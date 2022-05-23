@@ -211,8 +211,8 @@ func RunRequests(
 
 	// Run API server
 	repoPath := ""
-	if testDirFs.Exists(filepath.Join("in", "repository")) {
-		repoPath = filepath.Join(testDirFs.BasePath(), "in", "repository")
+	if testDirFs.Exists("repository") {
+		repoPath = filepath.Join(testDirFs.BasePath(), "repository")
 	}
 	apiUrl := RunApiServer(t, binary, project.StorageApiHost(), repoPath)
 	client := resty.New()
@@ -225,9 +225,10 @@ func RunRequests(
 		// Read the request file
 		requestFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(dir, "request.json")))
 		assert.NoError(t, err)
+		requestFileStr := testhelper.ReplaceEnvsString(requestFile.Content, envProvider)
 
 		request := &ApiRequest{}
-		err = json.DecodeString(requestFile.Content, request)
+		err = json.DecodeString(requestFileStr, request)
 		assert.NoError(t, err)
 		err = validator.Validate(context.Background(), request)
 		assert.NoError(t, err)
@@ -258,7 +259,7 @@ func RunRequests(
 		assert.NoError(t, err)
 		expectedRespBody := testhelper.ReplaceEnvsString(expectedRespFile.Content, envProvider)
 
-		// Decode && encode json to remove indentation from the expected-response.json
+		// Decode && encode json to unite indentation of the response with expected-response.json
 		respMap := orderedmap.New()
 		err = json.DecodeString(resp.String(), &respMap)
 		assert.NoError(t, err)
@@ -281,19 +282,6 @@ func RunRequests(
 		// Assert response body
 		testhelper.AssertWildcards(t, expectedRespBody, respBody, "Unexpected response.")
 	}
-
-	// Expected state dir
-	expectedDir := "out"
-	if !testDirFs.IsDir(expectedDir) {
-		t.Fatalf(`Missing directory "%s" in "%s".`, expectedDir, testDirFs.BasePath())
-	}
-
-	// Copy expected state and replace ENVs
-	expectedDirFs := testfs.NewMemoryFsFrom(filesystem.Join(testDirFs.BasePath(), expectedDir))
-	testhelper.ReplaceEnvsDir(expectedDirFs, `/`, envProvider)
-
-	// Compare actual and expected dirs
-	testhelper.AssertDirectoryContentsSame(t, expectedDirFs, `/`, workingDirFs, `/`)
 
 	// Check project state
 	expectedStatePath := "expected-state.json"
