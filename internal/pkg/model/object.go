@@ -149,6 +149,9 @@ type TemplateMainConfig struct {
 }
 
 func (m BranchMetadata) saveTemplateUsages(instances TemplatesInstances) error {
+	sort.SliceStable(instances, func(i, j int) bool {
+		return instances[i].InstanceId < instances[j].InstanceId
+	})
 	encoded, err := json.EncodeString(instances, false)
 	if err != nil {
 		return fmt.Errorf(`metadata "%s" are not in valid format: %w`, templatesInstancesMetaKey, err)
@@ -157,11 +160,11 @@ func (m BranchMetadata) saveTemplateUsages(instances TemplatesInstances) error {
 	return nil
 }
 
-func (m BranchMetadata) AddTemplateUsage(instanceId, instanceName, templateId, repositoryName, version, tokenId string, mainConfig *ConfigKey) error {
-	now := time.Now().Truncate(time.Second).UTC()
-	r := TemplateInstance{
+// UpsertTemplateInstance (update or insert) on use or upgrade operation.
+func (m BranchMetadata) UpsertTemplateInstance(now time.Time, instanceId, instanceName, templateId, repositoryName, version, tokenId string, mainConfig *ConfigKey) error {
+	now = now.Truncate(time.Second).UTC()
+	instance := TemplateInstance{
 		InstanceId:     instanceId,
-		InstanceName:   instanceName,
 		TemplateId:     templateId,
 		RepositoryName: repositoryName,
 		Version:        version,
@@ -169,19 +172,34 @@ func (m BranchMetadata) AddTemplateUsage(instanceId, instanceName, templateId, r
 		Updated:        ChangedByRecord{Date: now, TokenId: tokenId},
 	}
 
-	if mainConfig != nil {
-		r.MainConfig = &TemplateMainConfig{
-			ConfigId:    mainConfig.Id,
-			ComponentId: mainConfig.ComponentId,
+	// Load instance, if exists
+	instancesOld, _ := m.TemplatesUsages() // on error -> empty slice
+	instances := make(TemplatesInstances, 0)
+	for _, item := range instancesOld {
+		if item.InstanceId != instanceId {
+			// Pass through other instances
+			instances = append(instances, item)
+		} else {
+			// Skip existing instance, get value
+			instance = item
 		}
 	}
 
-	instances, err := m.TemplatesUsages()
-	if err != nil {
-		return err
+	// Set/update version, updated date, main config
+	instance.Version = version
+	instance.InstanceName = instanceName
+	instance.Updated = ChangedByRecord{Date: now, TokenId: tokenId}
+	if mainConfig != nil {
+		instance.MainConfig = &TemplateMainConfig{
+			ConfigId:    mainConfig.Id,
+			ComponentId: mainConfig.ComponentId,
+		}
+	} else {
+		instance.MainConfig = nil
 	}
 
-	instances = append(instances, r)
+	// Store instance
+	instances = append(instances, instance)
 	return m.saveTemplateUsages(instances)
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
@@ -95,7 +96,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 		return "", err
 	}
 
-	if err := branchState.Local.Metadata.AddTemplateUsage(instanceId, o.InstanceName, tmpl.TemplateId(), tmpl.Repository().Name, tmpl.Version(), storageApi.Token().Id, mainConfig); err != nil {
+	if err := branchState.Local.Metadata.UpsertTemplateInstance(time.Now(), instanceId, o.InstanceName, tmpl.TemplateId(), tmpl.Repository().Name, tmpl.Version(), storageApi.Token().Id, mainConfig); err != nil {
 		errors.Append(err)
 	}
 	saveOp.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())
