@@ -1,0 +1,33 @@
+Plan for "encrypt" operation:
+  C main/extractor/keboola.ex-db-mysql/with-rows
+    parameters.db.#password
+Encrypt done.
+Objects from "keboola/my-template-id/1.2.3" template:
+  * C main/_shared/keboola.python-transformation-v2
+  * R main/_shared/keboola.python-transformation-v2/codes/code-with-variables
+  * C main/_shared/keboola.python-transformation-v2/codes/code-with-variables/variables
+  * R main/_shared/keboola.python-transformation-v2/codes/my-code-1
+  * R main/_shared/keboola.python-transformation-v2/codes/my-code-2
+  * C main/extractor/ex-generic-v2/empty
+  * C main/extractor/ex-generic-v2/om-config
+  × C main/extractor/ex-generic-v2/to-delete
+  * C main/extractor/ex-generic-v2/without-rows
+  * C main/extractor/keboola.ex-aws-s3/om-default-bucket
+  * C main/extractor/keboola.ex-db-mysql/with-rows
+  * R main/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
+  * R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
+  × R main/extractor/keboola.ex-db-mysql/with-rows/rows/to-delete
+  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
+  * C main/other/keboola.orchestrator/orchestrator
+  * C main/other/keboola.orchestrator/orchestrator/schedules/scheduler
+  + C main/other/transformation/old-transformation
+  + R main/other/transformation/old-transformation/rows/old-transformation-snfk
+  + C main/transformation/keboola.python-transformation-v2/python-transformation
+  * C main/transformation/keboola.python-transformation-v2/transformation-with-shared-code
+  * C main/transformation/keboola.python-transformation-v2/transformation-with-shared-code/variables
+  * R main/transformation/keboola.python-transformation-v2/transformation-with-shared-code/variables/values/default
+  * C main/transformation/keboola.snowflake-transformation/im-transformation
+  * R main/transformation/keboola.snowflake-transformation/im-transformation/rows/test
+  * C main/transformation/keboola.snowflake-transformation/snowflake-transformation
+  * C main/writer/keboola.wr-db-mysql/im-default-bucket
+Template instance "V1StGXR8IZ5jdHi6BAmyT" has been upgraded to "keboola/my-template-id/1.2.3".

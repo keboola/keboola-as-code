@@ -1,0 +1,4 @@
+{
+  "mysql-password": "new-secret",
+  "base-url": "https://example.com"
+}

@@ -1,0 +1,326 @@
+{
+  "version": 2,
+  "project": {
+    "id": %%TEST_KBC_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "sortBy": "path",
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "schedulerConfig": "schedules/{config_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_name}",
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_name}"
+  },
+  "allowedBranches": [
+    "__all__"
+  ],
+  "ignoredComponents": [],
+  "templates": {
+    "repositories": [
+      {
+        "type": "dir",
+        "name": "keboola",
+        "url": "../repository",
+        "ref": "main"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "id": 12345,
+      "path": "main",
+      "metadata": {
+        "KBC.KAC.templates.instances": "[{\"instanceId\":\"V1StGXR8IZ5jdHi6BAmyT\",\"instanceName\":\"My Instance\",\"templateId\":\"my-template-id\",\"repositoryName\":\"keboola\",\"version\":\"1.2.3\",\"created\":{\"date\":\"2022-01-02T15:04:05Z\",\"tokenId\":\"12345\"},\"updated\":{\"date\":\"%s\",\"tokenId\":\"%s\"},\"mainConfig\":{\"configId\":\"014\",\"componentId\":\"keboola.orchestrator\"}}]"
+      }
+    }
+  ],
+  "configurations": [
+    {
+      "branchId": 12345,
+      "componentId": "keboola.shared-code",
+      "id": "001",
+      "path": "_shared/keboola.python-transformation-v2",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"shared-codes\"}",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.rowsIds": "[{\"idInProject\":\"002\",\"idInTemplate\":\"code-with-variables\"},{\"idInProject\":\"003\",\"idInTemplate\":\"my-code-1\"},{\"idInProject\":\"004\",\"idInTemplate\":\"my-code-2\"}]",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": [
+        {
+          "id": "002",
+          "path": "codes/code-with-variables"
+        },
+        {
+          "id": "003",
+          "path": "codes/my-code-1"
+        },
+        {
+          "id": "004",
+          "path": "codes/my-code-2"
+        }
+      ]
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.variables",
+      "id": "005",
+      "path": "variables",
+      "relations": [
+        {
+          "configId": "001",
+          "rowId": "002",
+          "type": "sharedCodeVariablesFor"
+        }
+      ],
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"shared-code-variables\"}",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "ex-generic-v2",
+      "id": "006",
+      "path": "extractor/ex-generic-v2/empty",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"empty\"}",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "ex-generic-v2",
+      "id": "007",
+      "path": "extractor/ex-generic-v2/om-config",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"om-config\"}",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "ex-generic-v2",
+      "id": "008",
+      "path": "extractor/ex-generic-v2/without-rows",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"without-rows\"}",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"base-url\",\"key\":\"parameters.api.baseUrl\"}]",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.ex-aws-s3",
+      "id": "009",
+      "path": "extractor/keboola.ex-aws-s3/om-default-bucket",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"om-default-bucket\"}",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.ex-db-mysql",
+      "id": "010",
+      "path": "extractor/keboola.ex-db-mysql/with-rows",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"with-rows\"}",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"mysql-password\",\"key\":\"parameters.db.#password\"}]",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.rowsIds": "[{\"idInProject\":\"011\",\"idInTemplate\":\"disabled\"},{\"idInProject\":\"012\",\"idInTemplate\":\"test-view\"},{\"idInProject\":\"%s\",\"idInTemplate\":\"users\"}]",
+        "KBC.KAC.templates.rowsInputs": "[{\"rowId\":\"012\",\"input\":\"mysql-incremental\",\"key\":\"parameters.incremental\"}]",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": [
+        {
+          "id": "011",
+          "path": "rows/disabled"
+        },
+        {
+          "id": "012",
+          "path": "rows/test-view"
+        },
+        {
+          "id": "%s",
+          "path": "rows/users"
+        }
+      ]
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.orchestrator",
+      "id": "014",
+      "path": "other/keboola.orchestrator/orchestrator",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"orchestrator\"}",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.scheduler",
+      "id": "015",
+      "path": "schedules/scheduler",
+      "relations": [
+        {
+          "componentId": "keboola.orchestrator",
+          "configId": "014",
+          "type": "schedulerFor"
+        }
+      ],
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"scheduler\"}",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "transformation",
+      "id": "%s",
+      "path": "other/transformation/old-transformation",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"old-transformation\"}",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.rowsIds": "[{\"idInProject\":\"%s\",\"idInTemplate\":\"old-transformation-snfk\"}]",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": [
+        {
+          "id": "%s",
+          "path": "rows/old-transformation-snfk"
+        }
+      ]
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.python-transformation-v2",
+      "id": "%s",
+      "path": "transformation/keboola.python-transformation-v2/python-transformation",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"python-transformation\"}",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.python-transformation-v2",
+      "id": "016",
+      "path": "transformation/keboola.python-transformation-v2/transformation-with-shared-code",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"transformation-with-shared-code\"}",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.variables",
+      "id": "017",
+      "path": "variables",
+      "relations": [
+        {
+          "componentId": "keboola.python-transformation-v2",
+          "configId": "016",
+          "type": "variablesFor"
+        }
+      ],
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"transformation-with-shared-code-variables\"}",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.rowsIds": "[{\"idInProject\":\"018\",\"idInTemplate\":\"default-values\"}]",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": [
+        {
+          "id": "018",
+          "path": "values/default",
+          "relations": [
+            {
+              "type": "variablesValuesFor"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.snowflake-transformation",
+      "id": "019",
+      "path": "transformation/keboola.snowflake-transformation/im-transformation",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"im-transformation\"}",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.rowsIds": "[{\"idInProject\":\"020\",\"idInTemplate\":\"test\"}]",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": [
+        {
+          "id": "020",
+          "path": "rows/test"
+        }
+      ]
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.snowflake-transformation",
+      "id": "021",
+      "path": "transformation/keboola.snowflake-transformation/snowflake-transformation",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"snowflake-transformation\"}",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": []
+    },
+    {
+      "branchId": 12345,
+      "componentId": "keboola.wr-db-mysql",
+      "id": "022",
+      "path": "writer/keboola.wr-db-mysql/im-default-bucket",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"im-default-bucket\"}",
+        "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.templateId": "my-template-id"
+      },
+      "rows": []
+    }
+  ]
+}
