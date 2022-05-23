@@ -173,7 +173,7 @@ type Step struct {
 	Inputs            Inputs `json:"inputs" validate:"omitempty,dive"`
 }
 
-func (s Step) NameFoDialog() string {
+func (s Step) NameForDialog() string {
 	if s.DialogName != "" {
 		return s.DialogName
 	}

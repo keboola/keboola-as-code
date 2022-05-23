@@ -274,7 +274,7 @@ func (d *useTmplInputsDialog) announceStep(step *input.StepExt) error {
 	step.Announced = true
 
 	// Print description
-	d.Printf("%s\n%s", step.NameFoDialog(), step.DescriptionForDialog())
+	d.Printf("%s\n%s", step.NameForDialog(), step.DescriptionForDialog())
 	return nil
 }
 

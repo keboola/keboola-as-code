@@ -26,28 +26,15 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 
 	// Register existing IDs, so they will be reused
 	configs := search.ConfigsForTemplateInstance(projectState.RemoteObjects().ConfigsWithRowsFrom(targetBranch), instanceId)
-	for _, config := range configs {
-		// Config must exist and corresponding ID in template must be defined
-		if v := config.Metadata.ConfigTemplateId(); v != nil {
-			c.RegisterPlaceholder(v.IdInTemplate, func(_ use.Placeholder, cb use.ResolveCallback) { cb(config.Id) })
-		} else {
-			continue
-		}
-
-		// Convert slice to map
-		rowsIdsMap := make(map[model.RowId]model.RowIdMetadata)
-		for _, v := range config.Metadata.RowsTemplateIds() {
-			rowsIdsMap[v.IdInProject] = v
-		}
-
-		// Process existing rows
-		for _, row := range config.Rows {
-			// Row must exist and corresponding ID in template must be defined
-			if v, found := rowsIdsMap[row.Id]; found {
-				c.RegisterPlaceholder(v.IdInTemplate, func(_ use.Placeholder, cb use.ResolveCallback) { cb(row.Id) })
-			}
-		}
-	}
+	iterateTmplMetadata(
+		configs,
+		func(config *model.Config, idInTemplate model.ConfigId, _ []model.ConfigInputUsage) {
+			c.RegisterPlaceholder(idInTemplate, func(_ use.Placeholder, cb use.ResolveCallback) { cb(config.Id) })
+		},
+		func(row *model.ConfigRow, idInTemplate model.RowId, _ []model.RowInputUsage) {
+			c.RegisterPlaceholder(idInTemplate, func(_ use.Placeholder, cb use.ResolveCallback) { cb(row.Id) })
+		},
+	)
 
 	return c
 }
