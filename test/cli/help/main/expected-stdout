@@ -34,6 +34,7 @@ Available Commands:
   local validate                 Validate the local directory.
   local fix-paths                Ensure that all paths match configured naming.
   local template                 Manage templates in the local directory.
+  local template list            List template instances in the project.
   local template use             Use template locally.
   local template upgrade         Upgrade template locally.
   local template delete          Delete template instance locally.
