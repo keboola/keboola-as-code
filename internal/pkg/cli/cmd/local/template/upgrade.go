@@ -33,7 +33,7 @@ func UpgradeCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Select instance
-			_, instance, err := d.Dialogs().AskTemplateInstance(projectState, d.Options())
+			branchKey, instance, err := d.Dialogs().AskTemplateInstance(projectState, d.Options())
 			if err != nil {
 				return err
 			}
@@ -53,14 +53,13 @@ func UpgradeCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			options, err := d.Dialogs().AskUpgradeTemplateOptions(projectState, template.Inputs(), d.Options())
+			options, err := d.Dialogs().AskUpgradeTemplateOptions(projectState, branchKey, *instance, template.Inputs(), d.Options())
 			if err != nil {
 				return err
 			}
 
 			// Use template
-			_, err = upgradeOp.Run(projectState, template, options, d)
-			return err
+			return upgradeOp.Run(projectState, template, options, d)
 		},
 	}
 
