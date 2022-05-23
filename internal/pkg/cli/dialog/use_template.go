@@ -60,7 +60,7 @@ func (d *useTmplDialog) ask() (useTemplate.Options, error) {
 	}
 
 	// User inputs
-	if v, err := d.askUseTemplateInputs(d.inputs, d.options); err != nil {
+	if v, err := d.askUseTemplateInputs(d.inputs.ToExtended(), d.options); err != nil {
 		return d.out, err
 	} else {
 		d.out.Inputs = v
@@ -101,14 +101,14 @@ type useTmplInputsDialog struct {
 }
 
 // askUseTemplateInputs - dialog to enter template inputs.
-func (p *Dialogs) askUseTemplateInputs(groups template.StepsGroups, opts *options.Options) (template.InputsValues, error) {
+func (p *Dialogs) askUseTemplateInputs(groups input.StepsGroupsExt, opts *options.Options) (template.InputsValues, error) {
 	dialog := &useTmplInputsDialog{
 		Dialogs:      p,
 		options:      opts,
 		context:      context.Background(),
 		inputsValues: make(map[string]interface{}),
 	}
-	return dialog.ask(groups.ToExtended())
+	return dialog.ask(groups)
 }
 
 func (d *useTmplInputsDialog) ask(stepsGroups input.StepsGroupsExt) (template.InputsValues, error) {
@@ -193,6 +193,13 @@ func (d *useTmplInputsDialog) announceGroup(group *input.StepsGroupExt) error {
 		// Detect steps from the inputs file, if present.
 		// If at least one input value is found, then the step is marked as selected.
 		for stepIndex, step := range group.Steps {
+			// Is step pre-selected (on upgrade operation)
+			if step.Show {
+				selectedSteps = append(selectedSteps, stepIndex)
+				continue
+			}
+
+			// Is at least one input defined in the inputs file?
 			for _, inputDef := range step.Inputs {
 				if _, found := d.inputsFile[inputDef.Id]; found {
 					selectedSteps = append(selectedSteps, stepIndex)
@@ -210,6 +217,7 @@ func (d *useTmplInputsDialog) announceGroup(group *input.StepsGroupExt) error {
 		multiSelect := &prompt.MultiSelectIndex{
 			Label:   "Select steps",
 			Options: group.Steps.OptionsForSelectBox(),
+			Default: group.Steps.SelectedOptions(),
 			Validator: func(answersRaw interface{}) error {
 				answers := answersRaw.([]survey.OptionAnswer)
 				values := make([]string, len(answers))

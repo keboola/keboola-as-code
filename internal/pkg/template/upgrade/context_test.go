@@ -74,14 +74,14 @@ func TestContext(t *testing.T) {
 	configMetadata.AddRowTemplateId("67890", "my-row")
 	assert.NoError(t, projectState.Set(&model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
-		Remote: &model.Config{
+		Local: &model.Config{
 			ConfigKey: configKey,
 			Metadata:  configMetadata,
 		},
 	}))
 	assert.NoError(t, projectState.Set(&model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{ConfigRowKey: rowKey},
-		Remote: &model.ConfigRow{
+		Local: &model.ConfigRow{
 			ConfigRowKey: rowKey,
 		},
 	}))

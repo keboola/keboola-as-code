@@ -25,7 +25,7 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 	}
 
 	// Register existing IDs, so they will be reused
-	configs := search.ConfigsForTemplateInstance(projectState.RemoteObjects().ConfigsWithRowsFrom(targetBranch), instanceId)
+	configs := search.ConfigsForTemplateInstance(projectState.LocalObjects().ConfigsWithRowsFrom(targetBranch), instanceId)
 	iterateTmplMetadata(
 		configs,
 		func(config *model.Config, idInTemplate model.ConfigId, _ []model.ConfigInputUsage) {

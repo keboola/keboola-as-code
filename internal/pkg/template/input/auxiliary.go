@@ -106,6 +106,16 @@ func (s StepsExt) OptionsForSelectBox() []string {
 	return res
 }
 
+func (s StepsExt) SelectedOptions() []int {
+	res := make([]int, 0)
+	for index, step := range s {
+		if step.Show {
+			res = append(res, index)
+		}
+	}
+	return res
+}
+
 func (g *StepsGroupExt) AddStep(step *StepExt) {
 	g.Steps = append(g.Steps, step)
 }

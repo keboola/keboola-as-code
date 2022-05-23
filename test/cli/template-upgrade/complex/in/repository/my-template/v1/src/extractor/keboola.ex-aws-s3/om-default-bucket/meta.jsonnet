@@ -1,0 +1,3 @@
+{
+  name: "om-default-bucket",
+}

@@ -34,7 +34,7 @@ func TestAskTemplateInstance_Interactive(t *testing.T) {
 	instanceName := "Instance 1"
 	repositoryName := "repo"
 	tokenId := "1234"
-	assert.NoError(t, branch.(*model.Branch).Metadata.AddTemplateUsage(instanceId, instanceName, templateId, repositoryName, version, tokenId, nil))
+	assert.NoError(t, branch.(*model.Branch).Metadata.UpsertTemplateInstance(time.Now(), instanceId, instanceName, templateId, repositoryName, version, tokenId, nil))
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -90,7 +90,7 @@ func TestAskTemplateInstance_Noninteractive_InvalidInstance(t *testing.T) {
 	instanceName := "Instance 1"
 	repositoryName := "repo"
 	tokenId := "1234"
-	assert.NoError(t, branch.(*model.Branch).Metadata.AddTemplateUsage(instanceId, instanceName, templateId, repositoryName, version, tokenId, nil))
+	assert.NoError(t, branch.(*model.Branch).Metadata.UpsertTemplateInstance(time.Now(), instanceId, instanceName, templateId, repositoryName, version, tokenId, nil))
 
 	options := d.Options()
 	options.Set("branch", 123)
@@ -119,7 +119,7 @@ func TestAskTemplateInstance_Noninteractive(t *testing.T) {
 	instanceName := "Instance 1"
 	repositoryName := "repo"
 	tokenId := "1234"
-	assert.NoError(t, branch.(*model.Branch).Metadata.AddTemplateUsage(instanceId, instanceName, templateId, repositoryName, version, tokenId, nil))
+	assert.NoError(t, branch.(*model.Branch).Metadata.UpsertTemplateInstance(time.Now(), instanceId, instanceName, templateId, repositoryName, version, tokenId, nil))
 
 	options := d.Options()
 	options.Set("branch", 123)
