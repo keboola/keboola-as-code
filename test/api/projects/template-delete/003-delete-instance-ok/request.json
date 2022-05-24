@@ -1,0 +1,5 @@
+{
+  "path": "/v1/project/%%TEST_BRANCH_MAIN_ID%%/instances/inst-001",
+  "method": "DELETE",
+  "body": {}
+}

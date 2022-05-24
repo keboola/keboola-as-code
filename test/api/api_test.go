@@ -261,7 +261,9 @@ func RunRequests(
 
 		// Decode && encode json to unite indentation of the response with expected-response.json
 		respMap := orderedmap.New()
-		err = json.DecodeString(resp.String(), &respMap)
+		if resp.String() != "" {
+			err = json.DecodeString(resp.String(), &respMap)
+		}
 		assert.NoError(t, err)
 		respBody, err := json.EncodeString(respMap, true)
 		assert.NoError(t, err)
