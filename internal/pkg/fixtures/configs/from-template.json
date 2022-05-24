@@ -1,0 +1,21 @@
+{
+  "componentId": "ex-generic-v2",
+  "name": "shopify",
+  "description": "test fixture",
+  "changeDescription": "From template keboola/my-template-id/1.2.3",
+  "configuration": {
+    "parameters": {
+      "shop": "shop",
+      "token": "token"
+    }
+  },
+  "rows": [],
+  "metadata": {
+    "KBC.KAC.templates.configId": "{\"idInTemplate\":\"shopify\"}",
+    "KBC.KAC.templates.configInputs": "[{\"input\":\"shopify-token\",\"key\":\"parameters.token\"}]",
+    "KBC.KAC.templates.instanceId": "inst-001",
+    "KBC.KAC.templates.repository": "keboola",
+    "KBC.KAC.templates.templateId": "my-template-id"
+  },
+  "isDisabled": false
+}
