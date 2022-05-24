@@ -10,7 +10,7 @@ import (
 
 func (p *Dialogs) selectTemplateInstance(options *options.Options, branch *model.Branch, label string) (*model.TemplateInstance, error) {
 	if options.IsSet(`instance`) {
-		usage, found, err := branch.Metadata.TemplateUsage(options.GetString(`instance`))
+		usage, found, err := branch.Metadata.TemplateInstance(options.GetString(`instance`))
 		if err != nil {
 			return nil, err
 		}
@@ -20,7 +20,7 @@ func (p *Dialogs) selectTemplateInstance(options *options.Options, branch *model
 		return nil, fmt.Errorf(`template instance "%s" was not found in branch "%s"`, options.GetString(`instance`), branch.Name)
 	}
 
-	all, err := branch.Metadata.TemplatesUsages()
+	all, err := branch.Metadata.TemplatesInstances()
 	if err != nil {
 		return nil, err
 	}

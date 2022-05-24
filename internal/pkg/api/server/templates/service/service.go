@@ -15,8 +15,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/upgrade"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	deleteTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/delete"
+	upgradeTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/upgrade"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -89,7 +91,7 @@ func (s *service) InputsIndex(d dependencies.Container, payload *InputsIndexPayl
 	if err != nil {
 		return nil, err
 	}
-	return InputsResponse(tmpl), nil
+	return InputsResponse(tmpl.Inputs().ToExtended()), nil
 }
 
 func (s *service) ValidateInputs(d dependencies.Container, payload *ValidateInputsPayload) (res *ValidationResult, err error) {
@@ -239,47 +241,10 @@ func (s *service) UpdateInstance(dependencies.Container, *UpdateInstancePayload)
 }
 
 func (s *service) DeleteInstance(d dependencies.Container, payload *DeleteInstancePayload) (err error) {
-	// Note:
-	//   Waits for separation of remote and local state.
-	//   A virtual FS and fake manifest are created to make it work.
-
-	branchKey, err := getBranch(d, payload.Branch)
+	// Get instance
+	prjState, branchKey, _, err := getTemplateInstance(d, payload.Branch, payload.InstanceID, true)
 	if err != nil {
 		return err
-	}
-
-	// Create virtual fs, after refactoring it will be removed
-	fs, err := aferofs.NewMemoryFs(d.Logger(), "")
-	if err != nil {
-		return err
-	}
-
-	// Create fake manifest
-	m := project.NewManifest(123, "foo")
-
-	// Load only target branch
-	m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.Id))})
-	prj := project.NewWithManifest(fs, m, d)
-
-	// Load project state
-	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true})
-	if err != nil {
-		return err
-	}
-
-	// Copy remote state to the local
-	for _, objectState := range prjState.All() {
-		objectState.SetLocalState(deepcopy.Copy(objectState.RemoteState()).(model.Object))
-	}
-
-	// Check instance existence in metadata
-	branch, _ := prjState.GetOrNil(branchKey).(*model.BranchState)
-	_, found, _ := branch.Local.Metadata.TemplateUsage(payload.InstanceID)
-	if !found {
-		return &GenericError{
-			Name:    "templates.instanceNotFound",
-			Message: fmt.Sprintf(`Instance "%s" not found in branch "%d".`, payload.InstanceID, branchKey.Id),
-		}
 	}
 
 	// Delete template instance
@@ -302,16 +267,85 @@ func (s *service) DeleteInstance(d dependencies.Container, payload *DeleteInstan
 	return nil
 }
 
-func (s *service) UpgradeInstance(dependencies.Container, *UpgradeInstancePayload) (res *UpgradeInstanceResult, err error) {
-	return nil, NotImplementedError{}
+func (s *service) UpgradeInstance(d dependencies.Container, payload *UpgradeInstancePayload) (res *UpgradeInstanceResult, err error) {
+	// Get instance
+	prjState, branchKey, instance, err := getTemplateInstance(d, payload.Branch, payload.InstanceID, true)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get template
+	_, tmpl, err := getTemplateVersion(d, instance.RepositoryName, instance.TemplateId, payload.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	// Process inputs
+	result, values, err := validateInputs(tmpl.Inputs(), payload.Steps)
+	if err != nil {
+		return nil, err
+	}
+	if !result.Valid {
+		return nil, &ValidationError{
+			Name:             "InvalidInputs",
+			Message:          "Inputs are not valid.",
+			ValidationResult: result,
+		}
+	}
+
+	// Upgrade template instance
+	upgradeOpts := upgradeTemplate.Options{
+		Branch:   branchKey,
+		Instance: *instance,
+		Inputs:   values,
+	}
+	err = upgradeTemplate.Run(prjState, tmpl, upgradeOpts, d)
+	if err != nil {
+		return nil, err
+	}
+
+	// Push changes
+	changeDesc := fmt.Sprintf("Upgraded from template %s", tmpl.FullName())
+	if err := push.Run(prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
+		return nil, err
+	}
+
+	return &UpgradeInstanceResult{InstanceID: instance.InstanceId}, nil
 }
 
-func (s *service) UpgradeInstanceInputsIndex(dependencies.Container, *UpgradeInstanceInputsIndexPayload) (res *Inputs, err error) {
-	return nil, NotImplementedError{}
+func (s *service) UpgradeInstanceInputsIndex(d dependencies.Container, payload *UpgradeInstanceInputsIndexPayload) (res *Inputs, err error) {
+	// Get instance
+	prjState, branchKey, instance, err := getTemplateInstance(d, payload.Branch, payload.InstanceID, true)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get template
+	_, tmpl, err := getTemplateVersion(d, instance.RepositoryName, instance.TemplateId, payload.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate response
+	stepsGroupsExt := upgrade.ExportInputsValues(d.Logger().InfoWriter(), prjState.State(), branchKey, instance.InstanceId, tmpl.Inputs())
+	return InputsResponse(stepsGroupsExt), nil
 }
 
-func (s *service) UpgradeInstanceValidateInputs(dependencies.Container, *UpgradeInstanceValidateInputsPayload) (res *ValidationResult, err error) {
-	return nil, NotImplementedError{}
+func (s *service) UpgradeInstanceValidateInputs(d dependencies.Container, payload *UpgradeInstanceValidateInputsPayload) (res *ValidationResult, err error) {
+	// Get instance
+	_, _, instance, err := getTemplateInstance(d, payload.Branch, payload.InstanceID, false)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate the inputs as in the use operation
+	return s.ValidateInputs(d, &ValidateInputsPayload{
+		Repository:      instance.RepositoryName,
+		Template:        instance.TemplateId,
+		Version:         payload.Version,
+		Steps:           payload.Steps,
+		StorageAPIToken: payload.StorageAPIToken,
+	})
 }
 
 func repositories(d dependencies.Container) []model.TemplateRepository {
@@ -454,4 +488,55 @@ func getBranch(d dependencies.Container, branchDef string) (model.BranchKey, err
 	}
 
 	return targetBranch, nil
+}
+
+func getTemplateInstance(d dependencies.Container, branchDef, instanceId string, loadConfigs bool) (*project.State, model.BranchKey, *model.TemplateInstance, error) {
+	// Note:
+	//   Waits for separation of remote and local state.
+	//   A virtual FS and fake manifest are created to make it work.
+
+	branchKey, err := getBranch(d, branchDef)
+	if err != nil {
+		return nil, branchKey, nil, err
+	}
+
+	// Create virtual fs, after refactoring it will be removed
+	fs, err := aferofs.NewMemoryFs(d.Logger(), "")
+	if err != nil {
+		return nil, branchKey, nil, err
+	}
+
+	// Create fake manifest
+	m := project.NewManifest(123, "foo")
+
+	// Load only target branch
+	if loadConfigs {
+		m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.Id))})
+	} else {
+		m.Filter().SetAllowedKeys([]model.Key{branchKey})
+	}
+	prj := project.NewWithManifest(fs, m, d)
+
+	// Load project state
+	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true})
+	if err != nil {
+		return nil, branchKey, nil, err
+	}
+
+	// Copy remote state to the local
+	for _, objectState := range prjState.All() {
+		objectState.SetLocalState(deepcopy.Copy(objectState.RemoteState()).(model.Object))
+	}
+
+	// Check instance existence in metadata
+	branch, _ := prjState.GetOrNil(branchKey).(*model.BranchState)
+	instance, found, _ := branch.Local.Metadata.TemplateInstance(instanceId)
+	if !found {
+		return nil, branchKey, nil, &GenericError{
+			Name:    "templates.instanceNotFound",
+			Message: fmt.Sprintf(`Instance "%s" not found in branch "%d".`, instanceId, branchKey.Id),
+		}
+	}
+
+	return prjState, branchKey, instance, nil
 }

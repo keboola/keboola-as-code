@@ -173,7 +173,7 @@ func (m BranchMetadata) UpsertTemplateInstance(now time.Time, instanceId, instan
 	}
 
 	// Load instance, if exists
-	instancesOld, _ := m.TemplatesUsages() // on error -> empty slice
+	instancesOld, _ := m.TemplatesInstances() // on error -> empty slice
 	instances := make(TemplatesInstances, 0)
 	for _, item := range instancesOld {
 		if item.InstanceId != instanceId {
@@ -204,7 +204,7 @@ func (m BranchMetadata) UpsertTemplateInstance(now time.Time, instanceId, instan
 }
 
 func (m BranchMetadata) DeleteTemplateUsage(instanceId string) error {
-	instances, err := m.TemplatesUsages()
+	instances, err := m.TemplatesInstances()
 	if err != nil {
 		return err
 	}
@@ -219,7 +219,7 @@ func (m BranchMetadata) DeleteTemplateUsage(instanceId string) error {
 	return fmt.Errorf(`instance "%s" not found`, instanceId)
 }
 
-func (m BranchMetadata) TemplatesUsages() (TemplatesInstances, error) {
+func (m BranchMetadata) TemplatesInstances() (TemplatesInstances, error) {
 	instances := &TemplatesInstances{}
 	instancesEncoded, found := m[templatesInstancesMetaKey]
 	if !found {
@@ -232,8 +232,8 @@ func (m BranchMetadata) TemplatesUsages() (TemplatesInstances, error) {
 	return *instances, nil
 }
 
-func (m BranchMetadata) TemplateUsage(instance string) (*TemplateInstance, bool, error) {
-	usages, err := m.TemplatesUsages()
+func (m BranchMetadata) TemplateInstance(instance string) (*TemplateInstance, bool, error) {
+	usages, err := m.TemplatesInstances()
 	if err != nil {
 		return &TemplateInstance{}, false, err
 	}
