@@ -142,11 +142,11 @@ func VersionDetailExtendedResponse(repo *repository.Repository, template *templa
 	}, nil
 }
 
-func InputsResponse(template *template.Template) (out *Inputs) {
-	out = &Inputs{StepGroups: make([]*StepGroup, 0)}
+func InputsResponse(stepsGroups input.StepsGroupsExt) (out *Inputs) {
+	out = &Inputs{StepGroups: make([]*StepGroup, 0), PreconfiguredSteps: make([]string, 0)}
 
 	// Groups
-	for _, group := range template.Inputs().ToExtended() {
+	for _, group := range stepsGroups {
 		// Group
 		groupResponse := &StepGroup{
 			ID:          group.Id,
@@ -169,6 +169,10 @@ func InputsResponse(template *template.Template) (out *Inputs) {
 				Inputs:            make([]*Input, 0),
 			}
 			groupResponse.Steps = append(groupResponse.Steps, stepResponse)
+
+			if step.Show {
+				out.PreconfiguredSteps = append(out.PreconfiguredSteps, step.Id)
+			}
 
 			// Inputs
 			for _, in := range step.Inputs {
@@ -210,7 +214,7 @@ func InstancesResponse(prjState *project.State, branchKey model.BranchKey) (out 
 	}
 
 	// Get instances
-	instances, err := branch.Remote.Metadata.TemplatesUsages()
+	instances, err := branch.Remote.Metadata.TemplatesInstances()
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +266,7 @@ func InstanceResponse(d dependencies.Container, prjState *project.State, branchK
 	}
 
 	// Get instances
-	instance, found, err := branch.Remote.Metadata.TemplateUsage(instanceId)
+	instance, found, err := branch.Remote.Metadata.TemplateInstance(instanceId)
 	if err != nil {
 		return nil, err
 	} else if !found {

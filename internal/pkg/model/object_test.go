@@ -25,7 +25,7 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 
 	testhelper.AssertWildcards(t, `[{"instanceId":"inst1","instanceName":"Instance 1","templateId":"tmpl1","repositoryName":"repo","version":"1.0.0","created":{"date":"%s","tokenId":"12345"},"updated":{"date":"%s","tokenId":"12345"},"mainConfig":{"configId":"1234","componentId":"foo.bar"}}]`, meta, "case 1")
 
-	usages, err := b.TemplatesUsages()
+	usages, err := b.TemplatesInstances()
 	assert.NoError(t, err)
 	assert.Equal(t, TemplatesInstances{
 		{
@@ -42,7 +42,7 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 
 	// Second instance
 	assert.NoError(t, b.UpsertTemplateInstance(now, "inst2", "Instance 2", "tmpl2", "repo", "2.0.0", "789", nil))
-	usages, err = b.TemplatesUsages()
+	usages, err = b.TemplatesInstances()
 	assert.NoError(t, err)
 	assert.Equal(t, TemplatesInstances{
 		{
@@ -68,7 +68,7 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 
 	// First instance - update
 	assert.NoError(t, b.UpsertTemplateInstance(now, "inst1", "Modified Instance 1", "tmpl1", "repo", "1.2.3", "789", &ConfigKey{Id: "7890", ComponentId: "foo.bar"}))
-	usages, err = b.TemplatesUsages()
+	usages, err = b.TemplatesInstances()
 	assert.NoError(t, err)
 	assert.Equal(t, TemplatesInstances{
 		{
@@ -123,7 +123,7 @@ func TestBranchMetadata_DeleteTemplateUsage(t *testing.T) {
 	b := BranchMetadata{}
 	b["KBC.KAC.templates.instances"] = encUsages
 
-	usage, found, err := b.TemplateUsage("inst1")
+	usage, found, err := b.TemplateInstance("inst1")
 	assert.NoError(t, err)
 	assert.True(t, found)
 	assert.Equal(t, &usage1, usage)
@@ -131,11 +131,11 @@ func TestBranchMetadata_DeleteTemplateUsage(t *testing.T) {
 	err = b.DeleteTemplateUsage("inst1")
 	assert.NoError(t, err)
 
-	usages, err := b.TemplatesUsages()
+	usages, err := b.TemplatesInstances()
 	assert.NoError(t, err)
 	assert.Len(t, usages, 1)
 
-	_, found, err = b.TemplateUsage("inst1")
+	_, found, err = b.TemplateInstance("inst1")
 	assert.NoError(t, err)
 	assert.False(t, found)
 }

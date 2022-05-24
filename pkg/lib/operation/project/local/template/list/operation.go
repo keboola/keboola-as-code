@@ -15,7 +15,7 @@ func Run(branch *model.BranchState, d dependencies) (err error) {
 	w := d.Logger().InfoWriter()
 
 	// Get instances
-	instances, err := branch.Local.Metadata.TemplatesUsages()
+	instances, err := branch.Local.Metadata.TemplatesInstances()
 	if err != nil {
 		return err
 	}

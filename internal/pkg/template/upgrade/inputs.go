@@ -13,7 +13,7 @@ import (
 )
 
 type inputsValuesExporter struct {
-	logger      log.Logger
+	logger      *log.LevelWriter
 	inputsById  map[string]*input.Input
 	foundInputs map[string]bool
 	groups      input.StepsGroupsExt
@@ -24,7 +24,7 @@ type inputsValuesExporter struct {
 // If the value is found:
 //   - the value is set as the default input value
 //   - step.Show = true, so it is marked configured in th API and pre-selected in CLI
-func ExportInputsValues(logger log.Logger, projectState *state.State, branch model.BranchKey, instanceId string, groups template.StepsGroups) input.StepsGroupsExt {
+func ExportInputsValues(logger *log.LevelWriter, projectState *state.State, branch model.BranchKey, instanceId string, groups template.StepsGroups) input.StepsGroupsExt {
 	e := inputsValuesExporter{
 		logger:      logger,
 		inputsById:  make(map[string]*input.Input),
@@ -40,7 +40,7 @@ func ExportInputsValues(logger log.Logger, projectState *state.State, branch mod
 }
 
 func (e inputsValuesExporter) export() input.StepsGroupsExt {
-	e.logger.Debug(`Exporting values of the template inputs from configs/rows ...`)
+	e.logger.WriteString(`Exporting values of the template inputs from configs/rows ...`)
 
 	// Export inputs values
 	iterateTmplMetadata(
@@ -65,7 +65,7 @@ func (e inputsValuesExporter) export() input.StepsGroupsExt {
 		return nil
 	})
 
-	e.logger.Debugf(`Exported %d inputs values.`, len(e.foundInputs))
+	e.logger.Writef(`Exported %d inputs values.`, len(e.foundInputs))
 	return e.groups
 }
 
@@ -73,13 +73,13 @@ func (e inputsValuesExporter) addValue(key model.Key, content *orderedmap.Ordere
 	value, keyFound, _ := content.GetNested(jsonKey)
 	if !keyFound {
 		// Key not found in the row content
-		e.logger.Debugf(`Value for input "%s" NOT found in JSON key "%s", in %s`, inputId, jsonKey, key.Desc())
+		e.logger.Writef(`Value for input "%s" NOT found in JSON key "%s", in %s`, inputId, jsonKey, key.Desc())
 		return
 	}
 	inputDef, inputFound := e.inputsById[inputId]
 	if !inputFound {
 		// Input is not found in the template
-		e.logger.Debugf(`Value for input "%s" found, but type doesn't match, JSON key "%s", in %s`, inputId, jsonKey, key.Desc())
+		e.logger.Writef(`Value for input "%s" found, but type doesn't match, JSON key "%s", in %s`, inputId, jsonKey, key.Desc())
 		return
 	}
 	if err := inputDef.Type.ValidateValue(reflect.ValueOf(value)); err != nil {
@@ -88,7 +88,7 @@ func (e inputsValuesExporter) addValue(key model.Key, content *orderedmap.Ordere
 	}
 
 	// Value has been found
-	e.logger.Debugf(`Value for input "%s" found in JSON key "%s", in %s`, inputId, jsonKey, key.Desc())
+	e.logger.Writef(`Value for input "%s" found in JSON key "%s", in %s`, inputId, jsonKey, key.Desc())
 	inputDef.Default = value
 	e.foundInputs[inputId] = true
 }

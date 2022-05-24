@@ -410,7 +410,7 @@ func (tc testCase) run(t *testing.T) {
 	}))
 
 	// Assert inputs
-	actual := ExportInputsValues(log.NewNopLogger(), state, branchKey, instanceId, tc.templateInputs)
+	actual := ExportInputsValues(log.NewNopLogger().DebugWriter(), state, branchKey, instanceId, tc.templateInputs)
 	assert.Equal(t, tc.expected, actual.ToValue())
 
 	// Assert steps state

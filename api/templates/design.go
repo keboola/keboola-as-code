@@ -323,6 +323,7 @@ var _ = Service("templates", func() {
 	Method("UpgradeInstance", func() {
 		Meta("openapi:summary", "Re-generate the instance in the same or different version")
 		Result(UpgradeInstanceResult)
+		Error("InvalidInputs", ValidationError, "Inputs are not valid.")
 		Payload(func() {
 			branchAttr()
 			instanceAttr()
@@ -333,6 +334,7 @@ var _ = Service("templates", func() {
 			POST("/project/{branch}/instances/{instanceId}/upgrade/{version}")
 			Meta("openapi:tag:instance")
 			Response(StatusOK)
+			Response("InvalidInputs", StatusBadRequest)
 			InstanceNotFoundError()
 		})
 	})
@@ -760,7 +762,10 @@ var Inputs = Type("Inputs", func() {
 		MinLength(1)
 		Example(ExampleStepGroups())
 	})
-	Required("stepGroups")
+	Attribute("preconfiguredSteps", ArrayOf(String), "IDs od steps that are initially configured.", func() {
+		Example([]string{"g01-s01", "g03-s02"})
+	})
+	Required("stepGroups", "preconfiguredSteps")
 })
 
 var StepGroup = Type("stepGroup", func() {
