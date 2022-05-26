@@ -1,0 +1,6 @@
+Command "local template rename"
+
+This command renames template instance.
+You can select an instance interactively or by flags.
+
+No changes are made to the remote state of the project.

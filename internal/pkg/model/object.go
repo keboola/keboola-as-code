@@ -160,8 +160,12 @@ func (m BranchMetadata) saveTemplateUsages(instances TemplatesInstances) error {
 	return nil
 }
 
+func (m BranchMetadata) UpsertTemplateInstanceFrom(now time.Time, tokenId string, d TemplateInstance) error {
+	return m.UpsertTemplateInstance(now, d.InstanceId, d.InstanceName, d.TemplateId, d.RepositoryName, d.Version, tokenId, d.MainConfig)
+}
+
 // UpsertTemplateInstance (update or insert) on use or upgrade operation.
-func (m BranchMetadata) UpsertTemplateInstance(now time.Time, instanceId, instanceName, templateId, repositoryName, version, tokenId string, mainConfig *ConfigKey) error {
+func (m BranchMetadata) UpsertTemplateInstance(now time.Time, instanceId, instanceName, templateId, repositoryName, version, tokenId string, mainConfig *TemplateMainConfig) error {
 	now = now.Truncate(time.Second).UTC()
 	instance := TemplateInstance{
 		InstanceId:     instanceId,
@@ -189,14 +193,7 @@ func (m BranchMetadata) UpsertTemplateInstance(now time.Time, instanceId, instan
 	instance.Version = version
 	instance.InstanceName = instanceName
 	instance.Updated = ChangedByRecord{Date: now, TokenId: tokenId}
-	if mainConfig != nil {
-		instance.MainConfig = &TemplateMainConfig{
-			ConfigId:    mainConfig.Id,
-			ComponentId: mainConfig.ComponentId,
-		}
-	} else {
-		instance.MainConfig = nil
-	}
+	instance.MainConfig = mainConfig
 
 	// Store instance
 	instances = append(instances, instance)

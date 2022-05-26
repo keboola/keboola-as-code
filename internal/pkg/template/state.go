@@ -25,6 +25,6 @@ func (s *State) TemplateManifest() *Manifest {
 	return s.container.TemplateManifest()
 }
 
-func (s *State) MainConfig() (*model.ConfigKey, error) {
+func (s *State) MainConfig() (*model.TemplateMainConfig, error) {
 	return s.container.MainConfig()
 }

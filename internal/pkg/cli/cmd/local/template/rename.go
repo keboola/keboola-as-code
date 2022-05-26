@@ -5,15 +5,15 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
-	deleteOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/delete"
+	renameOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func DeleteCommand(p dependencies.Provider) *cobra.Command {
+func RenameCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   `delete`,
-		Short: helpmsg.Read(`local/template/delete/short`),
-		Long:  helpmsg.Read(`local/template/delete/long`),
+		Use:   `rename`,
+		Short: helpmsg.Read(`local/template/rename/short`),
+		Long:  helpmsg.Read(`local/template/rename/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			d := p.Dependencies()
 
@@ -29,20 +29,19 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Select instance
-			branchKey, instance, err := d.Dialogs().AskTemplateInstance(projectState, d.Options())
+			// Ask
+			renameOpts, err := d.Dialogs().AskRenameInstance(projectState, d.Options())
 			if err != nil {
 				return err
 			}
 
-			// Delete template
-			options := deleteOp.Options{Branch: branchKey, Instance: instance.InstanceId, DryRun: d.Options().GetBool("dry-run")}
-			return deleteOp.Run(projectState, options, d)
+			// Rename template instance
+			return renameOp.Run(projectState, renameOpts, d)
 		},
 	}
 
 	cmd.Flags().StringP(`branch`, "b", ``, "branch ID or name")
 	cmd.Flags().StringP(`instance`, "i", ``, "instance ID of the template to delete")
-	cmd.Flags().Bool("dry-run", false, "print what needs to be done")
+	cmd.Flags().StringP(`new-name`, "n", ``, "new name of the template instance")
 	return cmd
 }
