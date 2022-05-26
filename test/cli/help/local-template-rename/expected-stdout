@@ -1,17 +1,17 @@
-Command "local template delete"
+Command "local template rename"
 
-This command deletes template instance.
+This command renames template instance.
 You can select an instance interactively or by flags.
 
 No changes are made to the remote state of the project.
 
 Usage:
-  %s local template delete [flags]
+  %s local template rename [flags]
 
 Flags:
   -b, --branch string     branch ID or name
-      --dry-run           print what needs to be done
   -i, --instance string   instance ID of the template to delete
+  -n, --new-name string   new name of the template instance
 
 Global Flags:
 %A

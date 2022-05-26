@@ -254,16 +254,20 @@ func (c *evaluatedTemplate) MappersFor(state *state.State) (mapper.Mappers, erro
 	return MappersFor(state, c.deps, c.context)
 }
 
-func (c *evaluatedTemplate) MainConfig() (*model.ConfigKey, error) {
+func (c *evaluatedTemplate) MainConfig() (*model.TemplateMainConfig, error) {
 	r, err := c.context.Replacements()
 	if err != nil {
 		return nil, err
 	}
 
 	// Replace ticket placeholder
-	mainConfig, err := r.Replace(c.manifest.MainConfig())
+	mainConfigRaw, err := r.Replace(c.manifest.MainConfig())
 	if err != nil {
 		return nil, err
 	}
-	return mainConfig.(*model.ConfigKey), nil
+	mainConfig := mainConfigRaw.(*model.ConfigKey)
+	if mainConfig == nil {
+		return nil, nil
+	}
+	return &model.TemplateMainConfig{ConfigId: mainConfig.Id, ComponentId: mainConfig.ComponentId}, nil
 }

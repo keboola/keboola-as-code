@@ -17,7 +17,7 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 	b := BranchMetadata{}
 
 	// First instance
-	assert.NoError(t, b.UpsertTemplateInstance(now, "inst1", "Instance 1", "tmpl1", "repo", "1.0.0", "12345", &ConfigKey{Id: "1234", ComponentId: "foo.bar"}))
+	assert.NoError(t, b.UpsertTemplateInstance(now, "inst1", "Instance 1", "tmpl1", "repo", "1.0.0", "12345", &TemplateMainConfig{ConfigId: "1234", ComponentId: "foo.bar"}))
 	assert.Len(t, b, 1)
 
 	meta, found := b["KBC.KAC.templates.instances"]
@@ -67,7 +67,7 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 	}, usages)
 
 	// First instance - update
-	assert.NoError(t, b.UpsertTemplateInstance(now, "inst1", "Modified Instance 1", "tmpl1", "repo", "1.2.3", "789", &ConfigKey{Id: "7890", ComponentId: "foo.bar"}))
+	assert.NoError(t, b.UpsertTemplateInstance(now, "inst1", "Modified Instance 1", "tmpl1", "repo", "1.2.3", "789", &TemplateMainConfig{ConfigId: "7890", ComponentId: "foo.bar"}))
 	usages, err = b.TemplatesInstances()
 	assert.NoError(t, err)
 	assert.Equal(t, TemplatesInstances{

@@ -37,6 +37,7 @@ Available Commands:
   local template list            List template instances in the project.
   local template use             Use template locally.
   local template upgrade         Upgrade template locally.
+  local template rename          Rename template instance locally.
   local template delete          Delete template instance locally.
 
   remote                         Operations performed directly in the project.
