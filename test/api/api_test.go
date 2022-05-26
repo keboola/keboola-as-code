@@ -282,7 +282,7 @@ func RunRequests(
 		)
 
 		// Assert response body
-		testhelper.AssertWildcards(t, expectedRespBody, respBody, "Unexpected response.")
+		testhelper.AssertWildcards(t, expectedRespBody, respBody, fmt.Sprintf("Unexpected response for request %s.", dir))
 	}
 
 	// Check project state
