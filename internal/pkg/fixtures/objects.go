@@ -134,6 +134,10 @@ func (r *MockedManifest) AddRelatedPath(path string) {
 	r.RelatedPaths = append(r.RelatedPaths, path)
 }
 
+func (r *MockedManifest) AddRelatedPathInRoot(path string) {
+	r.AddRelatedPath(path)
+}
+
 func (MockedManifest) RenameRelatedPaths(_, _ string) {
 	// nop
 }
