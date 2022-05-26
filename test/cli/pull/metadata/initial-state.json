@@ -8,7 +8,8 @@
         "name": "Main",
         "isDefault": true,
         "metadata": {
-          "KBC.KaC.branch-meta": "val1"
+          "KBC.KaC.branch-meta": "val1",
+          "KBC.projectDescription": "**test description**\n\nwith some text\n"
         }
       }
     }
