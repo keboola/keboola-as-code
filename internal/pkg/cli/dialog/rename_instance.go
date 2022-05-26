@@ -10,9 +10,9 @@ import (
 )
 
 // AskRenameInstance - dialog to rename template instance.
-func (d *Dialogs) AskRenameInstance(projectState *project.State, opts *options.Options) (out renameOp.Options, err error) {
+func (p *Dialogs) AskRenameInstance(projectState *project.State, opts *options.Options) (out renameOp.Options, err error) {
 	// Select instance
-	branchKey, instance, err := d.AskTemplateInstance(projectState, opts)
+	branchKey, instance, err := p.AskTemplateInstance(projectState, opts)
 	if err != nil {
 		return out, err
 	}
@@ -24,7 +24,7 @@ func (d *Dialogs) AskRenameInstance(projectState *project.State, opts *options.O
 		out.NewName = v
 	} else {
 		// Ask for instance name
-		v, _ := d.Prompt.Ask(&prompt.Question{
+		v, _ := p.Prompt.Ask(&prompt.Question{
 			Label:       "Instance Name",
 			Description: "Please enter instance name.",
 			Default:     instance.InstanceName,

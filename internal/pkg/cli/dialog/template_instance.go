@@ -7,14 +7,14 @@ import (
 )
 
 // AskTemplateInstance - dialog to select template instance.
-func (d *Dialogs) AskTemplateInstance(projectState *project.State, opts *options.Options) (branchKey model.BranchKey, instance *model.TemplateInstance, err error) {
+func (p *Dialogs) AskTemplateInstance(projectState *project.State, opts *options.Options) (branchKey model.BranchKey, instance *model.TemplateInstance, err error) {
 	// Branch
-	branch, err := d.SelectBranch(opts, projectState.LocalObjects().Branches(), `Select branch`)
+	branch, err := p.SelectBranch(opts, projectState.LocalObjects().Branches(), `Select branch`)
 	if err != nil {
 		return branchKey, instance, err
 	}
 
 	// Template instance
-	instance, err = d.selectTemplateInstance(opts, branch, `Select template instance`)
+	instance, err = p.selectTemplateInstance(opts, branch, `Select template instance`)
 	return branch.BranchKey, instance, err
 }
