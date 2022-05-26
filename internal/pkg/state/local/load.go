@@ -25,7 +25,11 @@ func (m *Manager) loadObject(ctx context.Context, manifest model.ObjectManifest,
 
 	// Set related paths
 	for _, file := range recipe.Files.Loaded() {
-		manifest.AddRelatedPath(file.Path())
+		if file.HasTag(model.FileKindProjectDescription) {
+			manifest.AddRelatedPathInRoot(file.Path())
+		} else {
+			manifest.AddRelatedPath(file.Path())
+		}
 	}
 
 	// Validate, if all files loaded without error

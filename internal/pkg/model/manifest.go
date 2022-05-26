@@ -33,6 +33,7 @@ type RelatedPaths interface {
 	GetRelatedPaths() []string
 	ClearRelatedPaths()
 	AddRelatedPath(path string)
+	AddRelatedPathInRoot(path string)
 	RenameRelatedPaths(oldPath, newPath string)
 }
 
@@ -115,6 +116,10 @@ func (p *Paths) AddRelatedPath(path string) {
 	}
 
 	p.RelatedPaths = append(p.RelatedPaths, relPath)
+}
+
+func (p *Paths) AddRelatedPathInRoot(path string) {
+	p.RelatedPaths = append(p.RelatedPaths, fmt.Sprintf("..%c%s", filesystem.PathSeparator, path))
 }
 
 func (p *Paths) RenameRelatedPaths(oldPath, newPath string) {
