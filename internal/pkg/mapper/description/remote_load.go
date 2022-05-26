@@ -19,6 +19,10 @@ func (m *descriptionMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) e
 	switch o := recipe.Object.(type) {
 	case *model.Branch:
 		o.Description = m.normalize(o.Description)
+		desc, found := o.Metadata[model.ProjectDescriptionMetaKey]
+		if found {
+			o.Metadata[model.ProjectDescriptionMetaKey] = m.normalize(desc)
+		}
 	case *model.Config:
 		o.Description = m.normalize(o.Description)
 	case *model.ConfigRow:
