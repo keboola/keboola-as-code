@@ -90,7 +90,11 @@ func (w *modelWriter) write() {
 		}
 
 		// Write
-		w.ObjectManifest.AddRelatedPath(fileRaw.Path())
+		if fileRaw.HasTag(model.FileKindProjectDescription) {
+			w.ObjectManifest.AddRelatedPathInRoot(fileRaw.Path())
+		} else {
+			w.ObjectManifest.AddRelatedPath(fileRaw.Path())
+		}
 		if err := w.fs.WriteFile(fileRaw); err != nil {
 			w.errors.Append(err)
 		}

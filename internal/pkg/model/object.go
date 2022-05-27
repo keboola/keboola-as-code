@@ -31,6 +31,7 @@ const (
 	SchedulerTargetConfigurationIdKey = `configurationId`
 	OrchestratorPhasesContentKey      = `phases`
 	OrchestratorTasksContentKey       = `tasks`
+	ProjectDescriptionMetaKey         = `KBC.projectDescription`
 	templatesInstancesMetaKey         = `KBC.KAC.templates.instances`
 	configIdMetadataKey               = "KBC.KAC.templates.configId"
 	rowsIdsMetadataKey                = "KBC.KAC.templates.rowsIds"

@@ -7,20 +7,21 @@ import (
 )
 
 const (
-	FileTypeJson              = `json`
-	FileTypeJsonNet           = `jsonnet`
-	FileTypeMarkdown          = `markdown`
-	FileTypeOther             = `other`
-	FileKindObjectConfig      = `objectConfig`
-	FileKindObjectMeta        = `objectMeta`
-	FileKindObjectDescription = `objectDescription`
-	FileKindBlockMeta         = `blockMeta`
-	FileKindCodeMeta          = `codeMeta`
-	FileKindPhaseConfig       = `phaseConfig`
-	FileKindTaskConfig        = `taskConfig`
-	FileKindNativeCode        = `nativeCode`
-	FileKindNativeSharedCode  = `nativeSharedCode`
-	FileKindGitKeep           = `gitkeep`
+	FileTypeJson               = `json`
+	FileTypeJsonNet            = `jsonnet`
+	FileTypeMarkdown           = `markdown`
+	FileTypeOther              = `other`
+	FileKindObjectConfig       = `objectConfig`
+	FileKindObjectMeta         = `objectMeta`
+	FileKindObjectDescription  = `objectDescription`
+	FileKindProjectDescription = `projectDescription`
+	FileKindBlockMeta          = `blockMeta`
+	FileKindCodeMeta           = `codeMeta`
+	FileKindPhaseConfig        = `phaseConfig`
+	FileKindTaskConfig         = `taskConfig`
+	FileKindNativeCode         = `nativeCode`
+	FileKindNativeSharedCode   = `nativeSharedCode`
+	FileKindGitKeep            = `gitkeep`
 )
 
 type files = filesystem.Files

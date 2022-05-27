@@ -39,6 +39,7 @@ DEBUG	Project state has been successfully loaded.
 INFO	Plan for "pull" operation:
 INFO	  + B main
 DEBUG	Execution plan is valid.
+DEBUG	Saved "description.md"
 DEBUG	Created directory "main"
 DEBUG	Saved "main/meta.json"
 DEBUG	Saved "main/description.md"

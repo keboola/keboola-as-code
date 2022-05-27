@@ -91,7 +91,7 @@ func TestLoadState(t *testing.T) {
 						"",
 						"main",
 					),
-					RelatedPaths: []string{naming.MetaFile, naming.DescriptionFile},
+					RelatedPaths: []string{naming.MetaFile, naming.DescriptionFile, "../" + naming.DescriptionFile},
 				},
 			},
 		},
