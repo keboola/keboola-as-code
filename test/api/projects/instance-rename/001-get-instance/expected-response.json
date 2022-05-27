@@ -1,0 +1,30 @@
+{
+  "versionDetail": {
+    "components": [],
+    "readme": "### My Template\n\nFull workflow to ...\n\n",
+    "version": "1.2.3",
+    "stable": false,
+    "description": ""
+  },
+  "configurations": [
+    {
+      "componentId": "ex-generic-v2",
+      "configId": "%%TEST_BRANCH_MAIN_CONFIG_SHOPIFY_ID%%",
+      "name": "shopify"
+    }
+  ],
+  "templateId": "my-template-id",
+  "instanceId": "inst-001",
+  "branch": "%%TEST_BRANCH_MAIN_ID%%",
+  "repositoryName": "keboola",
+  "version": "1.2.3",
+  "name": "Inst 001",
+  "created": {
+    "date": "2022-01-01T07:00:00Z",
+    "tokenId": "123"
+  },
+  "updated": {
+    "date": "2022-01-01T07:00:00Z",
+    "tokenId": "123"
+  }
+}

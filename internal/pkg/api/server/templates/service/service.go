@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/upgrade"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	deleteTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/delete"
+	renameInst "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
 	upgradeTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/upgrade"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
@@ -236,8 +237,30 @@ func (s *service) InstanceIndex(d dependencies.Container, payload *InstanceIndex
 	return InstanceResponse(d, prjState, branchKey, payload.InstanceID)
 }
 
-func (s *service) UpdateInstance(dependencies.Container, *UpdateInstancePayload) (res *InstanceDetail, err error) {
-	return nil, NotImplementedError{}
+func (s *service) UpdateInstance(d dependencies.Container, payload *UpdateInstancePayload) (res *InstanceDetail, err error) {
+	prjState, branchKey, instance, err := getTemplateInstance(d, payload.Branch, payload.InstanceID, true)
+	if err != nil {
+		return nil, err
+	}
+
+	opts := renameInst.Options{
+		Branch:   branchKey,
+		Instance: *instance,
+		NewName:  payload.Name,
+	}
+
+	err = renameInst.Run(prjState, opts, d)
+	if err != nil {
+		return nil, err
+	}
+
+	// Push changes
+	changeDesc := fmt.Sprintf("Rename template instance %s", payload.InstanceID)
+	if err := push.Run(prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
+		return nil, err
+	}
+
+	return InstanceResponse(d, prjState, branchKey, payload.InstanceID)
 }
 
 func (s *service) DeleteInstance(d dependencies.Container, payload *DeleteInstancePayload) (err error) {

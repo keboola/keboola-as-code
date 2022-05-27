@@ -277,7 +277,7 @@ func InstanceResponse(d dependencies.Container, prjState *project.State, branchK
 	}
 
 	// Get instances
-	instance, found, err := branch.Remote.Metadata.TemplateInstance(instanceId)
+	instance, found, err := branch.LocalOrRemoteState().(*model.Branch).Metadata.TemplateInstance(instanceId)
 	if err != nil {
 		return nil, err
 	} else if !found {
