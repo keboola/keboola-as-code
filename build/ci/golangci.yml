@@ -44,9 +44,12 @@ linters-settings:
 
 # https://golangci-lint.run/usage/linters
 linters:
+  disable-all: true
+  # Some linters are not compatible with go 1.18, so they are temporary disabled.
+  # See https://github.com/golangci/golangci-lint/issues/2649
   enable:
     - asciicheck
-    - bodyclose
+    #- bodyclose # Not compatible with go 1.18, temporary disable
     - deadcode
     - depguard
     - dogsled
@@ -61,53 +64,53 @@ linters:
     - gochecknoglobals
     - gochecknoinits
     - goconst
-    - gocritic
+    #- gocritic # Not compatible with go 1.18, temporary disable
     - godot
     - godox
-    - gofumpt
+    #- gofumpt
     - goheader
     - gomodguard
     - goprintffuncname
     - gosec
     - gosimple
-    - govet
+    #- govet # Not compatible with go 1.18, temporary disable
     - ifshort
     - importas
     - ineffassign
     - makezero
     - misspell
     - nakedret
-    - nilerr
-    - noctx
+    #- nilerr # Not compatible with go 1.18, temporary disable
+    #- noctx # Not compatible with go 1.18, temporary disable
     - predeclared
     - promlinter
-    - rowserrcheck
-    - sqlclosecheck
+    #- rowserrcheck # Not compatible with go 1.18, temporary disable
+    #- sqlclosecheck # Not compatible with go 1.18, temporary disable
     - staticcheck
-    - structcheck
+    #- structcheck # Not compatible with go 1.18, temporary disable
     - tagliatelle
     - thelper
-    - tparallel
+    #- tparallel # Not compatible with go 1.18, temporary disable
     - paralleltest
     - unconvert
-    - unparam
+    #- unparam # Not compatible with go 1.18, temporary disable
     - unused
     - varcheck
-    - wastedassign
+    #- wastedassign # Not compatible with go 1.18, temporary disable
     - whitespace
-  disable:
-    - goimports # replaced with gci
-    - gofmt # replaced with gofumpt
-    - nolintlint # strange behavior
-    - gomoddirectives # allow replace directive in go.mod
+    # DISABLED
+    #- goimports # replaced with gci
+    #- gofmt # replaced with gofumpt
+    #- nolintlint # strange behavior
+    #- gomoddirectives # allow replace directive in go.mod
     # TODO
-    - funlen
-    - gocyclo
-    - gocognit
-    - cyclop
-    - nestif
-    - lll
-    - gomnd
+    #- funlen
+    #- gocyclo
+    #- gocognit
+    #- cyclop
+    #- nestif
+    #- lll
+    #- gomnd
 
 issues:
   # List of regexps of issue texts to exclude
