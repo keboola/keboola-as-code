@@ -179,10 +179,8 @@ func createTransport() *http.Transport {
 func setupLogs(client *Client, verbose bool) {
 	// Debug full request and response if verbose = true
 	// Secrets are hidden see Logger
-	if verbose {
-		client.resty.SetDebug(true)
-		client.resty.SetDebugBodyLimit(32 * 1024)
-	}
+	client.resty.SetDebugBodyLimit(32 * 1024)
+	client.resty.SetDebug(verbose)
 
 	// Log each request when done
 	client.resty.OnAfterResponse(func(c *resty.Client, res *resty.Response) error {
