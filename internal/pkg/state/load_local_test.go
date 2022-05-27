@@ -32,6 +32,7 @@ func TestLoadLocalStateMinimal(t *testing.T) {
 	assert.Len(t, state.Configs(), 1)
 	assert.Empty(t, state.UntrackedPaths())
 	assert.Equal(t, []string{
+		"description.md",
 		"main",
 		"main/description.md",
 		"main/extractor",
@@ -87,6 +88,7 @@ func TestLoadLocalStateComplex(t *testing.T) {
 		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled/description.md",
 		"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled/meta.json",
 		"123-branch/meta.json",
+		"description.md",
 		"main",
 		"main/description.md",
 		"main/extractor",
@@ -354,7 +356,7 @@ func complexLocalExpectedBranches() []*model.BranchState {
 						"",
 						"main",
 					),
-					RelatedPaths: []string{naming.MetaFile, naming.DescriptionFile},
+					RelatedPaths: []string{naming.MetaFile, naming.DescriptionFile, "../" + naming.DescriptionFile},
 				},
 			},
 		},

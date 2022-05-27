@@ -53,6 +53,7 @@ func TestKnownPathsFilter(t *testing.T) {
 	// Compare result with result of the TestKnownPathsComplex.
 	assert.NoError(t, err)
 	assert.Equal(t, []string{
+		"description.md",
 		"main",
 		"main/description.md",
 		"main/meta.json",
@@ -98,6 +99,7 @@ func TestKnownPathsComplex(t *testing.T) {
 		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir",
 		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir/untracked2",
 		"123-branch/meta.json",
+		"description.md",
 		"main",
 		"main/description.md",
 		"main/extractor",
@@ -156,6 +158,7 @@ func TestKnownPathsComplex(t *testing.T) {
 		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir",
 		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir/untracked2",
 		"123-branch/meta.json",
+		"description.md",
 		"main",
 		"main/description.md",
 		"main/extractor",
@@ -205,6 +208,7 @@ func TestKnownPathsComplex(t *testing.T) {
 		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir",
 		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir/untracked2",
 		"123-branch/meta.json",
+		"description.md",
 		"main/description.md",
 		"main/extractor/ex-generic-v2/456-todos",
 		"main/extractor/ex-generic-v2/456-todos/config.json",
@@ -251,6 +255,7 @@ func TestKnownPathsComplex(t *testing.T) {
 		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir",
 		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir/untracked2",
 		"123-branch/meta.json",
+		"description.md",
 		"main/description.md",
 		"main/extractor/ex-generic-v2/456-todos",
 		"main/extractor/ex-generic-v2/456-todos/config.json",
