@@ -143,7 +143,8 @@ func VersionDetailExtendedResponse(repo *repository.Repository, template *templa
 }
 
 func InputsResponse(stepsGroups input.StepsGroupsExt) (out *Inputs) {
-	out = &Inputs{StepGroups: make([]*StepGroup, 0), PreconfiguredSteps: make([]string, 0)}
+	out = &Inputs{StepGroups: make([]*StepGroup, 0)}
+	initialValues := make([]*StepPayload, 0)
 
 	// Groups
 	for _, group := range stepsGroups {
@@ -158,6 +159,13 @@ func InputsResponse(stepsGroups input.StepsGroupsExt) (out *Inputs) {
 
 		// Steps
 		for _, step := range group.Steps {
+			// If the step is pre-configured -> validate default values.
+			var stepValues *StepPayload
+			if step.Show {
+				stepValues = &StepPayload{ID: step.Id}
+				initialValues = append(initialValues, stepValues)
+			}
+
 			// Step
 			stepResponse := &Step{
 				ID:                step.Id,
@@ -169,10 +177,6 @@ func InputsResponse(stepsGroups input.StepsGroupsExt) (out *Inputs) {
 				Inputs:            make([]*Input, 0),
 			}
 			groupResponse.Steps = append(groupResponse.Steps, stepResponse)
-
-			if step.Show {
-				out.PreconfiguredSteps = append(out.PreconfiguredSteps, step.Id)
-			}
 
 			// Inputs
 			for _, in := range step.Inputs {
@@ -186,10 +190,17 @@ func InputsResponse(stepsGroups input.StepsGroupsExt) (out *Inputs) {
 					Options:     OptionsResponse(in.Options),
 				}
 				stepResponse.Inputs = append(stepResponse.Inputs, inputResponse)
+
+				if stepValues != nil {
+					stepValues.Inputs = append(stepValues.Inputs, &InputValue{ID: in.Id, Value: in.Default})
+				}
 			}
 		}
 	}
 
+	// Together with the inputs definitions, the initial state (initial validation) is generated.
+	// It is primarily intended for the upgrade operation, where the step may be pre-configured.
+	out.InitialState, _, _ = validateInputs(stepsGroups.ToValue(), initialValues)
 	return out
 }
 

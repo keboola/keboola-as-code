@@ -762,10 +762,10 @@ var Inputs = Type("Inputs", func() {
 		MinLength(1)
 		Example(ExampleStepGroups())
 	})
-	Attribute("preconfiguredSteps", ArrayOf(String), "IDs od steps that are initially configured.", func() {
-		Example([]string{"g01-s01", "g03-s02"})
+	Attribute("initialState", ValidationResult, "Initial state - same structure as the validation result.", func() {
+		Example(ExampleValidationResult())
 	})
-	Required("stepGroups", "preconfiguredSteps")
+	Required("stepGroups", "initialState")
 })
 
 var StepGroup = Type("stepGroup", func() {
