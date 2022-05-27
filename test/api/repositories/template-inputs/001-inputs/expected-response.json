@@ -26,5 +26,27 @@
       ]
     }
   ],
-  "preconfiguredSteps": []
+  "initialState": {
+    "valid": false,
+    "stepGroups": [
+      {
+        "id": "g01",
+        "valid": false,
+        "error": "All steps (1) must be selected.",
+        "steps": [
+          {
+            "id": "g01-s01",
+            "configured": false,
+            "valid": true,
+            "inputs": [
+              {
+                "id": "shopify-token",
+                "visible": true
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
 }
