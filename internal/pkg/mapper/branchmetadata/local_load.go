@@ -33,7 +33,7 @@ func (m *branchMetadataMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) 
 			return err
 		}
 		if err == nil && file.Content != "" {
-			branch.Metadata[model.ProjectDescriptionMetaKey] = file.Content
+			branch.Metadata[model.ProjectDescriptionMetaKey] = strings.TrimRight(file.Content, " \r\n\t")
 		}
 	}
 

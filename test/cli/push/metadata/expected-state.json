@@ -6,7 +6,7 @@
         "description": "",
         "isDefault": true,
         "metadata": {
-          "KBC.projectDescription": "**test description**\n\nwith some text\n"
+          "KBC.projectDescription": "**test description**\n\nwith some text"
         }
       },
       "configs": []
