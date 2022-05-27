@@ -32,8 +32,7 @@ func (p *Dialogs) AskStorageApiHost(options *options.Options) (string, error) {
 }
 
 func StorageApiHostValidator(val interface{}) error {
-	str := val.(string)
-	if len(str) == 0 {
+	if str := val.(string); len(str) == 0 {
 		return errors.New("value is required")
 	} else if _, err := url.Parse(str); err != nil {
 		return errors.New("invalid host")

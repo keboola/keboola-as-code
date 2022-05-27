@@ -282,8 +282,7 @@ func (f *Files) Add(file File) File {
 }
 
 func (f *Files) GetOneByTag(tag string) File {
-	files := f.GetByTag(tag)
-	if len(files) == 1 {
+	if files := f.GetByTag(tag); len(files) == 1 {
 		return files[0]
 	} else if len(files) > 1 {
 		var paths []string

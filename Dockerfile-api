@@ -1,5 +1,5 @@
 # Build container
-FROM golang:1.17 AS buildContainer
+FROM golang:1.18 AS buildContainer
 WORKDIR /app
 COPY . .
 #flags: -s -w to remove symbol table and debug info
