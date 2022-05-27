@@ -88,8 +88,7 @@ func (o *OrderedMap) GetOrNil(key string) interface{} {
 }
 
 func (o *OrderedMap) Set(key string, value interface{}) {
-	_, exists := o.values[key]
-	if !exists {
+	if _, exists := o.values[key]; !exists {
 		o.keys = append(o.keys, key)
 	}
 	o.values[key] = value
@@ -242,8 +241,7 @@ func (o *OrderedMap) VisitAllRecursive(callback visitCallback) {
 
 func (o *OrderedMap) Delete(key string) {
 	// check key is in use
-	_, ok := o.values[key]
-	if !ok {
+	if _, ok := o.values[key]; !ok {
 		return
 	}
 	// remove from keys

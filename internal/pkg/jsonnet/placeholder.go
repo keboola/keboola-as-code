@@ -113,8 +113,7 @@ func splitPlaceholders(str string, replace func(funcName string, args []interfac
 		prevEnd = indices[1]
 	}
 
-	lastPart := str[prevEnd:]
-	if len(lastPart) > 0 {
+	if lastPart := str[prevEnd:]; len(lastPart) > 0 {
 		output = append(output, ValueToLiteral(lastPart))
 	}
 

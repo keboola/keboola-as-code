@@ -16,7 +16,11 @@ linters-settings:
       - github.com/keboola/keboola-as-code/*
   # Gci - improved version of goimports
   gci:
-    local-prefixes: github.com/keboola/keboola-as-code
+    sections:
+      - standard # Captures all standard packages if they do not match another section.
+      - default # Contains all imports that could not be matched to another section type.
+      - prefix(github.com/keboola/keboola-as-code)
+
   gocyclo:
     # minimal code complexity to report, 30 by default (but we recommend 10-20)
     min-complexity: 10

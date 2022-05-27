@@ -23,12 +23,10 @@ func (p *Plan) Name() string {
 func (p *Plan) Log(logger log.Logger) {
 	writer := logger.InfoWriter()
 	writer.WriteString(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
-	actions := p.actions
-
-	if len(actions) == 0 {
+	if len(p.actions) == 0 {
 		writer.WriteStringIndent(1, "no new or deleted objects found")
 	} else {
-		for _, action := range actions {
+		for _, action := range p.actions {
 			writer.WriteStringIndent(1, action.String())
 		}
 	}

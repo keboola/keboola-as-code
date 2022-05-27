@@ -24,12 +24,10 @@ func (p *Plan) Name() string {
 func (p *Plan) Log(log log.Logger) {
 	writer := log.InfoWriter()
 	writer.WriteString(fmt.Sprintf(`Plan for "%s" operation:`, p.Name()))
-	actions := p.actions
-
-	if len(actions) == 0 {
+	if len(p.actions) == 0 {
 		writer.WriteStringIndent(1, "no paths to rename")
 	} else {
-		for _, action := range actions {
+		for _, action := range p.actions {
 			writer.WriteStringIndent(1, "- "+action.String())
 		}
 	}
