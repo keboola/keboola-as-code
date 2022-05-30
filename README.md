@@ -29,3 +29,7 @@ A monorepo written in Go, represents [Keboola Connection](https://www.keboola.co
   https://www.keboola.com/resources/roadmap.
 - You can also send PR directly, but we do not guarantee that it will be accepted.
 - See the [developer's guide](./docs/DEVELOPMENT.md).
+
+## License
+
+MIT licensed, see [LICENSE](./LICENSE) file.
