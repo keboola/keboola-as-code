@@ -7,7 +7,6 @@
   "templates": [
     {
       "id": "my-template",
-      "icon": "common:settings",
       "name": "My Template",
       "description": "Full workflow to ...",
       "path": "my-template",
@@ -28,7 +27,6 @@
     },
     {
       "id": "second-template",
-      "icon": "common:settings",
       "name": "Second Template",
       "description": "Full workflow to ...",
       "path": "second-template",

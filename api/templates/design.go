@@ -615,7 +615,6 @@ var Template = Type("Template", func() {
 		MaxLength(40)
 		Example("my-template")
 	})
-	iconAttr()
 	Attribute("name", String, "Template name.", func() {
 		MinLength(1)
 		MaxLength(40)
@@ -637,7 +636,7 @@ var Template = Type("Template", func() {
 	Attribute("versions", ArrayOf(TemplateVersion), "All available versions of the template.", func() {
 		Example(ExampleVersions1())
 	})
-	Required("id", "icon", "name", "author", "description", "defaultVersion", "versions")
+	Required("id", "name", "author", "description", "defaultVersion", "versions")
 })
 
 var VersionDetail = Type("VersionDetail", func() {
@@ -985,7 +984,6 @@ type ExampleAuthorData struct {
 }
 
 type ExampleTemplateData struct {
-	Icon           string               `json:"icon" yaml:"icon"`
 	Id             string               `json:"id" yaml:"id"`
 	Name           string               `json:"name" yaml:"name"`
 	Author         ExampleAuthorData    `json:"author" yaml:"author"`
@@ -1115,7 +1113,6 @@ func ExampleAuthor() ExampleAuthorData {
 
 func ExampleTemplate1() ExampleTemplateData {
 	return ExampleTemplateData{
-		Icon:           "common:download",
 		Id:             "my-template",
 		Name:           "My Template",
 		Author:         ExampleAuthor(),
@@ -1127,7 +1124,6 @@ func ExampleTemplate1() ExampleTemplateData {
 
 func ExampleTemplate2() ExampleTemplateData {
 	return ExampleTemplateData{
-		Icon:           "component:keboola.ex-db-mysql",
 		Id:             "maximum-length-template-id-dolor-sit-an",
 		Name:           "Maximum length template name ipsum dolo",
 		Author:         ExampleAuthor(),

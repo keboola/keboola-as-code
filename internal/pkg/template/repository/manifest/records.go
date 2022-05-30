@@ -8,11 +8,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-const DefaultTemplateIcon = "common:settings"
-
 type TemplateRecord struct {
 	Id            string `json:"id" validate:"required,alphanumdash,min=1,max=40"`
-	Icon          string `json:"icon" validate:"required,templateicon,min=1,max=40"`
 	Name          string `json:"name" validate:"required,min=1,max=40"`
 	Description   string `json:"description" validate:"required,min=1,max=200"`
 	model.AbsPath `validate:"dive"`
