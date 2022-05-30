@@ -26,12 +26,12 @@
       }
     ]
   },
-  "components": [
-    "keboola.ex-aws-s3",
-    "keboola.ex-facebook"
-  ],
   "readme": "### My Template\n\nFull workflow to ...\n\n",
   "version": "1.2.3",
   "stable": false,
-  "description": ""
+  "description": "",
+  "components": [
+    "keboola.ex-aws-s3",
+    "keboola.ex-facebook"
+  ]
 }

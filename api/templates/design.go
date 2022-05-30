@@ -642,9 +642,6 @@ var Template = Type("Template", func() {
 
 var VersionDetail = Type("VersionDetail", func() {
 	Extend(TemplateVersion)
-	Attribute("components", ArrayOf(String), "List of components used in the template.", func() {
-		Example([]string{"ex-generic-v2", "keboola.snowflake-transformation"})
-	})
 	Attribute("readme", String, "Readme of the template version in Markdown format.", func() {
 		MinLength(1)
 		Example("Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)")
@@ -679,6 +676,9 @@ var TemplateVersion = Type("Version", func() {
 		MinLength(0)
 		MaxLength(40)
 		Example("Experimental support for new API.")
+	})
+	Attribute("components", ArrayOf(String), "List of components used in the template.", func() {
+		Example([]string{"ex-generic-v2", "keboola.snowflake-transformation"})
 	})
 	Required("version", "stable", "description")
 	Example(ExampleVersion1())
