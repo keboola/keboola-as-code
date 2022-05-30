@@ -21,6 +21,12 @@ func Run(tmpl *template.Template, d dependencies) (err error) {
 	w.Writef("Version:              %s", v.Version.String())
 	w.Writef("Stable:               %t", v.Stable)
 	w.Writef("Description:          %s", v.Description)
+	if len(v.Components) > 0 {
+		w.Writef("Components:")
+		for _, c := range v.Components {
+			w.Writef("  - %s", c)
+		}
+	}
 	w.Writef("")
 
 	// Groups

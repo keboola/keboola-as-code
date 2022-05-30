@@ -151,6 +151,13 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		_, err = console.Send(testhelper.Enter) // -> start editor
 		assert.NoError(t, err)
 
+		_, err = console.ExpectString("Select the components that are used in the templates.")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.Enter) // enter
+		assert.NoError(t, err)
+
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)
 	}()
@@ -224,6 +231,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 				},
 			},
 		},
+		Components: []string{},
 	}, opts)
 }
 
@@ -333,6 +341,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 				},
 			},
 		},
+		Components: []string{},
 	}, opts)
 }
 
@@ -427,6 +436,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 				},
 			},
 		},
+		Components: []string{},
 	}, opts)
 }
 

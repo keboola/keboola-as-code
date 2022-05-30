@@ -179,8 +179,10 @@ func (t *Template) Inputs() StepsGroups {
 }
 
 func (t *Template) Components() []string {
-	// not implemented yet, scan t.manifestFile.RawContent()
-	return []string{}
+	if t.version.Components == nil {
+		return make([]string, 0)
+	}
+	return t.version.Components
 }
 
 func (t *Template) ManifestPath() string {

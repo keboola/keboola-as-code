@@ -222,7 +222,7 @@ func TestManifest_GetVersion(t *testing.T) {
 	t.Parallel()
 	m := New()
 	record := TemplateRecord{Id: "foo", AbsPath: model.NewAbsPath("parent", "foo")}
-	record.AddVersion(version("1.2.3"))
+	record.AddVersion(version("1.2.3"), []string{})
 	m.Persist(record)
 
 	// Version found

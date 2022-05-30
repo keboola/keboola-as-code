@@ -78,9 +78,9 @@ func TestTemplateRecord_GetByPath_Found(t *testing.T) {
 	t.Parallel()
 	r := &TemplateRecord{}
 	version1 := version(`v1.2.3`)
-	r.AddVersion(version1)
+	r.AddVersion(version1, []string{})
 	version2 := version(`v2.0.0`)
-	r.AddVersion(version2)
+	r.AddVersion(version2, []string{})
 	value, found := r.GetByPath(`v1`)
 	assert.Equal(t, version1, value.Version)
 	assert.True(t, found)
@@ -91,14 +91,14 @@ func TestTemplateRecord_GetByVersion_Complex(t *testing.T) {
 
 	// Add some versions
 	r := &TemplateRecord{}
-	r.AddVersion(version(`v1.0.0`))
-	r.AddVersion(version(`v1.2.2`))
-	r.AddVersion(version(`v1.2.3`))
-	r.AddVersion(version(`v2.4.5`))
-	r.AddVersion(version(`v0.0.1`))
-	r.AddVersion(version(`v0.0.2`))
-	r.AddVersion(version(`v0.0.3`))
-	r.AddVersion(version(`v0.1.4`))
+	r.AddVersion(version(`v1.0.0`), []string{})
+	r.AddVersion(version(`v1.2.2`), []string{})
+	r.AddVersion(version(`v1.2.3`), []string{})
+	r.AddVersion(version(`v2.4.5`), []string{})
+	r.AddVersion(version(`v0.0.1`), []string{})
+	r.AddVersion(version(`v0.0.2`), []string{})
+	r.AddVersion(version(`v0.0.3`), []string{})
+	r.AddVersion(version(`v0.1.4`), []string{})
 
 	// Test cases
 	cases := []struct {
