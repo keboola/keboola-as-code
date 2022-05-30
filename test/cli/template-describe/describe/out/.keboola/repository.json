@@ -16,6 +16,9 @@
           "version": "0.0.1",
           "description": "notes",
           "stable": false,
+          "components": [
+            "keboola.ex-facebook"
+          ],
           "path": "v0"
         }
       ]

@@ -5,6 +5,8 @@ Description:          Full workflow to ...
 Version:              0.0.1
 Stable:               false
 Description:          notes
+Components:
+  - keboola.ex-facebook
 
 Group ID:             g01
 Description:          Default Group
