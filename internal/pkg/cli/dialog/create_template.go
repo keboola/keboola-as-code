@@ -143,7 +143,35 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	objectInputs.setTo(d.out.Configs)
 	d.out.StepsGroups = stepsGroups
 
+	// Ask for list of used components
+	var usedComponents []string
+	if d.deps.Options().IsSet(`used-components`) {
+		usedComponents = strings.Split(d.deps.Options().GetString(`used-components`), `,`)
+	} else {
+		usedComponents = d.askComponents(storageApi.Components().AllLoaded())
+	}
+	d.out.Components = usedComponents
+
 	return d.out, nil
+}
+
+func (d *createTmplDialog) askComponents(all []*model.Component) []string {
+	opts := make([]string, 0)
+	for _, c := range all {
+		opts = append(opts, fmt.Sprintf("%s (%s)", c.Name, c.Id))
+	}
+
+	selected, _ := d.prompt.MultiSelectIndex(&prompt.MultiSelectIndex{
+		Label:       `Used Components`,
+		Description: "Select the components that are used in the templates.",
+		Options:     opts,
+	})
+
+	res := make([]string, 0)
+	for _, s := range selected {
+		res = append(res, all[s].Id.String())
+	}
+	return res
 }
 
 func (d *createTmplDialog) askName() string {

@@ -26,6 +26,7 @@ type Options struct {
 	SourceBranch model.BranchKey
 	Configs      []create.ConfigDef
 	StepsGroups  template.StepsGroups
+	Components   []string
 }
 
 type dependencies interface {
@@ -57,7 +58,7 @@ func Run(o Options, d dependencies) (err error) {
 	}
 
 	// Init template directory
-	versionRecord := templateRecord.AddVersion(version)
+	versionRecord := templateRecord.AddVersion(version, o.Components)
 	if _, err := createDir(o, d, repo.Fs(), versionRecord); err != nil {
 		return err
 	}

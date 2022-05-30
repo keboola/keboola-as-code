@@ -16,6 +16,10 @@
           "version": "0.0.1",
           "description": "",
           "stable": false,
+          "components": [
+            "keboola.ex-facebook",
+            "keboola.ex-aws-s3"
+          ],
           "path": "v0"
         }
       ]

@@ -23,6 +23,7 @@ type VersionRecord struct {
 	Version       model.SemVersion `json:"version" validate:"required,semver,min=1,max=20"`
 	Description   string           `json:"description" validate:"min=0,max=40"`
 	Stable        bool             `json:"stable" validate:""`
+	Components    []string         `json:"components,omitempty"`
 	model.AbsPath `validate:"dive"`
 }
 
@@ -41,11 +42,12 @@ func (v *TemplateRecord) AllVersions() (out []VersionRecord) {
 	return out
 }
 
-func (v *TemplateRecord) AddVersion(version model.SemVersion) VersionRecord {
+func (v *TemplateRecord) AddVersion(version model.SemVersion, components []string) VersionRecord {
 	record := VersionRecord{
-		Version: version,
-		Stable:  false,
-		AbsPath: model.NewAbsPath(v.Path(), fmt.Sprintf(`v%d`, version.Major())),
+		Version:    version,
+		Stable:     false,
+		Components: components,
+		AbsPath:    model.NewAbsPath(v.Path(), fmt.Sprintf(`v%d`, version.Major())),
 	}
 	v.Versions = append(v.Versions, record)
 	return record
