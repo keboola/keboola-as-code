@@ -11,6 +11,9 @@
   "id": "my-template-id",
   "icon": "common:settings",
   "name": "My Template",
+  "components": [
+    "keboola.ex-aws-s3"
+  ],
   "author": {
     "name": "Example Author",
     "url": "https://example.com"
