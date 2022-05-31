@@ -640,11 +640,14 @@ var Template = Type("Template", func() {
 	Attribute("versions", ArrayOf(TemplateVersion), "All available versions of the template.", func() {
 		Example(ExampleVersions1())
 	})
-	Required("id", "icon", "name", "author", "description", "defaultVersion", "versions")
+	Required("id", "icon", "name", "components", "author", "description", "defaultVersion", "versions")
 })
 
 var VersionDetail = Type("VersionDetail", func() {
 	Extend(TemplateVersion)
+	Attribute("components", ArrayOf(String), "List of components used in the template version.", func() {
+		Example([]string{"ex-generic-v2", "keboola.snowflake-transformation"})
+	})
 	Attribute("readme", String, "Readme of the template version in Markdown format.", func() {
 		MinLength(1)
 		Example("Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)")
@@ -679,9 +682,6 @@ var TemplateVersion = Type("Version", func() {
 		MinLength(0)
 		MaxLength(40)
 		Example("Experimental support for new API.")
-	})
-	Attribute("components", ArrayOf(String), "List of components used in the template.", func() {
-		Example([]string{"ex-generic-v2", "keboola.snowflake-transformation"})
 	})
 	Required("version", "stable", "description")
 	Example(ExampleVersion1())
@@ -991,6 +991,7 @@ type ExampleTemplateData struct {
 	Icon           string               `json:"icon" yaml:"icon"`
 	Id             string               `json:"id" yaml:"id"`
 	Name           string               `json:"name" yaml:"name"`
+	Components     []string             `json:"components" yaml:"components"`
 	Author         ExampleAuthorData    `json:"author" yaml:"author"`
 	Description    string               `json:"description" yaml:"description"`
 	DefaultVersion string               `json:"defaultVersion" yaml:"defaultVersion"`
@@ -1121,6 +1122,7 @@ func ExampleTemplate1() ExampleTemplateData {
 		Icon:           "common:download",
 		Id:             "my-template",
 		Name:           "My Template",
+		Components:     ExampleComponents(),
 		Author:         ExampleAuthor(),
 		Description:    "Full workflow to load all user accounts from the Service.",
 		DefaultVersion: "v1.2.3",
@@ -1133,6 +1135,7 @@ func ExampleTemplate2() ExampleTemplateData {
 		Icon:           "component:keboola.ex-db-mysql",
 		Id:             "maximum-length-template-id-dolor-sit-an",
 		Name:           "Maximum length template name ipsum dolo",
+		Components:     ExampleComponents(),
 		Author:         ExampleAuthor(),
 		Description:    "Maximum length template description dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascet.",
 		DefaultVersion: "v4.5.6",
@@ -1150,7 +1153,7 @@ func ExampleVersion1() ExampleVersionData {
 
 func ExampleVersionDetail() ExampleVersionDetailData {
 	return ExampleVersionDetailData{
-		Components:         []string{"ex-generic-v2", "keboola.snowflake-transformation"},
+		Components:         ExampleComponents(),
 		Readme:             "Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)",
 		ExampleVersionData: ExampleVersion1(),
 	}
@@ -1185,6 +1188,10 @@ func ExampleVersions2() []ExampleVersionData {
 	return []ExampleVersionData{
 		{Version: "v4.5.6", Stable: true, Description: "Maximum length version description abc."},
 	}
+}
+
+func ExampleComponents() []string {
+	return []string{"ex-generic-v2", "keboola.snowflake-transformation"}
 }
 
 func ExampleStepGroups() []ExampleStepGroupData {

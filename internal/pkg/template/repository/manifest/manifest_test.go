@@ -289,6 +289,10 @@ func fullJson() string {
           "version": "1.2.3",
           "description": "SemVersion 1",
           "stable": true,
+          "components": [
+            "foo",
+            "bar"
+          ],
           "path": "v1"
         }
       ]
@@ -317,12 +321,14 @@ func fullStruct() *file {
 						AbsPath:     model.NewAbsPath(`template-1`, `v0`),
 						Version:     version(`0.0.1`),
 						Stable:      false,
+						Components:  []string{},
 						Description: `SemVersion 0`,
 					},
 					{
 						AbsPath:     model.NewAbsPath(`template-1`, `v1`),
 						Version:     version(`1.2.3`),
 						Stable:      true,
+						Components:  []string{"foo", "bar"},
 						Description: `SemVersion 1`,
 					},
 				},

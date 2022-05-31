@@ -12,6 +12,10 @@
     "id": "my-template-id",
     "icon": "common:settings",
     "name": "My Template",
+    "components": [
+      "keboola.ex-aws-s3",
+      "keboola.ex-facebook"
+    ],
     "author": {
       "name": "Example Author",
       "url": "https://example.com"
@@ -26,12 +30,12 @@
       }
     ]
   },
-  "readme": "### My Template\n\nFull workflow to ...\n\n",
-  "version": "1.2.3",
-  "stable": false,
-  "description": "",
   "components": [
     "keboola.ex-aws-s3",
     "keboola.ex-facebook"
-  ]
+  ],
+  "readme": "### My Template\n\nFull workflow to ...\n\n",
+  "version": "1.2.3",
+  "stable": false,
+  "description": ""
 }

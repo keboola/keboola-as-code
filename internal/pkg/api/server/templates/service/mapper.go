@@ -66,6 +66,7 @@ func TemplateResponse(tmpl *repository.TemplateRecord, author *Author) (*Templat
 		ID:             tmpl.Id,
 		Icon:           tmpl.Icon,
 		Name:           tmpl.Name,
+		Components:     defaultVersion.Components,
 		Description:    tmpl.Description,
 		DefaultVersion: defaultVersion.Version.String(),
 		Author:         author,

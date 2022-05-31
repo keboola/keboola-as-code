@@ -49,13 +49,16 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 		return nil, err
 	}
 
-	// Fill in parent paths
+	// Fill in parent paths and convert nil components to empty slice
 	for i := range content.Templates {
 		template := &content.Templates[i]
 		template.AbsPath.SetParentPath(``)
 		for j := range template.Versions {
 			version := &template.Versions[j]
 			version.AbsPath.SetParentPath(template.Path())
+			if version.Components == nil {
+				version.Components = make([]string, 0)
+			}
 		}
 	}
 

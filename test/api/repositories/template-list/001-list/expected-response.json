@@ -13,6 +13,7 @@
       "id": "my-template-id",
       "icon": "common:settings",
       "name": "My Template",
+      "components": [],
       "author": {
         "name": "Example Author",
         "url": "https://example.com"
