@@ -65,6 +65,7 @@ func TemplateResponse(tmpl *repository.TemplateRecord, author *Author) (*Templat
 	out := &Template{
 		ID:             tmpl.Id,
 		Name:           tmpl.Name,
+		Components:     defaultVersion.Components,
 		Description:    tmpl.Description,
 		DefaultVersion: defaultVersion.Version.String(),
 		Author:         author,

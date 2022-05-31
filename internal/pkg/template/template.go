@@ -179,9 +179,6 @@ func (t *Template) Inputs() StepsGroups {
 }
 
 func (t *Template) Components() []string {
-	if t.version.Components == nil {
-		return make([]string, 0)
-	}
 	return t.version.Components
 }
 

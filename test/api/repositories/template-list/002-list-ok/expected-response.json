@@ -12,6 +12,7 @@
     {
       "id": "my-template-id",
       "name": "My Template",
+      "components": [],
       "author": {
         "name": "Example Author",
         "url": "https://example.com"

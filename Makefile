@@ -38,6 +38,12 @@ tests-cli: prepare
 tests-cli-verbose: prepare
 	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 bash ./scripts/tests.sh -run TestCliE2E
 
+tests-api: prepare
+	TEST_VERBOSE=false TEST_LOG_FORMAT=standard-verbose bash ./scripts/tests.sh -run TestApiE2E
+
+tests-api-verbose: prepare
+	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 bash ./scripts/tests.sh -run TestApiE2E
+
 mod: prepare
 	bash ./scripts/mod.sh
 
