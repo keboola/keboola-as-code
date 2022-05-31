@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -187,7 +188,7 @@ func (v *CommonContainer) Template(reference model.TemplateRef) (*template.Templ
 	// Get template
 	templateRecord, found := repo.GetTemplateById(reference.TemplateId())
 	if !found {
-		return nil, err
+		return nil, manifest.TemplateNotFoundError{}
 	}
 
 	// Get template version
