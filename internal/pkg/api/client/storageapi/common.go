@@ -3,7 +3,7 @@ package storageapi
 import (
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -14,7 +14,7 @@ type Metadata struct {
 	Timestamp string `json:"timestamp"`
 }
 
-func (a *Api) CreateRequest(object interface{}) (*client.Request, error) {
+func (a *Api) CreateRequest(object interface{}) (*http.Request, error) {
 	switch v := object.(type) {
 	case *model.Branch:
 		return a.CreateBranchRequest(v), nil
@@ -29,7 +29,7 @@ func (a *Api) CreateRequest(object interface{}) (*client.Request, error) {
 	}
 }
 
-func (a *Api) UpdateRequest(object interface{}, changed model.ChangedFields) (*client.Request, error) {
+func (a *Api) UpdateRequest(object interface{}, changed model.ChangedFields) (*http.Request, error) {
 	switch v := object.(type) {
 	case *model.Branch:
 		return a.UpdateBranchRequest(v, changed), nil
@@ -44,7 +44,7 @@ func (a *Api) UpdateRequest(object interface{}, changed model.ChangedFields) (*c
 	}
 }
 
-func (a *Api) DeleteRequest(key model.Key) *client.Request {
+func (a *Api) DeleteRequest(key model.Key) *http.Request {
 	switch k := key.(type) {
 	case model.BranchKey:
 		return a.DeleteBranchRequest(k)
@@ -57,7 +57,7 @@ func (a *Api) DeleteRequest(key model.Key) *client.Request {
 	}
 }
 
-func (a *Api) AppendMetadataRequest(object interface{}) *client.Request {
+func (a *Api) AppendMetadataRequest(object interface{}) *http.Request {
 	switch v := object.(type) {
 	case *model.Branch:
 		return a.AppendBranchMetadataRequest(v)

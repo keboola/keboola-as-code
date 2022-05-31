@@ -8,7 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -63,7 +63,7 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 	pool := p.StorageApi().NewPool()
 	pool.
 		Request(p.StorageApi().ListBranchesRequest()).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *http.Response) {
 			apiBranches := *response.Result().(*[]*model.Branch)
 			for _, branch := range apiBranches {
 				branch := branch
@@ -79,7 +79,7 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 				// Configs
 				pool.
 					Request(p.StorageApi().ListComponentsRequest(branch.Id)).
-					OnSuccess(func(response *client.Response) {
+					OnSuccess(func(response *http.Response) {
 						apiComponents := *response.Result().(*[]*model.ComponentWithConfigs)
 						for _, component := range apiComponents {
 							for _, config := range component.Configs {
@@ -111,7 +111,7 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 					Send()
 				pool.
 					Request(p.StorageApi().ListBranchMetadataRequest(branch.Id)).
-					OnSuccess(func(response *client.Response) {
+					OnSuccess(func(response *http.Response) {
 						branchMetadataResponse := *response.Result().(*[]storageapi.Metadata)
 						branchMetadataMap := make(map[string]string)
 						for _, m := range branchMetadataResponse {
@@ -122,7 +122,7 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 					Send()
 				pool.
 					Request(p.StorageApi().ListConfigMetadataRequest(branch.Id)).
-					OnSuccess(func(response *client.Response) {
+					OnSuccess(func(response *http.Response) {
 						metadataResponse := *response.Result().(*storageapi.ConfigMetadataResponse)
 						for key, metadata := range metadataResponse.MetadataMap(branch.Id) {
 							if len(metadata) > 0 {

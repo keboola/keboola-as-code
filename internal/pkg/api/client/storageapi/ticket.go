@@ -4,9 +4,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/go-resty/resty/v2"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -14,7 +12,7 @@ import (
 type TicketProvider struct {
 	lock      *sync.Mutex
 	api       *Api
-	pool      *client.Pool
+	pool      *http.Pool
 	tickets   []*model.Ticket
 	callbacks []func(ticket *model.Ticket)
 }
@@ -27,7 +25,7 @@ func (t *TicketProvider) Request(onSuccess func(ticket *model.Ticket)) {
 	t.callbacks = append(t.callbacks, onSuccess)
 	t.pool.
 		Request(t.api.GenerateNewIdRequest()).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *http.Response) {
 			t.lock.Lock()
 			defer t.lock.Unlock()
 			ticket := response.Result().(*model.Ticket)
@@ -61,9 +59,9 @@ func (a *Api) GenerateNewId() (*model.Ticket, error) {
 }
 
 // GenerateNewIdRequest https://keboola.docs.apiary.io/#reference/tickets/generate-unique-id/generate-new-id
-func (a *Api) GenerateNewIdRequest() *client.Request {
+func (a *Api) GenerateNewIdRequest() *http.Request {
 	ticket := &model.Ticket{}
 	return a.
-		NewRequest(resty.MethodPost, "tickets").
+		NewRequest(http.MethodPost, "tickets").
 		SetResult(ticket)
 }

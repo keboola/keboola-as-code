@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
@@ -69,14 +68,14 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 	// Branches
 	pool.
 		Request(u.api.ListBranchesRequest()).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *http.Response) {
 			for _, branch := range *response.Result().(*[]*model.Branch) {
 				metadataRequest := u.branchMetadataRequest(branch, pool)
 				response.WaitFor(metadataRequest)
 				metadataRequest.Send()
 			}
 		}).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *http.Response) {
 			// Process branch + load branch components
 			for _, branch := range *response.Result().(*[]*model.Branch) {
 				// Store branch to state
@@ -95,14 +94,14 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 		Send()
 }
 
-func (u *UnitOfWork) loadBranch(branch *model.Branch, filter model.ObjectsFilter, pool *client.Pool) {
+func (u *UnitOfWork) loadBranch(branch *model.Branch, filter model.ObjectsFilter, pool *http.Pool) {
 	// Load metadata for configurations
 	metadataMap, metadataReq := u.configsMetadataRequest(branch, pool)
 
 	// Load components, configs and rows
 	componentsReq := pool.
 		Request(u.api.ListComponentsRequest(branch.Id)).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *http.Response) {
 			components := *response.Result().(*[]*model.ComponentWithConfigs)
 
 			// Save component, it contains all configs and rows
@@ -145,10 +144,10 @@ func (u *UnitOfWork) loadBranch(branch *model.Branch, filter model.ObjectsFilter
 	componentsReq.Send()
 }
 
-func (u *UnitOfWork) branchMetadataRequest(branch *model.Branch, pool *client.Pool) *client.Request {
+func (u *UnitOfWork) branchMetadataRequest(branch *model.Branch, pool *http.Pool) *http.Request {
 	request := pool.
 		Request(u.api.ListBranchMetadataRequest(branch.Id)).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *http.Response) {
 			metadataResponse := *response.Result().(*[]storageapi.Metadata)
 			branch.Metadata = make(map[string]string)
 			for _, m := range metadataResponse {
@@ -158,12 +157,12 @@ func (u *UnitOfWork) branchMetadataRequest(branch *model.Branch, pool *client.Po
 	return request
 }
 
-func (u *UnitOfWork) configsMetadataRequest(branch *model.Branch, pool *client.Pool) (map[model.Key]map[string]string, *client.Request) {
+func (u *UnitOfWork) configsMetadataRequest(branch *model.Branch, pool *http.Pool) (map[model.Key]map[string]string, *http.Request) {
 	lock := &sync.Mutex{}
 	out := make(map[model.Key]map[string]string)
 	request := pool.
 		Request(u.api.ListConfigMetadataRequest(branch.Id)).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *http.Response) {
 			lock.Lock()
 			defer lock.Unlock()
 			metadataResponse := *response.Result().(*storageapi.ConfigMetadataResponse)
@@ -264,7 +263,7 @@ func (u *UnitOfWork) Invoke() error {
 	u.storageApiPools.SortKeys(sort.Strings)
 	for _, level := range u.storageApiPools.Keys() {
 		pool, _ := u.storageApiPools.Get(level)
-		if err := pool.(*client.Pool).StartAndWait(); err != nil {
+		if err := pool.(*http.Pool).StartAndWait(); err != nil {
 			u.errors.Append(err)
 			break
 		}
@@ -306,7 +305,7 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 	// Should metadata be set?
 	exists := objectState.HasRemoteState()
 	setMetadata := !exists || changedFields.Has("metadata")
-	var setMetadataReq *client.Request
+	var setMetadataReq *http.Request
 	if setMetadata {
 		setMetadataReq = u.api.AppendMetadataRequest(object)
 		changedFields.Remove("metadata")
@@ -318,7 +317,7 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 	}
 
 	// Create or update
-	var createOrUpdateReq *client.Request
+	var createOrUpdateReq *http.Request
 	if exists {
 		// Update
 		if r, err := u.updateRequest(objectState, object, recipe, changedFields); err != nil {
@@ -338,7 +337,7 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 	// Set metadata
 	if setMetadataReq != nil {
 		// Set metadata if save has been successful
-		createOrUpdateReq.OnSuccess(func(response *client.Response) {
+		createOrUpdateReq.OnSuccess(func(response *http.Response) {
 			response.Sender().Send(setMetadataReq) // use same pool
 		})
 	}
@@ -348,7 +347,7 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 	return nil
 }
 
-func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe) (*client.Request, error) {
+func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe) (*http.Request, error) {
 	request, err := u.api.CreateRequest(recipe.Object)
 	if err != nil {
 		return nil, err
@@ -356,12 +355,12 @@ func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.O
 
 	return u.poolFor(object.Level()).
 		Request(request).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *http.Response) {
 			// Save new ID to manifest
 			objectState.SetRemoteState(object)
 			u.changes.AddCreated(objectState)
 		}).
-		OnError(func(response *client.Response) {
+		OnError(func(response *http.Response) {
 			if e, ok := response.Error().(*storageapi.Error); ok {
 				if e.ErrCode == "configurationAlreadyExists" || e.ErrCode == "configurationRowAlreadyExists" {
 					// Object exists -> update instead of create + clear error
@@ -377,7 +376,7 @@ func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.O
 		}), nil
 }
 
-func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) (*client.Request, error) {
+func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) (*http.Request, error) {
 	request, err := u.api.UpdateRequest(recipe.Object, changedFields)
 	if err != nil {
 		return nil, err
@@ -385,7 +384,7 @@ func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.O
 
 	return u.poolFor(object.Level()).
 		Request(request).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *http.Response) {
 			objectState.SetRemoteState(object)
 			u.changes.AddUpdated(objectState)
 		}), nil
@@ -394,25 +393,25 @@ func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.O
 func (u *UnitOfWork) delete(objectState model.ObjectState) {
 	u.poolFor(objectState.Level()).
 		Request(u.api.DeleteRequest(objectState.Key())).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *http.Response) {
 			u.Manifest().Delete(objectState)
 			objectState.SetRemoteState(nil)
 		}).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *http.Response) {
 			u.changes.AddDeleted(objectState)
 		}).
 		Send()
 }
 
 // poolFor each level (branches, configs, rows).
-func (u *UnitOfWork) poolFor(level int) *client.Pool {
+func (u *UnitOfWork) poolFor(level int) *http.Pool {
 	if u.invoked {
 		panic(fmt.Errorf(`invoked UnitOfWork cannot be reused`))
 	}
 
 	key := cast.ToString(level)
 	if value, found := u.storageApiPools.Get(key); found {
-		return value.(*client.Pool)
+		return value.(*http.Pool)
 	}
 
 	pool := u.api.NewPool()

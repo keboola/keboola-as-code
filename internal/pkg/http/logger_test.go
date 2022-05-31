@@ -1,4 +1,4 @@
-package client
+package http
 
 import (
 	"testing"
@@ -11,7 +11,7 @@ import (
 func TestClientLogger(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
-	clientLogger := &Logger{logger}
+	clientLogger := &httpLogger{&Client{logger: logger}}
 	clientLogger.Debugf("Some debug")
 	clientLogger.Warnf("Some warning")
 	clientLogger.Errorf("Some error")

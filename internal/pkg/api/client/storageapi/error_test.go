@@ -29,7 +29,7 @@ func TestErrorHttpStatus(t *testing.T) {
 
 func newResponseWithStatusCode(code int) *resty.Response {
 	return &resty.Response{
-		Request:     &resty.Request{Method: resty.MethodGet, URL: "https://example.com"},
+		Request:     &resty.Request{Method: http.MethodGet, URL: "https://example.com"},
 		RawResponse: &http.Response{StatusCode: code},
 	}
 }

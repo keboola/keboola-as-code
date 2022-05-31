@@ -1,4 +1,4 @@
-package client
+package todo
 
 import (
 	"context"
@@ -182,6 +182,8 @@ func (r *Request) WaitFor(subRequest *Request) {
 
 	// Store sub-request
 	r.waitingFor = append(r.waitingFor, subRequest)
+
+	r.Response.Response.IsSuccess()
 
 	// Continue execution of the listeners, when the sub-request completes
 	r.waitingForGrp.Add(1)

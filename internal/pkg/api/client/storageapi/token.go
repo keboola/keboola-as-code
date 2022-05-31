@@ -3,9 +3,7 @@ package storageapi
 import (
 	"fmt"
 
-	"github.com/go-resty/resty/v2"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -45,9 +43,9 @@ func (a *Api) GetToken(token string) (model.Token, error) {
 	return model.Token{}, response.Err()
 }
 
-func (a *Api) GetTokenRequest(token string) *client.Request {
+func (a *Api) GetTokenRequest(token string) *http.Request {
 	return a.
-		NewRequest(resty.MethodGet, "tokens/verify").
+		NewRequest(http.MethodGet, "tokens/verify").
 		SetHeader("X-StorageApi-Token", token).
 		SetResult(&model.Token{})
 }

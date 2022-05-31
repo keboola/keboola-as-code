@@ -4,9 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/go-resty/resty/v2"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -64,9 +62,9 @@ func (a *Api) ListAllComponents() ([]*model.Component, error) {
 	return nil, response.Err()
 }
 
-func (a *Api) IndexRequest() *client.Request {
+func (a *Api) IndexRequest() *http.Request {
 	index := &Index{}
 	return a.
-		NewRequest(resty.MethodGet, "").
+		NewRequest(http.MethodGet, "").
 		SetResult(index)
 }

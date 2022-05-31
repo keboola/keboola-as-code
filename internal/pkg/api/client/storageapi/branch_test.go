@@ -9,7 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
@@ -63,7 +63,7 @@ func TestBranchApiCalls(t *testing.T) {
 	}
 	onSuccessCalled := false
 	request := api.CreateBranchRequest(branchBar).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *http.Response) {
 			// OnSuccess callback called when job is in successful state
 			job := response.Result().(*model.Job)
 			assert.NoError(t, response.Err())
@@ -146,7 +146,7 @@ func TestBranchApiCalls(t *testing.T) {
 	// Delete branch with callback
 	onSuccessCalled = false
 	request = api.DeleteBranchRequest(branchBar.BranchKey).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *http.Response) {
 			// OnSuccess callback called when job is in successful state
 			job := response.Result().(*model.Job)
 			assert.NoError(t, response.Err())

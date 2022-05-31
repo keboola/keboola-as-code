@@ -24,7 +24,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -185,7 +185,7 @@ func (p *Project) Clear() {
 	// Delete metadata of default branch
 	pool = p.storageApi.NewPool()
 	pool.Request(p.storageApi.ListBranchMetadataRequest(p.defaultBranch.Id)).
-		OnSuccess(func(response *client.Response) {
+		OnSuccess(func(response *http.Response) {
 			branchMetadataResponse := *response.Result().(*[]storageapi.Metadata)
 			for _, m := range branchMetadataResponse {
 				pool.Request(p.storageApi.DeleteBranchMetadataRequest(p.defaultBranch.Id, m.Id)).Send()
@@ -291,7 +291,7 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) {
 		} else {
 			err := p.storageApi.
 				CreateBranchRequest(branch).
-				OnSuccess(func(response *client.Response) {
+				OnSuccess(func(response *http.Response) {
 					p.logf(`crated branch "%s", id: "%d"`, branch.Name, branch.Id)
 					p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), branch.Id.String())
 					p.branchesById[branch.Id] = branch
@@ -361,7 +361,7 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 	}
 }
 
-func (p *Project) createConfigsRequests(configs []*model.ConfigWithRows, pool *client.Pool) {
+func (p *Project) createConfigsRequests(configs []*model.ConfigWithRows, pool *http.Pool) {
 	for _, config := range configs {
 		// Replace ENVs in config and rows content
 		json.MustDecodeString(testhelper.ReplaceEnvsString(json.MustEncodeString(config.Content, false), p.envs), &config.Content)
@@ -373,7 +373,7 @@ func (p *Project) createConfigsRequests(configs []*model.ConfigWithRows, pool *c
 		if request, err := p.storageApi.CreateConfigRequest(config); err == nil {
 			branch := p.branchesById[config.BranchId]
 			p.logf("creating config \"%s/%s/%s\"", branch.Name, config.ComponentId, config.Name)
-			request.OnSuccess(func(response *client.Response) {
+			request.OnSuccess(func(response *http.Response) {
 				if len(config.Config.Metadata) > 0 {
 					request := p.StorageApi().AppendConfigMetadataRequest(config.Config)
 					pool.Request(request).Send()

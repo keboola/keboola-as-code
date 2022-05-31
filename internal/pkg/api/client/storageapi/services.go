@@ -3,9 +3,7 @@ package storageapi
 import (
 	"fmt"
 
-	"github.com/go-resty/resty/v2"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http"
 )
 
 type (
@@ -42,9 +40,13 @@ func (a *Api) ServicesUrlById() (map[ServiceId]ServiceUrl, error) {
 	return urls, nil
 }
 
-func (a *Api) GetServicesRequest() *client.Request {
+func (a *Api) GetServicesRequest() *http.Request {
 	result := make(map[string]interface{})
-	return a.NewRequest(resty.MethodGet, "/").
+	return a.NewRequest(http.MethodGet, "/").
 		SetQueryParam("exclude", "components").
 		SetResult(&result)
+}
+
+func (v ServiceUrl) String() string {
+	return string(v)
 }

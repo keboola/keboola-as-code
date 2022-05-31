@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/schedulerapi"
+	. "github.com/keboola/keboola-as-code/internal/pkg/api/client/schedulerapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
@@ -16,17 +16,19 @@ import (
 
 func TestSchedulerApiCalls(t *testing.T) {
 	t.Parallel()
-	logger := log.NewDebugLogger()
 
 	project := testproject.GetTestProject(t, env.Empty())
 	project.SetState("empty.json")
 	storageApi := project.StorageApi()
-	token := storageApi.Token().Token
 	services, err := storageApi.ServicesUrlById()
 	assert.NoError(t, err)
-	hostName, found := services[`scheduler`]
+	baseUrl, found := services[`scheduler`]
 	assert.True(t, found)
-	api := schedulerapi.New(context.Background(), logger, string(hostName), token, true)
+	client := http.New(
+		context.Background(),
+		http.WithBaseUrl(baseUrl.String()),
+		http.WithHeader("X-StorageApi-Token", storageApi.Token().Token),
+	)
 
 	// Get default branch
 	branch, err := storageApi.GetDefaultBranch()
@@ -90,47 +92,47 @@ func TestSchedulerApiCalls(t *testing.T) {
 	assert.NoError(t, err)
 
 	// List should return no schedule
-	schedules, err := api.ListSchedules()
+	_, schedules, err := ListSchedulesRequest().Send(client)
 	assert.NoError(t, err)
 	assert.Len(t, schedules, 0)
 
 	// Activate
-	schedule, err := api.ActivateSchedule(resConfigScheduler.Id, "")
+	_, schedule, err := ActivateScheduleRequest(resConfigScheduler.Id, "").Send(client)
 	assert.NoError(t, err)
 	assert.NotNil(t, schedule)
 	assert.NotEmpty(t, schedule.Id)
 
 	// List should return one schedule
-	schedules, err = api.ListSchedules()
+	_, schedules, err = ListSchedulesRequest().Send(client)
 	assert.NoError(t, err)
 	assert.Len(t, schedules, 1)
 
 	// Delete
-	deleteResponseErr := api.DeleteSchedule(schedule.Id)
-	assert.NoError(t, deleteResponseErr)
+	_, _, err = DeleteScheduleRequest(schedule.Id).Send(client)
+	assert.NoError(t, err)
 
 	// List should return no schedule
-	schedules, err = api.ListSchedules()
+	_, schedules, err = ListSchedulesRequest().Send(client)
 	assert.NoError(t, err)
 	assert.Len(t, schedules, 0)
 
 	// Activate again
-	schedule, err = api.ActivateSchedule(resConfigScheduler.Id, "")
+	_, schedule, err = ActivateScheduleRequest(resConfigScheduler.Id, "").Send(client)
 	assert.NoError(t, err)
 	assert.NotNil(t, schedule)
 	assert.NotEmpty(t, schedule.Id)
 
 	// List should return one schedule
-	schedules, err = api.ListSchedules()
+	_, schedules, err = ListSchedulesRequest().Send(client)
 	assert.NoError(t, err)
 	assert.Len(t, schedules, 1)
 
 	// Delete for configuration
-	deleteResponseErr = api.DeleteSchedulesForConfiguration(resConfigScheduler.Id)
-	assert.NoError(t, deleteResponseErr)
+	_, _, err = DeleteSchedulesForConfigurationRequest(resConfigScheduler.Id).Send(client)
+	assert.NoError(t, err)
 
 	// List should return no schedule
-	schedules, err = api.ListSchedules()
+	_, schedules, err = ListSchedulesRequest().Send(client)
 	assert.NoError(t, err)
 	assert.Len(t, schedules, 0)
 }

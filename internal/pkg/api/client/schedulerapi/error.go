@@ -1,6 +1,7 @@
 package schedulerapi
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-resty/resty/v2"
@@ -12,6 +13,10 @@ type Error struct {
 	ErrCode     int    `json:"code"`
 	ExceptionId string `json:"exceptionId"`
 	response    *resty.Response
+}
+
+func (e *Error) Error() string {
+	return fmt.Sprintf("scheduler api error[%d]: %s", e.ErrCode, e.Message)
 }
 
 func (e *Error) ErrorName() string {

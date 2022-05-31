@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-resty/resty/v2"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -36,7 +34,7 @@ func (a *Api) CreatEventRequest(
 	duration time.Duration,
 	params map[string]interface{},
 	results map[string]interface{},
-) *client.Request {
+) *http.Request {
 	paramsJson, err := json.EncodeString(params, false)
 	if err != nil {
 		panic(utils.PrefixError(`cannot serialize event "params" key to JSON`, err))
@@ -47,7 +45,7 @@ func (a *Api) CreatEventRequest(
 	}
 
 	return a.
-		NewRequest(resty.MethodPost, "events").
+		NewRequest(http.MethodPost, "events").
 		SetFormBody(map[string]string{
 			"component": EventsComponentId,
 			"message":   message,

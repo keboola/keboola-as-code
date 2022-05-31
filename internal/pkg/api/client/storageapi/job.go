@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/spf13/cast"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -20,19 +19,19 @@ func (a *Api) GetJob(jobId int) (*model.Job, error) {
 }
 
 // GetJobRequest https://keboola.docs.apiary.io/#reference/jobs/manage-jobs/job-detail
-func (a *Api) GetJobRequest(jobId int) *client.Request {
+func (a *Api) GetJobRequest(jobId int) *http.Request {
 	job := &model.Branch{}
 	return a.
-		NewRequest(resty.MethodGet, "jobs/{jobId}").
+		NewRequest(http.MethodGet, "jobs/{jobId}").
 		SetPathParam("jobId", cast.ToString(jobId)).
 		SetResult(job)
 }
 
-func waitForJob(a *Api, parentRequest *client.Request, job *model.Job, onJobSuccess client.ResponseCallback) client.ResponseCallback {
+func waitForJob(a *Api, parentRequest *http.Request, job *model.Job, onJobSuccess http.ResponseCallback) http.ResponseCallback {
 	// Check job
 	backoff := newBackoff()
-	var checkJobStatus client.ResponseCallback
-	checkJobStatus = func(response *client.Response) {
+	var checkJobStatus http.ResponseCallback
+	checkJobStatus = func(response *http.Response) {
 		// Check status
 		if job.Status == "success" {
 			if onJobSuccess != nil {

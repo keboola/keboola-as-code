@@ -9,7 +9,7 @@ import (
 	"github.com/Masterminds/semver"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
+	"github.com/keboola/keboola-as-code/internal/pkg/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
@@ -17,7 +17,7 @@ const EnvVersionCheck = "KBC_VERSION_CHECK"
 
 type checker struct {
 	envs   *env.Map
-	api    *client.Client
+	api    *http.Client
 	cancel context.CancelFunc
 	logger log.Logger
 }
@@ -27,7 +27,7 @@ func NewGitHubChecker(parentCtx context.Context, logger log.Logger, envs *env.Ma
 	ctx, cancel := context.WithTimeout(parentCtx, 3*time.Second)
 
 	// Create client
-	api := client.NewClient(ctx, logger, false).WithHostUrl(`https://api.github.com`)
+	api := http.NewClient(ctx, logger, false).WithBaseUrl(`https://api.github.com`)
 	return &checker{envs, api, cancel, logger}
 }
 
