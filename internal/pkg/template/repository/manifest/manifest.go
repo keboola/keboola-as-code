@@ -146,7 +146,7 @@ func (m *Manifest) GetOrCreate(templateId string) TemplateRecord {
 }
 
 func newRecord(templateId string) TemplateRecord {
-	record := TemplateRecord{Id: templateId, Icon: DefaultTemplateIcon}
+	record := TemplateRecord{Id: templateId}
 	record.AbsPath = model.NewAbsPath("", strhelper.NormalizeName(templateId))
 	return record
 }

@@ -121,7 +121,6 @@ func TestManifestBadRecordSemanticVersion(t *testing.T) {
   "templates": [
     {
       "id": "template-1",
-      "icon": "common:settings",
       "name": "Template 1",
       "description": "My Template 1",
       "path": "template-1",
@@ -182,17 +181,14 @@ func TestManifest_Records(t *testing.T) {
 	assert.Equal(t, []TemplateRecord{
 		{
 			Id:      "abc",
-			Icon:    DefaultTemplateIcon,
 			AbsPath: model.NewAbsPath("", "abc"),
 		},
 		{
 			Id:      "foo-bar",
-			Icon:    DefaultTemplateIcon,
 			AbsPath: model.NewAbsPath("", "foo-bar"),
 		},
 		{
 			Id:      "xyz",
-			Icon:    DefaultTemplateIcon,
 			AbsPath: model.NewAbsPath("", "xyz"),
 		},
 	}, m.AllTemplates())
@@ -274,7 +270,6 @@ func fullJson() string {
   "templates": [
     {
       "id": "template-1",
-      "icon": "common:settings",
       "name": "Template 1",
       "description": "My Template 1",
       "path": "template-1",
@@ -309,7 +304,6 @@ func fullStruct() *file {
 			{
 				AbsPath:     model.NewAbsPath(``, `template-1`),
 				Id:          "template-1",
-				Icon:        DefaultTemplateIcon,
 				Name:        `Template 1`,
 				Description: `My Template 1`,
 				Versions: []VersionRecord{

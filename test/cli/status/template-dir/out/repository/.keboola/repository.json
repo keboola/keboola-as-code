@@ -7,7 +7,6 @@
   "templates": [
     {
       "id": "my-template-id",
-      "icon": "common:settings",
       "name": "My Template Name",
       "description": "My Template Description",
       "path": "my-template",

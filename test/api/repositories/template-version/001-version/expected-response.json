@@ -10,7 +10,6 @@
   },
   "template": {
     "id": "my-template-id",
-    "icon": "common:settings",
     "name": "My Template",
     "author": {
       "name": "Example Author",
