@@ -620,6 +620,9 @@ var Template = Type("Template", func() {
 		MaxLength(40)
 		Example("My Template")
 	})
+	Attribute("components", ArrayOf(String), "List of components used in the template.", func() {
+		Example([]string{"ex-generic-v2", "keboola.snowflake-transformation"})
+	})
 	Attribute("author", Author, func() {
 		Example(ExampleAuthor())
 	})

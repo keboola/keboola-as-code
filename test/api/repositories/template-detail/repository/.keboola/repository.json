@@ -15,6 +15,9 @@
           "version": "1.2.3",
           "description": "",
           "stable": false,
+          "components": [
+            "keboola.ex-aws-s3"
+          ],
           "path": "v1"
         }
       ]
