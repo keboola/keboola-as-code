@@ -10,6 +10,9 @@
   },
   "id": "my-template-id",
   "name": "My Template",
+  "components": [
+    "keboola.ex-aws-s3"
+  ],
   "author": {
     "name": "Example Author",
     "url": "https://example.com"

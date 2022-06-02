@@ -126,7 +126,7 @@ func (v *TemplateRecord) DefaultVersion() (VersionRecord, bool) {
 	found := false
 	latest := VersionRecord{Version: model.ZeroSemVersion()}
 	latestStable := VersionRecord{Version: model.ZeroSemVersion()}
-	for _, item := range v.Versions {
+	for _, item := range v.AllVersions() {
 		// GreaterThanOrEqual
 		if !item.Version.LessThan(latest.Version.Value()) {
 			found = true
