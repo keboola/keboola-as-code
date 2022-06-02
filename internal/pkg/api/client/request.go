@@ -125,6 +125,9 @@ type requestData struct {
 	errorDef    error
 }
 
+type requestEvents struct {
+}
+
 type response[R any] struct {
 	*request[R]
 	rawResponse *http.Response
