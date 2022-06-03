@@ -1,7 +1,7 @@
 {
   "name": "keboola",
   "url": "https://github.com/keboola/keboola-as-code-templates.git",
-  "ref": "api-demo",
+  "ref": "main",
   "author": {
     "name": "Keboola",
     "url": "https://keboola.com"
