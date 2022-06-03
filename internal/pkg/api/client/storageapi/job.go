@@ -2,65 +2,47 @@ package storageapi
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/spf13/cast"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/http"
+	. "github.com/keboola/keboola-as-code/internal/pkg/api/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (a *Api) GetJob(jobId int) (*model.Job, error) {
-	response := a.GetJobRequest(jobId).Send().Response
-	if response.HasResult() {
-		return response.Result().(*model.Job), nil
-	}
-	return nil, response.Err()
-}
-
 // GetJobRequest https://keboola.docs.apiary.io/#reference/jobs/manage-jobs/job-detail
-func (a *Api) GetJobRequest(jobId int) *http.Request {
-	job := &model.Branch{}
-	return a.
-		NewRequest(http.MethodGet, "jobs/{jobId}").
-		SetPathParam("jobId", cast.ToString(jobId)).
-		SetResult(job)
+func GetJobRequest(jobId int) Request[*model.Job] {
+	return getJobRequest(&model.Job{Id: jobId})
 }
 
-func waitForJob(a *Api, parentRequest *http.Request, job *model.Job, onJobSuccess http.ResponseCallback) http.ResponseCallback {
-	// Check job
+func getJobRequest(job *model.Job) Request[*model.Job] {
+	return newRequest(job).
+		SetMethod(http.MethodGet).
+		SetUrl("jobs/{jobId}").
+		SetPathParam("jobId", cast.ToString(job.Id))
+}
+
+func waitForJob(sender Sender, job *model.Job) error {
 	backoff := newBackoff()
-	var checkJobStatus http.ResponseCallback
-	checkJobStatus = func(response *http.Response) {
+	for {
+		// Get job status
+		if _, _, err := getJobRequest(job).Send(sender); err != nil {
+			return err
+		}
+
 		// Check status
 		if job.Status == "success" {
-			if onJobSuccess != nil {
-				onJobSuccess(response)
-			}
-			return
+			return nil
 		} else if job.Status == "error" {
-			err := fmt.Errorf("job failed: %v", job.Results)
-			response.SetErr(err)
-			return
+			return fmt.Errorf("job failed: %v", job.Results)
 		}
 
 		// Wait and check again
-		delay := backoff.NextBackOff()
-		if delay == backoff.Stop {
-			err := fmt.Errorf("timeout: timeout while waiting for the storage job to complete")
-			response.SetErr(err)
-			return
+		if delay := backoff.NextBackOff(); delay == backoff.Stop {
+			return fmt.Errorf("timeout while waiting for the storage job %d to complete", job.Id)
+		} else {
+			time.Sleep(delay)
 		}
-
-		// Try again
-		request := a.
-			GetJobRequest(job.Id).
-			SetResult(job).
-			OnSuccess(checkJobStatus)
-
-		parentRequest.WaitFor(request)
-		time.Sleep(delay)
-		response.Sender().Request(request).Send()
 	}
-	return checkJobStatus
 }

@@ -3,6 +3,7 @@ package storageapi
 import (
 	"fmt"
 
+	. "github.com/keboola/keboola-as-code/internal/pkg/api/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -14,7 +15,7 @@ type Metadata struct {
 	Timestamp string `json:"timestamp"`
 }
 
-func (a *Api) CreateRequest(object interface{}) (*http.Request, error) {
+func CreateRequest(object any) (Request[, error) {
 	switch v := object.(type) {
 	case *model.Branch:
 		return a.CreateBranchRequest(v), nil

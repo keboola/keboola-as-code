@@ -6,54 +6,12 @@ import (
 	"net/url"
 )
 
-// Sender is implementation of HTTP client, e.g. using go-resty/resty lib, or native net/http.
-type Sender interface {
-	// Send method sends defined request and returns response.
-	// Type of the return value "result" must be the same as type of the argument "resultDef", otherwise panic will occur.
-	//   In Go, this rule cannot be written using generic types yet, methods cannot have generic types.
-	//   Send[R Result](request RequestReadOnly, resultDef R, errorDef error) (result R, error error)
-	Send(request RequestReadOnly, resultDef interface{}, errorDef error) (rawResponse *http.Response, result interface{}, error error)
-}
-
 type Result = any
 
 type NoResult struct{}
 
-// Request is the definition of the HTTP request whose response should be mapped to type R.
-type Request[R Result] interface {
-	RequestReadOnly
-	// SetMethod method sets the HTTP method.
-	SetMethod(method string) Request[R]
-	// SetUrl method sets the URL.
-	SetUrl(url string) Request[R]
-	// SetHeader method sets a single header field and its value.
-	SetHeader(header string, value string) Request[R]
-	// SetQueryParam method sets single parameter and its value.
-	SetQueryParam(param, value string) Request[R]
-	// SetQueryParams method sets multiple parameters and its values.
-	SetQueryParams(params map[string]string) Request[R]
-	// SetPathParam method sets single URL path key-value pair.
-	SetPathParam(param, value string) Request[R]
-	// SetPathParams method sets multiple URL path key-value pairs.
-	SetPathParams(params map[string]string) Request[R]
-	// SetFormBody method sets Form parameters, their values and Content-Type header to "application/x-www-form-urlencoded".
-	SetFormBody(body map[string]string) Request[R]
-	// SetJsonBody method sets request body to a JSON value and Content-Type header to "application/json".
-	SetJsonBody(body map[string]string) Request[R]
-	// SetErrorDef method is to register the request `Error` value for automatic mapping.
-	SetErrorDef(err error) Request[R]
-	// OnComplete method registers callback to be executed when the request is completed.
-	OnComplete(func(request Request[R], result R, err error)) Request[R]
-	// OnSuccess method registers callback to be executed when the request is completed and `code >= 200 and <= 299`.
-	OnSuccess(func(request Request[R], result R)) Request[R]
-	// OnError method registers callback to be executed when the request is completed and `code >= 400`.
-	OnError(func(request Request[R], err error)) Request[R]
-	// Send sends the request by the sender.
-	Send(sender Sender) (Response[R], R, error)
-}
-
-// RequestReadOnly contains read only request data used by the Sender.
-type RequestReadOnly interface {
+// HttpRequest contains read only request data used by the Sender.
+type HttpRequest interface {
 	// Method returns HTTP method.
 	Method() string
 	// Url method returns HTTP URL.
@@ -71,15 +29,11 @@ type RequestReadOnly interface {
 	// `string`, `[]byte`, `struct`, `map`, `slice` and `io.Reader`. Body value can be pointer or non-pointer.
 	// Automatic marshalling for JSON and XML content type, if it is `struct`, `map`, or `slice`.
 	Body() interface{}
-	// IsSent method returns if the request has been sent.
-	IsSent() bool
-	// IsDone method returns if the request has been completed.
-	IsDone() bool
 }
 
-// Response is HTTP response whose result is mapped to type R.
-type Response[R Result] interface {
-	RequestReadOnly
+// HttpResponse is HTTP response whose result is mapped to type R.
+type HttpResponse interface {
+	HttpRequest
 	// ResponseHeader method returns HTTP response headers.
 	ResponseHeader() http.Header
 	// StatusCode method returns HTTP status code.
@@ -90,31 +44,67 @@ type Response[R Result] interface {
 	IsSuccess() bool
 	// IsError method returns true if HTTP status `code >= 400` otherwise false.
 	IsError() bool
-	// HasError method returns true is Error() is not nil.
-	HasError() bool
-	// Result method returns the response value mapped as a data type.
-	Result() R
 	// Error method returns the error response mapped as a data type, if any.
 	// It can also return native HTTP errors, e.g. some network problem.
 	Error() error
 }
 
-// NewRequest creates new HTTP request whose response should be mapped to type R.
-// Value "resultDef" can be pointer or non-pointer value.
-func NewRequest[R Result](resultDef R) Request[R] {
-	return &request[R]{resultDef: resultDef}
+// Sender is implementation of HTTP client, e.g. using go-resty/resty lib, or native net/http.
+type Sender interface {
+	// Send method sends defined request and returns response.
+	// Type of the return value "result" must be the same as type of the argument "resultDef", otherwise panic will occur.
+	//   In Go, this rule cannot be written using generic types yet, methods cannot have generic types.
+	//   Send[R Result](request HttpRequest, resultDef R, errorDef error) (result R, error error)
+	Send(request HttpRequest, resultDef interface{}, errorDef error) (rawResponse *http.Response, result interface{}, error error)
+}
+
+type Request[R Result] interface {
+	HttpRequest
+	// WithMethod method sets the HTTP method.
+	WithMethod(method string) Request[R]
+	// WithUrl method sets the URL.
+	WithUrl(url string) Request[R]
+	// AndHeader method sets a single header field and its value.
+	AndHeader(header string, value string) Request[R]
+	// AndQueryParam method sets single parameter and its value.
+	AndQueryParam(param, value string) Request[R]
+	// WithQueryParams method sets multiple parameters and its values.
+	WithQueryParams(params map[string]string) Request[R]
+	// AndPathParam method sets single URL path key-value pair.
+	AndPathParam(param, value string) Request[R]
+	// WithPathParams method sets multiple URL path key-value pairs.
+	WithPathParams(params map[string]string) Request[R]
+	// WithFormBody method sets Form parameters and Content-Type header to "application/x-www-form-urlencoded".
+	WithFormBody(body map[string]string) Request[R]
+	// WithJsonBody method sets request body to a JSON value and Content-Type header to "application/json".
+	WithJsonBody(body map[string]string) Request[R]
+	// WithErrorDef method is to register the request `Error` value for automatic mapping.
+	WithErrorDef(err error) Request[R]
+	// WithOnComplete method registers callback to be executed when the request is completed.
+	WithOnComplete(func(sender Sender, response HttpResponse) error) Request[R]
+	// WithOnSuccess method registers callback to be executed when the request is completed and `code >= 200 and <= 299`.
+	WithOnSuccess(func(sender Sender, response HttpResponse) error) Request[R]
+	// WithOnError method registers callback to be executed when the request is completed and `code >= 400`.
+	WithOnError(func(sender Sender, response HttpResponse) error) Request[R]
+	// Send sends the request by the sender.
+	Send(sender Sender) (response HttpResponse, result R, err error)
+}
+
+type Response[R Result] interface {
+	HttpResponse
+	// Result method returns the response value mapped as a data type.
+	Result() R
 }
 
 // Implementation of the interfaces.
 
-type request[R any] struct {
-	requestData
-	resultDef R
+// NewRequest creates new HTTP request whose response should be mapped to type R.
+// Value "resultDef" can be pointer or non-pointer value.
+func NewRequest[R Result](resultDef R) Request[R] {
+	return request[R]{resultDef: resultDef}
 }
 
-type requestData struct {
-	sent        bool
-	done        bool
+type request[R Result] struct {
 	method      string
 	url         *url.URL
 	header      http.Header
@@ -122,73 +112,58 @@ type requestData struct {
 	pathParams  map[string]string
 	formData    url.Values
 	body        interface{}
+	resultDef   R
 	errorDef    error
 }
 
-type requestEvents struct {
-}
-
-type response[R any] struct {
-	*request[R]
+type httpRequest = HttpRequest
+type response[R Result] struct {
+	httpRequest
 	rawResponse *http.Response
 	result      R
-	error       error
+	err         error
 }
 
-func (r requestData) Method() string {
+func (r request[R]) Method() string {
 	if r.method == "" {
 		panic(fmt.Errorf("request method is not set"))
 	}
 	return r.method
 }
 
-func (r requestData) Url() string {
+func (r request[R]) Url() string {
 	if r.url == nil {
 		panic(fmt.Errorf("request url is not set"))
 	}
 	return r.url.String()
 }
 
-func (r requestData) RequestHeader() http.Header {
+func (r request[R]) RequestHeader() http.Header {
 	return r.header
 }
 
-func (r requestData) QueryParams() url.Values {
+func (r request[R]) QueryParams() url.Values {
 	return r.queryParams
 }
 
-func (r requestData) PathParams() map[string]string {
+func (r request[R]) PathParams() map[string]string {
 	return r.pathParams
 }
 
-func (r requestData) FormData() url.Values {
+func (r request[R]) FormData() url.Values {
 	return r.formData
 }
 
-func (r requestData) Body() interface{} {
+func (r request[R]) Body() interface{} {
 	return r.body
 }
 
-func (r requestData) IsSent() bool {
-	return r.sent
-}
-
-func (r requestData) IsDone() bool {
-	return r.done
-}
-
-func (r *request[R]) SetMethod(method string) Request[R] {
-	if r.sent {
-		panic(fmt.Errorf("sent request cannot be modified"))
-	}
+func (r request[R]) WithMethod(method string) Request[R] {
 	r.method = method
 	return r
 }
 
-func (r *request[R]) SetUrl(urlStr string) Request[R] {
-	if r.sent {
-		panic(fmt.Errorf("sent request cannot be modified"))
-	}
+func (r request[R]) WithUrl(urlStr string) Request[R] {
 	if v, err := url.Parse(urlStr); err == nil {
 		r.url = v
 	} else {
@@ -197,108 +172,120 @@ func (r *request[R]) SetUrl(urlStr string) Request[R] {
 	return r
 }
 
-func (r *request[R]) SetHeader(header string, value string) Request[R] {
-	if r.sent {
-		panic(fmt.Errorf("sent request cannot be modified"))
-	}
+func (r request[R]) AndHeader(header string, value string) Request[R] {
+	r.header = r.header.Clone()
 	r.header.Set(header, value)
 	return r
 }
 
-func (r *request[R]) SetQueryParam(param, value string) Request[R] {
-	if r.sent {
-		panic(fmt.Errorf("sent request cannot be modified"))
-	}
-	r.queryParams.Set(param, value)
+func (r request[R]) AndQueryParam(key, value string) Request[R] {
+	r.queryParams = cloneUrlValues(r.queryParams)
+	r.queryParams.Set(key, value)
 	return r
 }
 
-func (r *request[R]) SetQueryParams(params map[string]string) Request[R] {
-	for p, v := range params {
-		r.SetQueryParam(p, v)
-	}
-	return r
-}
-
-func (r *request[R]) SetPathParam(param, value string) Request[R] {
-	if r.sent {
-		panic(fmt.Errorf("sent request cannot be modified"))
-	}
-	if r.pathParams == nil {
-		r.pathParams = make(map[string]string)
-	}
-	r.pathParams[param] = value
-	return r
-}
-
-func (r *request[R]) SetPathParams(params map[string]string) Request[R] {
-	for p, v := range params {
-		r.SetPathParam(p, v)
+func (r request[R]) WithQueryParams(params map[string]string) Request[R] {
+	r.queryParams = make(url.Values)
+	for k, v := range params {
+		r.queryParams.Set(k, v)
 	}
 	return r
 }
 
-func (r *request[R]) SetFormBody(body map[string]string) Request[R] {
-	if r.sent {
-		panic(fmt.Errorf("sent request cannot be modified"))
+func (r request[R]) AndPathParam(key, value string) Request[R] {
+	r.pathParams = cloneParams(r.pathParams)
+	r.pathParams[key] = value
+	return r
+}
+
+func (r request[R]) WithPathParams(params map[string]string) Request[R] {
+	r.pathParams = make(map[string]string)
+	for k, v := range params {
+		r.pathParams[k] = v
 	}
-	r.SetHeader("Content-Type", "application/x-www-form-urlencoded")
+	return r
+}
+
+func (r request[R]) WithFormBody(body map[string]string) Request[R] {
+	r.formData = make(url.Values)
 	for k, v := range body {
 		r.formData.Set(k, v)
 	}
-	return r
+	return r.AndHeader("Content-Type", "application/x-www-form-urlencoded")
 }
 
-func (r *request[R]) SetJsonBody(body map[string]string) Request[R] {
-	if r.sent {
-		panic(fmt.Errorf("sent request cannot be modified"))
-	}
-	r.SetHeader("Content-Type", "application/json")
-	r.body = body // nolint
-	return r
+func (r request[R]) WithJsonBody(body map[string]string) Request[R] {
+	r.body = body
+	return r.AndHeader("Content-Type", "application/json")
 }
 
-func (r *request[R]) SetErrorDef(err error) Request[R] {
+func (r request[R]) WithErrorDef(err error) Request[R] {
 	r.errorDef = err
 	return r
 }
 
-func (r *request[R]) Send(sender Sender) Response[R] {
-	r.sent = true
-	rawResponse, result, err := sender.Send(r.requestData, r.resultDef, r.errorDef)
-	r.done = true
-	// Type of the return value "result" must be the same as type of the argument "r.resultDef", otherwise panic will occur.
-	return &response[R]{request: r, rawResponse: rawResponse, result: result.(R), err: err}
+func (r request[R]) WithOnComplete(func(sender Sender, response HttpResponse) error) Request[R] {
+	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *response[T]) ResponseHeader() http.Header {
+func (r request[R]) WithOnSuccess(func(sender Sender, response HttpResponse) error) Request[R] {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r request[R]) WithOnError(func(sender Sender, response HttpResponse) error) Request[R] {
+	panic(fmt.Errorf("not implemented"))
+}
+
+// >>>>>>>>>>>> Type of the return value "result" must be the same as type of the argument "r.resultDef", otherwise panic will occur.
+
+func (r request[R]) Send(sender Sender) (HttpResponse, R, error) {
+	rawResponse, result, err := sender.Send(r, r.resultDef, r.errorDef)
+	out := &response{httpRequest: r, rawResponse: rawResponse, result: result, err: err}
+	return out, out.result, out.err
+}
+
+func (r *response[R]) ResponseHeader() http.Header {
 	return r.rawResponse.Header
 }
 
-func (r *response[T]) StatusCode() int {
+func (r *response[R]) StatusCode() int {
 	return r.rawResponse.StatusCode
 }
 
-func (r *response[T]) RawResponse() *http.Response {
+func (r *response[R]) RawResponse() *http.Response {
 	return r.rawResponse
 }
 
-func (r *response[T]) IsSuccess() bool {
+func (r *response[R]) IsSuccess() bool {
 	return r.StatusCode() > 199 && r.StatusCode() < 300
 }
 
-func (r *response[T]) IsError() bool {
+func (r *response[R]) IsError() bool {
 	return r.StatusCode() > 399
 }
 
-func (r *response[T]) HasError() bool {
-	return r.error != nil
-}
-
-func (r *response[T]) Result() T {
+func (r *response[R]) Result() interface{} {
 	return r.result
 }
 
-func (r *response[T]) Error() error {
-	return r.error
+func (r *response[R]) Error() error {
+	return r.err
+}
+
+func cloneParams(in map[string]string) (out map[string]string) {
+	out = make(map[string]string)
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
+}
+
+func cloneUrlValues(in url.Values) (out url.Values) {
+	out = make(url.Values)
+	for k, values := range in {
+		for _, v := range values {
+			out.Add(k, v)
+		}
+	}
+	return out
 }
