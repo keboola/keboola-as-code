@@ -7,7 +7,6 @@ package dependencies
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -24,16 +23,10 @@ import (
 func TestGitRepositoryFs_SparseCheckout(t *testing.T) {
 	t.Parallel()
 
-	// Create temp dir
-	tmpDir, err := ioutil.TempDir("", t.Name())
-	assert.NoError(t, err)
-	t.Cleanup(func() {
-		_ = os.RemoveAll(tmpDir)
-	})
-
 	// Copy the git repository to temp
+	tmpDir := t.TempDir()
 	assert.NoError(t, aferofs.CopyFs2Fs(nil, filepath.Join("test", "repository"), nil, tmpDir))
-	assert.NoError(t, os.Rename(fmt.Sprintf("%s/.gittest", tmpDir), fmt.Sprintf("%s/.git", tmpDir)))
+	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git")))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -41,7 +34,7 @@ func TestGitRepositoryFs_SparseCheckout(t *testing.T) {
 	// Checkout fail due to non-existing template in the branch
 	repo := model.TemplateRepository{Type: "git", Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
 	template := model.NewTemplateRef(repo, "template2", "1.0.0")
-	_, err = gitRepositoryFs(ctx, repo, template, log.NewDebugLogger())
+	_, err := gitRepositoryFs(ctx, repo, template, log.NewDebugLogger())
 	assert.Error(t, err)
 	assert.Equal(t, fmt.Sprintf(`template "template2" not found:
   - searched in git repository "file://%s"
