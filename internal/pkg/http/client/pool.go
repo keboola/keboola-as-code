@@ -79,12 +79,12 @@ func (p *Pool) Send(request *Request) {
 	// Check if a free space is in the "requestsChan" channel.
 	// If not, then a deadlock would occur. See test "TestPoolManyRequests".
 	if !p.started && p.requestsQueuedCount.IncAndGet() >= REQUESTS_BUFFER_SIZE {
-		panic(fmt.Errorf(`Too many (%d) queued reuests in HTTP pool.`, p.requestsQueuedCount.Get()))
+		panic(fmt.Errorf(`too many (%d) queued reuests in HTTP pool`, p.requestsQueuedCount.Get()))
 	}
 
 	// Check if is pool active
 	if p.finished {
-		request.SetErr(fmt.Errorf("pool is finished"))
+		request.Response = NewResponse(request, nil, fmt.Errorf("pool is finished"))
 		return
 	}
 
