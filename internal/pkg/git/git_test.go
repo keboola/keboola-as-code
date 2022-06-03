@@ -1,6 +1,3 @@
-//go:build !windows
-// +build !windows
-
 // nolint: forbidigo
 package git_test
 
@@ -37,14 +34,14 @@ func TestGit_Checkout(t *testing.T) {
 	ref := "main"
 	_, err := Checkout(ctx, url, ref, false, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `git repository could not be checked out from "https://non-existing-url"`, err.Error())
+	assert.Contains(t, err.Error(), `git repository could not be checked out from "https://non-existing-url"`)
 
 	// Checkout fail from a non-existing GitHub repository
 	url = "https://github.com/keboola/non-existing-repo.git"
 	ref = "main"
 	_, err = Checkout(ctx, url, ref, false, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `git repository could not be checked out from "https://github.com/keboola/non-existing-repo.git"`, err.Error())
+	assert.Contains(t, err.Error(), `git repository could not be checked out from "https://github.com/keboola/non-existing-repo.git"`)
 
 	// Checkout fail from a non-existing branch
 	url = "https://github.com/keboola/keboola-as-code-templates.git"
@@ -105,7 +102,7 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	ref := "main"
 	_, err := Checkout(ctx, url, ref, true, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `git repository could not be checked out from "https://non-existing-url"`, err.Error())
+	assert.Contains(t, err.Error(), `git repository could not be checked out from "https://non-existing-url"`)
 
 	// Checkout fail from a non-existing GitHub repository
 	time.Sleep(200 * time.Millisecond)
@@ -113,7 +110,7 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	ref = "main"
 	_, err = Checkout(ctx, url, ref, true, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `git repository could not be checked out from "https://github.com/keboola/non-existing-repo.git"`, err.Error())
+	assert.Contains(t, err.Error(), `git repository could not be checked out from "https://github.com/keboola/non-existing-repo.git"`)
 
 	// Checkout fail from a non-existing branch
 	time.Sleep(200 * time.Millisecond)
