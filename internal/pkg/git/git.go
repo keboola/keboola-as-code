@@ -72,10 +72,11 @@ func Checkout(ctx context.Context, url, ref string, sparse bool, logger log.Logg
 		if strings.Contains(result.stdErr, fmt.Sprintf("Remote branch %s not found", r.ref)) {
 			return nil, fmt.Errorf(`reference "%s" not found in the git repository "%s"`, r.ref, r.url)
 		}
-		if result.exitCode == 128 {
-			return nil, fmt.Errorf(`git repository could not be checked out from "%s": %s`, r.url, result.stdErr)
+		out := strings.TrimSpace(result.stdErr)
+		if out == "" {
+			out = result.stdOut
 		}
-		return nil, utils.PrefixError("cannot checkout git repository", fmt.Errorf(result.stdErr))
+		return nil, fmt.Errorf(`git repository could not be checked out from "%s": %s`, r.url, out)
 	}
 	return r, nil
 }
@@ -225,8 +226,8 @@ func newBackoff() *backoff.ExponentialBackOff {
 	b.RandomizationFactor = 0
 	b.InitialInterval = 50 * time.Millisecond
 	b.Multiplier = 2
-	b.MaxInterval = 300 * time.Millisecond
-	b.MaxElapsedTime = 1 * time.Second
+	b.MaxInterval = 500 * time.Millisecond
+	b.MaxElapsedTime = 2 * time.Second
 	b.Reset()
 	return b
 }
