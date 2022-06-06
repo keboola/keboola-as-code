@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -20,6 +21,7 @@ import (
 	templatesHttp "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type ddLogger struct {
@@ -34,7 +36,7 @@ func main() {
 	// Flags.
 	httpHostF := flag.String("http-host", "0.0.0.0", "HTTP host")
 	httpPortF := flag.String("http-port", "8000", "HTTP port")
-	repositoryPathF := flag.String("repository-path", "https://github.com/keboola/keboola-as-code-templates.git:main", "Path to default repository")
+	repositoriesF := flag.String("repositories", "keboola|https://github.com/keboola/keboola-as-code-templates.git|main", "Default repositories, <name1>|<repo1>|<branch1>;<name2>|<repo2>|<branch2>;...")
 	debugF := flag.Bool("debug", false, "Log request and response bodies")
 	flag.Parse()
 
@@ -59,16 +61,23 @@ func main() {
 		defer tracer.Stop()
 	}
 
-	// Start server
-	if err := start(*httpHostF, *httpPortF, *repositoryPathF, *debugF, logger, envs); err != nil {
+	// Parse repositories.
+	repositories, err := parseRepositories(*repositoriesF)
+	if err != nil {
+		logger.Println(err.Error())
+		os.Exit(1)
+	}
+
+	// Start server.
+	if err := start(*httpHostF, *httpPortF, repositories, *debugF, logger, envs); err != nil {
 		logger.Println(err.Error())
 		os.Exit(1)
 	}
 }
 
-func start(host, port string, repoPath string, debug bool, logger *log.Logger, envs *env.Map) error {
+func start(host, port string, repositories []model.TemplateRepository, debug bool, logger *log.Logger, envs *env.Map) error {
 	// Create dependencies.
-	d, err := dependencies.NewContainer(context.Background(), repoPath, debug, logger, envs)
+	d, err := dependencies.NewContainer(context.Background(), repositories, debug, logger, envs)
 	if err != nil {
 		return err
 	}
@@ -115,4 +124,51 @@ func start(host, port string, repoPath string, debug bool, logger *log.Logger, e
 	wg.Wait()
 	logger.Println("exited")
 	return nil
+}
+
+func parseRepositories(paths string) (out []model.TemplateRepository, err error) {
+	paths = strings.TrimSpace(paths)
+	if len(paths) == 0 {
+		return nil, nil
+	}
+
+	// Definitions are separated by ";"
+	for _, definition := range strings.Split(paths, ";") {
+		// Definition parts are separated by "|"
+		parts := strings.Split(definition, "|")
+		if len(parts) < 2 {
+			return nil, fmt.Errorf(`invalid repository definition "%s": required format <name>|https://<repository>|<branch> or <name>|file://<repository>`, definition)
+		}
+		name := parts[0]
+		path := parts[1]
+
+		switch {
+		case strings.HasPrefix(path, "file://"):
+			if len(parts) != 2 {
+				return nil, fmt.Errorf(`invalid repository definition "%s": required format <name>|file://<repository>`, definition)
+			}
+			out = append(out, model.TemplateRepository{
+				Type: model.RepositoryTypeDir,
+				Name: name,
+				Url:  strings.TrimPrefix(path, "file://"),
+			})
+		case strings.HasPrefix(path, "https://"):
+			if len(parts) != 3 {
+				return nil, fmt.Errorf(`invalid repository definition "%s": required format <name>:https://<repository>:<branch>`, definition)
+			}
+			if _, err = url.ParseRequestURI(path); err != nil {
+				return nil, fmt.Errorf(`invalid repository url "%s": %w`, path, err)
+			}
+			out = append(out, model.TemplateRepository{
+				Type: model.RepositoryTypeGit,
+				Name: name,
+				Url:  path,
+				Ref:  parts[2],
+			})
+		default:
+			return nil, fmt.Errorf(`invalid repository path "%s": must start with "file://" or "https://"`, path)
+		}
+	}
+
+	return out, nil
 }
