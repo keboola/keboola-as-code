@@ -453,7 +453,7 @@ func getTemplateVersion(d dependencies.Container, repoName, templateId, versionS
 	}
 
 	// Get template version
-	tmpl, err := d.Template(model.NewTemplateRef(repo.Ref(), templateId, semVersion.String()))
+	tmpl, err := d.Template(model.NewTemplateRef(repo.Ref(), templateId, semVersion.Original()))
 	if err != nil {
 		if errors.As(err, &manifest.TemplateNotFoundError{}) {
 			return nil, nil, &GenericError{
