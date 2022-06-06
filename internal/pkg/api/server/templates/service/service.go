@@ -52,7 +52,7 @@ func (s *service) HealthCheck(dependencies.Container) (res string, err error) {
 }
 
 func (s *service) RepositoriesIndex(d dependencies.Container, _ *RepositoriesIndexPayload) (res *Repositories, err error) {
-	return RepositoriesResponse(d, repositories(d))
+	return RepositoriesResponse(d, d.Repositories())
 }
 
 func (s *service) RepositoryIndex(d dependencies.Container, payload *RepositoryIndexPayload) (res *Repository, err error) {
@@ -371,13 +371,8 @@ func (s *service) UpgradeInstanceValidateInputs(d dependencies.Container, payloa
 	})
 }
 
-func repositories(d dependencies.Container) []model.TemplateRepository {
-	defaultRepo := d.DefaultRepository()
-	return []model.TemplateRepository{defaultRepo}
-}
-
 func repositoryRef(d dependencies.Container, name string) (model.TemplateRepository, error) {
-	for _, repo := range repositories(d) {
+	for _, repo := range d.Repositories() {
 		if repo.Name == name {
 			return repo, nil
 		}
