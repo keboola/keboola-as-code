@@ -28,6 +28,7 @@ spec:
           image: $TEMPLATES_API_REPOSITORY:$TEMPLATES_API_IMAGE_TAG
           resources:
             requests:
+              cpu: "200m"
               memory: "256Mi"
             limits:
               memory: "256Mi"
