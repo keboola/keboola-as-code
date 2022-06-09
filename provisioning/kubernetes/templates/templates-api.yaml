@@ -8,7 +8,7 @@ metadata:
     app: templates-api
     releaseId: $RELEASE_ID
 spec:
-  replicas: $TEMPLATES_API_API_REPLICAS
+  replicas: $TEMPLATES_API_REPLICAS
   selector:
     matchLabels:
       app: templates-api
