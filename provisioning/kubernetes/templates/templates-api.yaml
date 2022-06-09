@@ -60,6 +60,15 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['tags.datadoghq.com/version']
+          startupProbe:
+            httpGet:
+              path: /health-check
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: KubernetesStartupProbe
+            periodSeconds: 1
+            failureThreshold: 30
           readinessProbe:
             httpGet:
               path: /health-check
@@ -67,7 +76,6 @@ spec:
               httpHeaders:
                 - name: Host
                   value: KubernetesReadinessProbe
-            initialDelaySeconds: 5
             periodSeconds: 10
       tolerations:
         - key: app
