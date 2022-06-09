@@ -301,7 +301,7 @@ func (c *Context) registerInputsUsageNotifier() {
 	})
 }
 
-func (c *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{}, _ interface{}, steps []interface{}) {
+func (n *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{}, _ interface{}, steps []interface{}) {
 	// Only for Input function
 	if fnName != "Input" {
 		return
@@ -315,6 +315,11 @@ func (c *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{},
 	// Argument is input name
 	inputName, ok := args[0].(string)
 	if !ok {
+		return
+	}
+
+	// Check if input exists and has been filled in by user
+	if input, found := n.inputs[inputName]; !found || input.Skipped {
 		return
 	}
 
@@ -332,7 +337,7 @@ func (c *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{},
 	}
 
 	// Get file definition
-	fileDef, _ := c.ctx.Value(jsonnetfiles.FileDefCtxKey).(*filesystem.FileDef)
+	fileDef, _ := n.ctx.Value(jsonnetfiles.FileDefCtxKey).(*filesystem.FileDef)
 	if fileDef == nil {
 		return
 	}
@@ -349,16 +354,16 @@ func (c *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{},
 	}
 
 	// Replace tickets in object key
-	objectKeyRaw, err := c.replacements.Replace(objectKey)
+	objectKeyRaw, err := n.replacements.Replace(objectKey)
 	if err != nil {
 		panic(err)
 	}
 
 	// Store
 	objectKey = objectKeyRaw.(model.Key)
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	c.inputsUsage.Values[objectKey] = append(c.inputsUsage.Values[objectKey], metadata.InputUsage{
+	n.lock.Lock()
+	defer n.lock.Unlock()
+	n.inputsUsage.Values[objectKey] = append(n.inputsUsage.Values[objectKey], metadata.InputUsage{
 		Name:    inputName,
 		JsonKey: mappedSteps,
 	})

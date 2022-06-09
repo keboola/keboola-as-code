@@ -10,9 +10,12 @@ import (
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/jsonnetfiles"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/metadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	. "github.com/keboola/keboola-as-code/internal/pkg/template/use"
@@ -56,13 +59,27 @@ func TestContext(t *testing.T) {
 			Id:    "input-4",
 			Value: false,
 		},
+		{
+			Id:      "input-5",
+			Value:   "",
+			Skipped: true,
+		},
 	}
 
 	// Create context
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
 	instanceId := "my-instance"
 	fs := testfs.NewMemoryFs()
-	ctx := NewContext(context.Background(), templateRef, fs, instanceId, targetBranch, inputsValues, tickets)
+
+	// Enable inputUsageNotifier
+	objectKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
+	fileDef := filesystem.NewFileDef("foo.bar")
+	fileDef.AddMetadata(filesystem.ObjectKeyMetadata, objectKey)
+	fileDef.AddTag(model.FileKindObjectConfig)
+	ctx := context.WithValue(context.Background(), jsonnetfiles.FileDefCtxKey, fileDef)
+
+	// Create template use context
+	useCtx := NewContext(ctx, templateRef, fs, instanceId, targetBranch, inputsValues, tickets)
 
 	// Check JsonNet functions
 	code := `
@@ -71,6 +88,7 @@ func TestContext(t *testing.T) {
     Input2: Input("input-2"),
     Input3: Input("input-3"),
     Input4: Input("input-4"),
+    Input5: Input("input-5"),
     Objects: {
       Config1: ConfigId("my-config"),
       Config2: ConfigId("my-config"),
@@ -85,6 +103,7 @@ func TestContext(t *testing.T) {
   "Input2": 789,
   "Input3": 3.5,
   "Input4": false,
+  "Input5": "",
   "Objects": {
     "Config1": "<<~~placeholder:1~~>>",
     "Config2": "<<~~placeholder:1~~>>",
@@ -93,14 +112,14 @@ func TestContext(t *testing.T) {
   }
 }
 `
-	jsonOutput, err := jsonnet.Evaluate(code, ctx.JsonNetContext())
+	jsonOutput, err := jsonnet.Evaluate(code, useCtx.JsonNetContext())
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expectedJson, "\n"), jsonOutput)
 
 	// Check tickets replacement
 	data := orderedmap.New()
 	json.MustDecodeString(jsonOutput, data)
-	replacements, err := ctx.Replacements()
+	replacements, err := useCtx.Replacements()
 	assert.NoError(t, err)
 	modifiedData, err := replacements.Replace(data)
 	assert.NoError(t, err)
@@ -112,6 +131,7 @@ func TestContext(t *testing.T) {
   "Input2": 789,
   "Input3": 3.5,
   "Input4": false,
+  "Input5": "",
   "Objects": {
     "Config1": "1001",
     "Config2": "1001",
@@ -121,4 +141,29 @@ func TestContext(t *testing.T) {
 }
 `
 	assert.Equal(t, strings.TrimLeft(expectedJson, "\n"), modifiedJson)
+
+	// Check collected inputs usage
+	assert.Equal(t, &metadata.InputsUsage{
+		Values: metadata.InputsUsageMap{
+			objectKey: []metadata.InputUsage{
+				{
+					Name:    "input-1",
+					JsonKey: orderedmap.KeyFromStr("Input1"),
+				},
+				{
+					Name:    "input-2",
+					JsonKey: orderedmap.KeyFromStr("Input2"),
+				},
+				{
+					Name:    "input-3",
+					JsonKey: orderedmap.KeyFromStr("Input3"),
+				},
+				{
+					Name:    "input-4",
+					JsonKey: orderedmap.KeyFromStr("Input4"),
+				},
+				// "input-5" IsSkipped, so it is not present here, it was not filled in by the user.
+			},
+		},
+	}, useCtx.InputsUsage())
 }
