@@ -169,7 +169,7 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string, repoPath s
 	apiUrl := fmt.Sprintf("http://localhost:%d", port)
 	args := []string{fmt.Sprintf("--http-port=%d", port)}
 	if repoPath != "" {
-		args = append(args, fmt.Sprintf("--repository-path=file://%s", repoPath))
+		args = append(args, fmt.Sprintf("--repositories=keboola|file://%s", repoPath))
 	}
 	cmd := exec.Command(binary, args...)
 	cmd.Env = append(os.Environ(), "KBC_STORAGE_API_HOST="+storageApiHost)
