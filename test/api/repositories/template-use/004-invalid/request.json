@@ -1,0 +1,16 @@
+{
+  "path": "/v1/repositories/keboola/templates/my-template-id/1.2.3/use",
+  "method": "POST",
+  "body": {
+    "branch": "default",
+    "name": "inst-001",
+    "steps": [
+      {
+        "id": "g01-s01",
+        "inputs": [
+
+        ]
+      }
+    ]
+  }
+}

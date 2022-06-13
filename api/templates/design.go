@@ -255,7 +255,6 @@ var _ = Service("templates", func() {
 			RepositoryNotFoundError()
 			TemplateNotFoundError()
 			VersionNotFoundError()
-			BranchNotFoundError()
 		})
 	})
 

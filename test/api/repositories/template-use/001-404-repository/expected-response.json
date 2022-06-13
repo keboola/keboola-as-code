@@ -1,0 +1,5 @@
+{
+  "statusCode": 404,
+  "error": "templates.repositoryNotFound",
+  "message": "Repository \"unknown\" not found."
+}
