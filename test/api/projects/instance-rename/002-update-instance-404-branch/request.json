@@ -1,0 +1,7 @@
+{
+  "path": "/v1/project/%%TEST_BRANCH_MAIN_ID%%333/instances/inst-001",
+  "method": "PUT",
+  "body": {
+    "name": "New Name"
+  }
+}

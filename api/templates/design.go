@@ -301,6 +301,7 @@ var _ = Service("templates", func() {
 			PUT("/project/{branch}/instances/{instanceId}")
 			Meta("openapi:tag:instance")
 			Response(StatusOK)
+			BranchNotFoundError()
 			InstanceNotFoundError()
 		})
 	})
