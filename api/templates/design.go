@@ -335,6 +335,8 @@ var _ = Service("templates", func() {
 			Meta("openapi:tag:instance")
 			Response(StatusOK)
 			Response("InvalidInputs", StatusBadRequest)
+			TemplateNotFoundError()
+			VersionNotFoundError()
 			InstanceNotFoundError()
 		})
 	})
@@ -351,6 +353,8 @@ var _ = Service("templates", func() {
 			GET("/project/{branch}/instances/{instanceId}/upgrade/{version}/inputs")
 			Meta("openapi:tag:instance")
 			Response(StatusOK)
+			TemplateNotFoundError()
+			VersionNotFoundError()
 			InstanceNotFoundError()
 		})
 	})
@@ -924,7 +928,7 @@ var InstanceDetail = Type("instanceDetail", func() {
 	Extend(Instance)
 	Attribute("versionDetail", VersionDetail, "Information about the template version. Can be null if the repository or template no longer exists. If the exact version is not found, the nearest one is used.")
 	Attribute("configurations", ArrayOf(Config), "All configurations from the instance.")
-	Required("versionDetail", "configurations")
+	Required("configurations")
 })
 
 var MainConfig = Type("mainConfig", func() {
