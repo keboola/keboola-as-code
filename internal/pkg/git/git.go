@@ -10,6 +10,9 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/cenkalti/backoff/v4"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -70,7 +73,7 @@ func Checkout(ctx context.Context, url, ref string, sparse bool, logger log.Logg
 			return nil, fmt.Errorf(`reference "%s" not found in the git repository "%s"`, r.ref, r.url)
 		}
 		if result.exitCode == 128 {
-			return nil, fmt.Errorf(`git repository could not be checked out from "%s"`, r.url)
+			return nil, fmt.Errorf(`git repository could not be checked out from "%s": %s`, r.url, result.stdErr)
 		}
 		return nil, utils.PrefixError("cannot checkout git repository", fmt.Errorf(result.stdErr))
 	}
@@ -175,6 +178,21 @@ func (r *Repository) fetch(ctx context.Context) error {
 }
 
 func (r *Repository) runGitCmd(ctx context.Context, args ...string) (cmdResult, error) {
+	retry := newBackoff()
+	for {
+		result, err := r.doRunGitCmd(ctx, args...)
+		if result.exitCode == 0 {
+			return result, err
+		}
+		if delay := retry.NextBackOff(); delay == retry.Stop {
+			return result, err
+		} else {
+			time.Sleep(delay)
+		}
+	}
+}
+
+func (r *Repository) doRunGitCmd(ctx context.Context, args ...string) (cmdResult, error) {
 	r.logger.Debug(fmt.Sprintf(`Running git command: git %s`, strings.Join(args, " ")))
 
 	var stdOutBuffer bytes.Buffer
@@ -200,4 +218,15 @@ func (r *Repository) runGitCmd(ctx context.Context, args ...string) (cmdResult, 
 	}
 
 	return result, err
+}
+
+func newBackoff() *backoff.ExponentialBackOff {
+	b := backoff.NewExponentialBackOff()
+	b.RandomizationFactor = 0
+	b.InitialInterval = 50 * time.Millisecond
+	b.Multiplier = 2
+	b.MaxInterval = 300 * time.Millisecond
+	b.MaxElapsedTime = 1 * time.Second
+	b.Reset()
+	return b
 }

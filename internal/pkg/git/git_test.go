@@ -1,21 +1,23 @@
-//go:build !windows
-// +build !windows
-
 // nolint: forbidigo
 package git_test
 
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	. "github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 func TestGit_Available(t *testing.T) {
@@ -29,6 +31,13 @@ func TestGit_Checkout(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
 
+	// Copy the git repository to temp
+	tmpDir := t.TempDir()
+	assert.NoError(t, aferofs.CopyFs2Fs(nil, filepath.Join("test", "repository"), nil, tmpDir))
+	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git")))
+	gitRepo := fmt.Sprintf("file://%s", tmpDir)
+
+	// Ctx
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -37,24 +46,24 @@ func TestGit_Checkout(t *testing.T) {
 	ref := "main"
 	_, err := Checkout(ctx, url, ref, false, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `git repository could not be checked out from "https://non-existing-url"`, err.Error())
+	assert.Contains(t, err.Error(), `git repository could not be checked out from "https://non-existing-url"`)
 
 	// Checkout fail from a non-existing GitHub repository
 	url = "https://github.com/keboola/non-existing-repo.git"
 	ref = "main"
 	_, err = Checkout(ctx, url, ref, false, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `git repository could not be checked out from "https://github.com/keboola/non-existing-repo.git"`, err.Error())
+	assert.Contains(t, err.Error(), `git repository could not be checked out from "https://github.com/keboola/non-existing-repo.git"`)
 
 	// Checkout fail from a non-existing branch
-	url = "https://github.com/keboola/keboola-as-code-templates.git"
+	url = gitRepo
 	ref = "non-existing-ref"
 	_, err = Checkout(ctx, url, ref, false, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `reference "non-existing-ref" not found in the git repository "https://github.com/keboola/keboola-as-code-templates.git"`, err.Error())
+	testhelper.AssertWildcards(t, `reference "non-existing-ref" not found in the git repository "%s"`, err.Error(), "unexpected output")
 
 	// Success
-	url = "https://github.com/keboola/keboola-as-code-templates.git"
+	url = gitRepo
 	ref = "main"
 	r, err := Checkout(ctx, url, ref, false, logger)
 	assert.NoError(t, err)
@@ -78,13 +87,13 @@ func TestGit_Checkout(t *testing.T) {
 	// Test parallel FS read
 	r.RLock()
 	r.RLock()
-	assert.True(t, r.Fs().Exists(".keboola/repository.json"))
+	assert.True(t, r.Fs().Exists("example-file.txt"))
 	r.RUnlock()
 	r.RUnlock()
 
 	// Test pull
 	assert.NoError(t, r.Pull(ctx))
-	assert.True(t, r.Fs().Exists(".keboola/repository.json"))
+	assert.True(t, r.Fs().Exists("example-file.txt"))
 
 	// Test clear
 	basePath := r.Fs().BasePath()
@@ -97,6 +106,13 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
 
+	// Copy the git repository to temp
+	tmpDir := t.TempDir()
+	assert.NoError(t, aferofs.CopyFs2Fs(nil, filepath.Join("test", "repository"), nil, tmpDir))
+	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git")))
+	gitRepo := fmt.Sprintf("file://%s", tmpDir)
+
+	// Ctx
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -105,7 +121,7 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	ref := "main"
 	_, err := Checkout(ctx, url, ref, true, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `git repository could not be checked out from "https://non-existing-url"`, err.Error())
+	assert.Contains(t, err.Error(), `git repository could not be checked out from "https://non-existing-url"`)
 
 	// Checkout fail from a non-existing GitHub repository
 	time.Sleep(200 * time.Millisecond)
@@ -113,19 +129,19 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	ref = "main"
 	_, err = Checkout(ctx, url, ref, true, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `git repository could not be checked out from "https://github.com/keboola/non-existing-repo.git"`, err.Error())
+	assert.Contains(t, err.Error(), `git repository could not be checked out from "https://github.com/keboola/non-existing-repo.git"`)
 
 	// Checkout fail from a non-existing branch
 	time.Sleep(200 * time.Millisecond)
-	url = "https://github.com/keboola/keboola-as-code-templates.git"
+	url = gitRepo
 	ref = "non-existing-ref"
 	_, err = Checkout(ctx, url, ref, true, logger)
 	assert.Error(t, err)
-	assert.Equal(t, `reference "non-existing-ref" not found in the git repository "https://github.com/keboola/keboola-as-code-templates.git"`, err.Error())
+	testhelper.AssertWildcards(t, `reference "non-existing-ref" not found in the git repository "%s"`, err.Error(), "unexpected output")
 
 	// Success
 	time.Sleep(200 * time.Millisecond)
-	url = "https://github.com/keboola/keboola-as-code-templates.git"
+	url = gitRepo
 	ref = "main"
 	r, err := Checkout(ctx, url, ref, true, logger)
 	assert.NoError(t, err)
