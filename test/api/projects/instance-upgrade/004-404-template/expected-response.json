@@ -1,0 +1,5 @@
+{
+  "statusCode": 404,
+  "error": "templates.templateNotFound",
+  "message": "Template \"unknown\" not found."
+}

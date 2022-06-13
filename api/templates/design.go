@@ -337,8 +337,9 @@ var _ = Service("templates", func() {
 			Response(StatusOK)
 			Response("InvalidInputs", StatusBadRequest)
 			TemplateNotFoundError()
-			VersionNotFoundError()
+			BranchNotFoundError()
 			InstanceNotFoundError()
+			VersionNotFoundError()
 		})
 	})
 
