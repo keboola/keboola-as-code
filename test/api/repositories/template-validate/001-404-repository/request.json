@@ -1,0 +1,14 @@
+{
+  "path": "/v1/repositories/unknown/templates/my-template-id/1.2.3/validate",
+  "method": "POST",
+  "body": {
+    "steps": [
+      {
+        "id": "g01-s01",
+        "inputs": [
+
+        ]
+      }
+    ]
+  }
+}
