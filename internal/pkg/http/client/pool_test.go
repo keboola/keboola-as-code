@@ -482,7 +482,7 @@ func TestPoolTooManyRequests(t *testing.T) {
 	}
 
 	// This is too much
-	assert.PanicsWithError(t, fmt.Sprintf(`Too many (%d) queued reuests in HTTP pool.`, REQUESTS_BUFFER_SIZE), func() {
+	assert.PanicsWithError(t, fmt.Sprintf(`too many (%d) queued reuests in HTTP pool`, REQUESTS_BUFFER_SIZE), func() {
 		pool.Send(client.NewRequest(`GET`, `https://example.com`))
 	})
 }
