@@ -316,6 +316,7 @@ var _ = Service("templates", func() {
 			DELETE("/project/{branch}/instances/{instanceId}")
 			Meta("openapi:tag:instance")
 			Response(StatusNoContent)
+			BranchNotFoundError()
 			InstanceNotFoundError()
 		})
 	})
