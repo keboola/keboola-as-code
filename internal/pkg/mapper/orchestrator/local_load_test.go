@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 func TestMapAfterLocalLoad(t *testing.T) {
@@ -74,7 +74,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/002-task-2/task.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/phase.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/task.json"
 `
-	testhelper.AssertWildcards(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages(), ``)
+	wildcards.Assert(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages(), ``)
 
 	// Check target configs relation
 	rel1, err := target1.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)

@@ -3,11 +3,11 @@ package input
 import (
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 func TestLoadInputsFile(t *testing.T) {
@@ -34,7 +34,7 @@ func TestSaveInputsFile(t *testing.T) {
 	// Load file
 	file, err := fs.ReadFile(filesystem.NewFileDef(Path()))
 	assert.NoError(t, err)
-	assert.Equal(t, testhelper.EscapeWhitespaces(inputsJsonNet), testhelper.EscapeWhitespaces(file.Content))
+	assert.Equal(t, wildcards.EscapeWhitespaces(inputsJsonNet), wildcards.EscapeWhitespaces(file.Content))
 }
 
 const inputsJsonNet = `{

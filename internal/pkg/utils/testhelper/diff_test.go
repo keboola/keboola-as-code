@@ -124,7 +124,7 @@ func TestAssertDirectoryDifferentContent(t *testing.T) {
 
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
-	assert.Contains(t, test.buf.String(), "Different content of the file \"file.txt\". Diff:")
+	assert.Contains(t, test.buf.String(), "Different content of the file \"file.txt\".")
 }
 
 func TestAssertDirectoryDifferentContentWildcards(t *testing.T) {
@@ -142,7 +142,7 @@ func TestAssertDirectoryDifferentContentWildcards(t *testing.T) {
 
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
-	assert.Contains(t, test.buf.String(), "Different content of the file \"file.txt\". Diff:")
+	assert.Contains(t, test.buf.String(), "Different content of the file \"file.txt\".")
 }
 
 func TestAssertDirectorySameEmpty(t *testing.T) {

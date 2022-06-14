@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
@@ -105,7 +105,7 @@ func TestConfigRowApiCalls(t *testing.T) {
 	components, err := api.ListComponents(branch.Id)
 	assert.NotNil(t, components)
 	assert.NoError(t, err)
-	testhelper.AssertWildcards(t, expectedComponentsConfigRowTest(), json.MustEncodeString(components, true), "Unexpected components")
+	wildcards.Assert(t, expectedComponentsConfigRowTest(), json.MustEncodeString(components, true), "Unexpected components")
 }
 
 func expectedComponentsConfigRowTest() string {

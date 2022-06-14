@@ -11,13 +11,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	. "github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 func TestGit_Available(t *testing.T) {
@@ -60,7 +60,7 @@ func TestGit_Checkout(t *testing.T) {
 	ref = "non-existing-ref"
 	_, err = Checkout(ctx, url, ref, false, logger)
 	assert.Error(t, err)
-	testhelper.AssertWildcards(t, `reference "non-existing-ref" not found in the git repository "%s"`, err.Error(), "unexpected output")
+	wildcards.Assert(t, `reference "non-existing-ref" not found in the git repository "%s"`, err.Error(), "unexpected output")
 
 	// Success
 	url = gitRepo
@@ -137,7 +137,7 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	ref = "non-existing-ref"
 	_, err = Checkout(ctx, url, ref, true, logger)
 	assert.Error(t, err)
-	testhelper.AssertWildcards(t, `reference "non-existing-ref" not found in the git repository "%s"`, err.Error(), "unexpected output")
+	wildcards.Assert(t, `reference "non-existing-ref" not found in the git repository "%s"`, err.Error(), "unexpected output")
 
 	// Success
 	time.Sleep(200 * time.Millisecond)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -47,7 +48,7 @@ func AssertDirectoryContentsSame(t assert.TestingT, expectedFs filesystem.Fs, ex
 				assert.NoError(t, err)
 				actualFile, err := actualFs.ReadFile(filesystem.NewFileDef(node.actual.absPath))
 				assert.NoError(t, err)
-				AssertWildcards(
+				wildcards.Assert(
 					t,
 					expectedFile.Content,
 					actualFile.Content,

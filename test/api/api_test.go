@@ -16,6 +16,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
@@ -282,7 +283,7 @@ func RunRequests(
 		)
 
 		// Assert response body
-		testhelper.AssertWildcards(t, expectedRespBody, respBody, fmt.Sprintf("Unexpected response for request %s.", dir))
+		wildcards.Assert(t, expectedRespBody, respBody, fmt.Sprintf("Unexpected response for request %s.", dir))
 	}
 
 	// Check project state
@@ -307,7 +308,7 @@ func RunRequests(
 		}
 
 		// Compare expected and actual state
-		testhelper.AssertWildcards(
+		wildcards.Assert(
 			t,
 			testhelper.ReplaceEnvsString(expectedSnapshot.Content, envProvider),
 			json.MustEncodeString(actualSnapshot, true),

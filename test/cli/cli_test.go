@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/google/shlex"
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
@@ -199,8 +200,8 @@ func AssertExpectations(
 	)
 
 	// Assert STDOUT and STDERR
-	testhelper.AssertWildcards(t, expectedStdout, stdout, "Unexpected STDOUT.")
-	testhelper.AssertWildcards(t, expectedStderr, stderr, "Unexpected STDERR.")
+	wildcards.Assert(t, expectedStdout, stdout, "Unexpected STDOUT.")
+	wildcards.Assert(t, expectedStderr, stderr, "Unexpected STDERR.")
 
 	// Expected state dir
 	expectedDir := "out"
@@ -237,7 +238,7 @@ func AssertExpectations(
 		}
 
 		// Compare expected and actual state
-		testhelper.AssertWildcards(
+		wildcards.Assert(
 			t,
 			testhelper.ReplaceEnvsString(expectedSnapshot.Content, envProvider),
 			json.MustEncodeString(actualSnapshot, true),

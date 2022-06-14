@@ -385,8 +385,8 @@ github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 h1:Z9n2FFNU
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51/go.mod h1:CzGEWj7cYgsdH8dAjBGEr58BoE7ScuLd+fwFZ44+/x8=
 github.com/keboola/go-jsonnet v0.18.1-0.20220516081243-59a46427c54f h1:EjbacWltPRtclVqU5dYTwuA0hh1xy0K3uFnonILzUVc=
 github.com/keboola/go-jsonnet v0.18.1-0.20220516081243-59a46427c54f/go.mod h1:C3fTzyVJDslXdiTqw/bTFk7vSGyCtH3MGRbDfvEwGd0=
-github.com/keboola/go-utils v0.0.0-20220614054156-ae3f91b3180d h1:li/FEuSLDHzp0yxGrzkeVBHuzNGg/lnpgEto0q0YXhs=
-github.com/keboola/go-utils v0.0.0-20220614054156-ae3f91b3180d/go.mod h1:COGns5uhXdH/WbHpQbjJOa+6fAcRXMF8T+PUy6bobo0=
+github.com/keboola/go-utils v0.0.0-20220614094519-00be9e2fcecd h1:ePQZrXQCqMNtkoFTdMD16IdINvKTqp9s7fsvvGyxGKk=
+github.com/keboola/go-utils v0.0.0-20220614094519-00be9e2fcecd/go.mod h1:COGns5uhXdH/WbHpQbjJOa+6fAcRXMF8T+PUy6bobo0=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/klauspost/compress v1.13.4/go.mod h1:8dP1Hq4DHOhN9w426knH3Rhby4rFm6D8eO+e+Dq5Gzg=

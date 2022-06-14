@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
@@ -12,7 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
@@ -112,7 +112,7 @@ func TestBranchApiCalls(t *testing.T) {
 	assert.NotNil(t, branches)
 	assert.NoError(t, err)
 	var encoded string
-	testhelper.AssertWildcards(t, expectedBranchesAll(), json.MustEncodeString(branches, true), "Unexpected branches state")
+	wildcards.Assert(t, expectedBranchesAll(), json.MustEncodeString(branches, true), "Unexpected branches state")
 
 	// Update metadata
 	branchFoo.Metadata = map[string]string{"KBC.KaC.meta1": fmt.Sprintf("%d", rand.Intn(100))}
@@ -166,7 +166,7 @@ func TestBranchApiCalls(t *testing.T) {
 	assert.NoError(t, err)
 	encoded, err = json.EncodeString(branches, true)
 	assert.NoError(t, err)
-	testhelper.AssertWildcards(t, expectedBranchesMain(), encoded, "Unexpected branches state")
+	wildcards.Assert(t, expectedBranchesMain(), encoded, "Unexpected branches state")
 }
 
 func expectedBranchesAll() string {
