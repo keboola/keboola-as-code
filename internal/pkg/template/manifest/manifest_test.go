@@ -3,12 +3,12 @@ package manifest
 import (
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 type test struct {
@@ -76,7 +76,7 @@ func TestSaveManifestFile(t *testing.T) {
 		// Load file
 		file, err := fs.ReadFile(filesystem.NewFileDef(Path()))
 		assert.NoError(t, err)
-		assert.Equal(t, testhelper.EscapeWhitespaces(c.jsonNet), testhelper.EscapeWhitespaces(file.Content), c.name)
+		assert.Equal(t, wildcards.EscapeWhitespaces(c.jsonNet), wildcards.EscapeWhitespaces(file.Content), c.name)
 	}
 }
 

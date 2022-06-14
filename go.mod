@@ -23,10 +23,9 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
 	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
-	github.com/keboola/go-utils v0.0.0-20220614054156-ae3f91b3180d
+	github.com/keboola/go-utils v0.0.0-20220614094519-00be9e2fcecd
 	github.com/kylelemons/godebug v1.1.0
 	github.com/nhatthm/aferocopy v1.0.2
-	github.com/pmezard/go-difflib v1.0.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cast v1.4.1
@@ -103,4 +102,5 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 )

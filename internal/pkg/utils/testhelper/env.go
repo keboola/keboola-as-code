@@ -22,7 +22,7 @@ type EnvProvider interface {
 // ReplaceEnvsString replaces ENVs in given string.
 func ReplaceEnvsString(str string, provider EnvProvider) string {
 	return regexp.
-		MustCompile(`%%[a-zA-Z0-9\-_]+%%`).
+		MustCompile(`%%[a-zA-Z0-9][a-zA-Z0-9\-_]*[a-zA-Z0-9]%%`).
 		ReplaceAllStringFunc(str, func(s string) string {
 			return provider.MustGet(strings.Trim(s, `%`))
 		})

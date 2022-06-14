@@ -76,6 +76,9 @@ func Checkout(ctx context.Context, url, ref string, sparse bool, logger log.Logg
 		if out == "" {
 			out = result.stdOut
 		}
+		if out == "" {
+			out = err.Error()
+		}
 		return nil, fmt.Errorf(`git repository could not be checked out from "%s": %s`, r.url, out)
 	}
 	return r, nil
@@ -182,7 +185,7 @@ func (r *Repository) runGitCmd(ctx context.Context, args ...string) (cmdResult, 
 	retry := newBackoff()
 	for {
 		result, err := r.doRunGitCmd(ctx, args...)
-		if result.exitCode == 0 {
+		if result.exitCode == 0 && err == nil {
 			return result, err
 		}
 		if delay := retry.NextBackOff(); delay == retry.Stop {

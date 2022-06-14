@@ -9,10 +9,10 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 func TestNewHttpClient(t *testing.T) {
@@ -51,7 +51,7 @@ func TestSimpleRequest(t *testing.T) {
 	assert.NoError(t, response.Err())
 	assert.Equal(t, "test", response.String())
 	expected := "DEBUG  HTTP\tGET https://example.com | 200 | %s"
-	testhelper.AssertWildcards(t, expected, logger.AllMessages(), "Unexpected log")
+	wildcards.Assert(t, expected, logger.AllMessages(), "Unexpected log")
 }
 
 func TestRetry(t *testing.T) {
@@ -74,7 +74,7 @@ func TestRetry(t *testing.T) {
 	assert.Greater(t, c.resty.RetryCount, 2)
 	for i := 1; i <= c.resty.RetryCount; i++ {
 		expected := fmt.Sprintf(`DEBUG  HTTP-ERROR	GET https://example.com | returned http code 504, Attempt %d`, i)
-		assert.Regexp(t, testhelper.WildcardToRegexp(expected), logs)
+		assert.Regexp(t, wildcards.ToRegexp(expected), logs)
 	}
 
 	// Error is logged
@@ -82,7 +82,7 @@ func TestRetry(t *testing.T) {
 		`DEBUG  HTTP-ERROR	GET https://example.com | returned http code 504, Attempt %d`,
 		1+c.resty.RetryCount,
 	)
-	assert.Regexp(t, testhelper.WildcardToRegexp(expected), logs)
+	assert.Regexp(t, wildcards.ToRegexp(expected), logs)
 }
 
 func TestDoNotRetry(t *testing.T) {
@@ -106,7 +106,7 @@ func TestDoNotRetry(t *testing.T) {
 
 	// Error is logged
 	expected := "DEBUG  HTTP-ERROR\tGET https://example.com | returned http code 403, Attempt 1\n"
-	testhelper.AssertWildcards(t, expected, logs, "Unexpected log")
+	wildcards.Assert(t, expected, logs, "Unexpected log")
 }
 
 func TestVerboseHideSecret(t *testing.T) {
@@ -147,7 +147,7 @@ test
 DEBUG  HTTP	GET https://example.com | 200 | %s
 
 `
-	testhelper.AssertWildcards(t, expectedLog, out.AllMessages(), "Unexpected log")
+	wildcards.Assert(t, expectedLog, out.AllMessages(), "Unexpected log")
 }
 
 func getMockedClientAndLogs(t *testing.T, verbose bool) (*Client, *httpmock.MockTransport, log.DebugLogger) {

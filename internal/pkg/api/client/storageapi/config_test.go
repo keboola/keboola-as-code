@@ -6,13 +6,13 @@ import (
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
@@ -103,7 +103,7 @@ func TestConfigApiCalls(t *testing.T) {
 	components, err = api.ListComponents(branch.Id)
 	assert.NotNil(t, components)
 	assert.NoError(t, err)
-	testhelper.AssertWildcards(t, expectedComponentsConfigTest(), json.MustEncodeString(components, true), "Unexpected components")
+	wildcards.Assert(t, expectedComponentsConfigTest(), json.MustEncodeString(components, true), "Unexpected components")
 
 	// Update metadata
 	config.Metadata = map[string]string{"KBC.KaC.meta1": fmt.Sprintf("%d", rand.Intn(100))}

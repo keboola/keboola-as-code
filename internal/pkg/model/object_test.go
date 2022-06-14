@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
@@ -23,7 +23,7 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 	meta, found := b["KBC.KAC.templates.instances"]
 	assert.True(t, found)
 
-	testhelper.AssertWildcards(t, `[{"instanceId":"inst1","instanceName":"Instance 1","templateId":"tmpl1","repositoryName":"repo","version":"1.0.0","created":{"date":"%s","tokenId":"12345"},"updated":{"date":"%s","tokenId":"12345"},"mainConfig":{"configId":"1234","componentId":"foo.bar"}}]`, meta, "case 1")
+	wildcards.Assert(t, `[{"instanceId":"inst1","instanceName":"Instance 1","templateId":"tmpl1","repositoryName":"repo","version":"1.0.0","created":{"date":"%s","tokenId":"12345"},"updated":{"date":"%s","tokenId":"12345"},"mainConfig":{"configId":"1234","componentId":"foo.bar"}}]`, meta, "case 1")
 
 	usages, err := b.TemplatesInstances()
 	assert.NoError(t, err)
