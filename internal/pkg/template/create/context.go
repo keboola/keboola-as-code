@@ -3,11 +3,12 @@ package create
 import (
 	"context"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 // Context represents the process of replacing values when creating a template from a remote project.
@@ -42,7 +43,7 @@ type Context struct {
 type _context context.Context
 
 type InputDef struct {
-	Path    orderedmap.Key
+	Path    orderedmap.Path
 	InputId string
 }
 

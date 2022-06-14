@@ -3,6 +3,7 @@ package transformation_test
 import (
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
@@ -11,7 +12,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 )
 
 func TestLocalSaveTransformationEmpty(t *testing.T) {

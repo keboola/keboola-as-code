@@ -10,10 +10,9 @@ import (
 	"strings"
 
 	"github.com/acarl005/stripansi"
+	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-
-	"github.com/spf13/cast"
 )
 
 type EnvProvider interface {

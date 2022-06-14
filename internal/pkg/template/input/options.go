@@ -3,8 +3,9 @@ package input
 import (
 	"fmt"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 // Options for input KindSelect and KindMultiSelect.

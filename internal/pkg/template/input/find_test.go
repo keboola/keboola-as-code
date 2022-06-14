@@ -3,11 +3,11 @@ package input
 import (
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestFind(t *testing.T) {
@@ -52,7 +52,7 @@ func TestFind(t *testing.T) {
 				Default: "Lorem ipsum dolor",
 			},
 			ObjectKey: objectKey,
-			Path:      orderedmap.KeyFromStr("parameters.object.array[1].string"),
+			Path:      orderedmap.PathFromStr("parameters.object.array[1].string"),
 			Example:   "Lorem ipsum dolor",
 			Selected:  false,
 		},
@@ -64,7 +64,7 @@ func TestFind(t *testing.T) {
 				Kind: KindHidden,
 			},
 			ObjectKey: objectKey,
-			Path:      orderedmap.KeyFromStr("parameters.object.array[1].#password"),
+			Path:      orderedmap.PathFromStr("parameters.object.array[1].#password"),
 			Example:   "",
 			Selected:  true,
 		},
@@ -77,7 +77,7 @@ func TestFind(t *testing.T) {
 				Default: 123,
 			},
 			ObjectKey: objectKey,
-			Path:      orderedmap.KeyFromStr("parameters.object.array[1].int"),
+			Path:      orderedmap.PathFromStr("parameters.object.array[1].int"),
 			Example:   "123",
 			Selected:  false,
 		},
@@ -90,7 +90,7 @@ func TestFind(t *testing.T) {
 				Default: 78.9,
 			},
 			ObjectKey: objectKey,
-			Path:      orderedmap.KeyFromStr("parameters.object.array[1].double"),
+			Path:      orderedmap.PathFromStr("parameters.object.array[1].double"),
 			Example:   "78.9",
 			Selected:  false,
 		},
@@ -103,7 +103,7 @@ func TestFind(t *testing.T) {
 				Default: false,
 			},
 			ObjectKey: objectKey,
-			Path:      orderedmap.KeyFromStr("parameters.object.array[1].bool"),
+			Path:      orderedmap.PathFromStr("parameters.object.array[1].bool"),
 			Example:   "false",
 			Selected:  false,
 		},
@@ -169,7 +169,7 @@ func TestFind_ComponentSchema(t *testing.T) {
 				Kind:        KindHidden,
 			},
 			ObjectKey: objectKey,
-			Path:      orderedmap.KeyFromStr("parameters.db.#connectionString"),
+			Path:      orderedmap.PathFromStr("parameters.db.#connectionString"),
 			Example:   "",
 			Selected:  true,
 		},

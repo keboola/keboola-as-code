@@ -5,13 +5,13 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/json/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -19,7 +19,7 @@ import (
 type ObjectField struct {
 	Input
 	ObjectKey model.Key
-	Path      orderedmap.Key
+	Path      orderedmap.Path
 	Example   string // example value convert to string
 	Selected  bool   // pre-selected in the dialog
 }
@@ -27,7 +27,7 @@ type ObjectField struct {
 // Find potential user inputs in config or config row.
 func Find(objectKey model.Key, component *model.Component, content *orderedmap.OrderedMap) []ObjectField {
 	var out []ObjectField
-	content.VisitAllRecursive(func(fieldPath orderedmap.Key, value interface{}, parent interface{}) {
+	content.VisitAllRecursive(func(fieldPath orderedmap.Path, value interface{}, parent interface{}) {
 		// Root key must be "parameters"
 		if len(fieldPath) < 2 || fieldPath.First() != orderedmap.MapStep("parameters") {
 			return

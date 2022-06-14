@@ -6,12 +6,12 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/keboola/go-utils/pkg/deepcopy"
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type Values struct {
@@ -31,7 +31,7 @@ type SubString string
 // ContentField sets nested value in config/row.Content ordered map.
 type ContentField struct {
 	objectKey model.Key
-	fieldPath orderedmap.Key
+	fieldPath orderedmap.Path
 }
 
 func NewValues() *Values {
@@ -84,7 +84,7 @@ func (v *Values) AddId(oldId, newId interface{}) {
 }
 
 // AddContentField sets nested value in config/row.Content ordered map.
-func (v *Values) AddContentField(objectKey model.Key, fieldPath orderedmap.Key, replace interface{}) {
+func (v *Values) AddContentField(objectKey model.Key, fieldPath orderedmap.Path, replace interface{}) {
 	v.AddValue(ContentField{objectKey: objectKey, fieldPath: fieldPath}, replace)
 }
 
@@ -93,7 +93,7 @@ func (v *Values) Replace(input interface{}) (interface{}, error) {
 		return nil, err
 	}
 
-	return deepcopy.CopyTranslate(input, func(original, clone reflect.Value, steps deepcopy.Steps) {
+	return deepcopy.CopyTranslate(input, func(original, clone reflect.Value, steps deepcopy.Path) {
 		for _, item := range v.values {
 			switch v := item.Search.(type) {
 			case ContentField:

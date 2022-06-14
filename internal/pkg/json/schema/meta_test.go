@@ -3,15 +3,15 @@ package schema_test
 import (
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json/schema"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestFieldMeta_Empty(t *testing.T) {
 	t.Parallel()
-	meta, found, err := schema.FieldMeta([]byte(""), orderedmap.Key{})
+	meta, found, err := schema.FieldMeta([]byte(""), orderedmap.Path{})
 	assert.Empty(t, meta)
 	assert.False(t, found)
 	assert.Nil(t, err)
@@ -51,19 +51,19 @@ func TestFieldMeta_Complex(t *testing.T) {
 }
 `
 	// Not found, empty path
-	meta, found, err := schema.FieldMeta([]byte(componentSchema), orderedmap.Key{})
+	meta, found, err := schema.FieldMeta([]byte(componentSchema), orderedmap.Path{})
 	assert.Empty(t, meta)
 	assert.False(t, found)
 	assert.Nil(t, err)
 
 	// Not found
-	meta, found, err = schema.FieldMeta([]byte(componentSchema), orderedmap.KeyFromStr("foo.bar"))
+	meta, found, err = schema.FieldMeta([]byte(componentSchema), orderedmap.PathFromStr("foo.bar"))
 	assert.Empty(t, meta)
 	assert.False(t, found)
 	assert.Nil(t, err)
 
 	// Found object
-	meta, found, err = schema.FieldMeta([]byte(componentSchema), orderedmap.KeyFromStr("parameters.db"))
+	meta, found, err = schema.FieldMeta([]byte(componentSchema), orderedmap.PathFromStr("parameters.db"))
 	assert.NotEmpty(t, meta)
 	assert.True(t, found)
 	assert.Nil(t, err)
@@ -73,7 +73,7 @@ func TestFieldMeta_Complex(t *testing.T) {
 	assert.False(t, meta.Required)
 
 	// Found string, required field
-	meta, found, err = schema.FieldMeta([]byte(componentSchema), orderedmap.KeyFromStr("parameters.db.#connectionString"))
+	meta, found, err = schema.FieldMeta([]byte(componentSchema), orderedmap.PathFromStr("parameters.db.#connectionString"))
 	assert.NotEmpty(t, meta)
 	assert.True(t, found)
 	assert.Nil(t, err)
@@ -83,7 +83,7 @@ func TestFieldMeta_Complex(t *testing.T) {
 	assert.True(t, meta.Required)
 
 	// Found int, default field
-	meta, found, err = schema.FieldMeta([]byte(componentSchema), orderedmap.KeyFromStr("parameters.db.limit"))
+	meta, found, err = schema.FieldMeta([]byte(componentSchema), orderedmap.PathFromStr("parameters.db.limit"))
 	assert.NotEmpty(t, meta)
 	assert.True(t, found)
 	assert.Nil(t, err)

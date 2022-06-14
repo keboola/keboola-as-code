@@ -1,10 +1,9 @@
 package schema
 
 import (
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/spf13/cast"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type FieldMetadata struct {
@@ -14,7 +13,7 @@ type FieldMetadata struct {
 	Required    bool
 }
 
-func FieldMeta(schemaDef []byte, path orderedmap.Key) (out FieldMetadata, found bool, err error) {
+func FieldMeta(schemaDef []byte, path orderedmap.Path) (out FieldMetadata, found bool, err error) {
 	// Is schema empty?
 	if len(schemaDef) == 0 {
 		return out, false, nil
@@ -31,7 +30,7 @@ func FieldMeta(schemaDef []byte, path orderedmap.Key) (out FieldMetadata, found 
 	return
 }
 
-func getFieldMeta(schema *jsonschema.Schema, path orderedmap.Key) (out FieldMetadata, found bool) {
+func getFieldMeta(schema *jsonschema.Schema, path orderedmap.Path) (out FieldMetadata, found bool) {
 	// Skip first step: component schema starts at "properties"
 	if path.First() != orderedmap.MapStep("parameters") {
 		return
@@ -67,7 +66,7 @@ func getFieldMeta(schema *jsonschema.Schema, path orderedmap.Key) (out FieldMeta
 	return out, true
 }
 
-func getField(current *jsonschema.Schema, path orderedmap.Key) (parent *jsonschema.Schema, field *jsonschema.Schema) {
+func getField(current *jsonschema.Schema, path orderedmap.Path) (parent *jsonschema.Schema, field *jsonschema.Schema) {
 	lastIndex := len(path) - 1
 	for index, step := range path {
 		// Only object keys are supported

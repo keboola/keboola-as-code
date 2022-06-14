@@ -3,10 +3,10 @@ package replacevalues
 import (
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestValues_AddKey(t *testing.T) {
@@ -214,12 +214,12 @@ func TestValues_Replace(t *testing.T) {
 	)
 	replacements.AddContentField(
 		model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: `12`},
-		orderedmap.Key{orderedmap.MapStep("key1"), orderedmap.MapStep("key2")},
+		orderedmap.Path{orderedmap.MapStep("key1"), orderedmap.MapStep("key2")},
 		"new value in config",
 	)
 	replacements.AddContentField(
 		model.ConfigRowKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: `12`, Id: `56`},
-		orderedmap.Key{orderedmap.MapStep("key3"), orderedmap.MapStep("key4")},
+		orderedmap.Path{orderedmap.MapStep("key3"), orderedmap.MapStep("key4")},
 		"new value in row 56",
 	)
 
@@ -360,7 +360,7 @@ func TestValues_AddContentField(t *testing.T) {
 	t.Parallel()
 
 	objectKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "123"}
-	fieldPath := orderedmap.Key{orderedmap.MapStep("foo"), orderedmap.SliceStep(123)}
+	fieldPath := orderedmap.Path{orderedmap.MapStep("foo"), orderedmap.SliceStep(123)}
 
 	replacements := NewValues()
 	replacements.AddContentField(objectKey, fieldPath, "new value")

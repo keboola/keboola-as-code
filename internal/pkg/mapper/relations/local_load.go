@@ -1,8 +1,9 @@
 package relations
 
 import (
+	"github.com/keboola/go-utils/pkg/deepcopy"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 )
 
 // MapAfterLocalLoad - load relations from manifest to object.

@@ -1,8 +1,9 @@
 package model
 
 import (
+	"github.com/keboola/go-utils/pkg/deepcopy"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 )
 
 type Path string
@@ -22,7 +23,7 @@ func NewAbsPath(parentPath, objectPath string) AbsPath {
 	return AbsPath{parentPath: Path(parentPath), parentPathSet: true, RelativePath: Path(objectPath)}
 }
 
-func (p AbsPath) DeepCopy(_ deepcopy.TranslateFunc, _ deepcopy.Steps, _ deepcopy.VisitedPtrMap) (AbsPath, deepcopy.CloneNestedFn) {
+func (p AbsPath) HandleDeepCopy(_ deepcopy.TranslateFn, _ deepcopy.Path, _ deepcopy.VisitedPtrMap) (AbsPath, deepcopy.CloneFn) {
 	return p, nil
 }
 

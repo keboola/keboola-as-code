@@ -1,9 +1,10 @@
 package transformation
 
 import (
+	"github.com/keboola/go-utils/pkg/orderedmap"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 // MapAfterRemoteLoad - load code blocks from API to blocks field.

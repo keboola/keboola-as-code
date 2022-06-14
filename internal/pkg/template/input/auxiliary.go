@@ -3,7 +3,7 @@ package input
 import (
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+	"github.com/keboola/go-utils/pkg/orderedmap"
 )
 
 // StepsGroupsExt and nested structs are auxiliary structs with extended information about group/step.

@@ -6,9 +6,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 const (
@@ -295,7 +296,7 @@ func (m ConfigMetadata) InputsUsage() []ConfigInputUsage {
 	return out
 }
 
-func (m ConfigMetadata) AddInputUsage(inputName string, jsonKey orderedmap.Key) {
+func (m ConfigMetadata) AddInputUsage(inputName string, jsonKey orderedmap.Path) {
 	m[configInputsUsageMetadataKey] = json.MustEncodeString(append(m.InputsUsage(), ConfigInputUsage{
 		Input:   inputName,
 		JsonKey: jsonKey.String(),
@@ -324,7 +325,7 @@ func (m ConfigMetadata) RowsInputsUsage() []RowInputUsage {
 	return out
 }
 
-func (m ConfigMetadata) AddRowInputUsage(rowId RowId, inputName string, jsonKey orderedmap.Key) {
+func (m ConfigMetadata) AddRowInputUsage(rowId RowId, inputName string, jsonKey orderedmap.Path) {
 	values := append(m.RowsInputsUsage(), RowInputUsage{
 		RowId:   rowId,
 		Input:   inputName,

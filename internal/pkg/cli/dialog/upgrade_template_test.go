@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
@@ -12,7 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	upgradeTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/upgrade"
 )
 
@@ -32,9 +32,9 @@ func TestAskUpgradeTemplate(t *testing.T) {
 	configMetadata := model.ConfigMetadata{}
 	configContent := orderedmap.New()
 	rowContent := orderedmap.New()
-	configMetadata.AddInputUsage("input1", orderedmap.KeyFromStr("foo.bar"))
+	configMetadata.AddInputUsage("input1", orderedmap.PathFromStr("foo.bar"))
 	assert.NoError(t, configContent.SetNested("foo.bar", "old value 1")) // <<<<<<<<<<<
-	configMetadata.AddRowInputUsage(configRowKey.Id, "input2", orderedmap.KeyFromStr("foo.bar"))
+	configMetadata.AddRowInputUsage(configRowKey.Id, "input2", orderedmap.PathFromStr("foo.bar"))
 	assert.NoError(t, rowContent.SetNested("foo.bar", "old value 2")) // <<<<<<<<<<<
 	assert.NoError(t, projectState.Set(&model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},

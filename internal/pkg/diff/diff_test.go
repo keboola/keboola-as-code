@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
@@ -12,7 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 

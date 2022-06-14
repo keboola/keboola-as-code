@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"github.com/google/go-jsonnet/ast"
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestNewRawFile(t *testing.T) {
