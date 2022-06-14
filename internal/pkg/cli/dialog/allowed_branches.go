@@ -5,11 +5,12 @@ import (
 	"math"
 	"strings"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 const (

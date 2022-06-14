@@ -4,9 +4,8 @@ import (
 	"math"
 	"sort"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/santhosh-tekuri/jsonschema/v5"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func GenerateDocument(schemaDef []byte) (*orderedmap.OrderedMap, error) {

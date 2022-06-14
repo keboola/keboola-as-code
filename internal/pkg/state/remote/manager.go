@@ -6,6 +6,8 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/keboola/go-utils/pkg/deepcopy"
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
@@ -15,8 +17,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type Manager struct {

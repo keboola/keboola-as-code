@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jarcoal/httpmock"
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
@@ -14,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )
@@ -186,7 +186,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 				Inputs: []create.InputDef{
 					{
 						InputId: "my-component-password",
-						Path:    orderedmap.KeyFromStr("parameters.#password"),
+						Path:    orderedmap.PathFromStr("parameters.#password"),
 					},
 				},
 				Rows: []create.ConfigRowDef{
@@ -274,15 +274,15 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 				Inputs: []create.InputDef{
 					{
 						InputId: "my-component-password",
-						Path:    orderedmap.KeyFromStr("parameters.#password"),
+						Path:    orderedmap.PathFromStr("parameters.#password"),
 					},
 					{
 						InputId: "my-component-int",
-						Path:    orderedmap.KeyFromStr("parameters.int"),
+						Path:    orderedmap.PathFromStr("parameters.int"),
 					},
 					{
 						InputId: "my-component-string",
-						Path:    orderedmap.KeyFromStr("parameters.string"),
+						Path:    orderedmap.PathFromStr("parameters.string"),
 					},
 				},
 				Rows: []create.ConfigRowDef{
@@ -383,7 +383,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 				Inputs: []create.InputDef{
 					{
 						InputId: "my-component-password",
-						Path:    orderedmap.KeyFromStr("parameters.#password"),
+						Path:    orderedmap.PathFromStr("parameters.#password"),
 					},
 				},
 				Rows: []create.ConfigRowDef{

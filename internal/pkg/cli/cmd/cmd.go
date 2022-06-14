@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
@@ -26,7 +27,6 @@ import (
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
 	versionCheck "github.com/keboola/keboola-as-code/pkg/lib/operation/version/check"
 )
@@ -94,11 +94,12 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		aliases:   orderedmap.New(),
 	}
 	root.Cmd = &Cmd{
-		Use:           "kbc", // name of the binary
-		Version:       version.Version(),
-		Short:         helpmsg.Read(`app`),
-		SilenceUsage:  true,
-		SilenceErrors: true, // custom error handling, see printError
+		Use:               "kbc", // name of the binary
+		Version:           version.Version(),
+		Short:             helpmsg.Read(`app`),
+		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
+		SilenceUsage:      true,
+		SilenceErrors:     true, // custom error handling, see printError
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Print help if no command specified
 			return root.Help()

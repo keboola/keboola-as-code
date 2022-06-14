@@ -4,11 +4,11 @@ import (
 	jsonlib "encoding/json"
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func TestLocalCreateConfigDefaultContent(t *testing.T) {

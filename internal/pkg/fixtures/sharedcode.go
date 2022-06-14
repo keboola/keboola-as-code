@@ -3,10 +3,10 @@ package fixtures
 import (
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, []model.ConfigRowKey) {

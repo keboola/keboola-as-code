@@ -4,9 +4,8 @@ package log
 import (
 	"fmt"
 
+	"github.com/keboola/go-utils/pkg/deepcopy"
 	"go.uber.org/zap/zapcore"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 )
 
 func NewMemoryLogger() *MemoryLogger {

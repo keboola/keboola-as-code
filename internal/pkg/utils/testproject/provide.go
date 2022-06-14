@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
-
 	"github.com/spf13/cast"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 )
 
 var projects []*Project      // nolint gochecknoglobals

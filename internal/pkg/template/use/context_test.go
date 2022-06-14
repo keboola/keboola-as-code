@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/jarcoal/httpmock"
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
@@ -19,7 +20,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	. "github.com/keboola/keboola-as-code/internal/pkg/template/use"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
@@ -148,19 +148,19 @@ func TestContext(t *testing.T) {
 			objectKey: []metadata.InputUsage{
 				{
 					Name:    "input-1",
-					JsonKey: orderedmap.KeyFromStr("Input1"),
+					JsonKey: orderedmap.PathFromStr("Input1"),
 				},
 				{
 					Name:    "input-2",
-					JsonKey: orderedmap.KeyFromStr("Input2"),
+					JsonKey: orderedmap.PathFromStr("Input2"),
 				},
 				{
 					Name:    "input-3",
-					JsonKey: orderedmap.KeyFromStr("Input3"),
+					JsonKey: orderedmap.PathFromStr("Input3"),
 				},
 				{
 					Name:    "input-4",
-					JsonKey: orderedmap.KeyFromStr("Input4"),
+					JsonKey: orderedmap.PathFromStr("Input4"),
 				},
 				// "input-5" IsSkipped, so it is not present here, it was not filled in by the user.
 			},

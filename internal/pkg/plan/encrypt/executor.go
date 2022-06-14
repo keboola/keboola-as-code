@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -11,7 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type executor struct {
@@ -55,7 +56,7 @@ func (e *executor) encryptRequest(action *action) *client.Request {
 	object := action.object
 
 	// Each key for encryption, in the API call, must start with #
-	keyToPath := make(map[string]orderedmap.Key)
+	keyToPath := make(map[string]orderedmap.Path)
 	data := make(map[string]string)
 	for _, unencrypted := range action.values {
 		key := `#` + unencrypted.path.String()

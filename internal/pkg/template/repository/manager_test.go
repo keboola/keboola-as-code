@@ -18,7 +18,6 @@ import (
 
 func TestNewManager(t *testing.T) {
 	t.Parallel()
-	t.Skipf("temporary disabled, fixed in PR #710")
 
 	// Copy the git repository to temp
 	tmpDir := t.TempDir()
@@ -42,7 +41,6 @@ func TestNewManager(t *testing.T) {
 
 func TestAddRepository_AlreadyExists(t *testing.T) {
 	t.Parallel()
-	t.Skipf("temporary disabled, fixed in PR #710")
 
 	// Copy the git repository to temp
 	tmpDir := t.TempDir()

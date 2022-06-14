@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
@@ -11,7 +12,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 )
 
@@ -150,13 +150,13 @@ func TestInputsSelectDialog_Parse(t *testing.T) {
 	assert.Equal(t, objectInputsMap{
 		configKey: {
 			{
-				Path:    orderedmap.KeyFromStr("parameters.#password"),
+				Path:    orderedmap.PathFromStr("parameters.#password"),
 				InputId: "foo-bar-password",
 			},
 		},
 		rowKey: {
 			{
-				Path:    orderedmap.KeyFromStr("parameters.object.array[1].#password"),
+				Path:    orderedmap.PathFromStr("parameters.object.array[1].#password"),
 				InputId: "foo-bar-object-array-1-password",
 			},
 		},
@@ -225,49 +225,49 @@ func TestInputsSelectDialog_Parse_All(t *testing.T) {
 	assert.Equal(t, objectInputsMap{
 		configKey: {
 			{
-				Path:    orderedmap.KeyFromStr("parameters.#password"),
+				Path:    orderedmap.PathFromStr("parameters.#password"),
 				InputId: "foo-bar-password",
 			},
 			{
-				Path:    orderedmap.KeyFromStr("parameters.bool"),
+				Path:    orderedmap.PathFromStr("parameters.bool"),
 				InputId: "foo-bar-bool",
 			},
 			{
-				Path:    orderedmap.KeyFromStr("parameters.double"),
+				Path:    orderedmap.PathFromStr("parameters.double"),
 				InputId: "foo-bar-double",
 			},
 			{
-				Path:    orderedmap.KeyFromStr("parameters.int"),
+				Path:    orderedmap.PathFromStr("parameters.int"),
 				InputId: "foo-bar-int",
 			},
 			{
-				Path:    orderedmap.KeyFromStr("parameters.string"),
+				Path:    orderedmap.PathFromStr("parameters.string"),
 				InputId: "foo-bar-string",
 			},
 			{
-				Path:    orderedmap.KeyFromStr("parameters.strings"),
+				Path:    orderedmap.PathFromStr("parameters.strings"),
 				InputId: "foo-bar-strings",
 			},
 		},
 		rowKey: {
 			{
-				Path:    orderedmap.KeyFromStr("parameters.object.array[1].#password"),
+				Path:    orderedmap.PathFromStr("parameters.object.array[1].#password"),
 				InputId: "foo-bar-password",
 			},
 			{
-				Path:    orderedmap.KeyFromStr("parameters.object.array[1].bool"),
+				Path:    orderedmap.PathFromStr("parameters.object.array[1].bool"),
 				InputId: "foo-bar-bool",
 			},
 			{
-				Path:    orderedmap.KeyFromStr("parameters.object.array[1].double"),
+				Path:    orderedmap.PathFromStr("parameters.object.array[1].double"),
 				InputId: "foo-bar-object-array-1-double",
 			},
 			{
-				Path:    orderedmap.KeyFromStr("parameters.object.array[1].int"),
+				Path:    orderedmap.PathFromStr("parameters.object.array[1].int"),
 				InputId: "foo-bar-object-array-1-int",
 			},
 			{
-				Path:    orderedmap.KeyFromStr("parameters.object.array[1].string"),
+				Path:    orderedmap.PathFromStr("parameters.object.array[1].string"),
 				InputId: "foo-bar-object-array-1-string",
 			},
 		},

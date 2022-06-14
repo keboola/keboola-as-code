@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
+	"github.com/keboola/go-utils/pkg/orderedmap"
 )
 
 type StructField struct {

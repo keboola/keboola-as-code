@@ -3,10 +3,11 @@ package defaultbucket
 import (
 	"fmt"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type defaultBucketMapper struct {

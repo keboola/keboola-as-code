@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
@@ -16,7 +17,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/upgrade"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	deleteTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/delete"
 	renameInst "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
 	upgradeTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/upgrade"

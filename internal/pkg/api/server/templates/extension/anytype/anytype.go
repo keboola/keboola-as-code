@@ -5,13 +5,12 @@ package anytype
 import (
 	"reflect"
 
+	"github.com/keboola/go-utils/pkg/deepcopy"
 	"goa.design/goa/v3/codegen"
 	"goa.design/goa/v3/eval"
 	"goa.design/goa/v3/http/codegen/openapi"
 	openapiv2 "goa.design/goa/v3/http/codegen/openapi/v2"
 	openapiv3 "goa.design/goa/v3/http/codegen/openapi/v3"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 )
 
 // nolint: gochecknoinits
@@ -45,7 +44,7 @@ func modifyOpenApiV3(data *openapiv3.OpenAPI) *openapiv3.OpenAPI {
 	return deepcopy.CopyTranslate(data, fixAnyType).(*openapiv3.OpenAPI)
 }
 
-func fixAnyType(_, clone reflect.Value, _ deepcopy.Steps) {
+func fixAnyType(_, clone reflect.Value, _ deepcopy.Path) {
 	if !clone.IsValid() {
 		return
 	}

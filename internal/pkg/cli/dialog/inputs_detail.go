@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/deepcopy"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 

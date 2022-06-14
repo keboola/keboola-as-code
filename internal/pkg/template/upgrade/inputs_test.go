@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/orderedmap"
 )
 
 type configInput struct {
@@ -381,7 +381,7 @@ func (tc testCase) run(t *testing.T) {
 	for index, inputDef := range tc.configInputs {
 		contentKey := fmt.Sprintf("foo.bar.item%d", index)
 		if inputDef.inMetadata {
-			configMetadata.AddInputUsage(inputDef.id, orderedmap.KeyFromStr(contentKey))
+			configMetadata.AddInputUsage(inputDef.id, orderedmap.PathFromStr(contentKey))
 		}
 		if inputDef.inContent {
 			assert.NoError(t, configContent.SetNested(contentKey, inputDef.value))
@@ -392,7 +392,7 @@ func (tc testCase) run(t *testing.T) {
 	for index, inputDef := range tc.rowInputs {
 		contentKey := fmt.Sprintf("foo.bar.item%d", index)
 		if inputDef.inMetadata {
-			configMetadata.AddRowInputUsage(configRowKey.Id, inputDef.id, orderedmap.KeyFromStr(contentKey))
+			configMetadata.AddRowInputUsage(configRowKey.Id, inputDef.id, orderedmap.PathFromStr(contentKey))
 		}
 		if inputDef.inContent {
 			assert.NoError(t, rowContent.SetNested(contentKey, inputDef.value))
