@@ -1,0 +1,17 @@
+{
+  "path": "/v1/project/0/instances/inst-001/upgrade/2.0.0/inputs",
+  "method": "POST",
+  "body": {
+    "steps": [
+      {
+        "id": "g01-s01",
+        "inputs": [
+          {
+            "id": "shopify-token",
+            "value": "token"
+          }
+        ]
+      }
+    ]
+  }
+}

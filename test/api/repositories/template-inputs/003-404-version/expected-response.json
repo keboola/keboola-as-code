@@ -1,0 +1,5 @@
+{
+  "statusCode": 404,
+  "error": "templates.versionNotFound",
+  "message": "Version \"2.0.0\" not found."
+}

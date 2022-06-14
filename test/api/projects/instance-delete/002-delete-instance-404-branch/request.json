@@ -1,0 +1,5 @@
+{
+  "path": "/v1/project/0/instances/inst-001",
+  "method": "DELETE",
+  "body": {}
+}

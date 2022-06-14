@@ -1,0 +1,27 @@
+{
+  "valid": false,
+  "stepGroups": [
+    {
+      "id": "g01",
+      "valid": false,
+      "steps": [
+        {
+          "id": "g01-s01",
+          "configured": true,
+          "valid": false,
+          "inputs": [
+            {
+              "id": "shopify-token",
+              "visible": true
+            },
+            {
+              "id": "shopify-shop",
+              "visible": true,
+              "error": "Shopify-shop is a required field."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
