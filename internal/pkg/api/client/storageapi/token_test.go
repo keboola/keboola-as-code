@@ -30,14 +30,14 @@ func TestGetToken(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	logger := log.NewDebugLogger()
-	api := New(context.Background(), logger, project.StorageApiHost(), false)
+	api := New(context.Background(), logger, project.StorageAPIHost(), false)
 
-	tokenValue := project.StorageApiToken()
+	tokenValue := project.StorageAPIToken()
 	token, err := api.GetToken(tokenValue)
 	assert.NoError(t, err)
 	assert.Regexp(t, `DEBUG  HTTP      GET https://.*/v2/storage/tokens/verify | 200 | .*`, logger.AllMessages())
 	assert.Equal(t, tokenValue, token.Token)
-	assert.Equal(t, project.Id(), token.ProjectId())
+	assert.Equal(t, project.ID(), token.ProjectId())
 	assert.NotEmpty(t, token.ProjectName())
 }
 
@@ -45,7 +45,7 @@ func TestGetTokenEmpty(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	logger := log.NewDebugLogger()
-	api := New(context.Background(), logger, project.StorageApiHost(), false)
+	api := New(context.Background(), logger, project.StorageAPIHost(), false)
 
 	tokenValue := ""
 	token, err := api.GetToken(tokenValue)
@@ -61,7 +61,7 @@ func TestGetTokenInvalid(t *testing.T) {
 	t.Parallel()
 	project := testproject.GetTestProject(t, env.Empty())
 	logger := log.NewDebugLogger()
-	api := New(context.Background(), logger, project.StorageApiHost(), false)
+	api := New(context.Background(), logger, project.StorageAPIHost(), false)
 
 	tokenValue := "mytoken"
 	token, err := api.GetToken(tokenValue)

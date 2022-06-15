@@ -24,13 +24,12 @@ import (
 
 func TestLoadState(t *testing.T) {
 	t.Parallel()
-	envs := env.Empty()
-
-	testProject := testproject.GetTestProject(t, envs)
+	testProject := testproject.GetTestProject(t, env.Empty())
 	testProject.SetState("minimal.json")
+	envs := testProject.Env()
 
 	// Same IDs in local and remote state
-	envs.Set("LOCAL_PROJECT_ID", cast.ToString(testProject.Id()))
+	envs.Set("LOCAL_PROJECT_ID", cast.ToString(testProject.ID()))
 	envs.Set("TEST_KBC_STORAGE_API_HOST", testProject.StorageApi().Host())
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", envs.MustGet(`TEST_BRANCH_MAIN_ID`))
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`))

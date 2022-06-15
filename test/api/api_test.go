@@ -83,6 +83,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 
 	// Get test project
 	project := testproject.GetTestProject(t, envs)
+	envs = project.Env()
 	api := project.StorageApi()
 
 	// Setup project state
@@ -215,7 +216,7 @@ func RunRequests(
 	if testDirFs.Exists("repository") {
 		repoPath = filepath.Join(testDirFs.BasePath(), "repository")
 	}
-	apiUrl := RunApiServer(t, binary, project.StorageApiHost(), repoPath)
+	apiUrl := RunApiServer(t, binary, project.StorageAPIHost(), repoPath)
 	client := resty.New()
 	client.SetHostURL(apiUrl)
 
