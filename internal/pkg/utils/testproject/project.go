@@ -3,18 +3,16 @@ package testproject
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/juju/fslock"
+	"github.com/keboola/go-utils/pkg/testproject"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
@@ -33,47 +31,23 @@ import (
 )
 
 type Project struct {
+	*testproject.Project
 	t              *testing.T
-	host           string // Storage API host
-	token          string // Storage API token
-	id             int    // project ID
-	lock           *fslock.Lock
-	locked         bool
-	mutex          *sync.Mutex
 	storageApi     *storageapi.Api
 	encryptionApi  *encryptionapi.Api
 	schedulerApi   *schedulerapi.Api
 	defaultBranch  *model.Branch
 	branchesById   map[model.BranchId]*model.Branch
 	branchesByName map[string]*model.Branch
-	envLock        *sync.Mutex
 	envs           *env.Map
-	newEnvs        []string
 }
 
-// newProject - create test project handler and lock it.
-func newProject(host string, id int, token string) *Project {
-	// Create locks dir if not exists
-	locksDir := filepath.Join(os.TempDir(), `.keboola-as-code-locks`)
-	if err := os.MkdirAll(locksDir, 0o700); err != nil {
-		panic(fmt.Errorf(`cannot lock test project: %s`, err))
-	}
+func GetTestProject(t *testing.T, envs *env.Map) *Project {
+	p := &Project{Project: testproject.GetTestProject(t), t: t}
 
-	// lock file name
-	lockFile := host + `-` + cast.ToString(id) + `.lock`
-	lockPath := filepath.Join(locksDir, lockFile)
-
-	p := &Project{
-		host:    host,
-		id:      id,
-		token:   token,
-		lock:    fslock.New(lockPath),
-		mutex:   &sync.Mutex{},
-		envLock: &sync.Mutex{},
-	}
-
-	// Init API
-	p.storageApi, _ = testapi.NewStorageApiWithToken(p.host, p.token, testhelper.TestIsVerbose())
+	// Init storage API
+	logger := log.NewDebugLogger()
+	p.storageApi, _ = testapi.NewStorageApiWithToken(p.StorageAPIHost(), p.StorageAPIToken(), testhelper.TestIsVerbose())
 
 	// Load services
 	services, err := p.storageApi.ServicesUrlById()
@@ -81,16 +55,28 @@ func newProject(host string, id int, token string) *Project {
 		assert.FailNow(p.t, "cannot get services: ", err)
 	}
 
+	// Get encryption service host
+	encryptionHost, found := services["encryption"]
+	if !found {
+		assert.FailNow(p.t, "encryption scheduler service")
+	}
+
+	// Init Encryption API
+	p.encryptionApi = encryptionapi.New(
+		context.Background(),
+		logger,
+		string(encryptionHost),
+		p.ID(),
+		false,
+	)
+
 	// Get scheduler service host
 	schedulerHost, found := services["scheduler"]
 	if !found {
 		assert.FailNow(p.t, "missing scheduler service")
 	}
 
-	// Init encrypt API
-
 	// Init Scheduler API
-	logger := log.NewDebugLogger()
 	if testhelper.TestIsVerbose() {
 		logger.ConnectTo(os.Stdout)
 	}
@@ -103,7 +89,7 @@ func newProject(host string, id int, token string) *Project {
 	)
 
 	// Check project ID
-	if p.id != p.storageApi.ProjectId() {
+	if p.ID() != p.storageApi.ProjectId() {
 		assert.FailNow(p.t, "test project id and token project id are different.")
 	}
 
@@ -122,52 +108,43 @@ func newProject(host string, id int, token string) *Project {
 	}
 	p.defaultBranch.Metadata = branchMetadataMap
 
+	// Set envs
+	p.envs = envs.Clone()
+	p.setEnv(`TEST_KBC_PROJECT_ID`, cast.ToString(p.ID()))
+	p.setEnv(`TEST_KBC_PROJECT_NAME`, p.Name())
+	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.StorageAPIHost())
+	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.StorageAPIToken())
+	p.logf(`Project locked`)
+
 	return p
 }
 
-func (p *Project) Id() int {
-	p.assertLocked()
-	return p.id
+func (p *Project) Env() *env.Map {
+	return p.envs
 }
 
 func (p *Project) DefaultBranch() *model.Branch {
-	p.assertLocked()
 	return p.defaultBranch
 }
 
 func (p *Project) Name() string {
-	p.assertLocked()
 	return p.storageApi.ProjectName()
 }
 
-func (p *Project) StorageApiHost() string {
-	p.assertLocked()
-	return p.host
-}
-
-func (p *Project) StorageApiToken() string {
-	p.assertLocked()
-	return p.storageApi.Token().Token
-}
-
 func (p *Project) StorageApi() *storageapi.Api {
-	p.assertLocked()
 	return p.storageApi
 }
 
 func (p *Project) EncryptionApi() *encryptionapi.Api {
-	p.assertLocked()
 	return p.encryptionApi
 }
 
 func (p *Project) SchedulerApi() *schedulerapi.Api {
-	p.assertLocked()
 	return p.schedulerApi
 }
 
 // Clear deletes all project branches (except default) and all configurations.
 func (p *Project) Clear() {
-	p.assertLocked()
 	p.logf("Clearing project ...")
 	startTime := time.Now()
 
@@ -235,8 +212,6 @@ func (p *Project) clearSchedules() {
 }
 
 func (p *Project) SetState(stateFilePath string) {
-	p.assertLocked()
-
 	// Remove all objects
 	p.Clear()
 
@@ -425,82 +400,17 @@ func (p *Project) setEnv(key string, value string) {
 
 	// Set
 	p.envs.Set(key, value)
-
-	// Log
-	p.envLock.Lock()
-	defer p.envLock.Unlock()
-	p.newEnvs = append(p.newEnvs, fmt.Sprintf("%s=%s", key, value))
 }
 
 func (p *Project) logEnvs() {
-	for _, item := range p.newEnvs {
+	for _, item := range p.envs.ToSlice() {
 		p.logf(fmt.Sprintf(`ENV "%s"`, item))
 	}
 }
 
 func (p *Project) logf(format string, a ...interface{}) {
 	if testhelper.TestIsVerbose() {
-		a = append([]interface{}{p.id, p.t.Name()}, a...)
+		a = append([]interface{}{p.ID(), p.t.Name()}, a...)
 		p.t.Logf("TestProject[%d][%s]: "+format, a...)
-	}
-}
-
-func (p *Project) assertLocked() {
-	if !p.locked {
-		panic(fmt.Errorf(`test project "%d" is not locked`, p.id))
-	}
-}
-
-func (p *Project) tryLock(t *testing.T, envs *env.Map) bool {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-	if p.locked {
-		return false
-	}
-
-	if err := p.lock.TryLock(); err != nil {
-		if !errors.Is(err, fslock.ErrLocked) {
-			// Unexpected error
-			panic(err)
-		}
-
-		// Busy
-		return false
-	}
-
-	// Locked!
-	p.t = t
-	p.locked = true
-
-	// Unlock, when test is done
-	p.t.Cleanup(func() {
-		p.unlock()
-	})
-
-	// Set ENVs, the environment resets when unlock is called
-	p.envs = envs
-	p.newEnvs = make([]string, 0)
-	p.setEnv(`TEST_KBC_PROJECT_ID`, cast.ToString(p.Id()))
-	p.setEnv(`TEST_KBC_PROJECT_NAME`, p.Name())
-	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.StorageApiHost())
-	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.StorageApiToken())
-	p.logf(`Project locked`)
-
-	return true
-}
-
-// unlock project if it is no more needed in test.
-func (p *Project) unlock() {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-
-	p.newEnvs = make([]string, 0)
-	p.envs = nil
-	p.locked = false
-	p.logf(`Project unlocked`)
-	p.t = nil
-
-	if err := p.lock.Unlock(); err != nil {
-		panic(fmt.Errorf(`cannot unlock test project: %w`, err))
 	}
 }

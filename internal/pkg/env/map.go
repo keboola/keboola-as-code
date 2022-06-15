@@ -44,6 +44,14 @@ func FromOs() (*Map, error) {
 	return m, nil
 }
 
+func (m *Map) Clone() *Map {
+	out := Empty()
+	for k, v := range m.data {
+		out.Set(k, v)
+	}
+	return out
+}
+
 func (m *Map) ToString() (string, error) {
 	return godotenv.Marshal(m.data)
 }
@@ -54,6 +62,7 @@ func (m *Map) ToSlice() []string {
 		v := m.Get(k)
 		out = append(out, fmt.Sprintf(`%s=%s`, k, v))
 	}
+	sort.Strings(out)
 	return out
 }
 
