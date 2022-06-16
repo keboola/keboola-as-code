@@ -12,6 +12,7 @@ const (
 	KindConfirm     = Kind("confirm")
 	KindSelect      = Kind("select")
 	KindMultiSelect = Kind("multiselect")
+	KindOAuth       = Kind("oauth")
 )
 
 // Kind represents how Input is displayed to the user.
@@ -21,7 +22,7 @@ type Kind string
 type Kinds []Kind
 
 func allKinds() Kinds {
-	return Kinds{KindInput, KindHidden, KindTextarea, KindConfirm, KindSelect, KindMultiSelect}
+	return Kinds{KindInput, KindHidden, KindTextarea, KindConfirm, KindSelect, KindMultiSelect, KindOAuth}
 }
 
 func (v Kinds) String() string {
@@ -71,6 +72,10 @@ func (k Kind) ValidateType(t Type) error {
 	case KindMultiSelect:
 		if t != TypeStringArray {
 			return fmt.Errorf("should be string[] for kind=%s, found %s", k, t)
+		}
+	case KindOAuth:
+		if t != TypeObject {
+			return fmt.Errorf("should be object for kind=%s, found %s", k, t)
 		}
 	default:
 		panic(fmt.Errorf(`unexpected kind "%s"`, t))

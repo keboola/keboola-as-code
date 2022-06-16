@@ -74,6 +74,7 @@ type Input struct {
 	Rules       Rules       `json:"rules,omitempty" validate:"omitempty,template-input-rules"`
 	If          If          `json:"showIf,omitempty" validate:"omitempty,template-input-if"`
 	Options     Options     `json:"options,omitempty" validate:"template-input-options"`
+	ComponentId string      `json:"componentId,omitempty"`
 }
 
 // ValidateUserInput validates input from the template user using Input.Rules.

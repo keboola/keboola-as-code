@@ -41,6 +41,24 @@ func TestInput_ValidateUserInput(t *testing.T) {
 	assert.NoError(t, input.ValidateUserInput(true))
 }
 
+func TestInput_ValidateUserInputOAuth(t *testing.T) {
+	t.Parallel()
+
+	input := Input{
+		Id:          "input.oauth",
+		Name:        "oauth",
+		Description: "oauth",
+		Type:        "object",
+		Kind:        "oauth",
+	}
+	err := input.ValidateUserInput([]string{"one", "two"})
+	assert.Error(t, err)
+	assert.Equal(t, "oauth should be object, got slice", err.Error())
+
+	err = input.ValidateUserInput(map[string]interface{}{"a": "b"})
+	assert.NoError(t, err)
+}
+
 func TestInput_Available(t *testing.T) {
 	t.Parallel()
 

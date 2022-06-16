@@ -222,8 +222,8 @@ func TestStepsGroups_Validate_InputsErrors(t *testing.T) {
 
 	// Assert
 	expectedErr := `
-- group 1, step 1, input "input1": type foo is not allowed, allowed values: string, int, double, bool, string[]
-- group 1, step 1, input "input2": type bar is not allowed, allowed values: string, int, double, bool, string[]
+- group 1, step 1, input "input1": type foo is not allowed, allowed values: string, int, double, bool, string[], object
+- group 1, step 1, input "input2": type bar is not allowed, allowed values: string, int, double, bool, string[], object
 `
 
 	err := groups.Validate()

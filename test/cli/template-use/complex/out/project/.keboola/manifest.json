@@ -106,6 +106,7 @@
       "path": "extractor/ex-generic-v2/om-config",
       "metadata": {
         "KBC.KAC.templates.configId": "{\"idInTemplate\":\"om-config\"}",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"oauth\",\"key\":\"authorization\"}]",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template-id"

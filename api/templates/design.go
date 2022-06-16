@@ -852,11 +852,11 @@ var Input = Type("input", func() {
 		Example("Insert Service API Token.")
 	})
 	Attribute("type", String, "Type of the input.", func() {
-		Enum("string", "int", "double", "bool", "string[]")
+		Enum("string", "int", "double", "bool", "string[]", "object")
 		Example("string")
 	})
 	Attribute("kind", String, "Kind of the input.", func() {
-		Enum("input", "hidden", "textarea", "confirm", "select", "multiselect")
+		Enum("input", "hidden", "textarea", "confirm", "select", "multiselect", "oauth")
 		Example("input")
 	})
 	Attribute("default", Any, "Default value, match defined type.", func() {
@@ -864,6 +864,9 @@ var Input = Type("input", func() {
 	})
 	Attribute("options", ArrayOf(InputOption), "Input options for type = select OR multiselect.", func() {
 		Example(ExampleInputOptions())
+	})
+	Attribute("componentId", String, "Component id for oauth kind inputs.", func() {
+		Example("keboola.ex-component")
 	})
 	Required("id", "name", "description", "type", "kind", "default")
 	Example(ExampleInput())

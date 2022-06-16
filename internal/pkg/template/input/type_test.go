@@ -73,6 +73,15 @@ func TestType_ValidateValue(t *testing.T) {
 	err = TypeStringArray.ValidateValue(reflect.ValueOf([]interface{}{"foo", 123}))
 	assert.Error(t, err)
 	assert.Equal(t, "all items should be string, got int, index 1", err.Error())
+
+	// Object
+	assert.NoError(t, TypeObject.ValidateValue(reflect.ValueOf(map[string]interface{}{"a": "b"})))
+	err = TypeObject.ValidateValue(reflect.ValueOf(nil))
+	assert.Error(t, err)
+	assert.Equal(t, "should be object, got null", err.Error())
+	err = TypeObject.ValidateValue(reflect.ValueOf("foo"))
+	assert.Error(t, err)
+	assert.Equal(t, "should be object, got string", err.Error())
 }
 
 func TestType_ParseValue(t *testing.T) {
@@ -142,6 +151,7 @@ func TestType_EmptyValue(t *testing.T) {
 		{TypeBool, false},
 		{TypeString, ""},
 		{TypeStringArray, []interface{}{}},
+		{TypeObject, make(map[string]interface{})},
 	}
 
 	// Assert

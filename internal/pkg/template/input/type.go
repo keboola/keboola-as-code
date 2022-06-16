@@ -16,6 +16,7 @@ const (
 	TypeDouble      = Type("double")
 	TypeBool        = Type("bool")
 	TypeStringArray = Type("string[]")
+	TypeObject      = Type("object")
 )
 
 // Type of the template user
@@ -25,7 +26,7 @@ type Type string
 type Types []Type
 
 func allTypes() Types {
-	return Types{TypeString, TypeInt, TypeDouble, TypeBool, TypeStringArray}
+	return Types{TypeString, TypeInt, TypeDouble, TypeBool, TypeStringArray, TypeObject}
 }
 
 func (v Types) String() string {
@@ -62,6 +63,8 @@ func (t Type) EmptyValue() interface{} {
 		return false
 	case TypeStringArray:
 		return []interface{}{}
+	case TypeObject:
+		return make(map[string]interface{})
 	default:
 		panic(fmt.Errorf(`unexpected input type "%s"`, t))
 	}
@@ -78,7 +81,6 @@ func (t Type) ValidateValue(value reflect.Value) error {
 			return fmt.Errorf("should be string, got %s", kindStr)
 		}
 	case TypeInt:
-
 		if valueKind != reflect.Int && !(valueKind == reflect.Float64 && math.Trunc(value.Float()) == value.Float()) {
 			return fmt.Errorf("should be int, got %s", kindStr)
 		}
@@ -107,6 +109,10 @@ func (t Type) ValidateValue(value reflect.Value) error {
 					return fmt.Errorf("all items should be string, got %s, index %d", reflectKindToStr(itemKind), i)
 				}
 			}
+		}
+	case TypeObject:
+		if valueKind != reflect.Map {
+			return fmt.Errorf("should be object, got %s", kindStr)
 		}
 	default:
 		panic(fmt.Errorf(`unexpected input type "%s"`, t))
