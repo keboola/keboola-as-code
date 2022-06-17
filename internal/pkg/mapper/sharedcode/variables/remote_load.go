@@ -19,7 +19,7 @@ func (m *mapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 
 	// Create relation
 	object.AddRelation(&model.SharedCodeVariablesFromRelation{
-		VariablesId: model.ConfigId(variablesId),
+		VariablesId: storageapi.ConfigID(variablesId),
 	})
 
 	// Remove variables ID from configuration content

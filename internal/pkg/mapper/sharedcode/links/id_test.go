@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestSharedCodeLinksMatchId(t *testing.T) {
@@ -28,7 +26,7 @@ func TestSharedCodeLinksMatchId(t *testing.T) {
 	}
 	idUtils := newIdUtils()
 	for i, c := range cases {
-		assert.Equal(t, model.RowId(c.expected), idUtils.match(c.input), fmt.Sprintf(`Case "%d"`, i))
+		assert.Equal(t, storageapi.RowID(c.expected), idUtils.match(c.input), fmt.Sprintf(`Case "%d"`, i))
 	}
 }
 

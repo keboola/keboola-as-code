@@ -11,7 +11,7 @@ import (
 
 func TestSharedCodeLocalLoad(t *testing.T) {
 	t.Parallel()
-	targetComponentId := model.ComponentId(`keboola.python-transformation-v2`)
+	targetComponentId := storageapi.ComponentID(`keboola.python-transformation-v2`)
 
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
@@ -53,7 +53,7 @@ func TestSharedCodeLocalLoad(t *testing.T) {
 
 func TestSharedCodeLocalLoad_MissingCodeFile(t *testing.T) {
 	t.Parallel()
-	targetComponentId := model.ComponentId(`keboola.python-transformation-v2`)
+	targetComponentId := storageapi.ComponentID(`keboola.python-transformation-v2`)
 
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()

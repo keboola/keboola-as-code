@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 const (
@@ -28,16 +26,16 @@ func newIdUtils() *idUtils {
 	return &idUtils{re: re}
 }
 
-func (v *idUtils) match(script string) model.RowId {
+func (v *idUtils) match(script string) storageapi.RowID {
 	script = strings.TrimSpace(script)
 	match := v.re.FindStringSubmatch(script)
 	if len(match) > 0 {
-		return model.RowId(match[1])
+		return storageapi.RowID(match[1])
 	}
 	return ""
 }
 
-func (v *idUtils) format(id model.RowId) string {
+func (v *idUtils) format(id storageapi.RowID) string {
 	placeholder := strings.ReplaceAll(IdFormat, `<ID>`, id.String())
 	if ok := v.re.MatchString(placeholder); !ok {
 		panic(fmt.Errorf(`shared code id "%s" is invalid`, id))

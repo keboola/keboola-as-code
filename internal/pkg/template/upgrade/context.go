@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
@@ -28,10 +29,10 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 	configs := search.ConfigsForTemplateInstance(projectState.LocalObjects().ConfigsWithRowsFrom(targetBranch), instanceId)
 	iterateTmplMetadata(
 		configs,
-		func(config *model.Config, idInTemplate model.ConfigId, _ []model.ConfigInputUsage) {
+		func(config *model.Config, idInTemplate storageapi.ConfigID, _ []model.ConfigInputUsage) {
 			c.RegisterPlaceholder(idInTemplate, func(_ use.Placeholder, cb use.ResolveCallback) { cb(config.Id) })
 		},
-		func(row *model.ConfigRow, idInTemplate model.RowId, _ []model.RowInputUsage) {
+		func(row *model.ConfigRow, idInTemplate storageapi.RowID, _ []model.RowInputUsage) {
 			c.RegisterPlaceholder(idInTemplate, func(_ use.Placeholder, cb use.ResolveCallback) { cb(row.Id) })
 		},
 	)

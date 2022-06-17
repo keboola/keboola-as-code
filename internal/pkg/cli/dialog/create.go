@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -16,7 +15,7 @@ import (
 
 type createDeps interface {
 	Options() *options.Options
-	StorageApi() (*storageapi.Api, error)
+	StorageApiClient() (client.Sender, error)
 }
 
 func (p *Dialogs) AskWhatCreateRemote() string {
@@ -122,16 +121,16 @@ func (p *Dialogs) askObjectName(d createDeps, desc string) (string, error) {
 	return name, nil
 }
 
-func (p *Dialogs) askComponentId(d createDeps) (model.ComponentId, error) {
+func (p *Dialogs) askComponentId(d createDeps) (storageapi.ComponentID, error) {
 	// Get Storage API
 	storageApi, err := d.StorageApi()
 	if err != nil {
 		return "", err
 	}
 
-	componentId := model.ComponentId("")
+	componentId := storageapi.ComponentID("")
 	if d.Options().IsSet(`component-id`) {
-		componentId = model.ComponentId(strings.TrimSpace(d.Options().GetString(`component-id`)))
+		componentId = storageapi.ComponentID(strings.TrimSpace(d.Options().GetString(`component-id`)))
 	} else {
 		// Load components
 		components, err := storageApi.NewComponentList()

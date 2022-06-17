@@ -56,9 +56,9 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 	lock := &sync.Mutex{}
 
 	// Load objects from Storage API
-	branchesMap := make(map[model.BranchId]*fixtures.Branch)
-	configsMap := make(map[model.BranchId]map[model.ConfigKey]*fixtures.Config)
-	metadataMap := make(map[model.BranchId]map[model.ConfigKey]*map[string]string)
+	branchesMap := make(map[storageapi.BranchID]*fixtures.Branch)
+	configsMap := make(map[storageapi.BranchID]map[model.ConfigKey]*fixtures.Config)
+	metadataMap := make(map[storageapi.BranchID]map[model.ConfigKey]*map[string]string)
 
 	// Branches
 	pool := p.StorageApiClient().NewPool()

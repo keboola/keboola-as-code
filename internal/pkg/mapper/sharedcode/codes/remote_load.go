@@ -51,7 +51,7 @@ func (m *mapper) onConfigRemoteLoad(config *model.Config) error {
 	}
 
 	// Store target component ID to struct
-	config.SharedCode = &model.SharedCodeConfig{Target: model.ComponentId(target)}
+	config.SharedCode = &model.SharedCodeConfig{Target: storageapi.ComponentID(target)}
 
 	errors := utils.NewMultiError()
 	for _, row := range m.state.RemoteObjects().ConfigRowsFrom(config.ConfigKey) {

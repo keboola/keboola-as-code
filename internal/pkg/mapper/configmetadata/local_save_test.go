@@ -20,7 +20,7 @@ func TestConfigMetadataMapper_MapBeforeLocalSave(t *testing.T) {
 
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: model.ComponentId("keboola.snowflake-transformation"),
+		ComponentId: storageapi.ComponentID("keboola.snowflake-transformation"),
 		Id:          `456`,
 	}
 	configState := &model.ConfigState{

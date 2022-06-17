@@ -22,7 +22,7 @@ func createStateWithMapper(t *testing.T) (*state.State, *dependencies.TestContai
 
 func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
-	targetComponentId := model.ComponentId(`keboola.snowflake-transformation`)
+	targetComponentId := storageapi.ComponentID(`keboola.snowflake-transformation`)
 
 	// Component
 	state.Components().Set(&model.Component{
@@ -94,7 +94,7 @@ func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigStat
 	return configState, rowState
 }
 
-func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
+func createLocalSharedCode(t *testing.T, targetComponentId storageapi.ComponentID, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
 	// Component
@@ -168,7 +168,7 @@ func createLocalSharedCode(t *testing.T, targetComponentId model.ComponentId, st
 }
 
 // nolint: unparam
-func createInternalSharedCode(t *testing.T, targetComponentId model.ComponentId, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
+func createInternalSharedCode(t *testing.T, targetComponentId storageapi.ComponentID, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
 	// Component

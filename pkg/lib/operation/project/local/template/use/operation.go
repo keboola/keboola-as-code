@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/go-client/pkg/encryptionapi"
 
-	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -47,7 +46,7 @@ func (v newObjects) Log(logger log.Logger, tmpl *template.Template) {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
+	StorageApiClient() (client.Sender, error)
 	EncryptionApi() (*encryptionapi.Api, error)
 }
 

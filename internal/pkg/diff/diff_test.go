@@ -426,7 +426,7 @@ func TestDiffTransformation(t *testing.T) {
 		},
 		Local: &model.Config{
 			SharedCode: &model.SharedCodeConfig{
-				Target: model.ComponentId(`12345`),
+				Target: storageapi.ComponentID(`12345`),
 			},
 			Transformation: &model.Transformation{
 				Blocks: []*model.Block{
@@ -524,7 +524,7 @@ func TestDiffSharedCode(t *testing.T) {
 		},
 		Local: &model.ConfigRow{
 			SharedCode: &model.SharedCodeRow{
-				Target: model.ComponentId(`keboola.snowflake-transformation`),
+				Target: storageapi.ComponentID(`keboola.snowflake-transformation`),
 				Scripts: model.Scripts{
 					model.StaticScript{Value: "SELECT 1;"},
 					model.StaticScript{Value: "SELECT 2;"},
@@ -534,7 +534,7 @@ func TestDiffSharedCode(t *testing.T) {
 		},
 		Remote: &model.ConfigRow{
 			SharedCode: &model.SharedCodeRow{
-				Target: model.ComponentId(`keboola.snowflake-transformation`),
+				Target: storageapi.ComponentID(`keboola.snowflake-transformation`),
 				Scripts: model.Scripts{
 					model.StaticScript{Value: "SELECT 4;"},
 					model.StaticScript{Value: "SELECT 3;"},

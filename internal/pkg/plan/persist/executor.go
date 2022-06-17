@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -66,10 +67,10 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 		// Set new id to the key
 		switch k := key.(type) {
 		case model.ConfigKey:
-			k.Id = model.ConfigId(ticket.Id)
+			k.Id = storageapi.ConfigID(ticket.Id)
 			key = k
 		case model.ConfigRowKey:
-			k.Id = model.RowId(ticket.Id)
+			k.Id = storageapi.RowID(ticket.Id)
 			key = k
 		default:
 			panic(fmt.Errorf(`unexpected type "%s" of the persisted object "%s"`, key.Kind(), key.Desc()))

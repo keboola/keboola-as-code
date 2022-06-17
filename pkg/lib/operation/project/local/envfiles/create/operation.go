@@ -3,14 +3,13 @@ package init
 import (
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 type dependencies interface {
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
+	StorageApiClient() (client.Sender, error)
 }
 
 func Run(fs filesystem.Fs, d dependencies) (err error) {

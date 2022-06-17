@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/go-client/pkg/encryptionapi"
 
-	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -33,7 +32,7 @@ type Options struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
+	StorageApiClient() (client.Sender, error)
 	EncryptionApi() (*encryptionapi.Api, error)
 }
 

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
@@ -16,9 +17,6 @@ const (
 	MetaFileFieldsTag                 = "metaFile:true"        // marks meta fields in object struct
 	ConfigFileFieldTag                = "configFile:true"      // marks config field in object struct
 	DescriptionFileFieldTag           = "descriptionFile:true" // marks description field in object struct
-	TransformationType                = "transformation"
-	SharedCodeComponentId             = ComponentId("keboola.shared-code")
-	OrchestratorComponentId           = ComponentId("keboola.orchestrator")
 	ShareCodeTargetComponentKey       = `componentId`
 	SharedCodeContentKey              = `code_content`
 	VariablesIdContentKey             = `variables_id`
@@ -49,9 +47,22 @@ type Object interface {
 	ObjectName() string
 }
 
+type ToApiObject interface {
+	ToApiObject() storageapi.Object
+}
+
+type ToApiObjectKey interface {
+	ToApiObjectKey() storageapi.ObjectKey
+}
+
+type ToApiMetadata interface {
+	ToApiObjectKey
+	ToApiMetadata() storageapi.Metadata
+}
+
 type ObjectWithContent interface {
 	Object
-	GetComponentId() ComponentId
+	GetComponentId() storageapi.ComponentID
 	GetContent() *orderedmap.OrderedMap
 }
 
@@ -67,7 +78,7 @@ type ObjectStates interface {
 	RemoteObjects() Objects
 	LocalObjects() Objects
 	All() []ObjectState
-	Components() *ComponentsMap
+	Components() ComponentsMap
 	Branches() (branches []*BranchState)
 	Configs() []*ConfigState
 	ConfigsFrom(branch BranchKey) (configs []*ConfigState)
@@ -120,8 +131,44 @@ type ChangedByRecord struct {
 }
 
 type TemplateMainConfig struct {
-	ConfigId    ConfigId    `json:"configId"`
-	ComponentId ComponentId `json:"componentId"`
+	ConfigId    storageapi.ConfigID    `json:"configId"`
+	ComponentId storageapi.ComponentID `json:"componentId"`
+}
+
+// NewBranch creates branch model from API values.
+func NewBranch(apiValue *storageapi.Branch) *Branch {
+	out := &Branch{}
+	out.Id = apiValue.ID
+	out.Name = apiValue.Name
+	out.Description = apiValue.Description
+	out.IsDefault = apiValue.IsDefault
+	return out
+}
+
+// NewConfig creates config model from API values.
+func NewConfig(apiValue *storageapi.Config) *Config {
+	out := &Config{}
+	out.BranchId = apiValue.BranchID
+	out.ComponentId = apiValue.ComponentID
+	out.Id = apiValue.ID
+	out.Name = apiValue.Name
+	out.Description = apiValue.Description
+	out.IsDisabled = apiValue.IsDisabled
+	out.Content = apiValue.Content
+	return out
+}
+
+// NewConfigRow creates config row model from API values.
+func NewConfigRow(apiValue *storageapi.ConfigRow) *ConfigRow {
+	out := &ConfigRow{}
+	out.BranchId = apiValue.BranchID
+	out.ComponentId = apiValue.ComponentID
+	out.Id = apiValue.ID
+	out.Name = apiValue.Name
+	out.Description = apiValue.Description
+	out.IsDisabled = apiValue.IsDisabled
+	out.Content = apiValue.Content
+	return out
 }
 
 func (m BranchMetadata) saveTemplateUsages(instances TemplatesInstances) error {
@@ -244,12 +291,12 @@ type ConfigInputUsage struct {
 }
 
 type RowInputUsage struct {
-	RowId   RowId  `json:"rowId"`
-	Input   string `json:"input"`
-	JsonKey string `json:"key"`
+	RowId   storageapi.RowID `json:"rowId"`
+	Input   string           `json:"input"`
+	JsonKey string           `json:"key"`
 }
 
-func (m ConfigMetadata) SetConfigTemplateId(templateObjectId ConfigId) {
+func (m ConfigMetadata) SetConfigTemplateId(templateObjectId storageapi.ConfigID) {
 	m[configIdMetadataKey] = json.MustEncodeString(ConfigIdMetadata{
 		IdInTemplate: templateObjectId,
 	}, false)
@@ -277,7 +324,7 @@ func (m ConfigMetadata) AddInputUsage(inputName string, jsonKey orderedmap.Path)
 	}), false)
 }
 
-func (m ConfigMetadata) AddRowTemplateId(projectObjectId, templateObjectId RowId) {
+func (m ConfigMetadata) AddRowTemplateId(projectObjectId, templateObjectId storageapi.RowID) {
 	items := append(m.RowsTemplateIds(), RowIdMetadata{
 		IdInProject:  projectObjectId,
 		IdInTemplate: templateObjectId,
@@ -299,7 +346,7 @@ func (m ConfigMetadata) RowsInputsUsage() []RowInputUsage {
 	return out
 }
 
-func (m ConfigMetadata) AddRowInputUsage(rowId RowId, inputName string, jsonKey orderedmap.Path) {
+func (m ConfigMetadata) AddRowInputUsage(rowId storageapi.RowID, inputName string, jsonKey orderedmap.Path) {
 	values := append(m.RowsInputsUsage(), RowInputUsage{
 		RowId:   rowId,
 		Input:   inputName,
@@ -387,11 +434,11 @@ func (r *ConfigRow) ObjectName() string {
 	return r.Name
 }
 
-func (c *Config) GetComponentId() ComponentId {
+func (c *Config) GetComponentId() storageapi.ComponentID {
 	return c.ComponentId
 }
 
-func (r *ConfigRow) GetComponentId() ComponentId {
+func (r *ConfigRow) GetComponentId() storageapi.ComponentID {
 	return r.ComponentId
 }
 

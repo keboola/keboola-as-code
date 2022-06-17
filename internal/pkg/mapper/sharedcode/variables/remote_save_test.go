@@ -20,7 +20,7 @@ func TestSharedCodeMapBeforeRemoteSave(t *testing.T) {
 		Content:      orderedmap.New(),
 	}
 	object.AddRelation(&model.SharedCodeVariablesFromRelation{
-		VariablesId: model.ConfigId(variablesConfigId),
+		VariablesId: storageapi.ConfigID(variablesConfigId),
 	})
 	recipe := model.NewRemoteSaveRecipe(&model.ConfigManifest{}, object, model.NewChangedFields())
 

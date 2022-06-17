@@ -40,6 +40,17 @@ func (v ChangedFields) All() []*ChangedField {
 	return out
 }
 
+func (v ChangedFields) Slice() []string {
+	out := make([]string, len(v))
+	i := 0
+	for _, field := range v {
+		out[i] = field.Name()
+		i++
+	}
+	sort.Strings(out)
+	return out
+}
+
 func (v ChangedFields) IsEmpty() bool {
 	return len(v) == 0
 }

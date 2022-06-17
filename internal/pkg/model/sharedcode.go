@@ -2,15 +2,17 @@ package model
 
 import (
 	"fmt"
+
+	"github.com/keboola/go-client/pkg/storageapi"
 )
 
 type SharedCodeConfig struct {
-	Target ComponentId `validate:"required"`
+	Target storageapi.ComponentID `validate:"required"`
 }
 
 type SharedCodeRow struct {
-	Target  ComponentId `validate:"required"`
-	Scripts Scripts     `validate:"required"`
+	Target  storageapi.ComponentID `validate:"required"`
+	Scripts Scripts                `validate:"required"`
 }
 
 // LinkScript is reference to shared code used in transformation.
@@ -32,13 +34,13 @@ func (v SharedCodeRow) String() string {
 
 // SharedCodeVariablesForRelation - variables for shared code.
 type SharedCodeVariablesForRelation struct {
-	ConfigId ConfigId `json:"configId" validate:"required"`
-	RowId    RowId    `json:"rowId" validate:"required"`
+	ConfigId storageapi.ConfigID `json:"configId" validate:"required"`
+	RowId    storageapi.RowID    `json:"rowId" validate:"required"`
 }
 
 // SharedCodeVariablesFromRelation - variables from source configuration.
 type SharedCodeVariablesFromRelation struct {
-	VariablesId ConfigId `json:"variablesId" validate:"required"`
+	VariablesId storageapi.ConfigID `json:"variablesId" validate:"required"`
 }
 
 func (t *SharedCodeVariablesForRelation) Type() RelationType {
@@ -60,7 +62,7 @@ func (t *SharedCodeVariablesForRelation) ParentKey(relationDefinedOn Key) (Key, 
 	}
 	return ConfigRowKey{
 		BranchId:    variables.BranchId,
-		ComponentId: SharedCodeComponentId,
+		ComponentId: storageapi.SharedCodeComponentID,
 		ConfigId:    t.ConfigId,
 		Id:          t.RowId,
 	}, nil
@@ -81,7 +83,7 @@ func (t *SharedCodeVariablesForRelation) NewOtherSideRelation(relationDefinedOn 
 	}
 	otherSide := ConfigRowKey{
 		BranchId:    variables.BranchId,
-		ComponentId: SharedCodeComponentId,
+		ComponentId: storageapi.SharedCodeComponentID,
 		ConfigId:    t.ConfigId,
 		Id:          t.RowId,
 	}
@@ -96,8 +98,8 @@ func (t *SharedCodeVariablesForRelation) checkDefinedOn(relationDefinedOn Key) (
 	if !ok {
 		return variables, fmt.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
-	if variables.ComponentId != VariablesComponentId {
-		return variables, fmt.Errorf(`relation "%s" must be defined on config from "%s" component, found %s`, t.Type(), VariablesComponentId, relationDefinedOn.Desc())
+	if variables.ComponentId != storageapi.VariablesComponentID {
+		return variables, fmt.Errorf(`relation "%s" must be defined on config from "%s" component, found %s`, t.Type(), storageapi.VariablesComponentID, relationDefinedOn.Desc())
 	}
 	return variables, nil
 }
@@ -133,7 +135,7 @@ func (t *SharedCodeVariablesFromRelation) NewOtherSideRelation(relationDefinedOn
 	}
 	otherSide := ConfigKey{
 		BranchId:    row.BranchId,
-		ComponentId: VariablesComponentId,
+		ComponentId: storageapi.VariablesComponentID,
 		Id:          t.VariablesId,
 	}
 	otherSideRelation := &SharedCodeVariablesForRelation{
@@ -148,8 +150,8 @@ func (t *SharedCodeVariablesFromRelation) checkDefinedOn(relationDefinedOn Key) 
 	if !ok {
 		return row, fmt.Errorf(`relation "%s" must be defined on config row, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
-	if row.ComponentId != SharedCodeComponentId {
-		return row, fmt.Errorf(`relation "%s" must be defined on config row from "%s" component, found %s`, t.Type(), SharedCodeComponentId, relationDefinedOn.Desc())
+	if row.ComponentId != storageapi.SharedCodeComponentID {
+		return row, fmt.Errorf(`relation "%s" must be defined on config row from "%s" component, found %s`, t.Type(), storageapi.SharedCodeComponentID, relationDefinedOn.Desc())
 	}
 	return row, nil
 }

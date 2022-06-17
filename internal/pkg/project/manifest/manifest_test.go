@@ -35,7 +35,7 @@ func cases() []test {
 			naming: naming.TemplateWithoutIds(),
 			filter: model.NewFilter(
 				model.AllowedBranches{"foo", "bar"},
-				model.ComponentIds{"abc"},
+				model.ComponentIDs{"abc"},
 			),
 			records: fullRecords(),
 		},

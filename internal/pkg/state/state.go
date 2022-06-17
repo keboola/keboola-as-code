@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/client"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -21,7 +22,7 @@ import (
 
 type Registry = registry.Registry
 
-func NewRegistry(paths *knownpaths.Paths, namingRegistry *naming.Registry, components *model.ComponentsMap, sortBy string) *Registry {
+func NewRegistry(paths *knownpaths.Paths, namingRegistry *naming.Registry, components model.ComponentsMap, sortBy string) *Registry {
 	return registry.New(paths, namingRegistry, components, sortBy)
 }
 
@@ -57,14 +58,19 @@ type ObjectsContainer interface {
 
 type dependencies interface {
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
+	Components() (model.ComponentsMap, error)
+	StorageApiClient() (client.Sender, error)
 }
 
 func New(container ObjectsContainer, d dependencies) (*State, error) {
 	// Get dependencies
 	logger := d.Logger()
 	m := container.Manifest()
-	storageApi, err := d.StorageApi()
+	storageApi, err := d.StorageApiClient()
+	if err != nil {
+		return nil, err
+	}
+	components, err := d.Components()
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +92,7 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
 	pathMatcher := naming.NewPathMatcher(namingTemplate)
 	s := &State{
-		Registry:        NewRegistry(knownPaths, namingRegistry, storageApi.Components(), m.SortBy()),
+		Registry:        NewRegistry(knownPaths, namingRegistry, components, m.SortBy()),
 		container:       container,
 		fileLoader:      fileLoader,
 		logger:          logger,
@@ -186,12 +192,6 @@ func (s *State) RemoteManager() *remote.Manager {
 func (s *State) Validate() (error, error) {
 	localErrors := utils.NewMultiError()
 	remoteErrors := utils.NewMultiError()
-
-	for _, component := range s.Components().AllLoaded() {
-		if err := s.validateValue(component); err != nil {
-			localErrors.Append(utils.PrefixError(fmt.Sprintf(`component \"%s\" is not valid`, component.Key()), err))
-		}
-	}
 
 	for _, objectState := range s.All() {
 		if objectState.HasRemoteState() {

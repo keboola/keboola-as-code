@@ -146,7 +146,7 @@ func (v *container) SetStorageApiToken(host string) {
 	v.options.Set(`storage-api-token`, host)
 }
 
-func (v *container) StorageApi() (*storageapi.Api, error) {
+func (v *container) StorageApiClient() (client.Sender, error) {
 	if v.storageApi == nil {
 		storageApi, err := v.commonDeps.StorageApiClient()
 		if err != nil {

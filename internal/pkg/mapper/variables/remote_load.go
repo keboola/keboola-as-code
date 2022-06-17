@@ -31,7 +31,7 @@ func (m *variablesMapper) loadVariables(object *model.Config) {
 
 	// Create relation
 	object.AddRelation(&model.VariablesFromRelation{
-		VariablesId: model.ConfigId(variablesId),
+		VariablesId: storageapi.ConfigID(variablesId),
 	})
 
 	// Remove variables ID from configuration content
@@ -59,7 +59,7 @@ func (m *variablesMapper) loadVariablesValues(object *model.Config) {
 
 	// Create relation
 	object.AddRelation(&model.VariablesValuesFromRelation{
-		VariablesValuesId: model.RowId(valuesId),
+		VariablesValuesId: storageapi.RowID(valuesId),
 	})
 
 	// Remove variables ID from configuration content

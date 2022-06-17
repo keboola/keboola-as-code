@@ -15,19 +15,19 @@ func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
 	instanceId := "my-instance"
 	objectIds := metadata.ObjectIdsMap{}
-	objectIds[model.ConfigId("456")] = model.ConfigId("my-config")
-	objectIds[model.RowId("789")] = model.RowId("my-row")
+	objectIds[storageapi.ConfigID("456")] = storageapi.ConfigID("my-config")
+	objectIds[storageapi.RowID("789")] = storageapi.RowID("my-row")
 	inputsUsage := metadata.NewInputsUsage()
 	mockedState, _ := createStateWithMapper(t, templateRef, instanceId, objectIds, inputsUsage)
 
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: model.ComponentId("keboola.foo-bar"),
+		ComponentId: storageapi.ComponentID("keboola.foo-bar"),
 		Id:          `456`,
 	}
 	configRowKey := model.ConfigRowKey{
 		BranchId:    123,
-		ComponentId: model.ComponentId("keboola.foo-bar"),
+		ComponentId: storageapi.ComponentID("keboola.foo-bar"),
 		ConfigId:    `456`,
 		Id:          `789`,
 	}
@@ -65,6 +65,6 @@ func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 	assert.Equal(t, "my-repository", config.Metadata.Repository())
 	assert.Equal(t, "my-template", config.Metadata.TemplateId())
 	assert.Equal(t, "my-instance", config.Metadata.InstanceId())
-	assert.Equal(t, &model.ConfigIdMetadata{IdInTemplate: "my-config"}, config.Metadata.ConfigTemplateId())
-	assert.Equal(t, []model.RowIdMetadata{{IdInProject: "789", IdInTemplate: "my-row"}}, config.Metadata.RowsTemplateIds())
+	assert.Equal(t, &storageapi.ConfigIDMetadata{IdInTemplate: "my-config"}, config.Metadata.ConfigTemplateId())
+	assert.Equal(t, []storageapi.RowIDMetadata{{IdInProject: "789", IdInTemplate: "my-row"}}, config.Metadata.RowsTemplateIds())
 }

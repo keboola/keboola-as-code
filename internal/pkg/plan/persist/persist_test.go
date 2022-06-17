@@ -380,7 +380,7 @@ func TestPersistSharedCode(t *testing.T) {
 					Description: "foo bar",
 					Content:     orderedmap.New(),
 					SharedCode: &model.SharedCodeConfig{
-						Target: model.ComponentId("keboola.python-transformation-v2"),
+						Target: storageapi.ComponentID("keboola.python-transformation-v2"),
 					},
 					Metadata: make(map[string]string),
 				},
@@ -537,7 +537,7 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					Description: "foo bar",
 					Content:     orderedmap.New(),
 					SharedCode: &model.SharedCodeConfig{
-						Target: model.ComponentId("keboola.python-transformation-v2"),
+						Target: storageapi.ComponentID("keboola.python-transformation-v2"),
 					},
 					Metadata: make(map[string]string),
 				},

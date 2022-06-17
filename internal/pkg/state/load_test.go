@@ -4,6 +4,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +31,7 @@ func TestLoadState(t *testing.T) {
 
 	// Same IDs in local and remote state
 	envs.Set("LOCAL_PROJECT_ID", cast.ToString(testProject.ID()))
-	envs.Set("TEST_KBC_STORAGE_API_HOST", testProject.StorageApiClient().Host())
+	envs.Set("TEST_KBC_STORAGE_API_HOST", testProject.StorageAPIHost())
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", envs.MustGet(`TEST_BRANCH_MAIN_ID`))
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`))
 
@@ -62,7 +63,7 @@ func TestLoadState(t *testing.T) {
 		{
 			Remote: &model.Branch{
 				BranchKey: model.BranchKey{
-					Id: model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					Id: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 				},
 				Name:        "Main",
 				Description: "Main branch",
@@ -71,7 +72,7 @@ func TestLoadState(t *testing.T) {
 			},
 			Local: &model.Branch{
 				BranchKey: model.BranchKey{
-					Id: model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					Id: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 				},
 				Name:        "Main",
 				Description: "Main branch",
@@ -83,7 +84,7 @@ func TestLoadState(t *testing.T) {
 					Persisted: true,
 				},
 				BranchKey: model.BranchKey{
-					Id: model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					Id: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -99,9 +100,9 @@ func TestLoadState(t *testing.T) {
 		{
 			Remote: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 					ComponentId: "ex-generic-v2",
-					Id:          model.ConfigId(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
+					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Name:              "empty",
 				Description:       "test fixture",
@@ -111,9 +112,9 @@ func TestLoadState(t *testing.T) {
 			},
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 					ComponentId: "ex-generic-v2",
-					Id:          model.ConfigId(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
+					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Name:              "todos",
 				Description:       "todos config",
@@ -141,9 +142,9 @@ func TestLoadState(t *testing.T) {
 					Persisted: true,
 				},
 				ConfigKey: model.ConfigKey{
-					BranchId:    model.BranchId(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 					ComponentId: "ex-generic-v2",
-					Id:          model.ConfigId(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
+					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(

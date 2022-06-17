@@ -40,7 +40,7 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 		Config: model.ConfigKey{
 			BranchId:    transformation.BranchId,
 			ComponentId: model.SharedCodeComponentId,
-			Id:          model.ConfigId(sharedCodeId),
+			Id:          storageapi.ConfigID(sharedCodeId),
 		},
 	}
 	sharedCodeState, found := m.state.GetOrNil(linkToSharedCode.Config).(*model.ConfigState)
@@ -88,7 +88,7 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 			BranchId:    linkToSharedCode.Config.BranchId,
 			ComponentId: linkToSharedCode.Config.ComponentId,
 			ConfigId:    linkToSharedCode.Config.Id,
-			Id:          model.RowId(cast.ToString(rowId)),
+			Id:          storageapi.RowID(cast.ToString(rowId)),
 		}
 		if _, found := m.state.Get(rowKey); found {
 			linkToSharedCode.Rows = append(linkToSharedCode.Rows, rowKey)

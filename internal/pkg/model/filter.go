@@ -3,6 +3,7 @@ package model
 import (
 	"strings"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -18,20 +19,20 @@ type AllowedBranch string
 
 type AllowedBranches []AllowedBranch
 
-type ComponentIds []ComponentId
+type ComponentIDs []storageapi.ComponentID
 
 // ObjectsFilter filters objects by allowed keys, allowed branches and ignored components.
 type ObjectsFilter struct {
 	allowedKeys       map[string]bool
 	allowedBranches   AllowedBranches
-	ignoredComponents ComponentIds
+	ignoredComponents ComponentIDs
 }
 
 func DefaultAllowedBranches() AllowedBranches {
 	return AllowedBranches{"*"}
 }
 
-func NewFilter(branches AllowedBranches, ignoredComponents ComponentIds) ObjectsFilter {
+func NewFilter(branches AllowedBranches, ignoredComponents ComponentIDs) ObjectsFilter {
 	return ObjectsFilter{
 		allowedBranches:   branches,
 		ignoredComponents: ignoredComponents,
@@ -41,7 +42,7 @@ func NewFilter(branches AllowedBranches, ignoredComponents ComponentIds) Objects
 func NoFilter() ObjectsFilter {
 	return ObjectsFilter{
 		allowedBranches:   DefaultAllowedBranches(),
-		ignoredComponents: ComponentIds{},
+		ignoredComponents: ComponentIDs{},
 	}
 }
 
@@ -79,11 +80,11 @@ func (f *ObjectsFilter) SetAllowedBranches(branches AllowedBranches) {
 	f.allowedBranches = branches
 }
 
-func (f *ObjectsFilter) IgnoredComponents() ComponentIds {
+func (f *ObjectsFilter) IgnoredComponents() ComponentIDs {
 	return f.ignoredComponents
 }
 
-func (f *ObjectsFilter) SetIgnoredComponents(ids ComponentIds) {
+func (f *ObjectsFilter) SetIgnoredComponents(ids ComponentIDs) {
 	f.ignoredComponents = ids
 }
 
@@ -139,7 +140,7 @@ func (v AllowedBranch) IsBranchAllowed(branch *Branch) bool {
 	return false
 }
 
-func (v ComponentIds) String() string {
+func (v ComponentIDs) String() string {
 	if len(v) == 0 {
 		return `[]`
 	}
@@ -151,7 +152,7 @@ func (v ComponentIds) String() string {
 	return `"` + strings.Join(items, `", "`) + `"`
 }
 
-func (v ComponentIds) Contains(componentId ComponentId) bool {
+func (v ComponentIDs) Contains(componentId storageapi.ComponentID) bool {
 	for _, id := range v {
 		if id == componentId {
 			return true

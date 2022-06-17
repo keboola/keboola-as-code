@@ -1,7 +1,6 @@
 package dialog
 
 import (
-	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
@@ -12,7 +11,7 @@ import (
 
 type initDeps interface {
 	Options() *options.Options
-	StorageApi() (*storageapi.Api, error)
+	StorageApiClient() (client.Sender, error)
 }
 
 func (p *Dialogs) AskInitOptions(d initDeps) (initOp.Options, error) {

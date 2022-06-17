@@ -1,4 +1,4 @@
-package dependencies
+package model
 
 import (
 	"encoding/json"

@@ -30,10 +30,10 @@ func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 	// Internal object has new relation + content without variables ID
 	assert.Equal(t, model.Relations{
 		&model.VariablesFromRelation{
-			VariablesId: model.ConfigId(variablesConfigId),
+			VariablesId: storageapi.ConfigID(variablesConfigId),
 		},
 		&model.VariablesValuesFromRelation{
-			VariablesValuesId: model.RowId(valuesConfigRowId),
+			VariablesValuesId: storageapi.RowID(valuesConfigRowId),
 		},
 	}, object.Relations)
 	_, found := object.Content.Get(model.VariablesIdContentKey)

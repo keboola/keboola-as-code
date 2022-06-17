@@ -68,16 +68,16 @@ func (v *Values) AddKey(oldKey, newKey model.Key) {
 // AddId replaces id with id.
 func (v *Values) AddId(oldId, newId interface{}) {
 	switch old := oldId.(type) {
-	case model.BranchId:
-		v.AddValue(old, newId.(model.BranchId))
-	case model.ConfigId:
-		v.AddValue(old, newId.(model.ConfigId))
+	case storageapi.BranchID:
+		v.AddValue(old, newId.(storageapi.BranchID))
+	case storageapi.ConfigID:
+		v.AddValue(old, newId.(storageapi.ConfigID))
 		// ConfigId in strings
-		v.AddValue(SubString(old), string(newId.(model.ConfigId)))
-	case model.RowId:
-		v.AddValue(old, newId.(model.RowId))
+		v.AddValue(SubString(old), string(newId.(storageapi.ConfigID)))
+	case storageapi.RowID:
+		v.AddValue(old, newId.(storageapi.RowID))
 		// ConfigRowId in strings
-		v.AddValue(SubString(old), string(newId.(model.RowId)))
+		v.AddValue(SubString(old), string(newId.(storageapi.RowID)))
 	default:
 		panic(fmt.Errorf(`unexpected ID type "%T"`, old))
 	}
@@ -136,8 +136,8 @@ func (v *Values) validate() error {
 	valuesMap := make(map[string]int)
 	for _, item := range v.values {
 		value := item.Search
-		_, ok1 := value.(model.ConfigId)
-		_, ok2 := value.(model.RowId)
+		_, ok1 := value.(storageapi.ConfigID)
+		_, ok2 := value.(storageapi.RowID)
 		if ok1 || ok2 {
 			valuesMap[cast.ToString(value)] += 1
 		}
@@ -152,8 +152,8 @@ func (v *Values) validate() error {
 	valuesMap = make(map[string]int)
 	for _, item := range v.values {
 		value := item.Replace
-		_, ok1 := value.(model.ConfigId)
-		_, ok2 := value.(model.RowId)
+		_, ok1 := value.(storageapi.ConfigID)
+		_, ok2 := value.(storageapi.RowID)
 		if ok1 || ok2 {
 			valuesMap[cast.ToString(value)] += 1
 		}

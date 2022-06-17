@@ -3,7 +3,6 @@ package delete_template
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	deleteTemplate "github.com/keboola/keboola-as-code/internal/pkg/plan/delete-template"
@@ -21,7 +20,7 @@ type Options struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
+	StorageApiClient() (client.Sender, error)
 }
 
 func Run(projectState *project.State, o Options, d dependencies) error {

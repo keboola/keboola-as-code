@@ -6,7 +6,6 @@ import (
 
 	"github.com/umisama/go-regexpcache"
 
-	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -20,7 +19,7 @@ import (
 type createTmplDialogDeps interface {
 	Logger() log.Logger
 	Options() *options.Options
-	StorageApi() (*storageapi.Api, error)
+	StorageApiClient() (client.Sender, error)
 	Components() (*model.ComponentsMap, error)
 }
 

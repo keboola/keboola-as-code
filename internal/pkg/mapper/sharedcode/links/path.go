@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 )
 
@@ -29,7 +28,7 @@ func newPathUtils() *pathUtils {
 	return &pathUtils{re: re}
 }
 
-func (v *pathUtils) match(script string, componentId model.ComponentId) string {
+func (v *pathUtils) match(script string, componentId storageapi.ComponentID) string {
 	comment := naming.CodeFileComment(naming.CodeFileExt(componentId))
 	script = strings.TrimSpace(script)
 	script = strings.TrimPrefix(script, comment)
@@ -41,7 +40,7 @@ func (v *pathUtils) match(script string, componentId model.ComponentId) string {
 	return ""
 }
 
-func (v *pathUtils) format(path string, componentId model.ComponentId) string {
+func (v *pathUtils) format(path string, componentId storageapi.ComponentID) string {
 	placeholder := strings.ReplaceAll(PathFormat, `<PATH>`, path)
 	if ok := v.re.MatchString(placeholder); !ok {
 		panic(fmt.Errorf(`shared code path "%s" is invalid`, path))

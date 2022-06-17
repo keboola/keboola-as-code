@@ -2,9 +2,8 @@ package model
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/spf13/cast"
 )
 
@@ -40,72 +39,43 @@ type WithKey interface {
 	Key() Key
 }
 
-func (v BranchId) String() string {
-	return strconv.Itoa(int(v))
-}
-
-func (v ComponentId) String() string {
-	return string(v)
-}
-
-func (v ConfigId) String() string {
-	return string(v)
-}
-
-func (v RowId) String() string {
-	return string(v)
-}
-
-func (v ComponentId) WithoutVendor() string {
-	parts := strings.SplitN(string(v), ".", 2)
-	if len(parts) == 1 {
-		// A component without vendor
-		return parts[0]
-	}
-	return parts[1]
-}
-
 type BranchKey struct {
-	Id BranchId `json:"id" validate:"required"`
-}
-
-type ComponentKey struct {
-	Id ComponentId `json:"id" validate:"required"`
+	Id storageapi.BranchID `json:"id" validate:"required"`
 }
 
 type ConfigKey struct {
-	BranchId    BranchId    `json:"branchId,omitempty" validate:"required_in_project"`
-	ComponentId ComponentId `json:"componentId" validate:"required"`
-	Id          ConfigId    `json:"id" validate:"required"`
+	BranchId    storageapi.BranchID    `json:"branchId,omitempty" validate:"required_in_project"`
+	ComponentId storageapi.ComponentID `json:"componentId" validate:"required"`
+	Id          storageapi.ConfigID    `json:"id" validate:"required"`
 }
 
 type ConfigRowKey struct {
-	BranchId    BranchId    `json:"-" validate:"required_in_project"`
-	ComponentId ComponentId `json:"-" validate:"required"`
-	ConfigId    ConfigId    `json:"-" validate:"required"`
-	Id          RowId       `json:"id" validate:"required" `
+	BranchId    storageapi.BranchID    `json:"-" validate:"required_in_project"`
+	ComponentId storageapi.ComponentID `json:"-" validate:"required"`
+	ConfigId    storageapi.ConfigID    `json:"-" validate:"required"`
+	Id          storageapi.RowID       `json:"id" validate:"required" `
 }
 
 type BlockKey struct {
-	BranchId    BranchId    `json:"-" validate:"required_in_project" `
-	ComponentId ComponentId `json:"-" validate:"required" `
-	ConfigId    ConfigId    `json:"-" validate:"required" `
-	Index       int         `json:"-" validate:"min=0" `
+	BranchId    storageapi.BranchID    `json:"-" validate:"required_in_project" `
+	ComponentId storageapi.ComponentID `json:"-" validate:"required" `
+	ConfigId    storageapi.ConfigID    `json:"-" validate:"required" `
+	Index       int                    `json:"-" validate:"min=0" `
 }
 
 type CodeKey struct {
-	BranchId    BranchId    `json:"-" validate:"required_in_project" `
-	ComponentId ComponentId `json:"-" validate:"required" `
-	ConfigId    ConfigId    `json:"-" validate:"required" `
-	BlockIndex  int         `json:"-" validate:"min=0" `
-	Index       int         `json:"-" validate:"min=0" `
+	BranchId    storageapi.BranchID    `json:"-" validate:"required_in_project" `
+	ComponentId storageapi.ComponentID `json:"-" validate:"required" `
+	ConfigId    storageapi.ConfigID    `json:"-" validate:"required" `
+	BlockIndex  int                    `json:"-" validate:"min=0" `
+	Index       int                    `json:"-" validate:"min=0" `
 }
 
 type PhaseKey struct {
-	BranchId    BranchId    `json:"-" validate:"required_in_project" `
-	ComponentId ComponentId `json:"-" validate:"required" `
-	ConfigId    ConfigId    `json:"-" validate:"required" `
-	Index       int         `json:"-" validate:"min=0" `
+	BranchId    storageapi.BranchID    `json:"-" validate:"required_in_project" `
+	ComponentId storageapi.ComponentID `json:"-" validate:"required" `
+	ConfigId    storageapi.ConfigID    `json:"-" validate:"required" `
+	Index       int                    `json:"-" validate:"min=0" `
 }
 
 type TaskKey struct {
@@ -415,10 +385,10 @@ func (k TaskKey) ParentKey() (Key, error) {
 }
 
 type ConfigIdMetadata struct {
-	IdInTemplate ConfigId `json:"idInTemplate"`
+	IdInTemplate storageapi.ConfigID `json:"idInTemplate"`
 }
 
 type RowIdMetadata struct {
-	IdInProject  RowId `json:"idInProject"`
-	IdInTemplate RowId `json:"idInTemplate"`
+	IdInProject  storageapi.RowID `json:"idInProject"`
+	IdInTemplate storageapi.RowID `json:"idInTemplate"`
 }

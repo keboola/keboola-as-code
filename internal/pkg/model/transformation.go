@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/sql"
@@ -118,7 +119,7 @@ func (v Scripts) Slice() []interface{} {
 	return out
 }
 
-func (v Scripts) String(componentId ComponentId) string {
+func (v Scripts) String(componentId storageapi.ComponentID) string {
 	var items []string
 	for _, script := range v {
 		items = append(items, script.Content())
@@ -170,7 +171,7 @@ func NormalizeScript(script string) string {
 	return strings.TrimRight(script, "\n\r\t ")
 }
 
-func ScriptsFromStr(content string, componentId ComponentId) Scripts {
+func ScriptsFromStr(content string, componentId storageapi.ComponentID) Scripts {
 	content = NormalizeScript(content)
 	var items []string
 	switch componentId.String() {

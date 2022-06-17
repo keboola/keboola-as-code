@@ -3,8 +3,7 @@ package project
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/schedulerapi"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/client"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -31,8 +30,8 @@ func LoadManifest(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
-	SchedulerApi() (*schedulerapi.Api, error)
+	StorageApiClient() (client.Sender, error)
+	SchedulerApiClient() (client.Sender, error)
 }
 
 type Project struct {

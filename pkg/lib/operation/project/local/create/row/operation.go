@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -12,16 +11,16 @@ import (
 )
 
 type Options struct {
-	BranchId    model.BranchId
-	ComponentId model.ComponentId
-	ConfigId    model.ConfigId
+	BranchId    storageapi.BranchID
+	ComponentId storageapi.ComponentID
+	ConfigId    storageapi.ConfigID
 	Name        string
 }
 
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
+	StorageApiClient() (client.Sender, error)
 }
 
 func Run(projectState *project.State, o Options, d dependencies) (err error) {
@@ -43,7 +42,7 @@ func Run(projectState *project.State, o Options, d dependencies) (err error) {
 	// Generate unique ID
 	ticketProvider := storageApi.NewTicketProvider()
 	ticketProvider.Request(func(ticket *model.Ticket) {
-		key.Id = model.RowId(ticket.Id)
+		key.Id = storageapi.RowID(ticket.Id)
 	})
 	if err := ticketProvider.Resolve(); err != nil {
 		return fmt.Errorf(`cannot generate new ID: %w`, err)

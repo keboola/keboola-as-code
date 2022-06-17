@@ -17,7 +17,7 @@ func (m *metadataMapper) AfterLocalOperation(changes *model.LocalChanges) error 
 			config.Metadata.SetTemplateInstance(m.templateRef.Repository().Name, m.templateRef.TemplateId(), m.instanceId)
 			// Store original object ID
 			if idInTemplate, found := m.objectIds.IdInTemplate(v.Id); found {
-				config.Metadata.SetConfigTemplateId(idInTemplate.(model.ConfigId))
+				config.Metadata.SetConfigTemplateId(idInTemplate.(storageapi.ConfigID))
 			}
 			// Store inputs usage
 			if inputsUsage, ok := m.inputsUsage.Values[config.Key()]; ok {
@@ -30,7 +30,7 @@ func (m *metadataMapper) AfterLocalOperation(changes *model.LocalChanges) error 
 			config := m.state.MustGet(v.ConfigKey()).(*model.ConfigState).Local
 			// Store original object ID
 			if idInTemplate, found := m.objectIds.IdInTemplate(v.Id); found {
-				config.Metadata.AddRowTemplateId(v.Id, idInTemplate.(model.RowId))
+				config.Metadata.AddRowTemplateId(v.Id, idInTemplate.(storageapi.RowID))
 			}
 			// Store inputs usage
 			if inputsUsage, ok := m.inputsUsage.Values[v.Key()]; ok {

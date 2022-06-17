@@ -494,7 +494,7 @@ func getBranch(d dependencies.Container, branchDef string) (model.BranchKey, err
 		return targetBranch, BadRequestError{
 			Message: fmt.Sprintf(`branch ID "%s" is not numeric`, branchDef),
 		}
-	} else if _, err := storageApi.GetBranch(model.BranchId(branchId)); err != nil {
+	} else if _, err := storageApi.GetBranch(storageapi.BranchID(branchId)); err != nil {
 		// Branch not found
 		return targetBranch, &GenericError{
 			Name:    "templates.branchNotFound",
@@ -502,7 +502,7 @@ func getBranch(d dependencies.Container, branchDef string) (model.BranchKey, err
 		}
 	} else {
 		// Branch found
-		targetBranch.Id = model.BranchId(branchId)
+		targetBranch.Id = storageapi.BranchID(branchId)
 	}
 
 	return targetBranch, nil

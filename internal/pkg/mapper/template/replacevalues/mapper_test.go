@@ -41,10 +41,10 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 					Key: "foo", Value: "bar",
 				},
 				{
-					Key: "link to config", Value: model.ConfigId("456"),
+					Key: "link to config", Value: storageapi.ConfigID("456"),
 				},
 				{
-					Key: "link to row", Value: model.RowId("789"),
+					Key: "link to row", Value: storageapi.RowID("789"),
 				},
 			}),
 		},
@@ -91,10 +91,10 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 						Key: "foo", Value: "bar",
 					},
 					{
-						Key: "link to config", Value: model.ConfigId("my-config"),
+						Key: "link to config", Value: storageapi.ConfigID("my-config"),
 					},
 					{
-						Key: "link to row", Value: model.RowId("my-row"),
+						Key: "link to row", Value: storageapi.RowID("my-row"),
 					},
 				}),
 			},

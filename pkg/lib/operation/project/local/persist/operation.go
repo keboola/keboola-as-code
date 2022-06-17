@@ -3,7 +3,6 @@ package persist
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/persist"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -20,7 +19,7 @@ type Options struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
+	StorageApiClient() (client.Sender, error)
 }
 
 func Run(projectState *project.State, o Options, d dependencies) error {

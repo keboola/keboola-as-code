@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/schedulerapi"
-	"github.com/keboola/go-client/pkg/storageapi"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -28,8 +25,8 @@ type Options struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
-	SchedulerApi() (*schedulerapi.Api, error)
+	StorageApiClient() (client.Sender, error)
+	SchedulerApiClient() (client.Sender, error)
 	EmptyDir() (filesystem.Fs, error)
 }
 

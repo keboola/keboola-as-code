@@ -39,7 +39,7 @@ type Common interface {
 	EncryptionApiClient() (client.Sender, error)
 	SchedulerApiClient() (client.Sender, error)
 	Features() (storageapi.FeaturesMap, error)
-	Components() (ComponentsMap, error)
+	Components() (model.ComponentsMap, error)
 	EventSender() (event.Sender, error)
 	Template(reference model.TemplateRef) (*template.Template, error)
 }
@@ -58,7 +58,7 @@ type CommonContainer struct {
 	features        Lazy[storageapi.FeaturesMap]
 	encryptionApi   Lazy[client.Client]
 	schedulerApi    Lazy[client.Client]
-	components      Lazy[ComponentsMap]
+	components      Lazy[model.ComponentsMap]
 	eventSender     Lazy[event.Sender]
 }
 
@@ -210,8 +210,8 @@ func (v *CommonContainer) SchedulerApiClient() (client.Sender, error) {
 	})
 }
 
-func (v *CommonContainer) Components() (ComponentsMap, error) {
-	return v.components.InitAndGet(func() (*ComponentsMap, error) {
+func (v *CommonContainer) Components() (model.ComponentsMap, error) {
+	return v.components.InitAndGet(func() (*model.ComponentsMap, error) {
 		// Get Storage API
 		c, err := v.StorageApiClient()
 		if err != nil {
@@ -220,7 +220,7 @@ func (v *CommonContainer) Components() (ComponentsMap, error) {
 
 		// Get components index
 		if index, err := storageapi.IndexComponentsRequest().Send(v.ctx, c); err == nil {
-			return NewComponentsMap(index.Components), nil
+			return model.NewComponentsMap(index.Components), nil
 		} else {
 			return nil, err
 		}

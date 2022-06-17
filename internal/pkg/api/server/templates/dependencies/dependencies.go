@@ -166,7 +166,7 @@ func (v *container) ApiVerboseLogs() bool {
 	return v.debug
 }
 
-func (v *container) StorageApi() (*storageapi.Api, error) {
+func (v *container) StorageApiClient() (client.Sender, error) {
 	// Store API instance, so it can be cloned, see WithStorageApiClient
 	if v.storageApi == nil {
 		api, err := v.commonDeps.StorageApiClient()

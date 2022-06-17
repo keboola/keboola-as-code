@@ -67,7 +67,7 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 				errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
 				continue
 			}
-			key = model.ConfigKey{BranchId: d.branch.Id, ComponentId: model.ComponentId(m[1]), Id: model.ConfigId(m[2])}
+			key = model.ConfigKey{BranchId: d.branch.Id, ComponentId: storageapi.ComponentID(m[1]), Id: storageapi.ConfigID(m[2])}
 		case strings.HasPrefix(line, `### Row`):
 			// Row ID definition
 			m := regexpcache.MustCompile(` ([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+)$`).FindStringSubmatch(line)
@@ -75,7 +75,7 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 				errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
 				continue
 			}
-			key = model.ConfigRowKey{BranchId: d.branch.Id, ComponentId: model.ComponentId(m[1]), ConfigId: model.ConfigId(m[2]), Id: model.RowId(m[3])}
+			key = model.ConfigRowKey{BranchId: d.branch.Id, ComponentId: storageapi.ComponentID(m[1]), ConfigId: storageapi.ConfigID(m[2]), Id: storageapi.RowID(m[3])}
 		default:
 			errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
 			continue

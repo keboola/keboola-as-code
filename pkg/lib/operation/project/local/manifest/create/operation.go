@@ -1,7 +1,6 @@
 package create
 
 import (
-	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -17,7 +16,7 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
+	StorageApiClient() (client.Sender, error)
 }
 
 func Run(fs filesystem.Fs, o Options, d dependencies) (*project.Manifest, error) {

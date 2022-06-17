@@ -7,7 +7,6 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
-	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -28,7 +27,7 @@ type branchesDialog struct {
 
 type branchesDialogDeps interface {
 	Options() *options.Options
-	StorageApi() (*storageapi.Api, error)
+	StorageApiClient() (client.Sender, error)
 }
 
 func (p *Dialogs) AskAllowedBranches(deps branchesDialogDeps) (model.AllowedBranches, error) {

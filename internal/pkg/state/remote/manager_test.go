@@ -10,10 +10,12 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
+	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
@@ -142,9 +144,9 @@ func TestRemoteLoadMapper(t *testing.T) {
 	httpTransport.RegisterResponder(
 		resty.MethodGet,
 		`=~storage/branch/123/metadata`,
-		httpmock.NewJsonResponderOrPanic(200, []storageapi.Metadata{
+		httpmock.NewJsonResponderOrPanic(200, []storageapi.MetadataDetail{
 			{
-				Id:        "1",
+				ID:        "1",
 				Key:       "KBC.KaC.branch-meta",
 				Value:     "val1",
 				Timestamp: "xxx",
@@ -156,7 +158,7 @@ func TestRemoteLoadMapper(t *testing.T) {
 	httpTransport.RegisterResponder(
 		resty.MethodGet,
 		`=~storage/branch/123/search/component-configurations`,
-		httpmock.NewJsonResponderOrPanic(200, storageapi.ConfigMetadataResponse{}).Once(),
+		httpmock.NewJsonResponderOrPanic(200, []storageapi.ConfigMetadataItem{}).Once(),
 	)
 
 	// Mocked response: components + configs
@@ -224,9 +226,9 @@ func TestLoadConfigMetadata(t *testing.T) {
 	httpTransport.RegisterResponder(
 		resty.MethodGet,
 		`=~storage/branch/123/metadata`,
-		httpmock.NewJsonResponderOrPanic(200, []storageapi.Metadata{
+		httpmock.NewJsonResponderOrPanic(200, storageapi.MetadataDetails{
 			{
-				Id:        "1",
+				ID:        "1",
 				Key:       "KBC.KaC.branch-meta",
 				Value:     "val1",
 				Timestamp: "xxx",
@@ -237,19 +239,19 @@ func TestLoadConfigMetadata(t *testing.T) {
 	// Mocked response: config metadata
 	httpTransport.RegisterResponder(
 		"GET", `=~/storage/branch/123/search/component-configurations`,
-		httpmock.NewJsonResponderOrPanic(200, storageapi.ConfigMetadataResponse{
-			storageapi.ConfigMetadataResponseItem{
-				ComponentId: "foo.bar",
-				ConfigId:    "456",
-				Metadata: []storageapi.Metadata{
+		httpmock.NewJsonResponderOrPanic(200, []storageapi.ConfigMetadataItem{
+			{
+				ComponentID: "foo.bar",
+				ConfigID:    "456",
+				Metadata: storageapi.MetadataDetails{
 					{
-						Id:        "1",
+						ID:        "1",
 						Key:       "KBC.KaC.Meta",
 						Value:     "value1",
 						Timestamp: "xxx",
 					},
 					{
-						Id:        "2",
+						ID:        "2",
 						Key:       "KBC.KaC.Meta2",
 						Value:     "value2",
 						Timestamp: "xxx",
@@ -327,8 +329,8 @@ func TestSaveConfigMetadata_Create(t *testing.T) {
 	httpTransport.RegisterResponder(resty.MethodPost, `=~/storage/branch/123/components/foo.bar/configs/456/metadata$`,
 		func(req *http.Request) (*http.Response, error) {
 			httpRequest = req
-			response := []storageapi.Metadata{
-				{Id: "1", Key: "KBC-KaC-meta1", Value: "val1", Timestamp: "xxx"},
+			response := storageapi.MetadataDetails{
+				{ID: "1", Key: "KBC-KaC-meta1", Value: "val1", Timestamp: "xxx"},
 			}
 			return httpmock.NewStringResponse(200, json.MustEncodeString(response, true)), nil
 		},
@@ -398,8 +400,8 @@ func TestSaveConfigMetadata_Update(t *testing.T) {
 	httpTransport.RegisterResponder(resty.MethodPost, `=~/storage/branch/123/components/foo.bar/configs/456/metadata$`,
 		func(req *http.Request) (*http.Response, error) {
 			httpRequest = req
-			response := []storageapi.Metadata{
-				{Id: "1", Key: "KBC-KaC-meta1", Value: "val1", Timestamp: "xxx"},
+			response := storageapi.MetadataDetails{
+				{ID: "1", Key: "KBC-KaC-meta1", Value: "val1", Timestamp: "xxx"},
 			}
 			return httpmock.NewStringResponse(200, json.MustEncodeString(response, true)), nil
 		},
@@ -461,7 +463,7 @@ func TestSaveConfigMetadata_Update_NoChange(t *testing.T) {
 
 func newTestRemoteUOW(t *testing.T, mappers ...interface{}) (*remote.UnitOfWork, *httpmock.MockTransport, *state.Registry) {
 	t.Helper()
-	storageApi, httpTransport := testapi.NewMockedStorageApi(log.NewDebugLogger())
+	storageApi, httpTransport := client.NewMockedClient()
 	localManager, projectState := newTestLocalManager(t, mappers)
 	mapperInst := mapper.New().AddMapper(mappers...)
 

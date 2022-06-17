@@ -75,8 +75,8 @@ func TestCreateContext(t *testing.T) {
 			Replace: model.BranchKey{Id: 0},
 		},
 		{
-			Search:  model.BranchId(123),
-			Replace: model.BranchId(0),
+			Search:  storageapi.BranchID(123),
+			Replace: storageapi.BranchID(0),
 		},
 		{
 			Search: model.ConfigKey{
@@ -91,8 +91,8 @@ func TestCreateContext(t *testing.T) {
 			},
 		},
 		{
-			Search:  model.ConfigId("123"),
-			Replace: model.ConfigId(`<<~~func:ConfigId:["my-first-config"]~~>>`),
+			Search:  storageapi.ConfigID("123"),
+			Replace: storageapi.ConfigID(`<<~~func:ConfigId:["my-first-config"]~~>>`),
 		},
 		{
 			Search:  replacevalues.SubString("123"),
@@ -111,8 +111,8 @@ func TestCreateContext(t *testing.T) {
 			},
 		},
 		{
-			Search:  model.ConfigId("345"),
-			Replace: model.ConfigId(`<<~~func:ConfigId:["my-second-config"]~~>>`),
+			Search:  storageapi.ConfigID("345"),
+			Replace: storageapi.ConfigID(`<<~~func:ConfigId:["my-second-config"]~~>>`),
 		},
 		{
 			Search:  replacevalues.SubString("345"),
@@ -133,8 +133,8 @@ func TestCreateContext(t *testing.T) {
 			},
 		},
 		{
-			Search:  model.RowId("789"),
-			Replace: model.RowId(`<<~~func:ConfigRowId:["my-row"]~~>>`),
+			Search:  storageapi.RowID("789"),
+			Replace: storageapi.RowID(`<<~~func:ConfigRowId:["my-row"]~~>>`),
 		},
 		{
 			Search:  replacevalues.SubString("789"),

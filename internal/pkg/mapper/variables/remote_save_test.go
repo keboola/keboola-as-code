@@ -18,10 +18,10 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	valuesConfigRowId := `456789`
 	object := &model.Config{Content: orderedmap.New()}
 	object.AddRelation(&model.VariablesFromRelation{
-		VariablesId: model.ConfigId(variablesConfigId),
+		VariablesId: storageapi.ConfigID(variablesConfigId),
 	})
 	object.AddRelation(&model.VariablesValuesFromRelation{
-		VariablesValuesId: model.RowId(valuesConfigRowId),
+		VariablesValuesId: storageapi.RowID(valuesConfigRowId),
 	})
 	recipe := model.NewRemoteSaveRecipe(&model.ConfigManifest{}, object, model.NewChangedFields())
 
