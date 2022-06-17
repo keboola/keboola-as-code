@@ -35,7 +35,6 @@ type TestContainer struct {
 	envs                        *env.Map
 	fs                          filesystem.Fs
 	options                     *options.Options
-	projectId                   int
 	apiVerboseLogs              bool
 	storageApiHost              string
 	storageApiToken             string
@@ -48,8 +47,9 @@ type TestContainer struct {
 }
 
 func NewTestContainer() *TestContainer {
-	c := &TestContainer{ctx: context.Background()}
-	c.CommonContainer = NewCommonContainer(c)
+	ctx := context.Background()
+	c := &TestContainer{ctx: ctx}
+	c.CommonContainer = NewCommonContainer(ctx, c)
 	c.logger = log.NewDebugLogger()
 	c.envs = env.Empty()
 	c.fs = testfs.NewMemoryFsWithLogger(c.logger)
@@ -62,7 +62,6 @@ func NewTestContainer() *TestContainer {
 // InitFromTestProject init test dependencies from testing project.
 func (v *TestContainer) InitFromTestProject(project *testproject.Project) {
 	storageApi := project.StorageApiClient()
-	v.SetProjectId(project.ID())
 	v.SetStorageApiHost(project.StorageAPIHost())
 	v.SetStorageApiToken(project.StorageAPIToken())
 	v.SetStorageApi(storageApi)
@@ -100,10 +99,6 @@ func (v *TestContainer) SetFs(fs filesystem.Fs) {
 
 func (v *TestContainer) Options() *options.Options {
 	return v.options
-}
-
-func (v *TestContainer) SetProjectId(projectId int) {
-	v.projectId = projectId
 }
 
 func (v *TestContainer) ApiVerboseLogs() bool {

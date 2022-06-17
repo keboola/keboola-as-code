@@ -39,20 +39,20 @@ type Project struct {
 	schedulerApiClient  client.Client
 	storageApiToken     *storageapi.Token
 	defaultBranch       *storageapi.Branch
+	envs                *env.Map
 	mapsLock            *sync.Mutex
 	branchesById        map[storageapi.BranchID]*storageapi.Branch
 	branchesByName      map[string]*storageapi.Branch
-	envs                *env.Map
 }
 
 func GetTestProject(t *testing.T, envs *env.Map) *Project {
 	ctx, cancelFn := context.WithCancel(context.Background())
-	p := &Project{Project: testproject.GetTestProject(t), t: t, ctx: ctx, mapsLock: &sync.Mutex{}}
-	initWg := &sync.WaitGroup{}
 	t.Cleanup(func() {
 		// Cancel background jobs
 		cancelFn()
 	})
+
+	p := &Project{Project: testproject.GetTestProject(t), t: t, ctx: ctx, mapsLock: &sync.Mutex{}}
 
 	// Init storage API
 	p.storageApiClient = storageapi.ClientWithHostAndToken(client.NewTestClient(), p.StorageAPIHost(), p.StorageAPIToken())
@@ -83,6 +83,7 @@ func GetTestProject(t *testing.T, envs *env.Map) *Project {
 	p.schedulerApiClient = schedulerapi.ClientWithHostAndToken(client.NewTestClient(), schedulerHost.String(), p.StorageAPIToken())
 
 	// Check token/project ID
+	initWg := &sync.WaitGroup{}
 	initWg.Add(1)
 	go func() {
 		defer initWg.Done()
@@ -113,7 +114,6 @@ func GetTestProject(t *testing.T, envs *env.Map) *Project {
 	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.StorageAPIHost())
 	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.StorageAPIToken())
 	p.logf(`Project locked`)
-
 	return p
 }
 
@@ -214,8 +214,8 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) {
 	// Create branches
 	for _, fixture := range branches {
 		fixture := fixture
-		var branch *storageapi.Branch
 		grp.Go(func() error {
+			var branch *storageapi.Branch
 			if fixture.IsDefault {
 				// Set default branch description
 				if p.defaultBranch.Description != fixture.Description {
@@ -226,17 +226,17 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) {
 				branch = p.defaultBranch
 			} else {
 				// Create a new branch
-				if v, err := storageapi.CreateBranchRequest(fixture.ToApi()).Send(p.ctx, p.storageApiClient); err != nil {
+				if v, err := storageapi.CreateBranchRequest(fixture.ToApi()).Send(p.ctx, p.storageApiClient); err == nil {
 					branch = v
 				} else {
 					return fmt.Errorf(`cannot create branch: %s`, err)
 				}
 			}
 
+			// Add branch to aux maps
 			p.addBranch(branch)
 
 			// Set branch metadata
-			branch := p.branchesByName[fixture.Name]
 			_, err := storageapi.AppendBranchMetadataRequest(branch.BranchKey, fixture.Metadata).Send(p.ctx, p.storageApiClient)
 			return err
 		})
@@ -251,12 +251,14 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) {
 func (p *Project) createConfigsInDefaultBranch(configs []string) {
 	ctx, cancelFn := context.WithCancel(p.ctx)
 	defer cancelFn()
+
 	tickets := storageapi.NewTicketProvider(ctx, p.storageApiClient)
-	grp, ctx := errgroup.WithContext(ctx)
+	grp, ctx := errgroup.WithContext(ctx) // group for all parallel requests
+	sendReady := make(chan struct{})      // block requests until IDs and ENVs will be ready
 
 	// Prepare configs
 	envPrefix := "TEST_BRANCH_ALL_CONFIG"
-	p.prepareConfigs(ctx, grp, tickets, envPrefix, configs, p.defaultBranch)
+	p.prepareConfigs(ctx, grp, sendReady, tickets, envPrefix, configs, p.defaultBranch)
 
 	// Generate new IDs
 	if err := tickets.Resolve(); err != nil {
@@ -264,6 +266,7 @@ func (p *Project) createConfigsInDefaultBranch(configs []string) {
 	}
 
 	// Wait for requests
+	close(sendReady) // unblock requests
 	if err := grp.Wait(); err != nil {
 		assert.FailNow(p.t, fmt.Sprintf("cannot create configs: %s", err))
 	}
@@ -272,13 +275,15 @@ func (p *Project) createConfigsInDefaultBranch(configs []string) {
 func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs map[string]string) {
 	ctx, cancelFn := context.WithCancel(p.ctx)
 	defer cancelFn()
+
 	tickets := storageapi.NewTicketProvider(ctx, p.storageApiClient)
-	grp, ctx := errgroup.WithContext(ctx)
+	grp, ctx := errgroup.WithContext(ctx) // group for all parallel requests
+	sendReady := make(chan struct{})      // block requests until IDs and ENVs will be ready
 
 	// Prepare configs
 	for _, branchFixture := range branches {
 		envPrefix := fmt.Sprintf("TEST_BRANCH_%s_CONFIG", branchFixture.Name)
-		p.prepareConfigs(ctx, grp, tickets, envPrefix, branchFixture.Configs, p.branchesByName[branchFixture.Name])
+		p.prepareConfigs(ctx, grp, sendReady, tickets, envPrefix, branchFixture.Configs, p.branchesByName[branchFixture.Name])
 	}
 
 	// Generate new IDs
@@ -294,12 +299,13 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 	}
 
 	// Wait for requests
+	close(sendReady) // unblock requests
 	if err := grp.Wait(); err != nil {
 		assert.FailNow(p.t, fmt.Sprintf("cannot create configs: %s", err))
 	}
 }
 
-func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, tickets *storageapi.TicketProvider, envPrefix string, names []string, branch *storageapi.Branch) {
+func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, sendReady <-chan struct{}, tickets *storageapi.TicketProvider, envPrefix string, names []string, branch *storageapi.Branch) {
 	for _, name := range names {
 		configFixture := fixtures.LoadConfig(p.t, name)
 		configWithRows := configFixture.ToApi()
@@ -330,8 +336,13 @@ func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, ticke
 
 		// Create configs and rows
 		grp.Go(func() error {
-			// Wait for all IDs
-			tickets.Wait()
+			// Wait for all IDs and ENVs
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-sendReady:
+				// continue!
+			}
 
 			// Is context done?
 			if err := ctx.Err(); err != nil {
@@ -344,7 +355,8 @@ func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, ticke
 				json.MustDecodeString(testhelper.ReplaceEnvsString(json.MustEncodeString(row.Content, false), p.envs), &row.Content)
 			}
 
-			storageapi.
+			// Send request
+			_, err := storageapi.
 				CreateConfigRequest(configWithRows).
 				WithOnSuccess(func(ctx context.Context, sender client.Sender, _ *storageapi.ConfigWithRows) error {
 					if len(configFixture.Metadata) > 0 {
@@ -352,9 +364,9 @@ func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, ticke
 						return err
 					}
 					return nil
-				})
-
-			return nil
+				}).
+				Send(ctx, p.storageApiClient)
+			return err
 		})
 	}
 }
