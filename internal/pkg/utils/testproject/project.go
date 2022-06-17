@@ -133,6 +133,10 @@ func (p *Project) StorageApiClient() client.Client {
 	return p.storageApiClient
 }
 
+func (p *Project) StorageApiToken() *storageapi.Token {
+	return p.storageApiToken
+}
+
 func (p *Project) EncryptionApiClient() client.Client {
 	return p.encryptionApiClient
 }
