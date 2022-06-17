@@ -168,7 +168,7 @@ func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTempl
 	}
 
 	// Use template
-	instanceId, err := useTemplate.Run(prjState, tmpl, options, d)
+	instanceId, _, err := useTemplate.Run(prjState, tmpl, options, d)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +322,7 @@ func (s *service) UpgradeInstance(d dependencies.Container, payload *UpgradeInst
 		Instance: *instance,
 		Inputs:   values,
 	}
-	err = upgradeTemplate.Run(prjState, tmpl, upgradeOpts, d)
+	_, err = upgradeTemplate.Run(prjState, tmpl, upgradeOpts, d)
 	if err != nil {
 		return nil, err
 	}

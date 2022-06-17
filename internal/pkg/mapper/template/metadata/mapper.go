@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 )
 
 type metadataMapper struct {
@@ -25,12 +26,26 @@ type InputsUsage struct {
 	Values InputsUsageMap
 }
 
+// OAuthConfigsMap returns input names mapped to oauth configurations.
+func (u InputsUsage) OAuthConfigsMap() map[string]model.ConfigKey {
+	res := map[string]model.ConfigKey{}
+	for key, usages := range u.Values {
+		for _, u := range usages {
+			if u.Def.Kind == input.KindOAuth {
+				res[u.Name] = key.(model.ConfigKey)
+			}
+		}
+	}
+	return res
+}
+
 type InputsUsageMap map[model.Key][]InputUsage
 
 // InputUsage describes where the input is used in the output JSON.
 type InputUsage struct {
 	Name    string
 	JsonKey orderedmap.Path
+	Def     *input.Input
 }
 
 func (v ObjectIdsMap) IdInTemplate(idInProject interface{}) (interface{}, bool) {

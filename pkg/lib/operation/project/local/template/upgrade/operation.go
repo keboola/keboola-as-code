@@ -36,23 +36,23 @@ type dependencies interface {
 	EncryptionApi() (*encryptionapi.Api, error)
 }
 
-func Run(projectState *project.State, tmpl *template.Template, o Options, d dependencies) error {
+func Run(projectState *project.State, tmpl *template.Template, o Options, d dependencies) ([]string, error) {
 	logger := d.Logger()
 
 	// Get Storage API
 	storageApi, err := d.StorageApi()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Create tickets provider, to generate new IDS, if needed
 	tickets := storageApi.NewTicketProvider()
 
 	// Load template
-	ctx := upgrade.NewContext(d.Ctx(), tmpl.Reference(), tmpl.ObjectsRoot(), o.Instance.InstanceId, o.Branch, o.Inputs, tickets, projectState.State())
+	ctx := upgrade.NewContext(d.Ctx(), tmpl.Reference(), tmpl.ObjectsRoot(), o.Instance.InstanceId, o.Branch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, projectState.State())
 	templateState, err := tmpl.LoadState(ctx, use.LoadTemplateOptions())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Prepare operations
@@ -67,7 +67,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	// Get main config
 	mainConfig, err := templateState.MainConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Update instance metadata
@@ -139,23 +139,23 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 
 	// Execute rename and save
 	if errors.Len() > 0 {
-		return errors
+		return nil, errors
 	}
 	if err := renameOp.Invoke(); err != nil {
-		return err
+		return nil, err
 	}
 	if err := saveOp.Invoke(); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Encrypt values
 	if err := encrypt.Run(projectState, encrypt.Options{DryRun: false, LogEmpty: false}, d); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Save manifest
 	if _, err := saveProjectManifest.Run(projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Log new objects
@@ -163,7 +163,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 
 	// Normalize paths
 	if _, err := rename.Run(projectState, rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Validate schemas and encryption
@@ -174,8 +174,20 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 		logger.Warnf(`Push operation is only possible when project is valid.`)
 	}
 
+	// Return urls to oauth configurations
+	warnings := make([]string, 0)
+	inputValuesMap := o.Inputs.ToMap()
+	for inputName, cKey := range ctx.InputsUsage().OAuthConfigsMap() {
+		if len(inputValuesMap[inputName].Value.(map[string]interface{})) == 0 {
+			warnings = append(warnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", storageApi.Host(), storageApi.ProjectId(), cKey.ComponentId, cKey.Id))
+		}
+	}
+	if len(warnings) > 0 {
+		warnings = append([]string{"The template generated configurations that need additional oAuth authorization. Please follow the links and complete the setup:"}, warnings...)
+	}
+
 	logger.Info(fmt.Sprintf(`Template instance "%s" has been upgraded to "%s".`, o.Instance.InstanceId, tmpl.FullName()))
-	return nil
+	return warnings, nil
 }
 
 type upgradedObject struct {

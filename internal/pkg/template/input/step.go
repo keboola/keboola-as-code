@@ -35,6 +35,16 @@ func (g StepsGroups) Path() string {
 	return Path()
 }
 
+// InputsMap returns all inputs in a map indexed by their ids.
+func (g StepsGroups) InputsMap() map[string]*Input {
+	res := make(map[string]*Input)
+	_ = g.ToExtended().VisitInputs(func(group *StepsGroupExt, step *StepExt, input *Input) error {
+		res[input.Id] = input
+		return nil
+	})
+	return res
+}
+
 func (g StepsGroups) Validate() error {
 	errors := utils.NewMultiError()
 

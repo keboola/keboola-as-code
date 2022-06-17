@@ -1,4 +1,5 @@
 {
+  "authorization": {},
   "parameters": {
     "api": {
       "baseUrl": "https://example.com"

@@ -88,7 +88,7 @@ func TestContext(t *testing.T) {
 
 	// Create context
 	fs := testfs.NewMemoryFs()
-	ctx := NewContext(context.Background(), templateRef, fs, instanceId, targetBranch, inputsValues, tickets, projectState)
+	ctx := NewContext(context.Background(), templateRef, fs, instanceId, targetBranch, inputsValues, map[string]*template.Input{}, tickets, projectState)
 
 	// Check JsonNet functions
 	code := `

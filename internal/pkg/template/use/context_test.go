@@ -79,7 +79,7 @@ func TestContext(t *testing.T) {
 	ctx := context.WithValue(context.Background(), jsonnetfiles.FileDefCtxKey, fileDef)
 
 	// Create template use context
-	useCtx := NewContext(ctx, templateRef, fs, instanceId, targetBranch, inputsValues, tickets)
+	useCtx := NewContext(ctx, templateRef, fs, instanceId, targetBranch, inputsValues, map[string]*template.Input{}, tickets)
 
 	// Check JsonNet functions
 	code := `

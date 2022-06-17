@@ -1,0 +1,2 @@
+The template generated configurations that need oAuth authorization. Please follow the links and complete the setup:
+- https://connection.%s/admin/projects/%s/components/ex-generic-v2/%s

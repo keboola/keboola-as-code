@@ -49,15 +49,16 @@ type Context struct {
 	instanceIdShort   string
 	jsonNetCtx        *jsonnet.Context
 	replacements      *replacevalues.Values
-	inputs            map[string]template.InputValue
+	inputsValues      map[string]template.InputValue
 	tickets           *storageapi.TicketProvider
 	placeholdersCount int
 	ticketsResolved   bool
 
-	lock         *sync.Mutex
-	placeholders PlaceholdersMap
-	objectIds    metadata.ObjectIdsMap
-	inputsUsage  *metadata.InputsUsage
+	lock          *sync.Mutex
+	placeholders  PlaceholdersMap
+	objectIds     metadata.ObjectIdsMap
+	inputsUsage   *metadata.InputsUsage
+	inputsDefsMap map[string]*template.Input
 }
 
 type _context context.Context
@@ -85,7 +86,7 @@ const (
 	instanceIdShortLength = 8
 )
 
-func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputs template.InputsValues, tickets *storageapi.TicketProvider) *Context {
+func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefsMap map[string]*template.Input, tickets *storageapi.TicketProvider) *Context {
 	ctx = template.NewContext(ctx)
 	c := &Context{
 		_context:        ctx,
@@ -94,17 +95,18 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 		instanceIdShort: strhelper.FirstN(instanceId, instanceIdShortLength),
 		jsonNetCtx:      jsonnet.NewContext().WithCtx(ctx).WithImporter(fsimporter.New(objectsRoot)),
 		replacements:    replacevalues.NewValues(),
-		inputs:          make(map[string]template.InputValue),
+		inputsValues:    make(map[string]template.InputValue),
 		tickets:         tickets,
 		lock:            &sync.Mutex{},
 		placeholders:    make(PlaceholdersMap),
 		objectIds:       make(metadata.ObjectIdsMap),
 		inputsUsage:     metadata.NewInputsUsage(),
+		inputsDefsMap:   inputsDefsMap,
 	}
 
-	// Convert inputs to map
-	for _, input := range inputs {
-		c.inputs[input.Id] = input
+	// Convert inputsValues to map
+	for _, input := range inputsValues {
+		c.inputsValues[input.Id] = input
 	}
 
 	// Replace BranchId, in template all objects have BranchId = 0
@@ -229,7 +231,7 @@ func (c *Context) registerJsonNetFunctions() {
 				return nil, fmt.Errorf("one parameter expected, found %d", len(params))
 			} else if id, ok := params[0].(string); !ok {
 				return nil, fmt.Errorf("parameter must be a string")
-			} else if v, found := c.inputs[id]; !found {
+			} else if v, found := c.inputsValues[id]; !found {
 				return nil, fmt.Errorf(`input "%s" not found`, id)
 			} else {
 				switch v := v.Value.(type) {
@@ -249,7 +251,7 @@ func (c *Context) registerJsonNetFunctions() {
 				return nil, fmt.Errorf("one parameter expected, found %d", len(params))
 			} else if id, ok := params[0].(string); !ok {
 				return nil, fmt.Errorf("parameter must be a string")
-			} else if v, found := c.inputs[id]; !found {
+			} else if v, found := c.inputsValues[id]; !found {
 				return nil, fmt.Errorf(`input "%s" not found`, id)
 			} else {
 				return !v.Skipped, nil
@@ -319,7 +321,7 @@ func (n *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{},
 	}
 
 	// Check if input exists and has been filled in by user
-	if input, found := n.inputs[inputName]; !found || input.Skipped {
+	if input, found := n.inputsValues[inputName]; !found || input.Skipped {
 		return
 	}
 
@@ -366,5 +368,6 @@ func (n *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{},
 	n.inputsUsage.Values[objectKey] = append(n.inputsUsage.Values[objectKey], metadata.InputUsage{
 		Name:    inputName,
 		JsonKey: mappedSteps,
+		Def:     n.inputsDefsMap[inputName],
 	})
 }
