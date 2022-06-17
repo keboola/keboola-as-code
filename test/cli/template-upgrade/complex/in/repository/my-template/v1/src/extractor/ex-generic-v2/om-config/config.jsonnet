@@ -14,4 +14,5 @@
       baseUrl: "https://jsonplaceholder.typicode.com",
     },
   },
+  authorization: Input("oauth1"),
 }

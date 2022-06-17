@@ -106,6 +106,7 @@
       "path": "extractor/ex-generic-v2/om-config",
       "metadata": {
         "KBC.KAC.templates.configId": "{\"idInTemplate\":\"om-config\"}",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"oauth1\",\"key\":\"authorization\"}]",
         "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template-id"
@@ -119,6 +120,7 @@
       "path": "extractor/ex-generic-v2/without-rows",
       "metadata": {
         "KBC.KAC.templates.configId": "{\"idInTemplate\":\"without-rows\"}",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"oauth2\",\"key\":\"authorization\"}]",
         "KBC.KAC.templates.instanceId": "V1StGXR8IZ5jdHi6BAmyT",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template-id"

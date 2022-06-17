@@ -1,4 +1,10 @@
 {
   "mysql-password": "new-secret",
-  "base-url": "https://example.com"
+  "base-url": "https://example.com",
+  "oauth1": {
+    "oauth_api": {
+      "id": "123",
+      "version": 3
+    }
+  }
 }

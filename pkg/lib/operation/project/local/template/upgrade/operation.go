@@ -77,7 +77,6 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	saveOp.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())
 
 	// Save all objects
-	newConfigs := map[model.ConfigKey]bool{}
 	for _, tmplObjectState := range templateState.All() {
 		// Skip branch - it is already processed
 		if tmplObjectState.Kind().IsBranch() {
@@ -111,10 +110,6 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 
 			// Generate path
 			renameOp.Add(objectState)
-
-			if objectState.Kind().IsConfig() {
-				newConfigs[objectState.Key().(model.ConfigKey)] = true
-			}
 		}
 
 		objects = append(objects, upgradedObject{ObjectState: objectState, opMark: opMark})
@@ -181,9 +176,9 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 
 	// Return urls to oauth configurations
 	warnings := make([]string, 0)
-	for _, cKey := range ctx.InputsUsage().OAuthConfigs() {
-		_, found := newConfigs[cKey]
-		if found {
+	inputValuesMap := o.Inputs.ToMap()
+	for inputName, cKey := range ctx.InputsUsage().OAuthConfigsMap() {
+		if len(inputValuesMap[inputName].Value.(map[string]interface{})) == 0 {
 			warnings = append(warnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", storageApi.Host(), storageApi.ProjectId(), cKey.ComponentId, cKey.Id))
 		}
 	}

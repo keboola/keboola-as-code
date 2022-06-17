@@ -58,6 +58,14 @@ func (i *Inputs) All() []Input {
 
 type Values []Value
 
+func (v Values) ToMap() map[string]Value {
+	res := map[string]Value{}
+	for _, val := range v {
+		res[val.Id] = val
+	}
+	return res
+}
+
 type Value struct {
 	Id      string
 	Value   interface{}

@@ -26,13 +26,13 @@ type InputsUsage struct {
 	Values InputsUsageMap
 }
 
-// OAuthConfigs returns oauth configurations.
-func (u InputsUsage) OAuthConfigs() []model.ConfigKey {
-	res := make([]model.ConfigKey, 0)
+// OAuthConfigsMap returns input names mapped to oauth configurations.
+func (u InputsUsage) OAuthConfigsMap() map[string]model.ConfigKey {
+	res := map[string]model.ConfigKey{}
 	for key, usages := range u.Values {
 		for _, u := range usages {
 			if u.Def.Kind == input.KindOAuth {
-				res = append(res, key.(model.ConfigKey))
+				res[u.Name] = key.(model.ConfigKey)
 			}
 		}
 	}

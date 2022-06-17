@@ -164,11 +164,11 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 
 	// Return urls to oauth configurations
 	warnings := make([]string, 0)
-	for _, cKey := range ctx.InputsUsage().OAuthConfigs() {
+	for _, cKey := range ctx.InputsUsage().OAuthConfigsMap() {
 		warnings = append(warnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", storageApi.Host(), storageApi.ProjectId(), cKey.ComponentId, cKey.Id))
 	}
 	if len(warnings) > 0 {
-		warnings = append([]string{"The template generated configurations that need additional oAuth authorization. Please follow the links and complete the setup:"}, warnings...)
+		warnings = append([]string{"The template generated configurations that need oAuth authorization. Please follow the links and complete the setup:"}, warnings...)
 	}
 
 	logger.Info(fmt.Sprintf(`Template "%s" has been applied, instance ID: %s`, tmpl.FullName(), instanceId))
