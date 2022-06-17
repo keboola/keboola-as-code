@@ -84,7 +84,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	// Get test project
 	project := testproject.GetTestProject(t, envs)
 	envs = project.Env()
-	api := project.StorageApi()
+	api := project.StorageApiClient()
 
 	// Setup project state
 	projectStateFile := "initial-state.json"

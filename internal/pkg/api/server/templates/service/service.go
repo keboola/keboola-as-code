@@ -475,7 +475,7 @@ func getTemplateVersion(d dependencies.Container, repoName, templateId, versionS
 
 func getBranch(d dependencies.Container, branchDef string) (model.BranchKey, error) {
 	// Get Storage API
-	storageApi, err := d.StorageApi()
+	storageApi, err := d.StorageApiClient()
 	if err != nil {
 		return model.BranchKey{}, err
 	}

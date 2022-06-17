@@ -3,12 +3,15 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"net/http"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/schedulerapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi/eventsender"
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/encryptionapi"
+	"github.com/keboola/go-client/pkg/schedulerapi"
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
@@ -19,10 +22,11 @@ import (
 
 // Abstract provides dependencies which are obtained in different in CLI and templates API.
 type Abstract interface {
-	Ctx() context.Context
 	Logger() log.Logger
 	Envs() *env.Map
 	ApiVerboseLogs() bool
+	HttpTransport() http.RoundTripper
+	HttpTraceFactory() client.TraceFactory
 	StorageApiHost() (string, error)
 	StorageApiToken() (string, error)
 	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
@@ -31,44 +35,55 @@ type Abstract interface {
 // Common provides common dependencies for CLI and templates API.
 type Common interface {
 	Abstract
-	Components() (*model.ComponentsMap, error)
-	StorageApi() (*storageapi.Api, error)
-	EncryptionApi() (*encryptionapi.Api, error)
-	SchedulerApi() (*schedulerapi.Api, error)
-	EventSender() (*eventsender.Sender, error)
+	StorageApiClient() (client.Sender, error)
+	EncryptionApiClient() (client.Sender, error)
+	SchedulerApiClient() (client.Sender, error)
+	Features() (storageapi.FeaturesMap, error)
+	Components() (ComponentsMap, error)
+	EventSender() (event.Sender, error)
 	Template(reference model.TemplateRef) (*template.Template, error)
 }
 
 // NewCommonContainer returns dependencies container for production.
-func NewCommonContainer(d Abstract) *CommonContainer {
-	return &CommonContainer{Abstract: d}
+func NewCommonContainer(ctx context.Context, d Abstract) *CommonContainer {
+	return &CommonContainer{Abstract: d, ctx: ctx}
 }
 
 type CommonContainer struct {
 	Abstract
-	serviceUrls   map[storageapi.ServiceId]storageapi.ServiceUrl
-	storageApi    *storageapi.Api
-	encryptionApi *encryptionapi.Api
-	schedulerApi  *schedulerapi.Api
-	eventSender   *eventsender.Sender
+	ctx             context.Context
+	storageApi      Lazy[clientWithToken]
+	storageApiIndex Lazy[storageapi.Index]
+	services        Lazy[storageapi.ServicesMap]
+	features        Lazy[storageapi.FeaturesMap]
+	encryptionApi   Lazy[client.Client]
+	schedulerApi    Lazy[client.Client]
+	components      Lazy[ComponentsMap]
+	eventSender     Lazy[event.Sender]
 }
 
-func (v *CommonContainer) Components() (*model.ComponentsMap, error) {
-	storageApi, err := v.StorageApi()
-	if err != nil {
-		return nil, err
-	}
-	return storageApi.Components(), nil
+// clientWithToken is client.Client with information about the authenticated project.
+type clientWithToken struct {
+	client.Client
+	Token *storageapi.Token
 }
 
-func (v *CommonContainer) WithStorageApi(api *storageapi.Api) *CommonContainer {
+func (v *CommonContainer) WithStorageApiClient(client client.Client, token *storageapi.Token) *CommonContainer {
 	clone := *v
-	clone.storageApi = api
+	clone.storageApi.Set(clientWithToken{Client: client, Token: token})
 	return &clone
 }
 
-func (v *CommonContainer) StorageApi() (*storageapi.Api, error) {
-	if v.storageApi == nil {
+func (v *CommonContainer) StorageApiClient() (client.Sender, error) {
+	if c, err := v.getStorageApi(); err != nil {
+		return c.Client, nil
+	} else {
+		return nil, err
+	}
+}
+
+func (v *CommonContainer) getStorageApi() (clientWithToken, error) {
+	return v.storageApi.InitAndGet(func() (*clientWithToken, error) {
 		// Get host
 		errors := utils.NewMultiError()
 		host, err := v.StorageApiHost()
@@ -77,7 +92,7 @@ func (v *CommonContainer) StorageApi() (*storageapi.Api, error) {
 		}
 
 		// Get token
-		token, err := v.StorageApiToken()
+		tokenStr, err := v.StorageApiToken()
 		if err != nil {
 			errors.Append(err)
 		}
@@ -87,95 +102,140 @@ func (v *CommonContainer) StorageApi() (*storageapi.Api, error) {
 			return nil, errors
 		}
 
-		// Create API
-		if token == "" {
-			v.storageApi = storageapi.New(v.Ctx(), v.Logger(), host, v.ApiVerboseLogs())
-		} else {
-			if api, err := storageapi.NewWithToken(v.Ctx(), v.Logger(), host, token, v.ApiVerboseLogs()); err == nil {
-				v.storageApi = api
+		// Create API client
+		c := client.New()
+		c = c.WithTransport(v.HttpTransport())
+		c = c.WithTrace(v.HttpTraceFactory())
+		c = storageapi.ClientWithHost(c, host)
+		api := &clientWithToken{Client: c}
+
+		// Verify token
+		if tokenStr != "" {
+			api.Client = storageapi.ClientWithToken(c, tokenStr)
+			if token, err := storageapi.VerifyTokenRequest(tokenStr).Send(v.ctx, api.Client); err == nil {
+				api.Token = token
 			} else {
 				return nil, err
 			}
 		}
-	}
-	return v.storageApi, nil
+
+		return api, nil
+	})
 }
 
-func (v *CommonContainer) EncryptionApi() (*encryptionapi.Api, error) {
-	if v.encryptionApi == nil {
-		// Get Storage API
-		storageApi, err := v.StorageApi()
-		if err != nil {
-			return nil, err
-		}
-
-		// Get Host
-		host, err := v.serviceUrl(`encryption`)
-		if err != nil {
-			return nil, fmt.Errorf(`cannot get Encryption API host: %w`, err)
-		}
-
-		v.encryptionApi = encryptionapi.New(v.Ctx(), v.Logger(), host, storageApi.ProjectId(), v.ApiVerboseLogs())
-	}
-	return v.encryptionApi, nil
-}
-
-func (v *CommonContainer) SchedulerApi() (*schedulerapi.Api, error) {
-	if v.schedulerApi == nil {
-		// Get Storage API
-		storageApi, err := v.StorageApi()
-		if err != nil {
-			return nil, err
-		}
-
-		// Get Host
-		host, err := v.serviceUrl(`scheduler`)
-		if err != nil {
-			return nil, fmt.Errorf(`cannot get Scheduler API host: %w`, err)
-		}
-
-		v.schedulerApi = schedulerapi.New(v.Ctx(), v.Logger(), host, storageApi.Token().Token, v.ApiVerboseLogs())
-	}
-	return v.schedulerApi, nil
-}
-
-func (v *CommonContainer) EventSender() (*eventsender.Sender, error) {
-	if v.eventSender == nil {
-		storageApi, err := v.StorageApi()
-		if err != nil {
-			return nil, err
-		}
-		v.eventSender = eventsender.New(v.Logger(), storageApi)
-	}
-	return v.eventSender, nil
-}
-
-func (v *CommonContainer) serviceUrl(id string) (string, error) {
-	serviceUrlById, err := v.serviceUrlById()
-	if err != nil {
-		return "", err
-	}
-	if url, found := serviceUrlById[storageapi.ServiceId(id)]; found {
-		return string(url), nil
-	} else {
-		return "", fmt.Errorf(`service "%s" not found`, id)
-	}
-}
-
-func (v *CommonContainer) serviceUrlById() (map[storageapi.ServiceId]storageapi.ServiceUrl, error) {
-	if v.serviceUrls == nil {
-		storageApi, err := v.StorageApi()
-		if err != nil {
-			return nil, err
-		}
-		urlById, err := storageApi.ServicesUrlById()
-		if err == nil {
-			v.serviceUrls = urlById
+func (v *CommonContainer) getServices() (storageapi.ServicesMap, error) {
+	return v.services.InitAndGet(func() (*storageapi.ServicesMap, error) {
+		if index, err := v.getStorageIndex(); err != nil {
+			services := index.Services.ToMap()
+			return &services, nil
 		} else {
-			return nil, fmt.Errorf(`cannot load services: %w`, err)
+			return nil, err
 		}
-	}
-	return v.serviceUrls, nil
+	})
+}
+
+func (v *CommonContainer) getStorageIndex() (storageapi.Index, error) {
+	return v.storageApiIndex.InitAndGet(func() (*storageapi.Index, error) {
+		// Get Storage API
+		c, err := v.StorageApiClient()
+		if err != nil {
+			return nil, err
+		}
+
+		// Get components index
+		return storageapi.IndexRequest().Send(v.ctx, c)
+	})
+}
+
+func (v *CommonContainer) Features() (storageapi.FeaturesMap, error) {
+	return v.features.InitAndGet(func() (*storageapi.FeaturesMap, error) {
+		if index, err := v.getStorageIndex(); err == nil {
+			features := index.Features.ToMap()
+			return &features, nil
+		} else {
+			return nil, err
+		}
+	})
+}
+
+func (v *CommonContainer) EncryptionApiClient() (client.Sender, error) {
+	return v.encryptionApi.InitAndGet(func() (*client.Client, error) {
+		// Get services
+		services, err := v.getServices()
+		if err != nil {
+			return nil, err
+		}
+
+		// Get host
+		host, found := services.URLByID("encryption")
+		if !found {
+			return nil, fmt.Errorf("encryption host not found")
+		}
+
+		// Create API client
+		c := client.New()
+		c = c.WithTransport(v.HttpTransport())
+		c = c.WithTrace(v.HttpTraceFactory())
+		c = encryptionapi.ClientWithHost(c, host.String())
+		return &c, nil
+	})
+}
+
+func (v *CommonContainer) SchedulerApiClient() (client.Sender, error) {
+	return v.schedulerApi.InitAndGet(func() (*client.Client, error) {
+		// Get token
+		x, err := v.getStorageApi()
+		if err != nil {
+			return nil, err
+		}
+
+		// Get services
+		services, err := v.getServices()
+		if err != nil {
+			return nil, err
+		}
+
+		// Get host
+		host, found := services.URLByID("encryption")
+		if !found {
+			return nil, fmt.Errorf("encryption host not found")
+		}
+
+		// Create API client
+		c := client.New()
+		c = c.WithTransport(v.HttpTransport())
+		c = c.WithTrace(v.HttpTraceFactory())
+		c = schedulerapi.ClientWithHostAndToken(c, host.String(), x.Token.Token)
+		return &c, nil
+	})
+}
+
+func (v *CommonContainer) Components() (ComponentsMap, error) {
+	return v.components.InitAndGet(func() (*ComponentsMap, error) {
+		// Get Storage API
+		c, err := v.StorageApiClient()
+		if err != nil {
+			return nil, err
+		}
+
+		// Get components index
+		if index, err := storageapi.IndexComponentsRequest().Send(v.ctx, c); err == nil {
+			return NewComponentsMap(index.Components), nil
+		} else {
+			return nil, err
+		}
+	})
+}
+
+func (v *CommonContainer) EventSender() (event.Sender, error) {
+	return v.eventSender.InitAndGet(func() (*event.Sender, error) {
+		// Get Storage API
+		c, err := v.getStorageApi()
+		if err != nil {
+			return nil, err
+		}
+		return event.NewSender(v.Logger(), c.Client, c.Token.ProjectID()), nil
+	})
 }
 
 func (v *CommonContainer) Template(reference model.TemplateRef) (*template.Template, error) {

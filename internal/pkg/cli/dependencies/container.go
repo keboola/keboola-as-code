@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
@@ -147,7 +148,7 @@ func (v *container) SetStorageApiToken(host string) {
 
 func (v *container) StorageApi() (*storageapi.Api, error) {
 	if v.storageApi == nil {
-		storageApi, err := v.commonDeps.StorageApi()
+		storageApi, err := v.commonDeps.StorageApiClient()
 		if err != nil {
 			return nil, err
 		}

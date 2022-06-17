@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/schedulerapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/go-client/pkg/client"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/mountfs"
@@ -69,8 +69,8 @@ func LoadReadme(fs filesystem.Fs) (string, error) {
 
 type dependencies interface {
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
-	SchedulerApi() (*schedulerapi.Api, error)
+	StorageApiClient() (client.Sender, error)
+	SchedulerApiClient() (client.Sender, error)
 }
 
 type _reference = model.TemplateRef

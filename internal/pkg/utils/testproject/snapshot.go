@@ -6,9 +6,10 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -25,7 +26,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		return p.snapshot(snapshot, configs)
 	})
 	grp.Go(func() (err error) {
-		schedules, err = p.SchedulerApi().ListSchedules()
+		schedules, err = p.SchedulerApiClient().ListSchedules()
 		return err
 	})
 	if err := grp.Wait(); err != nil {
@@ -60,9 +61,9 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 	metadataMap := make(map[model.BranchId]map[model.ConfigKey]*map[string]string)
 
 	// Branches
-	pool := p.StorageApi().NewPool()
+	pool := p.StorageApiClient().NewPool()
 	pool.
-		Request(p.StorageApi().ListBranchesRequest()).
+		Request(p.StorageApiClient().ListBranchesRequest()).
 		OnSuccess(func(response *client.Response) {
 			apiBranches := *response.Result().(*[]*model.Branch)
 			for _, branch := range apiBranches {
@@ -78,13 +79,13 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 
 				// Configs
 				pool.
-					Request(p.StorageApi().ListComponentsRequest(branch.Id)).
+					Request(p.StorageApiClient().ListComponentsRequest(branch.Id)).
 					OnSuccess(func(response *client.Response) {
 						apiComponents := *response.Result().(*[]*model.ComponentWithConfigs)
 						for _, component := range apiComponents {
 							for _, config := range component.Configs {
 								c := &fixtures.Config{Rows: make([]*fixtures.ConfigRow, 0)}
-								c.ComponentId = config.ComponentId
+								c.ComponentID = config.ComponentId
 								c.Name = config.Name
 								c.Description = config.Description
 								c.ChangeDescription = normalizeChangeDesc(config.ChangeDescription)
@@ -110,7 +111,7 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 					}).
 					Send()
 				pool.
-					Request(p.StorageApi().ListBranchMetadataRequest(branch.Id)).
+					Request(p.StorageApiClient().ListBranchMetadataRequest(branch.Id)).
 					OnSuccess(func(response *client.Response) {
 						branchMetadataResponse := *response.Result().(*[]storageapi.Metadata)
 						branchMetadataMap := make(map[string]string)
@@ -121,7 +122,7 @@ func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[strin
 					}).
 					Send()
 				pool.
-					Request(p.StorageApi().ListConfigMetadataRequest(branch.Id)).
+					Request(p.StorageApiClient().ListConfigMetadataRequest(branch.Id)).
 					OnSuccess(func(response *client.Response) {
 						metadataResponse := *response.Result().(*storageapi.ConfigMetadataResponse)
 						for key, metadata := range metadataResponse.MetadataMap(branch.Id) {

@@ -6,12 +6,14 @@ import (
 
 	"github.com/jarcoal/httpmock"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/schedulerapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi/eventsender"
+	"github.com/keboola/go-client/pkg/encryptionapi"
+
+	"github.com/keboola/go-client/pkg/schedulerapi"
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -59,13 +61,13 @@ func NewTestContainer() *TestContainer {
 
 // InitFromTestProject init test dependencies from testing project.
 func (v *TestContainer) InitFromTestProject(project *testproject.Project) {
-	storageApi := project.StorageApi()
+	storageApi := project.StorageApiClient()
 	v.SetProjectId(project.ID())
-	v.SetStorageApiHost(storageApi.Host())
-	v.SetStorageApiToken(storageApi.Token().Token)
+	v.SetStorageApiHost(project.StorageAPIHost())
+	v.SetStorageApiToken(project.StorageAPIToken())
 	v.SetStorageApi(storageApi)
-	v.SetSchedulerApi(project.SchedulerApi())
-	v.SetEncryptionApi(project.EncryptionApi())
+	v.SetSchedulerApi(project.SchedulerApiClient())
+	v.SetEncryptionApi(project.EncryptionApiClient())
 }
 
 func (v *TestContainer) Ctx() context.Context {
@@ -154,14 +156,14 @@ func (v *TestContainer) SetStorageApi(api *storageapi.Api) {
 }
 
 func (v *TestContainer) SetEncryptionApi(api *encryptionapi.Api) {
-	v.encryptionApi = api
+	v.encryption = api
 }
 
 func (v *TestContainer) SetSchedulerApi(api *schedulerapi.Api) {
 	v.schedulerApi = api
 }
 
-func (v *TestContainer) EventSender(sender *eventsender.Sender) {
+func (v *TestContainer) EventSender(sender *event.Sender) {
 	v.eventSender = sender
 }
 

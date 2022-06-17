@@ -10,24 +10,25 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/Netflix/go-expect v0.0.0-20210429232723-e923ed2d1db5
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
-	github.com/cenkalti/backoff/v4 v4.1.1
+	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/go-playground/locales v0.14.0
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.10.0
 	github.com/go-resty/resty/v2 v2.6.0
-	github.com/google/go-cmp v0.5.6
+	github.com/google/go-cmp v0.5.7
 	github.com/google/go-jsonnet v0.18.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
-	github.com/hashicorp/go-multierror v1.1.0
-	github.com/jarcoal/httpmock v1.0.8
+	github.com/hashicorp/go-multierror v1.1.1
+	github.com/jarcoal/httpmock v1.2.0
 	github.com/joho/godotenv v1.3.0
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
+	github.com/keboola/go-client v0.0.0-20220616192809-fe2753f7bbd6
 	github.com/keboola/go-utils v0.0.0-20220614094519-00be9e2fcecd
 	github.com/kylelemons/godebug v1.1.0
 	github.com/nhatthm/aferocopy v1.0.2
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
 	github.com/spf13/afero v1.6.0
-	github.com/spf13/cast v1.4.1
+	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.10.0
@@ -36,7 +37,7 @@ require (
 	go.uber.org/zap v1.21.0
 	goa.design/goa/v3 v3.7.0
 	goa.design/plugins/v3 v3.7.0
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 	gopkg.in/DataDog/dd-trace-go.v1 v1.36.2
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	v.io/x/lib v0.1.9
@@ -84,8 +85,8 @@ require (
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220317061510-51cd9980dadf // indirect
+	golang.org/x/net v0.0.0-20220607020251-c690dde0001d // indirect
+	golang.org/x/sys v0.0.0-20220608164250-635b8c9b7f68 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11 // indirect
@@ -101,6 +102,9 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 )

@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
+	"github.com/keboola/go-client/pkg/encryptionapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"

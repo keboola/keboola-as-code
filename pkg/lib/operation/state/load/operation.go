@@ -1,7 +1,7 @@
 package load
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"

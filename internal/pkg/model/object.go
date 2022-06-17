@@ -100,32 +100,6 @@ type Kind struct {
 	Abbr string
 }
 
-// Ticket https://keboola.docs.apiary.io/#reference/tickets/generate-unique-id/generate-new-id
-type Ticket struct {
-	Id string `json:"id"`
-}
-
-// Token https://keboola.docs.apiary.io/#reference/tokens-and-permissions/token-verification/token-verification
-type Token struct {
-	Id       string     `json:"id"`
-	Token    string     `json:"token"`
-	IsMaster bool       `json:"isMasterToken"`
-	Owner    TokenOwner `json:"owner"`
-}
-
-func (t *Token) ProjectId() int {
-	return t.Owner.Id
-}
-
-func (t *Token) ProjectName() string {
-	return t.Owner.Name
-}
-
-type TokenOwner struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
-}
-
 type BranchMetadata map[string]string
 
 type TemplateInstance struct {
@@ -399,17 +373,6 @@ type Job struct {
 	Status  string                 `json:"status" validate:"required"`
 	Url     string                 `json:"url" validate:"required"`
 	Results map[string]interface{} `json:"results"`
-}
-
-// Event https://keboola.docs.apiary.io/#reference/events/events/create-event
-type Event struct {
-	Id string `json:"id"`
-}
-
-// Schedule - https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/get_schedules
-type Schedule struct {
-	Id       string   `json:"id" validate:"required"`
-	ConfigId ConfigId `json:"configurationId" validate:"required"`
 }
 
 func (b *Branch) ObjectName() string {

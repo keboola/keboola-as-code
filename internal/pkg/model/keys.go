@@ -40,13 +40,6 @@ type WithKey interface {
 	Key() Key
 }
 
-type (
-	BranchId    int
-	ComponentId string
-	ConfigId    string
-	RowId       string
-)
-
 func (v BranchId) String() string {
 	return strconv.Itoa(int(v))
 }

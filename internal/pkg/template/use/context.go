@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-jsonnet/ast"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet/fsimporter"

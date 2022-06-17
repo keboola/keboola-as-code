@@ -4,7 +4,8 @@ import (
 	"context"
 	stdLog "log"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -89,7 +90,7 @@ func (v *container) WithLoggerPrefix(prefix string) *container {
 func (v *container) WithStorageApi(api *storageapi.Api) (*container, error) {
 	clone := v.Clone()
 	clone.storageApi = api
-	clone.commonDeps = clone.commonDeps.WithStorageApi(api)
+	clone.commonDeps = clone.commonDeps.WithStorageApiClient(api)
 	return clone, nil
 }
 
@@ -166,9 +167,9 @@ func (v *container) ApiVerboseLogs() bool {
 }
 
 func (v *container) StorageApi() (*storageapi.Api, error) {
-	// Store API instance, so it can be cloned, see WithStorageApi
+	// Store API instance, so it can be cloned, see WithStorageApiClient
 	if v.storageApi == nil {
-		api, err := v.commonDeps.StorageApi()
+		api, err := v.commonDeps.StorageApiClient()
 		if err != nil {
 			return nil, err
 		}

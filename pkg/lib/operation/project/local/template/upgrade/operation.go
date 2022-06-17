@@ -6,8 +6,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/go-client/pkg/encryptionapi"
+
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"

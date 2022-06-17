@@ -15,7 +15,7 @@ func (s *service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *secur
 		d := ctx.Value(dependencies.CtxKey).(dependencies.Container)
 
 		// Get API
-		api, err := d.StorageApi()
+		api, err := d.StorageApiClient()
 		if err != nil {
 			return ctx, err
 		}

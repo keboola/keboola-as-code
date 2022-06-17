@@ -30,7 +30,7 @@ func TestLoadState(t *testing.T) {
 
 	// Same IDs in local and remote state
 	envs.Set("LOCAL_PROJECT_ID", cast.ToString(testProject.ID()))
-	envs.Set("TEST_KBC_STORAGE_API_HOST", testProject.StorageApi().Host())
+	envs.Set("TEST_KBC_STORAGE_API_HOST", testProject.StorageApiClient().Host())
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", envs.MustGet(`TEST_BRANCH_MAIN_ID`))
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`))
 
