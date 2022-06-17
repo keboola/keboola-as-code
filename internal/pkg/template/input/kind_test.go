@@ -14,6 +14,7 @@ func TestKind_IsValid(t *testing.T) {
 	assert.True(t, KindConfirm.IsValid())
 	assert.True(t, KindSelect.IsValid())
 	assert.True(t, KindMultiSelect.IsValid())
+	assert.True(t, KindOAuth.IsValid())
 	assert.False(t, Kind("foo").IsValid())
 }
 
@@ -53,4 +54,10 @@ func TestKind_ValidateType(t *testing.T) {
 	err = KindMultiSelect.ValidateType(TypeString)
 	assert.Error(t, err)
 	assert.Equal(t, "should be string[] for kind=multiselect, found string", err.Error())
+
+	// oAuth
+	assert.NoError(t, KindOAuth.ValidateType(TypeObject))
+	err = KindOAuth.ValidateType(TypeString)
+	assert.Error(t, err)
+	assert.Equal(t, "should be object for kind=oauth, found string", err.Error())
 }
