@@ -25,9 +25,9 @@ func ValidateSchemas(objects model.ObjectStates) error {
 			continue
 		}
 
-		component, found := objects.Components().Get(config.ComponentId)
-		if !found {
-			return fmt.Errorf(`component "%s" not found`, config.ComponentId)
+		component, err := objects.Components().GetOrErr(config.ComponentId)
+		if err != nil {
+			return err
 		}
 
 		if err := ValidateConfig(component, config.Local); err != nil {
@@ -41,9 +41,9 @@ func ValidateSchemas(objects model.ObjectStates) error {
 			continue
 		}
 
-		component, found := objects.Components().Get(row.ComponentId)
-		if !found {
-			return fmt.Errorf(`component "%s" not found`, row.ComponentId)
+		component, err := objects.Components().GetOrErr(row.ComponentId)
+		if err != nil {
+			return err
 		}
 
 		if err := ValidateConfigRow(component, row.Local); err != nil {

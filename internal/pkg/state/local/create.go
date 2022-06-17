@@ -12,7 +12,7 @@ import (
 func (m *Manager) createObject(key model.Key, name string) (model.Object, error) {
 	switch k := key.(type) {
 	case model.ConfigKey:
-		component, err := m.state.Components().Get(k.ComponentKey())
+		component, err := m.state.Components().GetOrErr(k.ComponentId)
 		if err != nil {
 			return nil, err
 		}
@@ -26,7 +26,7 @@ func (m *Manager) createObject(key model.Key, name string) (model.Object, error)
 			Content:   content,
 		}, nil
 	case model.ConfigRowKey:
-		component, err := m.state.Components().Get(k.ComponentKey())
+		component, err := m.state.Components().GetOrErr(k.ComponentId)
 		if err != nil {
 			return nil, err
 		}

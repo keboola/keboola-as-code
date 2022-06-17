@@ -220,7 +220,8 @@ func (v *CommonContainer) Components() (model.ComponentsMap, error) {
 
 		// Get components index
 		if index, err := storageapi.IndexComponentsRequest().Send(v.ctx, c); err == nil {
-			return model.NewComponentsMap(index.Components), nil
+			v := model.NewComponentsMap(index.Components)
+			return &v, nil
 		} else {
 			return nil, err
 		}

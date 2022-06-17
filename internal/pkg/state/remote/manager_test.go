@@ -354,6 +354,7 @@ func TestSaveConfigMetadata_Create(t *testing.T) {
 	assert.NoError(t, uow.Invoke())
 
 	// Check
+	assert.NotNil(t, httpRequest)
 	reqBodyRaw, err := io.ReadAll(httpRequest.Body)
 	assert.NoError(t, err)
 	reqBody, err := url.QueryUnescape(string(reqBodyRaw))
@@ -479,8 +480,7 @@ func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *
 	assert.NoError(t, err)
 
 	m := manifest.New(1, "foo.bar")
-	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
-	projectState := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), components, model.SortByPath)
+	projectState := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), testapi.MockedComponentsMap(), model.SortByPath)
 
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()

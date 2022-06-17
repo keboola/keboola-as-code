@@ -16,8 +16,8 @@ type ComponentsMap struct {
 	defaultBucketsByPrefix      map[string]storageapi.ComponentID
 }
 
-func NewComponentsMap(components storageapi.Components) *ComponentsMap {
-	v := &ComponentsMap{
+func NewComponentsMap(components storageapi.Components) ComponentsMap {
+	v := ComponentsMap{
 		componentsMap:               components.ToMap(),
 		used:                        make(map[storageapi.ComponentID]bool),
 		defaultBucketsByComponentId: make(map[storageapi.ComponentID]string),
@@ -34,12 +34,20 @@ func NewComponentsMap(components storageapi.Components) *ComponentsMap {
 	return v
 }
 
-func (m *ComponentsMap) Get(id storageapi.ComponentID) (*storageapi.Component, bool) {
+func (m ComponentsMap) Get(id storageapi.ComponentID) (*storageapi.Component, bool) {
 	v, ok := m.componentsMap.Get(id)
 	if ok {
 		m.used[id] = true
 	}
 	return v, ok
+}
+
+func (m ComponentsMap) GetOrErr(id storageapi.ComponentID) (*storageapi.Component, error) {
+	v, ok := m.Get(id)
+	if !ok {
+		return nil, fmt.Errorf(`component "%s" not found`, id)
+	}
+	return v, nil
 }
 
 func (m *ComponentsMap) Used() map[storageapi.ComponentID]bool {

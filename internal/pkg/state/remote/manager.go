@@ -290,18 +290,8 @@ func (u *UnitOfWork) Invoke() error {
 }
 
 func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) {
-	// Set changeDescription
-	switch v := recipe.Object.(type) {
-	case *model.Config:
-		v.ChangeDescription = u.changeDescription
-		changedFields.Add("changeDescription")
-	case *model.ConfigRow:
-		v.ChangeDescription = u.changeDescription
-		changedFields.Add("changeDescription")
-	}
-
 	// Create or update
-	var createUpdateRequest client.Sendable
+	var createUpdateRequest client.APIRequest[storageapi.Object]
 	exists := objectState.HasRemoteState()
 	if exists {
 		// Update
@@ -309,31 +299,32 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 	} else {
 		createUpdateRequest = u.createRequest(objectState, object, recipe)
 	}
+	u.runGroupFor(object.Level()).Add(createUpdateRequest)
 
 	// Should metadata be set?
-	var metadataRequest client.Sendable
-	var metadataRequestLevel int
 	setMetadata := !exists || changedFields.Has("metadata")
 	if v, ok := recipe.Object.(model.ToApiMetadata); ok && setMetadata {
-		metadataRequest = storageapi.AppendMetadataRequest(v.ToApiObjectKey(), v.ToApiMetadata())
-		if exists {
+		metadataRequest := storageapi.AppendMetadataRequest(v.ToApiObjectKey(), v.ToApiMetadata())
+		// Nil means "nothing to do"
+		if metadataRequest != nil {
 			// If the object already exists, we can send the metadata request in parallel with the update.
-			metadataRequestLevel = object.Level()
-		} else {
-			// If the object does not exist, we must set metadata after object creation.
-			metadataRequestLevel = object.Level() + 1
+			metadataRequestLevel := object.Level()
+			if !exists {
+				// If the object does not exist, we must set metadata after object creation.
+				metadataRequestLevel = object.Level() + 1
+			}
+			u.runGroupFor(metadataRequestLevel).Add(metadataRequest)
 		}
 	}
-
-	u.runGroupFor(object.Level()).Add(createUpdateRequest)
-	u.runGroupFor(metadataRequestLevel).Add(metadataRequest)
 }
 
-func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe) client.Sendable {
+func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe) client.APIRequest[storageapi.Object] {
+	apiObject, _ := recipe.Object.(model.ToApiObject).ToApiObject(u.changeDescription, nil)
 	return storageapi.
-		CreateRequest(recipe.Object.(model.ToApiObject).ToApiObject()).
-		WithOnSuccess(func(_ context.Context, _ client.Sender, _ client.NoResult) error {
-			// Save new ID to manifest
+		CreateRequest(apiObject).
+		WithOnSuccess(func(_ context.Context, _ client.Sender, apiObject storageapi.Object) error {
+			// Update internal state
+			object.SetObjectId(apiObject.ObjectId())
 			objectState.SetRemoteState(object)
 			u.changes.AddCreated(objectState)
 			return nil
@@ -341,7 +332,7 @@ func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.O
 		WithOnError(func(ctx context.Context, sender client.Sender, err error) error {
 			if e, ok := err.(*storageapi.Error); ok {
 				if e.ErrCode == "configurationAlreadyExists" || e.ErrCode == "configurationRowAlreadyExists" {
-					// Object exists -> update instead of create + clear error
+					// Object exists -> update instead of create
 					return u.updateRequest(objectState, object, recipe, nil).SendOrErr(ctx, sender)
 				}
 			}
@@ -349,11 +340,12 @@ func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.O
 		})
 }
 
-func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) client.Sendable {
+func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) client.APIRequest[storageapi.Object] {
+	apiObject, apiChangedFields := recipe.Object.(model.ToApiObject).ToApiObject(u.changeDescription, changedFields)
 	return storageapi.
-		UpdateRequest(recipe.Object.(model.ToApiObject).ToApiObject(), changedFields.Slice()).
-		WithOnSuccess(func(_ context.Context, _ client.Sender, _ client.NoResult) error {
-			// Save new ID to manifest
+		UpdateRequest(apiObject, apiChangedFields).
+		WithOnSuccess(func(_ context.Context, _ client.Sender, apiObject storageapi.Object) error {
+			// Update internal state
 			objectState.SetRemoteState(object)
 			u.changes.AddUpdated(objectState)
 			return nil

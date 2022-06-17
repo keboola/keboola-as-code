@@ -3,14 +3,12 @@ package model
 import (
 	"fmt"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 const (
@@ -45,14 +43,15 @@ type Object interface {
 	Key
 	Key() Key
 	ObjectName() string
+	SetObjectId(any)
 }
 
 type ToApiObject interface {
-	ToApiObject() storageapi.Object
+	ToApiObject(changeDescription string, changedFields ChangedFields) (apiObject storageapi.Object, apiChangedFields []string)
 }
 
 type ToApiObjectKey interface {
-	ToApiObjectKey() storageapi.ObjectKey
+	ToApiObjectKey() any
 }
 
 type ToApiMetadata interface {
@@ -169,6 +168,69 @@ func NewConfigRow(apiValue *storageapi.ConfigRow) *ConfigRow {
 	out.IsDisabled = apiValue.IsDisabled
 	out.Content = apiValue.Content
 	return out
+}
+
+// ToApiObject ...
+func (b *Branch) ToApiObject(_ string, changedFields ChangedFields) (storageapi.Object, []string) {
+	out := &storageapi.Branch{}
+	out.ID = b.Id
+	out.Name = b.Name
+	out.Description = b.Description
+	out.IsDefault = b.IsDefault
+	return out, changedFields.Slice()
+}
+
+// ToApiObject ...
+func (c *Config) ToApiObject(changeDescription string, changedFields ChangedFields) (storageapi.Object, []string) {
+	out := &storageapi.Config{}
+	out.ChangeDescription = changeDescription
+	out.BranchID = c.BranchId
+	out.ComponentID = c.ComponentId
+	out.ID = c.Id
+	out.Name = c.Name
+	out.Description = c.Description
+	out.IsDisabled = c.IsDisabled
+	out.Content = c.Content
+	return out, append(changedFields.Slice(), "changeDescription")
+}
+
+// ToApiObject ...
+func (r *ConfigRow) ToApiObject(changeDescription string, changedFields ChangedFields) (storageapi.Object, []string) {
+	out := &storageapi.ConfigRow{}
+	out.ChangeDescription = changeDescription
+	out.BranchID = r.BranchId
+	out.ComponentID = r.ComponentId
+	out.ID = r.Id
+	out.Name = r.Name
+	out.Description = r.Description
+	out.IsDisabled = r.IsDisabled
+	out.Content = r.Content
+	return out, append(changedFields.Slice(), "changeDescription")
+}
+
+// ToApiObjectKey ...
+func (b *Branch) ToApiObjectKey() any {
+	return storageapi.BranchKey{ID: b.Id}
+}
+
+// ToApiObjectKey ...
+func (c *Config) ToApiObjectKey() any {
+	return storageapi.ConfigKey{BranchID: c.BranchId, ComponentID: c.ComponentId, ID: c.Id}
+}
+
+// ToApiObjectKey ...
+func (r *ConfigRow) ToApiObjectKey() any {
+	return storageapi.ConfigRowKey{BranchID: r.BranchId, ComponentID: r.ComponentId, ConfigID: r.ConfigId, ID: r.Id}
+}
+
+// ToApiMetadata ...
+func (b *Branch) ToApiMetadata() storageapi.Metadata {
+	return storageapi.Metadata(b.Metadata)
+}
+
+// ToApiMetadata ...
+func (c *Config) ToApiMetadata() storageapi.Metadata {
+	return storageapi.Metadata(c.Metadata)
 }
 
 func (m BranchMetadata) saveTemplateUsages(instances TemplatesInstances) error {
@@ -379,16 +441,15 @@ func (m ConfigMetadata) InstanceId() string {
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type Config struct {
 	ConfigKey
-	Name              string                 `json:"name" validate:"required" diff:"true" metaFile:"true"`
-	Description       string                 `json:"description" diff:"true" descriptionFile:"true"`
-	ChangeDescription string                 `json:"changeDescription"`
-	IsDisabled        bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
-	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	Transformation    *Transformation        `json:"-" validate:"omitempty,dive" diff:"true"`
-	SharedCode        *SharedCodeConfig      `json:"-" validate:"omitempty,dive" diff:"true"`
-	Orchestration     *Orchestration         `json:"-" validate:"omitempty,dive" diff:"true"`
-	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
-	Metadata          ConfigMetadata         `json:"-" validate:"dive" diff:"true"`
+	Name           string                 `json:"name" validate:"required" diff:"true" metaFile:"true"`
+	Description    string                 `json:"description" diff:"true" descriptionFile:"true"`
+	IsDisabled     bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
+	Content        *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
+	Transformation *Transformation        `json:"-" validate:"omitempty,dive" diff:"true"`
+	SharedCode     *SharedCodeConfig      `json:"-" validate:"omitempty,dive" diff:"true"`
+	Orchestration  *Orchestration         `json:"-" validate:"omitempty,dive" diff:"true"`
+	Relations      Relations              `json:"-" validate:"dive" diff:"true"`
+	Metadata       ConfigMetadata         `json:"-" validate:"dive" diff:"true"`
 }
 
 type ConfigWithRows struct {
@@ -405,13 +466,12 @@ func (c *ConfigWithRows) SortRows() {
 // ConfigRow https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type ConfigRow struct {
 	ConfigRowKey
-	Name              string                 `json:"name" diff:"true" metaFile:"true"`
-	Description       string                 `json:"description" diff:"true" descriptionFile:"true"`
-	ChangeDescription string                 `json:"changeDescription"`
-	IsDisabled        bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
-	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	SharedCode        *SharedCodeRow         `json:"-" validate:"omitempty,dive" diff:"true"`
-	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
+	Name        string                 `json:"name" diff:"true" metaFile:"true"`
+	Description string                 `json:"description" diff:"true" descriptionFile:"true"`
+	IsDisabled  bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
+	Content     *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
+	SharedCode  *SharedCodeRow         `json:"-" validate:"omitempty,dive" diff:"true"`
+	Relations   Relations              `json:"-" validate:"dive" diff:"true"`
 }
 
 // Job - Storage API job.
@@ -434,6 +494,18 @@ func (r *ConfigRow) ObjectName() string {
 	return r.Name
 }
 
+func (b *Branch) SetObjectId(id any) {
+	b.Id = id.(storageapi.BranchID)
+}
+
+func (c *Config) SetObjectId(id any) {
+	c.Id = id.(storageapi.ConfigID)
+}
+
+func (r *ConfigRow) SetObjectId(id any) {
+	r.Id = id.(storageapi.RowID)
+}
+
 func (c *Config) GetComponentId() storageapi.ComponentID {
 	return c.ComponentId
 }
@@ -448,36 +520,6 @@ func (c *Config) GetContent() *orderedmap.OrderedMap {
 
 func (r *ConfigRow) GetContent() *orderedmap.OrderedMap {
 	return r.Content
-}
-
-func (c *Config) ToApiValues() (map[string]string, error) {
-	configJson, err := json.EncodeString(c.Content, false)
-	if err != nil {
-		return nil, utils.PrefixError(`cannot JSON encode config configuration`, err)
-	}
-
-	return map[string]string{
-		"name":              c.Name,
-		"description":       c.Description,
-		"changeDescription": c.ChangeDescription,
-		"isDisabled":        strconv.FormatBool(c.IsDisabled),
-		"configuration":     configJson,
-	}, nil
-}
-
-func (r *ConfigRow) ToApiValues() (map[string]string, error) {
-	configJson, err := json.EncodeString(r.Content, false)
-	if err != nil {
-		return nil, utils.PrefixError(`cannot JSON encode config configuration`, err)
-	}
-
-	return map[string]string{
-		"name":              r.Name,
-		"description":       r.Description,
-		"changeDescription": r.ChangeDescription,
-		"isDisabled":        strconv.FormatBool(r.IsDisabled),
-		"configuration":     configJson,
-	}, nil
 }
 
 // ParentKey - config parent can be modified via Relations, for example variables config is embedded in another config.

@@ -17,7 +17,6 @@ const (
 	PhaseKind     = "phase"
 	TaskKind      = "task"
 	BranchAbbr    = "B"
-	ComponentAbbr = "COM"
 	ConfigAbbr    = "C"
 	RowAbbr       = "R"
 	BlockAbbr     = "b"
@@ -87,10 +86,6 @@ func (k BranchKey) Kind() Kind {
 	return Kind{Name: BranchKind, Abbr: BranchAbbr}
 }
 
-func (k ComponentKey) Kind() Kind {
-	return Kind{Name: ComponentKind, Abbr: ComponentAbbr}
-}
-
 func (k ConfigKey) Kind() Kind {
 	return Kind{Name: ConfigKind, Abbr: ConfigAbbr}
 }
@@ -116,10 +111,6 @@ func (k TaskKey) Kind() Kind {
 }
 
 func (k BranchKey) ObjectId() string {
-	return k.Id.String()
-}
-
-func (k ComponentKey) ObjectId() string {
 	return k.Id.String()
 }
 
@@ -151,10 +142,6 @@ func (k BranchKey) Level() int {
 	return 1
 }
 
-func (k ComponentKey) Level() int {
-	return 2
-}
-
 func (k ConfigKey) Level() int {
 	return 3
 }
@@ -180,10 +167,6 @@ func (k TaskKey) Level() int {
 }
 
 func (k BranchKey) Key() Key {
-	return k
-}
-
-func (k ComponentKey) Key() Key {
 	return k
 }
 
@@ -244,16 +227,8 @@ func (k CodeKey) ParentKey() (Key, error) {
 	return k.BlockKey(), nil
 }
 
-func (k ComponentKey) ParentKey() (Key, error) {
-	return nil, nil // Component is top level object
-}
-
 func (k BranchKey) Desc() string {
 	return fmt.Sprintf(`%s "%d"`, k.Kind().Name, k.Id)
-}
-
-func (k ComponentKey) Desc() string {
-	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.Id)
 }
 
 func (k ConfigKey) Desc() string {
@@ -296,10 +271,6 @@ func (k BranchKey) ParentKey() (Key, error) {
 	return nil, nil // Branch is top level object
 }
 
-func (k ComponentKey) String() string {
-	return fmt.Sprintf("%02d_%s_component", k.Level(), k.Id)
-}
-
 func (k ConfigKey) String() string {
 	return fmt.Sprintf("%02d_%d_%s_%s_config", k.Level(), k.BranchId, k.ComponentId, k.Id)
 }
@@ -324,10 +295,6 @@ func (k TaskKey) String() string {
 	return fmt.Sprintf("%02d_%d_%s_%s_%03d_%03d_task", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.PhaseKey.Index, k.Index)
 }
 
-func (k ConfigKey) ComponentKey() ComponentKey {
-	return ComponentKey{Id: k.ComponentId}
-}
-
 func (k ConfigKey) BranchKey() BranchKey {
 	return BranchKey{Id: k.BranchId}
 }
@@ -338,10 +305,6 @@ func (k ConfigKey) ParentKey() (Key, error) {
 		return nil, nil
 	}
 	return k.BranchKey(), nil
-}
-
-func (k ConfigRowKey) ComponentKey() ComponentKey {
-	return ComponentKey{Id: k.ComponentId}
 }
 
 func (k ConfigRowKey) BranchKey() BranchKey {
