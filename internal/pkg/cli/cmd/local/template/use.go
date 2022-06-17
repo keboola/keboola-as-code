@@ -59,7 +59,13 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Use template
-			_, err = useOp.Run(projectState, template, options, d)
+			_, warnings, err := useOp.Run(projectState, template, options, d)
+
+			if len(warnings) > 0 {
+				for _, w := range warnings {
+					d.Logger().Warnf(w)
+				}
+			}
 			return err
 		},
 	}

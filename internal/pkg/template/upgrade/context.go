@@ -19,9 +19,9 @@ type Context struct {
 	*use.Context
 }
 
-func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputs template.InputsValues, tickets *storageapi.TicketProvider, projectState *state.State) *Context {
+func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefs map[string]*template.Input, tickets *storageapi.TicketProvider, projectState *state.State) *Context {
 	c := &Context{
-		Context: use.NewContext(ctx, templateRef, objectsRoot, instanceId, targetBranch, inputs, tickets),
+		Context: use.NewContext(ctx, templateRef, objectsRoot, instanceId, targetBranch, inputsValues, inputsDefs, tickets),
 	}
 
 	// Register existing IDs, so they will be reused
