@@ -130,7 +130,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 				}
 				return nil
 			})
-		return request.SendOrErr(ctx, p.schedulerApiClient)
+		return request.SendOrErr(ctx, p.schedulerAPIClient)
 	})
 
 	// Wait for requests

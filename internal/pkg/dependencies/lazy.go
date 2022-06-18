@@ -11,11 +11,11 @@ type Lazy[T any] struct {
 	value *T
 }
 
-func (s Lazy[T]) Set(v T) {
+func (s *Lazy[T]) Set(v T) {
 	s.value = &v
 }
 
-func (s Lazy[T]) InitAndGet(initFn func() (*T, error)) (T, error) {
+func (s *Lazy[T]) InitAndGet(initFn func() (*T, error)) (T, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 

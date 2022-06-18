@@ -65,10 +65,10 @@ func NewTestContainer() *TestContainer {
 // InitFromTestProject init test dependencies from testing project.
 func (v *TestContainer) InitFromTestProject(project *testproject.Project) {
 	v.SetStorageApiHost(project.StorageAPIHost())
-	v.SetStorageApiToken(project.StorageAPIToken())
-	v.SetStorageApi(project.StorageApiClient(), project.StorageApiToken())
-	v.SetSchedulerApi(project.SchedulerApiClient())
-	v.SetEncryptionApi(project.EncryptionApiClient())
+	v.SetStorageApiToken(project.StorageAPIToken().Token)
+	v.SetStorageApi(project.StorageAPIClient(), project.StorageAPIToken())
+	v.SetSchedulerApi(project.SchedulerAPIClient())
+	v.SetEncryptionApi(project.EncryptionAPIClient())
 }
 
 func (v *TestContainer) Ctx() context.Context {

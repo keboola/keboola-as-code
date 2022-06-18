@@ -77,7 +77,7 @@ func (v *CommonContainer) WithStorageApiClient(client client.Client, token *stor
 }
 
 func (v *CommonContainer) StorageApiClient() (client.Sender, error) {
-	if c, err := v.getStorageApi(); err != nil {
+	if c, err := v.getStorageApi(); err == nil {
 		return c.Client, nil
 	} else {
 		return nil, err

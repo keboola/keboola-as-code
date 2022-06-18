@@ -162,6 +162,7 @@ func NewConfigRow(apiValue *storageapi.ConfigRow) *ConfigRow {
 	out := &ConfigRow{}
 	out.BranchId = apiValue.BranchID
 	out.ComponentId = apiValue.ComponentID
+	out.ConfigId = apiValue.ConfigID
 	out.Id = apiValue.ID
 	out.Name = apiValue.Name
 	out.Description = apiValue.Description

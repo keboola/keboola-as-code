@@ -1,7 +1,6 @@
 package state_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/storageapi"
@@ -157,11 +156,10 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 					ComponentId: "ex-generic-v2",
 					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
-				Name:              "empty",
-				Description:       "test fixture",
-				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
-				Content:           orderedmap.New(),
-				Metadata:          make(map[string]string),
+				Name:        "empty",
+				Description: "test fixture",
+				Content:     orderedmap.New(),
+				Metadata:    make(map[string]string),
 			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
@@ -185,9 +183,8 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 					ComponentId: "ex-generic-v2",
 					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_BAR_CONFIG_WITHOUT_ROWS_ID`)),
 				},
-				Name:              "without-rows",
-				Description:       "test fixture",
-				ChangeDescription: "created by test",
+				Name:        "without-rows",
+				Description: "test fixture",
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
@@ -228,11 +225,10 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 					ComponentId: "ex-generic-v2",
 					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
-				Name:              "empty",
-				Description:       "test fixture",
-				ChangeDescription: fmt.Sprintf(`Copied from default branch configuration "empty" (%s) version 1`, envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
-				Content:           orderedmap.New(),
-				Metadata:          make(map[string]string),
+				Name:        "empty",
+				Description: "test fixture",
+				Content:     orderedmap.New(),
+				Metadata:    make(map[string]string),
 			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
@@ -256,9 +252,8 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 					ComponentId: "keboola.ex-db-mysql",
 					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
 				},
-				Name:              "with-rows",
-				Description:       "test fixture",
-				ChangeDescription: "created by test",
+				Name:        "with-rows",
+				Description: "test fixture",
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
@@ -299,11 +294,10 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 					ComponentId: "ex-generic-v2",
 					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
-				Name:              "empty",
-				Description:       "test fixture",
-				ChangeDescription: "created by test",
-				Content:           orderedmap.New(),
-				Metadata:          make(map[string]string),
+				Name:        "empty",
+				Description: "test fixture",
+				Content:     orderedmap.New(),
+				Metadata:    make(map[string]string),
 			},
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
@@ -333,10 +327,9 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 					ConfigId:    storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
 					Id:          storageapi.RowID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_DISABLED_ID`)),
 				},
-				Name:              "disabled",
-				Description:       "test fixture",
-				ChangeDescription: "created by test",
-				IsDisabled:        true,
+				Name:        "disabled",
+				Description: "test fixture",
+				IsDisabled:  true,
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
@@ -369,10 +362,9 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 					ConfigId:    storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
 					Id:          storageapi.RowID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID`)),
 				},
-				Name:              "test_view",
-				Description:       "test fixture",
-				ChangeDescription: "created by test",
-				IsDisabled:        false,
+				Name:        "test_view",
+				Description: "test fixture",
+				IsDisabled:  false,
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
@@ -405,10 +397,9 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 					ConfigId:    storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
 					Id:          storageapi.RowID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_USERS_ID`)),
 				},
-				Name:              "users",
-				Description:       "test fixture",
-				ChangeDescription: "created by test",
-				IsDisabled:        false,
+				Name:        "users",
+				Description: "test fixture",
+				IsDisabled:  false,
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",

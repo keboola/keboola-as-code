@@ -104,11 +104,10 @@ func TestLoadState(t *testing.T) {
 					ComponentId: "ex-generic-v2",
 					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
-				Name:              "empty",
-				Description:       "test fixture",
-				ChangeDescription: "created by test",
-				Content:           orderedmap.New(),
-				Metadata:          make(map[string]string),
+				Name:        "empty",
+				Description: "test fixture",
+				Content:     orderedmap.New(),
+				Metadata:    make(map[string]string),
 			},
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{
@@ -116,9 +115,8 @@ func TestLoadState(t *testing.T) {
 					ComponentId: "ex-generic-v2",
 					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
-				Name:              "todos",
-				Description:       "todos config",
-				ChangeDescription: "",
+				Name:        "todos",
+				Description: "todos config",
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",

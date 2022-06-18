@@ -5,6 +5,7 @@ services:
     build: .
     volumes:
       - ./:/code:z
+      - ../keboola-go-client:/go-client:z
       - cache:/tmp/cache
     environment:
       # For CLI

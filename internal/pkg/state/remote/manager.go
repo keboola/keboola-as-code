@@ -304,17 +304,13 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 	// Should metadata be set?
 	setMetadata := !exists || changedFields.Has("metadata")
 	if v, ok := recipe.Object.(model.ToApiMetadata); ok && setMetadata {
-		metadataRequest := storageapi.AppendMetadataRequest(v.ToApiObjectKey(), v.ToApiMetadata())
-		// Nil means "nothing to do"
-		if metadataRequest != nil {
-			// If the object already exists, we can send the metadata request in parallel with the update.
-			metadataRequestLevel := object.Level()
-			if !exists {
-				// If the object does not exist, we must set metadata after object creation.
-				metadataRequestLevel = object.Level() + 1
-			}
-			u.runGroupFor(metadataRequestLevel).Add(metadataRequest)
+		// If the object already exists, we can send the metadata request in parallel with the update.
+		metadataRequestLevel := object.Level()
+		if !exists {
+			// If the object does not exist, we must set metadata after object creation.
+			metadataRequestLevel = object.Level() + 1
 		}
+		u.runGroupFor(metadataRequestLevel).Add(storageapi.AppendMetadataRequest(v.ToApiObjectKey(), v.ToApiMetadata()))
 	}
 }
 

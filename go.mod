@@ -22,7 +22,7 @@ require (
 	github.com/jarcoal/httpmock v1.2.0
 	github.com/joho/godotenv v1.3.0
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
-	github.com/keboola/go-client v0.0.0-20220617192405-9403bcacad99
+	github.com/keboola/go-client v0.0.0-20220618215929-2ac5239033d8
 	github.com/keboola/go-utils v0.0.0-20220614094519-00be9e2fcecd
 	github.com/kylelemons/godebug v1.1.0
 	github.com/nhatthm/aferocopy v1.0.2
@@ -100,6 +100,7 @@ require (
 )
 
 require (
+	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

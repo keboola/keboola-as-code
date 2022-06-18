@@ -372,9 +372,8 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					ComponentId: "keboola.ex-db-mysql",
 					Id:          "896",
 				},
-				Name:              "tables",
-				Description:       "tables config",
-				ChangeDescription: "",
+				Name:        "tables",
+				Description: "tables config",
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
@@ -418,9 +417,8 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					ComponentId: "ex-generic-v2",
 					Id:          "456",
 				},
-				Name:              "todos",
-				Description:       "todos config",
-				ChangeDescription: "",
+				Name:        "todos",
+				Description: "todos config",
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
@@ -464,9 +462,8 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					ComponentId: "ex-generic-v2",
 					Id:          "456",
 				},
-				Name:              "todos",
-				Description:       "todos config",
-				ChangeDescription: "",
+				Name:        "todos",
+				Description: "todos config",
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
@@ -516,10 +513,9 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 					ConfigId:    "896",
 					Id:          "56",
 				},
-				Name:              "disabled",
-				Description:       "",
-				ChangeDescription: "",
-				IsDisabled:        true,
+				Name:        "disabled",
+				Description: "",
+				IsDisabled:  true,
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
@@ -556,10 +552,9 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 					ConfigId:    "896",
 					Id:          "34",
 				},
-				Name:              "test_view",
-				Description:       "row description",
-				ChangeDescription: "",
-				IsDisabled:        false,
+				Name:        "test_view",
+				Description: "row description",
+				IsDisabled:  false,
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
@@ -596,10 +591,9 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 					ConfigId:    "896",
 					Id:          "12",
 				},
-				Name:              "users",
-				Description:       "",
-				ChangeDescription: "",
-				IsDisabled:        false,
+				Name:        "users",
+				Description: "",
+				IsDisabled:  false,
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{
 						Key: "parameters",
