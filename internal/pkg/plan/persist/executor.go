@@ -61,16 +61,16 @@ func (e *executor) invoke() error {
 
 func (e *executor) persistNewObject(action *newObjectAction) {
 	// Generate unique ID
-	e.tickets.Request(func(ticket *model.Ticket) {
+	e.tickets.Request(func(ticket *storageapi.Ticket) {
 		key := action.Key
 
 		// Set new id to the key
 		switch k := key.(type) {
 		case model.ConfigKey:
-			k.Id = storageapi.ConfigID(ticket.Id)
+			k.Id = storageapi.ConfigID(ticket.ID)
 			key = k
 		case model.ConfigRowKey:
-			k.Id = storageapi.RowID(ticket.Id)
+			k.Id = storageapi.RowID(ticket.ID)
 			key = k
 		default:
 			panic(fmt.Errorf(`unexpected type "%s" of the persisted object "%s"`, key.Kind(), key.Desc()))
@@ -91,7 +91,7 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 		}
 
 		// Invoke mapper
-		err = e.Mapper().MapBeforePersist(&model.PersistRecipe{
+		err = e.Mapper().MapBeforePersist(e.Ctx(), &model.PersistRecipe{
 			ParentKey: action.ParentKey,
 			Manifest:  record,
 		})

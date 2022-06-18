@@ -51,15 +51,17 @@ func NewCommonContainer(ctx context.Context, d Abstract) *CommonContainer {
 
 type CommonContainer struct {
 	Abstract
-	ctx             context.Context
-	storageApi      Lazy[clientWithToken]
-	storageApiIndex Lazy[storageapi.Index]
-	services        Lazy[storageapi.ServicesMap]
-	features        Lazy[storageapi.FeaturesMap]
-	encryptionApi   Lazy[client.Client]
-	schedulerApi    Lazy[client.Client]
-	components      Lazy[model.ComponentsMap]
-	eventSender     Lazy[event.Sender]
+	ctx              context.Context
+	httpTransport    http.RoundTripper
+	httpTraceFactory client.TraceFactory
+	storageApi       Lazy[clientWithToken]
+	storageApiIndex  Lazy[storageapi.Index]
+	services         Lazy[storageapi.ServicesMap]
+	features         Lazy[storageapi.FeaturesMap]
+	encryptionApi    Lazy[client.Client]
+	schedulerApi     Lazy[client.Client]
+	components       Lazy[model.ComponentsMap]
+	eventSender      Lazy[event.Sender]
 }
 
 // clientWithToken is client.Client with information about the authenticated project.

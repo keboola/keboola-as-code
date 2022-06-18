@@ -1,12 +1,14 @@
 package jsonnetfiles
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *jsonNetMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *jsonNetMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	// Convert all Json files to JsonNet
 	errors := utils.NewMultiError()
 	modified := model.NewFilesToSave()

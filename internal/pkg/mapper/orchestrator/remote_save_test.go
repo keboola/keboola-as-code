@@ -1,9 +1,11 @@
 package orchestrator_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -21,7 +23,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
+					ComponentId: storageapi.OrchestratorComponentID,
 					ConfigId:    `456`,
 					Index:       0,
 				},
@@ -124,7 +126,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 
 	key := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: model.OrchestratorComponentId,
+		ComponentId: storageapi.OrchestratorComponentID,
 		Id:          `456`,
 	}
 	manifest := &model.ConfigManifest{ConfigKey: key}
@@ -133,7 +135,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 	recipe := model.NewRemoteSaveRecipe(manifest, object, model.NewChangedFields("orchestration"))
 
 	// Save
-	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Orchestration is stored in API object content

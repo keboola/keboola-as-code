@@ -1,8 +1,10 @@
 package configmetadata_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -36,7 +38,7 @@ func TestConfigMetadataMapper_MapBeforeLocalSave(t *testing.T) {
 	}
 
 	recipe := model.NewLocalSaveRecipe(configState.Manifest(), configState.Local, model.NewChangedFields())
-	assert.NoError(t, mockedState.Mapper().MapBeforeLocalSave(recipe))
+	assert.NoError(t, mockedState.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	configManifest := recipe.ObjectManifest.(*model.ConfigManifest)

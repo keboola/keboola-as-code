@@ -1,13 +1,15 @@
 package corefiles
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // MapAfterLocalLoad loads files to tagged object (Branch, Config,ConfigRow) fields.
-func (m *coreFilesMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
+func (m *coreFilesMapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
 	errors := utils.NewMultiError()
 	if err := m.loadMetaFile(recipe); err != nil {
 		errors.Append(err)

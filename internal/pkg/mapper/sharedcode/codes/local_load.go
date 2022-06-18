@@ -1,7 +1,10 @@
 package codes
 
 import (
+	"context"
 	"fmt"
+
+	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -9,7 +12,7 @@ import (
 )
 
 // MapAfterLocalLoad loads shared code from filesystem to target config.
-func (m *mapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
+func (m *mapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
 	errors := utils.NewMultiError()
 
 	// Shared code config

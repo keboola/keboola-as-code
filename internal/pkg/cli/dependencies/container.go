@@ -3,8 +3,9 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"net/http"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/client"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
@@ -55,7 +56,7 @@ type Provider interface {
 
 func NewContainer(ctx context.Context, envs *env.Map, fs filesystem.Fs, dialogs *dialog.Dialogs, logger log.Logger, options *options.Options) Container {
 	c := &container{ctx: ctx, logger: logger, envs: envs, fs: fs, dialogs: dialogs, options: options}
-	c.commonDeps = dependencies.NewCommonContainer(c)
+	c.commonDeps = dependencies.NewCommonContainer(ctx, c)
 	return c
 }
 
@@ -63,18 +64,31 @@ type commonDeps = dependencies.Common
 
 type container struct {
 	commonDeps
-	ctx        context.Context
-	logger     log.Logger
-	dialogs    *dialog.Dialogs
-	options    *options.Options
-	envs       *env.Map
-	storageApi *storageapi.Api
+	ctx              context.Context
+	logger           log.Logger
+	dialogs          *dialog.Dialogs
+	options          *options.Options
+	envs             *env.Map
+	httpTransport    http.RoundTripper
+	httpTraceFactory client.TraceFactory
+	storageApi       client.Sender
 	// Fs
 	fs       filesystem.Fs
 	emptyDir filesystem.Fs
 	// Project
 	project    *project.Project
 	projectDir filesystem.Fs
+}
+
+func (v *container) HttpTransport() http.RoundTripper {
+	if v.httpTransport == nil {
+		v.httpTransport = client.DefaultTransport()
+	}
+	return v.httpTransport
+}
+
+func (v *container) HttpTraceFactory() client.TraceFactory {
+	return v.httpTraceFactory
 }
 
 func (v *container) Ctx() context.Context {
@@ -153,17 +167,17 @@ func (v *container) StorageApiClient() (client.Sender, error) {
 			return nil, err
 		}
 
-		// Storage Api token project ID and manifest project ID must be same
-		if v.LocalProjectExists() {
-			prj, err := v.LocalProject(false)
-			if err != nil {
-				return nil, err
-			}
-			projectManifest := prj.ProjectManifest()
-			if projectManifest != nil && projectManifest.ProjectId() != storageApi.ProjectId() {
-				return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, storageApi.ProjectId(), projectManifest.ProjectId())
-			}
-		}
+		//// Storage Api token project ID and manifest project ID must be same
+		//if v.LocalProjectExists() {
+		//	prj, err := v.LocalProject(false)
+		//	if err != nil {
+		//		return nil, err
+		//	}
+		//	projectManifest := prj.ProjectManifest()
+		//	if projectManifest != nil && projectManifest.ProjectId() != storageApi.ProjectId() {
+		//		return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, storageApi.ProjectId(), projectManifest.ProjectId())
+		//	}
+		//}
 
 		v.storageApi = storageApi
 	}

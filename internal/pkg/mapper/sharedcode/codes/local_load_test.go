@@ -1,8 +1,10 @@
 package codes_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -25,13 +27,13 @@ func TestSharedCodeLocalLoad(t *testing.T) {
 
 	// Load config
 	configRecipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
-	err := state.Mapper().MapAfterLocalLoad(configRecipe)
+	err := state.Mapper().MapAfterLocalLoad(context.Background(), configRecipe)
 	assert.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Load row
 	rowRecipe := model.NewLocalLoadRecipe(d.FileLoader(), rowState.Manifest(), rowState.Local)
-	err = state.Mapper().MapAfterLocalLoad(rowRecipe)
+	err = state.Mapper().MapAfterLocalLoad(context.Background(), rowRecipe)
 	assert.NoError(t, err)
 	assert.Equal(t, "DEBUG  Loaded \"branch/config/row/code.py\"\n", logger.AllMessages())
 
@@ -61,13 +63,13 @@ func TestSharedCodeLocalLoad_MissingCodeFile(t *testing.T) {
 
 	// Load config
 	configRecipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
-	err := state.Mapper().MapAfterLocalLoad(configRecipe)
+	err := state.Mapper().MapAfterLocalLoad(context.Background(), configRecipe)
 	assert.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Load row
 	rowRecipe := model.NewLocalLoadRecipe(d.FileLoader(), rowState.Manifest(), rowState.Local)
-	err = state.Mapper().MapAfterLocalLoad(rowRecipe)
+	err = state.Mapper().MapAfterLocalLoad(context.Background(), rowRecipe)
 	assert.Error(t, err)
 	assert.Equal(t, `missing shared code file "branch/config/row/code.py"`, err.Error())
 	assert.Empty(t, logger.WarnAndErrorMessages())

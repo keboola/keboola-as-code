@@ -1,8 +1,10 @@
 package variables_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -28,7 +30,7 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	// Invoke
 	assert.NotEmpty(t, object.Relations)
 	assert.NotEmpty(t, object.Relations)
-	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// All relations have been mapped

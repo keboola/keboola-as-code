@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/keboola/go-client/pkg/storageapi"
 )
 
 const (

@@ -7,10 +7,10 @@ import (
 )
 
 func MockedComponentsMap() model.ComponentsMap {
-	return model.NewComponentsMap(mockedComponents())
+	return model.NewComponentsMap(MockedComponents())
 }
 
-func mockedComponents() storageapi.Components {
+func MockedComponents() storageapi.Components {
 	return storageapi.Components{
 		{ComponentKey: storageapi.ComponentKey{ID: "foo.bar"}, Type: "other", Name: "Foo Bar", Data: storageapi.ComponentData{}},
 		{ComponentKey: storageapi.ComponentKey{ID: "ex-generic-v2"}, Type: "extractor", Name: "Generic", Data: storageapi.ComponentData{}},

@@ -1,8 +1,10 @@
 package codes_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -25,7 +27,7 @@ func TestSharedCodeLocalSave(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(filesystem.Dir(codeFilePath)))
 
 	// Save to file
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Assert

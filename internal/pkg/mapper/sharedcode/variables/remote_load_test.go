@@ -1,8 +1,10 @@
 package variables_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -18,14 +20,14 @@ func TestSharedCodeMapAfterRemoteLoad(t *testing.T) {
 	content := orderedmap.New()
 	content.Set(model.SharedCodeVariablesIdContentKey, variablesConfigId)
 	object := &model.ConfigRow{
-		ConfigRowKey: model.ConfigRowKey{ComponentId: model.SharedCodeComponentId},
+		ConfigRowKey: model.ConfigRowKey{ComponentId: storageapi.SharedCodeComponentID},
 		Content:      content,
 	}
 	recipe := model.NewRemoteLoadRecipe(&model.ConfigRowManifest{}, object)
 
 	// Invoke
 	assert.Empty(t, object.Relations)
-	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(recipe))
+	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Object has new relation + content without variables ID

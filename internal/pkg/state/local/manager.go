@@ -250,7 +250,7 @@ func (u *UnitOfWork) Invoke() error {
 
 	// AfterLocalOperation event
 	if !u.changes.Empty() {
-		if err := u.mapper.AfterLocalOperation(u.changes); err != nil {
+		if err := u.mapper.AfterLocalOperation(u.ctx, u.changes); err != nil {
 			u.errors.Append(err)
 		}
 	}

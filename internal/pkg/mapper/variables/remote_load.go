@@ -1,10 +1,14 @@
 package variables
 
 import (
+	"context"
+
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *variablesMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+func (m *variablesMapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
 	// Variables are used by config
 	object, ok := recipe.Object.(*model.Config)
 	if !ok {

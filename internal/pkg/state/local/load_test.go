@@ -11,7 +11,7 @@ import (
 
 func TestLocalLoadModelNotFound(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
+	manager := newTestLocalManager(t, nil)
 
 	// Save files
 	target := &fixtures.MockedObject{}

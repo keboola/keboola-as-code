@@ -214,7 +214,7 @@ func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) 
 
 	// Invoke mapper
 	recipe := model.NewRemoteLoadRecipe(objectState.Manifest(), internalObject)
-	if err := u.mapper.MapAfterRemoteLoad(recipe); err != nil {
+	if err := u.mapper.MapAfterRemoteLoad(u.ctx, recipe); err != nil {
 		return nil, err
 	}
 
@@ -232,7 +232,7 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 	// Invoke mapper
 	apiObject := deepcopy.Copy(object).(model.Object)
 	recipe := model.NewRemoteSaveRecipe(objectState.Manifest(), apiObject, changedFields)
-	if err := u.mapper.MapBeforeRemoteSave(recipe); err != nil {
+	if err := u.mapper.MapBeforeRemoteSave(context.Background(), recipe); err != nil {
 		u.errors.Append(err)
 		return
 	}
@@ -269,7 +269,7 @@ func (u *UnitOfWork) Invoke() error {
 
 	// AfterRemoteOperation event
 	if !u.changes.Empty() {
-		if err := u.mapper.AfterRemoteOperation(u.changes); err != nil {
+		if err := u.mapper.AfterRemoteOperation(u.ctx, u.changes); err != nil {
 			u.errors.Append(err)
 		}
 	}

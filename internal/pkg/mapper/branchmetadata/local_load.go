@@ -1,6 +1,7 @@
 package branchmetadata
 
 import (
+	"context"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -8,7 +9,7 @@ import (
 )
 
 // MapAfterLocalLoad - load metadata from manifest to branch.
-func (m *branchMetadataMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
+func (m *branchMetadataMapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
 	manifest, ok := recipe.ObjectManifest.(*model.BranchManifest)
 	if !ok {
 		return nil

@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 )
 

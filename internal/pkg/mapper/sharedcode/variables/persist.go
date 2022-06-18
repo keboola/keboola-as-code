@@ -1,12 +1,13 @@
 package variables
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *mapper) MapBeforePersist(recipe *model.PersistRecipe) error {
+func (m *mapper) MapBeforePersist(ctx context.Context, recipe *model.PersistRecipe) error {
 	// Variables are represented by config
 	configManifest, ok := recipe.Manifest.(*model.ConfigManifest)
 	if !ok {
@@ -14,7 +15,7 @@ func (m *mapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	}
 
 	// Component must be "variables"
-	variablesComponent, err := m.state.Components().Get(configManifest.ComponentKey())
+	variablesComponent, err := m.state.Components().GetOrErr(configManifest.ComponentId)
 	if err != nil {
 		return err
 	}
@@ -29,7 +30,7 @@ func (m *mapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	}
 
 	// Parent component must be "variables"
-	parentComponent, err := m.state.Components().Get(sharedCodeRowKey.ComponentKey())
+	parentComponent, err := m.state.Components().GetOrErr(sharedCodeRowKey.ComponentId)
 	if err != nil {
 		return err
 	}

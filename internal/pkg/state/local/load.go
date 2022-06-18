@@ -19,7 +19,7 @@ func (m *Manager) loadObject(ctx context.Context, manifest model.ObjectManifest,
 	// Call mappers
 	errors := utils.NewMultiError()
 	recipe := model.NewLocalLoadRecipe(m.FileLoader(), manifest, object)
-	if err := m.mapper.MapAfterLocalLoad(recipe); err != nil {
+	if err := m.mapper.MapAfterLocalLoad(context.Background(), recipe); err != nil {
 		errors.Append(err)
 	}
 

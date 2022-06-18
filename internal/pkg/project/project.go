@@ -30,6 +30,7 @@ func LoadManifest(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
+	Components() (model.ComponentsMap, error)
 	StorageApiClient() (client.Sender, error)
 	SchedulerApiClient() (client.Sender, error)
 }

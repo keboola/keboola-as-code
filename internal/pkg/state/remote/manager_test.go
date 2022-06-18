@@ -34,7 +34,7 @@ type testMapper struct {
 	remoteChanges []string
 }
 
-func (*testMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+func (*testMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
 	if config, ok := recipe.Object.(*model.Config); ok {
 		config.Name = "modified name"
 		config.Content.Set(`key`, `api value`)
@@ -43,7 +43,7 @@ func (*testMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	return nil
 }
 
-func (*testMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+func (*testMapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
 	if config, ok := recipe.Object.(*model.Config); ok {
 		config.Name = "internal name"
 		config.Content.Set(`key`, `internal value`)
@@ -52,7 +52,7 @@ func (*testMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	return nil
 }
 
-func (t *testMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (t *testMapper) AfterRemoteOperation(ctx context.Context, changes *model.RemoteChanges) error {
 	for _, objectState := range changes.Loaded() {
 		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`loaded %s`, objectState.Desc()))
 	}

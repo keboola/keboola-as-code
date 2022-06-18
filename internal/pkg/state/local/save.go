@@ -49,7 +49,7 @@ func (w *modelWriter) save() error {
 	}
 
 	// Call mappers
-	if err := w.mapper.MapBeforeLocalSave(w.LocalSaveRecipe); err != nil {
+	if err := w.mapper.MapBeforeLocalSave(w.ctx, w.LocalSaveRecipe); err != nil {
 		w.errors.Append(err)
 	}
 

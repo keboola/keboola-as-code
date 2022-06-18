@@ -3,6 +3,7 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
@@ -34,6 +35,7 @@ type TestContainer struct {
 	fs                          filesystem.Fs
 	options                     *options.Options
 	apiVerboseLogs              bool
+	httpTraceFactory            client.TraceFactory
 	storageApiHost              string
 	storageApiToken             string
 	templateRepositoryFs        filesystem.Fs
@@ -42,7 +44,10 @@ type TestContainer struct {
 	mockedStorageApiTransport   *httpmock.MockTransport
 	mockedSchedulerApi          *client.Client
 	mockedSchedulerApiTransport *httpmock.MockTransport
+	mockedComponents            *model.ComponentsMap
 }
+
+var testTransport = client.DefaultTransport()
 
 func NewTestContainer() *TestContainer {
 	ctx := context.Background()
@@ -100,6 +105,14 @@ func (v *TestContainer) Options() *options.Options {
 
 func (v *TestContainer) ApiVerboseLogs() bool {
 	return v.apiVerboseLogs
+}
+
+func (v *TestContainer) HttpTransport() http.RoundTripper {
+	return testTransport
+}
+
+func (v *TestContainer) HttpTraceFactory() client.TraceFactory {
+	return v.httpTraceFactory
 }
 
 func (v *TestContainer) SetApiVerboseLogs(value bool) {
@@ -165,6 +178,7 @@ func (v *TestContainer) UseMockedStorageApi() (client.Client, *httpmock.MockTran
 		v.mockedStorageApi, v.mockedStorageApiTransport = &c, transport
 	}
 	v.SetStorageApi(*v.mockedStorageApi, nil)
+	v.UseMockedComponents()
 	return *v.mockedStorageApi, v.mockedStorageApiTransport
 }
 
@@ -177,12 +191,20 @@ func (v *TestContainer) UseMockedSchedulerApi() (client.Client, *httpmock.MockTr
 	return *v.mockedSchedulerApi, v.mockedSchedulerApiTransport
 }
 
+func (v *TestContainer) UseMockedComponents() model.ComponentsMap {
+	if v.mockedComponents == nil {
+		components := testapi.MockedComponentsMap()
+		v.mockedComponents = &components
+		v.components.Set(components)
+	}
+	return *v.mockedComponents
+}
+
 // EmptyState without mappers. Useful for mappers unit tests.
 func (v *TestContainer) EmptyState() *state.State {
 	// Enable mocked APIs
 	v.UseMockedSchedulerApi()
-	_, httpTransport := v.UseMockedStorageApi()
-	testapi.AddMockedComponents(httpTransport)
+	v.UseMockedStorageApi()
 
 	// Create mocked state
 	mockedState, err := state.New(NewObjectsContainer(v.Fs(), fixtures.NewManifest()), v)

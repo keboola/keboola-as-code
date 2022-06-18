@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -13,7 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-func (m *orchestratorMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *orchestratorMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	// Object must be orchestrator config
 	if ok, err := m.isOrchestratorConfigKey(recipe.Object.Key()); err != nil || !ok {
 		return err

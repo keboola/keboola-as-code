@@ -1,12 +1,15 @@
 package scheduler
 
 import (
+	"context"
+
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *schedulerMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+func (m *schedulerMapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
 	// Scheduler is a config
 	object, ok := recipe.Object.(*model.Config)
 	if !ok {
@@ -14,7 +17,7 @@ func (m *schedulerMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) err
 	}
 
 	// Check component type
-	component, err := m.state.Components().Get(object.ComponentKey())
+	component, err := m.state.Components().GetOrErr(object.ComponentId)
 	if err != nil {
 		return err
 	}

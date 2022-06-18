@@ -27,7 +27,7 @@ type testMapper struct {
 	localChanges []string
 }
 
-func (*testMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (*testMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	if config, ok := recipe.Object.(*model.Config); ok {
 		config.Content.Set("key", "overwritten")
 		config.Content.Set("new", "value")
@@ -35,7 +35,7 @@ func (*testMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 	return nil
 }
 
-func (*testMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
+func (*testMapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
 	if config, ok := recipe.Object.(*model.Config); ok {
 		config.Content.Set("parameters", "overwritten")
 		config.Content.Set("new", "value")
@@ -43,7 +43,7 @@ func (*testMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 	return nil
 }
 
-func (t *testMapper) AfterLocalOperation(changes *model.LocalChanges) error {
+func (t *testMapper) AfterLocalOperation(ctx context.Context, changes *model.LocalChanges) error {
 	for _, objectState := range changes.Loaded() {
 		t.localChanges = append(t.localChanges, fmt.Sprintf(`loaded %s`, objectState.Desc()))
 	}

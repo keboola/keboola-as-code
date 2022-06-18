@@ -1,12 +1,14 @@
 package orchestrator
 
 import (
+	"context"
+
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *orchestratorMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+func (m *orchestratorMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
 	// Object must be orchestrator config
 	if ok, err := m.isOrchestratorConfigKey(recipe.Object.Key()); err != nil || !ok {
 		return err

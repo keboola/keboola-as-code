@@ -1,6 +1,7 @@
 package variables
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -9,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-func (m *variablesMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
+func (m *variablesMapper) MapBeforePersist(ctx context.Context, recipe *model.PersistRecipe) error {
 	// Variables are represented by config
 	configManifest, ok := recipe.Manifest.(*model.ConfigManifest)
 	if !ok {
@@ -23,7 +24,7 @@ func (m *variablesMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	}
 
 	// Get component
-	component, err := m.state.Components().Get(configManifest.ComponentKey())
+	component, err := m.state.Components().GetOrErr(configManifest.ComponentId)
 	if err != nil {
 		return err
 	}
@@ -56,7 +57,7 @@ func (m *variablesMapper) AfterLocalOperation(changes *model.LocalChanges) error
 		object := objectState.LocalState()
 		if config, ok := object.(*model.Config); ok {
 			// Variables config?
-			component, err := m.state.Components().Get(config.ComponentKey())
+			component, err := m.state.Components().GetOrErr(config.ComponentId)
 			if err != nil {
 				errors.Append(err)
 				continue
@@ -66,7 +67,7 @@ func (m *variablesMapper) AfterLocalOperation(changes *model.LocalChanges) error
 			}
 		} else if row, ok := object.(*model.ConfigRow); ok {
 			// Variables values row?
-			component, err := m.state.Components().Get(row.ComponentKey())
+			component, err := m.state.Components().GetOrErr(row.ComponentId)
 			if err != nil {
 				errors.Append(err)
 				continue

@@ -29,6 +29,6 @@ func (s Lazy[T]) InitAndGet(initFn func() (*T, error)) (T, error) {
 		s.value = v
 		return *v, nil
 	} else {
-		return nil, err
+		return *new(T), err
 	}
 }
