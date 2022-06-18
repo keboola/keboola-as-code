@@ -1,43 +1,151 @@
 package testproject
 
 import (
+	"context"
 	"strings"
 	"sync"
 
+	"github.com/keboola/go-client/pkg/schedulerapi"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // NewSnapshot - to validate final project state in tests.
 func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
+	lock := &sync.Mutex{}
 	snapshot := &fixtures.ProjectSnapshot{}
-	configs := make(map[string]*fixtures.Config)
-	var schedules []*model.Schedule
+	configsMap := make(map[storageapi.ConfigKey]*fixtures.Config)
+	configsMetadataMap := make(map[storageapi.ConfigKey]storageapi.Metadata)
 
-	// Load Storage API object and Schedules in parallel
-	grp := &errgroup.Group{}
+	ctx, cancelFn := context.WithCancel(p.ctx)
+	grp, ctx := errgroup.WithContext(ctx)
+	defer cancelFn()
+
+	// Branches
 	grp.Go(func() error {
-		return p.snapshot(snapshot, configs)
+		request := storageapi.
+			ListBranchesRequest().
+			WithOnSuccess(func(ctx context.Context, sender client.Sender, apiBranches *[]*storageapi.Branch) error {
+				wg := client.NewWaitGroup(ctx, sender)
+				for _, apiBranch := range *apiBranches {
+					apiBranch := apiBranch
+					branch := &fixtures.BranchWithConfigs{Configs: make([]*fixtures.Config, 0)}
+					branch.Name = apiBranch.Name
+					branch.Description = apiBranch.Description
+					branch.IsDefault = apiBranch.IsDefault
+					branch.Metadata = make(map[string]string)
+					snapshot.Branches = append(snapshot.Branches, branch)
+
+					// Load branch metadata
+					wg.Send(storageapi.
+						ListBranchMetadataRequest(apiBranch.BranchKey).
+						WithOnSuccess(func(_ context.Context, _ client.Sender, metadata *storageapi.MetadataDetails) error {
+							branch.Metadata = metadata.ToMap()
+							return nil
+						}),
+					)
+
+					// Load configs and rows
+					wg.Send(storageapi.
+						ListConfigsAndRowsFrom(apiBranch.BranchKey).
+						WithOnSuccess(func(ctx context.Context, sender client.Sender, components *[]*storageapi.ComponentWithConfigs) error {
+							for _, component := range *components {
+								for _, apiConfig := range component.Configs {
+									config := &fixtures.Config{Rows: make([]*fixtures.ConfigRow, 0)}
+									config.ComponentID = apiConfig.ComponentID
+									config.Name = apiConfig.Name
+									config.Description = apiConfig.Description
+									config.ChangeDescription = normalizeChangeDesc(apiConfig.ChangeDescription)
+									config.Content = apiConfig.Content
+									branch.Configs = append(branch.Configs, config)
+
+									lock.Lock()
+									configsMap[apiConfig.ConfigKey] = config
+									lock.Unlock()
+
+									for _, apiRow := range apiConfig.Rows {
+										row := &fixtures.ConfigRow{}
+										row.Name = apiRow.Name
+										row.Description = apiRow.Description
+										row.ChangeDescription = normalizeChangeDesc(apiRow.ChangeDescription)
+										row.IsDisabled = apiRow.IsDisabled
+										row.Content = apiRow.Content
+										config.Rows = append(config.Rows, row)
+									}
+								}
+							}
+							return nil
+						}),
+					)
+
+					// Load configs metadata
+					wg.Send(storageapi.
+						ListConfigMetadataRequest(apiBranch.ID).
+						WithOnSuccess(func(_ context.Context, _ client.Sender, metadata *storageapi.ConfigsMetadata) error {
+							for _, item := range *metadata {
+								configKey := storageapi.ConfigKey{BranchID: item.BranchID, ComponentID: item.ComponentID, ID: item.ConfigID}
+								value := item.Metadata.ToMap()
+
+								lock.Lock()
+								configsMetadataMap[configKey] = value
+								lock.Unlock()
+							}
+							return nil
+						}),
+					)
+				}
+
+				// Wait for sub-requests
+				if err := wg.Wait(); err != nil {
+					return err
+				}
+
+				// Join configs and configs metadata
+				for key, config := range configsMap {
+					if metadata, found := configsMetadataMap[key]; found {
+						config.Metadata = metadata
+					} else {
+						config.Metadata = make(storageapi.Metadata)
+					}
+				}
+
+				return nil
+			})
+		return request.SendOrErr(ctx, p.storageApiClient)
 	})
-	grp.Go(func() (err error) {
-		schedules, err = p.SchedulerApiClient().ListSchedules()
-		return err
+
+	// Schedules for main branch
+	var schedules []*schedulerapi.Schedule
+	grp.Go(func() error {
+		request := schedulerapi.
+			ListSchedulesRequest().
+			WithOnSuccess(func(_ context.Context, _ client.Sender, apiSchedules *[]*schedulerapi.Schedule) error {
+				for _, apiSchedule := range *apiSchedules {
+					schedules = append(schedules, apiSchedule)
+				}
+				return nil
+			})
+		return request.SendOrErr(ctx, p.schedulerApiClient)
 	})
+
+	// Wait for requests
 	if err := grp.Wait(); err != nil {
 		return nil, err
 	}
 
-	// Map schedules
+	// Join schedules with config name
 	for _, schedule := range schedules {
-		configKey := model.ConfigKey{BranchId: p.DefaultBranch().Id, ComponentId: model.SchedulerComponentId, Id: schedule.ConfigId}
-		scheduleConfig := configs[configKey.String()]
-		snapshot.Schedules = append(snapshot.Schedules, &fixtures.Schedule{Name: scheduleConfig.Name})
+		configKey := storageapi.ConfigKey{BranchID: p.DefaultBranch().ID, ComponentID: storageapi.SchedulerComponentID, ID: schedule.ConfigID}
+		if scheduleConfig, found := configsMap[configKey]; found {
+			snapshot.Schedules = append(snapshot.Schedules, &fixtures.Schedule{Name: scheduleConfig.Name})
+		} else {
+			snapshot.Schedules = append(snapshot.Schedules, &fixtures.Schedule{Name: "SCHEDULE CONFIG NOT FOUND"})
+		}
 	}
 
 	// Sort by name
@@ -50,115 +158,6 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	}
 
 	return snapshot, nil
-}
-
-func (p *Project) snapshot(snapshot *fixtures.ProjectSnapshot, configs map[string]*fixtures.Config) error {
-	lock := &sync.Mutex{}
-
-	// Load objects from Storage API
-	branchesMap := make(map[storageapi.BranchID]*fixtures.Branch)
-	configsMap := make(map[storageapi.BranchID]map[model.ConfigKey]*fixtures.Config)
-	metadataMap := make(map[storageapi.BranchID]map[model.ConfigKey]*map[string]string)
-
-	// Branches
-	pool := p.StorageApiClient().NewPool()
-	pool.
-		Request(p.StorageApiClient().ListBranchesRequest()).
-		OnSuccess(func(response *client.Response) {
-			apiBranches := *response.Result().(*[]*model.Branch)
-			for _, branch := range apiBranches {
-				branch := branch
-				b := &fixtures.Branch{}
-				b.Name = branch.Name
-				b.Description = branch.Description
-				b.IsDefault = branch.IsDefault
-				b.Metadata = make(map[string]string)
-				branchesMap[branch.Id] = b
-				configsMap[branch.Id] = make(map[model.ConfigKey]*fixtures.Config)
-				metadataMap[branch.Id] = make(map[model.ConfigKey]*map[string]string)
-
-				// Configs
-				pool.
-					Request(p.StorageApiClient().ListComponentsRequest(branch.Id)).
-					OnSuccess(func(response *client.Response) {
-						apiComponents := *response.Result().(*[]*model.ComponentWithConfigs)
-						for _, component := range apiComponents {
-							for _, config := range component.Configs {
-								c := &fixtures.Config{Rows: make([]*fixtures.ConfigRow, 0)}
-								c.ComponentID = config.ComponentId
-								c.Name = config.Name
-								c.Description = config.Description
-								c.ChangeDescription = normalizeChangeDesc(config.ChangeDescription)
-								c.Content = config.Content
-								configsMap[branch.Id][config.ConfigKey] = c
-
-								lock.Lock()
-								configs[config.Key().String()] = c
-								lock.Unlock()
-
-								// Rows
-								for _, row := range config.Rows {
-									r := &fixtures.ConfigRow{}
-									r.Name = row.Name
-									r.Description = row.Description
-									r.ChangeDescription = normalizeChangeDesc(row.ChangeDescription)
-									r.IsDisabled = row.IsDisabled
-									r.Content = row.Content
-									c.Rows = append(c.Rows, r)
-								}
-							}
-						}
-					}).
-					Send()
-				pool.
-					Request(p.StorageApiClient().ListBranchMetadataRequest(branch.Id)).
-					OnSuccess(func(response *client.Response) {
-						branchMetadataResponse := *response.Result().(*[]storageapi.Metadata)
-						branchMetadataMap := make(map[string]string)
-						for _, m := range branchMetadataResponse {
-							branchMetadataMap[m.Key] = m.Value
-						}
-						b.Metadata = branchMetadataMap
-					}).
-					Send()
-				pool.
-					Request(p.StorageApiClient().ListConfigMetadataRequest(branch.Id)).
-					OnSuccess(func(response *client.Response) {
-						metadataResponse := *response.Result().(*storageapi.ConfigMetadataResponse)
-						for key, metadata := range metadataResponse.MetadataMap(branch.Id) {
-							if len(metadata) > 0 {
-								configMetadataMap := make(map[string]string)
-								for _, m := range metadata {
-									configMetadataMap[m.Key] = m.Value
-								}
-								metadataMap[branch.Id][key] = &configMetadataMap
-							}
-						}
-					}).
-					Send()
-			}
-		}).
-		Send()
-
-	// Wait for requests
-	if err := pool.StartAndWait(); err != nil {
-		return err
-	}
-
-	// Merge configs with metadata
-	for branchId, b := range branchesMap {
-		branchWithConfigs := &fixtures.BranchWithConfigs{Branch: b, Configs: make([]*fixtures.Config, 0)}
-		for configKey, c := range configsMap[branchId] {
-			metadata, ok := metadataMap[branchId][configKey]
-			if ok {
-				c.Metadata = *metadata
-			}
-			branchWithConfigs.Configs = append(branchWithConfigs.Configs, c)
-		}
-		snapshot.Branches = append(snapshot.Branches, branchWithConfigs)
-	}
-
-	return nil
 }
 
 func normalizeChangeDesc(str string) string {

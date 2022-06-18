@@ -150,18 +150,19 @@ func (p *Project) Clean() {
 	p.logf("Clearing project ...")
 	startTime := time.Now()
 
-	grp, cancelFn := errgroup.WithContext(context.Background())
+	ctx, cancelFn := context.WithCancel(context.Background())
+	grp, ctx := errgroup.WithContext(ctx)
 	defer cancelFn()
 
 	// Clean by Storage API
 	grp.Go(func() error {
-		_, err := storageapi.CleanProjectRequest().Send(p.ctx, p.storageApiClient)
+		_, err := storageapi.CleanProjectRequest().Send(ctx, p.storageApiClient)
 		return err
 	})
 
 	// Clean by Scheduler API
 	grp.Go(func() error {
-		_, err := schedulerapi.CleanAllSchedulesRequest().Send(p.ctx, p.schedulerApiClient)
+		_, err := schedulerapi.CleanAllSchedulesRequest().Send(ctx, p.schedulerApiClient)
 		return err
 	})
 
@@ -212,7 +213,8 @@ func (p *Project) SetState(stateFilePath string) {
 }
 
 func (p *Project) createBranches(branches []*fixtures.BranchState) {
-	grp, cancelFn := errgroup.WithContext(context.Background())
+	ctx, cancelFn := context.WithCancel(context.Background())
+	grp, ctx := errgroup.WithContext(context.Background())
 	defer cancelFn()
 
 	// Create branches
@@ -223,14 +225,14 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) {
 			if fixture.IsDefault {
 				// Set default branch description
 				if p.defaultBranch.Description != fixture.Description {
-					if _, err := storageapi.UpdateBranchRequest(p.defaultBranch, []string{"description"}).Send(p.ctx, p.storageApiClient); err != nil {
+					if _, err := storageapi.UpdateBranchRequest(p.defaultBranch, []string{"description"}).Send(ctx, p.storageApiClient); err != nil {
 						return fmt.Errorf("cannot set default branch description: %s", err)
 					}
 				}
 				branch = p.defaultBranch
 			} else {
 				// Create a new branch
-				if v, err := storageapi.CreateBranchRequest(fixture.ToApi()).Send(p.ctx, p.storageApiClient); err == nil {
+				if v, err := storageapi.CreateBranchRequest(fixture.ToApi()).Send(ctx, p.storageApiClient); err == nil {
 					branch = v
 				} else {
 					return fmt.Errorf(`cannot create branch: %s`, err)
@@ -241,7 +243,7 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) {
 			p.addBranch(branch)
 
 			// Set branch metadata
-			_, err := storageapi.AppendBranchMetadataRequest(branch.BranchKey, fixture.Metadata).Send(p.ctx, p.storageApiClient)
+			_, err := storageapi.AppendBranchMetadataRequest(branch.BranchKey, fixture.Metadata).Send(ctx, p.storageApiClient)
 			return err
 		})
 	}
