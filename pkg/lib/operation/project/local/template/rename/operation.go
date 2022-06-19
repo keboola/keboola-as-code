@@ -20,14 +20,14 @@ type Options struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	StorageApiClient() (client.Sender, error)
+	StorageAPITokenID() (string, error)
 }
 
 func Run(projectState *project.State, o Options, d dependencies) error {
 	logger := d.Logger()
 
-	// Get Storage Api - for token
-	storageApi, err := d.StorageApi()
+	// Get token ID
+	tokenID, err := d.StorageAPITokenID()
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func Run(projectState *project.State, o Options, d dependencies) error {
 
 	// Rename
 	o.Instance.InstanceName = o.NewName
-	err = branchState.Local.Metadata.UpsertTemplateInstanceFrom(time.Now(), storageApi.Token().Id, o.Instance)
+	err = branchState.Local.Metadata.UpsertTemplateInstanceFrom(time.Now(), tokenID, o.Instance)
 	if err != nil {
 		return err
 	}

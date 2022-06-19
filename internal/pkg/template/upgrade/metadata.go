@@ -1,6 +1,8 @@
 package upgrade
 
 import (
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
@@ -19,7 +21,7 @@ func iterateTmplMetadata(configs []*model.ConfigWithRows, c configFn, r rowFn) {
 		}
 
 		// Convert slices to maps
-		rowsIdsMap := make(map[storageapi.RowID]storageapi.RowIDMetadata)
+		rowsIdsMap := make(map[storageapi.RowID]model.RowIdMetadata)
 		for _, v := range config.Metadata.RowsTemplateIds() {
 			rowsIdsMap[v.IdInProject] = v
 		}

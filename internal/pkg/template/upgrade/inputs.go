@@ -3,6 +3,7 @@ package upgrade
 import (
 	"reflect"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -22,12 +23,12 @@ type executor struct {
 	errors  *utils.MultiError
 }
 
-func newExecutor(logger log.Logger, api *storageapi.Api, projectState *state.State, plan *Plan) *executor {
+func newExecutor(ctx context.Context, logger log.Logger, storageApiClient client.Sender, projectState *state.State, plan *Plan) *executor {
 	return &executor{
 		Plan:    plan,
 		State:   projectState,
 		logger:  logger,
-		tickets: api.NewTicketProvider(),
+		tickets: storageapi.NewTicketProvider(ctx, storageApiClient),
 		uow:     projectState.LocalManager().NewUnitOfWork(context.Background()),
 		errors:  utils.NewMultiError(),
 	}

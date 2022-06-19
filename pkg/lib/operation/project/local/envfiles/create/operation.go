@@ -3,22 +3,20 @@ package init
 import (
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/client"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 type dependencies interface {
 	Logger() log.Logger
-	StorageApiClient() (client.Sender, error)
+	StorageApiToken() (string, error)
 }
 
 func Run(fs filesystem.Fs, d dependencies) (err error) {
 	logger := d.Logger()
 
-	// Get Storage API
-	storageApi, err := d.StorageApiClient()
+	// Get Storage API token
+	token, err := d.StorageApiToken()
 	if err != nil {
 		return err
 	}
@@ -26,7 +24,7 @@ func Run(fs filesystem.Fs, d dependencies) (err error) {
 	// .env.local - with token value
 	envLocalMsg := " - it contains the API token, keep it local and secret"
 	envLocalLines := []filesystem.FileLine{
-		{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: fmt.Sprintf(`KBC_STORAGE_API_TOKEN="%s"`, storageApi.Token().Token)},
+		{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: fmt.Sprintf(`KBC_STORAGE_API_TOKEN="%s"`, token)},
 	}
 	if err := createFile(logger, fs, ".env.local", envLocalMsg, envLocalLines); err != nil {
 		return err

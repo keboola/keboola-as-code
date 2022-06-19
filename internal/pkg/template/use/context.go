@@ -281,12 +281,12 @@ func (c *Context) idPlaceholder(oldId interface{}) string {
 	p := c.RegisterPlaceholder(oldId, func(p Placeholder, cb ResolveCallback) {
 		// Placeholder -> new ID
 		var newId interface{}
-		c.tickets.Request(func(ticket *model.Ticket) {
+		c.tickets.Request(func(ticket *storageapi.Ticket) {
 			switch p.asValue.(type) {
 			case storageapi.ConfigID:
-				newId = storageapi.ConfigID(ticket.Id)
+				newId = storageapi.ConfigID(ticket.ID)
 			case storageapi.RowID:
-				newId = storageapi.RowID(ticket.Id)
+				newId = storageapi.RowID(ticket.ID)
 			default:
 				panic(fmt.Errorf("unexpected ID type"))
 			}

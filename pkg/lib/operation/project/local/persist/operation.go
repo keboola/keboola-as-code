@@ -3,6 +3,8 @@ package persist
 import (
 	"context"
 
+	"github.com/keboola/go-client/pkg/client"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/persist"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -26,7 +28,7 @@ func Run(projectState *project.State, o Options, d dependencies) error {
 	logger := d.Logger()
 
 	// Get Storage API
-	storageApi, err := d.StorageApi()
+	storageApiClient, err := d.StorageApiClient()
 	if err != nil {
 		return err
 	}
@@ -48,7 +50,7 @@ func Run(projectState *project.State, o Options, d dependencies) error {
 		}
 
 		// Invoke
-		if err := plan.Invoke(logger, storageApi, projectState.State()); err != nil {
+		if err := plan.Invoke(d.Ctx(), logger, storageApiClient, projectState.State()); err != nil {
 			return utils.PrefixError(`cannot persist objects`, err)
 		}
 

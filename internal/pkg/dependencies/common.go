@@ -35,6 +35,8 @@ type Abstract interface {
 // Common provides common dependencies for CLI and templates API.
 type Common interface {
 	Abstract
+	ProjectID() (int, error)
+	StorageAPITokenID() (string, error)
 	StorageApiClient() (client.Sender, error)
 	EncryptionApiClient() (client.Sender, error)
 	SchedulerApiClient() (client.Sender, error)
@@ -74,6 +76,28 @@ func (v *CommonContainer) WithStorageApiClient(client client.Client, token *stor
 	clone := *v
 	clone.storageApi.Set(clientWithToken{Client: client, Token: token})
 	return &clone
+}
+
+func (v *CommonContainer) ProjectID() (int, error) {
+	storageApi, err := v.getStorageApi()
+	if err != nil {
+		return 0, err
+	}
+	if storageApi.Token == nil {
+		return 0, fmt.Errorf("cannot get project ID: unauthenticated")
+	}
+	return storageApi.Token.Owner.ID, nil
+}
+
+func (v *CommonContainer) StorageAPITokenID() (string, error) {
+	storageApi, err := v.getStorageApi()
+	if err != nil {
+		return 0, err
+	}
+	if storageApi.Token == nil {
+		return 0, fmt.Errorf("cannot get token ID: unauthenticated")
+	}
+	return storageApi.Token.ID, nil
 }
 
 func (v *CommonContainer) StorageApiClient() (client.Sender, error) {

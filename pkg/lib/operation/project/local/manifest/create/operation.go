@@ -16,20 +16,25 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	StorageApiClient() (client.Sender, error)
+	StorageApiHost() (string, error)
+	ProjectID() (int, error)
 }
 
 func Run(fs filesystem.Fs, o Options, d dependencies) (*project.Manifest, error) {
 	logger := d.Logger()
 
-	// Get Storage API
-	storageApi, err := d.StorageApi()
+	// Get project host and ID
+	host, err := d.StorageApiHost()
+	if err != nil {
+		return nil, err
+	}
+	projectId, err := d.ProjectID()
 	if err != nil {
 		return nil, err
 	}
 
 	// Create
-	manifest := project.NewManifest(storageApi.ProjectId(), storageApi.Host())
+	manifest := project.NewManifest(projectId, host)
 
 	// Configure
 	manifest.SetNamingTemplate(o.Naming)

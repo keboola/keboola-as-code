@@ -61,7 +61,7 @@ func createMockedChecker(t *testing.T) (*checker, log.DebugLogger) {
 
 	logger := log.NewDebugLogger()
 	c := NewGitHubChecker(context.Background(), logger, env.Empty())
-	resty := c.api.GetRestyClient()
+	resty := c.client.GetRestyClient()
 
 	// Set short retry delay in tests
 	resty.RetryWaitTime = 1 * time.Millisecond

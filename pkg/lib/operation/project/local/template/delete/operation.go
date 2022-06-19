@@ -3,6 +3,8 @@ package delete_template
 import (
 	"context"
 
+	"github.com/keboola/go-client/pkg/client"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	deleteTemplate "github.com/keboola/keboola-as-code/internal/pkg/plan/delete-template"

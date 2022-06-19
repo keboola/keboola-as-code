@@ -6,8 +6,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/keboola/go-client/pkg/encryptionapi"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -33,7 +31,7 @@ type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
 	StorageApiClient() (client.Sender, error)
-	EncryptionApi() (*encryptionapi.Api, error)
+	EncryptionApiClient() (client.Sender, error)
 }
 
 func Run(projectState *project.State, tmpl *template.Template, o Options, d dependencies) error {

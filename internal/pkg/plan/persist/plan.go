@@ -1,9 +1,11 @@
 package persist
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/client"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
@@ -32,6 +34,6 @@ func (p *Plan) Log(logger log.Logger) {
 	}
 }
 
-func (p *Plan) Invoke(logger log.Logger, api *storageapi.Api, projectState *state.State) error {
-	return newExecutor(logger, api, projectState, p).invoke()
+func (p *Plan) Invoke(ctx context.Context, logger log.Logger, storageApiClient client.Sender, projectState *state.State) error {
+	return newExecutor(ctx, logger, storageApiClient, projectState, p).invoke()
 }

@@ -2,11 +2,9 @@ package encrypt
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/go-client/pkg/encryptionapi"
+	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/go-client/pkg/client"
 
@@ -19,30 +17,33 @@ import (
 
 type executor struct {
 	*Plan
-	logger log.Logger
-	api    *encryptionapi.Api
-	pool   *client.Pool
-	uow    *local.UnitOfWork
-	errors *utils.MultiError
+	ctx                 context.Context
+	projectID           int
+	logger              log.Logger
+	encryptionApiClient client.Sender
+	uow                 *local.UnitOfWork
+	errors              *utils.MultiError
 }
 
-func newExecutor(logger log.Logger, api *encryptionapi.Api, state *state.State, ctx context.Context, plan *Plan) *executor {
+func newExecutor(ctx context.Context, projectID int, logger log.Logger, encryptionApiClient client.Sender, state *state.State, plan *Plan) *executor {
 	return &executor{
-		Plan:   plan,
-		logger: logger,
-		api:    api,
-		pool:   api.NewPool(),
-		uow:    state.LocalManager().NewUnitOfWork(ctx),
-		errors: utils.NewMultiError(),
+		Plan:                plan,
+		ctx:                 ctx,
+		projectID:           projectID,
+		logger:              logger,
+		encryptionApiClient: encryptionApiClient,
+		uow:                 state.LocalManager().NewUnitOfWork(ctx),
+		errors:              utils.NewMultiError(),
 	}
 }
 
 func (e *executor) invoke() error {
 	// Encrypt values
+	wg := client.NewWaitGroup(e.ctx, e.encryptionApiClient)
 	for _, action := range e.actions {
-		e.pool.Request(e.encryptRequest(action)).Send()
+		wg.Send(e.encryptRequest(action))
 	}
-	if err := e.pool.StartAndWait(); err != nil {
+	if err := wg.Wait(); err != nil {
 		e.errors.Append(err)
 	}
 
@@ -54,7 +55,7 @@ func (e *executor) invoke() error {
 	return e.errors.ErrorOrNil()
 }
 
-func (e *executor) encryptRequest(action *action) *client.Request {
+func (e *executor) encryptRequest(action *action) client.Sendable {
 	object := action.object
 
 	// Each key for encryption, in the API call, must start with #
@@ -67,16 +68,10 @@ func (e *executor) encryptRequest(action *action) *client.Request {
 	}
 
 	// Prepare request
-	return e.api.
-		CreateEncryptRequest(object.GetComponentId(), data).
-		OnSuccess(func(response *client.Response) {
-			if !response.HasResult() {
-				panic(fmt.Errorf(`missing result of the encrypt API call`))
-			}
-
-			// Replace unencrypted values with encrypted
-			results := *response.Result().(*map[string]string)
-			for key, encrypted := range results {
+	return encryptionapi.
+		EncryptRequest(e.projectID, object.GetComponentId(), data).
+		WithOnSuccess(func(ctx context.Context, sender client.Sender, results *map[string]string) error {
+			for key, encrypted := range *results {
 				path := keyToPath[key]
 				if err := object.GetContent().SetNestedPath(path, encrypted); err != nil {
 					panic(err)
@@ -86,5 +81,6 @@ func (e *executor) encryptRequest(action *action) *client.Request {
 
 			// Save changes
 			e.uow.SaveObject(action.ObjectState, action.object, model.NewChangedFields("configuration"))
+			return nil
 		})
 }
