@@ -5,11 +5,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/keboola/go-client/pkg/schedulerapi"
-	"golang.org/x/sync/errgroup"
-
 	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/schedulerapi"
 	"github.com/keboola/go-client/pkg/storageapi"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"

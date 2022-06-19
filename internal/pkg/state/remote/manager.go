@@ -2,16 +2,16 @@ package remote
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
 
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
-
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -326,8 +326,9 @@ func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.O
 			return nil
 		}).
 		WithOnError(func(ctx context.Context, sender client.Sender, err error) error {
-			if e, ok := err.(*storageapi.Error); ok {
-				if e.ErrCode == "configurationAlreadyExists" || e.ErrCode == "configurationRowAlreadyExists" {
+			var storageApiErr *storageapi.Error
+			if errors.As(err, &storageApiErr) {
+				if storageApiErr.ErrCode == "configurationAlreadyExists" || storageApiErr.ErrCode == "configurationRowAlreadyExists" {
 					// Object exists -> update instead of create
 					return u.updateRequest(objectState, object, recipe, nil).SendOrErr(ctx, sender)
 				}

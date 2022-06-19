@@ -5,12 +5,11 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/keboola/go-client/pkg/encryptionapi"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
-
-	"github.com/keboola/go-client/pkg/encryptionapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"

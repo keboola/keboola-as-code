@@ -1,9 +1,8 @@
 package scheduler
 
 import (
-	"github.com/keboola/go-client/pkg/schedulerapi"
-
 	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/schedulerapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )

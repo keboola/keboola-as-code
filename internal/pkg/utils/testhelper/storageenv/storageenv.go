@@ -5,9 +5,8 @@ import (
 	"strings"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/umisama/go-regexpcache"
-
 	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"

@@ -11,17 +11,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/encryptionapi"
+	"github.com/keboola/go-client/pkg/schedulerapi"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/testproject"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
-
-	"github.com/keboola/go-client/pkg/schedulerapi"
-	"github.com/keboola/go-client/pkg/storageapi"
-
-	"github.com/keboola/go-client/pkg/client"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"

@@ -7,7 +7,6 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
-
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
@@ -47,7 +46,7 @@ type TestContainer struct {
 	mockedComponents            *model.ComponentsMap
 }
 
-var testTransport = client.DefaultTransport()
+var testTransport = client.DefaultTransport() // nolint:gochecknoglobals
 
 func NewTestContainer() *TestContainer {
 	ctx := context.Background()
