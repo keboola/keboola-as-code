@@ -1,8 +1,10 @@
 package metadata_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -58,13 +60,13 @@ func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	assert.NoError(t, mockedState.Mapper().AfterLocalOperation(changes))
+	assert.NoError(t, mockedState.Mapper().AfterLocalOperation(context.Background(), changes))
 
 	config := configState.Local
 	assert.NotEmpty(t, config.Metadata)
 	assert.Equal(t, "my-repository", config.Metadata.Repository())
 	assert.Equal(t, "my-template", config.Metadata.TemplateId())
 	assert.Equal(t, "my-instance", config.Metadata.InstanceId())
-	assert.Equal(t, &storageapi.ConfigIDMetadata{IdInTemplate: "my-config"}, config.Metadata.ConfigTemplateId())
-	assert.Equal(t, []storageapi.RowIDMetadata{{IdInProject: "789", IdInTemplate: "my-row"}}, config.Metadata.RowsTemplateIds())
+	assert.Equal(t, &model.ConfigIdMetadata{IdInTemplate: "my-config"}, config.Metadata.ConfigTemplateId())
+	assert.Equal(t, []model.RowIdMetadata{{IdInProject: "789", IdInTemplate: "my-row"}}, config.Metadata.RowsTemplateIds())
 }

@@ -6,25 +6,24 @@ import (
 
 	"github.com/Netflix/go-expect"
 	"github.com/jarcoal/httpmock"
+	"github.com/keboola/go-client/pkg/client"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	interactivePrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
-func mockedStorageApi(branches []*model.Branch) *storageapi.Api {
-	api, httpTransport := testapi.NewMockedStorageApi(log.NewDebugLogger())
+func mockedStorageApi(branches []*storageapi.Branch) client.Client {
+	storageApiClient, httpTransport := client.NewMockedClient()
 	httpTransport.RegisterResponder(
 		"GET", `=~/storage/dev-branches`,
 		httpmock.NewJsonResponderOrPanic(200, branches),
 	)
-	return api
+	return storageApiClient
 }
 
 func createDialogs(t *testing.T, interactive bool) (*dialog.Dialogs, *expect.Console) {

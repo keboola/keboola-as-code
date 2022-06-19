@@ -11,14 +11,17 @@ import (
 type componentsMap = storageapi.ComponentsMap
 type ComponentsMap struct {
 	componentsMap
+	components                  storageapi.Components
 	used                        map[storageapi.ComponentID]bool
 	defaultBucketsByComponentId map[storageapi.ComponentID]string
 	defaultBucketsByPrefix      map[string]storageapi.ComponentID
 }
 
 func NewComponentsMap(components storageapi.Components) ComponentsMap {
+
 	v := ComponentsMap{
 		componentsMap:               components.ToMap(),
+		components:                  components,
 		used:                        make(map[storageapi.ComponentID]bool),
 		defaultBucketsByComponentId: make(map[storageapi.ComponentID]string),
 		defaultBucketsByPrefix:      make(map[string]storageapi.ComponentID),
@@ -32,6 +35,10 @@ func NewComponentsMap(components storageapi.Components) ComponentsMap {
 	}
 
 	return v
+}
+
+func (m ComponentsMap) NewComponentList() storageapi.Components {
+	return m.components.NewComponentList()
 }
 
 func (m ComponentsMap) Get(id storageapi.ComponentID) (*storageapi.Component, bool) {
@@ -50,8 +57,14 @@ func (m ComponentsMap) GetOrErr(id storageapi.ComponentID) (*storageapi.Componen
 	return v, nil
 }
 
-func (m ComponentsMap) Used() map[storageapi.ComponentID]bool {
-	return m.used
+func (m ComponentsMap) Used() storageapi.Components {
+	var out storageapi.Components
+	for id := range m.used {
+		component, _ := m.Get(id)
+		out = append(out, component)
+	}
+	storageapi.SortComponents(out)
+	return out
 }
 
 func (m ComponentsMap) GetDefaultBucketByTableId(tableId string) (storageapi.ComponentID, storageapi.ConfigID, bool) {

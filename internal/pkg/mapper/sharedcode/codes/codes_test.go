@@ -3,6 +3,7 @@ package codes_test
 import (
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -24,29 +25,11 @@ func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigStat
 	t.Helper()
 	targetComponentId := storageapi.ComponentID(`keboola.snowflake-transformation`)
 
-	// Component
-	state.Components().Set(&model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: model.SharedCodeComponentId,
-		},
-		Type: `other`,
-		Name: `Shared Code`,
-	})
-
-	// Target component
-	state.Components().Set(&model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: targetComponentId,
-		},
-		Type: `transformation`,
-		Name: `Foo`,
-	})
-
 	// Config
 	configKey := model.ConfigKey{
 		BranchId:    789,
 		Id:          `123`,
-		ComponentId: model.SharedCodeComponentId,
+		ComponentId: storageapi.SharedCodeComponentID,
 	}
 	configContent := orderedmap.New()
 	configContent.Set(model.ShareCodeTargetComponentKey, targetComponentId.String())
@@ -72,7 +55,7 @@ func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigStat
 		BranchId:    789,
 		ConfigId:    `123`,
 		Id:          `456`,
-		ComponentId: model.SharedCodeComponentId,
+		ComponentId: storageapi.SharedCodeComponentID,
 	}
 	rowState := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{
@@ -97,29 +80,11 @@ func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigStat
 func createLocalSharedCode(t *testing.T, targetComponentId storageapi.ComponentID, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
-	// Component
-	state.Components().Set(&model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: model.SharedCodeComponentId,
-		},
-		Type: `other`,
-		Name: `Shared Code`,
-	})
-
-	// Target component
-	state.Components().Set(&model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: targetComponentId,
-		},
-		Type: `transformation`,
-		Name: `Foo`,
-	})
-
 	// Config
 	configKey := model.ConfigKey{
 		BranchId:    789,
 		Id:          `123`,
-		ComponentId: model.SharedCodeComponentId,
+		ComponentId: storageapi.SharedCodeComponentID,
 	}
 	configContent := orderedmap.New()
 	configContent.Set(model.ShareCodeTargetComponentKey, targetComponentId.String())
@@ -145,7 +110,7 @@ func createLocalSharedCode(t *testing.T, targetComponentId storageapi.ComponentI
 		BranchId:    789,
 		ConfigId:    `123`,
 		Id:          `456`,
-		ComponentId: model.SharedCodeComponentId,
+		ComponentId: storageapi.SharedCodeComponentID,
 	}
 	rowState := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{
@@ -171,29 +136,11 @@ func createLocalSharedCode(t *testing.T, targetComponentId storageapi.ComponentI
 func createInternalSharedCode(t *testing.T, targetComponentId storageapi.ComponentID, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
-	// Component
-	state.Components().Set(&model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: model.SharedCodeComponentId,
-		},
-		Type: `other`,
-		Name: `Shared Code`,
-	})
-
-	// Target component
-	state.Components().Set(&model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: targetComponentId,
-		},
-		Type: `transformation`,
-		Name: `Foo`,
-	})
-
 	// Config
 	configKey := model.ConfigKey{
 		BranchId:    789,
 		Id:          `123`,
-		ComponentId: model.SharedCodeComponentId,
+		ComponentId: storageapi.SharedCodeComponentID,
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -227,7 +174,7 @@ func createInternalSharedCode(t *testing.T, targetComponentId storageapi.Compone
 		BranchId:    789,
 		ConfigId:    `123`,
 		Id:          `456`,
-		ComponentId: model.SharedCodeComponentId,
+		ComponentId: storageapi.SharedCodeComponentID,
 	}
 	rowState := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{

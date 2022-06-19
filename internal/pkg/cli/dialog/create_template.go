@@ -1,9 +1,12 @@
 package dialog
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
@@ -17,10 +20,11 @@ import (
 )
 
 type createTmplDialogDeps interface {
+	Ctx() context.Context
 	Logger() log.Logger
 	Options() *options.Options
+	Components() (model.ComponentsMap, error)
 	StorageApiClient() (client.Sender, error)
-	Components() (*model.ComponentsMap, error)
 }
 
 type createTmplDialog struct {
@@ -58,14 +62,18 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	}
 
 	// Get Storage API
-	storageApi, err := d.deps.StorageApi()
+	storageApiClient, err := d.deps.StorageApiClient()
 	if err != nil {
 		return d.out, err
 	}
 
 	// Load branches
-	allBranches, err := storageApi.ListBranches()
-	if err != nil {
+	var allBranches []*model.Branch
+	if result, err := storageapi.ListBranchesRequest().Send(d.deps.Ctx(), storageApiClient); err == nil {
+		for _, apiBranch := range *result {
+			allBranches = append(allBranches, model.NewBranch(apiBranch))
+		}
+	} else {
 		return d.out, err
 	}
 
@@ -107,14 +115,15 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	d.out.SourceBranch = d.selectedBranch.BranchKey
 
 	// Load configs
-	components, err := storageApi.ListComponents(d.selectedBranch.Id)
-	if err != nil {
+	branchKey := storageapi.BranchKey{ID: d.selectedBranch.Id}
+	if result, err := storageapi.ListConfigsAndRowsFrom(branchKey).Send(d.deps.Ctx(), storageApiClient); err == nil {
+		for _, component := range *result {
+			for _, apiConfig := range component.Configs {
+				d.allConfigs = append(d.allConfigs, model.NewConfigWithRows(apiConfig))
+			}
+		}
+	} else {
 		return d.out, err
-	}
-
-	// Load configs from branch
-	for _, component := range components {
-		d.allConfigs = append(d.allConfigs, component.Configs...)
 	}
 
 	// Select configs
@@ -147,17 +156,22 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	if d.deps.Options().IsSet(`used-components`) {
 		usedComponents = strings.Split(d.deps.Options().GetString(`used-components`), `,`)
 	} else {
-		usedComponents = d.askComponents(storageApi.Components().AllLoaded())
+		if components, err := d.deps.Components(); err != nil {
+			usedComponents = d.askComponents(components.Used())
+		} else {
+			return d.out, err
+		}
+
 	}
 	d.out.Components = usedComponents
 
 	return d.out, nil
 }
 
-func (d *createTmplDialog) askComponents(all []*model.Component) []string {
+func (d *createTmplDialog) askComponents(all []*storageapi.Component) []string {
 	opts := make([]string, 0)
 	for _, c := range all {
-		opts = append(opts, fmt.Sprintf("%s (%s)", c.Name, c.Id))
+		opts = append(opts, fmt.Sprintf("%s (%s)", c.Name, c.ID))
 	}
 
 	selected, _ := d.prompt.MultiSelectIndex(&prompt.MultiSelectIndex{
@@ -168,7 +182,7 @@ func (d *createTmplDialog) askComponents(all []*model.Component) []string {
 
 	res := make([]string, 0)
 	for _, s := range selected {
-		res = append(res, all[s].Id.String())
+		res = append(res, all[s].ID.String())
 	}
 	return res
 }

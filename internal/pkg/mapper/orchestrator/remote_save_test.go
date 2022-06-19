@@ -37,7 +37,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
 								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
+								ComponentId: storageapi.OrchestratorComponentID,
 								ConfigId:    `456`,
 								Index:       0,
 							},
@@ -61,7 +61,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
 								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
+								ComponentId: storageapi.OrchestratorComponentID,
 								ConfigId:    `456`,
 								Index:       0,
 							},
@@ -86,7 +86,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
+					ComponentId: storageapi.OrchestratorComponentID,
 					ConfigId:    `456`,
 					Index:       1,
 				},
@@ -99,7 +99,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
 								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
+								ComponentId: storageapi.OrchestratorComponentID,
 								ConfigId:    `456`,
 								Index:       1,
 							},

@@ -156,8 +156,8 @@ func (v *container) SetStorageApiHost(host string) {
 	v.options.Set(`storage-api-host`, host)
 }
 
-func (v *container) SetStorageApiToken(host string) {
-	v.options.Set(`storage-api-token`, host)
+func (v *container) SetStorageApiToken(token string) {
+	v.options.Set(`storage-api-token`, token)
 }
 
 func (v *container) StorageApiClient() (client.Sender, error) {

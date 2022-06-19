@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -126,13 +127,6 @@ func TestDiffEqualConfig(t *testing.T) {
 	t.Parallel()
 	projectState := newProjectState(t)
 
-	component := &model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: "foo-bar",
-		},
-	}
-	projectState.Components().Set(component)
-
 	branchKey := model.BranchKey{Id: 123}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
@@ -153,22 +147,20 @@ func TestDiffEqualConfig(t *testing.T) {
 
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: "foo-bar",
+		ComponentId: "foo.bar",
 		Id:          "456",
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
 		Local: &model.Config{
-			ConfigKey:         configKey,
-			Name:              "config name",
-			Description:       "description",
-			ChangeDescription: "remote", // no diff:"true" tag
+			ConfigKey:   configKey,
+			Name:        "config name",
+			Description: "description",
 		},
 		Remote: &model.Config{
-			ConfigKey:         configKey,
-			Name:              "config name",
-			Description:       "description",
-			ChangeDescription: "local", // no diff:"true" tag
+			ConfigKey:   configKey,
+			Name:        "config name",
+			Description: "description",
 		},
 	}
 	assert.NoError(t, projectState.Set(configState))
@@ -193,13 +185,6 @@ func TestDiffNotEqualConfig(t *testing.T) {
 	t.Parallel()
 	projectState := newProjectState(t)
 
-	component := &model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: "foo-bar",
-		},
-	}
-	projectState.Components().Set(component)
-
 	branchKey := model.BranchKey{Id: 123}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
@@ -220,22 +205,20 @@ func TestDiffNotEqualConfig(t *testing.T) {
 
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: "foo-bar",
+		ComponentId: "foo.bar",
 		Id:          "456",
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
 		Local: &model.Config{
-			ConfigKey:         configKey,
-			Name:              "name",
-			Description:       "description",
-			ChangeDescription: "remote", // no diff:"true" tag
+			ConfigKey:   configKey,
+			Name:        "name",
+			Description: "description",
 		},
 		Remote: &model.Config{
-			ConfigKey:         configKey,
-			Name:              "changed",
-			Description:       "changed",
-			ChangeDescription: "local", // no diff:"true" tag
+			ConfigKey:   configKey,
+			Name:        "changed",
+			Description: "changed",
 		},
 	}
 	assert.NoError(t, projectState.Set(configState))
@@ -262,13 +245,6 @@ func TestDiffNotEqualConfigConfiguration(t *testing.T) {
 	t.Parallel()
 	projectState := newProjectState(t)
 
-	component := &model.Component{
-		ComponentKey: model.ComponentKey{
-			Id: "foo-bar",
-		},
-	}
-	projectState.Components().Set(component)
-
 	branchKey := model.BranchKey{Id: 123}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
@@ -289,16 +265,15 @@ func TestDiffNotEqualConfigConfiguration(t *testing.T) {
 
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: "foo-bar",
+		ComponentId: "foo.bar",
 		Id:          "456",
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
 		Local: &model.Config{
-			ConfigKey:         configKey,
-			Name:              "name",
-			Description:       "description",
-			ChangeDescription: "remote", // no diff:"true" tag
+			ConfigKey:   configKey,
+			Name:        "name",
+			Description: "description",
 			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{
 					Key: "foo",
@@ -309,10 +284,9 @@ func TestDiffNotEqualConfigConfiguration(t *testing.T) {
 			}),
 		},
 		Remote: &model.Config{
-			ConfigKey:         configKey,
-			Name:              "name",
-			Description:       "description",
-			ChangeDescription: "local", // no diff:"true" tag
+			ConfigKey:   configKey,
+			Name:        "name",
+			Description: "description",
 			Content: orderedmap.FromPairs([]orderedmap.Pair{
 				{
 					Key: "foo",
@@ -514,7 +488,7 @@ func TestDiffSharedCode(t *testing.T) {
 	projectState := newProjectState(t)
 
 	// Object state
-	configRowKey := model.ConfigRowKey{BranchId: 123, ComponentId: model.SharedCodeComponentId, Id: `456`}
+	configRowKey := model.ConfigRowKey{BranchId: 123, ComponentId: storageapi.SharedCodeComponentID, Id: `456`}
 	configRowState := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{
 			ConfigRowKey: configRowKey,
@@ -563,7 +537,7 @@ func TestDiffOrchestration(t *testing.T) {
 	projectState := newProjectState(t)
 
 	// Object state
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: model.OrchestratorComponentId, Id: `456`}
+	configKey := model.ConfigKey{BranchId: 123, ComponentId: storageapi.OrchestratorComponentID, Id: `456`}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
@@ -577,7 +551,7 @@ func TestDiffOrchestration(t *testing.T) {
 					{
 						PhaseKey: model.PhaseKey{
 							BranchId:    123,
-							ComponentId: model.OrchestratorComponentId,
+							ComponentId: storageapi.OrchestratorComponentID,
 							ConfigId:    `456`,
 							Index:       0,
 						},
@@ -592,7 +566,7 @@ func TestDiffOrchestration(t *testing.T) {
 								TaskKey: model.TaskKey{
 									PhaseKey: model.PhaseKey{
 										BranchId:    123,
-										ComponentId: model.OrchestratorComponentId,
+										ComponentId: storageapi.OrchestratorComponentID,
 										ConfigId:    `456`,
 										Index:       0,
 									},
@@ -619,7 +593,7 @@ func TestDiffOrchestration(t *testing.T) {
 					{
 						PhaseKey: model.PhaseKey{
 							BranchId:    123,
-							ComponentId: model.OrchestratorComponentId,
+							ComponentId: storageapi.OrchestratorComponentID,
 							ConfigId:    `456`,
 							Index:       1,
 						},
@@ -639,7 +613,7 @@ func TestDiffOrchestration(t *testing.T) {
 					{
 						PhaseKey: model.PhaseKey{
 							BranchId:    123,
-							ComponentId: model.OrchestratorComponentId,
+							ComponentId: storageapi.OrchestratorComponentID,
 							ConfigId:    `456`,
 							Index:       0,
 						},
@@ -654,7 +628,7 @@ func TestDiffOrchestration(t *testing.T) {
 								TaskKey: model.TaskKey{
 									PhaseKey: model.PhaseKey{
 										BranchId:    123,
-										ComponentId: model.OrchestratorComponentId,
+										ComponentId: storageapi.OrchestratorComponentID,
 										ConfigId:    `456`,
 										Index:       0,
 									},
@@ -680,7 +654,7 @@ func TestDiffOrchestration(t *testing.T) {
 								TaskKey: model.TaskKey{
 									PhaseKey: model.PhaseKey{
 										BranchId:    123,
-										ComponentId: model.OrchestratorComponentId,
+										ComponentId: storageapi.OrchestratorComponentID,
 										ConfigId:    `456`,
 										Index:       0,
 									},

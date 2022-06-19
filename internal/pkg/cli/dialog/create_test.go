@@ -12,7 +12,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
@@ -91,10 +90,8 @@ func TestAskCreateConfig(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
 	d.SetFs(fs)
+	d.UseMockedStorageApi()
 	d.UseMockedSchedulerApi()
-	_, httpTransport := d.UseMockedStorageApi()
-	testapi.AddMockedComponents(httpTransport)
-	testapi.AddMockedApiIndex(httpTransport)
 	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
 	assert.NoError(t, err)
 
@@ -192,10 +189,8 @@ func TestAskCreateRow(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
 	d.SetFs(fs)
+	d.UseMockedStorageApi()
 	d.UseMockedSchedulerApi()
-	_, httpTransport := d.UseMockedStorageApi()
-	testapi.AddMockedComponents(httpTransport)
-	testapi.AddMockedApiIndex(httpTransport)
 	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
 	assert.NoError(t, err)
 

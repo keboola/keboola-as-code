@@ -1,8 +1,10 @@
 package replacevalues_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -65,7 +67,7 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 	// Run mapper
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(config, row)
-	assert.NoError(t, s.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, s.Mapper().AfterRemoteOperation(context.Background(), changes))
 
 	// Check result state
 	assert.Equal(t, []model.ObjectState{

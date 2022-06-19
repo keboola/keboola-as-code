@@ -48,22 +48,31 @@ type Common interface {
 
 // NewCommonContainer returns dependencies container for production.
 func NewCommonContainer(ctx context.Context, d Abstract) *CommonContainer {
-	return &CommonContainer{Abstract: d, ctx: ctx}
+	return &CommonContainer{
+		Abstract:        d,
+		ctx:             ctx,
+		storageApi:      new(Lazy[clientWithToken]),
+		storageApiIndex: new(Lazy[storageapi.Index]),
+		services:        new(Lazy[storageapi.ServicesMap]),
+		features:        new(Lazy[storageapi.FeaturesMap]),
+		encryptionApi:   new(Lazy[client.Client]),
+		schedulerApi:    new(Lazy[client.Client]),
+		components:      new(Lazy[model.ComponentsMap]),
+		eventSender:     new(Lazy[event.Sender]),
+	}
 }
 
 type CommonContainer struct {
 	Abstract
-	ctx              context.Context
-	httpTransport    http.RoundTripper
-	httpTraceFactory client.TraceFactory
-	storageApi       Lazy[clientWithToken]
-	storageApiIndex  Lazy[storageapi.Index]
-	services         Lazy[storageapi.ServicesMap]
-	features         Lazy[storageapi.FeaturesMap]
-	encryptionApi    Lazy[client.Client]
-	schedulerApi     Lazy[client.Client]
-	components       Lazy[model.ComponentsMap]
-	eventSender      Lazy[event.Sender]
+	ctx             context.Context
+	storageApi      *Lazy[clientWithToken]
+	storageApiIndex *Lazy[storageapi.Index]
+	services        *Lazy[storageapi.ServicesMap]
+	features        *Lazy[storageapi.FeaturesMap]
+	encryptionApi   *Lazy[client.Client]
+	schedulerApi    *Lazy[client.Client]
+	components      *Lazy[model.ComponentsMap]
+	eventSender     *Lazy[event.Sender]
 }
 
 // clientWithToken is client.Client with information about the authenticated project.
@@ -74,6 +83,7 @@ type clientWithToken struct {
 
 func (v *CommonContainer) WithStorageApiClient(client client.Client, token *storageapi.Token) *CommonContainer {
 	clone := *v
+	clone.storageApi = new(Lazy[clientWithToken])
 	clone.storageApi.Set(clientWithToken{Client: client, Token: token})
 	return &clone
 }
@@ -92,10 +102,10 @@ func (v *CommonContainer) ProjectID() (int, error) {
 func (v *CommonContainer) StorageAPITokenID() (string, error) {
 	storageApi, err := v.getStorageApi()
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	if storageApi.Token == nil {
-		return 0, fmt.Errorf("cannot get token ID: unauthenticated")
+		return "", fmt.Errorf("cannot get token ID: unauthenticated")
 	}
 	return storageApi.Token.ID, nil
 }

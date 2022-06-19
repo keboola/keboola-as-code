@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
@@ -19,7 +20,7 @@ import (
 type inputsSelectDialog struct {
 	prompt       prompt.Prompt
 	selectAll    bool
-	components   *model.ComponentsMap
+	components   model.ComponentsMap
 	branch       *model.Branch
 	configs      []*model.ConfigWithRows
 	inputs       input.InputsMap
@@ -27,7 +28,7 @@ type inputsSelectDialog struct {
 	objectInputs objectInputsMap
 }
 
-func newInputsSelectDialog(prompt prompt.Prompt, selectAll bool, components *model.ComponentsMap, branch *model.Branch, configs []*model.ConfigWithRows, inputs input.InputsMap) (*inputsSelectDialog, error) {
+func newInputsSelectDialog(prompt prompt.Prompt, selectAll bool, components model.ComponentsMap, branch *model.Branch, configs []*model.ConfigWithRows, inputs input.InputsMap) (*inputsSelectDialog, error) {
 	d := &inputsSelectDialog{prompt: prompt, selectAll: selectAll, components: components, inputs: inputs, branch: branch, configs: configs}
 	return d, d.detectInputs()
 }
@@ -226,7 +227,7 @@ func (d *inputsSelectDialog) detectInputs() error {
 	d.objectFields = make(map[model.Key]inputFields)
 	for _, c := range d.configs {
 		// Get component
-		component, err := d.components.Get(c.ComponentKey())
+		component, err := d.components.GetOrErr(c.ComponentId)
 		if err != nil {
 			return err
 		}

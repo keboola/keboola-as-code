@@ -6,6 +6,9 @@ import (
 	"sort"
 	"time"
 
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -30,6 +33,8 @@ type Options struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
+	ProjectID() (int, error)
+	StorageAPITokenID() (string, error)
 	StorageApiClient() (client.Sender, error)
 	EncryptionApiClient() (client.Sender, error)
 }
@@ -38,13 +43,19 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	logger := d.Logger()
 
 	// Get Storage API
-	storageApi, err := d.StorageApi()
+	storageApiClient, err := d.StorageApiClient()
+	if err != nil {
+		return err
+	}
+
+	// Get token ID
+	tokenId, err := d.StorageAPITokenID()
 	if err != nil {
 		return err
 	}
 
 	// Create tickets provider, to generate new IDS, if needed
-	tickets := storageApi.NewTicketProvider()
+	tickets := storageapi.NewTicketProvider(d.Ctx(), storageApiClient)
 
 	// Load template
 	ctx := upgrade.NewContext(d.Ctx(), tmpl.Reference(), tmpl.ObjectsRoot(), o.Instance.InstanceId, o.Branch, o.Inputs, tickets, projectState.State())
@@ -69,7 +80,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	}
 
 	// Update instance metadata
-	if err := branchState.Local.Metadata.UpsertTemplateInstance(time.Now(), o.Instance.InstanceId, o.Instance.InstanceName, tmpl.TemplateId(), tmpl.Repository().Name, tmpl.Version(), storageApi.Token().Id, mainConfig); err != nil {
+	if err := branchState.Local.Metadata.UpsertTemplateInstance(time.Now(), o.Instance.InstanceId, o.Instance.InstanceName, tmpl.TemplateId(), tmpl.Repository().Name, tmpl.Version(), tokenId, mainConfig); err != nil {
 		errors.Append(err)
 	}
 	saveOp.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())

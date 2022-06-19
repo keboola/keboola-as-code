@@ -93,12 +93,12 @@ func TestFilterIsObjectIgnored(t *testing.T) {
 func TestObjectsFilter_SetAllowedKeys(t *testing.T) {
 	t.Parallel()
 
-	object1 := fixtures.MockedObject{
+	object1 := &fixtures.MockedObject{
 		MockedKey: fixtures.MockedKey{
 			Id: "123",
 		},
 	}
-	object2 := fixtures.MockedObject{
+	object2 := &fixtures.MockedObject{
 		MockedKey: fixtures.MockedKey{
 			Id: "456",
 		},

@@ -4,6 +4,7 @@ import (
 	"context"
 	stdLog "log"
 
+	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
@@ -32,14 +33,14 @@ type Container interface {
 	Repositories() []model.TemplateRepository
 	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
 	WithLoggerPrefix(prefix string) *container
-	WithStorageApi(api *storageapi.Api) (*container, error)
+	WithStorageApiClient(client client.Client, token *storageapi.Token) (*container, error)
 }
 
 // NewContainer returns dependencies for API and add them to the context.
 func NewContainer(ctx context.Context, repositories []model.TemplateRepository, debug bool, logger *stdLog.Logger, envs *env.Map) (Container, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	c := &container{ctx: ctx, ctxCancelFn: cancel, defaultRepositories: repositories, debug: debug, envs: envs, logger: log.NewApiLogger(logger, "", debug)}
-	c.commonDeps = dependencies.NewCommonContainer(c)
+	c.commonDeps = dependencies.NewCommonContainer(ctx, c)
 	return c, nil
 }
 
@@ -53,7 +54,7 @@ type container struct {
 	logger              log.PrefixLogger
 	envs                *env.Map
 	repositoryManager   *repository.Manager
-	storageApi          *storageapi.Api
+	storageApiClient    client.Sender
 	defaultRepositories []model.TemplateRepository
 }
 
@@ -86,11 +87,10 @@ func (v *container) WithLoggerPrefix(prefix string) *container {
 	return clone
 }
 
-// WithStorageApi returns dependencies clone with modified Storage API.
-func (v *container) WithStorageApi(api *storageapi.Api) (*container, error) {
+// WithStorageApiClient returns dependencies clone with modified Storage API.
+func (v *container) WithStorageApiClient(client client.Client, token *storageapi.Token) (*container, error) {
 	clone := v.Clone()
-	clone.storageApi = api
-	clone.commonDeps = clone.commonDeps.WithStorageApiClient(api)
+	clone.commonDeps = clone.commonDeps.WithStorageApiClient(client, token)
 	return clone, nil
 }
 
@@ -164,19 +164,6 @@ func (v *container) Envs() *env.Map {
 
 func (v *container) ApiVerboseLogs() bool {
 	return v.debug
-}
-
-func (v *container) StorageApiClient() (client.Sender, error) {
-	// Store API instance, so it can be cloned, see WithStorageApiClient
-	if v.storageApi == nil {
-		api, err := v.commonDeps.StorageApiClient()
-		if err != nil {
-			return nil, err
-		}
-		v.storageApi = api
-	}
-
-	return v.storageApi, nil
 }
 
 func (v *container) StorageApiHost() (string, error) {

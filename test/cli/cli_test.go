@@ -3,6 +3,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"os/exec"
@@ -93,7 +94,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	}
 
 	// Create ENV provider
-	envProvider := storageenv.CreateStorageEnvTicketProvider(api, envs)
+	envProvider := storageenv.CreateStorageEnvTicketProvider(context.Background(), api, envs)
 
 	// Replace all %%ENV_VAR%% in all files in the working directory
 	testhelper.ReplaceEnvsDir(workingDirFs, `/`, envProvider)

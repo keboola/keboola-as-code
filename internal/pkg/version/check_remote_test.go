@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/jarcoal/httpmock"
+	"github.com/keboola/go-client/pkg/client"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
@@ -59,17 +59,11 @@ WARN
 func createMockedChecker(t *testing.T) (*checker, log.DebugLogger) {
 	t.Helper()
 
+	// Client with mocked http transport
 	logger := log.NewDebugLogger()
 	c := NewGitHubChecker(context.Background(), logger, env.Empty())
-	resty := c.client.GetRestyClient()
-
-	// Set short retry delay in tests
-	resty.RetryWaitTime = 1 * time.Millisecond
-	resty.RetryMaxWaitTime = 1 * time.Millisecond
-
-	// Mocked resty transport
 	httpTransport := httpmock.NewMockTransport()
-	resty.GetClient().Transport = httpTransport
+	c.client = c.client.WithTransport(httpTransport).WithRetry(client.TestingRetry())
 
 	// Mocked body
 	body := `

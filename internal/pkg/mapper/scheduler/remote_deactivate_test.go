@@ -1,11 +1,13 @@
 package scheduler_test
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -35,7 +37,7 @@ func TestSchedulerMapperRemoteDeactivate(t *testing.T) {
 	// Scheduler config
 	schedulerKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: model.SchedulerComponentId,
+		ComponentId: storageapi.SchedulerComponentID,
 		Id:          `456`,
 	}
 	schedulerConfigState := &model.ConfigState{
@@ -60,7 +62,7 @@ func TestSchedulerMapperRemoteDeactivate(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddDeleted(schedulerConfigState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check API request

@@ -1,6 +1,7 @@
 package relations_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -54,7 +55,7 @@ func TestRelationsMapperLinkRelations(t *testing.T) {
 	// Call AfterLocalOperation
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(object1)
-	assert.NoError(t, state.Mapper().AfterLocalOperation(changes))
+	assert.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Other side relation has been created
@@ -90,7 +91,7 @@ func TestRelationsMapperOtherSideMissing(t *testing.T) {
 	// Call AfterLocalOperation
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(object1)
-	assert.NoError(t, state.Mapper().AfterLocalOperation(changes))
+	assert.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
 
 	// Warning is logged
 	expected := `

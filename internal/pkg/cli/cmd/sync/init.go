@@ -33,7 +33,7 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 
 			// Send cmd successful/failed event
 			if eventSender, err := d.EventSender(); err == nil {
-				defer func() { eventSender.SendCmdEvent(start, cmdErr, "sync-init") }()
+				defer func() { eventSender.SendCmdEvent(d.Ctx(), start, cmdErr, "sync-init") }()
 			} else {
 				return err
 			}

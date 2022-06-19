@@ -1,9 +1,11 @@
 package orchestrator_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
@@ -63,7 +65,7 @@ func TestMapAfterLocalLoad(t *testing.T) {
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	assert.NoError(t, state.Mapper().AfterLocalOperation(changes))
+	assert.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
 
 	// Logs
 	expectedLogs := `
@@ -93,7 +95,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
+					ComponentId: storageapi.OrchestratorComponentID,
 					ConfigId:    `456`,
 					Index:       0,
 				},
@@ -108,7 +110,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
 								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
+								ComponentId: storageapi.OrchestratorComponentID,
 								ConfigId:    `456`,
 								Index:       0,
 							},
@@ -134,7 +136,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
 								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
+								ComponentId: storageapi.OrchestratorComponentID,
 								ConfigId:    `456`,
 								Index:       0,
 							},
@@ -161,7 +163,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
+					ComponentId: storageapi.OrchestratorComponentID,
 					ConfigId:    `456`,
 					Index:       1,
 				},
@@ -169,7 +171,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 				DependsOn: []model.PhaseKey{
 					{
 						BranchId:    123,
-						ComponentId: model.OrchestratorComponentId,
+						ComponentId: storageapi.OrchestratorComponentID,
 						ConfigId:    `456`,
 						Index:       0,
 					},
@@ -181,7 +183,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
 								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
+								ComponentId: storageapi.OrchestratorComponentID,
 								ConfigId:    `456`,
 								Index:       1,
 							},
@@ -248,7 +250,7 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	err := state.Mapper().AfterLocalOperation(changes)
+	err := state.Mapper().AfterLocalOperation(context.Background(), changes)
 	assert.Error(t, err)
 
 	// Assert error
@@ -310,7 +312,7 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	err := state.Mapper().AfterLocalOperation(changes)
+	err := state.Mapper().AfterLocalOperation(context.Background(), changes)
 	assert.Error(t, err)
 
 	// Assert error

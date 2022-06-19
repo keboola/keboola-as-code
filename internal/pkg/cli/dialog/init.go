@@ -1,6 +1,10 @@
 package dialog
 
 import (
+	"context"
+
+	"github.com/keboola/go-client/pkg/client"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
@@ -10,6 +14,7 @@ import (
 )
 
 type initDeps interface {
+	Ctx() context.Context
 	Options() *options.Options
 	StorageApiClient() (client.Sender, error)
 }

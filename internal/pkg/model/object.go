@@ -157,6 +157,22 @@ func NewConfig(apiValue *storageapi.Config) *Config {
 	return out
 }
 
+// NewConfigWithRows creates config model from API values.
+func NewConfigWithRows(apiValue *storageapi.ConfigWithRows) *ConfigWithRows {
+	out := &ConfigWithRows{}
+	out.BranchId = apiValue.BranchID
+	out.ComponentId = apiValue.ComponentID
+	out.Id = apiValue.ID
+	out.Name = apiValue.Name
+	out.Description = apiValue.Description
+	out.IsDisabled = apiValue.IsDisabled
+	out.Content = apiValue.Content
+	for _, apiRow := range apiValue.Rows {
+		out.Rows = append(out.Rows, NewConfigRow(apiRow))
+	}
+	return out
+}
+
 // NewConfigRow creates config row model from API values.
 func NewConfigRow(apiValue *storageapi.ConfigRow) *ConfigRow {
 	out := &ConfigRow{}
