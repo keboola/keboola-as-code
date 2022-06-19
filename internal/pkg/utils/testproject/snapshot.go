@@ -125,9 +125,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		request := schedulerapi.
 			ListSchedulesRequest().
 			WithOnSuccess(func(_ context.Context, _ client.Sender, apiSchedules *[]*schedulerapi.Schedule) error {
-				for _, apiSchedule := range *apiSchedules {
-					schedules = append(schedules, apiSchedule)
-				}
+				schedules = append(schedules, *apiSchedules...)
 				return nil
 			})
 		return request.SendOrErr(ctx, p.schedulerAPIClient)

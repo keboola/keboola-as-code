@@ -18,7 +18,6 @@ type ComponentsMap struct {
 }
 
 func NewComponentsMap(components storageapi.Components) ComponentsMap {
-
 	v := ComponentsMap{
 		componentsMap:               components.ToMap(),
 		components:                  components,

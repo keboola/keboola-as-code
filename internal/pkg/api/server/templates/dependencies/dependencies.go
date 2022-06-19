@@ -54,7 +54,6 @@ type container struct {
 	logger              log.PrefixLogger
 	envs                *env.Map
 	repositoryManager   *repository.Manager
-	storageApiClient    client.Sender
 	defaultRepositories []model.TemplateRepository
 }
 

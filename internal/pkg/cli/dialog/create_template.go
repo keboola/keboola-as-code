@@ -161,7 +161,6 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 		} else {
 			return d.out, err
 		}
-
 	}
 	d.out.Components = usedComponents
 

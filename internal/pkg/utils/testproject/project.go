@@ -47,6 +47,7 @@ type Project struct {
 }
 
 func GetTestProject(t *testing.T, envs *env.Map) *Project {
+	t.Helper()
 	ctx, cancelFn := context.WithCancel(context.Background())
 	t.Cleanup(func() {
 		// Cancel background jobs
@@ -254,7 +255,7 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 							p.logf("✔️ Default branch description.")
 							return nil
 						} else {
-							return fmt.Errorf("cannot set default branch description: %s", err)
+							return fmt.Errorf("cannot set default branch description: %w", err)
 						}
 					}).
 					SendOrErr(ctx, sender)
@@ -274,7 +275,7 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 					p.logf("✔️ Branch \"%s\"(%s).", fixture.Name, branch.ID)
 					return nil
 				} else {
-					return fmt.Errorf(`cannot create branch: %s`, err)
+					return fmt.Errorf(`cannot create branch: %w`, err)
 				}
 			})
 	}
@@ -298,7 +299,7 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 					p.logf("✔️ Branch metadata \"%s\".", fixture.Name)
 					return nil
 				} else {
-					return fmt.Errorf(`cannot set branch metadata: %s`, err)
+					return fmt.Errorf(`cannot set branch metadata: %w`, err)
 				}
 			}).
 			SendOrErr(ctx, sender)
@@ -350,10 +351,8 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 	}
 
 	// Add additional ENVs
-	if additionalEnvs != nil {
-		for k, v := range additionalEnvs {
-			p.setEnv(k, testhelper.ReplaceEnvsString(v, p.envs))
-		}
+	for k, v := range additionalEnvs {
+		p.setEnv(k, testhelper.ReplaceEnvsString(v, p.envs))
 	}
 
 	// Wait for requests
