@@ -1,11 +1,15 @@
 package variables
 
 import (
+	"context"
+
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 // MapAfterRemoteLoad - extract shared code "variables_id".
-func (m *mapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+func (m *mapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
 	if ok, err := m.IsSharedCodeRowKey(recipe.Object.Key()); err != nil || !ok {
 		return err
 	}
@@ -19,7 +23,7 @@ func (m *mapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 
 	// Create relation
 	object.AddRelation(&model.SharedCodeVariablesFromRelation{
-		VariablesId: model.ConfigId(variablesId),
+		VariablesId: storageapi.ConfigID(variablesId),
 	})
 
 	// Remove variables ID from configuration content

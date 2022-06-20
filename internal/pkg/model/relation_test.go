@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
@@ -85,7 +86,7 @@ func TestVariablesForRelation(t *testing.T) {
 	definedOn := &Config{
 		ConfigKey: ConfigKey{
 			BranchId:    123,
-			ComponentId: VariablesComponentId,
+			ComponentId: storageapi.VariablesComponentID,
 			Id:          `45678`,
 		},
 	}

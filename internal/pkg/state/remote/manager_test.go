@@ -10,10 +10,11 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
@@ -32,7 +33,7 @@ type testMapper struct {
 	remoteChanges []string
 }
 
-func (*testMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+func (*testMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
 	if config, ok := recipe.Object.(*model.Config); ok {
 		config.Name = "modified name"
 		config.Content.Set(`key`, `api value`)
@@ -41,7 +42,7 @@ func (*testMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 	return nil
 }
 
-func (*testMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+func (*testMapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
 	if config, ok := recipe.Object.(*model.Config); ok {
 		config.Name = "internal name"
 		config.Content.Set(`key`, `internal value`)
@@ -50,7 +51,7 @@ func (*testMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 	return nil
 }
 
-func (t *testMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (t *testMapper) AfterRemoteOperation(ctx context.Context, changes *model.RemoteChanges) error {
 	for _, objectState := range changes.Loaded() {
 		t.remoteChanges = append(t.remoteChanges, fmt.Sprintf(`loaded %s`, objectState.Desc()))
 	}
@@ -142,9 +143,9 @@ func TestRemoteLoadMapper(t *testing.T) {
 	httpTransport.RegisterResponder(
 		resty.MethodGet,
 		`=~storage/branch/123/metadata`,
-		httpmock.NewJsonResponderOrPanic(200, []storageapi.Metadata{
+		httpmock.NewJsonResponderOrPanic(200, []storageapi.MetadataDetail{
 			{
-				Id:        "1",
+				ID:        "1",
 				Key:       "KBC.KaC.branch-meta",
 				Value:     "val1",
 				Timestamp: "xxx",
@@ -156,7 +157,7 @@ func TestRemoteLoadMapper(t *testing.T) {
 	httpTransport.RegisterResponder(
 		resty.MethodGet,
 		`=~storage/branch/123/search/component-configurations`,
-		httpmock.NewJsonResponderOrPanic(200, storageapi.ConfigMetadataResponse{}).Once(),
+		httpmock.NewJsonResponderOrPanic(200, []storageapi.ConfigMetadataItem{}).Once(),
 	)
 
 	// Mocked response: components + configs
@@ -224,9 +225,9 @@ func TestLoadConfigMetadata(t *testing.T) {
 	httpTransport.RegisterResponder(
 		resty.MethodGet,
 		`=~storage/branch/123/metadata`,
-		httpmock.NewJsonResponderOrPanic(200, []storageapi.Metadata{
+		httpmock.NewJsonResponderOrPanic(200, storageapi.MetadataDetails{
 			{
-				Id:        "1",
+				ID:        "1",
 				Key:       "KBC.KaC.branch-meta",
 				Value:     "val1",
 				Timestamp: "xxx",
@@ -237,19 +238,19 @@ func TestLoadConfigMetadata(t *testing.T) {
 	// Mocked response: config metadata
 	httpTransport.RegisterResponder(
 		"GET", `=~/storage/branch/123/search/component-configurations`,
-		httpmock.NewJsonResponderOrPanic(200, storageapi.ConfigMetadataResponse{
-			storageapi.ConfigMetadataResponseItem{
-				ComponentId: "foo.bar",
-				ConfigId:    "456",
-				Metadata: []storageapi.Metadata{
+		httpmock.NewJsonResponderOrPanic(200, []storageapi.ConfigMetadataItem{
+			{
+				ComponentID: "foo.bar",
+				ConfigID:    "456",
+				Metadata: storageapi.MetadataDetails{
 					{
-						Id:        "1",
+						ID:        "1",
 						Key:       "KBC.KaC.Meta",
 						Value:     "value1",
 						Timestamp: "xxx",
 					},
 					{
-						Id:        "2",
+						ID:        "2",
 						Key:       "KBC.KaC.Meta2",
 						Value:     "value2",
 						Timestamp: "xxx",
@@ -327,8 +328,8 @@ func TestSaveConfigMetadata_Create(t *testing.T) {
 	httpTransport.RegisterResponder(resty.MethodPost, `=~/storage/branch/123/components/foo.bar/configs/456/metadata$`,
 		func(req *http.Request) (*http.Response, error) {
 			httpRequest = req
-			response := []storageapi.Metadata{
-				{Id: "1", Key: "KBC-KaC-meta1", Value: "val1", Timestamp: "xxx"},
+			response := storageapi.MetadataDetails{
+				{ID: "1", Key: "KBC-KaC-meta1", Value: "val1", Timestamp: "xxx"},
 			}
 			return httpmock.NewStringResponse(200, json.MustEncodeString(response, true)), nil
 		},
@@ -352,6 +353,7 @@ func TestSaveConfigMetadata_Create(t *testing.T) {
 	assert.NoError(t, uow.Invoke())
 
 	// Check
+	assert.NotNil(t, httpRequest)
 	reqBodyRaw, err := io.ReadAll(httpRequest.Body)
 	assert.NoError(t, err)
 	reqBody, err := url.QueryUnescape(string(reqBodyRaw))
@@ -398,8 +400,8 @@ func TestSaveConfigMetadata_Update(t *testing.T) {
 	httpTransport.RegisterResponder(resty.MethodPost, `=~/storage/branch/123/components/foo.bar/configs/456/metadata$`,
 		func(req *http.Request) (*http.Response, error) {
 			httpRequest = req
-			response := []storageapi.Metadata{
-				{Id: "1", Key: "KBC-KaC-meta1", Value: "val1", Timestamp: "xxx"},
+			response := storageapi.MetadataDetails{
+				{ID: "1", Key: "KBC-KaC-meta1", Value: "val1", Timestamp: "xxx"},
 			}
 			return httpmock.NewStringResponse(200, json.MustEncodeString(response, true)), nil
 		},
@@ -461,11 +463,11 @@ func TestSaveConfigMetadata_Update_NoChange(t *testing.T) {
 
 func newTestRemoteUOW(t *testing.T, mappers ...interface{}) (*remote.UnitOfWork, *httpmock.MockTransport, *state.Registry) {
 	t.Helper()
-	storageApi, httpTransport := testapi.NewMockedStorageApi(log.NewDebugLogger())
+	storageApiClient, httpTransport := client.NewMockedClient()
 	localManager, projectState := newTestLocalManager(t, mappers)
 	mapperInst := mapper.New().AddMapper(mappers...)
 
-	remoteManager := remote.NewManager(localManager, storageApi, projectState, mapperInst)
+	remoteManager := remote.NewManager(localManager, storageApiClient, projectState, mapperInst)
 	return remoteManager.NewUnitOfWork(context.Background(), `change desc`), httpTransport, projectState
 }
 
@@ -477,8 +479,7 @@ func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *
 	assert.NoError(t, err)
 
 	m := manifest.New(1, "foo.bar")
-	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
-	projectState := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), components, model.SortByPath)
+	projectState := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), testapi.MockedComponentsMap(), model.SortByPath)
 
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()

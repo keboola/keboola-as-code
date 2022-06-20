@@ -3,6 +3,7 @@ package upgrade
 import (
 	"reflect"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -46,12 +47,12 @@ func (e inputsValuesExporter) export() input.StepsGroupsExt {
 	// Export inputs values
 	iterateTmplMetadata(
 		e.configs,
-		func(config *model.Config, idInTemplate model.ConfigId, inputs []model.ConfigInputUsage) {
+		func(config *model.Config, idInTemplate storageapi.ConfigID, inputs []model.ConfigInputUsage) {
 			for _, inputUsage := range inputs {
 				e.addValue(config.Key(), config.Content, inputUsage.Input, inputUsage.JsonKey)
 			}
 		},
-		func(row *model.ConfigRow, idInTemplate model.RowId, inputs []model.RowInputUsage) {
+		func(row *model.ConfigRow, idInTemplate storageapi.RowID, inputs []model.RowInputUsage) {
 			for _, inputUsage := range inputs {
 				e.addValue(row.Key(), row.Content, inputUsage.Input, inputUsage.JsonKey)
 			}

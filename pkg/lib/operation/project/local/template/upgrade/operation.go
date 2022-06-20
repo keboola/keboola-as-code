@@ -6,8 +6,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -32,21 +33,42 @@ type Options struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
-	EncryptionApi() (*encryptionapi.Api, error)
+	ProjectID() (int, error)
+	StorageApiHost() (string, error)
+	StorageAPITokenID() (string, error)
+	StorageApiClient() (client.Sender, error)
+	EncryptionApiClient() (client.Sender, error)
 }
 
 func Run(projectState *project.State, tmpl *template.Template, o Options, d dependencies) ([]string, error) {
 	logger := d.Logger()
 
 	// Get Storage API
-	storageApi, err := d.StorageApi()
+	storageApiClient, err := d.StorageApiClient()
+	if err != nil {
+		return nil, err
+	}
+
+	// Host
+	storageApiHost, err := d.StorageApiHost()
+	if err != nil {
+		return nil, err
+	}
+
+	// Project ID
+	projectID, err := d.ProjectID()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get token ID
+	tokenId, err := d.StorageAPITokenID()
 	if err != nil {
 		return nil, err
 	}
 
 	// Create tickets provider, to generate new IDS, if needed
-	tickets := storageApi.NewTicketProvider()
+	tickets := storageapi.NewTicketProvider(d.Ctx(), storageApiClient)
 
 	// Load template
 	ctx := upgrade.NewContext(d.Ctx(), tmpl.Reference(), tmpl.ObjectsRoot(), o.Instance.InstanceId, o.Branch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, projectState.State())
@@ -71,7 +93,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	}
 
 	// Update instance metadata
-	if err := branchState.Local.Metadata.UpsertTemplateInstance(time.Now(), o.Instance.InstanceId, o.Instance.InstanceName, tmpl.TemplateId(), tmpl.Repository().Name, tmpl.Version(), storageApi.Token().Id, mainConfig); err != nil {
+	if err := branchState.Local.Metadata.UpsertTemplateInstance(time.Now(), o.Instance.InstanceId, o.Instance.InstanceName, tmpl.TemplateId(), tmpl.Repository().Name, tmpl.Version(), tokenId, mainConfig); err != nil {
 		errors.Append(err)
 	}
 	saveOp.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())
@@ -179,7 +201,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	inputValuesMap := o.Inputs.ToMap()
 	for inputName, cKey := range ctx.InputsUsage().OAuthConfigsMap() {
 		if len(inputValuesMap[inputName].Value.(map[string]interface{})) == 0 {
-			warnings = append(warnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", storageApi.Host(), storageApi.ProjectId(), cKey.ComponentId, cKey.Id))
+			warnings = append(warnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", storageApiHost, projectID, cKey.ComponentId, cKey.Id))
 		}
 	}
 	if len(warnings) > 0 {

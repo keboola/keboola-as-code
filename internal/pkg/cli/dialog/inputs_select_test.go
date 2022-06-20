@@ -55,7 +55,7 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 `
 
 	// Check default value
-	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
+	components := testapi.MockedComponentsMap()
 	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, input.NewInputsMap())
 	assert.NoError(t, err)
 	actual := dialog.defaultValue()
@@ -103,7 +103,7 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 `
 
 	// Check default value
-	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
+	components := testapi.MockedComponentsMap()
 	dialog, err := newInputsSelectDialog(nopPrompt.New(), true, components, branch, configs, input.NewInputsMap())
 	assert.NoError(t, err)
 	actual := dialog.defaultValue()
@@ -133,7 +133,7 @@ func TestInputsSelectDialog_Parse(t *testing.T) {
 `
 
 	// Parse
-	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
+	components := testapi.MockedComponentsMap()
 	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, input.NewInputsMap())
 	assert.NoError(t, err)
 	assert.NoError(t, dialog.parse(result))
@@ -185,7 +185,7 @@ func TestInputsSelectDialog_Parse_All(t *testing.T) {
 `
 
 	// Parse
-	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
+	components := testapi.MockedComponentsMap()
 	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, input.NewInputsMap())
 	assert.NoError(t, err)
 	assert.NoError(t, dialog.parse(result))
@@ -304,7 +304,7 @@ invalid
 `
 
 	// Parse
-	components := model.NewComponentsMap(testapi.NewMockedComponentsProvider())
+	components := testapi.MockedComponentsMap()
 	dialog, err := newInputsSelectDialog(nopPrompt.New(), false, components, branch, configs, input.NewInputsMap())
 	assert.NoError(t, err)
 	err = dialog.parse(result)

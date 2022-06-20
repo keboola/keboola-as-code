@@ -15,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
@@ -30,8 +29,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
 	d.SetFs(testfs.MinimalProjectFs(t))
-	_, httpTransport := d.UseMockedStorageApi()
-	testapi.AddMockedComponents(httpTransport)
+	d.UseMockedStorageApi()
 	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
 	assert.NoError(t, err)
 
@@ -278,8 +276,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
 	d.SetFs(testfs.MinimalProjectFs(t))
-	_, httpTransport := d.UseMockedStorageApi()
-	testapi.AddMockedComponents(httpTransport)
+	d.UseMockedStorageApi()
 	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
 	assert.NoError(t, err)
 
@@ -417,8 +414,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
 	d.SetFs(testfs.MinimalProjectFs(t))
-	_, httpTransport := d.UseMockedStorageApi()
-	testapi.AddMockedComponents(httpTransport)
+	d.UseMockedStorageApi()
 	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
 	assert.NoError(t, err)
 
@@ -602,8 +598,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 	d.Options().Set("branch", "123") // see MinimalProjectFs
 	d.Options().Set("instance-name", "My Instance")
 	d.Options().Set("inputs-file", inputsFilePath)
-	_, httpTransport := d.UseMockedStorageApi()
-	testapi.AddMockedComponents(httpTransport)
+	d.UseMockedStorageApi()
 	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
 	assert.NoError(t, err)
 
@@ -699,8 +694,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 	d.Options().Set("branch", "123") // see MinimalProjectFs
 	d.Options().Set("instance-name", "My Instance")
 	d.Options().Set("inputs-file", inputsFilePath)
-	_, httpTransport := d.UseMockedStorageApi()
-	testapi.AddMockedComponents(httpTransport)
+	d.UseMockedStorageApi()
 	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
 	assert.NoError(t, err)
 

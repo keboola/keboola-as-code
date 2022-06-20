@@ -1,6 +1,7 @@
 package transformation_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/deepcopy"
@@ -30,7 +31,7 @@ func TestLocalSaveTransformationEmpty(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(blocksDir))
 
 	// Save
-	err := state.Mapper().MapBeforeLocalSave(recipe)
+	err := state.Mapper().MapBeforeLocalSave(context.Background(), recipe)
 	assert.NoError(t, err)
 	assert.NoError(t, err)
 	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(object.Content, false))
@@ -143,7 +144,7 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 	}
 
 	// Save
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Minify JSON + remove file description

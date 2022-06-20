@@ -1,8 +1,10 @@
 package metadata_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -15,19 +17,19 @@ func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
 	instanceId := "my-instance"
 	objectIds := metadata.ObjectIdsMap{}
-	objectIds[model.ConfigId("456")] = model.ConfigId("my-config")
-	objectIds[model.RowId("789")] = model.RowId("my-row")
+	objectIds[storageapi.ConfigID("456")] = storageapi.ConfigID("my-config")
+	objectIds[storageapi.RowID("789")] = storageapi.RowID("my-row")
 	inputsUsage := metadata.NewInputsUsage()
 	mockedState, _ := createStateWithMapper(t, templateRef, instanceId, objectIds, inputsUsage)
 
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: model.ComponentId("keboola.foo-bar"),
+		ComponentId: storageapi.ComponentID("keboola.foo-bar"),
 		Id:          `456`,
 	}
 	configRowKey := model.ConfigRowKey{
 		BranchId:    123,
-		ComponentId: model.ComponentId("keboola.foo-bar"),
+		ComponentId: storageapi.ComponentID("keboola.foo-bar"),
 		ConfigId:    `456`,
 		Id:          `789`,
 	}
@@ -58,7 +60,7 @@ func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	assert.NoError(t, mockedState.Mapper().AfterLocalOperation(changes))
+	assert.NoError(t, mockedState.Mapper().AfterLocalOperation(context.Background(), changes))
 
 	config := configState.Local
 	assert.NotEmpty(t, config.Metadata)

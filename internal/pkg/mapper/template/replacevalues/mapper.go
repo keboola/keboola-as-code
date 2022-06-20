@@ -1,6 +1,8 @@
 package replacevalues
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -22,11 +24,11 @@ func NewMapper(state *state.State, replacements *Values) *replaceKeysMapper {
 	return &replaceKeysMapper{state: state, logger: state.Logger(), replacements: replacements}
 }
 
-func (m *replaceKeysMapper) AfterLocalOperation(changes *model.LocalChanges) error {
+func (m *replaceKeysMapper) AfterLocalOperation(_ context.Context, changes *model.LocalChanges) error {
 	return m.afterOperation(changes)
 }
 
-func (m *replaceKeysMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (m *replaceKeysMapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
 	return m.afterOperation(changes)
 }
 

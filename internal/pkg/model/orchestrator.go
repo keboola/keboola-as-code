@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 
@@ -28,8 +29,8 @@ type Task struct {
 	TaskKey
 	AbsPath     `validate:"dive"`
 	Name        string                 `validate:"required"`
-	ComponentId ComponentId            `validate:"required"`
-	ConfigId    ConfigId               `validate:"required"`
+	ComponentId storageapi.ComponentID `validate:"required"`
+	ConfigId    storageapi.ConfigID    `validate:"required"`
 	ConfigPath  string                 // target config path if any
 	Content     *orderedmap.OrderedMap `validate:"dive"`
 }
@@ -67,7 +68,7 @@ func (t Task) String() string {
 
 // UsedInOrchestratorRelation indicates that the owner config is used in an orchestration.
 type UsedInOrchestratorRelation struct {
-	ConfigId ConfigId
+	ConfigId storageapi.ConfigID
 }
 
 func (t *UsedInOrchestratorRelation) Type() RelationType {

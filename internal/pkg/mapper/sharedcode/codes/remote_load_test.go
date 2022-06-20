@@ -1,6 +1,7 @@
 package codes_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -25,7 +26,7 @@ func TestSharedCodeRemoteLoad(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check config
@@ -60,7 +61,7 @@ func TestSharedCodeRemoteLoad_Legacy(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check config
@@ -95,7 +96,7 @@ func TestSharedCodeRemoteLoad_UnexpectedTypeInConfig(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 
 	// Check logs
 	expectedLogs := `
@@ -123,7 +124,7 @@ func TestSharedCodeRemoteLoad_UnexpectedTypeInRow(t *testing.T) {
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
 	changes.AddLoaded(rowState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 
 	// Check logs
 	expectedLogs := `

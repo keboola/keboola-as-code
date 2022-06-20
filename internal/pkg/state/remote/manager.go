@@ -2,16 +2,18 @@ package remote
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
 
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
+	"golang.org/x/sync/semaphore"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
@@ -20,10 +22,10 @@ import (
 )
 
 type Manager struct {
-	state        model.ObjectStates
-	localManager *local.Manager
-	api          *storageapi.Api
-	mapper       *mapper.Mapper
+	state            model.ObjectStates
+	localManager     *local.Manager
+	storageApiClient client.Sender
+	mapper           *mapper.Mapper
 }
 
 type UnitOfWork struct {
@@ -31,18 +33,23 @@ type UnitOfWork struct {
 	ctx               context.Context
 	lock              *sync.Mutex
 	changeDescription string                 // change description used for all modified configs and rows
-	storageApiPools   *orderedmap.OrderedMap // separated pool for changes in branches, configs and rows
+	runGroups         *orderedmap.OrderedMap // separated run group for changes in branches, configs and rows
 	changes           *model.RemoteChanges
 	errors            *utils.MultiError
 	invoked           bool
+	// Only one create/delete branch request can run simultaneously.
+	// Operation is performed via Storage Job, which uses locks.
+	// If we ran multiple requests, then only one job would run and the other jobs would wait.
+	// The problem is that the lock is checked again after 30 seconds, so there is a long delay.
+	branchesSem *semaphore.Weighted
 }
 
-func NewManager(localManager *local.Manager, api *storageapi.Api, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
+func NewManager(localManager *local.Manager, storageApiClint client.Sender, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
 	return &Manager{
-		state:        objects,
-		localManager: localManager,
-		api:          api,
-		mapper:       mapper,
+		state:            objects,
+		localManager:     localManager,
+		storageApiClient: storageApiClint,
+		mapper:           mapper,
 	}
 }
 
@@ -56,134 +63,140 @@ func (m *Manager) NewUnitOfWork(ctx context.Context, changeDescription string) *
 		ctx:               ctx,
 		lock:              &sync.Mutex{},
 		changeDescription: changeDescription,
-		storageApiPools:   orderedmap.New(),
+		runGroups:         orderedmap.New(),
 		changes:           model.NewRemoteChanges(),
 		errors:            utils.NewMultiError(),
+		branchesSem:       semaphore.NewWeighted(1),
 	}
 }
 
 func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
-	// Run all requests in one pool
-	pool := u.poolFor(-1)
+	branches := make(map[model.BranchKey]*model.Branch)
+	configs := make([]*model.ConfigWithRows, 0)
+	configsLock := &sync.Mutex{}
+	configsMetadata := make(map[model.ConfigKey]storageapi.Metadata)
+	configsMetadataLock := &sync.Mutex{}
 
-	// Branches
-	pool.
-		Request(u.api.ListBranchesRequest()).
-		OnSuccess(func(response *client.Response) {
-			for _, branch := range *response.Result().(*[]*model.Branch) {
-				metadataRequest := u.branchMetadataRequest(branch, pool)
-				response.WaitFor(metadataRequest)
-				metadataRequest.Send()
-			}
-		}).
-		OnSuccess(func(response *client.Response) {
-			// Process branch + load branch components
-			for _, branch := range *response.Result().(*[]*model.Branch) {
-				// Store branch to state
-				if objectState, err := u.loadObject(branch, filter); err != nil {
-					u.errors.Append(err)
-					continue
-				} else if objectState == nil {
-					// Ignored -> skip
+	req := storageapi.
+		ListBranchesRequest().
+		WithOnSuccess(func(ctx context.Context, sender client.Sender, apiBranches *[]*storageapi.Branch) error {
+			wg := client.NewWaitGroup(ctx, sender)
+			for _, apiBranch := range *apiBranches {
+				branch := model.NewBranch(apiBranch)
+
+				// Is branch ignored?
+				if filter.IsObjectIgnored(branch) {
 					continue
 				}
 
-				// Load components
-				u.loadBranch(branch, filter, pool)
-			}
-		}).
-		Send()
-}
+				// Add to slice
+				branches[branch.BranchKey] = branch
 
-func (u *UnitOfWork) loadBranch(branch *model.Branch, filter model.ObjectsFilter, pool *client.Pool) {
-	// Load metadata for configurations
-	metadataMap, metadataReq := u.configsMetadataRequest(branch, pool)
+				// Load branch metadata
+				wg.Send(storageapi.
+					ListBranchMetadataRequest(apiBranch.BranchKey).
+					WithOnSuccess(func(_ context.Context, _ client.Sender, metadata *storageapi.MetadataDetails) error {
+						branch.Metadata = model.BranchMetadata(metadata.ToMap())
+						return nil
+					}),
+				)
 
-	// Load components, configs and rows
-	componentsReq := pool.
-		Request(u.api.ListComponentsRequest(branch.Id)).
-		OnSuccess(func(response *client.Response) {
-			components := *response.Result().(*[]*model.ComponentWithConfigs)
+				// Load configs and rows
+				wg.Send(storageapi.
+					ListConfigsAndRowsFrom(apiBranch.BranchKey).
+					WithOnSuccess(func(_ context.Context, _ client.Sender, components *[]*storageapi.ComponentWithConfigs) error {
+						// Save component, it contains all configs and rows
+						for _, apiComponent := range *components {
+							// Configs
+							for _, apiConfig := range apiComponent.Configs {
+								config := &model.ConfigWithRows{Config: model.NewConfig(apiConfig.Config)}
 
-			// Save component, it contains all configs and rows
-			for _, component := range components {
-				// Configs
-				for _, config := range component.Configs {
-					// Set config metadata
-					metadata, found := metadataMap[config.ConfigKey]
-					if !found {
-						metadata = make(map[string]string)
-					}
-					config.Metadata = metadata
+								// Is config ignored?
+								if filter.IsObjectIgnored(config) {
+									continue
+								}
 
-					// Store config to state
-					if objectState, err := u.loadObject(config.Config, filter); err != nil {
-						u.errors.Append(err)
-						continue
-					} else if objectState == nil {
-						// Ignored -> skip
-						continue
-					}
+								// Add to slice
+								configsLock.Lock()
+								configs = append(configs, config)
+								configsLock.Unlock()
 
-					// Rows
-					for _, row := range config.Rows {
-						//  Store row to state
-						if _, err := u.loadObject(row, filter); err != nil {
-							u.errors.Append(err)
-							continue
+								// Rows
+								for _, apiRow := range apiConfig.Rows {
+									row := model.NewConfigRow(apiRow)
+
+									// Is row ignored?
+									if filter.IsObjectIgnored(row) {
+										continue
+									}
+
+									// Add to config
+									config.Rows = append(config.Rows, row)
+								}
+							}
 						}
+						return nil
+					}),
+				)
+
+				// Load configs metadata
+				wg.Send(storageapi.
+					ListConfigMetadataRequest(apiBranch.ID).
+					WithOnSuccess(func(_ context.Context, _ client.Sender, metadata *storageapi.ConfigsMetadata) error {
+						for _, item := range *metadata {
+							configKey := model.ConfigKey{BranchId: item.BranchID, ComponentId: item.ComponentID, Id: item.ConfigID}
+							configsMetadataLock.Lock()
+							configsMetadata[configKey] = item.Metadata.ToMap()
+							configsMetadataLock.Unlock()
+						}
+						return nil
+					}),
+				)
+			}
+
+			// Wait for sub-requests
+			if err := wg.Wait(); err != nil {
+				return err
+			}
+
+			// Process results
+			errs := utils.NewMultiError()
+			for key, branch := range branches {
+				if _, err := u.loadObject(branch); err != nil {
+					errs.Append(err)
+					delete(branches, key)
+				}
+			}
+			for _, config := range configs {
+				// Skip config, if there is an error with branch and branch was not loaded.
+				if _, found := branches[config.BranchKey()]; !found {
+					continue
+				}
+
+				// Add config metadata
+				if m, found := configsMetadata[config.ConfigKey]; found {
+					config.Metadata = model.ConfigMetadata(m)
+				} else {
+					config.Metadata = make(model.ConfigMetadata)
+				}
+				if _, err := u.loadObject(config.Config); err != nil {
+					errs.Append(err)
+					continue
+				}
+				for _, row := range config.Rows {
+					if _, err := u.loadObject(row); err != nil {
+						errs.Append(err)
 					}
 				}
 			}
+			return errs.ErrorOrNil()
 		})
 
-	// Process response after the metadata is loaded
-	componentsReq.WaitFor(metadataReq)
-
-	// Send requests
-	metadataReq.Send()
-	componentsReq.Send()
+	// Add request
+	u.runGroupFor(-1).Add(req)
 }
 
-func (u *UnitOfWork) branchMetadataRequest(branch *model.Branch, pool *client.Pool) *client.Request {
-	request := pool.
-		Request(u.api.ListBranchMetadataRequest(branch.Id)).
-		OnSuccess(func(response *client.Response) {
-			metadataResponse := *response.Result().(*[]storageapi.Metadata)
-			branch.Metadata = make(map[string]string)
-			for _, m := range metadataResponse {
-				branch.Metadata[m.Key] = m.Value
-			}
-		})
-	return request
-}
-
-func (u *UnitOfWork) configsMetadataRequest(branch *model.Branch, pool *client.Pool) (map[model.Key]map[string]string, *client.Request) {
-	lock := &sync.Mutex{}
-	out := make(map[model.Key]map[string]string)
-	request := pool.
-		Request(u.api.ListConfigMetadataRequest(branch.Id)).
-		OnSuccess(func(response *client.Response) {
-			lock.Lock()
-			defer lock.Unlock()
-			metadataResponse := *response.Result().(*storageapi.ConfigMetadataResponse)
-			for key, metadata := range metadataResponse.MetadataMap(branch.Id) {
-				metadataMap := make(map[string]string)
-				for _, m := range metadata {
-					metadataMap[m.Key] = m.Value
-				}
-				out[key] = metadataMap
-			}
-		})
-	return out, request
-}
-
-func (u *UnitOfWork) loadObject(object model.Object, filter model.ObjectsFilter) (model.ObjectState, error) {
-	// Skip ignored objects
-	if filter.IsObjectIgnored(object) {
-		return nil, nil
-	}
-
+func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) {
 	// Get object state
 	objectState, found := u.state.Get(object.Key())
 
@@ -208,7 +221,7 @@ func (u *UnitOfWork) loadObject(object model.Object, filter model.ObjectsFilter)
 
 	// Invoke mapper
 	recipe := model.NewRemoteLoadRecipe(objectState.Manifest(), internalObject)
-	if err := u.mapper.MapAfterRemoteLoad(recipe); err != nil {
+	if err := u.mapper.MapAfterRemoteLoad(u.ctx, recipe); err != nil {
 		return nil, err
 	}
 
@@ -226,14 +239,13 @@ func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Obje
 	// Invoke mapper
 	apiObject := deepcopy.Copy(object).(model.Object)
 	recipe := model.NewRemoteSaveRecipe(objectState.Manifest(), apiObject, changedFields)
-	if err := u.mapper.MapBeforeRemoteSave(recipe); err != nil {
+	if err := u.mapper.MapBeforeRemoteSave(context.Background(), recipe); err != nil {
 		u.errors.Append(err)
 		return
 	}
 
-	if err := u.createOrUpdate(objectState, object, recipe, changedFields); err != nil {
-		u.errors.Append(err)
-	}
+	// Prepare request
+	u.createOrUpdate(objectState, object, recipe, changedFields)
 }
 
 func (u *UnitOfWork) DeleteObject(objectState model.ObjectState) {
@@ -243,15 +255,7 @@ func (u *UnitOfWork) DeleteObject(objectState model.ObjectState) {
 			u.errors.Append(fmt.Errorf("default branch cannot be deleted"))
 			return
 		}
-
-		// Branch must be deleted in blocking operation
-		if _, err := u.api.DeleteBranch(branch.BranchKey); err != nil {
-			u.errors.Append(err)
-		}
-
-		return
 	}
-
 	u.delete(objectState)
 }
 
@@ -260,11 +264,11 @@ func (u *UnitOfWork) Invoke() error {
 		panic(fmt.Errorf(`invoked UnitOfWork cannot be reused`))
 	}
 
-	// Start and wait for all pools
-	u.storageApiPools.SortKeys(sort.Strings)
-	for _, level := range u.storageApiPools.Keys() {
-		pool, _ := u.storageApiPools.Get(level)
-		if err := pool.(*client.Pool).StartAndWait(); err != nil {
+	// Start and wait for all groups
+	u.runGroups.SortKeys(sort.Strings)
+	for _, level := range u.runGroups.Keys() {
+		grp, _ := u.runGroups.Get(level)
+		if err := grp.(*client.RunGroup).RunAndWait(); err != nil {
 			u.errors.Append(err)
 			break
 		}
@@ -272,7 +276,7 @@ func (u *UnitOfWork) Invoke() error {
 
 	// AfterRemoteOperation event
 	if !u.changes.Empty() {
-		if err := u.mapper.AfterRemoteOperation(u.changes); err != nil {
+		if err := u.mapper.AfterRemoteOperation(u.ctx, u.changes); err != nil {
 			u.errors.Append(err)
 		}
 	}
@@ -292,131 +296,118 @@ func (u *UnitOfWork) Invoke() error {
 	return u.errors.ErrorOrNil()
 }
 
-func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) error {
-	// Set changeDescription
-	switch v := recipe.Object.(type) {
-	case *model.Config:
-		v.ChangeDescription = u.changeDescription
-		changedFields.Add("changeDescription")
-	case *model.ConfigRow:
-		v.ChangeDescription = u.changeDescription
-		changedFields.Add("changeDescription")
-	}
-
+func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) {
 	// Should metadata be set?
 	exists := objectState.HasRemoteState()
 	setMetadata := !exists || changedFields.Has("metadata")
-	var setMetadataReq *client.Request
-	if setMetadata {
-		setMetadataReq = u.api.AppendMetadataRequest(object)
-		changedFields.Remove("metadata")
-		// If there is no other change, send the request and return
-		if len(changedFields) == 0 {
-			setMetadataReq.Send()
-			return nil
+	if v, ok := recipe.Object.(model.ToApiMetadata); ok && setMetadata {
+		// If the object already exists, we can send the metadata request in parallel with the update.
+		metadataRequestLevel := object.Level()
+		if !exists {
+			// If the object does not exist, we must set metadata after object creation.
+			metadataRequestLevel = object.Level() + 1
 		}
+		changedFields.Remove("metadata")
+		u.runGroupFor(metadataRequestLevel).Add(storageapi.AppendMetadataRequest(v.ToApiObjectKey(), v.ToApiMetadata()))
 	}
 
 	// Create or update
-	var createOrUpdateReq *client.Request
-	if exists {
-		// Update
-		if r, err := u.updateRequest(objectState, object, recipe, changedFields); err != nil {
-			return err
-		} else {
-			createOrUpdateReq = r
-		}
-	} else {
+	if !exists {
 		// Create
-		if r, err := u.createRequest(objectState, object, recipe); err != nil {
-			return err
-		} else {
-			createOrUpdateReq = r
-		}
+		u.runGroupFor(object.Level()).Add(u.createRequest(objectState, object, recipe))
+	} else if !changedFields.IsEmpty() {
+		// Update
+		u.runGroupFor(object.Level()).Add(u.updateRequest(objectState, object, recipe, changedFields))
 	}
-
-	// Set metadata
-	if setMetadataReq != nil {
-		// Set metadata if save has been successful
-		createOrUpdateReq.OnSuccess(func(response *client.Response) {
-			response.Sender().Send(setMetadataReq) // use same pool
-		})
-	}
-
-	// Send
-	createOrUpdateReq.Send()
-	return nil
 }
 
-func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe) (*client.Request, error) {
-	request, err := u.api.CreateRequest(recipe.Object)
-	if err != nil {
-		return nil, err
-	}
-
-	return u.poolFor(object.Level()).
-		Request(request).
-		OnSuccess(func(response *client.Response) {
-			// Save new ID to manifest
+func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe) client.APIRequest[storageapi.Object] {
+	apiObject, _ := recipe.Object.(model.ToApiObject).ToApiObject(u.changeDescription, nil)
+	request := storageapi.
+		CreateRequest(apiObject).
+		WithOnSuccess(func(_ context.Context, _ client.Sender, apiObject storageapi.Object) error {
+			// Update internal state
+			object.SetObjectId(apiObject.ObjectId())
 			objectState.SetRemoteState(object)
 			u.changes.AddCreated(objectState)
+			return nil
 		}).
-		OnError(func(response *client.Response) {
-			if e, ok := response.Error().(*storageapi.Error); ok {
-				if e.ErrCode == "configurationAlreadyExists" || e.ErrCode == "configurationRowAlreadyExists" {
-					// Object exists -> update instead of create + clear error
-					if r, err := u.updateRequest(objectState, object, recipe, nil); err != nil {
-						response.SetErr(err)
-					} else {
-						response.SetErr(nil)
-						response.WaitFor(r)
-						r.Send()
-					}
+		WithOnError(func(ctx context.Context, sender client.Sender, err error) error {
+			var storageApiErr *storageapi.Error
+			if errors.As(err, &storageApiErr) {
+				if storageApiErr.ErrCode == "configurationAlreadyExists" || storageApiErr.ErrCode == "configurationRowAlreadyExists" {
+					// Object exists -> update instead of create
+					return u.updateRequest(objectState, object, recipe, nil).SendOrErr(ctx, sender)
 				}
 			}
-		}), nil
-}
+			return err
+		})
 
-func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) (*client.Request, error) {
-	request, err := u.api.UpdateRequest(recipe.Object, changedFields)
-	if err != nil {
-		return nil, err
+	// Limit concurrency of branch operations, see u.branchesSem comment.
+	if object.Kind().IsBranch() {
+		request.
+			WithBefore(func(ctx context.Context, _ client.Sender) error {
+				return u.branchesSem.Acquire(ctx, 1)
+			}).
+			WithOnComplete(func(_ context.Context, _ client.Sender, _ storageapi.Object, err error) error {
+				u.branchesSem.Release(1)
+				return err
+			})
 	}
 
-	return u.poolFor(object.Level()).
-		Request(request).
-		OnSuccess(func(response *client.Response) {
+	return request
+}
+
+func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) client.APIRequest[storageapi.Object] {
+	apiObject, apiChangedFields := recipe.Object.(model.ToApiObject).ToApiObject(u.changeDescription, changedFields)
+	return storageapi.
+		UpdateRequest(apiObject, apiChangedFields).
+		WithOnSuccess(func(_ context.Context, _ client.Sender, apiObject storageapi.Object) error {
+			// Update internal state
 			objectState.SetRemoteState(object)
 			u.changes.AddUpdated(objectState)
-		}), nil
+			return nil
+		})
 }
 
 func (u *UnitOfWork) delete(objectState model.ObjectState) {
-	u.poolFor(objectState.Level()).
-		Request(u.api.DeleteRequest(objectState.Key())).
-		OnSuccess(func(response *client.Response) {
+	request := storageapi.
+		DeleteRequest(objectState.(model.ToApiObjectKey).ToApiObjectKey()).
+		WithOnSuccess(func(_ context.Context, _ client.Sender, _ client.NoResult) error {
 			u.Manifest().Delete(objectState)
 			objectState.SetRemoteState(nil)
-		}).
-		OnSuccess(func(response *client.Response) {
 			u.changes.AddDeleted(objectState)
-		}).
-		Send()
+			return nil
+		})
+
+	// Limit concurrency of branch operations, see u.branchesSem comment.
+	if objectState.Kind().IsBranch() {
+		request.
+			WithBefore(func(ctx context.Context, _ client.Sender) error {
+				return u.branchesSem.Acquire(ctx, 1)
+			}).
+			WithOnComplete(func(_ context.Context, _ client.Sender, _ client.NoResult, err error) error {
+				u.branchesSem.Release(1)
+				return err
+			})
+	}
+
+	grp := u.runGroupFor(objectState.Level())
+	grp.Add(request)
 }
 
-// poolFor each level (branches, configs, rows).
-func (u *UnitOfWork) poolFor(level int) *client.Pool {
+// runGroupFor each level (branches, configs, rows).
+func (u *UnitOfWork) runGroupFor(level int) *client.RunGroup {
 	if u.invoked {
 		panic(fmt.Errorf(`invoked UnitOfWork cannot be reused`))
 	}
 
 	key := cast.ToString(level)
-	if value, found := u.storageApiPools.Get(key); found {
-		return value.(*client.Pool)
+	if value, found := u.runGroups.Get(key); found {
+		return value.(*client.RunGroup)
 	}
 
-	pool := u.api.NewPool()
-	pool.SetContext(u.ctx)
-	u.storageApiPools.Set(key, pool)
-	return pool
+	grp := client.NewRunGroup(u.ctx, u.storageApiClient)
+	u.runGroups.Set(key, grp)
+	return grp
 }

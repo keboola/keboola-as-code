@@ -121,11 +121,11 @@ func (m *Manifest) SetAllowedBranches(branches model.AllowedBranches) {
 	m.filter.SetAllowedBranches(branches)
 }
 
-func (m *Manifest) IgnoredComponents() model.ComponentIds {
+func (m *Manifest) IgnoredComponents() model.ComponentIDs {
 	return m.filter.IgnoredComponents()
 }
 
-func (m *Manifest) SetIgnoredComponents(ids model.ComponentIds) {
+func (m *Manifest) SetIgnoredComponents(ids model.ComponentIDs) {
 	m.filter.SetIgnoredComponents(ids)
 }
 

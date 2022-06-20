@@ -1,7 +1,6 @@
 package create
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -17,20 +16,25 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
+	StorageApiHost() (string, error)
+	ProjectID() (int, error)
 }
 
 func Run(fs filesystem.Fs, o Options, d dependencies) (*project.Manifest, error) {
 	logger := d.Logger()
 
-	// Get Storage API
-	storageApi, err := d.StorageApi()
+	// Get project host and ID
+	host, err := d.StorageApiHost()
+	if err != nil {
+		return nil, err
+	}
+	projectId, err := d.ProjectID()
 	if err != nil {
 		return nil, err
 	}
 
 	// Create
-	manifest := project.NewManifest(storageApi.ProjectId(), storageApi.Host())
+	manifest := project.NewManifest(projectId, host)
 
 	// Configure
 	manifest.SetNamingTemplate(o.Naming)

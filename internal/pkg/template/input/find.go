@@ -5,11 +5,12 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/keboola/go-client/pkg/encryptionapi"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/json/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -25,7 +26,7 @@ type ObjectField struct {
 }
 
 // Find potential user inputs in config or config row.
-func Find(objectKey model.Key, component *model.Component, content *orderedmap.OrderedMap) []ObjectField {
+func Find(objectKey model.Key, component *storageapi.Component, content *orderedmap.OrderedMap) []ObjectField {
 	var out []ObjectField
 	content.VisitAllRecursive(func(fieldPath orderedmap.Path, value interface{}, parent interface{}) {
 		// Root key must be "parameters"
@@ -40,7 +41,7 @@ func Find(objectKey model.Key, component *model.Component, content *orderedmap.O
 		}
 
 		// Generate input ID
-		inputId := strhelper.NormalizeName(component.Id.WithoutVendor() + "-" + fieldPath.WithoutFirst().String())
+		inputId := strhelper.NormalizeName(component.ID.WithoutVendor() + "-" + fieldPath.WithoutFirst().String())
 
 		// Detect type, kind and default value
 		var inputType Type

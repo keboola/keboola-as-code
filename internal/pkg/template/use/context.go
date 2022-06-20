@@ -7,9 +7,9 @@ import (
 
 	jsonnetLib "github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/ast"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet/fsimporter"
@@ -171,10 +171,10 @@ func (c *Context) RegisterPlaceholder(oldId interface{}, fn PlaceholderResolver)
 
 		// Convert string to an ID value
 		switch oldId.(type) {
-		case model.ConfigId:
-			p.asValue = model.ConfigId(p.asString)
-		case model.RowId:
-			p.asValue = model.RowId(p.asString)
+		case storageapi.ConfigID:
+			p.asValue = storageapi.ConfigID(p.asString)
+		case storageapi.RowID:
+			p.asValue = storageapi.RowID(p.asString)
 		default:
 			panic(fmt.Errorf("unexpected ID type"))
 		}
@@ -202,7 +202,7 @@ func (c *Context) registerJsonNetFunctions() {
 			} else if id, ok := params[0].(string); !ok {
 				return nil, fmt.Errorf("parameter must be a string")
 			} else {
-				return c.idPlaceholder(model.ConfigId(id)), nil
+				return c.idPlaceholder(storageapi.ConfigID(id)), nil
 			}
 		},
 	})
@@ -217,7 +217,7 @@ func (c *Context) registerJsonNetFunctions() {
 			} else if id, ok := params[0].(string); !ok {
 				return nil, fmt.Errorf("parameter must be a string")
 			} else {
-				return c.idPlaceholder(model.RowId(id)), nil
+				return c.idPlaceholder(storageapi.RowID(id)), nil
 			}
 		},
 	})
@@ -282,12 +282,12 @@ func (c *Context) idPlaceholder(oldId interface{}) string {
 	p := c.RegisterPlaceholder(oldId, func(p Placeholder, cb ResolveCallback) {
 		// Placeholder -> new ID
 		var newId interface{}
-		c.tickets.Request(func(ticket *model.Ticket) {
+		c.tickets.Request(func(ticket *storageapi.Ticket) {
 			switch p.asValue.(type) {
-			case model.ConfigId:
-				newId = model.ConfigId(ticket.Id)
-			case model.RowId:
-				newId = model.RowId(ticket.Id)
+			case storageapi.ConfigID:
+				newId = storageapi.ConfigID(ticket.ID)
+			case storageapi.RowID:
+				newId = storageapi.RowID(ticket.ID)
 			default:
 				panic(fmt.Errorf("unexpected ID type"))
 			}

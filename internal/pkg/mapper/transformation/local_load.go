@@ -1,6 +1,7 @@
 package transformation
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -14,7 +15,7 @@ import (
 )
 
 // MapAfterLocalLoad - load code blocks from filesystem to Blocks field.
-func (m *transformationMapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
+func (m *transformationMapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
 	// Only for transformation config
 	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
 		return err

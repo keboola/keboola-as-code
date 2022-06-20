@@ -1,9 +1,11 @@
 package orchestrator_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -78,7 +80,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: model.OrchestratorComponentId,
+		ComponentId: storageapi.OrchestratorComponentID,
 		Id:          `456`,
 	}
 	configManifest := &model.ConfigManifest{
@@ -100,7 +102,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Check target configs relation
@@ -121,7 +123,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
+					ComponentId: storageapi.OrchestratorComponentID,
 					ConfigId:    `456`,
 					Index:       0,
 				},
@@ -134,7 +136,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
 								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
+								ComponentId: storageapi.OrchestratorComponentID,
 								ConfigId:    `456`,
 								Index:       0,
 							},
@@ -160,7 +162,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
 								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
+								ComponentId: storageapi.OrchestratorComponentID,
 								ConfigId:    `456`,
 								Index:       0,
 							},
@@ -187,7 +189,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
+					ComponentId: storageapi.OrchestratorComponentID,
 					ConfigId:    `456`,
 					Index:       1,
 				},
@@ -195,7 +197,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 				DependsOn: []model.PhaseKey{
 					{
 						BranchId:    123,
-						ComponentId: model.OrchestratorComponentId,
+						ComponentId: storageapi.OrchestratorComponentID,
 						ConfigId:    `456`,
 						Index:       0,
 					},
@@ -209,7 +211,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
 								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
+								ComponentId: storageapi.OrchestratorComponentID,
 								ConfigId:    `456`,
 								Index:       1,
 							},
@@ -286,7 +288,7 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: model.OrchestratorComponentId,
+		ComponentId: storageapi.OrchestratorComponentID,
 		Id:          `456`,
 	}
 	configManifest := &model.ConfigManifest{
@@ -305,7 +307,7 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 
 	// Warnings
 	expectedWarnings := `
@@ -330,7 +332,7 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
+					ComponentId: storageapi.OrchestratorComponentID,
 					ConfigId:    `456`,
 					Index:       0,
 				},
@@ -342,7 +344,7 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
 								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
+								ComponentId: storageapi.OrchestratorComponentID,
 								ConfigId:    `456`,
 								Index:       0,
 							},
@@ -409,7 +411,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: model.OrchestratorComponentId,
+		ComponentId: storageapi.OrchestratorComponentID,
 		Id:          `456`,
 	}
 	configManifest := &model.ConfigManifest{
@@ -425,7 +427,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Internal object
@@ -435,7 +437,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
+					ComponentId: storageapi.OrchestratorComponentID,
 					ConfigId:    `456`,
 					Index:       0,
 				},
@@ -446,14 +448,14 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
+					ComponentId: storageapi.OrchestratorComponentID,
 					ConfigId:    `456`,
 					Index:       1,
 				},
 				DependsOn: []model.PhaseKey{
 					{
 						BranchId:    123,
-						ComponentId: model.OrchestratorComponentId,
+						ComponentId: storageapi.OrchestratorComponentID,
 						ConfigId:    `456`,
 						Index:       0,
 					},
@@ -464,7 +466,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
+					ComponentId: storageapi.OrchestratorComponentID,
 					ConfigId:    `456`,
 					Index:       2,
 				},
@@ -475,20 +477,20 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
+					ComponentId: storageapi.OrchestratorComponentID,
 					ConfigId:    `456`,
 					Index:       3,
 				},
 				DependsOn: []model.PhaseKey{
 					{
 						BranchId:    123,
-						ComponentId: model.OrchestratorComponentId,
+						ComponentId: storageapi.OrchestratorComponentID,
 						ConfigId:    `456`,
 						Index:       0,
 					},
 					{
 						BranchId:    123,
-						ComponentId: model.OrchestratorComponentId,
+						ComponentId: storageapi.OrchestratorComponentID,
 						ConfigId:    `456`,
 						Index:       2,
 					},
@@ -499,26 +501,26 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
+					ComponentId: storageapi.OrchestratorComponentID,
 					ConfigId:    `456`,
 					Index:       4,
 				},
 				DependsOn: []model.PhaseKey{
 					{
 						BranchId:    123,
-						ComponentId: model.OrchestratorComponentId,
+						ComponentId: storageapi.OrchestratorComponentID,
 						ConfigId:    `456`,
 						Index:       0,
 					},
 					{
 						BranchId:    123,
-						ComponentId: model.OrchestratorComponentId,
+						ComponentId: storageapi.OrchestratorComponentID,
 						ConfigId:    `456`,
 						Index:       1,
 					},
 					{
 						BranchId:    123,
-						ComponentId: model.OrchestratorComponentId,
+						ComponentId: storageapi.OrchestratorComponentID,
 						ConfigId:    `456`,
 						Index:       3,
 					},
@@ -587,7 +589,7 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: model.OrchestratorComponentId,
+		ComponentId: storageapi.OrchestratorComponentID,
 		Id:          `456`,
 	}
 	configManifest := &model.ConfigManifest{
@@ -606,7 +608,7 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 	// Invoke
 	changes := model.NewRemoteChanges()
 	changes.AddLoaded(configState)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 
 	// Warnings
 	expectedWarnings := `

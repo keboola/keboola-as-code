@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
+	"github.com/keboola/go-client/pkg/client"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
@@ -24,8 +25,8 @@ func (p *Plan) Name() string {
 	return "encrypt"
 }
 
-func (p *Plan) Invoke(logger log.Logger, encryptionApi *encryptionapi.Api, state *state.State, ctx context.Context) error {
-	return newExecutor(logger, encryptionApi, state, ctx, p).invoke()
+func (p *Plan) Invoke(ctx context.Context, projectID int, logger log.Logger, encryptionApiClient client.Sender, state *state.State) error {
+	return newExecutor(ctx, projectID, logger, encryptionApiClient, state, p).invoke()
 }
 
 func (p *Plan) Log(logger log.Logger) {

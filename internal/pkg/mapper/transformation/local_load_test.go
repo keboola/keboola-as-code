@@ -17,17 +17,11 @@ import (
 func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 	t.Parallel()
 
-	component := &model.Component{
-		ComponentKey: model.ComponentKey{Id: "keboola.foo-bar"},
-		Type:         model.TransformationType,
-	}
-
 	d := dependencies.NewTestContainer()
 	state := d.EmptyState()
 	state.Mapper().AddMapper(corefiles.NewMapper(state))
 	state.Mapper().AddMapper(transformation.NewMapper(state))
 
-	state.Components().Set(component)
 	fs := d.Fs()
 	namingGenerator := state.NamingGenerator()
 
@@ -42,7 +36,7 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 	// Save files
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: component.Id,
+		ComponentId: "foo.bar",
 		Id:          "456",
 	}
 	record := &model.ConfigManifest{
@@ -61,7 +55,7 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(block.Path()), blockMeta)))
 	code := &model.Code{CodeKey: model.CodeKey{Index: 123}, Name: `code`}
 	code.AbsPath = namingGenerator.CodePath(block.Path(), code)
-	code.CodeFileName = namingGenerator.CodeFileName(component.Id)
+	code.CodeFileName = namingGenerator.CodeFileName("foo.bar")
 	assert.NoError(t, fs.Mkdir(code.Path()))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.MetaFilePath(code.Path()), codeMeta)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(namingGenerator.CodeFilePath(code), codeContent)))
@@ -108,7 +102,7 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(block1))
 
 	// Load, assert
-	err := state.Mapper().MapAfterLocalLoad(recipe)
+	err := state.Mapper().MapAfterLocalLoad(context.Background(), recipe)
 	assert.Error(t, err)
 	assert.Equal(t, `missing block metadata file "branch/config/blocks/001-block-1/meta.json"`, err.Error())
 	assert.Empty(t, logger.WarnAndErrorMessages())
@@ -133,7 +127,7 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	assert.NoError(t, fs.Mkdir(block1Code1))
 
 	// Load, assert
-	err := state.Mapper().MapAfterLocalLoad(recipe)
+	err := state.Mapper().MapAfterLocalLoad(context.Background(), recipe)
 	assert.Error(t, err)
 	assert.Equal(t, strings.Join([]string{
 		`- missing code metadata file "branch/config/blocks/001-block-1/001-code-1/meta.json"`,
@@ -177,7 +171,7 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
-	assert.NoError(t, state.Mapper().MapAfterLocalLoad(recipe))
+	assert.NoError(t, state.Mapper().MapAfterLocalLoad(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Assert
@@ -320,7 +314,7 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(block3, `meta.json`), `{"name": "003"}`)))
 
 	// Load
-	assert.NoError(t, state.Mapper().MapAfterLocalLoad(recipe))
+	assert.NoError(t, state.Mapper().MapAfterLocalLoad(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Assert

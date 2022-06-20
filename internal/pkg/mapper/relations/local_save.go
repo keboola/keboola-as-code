@@ -1,13 +1,15 @@
 package relations
 
 import (
+	"context"
+
 	"github.com/keboola/go-utils/pkg/deepcopy"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 // MapBeforeLocalSave - store config relations from object to manifest.
-func (m *relationsMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *relationsMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	manifest, ok := recipe.ObjectManifest.(model.ObjectManifestWithRelations)
 	if !ok {
 		return nil

@@ -1,12 +1,13 @@
 package scheduler
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *schedulerMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
+func (m *schedulerMapper) MapBeforePersist(ctx context.Context, recipe *model.PersistRecipe) error {
 	// Scheduler is represented by config
 	configManifest, ok := recipe.Manifest.(*model.ConfigManifest)
 	if !ok {
@@ -20,7 +21,7 @@ func (m *schedulerMapper) MapBeforePersist(recipe *model.PersistRecipe) error {
 	}
 
 	// Get component
-	component, err := m.state.Components().Get(configManifest.ComponentKey())
+	component, err := m.state.Components().GetOrErr(configManifest.ComponentId)
 	if err != nil {
 		return err
 	}

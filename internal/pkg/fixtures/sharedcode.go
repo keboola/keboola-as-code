@@ -3,6 +3,7 @@ package fixtures
 import (
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -27,7 +28,7 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, 
 	// Shared code
 	sharedCodeKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: model.SharedCodeComponentId,
+		ComponentId: storageapi.SharedCodeComponentID,
 		Id:          `456`,
 	}
 	sharedCodeState := &model.ConfigState{
@@ -57,7 +58,7 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, 
 	// Shared code row 1
 	row1Key := model.ConfigRowKey{
 		BranchId:    123,
-		ComponentId: model.SharedCodeComponentId,
+		ComponentId: storageapi.SharedCodeComponentID,
 		ConfigId:    `456`,
 		Id:          `1234`,
 	}
@@ -76,7 +77,7 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, 
 	// Shared code row 2
 	row2Key := model.ConfigRowKey{
 		BranchId:    123,
-		ComponentId: model.SharedCodeComponentId,
+		ComponentId: storageapi.SharedCodeComponentID,
 		ConfigId:    `456`,
 		Id:          `5678`,
 	}

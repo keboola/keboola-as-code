@@ -16,7 +16,7 @@ import (
 type inputsDialogDeps interface {
 	Logger() log.Logger
 	Options() *options.Options
-	Components() (*model.ComponentsMap, error)
+	Components() (model.ComponentsMap, error)
 }
 
 // askNewTemplateInputs - dialog to define user inputs for a new template.

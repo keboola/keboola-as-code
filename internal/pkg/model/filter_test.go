@@ -46,7 +46,7 @@ func TestIsBranchAllowed(t *testing.T) {
 
 func TestComponentsIds(t *testing.T) {
 	t.Parallel()
-	ids := ComponentIds{"foo", "bar"}
+	ids := ComponentIDs{"foo", "bar"}
 	assert.True(t, ids.Contains("foo"))
 	assert.True(t, ids.Contains("bar"))
 	assert.False(t, ids.Contains("baz"))
@@ -56,7 +56,7 @@ func TestFilterIsObjectIgnored(t *testing.T) {
 	t.Parallel()
 	m := NewFilter(
 		AllowedBranches{"dev-*", "123", "abc"},
-		ComponentIds{"aaa", "bbb"},
+		ComponentIDs{"aaa", "bbb"},
 	)
 	assert.False(t, m.IsObjectIgnored(
 		&Branch{BranchKey: BranchKey{Id: 789}, Name: "dev-1"}),
@@ -93,12 +93,12 @@ func TestFilterIsObjectIgnored(t *testing.T) {
 func TestObjectsFilter_SetAllowedKeys(t *testing.T) {
 	t.Parallel()
 
-	object1 := fixtures.MockedObject{
+	object1 := &fixtures.MockedObject{
 		MockedKey: fixtures.MockedKey{
 			Id: "123",
 		},
 	}
-	object2 := fixtures.MockedObject{
+	object2 := &fixtures.MockedObject{
 		MockedKey: fixtures.MockedKey{
 			Id: "456",
 		},

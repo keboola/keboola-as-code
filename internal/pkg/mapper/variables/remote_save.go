@@ -1,13 +1,14 @@
 package variables
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *variablesMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+func (m *variablesMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
 	// Variables are used by config
 	config, ok := recipe.Object.(*model.Config)
 	if !ok {

@@ -29,7 +29,7 @@ type file struct {
 	SortBy            string                          `json:"sortBy" validate:"oneof=id path"`
 	Naming            naming.Template                 `json:"naming" validate:"required"`
 	AllowedBranches   model.AllowedBranches           `json:"allowedBranches" validate:"required,min=1"`
-	IgnoredComponents model.ComponentIds              `json:"ignoredComponents"`
+	IgnoredComponents model.ComponentIDs              `json:"ignoredComponents"`
 	Templates         Templates                       `json:"templates,omitempty"`
 	Branches          []*model.BranchManifest         `json:"branches" validate:"dive"`
 	Configs           []*model.ConfigManifestWithRows `json:"configurations" validate:"dive"`
@@ -46,7 +46,7 @@ func newFile(projectId int, apiHost string) *file {
 		SortBy:            model.SortById,
 		Naming:            naming.TemplateWithIds(),
 		AllowedBranches:   model.DefaultAllowedBranches(),
-		IgnoredComponents: model.ComponentIds{},
+		IgnoredComponents: model.ComponentIDs{},
 		Templates:         Templates{Repositories: []model.TemplateRepository{repository.DefaultRepository()}},
 		Branches:          make([]*model.BranchManifest, 0),
 		Configs:           make([]*model.ConfigManifestWithRows, 0),

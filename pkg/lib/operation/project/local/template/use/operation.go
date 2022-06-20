@@ -6,8 +6,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -46,8 +47,11 @@ func (v newObjects) Log(logger log.Logger, tmpl *template.Template) {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
-	EncryptionApi() (*encryptionapi.Api, error)
+	ProjectID() (int, error)
+	StorageApiHost() (string, error)
+	StorageAPITokenID() (string, error)
+	StorageApiClient() (client.Sender, error)
+	EncryptionApiClient() (client.Sender, error)
 }
 
 func LoadTemplateOptions() loadState.Options {
@@ -63,13 +67,31 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	logger := d.Logger()
 
 	// Get Storage API
-	storageApi, err := d.StorageApi()
+	storageApiClient, err := d.StorageApiClient()
+	if err != nil {
+		return "", nil, err
+	}
+
+	// Host
+	storageApiHost, err := d.StorageApiHost()
+	if err != nil {
+		return "", nil, err
+	}
+
+	// Project ID
+	projectID, err := d.ProjectID()
+	if err != nil {
+		return "", nil, err
+	}
+
+	// Token ID
+	tokenId, err := d.StorageAPITokenID()
 	if err != nil {
 		return "", nil, err
 	}
 
 	// Create tickets provider, to generate new IDS
-	tickets := storageApi.NewTicketProvider()
+	tickets := storageapi.NewTicketProvider(d.Ctx(), storageApiClient)
 
 	// Generate ID for the template instance
 	instanceId := idgenerator.TemplateInstanceId()
@@ -96,7 +118,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 		return "", nil, err
 	}
 
-	if err := branchState.Local.Metadata.UpsertTemplateInstance(time.Now(), instanceId, o.InstanceName, tmpl.TemplateId(), tmpl.Repository().Name, tmpl.Version(), storageApi.Token().Id, mainConfig); err != nil {
+	if err := branchState.Local.Metadata.UpsertTemplateInstance(time.Now(), instanceId, o.InstanceName, tmpl.TemplateId(), tmpl.Repository().Name, tmpl.Version(), tokenId, mainConfig); err != nil {
 		errors.Append(err)
 	}
 	saveOp.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())
@@ -165,7 +187,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	// Return urls to oauth configurations
 	warnings := make([]string, 0)
 	for _, cKey := range ctx.InputsUsage().OAuthConfigsMap() {
-		warnings = append(warnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", storageApi.Host(), storageApi.ProjectId(), cKey.ComponentId, cKey.Id))
+		warnings = append(warnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", storageApiHost, projectID, cKey.ComponentId, cKey.Id))
 	}
 	if len(warnings) > 0 {
 		warnings = append([]string{"The template generated configurations that need oAuth authorization. Please follow the links and complete the setup:"}, warnings...)

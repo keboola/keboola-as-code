@@ -9,7 +9,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	renameOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
@@ -23,8 +22,7 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
 	d.SetFs(testfs.MinimalProjectFs(t))
-	_, httpTransport := d.UseMockedStorageApi()
-	testapi.AddMockedComponents(httpTransport)
+	d.UseMockedStorageApi()
 	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
 	assert.NoError(t, err)
 	branchKey := model.BranchKey{Id: 123}
@@ -96,8 +94,7 @@ func TestAskRenameInstance_Noninteractive(t *testing.T) {
 	dialog, _ := createDialogs(t, false)
 	d := dependencies.NewTestContainer()
 	d.SetFs(testfs.MinimalProjectFs(t))
-	_, httpTransport := d.UseMockedStorageApi()
-	testapi.AddMockedComponents(httpTransport)
+	d.UseMockedStorageApi()
 	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
 	assert.NoError(t, err)
 	branchKey := model.BranchKey{Id: 123}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/spf13/cast"
 
@@ -475,7 +476,7 @@ func getTemplateVersion(d dependencies.Container, repoName, templateId, versionS
 
 func getBranch(d dependencies.Container, branchDef string) (model.BranchKey, error) {
 	// Get Storage API
-	storageApi, err := d.StorageApi()
+	storageApiClient, err := d.StorageApiClient()
 	if err != nil {
 		return model.BranchKey{}, err
 	}
@@ -484,17 +485,17 @@ func getBranch(d dependencies.Container, branchDef string) (model.BranchKey, err
 	var targetBranch model.BranchKey
 	if branchDef == "default" {
 		// Use main branch
-		if v, err := storageApi.GetDefaultBranch(); err != nil {
+		if v, err := storageapi.GetDefaultBranchRequest().Send(d.Ctx(), storageApiClient); err != nil {
 			return targetBranch, err
 		} else {
-			targetBranch = v.BranchKey
+			targetBranch.Id = v.ID
 		}
 	} else if branchId, err := strconv.Atoi(branchDef); err != nil {
 		// Branch ID must be numeric
 		return targetBranch, BadRequestError{
 			Message: fmt.Sprintf(`branch ID "%s" is not numeric`, branchDef),
 		}
-	} else if _, err := storageApi.GetBranch(model.BranchId(branchId)); err != nil {
+	} else if _, err := storageapi.GetBranchRequest(storageapi.BranchKey{ID: storageapi.BranchID(branchId)}).Send(d.Ctx(), storageApiClient); err != nil {
 		// Branch not found
 		return targetBranch, &GenericError{
 			Name:    "templates.branchNotFound",
@@ -502,7 +503,7 @@ func getBranch(d dependencies.Container, branchDef string) (model.BranchKey, err
 		}
 	} else {
 		// Branch found
-		targetBranch.Id = model.BranchId(branchId)
+		targetBranch.Id = storageapi.BranchID(branchId)
 	}
 
 	return targetBranch, nil

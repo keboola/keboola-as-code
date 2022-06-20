@@ -1,6 +1,7 @@
 package relations
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
@@ -9,7 +10,7 @@ import (
 )
 
 // AfterLocalOperation links relation sides on local load.
-func (m *relationsMapper) AfterLocalOperation(changes *model.LocalChanges) error {
+func (m *relationsMapper) AfterLocalOperation(_ context.Context, changes *model.LocalChanges) error {
 	errors := utils.NewMultiError()
 	allObjects := m.state.LocalObjects()
 	for _, objectState := range changes.Loaded() {
@@ -27,7 +28,7 @@ func (m *relationsMapper) AfterLocalOperation(changes *model.LocalChanges) error
 }
 
 // AfterRemoteOperation links relation sides on remote load.
-func (m *relationsMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (m *relationsMapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
 	errors := utils.NewMultiError()
 	allObjects := m.state.RemoteObjects()
 	for _, objectState := range changes.Loaded() {

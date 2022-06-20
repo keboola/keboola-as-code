@@ -37,7 +37,8 @@ func main() {
 	httpHostF := flag.String("http-host", "0.0.0.0", "HTTP host")
 	httpPortF := flag.String("http-port", "8000", "HTTP port")
 	repositoriesF := flag.String("repositories", "keboola|https://github.com/keboola/keboola-as-code-templates.git|main", "Default repositories, <name1>|<repo1>|<branch1>;<name2>|<repo2>|<branch2>;...")
-	debugF := flag.Bool("debug", false, "Log request and response bodies")
+	debugF := flag.Bool("debug", false, "Enable debug log level.")
+	debugHttpF := flag.Bool("debug-http", false, "Log HTTP client request and response bodies.")
 	flag.Parse()
 
 	// Setup logger.
@@ -69,15 +70,15 @@ func main() {
 	}
 
 	// Start server.
-	if err := start(*httpHostF, *httpPortF, repositories, *debugF, logger, envs); err != nil {
+	if err := start(*httpHostF, *httpPortF, repositories, *debugF, *debugHttpF, logger, envs); err != nil {
 		logger.Println(err.Error())
 		os.Exit(1)
 	}
 }
 
-func start(host, port string, repositories []model.TemplateRepository, debug bool, logger *log.Logger, envs *env.Map) error {
+func start(host, port string, repositories []model.TemplateRepository, debug, debugHttp bool, logger *log.Logger, envs *env.Map) error {
 	// Create dependencies.
-	d, err := dependencies.NewContainer(context.Background(), repositories, debug, logger, envs)
+	d, err := dependencies.NewContainer(context.Background(), repositories, debug, debugHttp, logger, envs)
 	if err != nil {
 		return err
 	}

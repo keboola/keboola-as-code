@@ -1,12 +1,14 @@
 package links
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // MapBeforeRemoteSave move shared code from Transformation struct to Content.
-func (m *mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+func (m *mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
 	// Shared code can be used only by transformation - struct must be set
 	transformation, ok := recipe.Object.(*model.Config)
 	if !ok || transformation.Transformation == nil {

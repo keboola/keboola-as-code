@@ -54,7 +54,11 @@ func HandleHTTPServer(ctx context.Context, wg *sync.WaitGroup, d dependencies.Co
 
 	// Start HTTP server using default configuration, change the code to
 	// configure the server as required by your service.
-	srv := &http.Server{Addr: u.Host, Handler: handler}
+	srv := &http.Server{
+		Addr:              u.Host,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
 	for _, m := range templatesServer.Mounts {
 		logger.Printf("HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 	}

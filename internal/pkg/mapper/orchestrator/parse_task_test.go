@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 func TestParseTask(t *testing.T) {
@@ -108,70 +108,70 @@ func TestParseTask(t *testing.T) {
 			`{"task":{"componentId":"foo.bar", "mode":"run"}, "foo":"bar"}`,
 			`{"task":{"mode":"run"},"foo":"bar"}`,
 			func(p *taskParser) (interface{}, error) { return p.componentId() },
-			model.ComponentId(`foo.bar`),
+			storageapi.ComponentID(`foo.bar`),
 			nil,
 		},
 		{
 			`{"foo":"bar"}`,
 			`{"foo":"bar"}`,
 			func(p *taskParser) (interface{}, error) { return p.componentId() },
-			model.ComponentId(""),
+			storageapi.ComponentID(""),
 			fmt.Errorf(`missing "task" key`),
 		},
 		{
 			`{"task":{},"foo":"bar"}`,
 			`{"task":{},"foo":"bar"}`,
 			func(p *taskParser) (interface{}, error) { return p.componentId() },
-			model.ComponentId(""),
+			storageapi.ComponentID(""),
 			fmt.Errorf(`missing "task.componentId" key`),
 		},
 		{
 			`{"task":{"componentId":""},"foo":"bar"}`,
 			`{"task":{"componentId":""},"foo":"bar"}`,
 			func(p *taskParser) (interface{}, error) { return p.componentId() },
-			model.ComponentId(``),
+			storageapi.ComponentID(``),
 			fmt.Errorf(`"task.componentId" cannot be empty`),
 		},
 		{
 			`{"task":{"componentId":123},"foo":"bar"}`,
 			`{"task":{"componentId":123},"foo":"bar"}`,
 			func(p *taskParser) (interface{}, error) { return p.componentId() },
-			model.ComponentId(``),
+			storageapi.ComponentID(``),
 			fmt.Errorf(`"task.componentId" must be string, found float64`),
 		},
 		{
 			`{"task":{"configId":"foo.bar", "mode":"run"}, "foo":"bar"}`,
 			`{"task":{"mode":"run"},"foo":"bar"}`,
 			func(p *taskParser) (interface{}, error) { return p.configId() },
-			model.ConfigId(`foo.bar`),
+			storageapi.ConfigID(`foo.bar`),
 			nil,
 		},
 		{
 			`{"foo":"bar"}`,
 			`{"foo":"bar"}`,
 			func(p *taskParser) (interface{}, error) { return p.configId() },
-			model.ConfigId(""),
+			storageapi.ConfigID(""),
 			fmt.Errorf(`missing "task" key`),
 		},
 		{
 			`{"task":{},"foo":"bar"}`,
 			`{"task":{},"foo":"bar"}`,
 			func(p *taskParser) (interface{}, error) { return p.configId() },
-			model.ConfigId(""),
+			storageapi.ConfigID(""),
 			fmt.Errorf(`missing "task.configId" key`),
 		},
 		{
 			`{"task":{"configId":""},"foo":"bar"}`,
 			`{"task":{"configId":""},"foo":"bar"}`,
 			func(p *taskParser) (interface{}, error) { return p.configId() },
-			model.ConfigId(``),
+			storageapi.ConfigID(``),
 			fmt.Errorf(`"task.configId" cannot be empty`),
 		},
 		{
 			`{"task":{"configId":123},"foo":"bar"}`,
 			`{"task":{"configId":123},"foo":"bar"}`,
 			func(p *taskParser) (interface{}, error) { return p.configId() },
-			model.ConfigId(``),
+			storageapi.ConfigID(``),
 			fmt.Errorf(`"task.configId" must be string, found float64`),
 		},
 		{

@@ -7,10 +7,10 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type ProjectSnapshot struct {
@@ -40,7 +40,7 @@ type Schedule struct {
 }
 
 type Config struct {
-	ComponentId       model.ComponentId      `json:"componentId" validate:"required"`
+	ComponentID       storageapi.ComponentID `json:"componentId" validate:"required"`
 	Name              string                 `json:"name" validate:"required"`
 	Description       string                 `json:"description"`
 	ChangeDescription string                 `json:"changeDescription,omitempty"`
@@ -64,42 +64,35 @@ type StateFile struct {
 	Envs               map[string]string `json:"envs,omitempty"` // additional ENVs
 }
 
-// ToModel maps fixture to model.Branch.
-func (b *Branch) ToModel(defaultBranch *model.Branch) *model.Branch {
-	if b.IsDefault {
-		return defaultBranch
-	}
-
-	branch := &model.Branch{}
+// ToApi maps fixture to model.Branch.
+func (b *Branch) ToApi() *storageapi.Branch {
+	branch := &storageapi.Branch{}
 	branch.Name = b.Name
 	branch.Description = b.Description
 	branch.IsDefault = b.IsDefault
-	branch.Metadata = b.Metadata
 	return branch
 }
 
-// ToModel maps fixture to model.Config.
-func (c *Config) ToModel() *model.ConfigWithRows {
-	config := &model.ConfigWithRows{Config: &model.Config{}}
-	config.ComponentId = c.ComponentId
+// ToApi maps fixture to model.Config.
+func (c *Config) ToApi() *storageapi.ConfigWithRows {
+	config := &storageapi.ConfigWithRows{Config: &storageapi.Config{}}
+	config.ComponentID = c.ComponentID
 	config.Name = c.Name
 	config.Description = "test fixture"
 	config.ChangeDescription = "created by test"
 	config.Content = c.Content
-	config.Metadata = c.Metadata
 	config.IsDisabled = c.IsDisabled
 
 	for _, r := range c.Rows {
-		row := r.ToModel()
-		config.Rows = append(config.Rows, row)
+		config.Rows = append(config.Rows, r.ToApi())
 	}
 
 	return config
 }
 
-// ToModel maps fixture to model.Config.
-func (r *ConfigRow) ToModel() *model.ConfigRow {
-	row := &model.ConfigRow{}
+// ToApi maps fixture to model.Config.
+func (r *ConfigRow) ToApi() *storageapi.ConfigRow {
+	row := &storageapi.ConfigRow{}
 	row.Name = r.Name
 	row.Description = "test fixture"
 	row.ChangeDescription = "created by test"
@@ -162,7 +155,7 @@ func LoadStateFile(path string) (*StateFile, error) {
 }
 
 // LoadConfig loads config from the file.
-func LoadConfig(t *testing.T, name string) *model.ConfigWithRows {
+func LoadConfig(t *testing.T, name string) *Config {
 	t.Helper()
 
 	// nolint: dogsled
@@ -182,5 +175,5 @@ func LoadConfig(t *testing.T, name string) *model.ConfigWithRows {
 		panic(fmt.Errorf("cannot parse test config file \"%s\": %w", path, err))
 	}
 
-	return fixture.ToModel()
+	return fixture
 }

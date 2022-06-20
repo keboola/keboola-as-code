@@ -3,22 +3,18 @@ package model
 import (
 	"fmt"
 	"sort"
-	"strconv"
 	"time"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 const (
 	MetaFileFieldsTag                 = "metaFile:true"        // marks meta fields in object struct
 	ConfigFileFieldTag                = "configFile:true"      // marks config field in object struct
 	DescriptionFileFieldTag           = "descriptionFile:true" // marks description field in object struct
-	TransformationType                = "transformation"
-	SharedCodeComponentId             = ComponentId("keboola.shared-code")
-	OrchestratorComponentId           = ComponentId("keboola.orchestrator")
 	ShareCodeTargetComponentKey       = `componentId`
 	SharedCodeContentKey              = `code_content`
 	VariablesIdContentKey             = `variables_id`
@@ -47,11 +43,25 @@ type Object interface {
 	Key
 	Key() Key
 	ObjectName() string
+	SetObjectId(any)
+}
+
+type ToApiObject interface {
+	ToApiObject(changeDescription string, changedFields ChangedFields) (apiObject storageapi.Object, apiChangedFields []string)
+}
+
+type ToApiObjectKey interface {
+	ToApiObjectKey() any
+}
+
+type ToApiMetadata interface {
+	ToApiObjectKey
+	ToApiMetadata() storageapi.Metadata
 }
 
 type ObjectWithContent interface {
 	Object
-	GetComponentId() ComponentId
+	GetComponentId() storageapi.ComponentID
 	GetContent() *orderedmap.OrderedMap
 }
 
@@ -67,7 +77,7 @@ type ObjectStates interface {
 	RemoteObjects() Objects
 	LocalObjects() Objects
 	All() []ObjectState
-	Components() *ComponentsMap
+	Components() ComponentsMap
 	Branches() (branches []*BranchState)
 	Configs() []*ConfigState
 	ConfigsFrom(branch BranchKey) (configs []*ConfigState)
@@ -100,32 +110,6 @@ type Kind struct {
 	Abbr string
 }
 
-// Ticket https://keboola.docs.apiary.io/#reference/tickets/generate-unique-id/generate-new-id
-type Ticket struct {
-	Id string `json:"id"`
-}
-
-// Token https://keboola.docs.apiary.io/#reference/tokens-and-permissions/token-verification/token-verification
-type Token struct {
-	Id       string     `json:"id"`
-	Token    string     `json:"token"`
-	IsMaster bool       `json:"isMasterToken"`
-	Owner    TokenOwner `json:"owner"`
-}
-
-func (t *Token) ProjectId() int {
-	return t.Owner.Id
-}
-
-func (t *Token) ProjectName() string {
-	return t.Owner.Name
-}
-
-type TokenOwner struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
-}
-
 type BranchMetadata map[string]string
 
 type TemplateInstance struct {
@@ -146,8 +130,125 @@ type ChangedByRecord struct {
 }
 
 type TemplateMainConfig struct {
-	ConfigId    ConfigId    `json:"configId"`
-	ComponentId ComponentId `json:"componentId"`
+	ConfigId    storageapi.ConfigID    `json:"configId"`
+	ComponentId storageapi.ComponentID `json:"componentId"`
+}
+
+// NewBranch creates branch model from API values.
+func NewBranch(apiValue *storageapi.Branch) *Branch {
+	out := &Branch{}
+	out.Id = apiValue.ID
+	out.Name = apiValue.Name
+	out.Description = apiValue.Description
+	out.IsDefault = apiValue.IsDefault
+	return out
+}
+
+// NewConfig creates config model from API values.
+func NewConfig(apiValue *storageapi.Config) *Config {
+	out := &Config{}
+	out.BranchId = apiValue.BranchID
+	out.ComponentId = apiValue.ComponentID
+	out.Id = apiValue.ID
+	out.Name = apiValue.Name
+	out.Description = apiValue.Description
+	out.IsDisabled = apiValue.IsDisabled
+	out.Content = apiValue.Content
+	return out
+}
+
+// NewConfigWithRows creates config model from API values.
+func NewConfigWithRows(apiValue *storageapi.ConfigWithRows) *ConfigWithRows {
+	out := &ConfigWithRows{Config: &Config{}}
+	out.BranchId = apiValue.BranchID
+	out.ComponentId = apiValue.ComponentID
+	out.Id = apiValue.ID
+	out.Name = apiValue.Name
+	out.Description = apiValue.Description
+	out.IsDisabled = apiValue.IsDisabled
+	out.Content = apiValue.Content
+	for _, apiRow := range apiValue.Rows {
+		out.Rows = append(out.Rows, NewConfigRow(apiRow))
+	}
+	return out
+}
+
+// NewConfigRow creates config row model from API values.
+func NewConfigRow(apiValue *storageapi.ConfigRow) *ConfigRow {
+	out := &ConfigRow{}
+	out.BranchId = apiValue.BranchID
+	out.ComponentId = apiValue.ComponentID
+	out.ConfigId = apiValue.ConfigID
+	out.Id = apiValue.ID
+	out.Name = apiValue.Name
+	out.Description = apiValue.Description
+	out.IsDisabled = apiValue.IsDisabled
+	out.Content = apiValue.Content
+	return out
+}
+
+// ToApiObject ...
+func (b *Branch) ToApiObject(_ string, changedFields ChangedFields) (storageapi.Object, []string) {
+	out := &storageapi.Branch{}
+	out.ID = b.Id
+	out.Name = b.Name
+	out.Description = b.Description
+	out.IsDefault = b.IsDefault
+	return out, changedFields.Slice()
+}
+
+// ToApiObject ...
+func (c *Config) ToApiObject(changeDescription string, changedFields ChangedFields) (storageapi.Object, []string) {
+	out := &storageapi.Config{}
+	out.ChangeDescription = changeDescription
+	out.BranchID = c.BranchId
+	out.ComponentID = c.ComponentId
+	out.ID = c.Id
+	out.Name = c.Name
+	out.Description = c.Description
+	out.IsDisabled = c.IsDisabled
+	out.Content = c.Content
+	return out, append(changedFields.Slice(), "changeDescription")
+}
+
+// ToApiObject ...
+func (r *ConfigRow) ToApiObject(changeDescription string, changedFields ChangedFields) (storageapi.Object, []string) {
+	out := &storageapi.ConfigRow{}
+	out.ChangeDescription = changeDescription
+	out.BranchID = r.BranchId
+	out.ComponentID = r.ComponentId
+	out.ConfigID = r.ConfigId
+	out.ID = r.Id
+	out.Name = r.Name
+	out.Description = r.Description
+	out.IsDisabled = r.IsDisabled
+	out.Content = r.Content
+	return out, append(changedFields.Slice(), "changeDescription")
+}
+
+// ToApiObjectKey ...
+func (b *Branch) ToApiObjectKey() any {
+	return storageapi.BranchKey{ID: b.Id}
+}
+
+// ToApiObjectKey ...
+func (c *Config) ToApiObjectKey() any {
+	return storageapi.ConfigKey{BranchID: c.BranchId, ComponentID: c.ComponentId, ID: c.Id}
+}
+
+// ToApiObjectKey ...
+func (r *ConfigRow) ToApiObjectKey() any {
+	return storageapi.ConfigRowKey{BranchID: r.BranchId, ComponentID: r.ComponentId, ConfigID: r.ConfigId, ID: r.Id}
+}
+
+// ToApiMetadata ...
+func (b *Branch) ToApiMetadata() storageapi.Metadata {
+	return storageapi.Metadata(b.Metadata)
+}
+
+// ToApiMetadata ...
+func (c *Config) ToApiMetadata() storageapi.Metadata {
+	return storageapi.Metadata(c.Metadata)
 }
 
 func (m BranchMetadata) saveTemplateUsages(instances TemplatesInstances) error {
@@ -270,12 +371,12 @@ type ConfigInputUsage struct {
 }
 
 type RowInputUsage struct {
-	RowId   RowId  `json:"rowId"`
-	Input   string `json:"input"`
-	JsonKey string `json:"key"`
+	RowId   storageapi.RowID `json:"rowId"`
+	Input   string           `json:"input"`
+	JsonKey string           `json:"key"`
 }
 
-func (m ConfigMetadata) SetConfigTemplateId(templateObjectId ConfigId) {
+func (m ConfigMetadata) SetConfigTemplateId(templateObjectId storageapi.ConfigID) {
 	m[configIdMetadataKey] = json.MustEncodeString(ConfigIdMetadata{
 		IdInTemplate: templateObjectId,
 	}, false)
@@ -303,7 +404,7 @@ func (m ConfigMetadata) AddInputUsage(inputName string, jsonKey orderedmap.Path)
 	}), false)
 }
 
-func (m ConfigMetadata) AddRowTemplateId(projectObjectId, templateObjectId RowId) {
+func (m ConfigMetadata) AddRowTemplateId(projectObjectId, templateObjectId storageapi.RowID) {
 	items := append(m.RowsTemplateIds(), RowIdMetadata{
 		IdInProject:  projectObjectId,
 		IdInTemplate: templateObjectId,
@@ -325,7 +426,7 @@ func (m ConfigMetadata) RowsInputsUsage() []RowInputUsage {
 	return out
 }
 
-func (m ConfigMetadata) AddRowInputUsage(rowId RowId, inputName string, jsonKey orderedmap.Path) {
+func (m ConfigMetadata) AddRowInputUsage(rowId storageapi.RowID, inputName string, jsonKey orderedmap.Path) {
 	values := append(m.RowsInputsUsage(), RowInputUsage{
 		RowId:   rowId,
 		Input:   inputName,
@@ -358,16 +459,15 @@ func (m ConfigMetadata) InstanceId() string {
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type Config struct {
 	ConfigKey
-	Name              string                 `json:"name" validate:"required" diff:"true" metaFile:"true"`
-	Description       string                 `json:"description" diff:"true" descriptionFile:"true"`
-	ChangeDescription string                 `json:"changeDescription"`
-	IsDisabled        bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
-	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	Transformation    *Transformation        `json:"-" validate:"omitempty,dive" diff:"true"`
-	SharedCode        *SharedCodeConfig      `json:"-" validate:"omitempty,dive" diff:"true"`
-	Orchestration     *Orchestration         `json:"-" validate:"omitempty,dive" diff:"true"`
-	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
-	Metadata          ConfigMetadata         `json:"-" validate:"dive" diff:"true"`
+	Name           string                 `json:"name" validate:"required" diff:"true" metaFile:"true"`
+	Description    string                 `json:"description" diff:"true" descriptionFile:"true"`
+	IsDisabled     bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
+	Content        *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
+	Transformation *Transformation        `json:"-" validate:"omitempty,dive" diff:"true"`
+	SharedCode     *SharedCodeConfig      `json:"-" validate:"omitempty,dive" diff:"true"`
+	Orchestration  *Orchestration         `json:"-" validate:"omitempty,dive" diff:"true"`
+	Relations      Relations              `json:"-" validate:"dive" diff:"true"`
+	Metadata       ConfigMetadata         `json:"-" validate:"dive" diff:"true"`
 }
 
 type ConfigWithRows struct {
@@ -384,13 +484,12 @@ func (c *ConfigWithRows) SortRows() {
 // ConfigRow https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type ConfigRow struct {
 	ConfigRowKey
-	Name              string                 `json:"name" diff:"true" metaFile:"true"`
-	Description       string                 `json:"description" diff:"true" descriptionFile:"true"`
-	ChangeDescription string                 `json:"changeDescription"`
-	IsDisabled        bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
-	Content           *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
-	SharedCode        *SharedCodeRow         `json:"-" validate:"omitempty,dive" diff:"true"`
-	Relations         Relations              `json:"-" validate:"dive" diff:"true"`
+	Name        string                 `json:"name" diff:"true" metaFile:"true"`
+	Description string                 `json:"description" diff:"true" descriptionFile:"true"`
+	IsDisabled  bool                   `json:"isDisabled" diff:"true" metaFile:"true"`
+	Content     *orderedmap.OrderedMap `json:"configuration" validate:"required" diff:"true" configFile:"true"`
+	SharedCode  *SharedCodeRow         `json:"-" validate:"omitempty,dive" diff:"true"`
+	Relations   Relations              `json:"-" validate:"dive" diff:"true"`
 }
 
 // Job - Storage API job.
@@ -399,17 +498,6 @@ type Job struct {
 	Status  string                 `json:"status" validate:"required"`
 	Url     string                 `json:"url" validate:"required"`
 	Results map[string]interface{} `json:"results"`
-}
-
-// Event https://keboola.docs.apiary.io/#reference/events/events/create-event
-type Event struct {
-	Id string `json:"id"`
-}
-
-// Schedule - https://app.swaggerhub.com/apis/odinuv/scheduler/1.0.0#/schedules/get_schedules
-type Schedule struct {
-	Id       string   `json:"id" validate:"required"`
-	ConfigId ConfigId `json:"configurationId" validate:"required"`
 }
 
 func (b *Branch) ObjectName() string {
@@ -424,11 +512,30 @@ func (r *ConfigRow) ObjectName() string {
 	return r.Name
 }
 
-func (c *Config) GetComponentId() ComponentId {
+func (b *Branch) SetObjectId(id any) {
+	b.Id = id.(storageapi.BranchID)
+}
+
+func (c *Config) SetObjectId(id any) {
+	c.Id = id.(storageapi.ConfigID)
+}
+
+func (c *ConfigWithRows) SetObjectId(id any) {
+	c.Id = id.(storageapi.ConfigID)
+	for _, row := range c.Rows {
+		row.ConfigId = c.Id
+	}
+}
+
+func (r *ConfigRow) SetObjectId(id any) {
+	r.Id = id.(storageapi.RowID)
+}
+
+func (c *Config) GetComponentId() storageapi.ComponentID {
 	return c.ComponentId
 }
 
-func (r *ConfigRow) GetComponentId() ComponentId {
+func (r *ConfigRow) GetComponentId() storageapi.ComponentID {
 	return r.ComponentId
 }
 
@@ -438,36 +545,6 @@ func (c *Config) GetContent() *orderedmap.OrderedMap {
 
 func (r *ConfigRow) GetContent() *orderedmap.OrderedMap {
 	return r.Content
-}
-
-func (c *Config) ToApiValues() (map[string]string, error) {
-	configJson, err := json.EncodeString(c.Content, false)
-	if err != nil {
-		return nil, utils.PrefixError(`cannot JSON encode config configuration`, err)
-	}
-
-	return map[string]string{
-		"name":              c.Name,
-		"description":       c.Description,
-		"changeDescription": c.ChangeDescription,
-		"isDisabled":        strconv.FormatBool(c.IsDisabled),
-		"configuration":     configJson,
-	}, nil
-}
-
-func (r *ConfigRow) ToApiValues() (map[string]string, error) {
-	configJson, err := json.EncodeString(r.Content, false)
-	if err != nil {
-		return nil, utils.PrefixError(`cannot JSON encode config configuration`, err)
-	}
-
-	return map[string]string{
-		"name":              r.Name,
-		"description":       r.Description,
-		"changeDescription": r.ChangeDescription,
-		"isDisabled":        strconv.FormatBool(r.IsDisabled),
-		"configuration":     configJson,
-	}, nil
 }
 
 // ParentKey - config parent can be modified via Relations, for example variables config is embedded in another config.

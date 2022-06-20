@@ -1,11 +1,13 @@
 package codes
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 // MapBeforeRemoteSave saves shared code target component and code to Content.
-func (m *mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+func (m *mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
 	// Save config
 	if config, ok := recipe.Object.(*model.Config); ok {
 		m.onConfigRemoteSave(config, recipe)

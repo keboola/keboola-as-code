@@ -1,6 +1,7 @@
 package links
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -8,7 +9,7 @@ import (
 )
 
 // MapBeforeLocalSave - replace shared codes IDs by paths on local save.
-func (m *mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *mapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	// Shared code can be used only by transformation - transformation struct must be set
 	transformation, ok := recipe.Object.(*model.Config)
 	if !ok || transformation.Transformation == nil {

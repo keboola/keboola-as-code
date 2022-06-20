@@ -1,6 +1,7 @@
 package links_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -22,7 +23,7 @@ func TestLocalLoadTranWithSharedCode(t *testing.T) {
 	// Invoke
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(transformation)
-	assert.NoError(t, state.Mapper().AfterLocalOperation(changes))
+	assert.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Paths in transformation blocks are replaced by IDs
@@ -103,7 +104,7 @@ func TestLocalLoadTranWithSharedCode_InvalidSharedCodePath(t *testing.T) {
 missing shared code "branch/missing":
   - referenced from config "branch:123/component:keboola.python-transformation-v2/config:789"
 `
-	err := state.Mapper().AfterLocalOperation(changes)
+	err := state.Mapper().AfterLocalOperation(context.Background(), changes)
 	assert.Error(t, err)
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
 	assert.Empty(t, logger.WarnAndErrorMessages())
@@ -133,7 +134,7 @@ func TestLocalLoadTranWithSharedCode_InvalidSharedCodeRowPath(t *testing.T) {
 missing shared code "branch/_shared/keboola.python-transformation-v2/codes/missing":
   - referenced from "branch/transformation/blocks/block-1/code-2"
 `
-	err := state.Mapper().AfterLocalOperation(changes)
+	err := state.Mapper().AfterLocalOperation(context.Background(), changes)
 	assert.Error(t, err)
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
 	assert.Empty(t, logger.WarnAndErrorMessages())

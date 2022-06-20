@@ -2,9 +2,8 @@ package model
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/spf13/cast"
 )
 
@@ -18,7 +17,6 @@ const (
 	PhaseKind     = "phase"
 	TaskKind      = "task"
 	BranchAbbr    = "B"
-	ComponentAbbr = "COM"
 	ConfigAbbr    = "C"
 	RowAbbr       = "R"
 	BlockAbbr     = "b"
@@ -40,79 +38,43 @@ type WithKey interface {
 	Key() Key
 }
 
-type (
-	BranchId    int
-	ComponentId string
-	ConfigId    string
-	RowId       string
-)
-
-func (v BranchId) String() string {
-	return strconv.Itoa(int(v))
-}
-
-func (v ComponentId) String() string {
-	return string(v)
-}
-
-func (v ConfigId) String() string {
-	return string(v)
-}
-
-func (v RowId) String() string {
-	return string(v)
-}
-
-func (v ComponentId) WithoutVendor() string {
-	parts := strings.SplitN(string(v), ".", 2)
-	if len(parts) == 1 {
-		// A component without vendor
-		return parts[0]
-	}
-	return parts[1]
-}
-
 type BranchKey struct {
-	Id BranchId `json:"id" validate:"required"`
-}
-
-type ComponentKey struct {
-	Id ComponentId `json:"id" validate:"required"`
+	Id storageapi.BranchID `json:"id" validate:"required"`
 }
 
 type ConfigKey struct {
-	BranchId    BranchId    `json:"branchId,omitempty" validate:"required_in_project"`
-	ComponentId ComponentId `json:"componentId" validate:"required"`
-	Id          ConfigId    `json:"id" validate:"required"`
+	BranchId    storageapi.BranchID    `json:"branchId,omitempty" validate:"required_in_project"`
+	ComponentId storageapi.ComponentID `json:"componentId" validate:"required"`
+	Id          storageapi.ConfigID    `json:"id" validate:"required"`
 }
 
 type ConfigRowKey struct {
-	BranchId    BranchId    `json:"-" validate:"required_in_project"`
-	ComponentId ComponentId `json:"-" validate:"required"`
-	ConfigId    ConfigId    `json:"-" validate:"required"`
-	Id          RowId       `json:"id" validate:"required" `
+	BranchId    storageapi.BranchID    `json:"-" validate:"required_in_project"`
+	ComponentId storageapi.ComponentID `json:"-" validate:"required"`
+	ConfigId    storageapi.ConfigID    `json:"-" validate:"required"`
+	Id          storageapi.RowID       `json:"id" validate:"required" `
 }
 
 type BlockKey struct {
-	BranchId    BranchId    `json:"-" validate:"required_in_project" `
-	ComponentId ComponentId `json:"-" validate:"required" `
-	ConfigId    ConfigId    `json:"-" validate:"required" `
-	Index       int         `json:"-" validate:"min=0" `
+	BranchId    storageapi.BranchID    `json:"-" validate:"required_in_project" `
+	ComponentId storageapi.ComponentID `json:"-" validate:"required" `
+	ConfigId    storageapi.ConfigID    `json:"-" validate:"required" `
+	Index       int                    `json:"-" validate:"min=0" `
 }
 
 type CodeKey struct {
-	BranchId    BranchId    `json:"-" validate:"required_in_project" `
-	ComponentId ComponentId `json:"-" validate:"required" `
-	ConfigId    ConfigId    `json:"-" validate:"required" `
-	BlockIndex  int         `json:"-" validate:"min=0" `
-	Index       int         `json:"-" validate:"min=0" `
+	BranchId    storageapi.BranchID    `json:"-" validate:"required_in_project" `
+	ComponentId storageapi.ComponentID `json:"-" validate:"required" `
+	ConfigId    storageapi.ConfigID    `json:"-" validate:"required" `
+	BlockIndex  int                    `json:"-" validate:"min=0" `
+	Index       int                    `json:"-" validate:"min=0" `
 }
 
 type PhaseKey struct {
-	BranchId    BranchId    `json:"-" validate:"required_in_project" `
-	ComponentId ComponentId `json:"-" validate:"required" `
-	ConfigId    ConfigId    `json:"-" validate:"required" `
-	Index       int         `json:"-" validate:"min=0" `
+	BranchId    storageapi.BranchID    `json:"-" validate:"required_in_project" `
+	ComponentId storageapi.ComponentID `json:"-" validate:"required" `
+	ConfigId    storageapi.ConfigID    `json:"-" validate:"required" `
+	Index       int                    `json:"-" validate:"min=0" `
 }
 
 type TaskKey struct {
@@ -122,10 +84,6 @@ type TaskKey struct {
 
 func (k BranchKey) Kind() Kind {
 	return Kind{Name: BranchKind, Abbr: BranchAbbr}
-}
-
-func (k ComponentKey) Kind() Kind {
-	return Kind{Name: ComponentKind, Abbr: ComponentAbbr}
 }
 
 func (k ConfigKey) Kind() Kind {
@@ -153,10 +111,6 @@ func (k TaskKey) Kind() Kind {
 }
 
 func (k BranchKey) ObjectId() string {
-	return k.Id.String()
-}
-
-func (k ComponentKey) ObjectId() string {
 	return k.Id.String()
 }
 
@@ -188,10 +142,6 @@ func (k BranchKey) Level() int {
 	return 1
 }
 
-func (k ComponentKey) Level() int {
-	return 2
-}
-
 func (k ConfigKey) Level() int {
 	return 3
 }
@@ -217,10 +167,6 @@ func (k TaskKey) Level() int {
 }
 
 func (k BranchKey) Key() Key {
-	return k
-}
-
-func (k ComponentKey) Key() Key {
 	return k
 }
 
@@ -281,16 +227,8 @@ func (k CodeKey) ParentKey() (Key, error) {
 	return k.BlockKey(), nil
 }
 
-func (k ComponentKey) ParentKey() (Key, error) {
-	return nil, nil // Component is top level object
-}
-
 func (k BranchKey) Desc() string {
 	return fmt.Sprintf(`%s "%d"`, k.Kind().Name, k.Id)
-}
-
-func (k ComponentKey) Desc() string {
-	return fmt.Sprintf(`%s "%s"`, k.Kind().Name, k.Id)
 }
 
 func (k ConfigKey) Desc() string {
@@ -333,10 +271,6 @@ func (k BranchKey) ParentKey() (Key, error) {
 	return nil, nil // Branch is top level object
 }
 
-func (k ComponentKey) String() string {
-	return fmt.Sprintf("%02d_%s_component", k.Level(), k.Id)
-}
-
 func (k ConfigKey) String() string {
 	return fmt.Sprintf("%02d_%d_%s_%s_config", k.Level(), k.BranchId, k.ComponentId, k.Id)
 }
@@ -361,10 +295,6 @@ func (k TaskKey) String() string {
 	return fmt.Sprintf("%02d_%d_%s_%s_%03d_%03d_task", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.PhaseKey.Index, k.Index)
 }
 
-func (k ConfigKey) ComponentKey() ComponentKey {
-	return ComponentKey{Id: k.ComponentId}
-}
-
 func (k ConfigKey) BranchKey() BranchKey {
 	return BranchKey{Id: k.BranchId}
 }
@@ -375,10 +305,6 @@ func (k ConfigKey) ParentKey() (Key, error) {
 		return nil, nil
 	}
 	return k.BranchKey(), nil
-}
-
-func (k ConfigRowKey) ComponentKey() ComponentKey {
-	return ComponentKey{Id: k.ComponentId}
 }
 
 func (k ConfigRowKey) BranchKey() BranchKey {
@@ -422,10 +348,10 @@ func (k TaskKey) ParentKey() (Key, error) {
 }
 
 type ConfigIdMetadata struct {
-	IdInTemplate ConfigId `json:"idInTemplate"`
+	IdInTemplate storageapi.ConfigID `json:"idInTemplate"`
 }
 
 type RowIdMetadata struct {
-	IdInProject  RowId `json:"idInProject"`
-	IdInTemplate RowId `json:"idInTemplate"`
+	IdInProject  storageapi.RowID `json:"idInProject"`
+	IdInTemplate storageapi.RowID `json:"idInTemplate"`
 }

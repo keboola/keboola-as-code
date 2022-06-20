@@ -1,6 +1,7 @@
 package description
 
 import (
+	"context"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -15,7 +16,7 @@ func NewMapper() *descriptionMapper {
 	return &descriptionMapper{}
 }
 
-func (m *descriptionMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+func (m *descriptionMapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
 	switch o := recipe.Object.(type) {
 	case *model.Branch:
 		o.Description = m.normalize(o.Description)

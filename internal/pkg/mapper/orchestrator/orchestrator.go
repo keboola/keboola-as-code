@@ -21,7 +21,7 @@ func (m *orchestratorMapper) isOrchestratorConfigKey(key model.Key) (bool, error
 		return false, nil
 	}
 
-	component, err := m.state.Components().Get(config.ComponentKey())
+	component, err := m.state.Components().GetOrErr(config.ComponentId)
 	if err != nil {
 		return false, err
 	}

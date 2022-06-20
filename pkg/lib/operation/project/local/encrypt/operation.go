@@ -1,7 +1,8 @@
 package encrypt
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
+	"github.com/keboola/go-client/pkg/client"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/encrypt"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -14,14 +15,21 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	EncryptionApi() (*encryptionapi.Api, error)
+	ProjectID() (int, error)
+	EncryptionApiClient() (client.Sender, error)
 }
 
 func Run(projectState *project.State, o Options, d dependencies) (err error) {
 	logger := d.Logger()
 
+	// Get project ID
+	projectID, err := d.ProjectID()
+	if err != nil {
+		return err
+	}
+
 	// Get Encryption API
-	encryptionApi, err := d.EncryptionApi()
+	encryptionApiClient, err := d.EncryptionApiClient()
 	if err != nil {
 		return err
 	}
@@ -42,7 +50,7 @@ func Run(projectState *project.State, o Options, d dependencies) (err error) {
 		}
 
 		// Invoke
-		if err := plan.Invoke(logger, encryptionApi, projectState.State(), projectState.Ctx()); err != nil {
+		if err := plan.Invoke(projectState.Ctx(), projectID, logger, encryptionApiClient, projectState.State()); err != nil {
 			return err
 		}
 

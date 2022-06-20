@@ -1,8 +1,10 @@
 package configmetadata_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -20,7 +22,7 @@ func TestConfigMetadataMapper_MapAfterLocalLoad(t *testing.T) {
 
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: model.ComponentId("keboola.snowflake-transformation"),
+		ComponentId: storageapi.ComponentID("keboola.snowflake-transformation"),
 		Id:          `456`,
 	}
 	configState := &model.ConfigState{
@@ -39,7 +41,7 @@ func TestConfigMetadataMapper_MapAfterLocalLoad(t *testing.T) {
 	}
 
 	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
-	assert.NoError(t, mockedState.Mapper().MapAfterLocalLoad(recipe))
+	assert.NoError(t, mockedState.Mapper().MapAfterLocalLoad(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	config := recipe.Object.(*model.Config)

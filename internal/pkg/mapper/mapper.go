@@ -1,6 +1,8 @@
 package mapper
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -10,7 +12,7 @@ import (
 // LocalSaveMapper is intended to modify how the object will be saved in the filesystem.
 // If you need a list of all saved objects, when they are already saved, use the AfterLocalOperationListener instead.
 type LocalSaveMapper interface {
-	MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error
+	MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error
 }
 
 // LocalLoadMapper is intended to modify/normalize the object internal representation after loading from the filesystem.
@@ -18,13 +20,13 @@ type LocalSaveMapper interface {
 // Important: do not rely on other objects in the LocalLoadMapper, they may not be loaded yet.
 // If you need to work with multiple objects (and relationships between them), use the AfterLocalOperationListener instead.
 type LocalLoadMapper interface {
-	MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error
+	MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error
 }
 
 // RemoteSaveMapper is intended to modify how the object will be saved in the Storage API.
 // If you need a list of all saved objects, when they are already saved, use the AfterRemoteOperationListener instead.
 type RemoteSaveMapper interface {
-	MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error
+	MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error
 }
 
 // RemoteLoadMapper is intended to modify/normalize the object internal representation after loading from the Storage API.
@@ -32,14 +34,14 @@ type RemoteSaveMapper interface {
 // Important: do not rely on other objects in the RemoteLoadMapper, they may not be loaded yet.
 // If you need to work with multiple objects (and relationships between them), use the AfterRemoteOperationListener instead.
 type RemoteLoadMapper interface {
-	MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error
+	MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error
 }
 
 // BeforePersistMapper is intended to modify manifest record before persist.
 // The Persist operation finds a new object in the filesystem and stores it in the manifest.
 // Remote state does not change.
 type BeforePersistMapper interface {
-	MapBeforePersist(recipe *model.PersistRecipe) error
+	MapBeforePersist(ctx context.Context, recipe *model.PersistRecipe) error
 }
 
 // LocalFileLoadMapper is intended to modify file load process.
@@ -59,13 +61,13 @@ type OnObjectPathUpdateListener interface {
 // AfterLocalOperationListener is called when the local.UnitOfWork finished all the work.
 // The "changes" parameter contains all: loaded, persisted, created, update, (saved), renamed, deleted objects.
 type AfterLocalOperationListener interface {
-	AfterLocalOperation(changes *model.LocalChanges) error
+	AfterLocalOperation(ctx context.Context, changes *model.LocalChanges) error
 }
 
 // AfterRemoteOperationListener is called when the remote.UnitOfWork finished all the work.
 // The "changes" parameter contains all: loaded, created, update, (saved), deleted objects.
 type AfterRemoteOperationListener interface {
-	AfterRemoteOperation(changes *model.RemoteChanges) error
+	AfterRemoteOperation(ctx context.Context, changes *model.RemoteChanges) error
 }
 
 type Mappers []interface{}
@@ -128,10 +130,10 @@ func (m *Mapper) AddMapper(mapper ...interface{}) *Mapper {
 }
 
 // MapBeforeLocalSave calls mappers with LocalSaveMapper interface implemented.
-func (m *Mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *Mapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	return m.mappers.ForEachReverse(true, func(mapper interface{}) error {
 		if mapper, ok := mapper.(LocalSaveMapper); ok {
-			if err := mapper.MapBeforeLocalSave(recipe); err != nil {
+			if err := mapper.MapBeforeLocalSave(ctx, recipe); err != nil {
 				return err
 			}
 		}
@@ -140,10 +142,10 @@ func (m *Mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
 }
 
 // MapAfterLocalLoad calls mappers with LocalLoadMapper interface implemented.
-func (m *Mapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
+func (m *Mapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
 	return m.mappers.ForEach(true, func(mapper interface{}) error {
 		if mapper, ok := mapper.(LocalLoadMapper); ok {
-			if err := mapper.MapAfterLocalLoad(recipe); err != nil {
+			if err := mapper.MapAfterLocalLoad(ctx, recipe); err != nil {
 				return err
 			}
 		}
@@ -152,10 +154,10 @@ func (m *Mapper) MapAfterLocalLoad(recipe *model.LocalLoadRecipe) error {
 }
 
 // MapBeforeRemoteSave calls mappers with RemoteSaveMapper interface implemented.
-func (m *Mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+func (m *Mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
 	return m.mappers.ForEachReverse(true, func(mapper interface{}) error {
 		if mapper, ok := mapper.(RemoteSaveMapper); ok {
-			if err := mapper.MapBeforeRemoteSave(recipe); err != nil {
+			if err := mapper.MapBeforeRemoteSave(ctx, recipe); err != nil {
 				return err
 			}
 		}
@@ -164,10 +166,10 @@ func (m *Mapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
 }
 
 // MapAfterRemoteLoad calls mappers with RemoteLoadMapper interface implemented.
-func (m *Mapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+func (m *Mapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
 	return m.mappers.ForEach(true, func(mapper interface{}) error {
 		if mapper, ok := mapper.(RemoteLoadMapper); ok {
-			if err := mapper.MapAfterRemoteLoad(recipe); err != nil {
+			if err := mapper.MapAfterRemoteLoad(ctx, recipe); err != nil {
 				return err
 			}
 		}
@@ -176,10 +178,10 @@ func (m *Mapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
 }
 
 // MapBeforePersist calls mappers with BeforePersistMapper interface implemented.
-func (m *Mapper) MapBeforePersist(recipe *model.PersistRecipe) error {
+func (m *Mapper) MapBeforePersist(ctx context.Context, recipe *model.PersistRecipe) error {
 	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(BeforePersistMapper); ok {
-			if err := mapper.MapBeforePersist(recipe); err != nil {
+			if err := mapper.MapBeforePersist(ctx, recipe); err != nil {
 				return err
 			}
 		}
@@ -222,10 +224,10 @@ func (m *Mapper) OnObjectPathUpdate(event model.OnObjectPathUpdateEvent) error {
 }
 
 // AfterLocalOperation calls mappers with AfterLocalOperationListener interface implemented.
-func (m *Mapper) AfterLocalOperation(changes *model.LocalChanges) error {
+func (m *Mapper) AfterLocalOperation(ctx context.Context, changes *model.LocalChanges) error {
 	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(AfterLocalOperationListener); ok {
-			if err := mapper.AfterLocalOperation(changes); err != nil {
+			if err := mapper.AfterLocalOperation(ctx, changes); err != nil {
 				return err
 			}
 		}
@@ -234,10 +236,10 @@ func (m *Mapper) AfterLocalOperation(changes *model.LocalChanges) error {
 }
 
 // AfterRemoteOperation calls mappers with AfterRemoteOperationListener interface implemented.
-func (m *Mapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (m *Mapper) AfterRemoteOperation(ctx context.Context, changes *model.RemoteChanges) error {
 	return m.mappers.ForEach(false, func(mapper interface{}) error {
 		if mapper, ok := mapper.(AfterRemoteOperationListener); ok {
-			if err := mapper.AfterRemoteOperation(changes); err != nil {
+			if err := mapper.AfterRemoteOperation(ctx, changes); err != nil {
 				return err
 			}
 		}

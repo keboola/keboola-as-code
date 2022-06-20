@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/jarcoal/httpmock"
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
@@ -14,13 +16,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/jsonnetfiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/metadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	. "github.com/keboola/keboola-as-code/internal/pkg/template/use"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
@@ -28,8 +28,8 @@ func TestContext(t *testing.T) {
 	t.Parallel()
 
 	// Mocked ticket provider
-	storageApi, httpTransport := testapi.NewMockedStorageApi(log.NewDebugLogger())
-	tickets := storageApi.NewTicketProvider()
+	storageApiClient, httpTransport := client.NewMockedClient()
+	tickets := storageapi.NewTicketProvider(context.Background(), storageApiClient)
 
 	// Mocked tickets
 	var ticketResponses []*http.Response

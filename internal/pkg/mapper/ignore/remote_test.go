@@ -1,8 +1,10 @@
 package ignore_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -22,7 +24,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Variables(t *testing.T) {
 	assert.NoError(t, state.Set(targetConfig))
 
 	// Variables for target
-	targetVarsKey := model.ConfigKey{BranchId: 1, ComponentId: model.VariablesComponentId, Id: "2"}
+	targetVarsKey := model.ConfigKey{BranchId: 1, ComponentId: storageapi.VariablesComponentID, Id: "2"}
 	targetVars := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: targetVarsKey},
 		Remote: &model.Config{
@@ -38,7 +40,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Variables(t *testing.T) {
 	assert.NoError(t, state.Set(targetVars))
 
 	// Unattached variables
-	unattachedVarsKey := model.ConfigKey{BranchId: 1, ComponentId: model.VariablesComponentId, Id: "3"}
+	unattachedVarsKey := model.ConfigKey{BranchId: 1, ComponentId: storageapi.VariablesComponentID, Id: "3"}
 	unattachedVars := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: unattachedVarsKey},
 		Remote:         &model.Config{ConfigKey: unattachedVarsKey},
@@ -50,7 +52,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Variables(t *testing.T) {
 	changes.AddLoaded(targetConfig)
 	changes.AddLoaded(targetVars)
 	changes.AddLoaded(unattachedVars)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	assert.Equal(t, "DEBUG  Ignored unattached variables config \"branch:1/component:keboola.variables/config:3\"\n", logger.AllMessages())
 
 	// Unattached variables are removed
@@ -74,7 +76,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Scheduler(t *testing.T) {
 	assert.NoError(t, state.Set(targetConfig))
 
 	// Valid scheduler
-	validSchedulerKey := model.ConfigKey{BranchId: 1, ComponentId: model.SchedulerComponentId, Id: "2"}
+	validSchedulerKey := model.ConfigKey{BranchId: 1, ComponentId: storageapi.SchedulerComponentID, Id: "2"}
 	validScheduler := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: validSchedulerKey},
 		Remote: &model.Config{
@@ -91,7 +93,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Scheduler(t *testing.T) {
 
 	// Ignored scheduler
 	missingTargetKey := model.ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", Id: "789"}
-	ignoredSchedulerKey := model.ConfigKey{BranchId: 1, ComponentId: model.SchedulerComponentId, Id: "3"}
+	ignoredSchedulerKey := model.ConfigKey{BranchId: 1, ComponentId: storageapi.SchedulerComponentID, Id: "3"}
 	ignoredScheduler := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: ignoredSchedulerKey},
 		Remote: &model.Config{
@@ -111,7 +113,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Scheduler(t *testing.T) {
 	changes.AddLoaded(targetConfig)
 	changes.AddLoaded(ignoredScheduler)
 	changes.AddLoaded(validScheduler)
-	assert.NoError(t, state.Mapper().AfterRemoteOperation(changes))
+	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	assert.Equal(t, "DEBUG  Ignored scheduler config \"branch:1/component:keboola.scheduler/config:3\", target config \"branch:1/component:keboola.foo-bar/config:789\" not found\n", logger.AllMessages())
 
 	// Unattached variables are removed

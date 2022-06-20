@@ -1,8 +1,10 @@
 package variables_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -21,7 +23,7 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 	configManifest := &model.ConfigManifest{
 		ConfigKey: model.ConfigKey{
 			BranchId:    123,
-			ComponentId: model.VariablesComponentId,
+			ComponentId: storageapi.VariablesComponentID,
 			Id:          `678`,
 		},
 	}
@@ -32,7 +34,7 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, configManifest.Relations)
-	assert.NoError(t, state.Mapper().MapBeforePersist(recipe))
+	assert.NoError(t, state.Mapper().MapBeforePersist(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Relation has been created
@@ -54,7 +56,7 @@ func TestVariablesValuesPersistDefaultInName(t *testing.T) {
 	// Get objects
 	rowKey := model.ConfigRowKey{
 		BranchId:    123,
-		ComponentId: model.VariablesComponentId,
+		ComponentId: storageapi.VariablesComponentID,
 		ConfigId:    `456`,
 	}
 	row1Key := rowKey
@@ -81,7 +83,7 @@ func TestVariablesValuesPersistDefaultInName(t *testing.T) {
 	// Invoke
 	changes := model.NewLocalChanges()
 	changes.AddPersisted(state.All()...)
-	assert.NoError(t, state.Mapper().AfterLocalOperation(changes))
+	assert.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Row 2 has relation -> contains default variables values, because it has "default" in the name
@@ -105,7 +107,7 @@ func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 	// Get objects
 	rowKey := model.ConfigRowKey{
 		BranchId:    123,
-		ComponentId: model.VariablesComponentId,
+		ComponentId: storageapi.VariablesComponentID,
 		ConfigId:    `456`,
 	}
 	row1Key := rowKey
@@ -129,7 +131,7 @@ func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 	// Invoke
 	changes := model.NewLocalChanges()
 	changes.AddPersisted(state.All()...)
-	assert.NoError(t, state.Mapper().AfterLocalOperation(changes))
+	assert.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Row1 has relation -> contains default variables values, because it is first

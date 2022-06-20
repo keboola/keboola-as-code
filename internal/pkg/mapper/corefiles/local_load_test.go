@@ -38,7 +38,7 @@ func TestLoadCoreFiles(t *testing.T) {
 
 	// Call mapper
 	recipe := model.NewLocalLoadRecipe(d.FileLoader(), manifest, object)
-	assert.NoError(t, state.Mapper().MapAfterLocalLoad(recipe))
+	assert.NoError(t, state.Mapper().MapAfterLocalLoad(context.Background(), recipe))
 
 	// Values are loaded and set
 	assert.Equal(t, &fixtures.MockedObject{

@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -21,14 +20,14 @@ type Options struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
+	StorageAPITokenID() (string, error)
 }
 
 func Run(projectState *project.State, o Options, d dependencies) error {
 	logger := d.Logger()
 
-	// Get Storage Api - for token
-	storageApi, err := d.StorageApi()
+	// Get token ID
+	tokenID, err := d.StorageAPITokenID()
 	if err != nil {
 		return err
 	}
@@ -38,7 +37,7 @@ func Run(projectState *project.State, o Options, d dependencies) error {
 
 	// Rename
 	o.Instance.InstanceName = o.NewName
-	err = branchState.Local.Metadata.UpsertTemplateInstanceFrom(time.Now(), storageApi.Token().Id, o.Instance)
+	err = branchState.Local.Metadata.UpsertTemplateInstanceFrom(time.Now(), tokenID, o.Instance)
 	if err != nil {
 		return err
 	}

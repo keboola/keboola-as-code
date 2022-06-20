@@ -1,10 +1,15 @@
 package scheduler
 
 import (
+	"context"
+
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *schedulerMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (m *schedulerMapper) AfterRemoteOperation(ctx context.Context, changes *model.RemoteChanges) error {
 	var saved []*model.ConfigState
 	var deleted []*model.ConfigState
 
@@ -24,26 +29,26 @@ func (m *schedulerMapper) AfterRemoteOperation(changes *model.RemoteChanges) err
 
 	if len(saved) > 0 || len(deleted) > 0 {
 		// Get Scheduler API - only if it is needed
-		api, err := m.SchedulerApi()
+		apiClient, err := m.SchedulerApiClient()
 		if err != nil {
 			return err
 		}
 
 		// Create requests pool
-		pool := api.NewPool()
+		grp := client.NewRunGroup(ctx, apiClient)
 
 		// Activate saved configs
 		for _, o := range saved {
-			m.onRemoteSave(api, pool, o)
+			m.onRemoteSave(grp, o)
 		}
 
 		// Deactivate deleted configs
 		for _, o := range deleted {
-			m.onRemoteDelete(api, pool, o)
+			m.onRemoteDelete(grp, o)
 		}
 
 		// Run requests
-		return pool.StartAndWait()
+		return grp.RunAndWait()
 	}
 
 	return nil
@@ -55,7 +60,7 @@ func (m *schedulerMapper) isSchedulerConfigFromMainBranch(objectState model.Obje
 		return false
 	}
 
-	if configState.ComponentId != model.SchedulerComponentId {
+	if configState.ComponentId != storageapi.SchedulerComponentID {
 		return false
 	}
 

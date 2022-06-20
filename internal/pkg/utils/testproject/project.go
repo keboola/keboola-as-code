@@ -1,121 +1,109 @@
-// nolint forbidigo
 package testproject
 
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/encryptionapi"
+	"github.com/keboola/go-client/pkg/schedulerapi"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/testproject"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/schedulerapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 type Project struct {
 	*testproject.Project
-	t              *testing.T
-	storageApi     *storageapi.Api
-	encryptionApi  *encryptionapi.Api
-	schedulerApi   *schedulerapi.Api
-	defaultBranch  *model.Branch
-	branchesById   map[model.BranchId]*model.Branch
-	branchesByName map[string]*model.Branch
-	envs           *env.Map
+	t                   *testing.T
+	initStartedAt       time.Time
+	ctx                 context.Context
+	storageAPIToken     *storageapi.Token
+	storageApiClient    client.Client
+	encryptionAPIClient client.Client
+	schedulerAPIClient  client.Client
+	defaultBranch       *storageapi.Branch
+	envs                *env.Map
+	mapsLock            *sync.Mutex
+	branchesById        map[storageapi.BranchID]*storageapi.Branch
+	branchesByName      map[string]*storageapi.Branch
 }
 
 func GetTestProject(t *testing.T, envs *env.Map) *Project {
-	p := &Project{Project: testproject.GetTestProject(t), t: t}
+	t.Helper()
+	ctx, cancelFn := context.WithCancel(context.Background())
+	t.Cleanup(func() {
+		// Cancel background jobs
+		cancelFn()
+	})
+
+	p := &Project{Project: testproject.GetTestProject(t), t: t, initStartedAt: time.Now(), ctx: ctx, mapsLock: &sync.Mutex{}}
+	p.logf("□ Initializing project...")
 
 	// Init storage API
-	logger := log.NewDebugLogger()
-	p.storageApi, _ = testapi.NewStorageApiWithToken(p.StorageAPIHost(), p.StorageAPIToken(), testhelper.TestIsVerbose())
+	p.storageApiClient = storageapi.ClientWithHostAndToken(client.NewTestClient(), p.StorageAPIHost(), p.Project.StorageAPIToken())
 
 	// Load services
-	services, err := p.storageApi.ServicesUrlById()
+	index, err := storageapi.IndexRequest().Send(p.ctx, p.storageApiClient)
 	if err != nil {
 		assert.FailNow(p.t, "cannot get services: ", err)
 	}
+	services := index.Services.ToMap()
 
 	// Get encryption service host
-	encryptionHost, found := services["encryption"]
+	encryptionHost, found := services.URLByID("encryption")
 	if !found {
-		assert.FailNow(p.t, "encryption scheduler service")
+		assert.FailNow(p.t, "encryption service not found")
 	}
 
 	// Init Encryption API
-	p.encryptionApi = encryptionapi.New(
-		context.Background(),
-		logger,
-		string(encryptionHost),
-		p.ID(),
-		false,
-	)
+	p.encryptionAPIClient = encryptionapi.ClientWithHost(client.NewTestClient(), encryptionHost.String())
 
 	// Get scheduler service host
-	schedulerHost, found := services["scheduler"]
+	schedulerHost, found := services.URLByID("scheduler")
 	if !found {
 		assert.FailNow(p.t, "missing scheduler service")
 	}
 
 	// Init Scheduler API
-	if testhelper.TestIsVerbose() {
-		logger.ConnectTo(os.Stdout)
-	}
-	p.schedulerApi = schedulerapi.New(
-		context.Background(),
-		logger,
-		string(schedulerHost),
-		p.storageApi.Token().Token,
-		false,
-	)
+	p.schedulerAPIClient = schedulerapi.ClientWithHostAndToken(client.NewTestClient(), schedulerHost.String(), p.Project.StorageAPIToken())
 
-	// Check project ID
-	if p.ID() != p.storageApi.ProjectId() {
-		assert.FailNow(p.t, "test project id and token project id are different.")
-	}
-
-	// Load default branch
-	p.defaultBranch, err = p.storageApi.GetDefaultBranch()
-	if err != nil {
-		assert.FailNow(p.t, "cannot get default branch: ", err)
-	}
-	branchMetadataResponse := p.storageApi.ListBranchMetadataRequest(p.defaultBranch.Id).Send().Response
-	branchMetadataMap := make(map[string]string)
-	if branchMetadataResponse.HasResult() {
-		metadata := *branchMetadataResponse.Result().(*[]storageapi.Metadata)
-		for _, m := range metadata {
-			branchMetadataMap[m.Key] = m.Value
+	// Check token/project ID
+	initWg := &sync.WaitGroup{}
+	initWg.Add(1)
+	go func() {
+		defer initWg.Done()
+		if token, err := storageapi.VerifyTokenRequest(p.Project.StorageAPIToken()).Send(p.ctx, p.storageApiClient); err != nil {
+			assert.FailNow(p.t, fmt.Sprintf("invalid token for project %d: %s", p.ID(), err))
+		} else if p.ID() != token.ProjectID() {
+			assert.FailNow(p.t, "test project id and token project id are different.")
+		} else {
+			p.storageAPIToken = token
 		}
-	}
-	p.defaultBranch.Metadata = branchMetadataMap
+	}()
 
 	// Set envs
+	initWg.Wait()
 	p.envs = envs.Clone()
 	p.setEnv(`TEST_KBC_PROJECT_ID`, cast.ToString(p.ID()))
-	p.setEnv(`TEST_KBC_PROJECT_NAME`, p.Name())
-	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.StorageAPIHost())
-	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.StorageAPIToken())
-	p.logf(`Project locked`)
-
+	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.Project.StorageAPIHost())
+	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.Project.StorageAPIToken())
+	p.logf(`■ ️Initialization done.`)
 	return p
 }
 
@@ -123,97 +111,74 @@ func (p *Project) Env() *env.Map {
 	return p.envs
 }
 
-func (p *Project) DefaultBranch() *model.Branch {
+func (p *Project) DefaultBranch() *storageapi.Branch {
+	if p.defaultBranch == nil {
+		if v, err := storageapi.GetDefaultBranchRequest().Send(p.ctx, p.storageApiClient); err != nil {
+			p.defaultBranch = v
+		} else {
+			assert.FailNow(p.t, "cannot get default branch: ", err)
+		}
+	}
 	return p.defaultBranch
 }
 
-func (p *Project) Name() string {
-	return p.storageApi.ProjectName()
+func (p *Project) StorageAPIToken() *storageapi.Token {
+	return p.storageAPIToken
 }
 
-func (p *Project) StorageApi() *storageapi.Api {
-	return p.storageApi
+func (p *Project) StorageAPIClient() client.Client {
+	return p.storageApiClient
 }
 
-func (p *Project) EncryptionApi() *encryptionapi.Api {
-	return p.encryptionApi
+func (p *Project) EncryptionAPIClient() client.Client {
+	return p.encryptionAPIClient
 }
 
-func (p *Project) SchedulerApi() *schedulerapi.Api {
-	return p.schedulerApi
+func (p *Project) SchedulerAPIClient() client.Client {
+	return p.schedulerAPIClient
 }
 
-// Clear deletes all project branches (except default) and all configurations.
-func (p *Project) Clear() {
-	p.logf("Clearing project ...")
-	startTime := time.Now()
+// Clean method resets default branch, deletes all project branches (except default), all configurations and all schedules.
+func (p *Project) Clean() {
+	p.logf("□ Cleaning project...")
 
-	// Clear branches maps
-	p.branchesById = make(map[model.BranchId]*model.Branch)
-	p.branchesByName = make(map[string]*model.Branch)
+	ctx, cancelFn := context.WithCancel(context.Background())
+	grp, ctx := errgroup.WithContext(ctx)
+	defer cancelFn()
 
-	// Delete all configs in default branch, it cannot be deleted
-	pool := p.storageApi.NewPool()
-	pool.Request(p.storageApi.DeleteConfigsInBranchRequest(p.defaultBranch.BranchKey)).Send()
-	if err := pool.StartAndWait(); err != nil {
-		assert.FailNow(p.t, fmt.Sprintf("cannot delete branches: %s", err))
+	// Clean by Storage API
+	grp.Go(func() (err error) {
+		p.defaultBranch, err = storageapi.
+			CleanProjectRequest().
+			WithOnSuccess(func(ctx context.Context, sender client.Sender, defaultBranch *storageapi.Branch) error {
+				p.defaultBranch = defaultBranch
+				return nil
+			}).
+			Send(ctx, p.storageApiClient)
+		return err
+	})
+
+	// Clean by Scheduler API
+	grp.Go(func() error {
+		return schedulerapi.
+			CleanAllSchedulesRequest().
+			SendOrErr(ctx, p.schedulerAPIClient)
+	})
+
+	if err := grp.Wait(); err != nil {
+		p.t.Fatalf(`cannot clean project "%d": %s`, p.ID(), err)
 	}
-
-	// Delete metadata of default branch
-	pool = p.storageApi.NewPool()
-	pool.Request(p.storageApi.ListBranchMetadataRequest(p.defaultBranch.Id)).
-		OnSuccess(func(response *client.Response) {
-			branchMetadataResponse := *response.Result().(*[]storageapi.Metadata)
-			for _, m := range branchMetadataResponse {
-				pool.Request(p.storageApi.DeleteBranchMetadataRequest(p.defaultBranch.Id, m.Id)).Send()
-			}
-		}).
-		Send()
-	if err := pool.StartAndWait(); err != nil {
-		assert.FailNow(p.t, fmt.Sprintf("cannot delete metadata: %s", err))
-	}
-
-	// Load branches
-	branches, err := p.storageApi.ListBranches()
-	if err != nil {
-		assert.FailNow(p.t, fmt.Sprintf("cannot load branches: %s", err))
-	}
-
-	// Delete all dev-branches sequentially, parallel requests don't work with this endpoint
-	for _, branch := range branches {
-		if !branch.IsDefault {
-			if _, err := p.storageApi.DeleteBranch(branch.BranchKey); err != nil {
-				assert.FailNow(p.t, fmt.Sprintf("cannot delete branch: %s", err))
-			}
-		}
-	}
-
-	p.clearSchedules()
-
-	p.logf("Test project cleared | %s", time.Since(startTime))
-}
-
-// Clear deletes all schedules.
-func (p *Project) clearSchedules() {
-	// Load schedules
-	schedules, err := p.schedulerApi.ListSchedules()
-	if err != nil {
-		assert.FailNow(p.t, fmt.Sprintf("cannot load schedules: %s", err))
-	}
-
-	// Delete all schedules
-	pool := p.schedulerApi.NewPool()
-	for _, schedule := range schedules {
-		pool.Request(p.schedulerApi.DeleteScheduleRequest(schedule.Id)).Send()
-	}
-	if err := pool.StartAndWait(); err != nil {
-		assert.FailNow(p.t, fmt.Sprintf("cannot delete schedules: %s", err))
-	}
+	p.logf("■ Cleanup done.")
 }
 
 func (p *Project) SetState(stateFilePath string) {
 	// Remove all objects
-	p.Clear()
+	p.Clean()
+	p.branchesById = make(map[storageapi.BranchID]*storageapi.Branch)
+	p.branchesByName = make(map[string]*storageapi.Branch)
+
+	// Set new state
+	p.logf("□ Setting project state ...")
 
 	// Log ENVs at the end
 	defer p.logEnvs()
@@ -233,10 +198,6 @@ func (p *Project) SetState(stateFilePath string) {
 		assert.FailNow(p.t, err.Error())
 	}
 
-	// Set new state
-	startTime := time.Now()
-	p.logf("Setting project state ...")
-
 	// Create configs in default branch, they will be auto-copied to branches created later
 	p.createConfigsInDefaultBranch(stateFile.AllBranchesConfigs)
 
@@ -246,72 +207,141 @@ func (p *Project) SetState(stateFilePath string) {
 	// Create configs in branches
 	p.createConfigs(stateFile.Branches, stateFile.Envs)
 
-	p.logf("Project state set | %s", time.Since(startTime))
+	p.logf("■ Project state set.")
 }
 
 func (p *Project) createBranches(branches []*fixtures.BranchState) {
-	// Create branches sequentially, parallel requests don't work with this endpoint
+	ctx, cancelFn := context.WithCancel(context.Background())
+	defer cancelFn()
+
+	// Only one create branch request can run simultaneously.
+	// Branch deletion is performed via Storage Job, which uses locks.
+	// If we ran multiple requests, then only one job would run and the other jobs would wait.
+	// The problem is that the lock is checked again after 30 seconds, so there is a long delay.
+	createBranchSem := semaphore.NewWeighted(1)
+
+	// Create branches
+	grp := client.NewWaitGroup(ctx, p.storageApiClient)
 	for _, fixture := range branches {
-		branch := fixture.Branch.ToModel(p.defaultBranch)
-		if len(fixture.Metadata) > 0 {
-			branch.Metadata = fixture.Metadata
-			p.StorageApi().AppendBranchMetadataRequest(branch).Send()
-		}
-		if branch.IsDefault {
-			p.defaultBranch.Description = fixture.Branch.Description
-			if _, err := p.storageApi.UpdateBranch(p.defaultBranch, model.NewChangedFields("description")); err != nil {
-				assert.FailNow(p.t, fmt.Sprintf("cannot set default branch description: %s", err))
-			}
-			p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), branch.Id.String())
-		} else {
-			err := p.storageApi.
-				CreateBranchRequest(branch).
-				OnSuccess(func(response *client.Response) {
-					p.logf(`crated branch "%s", id: "%d"`, branch.Name, branch.Id)
-					p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), branch.Id.String())
-					p.branchesById[branch.Id] = branch
-					p.branchesByName[branch.Name] = branch
-				}).
-				Send().
-				Err()
-			if err != nil {
-				assert.FailNow(p.t, fmt.Sprintf(`cannot create branch: %s`, err))
-			}
-		}
+		fixture := fixture
+		grp.Send(p.createBranchRequest(fixture, createBranchSem))
+	}
+
+	// Wait for all requests
+	if err := grp.Wait(); err != nil {
+		assert.FailNow(p.t, err.Error())
 	}
 }
 
-func (p *Project) createConfigsInDefaultBranch(names []string) {
-	p.branchesById[p.defaultBranch.Id] = p.defaultBranch
-	p.branchesByName[p.defaultBranch.Name] = p.defaultBranch
+func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranchSem *semaphore.Weighted) client.APIRequest[*storageapi.Branch] {
+	var request client.APIRequest[*storageapi.Branch]
+
+	// Create branch
+	if fixture.IsDefault {
+		// Reset default branch description (default branch cannot be created/deleted)
+		request = client.NewNoOperationAPIRequest(p.defaultBranch) // default branch already exists
+		if p.defaultBranch.Description != fixture.Description {
+			request = request.WithOnSuccess(func(ctx context.Context, sender client.Sender, branch *storageapi.Branch) error {
+				branch.Description = fixture.Description
+				return storageapi.
+					UpdateBranchRequest(branch, []string{"description"}).
+					WithBefore(func(ctx context.Context, sender client.Sender) error {
+						p.logf("▶ Default branch description ...")
+						return nil
+					}).
+					WithOnComplete(func(ctx context.Context, sender client.Sender, _ *storageapi.Branch, err error) error {
+						if err == nil {
+							p.logf("✔️ Default branch description.")
+							return nil
+						} else {
+							return fmt.Errorf("cannot set default branch description: %w", err)
+						}
+					}).
+					SendOrErr(ctx, sender)
+			})
+		}
+	} else {
+		// Create a new branch
+		request = storageapi.
+			CreateBranchRequest(fixture.ToApi()).
+			WithBefore(func(ctx context.Context, _ client.Sender) error {
+				p.logf("▶ Branch \"%s\"...", fixture.Name)
+				return createBranchSem.Acquire(ctx, 1)
+			}).
+			WithOnComplete(func(ctx context.Context, sender client.Sender, branch *storageapi.Branch, err error) error {
+				createBranchSem.Release(1)
+				if err == nil {
+					p.logf("✔️ Branch \"%s\"(%s).", fixture.Name, branch.ID)
+					return nil
+				} else {
+					return fmt.Errorf(`cannot create branch: %w`, err)
+				}
+			})
+	}
+
+	// Branch is ready
+	request = request.WithOnSuccess(func(ctx context.Context, sender client.Sender, branch *storageapi.Branch) error {
+		p.addBranch(branch)
+		return nil
+	})
+
+	// Set branch metadata
+	request = request.WithOnSuccess(func(ctx context.Context, sender client.Sender, branch *storageapi.Branch) error {
+		return storageapi.
+			AppendBranchMetadataRequest(branch.BranchKey, fixture.Metadata).
+			WithBefore(func(ctx context.Context, sender client.Sender) error {
+				p.logf("▶ Branch metadata \"%s\"...", fixture.Name)
+				return nil
+			}).
+			WithOnComplete(func(ctx context.Context, sender client.Sender, _ client.NoResult, err error) error {
+				if err == nil {
+					p.logf("✔️ Branch metadata \"%s\".", fixture.Name)
+					return nil
+				} else {
+					return fmt.Errorf(`cannot set branch metadata: %w`, err)
+				}
+			}).
+			SendOrErr(ctx, sender)
+	})
+	return request
+}
+
+func (p *Project) createConfigsInDefaultBranch(configs []string) {
+	ctx, cancelFn := context.WithCancel(p.ctx)
+	defer cancelFn()
+
+	tickets := storageapi.NewTicketProvider(ctx, p.storageApiClient)
+	grp, ctx := errgroup.WithContext(ctx) // group for all parallel requests
+	sendReady := make(chan struct{})      // block requests until IDs and ENVs will be ready
 
 	// Prepare configs
-	tickets := p.storageApi.NewTicketProvider()
-	configs := p.prepareConfigs(names, p.defaultBranch, tickets, "TEST_BRANCH_ALL_CONFIG")
+	envPrefix := "TEST_BRANCH_ALL_CONFIG"
+	p.prepareConfigs(ctx, grp, sendReady, tickets, envPrefix, configs, p.defaultBranch)
 
 	// Generate new IDs
 	if err := tickets.Resolve(); err != nil {
 		assert.FailNow(p.t, fmt.Sprintf(`cannot generate new IDs: %s`, err))
 	}
 
-	// Create requests
-	pool := p.storageApi.NewPool()
-	p.createConfigsRequests(configs, pool)
-
-	// Send requests
-	if err := pool.StartAndWait(); err != nil {
-		assert.FailNow(p.t, fmt.Sprintf("cannot create configs in default branch: %s", err))
+	// Wait for requests
+	close(sendReady) // unblock requests
+	if err := grp.Wait(); err != nil {
+		assert.FailNow(p.t, fmt.Sprintf("cannot create configs: %s", err))
 	}
 }
 
 func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs map[string]string) {
+	ctx, cancelFn := context.WithCancel(p.ctx)
+	defer cancelFn()
+
+	tickets := storageapi.NewTicketProvider(ctx, p.storageApiClient)
+	grp, ctx := errgroup.WithContext(ctx) // group for all parallel requests
+	sendReady := make(chan struct{})      // block requests until IDs and ENVs will be ready
+
 	// Prepare configs
-	tickets := p.storageApi.NewTicketProvider()
-	var configs []*model.ConfigWithRows
-	for _, branch := range branches {
-		modelBranch := p.branchesByName[branch.Branch.Name]
-		envPrefix := fmt.Sprintf("TEST_BRANCH_%s_CONFIG", modelBranch.Name)
-		configs = append(configs, p.prepareConfigs(branch.Configs, modelBranch, tickets, envPrefix)...)
+	for _, branchFixture := range branches {
+		envPrefix := fmt.Sprintf("TEST_BRANCH_%s_CONFIG", branchFixture.Name)
+		p.prepareConfigs(ctx, grp, sendReady, tickets, envPrefix, branchFixture.Configs, p.branchesByName[branchFixture.Name])
 	}
 
 	// Generate new IDs
@@ -320,75 +350,105 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 	}
 
 	// Add additional ENVs
-	if additionalEnvs != nil {
-		for k, v := range additionalEnvs {
-			p.setEnv(k, testhelper.ReplaceEnvsString(v, p.envs))
-		}
+	for k, v := range additionalEnvs {
+		p.setEnv(k, testhelper.ReplaceEnvsString(v, p.envs))
 	}
 
-	// Create requests
-	pool := p.storageApi.NewPool()
-	p.createConfigsRequests(configs, pool)
-
-	// Send requests
-	if err := pool.StartAndWait(); err != nil {
+	// Wait for requests
+	close(sendReady) // unblock requests
+	if err := grp.Wait(); err != nil {
 		assert.FailNow(p.t, fmt.Sprintf("cannot create configs: %s", err))
 	}
 }
 
-func (p *Project) createConfigsRequests(configs []*model.ConfigWithRows, pool *client.Pool) {
-	for _, config := range configs {
-		// Replace ENVs in config and rows content
-		json.MustDecodeString(testhelper.ReplaceEnvsString(json.MustEncodeString(config.Content, false), p.envs), &config.Content)
-		for _, row := range config.Rows {
-			json.MustDecodeString(testhelper.ReplaceEnvsString(json.MustEncodeString(row.Content, false), p.envs), &row.Content)
+func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, sendReady <-chan struct{}, tickets *storageapi.TicketProvider, envPrefix string, names []string, branch *storageapi.Branch) {
+	for _, name := range names {
+		configFixture := fixtures.LoadConfig(p.t, name)
+		configWithRows := configFixture.ToApi()
+		configDesc := fmt.Sprintf("%s/%s/%s", branch.Name, configFixture.ComponentID, configFixture.Name)
+
+		// Generate ID for config
+		p.logf("▶ ID for config \"%s\"...", configDesc)
+		tickets.Request(func(ticket *storageapi.Ticket) {
+			configWithRows.BranchID = branch.ID
+			configWithRows.ID = storageapi.ConfigID(ticket.ID)
+			p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, configFixture.Name), configWithRows.ID.String())
+			p.logf("✔️ ID for config \"%s\".", configDesc)
+		})
+
+		// For each row
+		for rowIndex, row := range configWithRows.Rows {
+			rowIndex, row := rowIndex, row
+			rowDesc := fmt.Sprintf("%s/%s", configDesc, row.Name)
+
+			// Generate ID for row
+			p.logf("▶ ID for config row \"%s\"...", rowDesc)
+			tickets.Request(func(ticket *storageapi.Ticket) {
+				row.ID = storageapi.RowID(ticket.ID)
+
+				// Generate row name for ENV, if needed
+				rowName := row.Name
+				if len(rowName) == 0 {
+					rowName = cast.ToString(rowIndex + 1)
+				}
+				p.setEnv(fmt.Sprintf("%s_%s_ROW_%s_ID", envPrefix, configFixture.Name, rowName), row.ID.String())
+				p.logf("✔️ ID for config row \"%s\".", rowDesc)
+			})
 		}
 
-		// Create config request
-		if request, err := p.storageApi.CreateConfigRequest(config); err == nil {
-			branch := p.branchesById[config.BranchId]
-			p.logf("creating config \"%s/%s/%s\"", branch.Name, config.ComponentId, config.Name)
-			request.OnSuccess(func(response *client.Response) {
-				if len(config.Config.Metadata) > 0 {
-					request := p.StorageApi().AppendConfigMetadataRequest(config.Config)
-					pool.Request(request).Send()
-				}
-			})
-			pool.Request(request).Send()
-		} else {
-			assert.FailNow(p.t, fmt.Sprintf("cannot create create config request: %s", err))
-		}
+		// Create configs and rows
+		grp.Go(func() error {
+			// Wait for all IDs and ENVs
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-sendReady:
+				// continue!
+			}
+
+			// Replace ENVs in config and rows content
+			json.MustDecodeString(testhelper.ReplaceEnvsString(json.MustEncodeString(configWithRows.Content, false), p.envs), &configWithRows.Content)
+			for _, row := range configWithRows.Rows {
+				json.MustDecodeString(testhelper.ReplaceEnvsString(json.MustEncodeString(row.Content, false), p.envs), &row.Content)
+			}
+
+			// Send request
+			_, err := storageapi.
+				CreateConfigRequest(configWithRows).
+				WithBefore(func(ctx context.Context, sender client.Sender) error {
+					p.logf("▶ Config \"%s/%s/%s\"...", branch.Name, configFixture.ComponentID, configFixture.Name)
+					return nil
+				}).
+				WithOnSuccess(func(ctx context.Context, sender client.Sender, _ *storageapi.ConfigWithRows) error {
+					p.logf("✔️️ Config \"%s/%s/%s\"...", branch.Name, configFixture.ComponentID, configFixture.Name)
+					if len(configFixture.Metadata) > 0 {
+						_, err := storageapi.
+							AppendConfigMetadataRequest(configWithRows.ConfigKey, configFixture.Metadata).
+							WithBefore(func(ctx context.Context, sender client.Sender) error {
+								p.logf("▶ Config metadata \"%s\"...", configDesc)
+								return nil
+							}).
+							WithOnSuccess(func(_ context.Context, _ client.Sender, _ client.NoResult) error {
+								p.logf("✔️️ Config metadata \"%s\".", configDesc)
+								return nil
+							}).
+							Send(ctx, sender)
+						return err
+					}
+					return nil
+				}).
+				Send(ctx, p.storageApiClient)
+			return err
+		})
 	}
 }
 
-func (p *Project) prepareConfigs(names []string, branch *model.Branch, tickets *storageapi.TicketProvider, envPrefix string) []*model.ConfigWithRows {
-	var configs []*model.ConfigWithRows
-	for _, name := range names {
-		config := fixtures.LoadConfig(p.t, name)
-		configs = append(configs, config)
-		config.BranchId = branch.Id
-
-		// Get IDs for config and its rows
-		// In tests must be rows IDs order always equal
-		p.logf("creating IDs for config \"%s/%s/%s\"", branch.Name, config.ComponentId, config.Name)
-		tickets.Request(func(ticket *model.Ticket) {
-			config.Id = model.ConfigId(ticket.Id)
-			p.setEnv(fmt.Sprintf("%s_%s_ID", envPrefix, config.Name), config.Id.String())
-		})
-		for rowIndex, r := range config.Rows {
-			row := r
-			rowName := row.Name
-			if len(rowName) == 0 {
-				rowName = cast.ToString(rowIndex + 1)
-			}
-			tickets.Request(func(ticket *model.Ticket) {
-				row.Id = model.RowId(ticket.Id)
-				p.setEnv(fmt.Sprintf("%s_%s_ROW_%s_ID", envPrefix, config.Name, rowName), row.Id.String())
-			})
-		}
-	}
-
-	return configs
+func (p *Project) addBranch(branch *storageapi.Branch) {
+	p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), branch.ID.String())
+	p.mapsLock.Lock()
+	defer p.mapsLock.Unlock()
+	p.branchesById[branch.ID] = branch
+	p.branchesByName[branch.Name] = branch
 }
 
 // setEnv set ENV variable, all ENVs are logged at the end of SetState method.
@@ -410,7 +470,8 @@ func (p *Project) logEnvs() {
 
 func (p *Project) logf(format string, a ...interface{}) {
 	if testhelper.TestIsVerbose() {
-		a = append([]interface{}{p.ID(), p.t.Name()}, a...)
-		p.t.Logf("TestProject[%d][%s]: "+format, a...)
+		seconds := float64(time.Since(p.initStartedAt).Milliseconds()) / 1000
+		a = append([]interface{}{p.ID(), p.t.Name(), seconds}, a...)
+		p.t.Logf("TestProject[%d][%s][%05.2fs]: "+format, a...)
 	}
 }

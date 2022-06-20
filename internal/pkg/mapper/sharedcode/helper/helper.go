@@ -3,6 +3,8 @@ package helper
 import (
 	"fmt"
 
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -26,7 +28,7 @@ func (h *SharedCodeHelper) IsSharedCodeKey(key model.Key) (bool, error) {
 	}
 
 	// Is shared code?
-	component, err := h.state.Components().Get(configKey.ComponentKey())
+	component, err := h.state.Components().GetOrErr(configKey.ComponentId)
 	if err != nil || !component.IsSharedCode() {
 		return false, err
 	}
@@ -41,7 +43,7 @@ func (h *SharedCodeHelper) IsSharedCodeRowKey(key model.Key) (bool, error) {
 	}
 
 	// Is shared code?
-	component, err := h.state.Components().Get(configRowKey.ComponentKey())
+	component, err := h.state.Components().GetOrErr(configRowKey.ComponentId)
 	if err != nil || !component.IsSharedCode() {
 		return false, err
 	}
@@ -56,7 +58,7 @@ func (h *SharedCodeHelper) IsTransformation(key model.Key) (bool, error) {
 	}
 
 	// Is shared code?
-	component, err := h.state.Components().Get(configKey.ComponentKey())
+	component, err := h.state.Components().GetOrErr(configKey.ComponentId)
 	if err != nil || !component.IsTransformation() {
 		return false, err
 	}
@@ -92,7 +94,7 @@ func (h *SharedCodeHelper) GetSharedCodeByPath(parentPath, codePath string) (*mo
 	}
 
 	// Shared code?
-	if configState.ComponentId != model.SharedCodeComponentId {
+	if configState.ComponentId != storageapi.SharedCodeComponentID {
 		return nil, fmt.Errorf(`config "%s" is not shared code`, codePath)
 	}
 

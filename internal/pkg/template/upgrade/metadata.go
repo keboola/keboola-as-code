@@ -1,12 +1,14 @@
 package upgrade
 
 import (
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type (
-	configFn func(config *model.Config, idInTemplate model.ConfigId, inputs []model.ConfigInputUsage)
-	rowFn    func(row *model.ConfigRow, idInTemplate model.RowId, inputs []model.RowInputUsage)
+	configFn func(config *model.Config, idInTemplate storageapi.ConfigID, inputs []model.ConfigInputUsage)
+	rowFn    func(row *model.ConfigRow, idInTemplate storageapi.RowID, inputs []model.RowInputUsage)
 )
 
 func iterateTmplMetadata(configs []*model.ConfigWithRows, c configFn, r rowFn) {
@@ -19,11 +21,11 @@ func iterateTmplMetadata(configs []*model.ConfigWithRows, c configFn, r rowFn) {
 		}
 
 		// Convert slices to maps
-		rowsIdsMap := make(map[model.RowId]model.RowIdMetadata)
+		rowsIdsMap := make(map[storageapi.RowID]model.RowIdMetadata)
 		for _, v := range config.Metadata.RowsTemplateIds() {
 			rowsIdsMap[v.IdInProject] = v
 		}
-		rowsInputsMap := make(map[model.RowId][]model.RowInputUsage)
+		rowsInputsMap := make(map[storageapi.RowID][]model.RowInputUsage)
 		for _, v := range config.Metadata.RowsInputsUsage() {
 			rowsInputsMap[v.RowId] = append(rowsInputsMap[v.RowId], v)
 		}

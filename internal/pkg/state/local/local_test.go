@@ -3,6 +3,7 @@ package local
 import (
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -13,19 +14,22 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/registry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 )
 
-func newTestLocalManager(t *testing.T) *Manager {
+func newTestLocalManager(t *testing.T, components []*storageapi.Component) *Manager {
 	t.Helper()
 
 	logger := log.NewDebugLogger()
 	fs, err := aferofs.NewMemoryFs(logger, "")
 	assert.NoError(t, err)
 	fileLoader := fs.FileLoader()
-
 	manifest := fixtures.NewManifest()
-	components := model.NewComponentsMap(nil)
-	projectState := registry.New(knownpaths.NewNop(), naming.NewRegistry(), components, model.SortByPath)
+
+	if components == nil {
+		components = testapi.MockedComponents()
+	}
+	projectState := registry.New(knownpaths.NewNop(), naming.NewRegistry(), model.NewComponentsMap(components), model.SortByPath)
 
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()

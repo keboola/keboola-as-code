@@ -64,6 +64,10 @@ func (m MockedKey) ObjectId() string {
 	return m.Id
 }
 
+func (m *MockedKey) SetObjectId(id any) {
+	m.Id = id.(string)
+}
+
 func (m MockedKey) ParentKey() (model.Key, error) {
 	return nil, nil
 }

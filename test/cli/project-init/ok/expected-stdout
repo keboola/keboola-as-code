@@ -1,5 +1,4 @@
 %A
-DEBUG	HTTP	GET https://%s/v2/storage/tokens/verify | 200 | %s
 DEBUG	Storage API token is valid.
 DEBUG	Project id: "%%TEST_KBC_PROJECT_ID%%", project name: "%s".
 %A

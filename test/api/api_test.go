@@ -84,7 +84,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	// Get test project
 	project := testproject.GetTestProject(t, envs)
 	envs = project.Env()
-	api := project.StorageApi()
+	api := project.StorageAPIClient()
 
 	// Setup project state
 	projectStateFile := "initial-state.json"
@@ -93,7 +93,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	}
 
 	// Create ENV provider
-	envProvider := storageenv.CreateStorageEnvTicketProvider(api, envs)
+	envProvider := storageenv.CreateStorageEnvTicketProvider(context.Background(), api, envs)
 
 	// Replace all %%ENV_VAR%% in all files in the working directory
 	testhelper.ReplaceEnvsDir(workingDirFs, `/`, envProvider)
