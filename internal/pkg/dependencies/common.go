@@ -79,10 +79,18 @@ type clientWithToken struct {
 	Token *storageapi.Token
 }
 
-func (v *CommonContainer) WithStorageApiClient(client client.Client, token *storageapi.Token) *CommonContainer {
+func (v *CommonContainer) WithStorageApiClient(c client.Client, token *storageapi.Token) *CommonContainer {
 	clone := *v
+
+	// Reset all values dependent on Storage API Project/Token
 	clone.storageApi = new(Lazy[clientWithToken])
-	clone.storageApi.Set(clientWithToken{Client: client, Token: token})
+	clone.storageApiIndex = new(Lazy[storageapi.Index])
+	clone.features = new(Lazy[storageapi.FeaturesMap])
+	clone.schedulerApi = new(Lazy[client.Client])
+	clone.eventSender = new(Lazy[event.Sender])
+
+	// Set value
+	clone.storageApi.Set(clientWithToken{Client: c, Token: token})
 	return &clone
 }
 
@@ -169,6 +177,12 @@ func (v *CommonContainer) getServices() (storageapi.ServicesMap, error) {
 
 func (v *CommonContainer) getStorageIndex() (storageapi.Index, error) {
 	return v.storageApiIndex.InitAndGet(func() (*storageapi.Index, error) {
+		// Authentication is required
+		_, err := v.ProjectID()
+		if err != nil {
+			return nil, err
+		}
+
 		// Get Storage API
 		c, err := v.StorageApiClient()
 		if err != nil {
@@ -308,9 +322,4 @@ func (v *CommonContainer) Template(reference model.TemplateRef) (*template.Templ
 	reference = model.NewTemplateRef(reference.Repository(), reference.TemplateId(), versionRecord.Version.String())
 
 	return template.New(reference, templateRecord, versionRecord, templateDir, repo.CommonDir(), v)
-}
-
-func (v *CommonContainer) Clone() *CommonContainer {
-	clone := *v
-	return &clone
 }
