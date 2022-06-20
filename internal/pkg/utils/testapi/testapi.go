@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func MockedComponentsMap() model.ComponentsMap {
+func MockedComponentsMap() *model.ComponentsMap {
 	return model.NewComponentsMap(MockedComponents())
 }
 

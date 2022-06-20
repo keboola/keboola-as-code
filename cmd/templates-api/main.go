@@ -84,7 +84,7 @@ func start(host, port string, repositories []model.TemplateRepository, debug, de
 	}
 
 	// Log options.
-	d.Logger().Infof("starting HTTP server, host=%s, port=%s, debug=%t", host, port, debug)
+	d.Logger().Infof("starting HTTP server, host=%s, port=%s, debug=%t, debug-http=%t", host, port, debug, debugHttp)
 
 	// Initialize the service.
 	svc, err := service.New(d)

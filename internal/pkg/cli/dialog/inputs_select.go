@@ -20,7 +20,7 @@ import (
 type inputsSelectDialog struct {
 	prompt       prompt.Prompt
 	selectAll    bool
-	components   model.ComponentsMap
+	components   *model.ComponentsMap
 	branch       *model.Branch
 	configs      []*model.ConfigWithRows
 	inputs       input.InputsMap
@@ -28,7 +28,7 @@ type inputsSelectDialog struct {
 	objectInputs objectInputsMap
 }
 
-func newInputsSelectDialog(prompt prompt.Prompt, selectAll bool, components model.ComponentsMap, branch *model.Branch, configs []*model.ConfigWithRows, inputs input.InputsMap) (*inputsSelectDialog, error) {
+func newInputsSelectDialog(prompt prompt.Prompt, selectAll bool, components *model.ComponentsMap, branch *model.Branch, configs []*model.ConfigWithRows, inputs input.InputsMap) (*inputsSelectDialog, error) {
 	d := &inputsSelectDialog{prompt: prompt, selectAll: selectAll, components: components, inputs: inputs, branch: branch, configs: configs}
 	return d, d.detectInputs()
 }

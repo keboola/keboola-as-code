@@ -17,7 +17,7 @@ import (
 
 type createDeps interface {
 	Options() *options.Options
-	Components() (model.ComponentsMap, error)
+	Components() (*model.ComponentsMap, error)
 }
 
 func (p *Dialogs) AskWhatCreateRemote() string {

@@ -1,13 +1,78 @@
 package model
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/umisama/go-regexpcache"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
+
+const ComponentsUpdateTimeout = 20 * time.Second
+
+type ComponentsProvider struct {
+	updateLock       *sync.RWMutex
+	logger           log.Logger
+	storageApiClient client.Sender
+	value            *ComponentsMap
+}
+
+func NewComponentsProvider(ctx context.Context, logger log.Logger, storageApiClient client.Sender) (*ComponentsProvider, error) {
+	p := &ComponentsProvider{updateLock: &sync.RWMutex{}, logger: logger, storageApiClient: storageApiClient}
+	if err := p.doUpdate(ctx); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+// RLock acquire read lock, before getting Components().
+// Update() is blocked until the read is finished.
+func (p *ComponentsProvider) RLock() {
+	p.updateLock.RLock()
+}
+
+// RUnlock release read lock.
+func (p *ComponentsProvider) RUnlock() {
+	p.updateLock.RUnlock()
+}
+
+func (p *ComponentsProvider) Components() *ComponentsMap {
+	return p.value
+}
+
+func (p *ComponentsProvider) Update(ctx context.Context) {
+	go func() {
+		// Error is logged
+		_ = p.doUpdate(ctx)
+	}()
+}
+
+func (p *ComponentsProvider) doUpdate(ctx context.Context) error {
+	startTime := time.Now()
+	p.logger.Infof(`components update: started`)
+	p.updateLock.Lock()
+
+	defer p.updateLock.Unlock()
+	p.logger.Infof(`components update: acquired lock`)
+	lockTime := time.Now()
+
+	ctx, cancel := context.WithTimeout(ctx, ComponentsUpdateTimeout)
+	defer cancel()
+	if index, err := storageapi.IndexComponentsRequest().Send(ctx, p.storageApiClient); err == nil {
+		p.value = NewComponentsMap(index.Components)
+		p.logger.Infof("components updated: finished | %s / %s", time.Since(startTime), time.Since(lockTime))
+		return nil
+	} else {
+		p.logger.Errorf("components update: error: %w", err)
+		return err
+	}
+}
 
 type componentsMap = storageapi.ComponentsMap
 type ComponentsMap struct {
@@ -19,8 +84,8 @@ type ComponentsMap struct {
 	used                        map[storageapi.ComponentID]bool
 }
 
-func NewComponentsMap(components storageapi.Components) ComponentsMap {
-	v := ComponentsMap{
+func NewComponentsMap(components storageapi.Components) *ComponentsMap {
+	v := &ComponentsMap{
 		componentsMap:               components.ToMap(),
 		components:                  components,
 		defaultBucketsByComponentId: make(map[storageapi.ComponentID]string),

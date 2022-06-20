@@ -38,7 +38,8 @@ type Common interface {
 	EncryptionApiClient() (client.Sender, error)
 	SchedulerApiClient() (client.Sender, error)
 	Features() (storageapi.FeaturesMap, error)
-	Components() (model.ComponentsMap, error)
+	Components() (*model.ComponentsMap, error)
+	ComponentsProvider() (*model.ComponentsProvider, error)
 	EventSender() (event.Sender, error)
 	Template(reference model.TemplateRef) (*template.Template, error)
 }
@@ -54,7 +55,7 @@ func NewCommonContainer(ctx context.Context, d Abstract) *CommonContainer {
 		features:        new(Lazy[storageapi.FeaturesMap]),
 		encryptionApi:   new(Lazy[client.Client]),
 		schedulerApi:    new(Lazy[client.Client]),
-		components:      new(Lazy[model.ComponentsMap]),
+		components:      new(Lazy[*model.ComponentsProvider]),
 		eventSender:     new(Lazy[event.Sender]),
 	}
 }
@@ -68,7 +69,7 @@ type CommonContainer struct {
 	features        *Lazy[storageapi.FeaturesMap]
 	encryptionApi   *Lazy[client.Client]
 	schedulerApi    *Lazy[client.Client]
-	components      *Lazy[model.ComponentsMap]
+	components      *Lazy[*model.ComponentsProvider]
 	eventSender     *Lazy[event.Sender]
 }
 
@@ -236,22 +237,29 @@ func (v *CommonContainer) SchedulerApiClient() (client.Sender, error) {
 	})
 }
 
-func (v *CommonContainer) Components() (model.ComponentsMap, error) {
-	return v.components.InitAndGet(func() (*model.ComponentsMap, error) {
+func (v *CommonContainer) ComponentsProvider() (*model.ComponentsProvider, error) {
+	return v.components.InitAndGet(func() (**model.ComponentsProvider, error) {
 		// Get Storage API
 		c, err := v.StorageApiClient()
 		if err != nil {
 			return nil, err
 		}
 
-		// Get components index
-		if index, err := storageapi.IndexComponentsRequest().Send(v.ctx, c); err == nil {
-			v := model.NewComponentsMap(index.Components)
-			return &v, nil
-		} else {
+		// Create components provider
+		v, err := model.NewComponentsProvider(v.ctx, v.Logger(), c)
+		if err != nil {
 			return nil, err
 		}
+		return &v, nil
 	})
+}
+
+func (v *CommonContainer) Components() (*model.ComponentsMap, error) {
+	provider, err := v.ComponentsProvider()
+	if err != nil {
+		return nil, err
+	}
+	return provider.Components(), nil
 }
 
 func (v *CommonContainer) EventSender() (event.Sender, error) {
