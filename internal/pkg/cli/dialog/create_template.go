@@ -156,7 +156,7 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	if d.deps.Options().IsSet(`used-components`) {
 		usedComponents = strings.Split(d.deps.Options().GetString(`used-components`), `,`)
 	} else {
-		if components, err := d.deps.Components(); err != nil {
+		if components, err := d.deps.Components(); err == nil {
 			usedComponents = d.askComponents(components.Used())
 		} else {
 			return d.out, err

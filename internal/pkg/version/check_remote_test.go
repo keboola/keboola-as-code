@@ -59,13 +59,7 @@ WARN
 func createMockedChecker(t *testing.T) (*checker, log.DebugLogger) {
 	t.Helper()
 
-	// Client with mocked http transport
-	logger := log.NewDebugLogger()
-	c := NewGitHubChecker(context.Background(), logger, env.Empty())
-	httpTransport := httpmock.NewMockTransport()
-	c.client = c.client.WithTransport(httpTransport).WithRetry(client.TestingRetry())
-
-	// Mocked body
+	// Mocked response
 	body := `
 [
   {
@@ -82,12 +76,14 @@ func createMockedChecker(t *testing.T) (*checker, log.DebugLogger) {
   }
 ]
 `
-	// Mocked response
 	bodyJson := make([]interface{}, 0)
 	json.MustDecodeString(body, &bodyJson)
-	responder, err := httpmock.NewJsonResponder(200, bodyJson)
-	assert.NoError(t, err)
-	httpTransport.RegisterResponder("GET", `=~.+repos/keboola/keboola-as-code/releases.+`, responder)
+	httpTransport := httpmock.NewMockTransport()
+	httpTransport.RegisterResponder("GET", `https://api.github.com/repos/keboola/keboola-as-code/releases`, httpmock.NewJsonResponderOrPanic(200, bodyJson))
 
+	// Client with mocked http transport
+	logger := log.NewDebugLogger()
+	c := NewGitHubChecker(context.Background(), logger, env.Empty())
+	c.client = c.client.WithTransport(httpTransport).WithRetry(client.TestingRetry())
 	return c, logger
 }

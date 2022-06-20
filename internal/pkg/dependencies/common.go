@@ -3,7 +3,6 @@ package dependencies
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/encryptionapi"
@@ -25,8 +24,7 @@ type Abstract interface {
 	Logger() log.Logger
 	Envs() *env.Map
 	ApiVerboseLogs() bool
-	HttpTransport() http.RoundTripper
-	HttpTraceFactory() client.TraceFactory
+	HttpClient() client.Client
 	StorageApiHost() (string, error)
 	StorageApiToken() (string, error)
 	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
@@ -139,10 +137,7 @@ func (v *CommonContainer) getStorageApi() (clientWithToken, error) {
 		}
 
 		// Create API client
-		c := client.New()
-		c = c.WithTransport(v.HttpTransport())
-		c = c.WithTrace(v.HttpTraceFactory())
-		c = storageapi.ClientWithHost(c, host)
+		c := storageapi.ClientWithHost(v.HttpClient(), host)
 		api := &clientWithToken{Client: c}
 
 		// Verify token
@@ -150,8 +145,10 @@ func (v *CommonContainer) getStorageApi() (clientWithToken, error) {
 			api.Client = storageapi.ClientWithToken(c, tokenStr)
 			if token, err := storageapi.VerifyTokenRequest(tokenStr).Send(v.ctx, api.Client); err == nil {
 				api.Token = token
+				v.Logger().Debugf("Storage API token is valid.")
+				v.Logger().Debugf(`Project id: "%d", project name: "%s".`, token.ProjectID(), token.ProjectName())
 			} else {
-				return nil, err
+				return nil, fmt.Errorf("the specified storage API token is not valid")
 			}
 		}
 
@@ -161,7 +158,7 @@ func (v *CommonContainer) getStorageApi() (clientWithToken, error) {
 
 func (v *CommonContainer) getServices() (storageapi.ServicesMap, error) {
 	return v.services.InitAndGet(func() (*storageapi.ServicesMap, error) {
-		if index, err := v.getStorageIndex(); err != nil {
+		if index, err := v.getStorageIndex(); err == nil {
 			services := index.Services.ToMap()
 			return &services, nil
 		} else {
@@ -209,10 +206,7 @@ func (v *CommonContainer) EncryptionApiClient() (client.Sender, error) {
 		}
 
 		// Create API client
-		c := client.New()
-		c = c.WithTransport(v.HttpTransport())
-		c = c.WithTrace(v.HttpTraceFactory())
-		c = encryptionapi.ClientWithHost(c, host.String())
+		c := encryptionapi.ClientWithHost(v.HttpClient(), host.String())
 		return &c, nil
 	})
 }
@@ -232,16 +226,13 @@ func (v *CommonContainer) SchedulerApiClient() (client.Sender, error) {
 		}
 
 		// Get host
-		host, found := services.URLByID("encryption")
+		host, found := services.URLByID("scheduler")
 		if !found {
-			return nil, fmt.Errorf("encryption host not found")
+			return nil, fmt.Errorf("scheduler host not found")
 		}
 
 		// Create API client
-		c := client.New()
-		c = c.WithTransport(v.HttpTransport())
-		c = c.WithTrace(v.HttpTraceFactory())
-		c = schedulerapi.ClientWithHostAndToken(c, host.String(), x.Token.Token)
+		c := schedulerapi.ClientWithHostAndToken(v.HttpClient(), host.String(), x.Token.Token)
 		return &c, nil
 	})
 }

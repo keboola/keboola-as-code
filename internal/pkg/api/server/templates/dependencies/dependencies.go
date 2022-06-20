@@ -50,6 +50,7 @@ type container struct {
 	*commonDeps
 	ctx                 context.Context
 	ctxCancelFn         context.CancelFunc
+	httpClient          *client.Client
 	debug               bool
 	logger              log.PrefixLogger
 	envs                *env.Map
@@ -84,6 +85,17 @@ func (v *container) WithLoggerPrefix(prefix string) *container {
 	clone := v.Clone()
 	clone.logger = v.logger.WithAdditionalPrefix(prefix)
 	return clone
+}
+
+func (v *container) HttpClient() client.Client {
+	if v.httpClient == nil {
+		c := client.New().
+			WithTransport(client.DefaultTransport()).
+			WithUserAgent("keboola-templates-api")
+		c = c.AndTrace(client.LogTracer(v.logger.DebugWriter()))
+		v.httpClient = &c
+	}
+	return *v.httpClient
 }
 
 // WithStorageApiClient returns dependencies clone with modified Storage API.

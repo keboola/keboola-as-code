@@ -21,10 +21,10 @@ import (
 )
 
 type Manager struct {
-	state        model.ObjectStates
-	localManager *local.Manager
-	storageApi   client.Sender
-	mapper       *mapper.Mapper
+	state            model.ObjectStates
+	localManager     *local.Manager
+	storageApiClient client.Sender
+	mapper           *mapper.Mapper
 }
 
 type UnitOfWork struct {
@@ -38,12 +38,12 @@ type UnitOfWork struct {
 	invoked           bool
 }
 
-func NewManager(localManager *local.Manager, storageApi client.Sender, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
+func NewManager(localManager *local.Manager, storageApiClint client.Sender, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
 	return &Manager{
-		state:        objects,
-		localManager: localManager,
-		storageApi:   storageApi,
-		mapper:       mapper,
+		state:            objects,
+		localManager:     localManager,
+		storageApiClient: storageApiClint,
+		mapper:           mapper,
 	}
 }
 
@@ -153,10 +153,10 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 			}
 
 			// Process results
-			errors := utils.NewMultiError()
+			errs := utils.NewMultiError()
 			for key, branch := range branches {
 				if _, err := u.loadObject(branch); err != nil {
-					errors.Append(err)
+					errs.Append(err)
 					delete(branches, key)
 				}
 			}
@@ -173,16 +173,16 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 					config.Metadata = make(model.ConfigMetadata)
 				}
 				if _, err := u.loadObject(config.Config); err != nil {
-					errors.Append(err)
+					errs.Append(err)
 					continue
 				}
 				for _, row := range config.Rows {
 					if _, err := u.loadObject(row); err != nil {
-						errors.Append(err)
+						errs.Append(err)
 					}
 				}
 			}
-			return errors.ErrorOrNil()
+			return errs.ErrorOrNil()
 		})
 
 	// Add request
@@ -290,18 +290,8 @@ func (u *UnitOfWork) Invoke() error {
 }
 
 func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) {
-	// Create or update
-	var createUpdateRequest client.APIRequest[storageapi.Object]
-	exists := objectState.HasRemoteState()
-	if exists {
-		// Update
-		createUpdateRequest = u.updateRequest(objectState, object, recipe, changedFields)
-	} else {
-		createUpdateRequest = u.createRequest(objectState, object, recipe)
-	}
-	u.runGroupFor(object.Level()).Add(createUpdateRequest)
-
 	// Should metadata be set?
+	exists := objectState.HasRemoteState()
 	setMetadata := !exists || changedFields.Has("metadata")
 	if v, ok := recipe.Object.(model.ToApiMetadata); ok && setMetadata {
 		// If the object already exists, we can send the metadata request in parallel with the update.
@@ -310,7 +300,17 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 			// If the object does not exist, we must set metadata after object creation.
 			metadataRequestLevel = object.Level() + 1
 		}
+		changedFields.Remove("metadata")
 		u.runGroupFor(metadataRequestLevel).Add(storageapi.AppendMetadataRequest(v.ToApiObjectKey(), v.ToApiMetadata()))
+	}
+
+	// Create or update
+	if !exists {
+		// Create
+		u.runGroupFor(object.Level()).Add(u.createRequest(objectState, object, recipe))
+	} else if !changedFields.IsEmpty() {
+		// Update
+		u.runGroupFor(object.Level()).Add(u.updateRequest(objectState, object, recipe, changedFields))
 	}
 }
 
@@ -373,7 +373,7 @@ func (u *UnitOfWork) runGroupFor(level int) *client.RunGroup {
 		return value.(*client.RunGroup)
 	}
 
-	grp := client.NewRunGroup(u.ctx, u.storageApi)
+	grp := client.NewRunGroup(u.ctx, u.storageApiClient)
 	u.runGroups.Set(key, grp)
 	return grp
 }

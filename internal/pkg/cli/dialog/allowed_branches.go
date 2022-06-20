@@ -46,7 +46,7 @@ func (d *branchesDialog) ask() (model.AllowedBranches, error) {
 	}
 
 	// List all branches
-	if v, err := storageapi.ListBranchesRequest().Send(d.deps.Ctx(), storageApiClient); err != nil {
+	if v, err := storageapi.ListBranchesRequest().Send(d.deps.Ctx(), storageApiClient); err == nil {
 		for _, apiBranch := range *v {
 			d.allBranches = append(d.allBranches, model.NewBranch(apiBranch))
 		}

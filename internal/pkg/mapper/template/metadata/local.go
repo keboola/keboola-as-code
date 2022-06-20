@@ -1,12 +1,14 @@
 package metadata
 
 import (
+	"context"
+
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *metadataMapper) AfterLocalOperation(changes *model.LocalChanges) error {
+func (m *metadataMapper) AfterLocalOperation(_ context.Context, changes *model.LocalChanges) error {
 	for _, objectState := range changes.Loaded() {
 		if !objectState.HasLocalState() {
 			continue

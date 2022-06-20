@@ -147,14 +147,15 @@ func (p *Project) Clean() {
 	defer cancelFn()
 
 	// Clean by Storage API
-	grp.Go(func() error {
-		return storageapi.
+	grp.Go(func() (err error) {
+		p.defaultBranch, err = storageapi.
 			CleanProjectRequest().
 			WithOnSuccess(func(ctx context.Context, sender client.Sender, defaultBranch *storageapi.Branch) error {
 				p.defaultBranch = defaultBranch
 				return nil
 			}).
-			SendOrErr(ctx, p.storageApiClient)
+			Send(ctx, p.storageApiClient)
+		return err
 	})
 
 	// Clean by Scheduler API
@@ -377,19 +378,20 @@ func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, sendR
 
 		// For each row
 		for rowIndex, row := range configWithRows.Rows {
-			row := row
+			rowIndex, row := rowIndex, row
 			rowDesc := fmt.Sprintf("%s/%s", configDesc, row.Name)
-
-			// Generate name, if needed
-			if len(row.Name) == 0 {
-				row.Name = cast.ToString(rowIndex + 1)
-			}
 
 			// Generate ID for row
 			p.logf("▶ ID for config row \"%s\"...", rowDesc)
 			tickets.Request(func(ticket *storageapi.Ticket) {
 				row.ID = storageapi.RowID(ticket.ID)
-				p.setEnv(fmt.Sprintf("%s_%s_ROW_%s_ID", envPrefix, configFixture.Name, row.Name), row.ID.String())
+
+				// Generate row name for ENV, if needed
+				rowName := row.Name
+				if len(rowName) == 0 {
+					rowName = cast.ToString(rowIndex + 1)
+				}
+				p.setEnv(fmt.Sprintf("%s_%s_ROW_%s_ID", envPrefix, configFixture.Name, rowName), row.ID.String())
 				p.logf("✔️ ID for config row \"%s\".", rowDesc)
 			})
 		}

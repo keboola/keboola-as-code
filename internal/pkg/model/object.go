@@ -159,7 +159,7 @@ func NewConfig(apiValue *storageapi.Config) *Config {
 
 // NewConfigWithRows creates config model from API values.
 func NewConfigWithRows(apiValue *storageapi.ConfigWithRows) *ConfigWithRows {
-	out := &ConfigWithRows{}
+	out := &ConfigWithRows{Config: &Config{}}
 	out.BranchId = apiValue.BranchID
 	out.ComponentId = apiValue.ComponentID
 	out.Id = apiValue.ID
@@ -217,6 +217,7 @@ func (r *ConfigRow) ToApiObject(changeDescription string, changedFields ChangedF
 	out.ChangeDescription = changeDescription
 	out.BranchID = r.BranchId
 	out.ComponentID = r.ComponentId
+	out.ConfigID = r.ConfigId
 	out.ID = r.Id
 	out.Name = r.Name
 	out.Description = r.Description
@@ -517,6 +518,13 @@ func (b *Branch) SetObjectId(id any) {
 
 func (c *Config) SetObjectId(id any) {
 	c.Id = id.(storageapi.ConfigID)
+}
+
+func (c *ConfigWithRows) SetObjectId(id any) {
+	c.Id = id.(storageapi.ConfigID)
+	for _, row := range c.Rows {
+		row.ConfigId = c.Id
+	}
 }
 
 func (r *ConfigRow) SetObjectId(id any) {

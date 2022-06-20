@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/storageapi"
@@ -12,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *orchestratorMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (m *orchestratorMapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
 	errors := utils.NewMultiError()
 	allObjects := m.state.RemoteObjects()
 	for _, objectState := range changes.Loaded() {

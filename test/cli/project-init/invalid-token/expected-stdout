@@ -1,2 +1,1 @@
 %A
-DEBUG	HTTP-ERROR	Invalid access token, method: "GET", url: "https://%s/v2/storage/tokens/verify", httpCode: "401", errCode: "storage.tokenInvalid", exceptionId: "%s", Attempt 1

@@ -81,7 +81,7 @@ func CreateBranchCommand(p dependencies.Provider) *cobra.Command {
 				projectManifest := prj.ProjectManifest()
 
 				// Add new branch to the allowed branches if needed
-				if projectManifest.AllowedBranches().IsBranchAllowed(&model.Branch{BranchKey: model.BranchKey{Id: branch.ID}, Name: branch.Name}) {
+				if !projectManifest.AllowedBranches().IsBranchAllowed(model.NewBranch(branch)) {
 					allowedBranches := projectManifest.AllowedBranches()
 					allowedBranches = append(allowedBranches, model.AllowedBranch(branch.ID.String()))
 					projectManifest.SetAllowedBranches(allowedBranches)

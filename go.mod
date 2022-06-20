@@ -11,6 +11,7 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20210429232723-e923ed2d1db5
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/cenkalti/backoff/v4 v4.1.3
+	github.com/davecgh/go-spew v1.1.1
 	github.com/go-playground/locales v0.14.0
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.10.0
@@ -22,8 +23,8 @@ require (
 	github.com/jarcoal/httpmock v1.2.0
 	github.com/joho/godotenv v1.3.0
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
-	github.com/keboola/go-client v0.0.0-20220619183901-60a7388a614a
-	github.com/keboola/go-utils v0.0.0-20220614094519-00be9e2fcecd
+	github.com/keboola/go-client v0.0.0-20220620100548-6e11cb941078
+	github.com/keboola/go-utils v0.0.0-20220620090327-5a174c7760a2
 	github.com/kylelemons/godebug v1.1.0
 	github.com/nhatthm/aferocopy v1.0.2
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
@@ -101,7 +102,6 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.0.4 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

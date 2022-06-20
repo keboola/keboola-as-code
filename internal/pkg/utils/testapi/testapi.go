@@ -15,6 +15,7 @@ func MockedComponents() storageapi.Components {
 		{ComponentKey: storageapi.ComponentKey{ID: "foo.bar"}, Type: "other", Name: "Foo Bar", Data: storageapi.ComponentData{}},
 		{ComponentKey: storageapi.ComponentKey{ID: "ex-generic-v2"}, Type: "extractor", Name: "Generic", Data: storageapi.ComponentData{}},
 		{ComponentKey: storageapi.ComponentKey{ID: "keboola.foo.bar"}, Type: "other", Name: "Foo Bar", Data: storageapi.ComponentData{}},
+		{ComponentKey: storageapi.ComponentKey{ID: "keboola.my-component"}, Type: "other", Name: "My Component", Data: storageapi.ComponentData{}},
 		{ComponentKey: storageapi.ComponentKey{ID: "keboola.wr-db-mysql"}, Type: "writer", Name: "MySQL", Data: storageapi.ComponentData{}},
 		{ComponentKey: storageapi.ComponentKey{ID: "keboola.ex-db-mysql"}, Type: "extractor", Name: "MySQL", Data: storageapi.ComponentData{}},
 		{ComponentKey: storageapi.ComponentKey{ID: "keboola.ex-aws-s3"}, Type: "extractor", Name: "AWS S3", Data: storageapi.ComponentData{DefaultBucket: true, DefaultBucketStage: "in"}},

@@ -1,6 +1,7 @@
 package defaultbucket
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -11,8 +12,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// OnLocalChange - replace placeholders with default buckets in IM.
-func (m *defaultBucketMapper) AfterLocalOperation(changes *model.LocalChanges) error {
+// AfterLocalOperation - replace placeholders with default buckets in IM.
+func (m *defaultBucketMapper) AfterLocalOperation(_ context.Context, changes *model.LocalChanges) error {
 	warnings := utils.NewMultiError()
 	for _, objectState := range changes.Loaded() {
 		config, ok := objectState.LocalState().(configOrRow)

@@ -33,7 +33,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 				wg := client.NewWaitGroup(ctx, sender)
 				for _, apiBranch := range *apiBranches {
 					apiBranch := apiBranch
-					branch := &fixtures.BranchWithConfigs{Configs: make([]*fixtures.Config, 0)}
+					branch := &fixtures.BranchWithConfigs{Branch: &fixtures.Branch{}, Configs: make([]*fixtures.Config, 0)}
 					branch.Name = apiBranch.Name
 					branch.Description = apiBranch.Description
 					branch.IsDefault = apiBranch.IsDefault

@@ -1,6 +1,7 @@
 package ignore
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/storageapi"
@@ -8,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *ignoreMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (m *ignoreMapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
 	// Ignore objects
 	ignored := make(map[string]bool)
 	for _, object := range changes.Loaded() {

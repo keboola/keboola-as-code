@@ -463,11 +463,11 @@ func TestSaveConfigMetadata_Update_NoChange(t *testing.T) {
 
 func newTestRemoteUOW(t *testing.T, mappers ...interface{}) (*remote.UnitOfWork, *httpmock.MockTransport, *state.Registry) {
 	t.Helper()
-	storageApi, httpTransport := client.NewMockedClient()
+	storageApiClient, httpTransport := client.NewMockedClient()
 	localManager, projectState := newTestLocalManager(t, mappers)
 	mapperInst := mapper.New().AddMapper(mappers...)
 
-	remoteManager := remote.NewManager(localManager, storageApi, projectState, mapperInst)
+	remoteManager := remote.NewManager(localManager, storageApiClient, projectState, mapperInst)
 	return remoteManager.NewUnitOfWork(context.Background(), `change desc`), httpTransport, projectState
 }
 

@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/umisama/go-regexpcache"
@@ -12,18 +13,20 @@ type componentsMap = storageapi.ComponentsMap
 type ComponentsMap struct {
 	componentsMap
 	components                  storageapi.Components
-	used                        map[storageapi.ComponentID]bool
 	defaultBucketsByComponentId map[storageapi.ComponentID]string
 	defaultBucketsByPrefix      map[string]storageapi.ComponentID
+	usedLock                    *sync.Mutex
+	used                        map[storageapi.ComponentID]bool
 }
 
 func NewComponentsMap(components storageapi.Components) ComponentsMap {
 	v := ComponentsMap{
 		componentsMap:               components.ToMap(),
 		components:                  components,
-		used:                        make(map[storageapi.ComponentID]bool),
 		defaultBucketsByComponentId: make(map[storageapi.ComponentID]string),
 		defaultBucketsByPrefix:      make(map[string]storageapi.ComponentID),
+		used:                        make(map[storageapi.ComponentID]bool),
+		usedLock:                    &sync.Mutex{},
 	}
 
 	// Init aux maps
@@ -43,7 +46,9 @@ func (m ComponentsMap) NewComponentList() storageapi.Components {
 func (m ComponentsMap) Get(id storageapi.ComponentID) (*storageapi.Component, bool) {
 	v, ok := m.componentsMap.Get(id)
 	if ok {
+		m.usedLock.Lock()
 		m.used[id] = true
+		m.usedLock.Unlock()
 	}
 	return v, ok
 }
@@ -57,7 +62,7 @@ func (m ComponentsMap) GetOrErr(id storageapi.ComponentID) (*storageapi.Componen
 }
 
 func (m ComponentsMap) Used() storageapi.Components {
-	var out storageapi.Components
+	out := make(storageapi.Components, 0)
 	for id := range m.used {
 		component, _ := m.Get(id)
 		out = append(out, component)
@@ -98,7 +103,7 @@ func (m ComponentsMap) GetDefaultBucketByComponentId(componentId storageapi.Comp
 
 func (m ComponentsMap) addDefaultBucketPrefix(component *storageapi.Component) {
 	r := regexpcache.MustCompile(`(?i)[^a-zA-Z0-9-]`)
-	bucketPrefix := fmt.Sprintf(`%s.v-%s-`, component.Data.DefaultBucketStage, r.ReplaceAllString(component.ID.String(), `-`))
+	bucketPrefix := fmt.Sprintf(`%s.c-%s-`, component.Data.DefaultBucketStage, r.ReplaceAllString(component.ID.String(), `-`))
 	m.defaultBucketsByComponentId[component.ID] = bucketPrefix
 	m.defaultBucketsByPrefix[bucketPrefix] = component.ID
 }

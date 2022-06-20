@@ -1,6 +1,7 @@
 package codes
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/storageapi"
@@ -9,8 +10,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// OnRemoteChange converts legacy "code_content" string -> []interface{}.
-func (m *mapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+// AfterRemoteOperation converts legacy "code_content" string -> []interface{}.
+func (m *mapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
 	errors := utils.NewMultiError()
 	for _, objectState := range changes.Loaded() {
 		if ok, err := m.IsSharedCodeKey(objectState.Key()); err != nil {

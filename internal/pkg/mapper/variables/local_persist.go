@@ -49,7 +49,7 @@ func (m *variablesMapper) MapBeforePersist(ctx context.Context, recipe *model.Pe
 }
 
 // AfterLocalOperation ensures there is one config row with default variables values after persist.
-func (m *variablesMapper) AfterLocalOperation(changes *model.LocalChanges) error {
+func (m *variablesMapper) AfterLocalOperation(_ context.Context, changes *model.LocalChanges) error {
 	// Find new persisted variables configs + include those that have a new persisted row
 	configs := make(map[model.ConfigKey]bool)
 	errors := utils.NewMultiError()

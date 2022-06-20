@@ -2,6 +2,8 @@ package model
 
 import (
 	"fmt"
+
+	"github.com/keboola/go-client/pkg/storageapi"
 )
 
 type StateType int
@@ -47,6 +49,21 @@ type ConfigRowState struct {
 	*ConfigRowManifest
 	Remote *ConfigRow `validate:"omitempty,dive"`
 	Local  *ConfigRow `validate:"omitempty,dive"`
+}
+
+// ToApiObjectKey ...
+func (b *BranchState) ToApiObjectKey() any {
+	return storageapi.BranchKey{ID: b.Id}
+}
+
+// ToApiObjectKey ...
+func (c *ConfigState) ToApiObjectKey() any {
+	return storageapi.ConfigKey{BranchID: c.BranchId, ComponentID: c.ComponentId, ID: c.Id}
+}
+
+// ToApiObjectKey ...
+func (r *ConfigRowState) ToApiObjectKey() any {
+	return storageapi.ConfigRowKey{BranchID: r.BranchId, ComponentID: r.ComponentId, ConfigID: r.ConfigId, ID: r.Id}
 }
 
 func (b *BranchState) HasState(stateType StateType) bool {

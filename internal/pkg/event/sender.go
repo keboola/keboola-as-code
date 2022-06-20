@@ -12,6 +12,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
+const componentID = storageapi.ComponentID("keboola.keboola-as-code")
+
 type Sender struct {
 	logger    log.Logger
 	client    client.Sender
@@ -56,11 +58,12 @@ func (s *Sender) sendCmdSuccessfulEvent(ctx context.Context, cmdStart time.Time,
 		"projectId": s.projectId,
 	}
 	event, err := storageapi.CreatEventRequest(&storageapi.Event{
-		Type:     "info",
-		Message:  msg,
-		Duration: storageapi.DurationSeconds(duration),
-		Params:   params,
-		Results:  results,
+		ComponentID: componentID,
+		Type:        "info",
+		Message:     msg,
+		Duration:    storageapi.DurationSeconds(duration),
+		Params:      params,
+		Results:     results,
 	}).Send(ctx, s.client)
 	if err == nil {
 		s.logger.Debugf("Sent \"%s\" successful event id: \"%s\"", cmd, event.ID)
@@ -80,11 +83,12 @@ func (s *Sender) sendCmdFailedEvent(ctx context.Context, cmdStart time.Time, err
 		"error":     fmt.Sprintf("%s", err),
 	}
 	event, err := storageapi.CreatEventRequest(&storageapi.Event{
-		Type:     "error",
-		Message:  msg,
-		Duration: storageapi.DurationSeconds(duration),
-		Params:   params,
-		Results:  results,
+		ComponentID: componentID,
+		Type:        "error",
+		Message:     msg,
+		Duration:    storageapi.DurationSeconds(duration),
+		Params:      params,
+		Results:     results,
 	}).Send(ctx, s.client)
 	if err == nil {
 		s.logger.Debugf("Sent \"%s\" failed event id: \"%s\"", cmd, event.ID)

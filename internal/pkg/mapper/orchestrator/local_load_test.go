@@ -69,7 +69,6 @@ func TestMapAfterLocalLoad(t *testing.T) {
 
 	// Logs
 	expectedLogs := `
-DEBUG  %aGET https://connection.keboola.com/v2/storage/components/keboola.orchestrator %a
 DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/phase.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/001-task-1/task.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/002-task-2/task.json"
