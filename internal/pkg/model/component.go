@@ -55,7 +55,7 @@ func (p *ComponentsProvider) Update(ctx context.Context) {
 
 func (p *ComponentsProvider) doUpdate(ctx context.Context) error {
 	startTime := time.Now()
-	p.logger.Infof(`components update: started`)
+	p.logger.Infof(`components update started`)
 	p.updateLock.Lock()
 
 	defer p.updateLock.Unlock()
@@ -66,10 +66,10 @@ func (p *ComponentsProvider) doUpdate(ctx context.Context) error {
 	defer cancel()
 	if index, err := storageapi.IndexComponentsRequest().Send(ctx, p.storageApiClient); err == nil {
 		p.value = NewComponentsMap(index.Components)
-		p.logger.Infof("components updated: finished | %s / %s", time.Since(startTime), time.Since(lockTime))
+		p.logger.Infof("components update finished | %s / %s", time.Since(startTime), time.Since(lockTime))
 		return nil
 	} else {
-		p.logger.Errorf("components update: error: %w", err)
+		p.logger.Errorf("components update failed: %w", err)
 		return err
 	}
 }
