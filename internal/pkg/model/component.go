@@ -25,7 +25,12 @@ type ComponentsProvider struct {
 
 func NewComponentsProvider(ctx context.Context, logger log.Logger, storageApiClient client.Sender) (*ComponentsProvider, error) {
 	p := &ComponentsProvider{updateLock: &sync.RWMutex{}, logger: logger, storageApiClient: storageApiClient}
-	if err := p.doUpdate(ctx); err != nil {
+	// Init
+	startTime := time.Now()
+	if index, err := p.index(ctx); err == nil {
+		p.value = NewComponentsMap(index.Components)
+		p.logger.Debugf("components loaded | %s", time.Since(startTime))
+	} else {
 		return nil, err
 	}
 	return p, nil
@@ -48,30 +53,27 @@ func (p *ComponentsProvider) Components() *ComponentsMap {
 
 func (p *ComponentsProvider) Update(ctx context.Context) {
 	go func() {
-		// Error is logged
-		_ = p.doUpdate(ctx)
+		startTime := time.Now()
+		p.logger.Infof("components update started")
+		p.updateLock.Lock()
+
+		defer p.updateLock.Unlock()
+		p.logger.Infof("components update: acquired lock")
+		lockTime := time.Now()
+
+		ctx, cancel := context.WithTimeout(ctx, ComponentsUpdateTimeout)
+		defer cancel()
+		if index, err := p.index(ctx); err == nil {
+			p.value = NewComponentsMap(index.Components)
+			p.logger.Infof("components update finished | %s / %s", time.Since(startTime), time.Since(lockTime))
+		} else {
+			p.logger.Errorf("components update failed: %w", err)
+		}
 	}()
 }
 
-func (p *ComponentsProvider) doUpdate(ctx context.Context) error {
-	startTime := time.Now()
-	p.logger.Infof(`components update started`)
-	p.updateLock.Lock()
-
-	defer p.updateLock.Unlock()
-	p.logger.Infof(`components update: acquired lock`)
-	lockTime := time.Now()
-
-	ctx, cancel := context.WithTimeout(ctx, ComponentsUpdateTimeout)
-	defer cancel()
-	if index, err := storageapi.IndexComponentsRequest().Send(ctx, p.storageApiClient); err == nil {
-		p.value = NewComponentsMap(index.Components)
-		p.logger.Infof("components update finished | %s / %s", time.Since(startTime), time.Since(lockTime))
-		return nil
-	} else {
-		p.logger.Errorf("components update failed: %w", err)
-		return err
-	}
+func (p *ComponentsProvider) index(ctx context.Context) (*storageapi.IndexComponents, error) {
+	return storageapi.IndexComponentsRequest().Send(ctx, p.storageApiClient)
 }
 
 type componentsMap = storageapi.ComponentsMap
