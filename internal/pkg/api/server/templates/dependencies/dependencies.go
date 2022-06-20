@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
+	"gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -90,8 +91,17 @@ func (v *container) WithLoggerPrefix(prefix string) *container {
 
 func (v *container) HttpClient() client.Client {
 	if v.httpClient == nil {
+		// Force HTTP2 transport
+		transport := client.HTTP2Transport()
+
+		// DataDog low-level tracing
+		if v.envs.Get("DATADOG_ENABLED") != "false" {
+			transport = http.WrapRoundTripper(transport)
+		}
+
+		// Create client
 		c := client.New().
-			WithTransport(client.HTTP2Transport()).
+			WithTransport(transport).
 			WithUserAgent("keboola-templates-api")
 
 		// Log each HTTP client request/response as debug message
@@ -102,6 +112,11 @@ func (v *container) HttpClient() client.Client {
 		// Dump each HTTP client request/response body
 		if v.debugHttp {
 			c = c.AndTrace(client.DumpTracer(v.logger.DebugWriter()))
+		}
+
+		// DataDog high-level tracing
+		if v.envs.Get("DATADOG_ENABLED") != "false" {
+			c = c.AndTrace(DDApiClientTrace())
 		}
 		v.httpClient = &c
 	}
