@@ -1,180 +1,77 @@
 package model
 
 import (
-	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 	"sync"
 
-	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/umisama/go-regexpcache"
 )
 
-const (
-	VariablesComponentId     = ComponentId(`keboola.variables`)
-	SchedulerComponentId     = ComponentId("keboola.scheduler")
-	DeprecatedFlag           = `deprecated`
-	ExcludeFromNewListFlag   = `excludeFromNewList`
-	ComponentTypeCodePattern = `code-pattern`
-	ComponentTypeProcessor   = `processor`
-)
-
-// Component https://keboola.docs.apiary.io/#reference/components-and-configurations/get-development-branch-components/get-development-branch-components
-type Component struct {
-	ComponentKey
-	Type           string                 `json:"type" validate:"required"`
-	Name           string                 `json:"name" validate:"required"`
-	Flags          []string               `json:"flags,omitempty"`
-	Schema         json.RawMessage        `json:"configurationSchema,omitempty"`
-	SchemaRow      json.RawMessage        `json:"configurationRowSchema,omitempty"`
-	EmptyConfig    *orderedmap.OrderedMap `json:"emptyConfiguration,omitempty"`
-	EmptyConfigRow *orderedmap.OrderedMap `json:"emptyConfigurationRow,omitempty"`
-	Data           ComponentData          `json:"data"`
-}
-
-type ComponentData struct {
-	DefaultBucket      bool   `json:"default_bucket"`       //nolint: tagliatelle
-	DefaultBucketStage string `json:"default_bucket_stage"` //nolint: tagliatelle
-}
-
-type ComponentWithConfigs struct {
-	BranchId BranchId `json:"branchId" validate:"required"`
-	*Component
-	Configs []*ConfigWithRows `json:"configurations" validate:"required"`
-}
-
-func (c *Component) IsTransformation() bool {
-	return c.Type == TransformationType
-}
-
-func (c *Component) IsSharedCode() bool {
-	return c.Id == SharedCodeComponentId
-}
-
-func (c *Component) IsVariables() bool {
-	return c.Id == VariablesComponentId
-}
-
-func (c *Component) IsCodePattern() bool {
-	return c.Type == ComponentTypeCodePattern
-}
-
-func (c *Component) IsProcessor() bool {
-	return c.Type == ComponentTypeProcessor
-}
-
-func (c *Component) IsScheduler() bool {
-	return c.Id == SchedulerComponentId
-}
-
-func (c *Component) IsOrchestrator() bool {
-	return c.Id == OrchestratorComponentId
-}
-
-func (c *Component) IsDeprecated() bool {
-	for _, flag := range c.Flags {
-		if flag == DeprecatedFlag {
-			return true
-		}
-	}
-	return false
-}
-
-func (c *Component) IsExcludedFromNewList() bool {
-	for _, flag := range c.Flags {
-		if flag == ExcludeFromNewListFlag {
-			return true
-		}
-	}
-	return false
-}
-
-// RemoteComponentsProvider - interface for Storage API.
-type RemoteComponentsProvider interface {
-	GetComponent(componentId ComponentId) (*Component, error)
-}
-
+type componentsMap = storageapi.ComponentsMap
 type ComponentsMap struct {
-	mutex                       *sync.Mutex
-	remoteProvider              RemoteComponentsProvider
-	components                  map[string]*Component
-	defaultBucketsByComponentId map[ComponentId]string
-	defaultBucketsByPrefix      map[string]ComponentId
+	componentsMap
+	components                  storageapi.Components
+	defaultBucketsByComponentId map[storageapi.ComponentID]string
+	defaultBucketsByPrefix      map[string]storageapi.ComponentID
+	usedLock                    *sync.Mutex
+	used                        map[storageapi.ComponentID]bool
 }
 
-func NewComponentsMap(remoteProvider RemoteComponentsProvider) *ComponentsMap {
-	return &ComponentsMap{
-		mutex:                       &sync.Mutex{},
-		remoteProvider:              remoteProvider,
-		components:                  make(map[string]*Component),
-		defaultBucketsByComponentId: make(map[ComponentId]string),
-		defaultBucketsByPrefix:      make(map[string]ComponentId),
-	}
-}
-
-func (c *ComponentsMap) AllLoaded() []*Component {
-	var components []*Component
-	for _, c := range c.components {
-		components = append(components, c)
-	}
-	sort.SliceStable(components, func(i, j int) bool {
-		return components[i].Id < components[j].Id
-	})
-	return components
-}
-
-func (c *ComponentsMap) Get(key ComponentKey) (*Component, error) {
-	// Load component from cache if present
-	if component, found := c.doGet(key); found {
-		return component, nil
+func NewComponentsMap(components storageapi.Components) ComponentsMap {
+	v := ComponentsMap{
+		componentsMap:               components.ToMap(),
+		components:                  components,
+		defaultBucketsByComponentId: make(map[storageapi.ComponentID]string),
+		defaultBucketsByPrefix:      make(map[string]storageapi.ComponentID),
+		used:                        make(map[storageapi.ComponentID]bool),
+		usedLock:                    &sync.Mutex{},
 	}
 
-	// Remote provider can be nil in tests, prevent panic
-	if c.remoteProvider == nil {
-		return nil, fmt.Errorf(`cannot load component "%s": remote provider is not set`, key.Id)
+	// Init aux maps
+	for _, component := range components {
+		if component.Data.DefaultBucket && component.Data.DefaultBucketStage != "" {
+			v.addDefaultBucketPrefix(component)
+		}
 	}
 
-	// Or by API
-	if component, err := c.remoteProvider.GetComponent(key.Id); err == nil {
-		c.doSet(component)
-		return component, nil
-	} else {
-		return nil, err
+	return v
+}
+
+func (m ComponentsMap) NewComponentList() storageapi.Components {
+	return m.components.NewComponentList()
+}
+
+func (m ComponentsMap) Get(id storageapi.ComponentID) (*storageapi.Component, bool) {
+	v, ok := m.componentsMap.Get(id)
+	if ok {
+		m.usedLock.Lock()
+		m.used[id] = true
+		m.usedLock.Unlock()
 	}
+	return v, ok
 }
 
-func (c *ComponentsMap) Set(component *Component) {
-	if component == nil {
-		panic(fmt.Errorf("component is not set"))
+func (m ComponentsMap) GetOrErr(id storageapi.ComponentID) (*storageapi.Component, error) {
+	v, ok := m.Get(id)
+	if !ok {
+		return nil, fmt.Errorf(`component "%s" not found`, id)
 	}
-	c.doSet(component)
+	return v, nil
 }
 
-func (c *ComponentsMap) doGet(key ComponentKey) (*Component, bool) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	component, found := c.components[key.String()]
-	return component, found
-}
-
-func (c *ComponentsMap) doSet(component *Component) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	c.components[component.String()] = component
-	if component.Data.DefaultBucket && component.Data.DefaultBucketStage != "" {
-		c.addDefaultBucketPrefix(component)
+func (m ComponentsMap) Used() storageapi.Components {
+	out := make(storageapi.Components, 0)
+	for id := range m.used {
+		component, _ := m.Get(id)
+		out = append(out, component)
 	}
+	storageapi.SortComponents(out)
+	return out
 }
 
-func (c *ComponentsMap) addDefaultBucketPrefix(component *Component) {
-	r := regexpcache.MustCompile(`(?i)[^a-zA-Z0-9-]`)
-	bucketPrefix := fmt.Sprintf(`%s.c-%s-`, component.Data.DefaultBucketStage, r.ReplaceAllString(component.Id.String(), `-`))
-	c.defaultBucketsByComponentId[component.Id] = bucketPrefix
-	c.defaultBucketsByPrefix[bucketPrefix] = component.Id
-}
-
-func (c *ComponentsMap) GetDefaultBucketByTableId(tableId string) (ComponentId, ConfigId, bool) {
+func (m ComponentsMap) GetDefaultBucketByTableId(tableId string) (storageapi.ComponentID, storageapi.ConfigID, bool) {
 	dotIndex := strings.LastIndex(tableId, ".")
 	if dotIndex < 1 {
 		return "", "", false
@@ -186,19 +83,27 @@ func (c *ComponentsMap) GetDefaultBucketByTableId(tableId string) (ComponentId, 
 	}
 
 	bucketPrefix := bucketId[0 : strings.LastIndex(bucketId, "-")+1]
-	configId := ConfigId(bucketId[strings.LastIndex(bucketId, "-")+1:])
+	configId := storageapi.ConfigID(bucketId[strings.LastIndex(bucketId, "-")+1:])
 
-	componentId, found := c.defaultBucketsByPrefix[bucketPrefix]
+	componentId, found := m.defaultBucketsByPrefix[bucketPrefix]
 	if !found {
 		return "", "", false
 	}
+
 	return componentId, configId, len(componentId) > 0 && len(configId) > 0
 }
 
-func (c *ComponentsMap) GetDefaultBucketByComponentId(componentId ComponentId, configId ConfigId) (string, bool) {
-	defaultBucketPrefix, found := c.defaultBucketsByComponentId[componentId]
+func (m ComponentsMap) GetDefaultBucketByComponentId(componentId storageapi.ComponentID, configId storageapi.ConfigID) (string, bool) {
+	defaultBucketPrefix, found := m.defaultBucketsByComponentId[componentId]
 	if !found {
 		return "", false
 	}
 	return fmt.Sprintf("%s%s", defaultBucketPrefix, configId), true
+}
+
+func (m ComponentsMap) addDefaultBucketPrefix(component *storageapi.Component) {
+	r := regexpcache.MustCompile(`(?i)[^a-zA-Z0-9-]`)
+	bucketPrefix := fmt.Sprintf(`%s.c-%s-`, component.Data.DefaultBucketStage, r.ReplaceAllString(component.ID.String(), `-`))
+	m.defaultBucketsByComponentId[component.ID] = bucketPrefix
+	m.defaultBucketsByPrefix[bucketPrefix] = component.ID
 }
