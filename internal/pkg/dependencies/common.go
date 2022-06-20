@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/schedulerapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi/eventsender"
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/encryptionapi"
+	"github.com/keboola/go-client/pkg/schedulerapi"
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"

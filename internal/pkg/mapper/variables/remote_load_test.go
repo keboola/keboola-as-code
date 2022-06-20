@@ -1,8 +1,10 @@
 package variables_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -24,16 +26,16 @@ func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, object.Relations)
-	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(recipe))
+	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Internal object has new relation + content without variables ID
 	assert.Equal(t, model.Relations{
 		&model.VariablesFromRelation{
-			VariablesId: model.ConfigId(variablesConfigId),
+			VariablesId: storageapi.ConfigID(variablesConfigId),
 		},
 		&model.VariablesValuesFromRelation{
-			VariablesValuesId: model.RowId(valuesConfigRowId),
+			VariablesValuesId: storageapi.RowID(valuesConfigRowId),
 		},
 	}, object.Relations)
 	_, found := object.Content.Get(model.VariablesIdContentKey)

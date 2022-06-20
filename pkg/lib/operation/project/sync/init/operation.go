@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/schedulerapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/go-client/pkg/client"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	createEnvFiles "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/envfiles/create"
@@ -27,8 +28,12 @@ type Options struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
-	SchedulerApi() (*schedulerapi.Api, error)
+	Components() (model.ComponentsMap, error)
+	StorageApiHost() (string, error)
+	StorageApiToken() (string, error)
+	ProjectID() (int, error)
+	StorageApiClient() (client.Sender, error)
+	SchedulerApiClient() (client.Sender, error)
 	EmptyDir() (filesystem.Fs, error)
 }
 

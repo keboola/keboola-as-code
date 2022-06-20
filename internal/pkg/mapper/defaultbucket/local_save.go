@@ -1,6 +1,7 @@
 package defaultbucket
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -11,7 +12,7 @@ import (
 )
 
 // MapBeforeLocalSave - replace default buckets in IM with placeholders.
-func (m *defaultBucketMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *defaultBucketMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	config, ok := recipe.Object.(configOrRow)
 	if !ok {
 		return nil

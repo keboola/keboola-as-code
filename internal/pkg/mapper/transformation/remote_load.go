@@ -1,6 +1,8 @@
 package transformation
 
 import (
+	"context"
+
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
@@ -8,7 +10,7 @@ import (
 )
 
 // MapAfterRemoteLoad - load code blocks from API to blocks field.
-func (m *transformationMapper) MapAfterRemoteLoad(recipe *model.RemoteLoadRecipe) error {
+func (m *transformationMapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
 	// Only for transformation config
 	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
 		return err

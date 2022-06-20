@@ -1,8 +1,10 @@
 package orchestrator
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 
@@ -11,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *orchestratorMapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (m *orchestratorMapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
 	errors := utils.NewMultiError()
 	allObjects := m.state.RemoteObjects()
 	for _, objectState := range changes.Loaded() {
@@ -251,7 +253,7 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 	return errors.ErrorOrNil()
 }
 
-func (l *remoteLoader) getTargetConfig(componentId model.ComponentId, configId model.ConfigId) (*model.Config, error) {
+func (l *remoteLoader) getTargetConfig(componentId storageapi.ComponentID, configId storageapi.ConfigID) (*model.Config, error) {
 	if len(componentId) == 0 || len(configId) == 0 {
 		return nil, nil
 	}

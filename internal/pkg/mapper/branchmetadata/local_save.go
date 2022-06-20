@@ -1,6 +1,7 @@
 package branchmetadata
 
 import (
+	"context"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -8,7 +9,7 @@ import (
 )
 
 // MapBeforeLocalSave - store branch metadata to manifest.
-func (m *branchMetadataMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *branchMetadataMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	manifest, ok := recipe.ObjectManifest.(*model.BranchManifest)
 	if !ok {
 		return nil

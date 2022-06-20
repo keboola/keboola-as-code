@@ -3,6 +3,7 @@ package replacevalues
 import (
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -53,16 +54,16 @@ func TestValues_AddKey(t *testing.T) {
 			Replace: model.BranchKey{Id: 0},
 		},
 		{
-			Search:  model.BranchId(123),
-			Replace: model.BranchId(0),
+			Search:  storageapi.BranchID(123),
+			Replace: storageapi.BranchID(0),
 		},
 		{
 			Search:  model.ConfigKey{BranchId: 1, ComponentId: "foo.bar", Id: "12"},
 			Replace: model.ConfigKey{BranchId: 1, ComponentId: "foo.bar", Id: "23"},
 		},
 		{
-			Search:  model.ConfigId("12"),
-			Replace: model.ConfigId("23"),
+			Search:  storageapi.ConfigID("12"),
+			Replace: storageapi.ConfigID("23"),
 		},
 		{
 			Search:  SubString("12"),
@@ -73,8 +74,8 @@ func TestValues_AddKey(t *testing.T) {
 			Replace: model.ConfigRowKey{BranchId: 1, ComponentId: "foo.bar", ConfigId: "23", Id: "67"},
 		},
 		{
-			Search:  model.RowId("45"),
-			Replace: model.RowId("67"),
+			Search:  storageapi.RowID("45"),
+			Replace: storageapi.RowID("67"),
 		},
 		{
 			Search:  SubString("45"),
@@ -87,21 +88,21 @@ func TestValues_AddId(t *testing.T) {
 	t.Parallel()
 
 	replacements := NewValues()
-	replacements.AddId(model.ConfigId("old1"), model.ConfigId("new1"))
-	replacements.AddId(model.RowId("old2"), model.RowId("new2"))
+	replacements.AddId(storageapi.ConfigID("old1"), storageapi.ConfigID("new1"))
+	replacements.AddId(storageapi.RowID("old2"), storageapi.RowID("new2"))
 
 	assert.Equal(t, []Value{
 		{
-			Search:  model.ConfigId("old1"),
-			Replace: model.ConfigId("new1"),
+			Search:  storageapi.ConfigID("old1"),
+			Replace: storageapi.ConfigID("new1"),
 		},
 		{
 			Search:  SubString("old1"),
 			Replace: "new1",
 		},
 		{
-			Search:  model.RowId("old2"),
-			Replace: model.RowId("new2"),
+			Search:  storageapi.RowID("old2"),
+			Replace: storageapi.RowID("new2"),
 		},
 		{
 			Search:  SubString("old2"),
@@ -225,7 +226,7 @@ func TestValues_Replace(t *testing.T) {
 
 	// Project objects
 	input := []model.Object{
-		model.ConfigWithRows{
+		&model.ConfigWithRows{
 			Config: &model.Config{
 				ConfigKey: model.ConfigKey{
 					BranchId:    1,
@@ -233,7 +234,7 @@ func TestValues_Replace(t *testing.T) {
 					Id:          `12`,
 				},
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
-					{Key: `some-row-id`, Value: model.RowId(`34`)},
+					{Key: `some-row-id`, Value: storageapi.RowID(`34`)},
 					{Key: "key1", Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "key2", Value: 123},
 					})},
@@ -272,7 +273,7 @@ func TestValues_Replace(t *testing.T) {
 
 	// Template objects
 	expected := []model.Object{
-		model.ConfigWithRows{
+		&model.ConfigWithRows{
 			Config: &model.Config{
 				ConfigKey: model.ConfigKey{
 					BranchId:    1,
@@ -280,7 +281,7 @@ func TestValues_Replace(t *testing.T) {
 					Id:          `config-in-template`,
 				},
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
-					{Key: `some-row-id`, Value: model.RowId(`row-in-template`)},
+					{Key: `some-row-id`, Value: storageapi.RowID(`row-in-template`)},
 					{Key: "key1", Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "key2", Value: "new value in config"},
 					})},

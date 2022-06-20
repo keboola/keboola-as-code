@@ -1,8 +1,10 @@
 package variables_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -16,18 +18,18 @@ func TestSharedCodeMapBeforeRemoteSave(t *testing.T) {
 
 	variablesConfigId := `123456`
 	object := &model.ConfigRow{
-		ConfigRowKey: model.ConfigRowKey{ComponentId: model.SharedCodeComponentId},
+		ConfigRowKey: model.ConfigRowKey{ComponentId: storageapi.SharedCodeComponentID},
 		Content:      orderedmap.New(),
 	}
 	object.AddRelation(&model.SharedCodeVariablesFromRelation{
-		VariablesId: model.ConfigId(variablesConfigId),
+		VariablesId: storageapi.ConfigID(variablesConfigId),
 	})
 	recipe := model.NewRemoteSaveRecipe(&model.ConfigManifest{}, object, model.NewChangedFields())
 
 	// Invoke
 	assert.NotEmpty(t, object.Relations)
 	assert.NotEmpty(t, object.Relations)
-	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// All relations have been mapped

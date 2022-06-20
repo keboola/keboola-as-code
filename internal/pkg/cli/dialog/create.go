@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -16,7 +17,7 @@ import (
 
 type createDeps interface {
 	Options() *options.Options
-	StorageApi() (*storageapi.Api, error)
+	Components() (model.ComponentsMap, error)
 }
 
 func (p *Dialogs) AskWhatCreateRemote() string {
@@ -122,48 +123,40 @@ func (p *Dialogs) askObjectName(d createDeps, desc string) (string, error) {
 	return name, nil
 }
 
-func (p *Dialogs) askComponentId(d createDeps) (model.ComponentId, error) {
-	// Get Storage API
-	storageApi, err := d.StorageApi()
+func (p *Dialogs) askComponentId(d createDeps) (storageapi.ComponentID, error) {
+	componentId := storageapi.ComponentID("")
+	components, err := d.Components()
 	if err != nil {
-		return "", err
+		return componentId, err
 	}
 
-	componentId := model.ComponentId("")
 	if d.Options().IsSet(`component-id`) {
-		componentId = model.ComponentId(strings.TrimSpace(d.Options().GetString(`component-id`)))
+		componentId = storageapi.ComponentID(strings.TrimSpace(d.Options().GetString(`component-id`)))
 	} else {
-		// Load components
-		components, err := storageApi.NewComponentList()
-		if err != nil {
-			return ``, fmt.Errorf(`cannot load components list: %w`, err)
-		}
-
 		// Make select
 		selectOpts := make([]string, 0)
-		for _, c := range components {
+		possibleNewComponents := components.NewComponentList()
+		for _, c := range possibleNewComponents {
 			name := c.Name
 			if c.Type == `extractor` || c.Type == `writer` || c.Type == `transformation` {
 				name += ` ` + c.Type
 			}
-			item := fmt.Sprintf(`%s (%s)`, name, c.Id)
+			item := fmt.Sprintf(`%s (%s)`, name, c.ID)
 			selectOpts = append(selectOpts, item)
 		}
 		if index, ok := p.SelectIndex(&prompt.SelectIndex{
 			Label:   `Select the target component`,
 			Options: selectOpts,
 		}); ok {
-			componentId = components[index].Id
+			componentId = possibleNewComponents[index].ID
 		}
 	}
 
 	if len(componentId) == 0 {
-		return ``, fmt.Errorf(`missing component ID, please specify it`)
+		return componentId, fmt.Errorf(`missing component ID, please specify it`)
 	}
 
-	if _, err := storageApi.Components().Get(model.ComponentKey{Id: componentId}); err != nil {
-		return ``, fmt.Errorf(`cannot load component "%s": %w`, componentId, err)
-	}
-
-	return componentId, nil
+	// Check if component exists
+	_, err = components.GetOrErr(componentId)
+	return componentId, err
 }

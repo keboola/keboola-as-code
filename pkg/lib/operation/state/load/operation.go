@@ -1,7 +1,8 @@
 package load
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/go-client/pkg/client"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -93,7 +94,8 @@ func LocalOperationOptions() Options {
 
 type dependencies interface {
 	Logger() log.Logger
-	StorageApi() (*storageapi.Api, error)
+	StorageApiClient() (client.Sender, error)
+	Components() (model.ComponentsMap, error)
 }
 
 func Run(container state.ObjectsContainer, o OptionsWithFilter, d dependencies) (*state.State, error) {

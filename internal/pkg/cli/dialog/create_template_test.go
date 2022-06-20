@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jarcoal/httpmock"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -457,27 +458,27 @@ func addMockedObjectsResponses(httpTransport *httpmock.MockTransport) {
 	json.MustDecodeString(configJson, configContent)
 
 	branches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}
-	configs := []*model.ConfigWithRows{
+	configs := []*storageapi.ConfigWithRows{
 		{
-			Config: &model.Config{
-				ConfigKey: model.ConfigKey{Id: "1"},
+			Config: &storageapi.Config{
+				ConfigKey: storageapi.ConfigKey{ID: "1"},
 				Name:      `Config 1`,
 				Content:   configContent,
 			},
-			Rows: []*model.ConfigRow{
+			Rows: []*storageapi.ConfigRow{
 				{
-					ConfigRowKey: model.ConfigRowKey{Id: "456"},
+					ConfigRowKey: storageapi.ConfigRowKey{ID: "456"},
 					Name:         `My Row`,
 					Content:      orderedmap.New(),
 				},
 			},
 		},
-		{Config: &model.Config{ConfigKey: model.ConfigKey{Id: "2"}, Name: `Config 2`, Content: orderedmap.New()}},
-		{Config: &model.Config{ConfigKey: model.ConfigKey{Id: "3"}, Name: `Config 3`, Content: orderedmap.New()}},
+		{Config: &storageapi.Config{ConfigKey: storageapi.ConfigKey{ID: "2"}, Name: `Config 2`, Content: orderedmap.New()}},
+		{Config: &storageapi.Config{ConfigKey: storageapi.ConfigKey{ID: "3"}, Name: `Config 3`, Content: orderedmap.New()}},
 	}
-	components := []*model.ComponentWithConfigs{
+	components := []*storageapi.ComponentWithConfigs{
 		{
-			Component: &model.Component{ComponentKey: model.ComponentKey{Id: `keboola.my-component`}, Name: `Foo Bar`},
+			Component: storageapi.Component{ComponentKey: storageapi.ComponentKey{ID: `keboola.my-component`}, Name: `Foo Bar`},
 			Configs:   configs,
 		},
 	}

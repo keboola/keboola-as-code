@@ -50,7 +50,7 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 
 			// Send cmd successful/failed event
 			if eventSender, err := d.EventSender(); err == nil {
-				defer func() { eventSender.SendCmdEvent(start, cmdErr, "sync-pull") }()
+				defer func() { eventSender.SendCmdEvent(d.Ctx(), start, cmdErr, "sync-pull") }()
 			} else {
 				return err
 			}

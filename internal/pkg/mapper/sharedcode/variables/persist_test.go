@@ -1,8 +1,10 @@
 package variables_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -15,14 +17,14 @@ func TestSharedCodeMapBeforePersist(t *testing.T) {
 
 	parentKey := model.ConfigRowKey{
 		BranchId:    123,
-		ComponentId: model.SharedCodeComponentId,
+		ComponentId: storageapi.SharedCodeComponentID,
 		ConfigId:    `345`,
 		Id:          `567`,
 	}
 	configManifest := &model.ConfigManifest{
 		ConfigKey: model.ConfigKey{
 			BranchId:    123,
-			ComponentId: model.VariablesComponentId,
+			ComponentId: storageapi.VariablesComponentID,
 			Id:          `789`,
 		},
 	}
@@ -33,7 +35,7 @@ func TestSharedCodeMapBeforePersist(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, configManifest.Relations)
-	assert.NoError(t, state.Mapper().MapBeforePersist(recipe))
+	assert.NoError(t, state.Mapper().MapBeforePersist(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Relation has been created

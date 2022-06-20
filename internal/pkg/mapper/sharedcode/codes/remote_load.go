@@ -1,14 +1,17 @@
 package codes
 
 import (
+	"context"
 	"fmt"
+
+	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// OnRemoteChange converts legacy "code_content" string -> []interface{}.
-func (m *mapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+// AfterRemoteOperation converts legacy "code_content" string -> []interface{}.
+func (m *mapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
 	errors := utils.NewMultiError()
 	for _, objectState := range changes.Loaded() {
 		if ok, err := m.IsSharedCodeKey(objectState.Key()); err != nil {
@@ -51,7 +54,7 @@ func (m *mapper) onConfigRemoteLoad(config *model.Config) error {
 	}
 
 	// Store target component ID to struct
-	config.SharedCode = &model.SharedCodeConfig{Target: model.ComponentId(target)}
+	config.SharedCode = &model.SharedCodeConfig{Target: storageapi.ComponentID(target)}
 
 	errors := utils.NewMultiError()
 	for _, row := range m.state.RemoteObjects().ConfigRowsFrom(config.ConfigKey) {

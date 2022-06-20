@@ -1,13 +1,15 @@
 package codes
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/corefiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 // MapBeforeLocalSave saves shared code as native file to filesystem.
-func (m *mapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *mapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	// Save config
 	if config, ok := recipe.Object.(*model.Config); ok {
 		m.onConfigLocalSave(config)

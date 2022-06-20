@@ -4,6 +4,7 @@ import (
 	jsonlib "encoding/json"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -13,12 +14,9 @@ import (
 
 func TestLocalCreateConfigDefaultContent(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
 
 	// Mocked component
 	component := getTestComponent()
-	manager.state.Components().Set(component)
-
 	// Empty config (used)
 	component.EmptyConfig = orderedmap.FromPairs([]orderedmap.Pair{
 		{Key: `configValue`, Value: 123},
@@ -32,6 +30,7 @@ func TestLocalCreateConfigDefaultContent(t *testing.T) {
 	component.Schema = getTestSchema()
 
 	// Create
+	manager := newTestLocalManager(t, []*storageapi.Component{component})
 	key := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `keboola.foo`,
@@ -50,11 +49,9 @@ func TestLocalCreateConfigDefaultContent(t *testing.T) {
 
 func TestLocalCreateConfigRowDefaultContent(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
 
 	// Mocked component
 	component := getTestComponent()
-	manager.state.Components().Set(component)
 
 	// Empty config (used)
 	component.EmptyConfigRow = orderedmap.FromPairs([]orderedmap.Pair{
@@ -69,6 +66,7 @@ func TestLocalCreateConfigRowDefaultContent(t *testing.T) {
 	component.Schema = getTestSchema()
 
 	// Create
+	manager := newTestLocalManager(t, []*storageapi.Component{component})
 	key := model.ConfigRowKey{
 		BranchId:    123,
 		ComponentId: `keboola.foo`,
@@ -88,16 +86,15 @@ func TestLocalCreateConfigRowDefaultContent(t *testing.T) {
 
 func TestLocalCreateConfigContentFromSchema(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
 
 	// Mocked component
 	component := getTestComponent()
-	manager.state.Components().Set(component)
 
 	// Schema (used)
 	component.Schema = getTestSchema()
 
 	// Create
+	manager := newTestLocalManager(t, []*storageapi.Component{component})
 	key := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `keboola.foo`,
@@ -116,16 +113,15 @@ func TestLocalCreateConfigContentFromSchema(t *testing.T) {
 
 func TestLocalCreateConfigRowContentFromSchema(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
 
 	// Mocked component
 	component := getTestComponent()
-	manager.state.Components().Set(component)
 
 	// Schema (used)
 	component.SchemaRow = getTestSchema()
 
 	// Create
+	manager := newTestLocalManager(t, []*storageapi.Component{component})
 	key := model.ConfigRowKey{
 		BranchId:    123,
 		ComponentId: `keboola.foo`,
@@ -145,13 +141,11 @@ func TestLocalCreateConfigRowContentFromSchema(t *testing.T) {
 
 func TestLocalCreateConfigEmptyContent(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
-
 	// Mocked component
 	component := getTestComponent()
-	manager.state.Components().Set(component)
 
 	// Create
+	manager := newTestLocalManager(t, []*storageapi.Component{component})
 	key := model.ConfigKey{
 		BranchId:    123,
 		ComponentId: `keboola.foo`,
@@ -170,13 +164,12 @@ func TestLocalCreateConfigEmptyContent(t *testing.T) {
 
 func TestLocalCreateConfigRowEmptyContent(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
 
 	// Mocked component
 	component := getTestComponent()
-	manager.state.Components().Set(component)
 
 	// Create
+	manager := newTestLocalManager(t, []*storageapi.Component{component})
 	key := model.ConfigRowKey{
 		BranchId:    123,
 		ComponentId: `keboola.foo`,
@@ -194,9 +187,9 @@ func TestLocalCreateConfigRowEmptyContent(t *testing.T) {
 	assert.Equal(t, expectedContent, json.MustEncodeString(row.Content, false))
 }
 
-func getTestComponent() *model.Component {
-	return &model.Component{
-		ComponentKey:   model.ComponentKey{Id: `keboola.foo`},
+func getTestComponent() *storageapi.Component {
+	return &storageapi.Component{
+		ComponentKey:   storageapi.ComponentKey{ID: `keboola.foo`},
 		Type:           `other`,
 		EmptyConfig:    orderedmap.New(),
 		EmptyConfigRow: orderedmap.New(),

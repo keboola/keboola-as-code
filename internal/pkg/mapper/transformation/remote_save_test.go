@@ -1,6 +1,7 @@
 package transformation_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -62,7 +63,7 @@ func TestRemoteSaveTransformation(t *testing.T) {
 	recipe := model.NewRemoteSaveRecipe(configState.Manifest(), object, model.NewChangedFields("transformation"))
 
 	// Save
-	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeRemoteSave(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Blocks are stored in API object content

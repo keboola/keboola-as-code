@@ -1,6 +1,7 @@
 package transformation
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -13,7 +14,7 @@ import (
 )
 
 // MapBeforeLocalSave - save code blocks to the disk.
-func (m *transformationMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *transformationMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	// Only for transformation config
 	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
 		return err

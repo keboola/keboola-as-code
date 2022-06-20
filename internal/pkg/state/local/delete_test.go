@@ -12,7 +12,7 @@ import (
 
 func TestLocalDeleteModel(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
+	manager := newTestLocalManager(t, nil)
 	fs := manager.fs
 
 	record := &fixtures.MockedManifest{}

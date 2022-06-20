@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -9,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *schedulerMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+func (m *schedulerMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
 	// Scheduler is a config
 	object, ok := recipe.Object.(*model.Config)
 	if !ok {

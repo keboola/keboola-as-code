@@ -47,7 +47,7 @@ func PushCommand(p dependencies.Provider) *cobra.Command {
 
 			// Send cmd successful/failed event
 			if eventSender, err := d.EventSender(); err == nil {
-				defer func() { eventSender.SendCmdEvent(start, cmdErr, "sync-push") }()
+				defer func() { eventSender.SendCmdEvent(d.Ctx(), start, cmdErr, "sync-push") }()
 			} else {
 				return err
 			}

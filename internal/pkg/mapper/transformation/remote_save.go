@@ -1,6 +1,7 @@
 package transformation
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -10,7 +11,7 @@ import (
 )
 
 // MapBeforeRemoteSave - save code blocks to the API.
-func (m *transformationMapper) MapBeforeRemoteSave(recipe *model.RemoteSaveRecipe) error {
+func (m *transformationMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
 	// Only for transformation config
 	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
 		return err

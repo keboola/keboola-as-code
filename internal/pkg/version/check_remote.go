@@ -7,17 +7,18 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver"
+	"github.com/keboola/go-client/pkg/client"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/http/client"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 const EnvVersionCheck = "KBC_VERSION_CHECK"
 
 type checker struct {
+	ctx    context.Context
 	envs   *env.Map
-	api    *client.Client
+	client client.Client
 	cancel context.CancelFunc
 	logger log.Logger
 }
@@ -27,8 +28,8 @@ func NewGitHubChecker(parentCtx context.Context, logger log.Logger, envs *env.Ma
 	ctx, cancel := context.WithTimeout(parentCtx, 3*time.Second)
 
 	// Create client
-	api := client.NewClient(ctx, logger, false).WithHostUrl(`https://api.github.com`)
-	return &checker{envs, api, cancel, logger}
+	c := client.New().WithBaseURL("https://api.github.com")
+	return &checker{ctx, envs, c, cancel, logger}
 }
 
 func (c *checker) CheckIfLatest(currentVersion string) error {
@@ -76,13 +77,13 @@ func (c *checker) getLatestVersion() (string, error) {
 	// Load releases
 	// The last release may be without assets (build in progress), so we load the last 5 releases.
 	result := make([]interface{}, 0)
-	releases := c.api.
-		NewRequest(`GET`, `repos/keboola/keboola-as-code/releases?per_page=5`).
-		SetResult(&result).
-		Send().
-		Response
-	if releases.HasError() {
-		return "", releases.Err()
+	_, _, err := client.
+		NewHTTPRequest().
+		WithGet("repos/keboola/keboola-as-code/releases?per_page=5").
+		WithResult(&result).
+		Send(c.ctx, c.client)
+	if err != nil {
+		return "", err
 	}
 
 	// Determine the latest version

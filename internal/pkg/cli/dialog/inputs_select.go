@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
@@ -19,7 +20,7 @@ import (
 type inputsSelectDialog struct {
 	prompt       prompt.Prompt
 	selectAll    bool
-	components   *model.ComponentsMap
+	components   model.ComponentsMap
 	branch       *model.Branch
 	configs      []*model.ConfigWithRows
 	inputs       input.InputsMap
@@ -27,7 +28,7 @@ type inputsSelectDialog struct {
 	objectInputs objectInputsMap
 }
 
-func newInputsSelectDialog(prompt prompt.Prompt, selectAll bool, components *model.ComponentsMap, branch *model.Branch, configs []*model.ConfigWithRows, inputs input.InputsMap) (*inputsSelectDialog, error) {
+func newInputsSelectDialog(prompt prompt.Prompt, selectAll bool, components model.ComponentsMap, branch *model.Branch, configs []*model.ConfigWithRows, inputs input.InputsMap) (*inputsSelectDialog, error) {
 	d := &inputsSelectDialog{prompt: prompt, selectAll: selectAll, components: components, inputs: inputs, branch: branch, configs: configs}
 	return d, d.detectInputs()
 }
@@ -77,7 +78,7 @@ func (d *inputsSelectDialog) parse(result string) error {
 				invalidObject = true
 				continue
 			}
-			key := model.ConfigKey{BranchId: d.branch.Id, ComponentId: model.ComponentId(m[1]), Id: model.ConfigId(m[2])}
+			key := model.ConfigKey{BranchId: d.branch.Id, ComponentId: storageapi.ComponentID(m[1]), Id: storageapi.ConfigID(m[2])}
 			if _, found := d.objectFields[key]; !found {
 				errors.Append(fmt.Errorf(`line %d: config "%s:%s" not found`, lineNum, m[1], m[2]))
 				invalidObject = true
@@ -93,7 +94,7 @@ func (d *inputsSelectDialog) parse(result string) error {
 				invalidObject = true
 				continue
 			}
-			key := model.ConfigRowKey{BranchId: d.branch.Id, ComponentId: model.ComponentId(m[1]), ConfigId: model.ConfigId(m[2]), Id: model.RowId(m[3])}
+			key := model.ConfigRowKey{BranchId: d.branch.Id, ComponentId: storageapi.ComponentID(m[1]), ConfigId: storageapi.ConfigID(m[2]), Id: storageapi.RowID(m[3])}
 			if _, found := d.objectFields[key]; !found {
 				errors.Append(fmt.Errorf(`line %d: config row "%s:%s:%s" not found`, lineNum, m[1], m[2], m[3]))
 				invalidObject = true
@@ -226,7 +227,7 @@ func (d *inputsSelectDialog) detectInputs() error {
 	d.objectFields = make(map[model.Key]inputFields)
 	for _, c := range d.configs {
 		// Get component
-		component, err := d.components.Get(c.ComponentKey())
+		component, err := d.components.GetOrErr(c.ComponentId)
 		if err != nil {
 			return err
 		}

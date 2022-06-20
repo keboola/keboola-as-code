@@ -348,10 +348,10 @@ func (k TaskKey) ParentKey() (Key, error) {
 }
 
 type ConfigIdMetadata struct {
-	IdInTemplate ConfigId `json:"idInTemplate"`
+	IdInTemplate storageapi.ConfigID `json:"idInTemplate"`
 }
 
 type RowIdMetadata struct {
-	IdInProject  RowId `json:"idInProject"`
-	IdInTemplate RowId `json:"idInTemplate"`
+	IdInProject  storageapi.RowID `json:"idInProject"`
+	IdInTemplate storageapi.RowID `json:"idInTemplate"`
 }

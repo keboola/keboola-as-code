@@ -68,7 +68,7 @@ func TestWorkersErrors(t *testing.T) {
 
 func TestLocalUnitOfWork_workersFor(t *testing.T) {
 	t.Parallel()
-	manager := newTestLocalManager(t)
+	manager := newTestLocalManager(t, nil)
 	uow := manager.NewUnitOfWork(context.Background())
 
 	lock := &sync.Mutex{}

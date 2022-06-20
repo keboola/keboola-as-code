@@ -1,6 +1,7 @@
 package corefiles
 
 import (
+	"context"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -13,7 +14,7 @@ const (
 )
 
 // MapBeforeLocalSave saves tagged object (Branch, Config,ConfigRow) fields to a files.
-func (m *coreFilesMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *coreFilesMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	m.createMetaFile(recipe)
 	m.createConfigFile(recipe)
 	m.createDescriptionFile(recipe)

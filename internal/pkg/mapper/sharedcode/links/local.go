@@ -1,12 +1,14 @@
 package links
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-// OnLocalChange - resolve shared codes paths, and replace them by IDs on local load.
-func (m *mapper) AfterLocalOperation(changes *model.LocalChanges) error {
+// AfterLocalOperation - resolve shared codes paths, and replace them by IDs on local load.
+func (m *mapper) AfterLocalOperation(_ context.Context, changes *model.LocalChanges) error {
 	// Process loaded objects
 	errors := utils.NewMultiError()
 	for _, objectState := range changes.Loaded() {

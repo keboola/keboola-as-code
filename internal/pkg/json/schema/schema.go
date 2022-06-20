@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 
@@ -24,7 +25,7 @@ func ValidateSchemas(objects model.ObjectStates) error {
 			continue
 		}
 
-		component, err := objects.Components().Get(config.ComponentKey())
+		component, err := objects.Components().GetOrErr(config.ComponentId)
 		if err != nil {
 			return err
 		}
@@ -40,7 +41,7 @@ func ValidateSchemas(objects model.ObjectStates) error {
 			continue
 		}
 
-		component, err := objects.Components().Get(row.ComponentKey())
+		component, err := objects.Components().GetOrErr(row.ComponentId)
 		if err != nil {
 			return err
 		}
@@ -53,7 +54,7 @@ func ValidateSchemas(objects model.ObjectStates) error {
 	return errs.ErrorOrNil()
 }
 
-func ValidateConfig(component *model.Component, config *model.Config) error {
+func ValidateConfig(component *storageapi.Component, config *model.Config) error {
 	// Skip deprecated component
 	if component.IsDeprecated() {
 		return nil
@@ -61,7 +62,7 @@ func ValidateConfig(component *model.Component, config *model.Config) error {
 	return validateContent(component.Schema, config.Content)
 }
 
-func ValidateConfigRow(component *model.Component, configRow *model.ConfigRow) error {
+func ValidateConfigRow(component *storageapi.Component, configRow *model.ConfigRow) error {
 	// Skip deprecated component
 	if component.IsDeprecated() {
 		return nil

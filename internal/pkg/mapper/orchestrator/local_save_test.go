@@ -1,6 +1,7 @@
 package orchestrator_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -21,7 +22,7 @@ func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 	recipe := model.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote, model.NewChangedFields())
 
 	// Save
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Minify JSON + remove file description
@@ -106,7 +107,7 @@ func TestMapBeforeLocalSaveWarnings(t *testing.T) {
 	recipe := model.NewLocalSaveRecipe(orchestratorConfigState.Manifest(), orchestratorConfigState.Remote, model.NewChangedFields())
 
 	// Save
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 	expectedWarnings := `
 WARN  Warning: cannot save orchestrator config "branch/other/orchestrator":
   - cannot save phase "001-phase":

@@ -3,6 +3,7 @@ package naming
 import (
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -31,7 +32,7 @@ func TestNamingMatchConfigPathOrdinary(t *testing.T) {
 			"extractor/keboola.ex-db-mysql/with-rows",
 		))
 	assert.NoError(t, err)
-	assert.Equal(t, ComponentId(`keboola.ex-db-mysql`), componentId)
+	assert.Equal(t, storageapi.ComponentID(`keboola.ex-db-mysql`), componentId)
 }
 
 func TestNamingMatchConfigPathSharedCode(t *testing.T) {
@@ -44,7 +45,7 @@ func TestNamingMatchConfigPathSharedCode(t *testing.T) {
 			"_shared/keboola.python-transformation-v2",
 		))
 	assert.NoError(t, err)
-	assert.Equal(t, SharedCodeComponentId, componentId)
+	assert.Equal(t, storageapi.SharedCodeComponentID, componentId)
 }
 
 func TestNamingMatchConfigPathVariables(t *testing.T) {
@@ -57,28 +58,28 @@ func TestNamingMatchConfigPathVariables(t *testing.T) {
 			"variables",
 		))
 	assert.NoError(t, err)
-	assert.Equal(t, VariablesComponentId, componentId)
+	assert.Equal(t, storageapi.VariablesComponentID, componentId)
 }
 
 func TestNamingMatchSharedCodeVariables(t *testing.T) {
 	t.Parallel()
 	m := NewPathMatcher(TemplateWithIds())
 	componentId, err := m.MatchConfigPath(
-		ConfigRowKey{ComponentId: SharedCodeComponentId},
+		ConfigRowKey{ComponentId: storageapi.SharedCodeComponentID},
 		NewAbsPath(
 			"shared/code/path",
 			"variables",
 		))
 	assert.NoError(t, err)
-	assert.Equal(t, VariablesComponentId, componentId)
+	assert.Equal(t, storageapi.VariablesComponentID, componentId)
 }
 
 func TestNamingMatchConfigRowPathNotMatched(t *testing.T) {
 	t.Parallel()
 	n := NewPathMatcher(TemplateWithIds())
 	matched := n.MatchConfigRowPath(
-		&Component{
-			ComponentKey: ComponentKey{Id: "foo.bar"},
+		&storageapi.Component{
+			ComponentKey: storageapi.ComponentKey{ID: "foo.bar"},
 		},
 		NewAbsPath(
 			"parent/path",
@@ -92,8 +93,8 @@ func TestNamingMatchConfigRowPathOrdinary(t *testing.T) {
 	t.Parallel()
 	m := NewPathMatcher(TemplateWithIds())
 	matched := m.MatchConfigRowPath(
-		&Component{
-			ComponentKey: ComponentKey{Id: "foo.bar"},
+		&storageapi.Component{
+			ComponentKey: storageapi.ComponentKey{ID: "foo.bar"},
 		},
 		NewAbsPath(
 			"parent/path",
@@ -107,8 +108,8 @@ func TestNamingMatchConfigRowPathSharedCode(t *testing.T) {
 	t.Parallel()
 	m := NewPathMatcher(TemplateWithIds())
 	matched := m.MatchConfigRowPath(
-		&Component{
-			ComponentKey: ComponentKey{Id: SharedCodeComponentId},
+		&storageapi.Component{
+			ComponentKey: storageapi.ComponentKey{ID: storageapi.SharedCodeComponentID},
 		},
 		NewAbsPath(
 			"parent/path",
@@ -121,8 +122,8 @@ func TestNamingMatchConfigRowPathVariables(t *testing.T) {
 	t.Parallel()
 	m := NewPathMatcher(TemplateWithIds())
 	matched := m.MatchConfigRowPath(
-		&Component{
-			ComponentKey: ComponentKey{Id: VariablesComponentId},
+		&storageapi.Component{
+			ComponentKey: storageapi.ComponentKey{ID: storageapi.VariablesComponentID},
 		},
 		NewAbsPath(
 			"parent/path",

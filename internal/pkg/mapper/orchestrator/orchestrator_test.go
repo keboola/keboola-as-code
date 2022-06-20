@@ -3,6 +3,7 @@ package orchestrator_test
 import (
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -103,7 +104,7 @@ func createLocalLoadFixtures(t *testing.T, state *state.State) *model.ConfigStat
 	// Orchestrator config
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: model.OrchestratorComponentId,
+		ComponentId: storageapi.OrchestratorComponentID,
 		Id:          `456`,
 	}
 	configState := &model.ConfigState{
@@ -128,7 +129,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
+					ComponentId: storageapi.OrchestratorComponentID,
 					ConfigId:    `456`,
 					Index:       0,
 				},
@@ -143,7 +144,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
 								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
+								ComponentId: storageapi.OrchestratorComponentID,
 								ConfigId:    `456`,
 								Index:       0,
 							},
@@ -169,7 +170,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
 								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
+								ComponentId: storageapi.OrchestratorComponentID,
 								ConfigId:    `456`,
 								Index:       0,
 							},
@@ -196,7 +197,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 			{
 				PhaseKey: model.PhaseKey{
 					BranchId:    123,
-					ComponentId: model.OrchestratorComponentId,
+					ComponentId: storageapi.OrchestratorComponentID,
 					ConfigId:    `456`,
 					Index:       1,
 				},
@@ -204,7 +205,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 				DependsOn: []model.PhaseKey{
 					{
 						BranchId:    123,
-						ComponentId: model.OrchestratorComponentId,
+						ComponentId: storageapi.OrchestratorComponentID,
 						ConfigId:    `456`,
 						Index:       0,
 					},
@@ -216,7 +217,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
 								BranchId:    123,
-								ComponentId: model.OrchestratorComponentId,
+								ComponentId: storageapi.OrchestratorComponentID,
 								ConfigId:    `456`,
 								Index:       1,
 							},
@@ -261,7 +262,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 	// Orchestrator config
 	configKey := model.ConfigKey{
 		BranchId:    123,
-		ComponentId: model.OrchestratorComponentId,
+		ComponentId: storageapi.OrchestratorComponentID,
 		Id:          `456`,
 	}
 	configState := &model.ConfigState{

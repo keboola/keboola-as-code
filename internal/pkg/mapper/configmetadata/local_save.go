@@ -1,11 +1,13 @@
 package configmetadata
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 // MapBeforeLocalSave - store config metadata to manifest.
-func (m *configMetadataMapper) MapBeforeLocalSave(recipe *model.LocalSaveRecipe) error {
+func (m *configMetadataMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	manifest, ok := recipe.ObjectManifest.(*model.ConfigManifest)
 	if !ok {
 		return nil

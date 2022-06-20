@@ -3,7 +3,8 @@ package push
 import (
 	"context"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
+	"github.com/keboola/go-client/pkg/client"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/push"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -24,7 +25,8 @@ type Options struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	EncryptionApi() (*encryptionapi.Api, error)
+	ProjectID() (int, error)
+	EncryptionApiClient() (client.Sender, error)
 }
 
 func Run(projectState *project.State, o Options, d dependencies) error {

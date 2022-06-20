@@ -1,11 +1,13 @@
 package orchestrator
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *orchestratorMapper) AfterLocalOperation(changes *model.LocalChanges) error {
+func (m *orchestratorMapper) AfterLocalOperation(_ context.Context, changes *model.LocalChanges) error {
 	errors := utils.NewMultiError()
 	allObjects := m.state.LocalObjects()
 

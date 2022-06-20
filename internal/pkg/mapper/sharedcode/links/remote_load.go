@@ -3,6 +3,7 @@ package links
 import (
 	"fmt"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -39,8 +40,8 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 	linkToSharedCode := &model.LinkToSharedCode{
 		Config: model.ConfigKey{
 			BranchId:    transformation.BranchId,
-			ComponentId: model.SharedCodeComponentId,
-			Id:          model.ConfigId(sharedCodeId),
+			ComponentId: storageapi.SharedCodeComponentID,
+			Id:          storageapi.ConfigID(sharedCodeId),
 		},
 	}
 	sharedCodeState, found := m.state.GetOrNil(linkToSharedCode.Config).(*model.ConfigState)
@@ -88,7 +89,7 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 			BranchId:    linkToSharedCode.Config.BranchId,
 			ComponentId: linkToSharedCode.Config.ComponentId,
 			ConfigId:    linkToSharedCode.Config.Id,
-			Id:          model.RowId(cast.ToString(rowId)),
+			Id:          storageapi.RowID(cast.ToString(rowId)),
 		}
 		if _, found := m.state.Get(rowKey); found {
 			linkToSharedCode.Rows = append(linkToSharedCode.Rows, rowKey)

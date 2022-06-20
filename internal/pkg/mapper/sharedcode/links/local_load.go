@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
@@ -63,7 +65,7 @@ func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
 
 	// Replace paths -> IDs in code scripts
 	errors := utils.NewMultiError()
-	foundSharedCodeRows := make(map[model.RowId]model.ConfigRowKey)
+	foundSharedCodeRows := make(map[storageapi.RowID]model.ConfigRowKey)
 	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
 		if sharedCodeRow, v, err := m.parsePathPlaceholder(code, script, sharedCodeState); err != nil {
 			errors.Append(err)

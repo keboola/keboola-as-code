@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Netflix/go-expect"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
@@ -25,7 +26,7 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}))
+	d.SetStorageApi(mockedStorageApi([]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}), nil)
 	d.Options().SetDefault(`branches`, `*`)
 	d.Options().Set(`branches`, `foo, bar`)
 
@@ -42,7 +43,7 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 	t.Parallel()
 	dialog, _ := createDialogs(t, false)
 	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}))
+	d.SetStorageApi(mockedStorageApi([]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}), nil)
 	d.Options().SetDefault(`branches`, `*`)
 
 	// No interaction expected
@@ -57,7 +58,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}))
+	d.SetStorageApi(mockedStorageApi([]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}), nil)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -86,7 +87,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}))
+	d.SetStorageApi(mockedStorageApi([]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}), nil)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -115,12 +116,12 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*model.Branch{
-		{BranchKey: model.BranchKey{Id: 10}, Name: "Main", IsDefault: true},
-		{BranchKey: model.BranchKey{Id: 20}, Name: "foo", IsDefault: false},
-		{BranchKey: model.BranchKey{Id: 30}, Name: "bar", IsDefault: false},
-		{BranchKey: model.BranchKey{Id: 40}, Name: "baz", IsDefault: false},
-	}))
+	d.SetStorageApi(mockedStorageApi([]*storageapi.Branch{
+		{BranchKey: storageapi.BranchKey{ID: 10}, Name: "Main", IsDefault: true},
+		{BranchKey: storageapi.BranchKey{ID: 20}, Name: "foo", IsDefault: false},
+		{BranchKey: storageapi.BranchKey{ID: 30}, Name: "bar", IsDefault: false},
+		{BranchKey: storageapi.BranchKey{ID: 40}, Name: "baz", IsDefault: false},
+	}), nil)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -175,12 +176,12 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*model.Branch{
-		{BranchKey: model.BranchKey{Id: 10}, Name: "Main", IsDefault: true},
-		{BranchKey: model.BranchKey{Id: 20}, Name: "foo", IsDefault: false},
-		{BranchKey: model.BranchKey{Id: 30}, Name: "bar", IsDefault: false},
-		{BranchKey: model.BranchKey{Id: 40}, Name: "baz", IsDefault: false},
-	}))
+	d.SetStorageApi(mockedStorageApi([]*storageapi.Branch{
+		{BranchKey: storageapi.BranchKey{ID: 10}, Name: "Main", IsDefault: true},
+		{BranchKey: storageapi.BranchKey{ID: 20}, Name: "foo", IsDefault: false},
+		{BranchKey: storageapi.BranchKey{ID: 30}, Name: "bar", IsDefault: false},
+		{BranchKey: storageapi.BranchKey{ID: 40}, Name: "baz", IsDefault: false},
+	}), nil)
 
 	// Interaction
 	wg := sync.WaitGroup{}

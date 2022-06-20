@@ -1,8 +1,10 @@
 package scheduler_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -16,7 +18,7 @@ func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Create api and internal object
-	key := model.ConfigKey{BranchId: 1, ComponentId: model.SchedulerComponentId, Id: `123`}
+	key := model.ConfigKey{BranchId: 1, ComponentId: storageapi.SchedulerComponentID, Id: `123`}
 	object := &model.Config{ConfigKey: key, Content: orderedmap.New()}
 	contentStr := `{
   "target": {
@@ -31,7 +33,7 @@ func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
 
 	// Invoke
 	assert.Empty(t, object.Relations)
-	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(recipe))
+	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Internal object has new relation

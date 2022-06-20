@@ -1,11 +1,13 @@
 package links
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func (m *mapper) AfterRemoteOperation(changes *model.RemoteChanges) error {
+func (m *mapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
 	// Process loaded objects
 	errors := utils.NewMultiError()
 	for _, objectState := range changes.Loaded() {

@@ -1,6 +1,7 @@
 package corefiles_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -35,7 +36,7 @@ func TestSaveCoreFiles(t *testing.T) {
 	assert.Empty(t, recipe.Files.All())
 
 	// Call mapper
-	assert.NoError(t, state.Mapper().MapBeforeLocalSave(recipe))
+	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 
 	// Files are generated
 	expectedFiles := model.NewFilesToSave()

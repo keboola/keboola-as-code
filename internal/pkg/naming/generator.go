@@ -3,6 +3,8 @@ package naming
 import (
 	"fmt"
 
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -62,7 +64,7 @@ func (g Generator) BranchPath(branch *Branch) AbsPath {
 	return g.registry.ensureUniquePath(branch.Key(), p)
 }
 
-func (g Generator) ConfigPath(parentPath string, component *Component, config *Config) AbsPath {
+func (g Generator) ConfigPath(parentPath string, component *storageapi.Component, config *Config) AbsPath {
 	// Get parent in the local filesystem
 	parentKey, err := config.ParentKey()
 	if err != nil {
@@ -92,7 +94,7 @@ func (g Generator) ConfigPath(parentPath string, component *Component, config *C
 	case parentKind.IsConfig() && component.IsVariables():
 		// Regular component with variables
 		template = string(g.template.VariablesConfig)
-	case parentKind.IsConfigRow() && component.IsVariables() && parentKey.(ConfigRowKey).ComponentId == SharedCodeComponentId:
+	case parentKind.IsConfigRow() && component.IsVariables() && parentKey.(ConfigRowKey).ComponentId == storageapi.SharedCodeComponentID:
 		// Shared code is config row and can have variables
 		template = string(g.template.VariablesConfig)
 	case parentKind.IsEmpty() || parentKind.IsBranch():
@@ -107,14 +109,14 @@ func (g Generator) ConfigPath(parentPath string, component *Component, config *C
 	p.SetRelativePath(utils.ReplacePlaceholders(template, map[string]interface{}{
 		"target_component_id": targetComponentId, // for shared code
 		"component_type":      component.Type,
-		"component_id":        component.Id,
+		"component_id":        component.ID,
 		"config_id":           jsonnet.StripIdPlaceholder(config.Id.String()),
 		"config_name":         strhelper.NormalizeName(config.Name),
 	}))
 	return g.registry.ensureUniquePath(config.Key(), p)
 }
 
-func (g Generator) ConfigRowPath(parentPath string, component *Component, row *ConfigRow) AbsPath {
+func (g Generator) ConfigRowPath(parentPath string, component *storageapi.Component, row *ConfigRow) AbsPath {
 	if len(parentPath) == 0 {
 		panic(fmt.Errorf(`config row "%s" parent path cannot be empty"`, row))
 	}
@@ -196,11 +198,11 @@ func (g Generator) CodeFilePath(code *Code) string {
 	return filesystem.Join(code.Path(), code.CodeFileName)
 }
 
-func (g Generator) SharedCodeFilePath(parentPath string, targetComponentId ComponentId) string {
+func (g Generator) SharedCodeFilePath(parentPath string, targetComponentId storageapi.ComponentID) string {
 	return filesystem.Join(parentPath, g.CodeFileName(targetComponentId))
 }
 
-func (g Generator) CodeFileName(componentId ComponentId) string {
+func (g Generator) CodeFileName(componentId storageapi.ComponentID) string {
 	return CodeFileName + "." + CodeFileExt(componentId)
 }
 

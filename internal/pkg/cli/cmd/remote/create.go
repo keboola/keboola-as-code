@@ -55,7 +55,7 @@ func CreateBranchCommand(p dependencies.Provider) *cobra.Command {
 
 			// Send cmd successful/failed event
 			if eventSender, err := d.EventSender(); err == nil {
-				defer func() { eventSender.SendCmdEvent(start, cmdErr, "remote-create-branch") }()
+				defer func() { eventSender.SendCmdEvent(d.Ctx(), start, cmdErr, "remote-create-branch") }()
 			} else {
 				return err
 			}
@@ -81,9 +81,9 @@ func CreateBranchCommand(p dependencies.Provider) *cobra.Command {
 				projectManifest := prj.ProjectManifest()
 
 				// Add new branch to the allowed branches if needed
-				if projectManifest.IsObjectIgnored(branch) {
+				if !projectManifest.AllowedBranches().IsBranchAllowed(model.NewBranch(branch)) {
 					allowedBranches := projectManifest.AllowedBranches()
-					allowedBranches = append(allowedBranches, model.AllowedBranch(branch.Id.String()))
+					allowedBranches = append(allowedBranches, model.AllowedBranch(branch.ID.String()))
 					projectManifest.SetAllowedBranches(allowedBranches)
 				}
 
