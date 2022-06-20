@@ -22,7 +22,7 @@ import (
 
 type Registry = registry.Registry
 
-func NewRegistry(paths *knownpaths.Paths, namingRegistry *naming.Registry, components model.ComponentsMap, sortBy string) *Registry {
+func NewRegistry(paths *knownpaths.Paths, namingRegistry *naming.Registry, components *model.ComponentsMap, sortBy string) *Registry {
 	return registry.New(paths, namingRegistry, components, sortBy)
 }
 
@@ -58,7 +58,7 @@ type ObjectsContainer interface {
 
 type dependencies interface {
 	Logger() log.Logger
-	Components() (model.ComponentsMap, error)
+	Components() (*model.ComponentsMap, error)
 	StorageApiClient() (client.Sender, error)
 }
 

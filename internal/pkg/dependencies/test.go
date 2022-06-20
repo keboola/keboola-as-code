@@ -190,13 +190,19 @@ func (v *TestContainer) UseMockedSchedulerApi() (client.Client, *httpmock.MockTr
 	return *v.mockedSchedulerApi, v.mockedSchedulerApiTransport
 }
 
-func (v *TestContainer) UseMockedComponents() model.ComponentsMap {
+func (v *TestContainer) Components() (*model.ComponentsMap, error) {
+	if v.mockedComponents == nil {
+		return v.CommonContainer.Components()
+	}
+	return v.mockedComponents, nil
+}
+
+func (v *TestContainer) UseMockedComponents() *model.ComponentsMap {
 	if v.mockedComponents == nil {
 		components := testapi.MockedComponentsMap()
-		v.mockedComponents = &components
-		v.components.Set(components)
+		v.mockedComponents = components
 	}
-	return *v.mockedComponents
+	return v.mockedComponents
 }
 
 // EmptyState without mappers. Useful for mappers unit tests.

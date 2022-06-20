@@ -19,11 +19,11 @@ type Registry struct {
 	sortBy         string
 	lock           *sync.Mutex
 	namingRegistry *naming.Registry
-	components     ComponentsMap
+	components     *ComponentsMap
 	objects        *orderedmap.OrderedMap
 }
 
-func New(paths *knownpaths.Paths, namingRegistry *naming.Registry, components ComponentsMap, sortBy string) *Registry {
+func New(paths *knownpaths.Paths, namingRegistry *naming.Registry, components *ComponentsMap, sortBy string) *Registry {
 	return &Registry{
 		pathsRO:        paths.ReadOnly(),
 		paths:          paths,
@@ -35,7 +35,7 @@ func New(paths *knownpaths.Paths, namingRegistry *naming.Registry, components Co
 	}
 }
 
-func (s *Registry) Components() ComponentsMap {
+func (s *Registry) Components() *ComponentsMap {
 	return s.components
 }
 

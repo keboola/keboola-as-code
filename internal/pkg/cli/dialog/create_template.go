@@ -23,7 +23,7 @@ type createTmplDialogDeps interface {
 	Ctx() context.Context
 	Logger() log.Logger
 	Options() *options.Options
-	Components() (model.ComponentsMap, error)
+	Components() (*model.ComponentsMap, error)
 	StorageApiClient() (client.Sender, error)
 }
 

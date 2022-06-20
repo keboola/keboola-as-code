@@ -77,7 +77,7 @@ type ObjectStates interface {
 	RemoteObjects() Objects
 	LocalObjects() Objects
 	All() []ObjectState
-	Components() ComponentsMap
+	Components() *ComponentsMap
 	Branches() (branches []*BranchState)
 	Configs() []*ConfigState
 	ConfigsFrom(branch BranchKey) (configs []*ConfigState)

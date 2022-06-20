@@ -69,7 +69,7 @@ func LoadReadme(fs filesystem.Fs) (string, error) {
 
 type dependencies interface {
 	Logger() log.Logger
-	Components() (model.ComponentsMap, error)
+	Components() (*model.ComponentsMap, error)
 	StorageApiClient() (client.Sender, error)
 	SchedulerApiClient() (client.Sender, error)
 }

@@ -28,7 +28,7 @@ type Options struct {
 type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
-	Components() (model.ComponentsMap, error)
+	Components() (*model.ComponentsMap, error)
 	StorageApiHost() (string, error)
 	StorageApiToken() (string, error)
 	ProjectID() (int, error)

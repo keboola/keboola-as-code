@@ -55,7 +55,7 @@ func (m *Manager) AddRepository(repositoryDef model.TemplateRepository) error {
 
 	// Check out
 	m.logger.Infof(`checking out repository "%s:%s"`, repositoryDef.Url, repositoryDef.Ref)
-	ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(m.ctx, OperationTimeout)
 	defer cancel()
 	repo, err := git.Checkout(ctx, repositoryDef.Url, repositoryDef.Ref, false, m.logger)
 	if err != nil {
@@ -70,7 +70,7 @@ func (m *Manager) Pull() {
 	for _, repo := range m.repositories {
 		repo := repo
 		go func() {
-			ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
+			ctx, cancel := context.WithTimeout(m.ctx, OperationTimeout)
 			defer cancel()
 			if err := pullRepo(ctx, m.logger, repo); err != nil {
 				m.logger.Errorf(`error while updating the repository "%s": %w`, repo, err)
@@ -80,7 +80,8 @@ func (m *Manager) Pull() {
 }
 
 func pullRepo(ctx context.Context, logger log.Logger, repo *git.Repository) error {
-	logger.Infof(`repository "%s" is being updated`, repo)
+	startTime := time.Now()
+	logger.Infof(`repository "%s" update started`, repo)
 	oldHash, err := repo.CommitHash(ctx)
 	if err != nil {
 		return err
@@ -97,9 +98,9 @@ func pullRepo(ctx context.Context, logger log.Logger, repo *git.Repository) erro
 	}
 
 	if oldHash == newHash {
-		logger.Infof(`repository "%s" update finished, no change found`, repo)
+		logger.Infof(`repository "%s" update finished, no change found | %s`, repo, time.Since(startTime))
 	} else {
-		logger.Infof(`repository "%s" updated from %s to %s`, repo, oldHash, newHash)
+		logger.Infof(`repository "%s" updated from %s to %s | %s`, repo, oldHash, newHash, time.Since(startTime))
 	}
 
 	return nil

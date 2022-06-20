@@ -123,6 +123,23 @@ func (v *container) PrefixLogger() log.PrefixLogger {
 	return v.logger
 }
 
+func (v *container) Components() (*model.ComponentsMap, error) {
+	// Get components provider
+	provider, err := v.commonDeps.ComponentsProvider()
+	if err != nil {
+		return nil, err
+	}
+
+	// Acquire read lock and release it after request,
+	// so update cannot occur in the middle of the request.
+	provider.RLock()
+	go func() {
+		<-v.ctx.Done()
+		provider.RUnlock()
+	}()
+	return provider.Components(), nil
+}
+
 func (v *container) RepositoryManager() (*repository.Manager, error) {
 	if v.repositoryManager == nil {
 		// Register default repositories
