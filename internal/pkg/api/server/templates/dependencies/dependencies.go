@@ -4,7 +4,9 @@ import (
 	"context"
 	stdLog "log"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -31,14 +33,14 @@ type Container interface {
 	Repositories() []model.TemplateRepository
 	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
 	WithLoggerPrefix(prefix string) *container
-	WithStorageApi(api *storageapi.Api) (*container, error)
+	WithStorageApiClient(client client.Client, token *storageapi.Token) (*container, error)
 }
 
 // NewContainer returns dependencies for API and add them to the context.
-func NewContainer(ctx context.Context, repositories []model.TemplateRepository, debug bool, logger *stdLog.Logger, envs *env.Map) (Container, error) {
+func NewContainer(ctx context.Context, repositories []model.TemplateRepository, debug, debugHttp bool, logger *stdLog.Logger, envs *env.Map) (Container, error) {
 	ctx, cancel := context.WithCancel(ctx)
-	c := &container{ctx: ctx, ctxCancelFn: cancel, defaultRepositories: repositories, debug: debug, envs: envs, logger: log.NewApiLogger(logger, "", debug)}
-	c.commonDeps = dependencies.NewCommonContainer(c)
+	c := &container{ctx: ctx, ctxCancelFn: cancel, defaultRepositories: repositories, debug: debug, debugHttp: debugHttp, envs: envs, logger: log.NewApiLogger(logger, "", debug)}
+	c.commonDeps = dependencies.NewCommonContainer(ctx, c)
 	return c, nil
 }
 
@@ -48,11 +50,12 @@ type container struct {
 	*commonDeps
 	ctx                 context.Context
 	ctxCancelFn         context.CancelFunc
-	debug               bool
+	httpClient          *client.Client
+	debug               bool // enables debug log level
+	debugHttp           bool // log HTTP client request and response bodies
 	logger              log.PrefixLogger
 	envs                *env.Map
 	repositoryManager   *repository.Manager
-	storageApi          *storageapi.Api
 	defaultRepositories []model.TemplateRepository
 }
 
@@ -85,11 +88,30 @@ func (v *container) WithLoggerPrefix(prefix string) *container {
 	return clone
 }
 
-// WithStorageApi returns dependencies clone with modified Storage API.
-func (v *container) WithStorageApi(api *storageapi.Api) (*container, error) {
+func (v *container) HttpClient() client.Client {
+	if v.httpClient == nil {
+		c := client.New().
+			WithTransport(client.HTTP2Transport()).
+			WithUserAgent("keboola-templates-api")
+
+		// Log each HTTP client request/response as debug message
+		if v.debug {
+			c = c.AndTrace(client.LogTracer(v.logger.DebugWriter()))
+		}
+
+		// Dump each HTTP client request/response body
+		if v.debugHttp {
+			c = c.AndTrace(client.DumpTracer(v.logger.DebugWriter()))
+		}
+		v.httpClient = &c
+	}
+	return *v.httpClient
+}
+
+// WithStorageApiClient returns dependencies clone with modified Storage API.
+func (v *container) WithStorageApiClient(client client.Client, token *storageapi.Token) (*container, error) {
 	clone := v.Clone()
-	clone.storageApi = api
-	clone.commonDeps = clone.commonDeps.WithStorageApi(api)
+	clone.commonDeps = clone.commonDeps.WithStorageApiClient(client, token)
 	return clone, nil
 }
 
@@ -159,23 +181,6 @@ func (v *container) TemplateRepository(definition model.TemplateRepository, _ mo
 
 func (v *container) Envs() *env.Map {
 	return v.envs
-}
-
-func (v *container) ApiVerboseLogs() bool {
-	return v.debug
-}
-
-func (v *container) StorageApi() (*storageapi.Api, error) {
-	// Store API instance, so it can be cloned, see WithStorageApi
-	if v.storageApi == nil {
-		api, err := v.commonDeps.StorageApi()
-		if err != nil {
-			return nil, err
-		}
-		v.storageApi = api
-	}
-
-	return v.storageApi, nil
 }
 
 func (v *container) StorageApiHost() (string, error) {

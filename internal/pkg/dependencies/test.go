@@ -3,15 +3,15 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/jarcoal/httpmock"
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/storageapi"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/encryptionapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/schedulerapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi/eventsender"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -33,21 +33,25 @@ type TestContainer struct {
 	envs                        *env.Map
 	fs                          filesystem.Fs
 	options                     *options.Options
-	projectId                   int
 	apiVerboseLogs              bool
+	httpTraceFactory            client.TraceFactory
 	storageApiHost              string
 	storageApiToken             string
 	templateRepositoryFs        filesystem.Fs
 	project                     *project.Project
-	mockedStorageApi            *storageapi.Api
+	mockedStorageApi            *client.Client
 	mockedStorageApiTransport   *httpmock.MockTransport
-	mockedSchedulerApi          *schedulerapi.Api
+	mockedSchedulerApi          *client.Client
 	mockedSchedulerApiTransport *httpmock.MockTransport
+	mockedComponents            *model.ComponentsMap
 }
 
+var testTransport = client.DefaultTransport() // nolint:gochecknoglobals
+
 func NewTestContainer() *TestContainer {
-	c := &TestContainer{ctx: context.Background()}
-	c.CommonContainer = NewCommonContainer(c)
+	ctx := context.Background()
+	c := &TestContainer{ctx: ctx}
+	c.CommonContainer = NewCommonContainer(ctx, c)
 	c.logger = log.NewDebugLogger()
 	c.envs = env.Empty()
 	c.fs = testfs.NewMemoryFsWithLogger(c.logger)
@@ -59,13 +63,11 @@ func NewTestContainer() *TestContainer {
 
 // InitFromTestProject init test dependencies from testing project.
 func (v *TestContainer) InitFromTestProject(project *testproject.Project) {
-	storageApi := project.StorageApi()
-	v.SetProjectId(project.ID())
-	v.SetStorageApiHost(storageApi.Host())
-	v.SetStorageApiToken(storageApi.Token().Token)
-	v.SetStorageApi(storageApi)
-	v.SetSchedulerApi(project.SchedulerApi())
-	v.SetEncryptionApi(project.EncryptionApi())
+	v.SetStorageApiHost(project.StorageAPIHost())
+	v.SetStorageApiToken(project.StorageAPIToken().Token)
+	v.SetStorageApi(project.StorageAPIClient(), project.StorageAPIToken())
+	v.SetSchedulerApi(project.SchedulerAPIClient())
+	v.SetEncryptionApi(project.EncryptionAPIClient())
 }
 
 func (v *TestContainer) Ctx() context.Context {
@@ -100,12 +102,16 @@ func (v *TestContainer) Options() *options.Options {
 	return v.options
 }
 
-func (v *TestContainer) SetProjectId(projectId int) {
-	v.projectId = projectId
+func (v *TestContainer) HttpClientVerboseLogs() bool {
+	return v.apiVerboseLogs
 }
 
-func (v *TestContainer) ApiVerboseLogs() bool {
-	return v.apiVerboseLogs
+func (v *TestContainer) HttpTransport() http.RoundTripper {
+	return testTransport
+}
+
+func (v *TestContainer) HttpTraceFactory() client.TraceFactory {
+	return v.httpTraceFactory
 }
 
 func (v *TestContainer) SetApiVerboseLogs(value bool) {
@@ -149,46 +155,55 @@ func (v *TestContainer) SetCtx(ctx context.Context) {
 	v.ctx = ctx
 }
 
-func (v *TestContainer) SetStorageApi(api *storageapi.Api) {
-	v.storageApi = api
+func (v *TestContainer) SetStorageApi(client client.Client, token *storageapi.Token) {
+	v.storageApi.Set(clientWithToken{Client: client, Token: token})
 }
 
-func (v *TestContainer) SetEncryptionApi(api *encryptionapi.Api) {
-	v.encryptionApi = api
+func (v *TestContainer) SetEncryptionApi(client client.Client) {
+	v.encryptionApi.Set(client)
 }
 
-func (v *TestContainer) SetSchedulerApi(api *schedulerapi.Api) {
-	v.schedulerApi = api
+func (v *TestContainer) SetSchedulerApi(client client.Client) {
+	v.schedulerApi.Set(client)
 }
 
-func (v *TestContainer) EventSender(sender *eventsender.Sender) {
-	v.eventSender = sender
+func (v *TestContainer) EventSender(sender event.Sender) {
+	v.eventSender.Set(sender)
 }
 
-func (v *TestContainer) UseMockedStorageApi() (*storageapi.Api, *httpmock.MockTransport) {
+func (v *TestContainer) UseMockedStorageApi() (client.Client, *httpmock.MockTransport) {
 	if v.mockedStorageApi == nil {
-		v.mockedStorageApi, v.mockedStorageApiTransport = testapi.NewMockedStorageApi(v.DebugLogger())
+		c, transport := client.NewMockedClient()
+		v.mockedStorageApi, v.mockedStorageApiTransport = &c, transport
 	}
-
-	v.SetStorageApi(v.mockedStorageApi)
-	return v.mockedStorageApi, v.mockedStorageApiTransport
+	v.SetStorageApi(*v.mockedStorageApi, nil)
+	v.UseMockedComponents()
+	return *v.mockedStorageApi, v.mockedStorageApiTransport
 }
 
-func (v *TestContainer) UseMockedSchedulerApi() (*schedulerapi.Api, *httpmock.MockTransport) {
+func (v *TestContainer) UseMockedSchedulerApi() (client.Client, *httpmock.MockTransport) {
 	if v.mockedSchedulerApi == nil {
-		v.mockedSchedulerApi, v.mockedSchedulerApiTransport = testapi.NewMockedSchedulerApi(v.DebugLogger())
+		c, transport := client.NewMockedClient()
+		v.mockedSchedulerApi, v.mockedSchedulerApiTransport = &c, transport
 	}
+	v.SetSchedulerApi(*v.mockedSchedulerApi)
+	return *v.mockedSchedulerApi, v.mockedSchedulerApiTransport
+}
 
-	v.SetSchedulerApi(v.mockedSchedulerApi)
-	return v.mockedSchedulerApi, v.mockedSchedulerApiTransport
+func (v *TestContainer) UseMockedComponents() model.ComponentsMap {
+	if v.mockedComponents == nil {
+		components := testapi.MockedComponentsMap()
+		v.mockedComponents = &components
+		v.components.Set(components)
+	}
+	return *v.mockedComponents
 }
 
 // EmptyState without mappers. Useful for mappers unit tests.
 func (v *TestContainer) EmptyState() *state.State {
 	// Enable mocked APIs
 	v.UseMockedSchedulerApi()
-	_, httpTransport := v.UseMockedStorageApi()
-	testapi.AddMockedComponents(httpTransport)
+	v.UseMockedStorageApi()
 
 	// Create mocked state
 	mockedState, err := state.New(NewObjectsContainer(v.Fs(), fixtures.NewManifest()), v)

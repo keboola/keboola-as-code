@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/client/storageapi"
+	"github.com/keboola/go-client/pkg/client"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
@@ -54,7 +56,7 @@ type Provider interface {
 
 func NewContainer(ctx context.Context, envs *env.Map, fs filesystem.Fs, dialogs *dialog.Dialogs, logger log.Logger, options *options.Options) Container {
 	c := &container{ctx: ctx, logger: logger, envs: envs, fs: fs, dialogs: dialogs, options: options}
-	c.commonDeps = dependencies.NewCommonContainer(c)
+	c.commonDeps = dependencies.NewCommonContainer(ctx, c)
 	return c
 }
 
@@ -62,18 +64,39 @@ type commonDeps = dependencies.Common
 
 type container struct {
 	commonDeps
-	ctx        context.Context
-	logger     log.Logger
-	dialogs    *dialog.Dialogs
-	options    *options.Options
-	envs       *env.Map
-	storageApi *storageapi.Api
+	ctx              context.Context
+	logger           log.Logger
+	dialogs          *dialog.Dialogs
+	options          *options.Options
+	envs             *env.Map
+	httpClient       *client.Client
+	storageApiClient client.Sender
 	// Fs
 	fs       filesystem.Fs
 	emptyDir filesystem.Fs
 	// Project
 	project    *project.Project
 	projectDir filesystem.Fs
+}
+
+func (v *container) HttpClient() client.Client {
+	if v.httpClient == nil {
+		c := client.New().
+			WithTransport(client.DefaultTransport()).
+			WithUserAgent(fmt.Sprintf("keboola-cli/%s", build.BuildVersion))
+
+		// Log each HTTP client request/response as debug message
+		// The CLI by default does not display these messages, but they are written always to the log file.
+		c = c.AndTrace(client.LogTracer(v.logger.DebugWriter()))
+
+		// Dump each HTTP client request/response body
+		if v.options.VerboseApi {
+			c = c.AndTrace(client.DumpTracer(v.logger.DebugWriter()))
+		}
+
+		v.httpClient = &c
+	}
+	return *v.httpClient
 }
 
 func (v *container) Ctx() context.Context {
@@ -104,10 +127,6 @@ func (v *container) Dialogs() *dialog.Dialogs {
 
 func (v *container) Options() *options.Options {
 	return v.options
-}
-
-func (v *container) ApiVerboseLogs() bool {
-	return v.options.VerboseApi
 }
 
 func (v *container) StorageApiHost() (string, error) {
@@ -141,13 +160,17 @@ func (v *container) SetStorageApiHost(host string) {
 	v.options.Set(`storage-api-host`, host)
 }
 
-func (v *container) SetStorageApiToken(host string) {
-	v.options.Set(`storage-api-token`, host)
+func (v *container) SetStorageApiToken(token string) {
+	v.options.Set(`storage-api-token`, token)
 }
 
-func (v *container) StorageApi() (*storageapi.Api, error) {
-	if v.storageApi == nil {
-		storageApi, err := v.commonDeps.StorageApi()
+func (v *container) StorageApiClient() (client.Sender, error) {
+	if v.storageApiClient == nil {
+		storageApiClient, err := v.commonDeps.StorageApiClient()
+		if err != nil {
+			return nil, err
+		}
+		projectId, err := v.ProjectID()
 		if err != nil {
 			return nil, err
 		}
@@ -159,13 +182,13 @@ func (v *container) StorageApi() (*storageapi.Api, error) {
 				return nil, err
 			}
 			projectManifest := prj.ProjectManifest()
-			if projectManifest != nil && projectManifest.ProjectId() != storageApi.ProjectId() {
-				return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, storageApi.ProjectId(), projectManifest.ProjectId())
+			if projectManifest != nil && projectManifest.ProjectId() != projectId {
+				return nil, fmt.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, projectId, projectManifest.ProjectId())
 			}
 		}
 
-		v.storageApi = storageApi
+		v.storageApiClient = storageApiClient
 	}
 
-	return v.storageApi, nil
+	return v.storageApiClient, nil
 }
