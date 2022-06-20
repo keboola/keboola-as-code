@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	httpMiddleware "goa.design/goa/v3/http/middleware"
@@ -20,21 +21,23 @@ import (
 func TraceEndpointsMiddleware() func(endpoint goa.Endpoint) goa.Endpoint {
 	return func(endpoint goa.Endpoint) goa.Endpoint {
 		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-			// Start operation
-			resourceName := tracer.ResourceName(fmt.Sprintf("%s.%s", ctx.Value(goa.ServiceKey), ctx.Value(goa.MethodKey)))
-			span, ctx := tracer.StartSpanFromContext(ctx, "endpoint.request", resourceName)
-
-			// Finis operation and log internal error
-			defer func() {
-				// Is internal error?
-				if err != nil && errorHttpCode(err) > 499 {
-					span.Finish(tracer.WithError(err))
-					return
-				}
-
-				// No internal error
-				span.Finish()
-			}()
+			// Trace all endpoints except health check
+			resourceName := fmt.Sprintf("%s.%s", ctx.Value(goa.ServiceKey), ctx.Value(goa.MethodKey))
+			if !strings.Contains(resourceName, "HealthCheck") {
+				// Start operation
+				var span tracer.Span
+				span, ctx = tracer.StartSpanFromContext(ctx, "endpoint.request", tracer.ResourceName(resourceName))
+				// Finis operation and log internal error
+				defer func() {
+					// Is internal error?
+					if err != nil && errorHttpCode(err) > 499 {
+						span.Finish(tracer.WithError(err))
+						return
+					}
+					// No internal error
+					span.Finish()
+				}()
+			}
 
 			// Handle
 			response, err = endpoint(ctx, request)
