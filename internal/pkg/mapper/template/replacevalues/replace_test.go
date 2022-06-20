@@ -226,7 +226,7 @@ func TestValues_Replace(t *testing.T) {
 
 	// Project objects
 	input := []model.Object{
-		model.ConfigWithRows{
+		&model.ConfigWithRows{
 			Config: &model.Config{
 				ConfigKey: model.ConfigKey{
 					BranchId:    1,
@@ -273,7 +273,7 @@ func TestValues_Replace(t *testing.T) {
 
 	// Template objects
 	expected := []model.Object{
-		model.ConfigWithRows{
+		&model.ConfigWithRows{
 			Config: &model.Config{
 				ConfigKey: model.ConfigKey{
 					BranchId:    1,

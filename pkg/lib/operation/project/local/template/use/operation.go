@@ -48,7 +48,7 @@ type dependencies interface {
 	Ctx() context.Context
 	Logger() log.Logger
 	ProjectID() (int, error)
-	StorageApiToken() (string, error)
+	StorageAPITokenID() (string, error)
 	StorageApiClient() (client.Sender, error)
 	EncryptionApiClient() (client.Sender, error)
 }
@@ -72,7 +72,7 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	}
 
 	// Token ID
-	tokenId, err := d.StorageApiToken()
+	tokenId, err := d.StorageAPITokenID()
 	if err != nil {
 		return "", err
 	}

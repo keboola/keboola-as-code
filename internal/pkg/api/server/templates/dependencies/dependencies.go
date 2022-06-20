@@ -37,9 +37,9 @@ type Container interface {
 }
 
 // NewContainer returns dependencies for API and add them to the context.
-func NewContainer(ctx context.Context, repositories []model.TemplateRepository, debug bool, logger *stdLog.Logger, envs *env.Map) (Container, error) {
+func NewContainer(ctx context.Context, repositories []model.TemplateRepository, debug, debugHttp bool, logger *stdLog.Logger, envs *env.Map) (Container, error) {
 	ctx, cancel := context.WithCancel(ctx)
-	c := &container{ctx: ctx, ctxCancelFn: cancel, defaultRepositories: repositories, debug: debug, envs: envs, logger: log.NewApiLogger(logger, "", debug)}
+	c := &container{ctx: ctx, ctxCancelFn: cancel, defaultRepositories: repositories, debug: debug, debugHttp: debugHttp, envs: envs, logger: log.NewApiLogger(logger, "", debug)}
 	c.commonDeps = dependencies.NewCommonContainer(ctx, c)
 	return c, nil
 }
@@ -51,7 +51,8 @@ type container struct {
 	ctx                 context.Context
 	ctxCancelFn         context.CancelFunc
 	httpClient          *client.Client
-	debug               bool
+	debug               bool // enables debug log level
+	debugHttp           bool // log HTTP client request and response bodies
 	logger              log.PrefixLogger
 	envs                *env.Map
 	repositoryManager   *repository.Manager
@@ -90,9 +91,18 @@ func (v *container) WithLoggerPrefix(prefix string) *container {
 func (v *container) HttpClient() client.Client {
 	if v.httpClient == nil {
 		c := client.New().
-			WithTransport(client.DefaultTransport()).
+			WithTransport(client.HTTP2Transport()).
 			WithUserAgent("keboola-templates-api")
-		c = c.AndTrace(client.LogTracer(v.logger.DebugWriter()))
+
+		// Log each HTTP client request/response as debug message
+		if v.debug {
+			c = c.AndTrace(client.LogTracer(v.logger.DebugWriter()))
+		}
+
+		// Dump each HTTP client request/response body
+		if v.debugHttp {
+			c = c.AndTrace(client.DumpTracer(v.logger.DebugWriter()))
+		}
 		v.httpClient = &c
 	}
 	return *v.httpClient
@@ -171,10 +181,6 @@ func (v *container) TemplateRepository(definition model.TemplateRepository, _ mo
 
 func (v *container) Envs() *env.Map {
 	return v.envs
-}
-
-func (v *container) ApiVerboseLogs() bool {
-	return v.debug
 }
 
 func (v *container) StorageApiHost() (string, error) {

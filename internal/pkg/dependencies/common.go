@@ -23,7 +23,6 @@ import (
 type Abstract interface {
 	Logger() log.Logger
 	Envs() *env.Map
-	ApiVerboseLogs() bool
 	HttpClient() client.Client
 	StorageApiHost() (string, error)
 	StorageApiToken() (string, error)

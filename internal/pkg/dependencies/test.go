@@ -102,7 +102,7 @@ func (v *TestContainer) Options() *options.Options {
 	return v.options
 }
 
-func (v *TestContainer) ApiVerboseLogs() bool {
+func (v *TestContainer) HttpClientVerboseLogs() bool {
 	return v.apiVerboseLogs
 }
 

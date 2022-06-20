@@ -390,8 +390,8 @@ github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 h1:Z9n2FFNUXsshfwJMBgNA0RU6/i7WVaAegv3PtuIHPMs=
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51/go.mod h1:CzGEWj7cYgsdH8dAjBGEr58BoE7ScuLd+fwFZ44+/x8=
-github.com/keboola/go-client v0.0.0-20220620100548-6e11cb941078 h1:vUFw2zRRklIDU76oC0dLbij6sW3nBLpm9CqUGaE6TDM=
-github.com/keboola/go-client v0.0.0-20220620100548-6e11cb941078/go.mod h1:nbMP1j0+UH7U7kJMEwx/yc/IdSNO9MluzT2C89acYts=
+github.com/keboola/go-client v0.0.0-20220620115719-8ec53fa929a1 h1:91V2AUHhK6sQHvvQHSlMJWjlqchVQ+3nGpNYHsXx0vQ=
+github.com/keboola/go-client v0.0.0-20220620115719-8ec53fa929a1/go.mod h1:nbMP1j0+UH7U7kJMEwx/yc/IdSNO9MluzT2C89acYts=
 github.com/keboola/go-jsonnet v0.18.1-0.20220516081243-59a46427c54f h1:EjbacWltPRtclVqU5dYTwuA0hh1xy0K3uFnonILzUVc=
 github.com/keboola/go-jsonnet v0.18.1-0.20220516081243-59a46427c54f/go.mod h1:C3fTzyVJDslXdiTqw/bTFk7vSGyCtH3MGRbDfvEwGd0=
 github.com/keboola/go-utils v0.0.0-20220620090327-5a174c7760a2 h1:hzrrpKT4wq8hctivSfwdXgXWwblNhg1WtLmu3UFAXww=

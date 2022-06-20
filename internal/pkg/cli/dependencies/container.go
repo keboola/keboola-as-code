@@ -83,8 +83,17 @@ func (v *container) HttpClient() client.Client {
 	if v.httpClient == nil {
 		c := client.New().
 			WithTransport(client.DefaultTransport()).
-			WithUserAgent(fmt.Sprintf("keboola-cli/%s", build.BuildVersion)).
-			AndTrace(client.LogTracer(v.logger.DebugWriter()))
+			WithUserAgent(fmt.Sprintf("keboola-cli/%s", build.BuildVersion))
+
+		// Log each HTTP client request/response as debug message
+		// The CLI by default does not display these messages, but they are written always to the log file.
+		c = c.AndTrace(client.LogTracer(v.logger.DebugWriter()))
+
+		// Dump each HTTP client request/response body
+		if v.options.VerboseApi {
+			c = c.AndTrace(client.DumpTracer(v.logger.DebugWriter()))
+		}
+
 		v.httpClient = &c
 	}
 	return *v.httpClient
@@ -118,10 +127,6 @@ func (v *container) Dialogs() *dialog.Dialogs {
 
 func (v *container) Options() *options.Options {
 	return v.options
-}
-
-func (v *container) ApiVerboseLogs() bool {
-	return v.options.VerboseApi
 }
 
 func (v *container) StorageApiHost() (string, error) {
