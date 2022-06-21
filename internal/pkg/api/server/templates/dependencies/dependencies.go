@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
+	"gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -73,25 +74,34 @@ func (v *container) Repositories() []model.TemplateRepository {
 }
 
 func (v *container) WithCtx(ctx context.Context, cancelFn context.CancelFunc) Container {
-	clone := v.Clone()
+	clone := *v
 	clone.ctx = ctx
 	if cancelFn != nil {
 		clone.ctxCancelFn = cancelFn
 	}
-	return clone
+	return &clone
 }
 
 // WithLoggerPrefix returns dependencies clone with modified logger.
 func (v *container) WithLoggerPrefix(prefix string) *container {
-	clone := v.Clone()
+	clone := *v
 	clone.logger = v.logger.WithAdditionalPrefix(prefix)
-	return clone
+	return &clone
 }
 
 func (v *container) HttpClient() client.Client {
 	if v.httpClient == nil {
+		// Force HTTP2 transport
+		transport := client.HTTP2Transport()
+
+		// DataDog low-level tracing
+		if v.envs.Get("DATADOG_ENABLED") != "false" {
+			transport = http.WrapRoundTripper(transport)
+		}
+
+		// Create client
 		c := client.New().
-			WithTransport(client.HTTP2Transport()).
+			WithTransport(transport).
 			WithUserAgent("keboola-templates-api")
 
 		// Log each HTTP client request/response as debug message
@@ -103,6 +113,11 @@ func (v *container) HttpClient() client.Client {
 		if v.debugHttp {
 			c = c.AndTrace(client.DumpTracer(v.logger.DebugWriter()))
 		}
+
+		// DataDog high-level tracing
+		if v.envs.Get("DATADOG_ENABLED") != "false" {
+			c = c.AndTrace(DDApiClientTrace())
+		}
 		v.httpClient = &c
 	}
 	return *v.httpClient
@@ -110,9 +125,9 @@ func (v *container) HttpClient() client.Client {
 
 // WithStorageApiClient returns dependencies clone with modified Storage API.
 func (v *container) WithStorageApiClient(client client.Client, token *storageapi.Token) (*container, error) {
-	clone := v.Clone()
+	clone := *v
 	clone.commonDeps = clone.commonDeps.WithStorageApiClient(client, token)
-	return clone, nil
+	return &clone, nil
 }
 
 func (v *container) Logger() log.Logger {
@@ -207,11 +222,4 @@ func (v *container) StorageApiHost() (string, error) {
 func (v *container) StorageApiToken() (string, error) {
 	// The API is authorized separately in each request
 	return "", nil
-}
-
-func (v *container) Clone() *container {
-	clone := *v
-	clone.commonDeps = clone.commonDeps.Clone()
-	clone.commonDeps.Abstract = &clone
-	return &clone
 }

@@ -135,6 +135,7 @@ jobs:
           VERSION: ${{ needs.set-version.outputs.version }}
           TEST_KBC_PROJECTS: ${{ env[matrix.projects] }}
           TEST_PARALLELISM: 16
+          DATADOG_ENABLED: false
 
   lint:
     needs:
