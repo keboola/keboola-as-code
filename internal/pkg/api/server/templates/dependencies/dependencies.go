@@ -31,7 +31,7 @@ type Container interface {
 	WithCtx(ctx context.Context, cancelFn context.CancelFunc) Container
 	PrefixLogger() log.PrefixLogger
 	RepositoryManager() (*repository.Manager, error)
-	Repositories() []model.TemplateRepository
+	Repositories() ([]model.TemplateRepository, error)
 	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
 	WithLoggerPrefix(prefix string) *container
 	WithStorageApiClient(client client.Client, token *storageapi.Token) (*container, error)
@@ -68,9 +68,25 @@ func (v *container) CtxCancelFn() context.CancelFunc {
 	return v.ctxCancelFn
 }
 
-func (v *container) Repositories() []model.TemplateRepository {
+func (v *container) Repositories() ([]model.TemplateRepository, error) {
 	// Currently, all projects use the same repositories, in the future it may differ per project.
-	return v.defaultRepositories
+	features, err := v.Features()
+	if err != nil {
+		return nil, err
+	}
+
+	var out []model.TemplateRepository
+	for _, repo := range v.defaultRepositories {
+		if repo.Name == repository.DefaultTemplateRepositoryName && repo.Ref == repository.DefaultTemplateRepositoryRefMain {
+			if features.Has(repository.FeatureTemplateRepositoryBeta) {
+				repo.Ref = repository.DefaultTemplateRepositoryRefBeta
+			} else if features.Has(repository.FeatureTemplateRepositoryDev) {
+				repo.Ref = repository.DefaultTemplateRepositoryRefDev
+			}
+		}
+		out = append(out, repo)
+	}
+	return out, nil
 }
 
 func (v *container) WithCtx(ctx context.Context, cancelFn context.CancelFunc) Container {

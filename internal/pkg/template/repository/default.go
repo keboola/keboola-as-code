@@ -5,9 +5,14 @@ import (
 )
 
 const (
-	DefaultTemplateRepositoryName = "keboola"
-	DefaultTemplateRepositoryUrl  = "https://github.com/keboola/keboola-as-code-templates.git"
-	DefaultTemplateRepositoryRef  = "main"
+	DefaultTemplateRepositoryName    = "keboola"
+	DefaultTemplateRepositoryUrl     = "https://github.com/keboola/keboola-as-code-templates.git"
+	DefaultTemplateRepositoryRefBeta = "beta"
+	DefaultTemplateRepositoryRefDev  = "dev"
+	DefaultTemplateRepositoryRefMain = "main"
+
+	FeatureTemplateRepositoryBeta = "templates-repository-beta"
+	FeatureTemplateRepositoryDev  = "templates-repository-dev"
 )
 
 func DefaultRepository() model.TemplateRepository {
@@ -15,6 +20,6 @@ func DefaultRepository() model.TemplateRepository {
 		Type: model.RepositoryTypeGit,
 		Name: DefaultTemplateRepositoryName,
 		Url:  DefaultTemplateRepositoryUrl,
-		Ref:  DefaultTemplateRepositoryRef,
+		Ref:  DefaultTemplateRepositoryRefMain,
 	}
 }
