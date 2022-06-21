@@ -20,7 +20,7 @@
             {
               id: "oauth",
               name: "Shopify oAuth",
-              description: "Shopify Authoritazion",
+              description: "Shopify Authorization",
               type: "object",
               kind: "oauth",
               componentId: "keboola.ex-shopify",
