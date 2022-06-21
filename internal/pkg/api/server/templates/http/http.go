@@ -50,7 +50,10 @@ func HandleHTTPServer(ctx context.Context, wg *sync.WaitGroup, d dependencies.Co
 	var handler http.Handler = mux
 	handler = LogMiddleware(handler)
 	handler = ContextMiddleware(d, handler)
-	handler = dataDog.WrapHandler(handler, "templates-api", "")
+	handler = dataDog.WrapHandler(handler, "templates-api", "", dataDog.WithIgnoreRequest(func(r *http.Request) bool {
+		// Trace all requests except health check
+		return r.URL.Path == "/health-check"
+	}))
 
 	// Start HTTP server using default configuration, change the code to
 	// configure the server as required by your service.
