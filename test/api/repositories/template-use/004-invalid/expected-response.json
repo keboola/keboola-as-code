@@ -17,6 +17,10 @@
                 "id": "shopify-token",
                 "visible": true,
                 "error": "Shopify-token is a required field."
+              },
+              {
+                "id": "oauth",
+                "visible": true
               }
             ]
           }
