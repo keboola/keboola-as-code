@@ -84,7 +84,7 @@ func pullRepo(ctx context.Context, logger log.Logger, repo *git.Repository) erro
 	logger.Infof(`repository "%s" update started`, repo)
 	oldHash, err := repo.CommitHash(ctx)
 	if err != nil {
-		return err
+		logger.Errorf("cannot get original commit hash", err)
 	}
 
 	err = repo.Pull(ctx)
@@ -94,7 +94,9 @@ func pullRepo(ctx context.Context, logger log.Logger, repo *git.Repository) erro
 
 	newHash, err := repo.CommitHash(ctx)
 	if err != nil {
-		return err
+		logger.Errorf("cannot get new commit hash", err)
+		logger.Infof(`repository "%s" update finished | %s`, repo, time.Since(startTime))
+		return nil
 	}
 
 	if oldHash == newHash {
