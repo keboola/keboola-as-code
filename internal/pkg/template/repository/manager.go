@@ -95,6 +95,8 @@ func pullRepo(ctx context.Context, logger log.Logger, repo *git.Repository) erro
 	newHash, err := repo.CommitHash(ctx)
 	if err != nil {
 		logger.Errorf("cannot get new commit hash", err)
+		logger.Infof(`repository "%s" update finished | %s`, repo, time.Since(startTime))
+		return nil
 	}
 
 	if oldHash == newHash {
