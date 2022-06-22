@@ -70,7 +70,7 @@ func (v *container) CtxCancelFn() context.CancelFunc {
 
 func (v *container) Repositories() ([]model.TemplateRepository, error) {
 	// Currently, all projects use the same repositories, in the future it may differ per project.
-	features, err := v.Features()
+	features, err := v.ProjectFeatures()
 	if err != nil {
 		return nil, err
 	}
