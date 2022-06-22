@@ -194,6 +194,14 @@ func (v *CommonContainer) getStorageIndex() (storageapi.Index, error) {
 	})
 }
 
+func (v *CommonContainer) ProjectFeatures() (storageapi.FeaturesMap, error) {
+	if c, err := v.getStorageApi(); err == nil {
+		return c.Token.Owner.Features.ToMap(), nil
+	} else {
+		return storageapi.FeaturesMap{}, err
+	}
+}
+
 func (v *CommonContainer) Features() (storageapi.FeaturesMap, error) {
 	return v.features.InitAndGet(func() (*storageapi.FeaturesMap, error) {
 		if index, err := v.getStorageIndex(); err == nil {
