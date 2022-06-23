@@ -82,16 +82,16 @@ func (m *Manager) Pull() {
 func pullRepo(ctx context.Context, logger log.Logger, repo *git.Repository) error {
 	startTime := time.Now()
 	logger.Infof(`repository "%s" update started`, repo)
-	/* oldHash, err := repo.CommitHash(ctx)
+	oldHash, err := repo.CommitHash(ctx)
 	if err != nil {
 		return err
-	} */
+	}
 
 	if err := repo.Pull(ctx); err != nil {
 		return err
 	}
 
-	/* newHash, err := repo.CommitHash(ctx)
+	newHash, err := repo.CommitHash(ctx)
 	if err != nil {
 		return err
 	}
@@ -100,8 +100,7 @@ func pullRepo(ctx context.Context, logger log.Logger, repo *git.Repository) erro
 		logger.Infof(`repository "%s" update finished, no change found | %s`, repo, time.Since(startTime))
 	} else {
 		logger.Infof(`repository "%s" updated from %s to %s | %s`, repo, oldHash, newHash, time.Since(startTime))
-	} */
-	logger.Infof(`repository "%s" updated | %s`, repo, time.Since(startTime))
+	}
 
 	return nil
 }

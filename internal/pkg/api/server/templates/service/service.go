@@ -32,9 +32,20 @@ func New(d dependencies.Container) (Service, error) {
 	if err := StartComponentsCron(d); err != nil {
 		return nil, err
 	}
-	if err := StartPullCron(d); err != nil {
+
+	// Locks in the git commands causes some problem in NE where the requests on repository start time-outing
+	// after ca. an hour since the pod start.
+	// Needs thorough debug, we disable the cron for now.
+	/* if err := StartPullCron(d); err != nil {
+		return nil, err
+	} */
+	m, err := d.RepositoryManager()
+	if err != nil {
 		return nil, err
 	}
+	// Pull the repository in the beginning
+	m.Pull()
+
 	return &service{}, nil
 }
 
