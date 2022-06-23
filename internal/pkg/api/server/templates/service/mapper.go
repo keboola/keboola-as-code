@@ -189,6 +189,9 @@ func InputsResponse(stepsGroups input.StepsGroupsExt) (out *Inputs) {
 					Default:     in.DefaultOrEmpty(),
 					Options:     OptionsResponse(in.Options),
 				}
+				if in.ComponentId != "" {
+					inputResponse.ComponentID = &in.ComponentId
+				}
 				stepResponse.Inputs = append(stepResponse.Inputs, inputResponse)
 
 				if stepValues != nil {
