@@ -17,5 +17,4 @@ ENV HOST 0.0.0.0
 ENV PORT 8000
 EXPOSE 8000
 
-# Note: keboola-dev is temporary repository, until we will know to switch repositories by a project feature.
-CMD ["/app/server", "--http-host=0.0.0.0", "--http-port=8000", "--repositories", "keboola|https://github.com/keboola/keboola-as-code-templates.git|main;keboola-dev|https://github.com/keboola/keboola-as-code-templates.git|dev"]
+CMD ["/app/server", "--http-host=0.0.0.0", "--http-port=8000", "--repositories", "keboola|https://github.com/keboola/keboola-as-code-templates.git|main"]
