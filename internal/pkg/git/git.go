@@ -17,7 +17,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type Repository struct {
@@ -72,16 +71,22 @@ func Checkout(ctx context.Context, url, ref string, sparse bool, logger log.Logg
 		if strings.Contains(result.stdErr, fmt.Sprintf("Remote branch %s not found", r.ref)) {
 			return nil, fmt.Errorf(`reference "%s" not found in the git repository "%s"`, r.ref, r.url)
 		}
-		out := strings.TrimSpace(result.stdErr)
-		if out == "" {
-			out = result.stdOut
-		}
-		if out == "" {
-			out = err.Error()
-		}
+		out := errorMsg(result, err)
 		return nil, fmt.Errorf(`git repository could not be checked out from "%s": %s`, r.url, out)
 	}
 	return r, nil
+}
+
+func errorMsg(result cmdResult, err error) string {
+	stderr := strings.TrimSpace(result.stdErr)
+	if stderr != "" {
+		return stderr
+	}
+	stdout := strings.TrimSpace(result.stdOut)
+	if stdout != "" {
+		return stdout
+	}
+	return err.Error()
 }
 
 func (r *Repository) String() string {
@@ -130,7 +135,8 @@ func (r *Repository) CommitHash(ctx context.Context) (string, error) {
 	defer r.lock.RUnlock()
 	result, err := r.runGitCmd(ctx, "rev-parse", "HEAD")
 	if err != nil {
-		return "", utils.PrefixError("cannot get repository hash", fmt.Errorf(result.stdErr))
+		out := errorMsg(result, err)
+		return "", fmt.Errorf(`cannot get repository hash: %s`, out)
 	}
 	return strings.TrimSuffix(result.stdOut, "\n"), nil
 }
@@ -162,7 +168,8 @@ func (r *Repository) Pull(ctx context.Context) error {
 	// Reset is used, because it works also with force push (edge-case)
 	result, err := r.runGitCmd(ctx, "reset", "--hard", fmt.Sprintf("origin/%s", r.ref))
 	if err != nil {
-		return utils.PrefixError("cannot reset repository to the origin", fmt.Errorf(result.stdErr))
+		out := errorMsg(result, err)
+		return fmt.Errorf(`cannot reset repository to the origin: %s`, out)
 	}
 
 	return nil
@@ -175,7 +182,8 @@ func (r *Repository) fetch(ctx context.Context) error {
 	// Check remote changes
 	result, err := r.runGitCmd(ctx, "fetch", "origin")
 	if err != nil {
-		return utils.PrefixError("cannot fetch repository", fmt.Errorf(result.stdErr))
+		out := errorMsg(result, err)
+		return fmt.Errorf(`cannot fetch repository: %s`, out)
 	}
 
 	return nil
