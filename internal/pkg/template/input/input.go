@@ -82,11 +82,21 @@ type Input struct {
 	Rules       Rules       `json:"rules,omitempty" validate:"omitempty,template-input-rules"`
 	If          If          `json:"showIf,omitempty" validate:"omitempty,template-input-if"`
 	Options     Options     `json:"options,omitempty" validate:"template-input-options"`
-	ComponentId string      `json:"componentId,omitempty"`
+	ComponentId string      `json:"componentId,omitempty" validate:"required_if=Kind oauth"`
 }
 
 // ValidateUserInput validates input from the template user using Input.Rules.
 func (i Input) ValidateUserInput(userInput interface{}) error {
+	if i.Kind == KindOAuth {
+		switch v := userInput.(type) {
+		case map[string]interface{}:
+			if len(v) == 0 {
+				return fmt.Errorf("oauth must not be empty")
+			}
+		default:
+			// ignore unknown type, will be validated by `type` field
+		}
+	}
 	if err := i.Type.ValidateValue(reflect.ValueOf(userInput)); err != nil {
 		return fmt.Errorf("%s %w", i.Name, err)
 	}

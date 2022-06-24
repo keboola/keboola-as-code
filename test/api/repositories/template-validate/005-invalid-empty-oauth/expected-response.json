@@ -1,18 +1,23 @@
 {
-  "valid": true,
+  "valid": false,
   "stepGroups": [
     {
       "id": "g01",
-      "valid": true,
+      "valid": false,
       "steps": [
         {
           "id": "g01-s01",
           "configured": true,
-          "valid": true,
+          "valid": false,
           "inputs": [
             {
               "id": "shopify-token",
               "visible": true
+            },
+            {
+              "id": "oauth",
+              "visible": true,
+              "error": "Oauth must not be empty."
             }
           ]
         }
