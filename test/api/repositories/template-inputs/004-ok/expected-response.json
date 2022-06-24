@@ -20,6 +20,15 @@
               "type": "string",
               "kind": "hidden",
               "default": ""
+            },
+            {
+              "id": "oauth",
+              "name": "Shopify oAuth",
+              "description": "Shopify Authorization",
+              "type": "object",
+              "kind": "oauth",
+              "default": {},
+              "componentId": "keboola.ex-shopify"
             }
           ]
         }
@@ -41,6 +50,10 @@
             "inputs": [
               {
                 "id": "shopify-token",
+                "visible": true
+              },
+              {
+                "id": "oauth",
                 "visible": true
               }
             ]
