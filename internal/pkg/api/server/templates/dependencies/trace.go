@@ -18,12 +18,17 @@ func DDApiClientTrace() client.TraceFactory {
 		var ctx context.Context
 		var apiReqSpan tracer.Span
 		t.GotRequest = func(c context.Context, request client.HTTPRequest) context.Context {
+			resultType := reflect.TypeOf(request.ResultDef())
+			resultTypeString := ""
+			if resultType != nil {
+				resultTypeString = resultType.String()
+			}
 			apiReqSpan, ctx = tracer.StartSpanFromContext(
 				c,
 				"api.client.request",
 				tracer.ResourceName("request"),
 				tracer.SpanType("api.client"),
-				tracer.Tag("result_type", reflect.TypeOf(request.ResultDef()).String()),
+				tracer.Tag("result_type", resultTypeString),
 			)
 			return ctx
 		}
