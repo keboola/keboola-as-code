@@ -84,6 +84,9 @@ func (e inputsValuesExporter) addValue(key model.Key, content *orderedmap.Ordere
 		e.logger.Writef(`Value for input "%s" found, but type doesn't match, JSON key "%s", in %s`, inputId, jsonKey, key.Desc())
 		return
 	}
+	if inputDef.Type == input.TypeObject {
+		value = value.(*orderedmap.OrderedMap).ToMap()
+	}
 	if err := inputDef.Type.ValidateValue(reflect.ValueOf(value)); err != nil {
 		// Value has unexpected type
 		return

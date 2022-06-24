@@ -868,7 +868,7 @@ var Input = Type("input", func() {
 	Attribute("componentId", String, "Component id for oauth kind inputs.", func() {
 		Example("keboola.ex-component")
 	})
-	Required("id", "name", "description", "type", "kind", "default")
+	Required("id", "name", "description", "type", "kind", "default", "componentId")
 	Example(ExampleInput())
 })
 
