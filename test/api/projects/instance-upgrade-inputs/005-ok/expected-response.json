@@ -19,7 +19,8 @@
               "description": "Please enter Shopify token",
               "type": "string",
               "kind": "hidden",
-              "default": "token"
+              "default": "token",
+              "componentId": ""
             },
             {
               "id": "shopify-shop",
@@ -27,7 +28,8 @@
               "description": "Please enter shop name",
               "type": "string",
               "kind": "input",
-              "default": ""
+              "default": "",
+              "componentId": ""
             }
           ]
         }
