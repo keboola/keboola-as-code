@@ -14,6 +14,7 @@
           "componentId": "ex-generic-v2",
           "name": "shopify",
           "description": "test fixture",
+          "changeDescription": "Upgraded from template keboola/my-template-id/2.0.0",
           "configuration": {
             "parameters": {
               "shop": "shop",

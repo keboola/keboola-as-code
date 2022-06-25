@@ -23,6 +23,20 @@
               "componentId": ""
             },
             {
+              "id": "oauth",
+              "name": "Shopify oAuth",
+              "description": "Shopify Authorization",
+              "type": "object",
+              "kind": "oauth",
+              "default": {
+                "oauth_api": {
+                  "id": "1234",
+                  "version": 3
+                }
+              },
+              "componentId": "keboola.ex-shopify"
+            },
+            {
               "id": "shopify-shop",
               "name": "Shopify shop name",
               "description": "Please enter shop name",
@@ -50,6 +64,10 @@
             "inputs": [
               {
                 "id": "shopify-token",
+                "visible": true
+              },
+              {
+                "id": "oauth",
                 "visible": true
               },
               {
