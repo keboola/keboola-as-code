@@ -19,7 +19,8 @@
               "description": "Please enter Shopify token",
               "type": "string",
               "kind": "hidden",
-              "default": ""
+              "default": "",
+              "componentId": ""
             },
             {
               "id": "oauth",

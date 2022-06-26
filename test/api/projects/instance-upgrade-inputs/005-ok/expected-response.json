@@ -19,7 +19,22 @@
               "description": "Please enter Shopify token",
               "type": "string",
               "kind": "hidden",
-              "default": "token"
+              "default": "token",
+              "componentId": ""
+            },
+            {
+              "id": "oauth",
+              "name": "Shopify oAuth",
+              "description": "Shopify Authorization",
+              "type": "object",
+              "kind": "oauth",
+              "default": {
+                "oauth_api": {
+                  "id": "1234",
+                  "version": 3
+                }
+              },
+              "componentId": "keboola.ex-shopify"
             },
             {
               "id": "shopify-shop",
@@ -27,7 +42,8 @@
               "description": "Please enter shop name",
               "type": "string",
               "kind": "input",
-              "default": ""
+              "default": "",
+              "componentId": ""
             }
           ]
         }
@@ -48,6 +64,10 @@
             "inputs": [
               {
                 "id": "shopify-token",
+                "visible": true
+              },
+              {
+                "id": "oauth",
                 "visible": true
               },
               {

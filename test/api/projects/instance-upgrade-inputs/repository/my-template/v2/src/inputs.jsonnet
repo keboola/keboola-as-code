@@ -18,6 +18,14 @@
               rules: "required",
             },
             {
+              id: "oauth",
+              name: "Shopify oAuth",
+              description: "Shopify Authorization",
+              type: "object",
+              kind: "oauth",
+              componentId: "keboola.ex-shopify",
+            },
+            {
               id: "shopify-shop",
               name: "Shopify shop name",
               description: "Please enter shop name",
