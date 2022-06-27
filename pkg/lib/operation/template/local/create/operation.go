@@ -125,10 +125,24 @@ func createDir(o Options, d dependencies, repositoryDir filesystem.Fs, record re
 	if _, err := createTemplateInputs.Run(fs, d); err != nil {
 		return nil, err
 	}
+	if err := createLongDesc(o, d, fs); err != nil {
+		return nil, err
+	}
 	if err := createReadme(o, d, fs); err != nil {
 		return nil, err
 	}
 	return fs, nil
+}
+
+func createLongDesc(o Options, d dependencies, fs filesystem.Fs) error {
+	content := "### %s\n\n%s\n\n"
+	path := filesystem.Join("src", template.LongDescriptionFile)
+	file := filesystem.NewRawFile(path, fmt.Sprintf(content, o.Name, `Extended description`)).SetDescription(`extended description`)
+	if err := fs.WriteFile(file); err != nil {
+		return err
+	}
+	d.Logger().Infof("Created extended description file \"%s\".", file.Path())
+	return nil
 }
 
 func createReadme(o Options, d dependencies, fs filesystem.Fs) error {

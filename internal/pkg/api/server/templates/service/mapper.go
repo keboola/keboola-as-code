@@ -114,11 +114,12 @@ func VersionResponse(v *repository.VersionRecord) *Version {
 func VersionDetailResponse(template *template.Template) *VersionDetail {
 	versionRec := template.VersionRecord()
 	return &VersionDetail{
-		Version:     versionRec.Version.String(),
-		Stable:      versionRec.Stable,
-		Description: versionRec.Description,
-		Components:  template.Components(),
-		Readme:      template.Readme(),
+		Version:         versionRec.Version.String(),
+		Stable:          versionRec.Stable,
+		Description:     versionRec.Description,
+		Components:      template.Components(),
+		LongDescription: template.LongDesc(),
+		Readme:          template.Readme(),
 	}
 }
 
@@ -132,13 +133,14 @@ func VersionDetailExtendedResponse(repo *repository.Repository, template *templa
 	}
 
 	return &VersionDetailExtended{
-		Repository:  repoResponse,
-		Template:    tmplResponse,
-		Version:     versionRec.Version.String(),
-		Stable:      versionRec.Stable,
-		Description: versionRec.Description,
-		Components:  template.Components(),
-		Readme:      template.Readme(),
+		Repository:      repoResponse,
+		Template:        tmplResponse,
+		Version:         versionRec.Version.String(),
+		Stable:          versionRec.Stable,
+		Description:     versionRec.Description,
+		Components:      template.Components(),
+		LongDescription: template.LongDesc(),
+		Readme:          template.Readme(),
 	}, nil
 }
 

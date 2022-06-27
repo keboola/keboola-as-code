@@ -1,6 +1,7 @@
 {
   "versionDetail": {
     "components": [],
+    "longDescription": "A long **description**.\n",
     "readme": "### My Template\n\nFull workflow to ...\n\n",
     "version": "1.2.3",
     "stable": false,
