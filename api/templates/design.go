@@ -659,7 +659,7 @@ var VersionDetail = Type("VersionDetail", func() {
 	})
 	Attribute("longDescription", String, "Extended description of the template in Markdown format.", func() {
 		MinLength(1)
-		Example("Full workflow to load all user accounts from the Service. With extended explanation ...")
+		Example("**Full workflow** to load all user accounts from [the Service](https://service.com). With *extended* explanation ...")
 	})
 	Attribute("readme", String, "Readme of the template version in Markdown format.", func() {
 		MinLength(1)
