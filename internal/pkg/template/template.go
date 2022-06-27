@@ -21,10 +21,11 @@ import (
 )
 
 const (
-	IdRegexp       = `^[a-zA-Z0-9\-]+$`
-	SrcDirectory   = "src"
-	TestsDirectory = "tests"
-	ReadmeFile     = "README.md"
+	IdRegexp            = `^[a-zA-Z0-9\-]+$`
+	SrcDirectory        = "src"
+	TestsDirectory      = "tests"
+	LongDescriptionFile = "description.md"
+	ReadmeFile          = "README.md"
 )
 
 type (
@@ -58,6 +59,18 @@ func LoadInputs(fs filesystem.Fs) (StepsGroups, error) {
 	return templateInput.Load(fs)
 }
 
+func LoadLongDesc(fs filesystem.Fs) (string, error) {
+	path := filesystem.Join(SrcDirectory, LongDescriptionFile)
+	if !fs.Exists(path) {
+		return "", nil
+	}
+	file, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("template extended description"))
+	if err != nil {
+		return "", err
+	}
+	return file.Content, nil
+}
+
 func LoadReadme(fs filesystem.Fs) (string, error) {
 	path := filesystem.Join(SrcDirectory, ReadmeFile)
 	file, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("template readme"))
@@ -78,15 +91,16 @@ type _reference = model.TemplateRef
 
 type Template struct {
 	_reference
-	template     repository.TemplateRecord
-	version      repository.VersionRecord
-	deps         dependencies
-	fs           filesystem.Fs
-	srcDir       filesystem.Fs
-	testsDir     filesystem.Fs
-	readme       string
-	manifestFile *ManifestFile
-	inputs       StepsGroups
+	template        repository.TemplateRecord
+	version         repository.VersionRecord
+	deps            dependencies
+	fs              filesystem.Fs
+	srcDir          filesystem.Fs
+	testsDir        filesystem.Fs
+	longDescription string
+	readme          string
+	manifestFile    *ManifestFile
+	inputs          StepsGroups
 }
 
 func New(reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, templateDir, commonDir filesystem.Fs, d dependencies) (*Template, error) {
@@ -118,6 +132,12 @@ func New(reference model.TemplateRef, template repository.TemplateRecord, versio
 
 	// Load inputs
 	out.inputs, err = LoadInputs(templateDir)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load long description
+	out.longDescription, err = LoadLongDesc(templateDir)
 	if err != nil {
 		return nil, err
 	}
@@ -169,6 +189,10 @@ func (t *Template) TestsDir() (filesystem.Fs, error) {
 	}
 
 	return t.testsDir, nil
+}
+
+func (t *Template) LongDesc() string {
+	return t.longDescription
 }
 
 func (t *Template) Readme() string {

@@ -657,11 +657,15 @@ var VersionDetail = Type("VersionDetail", func() {
 	Attribute("components", ArrayOf(String), "List of components used in the template version.", func() {
 		Example([]string{"ex-generic-v2", "keboola.snowflake-transformation"})
 	})
+	Attribute("longDescription", String, "Extended description of the template in Markdown format.", func() {
+		MinLength(1)
+		Example("Full workflow to load all user accounts from the Service. With extended explanation ...")
+	})
 	Attribute("readme", String, "Readme of the template version in Markdown format.", func() {
 		MinLength(1)
 		Example("Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)")
 	})
-	Required("components", "readme")
+	Required("components", "longDescription", "readme")
 	Example(ExampleVersionDetail())
 })
 
@@ -1027,8 +1031,9 @@ type ExampleVersionData struct {
 
 type ExampleVersionDetailData struct {
 	ExampleVersionData
-	Components []string `json:"components" yaml:"components"`
-	Readme     string   `json:"readme" yaml:"readme"`
+	Components      []string `json:"components" yaml:"components"`
+	LongDescription string   `json:"longDescription" yaml:"longDescription"`
+	Readme          string   `json:"readme" yaml:"readme"`
 }
 
 type ExampleVersionDetailExtendedData struct {
@@ -1163,6 +1168,7 @@ func ExampleVersion1() ExampleVersionData {
 func ExampleVersionDetail() ExampleVersionDetailData {
 	return ExampleVersionDetailData{
 		Components:         ExampleComponents(),
+		LongDescription:    "Maximum length template **description** dolor sit amet, consectetuer adipiscing elit",
 		Readme:             "Lorem markdownum quod discenda [aegide lapidem](http://www.nequeuntoffensa.io/)",
 		ExampleVersionData: ExampleVersion1(),
 	}
