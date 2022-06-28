@@ -1,6 +1,8 @@
 package describe
 
 import (
+	markdown "github.com/MichaelMure/go-term-markdown"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 )
@@ -16,6 +18,12 @@ func Run(tmpl *template.Template, d dependencies) (err error) {
 	w.Writef("Name:                 %s", tmpl.TemplateRecord().Name)
 	w.Writef("Description:          %s", tmpl.TemplateRecord().Description)
 	w.Writef("")
+
+	if len(tmpl.LongDesc()) > 0 {
+		w.Writef("Extended Description:")
+		w.Writef(string(markdown.Render(tmpl.LongDesc(), 80, 2)))
+		w.Writef("")
+	}
 
 	v := tmpl.VersionRecord()
 	w.Writef("Version:              %s", v.Version.String())

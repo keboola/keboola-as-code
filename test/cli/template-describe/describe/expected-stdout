@@ -2,6 +2,19 @@ Template ID:          my-template
 Name:                 My Template
 Description:          Full workflow to ...
 
+Extended Description:
+  1 My Template
+  ──────────────────────────────────────────────────────────────────────────────
+
+  1.1 Extended description
+
+  • of a template for demo purposes
+  • from the examples in the API documentation
+
+  1.2 Some Example
+
+  ┃     with.a.code()
+
 Version:              0.0.1
 Stable:               false
 Description:          notes
