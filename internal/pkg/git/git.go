@@ -146,7 +146,7 @@ func (r *Repository) Load(ctx context.Context, path string) error {
 	if !r.sparse {
 		return fmt.Errorf("sparse checkout is not allowed")
 	}
-	if _, err := r.runGitCmd(ctx, "sparse-checkout", "add", fmt.Sprintf("/%s", path)); err != nil {
+	if _, err := r.runGitCmd(ctx, "sparse-checkout", "add", path); err != nil {
 		return err
 	}
 	if _, err := r.runGitCmd(ctx, "checkout"); err != nil {
