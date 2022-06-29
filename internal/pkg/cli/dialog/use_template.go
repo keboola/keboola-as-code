@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	markdown "github.com/MichaelMure/go-term-markdown"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 
@@ -282,7 +283,7 @@ func (d *useTmplInputsDialog) announceStep(step *input.StepExt) error {
 	step.Announced = true
 
 	// Print description
-	d.Printf("%s\n%s", step.NameForDialog(), step.DescriptionForDialog())
+	d.Printf("%s\n%s", step.NameForDialog(), markdown.Render(step.DescriptionForDialog(), 80, 0))
 	return nil
 }
 
