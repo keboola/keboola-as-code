@@ -375,7 +375,7 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input) error {
 		return d.addInputValue(selectedValues, inputDef, true)
 	case input.KindOAuth:
 		// Save value
-		return d.addInputValue(nil, inputDef, true)
+		return d.addInputValue(map[string]interface{}{}, inputDef, true)
 	}
 
 	return nil
