@@ -25,6 +25,15 @@
               kind: "input",
               rules: "required",
             },
+            {
+              id: "shopify-oauth",
+              name: "Shopify oAuth",
+              description: "Please authorize your account",
+              type: "object",
+              kind: "oauth",
+              componentId: "keboola.ex-shopify"
+            }
+
           ],
         },
         {
