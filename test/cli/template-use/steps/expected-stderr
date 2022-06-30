@@ -1,0 +1,2 @@
+The template generated configurations that need oAuth authorization. Please follow the links and complete the setup:
+- https://%%TEST_KBC_STORAGE_API_HOST%%/admin/projects/%%TEST_KBC_PROJECT_ID%%/components/ex-generic-v2/%s

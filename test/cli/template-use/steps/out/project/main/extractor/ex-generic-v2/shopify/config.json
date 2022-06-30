@@ -1,4 +1,7 @@
 {
+  "authorization": {
+    "oauth_api": {}
+  },
   "parameters": {
     "shop": "shop",
     "token": "token"
