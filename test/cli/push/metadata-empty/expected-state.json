@@ -1,0 +1,15 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true,
+        "metadata": {
+          "KBC.projectDescription": "**test description**\n\nwith some text"
+        }
+      },
+      "configs": []
+    }
+  ]
+}
