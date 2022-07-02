@@ -95,7 +95,8 @@
         "KBC.KAC.templates.configId": "{\"idInTemplate\":\"empty\"}",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
-        "KBC.KAC.templates.templateId": "my-template-id"
+        "KBC.KAC.templates.templateId": "my-template-id",
+        "KBC.test": "value"
       },
       "rows": []
     },
