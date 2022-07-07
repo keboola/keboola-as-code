@@ -1,0 +1,58 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": [
+        {
+          "componentId": "keboola.ex-db-mysql",
+          "name": "with-rows",
+          "description": "test fixture",
+          "configuration": {
+            "parameters": {
+              "db": {
+                "host": "mysql.example.com"
+              }
+            }
+          },
+          "rows": [
+            {
+              "name": "disabled",
+              "description": "test fixture",
+              "isDisabled": true,
+              "configuration": {
+                "parameters": {
+                  "incremental": false
+                }
+              }
+            },
+            {
+              "name": "test_view",
+              "description": "test fixture",
+              "isDisabled": false,
+              "configuration": {
+                "parameters": {
+                  "incremental": false
+                }
+              }
+            },
+            {
+              "name": "users",
+              "description": "test fixture",
+              "isDisabled": false,
+              "configuration": {
+                "parameters": {
+                  "incremental": false
+                }
+              }
+            }
+          ],
+          "isDisabled": false
+        }
+      ]
+    }
+  ]
+}
