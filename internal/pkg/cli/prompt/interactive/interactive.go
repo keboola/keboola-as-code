@@ -96,7 +96,7 @@ func (p *Prompt) Ask(q *prompt.Question) (result string, ok bool) {
 		p.Printf("\n")
 	}
 
-	if q.Hidden {
+	if q.Hidden && len(q.Default) > 0 {
 		p.Printf("Leave blank for default value.\n")
 	}
 
