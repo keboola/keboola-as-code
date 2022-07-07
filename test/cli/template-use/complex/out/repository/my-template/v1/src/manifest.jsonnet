@@ -41,6 +41,9 @@
       id: ConfigId("empty"),
       path: "extractor/ex-generic-v2/empty",
       rows: [],
+      metadata: {
+        "KBC.test": "value"
+      }
     },
     {
       componentId: "ex-generic-v2",
