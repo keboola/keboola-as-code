@@ -1,0 +1,5 @@
+Plan for "delete template instance" operation:
+  × C main/extractor/ex-generic-v2/empty
+  × C main/other/keboola.orchestrator/orchestrator
+  × C main/other/keboola.orchestrator/orchestrator/schedules/scheduler
+Delete done.
