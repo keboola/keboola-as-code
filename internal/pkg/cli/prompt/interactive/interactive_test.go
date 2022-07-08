@@ -178,3 +178,94 @@ func TestPrompt_MultiSelectIndex(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, []int{0, 2}, result)
 }
+
+func TestPrompt_ShowLeaveBlank(t *testing.T) {
+	t.Parallel()
+
+	// Create virtual console
+	stdout := testhelper.VerboseStdout()
+	console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+	assert.NoError(t, err)
+	p := interactive.New(console.Tty(), console.Tty(), console.Tty())
+
+	// Interaction
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		_, err := console.ExpectString("My input")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Leave blank for default value.")
+		assert.NoError(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.Enter) // enter - default value
+		assert.NoError(t, err)
+
+		_, err = console.ExpectEOF()
+		assert.NoError(t, err)
+	}()
+
+	// Show select
+	result, ok := p.Ask(&prompt.Question{
+		Label:       "Default",
+		Description: "My input",
+		Help:        "help",
+		Hidden:      true,
+		Default:     "default",
+	})
+	assert.NoError(t, console.Tty().Close())
+	wg.Wait()
+	assert.NoError(t, console.Close())
+
+	// Assert
+	assert.True(t, ok)
+	assert.Equal(t, "default", result)
+}
+
+func TestPrompt_HideLeaveBlank(t *testing.T) {
+	t.Parallel()
+
+	// Create virtual console
+	stdout := testhelper.VerboseStdout()
+	console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+	assert.NoError(t, err)
+	p := interactive.New(console.Tty(), console.Tty(), console.Tty())
+
+	// Interaction
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		_, err := console.ExpectString("My input")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Leave blank for default value.")
+		assert.Error(t, err)
+
+		time.Sleep(20 * time.Millisecond)
+		_, err = console.Send(testhelper.Enter) // enter - default value
+		assert.NoError(t, err)
+
+		_, err = console.ExpectEOF()
+		assert.NoError(t, err)
+	}()
+
+	// Show select
+	result, ok := p.Ask(&prompt.Question{
+		Label:       "Default",
+		Description: "My input",
+		Help:        "help",
+		Hidden:      true,
+	})
+	assert.NoError(t, console.Tty().Close())
+	wg.Wait()
+	assert.NoError(t, console.Close())
+
+	// Assert
+	assert.True(t, ok)
+	assert.Equal(t, "", result)
+}
