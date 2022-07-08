@@ -22,6 +22,7 @@ spec:
         tags.datadoghq.com/version: "$RELEASE_ID"
       annotations:
         log: "true"
+        ad.datadoghq.com/tags: '{"git.commit.sha": "$COMMIT", "git.repository_url": "https://github.com/keboola/keboola-as-code"}'
     spec:
       containers:
         - name: templates-api
