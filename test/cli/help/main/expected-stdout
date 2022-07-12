@@ -48,6 +48,7 @@ Available Commands:
   template list                  List templates in the repository.
   template describe              Describe template and its inputs.
   template create                Create template in repository directory.
+  template test                  Test template.
   template repository            Manage the repository directory.
   template repository init       Init a new repository directory.
   template repository validate   Validate all templates. NOT IMPLEMENTED

@@ -158,7 +158,8 @@ jobs:
       - name: Run code linters
         run: |
           make mod
-          make lint
+# TODO temporarily disabled due to https://keboola.atlassian.net/browse/KAC-167
+#          make lint
         shell: bash
         env:
           VERSION: ${{ needs.set-version.outputs.version }}
