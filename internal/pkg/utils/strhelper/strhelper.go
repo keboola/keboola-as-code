@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/jpillora/longestcommon"
 	"github.com/umisama/go-regexpcache"
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
 // FormatPathChange - example result "branch/config/{row -> row1}".
@@ -96,8 +100,11 @@ func NormalizeName(str string) string {
 	// Replace special characters with one separator
 	// "---Camel-Case" -> "-Camel-Case"
 	str = regexpcache.
-		MustCompile(`[^a-zA-Z0-9]+`).
+		MustCompile(`[^a-zA-Zá-žÁ-Ž0-9]+`).
 		ReplaceAllString(str, "-")
+	// Normalize accented letters
+	t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+	str, _, _ = transform.String(t, str)
 	// Trim separators
 	// "-Camel-Case" -> "Camel-Case"
 	str = strings.Trim(str, "-")
