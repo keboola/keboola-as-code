@@ -89,9 +89,38 @@ jobs:
           echo "::set-output name=is_semantic_tag::$IS_SEMANTIC_TAG"
           echo "::set-output name=version::$VERSION"
 
+  prepare:
+    needs:
+      - set-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Load Go cache
+        uses: ./.github/actions/go-cache
+        with:
+          key: prepare
+      - name: Install tools
+        run: . ./scripts/tools.sh
+        shell: bash
+      - name: Generate API code
+        run: make generate-code
+        shell: bash
+      - name: Upload generated code to artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: generated-api-code
+          path: internal/pkg/api/server/templates
+          retention-days: 1
+
   test:
     needs:
       - set-version
+      - prepare
     concurrency:
       group: tests-${{ matrix.name }}
       cancel-in-progress: false
@@ -126,20 +155,27 @@ jobs:
       - name: Install tools
         run: . ./scripts/tools.sh
         shell: bash
+      - name: Download generated API code from artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: generated-api-code
+          path: internal/pkg/api/server/templates
       - name: Run tests
         run: |
           make mod
           make tests
         shell: bash
         env:
-          VERSION: ${{ needs.set-version.outputs.version }}
+          DATADOG_ENABLED: false
+          SKIP_API_CODE_REGENERATION: true
           TEST_KBC_PROJECTS: ${{ env[matrix.projects] }}
           TEST_PARALLELISM: 16
-          DATADOG_ENABLED: false
+          VERSION: ${{ needs.set-version.outputs.version }}
 
   lint:
     needs:
       - set-version
+      - prepare
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -155,19 +191,25 @@ jobs:
       - name: Install tools
         run: . ./scripts/tools.sh
         shell: bash
+      - name: Download generated API code from artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: generated-api-code
+          path: internal/pkg/api/server/templates
       - name: Run code linters
         run: |
           make mod
-# TODO temporarily disabled due to https://keboola.atlassian.net/browse/KAC-167
-#          make lint
+          make lint
         shell: bash
         env:
-          VERSION: ${{ needs.set-version.outputs.version }}
+          SKIP_API_CODE_REGENERATION: true
           TEST_KBC_PROJECTS: ${{ env[matrix.projects] }}
+          VERSION: ${{ needs.set-version.outputs.version }}
 
   cross-compile:
     needs:
       - set-version
+      - prepare
     runs-on: macos-latest # same as release, shared cache
     steps:
       - name: Checkout code
@@ -183,12 +225,18 @@ jobs:
       - name: Install tools
         run: . ./scripts/tools.sh
         shell: bash
+      - name: Download generated API code from artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: generated-api-code
+          path: internal/pkg/api/server/templates
       - name: Cross-compile
         run: |
           make mod
           make build
         shell: bash
         env:
+          SKIP_API_CODE_REGENERATION: true
           VERSION: ${{ needs.set-version.outputs.version }}
 
   release:
