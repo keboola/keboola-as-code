@@ -12,6 +12,9 @@ spec:
       http:
         paths:
           - backend:
-              serviceName: templates-api
-              servicePort: 80
+              service:
+                name: templates-api
+                port: 
+                  number: 80
             path: /
+            pathType: Prefix
