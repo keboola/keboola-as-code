@@ -1,5 +1,5 @@
 ---
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
@@ -12,6 +12,9 @@ spec:
       http:
         paths:
           - backend:
-              serviceName: templates-api
-              servicePort: 80
+              service:
+                name: templates-api
+                port: 
+                  number: 80
             path: /
+            pathType: Prefix
