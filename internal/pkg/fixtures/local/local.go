@@ -10,7 +10,7 @@ import (
 )
 
 func LoadFS(dirName string, envs testhelper.EnvProvider) (filesystem.Fs, error) {
-	// Objects dir
+	// nolint: dogsled
 	_, thisFile, _, _ := runtime.Caller(0)
 	fixturesDir := filesystem.Dir(thisFile)
 	stateDir := filesystem.Join(fixturesDir, dirName)

@@ -1,0 +1,24 @@
+New objects from "/my-template/0.0.1" template:
+  + C main/extractor/ex-generic-v2/empty
+  + C main/extractor/ex-generic-v2/without-rows
+  + C main/extractor/keboola.ex-db-mysql/with-rows
+  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
+  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
+  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
+Plan for "rename" operation:
+  - main/extractor/ex-generic-v2/{456-todos -> todos}
+Rename done.
+Template "/my-template/0.0.1" has been applied, instance ID: %s
+Test "one" finished.
+New objects from "/my-template/0.0.1" template:
+  + C main/extractor/ex-generic-v2/empty
+  + C main/extractor/ex-generic-v2/without-rows
+  + C main/extractor/keboola.ex-db-mysql/with-rows
+  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
+  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
+  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
+Plan for "rename" operation:
+  - main/extractor/ex-generic-v2/{456-todos -> todos}
+Rename done.
+Template "/my-template/0.0.1" has been applied, instance ID: %s
+Test "two" finished.
