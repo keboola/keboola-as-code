@@ -22,12 +22,13 @@ import (
 )
 
 const (
-	IdRegexp            = `^[a-zA-Z0-9\-]+$`
-	InputsFile          = "inputs.json"
-	LongDescriptionFile = "description.md"
-	ReadmeFile          = "README.md"
-	SrcDirectory        = "src"
-	TestsDirectory      = "tests"
+	ExpectedOutDirectory = "expected-out"
+	IdRegexp             = `^[a-zA-Z0-9\-]+$`
+	InputsFile           = "inputs.json"
+	LongDescriptionFile  = "description.md"
+	ReadmeFile           = "README.md"
+	SrcDirectory         = "src"
+	TestsDirectory       = "tests"
 )
 
 type (
@@ -245,6 +246,17 @@ func (t *Template) TestDir(name string) (filesystem.Fs, error) {
 	}
 
 	return dirFS.SubDirFs(name)
+}
+
+func (t *Template) TestExpectedOutFS(name string) (filesystem.Fs, error) {
+	testFS, err := t.TestDir(name)
+	if err != nil {
+		return nil, err
+	}
+	if !testFS.IsDir(ExpectedOutDirectory) {
+		return nil, fmt.Errorf(`directory "%s" in test "%s" not found`, ExpectedOutDirectory, name)
+	}
+	return testFS.SubDirFs(ExpectedOutDirectory)
 }
 
 func (t *Template) TestInputs(name string) (map[string]interface{}, error) {
