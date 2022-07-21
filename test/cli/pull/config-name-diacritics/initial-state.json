@@ -1,0 +1,15 @@
+{
+  "allBranchesConfigs": [],
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "isDefault": true
+      },
+      "configs": [
+        "with-diacritics-name"
+      ]
+    }
+  ],
+  "envs": {}
+}
