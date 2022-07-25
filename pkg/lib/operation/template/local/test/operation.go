@@ -113,6 +113,8 @@ func runSingleTest(testName string, tmpl *template.Template, repoDirFS filesyste
 	fixProjectEnvs := env.Empty()
 	fixProjectEnvs.Set("TEST_KBC_STORAGE_API_HOST", projectHost)
 	fixProjectEnvs.Set("LOCAL_PROJECT_ID", projectId)
+	fixProjectEnvs.Set("STORAGE_API_HOST", projectHost)
+	fixProjectEnvs.Set("PROJECT_ID", projectId)
 	projectFS, err := fixtures.LoadFS("empty-branch", fixProjectEnvs)
 	if err != nil {
 		return err
@@ -184,7 +186,7 @@ func runSingleTest(testName string, tmpl *template.Template, repoDirFS filesyste
 	}
 	envProvider := storageenv.CreateStorageEnvTicketProvider(d.Ctx(), storageApiClient, fixProjectEnvs)
 	testhelper.ReplaceEnvsDir(projectFS, `/`, envProvider)
-	testhelper.ReplaceEnvsDir(expectedDirFs, `/`, envProvider)
+	testhelper.ReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
 
 	// Compare actual and expected dirs
 	return testhelper.DirectoryContentsSame(expectedDirFs, `/`, projectFS, `/`)
