@@ -55,6 +55,10 @@ func TestInput_ValidateUserInputOAuth(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "oauth should be object, got slice", err.Error())
 
+	err = input.ValidateUserInput(map[string]interface{}{})
+	assert.Error(t, err)
+	assert.Equal(t, "oauth must not be empty", err.Error())
+
 	err = input.ValidateUserInput(map[string]interface{}{"a": "b"})
 	assert.NoError(t, err)
 }

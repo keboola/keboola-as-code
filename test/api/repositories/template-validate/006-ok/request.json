@@ -9,6 +9,15 @@
           {
             "id": "shopify-token",
             "value": "token"
+          },
+          {
+            "id": "oauth",
+            "value": {
+              "oauth_api": {
+                "id": "123",
+                "version": 3
+              }
+            }
           }
         ]
       }

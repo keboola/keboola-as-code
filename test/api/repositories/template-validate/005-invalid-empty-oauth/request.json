@@ -1,0 +1,21 @@
+{
+  "path": "/v1/repositories/keboola/templates/my-template-id/1.2.3/validate",
+  "method": "POST",
+  "body": {
+    "steps": [
+      {
+        "id": "g01-s01",
+        "inputs": [
+          {
+            "id": "shopify-token",
+            "value": "token"
+          },
+          {
+            "id": "oauth",
+            "value": {}
+          }
+        ]
+      }
+    ]
+  }
+}
