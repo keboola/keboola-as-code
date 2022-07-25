@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // fileNode is one file/dir in expected or actual directory.
@@ -57,7 +58,7 @@ func DirectoryContentsSame(expectedFs filesystem.Fs, expectedDir string, actualF
 					actualFile.Content,
 				)
 				if err != nil {
-					return err
+					return utils.PrefixError(fmt.Sprintf("Different content of the file \"%s\".", node.relPath), err)
 				}
 			}
 		}
