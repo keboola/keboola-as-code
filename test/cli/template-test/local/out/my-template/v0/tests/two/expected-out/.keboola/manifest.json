@@ -31,7 +31,7 @@
   },
   "branches": [
     {
-      "id": %%TEST_BRANCH_MAIN_ID%%,
+      "id": 1,
       "path": "main",
       "metadata": {
         "KBC.KAC.templates.instances": "[{\"instanceId\":\"%s\",\"instanceName\":\"test\",\"templateId\":\"my-template\",\"repositoryName\":\"\",\"version\":\"0.0.1\",\"created\":{\"date\":\"%s\",\"tokenId\":\"%s\"},\"updated\":{\"date\":\"%s\",\"tokenId\":\"%s\"}}]"
@@ -40,7 +40,7 @@
   ],
   "configurations": [
     {
-      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "branchId": 1,
       "componentId": "ex-generic-v2",
       "id": "%s",
       "path": "extractor/ex-generic-v2/empty",
@@ -53,7 +53,7 @@
       "rows": []
     },
     {
-      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "branchId": 1,
       "componentId": "ex-generic-v2",
       "id": "%s",
       "path": "extractor/ex-generic-v2/without-rows",
@@ -67,7 +67,7 @@
       "rows": []
     },
     {
-      "branchId": %%TEST_BRANCH_MAIN_ID%%,
+      "branchId": 1,
       "componentId": "keboola.ex-db-mysql",
       "id": "%s",
       "path": "extractor/keboola.ex-db-mysql/with-rows",

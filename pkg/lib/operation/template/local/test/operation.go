@@ -109,17 +109,10 @@ func runSingleTest(testName string, tmpl *template.Template, repoDirFS filesyste
 	projectHost, projectId, projectToken := getATestProject()
 	storageApiClient := storageapi.ClientWithHostAndToken(client.NewTestClient(), projectHost, projectToken)
 
-	// Get project's main branch id
-	branch, err := storageapi.GetDefaultBranchRequest().Send(d.Ctx(), storageApiClient)
-	if err != nil {
-		return err
-	}
-
 	// Load fixture with minimal project
 	fixProjectEnvs := env.Empty()
 	fixProjectEnvs.Set("TEST_KBC_STORAGE_API_HOST", projectHost)
 	fixProjectEnvs.Set("LOCAL_PROJECT_ID", projectId)
-	fixProjectEnvs.Set("LOCAL_STATE_MAIN_BRANCH_ID", branch.ID.String())
 	projectFS, err := fixtures.LoadFS("empty-branch", fixProjectEnvs)
 	if err != nil {
 		return err
@@ -179,7 +172,7 @@ func runSingleTest(testName string, tmpl *template.Template, repoDirFS filesyste
 	// Use template
 	tmplOpts := useTemplate.Options{
 		InstanceName: "test",
-		TargetBranch: model.BranchKey{Id: branch.ID},
+		TargetBranch: model.BranchKey{Id: 1},
 		Inputs:       inputValues,
 	}
 	_, _, err = useTemplate.Run(prjState, tmpl, tmplOpts, projectDeps)
