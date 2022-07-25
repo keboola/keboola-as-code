@@ -78,6 +78,16 @@ spec:
                 - name: Host
                   value: KubernetesReadinessProbe
             periodSeconds: 10
+            failureThreshold: 1
+          livenessProbe:
+            httpGet:
+              path: /health-check
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: KubernetesLivenessProbe
+            periodSeconds: 10
+            failureThreshold: 3
       tolerations:
         - key: app
           operator: Exists
