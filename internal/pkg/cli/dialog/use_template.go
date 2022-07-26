@@ -382,23 +382,12 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input) error {
 }
 
 // addInputValue from CLI dialog or inputs file.
-func (d *useTmplInputsDialog) addInputValue(value interface{}, inputDef *input.Input, isFiled bool) error {
-	// Convert
-	value, err := inputDef.Type.ParseValue(value)
+func (d *useTmplInputsDialog) addInputValue(value interface{}, inputDef *input.Input, isFilled bool) error {
+	inputValue, err := template.ParseInputValue(value, inputDef, isFilled)
 	if err != nil {
-		return fmt.Errorf("invalid template input: %w", err)
+		return err
 	}
-
-	// Validate
-	if isFiled {
-		if err := inputDef.ValidateUserInput(value); err != nil {
-			return fmt.Errorf("invalid template input: %w", err)
-		}
-	}
-
-	// Add
-	inputValue := template.InputValue{Id: inputDef.Id, Value: value, Skipped: !isFiled}
-	d.inputsValues[inputDef.Id] = value
+	d.inputsValues[inputDef.Id] = inputValue.Value
 	d.out = append(d.out, inputValue)
 	return nil
 }

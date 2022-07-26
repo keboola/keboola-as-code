@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 // fileNode is one file/dir in expected or actual directory.
@@ -24,8 +25,8 @@ type fileNodeState struct {
 	actual   *fileNode
 }
 
-// AssertDirectoryContentsSame compares two directories, in expected file content can be used wildcards.
-func AssertDirectoryContentsSame(t assert.TestingT, expectedFs filesystem.Fs, expectedDir string, actualFs filesystem.Fs, actualDir string) {
+// DirectoryContentsSame compares two directories, in expected file content can be used wildcards.
+func DirectoryContentsSame(expectedFs filesystem.Fs, expectedDir string, actualFs filesystem.Fs, actualDir string) error {
 	nodesState := compareDirectories(expectedFs, expectedDir, actualFs, actualDir)
 	var errors []string
 	for _, node := range nodesState {
@@ -45,21 +46,35 @@ func AssertDirectoryContentsSame(t assert.TestingT, expectedFs filesystem.Fs, ex
 			// Compare content
 			if !node.actual.isDir {
 				expectedFile, err := expectedFs.ReadFile(filesystem.NewFileDef(node.expected.absPath))
-				assert.NoError(t, err)
+				if err != nil {
+					return err
+				}
 				actualFile, err := actualFs.ReadFile(filesystem.NewFileDef(node.actual.absPath))
-				assert.NoError(t, err)
-				wildcards.Assert(
-					t,
+				if err != nil {
+					return err
+				}
+				err = wildcards.Compare(
 					expectedFile.Content,
 					actualFile.Content,
-					fmt.Sprintf("Different content of the file \"%s\".", node.relPath),
 				)
+				if err != nil {
+					return utils.PrefixError(fmt.Sprintf("Different content of the file \"%s\".", node.relPath), err)
+				}
 			}
 		}
 	}
 
 	if len(errors) > 0 {
-		t.Errorf("Directories are not same:\n" + strings.Join(errors, "\n"))
+		return fmt.Errorf("Directories are not same:\n" + strings.Join(errors, "\n"))
+	}
+	return nil
+}
+
+// AssertDirectoryContentsSame compares two directories, in expected file content can be used wildcards.
+func AssertDirectoryContentsSame(t assert.TestingT, expectedFs filesystem.Fs, expectedDir string, actualFs filesystem.Fs, actualDir string) {
+	err := DirectoryContentsSame(expectedFs, expectedDir, actualFs, actualDir)
+	if err != nil {
+		assert.Fail(t, err.Error())
 	}
 }
 

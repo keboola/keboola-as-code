@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "project": {
+    "id": %%LOCAL_PROJECT_ID%%,
+    "apiHost": "%%TEST_KBC_STORAGE_API_HOST%%"
+  },
+  "templates": {
+    "repositories": [
+      {
+        "type": "dir",
+        "name": "keboola",
+        "url": "../repository"
+      }
+    ]
+  },
+  "naming": {
+    "branch": "{branch_name}",
+    "config": "{component_type}/{component_id}/{config_name}",
+    "configRow": "rows/{config_row_name}",
+    "schedulerConfig": "schedules/{config_name}",
+    "sharedCodeConfig": "_shared/{target_component_id}",
+    "sharedCodeConfigRow": "codes/{config_row_name}",
+    "variablesConfig": "variables",
+    "variablesValuesRow": "values/{config_row_name}"
+  },
+  "branches": [
+    {
+      "id": 1,
+      "path": "main"
+    }
+  ],
+  "configurations": []
+}

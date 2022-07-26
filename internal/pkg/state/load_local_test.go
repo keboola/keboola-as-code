@@ -1,7 +1,6 @@
 package state_test
 
 import (
-	"runtime"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -11,14 +10,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	fixtures "github.com/keboola/keboola-as-code/internal/pkg/fixtures/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	. "github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 func TestLoadLocalStateMinimal(t *testing.T) {
@@ -287,17 +285,7 @@ func loadManifest(t *testing.T, projectDirName string) (*manifest.Manifest, file
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
 	envs.Set("LOCAL_STATE_MYSQL_CONFIG_ID", "896")
 
-	// Objects dir
-	_, testFile, _, _ := runtime.Caller(0)
-	testDir := filesystem.Dir(testFile)
-	stateDir := filesystem.Join(testDir, "..", "fixtures", "local", projectDirName)
-
-	// Create Fs
-	fs := testfs.NewMemoryFsFrom(stateDir)
-	testhelper.ReplaceEnvsDir(fs, `/`, envs)
-
-	// Load manifest
-	m, err := manifest.Load(fs, false)
+	m, fs, err := fixtures.LoadManifest(projectDirName, envs)
 	if err != nil {
 		assert.FailNow(t, err.Error())
 	}

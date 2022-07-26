@@ -34,7 +34,7 @@ func TestAssertDirectoryFileOnlyInExpected(t *testing.T) {
 	// Assert
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
-	assert.Regexp(t, "^Directories are not same:\nonly in expected \".+file.txt\"$", test.buf.String())
+	assert.Regexp(t, "only in expected \".+file.txt\"", test.buf.String())
 }
 
 func TestAssertDirectoryDirOnlyInExpected(t *testing.T) {
@@ -48,7 +48,7 @@ func TestAssertDirectoryDirOnlyInExpected(t *testing.T) {
 	// Assert
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
-	assert.Regexp(t, "^Directories are not same:\nonly in expected \".+myDir\"$", test.buf.String())
+	assert.Regexp(t, "only in expected \".+myDir\"", test.buf.String())
 }
 
 func TestAssertDirectoryFileOnlyInActual(t *testing.T) {
@@ -62,7 +62,7 @@ func TestAssertDirectoryFileOnlyInActual(t *testing.T) {
 	// Assert
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
-	assert.Regexp(t, "^Directories are not same:\nonly in actual \".+file.txt\"$", test.buf.String())
+	assert.Regexp(t, "only in actual \".+file.txt\"", test.buf.String())
 }
 
 func TestAssertDirectoryDirOnlyInActual(t *testing.T) {
@@ -76,7 +76,7 @@ func TestAssertDirectoryDirOnlyInActual(t *testing.T) {
 	// Assert
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
-	assert.Regexp(t, "^Directories are not same:\nonly in actual \".+myDir\"$", test.buf.String())
+	assert.Regexp(t, "only in actual \".+myDir\"", test.buf.String())
 }
 
 func TestAssertDirectoryFileDifferentType1(t *testing.T) {
@@ -92,7 +92,7 @@ func TestAssertDirectoryFileDifferentType1(t *testing.T) {
 
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
-	assert.Contains(t, test.buf.String(), "Directories are not same:\n\"myNode\" is file in actual, but dir in expected")
+	assert.Contains(t, test.buf.String(), "\"myNode\" is file in actual, but dir in expected")
 }
 
 func TestAssertDirectoryFileDifferentType2(t *testing.T) {
@@ -108,7 +108,7 @@ func TestAssertDirectoryFileDifferentType2(t *testing.T) {
 
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
-	assert.Contains(t, test.buf.String(), "Directories are not same:\n\"myNode\" is dir in actual, but file in expected")
+	assert.Contains(t, test.buf.String(), "\"myNode\" is dir in actual, but file in expected")
 }
 
 func TestAssertDirectoryDifferentContent(t *testing.T) {
