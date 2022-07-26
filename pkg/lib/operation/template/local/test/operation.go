@@ -7,9 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
-
 	cliDeps "github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
@@ -26,7 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenv"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenvmock"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -36,16 +33,8 @@ type Options struct {
 }
 
 type dependencies interface {
-	Components() (*model.ComponentsMap, error)
 	Ctx() context.Context
-	EncryptionApiClient() (client.Sender, error)
-	HttpClient() client.Client
 	Logger() log.Logger
-	SchedulerApiClient() (client.Sender, error)
-	ProjectID() (int, error)
-	StorageApiHost() (string, error)
-	StorageAPITokenID() (string, error)
-	StorageApiClient() (client.Sender, error)
 }
 
 // getATestProject takes first project from TEST_KBC_PROJECTS env var.
@@ -107,7 +96,6 @@ func Run(tmpl *template.Template, d dependencies) (err error) {
 func runSingleTest(testName string, tmpl *template.Template, repoDirFS filesystem.Fs, d dependencies) error {
 	// Get a test project
 	projectHost, projectId, projectToken := getATestProject()
-	storageApiClient := storageapi.ClientWithHostAndToken(client.NewTestClient(), projectHost, projectToken)
 
 	// Load fixture with minimal project
 	fixProjectEnvs := env.Empty()
@@ -184,7 +172,7 @@ func runSingleTest(testName string, tmpl *template.Template, repoDirFS filesyste
 	if err != nil {
 		return err
 	}
-	envProvider := storageenv.CreateStorageEnvTicketProvider(d.Ctx(), storageApiClient, fixProjectEnvs)
+	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(d.Ctx(), fixProjectEnvs)
 	testhelper.ReplaceEnvsDir(projectFS, `/`, envProvider)
 	testhelper.ReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
 
