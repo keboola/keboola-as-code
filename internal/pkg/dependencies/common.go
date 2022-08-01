@@ -37,7 +37,7 @@ type Common interface {
 	StorageApiClient() (client.Sender, error)
 	EncryptionApiClient() (client.Sender, error)
 	SchedulerApiClient() (client.Sender, error)
-	Features() (storageapi.FeaturesMap, error)
+	StackFeatures() (storageapi.FeaturesMap, error)
 	Components() (*model.ComponentsMap, error)
 	ComponentsProvider() (*model.ComponentsProvider, error)
 	EventSender() (event.Sender, error)
@@ -202,7 +202,7 @@ func (v *CommonContainer) ProjectFeatures() (storageapi.FeaturesMap, error) {
 	}
 }
 
-func (v *CommonContainer) Features() (storageapi.FeaturesMap, error) {
+func (v *CommonContainer) StackFeatures() (storageapi.FeaturesMap, error) {
 	return v.features.InitAndGet(func() (*storageapi.FeaturesMap, error) {
 		if index, err := v.getStorageIndex(); err == nil {
 			features := index.Features.ToMap()
