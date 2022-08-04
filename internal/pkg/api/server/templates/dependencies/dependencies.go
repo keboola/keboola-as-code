@@ -31,7 +31,7 @@ type Container interface {
 	WithCtx(ctx context.Context, cancelFn context.CancelFunc) Container
 	PrefixLogger() log.PrefixLogger
 	RepositoryManager() (*repository.Manager, error)
-	Repositories() ([]model.TemplateRepository, error)
+	ProjectRepositories() ([]model.TemplateRepository, error)
 	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
 	WithLoggerPrefix(prefix string) *container
 	WithStorageApiClient(client client.Client, token *storageapi.Token) (*container, error)
@@ -40,8 +40,16 @@ type Container interface {
 // NewContainer returns dependencies for API and add them to the context.
 func NewContainer(ctx context.Context, repositories []model.TemplateRepository, debug, debugHttp bool, logger *stdLog.Logger, envs *env.Map) (Container, error) {
 	ctx, cancel := context.WithCancel(ctx)
-	c := &container{ctx: ctx, ctxCancelFn: cancel, defaultRepositories: repositories, debug: debug, debugHttp: debugHttp, envs: envs, logger: log.NewApiLogger(logger, "", debug)}
+	c := &container{ctx: ctx, ctxCancelFn: cancel, debug: debug, debugHttp: debugHttp, envs: envs, logger: log.NewApiLogger(logger, "", debug)}
 	c.commonDeps = dependencies.NewCommonContainer(ctx, c)
+
+	// Create repository manager
+	if m, err := repository.NewManager(ctx, c.logger, repositories); err != nil {
+		return nil, err
+	} else {
+		c.repositoryManager = m
+	}
+
 	return c, nil
 }
 
@@ -49,15 +57,14 @@ type commonDeps = dependencies.CommonContainer
 
 type container struct {
 	*commonDeps
-	ctx                 context.Context
-	ctxCancelFn         context.CancelFunc
-	httpClient          *client.Client
-	debug               bool // enables debug log level
-	debugHttp           bool // log HTTP client request and response bodies
-	logger              log.PrefixLogger
-	envs                *env.Map
-	repositoryManager   *repository.Manager
-	defaultRepositories []model.TemplateRepository
+	ctx               context.Context
+	ctxCancelFn       context.CancelFunc
+	httpClient        *client.Client
+	debug             bool // enables debug log level
+	debugHttp         bool // log HTTP client request and response bodies
+	logger            log.PrefixLogger
+	envs              *env.Map
+	repositoryManager *repository.Manager
 }
 
 func (v *container) Ctx() context.Context {
@@ -68,7 +75,7 @@ func (v *container) CtxCancelFn() context.CancelFunc {
 	return v.ctxCancelFn
 }
 
-func (v *container) Repositories() ([]model.TemplateRepository, error) {
+func (v *container) ProjectRepositories() ([]model.TemplateRepository, error) {
 	// Currently, all projects use the same repositories, in the future it may differ per project.
 	features, err := v.ProjectFeatures()
 	if err != nil {
@@ -76,7 +83,7 @@ func (v *container) Repositories() ([]model.TemplateRepository, error) {
 	}
 
 	var out []model.TemplateRepository
-	for _, repo := range v.defaultRepositories {
+	for _, repo := range v.repositoryManager.DefaultRepositories() {
 		if repo.Name == repository.DefaultTemplateRepositoryName && repo.Ref == repository.DefaultTemplateRepositoryRefMain {
 			if features.Has(repository.FeatureTemplateRepositoryBeta) {
 				repo.Ref = repository.DefaultTemplateRepositoryRefBeta
@@ -172,17 +179,6 @@ func (v *container) Components() (*model.ComponentsMap, error) {
 }
 
 func (v *container) RepositoryManager() (*repository.Manager, error) {
-	if v.repositoryManager == nil {
-		// Register default repositories
-		v.repositoryManager = repository.NewManager(v.Ctx(), v.Logger())
-		for _, repo := range v.defaultRepositories {
-			if repo.Type == model.RepositoryTypeGit {
-				if err := v.repositoryManager.AddRepository(repo); err != nil {
-					return nil, err
-				}
-			}
-		}
-	}
 	return v.repositoryManager, nil
 }
 
