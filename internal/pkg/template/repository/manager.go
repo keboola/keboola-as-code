@@ -14,19 +14,45 @@ import (
 const OperationTimeout = 20 * time.Second
 
 type Manager struct {
-	ctx          context.Context
-	logger       log.Logger
-	lock         *sync.Mutex
-	repositories map[string]*git.Repository
+	ctx                 context.Context
+	logger              log.Logger
+	lock                *sync.Mutex
+	defaultRepositories []model.TemplateRepository
+	repositories        map[string]*git.Repository
 }
 
-func NewManager(ctx context.Context, logger log.Logger) *Manager {
-	return &Manager{
-		ctx:          ctx,
-		logger:       logger,
-		lock:         &sync.Mutex{},
-		repositories: make(map[string]*git.Repository),
+func NewManager(ctx context.Context, logger log.Logger, defaultRepositories []model.TemplateRepository) (*Manager, error) {
+	m := &Manager{
+		ctx:                 ctx,
+		logger:              logger,
+		lock:                &sync.Mutex{},
+		defaultRepositories: defaultRepositories,
+		repositories:        make(map[string]*git.Repository),
 	}
+
+	// Add default repositories
+	for _, repo := range defaultRepositories {
+		if repo.Type == model.RepositoryTypeGit {
+			if err := m.AddRepository(repo); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return m, nil
+}
+
+// DefaultRepositories returns list of default repositories configured for the API.
+func (m *Manager) DefaultRepositories() []model.TemplateRepository {
+	return m.defaultRepositories
+}
+
+// ManagedRepositories return list of git repositories which are updated when the Pull method is called.
+func (m *Manager) ManagedRepositories() (out []string) {
+	for _, r := range m.repositories {
+		out = append(out, r.String())
+	}
+	return out
 }
 
 func (m *Manager) Repository(ref model.TemplateRepository) (*git.Repository, error) {
