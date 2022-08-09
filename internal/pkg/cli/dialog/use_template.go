@@ -374,7 +374,10 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input) error {
 		// Save value
 		return d.addInputValue(selectedValues, inputDef, true)
 	case input.KindOAuth:
-		// Save value
+		// OAuth is not supported in CLI dialog, use empty object.
+		return d.addInputValue(map[string]interface{}{}, inputDef, true)
+	case input.KindOAuthAccounts:
+		// OAuth is not supported in CLI dialog, save empty object.
 		return d.addInputValue(map[string]interface{}{}, inputDef, true)
 	}
 
