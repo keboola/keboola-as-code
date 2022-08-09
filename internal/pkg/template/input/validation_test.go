@@ -260,6 +260,14 @@ func TestValidationRules(t *testing.T) {
 					Kind:         "oauthAccounts",
 					OauthInputId: "input.other",
 				},
+				{
+					Id:          "input.other",
+					Name:        "input",
+					Description: "input desc",
+					Type:        "object",
+					Kind:        "oauth",
+					ComponentId: "foo.bar",
+				},
 			},
 			error: "",
 		},
@@ -275,6 +283,20 @@ func TestValidationRules(t *testing.T) {
 				},
 			},
 			error: "group 1, step 1, input \"input.id\": oauthInputId is a required field",
+		},
+		{
+			description: "missing referenced input from kind oauthAccounts",
+			inputs: Inputs{
+				{
+					Id:           "input.id",
+					Name:         "input",
+					Description:  "input desc",
+					Type:         "object",
+					Kind:         "oauthAccounts",
+					OauthInputId: "input.other",
+				},
+			},
+			error: "input \"input.other\" not found, referenced from: input.id",
 		},
 	}
 

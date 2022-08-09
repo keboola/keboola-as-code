@@ -52,27 +52,53 @@ func (g StepsGroups) Validate() error {
 		errors.Append(fmt.Errorf("at least one steps group must be defined"))
 	}
 
-	// Check duplicate inputs
-	inputsOccurrences := orderedmap.New()
+	inputsOccurrences := orderedmap.New() // inputId -> []string{occurrence1, ...}
+	inputsReferences := orderedmap.New()  // inputId -> []string{referencedFromInputId1, ...}
 	_ = g.ToExtended().VisitInputs(func(group *StepsGroupExt, step *StepExt, input *Input) error {
-		vRaw, _ := inputsOccurrences.Get(input.Id)
-		v, _ := vRaw.([]string)
-		v = append(v, fmt.Sprintf(`group %d, step %d "%s"`, step.GroupIndex+1, step.StepIndex+1, step.Name))
-		inputsOccurrences.Set(input.Id, v)
+		// Collect inputs occurrences
+		{
+			v, _ := inputsOccurrences.GetOrNil(input.Id).([]string)
+			v = append(v, fmt.Sprintf(`group %d, step %d "%s"`, step.GroupIndex+1, step.StepIndex+1, step.Name))
+			inputsOccurrences.Set(input.Id, v)
+		}
+
+		// Collect inputs references
+		if input.Kind == KindOAuthAccounts && len(input.OauthInputId) > 0 {
+			v, _ := inputsReferences.GetOrNil(input.OauthInputId).([]string)
+			v = append(v, input.Id)
+			inputsReferences.Set(input.OauthInputId, v)
+		}
+
 		return nil
 	})
+
+	// Check duplicate inputs
 	inputsOccurrences.SortKeys(func(keys []string) {
 		sort.Strings(keys)
 	})
 	for _, inputId := range inputsOccurrences.Keys() {
-		occurrencesRaw, _ := inputsOccurrences.Get(inputId)
-		occurrences := occurrencesRaw.([]string)
+		occurrences, _ := inputsOccurrences.GetOrNil(inputId).([]string)
 		if len(occurrences) > 1 {
 			inputsErr := utils.NewMultiError()
 			for _, occurrence := range occurrences {
 				inputsErr.Append(fmt.Errorf(occurrence))
 			}
 			errors.AppendWithPrefix(fmt.Sprintf(`input "%s" is defined %d times in`, inputId, len(occurrences)), inputsErr)
+		}
+	}
+
+	// Check all referenced inputs exist
+	inputsReferences.SortKeys(func(keys []string) {
+		sort.Strings(keys)
+	})
+	for _, inputId := range inputsReferences.Keys() {
+		if _, found := inputsOccurrences.Get(inputId); !found {
+			inputsErr := utils.NewMultiError()
+			references, _ := inputsReferences.GetOrNil(inputId).([]string)
+			for _, referencedFrom := range references {
+				inputsErr.Append(fmt.Errorf(referencedFrom))
+			}
+			errors.AppendWithPrefix(fmt.Sprintf(`input "%s" not found, referenced from`, inputId), inputsErr)
 		}
 	}
 
