@@ -23,7 +23,7 @@ type Kind string
 type Kinds []Kind
 
 func allKinds() Kinds {
-	return Kinds{KindInput, KindHidden, KindTextarea, KindConfirm, KindSelect, KindMultiSelect, KindOAuth}
+	return Kinds{KindInput, KindHidden, KindTextarea, KindConfirm, KindSelect, KindMultiSelect, KindOAuth, KindOAuthAccounts}
 }
 
 func (v Kinds) String() string {

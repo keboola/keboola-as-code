@@ -196,6 +196,52 @@ func TestValidationRules(t *testing.T) {
 			},
 			error: "",
 		},
+		{
+			description: "valid oauth",
+			input: Input{
+				Id:          "input.id",
+				Name:        "input",
+				Description: "input desc",
+				Type:        "object",
+				Kind:        "oauth",
+				ComponentId: "foo.bar",
+			},
+			error: "",
+		},
+		{
+			description: "missing componentId for oauth kind",
+			input: Input{
+				Id:          "input.id",
+				Name:        "input",
+				Description: "input desc",
+				Type:        "object",
+				Kind:        "oauth",
+			},
+			error: "group 1, step 1, input \"input.id\": componentId is a required field",
+		},
+		{
+			description: "valid oauthAccounts",
+			input: Input{
+				Id:           "input.id",
+				Name:         "input",
+				Description:  "input desc",
+				Type:         "object",
+				Kind:         "oauthAccounts",
+				OauthInputId: "input.other",
+			},
+			error: "",
+		},
+		{
+			description: "missing oauthInputId for oauthAccounts kind",
+			input: Input{
+				Id:          "input.id",
+				Name:        "input",
+				Description: "input desc",
+				Type:        "object",
+				Kind:        "oauthAccounts",
+			},
+			error: "group 1, step 1, input \"input.id\": oauthInputId is a required field",
+		},
 	}
 
 	stepsGroups := StepsGroups{

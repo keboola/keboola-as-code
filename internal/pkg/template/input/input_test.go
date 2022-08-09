@@ -50,6 +50,7 @@ func TestInput_ValidateUserInputOAuth(t *testing.T) {
 		Description: "oauth",
 		Type:        "object",
 		Kind:        "oauth",
+		ComponentId: "foo.bar",
 	}
 	err := input.ValidateUserInput([]string{"one", "two"})
 	assert.Error(t, err)
