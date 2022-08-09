@@ -60,4 +60,10 @@ func TestKind_ValidateType(t *testing.T) {
 	err = KindOAuth.ValidateType(TypeString)
 	assert.Error(t, err)
 	assert.Equal(t, "should be object for kind=oauth, found string", err.Error())
+
+	// oAuthAccounts
+	assert.NoError(t, KindOAuthAccounts.ValidateType(TypeObject))
+	err = KindOAuthAccounts.ValidateType(TypeString)
+	assert.Error(t, err)
+	assert.Equal(t, "should be object for kind=oauthAccounts, found string", err.Error())
 }

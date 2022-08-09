@@ -6,13 +6,14 @@ import (
 )
 
 const (
-	KindInput       = Kind("input")
-	KindHidden      = Kind("hidden")
-	KindTextarea    = Kind("textarea")
-	KindConfirm     = Kind("confirm")
-	KindSelect      = Kind("select")
-	KindMultiSelect = Kind("multiselect")
-	KindOAuth       = Kind("oauth")
+	KindInput         = Kind("input")
+	KindHidden        = Kind("hidden")
+	KindTextarea      = Kind("textarea")
+	KindConfirm       = Kind("confirm")
+	KindSelect        = Kind("select")
+	KindMultiSelect   = Kind("multiselect")
+	KindOAuth         = Kind("oauth")
+	KindOAuthAccounts = Kind("oauthAccounts")
 )
 
 // Kind represents how Input is displayed to the user.
@@ -74,6 +75,10 @@ func (k Kind) ValidateType(t Type) error {
 			return fmt.Errorf("should be string[] for kind=%s, found %s", k, t)
 		}
 	case KindOAuth:
+		if t != TypeObject {
+			return fmt.Errorf("should be object for kind=%s, found %s", k, t)
+		}
+	case KindOAuthAccounts:
 		if t != TypeObject {
 			return fmt.Errorf("should be object for kind=%s, found %s", k, t)
 		}
