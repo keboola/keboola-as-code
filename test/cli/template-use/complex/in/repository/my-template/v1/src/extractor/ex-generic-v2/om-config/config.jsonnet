@@ -9,7 +9,7 @@
       ],
     },
   },
-  parameters: {
+  parameters: Input("oauthAccounts") + {
     api: {
       baseUrl: "https://jsonplaceholder.typicode.com",
     },
