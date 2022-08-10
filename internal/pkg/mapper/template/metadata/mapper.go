@@ -43,9 +43,10 @@ type InputsUsageMap map[model.Key][]InputUsage
 
 // InputUsage describes where the input is used in the output JSON.
 type InputUsage struct {
-	Name    string
-	JsonKey orderedmap.Path
-	Def     *input.Input
+	Name       string
+	JsonKey    orderedmap.Path
+	Def        *input.Input
+	ObjectKeys []string // list of object keys generated from the input (empty = all)
 }
 
 func (v ObjectIdsMap) IdInTemplate(idInProject interface{}) (interface{}, bool) {

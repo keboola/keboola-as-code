@@ -32,9 +32,9 @@ func TestAskUpgradeTemplate(t *testing.T) {
 	configMetadata := model.ConfigMetadata{}
 	configContent := orderedmap.New()
 	rowContent := orderedmap.New()
-	configMetadata.AddInputUsage("input1", orderedmap.PathFromStr("foo.bar"))
+	configMetadata.AddInputUsage("input1", orderedmap.PathFromStr("foo.bar"), nil)
 	assert.NoError(t, configContent.SetNested("foo.bar", "old value 1")) // <<<<<<<<<<<
-	configMetadata.AddRowInputUsage(configRowKey.Id, "input2", orderedmap.PathFromStr("foo.bar"))
+	configMetadata.AddRowInputUsage(configRowKey.Id, "input2", orderedmap.PathFromStr("foo.bar"), nil)
 	assert.NoError(t, rowContent.SetNested("foo.bar", "old value 2")) // <<<<<<<<<<<
 	assert.NoError(t, projectState.Set(&model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
