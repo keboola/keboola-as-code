@@ -194,6 +194,10 @@ func InputsResponse(stepsGroups input.StepsGroupsExt) (out *Inputs) {
 				if in.ComponentId != "" {
 					inputResponse.ComponentID = in.ComponentId
 				}
+				if in.OauthInputId != "" {
+					v := in.OauthInputId
+					inputResponse.OauthInputID = &v
+				}
 				stepResponse.Inputs = append(stepResponse.Inputs, inputResponse)
 
 				if stepValues != nil {

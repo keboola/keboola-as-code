@@ -869,8 +869,11 @@ var Input = Type("input", func() {
 	Attribute("options", ArrayOf(InputOption), "Input options for type = select OR multiselect.", func() {
 		Example(ExampleInputOptions())
 	})
-	Attribute("componentId", String, "Component id for oauth kind inputs.", func() {
+	Attribute("componentId", String, "Component id for \"oauth\" kind inputs.", func() {
 		Example("keboola.ex-component")
+	})
+	Attribute("oauthInputId", String, "OAuth input id for \"oauthAccounts\" kind inputs.", func() {
+		Example("oauthInput")
 	})
 	Required("id", "name", "description", "type", "kind", "default", "componentId")
 	Example(ExampleInput())

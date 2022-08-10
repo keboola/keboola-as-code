@@ -59,7 +59,8 @@
                   }
                 }
               },
-              "componentId": ""
+              "componentId": "",
+              "oauthInputId": "oauth"
             }
           ]
         }
