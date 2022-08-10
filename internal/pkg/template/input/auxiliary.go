@@ -88,6 +88,16 @@ func (g StepsGroupsExt) VisitInputs(fn VisitInputsCallback) error {
 	})
 }
 
+// InputsMap returns inputId -> input map.
+func (g StepsGroupsExt) InputsMap() map[string]*Input {
+	out := make(map[string]*Input)
+	_ = g.VisitInputs(func(_ *StepsGroupExt, _ *StepExt, input *Input) error {
+		out[input.Id] = input
+		return nil
+	})
+	return out
+}
+
 // StepsMap returns stepId -> step map.
 func (g StepsGroupsExt) StepsMap() map[string]*StepExt {
 	out := make(map[string]*StepExt)

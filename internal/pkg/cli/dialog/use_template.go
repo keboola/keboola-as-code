@@ -93,26 +93,30 @@ func (d *useTmplDialog) askInstanceName() (string, error) {
 
 type useTmplInputsDialog struct {
 	*Dialogs
+	groups        input.StepsGroupsExt
+	inputs        map[string]*input.Input
 	options       *options.Options
-	inputsFile    map[string]interface{} // inputs values loaded from a file specified by inputsFileFlag
+	inputsFile    map[string]any // inputs values loaded from a file specified by inputsFileFlag
 	useInputsFile bool
 	out           template.InputsValues
-	context       context.Context        // for input.ValidateUserInput
-	inputsValues  map[string]interface{} // for input.Available
+	context       context.Context // for input.ValidateUserInput
+	inputsValues  map[string]any  // for input.Available
 }
 
 // askUseTemplateInputs - dialog to enter template inputs.
 func (p *Dialogs) askUseTemplateInputs(groups input.StepsGroupsExt, opts *options.Options) (template.InputsValues, error) {
 	dialog := &useTmplInputsDialog{
 		Dialogs:      p,
+		groups:       groups,
+		inputs:       groups.InputsMap(),
 		options:      opts,
 		context:      context.Background(),
-		inputsValues: make(map[string]interface{}),
+		inputsValues: make(map[string]any),
 	}
-	return dialog.ask(groups)
+	return dialog.ask()
 }
 
-func (d *useTmplInputsDialog) ask(stepsGroups input.StepsGroupsExt) (template.InputsValues, error) {
+func (d *useTmplInputsDialog) ask() (template.InputsValues, error) {
 	// Load inputs file
 	if d.options.IsSet(inputsFileFlag) {
 		d.useInputsFile = true
@@ -126,7 +130,7 @@ func (d *useTmplInputsDialog) ask(stepsGroups input.StepsGroupsExt) (template.In
 		}
 	}
 
-	err := stepsGroups.VisitInputs(func(group *input.StepsGroupExt, step *input.StepExt, inputDef *input.Input) error {
+	err := d.groups.VisitInputs(func(group *input.StepsGroupExt, step *input.StepExt, inputDef *input.Input) error {
 		// Print info about group and select steps
 		if !group.Announced {
 			if err := d.announceGroup(group); err != nil {
@@ -163,7 +167,7 @@ func (d *useTmplInputsDialog) ask(stepsGroups input.StepsGroupsExt) (template.In
 					return utils.PrefixError(err.Error(), fmt.Errorf("please fix the value in the inputs JSON file"))
 				}
 			} else {
-				if err := d.addInputValue(inputDef.DefaultOrEmpty(), inputDef, true); err != nil {
+				if err := d.addInputValue(d.defaultOrEmptyValueFor(inputDef), inputDef, true); err != nil {
 					return utils.PrefixError(err.Error(), fmt.Errorf("please define value in the inputs JSON file"))
 				}
 			}
@@ -219,7 +223,7 @@ func (d *useTmplInputsDialog) announceGroup(group *input.StepsGroupExt) error {
 			Label:   "Select steps",
 			Options: group.Steps.OptionsForSelectBox(),
 			Default: group.Steps.SelectedOptions(),
-			Validator: func(answersRaw interface{}) error {
+			Validator: func(answersRaw any) error {
 				answers := answersRaw.([]survey.OptionAnswer)
 				values := make([]string, len(answers))
 				for i, v := range answers {
@@ -294,7 +298,7 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input) error {
 		question := &prompt.Question{
 			Label:       inputDef.Name,
 			Description: inputDef.Description,
-			Validator: func(raw interface{}) error {
+			Validator: func(raw any) error {
 				value, err := inputDef.Type.ParseValue(raw)
 				if err != nil {
 					return err
@@ -329,7 +333,7 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input) error {
 			Description: inputDef.Description,
 			Options:     inputDef.Options.Names(),
 			UseDefault:  true,
-			Validator: func(answerRaw interface{}) error {
+			Validator: func(answerRaw any) error {
 				answer := answerRaw.(survey.OptionAnswer)
 				return inputDef.ValidateUserInput(answer.Value)
 			},
@@ -346,7 +350,7 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input) error {
 			Label:       inputDef.Name,
 			Description: inputDef.Description,
 			Options:     inputDef.Options.Names(),
-			Validator: func(answersRaw interface{}) error {
+			Validator: func(answersRaw any) error {
 				answers := answersRaw.([]survey.OptionAnswer)
 				values := make([]string, len(answers))
 				for i, v := range answers {
@@ -358,7 +362,7 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input) error {
 		// Default indices
 		if inputDef.Default != nil {
 			defaultIndices := make([]int, 0)
-			for _, id := range inputDef.Default.([]interface{}) {
+			for _, id := range inputDef.Default.([]any) {
 				if _, index, found := inputDef.Options.GetById(id.(string)); found {
 					defaultIndices = append(defaultIndices, index)
 				}
@@ -374,18 +378,18 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input) error {
 		// Save value
 		return d.addInputValue(selectedValues, inputDef, true)
 	case input.KindOAuth:
-		// OAuth is not supported in CLI dialog, use empty object.
-		return d.addInputValue(map[string]interface{}{}, inputDef, true)
+		// OAuth is not supported in CLI dialog.
+		return d.addInputValue(d.defaultOrEmptyValueFor(inputDef), inputDef, true)
 	case input.KindOAuthAccounts:
-		// OAuth is not supported in CLI dialog, save empty object.
-		return d.addInputValue(map[string]interface{}{}, inputDef, true)
+		// OAuth is not supported in CLI dialog.
+		return d.addInputValue(d.defaultOrEmptyValueFor(inputDef), inputDef, true)
 	}
 
 	return nil
 }
 
 // addInputValue from CLI dialog or inputs file.
-func (d *useTmplInputsDialog) addInputValue(value interface{}, inputDef *input.Input, isFiled bool) error {
+func (d *useTmplInputsDialog) addInputValue(value any, inputDef *input.Input, isFiled bool) error {
 	// Convert
 	value, err := inputDef.Type.ParseValue(value)
 	if err != nil {
@@ -404,4 +408,33 @@ func (d *useTmplInputsDialog) addInputValue(value interface{}, inputDef *input.I
 	d.inputsValues[inputDef.Id] = value
 	d.out = append(d.out, inputValue)
 	return nil
+}
+
+func (d *useTmplInputsDialog) defaultOrEmptyValueFor(inputDef *input.Input) any {
+	switch inputDef.Kind {
+	case input.KindOAuthAccounts:
+		// OAuth is not supported in CLI dialog.
+		value := inputDef.DefaultOrEmpty()
+		if inputDef.Default == nil {
+			// Get component ID
+			oauthInput, found := d.inputs[inputDef.OauthInputId]
+			if !found {
+				panic(fmt.Errorf(`oauth input "%s" not found`, inputDef.OauthInputId))
+			}
+			if oauthInput.Kind != input.KindOAuth {
+				panic(fmt.Errorf(`input "%s" has unexpected kind, expected "%s", given "%s"`, inputDef.OauthInputId, input.KindOAuth, oauthInput.Kind))
+			}
+			componentId := oauthInput.ComponentId
+
+			// User must fill in value in UI,
+			// but at least empty keys must be generated in CLI,
+			// so values can be found during the upgrade operation.
+			if v, found := input.OauthAccountsEmptyValue[componentId]; found {
+				value = v
+			}
+		}
+		return value
+	default:
+		return inputDef.DefaultOrEmpty()
+	}
 }

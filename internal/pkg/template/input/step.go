@@ -111,7 +111,7 @@ func (g StepsGroups) Validate() error {
 		// Check that input kind=KindOAuthAccounts is defined for a supported component
 		if input.Kind == KindOAuthAccounts {
 			if oauthInput, found := inputsMap[input.OauthInputId]; found {
-				if !OauthAccountsComponentIDs[oauthInput.ComponentId] {
+				if !OauthAccountsSupportedComponents[oauthInput.ComponentId] {
 					errors.Append(fmt.Errorf(`input "%s" (kind=%s) is defined for "%s" component, but it is not supported`, input.Id, input.Kind, oauthInput.ComponentId))
 				}
 			}
