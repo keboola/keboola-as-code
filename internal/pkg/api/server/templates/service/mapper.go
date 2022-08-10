@@ -192,7 +192,8 @@ func InputsResponse(stepsGroups input.StepsGroupsExt) (out *Inputs) {
 					Options:     OptionsResponse(in.Options),
 				}
 				if in.ComponentId != "" {
-					inputResponse.ComponentID = in.ComponentId
+					v := in.ComponentId
+					inputResponse.ComponentID = &v
 				}
 				if in.OauthInputId != "" {
 					v := in.OauthInputId

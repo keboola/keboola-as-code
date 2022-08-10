@@ -875,7 +875,7 @@ var Input = Type("input", func() {
 	Attribute("oauthInputId", String, "OAuth input id for \"oauthAccounts\" kind inputs.", func() {
 		Example("oauthInput")
 	})
-	Required("id", "name", "description", "type", "kind", "default", "componentId")
+	Required("id", "name", "description", "type", "kind", "default")
 	Example(ExampleInput())
 })
 

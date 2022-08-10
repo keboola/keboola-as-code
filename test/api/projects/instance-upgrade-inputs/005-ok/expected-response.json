@@ -19,8 +19,7 @@
               "description": "Some limit",
               "type": "int",
               "kind": "input",
-              "default": 4000,
-              "componentId": ""
+              "default": 4000
             },
             {
               "id": "size",
@@ -28,8 +27,7 @@
               "description": "Some size",
               "type": "int",
               "kind": "input",
-              "default": 0,
-              "componentId": ""
+              "default": 0
             },
             {
               "id": "oauth",
@@ -59,7 +57,6 @@
                   }
                 }
               },
-              "componentId": "",
               "oauthInputId": "oauth"
             }
           ]

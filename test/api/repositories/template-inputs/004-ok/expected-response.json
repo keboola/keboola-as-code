@@ -19,8 +19,7 @@
               "description": "Please enter Shopify token",
               "type": "string",
               "kind": "hidden",
-              "default": "",
-              "componentId": ""
+              "default": ""
             },
             {
               "id": "oauth",
@@ -47,7 +46,6 @@
               "type": "object",
               "kind": "oauthAccounts",
               "default": {},
-              "componentId": "",
               "oauthInputId": "oauth2"
             }
           ]
