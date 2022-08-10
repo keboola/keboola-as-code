@@ -29,7 +29,7 @@
           "rows": [],
           "metadata": {
             "KBC.KAC.templates.configId": "{\"idInTemplate\":\"shopify\"}",
-            "KBC.KAC.templates.configInputs": "[{\"input\":\"oauth\",\"key\":\"authorization\"},{\"input\":\"shopify-token\",\"key\":\"parameters.token\"}]",
+            "KBC.KAC.templates.configInputs": "[{\"input\":\"oauth\",\"key\":\"authorization.oauth_api\"},{\"input\":\"shopify-token\",\"key\":\"parameters.token\"}]",
             "KBC.KAC.templates.instanceId": "inst-001",
             "KBC.KAC.templates.repository": "keboola",
             "KBC.KAC.templates.templateId": "my-template-id"

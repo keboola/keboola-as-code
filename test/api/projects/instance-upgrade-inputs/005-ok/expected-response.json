@@ -29,10 +29,8 @@
               "type": "object",
               "kind": "oauth",
               "default": {
-                "oauth_api": {
-                  "id": "1234",
-                  "version": 3
-                }
+                "id": "1234",
+                "version": 3
               },
               "componentId": "keboola.ex-shopify"
             },
