@@ -37,7 +37,7 @@
           "rows": [],
           "metadata": {
             "KBC.KAC.templates.configId": "{\"idInTemplate\":\"instagram\"}",
-            "KBC.KAC.templates.configInputs": "[{\"input\":\"oauth2\",\"key\":\"authorization.oauth_api\"}]",
+            "KBC.KAC.templates.configInputs": "[{\"input\":\"oauth2\",\"key\":\"authorization.oauth_api\"},{\"input\":\"oauth2Accounts\",\"key\":\"parameters\",\"objectKeys\":[\"accounts\"]}]",
             "KBC.KAC.templates.instanceId": "%s",
             "KBC.KAC.templates.repository": "keboola",
             "KBC.KAC.templates.templateId": "my-template-id"
