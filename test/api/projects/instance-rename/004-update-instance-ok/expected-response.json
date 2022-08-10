@@ -9,9 +9,9 @@
   },
   "configurations": [
     {
-      "componentId": "ex-generic-v2",
-      "configId": "%%TEST_BRANCH_MAIN_CONFIG_SHOPIFY_ID%%",
-      "name": "shopify"
+      "componentId": "keboola.ex-instagram",
+      "configId": "%%TEST_BRANCH_MAIN_CONFIG_INSTAGRAM_ID%%",
+      "name": "instagram"
     }
   ],
   "templateId": "my-template-id",

@@ -197,7 +197,7 @@ func InputsResponse(stepsGroups input.StepsGroupsExt) (out *Inputs) {
 				stepResponse.Inputs = append(stepResponse.Inputs, inputResponse)
 
 				if stepValues != nil {
-					stepValues.Inputs = append(stepValues.Inputs, &InputValue{ID: in.Id, Value: in.Default})
+					stepValues.Inputs = append(stepValues.Inputs, &InputValue{ID: inputResponse.ID, Value: inputResponse.Default})
 				}
 			}
 		}

@@ -2,45 +2,63 @@
   "stepGroups": [
     {
       "id": "g01",
-      "description": "Configure the eshop platforms",
+      "description": "Configure...",
       "required": "all",
       "steps": [
         {
           "id": "g01-s01",
           "icon": "common:settings",
-          "name": "Shopify",
-          "description": "Sell online with an ecommerce website",
-          "dialogName": "Shopify",
-          "dialogDescription": "Sell online with an ecommerce website",
+          "name": "Instagram",
+          "description": "Lorem ipsum",
+          "dialogName": "Instagram",
+          "dialogDescription": "Lorem ipsum",
           "inputs": [
             {
-              "id": "shopify-token",
-              "name": "Shopify token",
-              "description": "Please enter Shopify token",
-              "type": "string",
-              "kind": "hidden",
-              "default": "token",
+              "id": "limit",
+              "name": "Lime",
+              "description": "Some limit",
+              "type": "int",
+              "kind": "input",
+              "default": 4000,
+              "componentId": ""
+            },
+            {
+              "id": "size",
+              "name": "Size",
+              "description": "Some size",
+              "type": "int",
+              "kind": "input",
+              "default": 0,
               "componentId": ""
             },
             {
               "id": "oauth",
-              "name": "Shopify oAuth",
-              "description": "Shopify Authorization",
+              "name": "Instagram oAuth",
+              "description": "Instagram Authorization",
               "type": "object",
               "kind": "oauth",
               "default": {
                 "id": "1234",
                 "version": 3
               },
-              "componentId": "keboola.ex-shopify"
+              "componentId": "keboola.ex-instagram"
             },
             {
-              "id": "shopify-shop",
-              "name": "Shopify shop name",
-              "description": "Please enter shop name",
-              "type": "string",
-              "kind": "input",
-              "default": "",
+              "id": "oauthAccounts",
+              "name": "Instagram Profiles",
+              "description": "Instagram Profiles",
+              "type": "object",
+              "kind": "oauthAccounts",
+              "default": {
+                "accounts": {
+                  "123456789101112": {
+                    "category": "Musician/Band",
+                    "fb_page_id": "1234",
+                    "id": "4567",
+                    "name": "Foo"
+                  }
+                }
+              },
               "componentId": ""
             }
           ]
@@ -61,17 +79,21 @@
             "valid": false,
             "inputs": [
               {
-                "id": "shopify-token",
+                "id": "limit",
                 "visible": true
+              },
+              {
+                "id": "size",
+                "visible": true,
+                "error": "Size is a required field."
               },
               {
                 "id": "oauth",
                 "visible": true
               },
               {
-                "id": "shopify-shop",
-                "visible": true,
-                "error": "Shopify shop name should be string, got null."
+                "id": "oauthAccounts",
+                "visible": true
               }
             ]
           }
