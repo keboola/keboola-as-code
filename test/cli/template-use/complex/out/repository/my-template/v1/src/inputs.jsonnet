@@ -31,7 +31,7 @@
               description: "oAuth",
               type: "object",
               kind: "oauth",
-              componentId: "keboola.ex-component",
+              componentId: "keboola.ex-instagram",
             },
             {
               id: "oauthAccounts",

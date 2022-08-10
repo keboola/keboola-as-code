@@ -13,6 +13,15 @@ import (
 
 type Inputs []Input
 
+// OauthAccountsComponentIDs contains list of components supported by input kind=KindOauthAccounts.
+var OauthAccountsComponentIDs = map[string]bool{
+	"keboola.ex-google-analytics-v4": true,
+	"keboola.ex-google-ads":          true,
+	"keboola.ex-facebook-ads":        true,
+	"keboola.ex-facebook":            true,
+	"keboola.ex-instagram":           true,
+}
+
 func NewInputs() *Inputs {
 	inputs := make(Inputs, 0)
 	return &inputs
