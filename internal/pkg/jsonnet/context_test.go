@@ -117,25 +117,46 @@ func TestVmContext_VariablesTypes(t *testing.T) {
 
 func TestVmContext_Notifier(t *testing.T) {
 	t.Parallel()
-	notifier := &testNotifier{}
 	ctx := NewContext()
-	ctx.NativeFunctionWithAlias(&NativeFunction{
-		Name:   `Decorate`,
+
+	// Test notifier
+	notifier := &testNotifier{}
+	ctx.NotifierFactory(func(context.Context) jsonnet.Notifier {
+		return notifier
+	})
+
+	// Function "decorate" wraps string value with "~".
+	ctx.NativeFunction(&NativeFunction{
+		Name:   `decorate`,
 		Params: ast.Identifiers{"str"},
 		Func: func(params []interface{}) (interface{}, error) {
 			return fmt.Sprintf("~%s~", params[0].(string)), nil
 		},
 	})
-	ctx.NotifierFactory(func(context.Context) jsonnet.Notifier {
-		return notifier
+
+	// Function "keyValueObject" converts key and value to object.
+	ctx.NativeFunction(&NativeFunction{
+		Name:   `keyValueObject`,
+		Params: ast.Identifiers{"key", "value"},
+		Func: func(params []interface{}) (interface{}, error) {
+			return map[string]interface{}{params[0].(string): params[1].(string)}, nil
+		},
 	})
 
-	// Jsonnet code
+	// Input Jsonnet code.
 	code := `
 local Person(name='Alice') = {
-  name: if true then Decorate(name) else null,
+  name: if true then std.native('decorate')(name) else null,
 };
 local Do() = {
+  myObject: {
+    mergedObject: 
+		std.native('keyValueObject')("A", "AAA") +
+		std.native('keyValueObject')("B", "BBB") +
+		{
+			"sub": std.native('keyValueObject')("C", "CCC")
+		}
+  },
   person1: Person(),
   person2: Person('Bob'),
   other: [Person('Foo'), Person('Bar')],
@@ -143,8 +164,17 @@ local Do() = {
 Do()
 `
 
-	// Output Json
+	// Expected output Json.
 	expected := `{
+  "myObject": {
+    "mergedObject": {
+      "A": "AAA",
+      "B": "BBB",
+      "sub": {
+        "C": "CCC"
+      }
+    }
+  },
   "other": [
     {
       "name": "~Foo~"
@@ -162,14 +192,113 @@ Do()
 }
 `
 
-	// Notified values
+	// Notified values:
 	expectedNotifications := []generatedValue{
-		{fnName: "Decorate", args: []interface{}{"Foo"}, value: "~Foo~", steps: []interface{}{jsonnet.ObjectFieldStep{Field: "other"}, jsonnet.ArrayIndexStep{Index: 0}, jsonnet.ObjectFieldStep{Field: "name"}}},
-		{fnName: "Decorate", args: []interface{}{"Bar"}, value: "~Bar~", steps: []interface{}{jsonnet.ObjectFieldStep{Field: "other"}, jsonnet.ArrayIndexStep{Index: 1}, jsonnet.ObjectFieldStep{Field: "name"}}},
-		{fnName: "Decorate", args: []interface{}{"Alice"}, value: "~Alice~", steps: []interface{}{jsonnet.ObjectFieldStep{Field: "person1"}, jsonnet.ObjectFieldStep{Field: "name"}}},
-		{fnName: "Decorate", args: []interface{}{"Bob"}, value: "~Bob~", steps: []interface{}{jsonnet.ObjectFieldStep{Field: "person2"}, jsonnet.ObjectFieldStep{Field: "name"}}},
+		// Objects merging
+		{
+			fnName:  "keyValueObject",
+			args:    []interface{}{"C", "CCC"},
+			partial: false,
+			partialValue: map[string]interface{}{
+				"C": "CCC",
+			},
+			finalValue: map[string]interface{}{
+				"C": "CCC",
+			},
+			steps: []interface{}{
+				jsonnet.ObjectFieldStep{Field: "myObject"},
+				jsonnet.ObjectFieldStep{Field: "mergedObject"},
+				jsonnet.ObjectFieldStep{Field: "sub"},
+			},
+		},
+		{
+			fnName:  "keyValueObject",
+			args:    []interface{}{"A", "AAA"},
+			partial: true,
+			partialValue: map[string]interface{}{
+				"A": "AAA",
+			},
+			finalValue: map[string]interface{}{
+				"A": "AAA",
+				"B": "BBB",
+				"sub": map[string]interface{}{
+					"C": "CCC",
+				},
+			},
+			steps: []interface{}{
+				jsonnet.ObjectFieldStep{Field: "myObject"},
+				jsonnet.ObjectFieldStep{Field: "mergedObject"},
+			},
+		},
+		{
+			fnName:  "keyValueObject",
+			args:    []interface{}{"B", "BBB"},
+			partial: true,
+			partialValue: map[string]interface{}{
+				"B": "BBB",
+			},
+			finalValue: map[string]interface{}{
+				"A": "AAA",
+				"B": "BBB",
+				"sub": map[string]interface{}{
+					"C": "CCC",
+				},
+			},
+			steps: []interface{}{
+				jsonnet.ObjectFieldStep{Field: "myObject"},
+				jsonnet.ObjectFieldStep{Field: "mergedObject"},
+			},
+		},
+		// Simple usage
+		{
+			fnName:       "decorate",
+			args:         []interface{}{"Foo"},
+			partial:      false,
+			partialValue: "~Foo~",
+			finalValue:   "~Foo~",
+			steps: []interface{}{
+				jsonnet.ObjectFieldStep{Field: "other"},
+				jsonnet.ArrayIndexStep{Index: 0},
+				jsonnet.ObjectFieldStep{Field: "name"},
+			},
+		},
+		{
+			fnName:       "decorate",
+			args:         []interface{}{"Bar"},
+			partial:      false,
+			partialValue: "~Bar~",
+			finalValue:   "~Bar~",
+			steps: []interface{}{
+				jsonnet.ObjectFieldStep{Field: "other"},
+				jsonnet.ArrayIndexStep{Index: 1},
+				jsonnet.ObjectFieldStep{Field: "name"},
+			},
+		},
+		{
+			fnName:       "decorate",
+			args:         []interface{}{"Alice"},
+			partial:      false,
+			partialValue: "~Alice~",
+			finalValue:   "~Alice~",
+			steps: []interface{}{
+				jsonnet.ObjectFieldStep{Field: "person1"},
+				jsonnet.ObjectFieldStep{Field: "name"},
+			},
+		},
+		{
+			fnName:       "decorate",
+			args:         []interface{}{"Bob"},
+			partial:      false,
+			partialValue: "~Bob~",
+			finalValue:   "~Bob~",
+			steps: []interface{}{
+				jsonnet.ObjectFieldStep{Field: "person2"},
+				jsonnet.ObjectFieldStep{Field: "name"},
+			},
+		},
 	}
 
+	// Evaluate and assert
 	actual, err := Evaluate(code, ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
@@ -181,17 +310,21 @@ type testNotifier struct {
 }
 
 type generatedValue struct {
-	fnName string
-	args   []interface{}
-	value  interface{}
-	steps  []interface{}
+	fnName       string
+	args         []interface{}
+	partial      bool
+	partialValue interface{}
+	finalValue   interface{}
+	steps        []interface{}
 }
 
-func (n *testNotifier) OnGeneratedValue(fnName string, args []interface{}, value interface{}, steps []interface{}) {
+func (n *testNotifier) OnGeneratedValue(fnName string, args []interface{}, partial bool, partialValue, finalValue interface{}, steps []interface{}) {
 	n.values = append(n.values, generatedValue{
-		fnName: fnName,
-		args:   args,
-		value:  value,
-		steps:  steps,
+		fnName:       fnName,
+		args:         args,
+		partial:      partial,
+		partialValue: partialValue,
+		finalValue:   finalValue,
+		steps:        steps,
 	})
 }

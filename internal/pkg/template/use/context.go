@@ -303,7 +303,7 @@ func (c *Context) registerInputsUsageNotifier() {
 	})
 }
 
-func (n *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{}, _ interface{}, steps []interface{}) {
+func (n *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{}, partial bool, _, _ interface{}, steps []interface{}) {
 	// Only for Input function
 	if fnName != "Input" {
 		return
@@ -365,9 +365,11 @@ func (n *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{},
 	objectKey = objectKeyRaw.(model.Key)
 	n.lock.Lock()
 	defer n.lock.Unlock()
-	n.inputsUsage.Values[objectKey] = append(n.inputsUsage.Values[objectKey], metadata.InputUsage{
-		Name:    inputName,
-		JsonKey: mappedSteps,
-		Def:     n.inputsDefsMap[inputName],
-	})
+	if !partial {
+		n.inputsUsage.Values[objectKey] = append(n.inputsUsage.Values[objectKey], metadata.InputUsage{
+			Name:    inputName,
+			JsonKey: mappedSteps,
+			Def:     n.inputsDefsMap[inputName],
+		})
+	}
 }
