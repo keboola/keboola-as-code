@@ -860,7 +860,7 @@ var Input = Type("input", func() {
 		Example("string")
 	})
 	Attribute("kind", String, "Kind of the input.", func() {
-		Enum("input", "hidden", "textarea", "confirm", "select", "multiselect", "oauth")
+		Enum("input", "hidden", "textarea", "confirm", "select", "multiselect", "oauth", "oauthAccounts")
 		Example("input")
 	})
 	Attribute("default", Any, "Default value, match defined type.", func() {
