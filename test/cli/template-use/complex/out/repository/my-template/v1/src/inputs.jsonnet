@@ -32,6 +32,7 @@
               type: "object",
               kind: "oauth",
               componentId: "keboola.ex-instagram",
+              rules: "required",
             },
             {
               id: "oauthAccounts",
@@ -40,6 +41,7 @@
               type: "object",
               kind: "oauthAccounts",
               oauthInputId: "oauth",
+              rules: "required",
             },
           ],
         },
