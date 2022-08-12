@@ -95,14 +95,14 @@ func inputDefinitionExtraRules() []validator.Rule {
 			Tag: "template-input-rules",
 			Func: func(fl goValidator.FieldLevel) (valid bool) {
 				// Run with an empty value to validate rules
-				err := fl.Field().Interface().(Rules).ValidateValue("", "")
+				err := fl.Field().Interface().(Rules).ValidateValue(Input{Id: "foo"}, "")
 				if _, ok := err.(InvalidRulesError); ok { // nolint: errorlint
 					return false
 				}
 				return true
 			},
 			ErrorMsgFunc: func(fe goValidator.FieldError) string {
-				err := fe.Value().(Rules).ValidateValue("", "")
+				err := fe.Value().(Rules).ValidateValue(Input{Id: "foo"}, "")
 				return fmt.Sprintf("%s is not valid: %s", fe.Field(), err.Error())
 			},
 		},

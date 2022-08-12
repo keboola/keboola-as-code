@@ -3,6 +3,7 @@ package input
 import (
 	"context"
 
+	goValidator "github.com/go-playground/validator/v10"
 	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
 
@@ -24,9 +25,18 @@ func (r Rules) Empty() bool {
 	return len(r) == 0
 }
 
-func (r Rules) ValidateValue(userInput interface{}, fieldId string) (err error) {
+func (r Rules) ValidateValue(input Input, value any) (err error) {
+	// Skip empty rules
 	if r.Empty() {
 		return nil
+	}
+
+	// Convert rules to string
+	rules := string(r)
+
+	// Handle required object: empty object "{}" is valid for "required" rule, so we have to add custom rule.
+	if input.Type == TypeObject {
+		rules = "requiredNotEmpty," + rules
 	}
 
 	// Catch panic, it means invalid expression.
@@ -38,5 +48,15 @@ func (r Rules) ValidateValue(userInput interface{}, fieldId string) (err error) 
 			err = InvalidRulesError(msg)
 		}
 	}()
-	return validator.ValidateCtx(context.Background(), userInput, string(r), fieldId)
+
+	extraRules := []validator.Rule{
+		{
+			Tag: "requiredNotEmpty",
+			Func: func(fl goValidator.FieldLevel) bool {
+				return fl.Field().Len() > 0
+			},
+			ErrorMsg: "{0} is a required field",
+		},
+	}
+	return validator.ValidateCtx(context.Background(), value, rules, input.Id, extraRules...)
 }
