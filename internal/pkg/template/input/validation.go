@@ -11,11 +11,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-func validate(value interface{}) error {
-	return validator.Validate(context.Background(), value, validationRules()...)
+func validateDefinitions(value any) error {
+	return validator.Validate(context.Background(), value, inputDefinitionExtraRules()...)
 }
 
-func validationRules() []validator.Rule {
+func inputDefinitionExtraRules() []validator.Rule {
 	return []validator.Rule{
 		{
 			Tag: "template-input-id",

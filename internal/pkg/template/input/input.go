@@ -51,11 +51,11 @@ func NewInputs() *Inputs {
 	return &inputs
 }
 
-func (i Inputs) Validate() error {
+func (i Inputs) ValidateDefinitions() error {
 	errors := utils.NewMultiError()
 
 	// Validate rules
-	if err := validate(i); err != nil {
+	if err := validateDefinitions(i); err != nil {
 		errors.Append(err)
 	}
 

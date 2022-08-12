@@ -76,5 +76,5 @@ func saveFile(fs filesystem.Fs, content *file) error {
 }
 
 func (f file) validate() error {
-	return f.StepsGroups.Validate()
+	return f.StepsGroups.ValidateDefinitions()
 }

@@ -164,7 +164,7 @@ func (d *inputsDetailDialog) parse(result string) (input.StepsGroupsExt, error) 
 	finalizeInput()
 
 	// Validate
-	if err := d.inputs.All().Validate(); err != nil {
+	if err := d.inputs.All().ValidateDefinitions(); err != nil {
 		errors.Append(err)
 	}
 
