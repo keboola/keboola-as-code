@@ -1,5 +1,7 @@
 {
-  "authorization": {},
+  "authorization": {
+    "oauth_api": {}
+  },
   "parameters": {
     "api": {
       "baseUrl": "https://jsonplaceholder.typicode.com"

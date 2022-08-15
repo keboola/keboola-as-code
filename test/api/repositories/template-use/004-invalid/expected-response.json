@@ -21,6 +21,14 @@
               {
                 "id": "oauth",
                 "visible": true
+              },
+              {
+                "id": "oauth2",
+                "visible": true
+              },
+              {
+                "id": "oauth2Accounts",
+                "visible": true
               }
             ]
           }

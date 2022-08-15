@@ -9,10 +9,12 @@
       ],
     },
   },
-  parameters: {
+  parameters: Input("oauthAccounts") + {
     api: {
       baseUrl: "https://jsonplaceholder.typicode.com",
     },
   },
-  authorization: Input("oauth")
+  authorization: {
+    oauth_api: Input("oauth"),
+  },
 }

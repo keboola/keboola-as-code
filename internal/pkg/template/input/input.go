@@ -73,16 +73,17 @@ type Value struct {
 }
 
 type Input struct {
-	Id          string      `json:"id" validate:"required,template-input-id"`
-	Name        string      `json:"name" validate:"required,min=1,max=25"`
-	Description string      `json:"description" validate:"max=60"`
-	Type        Type        `json:"type" validate:"required,template-input-type,template-input-type-for-kind"`
-	Kind        Kind        `json:"kind" validate:"required,template-input-kind"`
-	Default     interface{} `json:"default,omitempty" validate:"omitempty,template-input-default-value,template-input-default-options"`
-	Rules       Rules       `json:"rules,omitempty" validate:"omitempty,template-input-rules"`
-	If          If          `json:"showIf,omitempty" validate:"omitempty,template-input-if"`
-	Options     Options     `json:"options,omitempty" validate:"template-input-options"`
-	ComponentId string      `json:"componentId,omitempty"`
+	Id           string      `json:"id" validate:"required,template-input-id"`
+	Name         string      `json:"name" validate:"required,min=1,max=25"`
+	Description  string      `json:"description" validate:"max=60"`
+	Type         Type        `json:"type" validate:"required,template-input-type,template-input-type-for-kind"`
+	Kind         Kind        `json:"kind" validate:"required,template-input-kind"`
+	Default      interface{} `json:"default,omitempty" validate:"omitempty,template-input-default-value,template-input-default-options"`
+	Rules        Rules       `json:"rules,omitempty" validate:"omitempty,template-input-rules"`
+	If           If          `json:"showIf,omitempty" validate:"omitempty,template-input-if"`
+	Options      Options     `json:"options,omitempty" validate:"template-input-options"`
+	ComponentId  string      `json:"componentId,omitempty" validate:"required_if=Kind oauth"`
+	OauthInputId string      `json:"oauthInputId,omitempty" validate:"required_if=Kind oauthAccounts"`
 }
 
 // ValidateUserInput validates input from the template user using Input.Rules.
