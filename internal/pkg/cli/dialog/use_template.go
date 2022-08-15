@@ -396,8 +396,8 @@ func (d *useTmplInputsDialog) addInputValue(value any, inputDef *input.Input, is
 		return fmt.Errorf("invalid template input: %w", err)
 	}
 
-	// Validate
-	if isFiled {
+	// Validate all except oauth inputs
+	if isFiled && inputDef.Kind != input.KindOAuth && inputDef.Kind != input.KindOAuthAccounts {
 		if err := inputDef.ValidateUserInput(value); err != nil {
 			return fmt.Errorf("invalid template input: %w", err)
 		}

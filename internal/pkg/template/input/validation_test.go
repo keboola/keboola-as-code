@@ -331,7 +331,7 @@ func TestValidationRules(t *testing.T) {
 	// Test all cases
 	for _, c := range cases {
 		stepsGroups[0].Steps[0].Inputs = c.inputs
-		err := stepsGroups.Validate()
+		err := stepsGroups.ValidateDefinitions()
 		if c.error == "" {
 			// Expected nil *utils.MultiError
 			assert.Nil(t, err, c.description)

@@ -45,7 +45,7 @@ func (g StepsGroups) InputsMap() map[string]*Input {
 	return res
 }
 
-func (g StepsGroups) Validate() error {
+func (g StepsGroups) ValidateDefinitions() error {
 	errors := utils.NewMultiError()
 
 	if len(g) == 0 {
@@ -119,7 +119,7 @@ func (g StepsGroups) Validate() error {
 	}
 
 	// Validate other rules
-	if err := validate(g); err != nil {
+	if err := validateDefinitions(g); err != nil {
 		errors.Append(err)
 	}
 

@@ -147,7 +147,7 @@ func (d *stepsDialog) parse(result string) (input.StepsGroupsExt, error) {
 	}
 
 	// Validate
-	if err := stepsGroups.Validate(); err != nil {
+	if err := stepsGroups.ValidateDefinitions(); err != nil {
 		errors.Append(err)
 	}
 

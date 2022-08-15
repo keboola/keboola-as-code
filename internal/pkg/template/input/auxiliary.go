@@ -58,8 +58,8 @@ func (g StepsGroupsExt) ToValue() (out StepsGroups) {
 	return out
 }
 
-func (g StepsGroupsExt) Validate() error {
-	return g.ToValue().Validate()
+func (g StepsGroupsExt) ValidateDefinitions() error {
+	return g.ToValue().ValidateDefinitions()
 }
 
 type VisitStepsCallback func(group *StepsGroupExt, step *StepExt) error
