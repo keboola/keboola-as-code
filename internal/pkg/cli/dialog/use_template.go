@@ -389,8 +389,8 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input) error {
 }
 
 // addInputValue from CLI dialog or inputs file.
-func (d *useTmplInputsDialog) addInputValue(value any, inputDef *input.Input, isFiled bool) error {
-	inputValue, err := template.ParseInputValue(value, inputDef, isFiled)
+func (d *useTmplInputsDialog) addInputValue(value any, inputDef *input.Input, isFilled bool) error {
+	inputValue, err := template.ParseInputValue(value, inputDef, isFilled)
 	if err != nil {
 		return err
 	}
