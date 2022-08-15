@@ -390,22 +390,12 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input) error {
 
 // addInputValue from CLI dialog or inputs file.
 func (d *useTmplInputsDialog) addInputValue(value any, inputDef *input.Input, isFiled bool) error {
-	// Convert
-	value, err := inputDef.Type.ParseValue(value)
+	inputValue, err := template.ParseInputValue(value, inputDef, isFiled)
 	if err != nil {
-		return fmt.Errorf("invalid template input: %w", err)
+		return err
 	}
 
-	// Validate all except oauth inputs
-	if isFiled && inputDef.Kind != input.KindOAuth && inputDef.Kind != input.KindOAuthAccounts {
-		if err := inputDef.ValidateUserInput(value); err != nil {
-			return fmt.Errorf("invalid template input: %w", err)
-		}
-	}
-
-	// Add
-	inputValue := template.InputValue{Id: inputDef.Id, Value: value, Skipped: !isFiled}
-	d.inputsValues[inputDef.Id] = value
+	d.inputsValues[inputDef.Id] = inputValue.Value
 	d.out = append(d.out, inputValue)
 	return nil
 }

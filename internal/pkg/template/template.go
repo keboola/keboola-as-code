@@ -80,6 +80,23 @@ func LoadReadme(fs filesystem.Fs) (string, error) {
 	return file.Content, nil
 }
 
+func ParseInputValue(value interface{}, inputDef *templateInput.Input, isFilled bool) (InputValue, error) {
+	// Convert
+	value, err := inputDef.Type.ParseValue(value)
+	if err != nil {
+		return InputValue{}, fmt.Errorf("invalid template input: %w", err)
+	}
+
+	// Validate all except oauth inputs
+	if isFilled && inputDef.Kind != templateInput.KindOAuth && inputDef.Kind != templateInput.KindOAuthAccounts {
+		if err := inputDef.ValidateUserInput(value); err != nil {
+			return InputValue{}, fmt.Errorf("invalid template input: %w", err)
+		}
+	}
+
+	return InputValue{Id: inputDef.Id, Value: value, Skipped: !isFilled}, nil
+}
+
 type dependencies interface {
 	Logger() log.Logger
 	Components() (*model.ComponentsMap, error)
