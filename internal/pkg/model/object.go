@@ -366,14 +366,16 @@ type Branch struct {
 type ConfigMetadata map[string]string
 
 type ConfigInputUsage struct {
-	Input   string `json:"input"`
-	JsonKey string `json:"key"`
+	Input      string   `json:"input"`
+	JsonKey    string   `json:"key"`
+	ObjectKeys []string `json:"objectKeys,omitempty"` // list of object keys generated from the input (empty = all)
 }
 
 type RowInputUsage struct {
-	RowId   storageapi.RowID `json:"rowId"`
-	Input   string           `json:"input"`
-	JsonKey string           `json:"key"`
+	RowId      storageapi.RowID `json:"rowId"`
+	Input      string           `json:"input"`
+	JsonKey    string           `json:"key"`
+	ObjectKeys []string         `json:"objectKeys,omitempty"` // list of object keys generated from the input (empty = all)
 }
 
 func (m ConfigMetadata) SetConfigTemplateId(templateObjectId storageapi.ConfigID) {
@@ -397,10 +399,12 @@ func (m ConfigMetadata) InputsUsage() []ConfigInputUsage {
 	return out
 }
 
-func (m ConfigMetadata) AddInputUsage(inputName string, jsonKey orderedmap.Path) {
+func (m ConfigMetadata) AddInputUsage(inputName string, jsonKey orderedmap.Path, objectKeys []string) {
+	sort.Strings(objectKeys)
 	m[configInputsUsageMetadataKey] = json.MustEncodeString(append(m.InputsUsage(), ConfigInputUsage{
-		Input:   inputName,
-		JsonKey: jsonKey.String(),
+		Input:      inputName,
+		JsonKey:    jsonKey.String(),
+		ObjectKeys: objectKeys,
 	}), false)
 }
 
@@ -426,11 +430,13 @@ func (m ConfigMetadata) RowsInputsUsage() []RowInputUsage {
 	return out
 }
 
-func (m ConfigMetadata) AddRowInputUsage(rowId storageapi.RowID, inputName string, jsonKey orderedmap.Path) {
+func (m ConfigMetadata) AddRowInputUsage(rowId storageapi.RowID, inputName string, jsonKey orderedmap.Path, objectKeys []string) {
+	sort.Strings(objectKeys)
 	values := append(m.RowsInputsUsage(), RowInputUsage{
-		RowId:   rowId,
-		Input:   inputName,
-		JsonKey: jsonKey.String(),
+		RowId:      rowId,
+		Input:      inputName,
+		JsonKey:    jsonKey.String(),
+		ObjectKeys: objectKeys,
 	})
 	sort.SliceStable(values, func(i, j int) bool {
 		return values[i].Input < values[j].Input

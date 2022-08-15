@@ -52,9 +52,12 @@ func (g StepsGroups) Validate() error {
 		errors.Append(fmt.Errorf("at least one steps group must be defined"))
 	}
 
+	inputsMap := make(map[string]*Input)
 	inputsOccurrences := orderedmap.New() // inputId -> []string{occurrence1, ...}
 	inputsReferences := orderedmap.New()  // inputId -> []string{referencedFromInputId1, ...}
 	_ = g.ToExtended().VisitInputs(func(group *StepsGroupExt, step *StepExt, input *Input) error {
+		inputsMap[input.Id] = input
+
 		// Collect inputs occurrences
 		{
 			v, _ := inputsOccurrences.GetOrNil(input.Id).([]string)
@@ -93,12 +96,25 @@ func (g StepsGroups) Validate() error {
 	})
 	for _, inputId := range inputsReferences.Keys() {
 		if _, found := inputsOccurrences.Get(inputId); !found {
+			// Referenced input is missing
 			inputsErr := utils.NewMultiError()
 			references, _ := inputsReferences.GetOrNil(inputId).([]string)
 			for _, referencedFrom := range references {
 				inputsErr.Append(fmt.Errorf(referencedFrom))
 			}
 			errors.AppendWithPrefix(fmt.Sprintf(`input "%s" not found, referenced from`, inputId), inputsErr)
+		}
+	}
+
+	// Check multi-input rules
+	for _, input := range inputsMap {
+		// Check that input kind=KindOAuthAccounts is defined for a supported component
+		if input.Kind == KindOAuthAccounts {
+			if oauthInput, found := inputsMap[input.OauthInputId]; found {
+				if !OauthAccountsSupportedComponents[oauthInput.ComponentId] {
+					errors.Append(fmt.Errorf(`input "%s" (kind=%s) is defined for "%s" component, but it is not supported`, input.Id, input.Kind, oauthInput.ComponentId))
+				}
+			}
 		}
 	}
 

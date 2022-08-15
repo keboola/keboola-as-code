@@ -860,7 +860,7 @@ var Input = Type("input", func() {
 		Example("string")
 	})
 	Attribute("kind", String, "Kind of the input.", func() {
-		Enum("input", "hidden", "textarea", "confirm", "select", "multiselect", "oauth")
+		Enum("input", "hidden", "textarea", "confirm", "select", "multiselect", "oauth", "oauthAccounts")
 		Example("input")
 	})
 	Attribute("default", Any, "Default value, match defined type.", func() {
@@ -869,10 +869,13 @@ var Input = Type("input", func() {
 	Attribute("options", ArrayOf(InputOption), "Input options for type = select OR multiselect.", func() {
 		Example(ExampleInputOptions())
 	})
-	Attribute("componentId", String, "Component id for oauth kind inputs.", func() {
+	Attribute("componentId", String, "Component id for \"oauth\" kind inputs.", func() {
 		Example("keboola.ex-component")
 	})
-	Required("id", "name", "description", "type", "kind", "default", "componentId")
+	Attribute("oauthInputId", String, "OAuth input id for \"oauthAccounts\" kind inputs.", func() {
+		Example("oauthInput")
+	})
+	Required("id", "name", "description", "type", "kind", "default")
 	Example(ExampleInput())
 })
 

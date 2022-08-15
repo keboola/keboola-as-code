@@ -1,29 +1,40 @@
 {
   stepsGroups: [
     {
-      description: "Configure the eshop platforms",
+      description: "Configure...",
       required: "all",
       steps: [
         {
           icon: "common:settings",
-          name: "Shopify",
-          description: "Sell online with an ecommerce website",
+          name: "Instagram",
+          description: "Lorem ipsum",
           inputs: [
             {
-              id: "shopify-token",
-              name: "Shopify token",
-              description: "Please enter Shopify token",
-              type: "string",
-              kind: "hidden",
+              id: "limit",
+              name: "Lime",
+              description: "Some limit",
+              type: "int",
+              kind: "input",
+              default: 2000,
               rules: "required",
             },
             {
               id: "oauth",
-              name: "Shopify oAuth",
-              description: "Shopify Authorization",
+              name: "Instagram oAuth",
+              description: "Instagram Authorization",
               type: "object",
               kind: "oauth",
-              componentId: "keboola.ex-shopify",
+              componentId: "keboola.ex-instagram",
+              rules: "required",
+            },
+            {
+              id: "oauthAccounts",
+              name: "Instagram Profiles",
+              description: "Instagram Profiles",
+              type: "object",
+              kind: "oauthAccounts",
+              oauthInputId: "oauth",
+              rules: "required",
             },
           ],
         },

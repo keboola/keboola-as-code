@@ -26,7 +26,7 @@ func (m *metadataMapper) AfterLocalOperation(_ context.Context, changes *model.L
 			// Store inputs usage
 			if inputsUsage, ok := m.inputsUsage.Values[config.Key()]; ok {
 				for _, item := range inputsUsage {
-					config.Metadata.AddInputUsage(item.Name, item.JsonKey)
+					config.Metadata.AddInputUsage(item.Name, item.JsonKey, item.ObjectKeys)
 				}
 			}
 		case *model.ConfigRowState:
@@ -39,7 +39,7 @@ func (m *metadataMapper) AfterLocalOperation(_ context.Context, changes *model.L
 			// Store inputs usage
 			if inputsUsage, ok := m.inputsUsage.Values[v.Key()]; ok {
 				for _, item := range inputsUsage {
-					config.Metadata.AddRowInputUsage(v.Id, item.Name, item.JsonKey)
+					config.Metadata.AddRowInputUsage(v.Id, item.Name, item.JsonKey, item.ObjectKeys)
 				}
 			}
 		}

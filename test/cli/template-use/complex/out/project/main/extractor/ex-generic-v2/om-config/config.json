@@ -3,6 +3,7 @@
     "oauth_api": {}
   },
   "parameters": {
+    "accounts": {},
     "api": {
       "baseUrl": "https://jsonplaceholder.typicode.com"
     }

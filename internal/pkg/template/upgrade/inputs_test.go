@@ -381,7 +381,7 @@ func (tc testCase) run(t *testing.T) {
 	for index, inputDef := range tc.configInputs {
 		contentKey := fmt.Sprintf("foo.bar.item%d", index)
 		if inputDef.inMetadata {
-			configMetadata.AddInputUsage(inputDef.id, orderedmap.PathFromStr(contentKey))
+			configMetadata.AddInputUsage(inputDef.id, orderedmap.PathFromStr(contentKey), nil)
 		}
 		if inputDef.inContent {
 			assert.NoError(t, configContent.SetNested(contentKey, inputDef.value))
@@ -392,7 +392,7 @@ func (tc testCase) run(t *testing.T) {
 	for index, inputDef := range tc.rowInputs {
 		contentKey := fmt.Sprintf("foo.bar.item%d", index)
 		if inputDef.inMetadata {
-			configMetadata.AddRowInputUsage(configRowKey.Id, inputDef.id, orderedmap.PathFromStr(contentKey))
+			configMetadata.AddRowInputUsage(configRowKey.Id, inputDef.id, orderedmap.PathFromStr(contentKey), nil)
 		}
 		if inputDef.inContent {
 			assert.NoError(t, rowContent.SetNested(contentKey, inputDef.value))

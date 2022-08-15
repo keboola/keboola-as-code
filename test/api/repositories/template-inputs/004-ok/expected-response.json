@@ -19,8 +19,7 @@
               "description": "Please enter Shopify token",
               "type": "string",
               "kind": "hidden",
-              "default": "",
-              "componentId": ""
+              "default": ""
             },
             {
               "id": "oauth",
@@ -30,6 +29,24 @@
               "kind": "oauth",
               "default": {},
               "componentId": "keboola.ex-shopify"
+            },
+            {
+              "id": "oauth2",
+              "name": "Instagram oAuth",
+              "description": "Instagram Authorization",
+              "type": "object",
+              "kind": "oauth",
+              "default": {},
+              "componentId": "keboola.ex-instagram"
+            },
+            {
+              "id": "oauth2Accounts",
+              "name": "Instagram Profiles",
+              "description": "Instagram Profiles",
+              "type": "object",
+              "kind": "oauthAccounts",
+              "default": {},
+              "oauthInputId": "oauth2"
             }
           ]
         }
@@ -55,6 +72,14 @@
               },
               {
                 "id": "oauth",
+                "visible": true
+              },
+              {
+                "id": "oauth2",
+                "visible": true
+              },
+              {
+                "id": "oauth2Accounts",
                 "visible": true
               }
             ]

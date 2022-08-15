@@ -49,12 +49,12 @@ func (e inputsValuesExporter) export() input.StepsGroupsExt {
 		e.configs,
 		func(config *model.Config, idInTemplate storageapi.ConfigID, inputs []model.ConfigInputUsage) {
 			for _, inputUsage := range inputs {
-				e.addValue(config.Key(), config.Content, inputUsage.Input, inputUsage.JsonKey)
+				e.addValue(config.Key(), config.Content, inputUsage.Input, inputUsage.JsonKey, inputUsage.ObjectKeys)
 			}
 		},
 		func(row *model.ConfigRow, idInTemplate storageapi.RowID, inputs []model.RowInputUsage) {
 			for _, inputUsage := range inputs {
-				e.addValue(row.Key(), row.Content, inputUsage.Input, inputUsage.JsonKey)
+				e.addValue(row.Key(), row.Content, inputUsage.Input, inputUsage.JsonKey, inputUsage.ObjectKeys)
 			}
 		},
 	)
@@ -71,7 +71,7 @@ func (e inputsValuesExporter) export() input.StepsGroupsExt {
 	return e.groups
 }
 
-func (e inputsValuesExporter) addValue(key model.Key, content *orderedmap.OrderedMap, inputId string, jsonKey string) {
+func (e inputsValuesExporter) addValue(key model.Key, content *orderedmap.OrderedMap, inputId string, jsonKey string, objectKeys []string) {
 	value, keyFound, _ := content.GetNested(jsonKey)
 	if !keyFound {
 		// Key not found in the row content
@@ -84,9 +84,30 @@ func (e inputsValuesExporter) addValue(key model.Key, content *orderedmap.Ordere
 		e.logger.Writef(`Value for input "%s" found, but type doesn't match, JSON key "%s", in %s`, inputId, jsonKey, key.Desc())
 		return
 	}
+
+	// Convert ordered map to map
 	if inputDef.Type == input.TypeObject {
 		value = value.(*orderedmap.OrderedMap).ToMap()
 	}
+
+	// If "objectKeys" are not empty, it means that only part of the value/object (only some keys) were generated from the Input.
+	if objectKeys != nil {
+		if jsonObject, ok := value.(map[string]any); ok {
+			// Export only defined keys
+			mappedValue := make(map[string]any)
+			for _, k := range objectKeys {
+				if v, ok := jsonObject[k]; ok {
+					mappedValue[k] = v
+				}
+			}
+			value = mappedValue
+		} else {
+			// Object keys requires a JSON object, skip
+			return
+		}
+	}
+
+	// Validate value
 	if err := inputDef.Type.ValidateValue(reflect.ValueOf(value)); err != nil {
 		// Value has unexpected type
 		return

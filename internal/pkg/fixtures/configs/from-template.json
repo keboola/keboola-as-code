@@ -1,6 +1,6 @@
 {
-  "componentId": "ex-generic-v2",
-  "name": "shopify",
+  "componentId": "keboola.ex-instagram",
+  "name": "instagram",
   "description": "test fixture",
   "changeDescription": "From template keboola/my-template-id/1.2.3",
   "configuration": {
@@ -11,14 +11,23 @@
       }
     },
     "parameters": {
-      "shop": "shop",
-      "token": "token"
+      "accounts": {
+        "123456789101112": {
+          "category": "Musician/Band",
+          "fb_page_id": "1234",
+          "id": "4567",
+          "name": "Foo"
+        }
+      },
+      "key1": "value1",
+      "key2": "value2",
+      "limit": 4000
     }
   },
   "rows": [],
   "metadata": {
-    "KBC.KAC.templates.configId": "{\"idInTemplate\":\"shopify\"}",
-    "KBC.KAC.templates.configInputs": "[{\"input\":\"oauth\",\"key\":\"authorization\"},{\"input\":\"shopify-token\",\"key\":\"parameters.token\"}]",
+    "KBC.KAC.templates.configId": "{\"idInTemplate\":\"instagram\"}",
+    "KBC.KAC.templates.configInputs": "[{\"input\":\"limit\",\"key\":\"parameters.limit\"},{\"input\":\"oauth\",\"key\":\"authorization.oauth_api\"},{\"input\":\"oauthAccounts\",\"key\":\"parameters\",\"objectKeys\":[\"accounts\"]}]",
     "KBC.KAC.templates.instanceId": "inst-001",
     "KBC.KAC.templates.repository": "keboola",
     "KBC.KAC.templates.templateId": "my-template-id"

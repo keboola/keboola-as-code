@@ -266,10 +266,32 @@ func TestValidationRules(t *testing.T) {
 					Description: "input desc",
 					Type:        "object",
 					Kind:        "oauth",
-					ComponentId: "foo.bar",
+					ComponentId: "keboola.ex-instagram",
 				},
 			},
 			error: "",
+		},
+		{
+			description: "invalid oauthAccounts, unsupported component",
+			inputs: Inputs{
+				{
+					Id:           "input.id",
+					Name:         "input",
+					Description:  "input desc",
+					Type:         "object",
+					Kind:         "oauthAccounts",
+					OauthInputId: "input.other",
+				},
+				{
+					Id:          "input.other",
+					Name:        "input",
+					Description: "input desc",
+					Type:        "object",
+					Kind:        "oauth",
+					ComponentId: "foo.bar",
+				},
+			},
+			error: "input \"input.id\" (kind=oauthAccounts) is defined for \"foo.bar\" component, but it is not supported",
 		},
 		{
 			description: "missing oauthInputId for oauthAccounts kind",

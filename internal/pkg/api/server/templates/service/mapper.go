@@ -192,12 +192,17 @@ func InputsResponse(stepsGroups input.StepsGroupsExt) (out *Inputs) {
 					Options:     OptionsResponse(in.Options),
 				}
 				if in.ComponentId != "" {
-					inputResponse.ComponentID = in.ComponentId
+					v := in.ComponentId
+					inputResponse.ComponentID = &v
+				}
+				if in.OauthInputId != "" {
+					v := in.OauthInputId
+					inputResponse.OauthInputID = &v
 				}
 				stepResponse.Inputs = append(stepResponse.Inputs, inputResponse)
 
 				if stepValues != nil {
-					stepValues.Inputs = append(stepValues.Inputs, &InputValue{ID: in.Id, Value: in.Default})
+					stepValues.Inputs = append(stepValues.Inputs, &InputValue{ID: inputResponse.ID, Value: inputResponse.Default})
 				}
 			}
 		}

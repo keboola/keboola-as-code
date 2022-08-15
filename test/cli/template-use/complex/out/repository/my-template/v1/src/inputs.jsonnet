@@ -31,7 +31,8 @@
               description: "oAuth",
               type: "object",
               kind: "oauth",
-              componentId: "keboola.ex-component",
+              componentId: "keboola.ex-instagram",
+              rules: "required",
             },
             {
               id: "oauthAccounts",
@@ -40,6 +41,7 @@
               type: "object",
               kind: "oauthAccounts",
               oauthInputId: "oauth",
+              rules: "required",
             },
           ],
         },
