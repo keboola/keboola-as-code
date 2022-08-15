@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/storageapi"
 
 	cliDeps "github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
@@ -24,6 +25,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenv"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -45,6 +48,7 @@ type dependencies interface {
 	StorageApiClient() (client.Sender, error)
 }
 
+// getATestProject takes first project from TEST_KBC_PROJECTS env var.
 //@TODO from github.com/keboola/go-utils/pkg/testproject/testproject.go:155.
 func getATestProject() (string, string, string) {
 	if def, found := os.LookupEnv(`TEST_KBC_PROJECTS`); found {
@@ -103,14 +107,20 @@ func Run(tmpl *template.Template, d dependencies) (err error) {
 func runSingleTest(testName string, tmpl *template.Template, repoDirFS filesystem.Fs, d dependencies) error {
 	// Get a test project
 	projectHost, projectId, projectToken := getATestProject()
+	storageApiClient := storageapi.ClientWithHostAndToken(client.NewTestClient(), projectHost, projectToken)
+
+	// Get project's main branch id
+	branch, err := storageapi.GetDefaultBranchRequest().Send(d.Ctx(), storageApiClient)
+	if err != nil {
+		return err
+	}
 
 	// Load fixture with minimal project
 	fixProjectEnvs := env.Empty()
 	fixProjectEnvs.Set("TEST_KBC_STORAGE_API_HOST", projectHost)
 	fixProjectEnvs.Set("LOCAL_PROJECT_ID", projectId)
-	fixProjectEnvs.Set("LOCAL_STATE_MAIN_BRANCH_ID", "111")
-	fixProjectEnvs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
-	projectFS, err := fixtures.LoadFS("minimal", fixProjectEnvs)
+	fixProjectEnvs.Set("LOCAL_STATE_MAIN_BRANCH_ID", branch.ID.String())
+	projectFS, err := fixtures.LoadFS("empty-branch", fixProjectEnvs)
 	if err != nil {
 		return err
 	}
@@ -169,11 +179,22 @@ func runSingleTest(testName string, tmpl *template.Template, repoDirFS filesyste
 	// Use template
 	tmplOpts := useTemplate.Options{
 		InstanceName: "test",
-		TargetBranch: model.BranchKey{Id: 111},
+		TargetBranch: model.BranchKey{Id: branch.ID},
 		Inputs:       inputValues,
 	}
 	_, _, err = useTemplate.Run(prjState, tmpl, tmplOpts, projectDeps)
-	return err
+
+	// Copy expected state and replace ENVs
+	expectedDirFs, err := tmpl.TestExpectedOutFS(testName)
+	if err != nil {
+		return err
+	}
+	envProvider := storageenv.CreateStorageEnvTicketProvider(d.Ctx(), storageApiClient, fixProjectEnvs)
+	testhelper.ReplaceEnvsDir(projectFS, `/`, envProvider)
+	testhelper.ReplaceEnvsDir(expectedDirFs, `/`, envProvider)
+
+	// Compare actual and expected dirs
+	return testhelper.DirectoryContentsSame(expectedDirFs, `/`, projectFS, `/`)
 }
 
 func prepareRepoFS(tempDir string, tmpl *template.Template) (filesystem.Fs, error) {
