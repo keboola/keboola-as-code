@@ -51,6 +51,7 @@ env:
 
   # Mac Os notarization
   APPLE_USERNAME: "apple@keboola.com"
+  APPLE_TEAM_ID: "46P6KJ65M2"
   APPLE_BUNDLE_ID: "com.keboola.kbc"
   APPLE_APP_IDENTITY: "Developer ID Application: Tomas Netrval"
 
