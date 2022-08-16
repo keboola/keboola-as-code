@@ -89,7 +89,8 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	// Setup project state
 	projectStateFile := "initial-state.json"
 	if testDirFs.IsFile(projectStateFile) {
-		project.SetState(filepath.Join(testDir, projectStateFile))
+		err := project.SetState(filepath.Join(testDir, projectStateFile))
+		assert.NoError(t, err)
 	}
 
 	// Create ENV provider

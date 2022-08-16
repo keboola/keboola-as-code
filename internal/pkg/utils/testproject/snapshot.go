@@ -137,7 +137,11 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	// Join schedules with config name
 	for _, schedule := range schedules {
-		configKey := storageapi.ConfigKey{BranchID: p.DefaultBranch().ID, ComponentID: storageapi.SchedulerComponentID, ID: schedule.ConfigID}
+		defBranch, err := p.DefaultBranch()
+		if err != nil {
+			return nil, err
+		}
+		configKey := storageapi.ConfigKey{BranchID: defBranch.ID, ComponentID: storageapi.SchedulerComponentID, ID: schedule.ConfigID}
 		if scheduleConfig, found := configsMap[configKey]; found {
 			snapshot.Schedules = append(snapshot.Schedules, &fixtures.Schedule{Name: scheduleConfig.Name})
 		} else {

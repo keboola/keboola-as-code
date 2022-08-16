@@ -26,7 +26,8 @@ import (
 func TestLoadState(t *testing.T) {
 	t.Parallel()
 	testProject := testproject.GetTestProjectForTest(t, env.Empty())
-	testProject.SetState("minimal.json")
+	err := testProject.SetState("minimal.json")
+	assert.NoError(t, err)
 	envs := testProject.Env()
 
 	// Same IDs in local and remote state

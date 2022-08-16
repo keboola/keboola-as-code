@@ -3,12 +3,10 @@ package fixtures
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"runtime"
-	"testing"
-
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"os"
+	"runtime"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
@@ -155,9 +153,7 @@ func LoadStateFile(path string) (*StateFile, error) {
 }
 
 // LoadConfig loads config from the file.
-func LoadConfig(t *testing.T, name string) *Config {
-	t.Helper()
-
+func LoadConfig(name string) *Config {
 	// nolint: dogsled
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)

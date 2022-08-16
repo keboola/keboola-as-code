@@ -30,7 +30,6 @@ import (
 
 type Project struct {
 	*testproject.Project
-	t                   *testing.T
 	initStartedAt       time.Time
 	ctx                 context.Context
 	storageAPIToken     *storageapi.Token
@@ -157,15 +156,15 @@ func (p *Project) Env() *env.Map {
 	return p.envs
 }
 
-func (p *Project) DefaultBranch() *storageapi.Branch {
+func (p *Project) DefaultBranch() (*storageapi.Branch, error) {
 	if p.defaultBranch == nil {
 		if v, err := storageapi.GetDefaultBranchRequest().Send(p.ctx, p.storageApiClient); err != nil {
 			p.defaultBranch = v
 		} else {
-			assert.FailNow(p.t, "cannot get default branch: ", err)
+			return nil, fmt.Errorf("cannot get default branch: %w", err)
 		}
 	}
-	return p.defaultBranch
+	return p.defaultBranch, nil
 }
 
 func (p *Project) StorageAPIToken() *storageapi.Token {
@@ -185,7 +184,7 @@ func (p *Project) SchedulerAPIClient() client.Client {
 }
 
 // Clean method resets default branch, deletes all project branches (except default), all configurations and all schedules.
-func (p *Project) Clean() {
+func (p *Project) Clean() error {
 	p.logf("□ Cleaning project...")
 
 	ctx, cancelFn := context.WithCancel(context.Background())
@@ -212,14 +211,18 @@ func (p *Project) Clean() {
 	})
 
 	if err := grp.Wait(); err != nil {
-		p.t.Fatalf(`cannot clean project "%d": %s`, p.ID(), err)
+		return fmt.Errorf(`cannot clean project "%d": %s`, p.ID(), err)
 	}
 	p.logf("■ Cleanup done.")
+	return nil
 }
 
-func (p *Project) SetState(stateFilePath string) {
+func (p *Project) SetState(stateFilePath string) error {
 	// Remove all objects
-	p.Clean()
+	err := p.Clean()
+	if err != nil {
+		return err
+	}
 	p.branchesById = make(map[storageapi.BranchID]*storageapi.Branch)
 	p.branchesByName = make(map[string]*storageapi.Branch)
 
@@ -241,22 +244,32 @@ func (p *Project) SetState(stateFilePath string) {
 	// Load state file
 	stateFile, err := fixtures.LoadStateFile(stateFilePath)
 	if err != nil {
-		assert.FailNow(p.t, err.Error())
+		return err
 	}
 
 	// Create configs in default branch, they will be auto-copied to branches created later
-	p.createConfigsInDefaultBranch(stateFile.AllBranchesConfigs)
+	err = p.createConfigsInDefaultBranch(stateFile.AllBranchesConfigs)
+	if err != nil {
+		return err
+	}
 
 	// Create branches
-	p.createBranches(stateFile.Branches)
+	err = p.createBranches(stateFile.Branches)
+	if err != nil {
+		return err
+	}
 
 	// Create configs in branches
-	p.createConfigs(stateFile.Branches, stateFile.Envs)
+	err = p.createConfigs(stateFile.Branches, stateFile.Envs)
+	if err != nil {
+		return err
+	}
 
 	p.logf("■ Project state set.")
+	return nil
 }
 
-func (p *Project) createBranches(branches []*fixtures.BranchState) {
+func (p *Project) createBranches(branches []*fixtures.BranchState) error {
 	ctx, cancelFn := context.WithCancel(context.Background())
 	defer cancelFn()
 
@@ -275,8 +288,9 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) {
 
 	// Wait for all requests
 	if err := grp.Wait(); err != nil {
-		assert.FailNow(p.t, err.Error())
+		return err
 	}
+	return nil
 }
 
 func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranchSem *semaphore.Weighted) client.APIRequest[*storageapi.Branch] {
@@ -352,7 +366,7 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 	return request
 }
 
-func (p *Project) createConfigsInDefaultBranch(configs []string) {
+func (p *Project) createConfigsInDefaultBranch(configs []string) error {
 	ctx, cancelFn := context.WithCancel(p.ctx)
 	defer cancelFn()
 
@@ -366,17 +380,18 @@ func (p *Project) createConfigsInDefaultBranch(configs []string) {
 
 	// Generate new IDs
 	if err := tickets.Resolve(); err != nil {
-		assert.FailNow(p.t, fmt.Sprintf(`cannot generate new IDs: %s`, err))
+		return fmt.Errorf(`cannot generate new IDs: %s`, err)
 	}
 
 	// Wait for requests
 	close(sendReady) // unblock requests
 	if err := grp.Wait(); err != nil {
-		assert.FailNow(p.t, fmt.Sprintf("cannot create configs: %s", err))
+		return fmt.Errorf("cannot create configs: %s", err)
 	}
+	return nil
 }
 
-func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs map[string]string) {
+func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs map[string]string) error {
 	ctx, cancelFn := context.WithCancel(p.ctx)
 	defer cancelFn()
 
@@ -392,7 +407,7 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 
 	// Generate new IDs
 	if err := tickets.Resolve(); err != nil {
-		assert.FailNow(p.t, fmt.Sprintf(`cannot generate new IDs: %s`, err))
+		return fmt.Errorf(`cannot generate new IDs: %s`, err)
 	}
 
 	// Add additional ENVs
@@ -403,13 +418,14 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 	// Wait for requests
 	close(sendReady) // unblock requests
 	if err := grp.Wait(); err != nil {
-		assert.FailNow(p.t, fmt.Sprintf("cannot create configs: %s", err))
+		return fmt.Errorf("cannot create configs: %s", err)
 	}
+	return nil
 }
 
 func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, sendReady <-chan struct{}, tickets *storageapi.TicketProvider, envPrefix string, names []string, branch *storageapi.Branch) {
 	for _, name := range names {
-		configFixture := fixtures.LoadConfig(p.t, name)
+		configFixture := fixtures.LoadConfig(name)
 		configWithRows := configFixture.ToApi()
 		configDesc := fmt.Sprintf("%s/%s/%s", branch.Name, configFixture.ComponentID, configFixture.Name)
 
@@ -517,7 +533,7 @@ func (p *Project) logEnvs() {
 func (p *Project) logf(format string, a ...interface{}) {
 	if testhelper.TestIsVerbose() {
 		seconds := float64(time.Since(p.initStartedAt).Milliseconds()) / 1000
-		a = append([]interface{}{p.ID(), p.t.Name(), seconds}, a...)
-		p.t.Logf("TestProject[%d][%s][%05.2fs]: "+format, a...)
+		a = append([]interface{}{p.ID(), seconds}, a...)
+		fmt.Printf("TestProject[%d][%05.2fs]: "+format, a...)
 	}
 }
