@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
-func InitTemplate(t *testing.T, fs filesystem.Fs) *Template {
+func initTemplate(t *testing.T, fs filesystem.Fs) *Template {
 	t.Helper()
 
 	version, err := model.NewSemVersion("v0.0.1")
@@ -44,7 +44,7 @@ func TestTemplate_TestsDir(t *testing.T) {
 	assert.NoError(t, fs.Mkdir("tests/one"))
 	assert.NoError(t, fs.Mkdir("tests/two"))
 
-	tmpl := InitTemplate(t, fs)
+	tmpl := initTemplate(t, fs)
 
 	res, err := tmpl.TestsDir()
 	assert.NoError(t, err)
@@ -63,7 +63,7 @@ func TestTemplate_TestDir(t *testing.T) {
 	assert.NoError(t, fs.Mkdir("tests/two"))
 	assert.NoError(t, fs.Mkdir("tests/two/sub2"))
 
-	tmpl := InitTemplate(t, fs)
+	tmpl := initTemplate(t, fs)
 
 	res, err := tmpl.TestDir("one")
 	assert.NoError(t, err)
@@ -79,7 +79,7 @@ func TestTemplate_ListTests(t *testing.T) {
 	assert.NoError(t, fs.Mkdir("tests/one"))
 	assert.NoError(t, fs.Mkdir("tests/two"))
 
-	tmpl := InitTemplate(t, fs)
+	tmpl := initTemplate(t, fs)
 
 	res, err := tmpl.ListTests()
 	assert.NoError(t, err)
@@ -95,7 +95,7 @@ func TestTemplate_TestInputs(t *testing.T) {
 	assert.NoError(t, fs.Mkdir("tests/one"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("tests/one/inputs.json", `{"foo":"bar"}`)))
 
-	tmpl := InitTemplate(t, fs)
+	tmpl := initTemplate(t, fs)
 
 	res, err := tmpl.TestInputs("one")
 	assert.NoError(t, err)
