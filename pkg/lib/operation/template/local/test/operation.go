@@ -3,10 +3,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"strings"
-
 	cliDeps "github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
@@ -24,8 +20,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenvmock"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
+	"os"
+	"strconv"
 )
 
 type Options struct {
@@ -37,35 +36,8 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-// getATestProject takes first project from TEST_KBC_PROJECTS env var.
-//@TODO from github.com/keboola/go-utils/pkg/testproject/testproject.go:155.
-func getATestProject() (string, string, string) {
-	if def, found := os.LookupEnv(`TEST_KBC_PROJECTS`); found {
-		// Each project definition is separated by ";"
-		projects := strings.Split(def, ";")
-		p := strings.TrimSpace(projects[0])
-
-		// Definition format: storage_api_host|project_id|project_token
-		parts := strings.Split(p, `|`)
-
-		// Check number of parts
-		if len(parts) != 3 {
-			panic(fmt.Errorf(
-				`project definition in TEST_PROJECTS env must be in "storage_api_host|project_id|project_token " format, given "%s"`,
-				p,
-			))
-		}
-
-		host := strings.TrimSpace(parts[0])
-		id := strings.TrimSpace(parts[1])
-		token := strings.TrimSpace(parts[2])
-		return host, id, token
-	}
-	return "", "", ""
-}
-
 func Run(tmpl *template.Template, d dependencies) (err error) {
-	tempDir, err := ioutil.TempDir("", "kac-test-template-")
+	tempDir, err := os.MkdirTemp("", "kac-test-template-")
 	if err != nil {
 		return err
 	}
@@ -95,22 +67,30 @@ func Run(tmpl *template.Template, d dependencies) (err error) {
 
 func runSingleTest(testName string, tmpl *template.Template, repoDirFS filesystem.Fs, d dependencies) error {
 	// Get a test project
-	projectHost, projectId, projectToken := getATestProject()
+	envs, err := env.FromOs()
+	if err != nil {
+		return err
+	}
+	testPrj, unlockFn, err := testproject.GetTestProject(envs)
+	if err != nil {
+		return err
+	}
+	defer unlockFn()
 
 	// Load fixture with minimal project
 	fixProjectEnvs := env.Empty()
-	fixProjectEnvs.Set("TEST_KBC_STORAGE_API_HOST", projectHost)
-	fixProjectEnvs.Set("LOCAL_PROJECT_ID", projectId)
-	fixProjectEnvs.Set("STORAGE_API_HOST", projectHost)
-	fixProjectEnvs.Set("PROJECT_ID", projectId)
+	fixProjectEnvs.Set("TEST_KBC_STORAGE_API_HOST", testPrj.StorageAPIHost())
+	fixProjectEnvs.Set("LOCAL_PROJECT_ID", strconv.Itoa(testPrj.ID()))
+	fixProjectEnvs.Set("STORAGE_API_HOST", testPrj.StorageAPIHost())
+	fixProjectEnvs.Set("PROJECT_ID", strconv.Itoa(testPrj.ID()))
 	projectFS, err := fixtures.LoadFS("empty-branch", fixProjectEnvs)
 	if err != nil {
 		return err
 	}
 
 	opts := options.New()
-	opts.Set(`storage-api-host`, projectHost)
-	opts.Set(`storage-api-token`, projectToken)
+	opts.Set(`storage-api-host`, testPrj.StorageAPIHost())
+	opts.Set(`storage-api-token`, testPrj.StorageAPIToken().Token)
 	tmplDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), repoDirFS, dialog.New(nop.New()), d.Logger(), opts)
 	projectDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), projectFS, dialog.New(nop.New()), d.Logger(), opts)
 

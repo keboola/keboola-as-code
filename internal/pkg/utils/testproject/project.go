@@ -44,15 +44,30 @@ type Project struct {
 	branchesByName      map[string]*storageapi.Branch
 }
 
-func GetTestProject(t *testing.T, envs *env.Map) *Project {
+type UnlockFn func()
+
+func GetTestProjectForTest(t *testing.T, envs *env.Map) *Project {
 	t.Helper()
-	ctx, cancelFn := context.WithCancel(context.Background())
+
+	p, unlockFn, err := GetTestProject(envs)
+	assert.NoError(t, err)
+
 	t.Cleanup(func() {
-		// Cancel background jobs
-		cancelFn()
+		// Unlock and cancel background jobs
+		unlockFn()
 	})
 
-	p := &Project{Project: testproject.GetTestProject(t), t: t, initStartedAt: time.Now(), ctx: ctx, mapsLock: &sync.Mutex{}}
+	return p
+}
+
+func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
+	project, unlockFn, err := testproject.GetTestProject()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ctx, cancelFn := context.WithCancel(context.Background())
+	p := &Project{Project: project, initStartedAt: time.Now(), ctx: ctx, mapsLock: &sync.Mutex{}}
 	p.logf("□ Initializing project...")
 
 	// Init storage API
@@ -61,14 +76,20 @@ func GetTestProject(t *testing.T, envs *env.Map) *Project {
 	// Load services
 	index, err := storageapi.IndexRequest().Send(p.ctx, p.storageApiClient)
 	if err != nil {
-		assert.FailNow(p.t, "cannot get services: ", err)
+		return nil, func() {
+			cancelFn()
+			unlockFn()
+		}, fmt.Errorf("cannot get services: %w", err)
 	}
 	services := index.Services.ToMap()
 
 	// Get encryption service host
 	encryptionHost, found := services.URLByID("encryption")
 	if !found {
-		assert.FailNow(p.t, "encryption service not found")
+		return nil, func() {
+			cancelFn()
+			unlockFn()
+		}, fmt.Errorf("encryption service not found")
 	}
 
 	// Init Encryption API
@@ -77,7 +98,10 @@ func GetTestProject(t *testing.T, envs *env.Map) *Project {
 	// Get scheduler service host
 	schedulerHost, found := services.URLByID("scheduler")
 	if !found {
-		assert.FailNow(p.t, "missing scheduler service")
+		return nil, func() {
+			cancelFn()
+			unlockFn()
+		}, fmt.Errorf("missing scheduler service")
 	}
 
 	// Init Scheduler API
@@ -86,25 +110,47 @@ func GetTestProject(t *testing.T, envs *env.Map) *Project {
 	// Check token/project ID
 	initWg := &sync.WaitGroup{}
 	initWg.Add(1)
+	errs := make(chan error, 1)
+	wgDone := make(chan bool)
 	go func() {
 		defer initWg.Done()
 		if token, err := storageapi.VerifyTokenRequest(p.Project.StorageAPIToken()).Send(p.ctx, p.storageApiClient); err != nil {
-			assert.FailNow(p.t, fmt.Sprintf("invalid token for project %d: %s", p.ID(), err))
+			errs <- fmt.Errorf("invalid token for project %d: %s", p.ID(), err)
 		} else if p.ID() != token.ProjectID() {
-			assert.FailNow(p.t, "test project id and token project id are different.")
+			errs <- fmt.Errorf("test project id and token project id are different")
 		} else {
 			p.storageAPIToken = token
 		}
 	}()
 
+	go func() {
+		initWg.Wait()
+		close(wgDone)
+	}()
+
+	// Wait until either WaitGroup is done or an error is received through the channel
+	select {
+	case <-wgDone:
+		// carry on
+		break
+	case err := <-errs:
+		close(errs)
+		return nil, func() {
+			cancelFn()
+			unlockFn()
+		}, err
+	}
+
 	// Set envs
-	initWg.Wait()
 	p.envs = envs.Clone()
 	p.setEnv(`TEST_KBC_PROJECT_ID`, cast.ToString(p.ID()))
 	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.Project.StorageAPIHost())
 	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.Project.StorageAPIToken())
 	p.logf(`■ ️Initialization done.`)
-	return p
+	return p, func() {
+		cancelFn()
+		unlockFn()
+	}, nil
 }
 
 func (p *Project) Env() *env.Map {

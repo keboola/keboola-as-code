@@ -439,7 +439,7 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	t.Helper()
 
 	envs := env.Empty()
-	testProject := testproject.GetTestProject(t, envs)
+	testProject := testproject.GetTestProjectForTest(t, envs)
 	testProject.SetState(projectStateFile)
 
 	d := dependencies.NewTestContainer()

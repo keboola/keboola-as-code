@@ -83,7 +83,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	assert.NoError(t, err)
 
 	// Get test project
-	project := testproject.GetTestProject(t, envs)
+	project := testproject.GetTestProjectForTest(t, envs)
 	envs = project.Env()
 	api := project.StorageAPIClient()
 
