@@ -28,7 +28,9 @@ import (
 )
 
 type Options struct {
-	Path string
+	LocalOnly  bool   // run local tests only
+	RemoteOnly bool   // run remote tests only
+	TestName   string // run only selected test
 }
 
 type dependencies interface {
@@ -36,7 +38,7 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(tmpl *template.Template, d dependencies) (err error) {
+func Run(tmpl *template.Template, o Options, d dependencies) (err error) {
 	tempDir, err := os.MkdirTemp("", "kac-test-template-")
 	if err != nil {
 		return err
@@ -56,8 +58,14 @@ func Run(tmpl *template.Template, d dependencies) (err error) {
 	}
 
 	for _, testName := range testsList {
-		if err := runSingleTest(testName, tmpl, repoDirFS, d); err != nil {
-			return fmt.Errorf(`running test "%s" for template "%s" failed: %w`, testName, tmpl.TemplateId(), err)
+		// Run only a single test?
+		if o.TestName != "" && o.TestName != testName {
+			continue
+		}
+		if !o.RemoteOnly {
+			if err := runSingleTest(testName, tmpl, true, repoDirFS, d); err != nil {
+				return fmt.Errorf(`running test "%s" for template "%s" failed: %w`, testName, tmpl.TemplateId(), err)
+			}
 		}
 		d.Logger().Infof(`Test "%s" finished.`, testName)
 	}
@@ -65,7 +73,7 @@ func Run(tmpl *template.Template, d dependencies) (err error) {
 	return nil
 }
 
-func runSingleTest(testName string, tmpl *template.Template, repoDirFS filesystem.Fs, d dependencies) error {
+func runSingleTest(testName string, tmpl *template.Template, _ bool, repoDirFS filesystem.Fs, d dependencies) error {
 	// Get a test project
 	envs, err := env.FromOs()
 	if err != nil {
