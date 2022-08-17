@@ -51,8 +51,9 @@ env:
 
   # Mac Os notarization
   APPLE_USERNAME: "apple@keboola.com"
+  APPLE_TEAM_ID: "46P6KJ65M2"
   APPLE_BUNDLE_ID: "com.keboola.kbc"
-  APPLE_APP_IDENTITY: "Developer ID Application: Tomas Netrval"
+  APPLE_APP_IDENTITY: "Developer ID Application: Keboola Industries SE"
 
   DIST_BASE_URL: "https://keboola-as-code-dist.s3.amazonaws.com"
 
@@ -247,6 +248,7 @@ jobs:
           APK_KEY_PRIVATE_PATH: /tmp/keys/apk.key
           AC_USERNAME: ${{ secrets.AC_USERNAME }}
           AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
+          AC_PROVIDER: ${{ env.APPLE_TEAM_ID }}
       - name: Upload artifact to release
         uses: svenstaro/upload-release-action@v2
         with:
