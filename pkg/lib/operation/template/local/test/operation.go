@@ -198,7 +198,7 @@ func runRemoteTest(testName string, tmpl *template.Template, repoFS filesystem.F
 		return err
 	}
 	defer unlockFn()
-	err = testPrj.SetState("minimal.json")
+	err = testPrj.SetState("empty.json")
 	if err != nil {
 		return err
 	}
