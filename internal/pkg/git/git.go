@@ -78,15 +78,7 @@ func Checkout(ctx context.Context, url, ref string, sparse bool, logger log.Logg
 }
 
 func errorMsg(result cmdResult, err error) string {
-	stderr := strings.TrimSpace(result.stdErr)
-	if stderr != "" {
-		return stderr
-	}
-	stdout := strings.TrimSpace(result.stdOut)
-	if stdout != "" {
-		return stdout
-	}
-	return err.Error()
+	return fmt.Sprintf("%s\n\nstderr:\n%s\n\nstdout:\n%s", err.Error(), strings.TrimSpace(result.stdErr), strings.TrimSpace(result.stdOut))
 }
 
 func (r *Repository) String() string {
@@ -235,7 +227,7 @@ func (r *Repository) doRunGitCmd(ctx context.Context, args ...string) (cmdResult
 func newBackoff() *backoff.ExponentialBackOff {
 	b := backoff.NewExponentialBackOff()
 	b.RandomizationFactor = 0
-	b.InitialInterval = 50 * time.Millisecond
+	b.InitialInterval = 200 * time.Millisecond
 	b.Multiplier = 2
 	b.MaxInterval = 500 * time.Millisecond
 	b.MaxElapsedTime = 2 * time.Second
