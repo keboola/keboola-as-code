@@ -78,12 +78,10 @@ func runSingleTest(testName string, tmpl *template.Template, repoDirFS filesyste
 	defer unlockFn()
 
 	// Load fixture with minimal project
-	fixProjectEnvs := env.Empty()
-	fixProjectEnvs.Set("TEST_KBC_STORAGE_API_HOST", testPrj.StorageAPIHost())
-	fixProjectEnvs.Set("LOCAL_PROJECT_ID", strconv.Itoa(testPrj.ID()))
-	fixProjectEnvs.Set("STORAGE_API_HOST", testPrj.StorageAPIHost())
-	fixProjectEnvs.Set("PROJECT_ID", strconv.Itoa(testPrj.ID()))
-	projectFS, err := fixtures.LoadFS("empty-branch", fixProjectEnvs)
+	fixPrjEnvs := env.Empty()
+	fixPrjEnvs.Set("TEST_KBC_STORAGE_API_HOST", testPrj.StorageAPIHost())
+	fixPrjEnvs.Set("LOCAL_PROJECT_ID", strconv.Itoa(testPrj.ID()))
+	projectFS, err := fixtures.LoadFS("empty-branch", fixPrjEnvs)
 	if err != nil {
 		return err
 	}
@@ -92,7 +90,7 @@ func runSingleTest(testName string, tmpl *template.Template, repoDirFS filesyste
 	opts.Set(`storage-api-host`, testPrj.StorageAPIHost())
 	opts.Set(`storage-api-token`, testPrj.StorageAPIToken().Token)
 	tmplDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), repoDirFS, dialog.New(nop.New()), d.Logger(), opts)
-	projectDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), projectFS, dialog.New(nop.New()), d.Logger(), opts)
+	prjDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), projectFS, dialog.New(nop.New()), d.Logger(), opts)
 
 	// Re-init template with set-up Storage client
 	tmpl, err = tmplDeps.Template(tmpl.Reference())
@@ -101,7 +99,7 @@ func runSingleTest(testName string, tmpl *template.Template, repoDirFS filesyste
 	}
 
 	// Load project state
-	prj, err := project.New(projectFS, true, projectDeps)
+	prj, err := project.New(projectFS, true, prjDeps)
 	if err != nil {
 		return err
 	}
@@ -145,14 +143,17 @@ func runSingleTest(testName string, tmpl *template.Template, repoDirFS filesyste
 		TargetBranch: model.BranchKey{Id: 1},
 		Inputs:       inputValues,
 	}
-	_, _, err = useTemplate.Run(prjState, tmpl, tmplOpts, projectDeps)
+	_, _, err = useTemplate.Run(prjState, tmpl, tmplOpts, prjDeps)
 
 	// Copy expected state and replace ENVs
 	expectedDirFs, err := tmpl.TestExpectedOutFS(testName)
 	if err != nil {
 		return err
 	}
-	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(d.Ctx(), fixProjectEnvs)
+	replaceEnvs := env.Empty()
+	replaceEnvs.Set("STORAGE_API_HOST", testPrj.StorageAPIHost())
+	replaceEnvs.Set("PROJECT_ID", strconv.Itoa(testPrj.ID()))
+	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(d.Ctx(), replaceEnvs)
 	testhelper.ReplaceEnvsDir(projectFS, `/`, envProvider)
 	testhelper.ReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
 
