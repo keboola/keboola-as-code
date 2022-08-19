@@ -148,7 +148,7 @@ func (p *Project) Env() *env.Map {
 
 func (p *Project) DefaultBranch() (*storageapi.Branch, error) {
 	if p.defaultBranch == nil {
-		if v, err := storageapi.GetDefaultBranchRequest().Send(p.ctx, p.storageApiClient); err != nil {
+		if v, err := storageapi.GetDefaultBranchRequest().Send(p.ctx, p.storageApiClient); err == nil {
 			p.defaultBranch = v
 		} else {
 			return nil, fmt.Errorf("cannot get default branch: %w", err)

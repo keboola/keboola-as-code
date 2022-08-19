@@ -3,6 +3,8 @@ package test
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-utils/pkg/deepcopy"
 	cliDeps "github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
@@ -22,6 +24,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenvmock"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
+	syncPush "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 	"os"
 	"strconv"
@@ -62,18 +65,29 @@ func Run(tmpl *template.Template, o Options, d dependencies) (err error) {
 		if o.TestName != "" && o.TestName != testName {
 			continue
 		}
+
 		if !o.RemoteOnly {
-			if err := runSingleTest(testName, tmpl, true, repoDirFS, d); err != nil {
-				return fmt.Errorf(`running test "%s" for template "%s" failed: %w`, testName, tmpl.TemplateId(), err)
+			d.Logger().Infof(`Running local test "%s".`, testName)
+			if err := runLocalTest(testName, tmpl, repoDirFS, d); err != nil {
+				return fmt.Errorf(`running local test "%s" for template "%s" failed: %w`, testName, tmpl.TemplateId(), err)
 			}
+			d.Logger().Infof(`Local test "%s" finished.`, testName)
 		}
-		d.Logger().Infof(`Test "%s" finished.`, testName)
+
+		if !o.LocalOnly {
+			d.Logger().Infof(`Running remote test "%s".`, testName)
+			if err := runRemoteTest(testName, tmpl, repoDirFS, d); err != nil {
+				return fmt.Errorf(`running remote test "%s" for template "%s" failed: %w`, testName, tmpl.TemplateId(), err)
+			}
+			d.Logger().Infof(`Remote test "%s" finished.`, testName)
+
+		}
 	}
 
 	return nil
 }
 
-func runSingleTest(testName string, tmpl *template.Template, _ bool, repoDirFS filesystem.Fs, d dependencies) error {
+func runLocalTest(testName string, tmpl *template.Template, repoFS filesystem.Fs, d dependencies) error {
 	// Get a test project
 	envs, err := env.FromOs()
 	if err != nil {
@@ -85,10 +99,13 @@ func runSingleTest(testName string, tmpl *template.Template, _ bool, repoDirFS f
 	}
 	defer unlockFn()
 
+	branchID := 1
+
 	// Load fixture with minimal project
 	fixPrjEnvs := env.Empty()
 	fixPrjEnvs.Set("TEST_KBC_STORAGE_API_HOST", testPrj.StorageAPIHost())
 	fixPrjEnvs.Set("LOCAL_PROJECT_ID", strconv.Itoa(testPrj.ID()))
+	fixPrjEnvs.Set("LOCAL_STATE_MAIN_BRANCH_ID", strconv.Itoa(branchID))
 	projectFS, err := fixtures.LoadFS("empty-branch", fixPrjEnvs)
 	if err != nil {
 		return err
@@ -97,7 +114,7 @@ func runSingleTest(testName string, tmpl *template.Template, _ bool, repoDirFS f
 	opts := options.New()
 	opts.Set(`storage-api-host`, testPrj.StorageAPIHost())
 	opts.Set(`storage-api-token`, testPrj.StorageAPIToken().Token)
-	tmplDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), repoDirFS, dialog.New(nop.New()), d.Logger(), opts)
+	tmplDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), repoFS, dialog.New(nop.New()), d.Logger(), opts)
 	prjDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), projectFS, dialog.New(nop.New()), d.Logger(), opts)
 
 	// Re-init template with set-up Storage client
@@ -148,7 +165,7 @@ func runSingleTest(testName string, tmpl *template.Template, _ bool, repoDirFS f
 	// Use template
 	tmplOpts := useTemplate.Options{
 		InstanceName: "test",
-		TargetBranch: model.BranchKey{Id: 1},
+		TargetBranch: model.BranchKey{Id: storageapi.BranchID(branchID)},
 		Inputs:       inputValues,
 	}
 	_, _, err = useTemplate.Run(prjState, tmpl, tmplOpts, prjDeps)
@@ -161,12 +178,146 @@ func runSingleTest(testName string, tmpl *template.Template, _ bool, repoDirFS f
 	replaceEnvs := env.Empty()
 	replaceEnvs.Set("STORAGE_API_HOST", testPrj.StorageAPIHost())
 	replaceEnvs.Set("PROJECT_ID", strconv.Itoa(testPrj.ID()))
+	replaceEnvs.Set("MAIN_BRANCH_ID", strconv.Itoa(branchID))
 	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(d.Ctx(), replaceEnvs)
 	testhelper.ReplaceEnvsDir(projectFS, `/`, envProvider)
 	testhelper.ReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
 
 	// Compare actual and expected dirs
 	return testhelper.DirectoryContentsSame(expectedDirFs, `/`, projectFS, `/`)
+}
+
+func runRemoteTest(testName string, tmpl *template.Template, repoFS filesystem.Fs, d dependencies) error {
+	// Get a test project
+	envs, err := env.FromOs()
+	if err != nil {
+		return err
+	}
+	testPrj, unlockFn, err := testproject.GetTestProject(envs)
+	if err != nil {
+		return err
+	}
+	defer unlockFn()
+
+	defBranch, err := testPrj.DefaultBranch()
+	if err != nil {
+		return err
+	}
+	branchID := int(defBranch.ID)
+
+	// Load fixture with minimal project
+	fixPrjEnvs := env.Empty()
+	fixPrjEnvs.Set("TEST_KBC_STORAGE_API_HOST", testPrj.StorageAPIHost())
+	fixPrjEnvs.Set("LOCAL_PROJECT_ID", strconv.Itoa(testPrj.ID()))
+	fixPrjEnvs.Set("LOCAL_STATE_MAIN_BRANCH_ID", strconv.Itoa(branchID))
+	prjFS, err := fixtures.LoadFS("empty-branch", fixPrjEnvs)
+	if err != nil {
+		return err
+	}
+
+	opts := options.New()
+	opts.Set(`storage-api-host`, testPrj.StorageAPIHost())
+	opts.Set(`storage-api-token`, testPrj.StorageAPIToken().Token)
+	tmplDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), repoFS, dialog.New(nop.New()), d.Logger(), opts)
+	projectDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), prjFS, dialog.New(nop.New()), d.Logger(), opts)
+
+	// Re-init template with set-up Storage client
+	tmpl, err = tmplDeps.Template(tmpl.Reference())
+	if err != nil {
+		return err
+	}
+
+	// Load project state
+	prj, err := project.New(prjFS, true, projectDeps)
+	// Create fake manifest
+	m := project.NewManifest(testPrj.ID(), testPrj.StorageAPIHost())
+	// Load only target branch
+	m.Filter().SetAllowedKeys([]model.Key{model.BranchKey{Id: storageapi.BranchID(branchID)}})
+
+	if err != nil {
+		return err
+	}
+	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true})
+	if err != nil {
+		return err
+	}
+	d.Logger().Debugf(`Working directory set up.`)
+
+	// Read inputs
+	inputsFile, err := tmpl.TestInputs(testName)
+	if err != nil {
+		return err
+	}
+
+	inputValues := make(template.InputsValues, 0)
+	err = tmpl.Inputs().ToExtended().VisitInputs(func(group *input.StepsGroupExt, step *input.StepExt, inputDef *input.Input) error {
+		var inputValue template.InputValue
+		if v, found := inputsFile[inputDef.Id]; found {
+			inputValue, err = template.ParseInputValue(v, inputDef, true)
+			if err != nil {
+				return utils.PrefixError(err.Error(), fmt.Errorf("please fix the value in the inputs JSON file"))
+			}
+		} else {
+			inputValue, err = template.ParseInputValue(inputDef.DefaultOrEmpty(), inputDef, true)
+			if err != nil {
+				return utils.PrefixError(err.Error(), fmt.Errorf("please define value in the inputs JSON file"))
+			}
+		}
+		inputValues = append(inputValues, inputValue)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	d.Logger().Debugf(`Inputs prepared.`)
+
+	// Copy remote state to the local
+	prjState, err = prj.LoadState(loadState.InitOptions(true))
+	if err != nil {
+		return err
+	}
+	for _, objectState := range prjState.All() {
+		objectState.SetLocalState(deepcopy.Copy(objectState.RemoteState()).(model.Object))
+	}
+
+	// Use template
+	tmplOpts := useTemplate.Options{
+		InstanceName: "test",
+		TargetBranch: model.BranchKey{Id: storageapi.BranchID(branchID)},
+		Inputs:       inputValues,
+	}
+	_, _, err = useTemplate.Run(prjState, tmpl, tmplOpts, projectDeps)
+
+	// Copy expected state and replace ENVs
+	expectedDirFs, err := tmpl.TestExpectedOutFS(testName)
+	if err != nil {
+		return err
+	}
+	replaceEnvs := env.Empty()
+	replaceEnvs.Set("STORAGE_API_HOST", testPrj.StorageAPIHost())
+	replaceEnvs.Set("PROJECT_ID", strconv.Itoa(testPrj.ID()))
+	replaceEnvs.Set("MAIN_BRANCH_ID", strconv.Itoa(branchID))
+	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(d.Ctx(), replaceEnvs)
+	testhelper.ReplaceEnvsDir(prjFS, `/`, envProvider)
+	testhelper.ReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
+
+	// Compare actual and expected dirs
+	err = testhelper.DirectoryContentsSame(expectedDirFs, `/`, prjFS, `/`)
+	if err != nil {
+		return err
+	}
+
+	// E2E test
+	// Push the project
+	pushOpts := syncPush.Options{
+		Encrypt:           true,
+		DryRun:            false,
+		SkipValidation:    false,
+		AllowRemoteDelete: true,
+		LogUntrackedPaths: true,
+		ChangeDescription: "",
+	}
+	return syncPush.Run(prjState, pushOpts, projectDeps)
 }
 
 func prepareRepoFS(tempDir string, tmpl *template.Template) (filesystem.Fs, error) {
