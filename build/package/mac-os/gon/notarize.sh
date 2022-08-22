@@ -28,8 +28,8 @@ cat <<EOT >> "./${GON_CONFIG_FILE}"
 {
     "source": ["${ARTIFACT_PATH}"],
     "bundle_id": "${APPLE_BUNDLE_ID}",
-    "apple_id": {"username": "${APPLE_USERNAME}", "password": "@env:AC_PASSWORD"},
-    "sign": { "application_identity": "${APPLE_APP_IDENTITY}" },
+    "apple_id": {"username": "${APPLE_ACCOUNT_USERNAME}", "password": "@env:APPLE_ACCOUNT_PASSWORD", "provider": "${APPLE_TEAM_ID}"},
+    "sign": { "application_identity": "Developer ID Application: ${APPLE_TEAM_NAME}" },
     "zip": { "output_path": "${TARGET_PATH}" }
 }
 EOT
