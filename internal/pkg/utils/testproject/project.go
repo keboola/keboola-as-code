@@ -42,6 +42,7 @@ type Project struct {
 	mapsLock            *sync.Mutex
 	branchesById        map[storageapi.BranchID]*storageapi.Branch
 	branchesByName      map[string]*storageapi.Branch
+	logFn               func(format string, a ...interface{})
 }
 
 type UnlockFn func()
@@ -56,6 +57,12 @@ func GetTestProjectForTest(t *testing.T, envs *env.Map) *Project {
 		// Unlock and cancel background jobs
 		unlockFn()
 	})
+
+	p.logFn = func(format string, a ...interface{}) {
+		seconds := float64(time.Since(p.initStartedAt).Milliseconds()) / 1000
+		a = append([]interface{}{p.ID(), t.Name(), seconds}, a...)
+		t.Logf("TestProject[%d][%s][%05.2fs]: "+format, a...)
+	}
 
 	return p
 }
@@ -514,9 +521,7 @@ func (p *Project) logEnvs() {
 }
 
 func (p *Project) logf(format string, a ...interface{}) {
-	if testhelper.TestIsVerbose() {
-		seconds := float64(time.Since(p.initStartedAt).Milliseconds()) / 1000
-		a = append([]interface{}{p.ID(), seconds}, a...)
-		fmt.Printf("TestProject[%d][%05.2fs]: "+format, a...)
+	if testhelper.TestIsVerbose() && p.logFn != nil {
+		p.logFn(format, a...)
 	}
 }
