@@ -3,6 +3,7 @@ package testproject
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -69,26 +70,27 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	p := &Project{Project: project, initStartedAt: time.Now(), ctx: ctx, mapsLock: &sync.Mutex{}}
 	p.logf("□ Initializing project...")
 
+	cleanupFn := func() {
+		cancelFn()
+		unlockFn()
+	}
+
 	// Init storage API
 	p.storageApiClient = storageapi.ClientWithHostAndToken(client.NewTestClient(), p.StorageAPIHost(), p.Project.StorageAPIToken())
 
 	// Load services
 	index, err := storageapi.IndexRequest().Send(p.ctx, p.storageApiClient)
 	if err != nil {
-		return nil, func() {
-			cancelFn()
-			unlockFn()
-		}, fmt.Errorf("cannot get services: %w", err)
+		cleanupFn()
+		return nil, nil, fmt.Errorf("cannot get services: %w", err)
 	}
 	services := index.Services.ToMap()
 
 	// Get encryption service host
 	encryptionHost, found := services.URLByID("encryption")
 	if !found {
-		return nil, func() {
-			cancelFn()
-			unlockFn()
-		}, fmt.Errorf("encryption service not found")
+		cleanupFn()
+		return nil, nil, fmt.Errorf("encryption service not found")
 	}
 
 	// Init Encryption API
@@ -97,47 +99,31 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	// Get scheduler service host
 	schedulerHost, found := services.URLByID("scheduler")
 	if !found {
-		return nil, func() {
-			cancelFn()
-			unlockFn()
-		}, fmt.Errorf("missing scheduler service")
+		cleanupFn()
+		return nil, nil, fmt.Errorf("missing scheduler service")
 	}
 
 	// Init Scheduler API
 	p.schedulerAPIClient = schedulerapi.ClientWithHostAndToken(client.NewTestClient(), schedulerHost.String(), p.Project.StorageAPIToken())
 
 	// Check token/project ID
+	errors := utils.NewMultiError()
 	initWg := &sync.WaitGroup{}
 	initWg.Add(1)
-	errs := make(chan error, 1)
-	wgDone := make(chan bool)
 	go func() {
 		defer initWg.Done()
 		if token, err := storageapi.VerifyTokenRequest(p.Project.StorageAPIToken()).Send(p.ctx, p.storageApiClient); err != nil {
-			errs <- fmt.Errorf("invalid token for project %d: %s", p.ID(), err)
+			errors.Append(fmt.Errorf("invalid token for project %d: %s", p.ID(), err))
 		} else if p.ID() != token.ProjectID() {
-			errs <- fmt.Errorf("test project id and token project id are different")
+			errors.Append(fmt.Errorf("test project id and token project id are different"))
 		} else {
 			p.storageAPIToken = token
 		}
 	}()
-
-	go func() {
-		initWg.Wait()
-		close(wgDone)
-	}()
-
-	// Wait until either WaitGroup is done or an error is received through the channel
-	select {
-	case <-wgDone:
-		// carry on
-		break
-	case err := <-errs:
-		close(errs)
-		return nil, func() {
-			cancelFn()
-			unlockFn()
-		}, err
+	initWg.Wait()
+	if len(errors.Errors) > 0 {
+		cleanupFn()
+		return nil, nil, errors
 	}
 
 	// Set envs
@@ -146,10 +132,7 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.Project.StorageAPIHost())
 	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.Project.StorageAPIToken())
 	p.logf(`■ ️Initialization done.`)
-	return p, func() {
-		cancelFn()
-		unlockFn()
-	}, nil
+	return p, cleanupFn, nil
 }
 
 func (p *Project) Env() *env.Map {
