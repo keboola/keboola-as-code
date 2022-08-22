@@ -41,14 +41,22 @@ func TestCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// Options
+			options := testOp.Options{
+				LocalOnly:  d.Options().GetBool("local-only"),
+				RemoteOnly: d.Options().GetBool("remote-only"),
+				TestName:   d.Options().GetString("test-name"),
+			}
+
 			// Test template
-			return testOp.Run(template, d)
+			return testOp.Run(template, options, d)
 		},
 	}
 
 	cmd.Flags().SortFlags = true
 	cmd.Flags().String("test-name", "", "name of a single test to be run")
-	cmd.Flags().Bool("local-test", false, "run a local test only")
+	cmd.Flags().Bool("local-only", false, "run a local test only")
+	cmd.Flags().Bool("remote-only", false, "run a remote test only")
 
 	return cmd
 }
