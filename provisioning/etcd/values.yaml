@@ -1,0 +1,56 @@
+# DEFAULT VALUES: https://github.com/bitnami/charts/blob/master/bitnami/etcd/values.yaml
+image:
+  tag: 3.5.4-debian-11-r27
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    memory: "256Mi"
+
+replicaCount: 3
+
+removeMemberOnContainerTermination: false
+
+extraEnvVars:
+  - name: ETCD_DISABLE_STORE_MEMBER_ID
+    value: "yes"
+
+auth:
+  rbac:
+    create: true
+    allowNoneAuthentication: false
+  token:
+    type: simple
+
+service:
+  clusterIP: None #headless service
+
+networkPolicy:
+  enabled: true
+  allowExternal: false
+
+persistence:
+  enabled: true
+  size: 512Mi
+
+tolerations:
+  - key: app
+    operator: Exists
+    effect: NoSchedule
+
+nodeSelector:
+  nodepool: main
+
+startupProbe:
+  enabled: true
+  initialDelaySeconds: 20
+  periodSeconds: 5
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 60
+livenessProbe:
+  initialDelaySeconds: 0 # replaced by startupProbe
+readinessProbe:
+  initialDelaySeconds: 0 # replaced by startupProbe
