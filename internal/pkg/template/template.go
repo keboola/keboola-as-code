@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/mountfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -21,11 +22,13 @@ import (
 )
 
 const (
-	IdRegexp            = `^[a-zA-Z0-9\-]+$`
-	SrcDirectory        = "src"
-	TestsDirectory      = "tests"
-	LongDescriptionFile = "description.md"
-	ReadmeFile          = "README.md"
+	ExpectedOutDirectory = "expected-out"
+	IdRegexp             = `^[a-zA-Z0-9\-]+$`
+	InputsFile           = "inputs.json"
+	LongDescriptionFile  = "description.md"
+	ReadmeFile           = "README.md"
+	SrcDirectory         = "src"
+	TestsDirectory       = "tests"
 )
 
 type (
@@ -78,6 +81,36 @@ func LoadReadme(fs filesystem.Fs) (string, error) {
 		return "", err
 	}
 	return file.Content, nil
+}
+
+func LoadTestInputs(fs filesystem.Fs) (map[string]interface{}, error) {
+	file, err := fs.ReadFile(filesystem.NewFileDef(InputsFile).SetDescription("template inputs"))
+	if err != nil {
+		return nil, err
+	}
+	inputs := map[string]interface{}{}
+	if err := json.DecodeString(file.Content, &inputs); err != nil {
+		return nil, fmt.Errorf(`cannot decode test inputs file "%s": %w`, InputsFile, err)
+	}
+
+	return inputs, nil
+}
+
+func ParseInputValue(value interface{}, inputDef *templateInput.Input, isFilled bool) (InputValue, error) {
+	// Convert
+	value, err := inputDef.Type.ParseValue(value)
+	if err != nil {
+		return InputValue{}, fmt.Errorf("invalid template input: %w", err)
+	}
+
+	// Validate all except oauth inputs
+	if isFilled && inputDef.Kind != templateInput.KindOAuth && inputDef.Kind != templateInput.KindOAuthAccounts {
+		if err := inputDef.ValidateUserInput(value); err != nil {
+			return InputValue{}, fmt.Errorf("invalid template input: %w", err)
+		}
+	}
+
+	return InputValue{Id: inputDef.Id, Value: value, Skipped: !isFilled}, nil
 }
 
 type dependencies interface {
@@ -189,6 +222,49 @@ func (t *Template) TestsDir() (filesystem.Fs, error) {
 	}
 
 	return t.testsDir, nil
+}
+
+func (t *Template) ListTests() ([]string, error) {
+	dirFS, err := t.TestsDir()
+	if err != nil {
+		return nil, err
+	}
+	paths, err := dirFS.Glob("*")
+	if err != nil {
+		return nil, err
+	}
+	return paths, nil
+}
+
+func (t *Template) TestDir(name string) (filesystem.Fs, error) {
+	dirFS, err := t.TestsDir()
+	if err != nil {
+		return nil, err
+	}
+	if !dirFS.IsDir(name) {
+		return nil, fmt.Errorf(`test "%s" not found`, name)
+	}
+
+	return dirFS.SubDirFs(name)
+}
+
+func (t *Template) TestExpectedOutFS(name string) (filesystem.Fs, error) {
+	testFS, err := t.TestDir(name)
+	if err != nil {
+		return nil, err
+	}
+	if !testFS.IsDir(ExpectedOutDirectory) {
+		return nil, fmt.Errorf(`directory "%s" in test "%s" not found`, ExpectedOutDirectory, name)
+	}
+	return testFS.SubDirFs(ExpectedOutDirectory)
+}
+
+func (t *Template) TestInputs(name string) (map[string]interface{}, error) {
+	testFS, err := t.TestDir(name)
+	if err != nil {
+		return nil, err
+	}
+	return LoadTestInputs(testFS)
 }
 
 func (t *Template) LongDesc() string {

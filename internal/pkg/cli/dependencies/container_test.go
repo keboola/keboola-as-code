@@ -20,7 +20,7 @@ import (
 
 func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	t.Parallel()
-	testProject := testproject.GetTestProject(t, env.Empty())
+	testProject := testproject.GetTestProjectForTest(t, env.Empty())
 
 	d := NewContainer(context.Background(), env.Empty(), testfs.NewMemoryFs(), dialog.New(nopPrompt.New()), log.NewNopLogger(), options.New())
 	c := d.(*container)

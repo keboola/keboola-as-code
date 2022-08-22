@@ -3,6 +3,7 @@ package testproject
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -30,7 +31,6 @@ import (
 
 type Project struct {
 	*testproject.Project
-	t                   *testing.T
 	initStartedAt       time.Time
 	ctx                 context.Context
 	storageAPIToken     *storageapi.Token
@@ -42,18 +42,45 @@ type Project struct {
 	mapsLock            *sync.Mutex
 	branchesById        map[storageapi.BranchID]*storageapi.Branch
 	branchesByName      map[string]*storageapi.Branch
+	logFn               func(format string, a ...interface{})
 }
 
-func GetTestProject(t *testing.T, envs *env.Map) *Project {
+type UnlockFn func()
+
+func GetTestProjectForTest(t *testing.T, envs *env.Map) *Project {
 	t.Helper()
-	ctx, cancelFn := context.WithCancel(context.Background())
+
+	p, unlockFn, err := GetTestProject(envs)
+	assert.NoError(t, err)
+
 	t.Cleanup(func() {
-		// Cancel background jobs
-		cancelFn()
+		// Unlock and cancel background jobs
+		unlockFn()
 	})
 
-	p := &Project{Project: testproject.GetTestProject(t), t: t, initStartedAt: time.Now(), ctx: ctx, mapsLock: &sync.Mutex{}}
+	p.logFn = func(format string, a ...interface{}) {
+		seconds := float64(time.Since(p.initStartedAt).Milliseconds()) / 1000
+		a = append([]interface{}{p.ID(), t.Name(), seconds}, a...)
+		t.Logf("TestProject[%d][%s][%05.2fs]: "+format, a...)
+	}
+
+	return p
+}
+
+func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
+	project, unlockFn, err := testproject.GetTestProject()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ctx, cancelFn := context.WithCancel(context.Background())
+	p := &Project{Project: project, initStartedAt: time.Now(), ctx: ctx, mapsLock: &sync.Mutex{}}
 	p.logf("□ Initializing project...")
+
+	cleanupFn := func() {
+		cancelFn()
+		unlockFn()
+	}
 
 	// Init storage API
 	p.storageApiClient = storageapi.ClientWithHostAndToken(client.NewTestClient(), p.StorageAPIHost(), p.Project.StorageAPIToken())
@@ -61,14 +88,16 @@ func GetTestProject(t *testing.T, envs *env.Map) *Project {
 	// Load services
 	index, err := storageapi.IndexRequest().Send(p.ctx, p.storageApiClient)
 	if err != nil {
-		assert.FailNow(p.t, "cannot get services: ", err)
+		cleanupFn()
+		return nil, nil, fmt.Errorf("cannot get services: %w", err)
 	}
 	services := index.Services.ToMap()
 
 	// Get encryption service host
 	encryptionHost, found := services.URLByID("encryption")
 	if !found {
-		assert.FailNow(p.t, "encryption service not found")
+		cleanupFn()
+		return nil, nil, fmt.Errorf("encryption service not found")
 	}
 
 	// Init Encryption API
@@ -77,49 +106,55 @@ func GetTestProject(t *testing.T, envs *env.Map) *Project {
 	// Get scheduler service host
 	schedulerHost, found := services.URLByID("scheduler")
 	if !found {
-		assert.FailNow(p.t, "missing scheduler service")
+		cleanupFn()
+		return nil, nil, fmt.Errorf("missing scheduler service")
 	}
 
 	// Init Scheduler API
 	p.schedulerAPIClient = schedulerapi.ClientWithHostAndToken(client.NewTestClient(), schedulerHost.String(), p.Project.StorageAPIToken())
 
 	// Check token/project ID
+	errors := utils.NewMultiError()
 	initWg := &sync.WaitGroup{}
 	initWg.Add(1)
 	go func() {
 		defer initWg.Done()
 		if token, err := storageapi.VerifyTokenRequest(p.Project.StorageAPIToken()).Send(p.ctx, p.storageApiClient); err != nil {
-			assert.FailNow(p.t, fmt.Sprintf("invalid token for project %d: %s", p.ID(), err))
+			errors.Append(fmt.Errorf("invalid token for project %d: %s", p.ID(), err))
 		} else if p.ID() != token.ProjectID() {
-			assert.FailNow(p.t, "test project id and token project id are different.")
+			errors.Append(fmt.Errorf("test project id and token project id are different"))
 		} else {
 			p.storageAPIToken = token
 		}
 	}()
+	initWg.Wait()
+	if len(errors.Errors) > 0 {
+		cleanupFn()
+		return nil, nil, errors
+	}
 
 	// Set envs
-	initWg.Wait()
 	p.envs = envs.Clone()
 	p.setEnv(`TEST_KBC_PROJECT_ID`, cast.ToString(p.ID()))
 	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.Project.StorageAPIHost())
 	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.Project.StorageAPIToken())
 	p.logf(`■ ️Initialization done.`)
-	return p
+	return p, cleanupFn, nil
 }
 
 func (p *Project) Env() *env.Map {
 	return p.envs
 }
 
-func (p *Project) DefaultBranch() *storageapi.Branch {
+func (p *Project) DefaultBranch() (*storageapi.Branch, error) {
 	if p.defaultBranch == nil {
 		if v, err := storageapi.GetDefaultBranchRequest().Send(p.ctx, p.storageApiClient); err != nil {
 			p.defaultBranch = v
 		} else {
-			assert.FailNow(p.t, "cannot get default branch: ", err)
+			return nil, fmt.Errorf("cannot get default branch: %w", err)
 		}
 	}
-	return p.defaultBranch
+	return p.defaultBranch, nil
 }
 
 func (p *Project) StorageAPIToken() *storageapi.Token {
@@ -139,7 +174,7 @@ func (p *Project) SchedulerAPIClient() client.Client {
 }
 
 // Clean method resets default branch, deletes all project branches (except default), all configurations and all schedules.
-func (p *Project) Clean() {
+func (p *Project) Clean() error {
 	p.logf("□ Cleaning project...")
 
 	ctx, cancelFn := context.WithCancel(context.Background())
@@ -166,14 +201,18 @@ func (p *Project) Clean() {
 	})
 
 	if err := grp.Wait(); err != nil {
-		p.t.Fatalf(`cannot clean project "%d": %s`, p.ID(), err)
+		return fmt.Errorf(`cannot clean project "%d": %s`, p.ID(), err)
 	}
 	p.logf("■ Cleanup done.")
+	return nil
 }
 
-func (p *Project) SetState(stateFilePath string) {
+func (p *Project) SetState(stateFilePath string) error {
 	// Remove all objects
-	p.Clean()
+	err := p.Clean()
+	if err != nil {
+		return err
+	}
 	p.branchesById = make(map[storageapi.BranchID]*storageapi.Branch)
 	p.branchesByName = make(map[string]*storageapi.Branch)
 
@@ -195,22 +234,32 @@ func (p *Project) SetState(stateFilePath string) {
 	// Load state file
 	stateFile, err := fixtures.LoadStateFile(stateFilePath)
 	if err != nil {
-		assert.FailNow(p.t, err.Error())
+		return err
 	}
 
 	// Create configs in default branch, they will be auto-copied to branches created later
-	p.createConfigsInDefaultBranch(stateFile.AllBranchesConfigs)
+	err = p.createConfigsInDefaultBranch(stateFile.AllBranchesConfigs)
+	if err != nil {
+		return err
+	}
 
 	// Create branches
-	p.createBranches(stateFile.Branches)
+	err = p.createBranches(stateFile.Branches)
+	if err != nil {
+		return err
+	}
 
 	// Create configs in branches
-	p.createConfigs(stateFile.Branches, stateFile.Envs)
+	err = p.createConfigs(stateFile.Branches, stateFile.Envs)
+	if err != nil {
+		return err
+	}
 
 	p.logf("■ Project state set.")
+	return nil
 }
 
-func (p *Project) createBranches(branches []*fixtures.BranchState) {
+func (p *Project) createBranches(branches []*fixtures.BranchState) error {
 	ctx, cancelFn := context.WithCancel(context.Background())
 	defer cancelFn()
 
@@ -229,8 +278,9 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) {
 
 	// Wait for all requests
 	if err := grp.Wait(); err != nil {
-		assert.FailNow(p.t, err.Error())
+		return err
 	}
+	return nil
 }
 
 func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranchSem *semaphore.Weighted) client.APIRequest[*storageapi.Branch] {
@@ -306,7 +356,7 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 	return request
 }
 
-func (p *Project) createConfigsInDefaultBranch(configs []string) {
+func (p *Project) createConfigsInDefaultBranch(configs []string) error {
 	ctx, cancelFn := context.WithCancel(p.ctx)
 	defer cancelFn()
 
@@ -320,17 +370,18 @@ func (p *Project) createConfigsInDefaultBranch(configs []string) {
 
 	// Generate new IDs
 	if err := tickets.Resolve(); err != nil {
-		assert.FailNow(p.t, fmt.Sprintf(`cannot generate new IDs: %s`, err))
+		return fmt.Errorf(`cannot generate new IDs: %s`, err)
 	}
 
 	// Wait for requests
 	close(sendReady) // unblock requests
 	if err := grp.Wait(); err != nil {
-		assert.FailNow(p.t, fmt.Sprintf("cannot create configs: %s", err))
+		return fmt.Errorf("cannot create configs: %s", err)
 	}
+	return nil
 }
 
-func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs map[string]string) {
+func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs map[string]string) error {
 	ctx, cancelFn := context.WithCancel(p.ctx)
 	defer cancelFn()
 
@@ -346,7 +397,7 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 
 	// Generate new IDs
 	if err := tickets.Resolve(); err != nil {
-		assert.FailNow(p.t, fmt.Sprintf(`cannot generate new IDs: %s`, err))
+		return fmt.Errorf(`cannot generate new IDs: %s`, err)
 	}
 
 	// Add additional ENVs
@@ -357,13 +408,14 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 	// Wait for requests
 	close(sendReady) // unblock requests
 	if err := grp.Wait(); err != nil {
-		assert.FailNow(p.t, fmt.Sprintf("cannot create configs: %s", err))
+		return fmt.Errorf("cannot create configs: %s", err)
 	}
+	return nil
 }
 
 func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, sendReady <-chan struct{}, tickets *storageapi.TicketProvider, envPrefix string, names []string, branch *storageapi.Branch) {
 	for _, name := range names {
-		configFixture := fixtures.LoadConfig(p.t, name)
+		configFixture := fixtures.LoadConfig(name)
 		configWithRows := configFixture.ToApi()
 		configDesc := fmt.Sprintf("%s/%s/%s", branch.Name, configFixture.ComponentID, configFixture.Name)
 
@@ -469,9 +521,7 @@ func (p *Project) logEnvs() {
 }
 
 func (p *Project) logf(format string, a ...interface{}) {
-	if testhelper.TestIsVerbose() {
-		seconds := float64(time.Since(p.initStartedAt).Milliseconds()) / 1000
-		a = append([]interface{}{p.ID(), p.t.Name(), seconds}, a...)
-		p.t.Logf("TestProject[%d][%s][%05.2fs]: "+format, a...)
+	if testhelper.TestIsVerbose() && p.logFn != nil {
+		p.logFn(format, a...)
 	}
 }

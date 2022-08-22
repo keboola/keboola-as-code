@@ -82,14 +82,15 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	assert.NoError(t, err)
 
 	// Get test project
-	project := testproject.GetTestProject(t, envs)
+	project := testproject.GetTestProjectForTest(t, envs)
 	envs = project.Env()
 	api := project.StorageAPIClient()
 
 	// Setup project state
 	projectStateFile := "initial-state.json"
 	if testDirFs.IsFile(projectStateFile) {
-		project.SetState(filepath.Join(testDir, projectStateFile))
+		err := project.SetState(filepath.Join(testDir, projectStateFile))
+		assert.NoError(t, err)
 	}
 
 	// Create ENV provider

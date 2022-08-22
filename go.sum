@@ -417,8 +417,8 @@ github.com/keboola/go-client v0.3.1 h1:YBzAFfBN/EgTLtwAy1+uFWAqy4/cuzELcu7/dNWyk
 github.com/keboola/go-client v0.3.1/go.mod h1:YPQenBSf8SQhXu8/KvpX/rcPgI7nE6p4iiI7sY5hL6U=
 github.com/keboola/go-jsonnet v0.18.1-0.20220810085752-aee7595aa305 h1:hS/jX0HQzeGZWjMBSAs/IqrJTrTB5/BlYu7UcjFW9NU=
 github.com/keboola/go-jsonnet v0.18.1-0.20220810085752-aee7595aa305/go.mod h1:2YGGjrWbRtdL5/lAp1anatj8zA+y/fKT0lLWvTqk+/Q=
-github.com/keboola/go-utils v0.1.1 h1:ZcwOrSejYbyFZ7WEZwiqAhN+Ew+7GLJA66tmJyEfPns=
-github.com/keboola/go-utils v0.1.1/go.mod h1:COGns5uhXdH/WbHpQbjJOa+6fAcRXMF8T+PUy6bobo0=
+github.com/keboola/go-utils v0.4.0 h1:fYmseGTlBft7H+WU54AYPN8afFai/aqQ2eWXnw/JoEc=
+github.com/keboola/go-utils v0.4.0/go.mod h1:COGns5uhXdH/WbHpQbjJOa+6fAcRXMF8T+PUy6bobo0=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/klauspost/compress v1.13.4/go.mod h1:8dP1Hq4DHOhN9w426knH3Rhby4rFm6D8eO+e+Dq5Gzg=
