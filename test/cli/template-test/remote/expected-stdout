@@ -1,39 +1,42 @@
 Running remote test "one".
-New objects from "/my-template/0.0.1" template:
+New objects from "keboola/my-template/0.0.1" template:
   + C main/extractor/ex-generic-v2/empty
   + C main/extractor/ex-generic-v2/without-rows
   + C main/extractor/keboola.ex-db-mysql/with-rows
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
-Template "/my-template/0.0.1" has been applied, instance ID: %s
+Template "keboola/my-template/0.0.1" has been applied, instance ID: %s
 Plan for "encrypt" operation:
   no values to encrypt
 Plan for "push" operation:
+  * B main | changed: metadata
   + C main/extractor/ex-generic-v2/empty
   + C main/extractor/ex-generic-v2/without-rows
   + C main/extractor/keboola.ex-db-mysql/with-rows
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
+Push done.
 Remote test "one" finished.
-Running remote test "two"
-New objects from "/my-template/0.0.1" template:
+Running remote test "two".
+New objects from "keboola/my-template/0.0.1" template:
   + C main/extractor/ex-generic-v2/empty
   + C main/extractor/ex-generic-v2/without-rows
   + C main/extractor/keboola.ex-db-mysql/with-rows
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
-Template "/my-template/0.0.1" has been applied, instance ID: %s
+Template "keboola/my-template/0.0.1" has been applied, instance ID: %s
 Plan for "encrypt" operation:
   no values to encrypt
 Plan for "push" operation:
-  + B main
+  * B main | changed: metadata
   + C main/extractor/ex-generic-v2/empty
   + C main/extractor/ex-generic-v2/without-rows
   + C main/extractor/keboola.ex-db-mysql/with-rows
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
-Test "two" finished.
+Push done.
+Remote test "two" finished.

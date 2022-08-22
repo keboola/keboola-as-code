@@ -24,7 +24,7 @@ func TestCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Get template repository
-			repo, err := d.LocalTemplateRepository()
+			repo, err := d.TemplateRepository(model.TemplateRepository{Type: model.RepositoryTypeWorkingDir, Name: "keboola"}, nil)
 			if err != nil {
 				return err
 			}
