@@ -3,6 +3,8 @@ services:
   dev:
     image: keboolabot/keboola-as-code-dev
     build: .
+    links:
+      - etcd
     volumes:
       - ./:/code:z
       - cache:/tmp/cache
@@ -15,10 +17,19 @@ services:
       - TEST_KBC_STORAGE_API_TOKEN
       # For Templates API
       - KBC_STORAGE_API_HOST
-      ## Disable DataDog integration
+      # Disable DataDog integration
       - DATADOG_ENABLED=false
+      # Etcd
+      - ETCD_ENDPOINT=etcd:2379
+      - ETCD_USERNAME=root
+      - ETCD_PASSWORD=toor
     ports:
       - "8000:8000"
+  etcd:
+    image: docker.io/bitnami/etcd:3.5.4-debian-11-r27
+    environment:
+      ALLOW_NONE_AUTHENTICATION: "no"
+      ETCD_ROOT_PASSWORD: "toor"
 
 volumes:
   cache:

@@ -2,11 +2,15 @@ package dependencies
 
 import (
 	"context"
+	"fmt"
 	stdLog "log"
+	"time"
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
+
+	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -35,6 +39,7 @@ type Container interface {
 	TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
 	WithLoggerPrefix(prefix string) *container
 	WithStorageApiClient(client client.Client, token *storageapi.Token) (*container, error)
+	EtcdClient() (*etcd.Client, error)
 }
 
 // NewContainer returns dependencies for API and add them to the context.
@@ -234,4 +239,34 @@ func (v *container) StorageApiHost() (string, error) {
 func (v *container) StorageApiToken() (string, error) {
 	// The API is authorized separately in each request
 	return "", nil
+}
+
+func (v *container) EtcdClient() (*etcd.Client, error) {
+	// Get endpoint
+	endpoint := v.envs.Get("ETCD_ENDPOINT")
+	if endpoint == "" {
+		return nil, fmt.Errorf("ETCD_HOST is not set")
+	}
+
+	// Create client
+	c, err := etcd.New(etcd.Config{
+		Context:              v.ctx,
+		Endpoints:            []string{endpoint},
+		DialTimeout:          2 * time.Second,
+		DialKeepAliveTimeout: 2 * time.Second,
+		DialKeepAliveTime:    10 * time.Second,
+		Username:             v.envs.Get("ETCD_USERNAME"), // optional
+		Password:             v.envs.Get("ETCD_PASSWORD"), // optional
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Close client when shutting down the server
+	go func() {
+		<-v.ctx.Done()
+		c.Close()
+	}()
+
+	return c, nil
 }
