@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 # Etcd cluster for Templates API
-: "${ETCD_REPLICA_COUNT:=3}"
+: "${ETCD_REPLICA_COUNT:=1}"
 ETCD_ROOT_PASSWORD_BASE64=$(kubectl get secret --namespace templates-api templates-api-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null || echo -e '')
 if [[ "$ETCD_ROOT_PASSWORD_BASE64" == "" ]]; then
   # Generate random root password if it not set
