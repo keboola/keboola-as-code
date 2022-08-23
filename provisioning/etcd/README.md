@@ -49,3 +49,8 @@ CLOUD_PROVIDER=aws ./provisioning/kubernetes/build.sh && \
 # Apply
 kubectl apply -f ./provisioning/kubernetes/deploy/etcd.yaml
 ```
+
+To delete all resources use `minikube delete` or:
+```bash
+kubectl delete all,secret,pvc -l app=templates-api-etcd
+```
