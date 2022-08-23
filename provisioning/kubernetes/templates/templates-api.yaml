@@ -41,6 +41,15 @@ spec:
                 configMapKeyRef:
                   name: templates-api
                   key: storageApiHost
+            - name: ETCD_ENDPOINT
+              value: templates-api-etcd-headless.templates-api.svc.cluster.local:2379
+            - name: ETCD_USER
+              value: root
+            - name: ETCD_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: templates-api-etcd
+                  key: etcd-root-password
             - name: DD_AGENT_HOST
               valueFrom:
                 fieldRef:
