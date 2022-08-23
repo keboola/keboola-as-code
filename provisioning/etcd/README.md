@@ -2,7 +2,7 @@
 
 ## Overview
 
-- Peers and clients communicate using the unencrypted HTTP protocol.
+- Peers and clients communicate using the unencrypted HTTP/gRPC protocol.
 - Communication is limited to participants using `NetworkPolicy`.
   - Client must have `templates-api-etcd-client: true` label.
   -  Clients connect to `templates-api-etcd.default.svc.cluster.local:2379`.
