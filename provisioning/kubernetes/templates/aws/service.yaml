@@ -5,7 +5,7 @@ metadata:
   labels:
     app: templates-api
   name: templates-api
-  namespace: default
+  namespace: templates-api
 spec:
   type: ClusterIP
   selector:

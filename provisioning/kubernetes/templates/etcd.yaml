@@ -4,7 +4,7 @@ kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
 metadata:
   name: templates-api-etcd
-  namespace: "default"
+  namespace: "templates-api"
   labels:
     app: templates-api-etcd
 spec:
@@ -47,7 +47,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: templates-api-etcd
-  namespace: "default"
+  namespace: "templates-api"
   labels:
     app: templates-api-etcd
 spec:
@@ -61,7 +61,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: templates-api-etcd
-  namespace: "default"
+  namespace: "templates-api"
   labels:
     app: templates-api-etcd
 type: Opaque
@@ -73,7 +73,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: templates-api-etcd-headless
-  namespace: "default"
+  namespace: "templates-api"
   labels:
     app: templates-api-etcd
   annotations:
@@ -97,7 +97,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: templates-api-etcd
-  namespace: "default"
+  namespace: "templates-api"
   labels:
     app: templates-api-etcd
   annotations:
@@ -122,7 +122,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: templates-api-etcd
-  namespace: "default"
+  namespace: "templates-api"
   labels:
     app: templates-api-etcd
 spec:
@@ -151,7 +151,7 @@ spec:
                   matchLabels:
                     app: templates-api-etcd
                 namespaces:
-                  - "default"
+                  - "templates-api"
                 topologyKey: kubernetes.io/hostname
               weight: 1
         nodeAffinity:
@@ -209,11 +209,11 @@ spec:
             - name: ETCD_AUTH_TOKEN
               value: "simple"
             - name: ETCD_ADVERTISE_CLIENT_URLS
-              value: "http://$(MY_POD_NAME).templates-api-etcd-headless.default.svc.cluster.local:2379,http://templates-api-etcd.default.svc.cluster.local:2379"
+              value: "http://$(MY_POD_NAME).templates-api-etcd-headless.templates-api.svc.cluster.local:2379,http://templates-api-etcd.templates-api.svc.cluster.local:2379"
             - name: ETCD_LISTEN_CLIENT_URLS
               value: "http://0.0.0.0:2379"
             - name: ETCD_INITIAL_ADVERTISE_PEER_URLS
-              value: "http://$(MY_POD_NAME).templates-api-etcd-headless.default.svc.cluster.local:2380"
+              value: "http://$(MY_POD_NAME).templates-api-etcd-headless.templates-api.svc.cluster.local:2380"
             - name: ETCD_LISTEN_PEER_URLS
               value: "http://0.0.0.0:2380"
             - name: ETCD_INITIAL_CLUSTER_TOKEN
@@ -223,7 +223,7 @@ spec:
             - name: ETCD_INITIAL_CLUSTER
               value: "$ETCD_INITIAL_CLUSTER"
             - name: ETCD_CLUSTER_DOMAIN
-              value: "templates-api-etcd-headless.default.svc.cluster.local"
+              value: "templates-api-etcd-headless.templates-api.svc.cluster.local"
             - name: ETCD_DISABLE_STORE_MEMBER_ID
               value: "yes"
           envFrom:

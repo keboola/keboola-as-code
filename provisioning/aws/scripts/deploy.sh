@@ -2,10 +2,12 @@
 set -Eeuo pipefail
 
 aws eks update-kubeconfig --name "$AWS_EKS_CLUSTER_NAME" --region "$AWS_REGION"
-kubectl config set-context --current --namespace default
+kubectl config set-context --current --namespace templates-api
 
 ./provisioning/kubernetes/build.sh
 
+kubectl apply -f ./provisioning/kubernetes/deploy/namespace.yaml
+kubectl apply -f ./provisioning/kubernetes/deploy/etcd.yaml
 kubectl apply -f ./provisioning/kubernetes/deploy/config-map.yaml
 kubectl apply -f ./provisioning/kubernetes/deploy/templates-api.yaml
 kubectl apply -f ./provisioning/kubernetes/deploy/aws/service.yaml

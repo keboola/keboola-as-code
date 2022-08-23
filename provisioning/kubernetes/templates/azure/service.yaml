@@ -3,7 +3,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: templates-api
-  namespace: default
+  namespace: templates-api
   labels:
     app: templates-api
   annotations:
