@@ -9,7 +9,7 @@ if [[ "$ETCD_ROOT_PASSWORD_BASE64" == "" ]]; then
   ETCD_ROOT_PASSWORD_BASE64=$(LC_CTYPE=C tr -dc A-Za-z0-9 </dev/urandom | head -c 17 | base64 || echo -e '')
 fi
 # Generate list of cluster endpoints
-ETCD_INITIAL_CLUSTER=$(seq 0 $(($ETCD_REPLICA_COUNT-1)) | awk '{ print "templates-api-etcd-"$0"=http://templates-api-etcd-"$0".templates-api-etcd-headless.default.svc.cluster.local:2380"}' | sed -z 's/\n/,/g;s/,$/\n/')
+ETCD_INITIAL_CLUSTER=$(seq 0 $(($ETCD_REPLICA_COUNT-1)) | awk '{ print "templates-api-etcd-"$0"=http://templates-api-etcd-"$0".templates-api-etcd-headless.default.svc.cluster.local:2380"}' | sed -e 'H;${x;s/\n/,/g;s/^,//;p;};d')
 export ETCD_REPLICA_COUNT
 export ETCD_ROOT_PASSWORD_BASE64
 export ETCD_INITIAL_CLUSTER
