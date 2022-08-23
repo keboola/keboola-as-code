@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 
 cd "$(dirname "$0")"
+helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
 helm template templates-api-etcd bitnami/etcd -f ./values.yaml > etcd.yaml
 
 # Replace root password by ENV
