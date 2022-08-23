@@ -21,7 +21,7 @@ kubectl rollout status deployment/templates-api --timeout=900s
 
 TEMPLATES_API_IP=$(kubectl get services \
   --selector "app=templates-api" \
-  --namespace default \
+  --namespace templates-api \
   --no-headers \
   --output jsonpath="{.items[0].status.loadBalancer.ingress[0].ip}")
 

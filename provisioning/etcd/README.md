@@ -16,12 +16,12 @@
 
 Run container:
 ```bash
-export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace default templates-api-etcd -o jsonpath="{.data.etcd-root-password}" | base64 -d)
+export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace templates-api templates-api-etcd -o jsonpath="{.data.etcd-root-password}" | base64 -d)
 ```
 
 ```bash
 kubectl run -i -t templates-api-etcd-client --restart=Never --rm \
-  --namespace default \
+  --namespace templates-api \
   --image docker.io/bitnami/etcd:3.5.4-debian-11-r27 \
   --labels="templates-api-etcd-client=true" \
   --env="ETCD_ROOT_PASSWORD=$ETCD_ROOT_PASSWORD" \
