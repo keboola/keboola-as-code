@@ -1,11 +1,9 @@
 package service
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/deepcopy"
@@ -48,17 +46,9 @@ func New(d dependencies.Container) (Service, error) {
 	// Pull the repository in the beginning
 	m.Pull()
 
-	// Connect to etcd
-	etcdClient, err := d.EtcdClient()
-	if err == nil {
-		ctx, cancelFn := context.WithTimeout(d.Ctx(), time.Second)
-		defer cancelFn()
-		memberList, err := etcdClient.MemberList(ctx)
-		if err == nil {
-			d.Logger().Infof(`connected to etcd server "%s"`, memberList.Members[0].Name)
-		} else {
-			d.Logger().Errorf(`etcd connection failed: %s`, err.Error())
-		}
+	// Try etcd connection
+	if etcdClient, err := d.EtcdClient(); err == nil {
+		d.Logger().Infof(`connected to etcd server "%s"`, etcdClient.Endpoints()[0])
 	} else {
 		d.Logger().Errorf(`etcd connection failed: %s`, err.Error())
 	}
