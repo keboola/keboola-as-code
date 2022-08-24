@@ -126,7 +126,7 @@ metadata:
   labels:
     app: templates-api-etcd
 spec:
-  replicas: $ETCD_REPLICA_COUNT
+  replicas: $TEMPLATES_API_ETCD_REPLICAS
   selector:
     matchLabels:
       app: templates-api-etcd

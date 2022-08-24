@@ -8,7 +8,7 @@
   -  Clients connect to `templates-api-etcd.default.svc.cluster.local:2379`.
 - Authentication is mandatory, there is only one user - `root`.
   - Root password is random, it is stored in `templates-api-etcd` secret under `etcd-root-password` key.
-- Number of replicas is defined by `ETCD_REPLICA_COUNT` env variable (default `3`).
+- Number of replicas is defined by `TEMPLATES_API_ETCD_REPLICAS` env variable (default `3`).
 - To re-generate `provisioning/templates/etcd/yaml` run `./generate.sh` and copy the file.
 - The number of nodes cannot be changed later (simple logic in `build.sh` is not enough).
 
