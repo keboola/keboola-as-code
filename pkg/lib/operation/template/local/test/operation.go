@@ -3,8 +3,12 @@ package test
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/deepcopy"
+
 	cliDeps "github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
@@ -26,8 +30,6 @@ import (
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	syncPush "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
-	"os"
-	"strconv"
 )
 
 type Options struct {
@@ -80,7 +82,6 @@ func Run(tmpl *template.Template, o Options, d dependencies) (err error) {
 				return fmt.Errorf(`running remote test "%s" for template "%s" failed: %w`, testName, tmpl.TemplateId(), err)
 			}
 			d.Logger().Infof(`Remote test "%s" finished.`, testName)
-
 		}
 	}
 

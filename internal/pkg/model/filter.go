@@ -59,6 +59,8 @@ func (f ObjectsFilter) IsObjectIgnored(object Object) bool {
 		return !f.allowedBranches.IsBranchAllowed(o)
 	case *Config:
 		return f.ignoredComponents.Contains(o.ComponentId)
+	case *ConfigWithRows:
+		return f.ignoredComponents.Contains(o.ComponentId)
 	case *ConfigRow:
 		return f.ignoredComponents.Contains(o.ComponentId)
 	}
