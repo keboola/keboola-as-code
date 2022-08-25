@@ -3,6 +3,7 @@ package testproject
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -36,6 +37,7 @@ type Project struct {
 	storageAPIToken     *storageapi.Token
 	storageApiClient    client.Client
 	encryptionAPIClient client.Client
+	jobsQueueAPIClient  client.Client
 	schedulerAPIClient  client.Client
 	defaultBranch       *storageapi.Branch
 	envs                *env.Map
@@ -103,6 +105,16 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	// Init Encryption API
 	p.encryptionAPIClient = encryptionapi.ClientWithHost(client.NewTestClient(), encryptionHost.String())
 
+	// Get encryption service host
+	queueHost, found := services.URLByID("queue")
+	if !found {
+		cleanupFn()
+		return nil, nil, fmt.Errorf("queue service not found")
+	}
+
+	// Init Queue API
+	p.jobsQueueAPIClient = jobsqueueapi.ClientWithHostAndToken(client.NewTestClient(), queueHost.String(), p.Project.StorageAPIToken())
+
 	// Get scheduler service host
 	schedulerHost, found := services.URLByID("scheduler")
 	if !found {
@@ -120,7 +132,7 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	go func() {
 		defer initWg.Done()
 		if token, err := storageapi.VerifyTokenRequest(p.Project.StorageAPIToken()).Send(p.ctx, p.storageApiClient); err != nil {
-			errors.Append(fmt.Errorf("invalid token for project %d: %s", p.ID(), err))
+			errors.Append(fmt.Errorf("invalid token for project %d: %w", p.ID(), err))
 		} else if p.ID() != token.ProjectID() {
 			errors.Append(fmt.Errorf("test project id and token project id are different"))
 		} else {
@@ -169,6 +181,10 @@ func (p *Project) EncryptionAPIClient() client.Client {
 	return p.encryptionAPIClient
 }
 
+func (p *Project) JobsQueueAPIClient() client.Client {
+	return p.jobsQueueAPIClient
+}
+
 func (p *Project) SchedulerAPIClient() client.Client {
 	return p.schedulerAPIClient
 }
@@ -201,7 +217,7 @@ func (p *Project) Clean() error {
 	})
 
 	if err := grp.Wait(); err != nil {
-		return fmt.Errorf(`cannot clean project "%d": %s`, p.ID(), err)
+		return fmt.Errorf(`cannot clean project "%d": %w`, p.ID(), err)
 	}
 	p.logf("■ Cleanup done.")
 	return nil
@@ -370,7 +386,7 @@ func (p *Project) createConfigsInDefaultBranch(configs []string) error {
 
 	// Generate new IDs
 	if err := tickets.Resolve(); err != nil {
-		return fmt.Errorf(`cannot generate new IDs: %s`, err)
+		return fmt.Errorf(`cannot generate new IDs: %w`, err)
 	}
 
 	// Wait for requests
