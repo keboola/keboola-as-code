@@ -3,7 +3,6 @@ package testproject
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -26,6 +25,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
