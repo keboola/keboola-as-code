@@ -1,4 +1,8 @@
 {
+  mainConfig: {
+    componentId: "ex-generic-v2",
+    id: ConfigId("empty"),
+  },
   configurations: [
     {
       componentId: "ex-generic-v2",

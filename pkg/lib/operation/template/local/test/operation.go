@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/keboola/go-client/pkg/jobsqueueapi"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/deepcopy"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -44,7 +46,7 @@ type dependencies interface {
 }
 
 func Run(tmpl *template.Template, o Options, d dependencies) (err error) {
-	tempDir, err := os.MkdirTemp("", "kac-test-template-")
+	tempDir, err := os.MkdirTemp("", "kac-test-template-") //nolint:forbidigo
 	if err != nil {
 		return err
 	}
@@ -209,6 +211,7 @@ func runRemoteTest(testName string, tmpl *template.Template, repoFS filesystem.F
 		return err
 	}
 	branchID := int(defBranch.ID)
+	branchKey := model.BranchKey{Id: storageapi.BranchID(branchID)}
 
 	// Load fixture with minimal project
 	fixPrjEnvs := env.Empty()
@@ -237,7 +240,7 @@ func runRemoteTest(testName string, tmpl *template.Template, repoFS filesystem.F
 	// Create fake manifest
 	m := project.NewManifest(testPrj.ID(), testPrj.StorageAPIHost())
 	// Load only target branch
-	m.Filter().SetAllowedKeys([]model.Key{model.BranchKey{Id: storageapi.BranchID(branchID)}})
+	m.Filter().SetAllowedKeys([]model.Key{branchKey})
 
 	if err != nil {
 		return err
@@ -277,10 +280,6 @@ func runRemoteTest(testName string, tmpl *template.Template, repoFS filesystem.F
 	d.Logger().Debugf(`Inputs prepared.`)
 
 	// Copy remote state to the local
-	prjState, err = prj.LoadState(loadState.InitOptions(true))
-	if err != nil {
-		return err
-	}
 	for _, objectState := range prjState.All() {
 		objectState.SetLocalState(deepcopy.Copy(objectState.RemoteState()).(model.Object))
 	}
@@ -288,10 +287,10 @@ func runRemoteTest(testName string, tmpl *template.Template, repoFS filesystem.F
 	// Use template
 	tmplOpts := useTemplate.Options{
 		InstanceName: "test",
-		TargetBranch: model.BranchKey{Id: storageapi.BranchID(branchID)},
+		TargetBranch: branchKey,
 		Inputs:       inputValues,
 	}
-	_, _, err = useTemplate.Run(prjState, tmpl, tmplOpts, projectDeps)
+	tmplInstID, _, err := useTemplate.Run(prjState, tmpl, tmplOpts, projectDeps)
 
 	// Copy expected state and replace ENVs
 	expectedDirFs, err := tmpl.TestExpectedOutFS(testName)
@@ -322,7 +321,66 @@ func runRemoteTest(testName string, tmpl *template.Template, repoFS filesystem.F
 		LogUntrackedPaths: true,
 		ChangeDescription: "",
 	}
-	return syncPush.Run(prjState, pushOpts, projectDeps)
+	err = syncPush.Run(prjState, pushOpts, projectDeps)
+	if err != nil {
+		return err
+	}
+
+	// Get mainConfig from applied template
+	err = reloadPrjState(prjState)
+	if err != nil {
+		return err
+	}
+	tmplInst, err := findTmplInst(prjState, branchKey, tmplInstID)
+	if err != nil {
+		return err
+	}
+
+	// Run the mainConfig job
+	queueClient := testPrj.JobsQueueAPIClient()
+	job, err := jobsqueueapi.CreateJobRequest(tmplInst.MainConfig.ComponentId, tmplInst.MainConfig.ConfigId).Send(d.Ctx(), queueClient)
+	if err != nil {
+		return err
+	}
+	return jobsqueueapi.WaitForJob(d.Ctx(), queueClient, job)
+}
+
+func reloadPrjState(prjState *project.State) error {
+	ok, localErr, remoteErr := prjState.Load(state.LoadOptions{LoadRemoteState: true})
+	if remoteErr != nil {
+		return fmt.Errorf(`state reload failed on remote error: %w`, remoteErr)
+	}
+	if localErr != nil {
+		return fmt.Errorf(`state reload failed on local error: %w`, localErr)
+	}
+	if !ok {
+		return fmt.Errorf(`state reload failed`)
+	}
+	return nil
+}
+
+func findTmplInst(prjState *project.State, branchKey model.BranchKey, tmplInstID string) (*model.TemplateInstance, error) {
+	branch, found := prjState.GetOrNil(branchKey).(*model.BranchState)
+	if !found {
+		return nil, fmt.Errorf(`branch "%d" not found`, branchKey.Id)
+	}
+	tmplInst, found, err := branch.Remote.Metadata.TemplateInstance(tmplInstID)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, fmt.Errorf(`template instance "%s" not found in branch metadata`, tmplInstID)
+	}
+	if tmplInst.MainConfig == nil {
+		return nil, fmt.Errorf(`template instance "%s" is missing mainConfig in metadata`, tmplInstID)
+	}
+	if tmplInst.MainConfig.ComponentId == "" {
+		return nil, fmt.Errorf(`template instance "%s" is missing mainConfig.componentId in metadata`, tmplInstID)
+	}
+	if tmplInst.MainConfig.ConfigId == "" {
+		return nil, fmt.Errorf(`template instance "%s" is missing mainConfig.configId in metadata`, tmplInstID)
+	}
+	return tmplInst, nil
 }
 
 func prepareRepoFS(tempDir string, tmpl *template.Template) (filesystem.Fs, error) {
