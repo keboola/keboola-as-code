@@ -71,19 +71,19 @@ func Run(tmpl *template.Template, o Options, d dependencies) (err error) {
 		}
 
 		if !o.RemoteOnly {
-			d.Logger().Infof(`Running local test "%s".`, testName)
+			d.Logger().Infof(`Running local test "%s" for template "%s".`, testName, tmpl.FullName())
 			if err := runLocalTest(testName, tmpl, repoDirFS, d); err != nil {
 				return fmt.Errorf(`running local test "%s" for template "%s" failed: %w`, testName, tmpl.TemplateId(), err)
 			}
-			d.Logger().Infof(`Local test "%s" finished.`, testName)
+			d.Logger().Infof(`Local test "%s" for template "%s" finished.`, testName, tmpl.FullName())
 		}
 
 		if !o.LocalOnly {
-			d.Logger().Infof(`Running remote test "%s".`, testName)
+			d.Logger().Infof(`Running remote test "%s" for template "%s".`, testName, tmpl.FullName())
 			if err := runRemoteTest(testName, tmpl, repoDirFS, d); err != nil {
 				return fmt.Errorf(`running remote test "%s" for template "%s" failed: %w`, testName, tmpl.TemplateId(), err)
 			}
-			d.Logger().Infof(`Remote test "%s" finished.`, testName)
+			d.Logger().Infof(`Remote test "%s" for template "%s" finished.`, testName, tmpl.FullName())
 		}
 	}
 

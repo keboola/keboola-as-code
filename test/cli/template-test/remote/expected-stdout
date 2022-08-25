@@ -1,4 +1,4 @@
-Running remote test "one".
+Running remote test "one" for template "keboola/my-template/0.0.1".
 New objects from "keboola/my-template/0.0.1" template:
   + C main/extractor/ex-generic-v2/empty
   + C main/extractor/ex-generic-v2/without-rows
@@ -18,4 +18,4 @@ Plan for "push" operation:
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
 Push done.
-Remote test "one" finished.
+Remote test "one" for template "keboola/my-template/0.0.1" finished.
