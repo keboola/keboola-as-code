@@ -3,7 +3,6 @@ package testproject
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/encryptionapi"
+	"github.com/keboola/go-client/pkg/jobsqueueapi"
 	"github.com/keboola/go-client/pkg/schedulerapi"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/testproject"
@@ -392,7 +392,7 @@ func (p *Project) createConfigsInDefaultBranch(configs []string) error {
 	// Wait for requests
 	close(sendReady) // unblock requests
 	if err := grp.Wait(); err != nil {
-		return fmt.Errorf("cannot create configs: %s", err)
+		return fmt.Errorf("cannot create configs: %w", err)
 	}
 	return nil
 }
@@ -413,7 +413,7 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 
 	// Generate new IDs
 	if err := tickets.Resolve(); err != nil {
-		return fmt.Errorf(`cannot generate new IDs: %s`, err)
+		return fmt.Errorf(`cannot generate new IDs: %w`, err)
 	}
 
 	// Add additional ENVs
@@ -424,7 +424,7 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 	// Wait for requests
 	close(sendReady) // unblock requests
 	if err := grp.Wait(); err != nil {
-		return fmt.Errorf("cannot create configs: %s", err)
+		return fmt.Errorf("cannot create configs: %w", err)
 	}
 	return nil
 }

@@ -339,6 +339,9 @@ func runRemoteTest(testName string, tmpl *template.Template, repoFS filesystem.F
 	// Run the mainConfig job
 	queueClient := testPrj.JobsQueueAPIClient()
 	job, err := jobsqueueapi.CreateJobRequest(tmplInst.MainConfig.ComponentId, tmplInst.MainConfig.ConfigId).Send(d.Ctx(), queueClient)
+	if err != nil {
+		return err
+	}
 	return jobsqueueapi.WaitForJob(d.Ctx(), queueClient, job)
 }
 
