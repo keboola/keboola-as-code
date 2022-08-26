@@ -13,7 +13,7 @@ type testInputsEnvProvider struct {
 	envs *env.Map
 }
 
-// CreateTestInputsEnvProvider allows you to generate new unique IDs via an ENV variable in the test.
+// CreateTestInputsEnvProvider allows you to inject only ENV variables with correct prefix.
 func CreateTestInputsEnvProvider(ctx context.Context) (testhelper.EnvProvider, error) {
 	allEnvs, err := env.FromOs()
 	if err != nil {
