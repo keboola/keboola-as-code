@@ -56,6 +56,7 @@ func TestCommand(p dependencies.Provider) *cobra.Command {
 				LocalOnly:  d.Options().GetBool("local-only"),
 				RemoteOnly: d.Options().GetBool("remote-only"),
 				TestName:   d.Options().GetString("test-name"),
+				Verbose:    d.Options().GetBool("verbose"),
 			}
 
 			// Test templates
