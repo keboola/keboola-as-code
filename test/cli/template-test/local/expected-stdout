@@ -1,4 +1,4 @@
-Running local test "one".
+Running local test "one" for template "keboola/my-template/0.0.1".
 New objects from "keboola/my-template/0.0.1" template:
   + C main/extractor/ex-generic-v2/empty
   + C main/extractor/ex-generic-v2/without-rows
@@ -7,8 +7,8 @@ New objects from "keboola/my-template/0.0.1" template:
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
 Template "keboola/my-template/0.0.1" has been applied, instance ID: %s
-Local test "one" finished.
-Running local test "two".
+Local test "one" for template "keboola/my-template/0.0.1" finished.
+Running local test "two" for template "keboola/my-template/0.0.1".
 New objects from "keboola/my-template/0.0.1" template:
   + C main/extractor/ex-generic-v2/empty
   + C main/extractor/ex-generic-v2/without-rows
@@ -17,4 +17,4 @@ New objects from "keboola/my-template/0.0.1" template:
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
   + R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
 Template "keboola/my-template/0.0.1" has been applied, instance ID: %s
-Local test "two" finished.
+Local test "two" for template "keboola/my-template/0.0.1" finished.
