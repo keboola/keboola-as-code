@@ -50,7 +50,7 @@ func ReplaceEnvsFile(fs filesystem.Fs, path string, provider EnvProvider) {
 	ReplaceEnvsFileWithSeparator(fs, path, provider, "%%")
 }
 
-// ReplaceEnvsDirWithSeparator replaces ENVs in all files in root directory and sub-directories withc chosen separator.
+// ReplaceEnvsDirWithSeparator replaces ENVs in all files in root directory and sub-directories with chosen separator.
 func ReplaceEnvsDirWithSeparator(fs filesystem.Fs, root string, provider EnvProvider, envSeparator string) {
 	// Iterate over directory structure
 	err := fs.Walk(root, func(path string, info filesystem.FileInfo, err error) error {
