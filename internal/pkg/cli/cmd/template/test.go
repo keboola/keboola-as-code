@@ -74,6 +74,7 @@ func TestCommand(p dependencies.Provider) *cobra.Command {
 	cmd.Flags().String("test-name", "", "name of a single test to be run")
 	cmd.Flags().Bool("local-only", false, "run a local test only")
 	cmd.Flags().Bool("remote-only", false, "run a remote test only")
+	cmd.Flags().Bool("verbose", false, "show details about running tests")
 
 	return cmd
 }
