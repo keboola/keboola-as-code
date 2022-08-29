@@ -18,6 +18,14 @@
               default: "https://jsonplaceholder.typicode.com",
             },
             {
+              id: "ex-generic-v2-oauth",
+              name: "oauth",
+              description: "b",
+              type: "object",
+              kind: "oauth",
+              componentId: "keboola.ex-facebook",
+            },
+            {
               id: "ex-db-mysql-db-host",
               name: "Db Host",
               description: "b",

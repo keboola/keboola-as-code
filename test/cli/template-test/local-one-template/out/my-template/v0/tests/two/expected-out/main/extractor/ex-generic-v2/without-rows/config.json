@@ -1,4 +1,7 @@
 {
+  "authorization": {
+    "oauth_api": {}
+  },
   "parameters": {
     "api": {
       "baseUrl": "base/url"
