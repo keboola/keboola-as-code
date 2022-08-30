@@ -114,6 +114,9 @@ jobs:
     steps:
       - name: Setup line endings
         run: git config --global core.autocrlf false
+      - name: Start etcd service (only on linux)
+        if: matrix.name == 'linux'
+        run: docker run -d --rm -e ALLOW_NONE_AUTHENTICATION=no -e ETCD_ROOT_PASSWORD=toor -p 2379:2379 docker.io/bitnami/etcd:3.5.4-debian-11-r27
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Install Go
@@ -137,6 +140,10 @@ jobs:
           TEST_KBC_PROJECTS: ${{ env[matrix.projects] }}
           TEST_PARALLELISM: 16
           DATADOG_ENABLED: false
+          ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
+          ETCD_ENDPOINT: localhost:2379
+          ETCD_USERNAME: root
+          ETCD_PASSWORD: toor
 
   lint:
     needs:

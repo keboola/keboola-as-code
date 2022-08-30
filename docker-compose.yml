@@ -20,6 +20,7 @@ services:
       # Disable DataDog integration
       - DATADOG_ENABLED=false
       # Etcd
+      - ETCD_ENABLED=true
       - ETCD_ENDPOINT=etcd:2379
       - ETCD_USERNAME=root
       - ETCD_PASSWORD=toor

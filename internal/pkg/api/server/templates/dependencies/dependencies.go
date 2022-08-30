@@ -40,6 +40,7 @@ type Container interface {
 	WithLoggerPrefix(prefix string) *container
 	WithStorageApiClient(client client.Client, token *storageapi.Token) (*container, error)
 	EtcdClient() (*etcd.Client, error)
+	Locker() *Locker
 }
 
 // NewContainer returns dependencies for API and add them to the context.
@@ -70,6 +71,8 @@ type container struct {
 	logger            log.PrefixLogger
 	envs              *env.Map
 	repositoryManager *repository.Manager
+	etcdClient        dependencies.Lazy[*etcd.Client]
+	locker            dependencies.Lazy[*Locker]
 }
 
 func (v *container) Ctx() context.Context {
@@ -242,31 +245,46 @@ func (v *container) StorageApiToken() (string, error) {
 }
 
 func (v *container) EtcdClient() (*etcd.Client, error) {
-	// Get endpoint
-	endpoint := v.envs.Get("ETCD_ENDPOINT")
-	if endpoint == "" {
-		return nil, fmt.Errorf("ETCD_HOST is not set")
-	}
+	return v.etcdClient.InitAndGet(func() (**etcd.Client, error) {
+		// Check if etcd is enabled
+		if v.envs.Get("ETCD_ENABLED") == "false" {
+			return nil, fmt.Errorf("etcd integration is disabled")
+		}
 
-	// Create client
-	c, err := etcd.New(etcd.Config{
-		Context:              v.ctx,
-		Endpoints:            []string{endpoint},
-		DialTimeout:          2 * time.Second,
-		DialKeepAliveTimeout: 2 * time.Second,
-		DialKeepAliveTime:    10 * time.Second,
-		Username:             v.envs.Get("ETCD_USERNAME"), // optional
-		Password:             v.envs.Get("ETCD_PASSWORD"), // optional
+		// Get endpoint
+		endpoint := v.envs.Get("ETCD_ENDPOINT")
+		if endpoint == "" {
+			return nil, fmt.Errorf("ETCD_HOST is not set")
+		}
+
+		// Create client
+		c, err := etcd.New(etcd.Config{
+			Context:              v.ctx,
+			Endpoints:            []string{endpoint},
+			DialTimeout:          2 * time.Second,
+			DialKeepAliveTimeout: 2 * time.Second,
+			DialKeepAliveTime:    10 * time.Second,
+			Username:             v.envs.Get("ETCD_USERNAME"), // optional
+			Password:             v.envs.Get("ETCD_PASSWORD"), // optional
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Close client when shutting down the server
+		go func() {
+			<-v.ctx.Done()
+			c.Close()
+		}()
+
+		return &c, nil
 	})
-	if err != nil {
-		return nil, err
-	}
+}
 
-	// Close client when shutting down the server
-	go func() {
-		<-v.ctx.Done()
-		c.Close()
-	}()
-
-	return c, nil
+func (v *container) Locker() *Locker {
+	locker, _ := v.locker.InitAndGet(func() (**Locker, error) {
+		locker := &Locker{d: v}
+		return &locker, nil
+	})
+	return locker
 }
