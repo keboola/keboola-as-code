@@ -17,6 +17,7 @@ kubectl delete configmap -n default templates-api --ignore-not-found
 kubectl delete poddisruptionbudget -n default templates-api-pdb --ignore-not-found
 
 kubectl apply -f ./provisioning/kubernetes/deploy/namespace.yaml
+kubectl apply -f ./provisioning/kubernetes/deploy/etcd.yaml
 kubectl apply -f ./provisioning/kubernetes/deploy/config-map.yaml
 kubectl apply -f ./provisioning/kubernetes/deploy/templates-api.yaml
 kubectl apply -f ./provisioning/kubernetes/deploy/azure/service.yaml
