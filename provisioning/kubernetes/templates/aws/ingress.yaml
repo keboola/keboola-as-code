@@ -2,10 +2,12 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  name: templates-api
+  namespace: templates-api
+  labels:
+    app: templates-api
   annotations:
     kubernetes.io/ingress.class: "nginx"
-  name: templates-api
-  namespace: default
 spec:
   rules:
     - host: "templates.${HOSTNAME_SUFFIX}"
@@ -14,7 +16,7 @@ spec:
           - backend:
               service:
                 name: templates-api
-                port: 
+                port:
                   number: 80
             path: /
             pathType: Prefix
