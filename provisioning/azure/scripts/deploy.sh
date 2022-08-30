@@ -14,6 +14,7 @@ az aks get-credentials --name "$CLUSTER_NAME" --resource-group "$RESOURCE_GROUP"
 # TEMPORARY
 kubectl delete all -n default -l app=templates-api --ignore-not-found
 kubectl delete configmap -n default templates-api --ignore-not-found
+kubectl delete poddisruptionbudget -n default templates-api-pdb --ignore-not-found
 
 kubectl apply -f ./provisioning/kubernetes/deploy/namespace.yaml
 kubectl apply -f ./provisioning/kubernetes/deploy/config-map.yaml
