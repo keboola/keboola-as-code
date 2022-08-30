@@ -64,7 +64,7 @@ func TestLoadDotEnv_Invalid(t *testing.T) {
 	assert.Equal(t, map[string]string{}, envs.ToMap())
 	expected := `
 DEBUG  Loaded ".env.local"
-WARN  Cannot parse env file ".env.local": Can't separate key from value
+WARN  cannot parse env file ".env.local": Can't separate key from value
 `
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
 }

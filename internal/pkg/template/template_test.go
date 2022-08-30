@@ -97,7 +97,7 @@ func TestTemplate_TestInputs(t *testing.T) {
 
 	tmpl := initTemplate(t, fs)
 
-	res, err := tmpl.TestInputs("one")
+	res, err := tmpl.TestInputs("one", nil, nil, "")
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"foo": "bar"}, res)
 }

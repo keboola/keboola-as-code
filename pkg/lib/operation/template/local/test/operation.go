@@ -28,6 +28,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenvmock"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/testtemplateinputs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	syncPush "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
@@ -137,8 +138,12 @@ func runLocalTest(testName string, tmpl *template.Template, repoFS filesystem.Fs
 	}
 	d.Logger().Debugf(`Working directory set up.`)
 
-	// Read inputs
-	inputsFile, err := tmpl.TestInputs(testName)
+	// Read inputs and replace env vars
+	envInputsProvider, err := testtemplateinputs.CreateTestInputsEnvProvider(d.Ctx())
+	if err != nil {
+		return err
+	}
+	inputsFile, err := tmpl.TestInputs(testName, envInputsProvider, testhelper.ReplaceEnvsStringWithSeparator, "##")
 	if err != nil {
 		return err
 	}
@@ -251,8 +256,12 @@ func runRemoteTest(testName string, tmpl *template.Template, repoFS filesystem.F
 	}
 	d.Logger().Debugf(`Working directory set up.`)
 
-	// Read inputs
-	inputsFile, err := tmpl.TestInputs(testName)
+	// Read inputs and replace env vars
+	envInputsProvider, err := testtemplateinputs.CreateTestInputsEnvProvider(d.Ctx())
+	if err != nil {
+		return err
+	}
+	inputsFile, err := tmpl.TestInputs(testName, envInputsProvider, testhelper.ReplaceEnvsStringWithSeparator, "##")
 	if err != nil {
 		return err
 	}
