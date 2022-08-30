@@ -2,7 +2,6 @@ package testtemplateinputs
 
 import (
 	"context"
-	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
@@ -19,13 +18,7 @@ func CreateTestInputsEnvProvider(ctx context.Context) (testhelper.EnvProvider, e
 	if err != nil {
 		return nil, err
 	}
-	res := make(map[string]string)
-	for k, v := range allEnvs.ToMap() {
-		if strings.HasPrefix(k, "KAC_SECRET_") {
-			res[k] = v
-		}
-	}
-	return &testInputsEnvProvider{ctx: ctx, envs: env.FromMap(res)}, nil
+	return &testInputsEnvProvider{ctx: ctx, envs: allEnvs}, nil
 }
 
 func (p *testInputsEnvProvider) MustGet(key string) string {

@@ -17,9 +17,7 @@ func TestNewUserErrorWithCode(t *testing.T) {
 
 	provider, err := CreateTestInputsEnvProvider(context.Background())
 	assert.NoError(t, err)
-	assert.PanicsWithError(t, `missing ENV variable "CUSTOM_ENV"`, func() {
-		provider.MustGet("CUSTOM_ENV")
-	})
+	assert.Equal(t, "val1", provider.MustGet("CUSTOM_ENV"))
 	assert.Equal(t, "val2", provider.MustGet("KAC_SECRET_VAR2"))
 	assert.Equal(t, "val3", provider.MustGet("KAC_SECRET_VAR3"))
 }
