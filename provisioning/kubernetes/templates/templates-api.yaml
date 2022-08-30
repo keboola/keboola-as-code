@@ -17,6 +17,7 @@ spec:
       labels:
         app: templates-api
         releaseId: $RELEASE_ID
+        templates-api-etcd-client: "true"
         tags.datadoghq.com/env: "$KEBOOLA_STACK"
         tags.datadoghq.com/service: "templates-api"
         tags.datadoghq.com/version: "$RELEASE_ID"
