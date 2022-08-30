@@ -17,6 +17,11 @@ COPY Makefile /tmp/build/Makefile
 COPY scripts  /tmp/build/scripts
 RUN cd /tmp/build && make tools && rm -rf /tmp/build
 
+# Install envsubstr and helm
+RUN curl -L https://github.com/a8m/envsubst/releases/download/v1.2.0/envsubst-$(uname -s)-$(uname -m) -o /usr/local/bin/envsubst && \
+    chmod +x /usr/local/bin/envsubst && \
+    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
 # Set prompt
 RUN mkdir -p ~ && \
     echo 'PS1="\w > "' > ~/.bashrc
