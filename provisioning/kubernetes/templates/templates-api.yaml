@@ -3,7 +3,7 @@ kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: templates-api
-  namespace: default
+  namespace: templates-api
   labels:
     app: templates-api
     releaseId: $RELEASE_ID
@@ -99,7 +99,9 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: templates-api-pdb
-  namespace: default
+  namespace: templates-api
+  labels:
+    app: templates-api
 spec:
   maxUnavailable: 1
   selector:
