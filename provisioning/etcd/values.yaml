@@ -40,6 +40,9 @@ tolerations:
     operator: Exists
     effect: NoSchedule
 
+pdb:
+  create: false
+
 nodeSelector:
   nodepool: main
 

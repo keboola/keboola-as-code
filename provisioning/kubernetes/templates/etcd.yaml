@@ -42,20 +42,6 @@ spec:
             matchLabels:
               app: templates-api-etcd
 ---
-# Source: etcd/templates/pdb.yaml
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: templates-api-etcd
-  namespace: "templates-api"
-  labels:
-    app: templates-api-etcd
-spec:
-  minAvailable: 51%
-  selector:
-    matchLabels:
-      app: templates-api-etcd
----
 # Source: etcd/templates/secrets.yaml
 apiVersion: v1
 kind: Secret
