@@ -143,7 +143,7 @@ func runLocalTest(testName string, tmpl *template.Template, repoFS filesystem.Fs
 	if err != nil {
 		return err
 	}
-	inputsFile, err := tmpl.TestInputs(testName, envInputsProvider, testhelper.ReplaceEnvsString)
+	inputsFile, err := tmpl.TestInputs(testName, envInputsProvider, testhelper.ReplaceEnvsStringWithSeparator, "##")
 	if err != nil {
 		return err
 	}
@@ -261,7 +261,7 @@ func runRemoteTest(testName string, tmpl *template.Template, repoFS filesystem.F
 	if err != nil {
 		return err
 	}
-	inputsFile, err := tmpl.TestInputs(testName, envInputsProvider, testhelper.ReplaceEnvsString)
+	inputsFile, err := tmpl.TestInputs(testName, envInputsProvider, testhelper.ReplaceEnvsStringWithSeparator, "##")
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,8 @@
 {
   "parameters": {
     "api": {
-      "baseUrl": "base/url"
+      "baseUrl": "base/url",
+      "token": "xxxtoken"
     }
   }
 }

@@ -84,14 +84,14 @@ func LoadReadme(fs filesystem.Fs) (string, error) {
 	return file.Content, nil
 }
 
-func LoadTestInputs(fs filesystem.Fs, provider testhelper.EnvProvider, replaceEnvsFn func(string, testhelper.EnvProvider) string) (map[string]interface{}, error) {
+func LoadTestInputs(fs filesystem.Fs, provider testhelper.EnvProvider, replaceEnvsFn func(string, testhelper.EnvProvider, string) string, envSeparator string) (map[string]interface{}, error) {
 	file, err := fs.ReadFile(filesystem.NewFileDef(InputsFile).SetDescription("template inputs"))
 	if err != nil {
 		return nil, err
 	}
 	inputs := map[string]interface{}{}
 	if replaceEnvsFn != nil {
-		file.Content = replaceEnvsFn(file.Content, provider)
+		file.Content = replaceEnvsFn(file.Content, provider, envSeparator)
 	}
 	if err := json.DecodeString(file.Content, &inputs); err != nil {
 		return nil, fmt.Errorf(`cannot decode test inputs file "%s": %w`, InputsFile, err)
@@ -263,12 +263,12 @@ func (t *Template) TestExpectedOutFS(name string) (filesystem.Fs, error) {
 	return testFS.SubDirFs(ExpectedOutDirectory)
 }
 
-func (t *Template) TestInputs(name string, provider testhelper.EnvProvider, replaceEnvsFn func(string, testhelper.EnvProvider) string) (map[string]interface{}, error) {
+func (t *Template) TestInputs(name string, provider testhelper.EnvProvider, replaceEnvsFn func(string, testhelper.EnvProvider, string) string, envSeparator string) (map[string]interface{}, error) {
 	testFS, err := t.TestDir(name)
 	if err != nil {
 		return nil, err
 	}
-	return LoadTestInputs(testFS, provider, replaceEnvsFn)
+	return LoadTestInputs(testFS, provider, replaceEnvsFn, envSeparator)
 }
 
 func (t *Template) LongDesc() string {

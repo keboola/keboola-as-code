@@ -115,12 +115,19 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 		t.Fatalf(`Cannot parse args "%s": %s`, argsStr, err)
 	}
 
-	// Enable templates private beta in tests
 	cmdEnvs, err := env.FromOs()
 	assert.NoError(t, err)
 	cmdEnvs.Unset(`KBC_STORAGE_API_HOST`)
 	cmdEnvs.Unset(`KBC_STORAGE_API_TOKEN`)
+	// Enable templates private beta in tests
 	cmdEnvs.Set(`KBC_TEMPLATES_PRIVATE_BETA`, `true`)
+	// Add envs from env file to the command
+	if envFile := "env"; testDirFs.Exists(envFile) {
+		cmdEnvs, err = env.LoadEnvFile(cmdEnvs, testDirFs, envFile)
+		if err != nil {
+			t.Fatalf(`Cannot load "env" file %s`, err)
+		}
+	}
 
 	// Prepare command
 	var stdout, stderr bytes.Buffer

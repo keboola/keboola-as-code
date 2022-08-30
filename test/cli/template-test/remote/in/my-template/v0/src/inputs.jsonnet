@@ -18,6 +18,13 @@
               default: "https://jsonplaceholder.typicode.com",
             },
             {
+              id: "ex-generic-v2-api-base-token",
+              name: "Api Token",
+              description: "a",
+              type: "string",
+              kind: "hidden",
+            },
+            {
               id: "ex-db-mysql-db-host",
               name: "Db Host",
               description: "b",
