@@ -26,6 +26,7 @@ import (
 type ctxKey string
 
 const CtxKey = ctxKey("dependencies")
+const EtcdTestConnectionTimeout = 1 * time.Second
 
 // Container provides dependencies used only in the API + common dependencies.
 type Container interface {
@@ -268,6 +269,14 @@ func (v *container) EtcdClient() (*etcd.Client, error) {
 			Password:             v.envs.Get("ETCD_PASSWORD"), // optional
 		})
 		if err != nil {
+			return nil, err
+		}
+
+		// Sync endpoints list from cluster (also serves as a connection check)
+		syncCtx, syncCancelFn := context.WithTimeout(v.ctx, EtcdTestConnectionTimeout)
+		defer syncCancelFn()
+		if err := c.Sync(syncCtx); err != nil {
+			c.Close()
 			return nil, err
 		}
 
