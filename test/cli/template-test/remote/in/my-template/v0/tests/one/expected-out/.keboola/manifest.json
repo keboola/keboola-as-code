@@ -59,7 +59,7 @@
       "path": "extractor/ex-generic-v2/without-rows",
       "metadata": {
         "KBC.KAC.templates.configId": "{\"idInTemplate\":\"without-rows\"}",
-        "KBC.KAC.templates.configInputs": "[{\"input\":\"ex-generic-v2-api-base-url\",\"key\":\"parameters.api.baseUrl\"}]",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"ex-generic-v2-api-base-url\",\"key\":\"parameters.api.baseUrl\"},{\"input\":\"ex-generic-v2-api-base-token\",\"key\":\"parameters.api.token\"}]",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.templateId": "my-template"

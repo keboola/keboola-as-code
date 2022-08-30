@@ -1,6 +1,7 @@
 package env
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -30,20 +31,11 @@ func LoadDotEnv(logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string)
 				continue
 			}
 
-			// Read file
-			file, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("env file"))
+			fileEnvs, err := readEnvFile(fs, path)
 			if err != nil {
-				logger.Warnf(`Cannot read env file "%s": %s`, path, err)
+				logger.Warnf(`%s`, err.Error())
 				continue
 			}
-
-			// Load env
-			fileEnvs, err := godotenv.Unmarshal(file.Content)
-			if err != nil {
-				logger.Warnf(`Cannot parse env file "%s": %s`, path, err)
-				continue
-			}
-
 			logger.Infof("Loaded env file \"%s\"", path)
 
 			// Merge ENVs, existing keys take precedence.
@@ -52,4 +44,32 @@ func LoadDotEnv(logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string)
 	}
 
 	return envs
+}
+
+func LoadEnvFile(inEnvs *Map, fs filesystem.Fs, path string) (*Map, error) {
+	envs := FromMap(inEnvs.ToMap()) // copy
+
+	fileEnvs, err := readEnvFile(fs, path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Merge ENVs, existing keys take precedence.
+	envs.Merge(FromMap(fileEnvs), false)
+
+	return envs, nil
+}
+
+func readEnvFile(fs filesystem.Fs, path string) (map[string]string, error) {
+	file, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("env file"))
+	if err != nil {
+		return nil, fmt.Errorf(`cannot read env file "%s": %w`, path, err)
+	}
+
+	fileEnvs, err := godotenv.Unmarshal(file.Content)
+	if err != nil {
+		return nil, fmt.Errorf(`cannot parse env file "%s": %w`, path, err)
+	}
+
+	return fileEnvs, nil
 }
