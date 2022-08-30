@@ -1,10 +1,2 @@
-Running local test "one" for template "keboola/my-template/0.0.1".
-New objects from "keboola/my-template/0.0.1" template:
-  + C main/extractor/ex-generic-v2/empty
-Template "keboola/my-template/0.0.1" has been applied, instance ID: %s
-Local test "one" for template "keboola/my-template/0.0.1" finished.
-Running local test "one" for template "keboola/template-2/2.0.0".
-New objects from "keboola/template-2/2.0.0" template:
-  + C main/extractor/ex-generic-v2/empty
-Template "keboola/template-2/2.0.0" has been applied, instance ID: %s
-Local test "one" for template "keboola/template-2/2.0.0" finished.
+PASS keboola/my-template/0.0.1 one local
+PASS keboola/template-2/2.0.0 one local
