@@ -19,7 +19,7 @@ kubectl apply -f ./provisioning/kubernetes/deploy/namespace.yaml
 kubectl apply -f ./provisioning/kubernetes/deploy/config-map.yaml
 kubectl apply -f ./provisioning/kubernetes/deploy/templates-api.yaml
 kubectl apply -f ./provisioning/kubernetes/deploy/azure/service.yaml
-kubectl rollout status deployment/templates-api --timeout=900s
+kubectl rollout status deployment/templates-api --namespace templates-api --timeout=900s
 
 TEMPLATES_API_IP=""
 TIME_WAITED=0
