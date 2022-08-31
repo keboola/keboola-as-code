@@ -1,0 +1,13 @@
+{
+  "authorization": {
+    "oauth_api": {
+      "id": "123",
+      "version": 3
+    }
+  },
+  "parameters": {
+    "api": {
+      "baseUrl": "base/url"
+    }
+  }
+}

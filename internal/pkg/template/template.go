@@ -237,7 +237,14 @@ func (t *Template) ListTests() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return paths, nil
+	res := make([]string, 0)
+	for _, p := range paths {
+		if dirFS.IsDir(p) {
+			res = append(res, p)
+		}
+	}
+
+	return res, nil
 }
 
 func (t *Template) TestDir(name string) (filesystem.Fs, error) {

@@ -39,6 +39,7 @@ type Options struct {
 	LocalOnly  bool   // run local tests only
 	RemoteOnly bool   // run remote tests only
 	TestName   string // run only selected test
+	Verbose    bool   // verbose output
 }
 
 type dependencies interface {
@@ -65,6 +66,7 @@ func Run(tmpl *template.Template, o Options, d dependencies) (err error) {
 		return err
 	}
 
+	errors := utils.NewMultiError()
 	for _, testName := range testsList {
 		// Run only a single test?
 		if o.TestName != "" && o.TestName != testName {
@@ -72,26 +74,34 @@ func Run(tmpl *template.Template, o Options, d dependencies) (err error) {
 		}
 
 		if !o.RemoteOnly {
-			d.Logger().Infof(`Running local test "%s" for template "%s".`, testName, tmpl.FullName())
-			if err := runLocalTest(testName, tmpl, repoDirFS, d); err != nil {
-				return fmt.Errorf(`running local test "%s" for template "%s" failed: %w`, testName, tmpl.TemplateId(), err)
+			if o.Verbose {
+				d.Logger().Infof(`%s %s local running`, tmpl.FullName(), testName)
 			}
-			d.Logger().Infof(`Local test "%s" for template "%s" finished.`, testName, tmpl.FullName())
+			if err := runLocalTest(testName, tmpl, repoDirFS, o.Verbose, d); err != nil {
+				d.Logger().Errorf(`FAIL %s %s local`, tmpl.FullName(), testName)
+				errors.Append(fmt.Errorf(`running local test "%s" for template "%s" failed: %w`, testName, tmpl.TemplateId(), err))
+			} else {
+				d.Logger().Infof(`PASS %s %s local`, tmpl.FullName(), testName)
+			}
 		}
 
 		if !o.LocalOnly {
-			d.Logger().Infof(`Running remote test "%s" for template "%s".`, testName, tmpl.FullName())
-			if err := runRemoteTest(testName, tmpl, repoDirFS, d); err != nil {
-				return fmt.Errorf(`running remote test "%s" for template "%s" failed: %w`, testName, tmpl.TemplateId(), err)
+			if o.Verbose {
+				d.Logger().Infof(`%s %s remote running`, tmpl.FullName(), testName)
 			}
-			d.Logger().Infof(`Remote test "%s" for template "%s" finished.`, testName, tmpl.FullName())
+			if err := runRemoteTest(testName, tmpl, repoDirFS, o.Verbose, d); err != nil {
+				d.Logger().Errorf(`FAIL %s %s remote`, tmpl.FullName(), testName)
+				errors.Append(fmt.Errorf(`running remote test "%s" for template "%s" failed: %w`, testName, tmpl.TemplateId(), err))
+			} else {
+				d.Logger().Infof(`PASS %s %s remote`, tmpl.FullName(), testName)
+			}
 		}
 	}
 
-	return nil
+	return errors.ErrorOrNil()
 }
 
-func runLocalTest(testName string, tmpl *template.Template, repoFS filesystem.Fs, d dependencies) error {
+func runLocalTest(testName string, tmpl *template.Template, repoFS filesystem.Fs, verbose bool, d dependencies) error {
 	// Get a test project
 	envs, err := env.FromOs()
 	if err != nil {
@@ -115,11 +125,17 @@ func runLocalTest(testName string, tmpl *template.Template, repoFS filesystem.Fs
 		return err
 	}
 
+	var logger log.Logger
+	if verbose {
+		logger = d.Logger()
+	} else {
+		logger = log.NewNopLogger()
+	}
 	opts := options.New()
 	opts.Set(`storage-api-host`, testPrj.StorageAPIHost())
 	opts.Set(`storage-api-token`, testPrj.StorageAPIToken().Token)
-	tmplDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), repoFS, dialog.New(nop.New()), d.Logger(), opts)
-	prjDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), projectFS, dialog.New(nop.New()), d.Logger(), opts)
+	tmplDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), repoFS, dialog.New(nop.New()), logger, opts)
+	prjDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), projectFS, dialog.New(nop.New()), logger, opts)
 
 	// Re-init template with set-up Storage client
 	tmpl, err = tmplDeps.Template(tmpl.Reference())
@@ -195,7 +211,7 @@ func runLocalTest(testName string, tmpl *template.Template, repoFS filesystem.Fs
 	return testhelper.DirectoryContentsSame(expectedDirFs, `/`, projectFS, `/`)
 }
 
-func runRemoteTest(testName string, tmpl *template.Template, repoFS filesystem.Fs, d dependencies) error {
+func runRemoteTest(testName string, tmpl *template.Template, repoFS filesystem.Fs, verbose bool, d dependencies) error {
 	// Get a test project
 	envs, err := env.FromOs()
 	if err != nil {
@@ -228,11 +244,17 @@ func runRemoteTest(testName string, tmpl *template.Template, repoFS filesystem.F
 		return err
 	}
 
+	var logger log.Logger
+	if verbose {
+		logger = d.Logger()
+	} else {
+		logger = log.NewNopLogger()
+	}
 	opts := options.New()
 	opts.Set(`storage-api-host`, testPrj.StorageAPIHost())
 	opts.Set(`storage-api-token`, testPrj.StorageAPIToken().Token)
-	tmplDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), repoFS, dialog.New(nop.New()), d.Logger(), opts)
-	projectDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), prjFS, dialog.New(nop.New()), d.Logger(), opts)
+	tmplDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), repoFS, dialog.New(nop.New()), logger, opts)
+	projectDeps := cliDeps.NewContainer(d.Ctx(), env.Empty(), prjFS, dialog.New(nop.New()), logger, opts)
 
 	// Re-init template with set-up Storage client
 	tmpl, err = tmplDeps.Template(tmpl.Reference())

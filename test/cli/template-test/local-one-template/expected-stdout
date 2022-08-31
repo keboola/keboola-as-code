@@ -1,0 +1,27 @@
+%A
+INFO	keboola/my-template/0.0.1 one local running
+%A
+INFO	New objects from "keboola/my-template/0.0.1" template:
+INFO	  + C main/extractor/ex-generic-v2/empty
+INFO	  + C main/extractor/ex-generic-v2/without-rows
+INFO	  + C main/extractor/keboola.ex-db-mysql/with-rows
+INFO	  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
+INFO	  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
+INFO	  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
+%A
+INFO	Template "keboola/my-template/0.0.1" has been applied, instance ID: %s
+%A
+INFO	PASS keboola/my-template/0.0.1 one local
+INFO	keboola/my-template/0.0.1 two local running
+%A
+INFO	New objects from "keboola/my-template/0.0.1" template:
+INFO	  + C main/extractor/ex-generic-v2/empty
+INFO	  + C main/extractor/ex-generic-v2/without-rows
+INFO	  + C main/extractor/keboola.ex-db-mysql/with-rows
+INFO	  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/disabled
+INFO	  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/test-view
+INFO	  + R main/extractor/keboola.ex-db-mysql/with-rows/rows/users
+%A
+INFO	Template "keboola/my-template/0.0.1" has been applied, instance ID: %s
+%A
+INFO	PASS keboola/my-template/0.0.1 two local
