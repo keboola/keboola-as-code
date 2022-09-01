@@ -31,7 +31,7 @@ linters-settings:
       # No debug statements
       - ^(fmt\.Print.*|print|println)$
       # No "os" filesystem ops, use "internal/pkg/filesystem" package instead
-      - ^(os\.(NewFile|Create.*|Open.*|Ch.*|Link|Symlink|Mkdir.*|ReadFile|Readlink|Remove.*|Rename|Truncate|Lstat|Stat|Getwd))$
+      - ^(os\.(NewFile|Create.*|Open.*|Ch.*|Link|Symlink|Mkdir|ReadFile|Readlink|Remove.*|Rename|Truncate|Lstat|Stat|Getwd))$
       - ^testhelper.(GetFileContent|Glob)$
       # No "filepath" package, use "internal/pkg/filesystem" package instead
       - ^filepath\..*$

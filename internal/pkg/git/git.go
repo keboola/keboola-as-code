@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -46,7 +45,7 @@ func Checkout(ctx context.Context, url, ref string, sparse bool, logger log.Logg
 	}
 
 	// Create a temp dir, it must be later cleared by calling Repository.Clear()
-	dir, err := ioutil.TempDir("", "keboola-as-code-git-")
+	dir, err := os.MkdirTemp("", "keboola-as-code-git-")
 	if err != nil {
 		return nil, err
 	}
