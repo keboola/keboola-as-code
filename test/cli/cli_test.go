@@ -27,6 +27,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
+const TestEnvFile = "env"
+
 // TestCliE2E runs one functional test per each sub-directory.
 func TestCliE2E(t *testing.T) {
 	t.Parallel()
@@ -78,13 +80,9 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	// Init working dir from "in" dir
 	assert.NoError(t, aferofs.CopyFs2Fs(testDirFs, inDir, workingDirFs, `/`))
 
-	// Get ENVs
-	envs, err := env.FromOs()
-	assert.NoError(t, err)
-
 	// Get test project
-	project := testproject.GetTestProjectForTest(t, envs)
-	envs = project.Env()
+	project := testproject.GetTestProjectForTest(t, env.Empty())
+	envs := project.Env()
 	api := project.StorageAPIClient()
 
 	// Setup project state
@@ -96,6 +94,26 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 
 	// Create ENV provider
 	envProvider := storageenv.CreateStorageEnvTicketProvider(context.Background(), api, envs)
+
+	// Add envs from test "env" file if present
+	if testDirFs.Exists(TestEnvFile) {
+		envFile, err := testDirFs.ReadFile(filesystem.NewFileDef(TestEnvFile))
+		if err != nil {
+			t.Fatalf(`Cannot load "env" file %s`, err)
+		}
+
+		// Replace all %%ENV_VAR%% in "env" file
+		envFileContent := testhelper.ReplaceEnvsString(envFile.Content, envProvider)
+
+		// Parse "env" file
+		envsFromFile, err := env.LoadEnvString(envFileContent)
+		if err != nil {
+			t.Fatalf(`Cannot load "env" file: %s`, err)
+		}
+
+		// Merge
+		envs.Merge(envsFromFile, true)
+	}
 
 	// Replace all %%ENV_VAR%% in all files in the working directory
 	testhelper.ReplaceEnvsDir(workingDirFs, `/`, envProvider)
@@ -115,24 +133,13 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 		t.Fatalf(`Cannot parse args "%s": %s`, argsStr, err)
 	}
 
-	cmdEnvs, err := env.FromOs()
-	assert.NoError(t, err)
-	cmdEnvs.Unset(`KBC_STORAGE_API_HOST`)
-	cmdEnvs.Unset(`KBC_STORAGE_API_TOKEN`)
 	// Enable templates private beta in tests
-	cmdEnvs.Set(`KBC_TEMPLATES_PRIVATE_BETA`, `true`)
-	// Add envs from env file to the command
-	if envFile := "env"; testDirFs.Exists(envFile) {
-		cmdEnvs, err = env.LoadEnvFile(cmdEnvs, testDirFs, envFile)
-		if err != nil {
-			t.Fatalf(`Cannot load "env" file %s`, err)
-		}
-	}
+	envs.Set(`KBC_TEMPLATES_PRIVATE_BETA`, `true`)
 
 	// Prepare command
 	var stdout, stderr bytes.Buffer
 	cmd := exec.Command(binary, args...)
-	cmd.Env = cmdEnvs.ToSlice()
+	cmd.Env = envs.ToSlice()
 	cmd.Dir = workingDir
 	cmd.Stdout = io.MultiWriter(&stdout, testhelper.VerboseStdout())
 	cmd.Stderr = io.MultiWriter(&stderr, testhelper.VerboseStderr())

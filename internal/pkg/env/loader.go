@@ -31,7 +31,7 @@ func LoadDotEnv(logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string)
 				continue
 			}
 
-			fileEnvs, err := readEnvFile(fs, path)
+			fileEnvs, err := LoadEnvFile(fs, path)
 			if err != nil {
 				logger.Warnf(`%s`, err.Error())
 				continue
@@ -39,37 +39,32 @@ func LoadDotEnv(logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string)
 			logger.Infof("Loaded env file \"%s\"", path)
 
 			// Merge ENVs, existing keys take precedence.
-			envs.Merge(FromMap(fileEnvs), false)
+			envs.Merge(fileEnvs, false)
 		}
 	}
 
 	return envs
 }
 
-func LoadEnvFile(inEnvs *Map, fs filesystem.Fs, path string) (*Map, error) {
-	envs := FromMap(inEnvs.ToMap()) // copy
-
-	fileEnvs, err := readEnvFile(fs, path)
-	if err != nil {
-		return nil, err
-	}
-
-	// Merge ENVs, existing keys take precedence.
-	envs.Merge(FromMap(fileEnvs), false)
-
-	return envs, nil
-}
-
-func readEnvFile(fs filesystem.Fs, path string) (map[string]string, error) {
+func LoadEnvFile(fs filesystem.Fs, path string) (*Map, error) {
 	file, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("env file"))
 	if err != nil {
 		return nil, fmt.Errorf(`cannot read env file "%s": %w`, path, err)
 	}
 
-	fileEnvs, err := godotenv.Unmarshal(file.Content)
+	envs, err := LoadEnvString(file.Content)
 	if err != nil {
 		return nil, fmt.Errorf(`cannot parse env file "%s": %w`, path, err)
 	}
 
-	return fileEnvs, nil
+	return envs, nil
+}
+
+func LoadEnvString(str string) (*Map, error) {
+	envsMap, err := godotenv.Unmarshal(str)
+	if err != nil {
+		return nil, err
+	}
+
+	return FromMap(envsMap), nil
 }

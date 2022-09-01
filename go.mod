@@ -24,7 +24,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
 	github.com/keboola/go-client v0.4.0
-	github.com/keboola/go-utils v0.4.0
+	github.com/keboola/go-utils v0.4.1
 	github.com/kylelemons/godebug v1.1.0
 	github.com/nhatthm/aferocopy v1.0.2
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
