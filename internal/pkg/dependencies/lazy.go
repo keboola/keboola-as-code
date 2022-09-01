@@ -8,27 +8,46 @@ import (
 // Initialization runs only once, other calls wait.
 type Lazy[T any] struct {
 	lock  sync.Mutex
-	value *T
+	value T
+	set   bool
+}
+
+func (s *Lazy[T]) IsSet() bool {
+	return s.set
 }
 
 func (s *Lazy[T]) Set(v T) {
-	s.value = &v
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.value = v
+	s.set = true
 }
 
-func (s *Lazy[T]) InitAndGet(initFn func() (*T, error)) (T, error) {
+func (s *Lazy[T]) MustInitAndGet(initFn func() T) T {
+	v, err := s.InitAndGet(func() (T, error) {
+		return initFn(), nil
+	})
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+func (s *Lazy[T]) InitAndGet(initFn func() (T, error)) (T, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	// Is already initialized?
-	if s.value != nil {
-		return *s.value, nil
+	if s.set {
+		return s.value, nil
 	}
 
 	// Initialize
 	if v, err := initFn(); err == nil {
 		s.value = v
-		return *v, nil
+		s.set = true
+		return v, nil
 	} else {
-		return *new(T), err
+		return v, err
 	}
 }
