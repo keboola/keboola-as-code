@@ -154,7 +154,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		p.Set(dependencies.NewProvider(cmd.Context(), envs, root.logger, root.fs, dialog.New(prompt), root.options))
 
 		// Check version
-		if err := versionCheck.Run(cmd.Context(), envs, root.logger); err != nil {
+		if err := versionCheck.Run(cmd.Context(), p.BaseDependencies()); err != nil {
 			// Ignore error, send to logs
 			root.logger.Debugf(`Version check: %s.`, err.Error())
 		}

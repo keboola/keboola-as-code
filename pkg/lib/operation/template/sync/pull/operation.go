@@ -1,7 +1,12 @@
 package pull
 
 import (
+	"context"
+
+	"github.com/keboola/go-client/pkg/client"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
@@ -15,6 +20,9 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
+	Components() *model.ComponentsMap
+	StorageApiClient() client.Sender
+	SchedulerApiClient() client.Sender
 }
 
 func LoadStateOptions() loadState.Options {
@@ -25,17 +33,17 @@ func LoadStateOptions() loadState.Options {
 	}
 }
 
-func Run(tmpl *template.Template, o Options, d dependencies) (err error) {
+func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies) (err error) {
 	logger := d.Logger()
 
 	// Load state
-	templateState, err := tmpl.LoadState(o.Context, LoadStateOptions())
+	templateState, err := tmpl.LoadState(o.Context, LoadStateOptions(), d)
 	if err != nil {
 		return err
 	}
 
 	// Diff
-	results, err := createDiff.Run(createDiff.Options{Objects: templateState})
+	results, err := createDiff.Run(ctx, createDiff.Options{Objects: templateState})
 	if err != nil {
 		return err
 	}
@@ -56,7 +64,7 @@ func Run(tmpl *template.Template, o Options, d dependencies) (err error) {
 		}
 
 		// Save manifest
-		if _, err := saveManifest.Run(templateState.TemplateManifest(), templateState.Fs(), d); err != nil {
+		if _, err := saveManifest.Run(ctx, templateState.TemplateManifest(), templateState.Fs(), d); err != nil {
 			return err
 		}
 	}

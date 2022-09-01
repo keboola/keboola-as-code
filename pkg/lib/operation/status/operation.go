@@ -1,6 +1,9 @@
 package status
 
 import (
+	"context"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
@@ -9,20 +12,16 @@ import (
 
 type dependencies interface {
 	Logger() log.Logger
-	BasePath() string
-	LocalProject(ignoreErrors bool) (*project.Project, error)
-	LocalProjectExists() bool
-	LocalTemplate() (*template.Template, error)
-	LocalTemplateExists() bool
-	LocalTemplateRepository() (*repository.Repository, error)
-	LocalTemplateRepositoryExists() bool
+	Fs() filesystem.Fs
+	LocalProject(ignoreErrors bool) (*project.Project, bool, error)
+	LocalTemplate(ctx context.Context) (*template.Template, bool, error)
+	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)
 }
 
-func Run(d dependencies) (err error) {
+func Run(ctx context.Context, d dependencies) (err error) {
 	logger := d.Logger()
 
-	if d.LocalProjectExists() {
-		prj, err := d.LocalProject(false)
+	if prj, found, err := d.LocalProject(false); found {
 		if err != nil {
 			return err
 		}
@@ -33,8 +32,7 @@ func Run(d dependencies) (err error) {
 		return nil
 	}
 
-	if d.LocalTemplateExists() {
-		tmpl, err := d.LocalTemplate()
+	if tmpl, found, err := d.LocalTemplate(ctx); found {
 		if err != nil {
 			return err
 		}
@@ -45,8 +43,7 @@ func Run(d dependencies) (err error) {
 		return nil
 	}
 
-	if d.LocalTemplateRepositoryExists() {
-		repo, err := d.LocalTemplateRepository()
+	if repo, found, err := d.LocalTemplateRepository(ctx); found {
 		if err != nil {
 			return err
 		}
@@ -57,6 +54,6 @@ func Run(d dependencies) (err error) {
 		return nil
 	}
 
-	logger.Warnf(`Directory "%s" is not a project or template repository.`, d.BasePath())
+	logger.Warnf(`Directory "%s" is not a project or template repository.`, d.Fs().BasePath())
 	return nil
 }

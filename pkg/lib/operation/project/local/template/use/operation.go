@@ -45,13 +45,15 @@ func (v newObjects) Log(logger log.Logger, tmpl *template.Template) {
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
-	ProjectID() (int, error)
-	StorageApiHost() (string, error)
-	StorageAPITokenID() (string, error)
-	StorageApiClient() (client.Sender, error)
-	EncryptionApiClient() (client.Sender, error)
+	ProjectID() int
+	StorageApiHost() string
+	StorageApiTokenID() string
+	StorageApiClient() client.Sender
+	SchedulerApiClient() client.Sender
+	Components() *model.ComponentsMap
+	EncryptionApiClient() client.Sender
+	ObjectIdGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider
 }
 
 func LoadTemplateOptions() loadState.Options {
@@ -63,51 +65,34 @@ func LoadTemplateOptions() loadState.Options {
 	}
 }
 
-func Run(projectState *project.State, tmpl *template.Template, o Options, d dependencies) (string, []string, error) {
+func Run(ctx context.Context, projectState *project.State, tmpl *template.Template, o Options, d dependencies) (string, []string, error) {
 	logger := d.Logger()
 
 	// Get Storage API
-	storageApiClient, err := d.StorageApiClient()
-	if err != nil {
-		return "", nil, err
-	}
-
-	// Host
-	storageApiHost, err := d.StorageApiHost()
-	if err != nil {
-		return "", nil, err
-	}
-
-	// Project ID
-	projectID, err := d.ProjectID()
-	if err != nil {
-		return "", nil, err
-	}
-
-	// Token ID
-	tokenId, err := d.StorageAPITokenID()
-	if err != nil {
-		return "", nil, err
-	}
+	storageApiHost := d.StorageApiHost()
+	tokenId := d.StorageApiTokenID()
 
 	// Create tickets provider, to generate new IDS
-	tickets := storageapi.NewTicketProvider(d.Ctx(), storageApiClient)
+	tickets := d.ObjectIdGeneratorFactory()(ctx)
 
 	// Generate ID for the template instance
 	instanceId := idgenerator.TemplateInstanceId()
 
 	// Load template
-	ctx := use.NewContext(d.Ctx(), tmpl.Reference(), tmpl.ObjectsRoot(), instanceId, o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets)
-	templateState, err := tmpl.LoadState(ctx, LoadTemplateOptions())
+	tmplCtx := use.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), instanceId, o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets)
+	templateState, err := tmpl.LoadState(tmplCtx, loadState.LocalOperationOptions(), d)
 	if err != nil {
 		return "", nil, err
 	}
 
+	// Get manager
+	manager := projectState.LocalManager()
+
 	// Prepare operations
 	objects := make(newObjects, 0)
 	errors := utils.NewMultiError()
-	renameOp := projectState.LocalManager().NewPathsGenerator(true)
-	saveOp := projectState.LocalManager().NewUnitOfWork(projectState.Ctx())
+	renameOp := manager.NewPathsGenerator(true)
+	saveOp := manager.NewUnitOfWork(ctx)
 
 	// Store template information in branch metadata
 	branchState := projectState.GetOrNil(o.TargetBranch).(*model.BranchState)
@@ -159,12 +144,12 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	}
 
 	// Encrypt values
-	if err := encrypt.Run(projectState, encrypt.Options{DryRun: false, LogEmpty: false}, d); err != nil {
+	if err := encrypt.Run(ctx, projectState, encrypt.Options{DryRun: false, LogEmpty: false}, d); err != nil {
 		return "", nil, err
 	}
 
 	// Save manifest
-	if _, err := saveProjectManifest.Run(projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
+	if _, err := saveProjectManifest.Run(ctx, projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
 		return "", nil, err
 	}
 
@@ -172,12 +157,12 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 	objects.Log(logger, tmpl)
 
 	// Normalize paths
-	if _, err := rename.Run(projectState, rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
+	if _, err := rename.Run(ctx, projectState, rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
 		return "", nil, err
 	}
 
 	// Validate schemas and encryption
-	if err := validate.Run(projectState, validate.Options{ValidateSecrets: true, ValidateJsonSchema: true}, d); err != nil {
+	if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: true, ValidateJsonSchema: true}, d); err != nil {
 		logger.Warn(`Warning, ` + err.Error())
 		logger.Warn()
 		logger.Warnf(`Please correct the problems listed above.`)
@@ -186,8 +171,8 @@ func Run(projectState *project.State, tmpl *template.Template, o Options, d depe
 
 	// Return urls to oauth configurations
 	warnings := make([]string, 0)
-	for _, cKey := range ctx.InputsUsage().OAuthConfigsMap() {
-		warnings = append(warnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", storageApiHost, projectID, cKey.ComponentId, cKey.Id))
+	for _, cKey := range tmplCtx.InputsUsage().OAuthConfigsMap() {
+		warnings = append(warnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", storageApiHost, d.ProjectID(), cKey.ComponentId, cKey.Id))
 	}
 	if len(warnings) > 0 {
 		warnings = append([]string{"The template generated configurations that need oAuth authorization. Please follow the links and complete the setup:"}, warnings...)

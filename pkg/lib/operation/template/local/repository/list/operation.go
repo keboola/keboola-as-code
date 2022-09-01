@@ -1,6 +1,8 @@
 package list
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
@@ -9,7 +11,7 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(repo *repository.Repository, d dependencies) (err error) {
+func Run(_ context.Context, repo *repository.Repository, d dependencies) (err error) {
 	w := d.Logger().InfoWriter()
 
 	for _, tmpl := range repo.Templates() {

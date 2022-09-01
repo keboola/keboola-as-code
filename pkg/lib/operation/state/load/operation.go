@@ -94,8 +94,8 @@ func LocalOperationOptions() Options {
 
 type dependencies interface {
 	Logger() log.Logger
-	StorageApiClient() (client.Sender, error)
-	Components() (*model.ComponentsMap, error)
+	Components() *model.ComponentsMap
+	StorageApiClient() client.Sender
 }
 
 func Run(container state.ObjectsContainer, o OptionsWithFilter, d dependencies) (*state.State, error) {

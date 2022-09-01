@@ -3,8 +3,6 @@ package delete_template
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/client"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	deleteTemplate "github.com/keboola/keboola-as-code/internal/pkg/plan/delete-template"
@@ -20,12 +18,10 @@ type Options struct {
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
-	StorageApiClient() (client.Sender, error)
 }
 
-func Run(projectState *project.State, o Options, d dependencies) error {
+func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) error {
 	logger := d.Logger()
 
 	// Get plan
@@ -44,12 +40,12 @@ func Run(projectState *project.State, o Options, d dependencies) error {
 	}
 
 	// Invoke
-	if err := plan.Invoke(projectState.Ctx()); err != nil {
+	if err := plan.Invoke(ctx); err != nil {
 		return utils.PrefixError(`cannot delete template configs`, err)
 	}
 
 	// Save manifest
-	if _, err := saveManifest.Run(projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
+	if _, err := saveManifest.Run(ctx, projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
 		return err
 	}
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/keboola/go-client/pkg/client"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -30,15 +32,17 @@ type Options struct {
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
-	LocalTemplateRepository() (*repository.Repository, error)
-	Template(reference model.TemplateRef) (*template.Template, error)
+	Components() *model.ComponentsMap
+	StorageApiClient() client.Sender
+	SchedulerApiClient() client.Sender
+	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
+	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)
 }
 
-func Run(o Options, d dependencies) (err error) {
+func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	// Get repository
-	repo, err := d.LocalTemplateRepository()
+	repo, _, err := d.LocalTemplateRepository(ctx)
 	if err != nil {
 		return err
 	}
@@ -59,35 +63,35 @@ func Run(o Options, d dependencies) (err error) {
 
 	// Init template directory
 	versionRecord := templateRecord.AddVersion(version, o.Components)
-	if _, err := createDir(o, d, repo.Fs(), versionRecord); err != nil {
+	if _, err := createDir(ctx, o, d, repo.Fs(), versionRecord); err != nil {
 		return err
 	}
 
 	// Save manifest
 	manifest.Persist(templateRecord)
-	if _, err := saveRepositoryManifest.Run(repo.Manifest(), repo.Fs(), d); err != nil {
+	if _, err := saveRepositoryManifest.Run(ctx, repo.Manifest(), repo.Fs(), d); err != nil {
 		return err
 	}
 
-	// Template definition
-	templateDef := model.NewTemplateRef(model.TemplateRepositoryWorkingDir(), o.Id, versionRecord.Version.String())
-
 	// Template context
-	templateCtx := create.NewContext(d.Ctx(), o.SourceBranch, o.Configs)
+	templateCtx := create.NewContext(ctx, o.SourceBranch, o.Configs)
+
+	// Template definition
+	templateDef := model.NewTemplateRef(repo.Ref(), o.Id, versionRecord.Version.String())
 
 	// Get template instance
-	tmpl, err := d.Template(templateDef)
+	tmpl, err := d.Template(ctx, templateDef)
 	if err != nil {
 		return err
 	}
 
 	// Pull remote objects
-	if err := pull.Run(tmpl, pull.Options{Context: templateCtx}, d); err != nil {
+	if err := pull.Run(ctx, tmpl, pull.Options{Context: templateCtx}, d); err != nil {
 		return err
 	}
 
 	// Save inputs
-	if err := saveInputs.Run(o.StepsGroups, tmpl.Fs(), d); err != nil {
+	if err := saveInputs.Run(ctx, o.StepsGroups, tmpl.Fs(), d); err != nil {
 		return err
 	}
 
@@ -97,9 +101,9 @@ func Run(o Options, d dependencies) (err error) {
 	return nil
 }
 
-func createDir(o Options, d dependencies, repositoryDir filesystem.Fs, record repositoryManifest.VersionRecord) (filesystem.Fs, error) {
+func createDir(ctx context.Context, o Options, d dependencies, repositoryDir filesystem.Fs, record repositoryManifest.VersionRecord) (filesystem.Fs, error) {
 	// Create directory
-	fs, err := createTemplateDir.Run(repositoryDir, createTemplateDir.Options{Path: record.Path()}, d)
+	fs, err := createTemplateDir.Run(ctx, repositoryDir, createTemplateDir.Options{Path: record.Path()}, d)
 	if err != nil {
 		return nil, err
 	}
@@ -119,10 +123,10 @@ func createDir(o Options, d dependencies, repositoryDir filesystem.Fs, record re
 	}
 
 	// Create files
-	if _, err := createTemplateManifest.Run(fs, d); err != nil {
+	if _, err := createTemplateManifest.Run(ctx, fs, d); err != nil {
 		return nil, err
 	}
-	if _, err := createTemplateInputs.Run(fs, d); err != nil {
+	if _, err := createTemplateInputs.Run(ctx, fs, d); err != nil {
 		return nil, err
 	}
 	if err := createLongDesc(o, d, fs); err != nil {

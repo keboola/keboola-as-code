@@ -1,6 +1,8 @@
 package load
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
@@ -10,7 +12,7 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(fs filesystem.Fs, d dependencies) (template.StepsGroups, error) {
+func Run(_ context.Context, fs filesystem.Fs, d dependencies) (template.StepsGroups, error) {
 	inputs, err := template.LoadInputs(fs)
 	if err != nil {
 		return nil, err

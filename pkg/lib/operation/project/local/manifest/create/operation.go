@@ -1,6 +1,8 @@
 package create
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -16,22 +18,16 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	StorageApiHost() (string, error)
-	ProjectID() (int, error)
+	StorageApiHost() string
+	ProjectID() int
 }
 
-func Run(fs filesystem.Fs, o Options, d dependencies) (*project.Manifest, error) {
+func Run(_ context.Context, fs filesystem.Fs, o Options, d dependencies) (*project.Manifest, error) {
 	logger := d.Logger()
 
 	// Get project host and ID
-	host, err := d.StorageApiHost()
-	if err != nil {
-		return nil, err
-	}
-	projectId, err := d.ProjectID()
-	if err != nil {
-		return nil, err
-	}
+	host := d.StorageApiHost()
+	projectId := d.ProjectID()
 
 	// Create
 	manifest := project.NewManifest(projectId, host)
@@ -41,7 +37,7 @@ func Run(fs filesystem.Fs, o Options, d dependencies) (*project.Manifest, error)
 	manifest.SetAllowedBranches(o.AllowedBranches)
 
 	// Save
-	if err = manifest.Save(fs); err != nil {
+	if err := manifest.Save(fs); err != nil {
 		return nil, err
 	}
 

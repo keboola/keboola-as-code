@@ -1,6 +1,8 @@
 package printDiff
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -16,11 +18,11 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(projectState *project.State, o Options, d dependencies) (*diff.Results, error) {
+func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (*diff.Results, error) {
 	logger := d.Logger()
 
 	// Diff
-	results, err := createDiff.Run(createDiff.Options{Objects: projectState})
+	results, err := createDiff.Run(ctx, createDiff.Options{Objects: projectState})
 	if err != nil {
 		return nil, err
 	}

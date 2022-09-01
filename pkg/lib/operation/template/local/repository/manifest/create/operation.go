@@ -1,6 +1,8 @@
 package create
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
@@ -10,7 +12,7 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(emptyDir filesystem.Fs, d dependencies) (*manifest.Manifest, error) {
+func Run(_ context.Context, emptyDir filesystem.Fs, d dependencies) (*manifest.Manifest, error) {
 	logger := d.Logger()
 
 	// Create
