@@ -162,15 +162,22 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
 	t.Helper()
 
-	var stdout, stderr bytes.Buffer
 	binaryPath := filepath.Join(tempDir, "/bin_func_tests")
 	if runtime.GOOS == "windows" {
 		binaryPath += `.exe`
 	}
 
+	// Envs
+	envs, err := env.FromOs()
+	assert.NoError(t, err)
+	envs.Set("TARGET_PATH", binaryPath)
+	envs.Set("SKIP_API_CODE_REGENERATION", "1")
+
+	// Build binary
+	var stdout, stderr bytes.Buffer
 	cmd := exec.Command("make", "build-local")
 	cmd.Dir = projectDir
-	cmd.Env = append(os.Environ(), "TARGET_PATH="+binaryPath, "SKIP_API_CODE_REGENERATION=1")
+	cmd.Env = envs.ToSlice()
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
