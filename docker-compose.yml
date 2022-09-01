@@ -26,6 +26,7 @@ services:
       - ETCD_PASSWORD=toor
     ports:
       - "8000:8000"
+      - "6060:6060"
   etcd:
     image: docker.io/bitnami/etcd:3.5.4-debian-11-r27
     environment:

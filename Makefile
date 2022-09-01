@@ -54,3 +54,7 @@ fix: generate-code
 	bash ./scripts/fix.sh
 
 ci: mod lint tests
+
+godoc:
+	# Example url: http://localhost:6060/pkg/github.com/keboola/keboola-as-code/internal/pkg/dependencies/?m=all
+	godoc -http=0.0.0.0:6060
