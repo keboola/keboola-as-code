@@ -155,8 +155,8 @@ func TestLocalLoadMapper(t *testing.T) {
 
 func newEmptyState(t *testing.T) *state.State {
 	t.Helper()
-	d := dependencies.NewTestContainer()
-	mockedState := d.EmptyState()
+	d := dependencies.NewMockedDeps()
+	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(corefiles.NewMapper(mockedState))
 	return mockedState
 }

@@ -1,6 +1,7 @@
 package persist
 
 import (
+	"context"
 	"net/http"
 	"runtime"
 	"testing"
@@ -921,10 +922,7 @@ func (tc *testCase) run(t *testing.T) {
 	testhelper.ReplaceEnvsDir(fs, `/`, envs)
 
 	// Container
-	d := dependencies.NewTestContainer()
-	d.SetFs(fs)
-	d.UseMockedSchedulerApi()
-	storageApiClient, httpTransport := d.UseMockedStorageApi()
+	d := dependencies.NewMockedDeps()
 
 	// Register new IDs API responses
 	var ticketResponses []*http.Response
@@ -933,12 +931,10 @@ func (tc *testCase) run(t *testing.T) {
 		assert.NoError(t, err)
 		ticketResponses = append(ticketResponses, response)
 	}
-	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
+	d.MockedHttpTransport().RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
 
 	// Load state
-	prj, err := d.LocalProject(false)
-	assert.NoError(t, err)
-	projectState, err := prj.LoadState(loadState.Options{LoadLocalState: true, IgnoreNotFoundErr: true})
+	projectState, err := d.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true, IgnoreNotFoundErr: true}, d)
 	assert.NoError(t, err)
 
 	// Assert state before
@@ -969,10 +965,10 @@ func (tc *testCase) run(t *testing.T) {
 	// Invoke
 	plan, err = NewPlan(projectState.State()) // plan with callbacks
 	assert.NoError(t, err)
-	assert.NoError(t, plan.Invoke(d.Ctx(), d.Logger(), storageApiClient, projectState.State()))
+	assert.NoError(t, plan.Invoke(context.Background(), d.Logger(), d.StorageApiClient(), projectState.State()))
 
 	// Assert new IDs requests count
-	assert.Equal(t, tc.expectedNewIds, httpTransport.GetCallCountInfo()["POST =~/storage/tickets"])
+	assert.Equal(t, tc.expectedNewIds, d.MockedHttpTransport().GetCallCountInfo()["POST =~/storage/tickets"])
 
 	// Assert state after
 	assert.Empty(t, projectState.UntrackedPaths())

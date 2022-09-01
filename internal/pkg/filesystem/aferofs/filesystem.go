@@ -68,6 +68,15 @@ func (f *Fs) WorkingDir() string {
 	return f.workingDir
 }
 
+// SetWorkingDir - set working directory.
+func (f *Fs) SetWorkingDir(workingDir string) {
+	if workingDir != "" && !f.IsDir(workingDir) {
+		// Dir not found
+		workingDir = ""
+	}
+	f.workingDir = f.fs.ToSlash(workingDir)
+}
+
 func (f *Fs) Logger() log.Logger {
 	return f.logger
 }

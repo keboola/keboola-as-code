@@ -72,7 +72,7 @@ func Load(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 
 func (m *Manifest) Save(fs filesystem.Fs) error {
 	// Create file content
-	content := newFile(m.ProjectId(), m.ApiHost())
+	content := newFile(m.ProjectID(), m.ApiHost())
 	content.SortBy = m.SortBy()
 	content.Naming = m.naming
 	content.AllowedBranches = m.filter.AllowedBranches()
@@ -101,7 +101,7 @@ func (m *Manifest) ApiHost() string {
 	return m.project.ApiHost
 }
 
-func (m *Manifest) ProjectId() int {
+func (m *Manifest) ProjectID() int {
 	return m.project.Id
 }
 

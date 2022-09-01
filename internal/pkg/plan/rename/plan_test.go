@@ -21,12 +21,9 @@ func TestRenameAllPlan(t *testing.T) {
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	fs := testFs(t, filesystem.Join(testDir, "..", "..", "fixtures", "local", "to-rename"))
-	d := dependencies.NewTestContainer()
-	d.SetFs(fs)
+	d := dependencies.NewMockedDeps()
 
 	// Mocked API response
-	d.UseMockedSchedulerApi()
-	_, httpTransport := d.UseMockedStorageApi()
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
 		"id":   "ex-generic-v2",
 		"type": "extractor",
@@ -39,13 +36,11 @@ func TestRenameAllPlan(t *testing.T) {
 		"name": "MySQL",
 	})
 	assert.NoError(t, err)
-	httpTransport.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder.Once())
-	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder.Once())
+	d.MockedHttpTransport().RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder.Once())
+	d.MockedHttpTransport().RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder.Once())
 
 	// Load state
-	prj, err := d.LocalProject(false)
-	assert.NoError(t, err)
-	projectState, err := prj.LoadState(loadState.Options{LoadLocalState: true})
+	projectState, err := d.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
 	// Get rename plan

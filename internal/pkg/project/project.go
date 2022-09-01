@@ -28,31 +28,31 @@ func LoadManifest(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
-	Components() (*model.ComponentsMap, error)
-	StorageApiClient() (client.Sender, error)
-	SchedulerApiClient() (client.Sender, error)
+	Components() *model.ComponentsMap
+	StorageApiClient() client.Sender
+	SchedulerApiClient() client.Sender
 }
 
 type Project struct {
 	deps       dependencies
+	ctx        context.Context
 	fs         filesystem.Fs
 	fileLoader filesystem.FileLoader
 	manifest   *Manifest
 }
 
-func New(fs filesystem.Fs, ignoreErrors bool, d dependencies) (*Project, error) {
+func New(ctx context.Context, fs filesystem.Fs, ignoreErrors bool) (*Project, error) {
 	m, err := projectManifest.Load(fs, ignoreErrors)
 	if err != nil {
 		return nil, err
 	}
-	return NewWithManifest(fs, m, d), nil
+	return NewWithManifest(ctx, fs, m), nil
 }
 
-func NewWithManifest(fs filesystem.Fs, m *Manifest, d dependencies) *Project {
+func NewWithManifest(ctx context.Context, fs filesystem.Fs, m *Manifest) *Project {
 	return &Project{
-		deps:       d,
+		ctx:        ctx,
 		fs:         fs,
 		fileLoader: fs.FileLoader(),
 		manifest:   m,
@@ -80,14 +80,16 @@ func (p *Project) Filter() model.ObjectsFilter {
 }
 
 func (p *Project) Ctx() context.Context {
-	return p.deps.Ctx()
+	return p.ctx
 }
 
 func (p *Project) MappersFor(state *state.State) (mapper.Mappers, error) {
 	return MappersFor(state, p.deps)
 }
 
-func (p *Project) LoadState(options loadState.Options) (*State, error) {
+func (p *Project) LoadState(options loadState.Options, d dependencies) (*State, error) {
+	p.deps = d
+
 	// Use filter from the project manifest
 	filter := p.Filter()
 	loadOptionsWithFilter := loadState.OptionsWithFilter{
@@ -97,7 +99,7 @@ func (p *Project) LoadState(options loadState.Options) (*State, error) {
 	}
 
 	// Load state
-	s, err := loadState.Run(p, loadOptionsWithFilter, p.deps)
+	s, err := loadState.Run(p, loadOptionsWithFilter, d)
 	if err != nil {
 		return nil, err
 	}

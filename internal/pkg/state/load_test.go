@@ -1,6 +1,7 @@
 package state_test
 
 import (
+	"context"
 	"runtime"
 	"testing"
 
@@ -38,19 +39,15 @@ func TestLoadState(t *testing.T) {
 
 	// Container
 	m, fs := loadTestManifest(t, envs, "minimal")
-	d := dependencies.NewTestContainer()
-	d.InitFromTestProject(testProject)
-	d.SetFs(fs)
-	d.SetLocalProject(project.NewWithManifest(d.Fs(), m, d))
-	prj, err := d.LocalProject(false)
-	assert.NoError(t, err)
+	d := dependencies.NewMockedDeps()
+	d.SetFromTestProject(testProject)
 
 	// Load
 	options := LoadOptions{
 		LoadLocalState:  true,
 		LoadRemoteState: true,
 	}
-	state, err := New(prj, d)
+	state, err := New(project.NewWithManifest(context.Background(), fs, m), d)
 	assert.NoError(t, err)
 	ok, localErr, remoteErr := state.Load(options)
 

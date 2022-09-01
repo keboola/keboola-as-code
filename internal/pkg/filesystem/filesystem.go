@@ -37,6 +37,7 @@ type Fs interface {
 	ApiName() string // name of the used implementation, for example local, memory, ...
 	BasePath() string
 	WorkingDir() string
+	SetWorkingDir(workingDir string)
 	SubDirFs(path string) (Fs, error)
 	Logger() log.Logger
 	SetLogger(logger log.Logger)

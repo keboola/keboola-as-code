@@ -94,14 +94,15 @@ func (v FsInfo) LocalTemplatePath() (LocalTemplatePath, error) {
 	}
 
 	// Get working directory relative to repository directory
-	workingDir, err := filepath.Rel(repoFs.BasePath(), filesystem.Join(v.fs.BasePath(), v.fs.WorkingDir())) // nolint: forbidigo
+	workingDir, err := filepath.Rel(repoFs.BasePath(), filepath.Join(v.fs.BasePath(), filesystem.FromSlash(v.fs.WorkingDir()))) // nolint: forbidigo
 	if err != nil {
 		return paths, fmt.Errorf(`path "%s" is not from "%s"`, repoFs.BasePath(), v.fs.BasePath())
 	}
 
 	// Template dir is [template]/[version], for example "my-template/v1".
 	// Working dir must be the template dir or a subdir.
-	parts := strings.SplitN(workingDir, string(filesystem.PathSeparator), 3)
+	workingDir = filesystem.ToSlash(workingDir)
+	parts := strings.SplitN(workingDir, string(filesystem.PathSeparator), 3) // nolint: forbidigo
 	if len(parts) < 2 {
 		return paths, fmt.Errorf(`directory "%s" is not a template directory`, filesystem.Join(parts[0:2]...))
 	}

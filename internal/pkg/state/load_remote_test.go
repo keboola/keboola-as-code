@@ -1,6 +1,7 @@
 package state_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/keboola/go-client/pkg/storageapi"
@@ -15,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	. "github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
@@ -443,13 +445,9 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	err := testProject.SetState(projectStateFile)
 	assert.NoError(t, err)
 
-	d := dependencies.NewTestContainer()
-	d.SetLocalProject(project.NewWithManifest(d.Fs(), m, d))
-	d.InitFromTestProject(testProject)
-	prj, err := d.LocalProject(false)
-	assert.NoError(t, err)
-
-	state, err := New(prj, d)
+	d := dependencies.NewMockedDeps()
+	d.SetFromTestProject(testProject)
+	state, err := New(project.NewWithManifest(context.Background(), testfs.NewMemoryFs(), m), d)
 	assert.NoError(t, err)
 	filter := m.Filter()
 	_, localErr, remoteErr := state.Load(LoadOptions{RemoteFilter: filter, LoadRemoteState: true})

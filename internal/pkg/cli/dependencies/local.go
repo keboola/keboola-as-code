@@ -165,7 +165,7 @@ func (v *local) LocalTemplate(ctx context.Context) (*template.Template, bool, er
 		}
 
 		// Set working directory
-		if workingDir, err := filesystem.Rel(tmpl.Fs().BasePath(), filesystem.Join(v.Fs().BasePath(), v.Fs().WorkingDir())); err == nil {
+		if workingDir, err := filepath.Rel(tmpl.Fs().BasePath(), filepath.Join(v.Fs().BasePath(), filesystem.FromSlash(v.Fs().WorkingDir()))); err == nil { // nolint: forbidigo
 			tmpl.Fs().SetWorkingDir(workingDir)
 		}
 

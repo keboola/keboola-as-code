@@ -17,13 +17,13 @@ const EnvVersionCheck = "KBC_VERSION_CHECK"
 
 type checker struct {
 	ctx    context.Context
-	envs   *env.Map
+	envs   env.Provider
 	client client.Client
 	cancel context.CancelFunc
 	logger log.Logger
 }
 
-func NewGitHubChecker(parentCtx context.Context, logger log.Logger, envs *env.Map) *checker {
+func NewGitHubChecker(parentCtx context.Context, logger log.Logger, envs env.Provider) *checker {
 	// Timeout 3 seconds
 	ctx, cancel := context.WithTimeout(parentCtx, 3*time.Second)
 
