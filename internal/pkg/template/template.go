@@ -84,22 +84,6 @@ func LoadReadme(fs filesystem.Fs) (string, error) {
 	return file.Content, nil
 }
 
-func LoadTestInputs(fs filesystem.Fs, provider testhelper.EnvProvider, replaceEnvsFn func(string, testhelper.EnvProvider, string) string, envSeparator string) (map[string]interface{}, error) {
-	file, err := fs.ReadFile(filesystem.NewFileDef(InputsFile).SetDescription("template inputs"))
-	if err != nil {
-		return nil, err
-	}
-	inputs := map[string]interface{}{}
-	if replaceEnvsFn != nil {
-		file.Content = replaceEnvsFn(file.Content, provider, envSeparator)
-	}
-	if err := json.DecodeString(file.Content, &inputs); err != nil {
-		return nil, fmt.Errorf(`cannot decode test inputs file "%s": %w`, InputsFile, err)
-	}
-
-	return inputs, nil
-}
-
 func ParseInputValue(value interface{}, inputDef *templateInput.Input, isFilled bool) (InputValue, error) {
 	// Convert
 	value, err := inputDef.Type.ParseValue(value)
@@ -119,9 +103,9 @@ func ParseInputValue(value interface{}, inputDef *templateInput.Input, isFilled 
 
 type dependencies interface {
 	Logger() log.Logger
-	Components() (*model.ComponentsMap, error)
-	StorageApiClient() (client.Sender, error)
-	SchedulerApiClient() (client.Sender, error)
+	Components() *model.ComponentsMap
+	StorageApiClient() client.Sender
+	SchedulerApiClient() client.Sender
 }
 
 type _reference = model.TemplateRef
@@ -140,7 +124,13 @@ type Template struct {
 	inputs          StepsGroups
 }
 
-func New(reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, templateDir, commonDir filesystem.Fs, d dependencies) (*Template, error) {
+type Test struct {
+	tmpl *Template
+	name string
+	fs   filesystem.Fs
+}
+
+func New(reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, templateDir, commonDir filesystem.Fs) (*Template, error) {
 	// Mount <common> directory to:
 	//   template dir FS - used to load manifest, inputs, readme
 	//   src dir FS - objects root
@@ -159,7 +149,7 @@ func New(reference model.TemplateRef, template repository.TemplateRecord, versio
 	}
 
 	// Create struct
-	out := &Template{_reference: reference, template: template, version: version, deps: d, fs: templateDir, srcDir: srcDir}
+	out := &Template{_reference: reference, template: template, version: version, fs: templateDir, srcDir: srcDir}
 
 	// Load manifest
 	out.manifestFile, err = LoadManifest(templateDir)
@@ -228,54 +218,48 @@ func (t *Template) TestsDir() (filesystem.Fs, error) {
 	return t.testsDir, nil
 }
 
-func (t *Template) ListTests() ([]string, error) {
-	dirFS, err := t.TestsDir()
+func (t *Template) Tests() (res []*Test, err error) {
+	testsDir, err := t.TestsDir()
 	if err != nil {
 		return nil, err
 	}
-	paths, err := dirFS.Glob("*")
+
+	// List sub files/directories
+	paths, err := testsDir.Glob("*")
 	if err != nil {
 		return nil, err
 	}
-	res := make([]string, 0)
-	for _, p := range paths {
-		if dirFS.IsDir(p) {
-			res = append(res, p)
+
+	// Each subdirectory is a test
+	for _, testName := range paths {
+		if testsDir.IsDir(testName) {
+			test, err := t.Test(testName)
+			if err != nil {
+				return nil, err
+			}
+			res = append(res, test)
 		}
 	}
 
 	return res, nil
 }
 
-func (t *Template) TestDir(name string) (filesystem.Fs, error) {
-	dirFS, err := t.TestsDir()
+func (t *Template) Test(testName string) (*Test, error) {
+	testsDir, err := t.TestsDir()
 	if err != nil {
 		return nil, err
 	}
-	if !dirFS.IsDir(name) {
-		return nil, fmt.Errorf(`test "%s" not found`, name)
+
+	if !testsDir.IsDir(testName) {
+		return nil, fmt.Errorf(`test "%s" not found in template "%s"`, testName, t.FullName())
 	}
 
-	return dirFS.SubDirFs(name)
-}
-
-func (t *Template) TestExpectedOutFS(name string) (filesystem.Fs, error) {
-	testFS, err := t.TestDir(name)
+	testDir, err := testsDir.SubDirFs(testName)
 	if err != nil {
 		return nil, err
 	}
-	if !testFS.IsDir(ExpectedOutDirectory) {
-		return nil, fmt.Errorf(`directory "%s" in test "%s" not found`, ExpectedOutDirectory, name)
-	}
-	return testFS.SubDirFs(ExpectedOutDirectory)
-}
 
-func (t *Template) TestInputs(name string, provider testhelper.EnvProvider, replaceEnvsFn func(string, testhelper.EnvProvider, string) string, envSeparator string) (map[string]interface{}, error) {
-	testFS, err := t.TestDir(name)
-	if err != nil {
-		return nil, err
-	}
-	return LoadTestInputs(testFS, provider, replaceEnvsFn, envSeparator)
+	return &Test{name: testName, tmpl: t, fs: testDir}, nil
 }
 
 func (t *Template) LongDesc() string {
@@ -302,7 +286,8 @@ func (t *Template) ManifestExists() (bool, error) {
 	return t.srcDir.IsFile(t.ManifestPath()), nil
 }
 
-func (t *Template) LoadState(ctx Context, options loadState.Options) (*State, error) {
+func (t *Template) LoadState(ctx Context, options loadState.Options, d dependencies) (*State, error) {
+	t.deps = d
 	localFilter := ctx.LocalObjectsFilter()
 	remoteFilter := ctx.RemoteObjectsFilter()
 	loadOptions := loadState.OptionsWithFilter{
@@ -381,4 +366,52 @@ func (c *evaluatedTemplate) MainConfig() (*model.TemplateMainConfig, error) {
 		return nil, nil
 	}
 	return &model.TemplateMainConfig{ConfigId: mainConfig.Id, ComponentId: mainConfig.ComponentId}, nil
+}
+
+func (t *Test) Name() string {
+	return t.name
+}
+
+func (t *Test) ExpectedOutDir() (filesystem.Fs, error) {
+	if !t.fs.IsDir(ExpectedOutDirectory) {
+		return nil, fmt.Errorf(`directory "%s" in test "%s" not found`, ExpectedOutDirectory, t.name)
+	}
+
+	// Get expected output dir
+	originalFs, err := t.fs.SubDirFs(ExpectedOutDirectory)
+	if err != nil {
+		return nil, err
+	}
+
+	// Copy FS, so original dir is immutable
+	copyFs, err := aferofs.NewMemoryFs(log.NewNopLogger(), "")
+	if err != nil {
+		return nil, err
+	}
+	if err := aferofs.CopyFs2Fs(originalFs, "", copyFs, ""); err != nil {
+		return nil, err
+	}
+
+	return copyFs, nil
+}
+
+func (t *Test) Inputs(provider testhelper.EnvProvider, replaceEnvsFn func(string, testhelper.EnvProvider, string) string, envSeparator string) (map[string]interface{}, error) {
+	// Read inputs file
+	file, err := t.fs.ReadFile(filesystem.NewFileDef(InputsFile).SetDescription("template inputs"))
+	if err != nil {
+		return nil, err
+	}
+
+	// Replace envs
+	inputs := map[string]interface{}{}
+	if replaceEnvsFn != nil {
+		file.Content = replaceEnvsFn(file.Content, provider, envSeparator)
+	}
+
+	// Decode JSON
+	if err := json.DecodeString(file.Content, &inputs); err != nil {
+		return nil, fmt.Errorf(`cannot decode test inputs file "%s": %w`, InputsFile, err)
+	}
+
+	return inputs, nil
 }

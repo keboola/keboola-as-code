@@ -52,7 +52,7 @@ func TestTemplate_TestsDir(t *testing.T) {
 	assert.True(t, res.IsDir("two"))
 }
 
-func TestTemplate_TestDir(t *testing.T) {
+func TestTemplate_Test(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
@@ -65,12 +65,12 @@ func TestTemplate_TestDir(t *testing.T) {
 
 	tmpl := initTemplate(t, fs)
 
-	res, err := tmpl.TestDir("one")
+	test, err := tmpl.Test("one")
 	assert.NoError(t, err)
-	assert.True(t, res.IsDir("sub1"))
+	assert.True(t, test.fs.IsDir("sub1"))
 }
 
-func TestTemplate_ListTests(t *testing.T) {
+func TestTemplate_Tests(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
@@ -81,9 +81,15 @@ func TestTemplate_ListTests(t *testing.T) {
 
 	tmpl := initTemplate(t, fs)
 
-	res, err := tmpl.ListTests()
+	tests, err := tmpl.Tests()
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"one", "two"}, res)
+
+	testNames := make([]string, 0)
+	for _, test := range tests {
+		testNames = append(testNames, test.Name())
+	}
+	
+	assert.Equal(t, []string{"one", "two"}, testNames)
 }
 
 func TestTemplate_TestInputs(t *testing.T) {
@@ -97,7 +103,9 @@ func TestTemplate_TestInputs(t *testing.T) {
 
 	tmpl := initTemplate(t, fs)
 
-	res, err := tmpl.TestInputs("one", nil, nil, "")
+	test, err := tmpl.Test("one")
+	assert.NoError(t, err)
+	res, err := test.Inputs(nil, nil, "")
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"foo": "bar"}, res)
 }

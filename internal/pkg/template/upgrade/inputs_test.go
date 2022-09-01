@@ -362,8 +362,8 @@ func (tc testCase) run(t *testing.T) {
 	t.Helper()
 
 	// Create objects
-	d := dependencies.NewTestContainer()
-	state := d.EmptyState()
+	d := dependencies.NewMockedDeps()
+	state := d.MockedState()
 	branchKey := model.BranchKey{Id: 123}
 	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "111"}
 	configRowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "foo.bar", ConfigId: "111", Id: "222"}
