@@ -6,8 +6,20 @@
 //
 // These dependencies containers are implemented:
 //   - [ForServer] long-lived dependencies that exist during the entire run of the API server.
-//   - [ForPublicRequest] short-lived dependencies for a public request that does not contain the Storage API token.
-//   - [ForProjectRequest] short-lived dependencies for an authenticated request that contains the Storage API token.
+//   - [ForPublicRequest] short-lived dependencies for a public request without authentication.
+//   - [ForProjectRequest] short-lived dependencies for a request with authentication.
+//
+// Dependency containers creation:
+//   - Container [ForServer] is created in API main.go entrypoint, in "start" method, see [src/github.com/keboola/keboola-as-code/cmd/templates-api/main.go].
+//   - Container [ForPublicRequest] is created for each HTTP request in the http.ContextMiddleware function, see [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/http/middleware.go].
+//   - Container [ForProjectRequest] is created for each authenticated HTTP request in the service.APIKeyAuth method, see [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/service/auth.go].
+//
+// Dependencies injection to service endpoints:
+//    - Each service endpoint handler/method gets [ForPublicRequest] container as a parameter.
+//    - If the endpoint use token authentication it gets [ForProjectRequest] container instead.
+//    - It is ensured by [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/dependencies] package.
+//    - See service implementation for details [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/service/service.go].
+//
 package dependencies
 
 import (

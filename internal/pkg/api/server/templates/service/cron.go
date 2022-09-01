@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
@@ -9,13 +10,9 @@ import (
 const TemplateRepositoriesPullInterval = 5 * time.Minute
 const ComponentsUpdateInterval = 5 * time.Minute
 
-func StartPullCron(d dependencies.Container) error {
+func StartPullCron(ctx context.Context, d dependencies.ForServer) error {
 	// Get dependencies
-	ctx := d.Ctx()
-	manager, err := d.RepositoryManager()
-	if err != nil {
-		return err
-	}
+	manager := d.RepositoryManager()
 
 	// Start background work
 	go func() {
@@ -41,13 +38,9 @@ func StartPullCron(d dependencies.Container) error {
 	return nil
 }
 
-func StartComponentsCron(d dependencies.Container) error {
+func StartComponentsCron(ctx context.Context, d dependencies.ForServer) error {
 	// Get dependencies
-	ctx := d.Ctx()
-	provider, err := d.ComponentsProvider()
-	if err != nil {
-		return err
-	}
+	provider := d.ComponentsProvider()
 
 	// Start background work
 	go func() {

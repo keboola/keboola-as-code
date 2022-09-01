@@ -194,7 +194,7 @@ func writeError(ctx context.Context, w http.ResponseWriter, err error) error {
 	response.Message = strhelper.FirstUpper(response.Message)
 
 	// Log error
-	d := ctx.Value(dependencies.CtxKey).(dependencies.Container)
+	d := ctx.Value(dependencies.ForPublicRequestCtxKey).(dependencies.ForPublicRequest)
 	logger := d.Logger()
 	if response.StatusCode > 499 {
 		logger.Error(errorLogMessage(err, response))

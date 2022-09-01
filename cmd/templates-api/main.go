@@ -5,7 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
+	stdLog "log"
 	"net"
 	"net/url"
 	"os"
@@ -21,11 +21,12 @@ import (
 	templatesHttp "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
 type ddLogger struct {
-	*log.Logger
+	*stdLog.Logger
 }
 
 func (l ddLogger) Log(msg string) {
@@ -42,7 +43,7 @@ func main() {
 	flag.Parse()
 
 	// Setup logger.
-	logger := log.New(os.Stderr, "[templatesApi]", 0)
+	logger := stdLog.New(os.Stderr, "[templatesApi]", 0)
 
 	// Envs.
 	envs, err := env.FromOs()
@@ -76,9 +77,16 @@ func main() {
 	}
 }
 
-func start(host, port string, repositories []model.TemplateRepository, debug, debugHttp bool, logger *log.Logger, envs *env.Map) error {
+func start(host, port string, repositories []model.TemplateRepository, debug, debugHttp bool, stdLogger *stdLog.Logger, envs *env.Map) error {
+	// Create context.
+	ctx, cancelFn := context.WithCancel(context.Background())
+	defer cancelFn()
+
+	// Create logger.
+	logger := log.NewApiLogger(stdLogger, "", debug)
+
 	// Create dependencies.
-	d, err := dependencies.NewContainer(context.Background(), repositories, debug, debugHttp, logger, envs)
+	d, err := dependencies.NewServerDeps(ctx, envs, logger, repositories, debug, debugHttp)
 	if err != nil {
 		return err
 	}
@@ -113,17 +121,17 @@ func start(host, port string, repositories []model.TemplateRepository, debug, de
 
 	// Start HTTP server.
 	var wg sync.WaitGroup
-	templatesHttp.HandleHTTPServer(d.Ctx(), &wg, d, serverUrl, endpoints, errCh, logger, debug)
+	templatesHttp.HandleHTTPServer(ctx, &wg, d, serverUrl, endpoints, errCh, stdLogger, debug)
 
 	// Wait for signal.
-	logger.Printf("exiting (%v)", <-errCh)
+	logger.Info("exiting (%v)", <-errCh)
 
 	// Send cancellation signal to the goroutines.
-	d.CtxCancelFn()()
+	cancelFn()
 
 	// Wait for goroutines.
 	wg.Wait()
-	logger.Println("exited")
+	logger.Info("exited")
 	return nil
 }
 
