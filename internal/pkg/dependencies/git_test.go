@@ -1,7 +1,3 @@
-//go:build !windows
-// +build !windows
-
-// nolint: forbidigo
 package dependencies
 
 import (
@@ -25,8 +21,8 @@ func TestGitRepositoryFs_SparseCheckout(t *testing.T) {
 
 	// Copy the git repository to temp
 	tmpDir := t.TempDir()
-	assert.NoError(t, aferofs.CopyFs2Fs(nil, filepath.Join("test", "repository"), nil, tmpDir))
-	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git")))
+	assert.NoError(t, aferofs.CopyFs2Fs(nil, filesystem.Join("git_test", "repository"), nil, tmpDir))
+	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
