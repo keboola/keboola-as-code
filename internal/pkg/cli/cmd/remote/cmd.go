@@ -7,14 +7,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 )
 
-func Commands(d dependencies.Provider) *cobra.Command {
+func Commands(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `remote`,
 		Short: helpmsg.Read(`remote/short`),
 		Long:  helpmsg.Read(`remote/long`),
 	}
 	cmd.AddCommand(
-		CreateCommand(d),
+		CreateCommand(p),
 	)
 	return cmd
 }

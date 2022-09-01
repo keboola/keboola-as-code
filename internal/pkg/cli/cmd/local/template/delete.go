@@ -15,16 +15,14 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/template/delete/short`),
 		Long:  helpmsg.Read(`local/template/delete/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := p.Dependencies()
-
-			// Local project
-			prj, err := d.LocalProject(false)
+			// Command must be used in project directory
+			prj, d, err := p.LocalProject(false)
 			if err != nil {
 				return err
 			}
 
 			// Load project state
-			projectState, err := prj.LoadState(loadState.LocalOperationOptions())
+			projectState, err := prj.LoadState(loadState.LocalOperationOptions(), d)
 			if err != nil {
 				return err
 			}
@@ -37,7 +35,7 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 
 			// Delete template
 			options := deleteOp.Options{Branch: branchKey, Instance: instance.InstanceId, DryRun: d.Options().GetBool("dry-run")}
-			return deleteOp.Run(projectState, options, d)
+			return deleteOp.Run(d.CommandCtx(), projectState, options, d)
 		},
 	}
 

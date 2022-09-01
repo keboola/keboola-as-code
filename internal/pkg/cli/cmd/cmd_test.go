@@ -120,7 +120,7 @@ func TestExecute(t *testing.T) {
 	root, out := newTestRootCommand(testfs.NewMemoryFs())
 
 	// Execute
-	root.Logger = log.NewNopLogger()
+	root.logger = log.NewNopLogger()
 	assert.Equal(t, 0, root.Execute())
 	assert.Contains(t, out.String(), "Available Commands:")
 }
@@ -129,7 +129,7 @@ func TestTearDown_RemoveLogFile(t *testing.T) {
 	t.Parallel()
 	root, _ := newTestRootCommand(testfs.NewMemoryFs())
 
-	root.Options.LogFilePath = ""
+	root.options.LogFilePath = ""
 	root.setupLogger()
 	assert.True(t, root.logFile.IsTemp())
 
@@ -143,21 +143,21 @@ func TestTearDown_KeepLogFile(t *testing.T) {
 	root, _ := newTestRootCommand(testfs.NewMemoryFs())
 	tempDir := t.TempDir()
 
-	root.Options.LogFilePath = filepath.Join(tempDir, "log-file.txt") // nolint: forbidigo
+	root.options.LogFilePath = filepath.Join(tempDir, "log-file.txt") // nolint: forbidigo
 	root.setupLogger()
 	assert.False(t, root.logFile.IsTemp())
-	assert.Equal(t, root.logFile.Path(), root.Options.LogFilePath)
+	assert.Equal(t, root.logFile.Path(), root.options.LogFilePath)
 
-	assert.FileExists(t, root.Options.LogFilePath)
+	assert.FileExists(t, root.options.LogFilePath)
 	root.tearDown(0, nil)
-	assert.FileExists(t, root.Options.LogFilePath)
+	assert.FileExists(t, root.options.LogFilePath)
 }
 
 func TestTearDown_Panic(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
 	root, _ := newTestRootCommand(testfs.NewMemoryFs())
-	root.Logger = logger
+	root.logger = logger
 	exitCode := root.tearDown(0, fmt.Errorf("panic error"))
 	assert.Equal(t, 1, exitCode)
 	expected := `INFO  
@@ -180,7 +180,7 @@ Thank you kindly!
 func TestGetLogFileTempFile(t *testing.T) {
 	t.Parallel()
 	root, _ := newTestRootCommand(testfs.NewMemoryFs())
-	root.Options.LogFilePath = ""
+	root.options.LogFilePath = ""
 	root.setupLogger()
 	assert.True(t, root.logFile.IsTemp())
 
@@ -198,9 +198,9 @@ func TestGetLogFileFromFlags(t *testing.T) {
 
 	// Note: log file can be outside project directory, so it is NOT using virtual filesystem
 	tempDir := t.TempDir()
-	root.Options.LogFilePath = filesystem.Join(tempDir, "log-file.txt")
+	root.options.LogFilePath = filesystem.Join(tempDir, "log-file.txt")
 	root.setupLogger()
-	assert.Equal(t, root.Options.LogFilePath, root.Options.LogFilePath)
+	assert.Equal(t, root.options.LogFilePath, root.options.LogFilePath)
 	assert.False(t, root.logFile.IsTemp())
 	assert.NoError(t, root.logFile.File().Close())
 }

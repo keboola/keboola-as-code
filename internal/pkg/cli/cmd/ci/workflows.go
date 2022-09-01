@@ -15,10 +15,13 @@ func WorkflowsCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`ci/workflows/short`),
 		Long:  helpmsg.Read(`ci/workflows/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			d := p.Dependencies()
+			d, err := p.DependenciesForLocalCommand()
+			if err != nil {
+				return err
+			}
 
 			// Local project
-			prj, err := d.LocalProject(false)
+			prj, _, err := d.LocalProject(false)
 			if err != nil {
 				return err
 			}

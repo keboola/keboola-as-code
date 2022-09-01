@@ -19,16 +19,14 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/template/use/short`),
 		Long:  helpmsg.Read(`local/template/use/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := p.Dependencies()
-
-			// Local project
-			prj, err := d.LocalProject(false)
+			// Command must be used in project directory
+			prj, d, err := p.LocalProject(false)
 			if err != nil {
 				return err
 			}
 
 			// Load project state
-			projectState, err := prj.LoadState(loadState.LocalOperationOptions())
+			projectState, err := prj.LoadState(loadState.LocalOperationOptions(), d)
 			if err != nil {
 				return err
 			}
@@ -47,7 +45,7 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Load template
-			template, err := d.Template(model.NewTemplateRef(repositoryDef, templateId, version))
+			template, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repositoryDef, templateId, version))
 			if err != nil {
 				return err
 			}
@@ -59,7 +57,7 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Use template
-			_, warnings, err := useOp.Run(projectState, template, options, d)
+			_, warnings, err := useOp.Run(d.CommandCtx(), projectState, template, options, d)
 
 			if len(warnings) > 0 {
 				for _, w := range warnings {

@@ -21,7 +21,10 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/create/short`),
 		Long:  helpmsg.Read(`remote/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := p.Dependencies()
+			d, err := p.DependenciesForRemoteCommand()
+			if err != nil {
+				return err
+			}
 
 			// We ask the user what he wants to create.
 			switch d.Dialogs().AskWhatCreateRemote() {
@@ -44,8 +47,11 @@ func CreateBranchCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/create/branch/short`),
 		Long:  helpmsg.Read(`remote/create/branch/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			d := p.Dependencies()
 			start := time.Now()
+			d, err := p.DependenciesForRemoteCommand()
+			if err != nil {
+				return err
+			}
 
 			// Options
 			options, err := d.Dialogs().AskCreateBranch(d)
@@ -54,25 +60,20 @@ func CreateBranchCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			if eventSender, err := d.EventSender(); err == nil {
-				defer func() { eventSender.SendCmdEvent(d.Ctx(), start, cmdErr, "remote-create-branch") }()
-			} else {
-				return err
-			}
+			defer func() { d.EventSender().SendCmdEvent(d.CommandCtx(), start, cmdErr, "remote-create-branch") }()
 
 			// Create branch
-			branch, err := createBranch.Run(options, d)
+			branch, err := createBranch.Run(d.CommandCtx(), options, d)
 			if err != nil {
 				return err
 			}
 
 			// Run pull, if the command is run in a project directory
-			if d.LocalProjectExists() {
+			if prj, found, err := d.LocalProject(false); found {
 				d.Logger().Info()
 				d.Logger().Info(`Pulling objects to the local directory.`)
 
 				// Local project
-				prj, err := d.LocalProject(false)
 				if err != nil {
 					return err
 				}
@@ -88,14 +89,14 @@ func CreateBranchCommand(p dependencies.Provider) *cobra.Command {
 				}
 
 				// Load project state - to pull new branch after create
-				projectState, err := prj.LoadState(loadState.PullOptions(false))
+				projectState, err := prj.LoadState(loadState.PullOptions(false), d)
 				if err != nil {
 					return err
 				}
 
 				// Pull
 				pullOptions := pull.Options{DryRun: false, LogUntrackedPaths: false}
-				if err := pull.Run(projectState, pullOptions, d); err != nil {
+				if err := pull.Run(d.CommandCtx(), projectState, pullOptions, d); err != nil {
 					return utils.PrefixError(`pull failed`, err)
 				}
 			}

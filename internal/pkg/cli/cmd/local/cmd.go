@@ -9,22 +9,22 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 )
 
-func Commands(d dependencies.Provider, envs *env.Map) *cobra.Command {
+func Commands(p dependencies.Provider, envs *env.Map) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `local`,
 		Short: helpmsg.Read(`local/short`),
 		Long:  helpmsg.Read(`local/long`),
 	}
 	cmd.AddCommand(
-		CreateCommand(d),
-		PersistCommand(d),
-		EncryptCommand(d),
-		ValidateCommand(d),
-		FixPathsCommand(d),
+		CreateCommand(p),
+		PersistCommand(p),
+		EncryptCommand(p),
+		ValidateCommand(p),
+		FixPathsCommand(p),
 	)
 
 	if envs.Get(`KBC_TEMPLATES_PRIVATE_BETA`) == `true` {
-		cmd.AddCommand(template.Commands(d))
+		cmd.AddCommand(template.Commands(p))
 	}
 
 	return cmd

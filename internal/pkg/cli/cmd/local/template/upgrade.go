@@ -18,16 +18,14 @@ func UpgradeCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/template/upgrade/short`),
 		Long:  helpmsg.Read(`local/template/upgrade/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := p.Dependencies()
-
-			// Local project
-			prj, err := d.LocalProject(false)
+			// Command must be used in project directory
+			prj, d, err := p.LocalProject(false)
 			if err != nil {
 				return err
 			}
 
 			// Load project state
-			projectState, err := prj.LoadState(loadState.LocalOperationOptions())
+			projectState, err := prj.LoadState(loadState.LocalOperationOptions(), d)
 			if err != nil {
 				return err
 			}
@@ -47,7 +45,7 @@ func UpgradeCommand(p dependencies.Provider) *cobra.Command {
 
 			// Load template
 			version := d.Options().GetString("version")
-			template, err := d.Template(model.NewTemplateRef(repositoryDef, instance.TemplateId, version))
+			template, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repositoryDef, instance.TemplateId, version))
 			if err != nil {
 				return err
 			}
@@ -59,7 +57,7 @@ func UpgradeCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Use template
-			warnings, err := upgradeOp.Run(projectState, template, options, d)
+			warnings, err := upgradeOp.Run(d.CommandCtx(), projectState, template, options, d)
 			if err != nil {
 				return err
 			}

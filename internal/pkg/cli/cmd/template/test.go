@@ -16,10 +16,13 @@ func TestCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`template/test/short`),
 		Long:  helpmsg.Read(`template/test/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := p.Dependencies()
+			d, err := p.DependenciesForLocalCommand()
+			if err != nil {
+				return err
+			}
 
 			// Get template repository
-			repo, err := d.TemplateRepository(model.TemplateRepository{Type: model.RepositoryTypeWorkingDir, Name: "keboola"}, nil)
+			repo, _, err := d.LocalTemplateRepository(d.CommandCtx())
 			if err != nil {
 				return err
 			}
@@ -32,7 +35,7 @@ func TestCommand(p dependencies.Provider) *cobra.Command {
 				if len(args) > 1 {
 					versionArg = args[1]
 				}
-				tmpl, err := d.Template(model.NewTemplateRef(repo.Ref(), args[0], versionArg))
+				tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Ref(), args[0], versionArg))
 				if err != nil {
 					return err
 				}
@@ -43,7 +46,7 @@ func TestCommand(p dependencies.Provider) *cobra.Command {
 					if err != nil {
 						return err
 					}
-					tmpl, err := d.Template(model.NewTemplateRef(repo.Ref(), t.Id, v.Version.String()))
+					tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Ref(), t.Id, v.Version.String()))
 					if err != nil {
 						return err
 					}
@@ -61,7 +64,7 @@ func TestCommand(p dependencies.Provider) *cobra.Command {
 
 			// Test templates
 			for _, tmpl := range templates {
-				err := testOp.Run(tmpl, options, d)
+				err := testOp.Run(d.CommandCtx(), tmpl, options, d)
 				if err != nil {
 					return err
 				}

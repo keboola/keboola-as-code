@@ -14,21 +14,20 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`template/create/short`),
 		Long:  helpmsg.Read(`template/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := p.Dependencies()
-
-			// Require template repository
-			if _, err := d.LocalTemplateRepository(); err != nil {
+			// Command must be used in template repository
+			d, err := p.DependenciesForRemoteCommand()
+			if err != nil {
 				return err
 			}
 
 			// Options
-			options, err := d.Dialogs().AskCreateTemplateOpts(d)
+			options, err := d.Dialogs().AskCreateTemplateOpts(d.CommandCtx(), d)
 			if err != nil {
 				return err
 			}
 
 			// Create template
-			return createOp.Run(options, d)
+			return createOp.Run(d.CommandCtx(), options, d)
 		},
 	}
 

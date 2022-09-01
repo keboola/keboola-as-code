@@ -17,14 +17,12 @@ func DescribeCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`template/describe/short`),
 		Long:  helpmsg.Read(`template/describe/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := p.Dependencies()
-
 			if len(args) < 1 {
 				return fmt.Errorf(`please enter argument with the template ID you want to use and optionally its version`)
 			}
 
-			// Get template repository
-			repo, err := d.LocalTemplateRepository()
+			// Command must be used in template repository
+			repo, d, err := p.LocalRepository()
 			if err != nil {
 				return err
 			}
@@ -36,13 +34,13 @@ func DescribeCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Load template
-			template, err := d.Template(model.NewTemplateRef(repo.Ref(), args[0], versionArg))
+			template, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Ref(), args[0], versionArg))
 			if err != nil {
 				return err
 			}
 
 			// Describe template
-			return describeOp.Run(template, d)
+			return describeOp.Run(d.CommandCtx(), template, d)
 		},
 	}
 
