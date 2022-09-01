@@ -10,6 +10,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// Provider is read-only interface to get ENV value.
+type Provider interface {
+	Lookup(key string) (string, bool)
+	Get(key string) string
+	MustGet(key string) string
+}
+
 // Map - abstraction for ENV variables.
 // Keys are represented as uppercase string.
 type Map struct {
