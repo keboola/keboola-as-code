@@ -96,7 +96,7 @@ type Project interface {
 	StorageApiClient() client.Sender
 	SchedulerApiClient() client.Sender
 	EventSender() event.Sender
-	ObjectIdGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider
+	ObjectIDGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider
 }
 
 // Mocked dependencies for tests.

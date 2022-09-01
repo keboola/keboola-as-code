@@ -53,7 +53,7 @@ type dependencies interface {
 	SchedulerApiClient() client.Sender
 	Components() *model.ComponentsMap
 	EncryptionApiClient() client.Sender
-	ObjectIdGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider
+	ObjectIDGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider
 }
 
 func LoadTemplateOptions() loadState.Options {
@@ -73,7 +73,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	tokenId := d.StorageApiTokenID()
 
 	// Create tickets provider, to generate new IDS
-	tickets := d.ObjectIdGeneratorFactory()(ctx)
+	tickets := d.ObjectIDGeneratorFactory()(ctx)
 
 	// Generate ID for the template instance
 	instanceId := idgenerator.TemplateInstanceId()

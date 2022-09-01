@@ -83,7 +83,7 @@ func (v project) EventSender() event.Sender {
 	return v.eventSender
 }
 
-func (v project) ObjectIdGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider {
+func (v project) ObjectIDGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider {
 	return func(ctx context.Context) *storageapi.TicketProvider {
 		return storageapi.NewTicketProvider(ctx, v.StorageApiClient())
 	}
