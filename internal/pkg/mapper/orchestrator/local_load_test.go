@@ -17,7 +17,7 @@ import (
 func TestMapAfterLocalLoad(t *testing.T) {
 	t.Parallel()
 	state, d := createStateWithMapper(t)
-	fs := d.Fs()
+	fs := state.ObjectsRoot()
 	logger := d.DebugLogger()
 
 	orchestratorConfigState := createLocalLoadFixtures(t, state)
@@ -215,7 +215,7 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 	t.Parallel()
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
-	fs := d.Fs()
+	fs := state.ObjectsRoot()
 	orchestratorConfigState := createLocalLoadFixtures(t, state)
 
 	// Local files
@@ -271,7 +271,7 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	t.Parallel()
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
-	fs := d.Fs()
+	fs := state.ObjectsRoot()
 	orchestratorConfigState := createLocalLoadFixtures(t, state)
 	createTargetConfigs(t, state)
 

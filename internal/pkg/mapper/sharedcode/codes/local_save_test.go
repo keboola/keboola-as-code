@@ -17,14 +17,13 @@ func TestSharedCodeLocalSave(t *testing.T) {
 
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
-	fs := d.Fs()
 	_, rowState := createInternalSharedCode(t, targetComponentId, state)
 
 	recipe := model.NewLocalSaveRecipe(rowState.Manifest(), rowState.Remote, model.NewChangedFields())
 	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(recipe.ObjectManifest.Path(), targetComponentId))
 
 	// Create dir
-	assert.NoError(t, fs.Mkdir(filesystem.Dir(codeFilePath)))
+	assert.NoError(t, state.ObjectsRoot().Mkdir(filesystem.Dir(codeFilePath)))
 
 	// Save to file
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))

@@ -14,8 +14,8 @@ import (
 
 func TestGetSharedCodeByPath(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewTestContainer()
-	mockedState := d.EmptyState()
+	d := dependencies.NewMockedDeps()
+	mockedState := d.MockedState()
 
 	sharedCodeKey, _ := fixtures.CreateSharedCode(t, mockedState)
 	helper := New(mockedState)
@@ -42,8 +42,8 @@ func TestGetSharedCodeByPath(t *testing.T) {
 func TestGetSharedCodeRowByPath(t *testing.T) {
 	t.Parallel()
 
-	d := dependencies.NewTestContainer()
-	mockedState := d.EmptyState()
+	d := dependencies.NewMockedDeps()
+	mockedState := d.MockedState()
 
 	sharedCodeKey, _ := fixtures.CreateSharedCode(t, mockedState)
 	helper := New(mockedState)
@@ -70,8 +70,8 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 func TestGetSharedCodeVariablesId(t *testing.T) {
 	t.Parallel()
 
-	d := dependencies.NewTestContainer()
-	mockedState := d.EmptyState()
+	d := dependencies.NewMockedDeps()
+	mockedState := d.MockedState()
 
 	fixtures.CreateSharedCode(t, mockedState)
 	helper := New(mockedState)

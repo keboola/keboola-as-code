@@ -17,7 +17,7 @@ func TestSharedCodeLocalLoad(t *testing.T) {
 
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
-	fs := d.Fs()
+	fs := state.ObjectsRoot()
 	configState, rowState := createLocalSharedCode(t, targetComponentId, state)
 
 	// Write file
@@ -26,13 +26,13 @@ func TestSharedCodeLocalLoad(t *testing.T) {
 	logger.Truncate()
 
 	// Load config
-	configRecipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
+	configRecipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
 	err := state.Mapper().MapAfterLocalLoad(context.Background(), configRecipe)
 	assert.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Load row
-	rowRecipe := model.NewLocalLoadRecipe(d.FileLoader(), rowState.Manifest(), rowState.Local)
+	rowRecipe := model.NewLocalLoadRecipe(state.FileLoader(), rowState.Manifest(), rowState.Local)
 	err = state.Mapper().MapAfterLocalLoad(context.Background(), rowRecipe)
 	assert.NoError(t, err)
 	assert.Equal(t, "DEBUG  Loaded \"branch/config/row/code.py\"\n", logger.AllMessages())
@@ -62,13 +62,13 @@ func TestSharedCodeLocalLoad_MissingCodeFile(t *testing.T) {
 	configState, rowState := createLocalSharedCode(t, targetComponentId, state)
 
 	// Load config
-	configRecipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
+	configRecipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
 	err := state.Mapper().MapAfterLocalLoad(context.Background(), configRecipe)
 	assert.NoError(t, err)
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Load row
-	rowRecipe := model.NewLocalLoadRecipe(d.FileLoader(), rowState.Manifest(), rowState.Local)
+	rowRecipe := model.NewLocalLoadRecipe(state.FileLoader(), rowState.Manifest(), rowState.Local)
 	err = state.Mapper().MapAfterLocalLoad(context.Background(), rowRecipe)
 	assert.Error(t, err)
 	assert.Equal(t, `missing shared code file "branch/config/row/code.py"`, err.Error())

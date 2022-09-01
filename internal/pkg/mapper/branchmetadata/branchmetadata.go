@@ -15,7 +15,7 @@ type branchMetadataMapper struct {
 }
 
 type dependencies interface {
-	StorageApiClient() (client.Sender, error)
+	StorageApiClient() client.Sender
 }
 
 func NewMapper(s *state.State, d dependencies) *branchMetadataMapper {
