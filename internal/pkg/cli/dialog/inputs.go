@@ -16,7 +16,7 @@ import (
 type inputsDialogDeps interface {
 	Logger() log.Logger
 	Options() *options.Options
-	Components() (*model.ComponentsMap, error)
+	Components() *model.ComponentsMap
 }
 
 // askNewTemplateInputs - dialog to define user inputs for a new template.
@@ -26,10 +26,7 @@ func (p *Dialogs) askNewTemplateInputs(deps inputsDialogDeps, branch *model.Bran
 	inputs := input.NewInputsMap()
 
 	// Get components
-	components, err := deps.Components()
-	if err != nil {
-		return nil, nil, err
-	}
+	components := deps.Components()
 
 	// Select which config/row fields will be replaced by user input.
 	selectAllInputs := deps.Options().GetBool("all-inputs")

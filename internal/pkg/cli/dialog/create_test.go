@@ -23,7 +23,7 @@ import (
 func TestAskCreateBranch(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewTestContainer()
+	d := dependencies.NewMockedDeps()
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -59,8 +59,10 @@ func TestAskCreateBranch(t *testing.T) {
 func TestAskCreateConfig(t *testing.T) {
 	t.Parallel()
 
-	// Fs
+	// Test dependencies
+	dialog, console := createDialogs(t, true)
 	fs := testfs.NewMemoryFs()
+	d := dependencies.NewMockedDeps()
 
 	// Create manifest file
 	manifestContent := `
@@ -86,13 +88,8 @@ func TestAskCreateConfig(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`main`, naming.MetaFile), `{"name": "Main"}`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(`main`, naming.DescriptionFile), ``)))
 
-	// Test dependencies
-	dialog, console := createDialogs(t, true)
-	d := dependencies.NewTestContainer()
-	d.SetFs(fs)
-	d.UseMockedStorageApi()
-	d.UseMockedSchedulerApi()
-	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	// Load project
+	projectState, err := d.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
 	// Interaction
@@ -144,8 +141,10 @@ func TestAskCreateConfig(t *testing.T) {
 func TestAskCreateRow(t *testing.T) {
 	t.Parallel()
 
-	// Fs
+	// Test dependencies
+	dialog, console := createDialogs(t, true)
 	fs := testfs.NewMemoryFs()
+	d := dependencies.NewMockedDeps()
 
 	// Create manifest file
 	manifestContent := `
@@ -186,12 +185,7 @@ func TestAskCreateRow(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filesystem.Join(configDir, naming.DescriptionFile), ``)))
 
 	// Test dependencies
-	dialog, console := createDialogs(t, true)
-	d := dependencies.NewTestContainer()
-	d.SetFs(fs)
-	d.UseMockedStorageApi()
-	d.UseMockedSchedulerApi()
-	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	projectState, err := d.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
 	// Interaction

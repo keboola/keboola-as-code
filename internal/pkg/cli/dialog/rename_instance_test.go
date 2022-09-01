@@ -20,10 +20,8 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewTestContainer()
-	d.SetFs(testfs.MinimalProjectFs(t))
-	d.UseMockedStorageApi()
-	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	d := dependencies.NewMockedDeps()
+	projectState, err := d.MockedProject(testfs.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 	branchKey := model.BranchKey{Id: 123}
 	branchRaw, _ := projectState.LocalObjects().Get(branchKey)
@@ -92,10 +90,8 @@ func TestAskRenameInstance_Noninteractive(t *testing.T) {
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
-	d := dependencies.NewTestContainer()
-	d.SetFs(testfs.MinimalProjectFs(t))
-	d.UseMockedStorageApi()
-	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	d := dependencies.NewMockedDeps()
+	projectState, err := d.MockedProject(testfs.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 	branchKey := model.BranchKey{Id: 123}
 	branchRaw, _ := projectState.LocalObjects().Get(branchKey)

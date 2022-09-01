@@ -1,6 +1,7 @@
 package dialog_test
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
@@ -25,13 +26,16 @@ const (
 func TestAskAllowedBranchesByFlag(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}), nil)
+	d := dependencies.NewMockedDeps()
+	registerMockedBranchesResponse(
+		d.MockedHttpTransport(),
+		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
+	)
 	d.Options().SetDefault(`branches`, `*`)
 	d.Options().Set(`branches`, `foo, bar`)
 
 	// No interaction expected
-	allowedBranches, err := dialog.AskAllowedBranches(d)
+	allowedBranches, err := dialog.AskAllowedBranches(context.Background(), d)
 	assert.NoError(t, err)
 	assert.Equal(t, model.AllowedBranches{"foo", "bar"}, allowedBranches)
 	assert.NoError(t, console.Tty().Close())
@@ -42,12 +46,15 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 	t.Parallel()
 	dialog, _ := createDialogs(t, false)
-	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}), nil)
+	d := dependencies.NewMockedDeps()
+	registerMockedBranchesResponse(
+		d.MockedHttpTransport(),
+		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
+	)
 	d.Options().SetDefault(`branches`, `*`)
 
 	// No interaction expected
-	allowedBranches, err := dialog.AskAllowedBranches(d)
+	allowedBranches, err := dialog.AskAllowedBranches(context.Background(), d)
 	assert.NoError(t, err)
 	assert.Equal(t, model.AllowedBranches{model.AllBranchesDef}, allowedBranches)
 }
@@ -57,8 +64,11 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}), nil)
+	d := dependencies.NewMockedDeps()
+	registerMockedBranchesResponse(
+		d.MockedHttpTransport(),
+		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
+	)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -71,7 +81,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := dialog.AskAllowedBranches(d)
+	allowedBranches, err := dialog.AskAllowedBranches(context.Background(), d)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -86,8 +96,11 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}), nil)
+	d := dependencies.NewMockedDeps()
+	registerMockedBranchesResponse(
+		d.MockedHttpTransport(),
+		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
+	)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -100,7 +113,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := dialog.AskAllowedBranches(d)
+	allowedBranches, err := dialog.AskAllowedBranches(context.Background(), d)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -115,13 +128,16 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*storageapi.Branch{
-		{BranchKey: storageapi.BranchKey{ID: 10}, Name: "Main", IsDefault: true},
-		{BranchKey: storageapi.BranchKey{ID: 20}, Name: "foo", IsDefault: false},
-		{BranchKey: storageapi.BranchKey{ID: 30}, Name: "bar", IsDefault: false},
-		{BranchKey: storageapi.BranchKey{ID: 40}, Name: "baz", IsDefault: false},
-	}), nil)
+	d := dependencies.NewMockedDeps()
+	registerMockedBranchesResponse(
+		d.MockedHttpTransport(),
+		[]*storageapi.Branch{
+			{BranchKey: storageapi.BranchKey{ID: 10}, Name: "Main", IsDefault: true},
+			{BranchKey: storageapi.BranchKey{ID: 20}, Name: "foo", IsDefault: false},
+			{BranchKey: storageapi.BranchKey{ID: 30}, Name: "bar", IsDefault: false},
+			{BranchKey: storageapi.BranchKey{ID: 40}, Name: "baz", IsDefault: false},
+		},
+	)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -160,7 +176,7 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := dialog.AskAllowedBranches(d)
+	allowedBranches, err := dialog.AskAllowedBranches(context.Background(), d)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -175,13 +191,16 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 func TestAskAllowedBranchesTypeList(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewTestContainer()
-	d.SetStorageApi(mockedStorageApi([]*storageapi.Branch{
-		{BranchKey: storageapi.BranchKey{ID: 10}, Name: "Main", IsDefault: true},
-		{BranchKey: storageapi.BranchKey{ID: 20}, Name: "foo", IsDefault: false},
-		{BranchKey: storageapi.BranchKey{ID: 30}, Name: "bar", IsDefault: false},
-		{BranchKey: storageapi.BranchKey{ID: 40}, Name: "baz", IsDefault: false},
-	}), nil)
+	d := dependencies.NewMockedDeps()
+	registerMockedBranchesResponse(
+		d.MockedHttpTransport(),
+		[]*storageapi.Branch{
+			{BranchKey: storageapi.BranchKey{ID: 10}, Name: "Main", IsDefault: true},
+			{BranchKey: storageapi.BranchKey{ID: 20}, Name: "foo", IsDefault: false},
+			{BranchKey: storageapi.BranchKey{ID: 30}, Name: "bar", IsDefault: false},
+			{BranchKey: storageapi.BranchKey{ID: 40}, Name: "baz", IsDefault: false},
+		},
+	)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -205,7 +224,7 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 	}()
 
 	// Run
-	allowedBranches, err := dialog.AskAllowedBranches(d)
+	allowedBranches, err := dialog.AskAllowedBranches(context.Background(), d)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
