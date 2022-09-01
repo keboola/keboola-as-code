@@ -2,7 +2,7 @@
   "version": 2,
   "project": {
     "id": 12345,
-    "apiHost": "foo.bar"
+    "apiHost": "connection.keboola.com"
   },
   "sortBy": "path",
   "naming": {
