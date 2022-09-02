@@ -41,19 +41,12 @@ func TestGit_Checkout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Checkout fail from a non-existing url
-	url := "https://non-existing-url"
+	// Checkout fail from a missing repo
+	url := "file://some/missing/repo"
 	ref := "main"
-	_, err := Checkout(ctx, url, ref, false, logger)
+	_, err := Checkout(ctx, url, ref, true, logger)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `git repository could not be checked out from "https://non-existing-url"`)
-
-	// Checkout fail from a non-existing GitHub repository
-	url = "https://github.com/keboola/non-existing-repo.git"
-	ref = "main"
-	_, err = Checkout(ctx, url, ref, false, logger)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `git repository could not be checked out from "https://github.com/keboola/non-existing-repo.git"`)
+	assert.Contains(t, err.Error(), `git repository could not be checked out from "file://some/missing/repo"`)
 
 	// Checkout fail from a non-existing branch
 	url = gitRepo
@@ -68,8 +61,11 @@ func TestGit_Checkout(t *testing.T) {
 	r, err := Checkout(ctx, url, ref, false, logger)
 	assert.NoError(t, err)
 
+	// Get repository FS
+	fs1, unlockFS1 := r.Fs()
+
 	// Full checkout -> directory is not empty
-	subDirs, err := filesystem.ReadSubDirs(r.Fs(), "/")
+	subDirs, err := filesystem.ReadSubDirs(fs1, "/")
 	assert.NoError(t, err)
 	assert.Greater(t, len(subDirs), 1)
 
@@ -78,27 +74,25 @@ func TestGit_Checkout(t *testing.T) {
 	assert.NoError(t, err)
 	var stdOut bytes.Buffer
 	cmd := exec.Command("git", "cat-file", "-t", hash)
-	cmd.Dir = r.Fs().BasePath()
+	cmd.Dir = fs1.BasePath()
 	cmd.Stdout = &stdOut
 	err = cmd.Run()
 	assert.NoError(t, err)
 	assert.Equal(t, "commit\n", stdOut.String())
 
-	// Test parallel FS read
-	r.RLock()
-	r.RLock()
-	assert.True(t, r.Fs().Exists("example-file.txt"))
-	r.RUnlock()
-	r.RUnlock()
+	// Test parallel access to FS
+	fs2, unlockFS2 := r.Fs()
+	assert.True(t, fs2.Exists("example-file.txt"))
 
 	// Test pull
 	assert.NoError(t, r.Pull(ctx))
-	assert.True(t, r.Fs().Exists("example-file.txt"))
+	assert.True(t, fs1.Exists("example-file.txt"))
 
-	// Test clear
-	basePath := r.Fs().BasePath()
-	r.Clear()
-	assert.Nil(t, r.Fs())
+	// Test free
+	basePath := fs1.BasePath()
+	unlockFS1()
+	unlockFS2()
+	<-r.Free()
 	assert.NoDirExists(t, basePath)
 }
 
@@ -116,23 +110,14 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Checkout fail from a non-existing url
-	url := "https://non-existing-url"
+	// Checkout fail from a missing repo
+	url := "file://some/missing/repo"
 	ref := "main"
 	_, err := Checkout(ctx, url, ref, true, logger)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `git repository could not be checked out from "https://non-existing-url"`)
-
-	// Checkout fail from a non-existing GitHub repository
-	time.Sleep(200 * time.Millisecond)
-	url = "https://github.com/keboola/non-existing-repo.git"
-	ref = "main"
-	_, err = Checkout(ctx, url, ref, true, logger)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `git repository could not be checked out from "https://github.com/keboola/non-existing-repo.git"`)
+	assert.Contains(t, err.Error(), `git repository could not be checked out from "file://some/missing/repo"`)
 
 	// Checkout fail from a non-existing branch
-	time.Sleep(200 * time.Millisecond)
 	url = gitRepo
 	ref = "non-existing-ref"
 	_, err = Checkout(ctx, url, ref, true, logger)
@@ -140,14 +125,16 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	wildcards.Assert(t, `reference "non-existing-ref" not found in the git repository "%s"`, err.Error(), "unexpected output")
 
 	// Success
-	time.Sleep(200 * time.Millisecond)
 	url = gitRepo
 	ref = "main"
 	r, err := Checkout(ctx, url, ref, true, logger)
 	assert.NoError(t, err)
 
+	// Get repository FS
+	fs1, unlockFS1 := r.Fs()
+
 	// Sparse checkout -> directory is empty
-	subDirs, err := filesystem.ReadSubDirs(r.Fs(), "/")
+	subDirs, err := filesystem.ReadSubDirs(fs1, "/")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{".git"}, subDirs)
 
@@ -156,26 +143,24 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	assert.NoError(t, err)
 	var stdOut bytes.Buffer
 	cmd := exec.Command("git", "cat-file", "-t", hash)
-	cmd.Dir = r.Fs().BasePath()
+	cmd.Dir = fs1.BasePath()
 	cmd.Stdout = &stdOut
 	err = cmd.Run()
 	assert.NoError(t, err)
 	assert.Equal(t, "commit\n", stdOut.String())
 
-	// Test parallel FS read
-	r.RLock()
-	r.RLock()
-	assert.True(t, r.Fs().Exists(".git"))
-	r.RUnlock()
-	r.RUnlock()
+	// Test parallel access to FS
+	fs2, unlockFS2 := r.Fs()
+	assert.True(t, fs2.Exists(".git"))
 
 	// Test pull
 	assert.NoError(t, r.Pull(ctx))
-	assert.True(t, r.Fs().Exists(".git"))
+	assert.True(t, fs1.Exists(".git"))
 
-	// Test clear
-	basePath := r.Fs().BasePath()
-	r.Clear()
-	assert.Nil(t, r.Fs())
+	// Test free
+	basePath := fs1.BasePath()
+	unlockFS1()
+	unlockFS2()
+	<-r.Free()
 	assert.NoDirExists(t, basePath)
 }

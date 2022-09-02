@@ -37,7 +37,11 @@ func TestNewManager(t *testing.T) {
 
 	defaultRepo, err := m.Repository(repo)
 	assert.NoError(t, err)
-	assert.True(t, defaultRepo.Fs().Exists("example-file.txt"))
+	
+	fs, unlockFS := defaultRepo.Fs()
+	defer unlockFS()
+
+	assert.True(t, fs.Exists("example-file.txt"))
 }
 
 func TestAddRepository_AlreadyExists(t *testing.T) {
