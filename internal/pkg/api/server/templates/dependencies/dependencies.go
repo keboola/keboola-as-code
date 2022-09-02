@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
@@ -38,6 +39,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
@@ -57,6 +59,7 @@ type ForServer interface {
 	dependencies.Base
 	dependencies.Public
 	ServerCtx() context.Context
+	ServerWaitGroup() *sync.WaitGroup
 	PrefixLogger() log.PrefixLogger
 	RepositoryManager() *repository.Manager
 	EtcdClient() (*etcd.Client, error)
@@ -83,6 +86,7 @@ type forServer struct {
 	dependencies.Base
 	dependencies.Public
 	serverCtx         context.Context
+	serverWg          *sync.WaitGroup
 	logger            log.PrefixLogger
 	repositoryManager *repository.Manager
 	etcdClient        dependencies.Lazy[*etcd.Client]
@@ -107,6 +111,9 @@ type forProjectRequest struct {
 }
 
 func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, defaultRepositories []model.TemplateRepository, debug, dumpHttp bool) (ForServer, error) {
+	// Create wait group - for graceful shutdown
+	serverWg := &sync.WaitGroup{}
+
 	// Get Storage API host
 	storageApiHost := strhelper.NormalizeHost(envs.MustGet("KBC_STORAGE_API_HOST"))
 	if storageApiHost == "" {
@@ -124,7 +131,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	}
 
 	// Create repository manager
-	repositoryManager, err := repository.NewManager(serverCtx, logger, defaultRepositories)
+	repositoryManager, err := repository.NewManager(serverCtx, serverWg, logger, defaultRepositories)
 	if err != nil {
 		return nil, err
 	}
@@ -134,6 +141,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 		Base:              baseDeps,
 		Public:            publicDeps,
 		serverCtx:         serverCtx,
+		serverWg:          serverWg,
 		logger:            logger,
 		repositoryManager: repositoryManager,
 	}
@@ -174,6 +182,10 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 
 func (v *forServer) ServerCtx() context.Context {
 	return v.serverCtx
+}
+
+func (v *forServer) ServerWaitGroup() *sync.WaitGroup {
+	return v.serverWg
 }
 
 func (v *forServer) PrefixLogger() log.PrefixLogger {
@@ -220,12 +232,15 @@ func (v *forServer) EtcdClient() (*etcd.Client, error) {
 		}
 
 		// Close client when shutting down the server
+		wg := v.ServerWaitGroup()
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			<-v.serverCtx.Done()
 			if err := c.Close(); err != nil {
-				v.Logger().Info("closed connection to etcd")
-			} else {
 				v.Logger().Warnf("cannot close connection etcd: %s", err)
+			} else {
+				v.Logger().Info("closed connection to etcd")
 			}
 		}()
 

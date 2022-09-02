@@ -213,7 +213,6 @@ func (r *Repository) Free() <-chan struct{} {
 
 		_ = os.RemoveAll(r.baseDirPath)
 		close(done)
-
 	}()
 
 	return done

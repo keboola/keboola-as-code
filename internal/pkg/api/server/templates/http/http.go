@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"sync"
 	"time"
 
 	goaHTTP "goa.design/goa/v3/http"
@@ -22,7 +21,7 @@ import (
 
 // HandleHTTPServer starts configures and starts a HTTP server on the given
 // URL. It shuts down the server if any error is received in the error channel.
-func HandleHTTPServer(ctx context.Context, wg *sync.WaitGroup, d dependencies.ForServer, u *url.URL, endpoints *templates.Endpoints, errCh chan error, logger *log.Logger, debug bool) {
+func HandleHTTPServer(ctx context.Context, d dependencies.ForServer, u *url.URL, endpoints *templates.Endpoints, errCh chan error, logger *log.Logger, debug bool) {
 	// Trace endpoint start, finish and error
 	endpoints.Use(TraceEndpointsMiddleware())
 
@@ -66,9 +65,10 @@ func HandleHTTPServer(ctx context.Context, wg *sync.WaitGroup, d dependencies.Fo
 		logger.Printf("HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 	}
 
-	(*wg).Add(1)
+	wg := d.ServerWaitGroup()
+	wg.Add(1)
 	go func() {
-		defer (*wg).Done()
+		defer wg.Done()
 
 		// Start HTTP server in a separate goroutine.
 		go func() {
