@@ -32,18 +32,9 @@ func NewComponentsProvider(index *storageapi.IndexComponents, logger log.Logger,
 	}
 }
 
-// RLock acquire read lock, before getting Components().
-// Update() is blocked until the read is finished.
-func (p *ComponentsProvider) RLock() {
-	p.updateLock.RLock()
-}
-
-// RUnlock release read lock.
-func (p *ComponentsProvider) RUnlock() {
-	p.updateLock.RUnlock()
-}
-
 func (p *ComponentsProvider) Components() *ComponentsMap {
+	p.updateLock.RLock()
+	defer p.updateLock.RUnlock()
 	return p.value
 }
 
@@ -51,17 +42,13 @@ func (p *ComponentsProvider) Update(ctx context.Context) {
 	go func() {
 		startTime := time.Now()
 		p.logger.Infof("components update started")
-		p.updateLock.Lock()
-
-		defer p.updateLock.Unlock()
-		p.logger.Infof("components update: acquired lock")
-		lockTime := time.Now()
-
 		ctx, cancel := context.WithTimeout(ctx, ComponentsUpdateTimeout)
 		defer cancel()
 		if index, err := p.index(ctx); err == nil {
+			p.updateLock.Lock()
+			defer p.updateLock.Unlock()
 			p.value = NewComponentsMap(index.Components)
-			p.logger.Infof("components update finished | %s / %s", time.Since(startTime), time.Since(lockTime))
+			p.logger.Infof("components update finished | %s", time.Since(startTime))
 		} else {
 			p.logger.Errorf("components update failed: %w", err)
 		}
