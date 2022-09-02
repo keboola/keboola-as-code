@@ -101,8 +101,9 @@ type forPublicRequest struct {
 type forProjectRequest struct {
 	dependencies.Project
 	ForPublicRequest
-	logger              log.PrefixLogger
-	projectRepositories dependencies.Lazy[[]model.TemplateRepository]
+	logger           log.PrefixLogger
+	repositories     map[string]*repository.Repository
+	repositoriesList dependencies.Lazy[[]model.TemplateRepository]
 }
 
 func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, defaultRepositories []model.TemplateRepository, debug, dumpHttp bool) (ForServer, error) {
@@ -167,6 +168,7 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 		logger:           logger,
 		Project:          projectDeps,
 		ForPublicRequest: publicDeps,
+		repositories:     make(map[string]*repository.Repository),
 	}, nil
 }
 
@@ -268,42 +270,51 @@ func (v *forProjectRequest) PrefixLogger() log.PrefixLogger {
 }
 
 func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition model.TemplateRepository, _ model.TemplateRef) (*repository.Repository, error) {
-	var fs filesystem.Fs
-	var err error
-	if definition.Type == model.RepositoryTypeGit {
-		// Get git repository
-		gitRepository, err := v.RepositoryManager().Repository(definition)
+	if _, found := v.repositories[definition.Hash()]; !found {
+		var fs filesystem.Fs
+		var err error
+		if definition.Type == model.RepositoryTypeGit {
+			// Get git repository
+			gitRepository, err := v.RepositoryManager().Repository(definition)
+			if err != nil {
+				return nil, err
+			}
+
+			// Unlock FS after the request, so directory won't be deleted during request (if a new version will be pulled)
+			var unlockFS git.RepositoryFsUnlockFn
+			fs, unlockFS = gitRepository.Fs()
+			go func() {
+				<-v.RequestCtx().Done()
+				unlockFS()
+			}()
+		} else {
+			fs, err = aferofs.NewLocalFs(v.Logger(), definition.Url, ".")
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// Load manifest from FS
+		manifest, err := loadRepositoryManifest.Run(ctx, fs, v)
 		if err != nil {
 			return nil, err
 		}
 
-		// Acquire read lock and release it after request,
-		// so pull cannot occur in the middle of the request.
-		gitRepository.RLock()
-		go func() {
-			<-v.RequestCtx().Done()
-			gitRepository.RUnlock()
-		}()
-		fs = gitRepository.Fs()
-	} else {
-		fs, err = aferofs.NewLocalFs(v.Logger(), definition.Url, ".")
+		// Get repository instance
+		repo, err := repository.New(definition, fs, manifest)
 		if err != nil {
 			return nil, err
 		}
+
+		// Cache value for the request
+		v.repositories[definition.Hash()] = repo
 	}
 
-	// Load manifest from FS
-	manifest, err := loadRepositoryManifest.Run(ctx, fs, v)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return repository
-	return repository.New(definition, fs, manifest)
+	return v.repositories[definition.Hash()], nil
 }
 
 func (v *forProjectRequest) ProjectRepositories() []model.TemplateRepository {
-	return v.projectRepositories.MustInitAndGet(func() []model.TemplateRepository {
+	return v.repositoriesList.MustInitAndGet(func() []model.TemplateRepository {
 		// Project repositories are default repositories modified by the project features.
 		features := v.ProjectFeatures()
 		var out []model.TemplateRepository
