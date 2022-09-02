@@ -33,12 +33,9 @@ func New(d dependencies.ForServer) (Service, error) {
 		return nil, err
 	}
 
-	// Locks in the git commands causes some problem in NE where the requests on repository start time-outing
-	// after ca. an hour since the pod start.
-	// Needs thorough debug, we disable the cron for now.
-	/* if err := StartPullCron(d); err != nil {
+	if err := StartRepositoriesPullCron(d.ServerCtx(), d); err != nil {
 		return nil, err
-	} */
+	}
 
 	return &service{}, nil
 }

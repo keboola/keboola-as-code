@@ -10,12 +10,14 @@ import (
 const TemplateRepositoriesPullInterval = 5 * time.Minute
 const ComponentsUpdateInterval = 5 * time.Minute
 
-func StartPullCron(ctx context.Context, d dependencies.ForServer) error {
+func StartRepositoriesPullCron(ctx context.Context, d dependencies.ForServer) error {
 	// Get dependencies
 	manager := d.RepositoryManager()
 
 	// Start background work
 	go func() {
+		d.Logger().Infof("repository pull cron prepared")
+
 		// Delay start to a rounded time
 		interval := TemplateRepositoriesPullInterval
 		startAt := time.Now().Truncate(interval).Add(interval)
@@ -23,7 +25,7 @@ func StartPullCron(ctx context.Context, d dependencies.ForServer) error {
 		<-timer.C
 
 		// Start ticker
-		d.Logger().Infof("repository pull ticker started at %s, interval=%s", time.Now().Format("15:04:05"), interval)
+		d.Logger().Infof("repository pull cron started at %s, interval=%s", time.Now().Format("15:04:05"), interval)
 		ticker := time.NewTicker(interval)
 		manager.Pull()
 		for {
