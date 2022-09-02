@@ -77,13 +77,9 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	testDirFs := testfs.NewBasePathLocalFs(testDir)
 	workingDirFs := testfs.NewBasePathLocalFs(workingDir)
 
-	// Get ENVs
-	envs, err := env.FromOs()
-	assert.NoError(t, err)
-
 	// Get test project
-	project := testproject.GetTestProjectForTest(t, envs)
-	envs = project.Env()
+	project := testproject.GetTestProjectForTest(t, env.Empty())
+	envs := project.Env()
 	api := project.StorageAPIClient()
 
 	// Setup project state
@@ -100,7 +96,6 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	testhelper.ReplaceEnvsDir(workingDirFs, `/`, envProvider)
 
 	// Assert
-	assert.NoError(t, err)
 	RunRequests(t, envProvider, testDirFs, workingDirFs, binary, project)
 }
 
@@ -113,10 +108,17 @@ func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
 		binaryPath += `.exe`
 	}
 
+	// Envs
+	envs, err := env.FromOs()
+	assert.NoError(t, err)
+	envs.Set("TEMPLATES_API_BUILD_TARGET_PATH", binaryPath)
+	envs.Set("SKIP_API_CODE_REGENERATION", "1")
+
+	// Build binary
 	var stdout, stderr bytes.Buffer
 	cmd := exec.Command("make", "build-templates-api")
 	cmd.Dir = projectDir
-	cmd.Env = append(os.Environ(), "TEMPLATES_API_BUILD_TARGET_PATH="+binaryPath, "SKIP_API_CODE_REGENERATION=1")
+	cmd.Env = envs.ToSlice()
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
@@ -164,33 +166,46 @@ func waitForAPI(apiUrl string) error {
 func RunApiServer(t *testing.T, binary string, storageApiHost string, repoPath string) string {
 	t.Helper()
 
+	// Get a free port
 	port, err := getFreePort()
 	if err != nil {
 		t.Fatalf("Could not receive a free port: %s", err)
 	}
 
+	// Args
 	apiUrl := fmt.Sprintf("http://localhost:%d", port)
 	args := []string{fmt.Sprintf("--http-port=%d", port)}
 	if repoPath != "" {
 		args = append(args, fmt.Sprintf("--repositories=keboola|file://%s", repoPath))
 	}
+
+	// Envs
+	envs := env.Empty()
+	envs.Set("PATH", os.Getenv("PATH"))
+	envs.Set("KBC_STORAGE_API_HOST", storageApiHost)
+	envs.Set("DATADOG_ENABLED", "false")
+	envs.Set("ETCD_ENABLED", "false")
+
+	// Start API server
 	cmd := exec.Command(binary, args...)
-	cmd.Env = append(os.Environ(), "KBC_STORAGE_API_HOST="+storageApiHost)
+	cmd.Env = envs.ToSlice()
 	cmd.Stdout = testhelper.VerboseStdout()
 	cmd.Stderr = testhelper.VerboseStderr()
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("Server failed to start: %s", err)
 	}
 
-	if err = waitForAPI(apiUrl); err != nil {
-		t.Fatalf("Unexpected error while waiting for API: %s", err)
-	}
-
+	// Kill API server after test
 	t.Cleanup(func() {
 		if err := cmd.Process.Kill(); err != nil {
 			assert.NoError(t, err)
 		}
 	})
+
+	// Wait for API server
+	if err = waitForAPI(apiUrl); err != nil {
+		t.Fatalf("Unexpected error while waiting for API: %s", err)
+	}
 
 	return apiUrl
 }

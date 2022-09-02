@@ -184,6 +184,11 @@ func (v *forServer) RepositoryManager() *repository.Manager {
 
 func (v *forServer) EtcdClient() (*etcd.Client, error) {
 	return v.etcdClient.InitAndGet(func() (*etcd.Client, error) {
+		// Check if etcd is enabled
+		if v.Envs().Get("ETCD_ENABLED") == "false" {
+			return nil, fmt.Errorf("etcd integration is disabled")
+		}
+
 		// Get endpoint
 		endpoint := v.Envs().Get("ETCD_ENDPOINT")
 		if endpoint == "" {
