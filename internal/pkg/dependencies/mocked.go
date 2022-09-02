@@ -35,11 +35,12 @@ type mocked struct {
 }
 
 type MockedValues struct {
-	Services        storageapi.Services
-	Features        storageapi.Features
-	Components      storageapi.Components
-	StorageApiHost  string
-	StorageApiToken storageapi.Token
+	Services                           storageapi.Services
+	Features                           storageapi.Features
+	Components                         storageapi.Components
+	StorageApiHost                     string
+	StorageApiToken                    storageapi.Token
+	StorageApiTokenMockedResponseTimes int
 }
 
 type MockedOption func(values *MockedValues)
@@ -74,6 +75,12 @@ func WithMockedStorageApiToken(token storageapi.Token) MockedOption {
 	}
 }
 
+func WithMockedTokenResponse(times int) MockedOption {
+	return func(values *MockedValues) {
+		values.StorageApiTokenMockedResponseTimes = times
+	}
+}
+
 func NewMockedDeps(opts ...MockedOption) Mocked {
 	ctx := context.Background()
 	envs := env.Empty()
@@ -99,6 +106,7 @@ func NewMockedDeps(opts ...MockedOption) Mocked {
 				Features: storageapi.Features{"my-feature"},
 			},
 		},
+		StorageApiTokenMockedResponseTimes: 1,
 	}
 
 	// Apply options
@@ -119,7 +127,7 @@ func NewMockedDeps(opts ...MockedOption) Mocked {
 	mockedHttpTransport.RegisterResponder(
 		http.MethodGet,
 		fmt.Sprintf("https://%s/v2/storage/tokens/verify", values.StorageApiHost),
-		httpmock.NewJsonResponderOrPanic(200, values.StorageApiToken).Once(),
+		httpmock.NewJsonResponderOrPanic(200, values.StorageApiToken).Times(values.StorageApiTokenMockedResponseTimes),
 	)
 
 	// Create base, public and project dependencies
