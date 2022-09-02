@@ -152,11 +152,6 @@ func newTestEtcdClient(t *testing.T) *etcd.Client {
 		t.Skipf("etcd disabled")
 	}
 
-	// Check if etcd is enabled
-	if envs.Get("ETCD_ENABLED") == "false" {
-		t.Skipf("etcd disabled")
-	}
-
 	// Create etcd client
 	etcdClient, err := etcd.New(etcd.Config{
 		Context:              context.Background(),

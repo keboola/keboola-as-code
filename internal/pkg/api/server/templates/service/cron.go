@@ -44,6 +44,8 @@ func StartComponentsCron(ctx context.Context, d dependencies.ForServer) error {
 
 	// Start background work
 	go func() {
+		d.Logger().Infof("components cron prepared")
+
 		// Delay start to a rounded time
 		interval := ComponentsUpdateInterval
 		startAt := time.Now().Truncate(interval).Add(interval)
@@ -51,15 +53,15 @@ func StartComponentsCron(ctx context.Context, d dependencies.ForServer) error {
 		<-timer.C
 
 		// Start ticker
-		d.Logger().Infof("components updater started at %s, interval=%s", time.Now().Format("15:04:05"), interval)
+		d.Logger().Infof("components cron started at %s, interval=%s", time.Now().Format("15:04:05"), interval)
 		ticker := time.NewTicker(interval)
-		provider.Update(ctx)
+		provider.UpdateAsync(ctx)
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				provider.Update(ctx)
+				provider.UpdateAsync(ctx)
 			}
 		}
 	}()
