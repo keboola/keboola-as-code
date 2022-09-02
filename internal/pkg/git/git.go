@@ -1,3 +1,4 @@
+// nolint: forbidigo
 package git
 
 import (
@@ -7,11 +8,13 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -19,14 +22,21 @@ import (
 )
 
 type Repository struct {
-	url       string
-	ref       string
-	sparse    bool
-	logger    log.Logger
-	lock      *sync.RWMutex
-	fetchLock *sync.Mutex
-	fs        filesystem.Fs
+	url         string
+	ref         string
+	sparse      bool
+	logger      log.Logger
+	baseDirPath string        // base directory for working and stable dir
+	workingDir  filesystem.Fs // directory for work and updates
+
+	valuesLock       *sync.RWMutex // sync access to stableDir and stableCommitHash fields
+	stableDir        *fsWithFreeLock
+	stableCommitHash string
+
+	cmdLock *sync.Mutex // only one git command can run at a time
 }
+
+type RepositoryFsUnlockFn func()
 
 type cmdResult struct {
 	exitCode int
@@ -39,30 +49,52 @@ func Available() bool {
 	return err == nil
 }
 
-func Checkout(ctx context.Context, url, ref string, sparse bool, logger log.Logger) (*Repository, error) {
+func Checkout(ctx context.Context, url, ref string, sparse bool, logger log.Logger) (r *Repository, err error) {
 	if !Available() {
 		return nil, fmt.Errorf("git command is not available, you have to install it first")
 	}
 
-	// Create a temp dir, it must be later cleared by calling Repository.Clear()
-	dir, err := os.MkdirTemp("", "keboola-as-code-git-")
+	// Create base directory
+	baseDirPath, err := os.MkdirTemp("", "kac-git-repository-")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot create temp dir for git repository: %w", err)
 	}
-	fs, err := aferofs.NewLocalFs(logger, dir, "")
+
+	// Clear everything if checkout fails
+	defer func() {
+		if err != nil {
+			_ = os.RemoveAll(baseDirPath)
+		}
+	}()
+
+	// Create working directory
+	workingDir := filepath.Join(baseDirPath, "working")
+	if err := os.Mkdir(workingDir, 0700); err != nil {
+		return nil, fmt.Errorf("cannot create working dir for git repository: %w", err)
+	}
+	workingDirFs, err := aferofs.NewLocalFs(logger, workingDir, "")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot setup working fs for git repository: %w", err)
 	}
 
 	// Create repository
-	r := &Repository{url: url, ref: ref, sparse: sparse, logger: logger, lock: &sync.RWMutex{}, fetchLock: &sync.Mutex{}, fs: fs}
+	r = &Repository{
+		url:         url,
+		ref:         ref,
+		sparse:      sparse,
+		logger:      logger,
+		baseDirPath: baseDirPath,
+		workingDir:  workingDirFs,
+		valuesLock:  &sync.RWMutex{},
+		cmdLock:     &sync.Mutex{},
+	}
 
 	// Clone parameters
 	params := []string{"clone", "-q", "--branch", r.ref}
 	if r.sparse {
 		params = append(params, "--depth=1", "--no-checkout", "--sparse", "--filter=blob:none")
 	}
-	params = append(params, "--", r.url, dir)
+	params = append(params, "--", r.url, workingDir)
 
 	// Clone repository
 	result, err := r.runGitCmd(ctx, params...)
@@ -73,11 +105,13 @@ func Checkout(ctx context.Context, url, ref string, sparse bool, logger log.Logg
 		out := errorMsg(result, err)
 		return nil, fmt.Errorf(`git repository could not be checked out from "%s": %s`, r.url, out)
 	}
-	return r, nil
-}
 
-func errorMsg(result cmdResult, err error) string {
-	return fmt.Sprintf("%s\n\nstderr:\n%s\n\nstdout:\n%s", err.Error(), strings.TrimSpace(result.stdErr), strings.TrimSpace(result.stdOut))
+	// Setup stable dir
+	if err := r.copyWorkingToStableDir(ctx); err != nil {
+		return nil, err
+	}
+
+	return r, nil
 }
 
 func (r *Repository) String() string {
@@ -94,36 +128,22 @@ func (r *Repository) Ref() string {
 	return r.ref
 }
 
-// RLock acquire read lock, before reading from repository Fs.
-// Pull() is blocked until the read is finished.
-func (r *Repository) RLock() {
-	r.lock.RLock()
-}
-
-// RUnlock release read lock.
-func (r *Repository) RUnlock() {
-	r.lock.RUnlock()
+func (r *Repository) WorkingFs() filesystem.Fs {
+	return r.workingDir
 }
 
 // Fs return repository filesystem.
-// It must be used together with RLock and RUnlock method, to sync Pull() with Fs() reads.
-func (r *Repository) Fs() filesystem.Fs {
-	return r.fs
-}
+func (r *Repository) Fs() (filesystem.Fs, RepositoryFsUnlockFn) {
+	// Sync access to the "stableDir" field
+	r.valuesLock.RLock()
+	defer r.valuesLock.RUnlock()
 
-// Clear deletes temp directory with all files.
-func (r *Repository) Clear() {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	if err := os.RemoveAll(r.fs.BasePath()); err != nil { // nolint: forbidigo
-		r.logger.Warnf(`cannot remove temp dir "%s": %w`, r.fs.BasePath(), err)
-	}
-	r.fs = nil
+	// Postpone free operation when FS is used
+	r.stableDir.freeLock.RLock()
+	return r.stableDir._fs, r.stableDir.freeLock.RUnlock
 }
 
 func (r *Repository) CommitHash(ctx context.Context) (string, error) {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
 	result, err := r.runGitCmd(ctx, "rev-parse", "HEAD")
 	if err != nil {
 		out := errorMsg(result, err)
@@ -143,6 +163,11 @@ func (r *Repository) Load(ctx context.Context, path string) error {
 	if _, err := r.runGitCmd(ctx, "checkout"); err != nil {
 		return err
 	}
+
+	if err := r.copyWorkingToStableDir(ctx); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -152,10 +177,6 @@ func (r *Repository) Pull(ctx context.Context) error {
 		return err
 	}
 
-	// Acquire write lock, from the repository must not be read during this time
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
 	// Reset is used, because it works also with force push (edge-case)
 	result, err := r.runGitCmd(ctx, "reset", "--hard", fmt.Sprintf("origin/%s", r.ref))
 	if err != nil {
@@ -163,13 +184,42 @@ func (r *Repository) Pull(ctx context.Context) error {
 		return fmt.Errorf(`cannot reset repository to the origin: %s`, out)
 	}
 
+	// Get new commit hash
+	commitHash, err := r.CommitHash(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Update stable dir if commit hash differs
+	if commitHash != r.stableCommitHash {
+		if err := r.copyWorkingToStableDir(ctx); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func (r *Repository) fetch(ctx context.Context) error {
-	r.fetchLock.Lock()
-	defer r.fetchLock.Unlock()
+func (r *Repository) Free() <-chan struct{} {
+	done := make(chan struct{})
 
+	go func() {
+		// Sync access to the "stableDir" field
+		r.valuesLock.Lock()
+		defer r.valuesLock.Unlock()
+
+		<-r.stableDir.free()
+		r.stableDir = nil
+
+		_ = os.RemoveAll(r.baseDirPath)
+		close(done)
+
+	}()
+
+	return done
+}
+
+func (r *Repository) fetch(ctx context.Context) error {
 	// Check remote changes
 	result, err := r.runGitCmd(ctx, "fetch", "origin")
 	if err != nil {
@@ -196,13 +246,15 @@ func (r *Repository) runGitCmd(ctx context.Context, args ...string) (cmdResult, 
 }
 
 func (r *Repository) doRunGitCmd(ctx context.Context, args ...string) (cmdResult, error) {
+	r.cmdLock.Lock()
+	defer r.cmdLock.Unlock()
 	r.logger.Debug(fmt.Sprintf(`Running git command: git %s`, strings.Join(args, " ")))
 
 	var stdOutBuffer bytes.Buffer
 	var stdErrBuffer bytes.Buffer
 
 	cmd := exec.CommandContext(ctx, "git", args...)
-	cmd.Dir = r.fs.BasePath()
+	cmd.Dir = r.workingDir.BasePath()
 	cmd.Stdout = io.MultiWriter(r.logger.DebugWriter(), &stdOutBuffer)
 	cmd.Stderr = io.MultiWriter(r.logger.DebugWriter(), &stdErrBuffer)
 	cmd.Env = os.Environ()
@@ -223,6 +275,82 @@ func (r *Repository) doRunGitCmd(ctx context.Context, args ...string) (cmdResult
 	return result, err
 }
 
+func (r *Repository) copyWorkingToStableDir(ctx context.Context) (err error) {
+	// Create stable dir
+	commitHash, err := r.CommitHash(ctx)
+	if err != nil {
+		return err
+	}
+	stableDir := filepath.Join(r.baseDirPath, commitHash+"-"+gonanoid.Must(8))
+	if err := os.Mkdir(stableDir, 0700); err != nil {
+		return fmt.Errorf("cannot create stable dir for git repository: %w", err)
+	}
+
+	// Clear stable dir if checkout fails
+	defer func() {
+		if err != nil {
+			_ = os.RemoveAll(stableDir)
+		}
+	}()
+
+	// Create FS
+	stableDirFs, err := aferofs.NewLocalFs(r.logger, stableDir, "")
+	if err != nil {
+		return fmt.Errorf("cannot setup stable fs for git repository: %w", err)
+	}
+
+	// Copy working dir to stable dir
+	if err := aferofs.CopyFs2Fs(r.workingDir, "", stableDirFs, ""); err != nil {
+		return fmt.Errorf("cannot copy working dir to stable dir: %w", err)
+	}
+
+	// Sync access to fields
+	r.valuesLock.Lock()
+	defer r.valuesLock.Unlock()
+
+	// Free old stable dir
+	if r.stableDir != nil {
+		r.stableDir.free()
+	}
+
+	// Replace values
+	r.stableDir = newFsWithFreeLock(stableDirFs)
+	r.stableCommitHash = commitHash
+
+	return nil
+}
+
+type _fs = filesystem.Fs
+
+type fsWithFreeLock struct {
+	_fs
+	freeLock *sync.RWMutex
+}
+
+func newFsWithFreeLock(fs filesystem.Fs) *fsWithFreeLock {
+	return &fsWithFreeLock{_fs: fs, freeLock: &sync.RWMutex{}}
+}
+
+func (v *fsWithFreeLock) free() <-chan struct{} {
+	done := make(chan struct{})
+	go func() {
+		lock := v.freeLock
+
+		// Postpone free operation until the FS is no longer in use
+		lock.Lock()
+		defer lock.Unlock()
+
+		// Delete directory
+		_ = os.RemoveAll(v._fs.BasePath())
+
+		// Clear values
+		v._fs = nil
+		v.freeLock = nil
+		close(done)
+	}()
+	return done
+}
+
 func newBackoff() *backoff.ExponentialBackOff {
 	b := backoff.NewExponentialBackOff()
 	b.RandomizationFactor = 0
@@ -232,4 +360,8 @@ func newBackoff() *backoff.ExponentialBackOff {
 	b.MaxElapsedTime = 2 * time.Second
 	b.Reset()
 	return b
+}
+
+func errorMsg(result cmdResult, err error) string {
+	return fmt.Sprintf("%s\n\nstderr:\n%s\n\nstdout:\n%s", err.Error(), strings.TrimSpace(result.stdErr), strings.TrimSpace(result.stdOut))
 }
