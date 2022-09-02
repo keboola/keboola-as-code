@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/jarcoal/httpmock"
@@ -33,55 +34,101 @@ type mocked struct {
 	mockedHttpTransport *httpmock.MockTransport
 }
 
-func NewMockedDeps() Mocked {
+type MockedValues struct {
+	Services        storageapi.Services
+	Features        storageapi.Features
+	Components      storageapi.Components
+	StorageApiHost  string
+	StorageApiToken storageapi.Token
+}
+
+type MockedOption func(values *MockedValues)
+
+func WithMockedServices(services storageapi.Services) MockedOption {
+	return func(values *MockedValues) {
+		values.Services = services
+	}
+}
+
+func WithMockedFeatures(features storageapi.Features) MockedOption {
+	return func(values *MockedValues) {
+		values.Features = features
+	}
+}
+
+func WithMockedComponents(components storageapi.Components) MockedOption {
+	return func(values *MockedValues) {
+		values.Components = components
+	}
+}
+
+func WithMockedStorageApiHost(host string) MockedOption {
+	return func(values *MockedValues) {
+		values.StorageApiHost = host
+	}
+}
+
+func WithMockedStorageApiToken(token storageapi.Token) MockedOption {
+	return func(values *MockedValues) {
+		values.StorageApiToken = token
+	}
+}
+
+func NewMockedDeps(opts ...MockedOption) Mocked {
 	ctx := context.Background()
 	envs := env.Empty()
 	logger := log.NewDebugLogger()
 	httpClient, mockedHttpTransport := client.NewMockedClient()
 
-	// Mocked Storage API host and token
-	host := "mocked.transport.http"
-	token := storageapi.Token{
-		ID:       "token-12345-id",
-		Token:    "my-secret",
-		IsMaster: true,
-		Owner: storageapi.TokenOwner{
-			ID:       12345,
-			Name:     "Project 12345",
-			Features: storageapi.Features{"my-feature"},
+	// Default values
+	values := MockedValues{
+		Services: storageapi.Services{
+			{ID: "encryption", URL: "https://encryption.mocked.transport.http"},
+			{ID: "scheduler", URL: "https://scheduler.mocked.transport.http"},
 		},
+		Features:       storageapi.Features{"FeatureA", "FeatureB"},
+		Components:     testapi.MockedComponents(),
+		StorageApiHost: "mocked.transport.http",
+		StorageApiToken: storageapi.Token{
+			ID:       "token-12345-id",
+			Token:    "my-secret",
+			IsMaster: true,
+			Owner: storageapi.TokenOwner{
+				ID:       12345,
+				Name:     "Project 12345",
+				Features: storageapi.Features{"my-feature"},
+			},
+		},
+	}
+
+	// Apply options
+	for _, opt := range opts {
+		opt(&values)
 	}
 
 	// Mock API index
 	mockedHttpTransport.RegisterResponder(
 		http.MethodGet,
-		"https://mocked.transport.http/v2/storage/",
+		fmt.Sprintf("https://%s/v2/storage/", values.StorageApiHost),
 		httpmock.NewJsonResponderOrPanic(200, &storageapi.IndexComponents{
-			Index: storageapi.Index{
-				Services: storageapi.Services{
-					{ID: "encryption", URL: "https://encryption.mocked.transport.http"},
-					{ID: "scheduler", URL: "https://scheduler.mocked.transport.http"},
-				},
-				Features: storageapi.Features{"FeatureA", "FeatureB"},
-			},
-			Components: testapi.MockedComponents(),
-		}),
+			Index: storageapi.Index{Services: values.Services, Features: values.Features}, Components: values.Components,
+		}).Once(),
 	)
 
 	// Mocked token verification
 	mockedHttpTransport.RegisterResponder(
 		http.MethodGet,
-		"https://mocked.transport.http/v2/storage/tokens/verify",
-		httpmock.NewJsonResponderOrPanic(200, token),
+		fmt.Sprintf("https://%s/v2/storage/tokens/verify", values.StorageApiHost),
+		httpmock.NewJsonResponderOrPanic(200, values.StorageApiToken).Once(),
 	)
 
 	// Create base, public and project dependencies
 	baseDeps := newBaseDeps(envs, logger, httpClient)
-	publicDeps, err := newPublicDeps(ctx, baseDeps, host)
+	publicDeps, err := newPublicDeps(ctx, baseDeps, values.StorageApiHost)
 	if err != nil {
 		panic(err)
 	}
-	projectDeps, err := newProjectDeps(baseDeps, publicDeps, token)
+	projectDeps, err := newProjectDeps(baseDeps, publicDeps, values.StorageApiToken)
 	if err != nil {
 		panic(err)
 	}

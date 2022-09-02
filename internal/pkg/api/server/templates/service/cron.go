@@ -53,13 +53,13 @@ func StartComponentsCron(ctx context.Context, d dependencies.ForServer) error {
 		// Start ticker
 		d.Logger().Infof("components updater started at %s, interval=%s", time.Now().Format("15:04:05"), interval)
 		ticker := time.NewTicker(interval)
-		provider.Update(ctx)
+		provider.UpdateAsync(ctx)
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				provider.Update(ctx)
+				provider.UpdateAsync(ctx)
 			}
 		}
 	}()

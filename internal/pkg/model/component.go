@@ -38,21 +38,32 @@ func (p *ComponentsProvider) Components() *ComponentsMap {
 	return p.value
 }
 
-func (p *ComponentsProvider) Update(ctx context.Context) {
+func (p *ComponentsProvider) UpdateAsync(ctx context.Context) {
 	go func() {
-		startTime := time.Now()
-		p.logger.Infof("components update started")
-		ctx, cancel := context.WithTimeout(ctx, ComponentsUpdateTimeout)
-		defer cancel()
-		if index, err := p.index(ctx); err == nil {
-			p.updateLock.Lock()
-			defer p.updateLock.Unlock()
-			p.value = NewComponentsMap(index.Components)
-			p.logger.Infof("components update finished | %s", time.Since(startTime))
-		} else {
+		if err := p.Update(ctx); err != nil {
 			p.logger.Errorf("components update failed: %w", err)
 		}
 	}()
+}
+
+func (p *ComponentsProvider) Update(ctx context.Context) error {
+	startTime := time.Now()
+	p.logger.Infof("components update started")
+	ctx, cancel := context.WithTimeout(ctx, ComponentsUpdateTimeout)
+	defer cancel()
+
+	// Get index
+	index, err := p.index(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Update value
+	p.updateLock.Lock()
+	defer p.updateLock.Unlock()
+	p.value = NewComponentsMap(index.Components)
+	p.logger.Infof("components update finished | %s", time.Since(startTime))
+	return nil
 }
 
 func (p *ComponentsProvider) index(ctx context.Context) (*storageapi.IndexComponents, error) {
@@ -91,6 +102,10 @@ func NewComponentsMap(components storageapi.Components) *ComponentsMap {
 
 func (m ComponentsMap) NewComponentList() storageapi.Components {
 	return m.components.NewComponentList()
+}
+
+func (m ComponentsMap) All() storageapi.Components {
+	return m.components
 }
 
 func (m ComponentsMap) Get(id storageapi.ComponentID) (*storageapi.Component, bool) {
