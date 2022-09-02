@@ -17,11 +17,11 @@ import (
 
 func TestLocalSaveTransformationEmpty(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewTestContainer()
-	state := d.EmptyState()
+	d := dependencies.NewMockedDeps()
+	state := d.MockedState()
 	state.Mapper().AddMapper(corefiles.NewMapper(state))
 	state.Mapper().AddMapper(transformation.NewMapper(state))
-	fs := d.Fs()
+	fs := state.ObjectsRoot()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
 	object := deepcopy.Copy(configState.Local).(*model.Config)
@@ -39,11 +39,11 @@ func TestLocalSaveTransformationEmpty(t *testing.T) {
 
 func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewTestContainer()
-	state := d.EmptyState()
+	d := dependencies.NewMockedDeps()
+	state := d.MockedState()
 	state.Mapper().AddMapper(corefiles.NewMapper(state))
 	state.Mapper().AddMapper(transformation.NewMapper(state))
-	fs := d.Fs()
+	fs := state.ObjectsRoot()
 	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")

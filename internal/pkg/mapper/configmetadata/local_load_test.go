@@ -15,9 +15,9 @@ import (
 
 func TestConfigMetadataMapper_MapAfterLocalLoad(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewTestContainer()
+	d := dependencies.NewMockedDeps()
 	logger := d.DebugLogger()
-	mockedState := d.EmptyState()
+	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(configmetadata.NewMapper(mockedState, d))
 
 	configKey := model.ConfigKey{
@@ -40,7 +40,7 @@ func TestConfigMetadataMapper_MapAfterLocalLoad(t *testing.T) {
 		},
 	}
 
-	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
+	recipe := model.NewLocalLoadRecipe(mockedState.FileLoader(), configState.Manifest(), configState.Local)
 	assert.NoError(t, mockedState.Mapper().MapAfterLocalLoad(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
 

@@ -130,6 +130,11 @@ func (*testCases) TestBasePath(t *testing.T, fs filesystem.Fs, _ log.DebugLogger
 
 func (*testCases) TestWorkingDir(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
 	assert.Equal(t, "my/dir", fs.WorkingDir())
+	assert.NoError(t, fs.Mkdir("some/dir"))
+	fs.SetWorkingDir("some/dir")
+	assert.Equal(t, "some/dir", fs.WorkingDir())
+	fs.SetWorkingDir("some/missing")
+	assert.Equal(t, "", fs.WorkingDir())
 }
 
 func (*testCases) TestSubDirFs(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {

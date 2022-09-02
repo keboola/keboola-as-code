@@ -17,7 +17,7 @@ import (
 
 type createDeps interface {
 	Options() *options.Options
-	Components() (*model.ComponentsMap, error)
+	Components() *model.ComponentsMap
 }
 
 func (p *Dialogs) AskWhatCreateRemote() string {
@@ -125,10 +125,7 @@ func (p *Dialogs) askObjectName(d createDeps, desc string) (string, error) {
 
 func (p *Dialogs) askComponentId(d createDeps) (storageapi.ComponentID, error) {
 	componentId := storageapi.ComponentID("")
-	components, err := d.Components()
-	if err != nil {
-		return componentId, err
-	}
+	components := d.Components()
 
 	if d.Options().IsSet(`component-id`) {
 		componentId = storageapi.ComponentID(strings.TrimSpace(d.Options().GetString(`component-id`)))
@@ -157,6 +154,6 @@ func (p *Dialogs) askComponentId(d createDeps) (storageapi.ComponentID, error) {
 	}
 
 	// Check if component exists
-	_, err = components.GetOrErr(componentId)
+	_, err := components.GetOrErr(componentId)
 	return componentId, err
 }

@@ -8,17 +8,15 @@ import (
 type TemplateRepositoryType string
 
 const (
-	RepositoryTypeWorkingDir = `working_dir`
-	RepositoryTypeDir        = `dir`
-	RepositoryTypeGit        = `git`
+	RepositoryTypeDir = `dir`
+	RepositoryTypeGit = `git`
 )
 
 type TemplateRepository struct {
-	Type       TemplateRepositoryType `json:"type" validate:"oneof=dir git"`
-	Name       string                 `json:"name" validate:"required,max=40"`
-	Url        string                 `json:"url" validate:"required"`
-	Ref        string                 `json:"ref,omitempty" validate:"required_if=Type git"`
-	WorkingDir string                 `json:"-"` // only for RepositoryTypeWorkingDir
+	Type TemplateRepositoryType `json:"type" validate:"oneof=dir git"`
+	Name string                 `json:"name" validate:"required,max=40"`
+	Url  string                 `json:"url" validate:"required"`
+	Ref  string                 `json:"ref,omitempty" validate:"required_if=Type git"`
 }
 
 func (r TemplateRepository) String() string {
@@ -31,12 +29,9 @@ func (r TemplateRepository) Hash() string {
 	return string(sha[:])
 }
 
-func TemplateRepositoryWorkingDir() TemplateRepository {
-	return TemplateRepository{Type: RepositoryTypeWorkingDir}
-}
-
 type TemplateRef interface {
 	Repository() TemplateRepository
+	WithRepository(TemplateRepository) TemplateRef
 	TemplateId() string
 	Version() string
 	FullName() string
@@ -59,6 +54,11 @@ func NewTemplateRef(repository TemplateRepository, templateId string, version st
 
 func (r templateRef) Repository() TemplateRepository {
 	return r.repository
+}
+
+func (r templateRef) WithRepository(repository TemplateRepository) TemplateRef {
+	r.repository = repository
+	return r
 }
 
 func (r templateRef) TemplateId() string {

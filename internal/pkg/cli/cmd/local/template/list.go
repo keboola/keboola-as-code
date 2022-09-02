@@ -16,16 +16,14 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/template/list/short`),
 		Long:  helpmsg.Read(`local/template/list/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := p.Dependencies()
-
-			// Local project
-			prj, err := d.LocalProject(false)
+			// Command must be used in project directory
+			prj, d, err := p.LocalProject(false)
 			if err != nil {
 				return err
 			}
 
 			// Load project state
-			projectState, err := prj.LoadState(loadState.LocalOperationOptions())
+			projectState, err := prj.LoadState(loadState.LocalOperationOptions(), d)
 			if err != nil {
 				return err
 			}

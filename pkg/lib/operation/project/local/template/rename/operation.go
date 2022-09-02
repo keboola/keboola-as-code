@@ -18,39 +18,35 @@ type Options struct {
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
-	StorageAPITokenID() (string, error)
+	StorageApiTokenID() string
 }
 
-func Run(projectState *project.State, o Options, d dependencies) error {
+func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) error {
 	logger := d.Logger()
-
-	// Get token ID
-	tokenID, err := d.StorageAPITokenID()
-	if err != nil {
-		return err
-	}
 
 	// Get branch
 	branchState := projectState.MustGet(o.Branch).(*model.BranchState)
 
 	// Rename
 	o.Instance.InstanceName = o.NewName
-	err = branchState.Local.Metadata.UpsertTemplateInstanceFrom(time.Now(), tokenID, o.Instance)
+	err := branchState.Local.Metadata.UpsertTemplateInstanceFrom(time.Now(), d.StorageApiTokenID(), o.Instance)
 	if err != nil {
 		return err
 	}
 
+	// Get manager
+	manager := projectState.LocalManager()
+
 	// Save metadata
-	uow := projectState.LocalManager().NewUnitOfWork(d.Ctx())
+	uow := manager.NewUnitOfWork(ctx)
 	uow.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())
 	if err := uow.Invoke(); err != nil {
 		return err
 	}
 
 	// Save manifest
-	if _, err := saveManifest.Run(projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
+	if _, err := saveManifest.Run(ctx, projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
 		return err
 	}
 

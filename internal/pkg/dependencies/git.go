@@ -3,7 +3,6 @@ package dependencies
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -13,72 +12,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
-	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	loadRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/load"
 )
 
-func localTemplateRepository() model.TemplateRepository {
-	return model.TemplateRepository{Type: model.RepositoryTypeWorkingDir}
-}
-
-func (v *container) LocalTemplateRepositoryExists() bool {
-	return v.fs.IsFile(repositoryManifest.Path())
-}
-
-func (v *container) LocalTemplateRepository() (*repository.Repository, error) {
-	return v.TemplateRepository(localTemplateRepository(), nil)
-}
-
-func (v *container) Template(reference model.TemplateRef) (*template.Template, error) {
-	return v.commonDeps.Template(reference)
-}
-
-func (v *container) TemplateRepository(definition model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error) {
-	fs, err := v.repositoryFs(definition, forTemplate)
-	if err != nil {
-		return nil, err
-	}
-	manifest, err := loadRepositoryManifest.Run(fs, v)
-	if err != nil {
-		return nil, err
-	}
-	return repository.New(definition, fs, manifest)
-}
-
-func (v *container) repositoryFs(definition model.TemplateRepository, template model.TemplateRef) (filesystem.Fs, error) {
-	switch definition.Type {
-	case model.RepositoryTypeWorkingDir:
-		fs, err := v.localTemplateRepositoryDir()
-		if err != nil {
-			return nil, err
-		}
-
-		// Convert RepositoryTypeWorkingDir -> RepositoryTypeDir.
-		// So it can be loaded in a common way.
-		definition = model.TemplateRepository{
-			Type:       model.RepositoryTypeDir,
-			Name:       definition.Name,
-			Url:        fs.BasePath(),
-			WorkingDir: fs.WorkingDir(),
-		}
-		fallthrough // continue with RepositoryTypeDir
-	case model.RepositoryTypeDir:
-		path := definition.Url
-		// Convert relative path to absolute
-		if !filepath.IsAbs(path) && v.LocalProjectExists() { // nolint: forbidigo
-			// Relative to the project directory
-			path = filepath.Join(v.fs.BasePath(), path) // nolint: forbidigo
-		}
-		return aferofs.NewLocalFs(v.Logger(), path, definition.WorkingDir)
-	case model.RepositoryTypeGit:
-		return gitRepositoryFs(v.Ctx(), definition, template, v.Logger())
-	default:
-		panic(fmt.Errorf(`unexpected repository type "%s"`, definition.Type))
-	}
-}
-
-// gitRepositoryFs returns template repository FS, which has been loaded from a git repository.
+// gitRepositoryFs returns template FS loaded from a git repository.
 // Sparse checkout is used to load only the needed files.
 func gitRepositoryFs(ctx context.Context, definition model.TemplateRepository, tmplRef model.TemplateRef, logger log.Logger) (filesystem.Fs, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -139,14 +76,4 @@ func gitRepositoryFs(ctx context.Context, definition model.TemplateRepository, t
 		return nil, err
 	}
 	return memoryFs, nil
-}
-
-func (v *container) localTemplateRepositoryDir() (filesystem.Fs, error) {
-	if !v.LocalTemplateRepositoryExists() {
-		if v.LocalProjectExists() {
-			return nil, ErrExpectedRepositoryFoundProject
-		}
-		return nil, ErrRepositoryManifestNotFound
-	}
-	return v.fs, nil
 }

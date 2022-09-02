@@ -14,16 +14,14 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`template/list/short`),
 		Long:  helpmsg.Read(`template/list/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := p.Dependencies()
-
-			// Get template repository
-			repo, err := d.LocalTemplateRepository()
+			// Command must be used in template repository
+			repo, d, err := p.LocalRepository()
 			if err != nil {
 				return err
 			}
 
 			// Describe template
-			return listOp.Run(repo, d)
+			return listOp.Run(d.CommandCtx(), repo, d)
 		},
 	}
 

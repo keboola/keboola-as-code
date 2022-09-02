@@ -19,19 +19,15 @@ type Options struct {
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
-	StorageApiClient() (client.Sender, error)
+	StorageApiClient() client.Sender
 }
 
-func Run(projectState *project.State, o Options, d dependencies) error {
+func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) error {
 	logger := d.Logger()
 
 	// Get Storage API
-	storageApiClient, err := d.StorageApiClient()
-	if err != nil {
-		return err
-	}
+	storageApiClient := d.StorageApiClient()
 
 	// Get plan
 	plan, err := persist.NewPlan(projectState.State())
@@ -50,12 +46,12 @@ func Run(projectState *project.State, o Options, d dependencies) error {
 		}
 
 		// Invoke
-		if err := plan.Invoke(d.Ctx(), logger, storageApiClient, projectState.State()); err != nil {
+		if err := plan.Invoke(ctx, logger, storageApiClient, projectState.State()); err != nil {
 			return utils.PrefixError(`cannot persist objects`, err)
 		}
 
 		// Save manifest
-		if _, err := saveManifest.Run(projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
+		if _, err := saveManifest.Run(ctx, projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
 			return err
 		}
 	}
@@ -66,7 +62,7 @@ func Run(projectState *project.State, o Options, d dependencies) error {
 	}
 
 	// Normalize paths
-	if _, err := rename.Run(projectState, rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
+	if _, err := rename.Run(ctx, projectState, rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
 		return err
 	}
 

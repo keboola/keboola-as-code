@@ -17,15 +17,16 @@ func PushCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`sync/push/short`),
 		Long:  helpmsg.Read(`sync/push/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			d := p.Dependencies()
 			start := time.Now()
 
-			// Load project state
-			prj, err := d.LocalProject(false)
+			// Command must be used in project directory
+			prj, d, err := p.LocalProject(false)
 			if err != nil {
 				return err
 			}
-			projectState, err := prj.LoadState(loadState.PushOptions())
+
+			// Load project state
+			projectState, err := prj.LoadState(loadState.PushOptions(), d)
 			if err != nil {
 				return err
 			}
@@ -46,14 +47,10 @@ func PushCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			if eventSender, err := d.EventSender(); err == nil {
-				defer func() { eventSender.SendCmdEvent(d.Ctx(), start, cmdErr, "sync-push") }()
-			} else {
-				return err
-			}
+			defer func() { d.EventSender().SendCmdEvent(d.CommandCtx(), start, cmdErr, "sync-push") }()
 
 			// Push
-			return push.Run(projectState, options, d)
+			return push.Run(d.CommandCtx(), projectState, options, d)
 		},
 	}
 

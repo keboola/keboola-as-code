@@ -20,19 +20,15 @@ type Options struct {
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
-	StorageApiClient() (client.Sender, error)
+	StorageApiClient() client.Sender
 }
 
-func Run(projectState *project.State, o Options, d dependencies) (err error) {
+func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
 	logger := d.Logger()
 
 	// Get Storage API
-	storageApiClient, err := d.StorageApiClient()
-	if err != nil {
-		return err
-	}
+	storageApiClient := d.StorageApiClient()
 
 	// Config key
 	key := model.ConfigKey{
@@ -41,7 +37,7 @@ func Run(projectState *project.State, o Options, d dependencies) (err error) {
 	}
 
 	// Generate unique ID
-	ticketProvider := storageapi.NewTicketProvider(d.Ctx(), storageApiClient)
+	ticketProvider := storageapi.NewTicketProvider(ctx, storageApiClient)
 	ticketProvider.Request(func(ticket *storageapi.Ticket) {
 		key.Id = storageapi.ConfigID(ticket.ID)
 	})
@@ -50,14 +46,14 @@ func Run(projectState *project.State, o Options, d dependencies) (err error) {
 	}
 
 	// Create and save object
-	uow := projectState.LocalManager().NewUnitOfWork(d.Ctx())
+	uow := projectState.LocalManager().NewUnitOfWork(ctx)
 	uow.CreateObject(key, o.Name)
 	if err := uow.Invoke(); err != nil {
 		return fmt.Errorf(`cannot create config: %w`, err)
 	}
 
 	// Save manifest
-	if _, err := saveManifest.Run(projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
+	if _, err := saveManifest.Run(ctx, projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
 		return err
 	}
 

@@ -17,29 +17,37 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`sync/init/short`),
 		Long:  helpmsg.Read(`sync/init/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			d := p.Dependencies()
 			start := time.Now()
-
-			// Require empty dir
-			if _, err := d.EmptyDir(); err != nil {
+			publicDeps, err := p.DependenciesForLocalCommand()
+			if err != nil {
 				return err
 			}
 
-			// Options
-			options, err := d.Dialogs().AskInitOptions(d)
+			// Require empty dir
+			if _, err := publicDeps.EmptyDir(); err != nil {
+				return err
+			}
+
+			// Authenticate
+			if err := publicDeps.Dialogs().AskHostAndToken(publicDeps.Options()); err != nil {
+				return err
+			}
+			projectDeps, err := p.DependenciesForRemoteCommand()
+			if err != nil {
+				return err
+			}
+
+			// Get init options
+			options, err := publicDeps.Dialogs().AskInitOptions(publicDeps.CommandCtx(), projectDeps)
 			if err != nil {
 				return err
 			}
 
 			// Send cmd successful/failed event
-			if eventSender, err := d.EventSender(); err == nil {
-				defer func() { eventSender.SendCmdEvent(d.Ctx(), start, cmdErr, "sync-init") }()
-			} else {
-				return err
-			}
+			defer func() { projectDeps.EventSender().SendCmdEvent(publicDeps.CommandCtx(), start, cmdErr, "sync-init") }()
 
 			// Init
-			return initOp.Run(options, d)
+			return initOp.Run(projectDeps.CommandCtx(), options, projectDeps)
 		},
 	}
 

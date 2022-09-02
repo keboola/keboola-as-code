@@ -22,7 +22,7 @@ import (
 
 // HandleHTTPServer starts configures and starts a HTTP server on the given
 // URL. It shuts down the server if any error is received in the error channel.
-func HandleHTTPServer(ctx context.Context, wg *sync.WaitGroup, d dependencies.Container, u *url.URL, endpoints *templates.Endpoints, errCh chan error, logger *log.Logger, debug bool) {
+func HandleHTTPServer(ctx context.Context, wg *sync.WaitGroup, d dependencies.ForServer, u *url.URL, endpoints *templates.Endpoints, errCh chan error, logger *log.Logger, debug bool) {
 	// Trace endpoint start, finish and error
 	endpoints.Use(TraceEndpointsMiddleware())
 
@@ -48,7 +48,7 @@ func HandleHTTPServer(ctx context.Context, wg *sync.WaitGroup, d dependencies.Co
 	// Wrap the multiplexer with additional middlewares. Middlewares mounted
 	// here apply to all the service endpoints.
 	var handler http.Handler = mux
-	handler = LogMiddleware(handler)
+	handler = LogMiddleware(d, handler)
 	handler = ContextMiddleware(d, handler)
 	handler = dataDog.WrapHandler(handler, "templates-api", "", dataDog.WithIgnoreRequest(func(r *http.Request) bool {
 		// Trace all requests except health check

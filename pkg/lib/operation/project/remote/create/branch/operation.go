@@ -16,23 +16,16 @@ type Options struct {
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
-	StorageApiClient() (client.Sender, error)
+	StorageApiClient() client.Sender
 }
 
-func Run(o Options, d dependencies) (branch *storageapi.Branch, err error) {
+func Run(ctx context.Context, o Options, d dependencies) (branch *storageapi.Branch, err error) {
 	logger := d.Logger()
-
-	// Get Storage API
-	storageApiClient, err := d.StorageApiClient()
-	if err != nil {
-		return nil, err
-	}
 
 	// Create branch by API
 	branch = &storageapi.Branch{Name: o.Name}
-	if _, err := storageapi.CreateBranchRequest(branch).Send(d.Ctx(), storageApiClient); err != nil {
+	if _, err := storageapi.CreateBranchRequest(branch).Send(ctx, d.StorageApiClient()); err != nil {
 		return nil, fmt.Errorf(`cannot create branch: %w`, err)
 	}
 

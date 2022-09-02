@@ -21,8 +21,8 @@ func TestAskUpgradeTemplate(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewTestContainer()
-	projectState := d.EmptyState()
+	d := dependencies.NewMockedDeps()
+	projectState := d.MockedState()
 
 	// Project state
 	instance := model.TemplateInstance{InstanceId: "12345abc"}

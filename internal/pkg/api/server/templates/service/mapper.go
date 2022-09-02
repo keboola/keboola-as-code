@@ -16,7 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
-func RepositoriesResponse(d dependencies.Container, v []model.TemplateRepository) (*Repositories, error) {
+func RepositoriesResponse(d dependencies.ForProjectRequest, v []model.TemplateRepository) (*Repositories, error) {
 	out := &Repositories{}
 	for _, repoRef := range v {
 		repo, err := repositoryInst(d, repoRef.Name)
@@ -276,7 +276,7 @@ func InstancesResponse(prjState *project.State, branchKey model.BranchKey) (out 
 	return out, nil
 }
 
-func InstanceResponse(d dependencies.Container, prjState *project.State, branchKey model.BranchKey, instanceId string) (out *InstanceDetail, err error) {
+func InstanceResponse(d dependencies.ForProjectRequest, prjState *project.State, branchKey model.BranchKey, instanceId string) (out *InstanceDetail, err error) {
 	// Get branch state
 	branch, found := prjState.GetOrNil(branchKey).(*model.BranchState)
 	if !found {
@@ -342,7 +342,7 @@ func InstanceResponse(d dependencies.Container, prjState *project.State, branchK
 	return out, nil
 }
 
-func instanceVersionDetail(d dependencies.Container, instance *model.TemplateInstance) *VersionDetail {
+func instanceVersionDetail(d dependencies.ForProjectRequest, instance *model.TemplateInstance) *VersionDetail {
 	repo, tmplRecord, err := templateRecord(d, instance.RepositoryName, instance.TemplateId)
 	if err != nil {
 		return nil
@@ -355,7 +355,7 @@ func instanceVersionDetail(d dependencies.Container, instance *model.TemplateIns
 	if !found {
 		return nil
 	}
-	tmpl, err := d.Template(model.NewTemplateRef(repo.Ref(), instance.TemplateId, versionRecord.Version.String()))
+	tmpl, err := d.Template(d.RequestCtx(), model.NewTemplateRef(repo.Ref(), instance.TemplateId, versionRecord.Version.String()))
 	if err != nil {
 		return nil
 	}

@@ -1,6 +1,8 @@
 package describe
 
 import (
+	"context"
+
 	markdown "github.com/MichaelMure/go-term-markdown"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -11,7 +13,7 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(tmpl *template.Template, d dependencies) (err error) {
+func Run(_ context.Context, tmpl *template.Template, d dependencies) (err error) {
 	w := d.Logger().InfoWriter()
 
 	w.Writef("Template ID:          %s", tmpl.TemplateRecord().Id)

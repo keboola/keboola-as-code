@@ -10,13 +10,12 @@ import (
 )
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
-	Envs() *env.Map
+	Envs() env.Provider
 }
 
-func Run(d dependencies) (err error) {
+func Run(ctx context.Context, d dependencies) (err error) {
 	return version.
-		NewGitHubChecker(d.Ctx(), d.Logger(), d.Envs()).
+		NewGitHubChecker(ctx, d.Logger(), d.Envs()).
 		CheckIfLatest(build.BuildVersion)
 }

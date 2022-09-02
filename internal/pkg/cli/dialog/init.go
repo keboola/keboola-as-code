@@ -14,22 +14,11 @@ import (
 )
 
 type initDeps interface {
-	Ctx() context.Context
 	Options() *options.Options
-	StorageApiClient() (client.Sender, error)
+	StorageApiClient() client.Sender
 }
 
-func (p *Dialogs) AskInitOptions(d initDeps) (initOp.Options, error) {
-	// Default values + values for non-interactive terminal
-	out := initOp.Options{
-		Pull: true,
-		ManifestOptions: createManifest.Options{
-			Naming: naming.TemplateWithoutIds(),
-		},
-	}
-
-	o := d.Options()
-
+func (p *Dialogs) AskHostAndToken(o *options.Options) error {
 	// Host and token
 	errors := utils.NewMultiError()
 	if _, err := p.AskStorageApiHost(o); err != nil {
@@ -39,11 +28,22 @@ func (p *Dialogs) AskInitOptions(d initDeps) (initOp.Options, error) {
 		errors.Append(err)
 	}
 	if errors.Len() > 0 {
-		return out, errors
+		return errors
+	}
+	return nil
+}
+
+func (p *Dialogs) AskInitOptions(ctx context.Context, d initDeps) (initOp.Options, error) {
+	// Default values + values for non-interactive terminal
+	out := initOp.Options{
+		Pull: true,
+		ManifestOptions: createManifest.Options{
+			Naming: naming.TemplateWithoutIds(),
+		},
 	}
 
 	// Allowed branches
-	if allowedBranches, err := p.AskAllowedBranches(d); err == nil {
+	if allowedBranches, err := p.AskAllowedBranches(ctx, d); err == nil {
 		out.ManifestOptions.AllowedBranches = allowedBranches
 	} else {
 		return out, err
@@ -51,7 +51,7 @@ func (p *Dialogs) AskInitOptions(d initDeps) (initOp.Options, error) {
 
 	// Ask for workflows options
 	if p.Confirm(&prompt.Confirm{Label: "Generate workflows files for GitHub Actions?", Default: true}) {
-		out.Workflows = p.AskWorkflowsOptions(o)
+		out.Workflows = p.AskWorkflowsOptions(d.Options())
 	}
 
 	return out, nil

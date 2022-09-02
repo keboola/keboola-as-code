@@ -120,8 +120,8 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 
 func createStateWithMapper(t *testing.T, replacements *replacevalues.Values) *state.State {
 	t.Helper()
-	d := dependencies.NewTestContainer()
-	mockedState := d.EmptyState()
+	d := dependencies.NewMockedDeps()
+	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(replacevalues.NewMapper(mockedState, replacements))
 	return mockedState
 }

@@ -17,12 +17,12 @@ import (
 func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 	t.Parallel()
 
-	d := dependencies.NewTestContainer()
-	state := d.EmptyState()
+	d := dependencies.NewMockedDeps()
+	state := d.MockedState()
 	state.Mapper().AddMapper(corefiles.NewMapper(state))
 	state.Mapper().AddMapper(transformation.NewMapper(state))
 
-	fs := d.Fs()
+	fs := state.ObjectsRoot()
 	namingGenerator := state.NamingGenerator()
 
 	// Files content
@@ -89,11 +89,11 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 	t.Parallel()
 	state, d := createStateWithMapper(t)
-	fs := d.Fs()
+	fs := state.ObjectsRoot()
 	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
+	recipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -111,11 +111,11 @@ func TestLoadTransformationMissingBlockMetaSql(t *testing.T) {
 func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 	t.Parallel()
 	state, d := createStateWithMapper(t)
-	fs := d.Fs()
+	fs := state.ObjectsRoot()
 	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
+	recipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -139,11 +139,11 @@ func TestLoadTransformationMissingCodeMeta(t *testing.T) {
 func TestLoadLocalTransformationSql(t *testing.T) {
 	t.Parallel()
 	state, d := createStateWithMapper(t)
-	fs := d.Fs()
+	fs := state.ObjectsRoot()
 	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
-	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
+	recipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)
@@ -282,11 +282,11 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 func TestLoadLocalTransformationPy(t *testing.T) {
 	t.Parallel()
 	state, d := createStateWithMapper(t)
-	fs := d.Fs()
+	fs := state.ObjectsRoot()
 	logger := d.DebugLogger()
 
 	configState := createTestFixtures(t, `keboola.python-transformation-v2`)
-	recipe := model.NewLocalLoadRecipe(d.FileLoader(), configState.Manifest(), configState.Local)
+	recipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)
 
 	// Create files/dirs
 	blocksDir := filesystem.Join(`branch`, `config`, `blocks`)

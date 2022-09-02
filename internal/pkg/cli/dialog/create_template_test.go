@@ -1,6 +1,7 @@
 package dialog_test
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
@@ -25,9 +26,8 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewTestContainer()
-	_, httpTransport := d.UseMockedStorageApi()
-	addMockedObjectsResponses(httpTransport)
+	d := dependencies.NewMockedDeps()
+	addMockedObjectsResponses(d.MockedHttpTransport())
 
 	// Set fake file editor
 	dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -164,7 +164,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := dialog.AskCreateTemplateOpts(d)
+	opts, err := dialog.AskCreateTemplateOpts(context.Background(), d)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -241,9 +241,8 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
-	d := dependencies.NewTestContainer()
-	_, httpTransport := d.UseMockedStorageApi()
-	addMockedObjectsResponses(httpTransport)
+	d := dependencies.NewMockedDeps()
+	addMockedObjectsResponses(d.MockedHttpTransport())
 
 	// Flags
 	d.Options().Set(`storage-api-host`, `connection.keboola.com`)
@@ -255,7 +254,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 	d.Options().Set(`all-inputs`, true)
 
 	// Run
-	opts, err := dialog.AskCreateTemplateOpts(d)
+	opts, err := dialog.AskCreateTemplateOpts(context.Background(), d)
 	assert.NoError(t, err)
 
 	// Assert
@@ -351,9 +350,8 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
-	d := dependencies.NewTestContainer()
-	_, httpTransport := d.UseMockedStorageApi()
-	addMockedObjectsResponses(httpTransport)
+	d := dependencies.NewMockedDeps()
+	addMockedObjectsResponses(d.MockedHttpTransport())
 
 	// Flags
 	d.Options().Set(`storage-api-host`, `connection.keboola.com`)
@@ -364,7 +362,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 	d.Options().Set(`all-configs`, true) // <<<<<<<<<<<<<<<<
 
 	// Run
-	opts, err := dialog.AskCreateTemplateOpts(d)
+	opts, err := dialog.AskCreateTemplateOpts(context.Background(), d)
 	assert.NoError(t, err)
 
 	// Assert

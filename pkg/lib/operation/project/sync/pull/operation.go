@@ -1,6 +1,8 @@
 package pull
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -29,11 +31,11 @@ func LoadStateOptions(force bool) loadState.Options {
 	}
 }
 
-func Run(projectState *project.State, o Options, d dependencies) (err error) {
+func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
 	logger := d.Logger()
 
 	// Diff
-	results, err := createDiff.Run(createDiff.Options{Objects: projectState})
+	results, err := createDiff.Run(ctx, createDiff.Options{Objects: projectState})
 	if err != nil {
 		return err
 	}
@@ -60,17 +62,17 @@ func Run(projectState *project.State, o Options, d dependencies) (err error) {
 		}
 
 		// Save manifest
-		if _, err := saveManifest.Run(projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
+		if _, err := saveManifest.Run(ctx, projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
 			return err
 		}
 
 		// Normalize paths
-		if _, err := rename.Run(projectState, rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
+		if _, err := rename.Run(ctx, projectState, rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
 			return err
 		}
 
 		// Validate schemas and encryption
-		if err := validate.Run(projectState, validate.Options{ValidateSecrets: true, ValidateJsonSchema: true}, d); err != nil {
+		if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: true, ValidateJsonSchema: true}, d); err != nil {
 			logger.Warn(`Warning, ` + err.Error())
 			logger.Warn()
 			logger.Warnf(`The project has been pulled, but it is not in a valid state.`)

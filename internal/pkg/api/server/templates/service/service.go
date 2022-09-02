@@ -28,8 +28,8 @@ import (
 
 type service struct{}
 
-func New(d dependencies.Container) (Service, error) {
-	if err := StartComponentsCron(d); err != nil {
+func New(d dependencies.ForServer) (Service, error) {
+	if err := StartComponentsCron(d.ServerCtx(), d); err != nil {
 		return nil, err
 	}
 
@@ -39,29 +39,16 @@ func New(d dependencies.Container) (Service, error) {
 	/* if err := StartPullCron(d); err != nil {
 		return nil, err
 	} */
-	m, err := d.RepositoryManager()
-	if err != nil {
-		return nil, err
-	}
-	// Pull the repository in the beginning
-	m.Pull()
-
-	// Try etcd connection
-	if etcdClient, err := d.EtcdClient(); err == nil {
-		d.Logger().Infof(`connected to etcd server "%s"`, etcdClient.Endpoints()[0])
-	} else {
-		d.Logger().Errorf(`etcd connection failed: %s`, err.Error())
-	}
 
 	return &service{}, nil
 }
 
-func (s *service) APIRootIndex(dependencies.Container) (err error) {
+func (s *service) APIRootIndex(dependencies.ForPublicRequest) (err error) {
 	// Redirect / -> /v1
 	return nil
 }
 
-func (s *service) APIVersionIndex(dependencies.Container) (res *ServiceDetail, err error) {
+func (s *service) APIVersionIndex(dependencies.ForPublicRequest) (res *ServiceDetail, err error) {
 	res = &ServiceDetail{
 		API:           "templates",
 		Documentation: "https://templates.keboola.com/v1/documentation",
@@ -69,19 +56,15 @@ func (s *service) APIVersionIndex(dependencies.Container) (res *ServiceDetail, e
 	return res, nil
 }
 
-func (s *service) HealthCheck(dependencies.Container) (res string, err error) {
+func (s *service) HealthCheck(dependencies.ForPublicRequest) (res string, err error) {
 	return "OK", nil
 }
 
-func (s *service) RepositoriesIndex(d dependencies.Container, _ *RepositoriesIndexPayload) (res *Repositories, err error) {
-	repositories, err := d.ProjectRepositories()
-	if err != nil {
-		return nil, err
-	}
-	return RepositoriesResponse(d, repositories)
+func (s *service) RepositoriesIndex(d dependencies.ForProjectRequest, _ *RepositoriesIndexPayload) (res *Repositories, err error) {
+	return RepositoriesResponse(d, d.ProjectRepositories())
 }
 
-func (s *service) RepositoryIndex(d dependencies.Container, payload *RepositoryIndexPayload) (res *Repository, err error) {
+func (s *service) RepositoryIndex(d dependencies.ForProjectRequest, payload *RepositoryIndexPayload) (res *Repository, err error) {
 	repo, err := repositoryInst(d, payload.Repository)
 	if err != nil {
 		return nil, err
@@ -89,7 +72,7 @@ func (s *service) RepositoryIndex(d dependencies.Container, payload *RepositoryI
 	return RepositoryResponse(repo), nil
 }
 
-func (s *service) TemplatesIndex(d dependencies.Container, payload *TemplatesIndexPayload) (res *Templates, err error) {
+func (s *service) TemplatesIndex(d dependencies.ForProjectRequest, payload *TemplatesIndexPayload) (res *Templates, err error) {
 	repo, err := repositoryInst(d, payload.Repository)
 	if err != nil {
 		return nil, err
@@ -97,7 +80,7 @@ func (s *service) TemplatesIndex(d dependencies.Container, payload *TemplatesInd
 	return TemplatesResponse(repo, repo.Templates())
 }
 
-func (s *service) TemplateIndex(d dependencies.Container, payload *TemplateIndexPayload) (res *TemplateDetail, err error) {
+func (s *service) TemplateIndex(d dependencies.ForProjectRequest, payload *TemplateIndexPayload) (res *TemplateDetail, err error) {
 	repo, tmplRecord, err := templateRecord(d, payload.Repository, payload.Template)
 	if err != nil {
 		return nil, err
@@ -105,7 +88,7 @@ func (s *service) TemplateIndex(d dependencies.Container, payload *TemplateIndex
 	return TemplateDetailResponse(repo, tmplRecord)
 }
 
-func (s *service) VersionIndex(d dependencies.Container, payload *VersionIndexPayload) (res *VersionDetailExtended, err error) {
+func (s *service) VersionIndex(d dependencies.ForProjectRequest, payload *VersionIndexPayload) (res *VersionDetailExtended, err error) {
 	repo, tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
 	if err != nil {
 		return nil, err
@@ -113,7 +96,7 @@ func (s *service) VersionIndex(d dependencies.Container, payload *VersionIndexPa
 	return VersionDetailExtendedResponse(repo, tmpl)
 }
 
-func (s *service) InputsIndex(d dependencies.Container, payload *InputsIndexPayload) (res *Inputs, err error) {
+func (s *service) InputsIndex(d dependencies.ForProjectRequest, payload *InputsIndexPayload) (res *Inputs, err error) {
 	_, tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
 	if err != nil {
 		return nil, err
@@ -121,7 +104,7 @@ func (s *service) InputsIndex(d dependencies.Container, payload *InputsIndexPayl
 	return InputsResponse(tmpl.Inputs().ToExtended()), nil
 }
 
-func (s *service) ValidateInputs(d dependencies.Container, payload *ValidateInputsPayload) (res *ValidationResult, err error) {
+func (s *service) ValidateInputs(d dependencies.ForProjectRequest, payload *ValidateInputsPayload) (res *ValidationResult, err error) {
 	_, tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
 	if err != nil {
 		return nil, err
@@ -132,7 +115,7 @@ func (s *service) ValidateInputs(d dependencies.Container, payload *ValidateInpu
 	return result, err
 }
 
-func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTemplateVersionPayload) (res *UseTemplateResult, err error) {
+func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *UseTemplateVersionPayload) (res *UseTemplateResult, err error) {
 	// Note:
 	//   A very strange code follows.
 	//   Since I did not manage to complete the refactoring - separation of remote and local state.
@@ -173,10 +156,10 @@ func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTempl
 
 	// Load only target branch
 	m.Filter().SetAllowedKeys([]model.Key{branchKey})
-	prj := project.NewWithManifest(fs, m, d)
+	prj := project.NewWithManifest(d.RequestCtx(), fs, m)
 
 	// Load project state
-	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true})
+	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true}, d)
 	if err != nil {
 		return nil, err
 	}
@@ -194,21 +177,21 @@ func (s *service) UseTemplateVersion(d dependencies.Container, payload *UseTempl
 	}
 
 	// Use template
-	instanceId, _, err := useTemplate.Run(prjState, tmpl, options, d)
+	instanceId, _, err := useTemplate.Run(d.RequestCtx(), prjState, tmpl, options, d)
 	if err != nil {
 		return nil, err
 	}
 
 	// Push changes
 	changeDesc := fmt.Sprintf("From template %s", tmpl.FullName())
-	if err := push.Run(prjState, push.Options{ChangeDescription: changeDesc, SkipValidation: true}, d); err != nil {
+	if err := push.Run(d.RequestCtx(), prjState, push.Options{ChangeDescription: changeDesc, SkipValidation: true}, d); err != nil {
 		return nil, err
 	}
 
 	return &UseTemplateResult{InstanceID: instanceId}, nil
 }
 
-func (s *service) InstancesIndex(d dependencies.Container, payload *InstancesIndexPayload) (res *Instances, err error) {
+func (s *service) InstancesIndex(d dependencies.ForProjectRequest, payload *InstancesIndexPayload) (res *Instances, err error) {
 	branchKey, err := getBranch(d, payload.Branch)
 	if err != nil {
 		return nil, err
@@ -225,10 +208,10 @@ func (s *service) InstancesIndex(d dependencies.Container, payload *InstancesInd
 
 	// Only one branch
 	m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.Id))})
-	prj := project.NewWithManifest(fs, m, d)
+	prj := project.NewWithManifest(d.RequestCtx(), fs, m)
 
 	// Load project state
-	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true})
+	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true}, d)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +219,7 @@ func (s *service) InstancesIndex(d dependencies.Container, payload *InstancesInd
 	return InstancesResponse(prjState, branchKey)
 }
 
-func (s *service) InstanceIndex(d dependencies.Container, payload *InstanceIndexPayload) (res *InstanceDetail, err error) {
+func (s *service) InstanceIndex(d dependencies.ForProjectRequest, payload *InstanceIndexPayload) (res *InstanceDetail, err error) {
 	branchKey, err := getBranch(d, payload.Branch)
 	if err != nil {
 		return nil, err
@@ -253,17 +236,17 @@ func (s *service) InstanceIndex(d dependencies.Container, payload *InstanceIndex
 
 	// Only one branch
 	m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.Id))})
-	prj := project.NewWithManifest(fs, m, d)
+	prj := project.NewWithManifest(d.RequestCtx(), fs, m)
 
 	// Load project state
-	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true})
+	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true}, d)
 	if err != nil {
 		return nil, err
 	}
 	return InstanceResponse(d, prjState, branchKey, payload.InstanceID)
 }
 
-func (s *service) UpdateInstance(d dependencies.Container, payload *UpdateInstancePayload) (res *InstanceDetail, err error) {
+func (s *service) UpdateInstance(d dependencies.ForProjectRequest, payload *UpdateInstancePayload) (res *InstanceDetail, err error) {
 	prjState, branchKey, instance, err := getTemplateInstance(d, payload.Branch, payload.InstanceID, true)
 	if err != nil {
 		return nil, err
@@ -275,21 +258,21 @@ func (s *service) UpdateInstance(d dependencies.Container, payload *UpdateInstan
 		NewName:  payload.Name,
 	}
 
-	err = renameInst.Run(prjState, opts, d)
+	err = renameInst.Run(d.RequestCtx(), prjState, opts, d)
 	if err != nil {
 		return nil, err
 	}
 
 	// Push changes
 	changeDesc := fmt.Sprintf("Rename template instance %s", payload.InstanceID)
-	if err := push.Run(prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
+	if err := push.Run(d.RequestCtx(), prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
 		return nil, err
 	}
 
 	return InstanceResponse(d, prjState, branchKey, payload.InstanceID)
 }
 
-func (s *service) DeleteInstance(d dependencies.Container, payload *DeleteInstancePayload) (err error) {
+func (s *service) DeleteInstance(d dependencies.ForProjectRequest, payload *DeleteInstancePayload) (err error) {
 	// Get instance
 	prjState, branchKey, _, err := getTemplateInstance(d, payload.Branch, payload.InstanceID, true)
 	if err != nil {
@@ -302,21 +285,21 @@ func (s *service) DeleteInstance(d dependencies.Container, payload *DeleteInstan
 		DryRun:   false,
 		Instance: payload.InstanceID,
 	}
-	err = deleteTemplate.Run(prjState, deleteOpts, d)
+	err = deleteTemplate.Run(d.RequestCtx(), prjState, deleteOpts, d)
 	if err != nil {
 		return err
 	}
 
 	// Push changes
 	changeDesc := fmt.Sprintf("Delete template instance %s", payload.InstanceID)
-	if err := push.Run(prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
+	if err := push.Run(d.RequestCtx(), prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *service) UpgradeInstance(d dependencies.Container, payload *UpgradeInstancePayload) (res *UpgradeInstanceResult, err error) {
+func (s *service) UpgradeInstance(d dependencies.ForProjectRequest, payload *UpgradeInstancePayload) (res *UpgradeInstanceResult, err error) {
 	// Get instance
 	prjState, branchKey, instance, err := getTemplateInstance(d, payload.Branch, payload.InstanceID, true)
 	if err != nil {
@@ -348,21 +331,21 @@ func (s *service) UpgradeInstance(d dependencies.Container, payload *UpgradeInst
 		Instance: *instance,
 		Inputs:   values,
 	}
-	_, err = upgradeTemplate.Run(prjState, tmpl, upgradeOpts, d)
+	_, err = upgradeTemplate.Run(d.RequestCtx(), prjState, tmpl, upgradeOpts, d)
 	if err != nil {
 		return nil, err
 	}
 
 	// Push changes
 	changeDesc := fmt.Sprintf("Upgraded from template %s", tmpl.FullName())
-	if err := push.Run(prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
+	if err := push.Run(d.RequestCtx(), prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
 		return nil, err
 	}
 
 	return &UpgradeInstanceResult{InstanceID: instance.InstanceId}, nil
 }
 
-func (s *service) UpgradeInstanceInputsIndex(d dependencies.Container, payload *UpgradeInstanceInputsIndexPayload) (res *Inputs, err error) {
+func (s *service) UpgradeInstanceInputsIndex(d dependencies.ForProjectRequest, payload *UpgradeInstanceInputsIndexPayload) (res *Inputs, err error) {
 	// Get instance
 	prjState, branchKey, instance, err := getTemplateInstance(d, payload.Branch, payload.InstanceID, true)
 	if err != nil {
@@ -380,7 +363,7 @@ func (s *service) UpgradeInstanceInputsIndex(d dependencies.Container, payload *
 	return InputsResponse(stepsGroupsExt), nil
 }
 
-func (s *service) UpgradeInstanceValidateInputs(d dependencies.Container, payload *UpgradeInstanceValidateInputsPayload) (res *ValidationResult, err error) {
+func (s *service) UpgradeInstanceValidateInputs(d dependencies.ForProjectRequest, payload *UpgradeInstanceValidateInputsPayload) (res *ValidationResult, err error) {
 	// Get instance
 	_, _, instance, err := getTemplateInstance(d, payload.Branch, payload.InstanceID, false)
 	if err != nil {
@@ -397,12 +380,8 @@ func (s *service) UpgradeInstanceValidateInputs(d dependencies.Container, payloa
 	})
 }
 
-func repositoryRef(d dependencies.Container, name string) (model.TemplateRepository, error) {
-	repositories, err := d.ProjectRepositories()
-	if err != nil {
-		return model.TemplateRepository{}, err
-	}
-	for _, repo := range repositories {
+func repositoryRef(d dependencies.ForProjectRequest, name string) (model.TemplateRepository, error) {
+	for _, repo := range d.ProjectRepositories() {
 		if repo.Name == name {
 			return repo, nil
 		}
@@ -413,7 +392,7 @@ func repositoryRef(d dependencies.Container, name string) (model.TemplateReposit
 	}
 }
 
-func repositoryInst(d dependencies.Container, repoName string) (*repository.Repository, error) {
+func repositoryInst(d dependencies.ForProjectRequest, repoName string) (*repository.Repository, error) {
 	// Get repository ref
 	repoRef, err := repositoryRef(d, repoName)
 	if err != nil {
@@ -421,14 +400,14 @@ func repositoryInst(d dependencies.Container, repoName string) (*repository.Repo
 	}
 
 	// Get repository
-	repo, err := d.TemplateRepository(repoRef, nil)
+	repo, err := d.TemplateRepository(d.RequestCtx(), repoRef, nil)
 	if err != nil {
 		return nil, err
 	}
 	return repo, nil
 }
 
-func templateRecord(d dependencies.Container, repoName, templateId string) (*repository.Repository, *repository.TemplateRecord, error) {
+func templateRecord(d dependencies.ForProjectRequest, repoName, templateId string) (*repository.Repository, *repository.TemplateRecord, error) {
 	// Get repository
 	repo, err := repositoryInst(d, repoName)
 	if err != nil {
@@ -446,7 +425,7 @@ func templateRecord(d dependencies.Container, repoName, templateId string) (*rep
 	return repo, &tmpl, nil
 }
 
-func getTemplateVersion(d dependencies.Container, repoName, templateId, versionStr string) (*repository.Repository, *template.Template, error) {
+func getTemplateVersion(d dependencies.ForProjectRequest, repoName, templateId, versionStr string) (*repository.Repository, *template.Template, error) {
 	// Get repo
 	repo, err := repositoryInst(d, repoName)
 	if err != nil {
@@ -483,7 +462,7 @@ func getTemplateVersion(d dependencies.Container, repoName, templateId, versionS
 	}
 
 	// Get template version
-	tmpl, err := d.Template(model.NewTemplateRef(repo.Ref(), templateId, semVersion.Original()))
+	tmpl, err := d.Template(d.RequestCtx(), model.NewTemplateRef(repo.Ref(), templateId, semVersion.Original()))
 	if err != nil {
 		if errors.As(err, &manifest.TemplateNotFoundError{}) {
 			return nil, nil, &GenericError{
@@ -503,18 +482,15 @@ func getTemplateVersion(d dependencies.Container, repoName, templateId, versionS
 	return repo, tmpl, nil
 }
 
-func getBranch(d dependencies.Container, branchDef string) (model.BranchKey, error) {
+func getBranch(d dependencies.ForProjectRequest, branchDef string) (model.BranchKey, error) {
 	// Get Storage API
-	storageApiClient, err := d.StorageApiClient()
-	if err != nil {
-		return model.BranchKey{}, err
-	}
+	storageApiClient := d.StorageApiClient()
 
 	// Parse branch ID
 	var targetBranch model.BranchKey
 	if branchDef == "default" {
 		// Use main branch
-		if v, err := storageapi.GetDefaultBranchRequest().Send(d.Ctx(), storageApiClient); err != nil {
+		if v, err := storageapi.GetDefaultBranchRequest().Send(d.RequestCtx(), storageApiClient); err != nil {
 			return targetBranch, err
 		} else {
 			targetBranch.Id = v.ID
@@ -524,7 +500,7 @@ func getBranch(d dependencies.Container, branchDef string) (model.BranchKey, err
 		return targetBranch, BadRequestError{
 			Message: fmt.Sprintf(`branch ID "%s" is not numeric`, branchDef),
 		}
-	} else if _, err := storageapi.GetBranchRequest(storageapi.BranchKey{ID: storageapi.BranchID(branchId)}).Send(d.Ctx(), storageApiClient); err != nil {
+	} else if _, err := storageapi.GetBranchRequest(storageapi.BranchKey{ID: storageapi.BranchID(branchId)}).Send(d.RequestCtx(), storageApiClient); err != nil {
 		// Branch not found
 		return targetBranch, &GenericError{
 			Name:    "templates.branchNotFound",
@@ -538,7 +514,7 @@ func getBranch(d dependencies.Container, branchDef string) (model.BranchKey, err
 	return targetBranch, nil
 }
 
-func getTemplateInstance(d dependencies.Container, branchDef, instanceId string, loadConfigs bool) (*project.State, model.BranchKey, *model.TemplateInstance, error) {
+func getTemplateInstance(d dependencies.ForProjectRequest, branchDef, instanceId string, loadConfigs bool) (*project.State, model.BranchKey, *model.TemplateInstance, error) {
 	// Note:
 	//   Waits for separation of remote and local state.
 	//   A virtual FS and fake manifest are created to make it work.
@@ -563,10 +539,10 @@ func getTemplateInstance(d dependencies.Container, branchDef, instanceId string,
 	} else {
 		m.Filter().SetAllowedKeys([]model.Key{branchKey})
 	}
-	prj := project.NewWithManifest(fs, m, d)
+	prj := project.NewWithManifest(d.RequestCtx(), fs, m)
 
 	// Load project state
-	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true})
+	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true}, d)
 	if err != nil {
 		return nil, branchKey, nil, err
 	}

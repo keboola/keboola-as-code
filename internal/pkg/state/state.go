@@ -58,22 +58,16 @@ type ObjectsContainer interface {
 
 type dependencies interface {
 	Logger() log.Logger
-	Components() (*model.ComponentsMap, error)
-	StorageApiClient() (client.Sender, error)
+	Components() *model.ComponentsMap
+	StorageApiClient() client.Sender
 }
 
 func New(container ObjectsContainer, d dependencies) (*State, error) {
 	// Get dependencies
 	logger := d.Logger()
 	m := container.Manifest()
-	storageApi, err := d.StorageApiClient()
-	if err != nil {
-		return nil, err
-	}
-	components, err := d.Components()
-	if err != nil {
-		return nil, err
-	}
+	storageApi := d.StorageApiClient()
+	components := d.Components()
 
 	// Create mapper
 	mapperInst := mapper.New()

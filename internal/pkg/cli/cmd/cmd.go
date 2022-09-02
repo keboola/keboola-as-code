@@ -76,9 +76,9 @@ type Cmd = cobra.Command
 
 type RootCommand struct {
 	*Cmd
-	Options   *options.Options
-	Logger    log.Logger
-	Deps      dependencies.Container
+	logger    log.Logger
+	options   *options.Options
+	fs        filesystem.Fs
 	logFile   *log.File
 	cmdByPath map[string]*cobra.Command
 	aliases   *orderedmap.OrderedMap
@@ -88,8 +88,8 @@ type RootCommand struct {
 func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt prompt.Prompt, envs *env.Map, fsFactory filesystem.Factory) *RootCommand {
 	// Command definition
 	root := &RootCommand{
-		Options:   options.New(),
-		Logger:    log.NewMemoryLogger(), // temporary logger, we don't have a path to the log file yet
+		options:   options.New(),
+		logger:    log.NewMemoryLogger(), // temporary logger, we don't have a path to the log file yet
 		cmdByPath: make(map[string]*cobra.Command),
 		aliases:   orderedmap.New(),
 	}
@@ -130,31 +130,33 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	root.Flags().BoolP("version", "V", false, "print version")
 
 	// Init when flags are parsed
+	p := &dependencies.ProviderRef{}
 	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		// Create filesystem abstraction
+		var err error
 		workingDir, _ := cmd.Flags().GetString(`working-dir`)
-		fs, err := fsFactory(root.Logger, workingDir)
+		root.fs, err = fsFactory(root.logger, workingDir)
 		if err != nil {
 			return err
 		}
 
 		// Load values from flags and envs
-		if err = root.Options.Load(root.Logger, envs, fs, cmd.Flags()); err != nil {
+		if err = root.options.Load(root.logger, envs, root.fs, cmd.Flags()); err != nil {
 			return err
 		}
 
 		// Setup logger
 		root.setupLogger()
-		fs.SetLogger(root.Logger)
-		root.Logger.Debug(`Working dir: `, filesystem.Join(fs.BasePath(), fs.WorkingDir()))
+		root.fs.SetLogger(root.logger)
+		root.logger.Debug(`Working dir: `, filesystem.Join(root.fs.BasePath(), root.fs.WorkingDir()))
 
-		// Create dependencies container
-		root.Deps = dependencies.NewContainer(root.Context(), envs, fs, dialog.New(prompt), root.Logger, root.Options)
+		// Create dependencies provider
+		p.Set(dependencies.NewProvider(cmd.Context(), envs, root.logger, root.fs, dialog.New(prompt), root.options))
 
 		// Check version
-		if err := versionCheck.Run(root.Deps); err != nil {
+		if err := versionCheck.Run(cmd.Context(), p.BaseDependencies()); err != nil {
 			// Ignore error, send to logs
-			root.Logger.Debugf(`Version check: %s.`, err.Error())
+			root.logger.Debugf(`Version check: %s.`, err.Error())
 		}
 
 		return nil
@@ -162,16 +164,16 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 
 	// Sub-commands
 	root.AddCommand(
-		StatusCommand(root),
-		sync.Commands(root),
-		ci.Commands(root),
-		local.Commands(root, envs),
-		remote.Commands(root),
+		StatusCommand(p),
+		sync.Commands(p),
+		ci.Commands(p),
+		local.Commands(p, envs),
+		remote.Commands(p),
 	)
 
 	// Templates are private beta, can be enabled by ENV
 	if envs.Get(`KBC_TEMPLATES_PRIVATE_BETA`) == `true` {
-		root.AddCommand(template.Commands(root))
+		root.AddCommand(template.Commands(p))
 	}
 
 	// Get all sub-commands by full path, eg. "sync init"
@@ -212,10 +214,6 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	root.Cmd.Annotations = map[string]string{`aliases`: root.listAliases()}
 
 	return root
-}
-
-func (root *RootCommand) Dependencies() dependencies.Container {
-	return root.Deps
 }
 
 // Execute command or sub-command.
@@ -290,58 +288,58 @@ func (root *RootCommand) printError(errRaw error) {
 	for _, err := range originalErrs.Errors {
 		switch {
 		case errors.Is(err, dependencies.ErrProjectDirFound):
-			root.Logger.Infof(`The path "%s" is an project directory.`, root.Deps.BasePath())
-			root.Logger.Info(`Please use an empty directory.`)
+			root.logger.Infof(`The path "%s" is an project directory.`, root.fs.BasePath())
+			root.logger.Info(`Please use an empty directory.`)
 			if root.CalledAs() == `init` {
-				root.Logger.Info(`Or synchronize the current directory with the "pull" command.`)
+				root.logger.Info(`Or synchronize the current directory with the "pull" command.`)
 			}
 			modifiedErrs.Append(fmt.Errorf(`manifest "%s" exists`, projectManifest.Path()))
 		case errors.Is(err, dependencies.ErrRepositoryDirFound):
-			root.Logger.Infof(`The path "%s" is an repository directory.`, root.Deps.BasePath())
-			root.Logger.Info(`Please use an empty directory.`)
+			root.logger.Infof(`The path "%s" is an repository directory.`, root.fs.BasePath())
+			root.logger.Info(`Please use an empty directory.`)
 			modifiedErrs.Append(fmt.Errorf(`manifest "%s" exists`, repositoryManifest.Path()))
 		case errors.Is(err, dependencies.ErrTemplateDirFound):
-			root.Logger.Infof(`The path "%s" is an template directory.`, root.Deps.BasePath())
-			root.Logger.Info(`Please use an empty directory.`)
+			root.logger.Infof(`The path "%s" is an template directory.`, root.fs.BasePath())
+			root.logger.Info(`Please use an empty directory.`)
 			modifiedErrs.Append(fmt.Errorf(`manifest "%s" exists`, repositoryManifest.Path()))
 		case errors.Is(err, dependencies.ErrProjectManifestNotFound):
-			root.Logger.Infof(`Project directory must contain the "%s" file.`, projectManifest.Path())
-			root.Logger.Infof(`Please change working directory to a project directory.`)
-			root.Logger.Infof(`Or use the "sync init" command in an empty directory.`)
+			root.logger.Infof(`Project directory must contain the "%s" file.`, projectManifest.Path())
+			root.logger.Infof(`Please change working directory to a project directory.`)
+			root.logger.Infof(`Or use the "sync init" command in an empty directory.`)
 			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is project dir`))
 		case errors.Is(err, dependencies.ErrExpectedProjectFoundRepository):
-			root.Logger.Infof(`Project directory must contain the "%s" file.`, projectManifest.Path())
-			root.Logger.Infof(`You are in the template repository, not in the project directory.`)
-			root.Logger.Infof(`Please change working directory to a project directory.`)
-			root.Logger.Infof(`Or use the "sync init" command in an empty directory.`)
+			root.logger.Infof(`Project directory must contain the "%s" file.`, projectManifest.Path())
+			root.logger.Infof(`You are in the template repository, not in the project directory.`)
+			root.logger.Infof(`Please change working directory to a project directory.`)
+			root.logger.Infof(`Or use the "sync init" command in an empty directory.`)
 			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is project dir`))
 		case errors.Is(err, dependencies.ErrExpectedProjectFoundTemplate):
-			root.Logger.Infof(`Project directory must contain the "%s" file.`, projectManifest.Path())
-			root.Logger.Infof(`You are in the template, not in the project directory.`)
-			root.Logger.Infof(`Please change working directory to a project directory.`)
-			root.Logger.Infof(`Or use the "sync init" command in an empty directory.`)
+			root.logger.Infof(`Project directory must contain the "%s" file.`, projectManifest.Path())
+			root.logger.Infof(`You are in the template, not in the project directory.`)
+			root.logger.Infof(`Please change working directory to a project directory.`)
+			root.logger.Infof(`Or use the "sync init" command in an empty directory.`)
 			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is project dir`))
 		case errors.Is(err, dependencies.ErrRepositoryManifestNotFound):
-			root.Logger.Infof(`Repository directory must contain the "%s" file.`, repositoryManifest.Path())
-			root.Logger.Infof(`Please change working directory to a repository directory.`)
-			root.Logger.Infof(`Or use the "template repository init" command in an empty directory.`)
+			root.logger.Infof(`Repository directory must contain the "%s" file.`, repositoryManifest.Path())
+			root.logger.Infof(`Please change working directory to a repository directory.`)
+			root.logger.Infof(`Or use the "template repository init" command in an empty directory.`)
 			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is repository dir`))
 		case errors.Is(err, dependencies.ErrExpectedRepositoryFoundProject):
-			root.Logger.Infof(`Repository directory must contain the "%s" file.`, repositoryManifest.Path())
-			root.Logger.Infof(`You are in the project directory, not in the template repository.`)
-			root.Logger.Infof(`Please change working directory to a repository directory.`)
-			root.Logger.Infof(`Or use the "template repository init" command in an empty directory.`)
+			root.logger.Infof(`Repository directory must contain the "%s" file.`, repositoryManifest.Path())
+			root.logger.Infof(`You are in the project directory, not in the template repository.`)
+			root.logger.Infof(`Please change working directory to a repository directory.`)
+			root.logger.Infof(`Or use the "template repository init" command in an empty directory.`)
 			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is repository dir`))
 		case errors.Is(err, dependencies.ErrTemplateManifestNotFound):
-			root.Logger.Infof(`Template directory must contain the "%s" file.`, templateManifest.Path())
-			root.Logger.Infof(`You are in the template repository, but not in the template directory.`)
-			root.Logger.Infof(`Please change working directory to a template directory, for example "template/v1".`)
-			root.Logger.Infof(`Or use the "template create" command.`)
+			root.logger.Infof(`Template directory must contain the "%s" file.`, templateManifest.Path())
+			root.logger.Infof(`You are in the template repository, but not in the template directory.`)
+			root.logger.Infof(`Please change working directory to a template directory, for example "template/v1".`)
+			root.logger.Infof(`Or use the "template create" command.`)
 			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is template dir`))
 		case errors.Is(err, dependencies.ErrMissingStorageApiHost), errors.Is(err, dialog.ErrMissingStorageApiHost):
-			modifiedErrs.Append(fmt.Errorf(`- missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, options.StorageApiHostOpt, root.Options.GetEnvName(options.StorageApiHostOpt)))
+			modifiedErrs.Append(fmt.Errorf(`- missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, options.StorageApiHostOpt, root.options.GetEnvName(options.StorageApiHostOpt)))
 		case errors.Is(err, dependencies.ErrMissingStorageApiToken), errors.Is(err, dialog.ErrMissingStorageApiToken):
-			modifiedErrs.Append(fmt.Errorf(`- missing Storage Api token, please use "--%s" flag or ENV variable "%s"`, options.StorageApiTokenOpt, root.Options.GetEnvName(options.StorageApiTokenOpt)))
+			modifiedErrs.Append(fmt.Errorf(`- missing Storage Api token, please use "--%s" flag or ENV variable "%s"`, options.StorageApiTokenOpt, root.options.GetEnvName(options.StorageApiTokenOpt)))
 		default:
 			modifiedErrs.Append(err)
 		}
@@ -353,26 +351,26 @@ func (root *RootCommand) printError(errRaw error) {
 func (root *RootCommand) setupLogger() {
 	// Get log file
 	var logFileErr error
-	root.logFile, logFileErr = log.NewLogFile(root.Options.LogFilePath)
+	root.logFile, logFileErr = log.NewLogFile(root.options.LogFilePath)
 
 	// Get temporary logger
-	memoryLogger, _ := root.Logger.(*log.MemoryLogger)
+	memoryLogger, _ := root.logger.(*log.MemoryLogger)
 
 	// Create logger
-	root.Logger = log.NewCliLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.Options.Verbose)
-	root.SetOut(root.Logger.InfoWriter())
-	root.SetErr(root.Logger.WarnWriter())
+	root.logger = log.NewCliLogger(root.OutOrStdout(), root.ErrOrStderr(), root.logFile, root.options.Verbose)
+	root.SetOut(root.logger.InfoWriter())
+	root.SetErr(root.logger.WarnWriter())
 
 	// Warn if user specified log file + it cannot be opened
-	if logFileErr != nil && root.Options.LogFilePath != "" {
-		root.Logger.Warnf("Cannot open log file: %s", logFileErr)
+	if logFileErr != nil && root.options.LogFilePath != "" {
+		root.logger.Warnf("Cannot open log file: %s", logFileErr)
 	}
 
 	// Log info
-	w := root.Logger.DebugWriter()
+	w := root.logger.DebugWriter()
 	w.WriteString(root.Version)
 	w.WriteString(fmt.Sprintf("Running command %v", os.Args))
-	w.WriteString(root.Options.Dump())
+	w.WriteString(root.options.Dump())
 	if root.logFile == nil {
 		w.WriteString(`Log file: -`)
 	} else {
@@ -381,14 +379,14 @@ func (root *RootCommand) setupLogger() {
 
 	// Copy logs from the temporary logger
 	if memoryLogger != nil {
-		memoryLogger.CopyLogsTo(root.Logger)
+		memoryLogger.CopyLogsTo(root.logger)
 	}
 }
 
 // tearDown does clean-up after command execution.
 func (root *RootCommand) tearDown(exitCode int, panicErr interface{}) int {
 	// Logger may be uninitialized, if error occurred before initialization
-	if _, ok := root.Logger.(*log.MemoryLogger); ok {
+	if _, ok := root.logger.(*log.MemoryLogger); ok {
 		root.setupLogger()
 	}
 
@@ -399,7 +397,7 @@ func (root *RootCommand) tearDown(exitCode int, panicErr interface{}) int {
 		}
 
 		// Process panic
-		exitCode = utils.ProcessPanic(panicErr, root.Logger, logFilePath)
+		exitCode = utils.ProcessPanic(panicErr, root.logger, logFilePath)
 	}
 
 	// Close log file

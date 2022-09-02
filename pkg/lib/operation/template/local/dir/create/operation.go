@@ -1,6 +1,8 @@
 package create
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
@@ -13,7 +15,7 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(repositoryDir filesystem.Fs, o Options, d dependencies) (filesystem.Fs, error) {
+func Run(_ context.Context, repositoryDir filesystem.Fs, o Options, d dependencies) (filesystem.Fs, error) {
 	// Create template dir
 	if err := repositoryDir.Mkdir(o.Path); err != nil {
 		return nil, err

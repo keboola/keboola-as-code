@@ -14,7 +14,10 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`template/repository/init/short`),
 		Long:  helpmsg.Read(`template/repository/init/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := p.Dependencies()
+			d, err := p.DependenciesForLocalCommand()
+			if err != nil {
+				return err
+			}
 
 			// Require empty dir
 			if _, err := d.EmptyDir(); err != nil {
@@ -22,7 +25,7 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Init repository
-			return initOp.Run(d)
+			return initOp.Run(d.CommandCtx(), d)
 		},
 	}
 	return cmd

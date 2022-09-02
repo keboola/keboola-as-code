@@ -2,9 +2,10 @@
 package aferofs
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -66,6 +67,15 @@ func (f *Fs) SubDirFs(path string) (filesystem.Fs, error) {
 // WorkingDir - user current working directory.
 func (f *Fs) WorkingDir() string {
 	return f.workingDir
+}
+
+// SetWorkingDir - set working directory.
+func (f *Fs) SetWorkingDir(workingDir string) {
+	if workingDir != "" && !f.IsDir(workingDir) {
+		// Dir not found
+		workingDir = ""
+	}
+	f.workingDir = f.fs.ToSlash(workingDir)
 }
 
 func (f *Fs) Logger() log.Logger {
@@ -274,9 +284,9 @@ func (f *Fs) ReadFile(def *filesystem.FileDef) (*filesystem.RawFile, error) {
 		return nil, newFileError("cannot open", file, err)
 	}
 
-	// Read
-	content, err := ioutil.ReadAll(fd)
-	if err != nil {
+	// Read all
+	content := bytes.NewBuffer(nil)
+	if _, err := io.Copy(content, fd); err != nil {
 		return nil, newFileError("cannot read", file, err)
 	}
 
@@ -287,7 +297,7 @@ func (f *Fs) ReadFile(def *filesystem.FileDef) (*filesystem.RawFile, error) {
 
 	// File has been loaded
 	f.logger.Debugf(`Loaded "%s"`, file.Path())
-	file.Content = string(content)
+	file.Content = content.String()
 	return file, nil
 }
 

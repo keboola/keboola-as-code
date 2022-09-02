@@ -46,22 +46,19 @@ func TraceEndpointsMiddleware() func(endpoint goa.Endpoint) goa.Endpoint {
 	}
 }
 
-func ContextMiddleware(d dependencies.Container, h http.Handler) http.Handler {
+func ContextMiddleware(serverDeps dependencies.ForServer, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Generate unique request ID
 		requestId := idgenerator.RequestId()
 		ctx := context.WithValue(r.Context(), middleware.RequestIDKey, requestId)
-		// Include request ID in all log messages
-		loggerPrefix := fmt.Sprintf("[requestId=%s]", requestId)
+
 		// Add request ID to headers
 		w.Header().Add("X-Request-Id", requestId)
 		// Add request ID to DD span
 		if span, ok := tracer.SpanFromContext(ctx); ok {
 			span.SetTag(ext.ResourceName, r.URL.Path)
 			span.SetTag("http.request.id", requestId)
-			if host, err := d.StorageApiHost(); err == nil {
-				span.SetTag("storage.host", host)
-			}
+			span.SetTag("storage.host", serverDeps.StorageApiHost())
 		}
 
 		// Cancel context after request
@@ -69,17 +66,18 @@ func ContextMiddleware(d dependencies.Container, h http.Handler) http.Handler {
 		defer cancelFn()
 
 		// Add dependencies to the context
-		ctx = context.WithValue(ctx, dependencies.CtxKey, d.WithCtx(ctx, cancelFn).WithLoggerPrefix(loggerPrefix))
+		reqDeps := dependencies.NewDepsForPublicRequest(serverDeps, ctx, requestId)
+		ctx = context.WithValue(ctx, dependencies.ForPublicRequestCtxKey, reqDeps)
 
 		// Handle
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func LogMiddleware(h http.Handler) http.Handler {
+func LogMiddleware(d dependencies.ForServer, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
-		logger := r.Context().Value(dependencies.CtxKey).(dependencies.Container).PrefixLogger()
+		logger := d.PrefixLogger()
 
 		// Log request
 		logger.

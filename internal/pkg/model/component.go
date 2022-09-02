@@ -23,17 +23,13 @@ type ComponentsProvider struct {
 	value            *ComponentsMap
 }
 
-func NewComponentsProvider(ctx context.Context, logger log.Logger, storageApiClient client.Sender) (*ComponentsProvider, error) {
-	p := &ComponentsProvider{updateLock: &sync.RWMutex{}, logger: logger, storageApiClient: storageApiClient}
-	// Init
-	startTime := time.Now()
-	if index, err := p.index(ctx); err == nil {
-		p.value = NewComponentsMap(index.Components)
-		p.logger.Debugf("components loaded | %s", time.Since(startTime))
-	} else {
-		return nil, err
+func NewComponentsProvider(index *storageapi.IndexComponents, logger log.Logger, storageApiClient client.Sender) *ComponentsProvider {
+	return &ComponentsProvider{
+		updateLock:       &sync.RWMutex{},
+		logger:           logger,
+		storageApiClient: storageApiClient,
+		value:            NewComponentsMap(index.Components),
 	}
-	return p, nil
 }
 
 // RLock acquire read lock, before getting Components().

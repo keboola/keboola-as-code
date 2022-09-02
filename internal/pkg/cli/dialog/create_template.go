@@ -20,11 +20,10 @@ import (
 )
 
 type createTmplDialogDeps interface {
-	Ctx() context.Context
 	Logger() log.Logger
 	Options() *options.Options
-	Components() (*model.ComponentsMap, error)
-	StorageApiClient() (client.Sender, error)
+	Components() *model.ComponentsMap
+	StorageApiClient() client.Sender
 }
 
 type createTmplDialog struct {
@@ -38,15 +37,15 @@ type createTmplDialog struct {
 }
 
 // AskCreateTemplateOpts - dialog for creating a template from an existing project.
-func (p *Dialogs) AskCreateTemplateOpts(deps createTmplDialogDeps) (createTemplate.Options, error) {
+func (p *Dialogs) AskCreateTemplateOpts(ctx context.Context, deps createTmplDialogDeps) (createTemplate.Options, error) {
 	return (&createTmplDialog{
 		Dialogs: p,
 		prompt:  p.Prompt,
 		deps:    deps,
-	}).ask()
+	}).ask(ctx)
 }
 
-func (d *createTmplDialog) ask() (createTemplate.Options, error) {
+func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, error) {
 	opts := d.deps.Options()
 
 	// Host and token
@@ -62,14 +61,11 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	}
 
 	// Get Storage API
-	storageApiClient, err := d.deps.StorageApiClient()
-	if err != nil {
-		return d.out, err
-	}
+	storageApiClient := d.deps.StorageApiClient()
 
 	// Load branches
 	var allBranches []*model.Branch
-	if result, err := storageapi.ListBranchesRequest().Send(d.deps.Ctx(), storageApiClient); err == nil {
+	if result, err := storageapi.ListBranchesRequest().Send(ctx, storageApiClient); err == nil {
 		for _, apiBranch := range *result {
 			allBranches = append(allBranches, model.NewBranch(apiBranch))
 		}
@@ -108,6 +104,7 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	}
 
 	// Branch
+	var err error
 	d.selectedBranch, err = d.SelectBranch(d.deps.Options(), allBranches, `Select the source branch`)
 	if err != nil {
 		return d.out, err
@@ -116,7 +113,7 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 
 	// Load configs
 	branchKey := storageapi.BranchKey{ID: d.selectedBranch.Id}
-	if result, err := storageapi.ListConfigsAndRowsFrom(branchKey).Send(d.deps.Ctx(), storageApiClient); err == nil {
+	if result, err := storageapi.ListConfigsAndRowsFrom(branchKey).Send(ctx, storageApiClient); err == nil {
 		for _, component := range *result {
 			for _, apiConfig := range component.Configs {
 				d.allConfigs = append(d.allConfigs, model.NewConfigWithRows(apiConfig))
@@ -152,17 +149,11 @@ func (d *createTmplDialog) ask() (createTemplate.Options, error) {
 	d.out.StepsGroups = stepsGroups
 
 	// Ask for list of used components
-	var usedComponents []string
 	if d.deps.Options().IsSet(`used-components`) {
-		usedComponents = strings.Split(d.deps.Options().GetString(`used-components`), `,`)
+		d.out.Components = strings.Split(d.deps.Options().GetString(`used-components`), `,`)
 	} else {
-		if components, err := d.deps.Components(); err == nil {
-			usedComponents = d.askComponents(components.Used())
-		} else {
-			return d.out, err
-		}
+		d.out.Components = d.askComponents(d.deps.Components().Used())
 	}
-	d.out.Components = usedComponents
 
 	return d.out, nil
 }

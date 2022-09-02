@@ -1,25 +1,24 @@
 package init
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 type dependencies interface {
 	Logger() log.Logger
-	StorageApiToken() (string, error)
+	Options() *options.Options
 }
 
-func Run(fs filesystem.Fs, d dependencies) (err error) {
+func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (err error) {
 	logger := d.Logger()
 
 	// Get Storage API token
-	token, err := d.StorageApiToken()
-	if err != nil {
-		return err
-	}
+	token := d.Options().GetString(options.StorageApiTokenOpt)
 
 	// .env.local - with token value
 	envLocalMsg := " - it contains the API token, keep it local and secret"

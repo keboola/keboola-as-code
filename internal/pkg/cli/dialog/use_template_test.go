@@ -27,10 +27,8 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewTestContainer()
-	d.SetFs(testfs.MinimalProjectFs(t))
-	d.UseMockedStorageApi()
-	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	d := dependencies.NewMockedDeps()
+	projectState, err := d.MockedProject(testfs.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
 	// Set fake file editor
@@ -274,10 +272,8 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewTestContainer()
-	d.SetFs(testfs.MinimalProjectFs(t))
-	d.UseMockedStorageApi()
-	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	d := dependencies.NewMockedDeps()
+	projectState, err := d.MockedProject(testfs.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
 	// Set fake file editor
@@ -412,10 +408,8 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewTestContainer()
-	d.SetFs(testfs.MinimalProjectFs(t))
-	d.UseMockedStorageApi()
-	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	d := dependencies.NewMockedDeps()
+	projectState, err := d.MockedProject(testfs.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
 	// Run
@@ -593,13 +587,11 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
-	d := dependencies.NewTestContainer()
-	d.SetFs(testfs.MinimalProjectFs(t))
+	d := dependencies.NewMockedDeps()
 	d.Options().Set("branch", "123") // see MinimalProjectFs
 	d.Options().Set("instance-name", "My Instance")
 	d.Options().Set("inputs-file", inputsFilePath)
-	d.UseMockedStorageApi()
-	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	projectState, err := d.MockedProject(testfs.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
 	// Run
@@ -689,13 +681,11 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
-	d := dependencies.NewTestContainer()
-	d.SetFs(testfs.MinimalProjectFs(t))
+	d := dependencies.NewMockedDeps()
 	d.Options().Set("branch", "123") // see MinimalProjectFs
 	d.Options().Set("instance-name", "My Instance")
 	d.Options().Set("inputs-file", inputsFilePath)
-	d.UseMockedStorageApi()
-	projectState, err := d.LocalProjectState(loadState.Options{LoadLocalState: true})
+	projectState, err := d.MockedProject(testfs.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
 	// Run

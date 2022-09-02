@@ -13,10 +13,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
-func createStateWithMapper(t *testing.T) (*state.State, *dependencies.TestContainer) {
+func createStateWithMapper(t *testing.T) (*state.State, dependencies.Mocked) {
 	t.Helper()
-	d := dependencies.NewTestContainer()
-	mockedState := d.EmptyState()
+	d := dependencies.NewMockedDeps()
+	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(links.NewMapper(mockedState))
 	return mockedState, d
 }

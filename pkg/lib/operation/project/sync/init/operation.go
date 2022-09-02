@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/client"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -26,18 +27,18 @@ type Options struct {
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
-	Components() (*model.ComponentsMap, error)
-	StorageApiHost() (string, error)
-	StorageApiToken() (string, error)
-	ProjectID() (int, error)
-	StorageApiClient() (client.Sender, error)
-	SchedulerApiClient() (client.Sender, error)
+	Options() *options.Options
+	Components() *model.ComponentsMap
+	StorageApiHost() string
+	ProjectID() int
+	StorageApiClient() client.Sender
+	SchedulerApiClient() client.Sender
+	EncryptionApiClient() client.Sender
 	EmptyDir() (filesystem.Fs, error)
 }
 
-func Run(o Options, d dependencies) (err error) {
+func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	logger := d.Logger()
 
 	fs, err := d.EmptyDir()
@@ -46,18 +47,18 @@ func Run(o Options, d dependencies) (err error) {
 	}
 
 	// Create metadata dir
-	if err := createMetaDir.Run(fs, d); err != nil {
+	if err := createMetaDir.Run(ctx, fs, d); err != nil {
 		return err
 	}
 
 	// Create manifest
-	manifest, err := createManifest.Run(fs, o.ManifestOptions, d)
+	manifest, err := createManifest.Run(ctx, fs, o.ManifestOptions, d)
 	if err != nil {
 		return fmt.Errorf(`cannot create manifest: %w`, err)
 	}
 
 	// Create ENV files
-	if err := createEnvFiles.Run(fs, d); err != nil {
+	if err := createEnvFiles.Run(ctx, fs, d); err != nil {
 		return err
 	}
 
@@ -77,15 +78,15 @@ func Run(o Options, d dependencies) (err error) {
 		logger.Info(`Running pull.`)
 
 		// Load project state
-		prj := project.NewWithManifest(fs, manifest, d)
-		projectState, err := prj.LoadState(loadState.InitOptions(o.Pull))
+		prj := project.NewWithManifest(ctx, fs, manifest)
+		projectState, err := prj.LoadState(loadState.InitOptions(o.Pull), d)
 		if err != nil {
 			return err
 		}
 
 		// Pull
 		pullOptions := pull.Options{DryRun: false, LogUntrackedPaths: false}
-		if err := pull.Run(projectState, pullOptions, d); err != nil {
+		if err := pull.Run(ctx, projectState, pullOptions, d); err != nil {
 			errors.Append(utils.PrefixError(`pull failed`, err))
 		}
 	}

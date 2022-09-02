@@ -29,24 +29,20 @@ type branchesDialog struct {
 }
 
 type branchesDialogDeps interface {
-	Ctx() context.Context
 	Options() *options.Options
-	StorageApiClient() (client.Sender, error)
+	StorageApiClient() client.Sender
 }
 
-func (p *Dialogs) AskAllowedBranches(deps branchesDialogDeps) (model.AllowedBranches, error) {
-	return (&branchesDialog{Dialogs: p, deps: deps}).ask()
+func (p *Dialogs) AskAllowedBranches(ctx context.Context, deps branchesDialogDeps) (model.AllowedBranches, error) {
+	return (&branchesDialog{Dialogs: p, deps: deps}).ask(ctx)
 }
 
-func (d *branchesDialog) ask() (model.AllowedBranches, error) {
+func (d *branchesDialog) ask(ctx context.Context) (model.AllowedBranches, error) {
 	// Get Storage API
-	storageApiClient, err := d.deps.StorageApiClient()
-	if err != nil {
-		return nil, err
-	}
+	storageApiClient := d.deps.StorageApiClient()
 
 	// List all branches
-	if v, err := storageapi.ListBranchesRequest().Send(d.deps.Ctx(), storageApiClient); err == nil {
+	if v, err := storageapi.ListBranchesRequest().Send(ctx, storageApiClient); err == nil {
 		for _, apiBranch := range *v {
 			d.allBranches = append(d.allBranches, model.NewBranch(apiBranch))
 		}

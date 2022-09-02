@@ -1,6 +1,7 @@
 package dialog_test
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
@@ -20,24 +21,12 @@ import (
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/init"
 )
 
-func TestAskInitOptions(t *testing.T) {
+func TestDialogs_AskHostAndToken(t *testing.T) {
 	t.Parallel()
 
 	// testDependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewTestContainer()
-	_, httpTransport := d.UseMockedStorageApi()
-
-	branches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}
-	httpTransport.RegisterResponder(
-		"GET", `=~/storage/dev-branches`,
-		httpmock.NewJsonResponderOrPanic(200, branches),
-	)
-
-	// Default values are defined by options
-	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
-	ci.WorkflowsCmdFlags(flags)
-	assert.NoError(t, d.Options().BindPFlags(flags))
+	opts := options.New()
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -65,7 +54,47 @@ func TestAskInitOptions(t *testing.T) {
 		_, err = console.SendLine(`my-secret-token`)
 		assert.NoError(t, err)
 
-		_, err = console.ExpectString("Allowed project's branches:")
+		_, err = console.ExpectEOF()
+		assert.NoError(t, err)
+	}()
+
+	// Run
+	err := dialog.AskHostAndToken(opts)
+	assert.NoError(t, err)
+	assert.NoError(t, console.Tty().Close())
+	wg.Wait()
+	assert.NoError(t, console.Close())
+
+	// Assert
+	assert.Equal(t, `foo.bar.com`, opts.Get(options.StorageApiHostOpt))
+	assert.Equal(t, `my-secret-token`, opts.Get(options.StorageApiTokenOpt))
+}
+
+func TestDialogs_AskInitOptions(t *testing.T) {
+	t.Parallel()
+
+	// testDependencies
+	dialog, console := createDialogs(t, true)
+	d := dependencies.NewMockedDeps()
+
+	branches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}
+	d.MockedHttpTransport().RegisterResponder(
+		"GET", `=~/storage/dev-branches`,
+		httpmock.NewJsonResponderOrPanic(200, branches),
+	)
+
+	// Default values are defined by options
+	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
+	ci.WorkflowsCmdFlags(flags)
+	assert.NoError(t, d.Options().BindPFlags(flags))
+
+	// Interaction
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		_, err := console.ExpectString("Allowed project's branches:")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
@@ -112,15 +141,13 @@ func TestAskInitOptions(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := dialog.AskInitOptions(d)
+	opts, err := dialog.AskInitOptions(context.Background(), d)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
 	assert.NoError(t, console.Close())
 
 	// Assert
-	assert.Equal(t, `foo.bar.com`, d.Options().Get(options.StorageApiHostOpt))
-	assert.Equal(t, `my-secret-token`, d.Options().Get(options.StorageApiTokenOpt))
 	assert.Equal(t, initOp.Options{
 		Pull: true,
 		ManifestOptions: createManifest.Options{

@@ -16,7 +16,6 @@ import (
 func TestSchedulerMapperRemoteDeactivate(t *testing.T) {
 	t.Parallel()
 	state, d := createStateWithMapper(t)
-	_, httpTransport := d.UseMockedSchedulerApi()
 	logger := d.DebugLogger()
 
 	// Branch
@@ -52,7 +51,7 @@ func TestSchedulerMapperRemoteDeactivate(t *testing.T) {
 
 	// Expected HTTP call
 	var httpRequest *http.Request
-	httpTransport.RegisterResponder(resty.MethodDelete, `=~configurations/456`,
+	d.MockedHttpTransport().RegisterResponder(resty.MethodDelete, `=~configurations/456`,
 		func(req *http.Request) (*http.Response, error) {
 			httpRequest = req
 			return httpmock.NewStringResponse(200, `{"id": "789"}`), nil

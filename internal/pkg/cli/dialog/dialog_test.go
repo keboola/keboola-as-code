@@ -6,7 +6,6 @@ import (
 
 	"github.com/Netflix/go-expect"
 	"github.com/jarcoal/httpmock"
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
@@ -16,13 +15,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
-func mockedStorageApi(branches []*storageapi.Branch) client.Client {
-	storageApiClient, httpTransport := client.NewMockedClient()
+func registerMockedBranchesResponse(httpTransport *httpmock.MockTransport, branches []*storageapi.Branch) {
 	httpTransport.RegisterResponder(
 		"GET", `=~/storage/dev-branches`,
 		httpmock.NewJsonResponderOrPanic(200, branches),
 	)
-	return storageApiClient
 }
 
 func createDialogs(t *testing.T, interactive bool) (*dialog.Dialogs, *expect.Console) {

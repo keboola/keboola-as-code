@@ -1,6 +1,8 @@
 package rename
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/rename"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -17,7 +19,7 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(projectState *project.State, o Options, d dependencies) (changed bool, err error) {
+func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (changed bool, err error) {
 	logger := d.Logger()
 
 	// Get plan
@@ -44,7 +46,7 @@ func Run(projectState *project.State, o Options, d dependencies) (changed bool, 
 		}
 
 		// Save manifest
-		if _, err := saveManifest.Run(projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
+		if _, err := saveManifest.Run(ctx, projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
 			return false, err
 		}
 

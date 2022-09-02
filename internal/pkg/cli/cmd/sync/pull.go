@@ -19,13 +19,17 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`sync/pull/short`),
 		Long:  helpmsg.Read(`sync/pull/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			d := p.Dependencies()
 			start := time.Now()
-			logger := d.Logger()
+			publicDeps, err := p.DependenciesForLocalCommand()
+			if err != nil {
+				return err
+			}
 
-			// Load project state
-			force := d.Options().GetBool(`force`)
-			prj, err := d.LocalProject(force)
+			logger := publicDeps.Logger()
+			force := publicDeps.Options().GetBool(`force`)
+
+			// Command must be used in project directory
+			prj, _, err := publicDeps.LocalProject(force)
 			if err != nil {
 				if !force && errors.As(err, &project.InvalidManifestError{}) {
 					logger.Info()
@@ -33,7 +37,15 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 				}
 				return err
 			}
-			projectState, err := prj.LoadState(loadState.PullOptions(force))
+
+			// Authentication
+			prjDeps, err := p.DependenciesForRemoteCommand()
+			if err != nil {
+				return err
+			}
+
+			// Load project state
+			projectState, err := prj.LoadState(loadState.PullOptions(force), prjDeps)
 			if err != nil {
 				if !force && errors.As(err, &loadState.InvalidLocalStateError{}) {
 					logger.Info()
@@ -44,19 +56,15 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 
 			// Options
 			options := pull.Options{
-				DryRun:            d.Options().GetBool(`dry-run`),
+				DryRun:            prjDeps.Options().GetBool(`dry-run`),
 				LogUntrackedPaths: true,
 			}
 
 			// Send cmd successful/failed event
-			if eventSender, err := d.EventSender(); err == nil {
-				defer func() { eventSender.SendCmdEvent(d.Ctx(), start, cmdErr, "sync-pull") }()
-			} else {
-				return err
-			}
+			defer func() { prjDeps.EventSender().SendCmdEvent(prjDeps.CommandCtx(), start, cmdErr, "sync-pull") }()
 
 			// Pull
-			return pull.Run(projectState, options, d)
+			return pull.Run(prjDeps.CommandCtx(), projectState, options, prjDeps)
 		},
 	}
 

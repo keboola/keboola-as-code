@@ -20,12 +20,12 @@ type Sender struct {
 	projectId int
 }
 
-func NewSender(logger log.Logger, client client.Sender, projectId int) *Sender {
-	return &Sender{logger: logger, client: client, projectId: projectId}
+func NewSender(logger log.Logger, client client.Sender, projectId int) Sender {
+	return Sender{logger: logger, client: client, projectId: projectId}
 }
 
 // SendCmdEvent sends failed event if an error occurred, otherwise it sends successful event.
-func (s *Sender) SendCmdEvent(ctx context.Context, cmdStart time.Time, err error, cmd string) {
+func (s Sender) SendCmdEvent(ctx context.Context, cmdStart time.Time, err error, cmd string) {
 	// Catch panic
 	panicErr := recover()
 	if panicErr != nil {
@@ -49,7 +49,7 @@ func (s *Sender) SendCmdEvent(ctx context.Context, cmdStart time.Time, err error
 }
 
 // sendCmdSuccessful send command successful event.
-func (s *Sender) sendCmdSuccessfulEvent(ctx context.Context, cmdStart time.Time, cmd, msg string) {
+func (s Sender) sendCmdSuccessfulEvent(ctx context.Context, cmdStart time.Time, cmd, msg string) {
 	duration := time.Since(cmdStart)
 	params := map[string]interface{}{
 		"command": cmd,
@@ -73,7 +73,7 @@ func (s *Sender) sendCmdSuccessfulEvent(ctx context.Context, cmdStart time.Time,
 }
 
 // sendCmdFailed send command failed event.
-func (s *Sender) sendCmdFailedEvent(ctx context.Context, cmdStart time.Time, err error, cmd, msg string) {
+func (s Sender) sendCmdFailedEvent(ctx context.Context, cmdStart time.Time, err error, cmd, msg string) {
 	duration := time.Since(cmdStart)
 	params := map[string]interface{}{
 		"command": cmd,

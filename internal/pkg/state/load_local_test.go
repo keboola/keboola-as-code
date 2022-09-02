@@ -1,6 +1,7 @@
 package state_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -239,11 +240,7 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (*
 	t.Helper()
 
 	// Mocked API response
-	d := dependencies.NewTestContainer()
-	d.SetFs(fs)
-	d.SetLocalProject(project.NewWithManifest(d.Fs(), m, d))
-	d.UseMockedSchedulerApi()
-	_, httpTransport := d.UseMockedStorageApi()
+	d := dependencies.NewMockedDeps()
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
 		"id":                     "ex-generic-v2",
 		"type":                   "extractor",
@@ -260,13 +257,12 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (*
 		"configurationRowSchema": map[string]interface{}{},
 	})
 	assert.NoError(t, err)
-	httpTransport.RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
-	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
+	d.MockedHttpTransport().RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
+	d.MockedHttpTransport().RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
 
 	// Load state
-	prj, err := d.LocalProject(false)
 	assert.NoError(t, err)
-	state, err := New(prj, d)
+	state, err := New(project.NewWithManifest(context.Background(), fs, m), d)
 	assert.NoError(t, err)
 	filter := m.Filter()
 	_, localErr, remoteErr := state.Load(LoadOptions{LocalFilter: filter, LoadLocalState: true})

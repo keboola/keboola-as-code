@@ -16,14 +16,14 @@ func PersistCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/persist/short`),
 		Long:  helpmsg.Read(`local/persist/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			d := p.Dependencies()
-
-			// Load project state
-			prj, err := d.LocalProject(false)
+			// Command must be used in project directory
+			prj, d, err := p.LocalProject(false)
 			if err != nil {
 				return err
 			}
-			projectState, err := prj.LoadState(loadState.PersistOptions())
+
+			// Load project state
+			projectState, err := prj.LoadState(loadState.PersistOptions(), d)
 			if err != nil {
 				return err
 			}
@@ -35,7 +35,7 @@ func PersistCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Persist
-			return persist.Run(projectState, options, d)
+			return persist.Run(d.CommandCtx(), projectState, options, d)
 		},
 	}
 

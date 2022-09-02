@@ -18,10 +18,9 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/create/short`),
 		Long:  helpmsg.Read(`local/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := p.Dependencies()
-
-			// Project is required
-			if _, err := d.LocalProject(false); err != nil {
+			// Command must be used in project directory
+			_, d, err := p.LocalProject(false)
+			if err != nil {
 				return err
 			}
 
@@ -49,14 +48,14 @@ func CreateConfigCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/create/config/short`),
 		Long:  helpmsg.Read(`local/create/config/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := p.Dependencies()
-
-			// Load project state
-			prj, err := d.LocalProject(false)
+			// Command must be used in project directory
+			prj, d, err := p.LocalProject(false)
 			if err != nil {
 				return err
 			}
-			projectState, err := prj.LoadState(loadState.LocalOperationOptions())
+
+			// Load project state
+			projectState, err := prj.LoadState(loadState.LocalOperationOptions(), d)
 			if err != nil {
 				return err
 			}
@@ -68,7 +67,7 @@ func CreateConfigCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Create config
-			return createConfig.Run(projectState, options, d)
+			return createConfig.Run(d.CommandCtx(), projectState, options, d)
 		},
 	}
 
@@ -86,14 +85,14 @@ func CreateRowCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/create/row/short`),
 		Long:  helpmsg.Read(`local/create/row/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d := p.Dependencies()
-
-			// Load project state
-			prj, err := d.LocalProject(false)
+			// Command must be used in project directory
+			prj, d, err := p.LocalProject(false)
 			if err != nil {
 				return err
 			}
-			projectState, err := prj.LoadState(loadState.LocalOperationOptions())
+
+			// Load project state
+			projectState, err := prj.LoadState(loadState.LocalOperationOptions(), d)
 			if err != nil {
 				return err
 			}
@@ -105,7 +104,7 @@ func CreateRowCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Create row
-			return createRow.Run(projectState, options, d)
+			return createRow.Run(d.CommandCtx(), projectState, options, d)
 		},
 	}
 

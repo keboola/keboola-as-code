@@ -23,19 +23,17 @@ type Options struct {
 }
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
-	ProjectID() (int, error)
-	EncryptionApiClient() (client.Sender, error)
+	ProjectID() int
+	EncryptionApiClient() client.Sender
 }
 
-func Run(projectState *project.State, o Options, d dependencies) error {
-	ctx := d.Ctx()
+func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) error {
 	logger := d.Logger()
 
 	// Encrypt before push?
 	if o.Encrypt {
-		if err := encrypt.Run(projectState, encrypt.Options{DryRun: o.DryRun, LogEmpty: true}, d); err != nil {
+		if err := encrypt.Run(ctx, projectState, encrypt.Options{DryRun: o.DryRun, LogEmpty: true}, d); err != nil {
 			return err
 		}
 	}
@@ -54,13 +52,13 @@ func Run(projectState *project.State, o Options, d dependencies) error {
 			ValidateSecrets:    !o.Encrypt || !o.DryRun,
 			ValidateJsonSchema: true,
 		}
-		if err := validate.Run(projectState, validateOptions, d); err != nil {
+		if err := validate.Run(ctx, projectState, validateOptions, d); err != nil {
 			return err
 		}
 	}
 
 	// Diff
-	results, err := createDiff.Run(createDiff.Options{Objects: projectState})
+	results, err := createDiff.Run(ctx, createDiff.Options{Objects: projectState})
 	if err != nil {
 		return err
 	}

@@ -22,9 +22,8 @@ func TestValidateState(t *testing.T) {
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", `456`)
 
 	// Container
-	d := dependencies.NewTestContainer()
-	state := d.EmptyState()
-	_, httpTransport := d.UseMockedStorageApi()
+	d := dependencies.NewMockedDeps()
+	state := d.MockedState()
 
 	// Mocked component response
 	getGenericExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
@@ -33,7 +32,7 @@ func TestValidateState(t *testing.T) {
 		"name": "Foo",
 	})
 	assert.NoError(t, err)
-	httpTransport.RegisterResponder("GET", `=~/storage/components/keboola.foo`, getGenericExResponder)
+	d.MockedHttpTransport().RegisterResponder("GET", `=~/storage/components/keboola.foo`, getGenericExResponder)
 
 	// Add invalid objects
 	branchKey := model.BranchKey{Id: 456}

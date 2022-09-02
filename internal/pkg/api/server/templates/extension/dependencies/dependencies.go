@@ -28,11 +28,23 @@ func generate(_ string, roots []eval.Root, files []*codegen.File) ([]*codegen.Fi
 					addPackageImport(s)
 				case "service":
 					// Add dependencies to the service interface, instead of context (it is included in dependencies)
-					s.Source = strings.ReplaceAll(
-						s.Source,
-						"{{ .VarName }}(context.Context",
-						"{{ .VarName }}(dependencies.Container",
-					)
+					search := `{{ .VarName }}(context.Context`
+					replace := `{{ .VarName }}(
+{{- $authFound := false}}
+{{- range .Requirements }}
+	{{- range .Schemes }}
+		{{- if eq .Type "APIKey" -}}
+			dependencies.ForProjectRequest
+			{{- $authFound = true}}
+			{{- break}}
+		{{- end }}
+	{{- end }}
+{{- end }}
+{{- if eq $authFound false -}}
+dependencies.ForPublicRequest
+{{- end -}}
+`
+					s.Source = strings.ReplaceAll(s.Source, search, replace)
 				}
 			}
 		case "endpoints.go":
@@ -42,11 +54,33 @@ func generate(_ string, roots []eval.Root, files []*codegen.File) ([]*codegen.Fi
 					// Import dependencies package
 					addPackageImport(s)
 				case "endpoint-method":
+
+					search := `
+{{- if .ServerStream }}
+`
+					replace := `
+{{- $authFound := false}}
+{{- range .Requirements }}
+	{{- range .Schemes }}
+		{{- if eq .Type "APIKey" }}
+			deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+			{{- $authFound = true}}
+			{{- break}}
+		{{- end }}
+	{{- end }}
+{{- end }}
+{{- if eq $authFound false }}
+	deps := ctx.Value(dependencies.ForPublicRequestCtxKey).(dependencies.ForPublicRequest)
+{{- end }}
+{{- if .ServerStream }}
+`
+					s.Source = strings.ReplaceAll(s.Source, search, replace)
+
 					// Add dependencies to the service method call, instead of context (it is included in dependencies)
 					s.Source = strings.ReplaceAll(
 						s.Source,
 						"s.{{ .VarName }}(ctx",
-						"s.{{ .VarName }}(ctx.Value(dependencies.CtxKey).(dependencies.Container)",
+						"s.{{ .VarName }}(deps",
 					)
 				}
 			}

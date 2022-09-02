@@ -1,6 +1,7 @@
 package create
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -11,7 +12,7 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(fs filesystem.Fs, d dependencies) error {
+func Run(_ context.Context, fs filesystem.Fs, d dependencies) error {
 	if err := fs.Mkdir(filesystem.MetadataDir); err != nil {
 		return fmt.Errorf("cannot create metadata directory \"%s\": %w", filesystem.MetadataDir, err)
 	}

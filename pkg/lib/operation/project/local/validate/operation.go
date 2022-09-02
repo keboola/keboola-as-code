@@ -1,6 +1,8 @@
 package validate
 
 import (
+	"context"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/json/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/encrypt"
@@ -17,7 +19,7 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(projectState *project.State, o Options, d dependencies) (err error) {
+func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
 	logger := d.Logger()
 
 	// Validate schemas

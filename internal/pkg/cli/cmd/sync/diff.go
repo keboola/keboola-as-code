@@ -15,15 +15,14 @@ func DiffCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`sync/diff/short`),
 		Long:  helpmsg.Read(`sync/diff/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			d := p.Dependencies()
-			logger := d.Logger()
-
-			// Load project state
-			prj, err := d.LocalProject(false)
+			// Command must be used in project directory
+			prj, d, err := p.LocalProject(false)
 			if err != nil {
 				return err
 			}
-			projectState, err := prj.LoadState(loadState.DiffOptions())
+
+			// Load project state
+			projectState, err := prj.LoadState(loadState.DiffOptions(), d)
 			if err != nil {
 				return err
 			}
@@ -35,13 +34,14 @@ func DiffCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Print diff
-			results, err := printDiff.Run(projectState, options, d)
+			results, err := printDiff.Run(d.CommandCtx(), projectState, options, d)
 			if err != nil {
 				return err
 			}
 
 			// Print info about --details flag
 			if !options.PrintDetails && results.HasNotEqualResult {
+				logger := d.Logger()
 				logger.Info()
 				logger.Info(`Use --details flag to list the changed fields.`)
 			}

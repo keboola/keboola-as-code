@@ -15,14 +15,14 @@ func ValidateCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`local/validate/short`),
 		Long:  helpmsg.Read(`local/validate/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			d := p.Dependencies()
-
-			// Load project state
-			prj, err := d.LocalProject(false)
+			// Command must be used in project directory
+			prj, d, err := p.LocalProject(false)
 			if err != nil {
 				return err
 			}
-			projectState, err := prj.LoadState(loadState.LocalOperationOptions())
+
+			// Load project state
+			projectState, err := prj.LoadState(loadState.LocalOperationOptions(), d)
 			if err != nil {
 				return err
 			}
@@ -34,7 +34,7 @@ func ValidateCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Validate
-			if err := validate.Run(projectState, options, d); err != nil {
+			if err := validate.Run(d.CommandCtx(), projectState, options, d); err != nil {
 				return err
 			}
 

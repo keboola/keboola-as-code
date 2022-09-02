@@ -10,12 +10,11 @@ import (
 )
 
 type dependencies interface {
-	Ctx() context.Context
 	Logger() log.Logger
 	EmptyDir() (filesystem.Fs, error)
 }
 
-func Run(d dependencies) (err error) {
+func Run(ctx context.Context, d dependencies) (err error) {
 	logger := d.Logger()
 
 	// Empty dir
@@ -25,12 +24,12 @@ func Run(d dependencies) (err error) {
 	}
 
 	// Create metadata dir
-	if err := createMetaDir.Run(emptyDir, d); err != nil {
+	if err := createMetaDir.Run(ctx, emptyDir, d); err != nil {
 		return err
 	}
 
 	// Create manifest
-	if _, err := createRepositoryManifest.Run(emptyDir, d); err != nil {
+	if _, err := createRepositoryManifest.Run(ctx, emptyDir, d); err != nil {
 		return err
 	}
 

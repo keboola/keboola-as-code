@@ -14,9 +14,9 @@ import (
 
 func TestConfigMetadataMapper_MapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewTestContainer()
+	d := dependencies.NewMockedDeps()
 	logger := d.DebugLogger()
-	mockedState := d.EmptyState()
+	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(branchmetadata.NewMapper(mockedState, d))
 
 	branchKey := model.BranchKey{Id: 123}

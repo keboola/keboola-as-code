@@ -17,8 +17,8 @@ import (
 
 func TestLoadCoreFiles(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
-	fs := d.Fs()
+	state, _ := createStateWithMapper(t)
+	fs := state.ObjectsRoot()
 
 	metaFile := `{
   "myKey": "3",
@@ -37,7 +37,7 @@ func TestLoadCoreFiles(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(state.NamingGenerator().ConfigFilePath(manifest.Path()), configFile)))
 
 	// Call mapper
-	recipe := model.NewLocalLoadRecipe(d.FileLoader(), manifest, object)
+	recipe := model.NewLocalLoadRecipe(state.FileLoader(), manifest, object)
 	assert.NoError(t, state.Mapper().MapAfterLocalLoad(context.Background(), recipe))
 
 	// Values are loaded and set
@@ -57,8 +57,8 @@ func TestLoadCoreFiles(t *testing.T) {
 
 func TestLoadCoreFiles_SkipChildrenLoadIfParentIsInvalid(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
-	fs := d.Fs()
+	state, _ := createStateWithMapper(t)
+	fs := state.ObjectsRoot()
 	manager := state.LocalManager()
 	manifest := manager.Manifest().(*fixtures.Manifest)
 	uow := manager.NewUnitOfWork(context.Background())
