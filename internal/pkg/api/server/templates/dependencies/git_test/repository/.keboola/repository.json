@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "author": {
+    "name": "Example Author",
+    "url": "https://example.com"
+  },
+  "templates": [
+    {
+      "id": "template1",
+      "name": "Template 1",
+      "description": "My Template Description",
+      "path": "template1",
+      "versions": [
+        {
+          "version": "1.0.3",
+          "description": "Version 1",
+          "stable": true,
+          "path": "v1"
+        }
+      ]
+    }
+  ]
+}
