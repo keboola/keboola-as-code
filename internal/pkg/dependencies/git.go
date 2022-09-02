@@ -27,15 +27,23 @@ func gitRepositoryFs(ctx context.Context, definition model.TemplateRepository, t
 		return nil, err
 	}
 
-	// Clear temp directory at the end.
-	// Files will be copied to memory.
-	defer gitRepository.Clear()
+	// Clear directory at the end. Files will be copied to memory.
+	defer func() {
+		<-gitRepository.Free()
+	}()
 
-	// Load repository manifest
+	// Add repository manifest to sparse git repository
 	if err := gitRepository.Load(ctx, ".keboola/repository.json"); err != nil {
 		return nil, err
 	}
-	repoManifest, err := repository.LoadManifest(gitRepository.Fs())
+
+	// Get repository FS
+	// WorkingFs() is used, because we are going to add more dirs the sparse repository.
+	// And it would be pointless to call Fs() after every change to get the actual version of the repository.
+	fs := gitRepository.WorkingFs()
+
+	// Load repository manifest
+	repoManifest, err := repository.LoadManifest(fs)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +63,7 @@ func gitRepositoryFs(ctx context.Context, definition model.TemplateRepository, t
 	if err := gitRepository.Load(ctx, srcDir); err != nil {
 		return nil, err
 	}
-	if !gitRepository.Fs().Exists(srcDir) {
+	if !fs.Exists(srcDir) {
 		e := utils.NewMultiError()
 		e.Append(fmt.Errorf(`searched in git repository "%s"`, gitRepository.Url()))
 		e.Append(fmt.Errorf(`reference "%s"`, gitRepository.Ref()))
@@ -72,7 +80,7 @@ func gitRepositoryFs(ctx context.Context, definition model.TemplateRepository, t
 	if err != nil {
 		return nil, err
 	}
-	if err := aferofs.CopyFs2Fs(gitRepository.Fs(), "", memoryFs, ""); err != nil {
+	if err := aferofs.CopyFs2Fs(fs, "", memoryFs, ""); err != nil {
 		return nil, err
 	}
 	return memoryFs, nil
