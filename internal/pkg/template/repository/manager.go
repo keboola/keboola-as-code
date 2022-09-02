@@ -92,17 +92,34 @@ func (m *Manager) AddRepository(repositoryDef model.TemplateRepository) error {
 	return nil
 }
 
-func (m *Manager) Pull() {
+func (m *Manager) Pull() <-chan error {
+	errorCh := make(chan error)
+	errors := utils.NewMultiError()
+
+	// Pull repositories in parallel
+	wg := &sync.WaitGroup{}
 	for _, repo := range m.repositories {
 		repo := repo
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			ctx, cancel := context.WithTimeout(m.ctx, OperationTimeout)
 			defer cancel()
 			if err := pullRepo(ctx, m.logger, repo); err != nil {
-				m.logger.Errorf(`error while updating the repository "%s": %w`, repo, err)
+				errors.Append(err)
+				m.logger.Errorf(`error while updating repository "%s": %w`, repo, err)
 			}
 		}()
 	}
+
+	// Write error to channel if any
+	go func() {
+		wg.Wait()
+		errorCh <- errors.ErrorOrNil()
+	}()
+
+	return errorCh
+}
 }
 
 func pullRepo(ctx context.Context, logger log.Logger, repo *git.Repository) error {
