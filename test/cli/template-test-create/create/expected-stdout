@@ -1,0 +1,4 @@
+New objects from "keboola/my-template/0.0.1" template:
+  + C main/extractor/ex-generic-v2/empty
+Template "keboola/my-template/0.0.1" has been applied, instance ID: %s
+The test was created in folder tests/one.
