@@ -48,11 +48,13 @@ Available Commands:
   template list                  List templates in the repository.
   template describe              Describe template and its inputs.
   template create                Create template in repository directory.
-  template test                  Test template.
   template repository            Manage the repository directory.
   template repository init       Init a new repository directory.
   template repository validate   Validate all templates. NOT IMPLEMENTED
   template repository fix-paths  Ensure that all paths match configured naming. NOT IMPLEMENTED
+  template test                  Manage template tests.
+  template test create           Create template test.
+  template test run              Run template test.
 
   help                           Help about any command
 
@@ -68,6 +70,7 @@ Aliases:
   local template use   use
   template             t
   template repository  r, repo
+  template test run    template test
 
 Flags:
   -h, --help                       print help for command

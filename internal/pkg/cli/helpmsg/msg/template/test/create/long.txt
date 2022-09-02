@@ -1,0 +1,1 @@
+Create template test by applying template to an empty project folder and asking for inputs.

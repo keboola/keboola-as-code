@@ -1,1 +1,1 @@
-Test template.
+Manage template tests.

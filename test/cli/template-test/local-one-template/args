@@ -1,1 +1,1 @@
-template test my-template 0.0.1 --local-only --verbose
+template test run my-template 0.0.1 --local-only --verbose

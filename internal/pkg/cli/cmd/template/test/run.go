@@ -1,4 +1,4 @@
-package template
+package test
 
 import (
 	"github.com/spf13/cobra"
@@ -7,14 +7,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	testOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test"
+	testOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test/run"
 )
 
-func TestCommand(p dependencies.Provider) *cobra.Command {
+func RunCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "test [template] [version]",
-		Short: helpmsg.Read(`template/test/short`),
-		Long:  helpmsg.Read(`template/test/long`),
+		Use:   "run [template] [version]",
+		Short: helpmsg.Read(`template/test/run/short`),
+		Long:  helpmsg.Read(`template/test/run/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			d, err := p.DependenciesForLocalCommand()
 			if err != nil {

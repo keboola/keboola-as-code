@@ -1,1 +1,0 @@
-Test template by applying it to an empty project folder and checking that the operation succeeded.

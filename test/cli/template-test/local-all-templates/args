@@ -1,1 +1,1 @@
-template test --local-only
+template test run --local-only

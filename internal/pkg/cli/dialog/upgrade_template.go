@@ -23,7 +23,7 @@ type upgradeTmplDeps interface {
 	Options() *options.Options
 }
 
-// AskUpgradeTemplateOptions - dialog for deleting a template from the project.
+// AskUpgradeTemplateOptions - dialog for updating a template to a new version.
 func (p *Dialogs) AskUpgradeTemplateOptions(d upgradeTmplDeps, projectState *state.State, branchKey model.BranchKey, instance model.TemplateInstance, groups template.StepsGroups) (upgradeTemplate.Options, error) {
 	groupsExt := upgrade.ExportInputsValues(d.Logger().DebugWriter(), projectState, branchKey, instance.InstanceId, groups)
 	dialog := &upgradeTmplDialog{Dialogs: p, groups: groupsExt, options: d.Options()}
