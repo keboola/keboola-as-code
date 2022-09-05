@@ -51,7 +51,10 @@ type ctxKey string
 
 const ForPublicRequestCtxKey = ctxKey("ForPublicRequest")
 const ForProjectRequestCtxKey = ctxKey("ForProjectRequest")
-const EtcdTestConnectionTimeout = 1 * time.Second
+const EtcdConnectionTimeoutCtxKey = ctxKey("EtcdConnectionTimeout")
+const EtcdDefaultConnectionTimeout = 2 * time.Second
+const EtcdKeepAliveTimeout = 2 * time.Second
+const EtcdKeepAliveInterval = 10 * time.Second
 
 // ForServer interface provides dependencies for Templates API server.
 // The container exists during the entire run of the API server.
@@ -62,7 +65,7 @@ type ForServer interface {
 	ServerWaitGroup() *sync.WaitGroup
 	PrefixLogger() log.PrefixLogger
 	RepositoryManager() *repository.Manager
-	EtcdClient() (*etcd.Client, error)
+	EtcdClient(ctx context.Context) (*etcd.Client, error)
 }
 
 // ForPublicRequest interface provides dependencies for a public request that does not contain the Storage API token.
@@ -147,7 +150,9 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	}
 
 	// Test connection to etcd at server startup
-	if _, err := d.EtcdClient(); err != nil {
+	// We use a longer timeout when starting the server, because ETCD could be restarted at the same time as the API.
+	etcdCtx := context.WithValue(serverCtx, EtcdConnectionTimeoutCtxKey, 30*time.Second)
+	if _, err := d.EtcdClient(etcdCtx); err != nil {
 		d.Logger().Warnf("cannot connect to etcd: %s", err.Error())
 	}
 
@@ -196,7 +201,7 @@ func (v *forServer) RepositoryManager() *repository.Manager {
 	return v.repositoryManager
 }
 
-func (v *forServer) EtcdClient() (*etcd.Client, error) {
+func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 	return v.etcdClient.InitAndGet(func() (*etcd.Client, error) {
 		// Check if etcd is enabled
 		if v.Envs().Get("ETCD_ENABLED") == "false" {
@@ -209,13 +214,21 @@ func (v *forServer) EtcdClient() (*etcd.Client, error) {
 			return nil, fmt.Errorf("ETCD_HOST is not set")
 		}
 
+		// Get timeout
+		connectTimeout := EtcdDefaultConnectionTimeout
+		if v, found := ctx.Value(EtcdConnectionTimeoutCtxKey).(time.Duration); found {
+			connectTimeout = v
+		}
+
 		// Create client
+		startTime := time.Now()
+		v.logger.Infof("connecting to etcd, timeout=%s", connectTimeout)
 		c, err := etcd.New(etcd.Config{
-			Context:              v.serverCtx,
+			Context:              v.serverCtx, // !!! a long-lived context must be used, client exists as long as the entire server
 			Endpoints:            []string{endpoint},
-			DialTimeout:          2 * time.Second,
-			DialKeepAliveTimeout: 2 * time.Second,
-			DialKeepAliveTime:    10 * time.Second,
+			DialTimeout:          connectTimeout,
+			DialKeepAliveTimeout: EtcdKeepAliveTimeout,
+			DialKeepAliveTime:    EtcdKeepAliveInterval,
 			Username:             v.Envs().Get("ETCD_USERNAME"), // optional
 			Password:             v.Envs().Get("ETCD_PASSWORD"), // optional
 		})
@@ -223,9 +236,11 @@ func (v *forServer) EtcdClient() (*etcd.Client, error) {
 			return nil, err
 		}
 
-		// Sync endpoints list from cluster (also serves as a connection check)
-		syncCtx, syncCancelFn := context.WithTimeout(v.ServerCtx(), EtcdTestConnectionTimeout)
+		// Context for connection test
+		syncCtx, syncCancelFn := context.WithTimeout(ctx, connectTimeout)
 		defer syncCancelFn()
+
+		// Sync endpoints list from cluster (also serves as a connection check)
 		if err := c.Sync(syncCtx); err != nil {
 			c.Close()
 			return nil, err
@@ -244,7 +259,7 @@ func (v *forServer) EtcdClient() (*etcd.Client, error) {
 			}
 		}()
 
-		v.logger.Infof(`connected to etcd cluster "%s"`, c.Endpoints()[0])
+		v.logger.Infof(`connected to etcd cluster "%s" | %s`, c.Endpoints()[0], time.Since(startTime))
 		return c, nil
 	})
 }

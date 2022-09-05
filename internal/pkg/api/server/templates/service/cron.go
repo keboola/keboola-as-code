@@ -16,7 +16,7 @@ func StartRepositoriesPullCron(ctx context.Context, d dependencies.ForServer) er
 
 	// Start background work
 	go func() {
-		d.Logger().Infof("repository pull cron prepared")
+		d.Logger().Infof("repository pull cron ready")
 
 		// Delay start to a rounded time
 		interval := TemplateRepositoriesPullInterval
@@ -46,7 +46,7 @@ func StartComponentsCron(ctx context.Context, d dependencies.ForServer) error {
 
 	// Start background work
 	go func() {
-		d.Logger().Infof("components cron prepared")
+		d.Logger().Infof("components update cron ready")
 
 		// Delay start to a rounded time
 		interval := ComponentsUpdateInterval
