@@ -141,6 +141,11 @@ func (*testCases) TestSubDirFs(t *testing.T, fs filesystem.Fs, _ log.DebugLogger
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("sub/dir1/dir2/file.txt", "foo\n")))
 	assert.True(t, fs.IsFile(`sub/dir1/dir2/file.txt`))
 
+	// Empty path is not allowed
+	_, err := fs.SubDirFs("  ")
+	assert.Error(t, err)
+	assert.Equal(t, `cannot get sub directory "  ": path cannot be empty`, err.Error())
+
 	// /sub/dir1
 	subDirFs1, err := fs.SubDirFs(`/sub/dir1`)
 	assert.NoError(t, err)
@@ -166,7 +171,7 @@ func (*testCases) TestSubDirFs(t *testing.T, fs filesystem.Fs, _ log.DebugLogger
 	// file
 	subDirFs3, err := subDirFs2.SubDirFs(`/file.txt`)
 	assert.Error(t, err)
-	assert.Equal(t, `path "file.txt" is not directory`, err.Error())
+	assert.Equal(t, `cannot get sub directory "file.txt": path "file.txt" is not directory`, err.Error())
 	assert.Nil(t, subDirFs3)
 
 	// not found

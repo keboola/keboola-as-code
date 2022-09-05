@@ -58,7 +58,7 @@ func (f *Fs) SubDirFs(path string) (filesystem.Fs, error) {
 
 	subDirFs, err := f.fs.SubDirFs(f.fs.FromSlash(path))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(`cannot get sub directory "%s": %w`, path, err)
 	}
 
 	return New(f.logger, subDirFs.(abstract.Backend), f.fs.FromSlash(workingDir)), nil
