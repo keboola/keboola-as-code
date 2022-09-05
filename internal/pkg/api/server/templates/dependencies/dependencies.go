@@ -221,6 +221,7 @@ func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 		}
 
 		// Create client
+		startTime := time.Now()
 		v.logger.Infof("connecting to etcd, timeout=%s", connectTimeout)
 		c, err := etcd.New(etcd.Config{
 			Context:              v.serverCtx, // !!! a long-lived context must be used, client exists as long as the entire server
@@ -258,7 +259,7 @@ func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 			}
 		}()
 
-		v.logger.Infof(`connected to etcd cluster "%s"`, c.Endpoints()[0])
+		v.logger.Infof(`connected to etcd cluster "%s" | %s`, c.Endpoints()[0], time.Since(startTime))
 		return c, nil
 	})
 }
