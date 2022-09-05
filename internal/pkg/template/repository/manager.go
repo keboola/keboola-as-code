@@ -102,7 +102,7 @@ func (m *Manager) AddRepository(repositoryDef model.TemplateRepository) error {
 }
 
 func (m *Manager) Pull() <-chan error {
-	errorCh := make(chan error)
+	errorCh := make(chan error, 1)
 	errors := utils.NewMultiError()
 
 	// Pull repositories in parallel
