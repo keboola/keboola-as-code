@@ -27,6 +27,11 @@ type basePathProvider interface {
 }
 
 func New(rootFs aferoFs, basePath string) (*BasePathFs, error) {
+	// Base path cannot be empty
+	if strings.TrimSpace(basePath) == "" {
+		return nil, fmt.Errorf("path cannot be empty")
+	}
+
 	// Check target dir
 	if stat, err := rootFs.Stat(basePath); err != nil {
 		return nil, err
