@@ -9,9 +9,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-const OperationTimeout = 20 * time.Second
+const OperationTimeout = 30 * time.Second
 
 type Manager struct {
 	ctx                 context.Context
@@ -21,7 +22,7 @@ type Manager struct {
 	repositories        map[string]*git.Repository
 }
 
-func NewManager(ctx context.Context, logger log.Logger, defaultRepositories []model.TemplateRepository) (*Manager, error) {
+func NewManager(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, defaultRepositories []model.TemplateRepository) (*Manager, error) {
 	m := &Manager{
 		ctx:                 ctx,
 		logger:              logger,
@@ -29,6 +30,14 @@ func NewManager(ctx context.Context, logger log.Logger, defaultRepositories []mo
 		defaultRepositories: defaultRepositories,
 		repositories:        make(map[string]*git.Repository),
 	}
+
+	// Delete all temp directories on server shutdown
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		m.Free()
+	}()
 
 	// Add default repositories
 	for _, repo := range defaultRepositories {
@@ -92,22 +101,54 @@ func (m *Manager) AddRepository(repositoryDef model.TemplateRepository) error {
 	return nil
 }
 
-func (m *Manager) Pull() {
+func (m *Manager) Pull() <-chan error {
+	errorCh := make(chan error)
+	errors := utils.NewMultiError()
+
+	// Pull repositories in parallel
+	wg := &sync.WaitGroup{}
 	for _, repo := range m.repositories {
 		repo := repo
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			ctx, cancel := context.WithTimeout(m.ctx, OperationTimeout)
 			defer cancel()
 			if err := pullRepo(ctx, m.logger, repo); err != nil {
-				m.logger.Errorf(`error while updating the repository "%s": %w`, repo, err)
+				errors.Append(err)
+				m.logger.Errorf(`error while updating repository "%s": %w`, repo, err)
 			}
 		}()
 	}
+
+	// Write error to channel if any
+	go func() {
+		wg.Wait()
+		errorCh <- errors.ErrorOrNil()
+	}()
+
+	return errorCh
+}
+
+func (m *Manager) Free() {
+	wg := &sync.WaitGroup{}
+	for _, repo := range m.repositories {
+		repo := repo
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-repo.Free()
+		}()
+	}
+
+	wg.Wait()
+	m.logger.Infof("repository manager cleaned up")
 }
 
 func pullRepo(ctx context.Context, logger log.Logger, repo *git.Repository) error {
 	startTime := time.Now()
 	logger.Infof(`repository "%s" update started`, repo)
+
 	oldHash, err := repo.CommitHash(ctx)
 	if err != nil {
 		return err

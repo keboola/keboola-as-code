@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
@@ -120,8 +119,7 @@ func start(host, port string, repositories []model.TemplateRepository, debug, de
 	serverUrl := &url.URL{Scheme: "http", Host: net.JoinHostPort(host, port)}
 
 	// Start HTTP server.
-	var wg sync.WaitGroup
-	templatesHttp.HandleHTTPServer(ctx, &wg, d, serverUrl, endpoints, errCh, stdLogger, debug)
+	templatesHttp.HandleHTTPServer(ctx, d, serverUrl, endpoints, errCh, stdLogger, debug)
 
 	// Wait for signal.
 	logger.Info("exiting (%v)", <-errCh)
@@ -129,8 +127,8 @@ func start(host, port string, repositories []model.TemplateRepository, debug, de
 	// Send cancellation signal to the goroutines.
 	cancelFn()
 
-	// Wait for goroutines.
-	wg.Wait()
+	// Wait for goroutines - graceful shutdown.
+	d.ServerWaitGroup().Wait()
 	logger.Info("exited")
 	return nil
 }

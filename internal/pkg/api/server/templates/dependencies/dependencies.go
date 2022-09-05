@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
@@ -38,6 +39,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
@@ -57,6 +59,7 @@ type ForServer interface {
 	dependencies.Base
 	dependencies.Public
 	ServerCtx() context.Context
+	ServerWaitGroup() *sync.WaitGroup
 	PrefixLogger() log.PrefixLogger
 	RepositoryManager() *repository.Manager
 	EtcdClient() (*etcd.Client, error)
@@ -83,6 +86,7 @@ type forServer struct {
 	dependencies.Base
 	dependencies.Public
 	serverCtx         context.Context
+	serverWg          *sync.WaitGroup
 	logger            log.PrefixLogger
 	repositoryManager *repository.Manager
 	etcdClient        dependencies.Lazy[*etcd.Client]
@@ -101,11 +105,15 @@ type forPublicRequest struct {
 type forProjectRequest struct {
 	dependencies.Project
 	ForPublicRequest
-	logger              log.PrefixLogger
-	projectRepositories dependencies.Lazy[[]model.TemplateRepository]
+	logger           log.PrefixLogger
+	repositories     map[string]*repository.Repository
+	repositoriesList dependencies.Lazy[[]model.TemplateRepository]
 }
 
 func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, defaultRepositories []model.TemplateRepository, debug, dumpHttp bool) (ForServer, error) {
+	// Create wait group - for graceful shutdown
+	serverWg := &sync.WaitGroup{}
+
 	// Get Storage API host
 	storageApiHost := strhelper.NormalizeHost(envs.MustGet("KBC_STORAGE_API_HOST"))
 	if storageApiHost == "" {
@@ -123,7 +131,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	}
 
 	// Create repository manager
-	repositoryManager, err := repository.NewManager(serverCtx, logger, defaultRepositories)
+	repositoryManager, err := repository.NewManager(serverCtx, serverWg, logger, defaultRepositories)
 	if err != nil {
 		return nil, err
 	}
@@ -133,6 +141,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 		Base:              baseDeps,
 		Public:            publicDeps,
 		serverCtx:         serverCtx,
+		serverWg:          serverWg,
 		logger:            logger,
 		repositoryManager: repositoryManager,
 	}
@@ -167,11 +176,16 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 		logger:           logger,
 		Project:          projectDeps,
 		ForPublicRequest: publicDeps,
+		repositories:     make(map[string]*repository.Repository),
 	}, nil
 }
 
 func (v *forServer) ServerCtx() context.Context {
 	return v.serverCtx
+}
+
+func (v *forServer) ServerWaitGroup() *sync.WaitGroup {
+	return v.serverWg
 }
 
 func (v *forServer) PrefixLogger() log.PrefixLogger {
@@ -218,12 +232,15 @@ func (v *forServer) EtcdClient() (*etcd.Client, error) {
 		}
 
 		// Close client when shutting down the server
+		wg := v.ServerWaitGroup()
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			<-v.serverCtx.Done()
 			if err := c.Close(); err != nil {
-				v.Logger().Info("closed connection to etcd")
-			} else {
 				v.Logger().Warnf("cannot close connection etcd: %s", err)
+			} else {
+				v.Logger().Info("closed connection to etcd")
 			}
 		}()
 
@@ -268,42 +285,51 @@ func (v *forProjectRequest) PrefixLogger() log.PrefixLogger {
 }
 
 func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition model.TemplateRepository, _ model.TemplateRef) (*repository.Repository, error) {
-	var fs filesystem.Fs
-	var err error
-	if definition.Type == model.RepositoryTypeGit {
-		// Get git repository
-		gitRepository, err := v.RepositoryManager().Repository(definition)
+	if _, found := v.repositories[definition.Hash()]; !found {
+		var fs filesystem.Fs
+		var err error
+		if definition.Type == model.RepositoryTypeGit {
+			// Get git repository
+			gitRepository, err := v.RepositoryManager().Repository(definition)
+			if err != nil {
+				return nil, err
+			}
+
+			// Unlock FS after the request, so directory won't be deleted during request (if a new version will be pulled)
+			var unlockFS git.RepositoryFsUnlockFn
+			fs, unlockFS = gitRepository.Fs()
+			go func() {
+				<-v.RequestCtx().Done()
+				unlockFS()
+			}()
+		} else {
+			fs, err = aferofs.NewLocalFs(v.Logger(), definition.Url, ".")
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// Load manifest from FS
+		manifest, err := loadRepositoryManifest.Run(ctx, fs, v)
 		if err != nil {
 			return nil, err
 		}
 
-		// Acquire read lock and release it after request,
-		// so pull cannot occur in the middle of the request.
-		gitRepository.RLock()
-		go func() {
-			<-v.RequestCtx().Done()
-			gitRepository.RUnlock()
-		}()
-		fs = gitRepository.Fs()
-	} else {
-		fs, err = aferofs.NewLocalFs(v.Logger(), definition.Url, ".")
+		// Get repository instance
+		repo, err := repository.New(definition, fs, manifest)
 		if err != nil {
 			return nil, err
 		}
+
+		// Cache value for the request
+		v.repositories[definition.Hash()] = repo
 	}
 
-	// Load manifest from FS
-	manifest, err := loadRepositoryManifest.Run(ctx, fs, v)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return repository
-	return repository.New(definition, fs, manifest)
+	return v.repositories[definition.Hash()], nil
 }
 
 func (v *forProjectRequest) ProjectRepositories() []model.TemplateRepository {
-	return v.projectRepositories.MustInitAndGet(func() []model.TemplateRepository {
+	return v.repositoriesList.MustInitAndGet(func() []model.TemplateRepository {
 		// Project repositories are default repositories modified by the project features.
 		features := v.ProjectFeatures()
 		var out []model.TemplateRepository

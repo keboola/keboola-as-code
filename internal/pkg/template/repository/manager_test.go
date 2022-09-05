@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,14 +31,18 @@ func TestNewManager(t *testing.T) {
 		Ref:  "main",
 	}
 
-	m, err := repository.NewManager(context.Background(), log.NewDebugLogger(), nil)
+	m, err := repository.NewManager(context.Background(), &sync.WaitGroup{}, log.NewDebugLogger(), nil)
 	assert.NoError(t, err)
 	err = m.AddRepository(repo)
 	assert.NoError(t, err)
 
 	defaultRepo, err := m.Repository(repo)
 	assert.NoError(t, err)
-	assert.True(t, defaultRepo.Fs().Exists("example-file.txt"))
+
+	fs, unlockFS := defaultRepo.Fs()
+	defer unlockFS()
+
+	assert.True(t, fs.Exists("example-file.txt"))
 }
 
 func TestAddRepository_AlreadyExists(t *testing.T) {
@@ -54,7 +59,7 @@ func TestAddRepository_AlreadyExists(t *testing.T) {
 		Ref:  "main",
 	}
 
-	m, err := repository.NewManager(context.Background(), log.NewDebugLogger(), nil)
+	m, err := repository.NewManager(context.Background(), &sync.WaitGroup{}, log.NewDebugLogger(), nil)
 	assert.NoError(t, err)
 	err = m.AddRepository(repo)
 	assert.NoError(t, err)
@@ -88,7 +93,7 @@ func TestNewManager_DefaultRepositories(t *testing.T) {
 	}
 
 	// Create manager
-	m, err := repository.NewManager(context.Background(), log.NewDebugLogger(), defaultRepositories)
+	m, err := repository.NewManager(context.Background(), &sync.WaitGroup{}, log.NewDebugLogger(), defaultRepositories)
 	assert.NoError(t, err)
 
 	// Get list of default repositories
