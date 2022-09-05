@@ -3,6 +3,7 @@ package dependencies
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	stdLog "log"
@@ -155,14 +156,20 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 
 	// Request 2 finished -> old FS is deleted (nobody uses it)
 	req2CancelFn()
-	time.Sleep(200 * time.Millisecond)
-	assert.NoDirExists(t, repo2.Fs().BasePath())
+	assert.Eventually(t, func() bool {
+		// NoDirExists
+		_, err := os.Stat(repo2.Fs().BasePath()) // nolint: forbidigo
+		return errors.Is(err, os.ErrNotExist)
+	}, 5*time.Second, 100*time.Millisecond)
 	assert.DirExists(t, repo3.Fs().BasePath())
 
 	// Request 3 finished -> the latest FS state is kept for next requests
 	req3CancelFn()
-	time.Sleep(200 * time.Millisecond)
-	assert.NoDirExists(t, repo1.Fs().BasePath())
+	assert.Eventually(t, func() bool {
+		// NoDirExists
+		_, err := os.Stat(repo1.Fs().BasePath()) // nolint: forbidigo
+		return errors.Is(err, os.ErrNotExist)
+	}, 5*time.Second, 100*time.Millisecond)
 	assert.DirExists(t, repo3.Fs().BasePath())
 
 	// Modify git repository
@@ -175,8 +182,11 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 	mockedDeps.DebugLogger().Truncate()
 
 	// Old FS is deleted (nobody uses it)
-	time.Sleep(200 * time.Millisecond)
-	assert.NoDirExists(t, repo3.Fs().BasePath())
+	assert.Eventually(t, func() bool {
+		// NoDirExists
+		_, err := os.Stat(repo3.Fs().BasePath()) // nolint: forbidigo
+		return errors.Is(err, os.ErrNotExist)
+	}, 5*time.Second, 100*time.Millisecond)
 }
 
 func runGitCommand(t *testing.T, dir string, args ...string) {

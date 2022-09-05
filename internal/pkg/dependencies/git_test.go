@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -18,6 +19,10 @@ import (
 
 func TestGitRepositoryFs_SparseCheckout(t *testing.T) {
 	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("unstable on windows - random timeouts")
+	}
 
 	// Copy the git repository to temp
 	tmpDir := t.TempDir()
