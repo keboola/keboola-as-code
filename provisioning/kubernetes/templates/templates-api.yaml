@@ -78,6 +78,7 @@ spec:
               httpHeaders:
                 - name: Host
                   value: KubernetesStartupProbe
+            initialDelaySeconds: 10
             periodSeconds: 1
             failureThreshold: 30
           readinessProbe:
