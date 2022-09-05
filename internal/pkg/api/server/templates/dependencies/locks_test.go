@@ -24,7 +24,7 @@ func (d *testDeps) Logger() log.Logger {
 	return d.logger
 }
 
-func (d *testDeps) EtcdClient() (*etcd.Client, error) {
+func (d *testDeps) EtcdClient(_ context.Context) (*etcd.Client, error) {
 	if d.etcdClient == nil {
 		return nil, fmt.Errorf("some etcd client error")
 	}

@@ -16,7 +16,7 @@ const LockReleaseTimeout = 5 * time.Second // the lock must be released in 5 sec
 
 type lockerDeps interface {
 	Logger() log.Logger
-	EtcdClient() (*etcd.Client, error)
+	EtcdClient(ctx context.Context) (*etcd.Client, error)
 }
 
 type Locker struct {
@@ -32,7 +32,7 @@ func NewLocker(d lockerDeps, ttl int) *Locker {
 
 func (l *Locker) Lock(requestCtx context.Context, lockName string) (bool, UnlockFn) {
 	// Get client
-	c, err := l.d.EtcdClient()
+	c, err := l.d.EtcdClient(requestCtx)
 	if err != nil {
 		l.d.Logger().Warnf(`cannot acquire etcd lock "%s" (continues without lock): cannot get etcd client: %s`, lockName, err.Error())
 		return true, func() {}
