@@ -4,8 +4,6 @@ go 1.19
 
 replace github.com/google/go-jsonnet v0.18.0 => github.com/keboola/go-jsonnet v0.18.1-0.20220810085752-aee7595aa305
 
-replace go.nhat.io/aferocopy/v2 v2.0.0 => github.com/keboola/aferocopy/v2 v2.0.0-20220906135934-de489c8021dc
-
 require (
 	github.com/ActiveState/vt10x v1.3.1
 	github.com/AlecAivazis/survey/v2 v2.2.12
@@ -38,7 +36,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
 	go.etcd.io/etcd/client/v3 v3.5.0
-	go.nhat.io/aferocopy/v2 v2.0.0
+	go.nhat.io/aferocopy/v2 v2.0.1
 	go.uber.org/zap v1.23.0
 	goa.design/goa/v3 v3.8.5
 	goa.design/plugins/v3 v3.8.5
