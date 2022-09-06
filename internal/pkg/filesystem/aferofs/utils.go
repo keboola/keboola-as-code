@@ -3,8 +3,8 @@ package aferofs
 import (
 	"fmt"
 
-	"github.com/nhatthm/aferocopy"
 	"github.com/spf13/afero"
+	"go.nhat.io/aferocopy/v2"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
