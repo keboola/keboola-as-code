@@ -27,22 +27,28 @@ run-templates-api: prepare
 	air -c ./.air-templates-api.toml
 
 tests: prepare
-	bash ./scripts/tests.sh
+	TEST_PACKAGE=./... bash ./scripts/tests.sh
 
 tests-verbose: prepare
-	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose bash ./scripts/tests.sh
+	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PACKAGE=./... bash ./scripts/tests.sh
+
+tests-unit: prepare
+	TEST_VERBOSE=false TEST_PACKAGE=./internal/pkg/... bash ./scripts/tests.sh
+
+tests-unit-verbose: prepare
+	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./internal/pkg... bash ./scripts/tests.sh
 
 tests-cli: prepare
-	TEST_VERBOSE=false TEST_LOG_FORMAT=standard-verbose bash ./scripts/tests.sh -run TestCliE2E
+	TEST_VERBOSE=false TEST_LOG_FORMAT=standard-verbose TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh -run TestCliE2E
 
 tests-cli-verbose: prepare
-	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 bash ./scripts/tests.sh -run TestCliE2E
+	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh -run TestCliE2E
 
 tests-api: prepare
-	TEST_VERBOSE=false TEST_LOG_FORMAT=standard-verbose bash ./scripts/tests.sh -run TestApiE2E
+	TEST_VERBOSE=false TEST_LOG_FORMAT=standard-verbose TEST_PACKAGE=./test/api/... bash ./scripts/tests.sh -run TestApiE2E
 
 tests-api-verbose: prepare
-	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 bash ./scripts/tests.sh -run TestApiE2E
+	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/api/... bash ./scripts/tests.sh -run TestApiE2E
 
 mod: prepare
 	bash ./scripts/mod.sh
