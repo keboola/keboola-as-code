@@ -83,15 +83,13 @@ func start(host, port string, repositories []model.TemplateRepository, debug, de
 
 	// Create logger.
 	logger := log.NewApiLogger(stdLogger, "", debug)
+	logger.Infof("starting HTTP server, host=%s, port=%s, debug=%t, debug-http=%t", host, port, debug, debugHttp)
 
 	// Create dependencies.
 	d, err := dependencies.NewServerDeps(ctx, envs, logger, repositories, debug, debugHttp)
 	if err != nil {
 		return err
 	}
-
-	// Log options.
-	d.Logger().Infof("starting HTTP server, host=%s, port=%s, debug=%t, debug-http=%t", host, port, debug, debugHttp)
 
 	// Initialize the service.
 	svc, err := service.New(d)

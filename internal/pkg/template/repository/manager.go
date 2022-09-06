@@ -78,6 +78,7 @@ func (m *Manager) AddRepository(repositoryDef model.TemplateRepository) error {
 	if repositoryDef.Type != model.RepositoryTypeGit {
 		panic("Cannot checkout dir repository")
 	}
+
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -89,6 +90,7 @@ func (m *Manager) AddRepository(repositoryDef model.TemplateRepository) error {
 	}
 
 	// Check out
+	startTime := time.Now()
 	m.logger.Infof(`checking out repository "%s:%s"`, repositoryDef.Url, repositoryDef.Ref)
 	ctx, cancel := context.WithTimeout(m.ctx, OperationTimeout)
 	defer cancel()
@@ -96,7 +98,7 @@ func (m *Manager) AddRepository(repositoryDef model.TemplateRepository) error {
 	if err != nil {
 		return fmt.Errorf(`cannot checkout out repository "%s": %w`, repositoryDef, err)
 	}
-	m.logger.Infof(`repository checked out "%s"`, repo)
+	m.logger.Infof(`repository checked out "%s" | %s`, repo, time.Since(startTime))
 	m.repositories[hash] = repo
 	return nil
 }
