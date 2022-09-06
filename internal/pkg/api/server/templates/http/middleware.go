@@ -52,7 +52,7 @@ func ContextMiddleware(serverDeps dependencies.ForServer, h http.Handler) http.H
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Generate unique request ID
 		requestId := idgenerator.RequestId()
-		ctx := context.WithValue(r.Context(), middleware.RequestIDKey, requestId)
+		ctx := context.WithValue(r.Context(), middleware.RequestIDKey, requestId) // nolint: staticcheck intentionally used the ctx key from external package
 
 		// Add request ID to headers
 		w.Header().Add("X-Request-Id", requestId)
