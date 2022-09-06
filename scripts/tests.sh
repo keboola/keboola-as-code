@@ -17,6 +17,7 @@ TEST_PARALLELISM_PKG="${TEST_PARALLELISM:=8}"  # number of packages tested in pa
 TEST_LOG_FORMAT="${TEST_LOG_FORMAT:=testname}"
 TEST_DETECT_RACE="${TEST_DETECT_RACE:=true}"
 TEST_COVERAGE="${TEST_COVERAGE:=true}"
+TEST_PACKAGE="${TEST_PACKAGE:=./...}"
 TEST_ARGS="${TEST_ARGS:=}"
 if [[ $TEST_DETECT_RACE == "true" ]]; then
   TEST_ARGS="$TEST_ARGS -race"
@@ -28,7 +29,7 @@ fi
 # Run tests, sequentially because the API is shared resource
 echo "Running tests ..."
 export KBC_VERSION_CHECK=false # do not check the latest version in the tests
-cmd="gotestsum --no-color=false --format \"$TEST_LOG_FORMAT\" -- -timeout 600s -p $TEST_PARALLELISM_PKG -parallel $TEST_PARALLELISM -v $TEST_ARGS  ./... $@"
+cmd="gotestsum --no-color=false --format \"$TEST_LOG_FORMAT\" -- -timeout 600s -p $TEST_PARALLELISM_PKG -parallel $TEST_PARALLELISM -v $TEST_ARGS  "$TEST_PACKAGE" $@"
 echo $cmd
 eval $cmd
 echo "Ok. All tests passed."
