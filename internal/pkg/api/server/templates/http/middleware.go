@@ -18,6 +18,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 )
 
+const RequestTimeout = 60 * time.Second
+
 func TraceEndpointsMiddleware() func(endpoint goa.Endpoint) goa.Endpoint {
 	return func(endpoint goa.Endpoint) goa.Endpoint {
 		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
@@ -61,8 +63,8 @@ func ContextMiddleware(serverDeps dependencies.ForServer, h http.Handler) http.H
 			span.SetTag("storage.host", serverDeps.StorageApiHost())
 		}
 
-		// Cancel context after request
-		ctx, cancelFn := context.WithCancel(ctx)
+		// Cancel context after request + set timeout
+		ctx, cancelFn := context.WithTimeout(ctx, RequestTimeout)
 		defer cancelFn()
 
 		// Add dependencies to the context

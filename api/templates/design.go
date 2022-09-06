@@ -255,6 +255,7 @@ var _ = Service("templates", func() {
 			RepositoryNotFoundError()
 			TemplateNotFoundError()
 			VersionNotFoundError()
+			ProjectLockedError()
 		})
 	})
 
@@ -303,6 +304,7 @@ var _ = Service("templates", func() {
 			Response(StatusOK)
 			BranchNotFoundError()
 			InstanceNotFoundError()
+			ProjectLockedError()
 		})
 	})
 
@@ -318,6 +320,7 @@ var _ = Service("templates", func() {
 			Response(StatusNoContent)
 			BranchNotFoundError()
 			InstanceNotFoundError()
+			ProjectLockedError()
 		})
 	})
 
@@ -340,6 +343,7 @@ var _ = Service("templates", func() {
 			BranchNotFoundError()
 			InstanceNotFoundError()
 			VersionNotFoundError()
+			ProjectLockedError()
 		})
 	})
 
@@ -388,16 +392,38 @@ var _ = Service("templates", func() {
 var GenericErrorType = Type("GenericError", func() {
 	Description("Generic error")
 	Attribute("statusCode", Int, "HTTP status code.", func() {
-		Example(500)
+		Example(StatusInternalServerError)
 	})
 	ErrorName("error", String, "Name of error.", func() {
 		Meta("struct:field:name", "name")
-		Example("Internal Error")
+		Example("templates.internalError")
 	})
 	Attribute("message", String, "Error message.", func() {
 		Example("Internal Error")
 	})
 	Required("statusCode", "error", "message")
+})
+
+var ProjectLockedErrorType = Type("ProjectLockedError", func() {
+	Description("Project locked error")
+	Attribute("statusCode", Int, "HTTP status code.", func() {
+		Example(StatusServiceUnavailable)
+	})
+	ErrorName("error", String, "Name of error.", func() {
+		Meta("struct:field:name", "name")
+		Example("templates.internalError")
+	})
+	Attribute("message", String, "Error message.", func() {
+		Example("The project is locked, another operation is in progress, please try again later.")
+	})
+	Attribute("retryAfter", String, "Indicates how long the user agent should wait before making a follow-up request.", func() {
+		Example("<http-date>")
+		Example("<delay-seconds>")
+		Docs(func() {
+			URL("https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After")
+		})
+	})
+	Required("statusCode", "error", "message", "retryAfter")
 })
 
 func GenericError(statusCode int, name, description, example string) {
@@ -417,6 +443,35 @@ func GenericError(statusCode int, name, description, example string) {
 
 	// Add response to the HTTP method definition
 	Response(name, statusCode)
+}
+
+// ProjectLockedError - 503, see https://stackoverflow.com/questions/37116097/http-statuscode-when-waiting-for-lock-release-takes-to-long
+func ProjectLockedError() {
+	// Must be called inside HTTP definition
+	endpoint, ok := eval.Current().(*expr.HTTPEndpointExpr)
+	if !ok {
+		eval.IncompatibleDSL()
+	}
+
+	// Add error to the method definition
+	name := "templates.projectLocked"
+	eval.Execute(func() {
+		Error(name, ProjectLockedErrorType, func() {
+			Description("Access to branch metadata must be atomic, so only one write operation can run at a time. If this error occurs, the client should make retries, see Retry-After header.")
+			Example(ExampleError(StatusServiceUnavailable, name, "The project is locked, another operation is in progress, please try again later."))
+		})
+	}, endpoint.MethodExpr)
+
+	// Add response to the HTTP method definition
+	Response(name, StatusServiceUnavailable, func() {
+		Header("retryAfter:Retry-After", String, "Indicates how long the user agent should wait before making a follow-up request.", func() {
+			Example("<http-date>")
+			Example("<delay-seconds>")
+			Docs(func() {
+				URL("https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After")
+			})
+		})
+	})
 }
 
 func RepositoryNotFoundError() {

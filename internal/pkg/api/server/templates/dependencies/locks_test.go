@@ -41,15 +41,15 @@ func TestLocker_WithoutEtcd(t *testing.T) {
 
 	// Test!
 	// All attempts return true
-	locked1, unlockFn1 := locker.Lock(context.Background(), "projectId=123")
+	locked1, unlockFn1 := locker.TryLock(context.Background(), "projectId=123")
 	defer unlockFn1()
 	assert.True(t, locked1)
 
-	locked2, unlockFn2 := locker.Lock(context.Background(), "projectId=123")
+	locked2, unlockFn2 := locker.TryLock(context.Background(), "projectId=123")
 	defer unlockFn2()
 	assert.True(t, locked2)
 
-	locked3, unlockFn3 := locker.Lock(context.Background(), "projectId=123")
+	locked3, unlockFn3 := locker.TryLock(context.Background(), "projectId=123")
 	defer unlockFn3()
 	assert.True(t, locked3)
 
@@ -72,21 +72,21 @@ func TestLocker_WithEtcd(t *testing.T) {
 
 	// Test!
 	// Project is locked
-	locked1, unlock1Fn := locker.Lock(context.Background(), "projectId=123")
+	locked1, unlock1Fn := locker.TryLock(context.Background(), "projectId=123")
 	defer unlock1Fn()
 	assert.True(t, locked1)
 	// ... so the project cannot be used by other requests
-	locked2, unlock2Fn := locker.Lock(context.Background(), "projectId=123")
+	locked2, unlock2Fn := locker.TryLock(context.Background(), "projectId=123")
 	defer unlock2Fn()
 	assert.False(t, locked2)
 	// ... but another project can be locked
-	locked3, unlock3Fn := locker.Lock(context.Background(), "projectId=789")
+	locked3, unlock3Fn := locker.TryLock(context.Background(), "projectId=789")
 	defer unlock3Fn()
 	assert.True(t, locked3)
 	// Project is unlocked
 	unlock1Fn()
 	// ... so next request can use the  project
-	locked5, unlock5Fn := locker.Lock(context.Background(), "projectId=123")
+	locked5, unlock5Fn := locker.TryLock(context.Background(), "projectId=123")
 	defer unlock5Fn()
 	assert.True(t, locked5)
 	// Unlock both projects
@@ -116,16 +116,16 @@ func TestLocker_WithEtcd_TimeToLiveExpired(t *testing.T) {
 
 	// Test!
 	// Project is locked
-	locked1, unlock1Fn := locker.Lock(context.Background(), "projectId=456")
+	locked1, unlock1Fn := locker.TryLock(context.Background(), "projectId=456")
 	defer unlock1Fn()
 	assert.True(t, locked1)
 	// ... so project cannot be locked by other requests
-	locked2, unlock2Fn := locker.Lock(context.Background(), "projectId=456")
+	locked2, unlock2Fn := locker.TryLock(context.Background(), "projectId=456")
 	defer unlock2Fn()
 	assert.False(t, locked2)
 	// ... but after ttlSeconds, lock is auto-released and project can be locked again
 	time.Sleep(time.Duration(ttlSeconds+1) * time.Second)
-	locked3, unlock3Fn := locker.Lock(context.Background(), "projectId=456")
+	locked3, unlock3Fn := locker.TryLock(context.Background(), "projectId=456")
 	defer unlock3Fn()
 	assert.True(t, locked3)
 	// Unlock

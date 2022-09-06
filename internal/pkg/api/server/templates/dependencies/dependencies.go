@@ -55,6 +55,7 @@ const EtcdConnectionTimeoutCtxKey = ctxKey("EtcdConnectionTimeout")
 const EtcdDefaultConnectionTimeout = 2 * time.Second
 const EtcdKeepAliveTimeout = 2 * time.Second
 const EtcdKeepAliveInterval = 10 * time.Second
+const ProjectLockTTLSeconds = 60
 
 // ForServer interface provides dependencies for Templates API server.
 // The container exists during the entire run of the API server.
@@ -66,6 +67,7 @@ type ForServer interface {
 	PrefixLogger() log.PrefixLogger
 	RepositoryManager() *repository.Manager
 	EtcdClient(ctx context.Context) (*etcd.Client, error)
+	ProjectLocker() *Locker
 }
 
 // ForPublicRequest interface provides dependencies for a public request that does not contain the Storage API token.
@@ -93,6 +95,7 @@ type forServer struct {
 	logger            log.PrefixLogger
 	repositoryManager *repository.Manager
 	etcdClient        dependencies.Lazy[*etcd.Client]
+	projectLocker     dependencies.Lazy[*Locker]
 }
 
 // forPublicRequest implements ForPublicRequest interface.
@@ -261,6 +264,12 @@ func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 
 		v.logger.Infof(`connected to etcd cluster "%s" | %s`, c.Endpoints()[0], time.Since(startTime))
 		return c, nil
+	})
+}
+
+func (v *forServer) ProjectLocker() *Locker {
+	return v.projectLocker.MustInitAndGet(func() *Locker {
+		return NewLocker(v, ProjectLockTTLSeconds)
 	})
 }
 
