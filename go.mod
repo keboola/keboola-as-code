@@ -4,6 +4,8 @@ go 1.19
 
 replace github.com/google/go-jsonnet v0.18.0 => github.com/keboola/go-jsonnet v0.18.1-0.20220810085752-aee7595aa305
 
+replace go.nhat.io/aferocopy/v2 v2.0.0 => github.com/keboola/aferocopy/v2 v2.0.0-20220906135934-de489c8021dc
+
 require (
 	github.com/ActiveState/vt10x v1.3.1
 	github.com/AlecAivazis/survey/v2 v2.2.12
@@ -26,9 +28,9 @@ require (
 	github.com/keboola/go-client v0.4.0
 	github.com/keboola/go-utils v0.4.1
 	github.com/kylelemons/godebug v1.1.0
-	github.com/nhatthm/aferocopy v1.0.2
+	github.com/nhatthm/aferocopy v1.2.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
-	github.com/spf13/afero v1.6.0
+	github.com/spf13/afero v1.9.2
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/pflag v1.0.5
@@ -36,6 +38,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
 	go.etcd.io/etcd/client/v3 v3.5.0
+	go.nhat.io/aferocopy/v2 v2.0.0
 	go.uber.org/zap v1.23.0
 	goa.design/goa/v3 v3.8.5
 	goa.design/plugins/v3 v3.8.5
@@ -85,7 +88,7 @@ require (
 	github.com/zach-klippenstein/goregen v0.0.0-20160303162051-795b5e3961ea // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
+	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/net v0.0.0-20220802222814-0bcc04d9c69b // indirect
 	golang.org/x/sys v0.0.0-20220803195053-6e608f9ce704 // indirect
