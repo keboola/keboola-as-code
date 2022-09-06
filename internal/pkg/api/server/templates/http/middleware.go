@@ -81,9 +81,12 @@ func LogMiddleware(d dependencies.ForServer, h http.Handler) http.Handler {
 		started := time.Now()
 		logger := d.PrefixLogger()
 
+		// Get request ID
+		requestId, _ := r.Context().Value(middleware.RequestIDKey).(string)
+
 		// Log request
 		logger.
-			WithAdditionalPrefix("[request]").
+			WithAdditionalPrefix(fmt.Sprintf("[request][requestId=%s]", requestId)).
 			Infof("%s %s %s", r.Method, r.URL.String(), from(r))
 
 		// Capture response
@@ -92,7 +95,7 @@ func LogMiddleware(d dependencies.ForServer, h http.Handler) http.Handler {
 
 		// Log response
 		logger.
-			WithAdditionalPrefix("[response]").
+			WithAdditionalPrefix(fmt.Sprintf("[response][requestId=%s]", requestId)).
 			Infof("status=%d bytes=%d time=%s", rw.StatusCode, rw.ContentLength, time.Since(started).String())
 	})
 }
