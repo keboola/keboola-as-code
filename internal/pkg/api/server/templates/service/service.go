@@ -3,7 +3,9 @@ package service
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/deepcopy"
@@ -25,6 +27,8 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
+
+const ProjectLockedRetryAfter = 5 * time.Second
 
 type service struct{}
 
@@ -113,6 +117,13 @@ func (s *service) ValidateInputs(d dependencies.ForProjectRequest, payload *Vali
 }
 
 func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *UseTemplateVersionPayload) (res *UseTemplateResult, err error) {
+	// Lock project
+	if unlockFn, err := tryLockProject(d); err != nil {
+		return nil, err
+	} else {
+		defer unlockFn()
+	}
+
 	// Note:
 	//   A very strange code follows.
 	//   Since I did not manage to complete the refactoring - separation of remote and local state.
@@ -244,6 +255,14 @@ func (s *service) InstanceIndex(d dependencies.ForProjectRequest, payload *Insta
 }
 
 func (s *service) UpdateInstance(d dependencies.ForProjectRequest, payload *UpdateInstancePayload) (res *InstanceDetail, err error) {
+	// Lock project
+	if unlockFn, err := tryLockProject(d); err != nil {
+		return nil, err
+	} else {
+		defer unlockFn()
+	}
+
+	// Get instance
 	prjState, branchKey, instance, err := getTemplateInstance(d, payload.Branch, payload.InstanceID, true)
 	if err != nil {
 		return nil, err
@@ -269,7 +288,14 @@ func (s *service) UpdateInstance(d dependencies.ForProjectRequest, payload *Upda
 	return InstanceResponse(d, prjState, branchKey, payload.InstanceID)
 }
 
-func (s *service) DeleteInstance(d dependencies.ForProjectRequest, payload *DeleteInstancePayload) (err error) {
+func (s *service) DeleteInstance(d dependencies.ForProjectRequest, payload *DeleteInstancePayload) error {
+	// Lock project
+	if unlockFn, err := tryLockProject(d); err != nil {
+		return err
+	} else {
+		defer unlockFn()
+	}
+
 	// Get instance
 	prjState, branchKey, _, err := getTemplateInstance(d, payload.Branch, payload.InstanceID, true)
 	if err != nil {
@@ -297,6 +323,13 @@ func (s *service) DeleteInstance(d dependencies.ForProjectRequest, payload *Dele
 }
 
 func (s *service) UpgradeInstance(d dependencies.ForProjectRequest, payload *UpgradeInstancePayload) (res *UpgradeInstanceResult, err error) {
+	// Lock project
+	if unlockFn, err := tryLockProject(d); err != nil {
+		return nil, err
+	} else {
+		defer unlockFn()
+	}
+
 	// Get instance
 	prjState, branchKey, instance, err := getTemplateInstance(d, payload.Branch, payload.InstanceID, true)
 	if err != nil {
@@ -560,4 +593,24 @@ func getTemplateInstance(d dependencies.ForProjectRequest, branchDef, instanceId
 	}
 
 	return prjState, branchKey, instance, nil
+}
+
+// tryLockProject.
+func tryLockProject(d dependencies.ForProjectRequest) (dependencies.UnlockFn, error) {
+	d.Logger().Infof(`requested lock for project "%d"`, d.ProjectID())
+
+	// Try lock
+	locked, unlockFn := d.ProjectLocker().TryLock(d.RequestCtx(), fmt.Sprintf("project-%d", d.ProjectID()))
+	if !locked {
+		d.Logger().Infof(`project "%d" is locked by another request`, d.ProjectID())
+		return nil, &ProjectLockedError{
+			StatusCode: http.StatusServiceUnavailable,
+			Name:       "templates.projectLocked",
+			Message:    "The project is locked, another operation is in progress, please try again later.",
+			RetryAfter: time.Now().Add(ProjectLockedRetryAfter).UTC().Format(http.TimeFormat),
+		}
+	}
+
+	// Locked!
+	return unlockFn, nil
 }
