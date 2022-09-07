@@ -54,6 +54,7 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -71,6 +72,7 @@ import (
 // Base contains basic dependencies.
 type Base interface {
 	Envs() env.Provider
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	HttpClient() client.Client
 }

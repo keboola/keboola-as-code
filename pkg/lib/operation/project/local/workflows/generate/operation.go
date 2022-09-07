@@ -1,8 +1,13 @@
 package generate
 
 import (
+	"context"
+
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/workflows"
 )
 
@@ -18,10 +23,14 @@ func (o Options) Enabled() bool {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 }
 
-func Run(fs filesystem.Fs, o Options, d dependencies) (err error) {
+func Run(ctx context.Context, fs filesystem.Fs, o Options, d dependencies) (err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.workflows.generate")
+	defer telemetry.EndSpan(span, &err)
+
 	if !o.Enabled() {
 		return nil
 	}

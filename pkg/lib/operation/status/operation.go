@@ -3,14 +3,18 @@ package status
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	Fs() filesystem.Fs
 	LocalProject(ignoreErrors bool) (*project.Project, bool, error)
@@ -19,6 +23,9 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, d dependencies) (err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.status")
+	defer telemetry.EndSpan(span, &err)
+
 	logger := d.Logger()
 
 	if prj, found, err := d.LocalProject(false); found {

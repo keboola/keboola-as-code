@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/keboola/go-client/pkg/client"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/persist"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
@@ -19,11 +21,15 @@ type Options struct {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	StorageApiClient() client.Sender
 }
 
-func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) error {
+func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.persist")
+	defer telemetry.EndSpan(span, &err)
+
 	logger := d.Logger()
 
 	// Get Storage API

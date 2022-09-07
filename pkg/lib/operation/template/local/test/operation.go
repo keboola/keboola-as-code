@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/go-client/pkg/jobsqueueapi"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/deepcopy"
+	"go.opentelemetry.io/otel/trace"
 
 	dependenciesPkg "github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -18,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -38,10 +40,14 @@ type Options struct {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 }
 
 func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies) (err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.template.test")
+	defer telemetry.EndSpan(span, &err)
+
 	tempDir, err := os.MkdirTemp("", "kac-test-template-") //nolint:forbidigo
 	if err != nil {
 		return err

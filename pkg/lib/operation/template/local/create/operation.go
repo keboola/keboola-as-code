@@ -5,10 +5,12 @@ import (
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/client"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
@@ -32,6 +34,7 @@ type Options struct {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	Components() *model.ComponentsMap
 	StorageApiClient() client.Sender
@@ -41,6 +44,9 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.template.local.create")
+	defer telemetry.EndSpan(span, &err)
+
 	// Get repository
 	repo, _, err := d.LocalTemplateRepository(ctx)
 	if err != nil {

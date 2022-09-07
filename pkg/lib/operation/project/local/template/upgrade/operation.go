@@ -8,12 +8,14 @@ import (
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/upgrade"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -31,6 +33,7 @@ type Options struct {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	ProjectID() int
 	StorageApiHost() string
@@ -42,7 +45,10 @@ type dependencies interface {
 	ObjectIDGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider
 }
 
-func Run(ctx context.Context, projectState *project.State, tmpl *template.Template, o Options, d dependencies) ([]string, error) {
+func Run(ctx context.Context, projectState *project.State, tmpl *template.Template, o Options, d dependencies) (warnings []string, err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.template.upgrade")
+	defer telemetry.EndSpan(span, &err)
+
 	logger := d.Logger()
 	storageApiHost := d.StorageApiHost()
 	projectID := d.ProjectID()
@@ -180,7 +186,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	}
 
 	// Return urls to oauth configurations
-	warnings := make([]string, 0)
+	warnings = make([]string, 0)
 	inputValuesMap := o.Inputs.ToMap()
 	for inputName, cKey := range tmplCtx.InputsUsage().OAuthConfigsMap() {
 		if len(inputValuesMap[inputName].Value.(map[string]interface{})) == 0 {

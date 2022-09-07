@@ -3,10 +3,13 @@ package delete_template
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	deleteTemplate "github.com/keboola/keboola-as-code/internal/pkg/plan/delete-template"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 )
@@ -18,10 +21,14 @@ type Options struct {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 }
 
-func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) error {
+func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.template.delete")
+	defer telemetry.EndSpan(span, &err)
+
 	logger := d.Logger()
 
 	// Get plan

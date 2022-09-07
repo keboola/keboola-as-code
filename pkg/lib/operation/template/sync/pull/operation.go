@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/keboola/go-client/pkg/client"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -19,6 +21,7 @@ type Options struct {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	Components() *model.ComponentsMap
 	StorageApiClient() client.Sender
@@ -34,6 +37,9 @@ func LoadStateOptions() loadState.Options {
 }
 
 func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies) (err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.template.sync.pull")
+	defer telemetry.EndSpan(span, &err)
+	
 	logger := d.Logger()
 
 	// Load state
@@ -43,7 +49,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	}
 
 	// Diff
-	results, err := createDiff.Run(ctx, createDiff.Options{Objects: templateState})
+	results, err := createDiff.Run(ctx, createDiff.Options{Objects: templateState}, d)
 	if err != nil {
 		return err
 	}

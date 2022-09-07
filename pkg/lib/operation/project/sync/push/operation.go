@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/keboola/go-client/pkg/client"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/push"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/encrypt"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
 	createDiff "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/create"
@@ -23,12 +25,16 @@ type Options struct {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	ProjectID() int
 	EncryptionApiClient() client.Sender
 }
 
-func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) error {
+func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.sync.pull")
+	defer telemetry.EndSpan(span, &err)
+
 	logger := d.Logger()
 
 	// Encrypt before push?
@@ -58,7 +64,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Diff
-	results, err := createDiff.Run(ctx, createDiff.Options{Objects: projectState})
+	results, err := createDiff.Run(ctx, createDiff.Options{Objects: projectState}, d)
 	if err != nil {
 		return err
 	}

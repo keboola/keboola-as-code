@@ -30,7 +30,7 @@ func WorkflowsCommand(p dependencies.Provider) *cobra.Command {
 			options := d.Dialogs().AskWorkflowsOptions(d.Options())
 
 			// Generate workflows
-			return workflowsGen.Run(prj.Fs(), options, d)
+			return workflowsGen.Run(d.CommandCtx(), prj.Fs(), options, d)
 		},
 	}
 

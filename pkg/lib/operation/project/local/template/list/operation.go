@@ -1,17 +1,25 @@
 package list
 
 import (
+	"context"
 	"time"
+
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 }
 
-func Run(branch *model.BranchState, d dependencies) (err error) {
+func Run(ctx context.Context, branch *model.BranchState, d dependencies) (err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.template.list")
+	defer telemetry.EndSpan(span, &err)
+
 	w := d.Logger().InfoWriter()
 
 	// Get instances

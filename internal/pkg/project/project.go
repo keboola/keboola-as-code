@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/keboola/go-client/pkg/client"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -28,6 +29,7 @@ func LoadManifest(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	Components() *model.ComponentsMap
 	StorageApiClient() client.Sender
@@ -99,7 +101,7 @@ func (p *Project) LoadState(options loadState.Options, d dependencies) (*State, 
 	}
 
 	// Load state
-	s, err := loadState.Run(p, loadOptionsWithFilter, d)
+	s, err := loadState.Run(p.ctx, p, loadOptionsWithFilter, d)
 	if err != nil {
 		return nil, err
 	}

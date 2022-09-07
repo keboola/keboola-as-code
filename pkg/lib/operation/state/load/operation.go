@@ -1,11 +1,15 @@
 package load
 
 import (
+	"context"
+
 	"github.com/keboola/go-client/pkg/client"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
@@ -93,12 +97,16 @@ func LocalOperationOptions() Options {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	Components() *model.ComponentsMap
 	StorageApiClient() client.Sender
 }
 
-func Run(container state.ObjectsContainer, o OptionsWithFilter, d dependencies) (*state.State, error) {
+func Run(ctx context.Context, container state.ObjectsContainer, o OptionsWithFilter, d dependencies) (s *state.State, err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.state.load")
+	defer telemetry.EndSpan(span, &err)
+
 	logger := d.Logger()
 	loadOptions := state.LoadOptions{
 		LoadLocalState:    o.LoadLocalState,

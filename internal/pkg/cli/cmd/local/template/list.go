@@ -36,7 +36,7 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 			branchState := projectState.MustGet(branch.BranchKey).(*model.BranchState)
 
 			// List template instances
-			return listOp.Run(branchState, d)
+			return listOp.Run(d.CommandCtx(), branchState, d)
 		},
 	}
 

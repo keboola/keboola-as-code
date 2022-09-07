@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/client"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -102,6 +103,7 @@ func ParseInputValue(value interface{}, inputDef *templateInput.Input, isFilled 
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	Components() *model.ComponentsMap
 	StorageApiClient() client.Sender
@@ -303,7 +305,7 @@ func (t *Template) LoadState(ctx Context, options loadState.Options, d dependenc
 	}
 
 	// Load state
-	if s, err := loadState.Run(container, loadOptions, t.deps); err == nil {
+	if s, err := loadState.Run(ctx, container, loadOptions, t.deps); err == nil {
 		return NewState(s, container), nil
 	} else {
 		return nil, err

@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/git"
@@ -27,6 +28,7 @@ type Manager struct {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	ServerWaitGroup() *sync.WaitGroup
 }

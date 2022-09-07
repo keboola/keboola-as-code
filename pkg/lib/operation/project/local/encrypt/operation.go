@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/keboola/go-client/pkg/client"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/encrypt"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 type Options struct {
@@ -16,12 +18,16 @@ type Options struct {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	ProjectID() int
 	EncryptionApiClient() client.Sender
 }
 
-func Run(_ context.Context, projectState *project.State, o Options, d dependencies) (err error) {
+func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.encrypt")
+	defer telemetry.EndSpan(span, &err)
+
 	logger := d.Logger()
 
 	// Get Encryption API

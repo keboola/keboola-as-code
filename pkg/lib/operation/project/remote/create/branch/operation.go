@@ -6,8 +6,10 @@ import (
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 type Options struct {
@@ -16,11 +18,15 @@ type Options struct {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	StorageApiClient() client.Sender
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (branch *storageapi.Branch, err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.create.branch")
+	defer telemetry.EndSpan(span, &err)
+
 	logger := d.Logger()
 
 	// Create branch by API

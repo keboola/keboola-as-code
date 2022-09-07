@@ -3,15 +3,22 @@ package list
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 }
 
-func Run(_ context.Context, repo *repository.Repository, d dependencies) (err error) {
+func Run(ctx context.Context, repo *repository.Repository, d dependencies) (err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.template.local.repository.list")
+	defer telemetry.EndSpan(span, &err)
+
 	w := d.Logger().InfoWriter()
 
 	for _, tmpl := range repo.Templates() {
