@@ -129,12 +129,17 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	// Create base HTTP client for all API requests to other APIs
 	httpClient := apiHttpClient(envs, logger, debug, dumpHttp)
 
-	// Create server dependencies
+	// Create base dependencies
 	baseDeps := dependencies.NewBaseDeps(envs, logger, httpClient)
+
+	// Create public dependencies - load API index
+	startTime := time.Now()
+	logger.Info("loading Storage API index")
 	publicDeps, err := dependencies.NewPublicDeps(serverCtx, baseDeps, storageApiHost)
 	if err != nil {
 		return nil, err
 	}
+	logger.Infof("loaded Storage API index | %s", time.Since(startTime))
 
 	// Create repository manager
 	repositoryManager, err := repository.NewManager(serverCtx, serverWg, logger, defaultRepositories)
