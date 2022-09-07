@@ -138,9 +138,9 @@ func (m *Manager) Pull(ctx context.Context) <-chan error {
 
 			// Done
 			if result.Changed {
-				m.logger.Infof(`repository "%s" update finished, no change found | %s`, repo, time.Since(startTime))
-			} else {
 				m.logger.Infof(`repository "%s" updated from %s to %s | %s`, repo, result.OldHash, result.NewHash, time.Since(startTime))
+			} else {
+				m.logger.Infof(`repository "%s" update finished, no change found | %s`, repo, time.Since(startTime))
 			}
 		}()
 	}
