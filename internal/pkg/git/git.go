@@ -90,9 +90,9 @@ func Checkout(ctx context.Context, url, ref string, sparse bool, logger log.Logg
 	}
 
 	// Clone parameters
-	params := []string{"clone", "-q", "--branch", r.ref}
+	params := []string{"clone", "-q", "--depth=1", "--branch", r.ref}
 	if r.sparse {
-		params = append(params, "--depth=1", "--no-checkout", "--sparse", "--filter=blob:none")
+		params = append(params, "--no-checkout", "--sparse", "--filter=blob:none")
 	}
 	params = append(params, "--", r.url, workingDir)
 

@@ -9,6 +9,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 )
 
+const CopyBufferSize uint = 512 * 1024 // 512 kB
+
 func CopyFs2Fs(srcFs filesystem.Fs, srcPath string, dstFs filesystem.Fs, dstPath string) error {
 	srcPath = filesystem.FromSlash(srcPath)
 	dstPath = filesystem.FromSlash(dstPath)
@@ -39,9 +41,10 @@ func CopyFs2Fs(srcFs filesystem.Fs, srcPath string, dstFs filesystem.Fs, dstPath
 
 	// nolint: forbidigo
 	return aferocopy.Copy(srcPath, dstPath, aferocopy.Options{
-		SrcFs:  aferoSrc,
-		DestFs: aferoDst,
-		Sync:   true,
+		SrcFs:          aferoSrc,
+		DestFs:         aferoDst,
+		Sync:           false,
+		CopyBufferSize: CopyBufferSize,
 		OnDirExists: func(srcFs afero.Fs, src string, destFs afero.Fs, dest string) aferocopy.DirExistsAction {
 			return aferocopy.Replace
 		},
