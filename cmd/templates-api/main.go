@@ -36,7 +36,7 @@ func main() {
 	// Flags.
 	httpHostF := flag.String("http-host", "0.0.0.0", "HTTP host")
 	httpPortF := flag.String("http-port", "8000", "HTTP port")
-	repositoriesF := flag.String("repositories", "keboola|https://github.com/keboola/keboola-as-code-templates.git|main", "Default repositories, <name1>|<repo1>|<branch1>;<name2>|<repo2>|<branch2>;...")
+	repositoriesF := flag.String("repositories", "", "Default repositories, <name1>|<repo1>|<branch1>;<name2>|<repo2>|<branch2>;...")
 	debugF := flag.Bool("debug", false, "Enable debug log level.")
 	debugHttpF := flag.Bool("debug-http", false, "Log HTTP client request and response bodies.")
 	flag.Parse()
@@ -63,10 +63,35 @@ func main() {
 	}
 
 	// Parse repositories.
-	repositories, err := parseRepositories(*repositoriesF)
-	if err != nil {
-		logger.Println(err.Error())
-		os.Exit(1)
+	var repositories []model.TemplateRepository
+	if *repositoriesF == "" {
+		// Default value
+		repositories = []model.TemplateRepository{
+			{
+				Type: model.RepositoryTypeGit,
+				Name: "keboola",
+				Url:  "https://github.com/keboola/keboola-as-code-templates.git",
+				Ref:  "main",
+			},
+			{
+				Type: model.RepositoryTypeGit,
+				Name: "keboola-beta",
+				Url:  "https://github.com/keboola/keboola-as-code-templates.git",
+				Ref:  "beta",
+			},
+			{
+				Type: model.RepositoryTypeGit,
+				Name: "keboola-dev",
+				Url:  "https://github.com/keboola/keboola-as-code-templates.git",
+				Ref:  "dev",
+			},
+		}
+	} else {
+		repositories, err = parseRepositories(*repositoriesF)
+		if err != nil {
+			logger.Println(err.Error())
+			os.Exit(1)
+		}
 	}
 
 	// Start server.
@@ -138,6 +163,7 @@ func parseRepositories(paths string) (out []model.TemplateRepository, err error)
 	}
 
 	// Definitions are separated by ";"
+	usedNames := make(map[string]bool)
 	for _, definition := range strings.Split(paths, ";") {
 		// Definition parts are separated by "|"
 		parts := strings.Split(definition, "|")
@@ -146,6 +172,12 @@ func parseRepositories(paths string) (out []model.TemplateRepository, err error)
 		}
 		name := parts[0]
 		path := parts[1]
+
+		// Each default repository must have unique name
+		if usedNames[name] {
+			return nil, fmt.Errorf(`duplicate repository name "%s" found when parsing default repositories`, name)
+		}
+		usedNames[name] = true
 
 		switch {
 		case strings.HasPrefix(path, "file://"):
