@@ -23,7 +23,7 @@ import (
 // URL. It shuts down the server if any error is received in the error channel.
 func HandleHTTPServer(ctx context.Context, d dependencies.ForServer, u *url.URL, endpoints *templates.Endpoints, errCh chan error, logger *log.Logger, debug bool) {
 	// Trace endpoint start, finish and error
-	endpoints.Use(TraceEndpointsMiddleware())
+	endpoints.Use(TraceEndpointsMiddleware(d))
 
 	// Build the service HTTP request multiplexer and configure it to serve
 	// HTTP requests to the service endpoints.

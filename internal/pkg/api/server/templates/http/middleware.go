@@ -20,7 +20,7 @@ import (
 
 const RequestTimeout = 60 * time.Second
 
-func TraceEndpointsMiddleware() func(endpoint goa.Endpoint) goa.Endpoint {
+func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint goa.Endpoint) goa.Endpoint {
 	return func(endpoint goa.Endpoint) goa.Endpoint {
 		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 			// Trace all endpoints except health check
@@ -40,6 +40,10 @@ func TraceEndpointsMiddleware() func(endpoint goa.Endpoint) goa.Endpoint {
 					span.Finish()
 				}()
 			}
+
+			// Add dependencies to the context
+			reqDeps := dependencies.NewDepsForPublicRequest(serverDeps, ctx, ctx.Value(middleware.RequestIDKey).(string))
+			ctx = context.WithValue(ctx, dependencies.ForPublicRequestCtxKey, reqDeps)
 
 			// Handle
 			response, err = endpoint(ctx, request)
@@ -66,10 +70,6 @@ func ContextMiddleware(serverDeps dependencies.ForServer, h http.Handler) http.H
 		// Cancel context after request + set timeout
 		ctx, cancelFn := context.WithTimeout(ctx, RequestTimeout)
 		defer cancelFn()
-
-		// Add dependencies to the context
-		reqDeps := dependencies.NewDepsForPublicRequest(serverDeps, ctx, requestId)
-		ctx = context.WithValue(ctx, dependencies.ForPublicRequestCtxKey, reqDeps)
 
 		// Handle
 		h.ServeHTTP(w, r.WithContext(ctx))
