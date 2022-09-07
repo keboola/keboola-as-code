@@ -3,16 +3,23 @@ package save
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 type Dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 }
 
-func Run(_ context.Context, m *project.Manifest, fs filesystem.Fs, d Dependencies) (changed bool, err error) {
+func Run(ctx context.Context, m *project.Manifest, fs filesystem.Fs, d Dependencies) (changed bool, err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.manifest.load")
+	defer telemetry.EndSpan(span, &err)
+
 	// Save if manifest is changed
 	if m.IsChanged() {
 		if err := m.Save(fs); err != nil {

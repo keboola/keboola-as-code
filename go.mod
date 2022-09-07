@@ -16,7 +16,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.10.0
 	github.com/go-resty/resty/v2 v2.6.0
-	github.com/google/go-cmp v0.5.7
+	github.com/google/go-cmp v0.5.8
 	github.com/google/go-jsonnet v0.18.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/hashicorp/go-multierror v1.1.1
@@ -37,6 +37,8 @@ require (
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
 	go.etcd.io/etcd/client/v3 v3.5.0
 	go.nhat.io/aferocopy/v2 v2.0.1
+	go.opentelemetry.io/otel v1.9.0
+	go.opentelemetry.io/otel/trace v1.9.0
 	go.uber.org/zap v1.23.0
 	goa.design/goa/v3 v3.8.5
 	goa.design/plugins/v3 v3.8.5

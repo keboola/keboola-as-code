@@ -5,12 +5,14 @@ import (
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/client"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	createEnvFiles "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/envfiles/create"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
@@ -27,6 +29,7 @@ type Options struct {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	Options() *options.Options
 	Components() *model.ComponentsMap
@@ -39,6 +42,9 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.sync.init")
+	defer telemetry.EndSpan(span, &err)
+
 	logger := d.Logger()
 
 	fs, err := d.EmptyDir()
@@ -66,7 +72,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	errors := utils.NewMultiError()
 
 	// Generate CI workflows
-	if err := genWorkflows.Run(fs, o.Workflows, d); err != nil {
+	if err := genWorkflows.Run(ctx, fs, o.Workflows, d); err != nil {
 		errors.Append(utils.PrefixError(`workflows generation failed`, err))
 	}
 

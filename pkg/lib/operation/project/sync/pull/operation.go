@@ -3,9 +3,12 @@ package pull
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
@@ -19,6 +22,7 @@ type Options struct {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 }
 
@@ -32,10 +36,13 @@ func LoadStateOptions(force bool) loadState.Options {
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.sync.pull")
+	defer telemetry.EndSpan(span, &err)
+
 	logger := d.Logger()
 
 	// Diff
-	results, err := createDiff.Run(ctx, createDiff.Options{Objects: projectState})
+	results, err := createDiff.Run(ctx, createDiff.Options{Objects: projectState}, d)
 	if err != nil {
 		return err
 	}

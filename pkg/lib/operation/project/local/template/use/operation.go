@@ -8,12 +8,14 @@ import (
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/use"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
@@ -45,6 +47,7 @@ func (v newObjects) Log(logger log.Logger, tmpl *template.Template) {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	ProjectID() int
 	StorageApiHost() string
@@ -65,7 +68,10 @@ func LoadTemplateOptions() loadState.Options {
 	}
 }
 
-func Run(ctx context.Context, projectState *project.State, tmpl *template.Template, o Options, d dependencies) (string, []string, error) {
+func Run(ctx context.Context, projectState *project.State, tmpl *template.Template, o Options, d dependencies) (instanceId string, warnings []string, err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.template.use")
+	defer telemetry.EndSpan(span, &err)
+
 	logger := d.Logger()
 
 	// Get Storage API
@@ -76,7 +82,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	tickets := d.ObjectIDGeneratorFactory()(ctx)
 
 	// Generate ID for the template instance
-	instanceId := idgenerator.TemplateInstanceId()
+	instanceId = idgenerator.TemplateInstanceId()
 
 	// Load template
 	tmplCtx := use.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), instanceId, o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets)
@@ -170,7 +176,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	}
 
 	// Return urls to oauth configurations
-	warnings := make([]string, 0)
+	warnings = make([]string, 0)
 	for _, cKey := range tmplCtx.InputsUsage().OAuthConfigsMap() {
 		warnings = append(warnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", storageApiHost, d.ProjectID(), cKey.ComponentId, cKey.Id))
 	}

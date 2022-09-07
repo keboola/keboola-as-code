@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"github.com/keboola/go-client/pkg/client"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -10,6 +11,7 @@ import (
 // base dependencies container implements Base interface.
 type base struct {
 	envs       env.Provider
+	tracer     trace.Tracer
 	logger     log.Logger
 	httpClient client.Client
 }
@@ -21,6 +23,7 @@ func NewBaseDeps(envs env.Provider, logger log.Logger, httpClient client.Client)
 func newBaseDeps(envs env.Provider, logger log.Logger, httpClient client.Client) *base {
 	return &base{
 		envs:       envs,
+		tracer:     trace.NewNoopTracerProvider().Tracer(""),
 		logger:     logger,
 		httpClient: httpClient,
 	}
@@ -28,6 +31,10 @@ func newBaseDeps(envs env.Provider, logger log.Logger, httpClient client.Client)
 
 func (v base) Envs() env.Provider {
 	return v.envs
+}
+
+func (v base) Tracer() trace.Tracer {
+	return v.tracer
 }
 
 func (v base) Logger() log.Logger {
