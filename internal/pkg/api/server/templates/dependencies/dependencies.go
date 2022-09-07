@@ -141,20 +141,20 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	}
 	logger.Infof("loaded Storage API index | %s", time.Since(startTime))
 
-	// Create repository manager
-	repositoryManager, err := repository.NewManager(serverCtx, serverWg, logger, defaultRepositories)
-	if err != nil {
-		return nil, err
-	}
-
 	// Create server dependencies
 	d := &forServer{
-		Base:              baseDeps,
-		Public:            publicDeps,
-		serverCtx:         serverCtx,
-		serverWg:          serverWg,
-		logger:            logger,
-		repositoryManager: repositoryManager,
+		Base:      baseDeps,
+		Public:    publicDeps,
+		serverCtx: serverCtx,
+		serverWg:  serverWg,
+		logger:    logger,
+	}
+
+	// Create repository manager
+	if v, err := repository.NewManager(serverCtx, defaultRepositories, d); err != nil {
+		return nil, err
+	} else {
+		d.repositoryManager = v
 	}
 
 	// Test connection to etcd at server startup
@@ -319,7 +319,7 @@ func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition m
 		var err error
 		if definition.Type == model.RepositoryTypeGit {
 			// Get git repository
-			gitRepository, err := v.RepositoryManager().Repository(definition)
+			gitRepository, err := v.RepositoryManager().Repository(ctx, definition)
 			if err != nil {
 				return nil, err
 			}
