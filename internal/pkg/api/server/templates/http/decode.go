@@ -7,6 +7,8 @@ import (
 )
 
 // decider decodes request.
-func decoder(r *http.Request) goaHTTP.Decoder {
-	return goaHTTP.RequestDecoder(r)
+func newDecoder() func(r *http.Request) goaHTTP.Decoder {
+	return func(r *http.Request) goaHTTP.Decoder {
+		return goaHTTP.RequestDecoder(r)
+	}
 }
