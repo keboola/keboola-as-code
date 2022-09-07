@@ -33,9 +33,6 @@ func TestNewManager(t *testing.T) {
 
 	m, err := repository.NewManager(context.Background(), &sync.WaitGroup{}, log.NewDebugLogger(), nil)
 	assert.NoError(t, err)
-	err = m.AddRepository(repo)
-	assert.NoError(t, err)
-
 	defaultRepo, err := m.Repository(repo)
 	assert.NoError(t, err)
 
@@ -45,7 +42,7 @@ func TestNewManager(t *testing.T) {
 	assert.True(t, fs.Exists("example-file.txt"))
 }
 
-func TestAddRepository_AlreadyExists(t *testing.T) {
+func TestManager_Repository(t *testing.T) {
 	t.Parallel()
 
 	// Copy the git repository to temp
@@ -61,10 +58,11 @@ func TestAddRepository_AlreadyExists(t *testing.T) {
 
 	m, err := repository.NewManager(context.Background(), &sync.WaitGroup{}, log.NewDebugLogger(), nil)
 	assert.NoError(t, err)
-	err = m.AddRepository(repo)
+	v, err := m.Repository(repo)
+	assert.NotNil(t, v)
 	assert.NoError(t, err)
-
-	err = m.AddRepository(repo)
+	v, err = m.Repository(repo)
+	assert.NotNil(t, v)
 	assert.NoError(t, err)
 }
 

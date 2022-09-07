@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/sync/singleflight"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -17,38 +19,45 @@ const OperationTimeout = 30 * time.Second
 type Manager struct {
 	ctx                 context.Context
 	logger              log.Logger
-	lock                *sync.Mutex
 	defaultRepositories []model.TemplateRepository
+	initGroup           *singleflight.Group
 	repositories        map[string]*git.Repository
 }
 
-func NewManager(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, defaultRepositories []model.TemplateRepository) (*Manager, error) {
+func NewManager(ctx context.Context, serverWg *sync.WaitGroup, logger log.Logger, defaultRepositories []model.TemplateRepository) (*Manager, error) {
 	m := &Manager{
 		ctx:                 ctx,
 		logger:              logger,
-		lock:                &sync.Mutex{},
 		defaultRepositories: defaultRepositories,
+		initGroup:           &singleflight.Group{},
 		repositories:        make(map[string]*git.Repository),
 	}
 
 	// Delete all temp directories on server shutdown
-	wg.Add(1)
+	serverWg.Add(1)
 	go func() {
-		defer wg.Done()
+		defer serverWg.Done()
 		<-ctx.Done()
 		m.Free()
 	}()
 
-	// Add default repositories
+	// Init default repositories in parallel
+	errors := utils.NewMultiError()
+	initWg := &sync.WaitGroup{}
 	for _, repo := range defaultRepositories {
+		repo := repo
 		if repo.Type == model.RepositoryTypeGit {
-			if err := m.AddRepository(repo); err != nil {
-				return nil, err
-			}
+			initWg.Add(1)
+			go func() {
+				defer initWg.Done()
+				if _, err := m.Repository(repo); err != nil {
+					errors.Append(err)
+				}
+			}()
 		}
 	}
-
-	return m, nil
+	initWg.Wait()
+	return m, errors.ErrorOrNil()
 }
 
 // DefaultRepositories returns list of default repositories configured for the API.
@@ -64,43 +73,39 @@ func (m *Manager) ManagedRepositories() (out []string) {
 	return out
 }
 
-func (m *Manager) Repository(ref model.TemplateRepository) (*git.Repository, error) {
+func (m *Manager) Repository(repoDef model.TemplateRepository) (*git.Repository, error) {
+	hash := repoDef.Hash()
+
 	// Get or init repository
-	if _, found := m.repositories[ref.Hash()]; !found {
-		if err := m.AddRepository(ref); err != nil {
-			return nil, err
+	ch := m.initGroup.DoChan(hash, func() (interface{}, error) {
+		if _, found := m.repositories[hash]; !found {
+			// Create context with timeout
+			ctx, cancel := context.WithTimeout(m.ctx, OperationTimeout)
+			defer cancel()
+
+			// Log start
+			startTime := time.Now()
+			m.logger.Infof(`checking out repository "%s:%s"`, repoDef.Url, repoDef.Ref)
+
+			// Checkout
+			repo, err := git.Checkout(ctx, repoDef.Url, repoDef.Ref, false, m.logger)
+			if err != nil {
+				return nil, fmt.Errorf(`cannot checkout out repository "%s": %w`, repoDef, err)
+			}
+
+			// Store
+			m.logger.Infof(`checked out repository "%s" | %s`, repo, time.Since(startTime))
+			m.repositories[hash] = repo
 		}
-	}
-	return m.repositories[ref.Hash()], nil
-}
+		return nil, nil
+	})
 
-func (m *Manager) AddRepository(repositoryDef model.TemplateRepository) error {
-	if repositoryDef.Type != model.RepositoryTypeGit {
-		panic("Cannot checkout dir repository")
-	}
-
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
-	// Check if already exists
-	hash := repositoryDef.Hash()
-	if _, ok := m.repositories[hash]; ok {
-		// repository already exists
-		return nil
+	// Check error during initialization
+	if err := (<-ch).Err; err != nil {
+		return nil, err
 	}
 
-	// Check out
-	startTime := time.Now()
-	m.logger.Infof(`checking out repository "%s:%s"`, repositoryDef.Url, repositoryDef.Ref)
-	ctx, cancel := context.WithTimeout(m.ctx, OperationTimeout)
-	defer cancel()
-	repo, err := git.Checkout(ctx, repositoryDef.Url, repositoryDef.Ref, false, m.logger)
-	if err != nil {
-		return fmt.Errorf(`cannot checkout out repository "%s": %w`, repositoryDef, err)
-	}
-	m.logger.Infof(`repository checked out "%s" | %s`, repo, time.Since(startTime))
-	m.repositories[hash] = repo
-	return nil
+	return m.repositories[repoDef.Hash()], nil
 }
 
 func (m *Manager) Pull() <-chan error {
