@@ -6,13 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
@@ -31,9 +30,11 @@ func TestNewManager(t *testing.T) {
 		Ref:  "main",
 	}
 
-	m, err := repository.NewManager(context.Background(), &sync.WaitGroup{}, log.NewDebugLogger(), nil)
+	ctx := context.Background()
+	d := dependencies.NewMockedDeps()
+	m, err := repository.NewManager(ctx, nil, d)
 	assert.NoError(t, err)
-	defaultRepo, err := m.Repository(repo)
+	defaultRepo, err := m.Repository(ctx, repo)
 	assert.NoError(t, err)
 
 	fs, unlockFS := defaultRepo.Fs()
@@ -56,12 +57,14 @@ func TestManager_Repository(t *testing.T) {
 		Ref:  "main",
 	}
 
-	m, err := repository.NewManager(context.Background(), &sync.WaitGroup{}, log.NewDebugLogger(), nil)
+	ctx := context.Background()
+	d := dependencies.NewMockedDeps()
+	m, err := repository.NewManager(ctx, nil, d)
 	assert.NoError(t, err)
-	v, err := m.Repository(repo)
+	v, err := m.Repository(ctx, repo)
 	assert.NotNil(t, v)
 	assert.NoError(t, err)
-	v, err = m.Repository(repo)
+	v, err = m.Repository(ctx, repo)
 	assert.NotNil(t, v)
 	assert.NoError(t, err)
 }
@@ -91,7 +94,8 @@ func TestNewManager_DefaultRepositories(t *testing.T) {
 	}
 
 	// Create manager
-	m, err := repository.NewManager(context.Background(), &sync.WaitGroup{}, log.NewDebugLogger(), defaultRepositories)
+	d := dependencies.NewMockedDeps()
+	m, err := repository.NewManager(context.Background(), defaultRepositories, d)
 	assert.NoError(t, err)
 
 	// Get list of default repositories

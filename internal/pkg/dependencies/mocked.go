@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
@@ -30,6 +31,7 @@ type mocked struct {
 	*project
 	envs                *env.Map
 	options             *options.Options
+	serverWg            *sync.WaitGroup
 	debugLogger         log.DebugLogger
 	mockedHttpTransport *httpmock.MockTransport
 }
@@ -150,6 +152,7 @@ func NewMockedDeps(opts ...MockedOption) Mocked {
 		project:             projectDeps,
 		envs:                envs,
 		options:             options.New(),
+		serverWg:            &sync.WaitGroup{},
 		debugLogger:         logger,
 		mockedHttpTransport: mockedHttpTransport,
 	}
@@ -176,6 +179,10 @@ func (v *mocked) Options() *options.Options {
 
 func (v *mocked) DebugLogger() log.DebugLogger {
 	return v.debugLogger
+}
+
+func (v *mocked) ServerWaitGroup() *sync.WaitGroup {
+	return v.serverWg
 }
 
 func (v *mocked) MockedHttpTransport() *httpmock.MockTransport {

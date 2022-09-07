@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -12,28 +11,37 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	checkoutOp "github.com/keboola/keboola-as-code/pkg/lib/operation/repository/checkout"
 )
 
-const OperationTimeout = 30 * time.Second
+const PullTimeout = 30 * time.Second
 
 type Manager struct {
 	ctx                 context.Context
+	deps                dependencies
 	logger              log.Logger
 	defaultRepositories []model.TemplateRepository
 	initGroup           *singleflight.Group
 	repositories        map[string]*git.Repository
 }
 
-func NewManager(ctx context.Context, serverWg *sync.WaitGroup, logger log.Logger, defaultRepositories []model.TemplateRepository) (*Manager, error) {
+type dependencies interface {
+	Logger() log.Logger
+	ServerWaitGroup() *sync.WaitGroup
+}
+
+func NewManager(ctx context.Context, defaultRepositories []model.TemplateRepository, d dependencies) (*Manager, error) {
 	m := &Manager{
 		ctx:                 ctx,
-		logger:              logger,
+		deps:                d,
+		logger:              d.Logger(),
 		defaultRepositories: defaultRepositories,
 		initGroup:           &singleflight.Group{},
 		repositories:        make(map[string]*git.Repository),
 	}
 
 	// Delete all temp directories on server shutdown
+	serverWg := d.ServerWaitGroup()
 	serverWg.Add(1)
 	go func() {
 		defer serverWg.Done()
@@ -50,7 +58,7 @@ func NewManager(ctx context.Context, serverWg *sync.WaitGroup, logger log.Logger
 			initWg.Add(1)
 			go func() {
 				defer initWg.Done()
-				if _, err := m.Repository(repo); err != nil {
+				if _, err := m.Repository(ctx, repo); err != nil {
 					errors.Append(err)
 				}
 			}()
@@ -73,27 +81,23 @@ func (m *Manager) ManagedRepositories() (out []string) {
 	return out
 }
 
-func (m *Manager) Repository(repoDef model.TemplateRepository) (*git.Repository, error) {
+func (m *Manager) Repository(ctx context.Context, repoDef model.TemplateRepository) (*git.Repository, error) {
 	hash := repoDef.Hash()
 
 	// Get or init repository
 	ch := m.initGroup.DoChan(hash, func() (interface{}, error) {
 		if _, found := m.repositories[hash]; !found {
-			// Create context with timeout
-			ctx, cancel := context.WithTimeout(m.ctx, OperationTimeout)
-			defer cancel()
-
 			// Log start
 			startTime := time.Now()
 			m.logger.Infof(`checking out repository "%s:%s"`, repoDef.Url, repoDef.Ref)
 
 			// Checkout
-			repo, err := git.Checkout(ctx, repoDef.Url, repoDef.Ref, false, m.logger)
+			repo, err := checkoutOp.Run(ctx, repoDef, m.deps)
 			if err != nil {
-				return nil, fmt.Errorf(`cannot checkout out repository "%s": %w`, repoDef, err)
+				return nil, err
 			}
 
-			// Store
+			// Done
 			m.logger.Infof(`checked out repository "%s" | %s`, repo, time.Since(startTime))
 			m.repositories[hash] = repo
 		}
@@ -119,7 +123,7 @@ func (m *Manager) Pull() <-chan error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			ctx, cancel := context.WithTimeout(m.ctx, OperationTimeout)
+			ctx, cancel := context.WithTimeout(m.ctx, PullTimeout)
 			defer cancel()
 			if err := pullRepo(ctx, m.logger, repo); err != nil {
 				errors.Append(err)

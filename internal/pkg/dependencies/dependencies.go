@@ -49,6 +49,7 @@ package dependencies
 
 import (
 	"context"
+	"sync"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
@@ -106,6 +107,7 @@ type Mocked interface {
 	Base
 	Public
 	Project
+	ServerWaitGroup() *sync.WaitGroup
 	SetFromTestProject(project *testproject.Project)
 	EnvsMutable() *env.Map
 	Options() *options.Options
