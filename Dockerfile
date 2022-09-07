@@ -1,6 +1,7 @@
 FROM golang:1.19
 
 ENV HOME=/my-home
+ENV GOMEMLIMIT=512MiB
 ENV GOCACHE=/tmp/cache/go
 ENV GOMODCACHE=/tmp/cache/go-mod
 ENV GOFLAGS="-mod=mod"

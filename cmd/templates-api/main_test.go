@@ -67,4 +67,8 @@ func TestParseRepositories(t *testing.T) {
 	_, err = parseRepositories("foo|https://bar|abc|def")
 	assert.Error(t, err)
 	assert.Equal(t, `invalid repository definition "foo|https://bar|abc|def": required format <name>:https://<repository>:<branch>`, err.Error())
+
+	_, err = parseRepositories("foo|https://bar.com|baz;foo|file://bar|bar")
+	assert.Error(t, err)
+	assert.Equal(t, `duplicate repository name "foo" found when parsing default repositories`, err.Error())
 }
