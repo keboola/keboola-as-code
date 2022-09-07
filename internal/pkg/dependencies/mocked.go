@@ -133,7 +133,7 @@ func NewMockedDeps(opts ...MockedOption) Mocked {
 	)
 
 	// Create base, public and project dependencies
-	baseDeps := newBaseDeps(envs, logger, httpClient)
+	baseDeps := newBaseDeps(envs, nil, logger, httpClient)
 	publicDeps, err := newPublicDeps(ctx, baseDeps, values.StorageApiHost)
 	if err != nil {
 		panic(err)

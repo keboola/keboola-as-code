@@ -131,7 +131,7 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 	} else {
 		logger = log.NewNopLogger()
 	}
-	testDeps, err := newTestDependencies(ctx, logger, testPrj.StorageAPIHost(), testPrj.StorageAPIToken().Token)
+	testDeps, err := newTestDependencies(ctx, d.Tracer(), logger, testPrj.StorageAPIHost(), testPrj.StorageAPIToken().Token)
 	if err != nil {
 		return err
 	}
@@ -253,7 +253,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	} else {
 		logger = log.NewNopLogger()
 	}
-	testDeps, err := newTestDependencies(ctx, logger, testPrj.StorageAPIHost(), testPrj.StorageAPIToken().Token)
+	testDeps, err := newTestDependencies(ctx, d.Tracer(), logger, testPrj.StorageAPIHost(), testPrj.StorageAPIToken().Token)
 	if err != nil {
 		return err
 	}
@@ -422,8 +422,8 @@ type testDependencies struct {
 	dependenciesPkg.Project
 }
 
-func newTestDependencies(ctx context.Context, logger log.Logger, apiHost, apiToken string) (*testDependencies, error) {
-	baseDeps := dependenciesPkg.NewBaseDeps(env.Empty(), logger, client.NewTestClient())
+func newTestDependencies(ctx context.Context, tracer trace.Tracer, logger log.Logger, apiHost, apiToken string) (*testDependencies, error) {
+	baseDeps := dependenciesPkg.NewBaseDeps(env.Empty(), tracer, logger, client.NewTestClient())
 	publicDeps, err := dependenciesPkg.NewPublicDeps(ctx, baseDeps, apiHost)
 	if err != nil {
 		return nil, err

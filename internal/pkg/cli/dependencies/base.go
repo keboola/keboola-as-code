@@ -28,7 +28,7 @@ type base struct {
 
 func newBaseDeps(commandCtx context.Context, envs env.Provider, logger log.Logger, httpClient client.Client, fs filesystem.Fs, dialogs *dialog.Dialogs, opts *options.Options) *base {
 	return &base{
-		Base:       dependencies.NewBaseDeps(envs, logger, httpClient),
+		Base:       dependencies.NewBaseDeps(envs, nil, logger, httpClient),
 		commandCtx: commandCtx,
 		fs:         fs,
 		fsInfo:     FsInfo{fs: fs},
