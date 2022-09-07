@@ -120,7 +120,7 @@ func start(host, port string, repositories []model.TemplateRepository, debug, de
 	templatesHttp.HandleHTTPServer(ctx, d, serverUrl, endpoints, errCh, stdLogger, debug)
 
 	// Wait for signal.
-	logger.Info("exiting (%v)", <-errCh)
+	logger.Infof("exiting (%v)", <-errCh)
 
 	// Send cancellation signal to the goroutines.
 	cancelFn()
