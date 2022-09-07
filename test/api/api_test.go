@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -142,28 +143,38 @@ func getFreePort() (int, error) {
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
-func waitForAPI(apiUrl string) error {
+func waitForAPI(cmdErrCh <-chan error, apiUrl string) error {
 	client := resty.New()
-
-	startTime := time.Now()
+	timeout := time.After(30 * time.Second)
+	tick := time.Tick(200 * time.Millisecond)
+	// Keep trying until we're timed out or got a result or got an error
 	for {
-		resp, err := client.R().Get(fmt.Sprintf("%s/health-check", apiUrl))
-		if err != nil && !strings.Contains(err.Error(), "connection refused") {
-			return err
-		}
-		if resp.StatusCode() == 200 {
-			return nil
-		}
-
-		if time.Since(startTime).Seconds() > 30 {
+		select {
+		// Handle timeout
+		case <-timeout:
 			return fmt.Errorf("server didn't start within 30 seconds")
+		// Handle server termination
+		case err := <-cmdErrCh:
+			if err == nil {
+				return fmt.Errorf("the server was terminated unexpectedly")
+			} else {
+				return fmt.Errorf("the server was terminated unexpectedly with error: %w", err)
+			}
+		// Periodically test health check endpoint
+		case <-tick:
+			resp, err := client.R().Get(fmt.Sprintf("%s/health-check", apiUrl))
+			if err != nil && !strings.Contains(err.Error(), "connection refused") {
+				return err
+			}
+			if resp.StatusCode() == 200 {
+				return nil
+			}
 		}
-		time.Sleep(200 * time.Millisecond)
 	}
 }
 
 // RunApiServer runs the compiled api binary on the background.
-func RunApiServer(t *testing.T, binary string, storageApiHost string, repoPath string) string {
+func RunApiServer(t *testing.T, binary string, storageApiHost string, repositories string) string {
 	t.Helper()
 
 	// Get a free port
@@ -174,10 +185,7 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string, repoPath s
 
 	// Args
 	apiUrl := fmt.Sprintf("http://localhost:%d", port)
-	args := []string{fmt.Sprintf("--http-port=%d", port)}
-	if repoPath != "" {
-		args = append(args, fmt.Sprintf("--repositories=keboola|file://%s", repoPath))
-	}
+	args := []string{fmt.Sprintf("--http-port=%d", port), fmt.Sprintf("--repositories=%s", repositories)}
 
 	// Envs
 	envs := env.Empty()
@@ -187,13 +195,19 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string, repoPath s
 	envs.Set("ETCD_ENABLED", "false")
 
 	// Start API server
+	var stdout, stderr bytes.Buffer
 	cmd := exec.Command(binary, args...)
 	cmd.Env = envs.ToSlice()
-	cmd.Stdout = testhelper.VerboseStdout()
-	cmd.Stderr = testhelper.VerboseStderr()
+	cmd.Stdout = io.MultiWriter(&stdout, testhelper.VerboseStdout())
+	cmd.Stderr = io.MultiWriter(&stderr, testhelper.VerboseStderr())
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("Server failed to start: %s", err)
 	}
+
+	cmdErrCh := make(chan error, 1)
+	go func() {
+		cmdErrCh <- cmd.Wait()
+	}()
 
 	// Kill API server after test
 	t.Cleanup(func() {
@@ -203,8 +217,13 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string, repoPath s
 	})
 
 	// Wait for API server
-	if err = waitForAPI(apiUrl); err != nil {
-		t.Fatalf("Unexpected error while waiting for API: %s", err)
+	if err = waitForAPI(cmdErrCh, apiUrl); err != nil {
+		t.Fatalf(
+			"Unexpected error while waiting for API: %s\n\nServer STDERR:%s\n\nServer STDOUT:%s\n",
+			err,
+			stderr.String(),
+			stdout.String(),
+		)
 	}
 
 	return apiUrl
@@ -227,12 +246,16 @@ func RunRequests(
 ) {
 	t.Helper()
 
-	// Run API server
-	repoPath := ""
+	// Testing templates repositories
+	var repositories string
 	if testDirFs.Exists("repository") {
-		repoPath = filepath.Join(testDirFs.BasePath(), "repository")
+		repositories = fmt.Sprintf("keboola|file://%s", filepath.Join(testDirFs.BasePath(), "repository"))
+	} else {
+		repositories = "keboola|https://github.com/keboola/keboola-as-code-templates.git|main"
 	}
-	apiUrl := RunApiServer(t, binary, project.StorageAPIHost(), repoPath)
+
+	// Run API server
+	apiUrl := RunApiServer(t, binary, project.StorageAPIHost(), repositories)
 	client := resty.New()
 	client.SetHostURL(apiUrl)
 
