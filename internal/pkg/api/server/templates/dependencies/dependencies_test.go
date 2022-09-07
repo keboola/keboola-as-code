@@ -100,7 +100,7 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 	assert.False(t, repo1.Fs().Exists("template2"))
 
 	// Update repository -> no change
-	err = <-repositoryManager.Pull()
+	err = <-repositoryManager.Pull(context.Background())
 	assert.NoError(t, err)
 	wildcards.Assert(t, `%Arepository "%s" update finished, no change found%A`, mockedDeps.DebugLogger().InfoMessages())
 	mockedDeps.DebugLogger().Truncate()
@@ -123,7 +123,7 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 	runGitCommand(t, tmpDir, "reset", "--hard", "b1")
 
 	// Update repository -> change occurred
-	err = <-repositoryManager.Pull()
+	err = <-repositoryManager.Pull(context.Background())
 	assert.NoError(t, err)
 	wildcards.Assert(t, `%Arepository "%s" updated from c6c1f0be98fa8fd49be15022a47dcdca22f0dc41 to db2c26cc2f75b730f034378031d43df445dd6bec%A`, mockedDeps.DebugLogger().InfoMessages())
 	mockedDeps.DebugLogger().Truncate()
@@ -175,7 +175,7 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 	runGitCommand(t, tmpDir, "reset", "--hard", "HEAD~2")
 
 	// Update repository -> change occurred
-	err = <-repositoryManager.Pull()
+	err = <-repositoryManager.Pull(context.Background())
 	assert.NoError(t, err)
 	wildcards.Assert(t, `%Arepository "%s" updated from db2c26cc2f75b730f034378031d43df445dd6bec to f4bf236227116803d28fa2f931f28059a5ab588f%A`, mockedDeps.DebugLogger().InfoMessages())
 	mockedDeps.DebugLogger().Truncate()

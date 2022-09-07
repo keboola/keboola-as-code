@@ -44,7 +44,7 @@ spec:
                   key: storageApiHost
             - name: ETCD_ENDPOINT
               value: templates-api-etcd-headless.templates-api.svc.cluster.local:2379
-            - name: ETCD_USER
+            - name: ETCD_USERNAME
               value: root
             - name: ETCD_PASSWORD
               valueFrom:

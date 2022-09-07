@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	checkoutOp "github.com/keboola/keboola-as-code/pkg/lib/operation/repository/checkout"
+	pullOp "github.com/keboola/keboola-as-code/pkg/lib/operation/repository/pull"
 )
 
 const PullTimeout = 30 * time.Second
@@ -112,7 +113,7 @@ func (m *Manager) Repository(ctx context.Context, repoDef model.TemplateReposito
 	return m.repositories[repoDef.Hash()], nil
 }
 
-func (m *Manager) Pull() <-chan error {
+func (m *Manager) Pull(ctx context.Context) <-chan error {
 	errorCh := make(chan error, 1)
 	errors := utils.NewMultiError()
 
@@ -123,11 +124,23 @@ func (m *Manager) Pull() <-chan error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			ctx, cancel := context.WithTimeout(m.ctx, PullTimeout)
-			defer cancel()
-			if err := pullRepo(ctx, m.logger, repo); err != nil {
+
+			// Log start
+			startTime := time.Now()
+			m.logger.Infof(`repository "%s" update started`, repo)
+
+			// Pull
+			result, err := pullOp.Run(ctx, repo, m.deps)
+			if err != nil {
 				errors.Append(err)
 				m.logger.Errorf(`error while updating repository "%s": %w`, repo, err)
+			}
+
+			// Done
+			if result.Changed {
+				m.logger.Infof(`repository "%s" updated from %s to %s | %s`, repo, result.OldHash, result.NewHash, time.Since(startTime))
+			} else {
+				m.logger.Infof(`repository "%s" update finished, no change found | %s`, repo, time.Since(startTime))
 			}
 		}()
 	}
@@ -154,31 +167,4 @@ func (m *Manager) Free() {
 
 	wg.Wait()
 	m.logger.Infof("repository manager cleaned up")
-}
-
-func pullRepo(ctx context.Context, logger log.Logger, repo *git.Repository) error {
-	startTime := time.Now()
-	logger.Infof(`repository "%s" update started`, repo)
-
-	oldHash, err := repo.CommitHash(ctx)
-	if err != nil {
-		return err
-	}
-
-	if err := repo.Pull(ctx); err != nil {
-		return err
-	}
-
-	newHash, err := repo.CommitHash(ctx)
-	if err != nil {
-		return err
-	}
-
-	if oldHash == newHash {
-		logger.Infof(`repository "%s" update finished, no change found | %s`, repo, time.Since(startTime))
-	} else {
-		logger.Infof(`repository "%s" updated from %s to %s | %s`, repo, oldHash, newHash, time.Since(startTime))
-	}
-
-	return nil
 }
