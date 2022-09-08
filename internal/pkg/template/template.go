@@ -264,6 +264,27 @@ func (t *Template) Test(testName string) (*Test, error) {
 	return &Test{name: testName, tmpl: t, fs: testDir}, nil
 }
 
+func (t *Template) CreateTest(testName string) (*Test, error) {
+	testsDir, err := t.TestsDir()
+	if err != nil {
+		return nil, err
+	}
+
+	if !testsDir.IsDir(testName) {
+		err = testsDir.Mkdir(testName)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	testDir, err := testsDir.SubDirFs(testName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Test{name: testName, tmpl: t, fs: testDir}, nil
+}
+
 func (t *Template) LongDesc() string {
 	return t.longDescription
 }
@@ -416,4 +437,38 @@ func (t *Test) Inputs(provider testhelper.EnvProvider, replaceEnvsFn func(string
 	}
 
 	return inputs, nil
+}
+
+func (t *Test) SaveInputs(inputs map[string]templateInput.Value) error {
+	res := make(map[string]interface{})
+	for k, v := range inputs {
+		res[k] = v.Value
+	}
+
+	// Convert to Json
+	jsonContent, err := json.EncodeString(res, true)
+	if err != nil {
+		return err
+	}
+
+	// Write file
+	f := filesystem.NewRawFile(InputsFile, jsonContent)
+	return t.fs.WriteFile(f)
+}
+
+func (t *Test) SaveExpectedOutput(prjFS filesystem.Fs) error {
+	// Get expected output dir
+	if !t.fs.IsDir(ExpectedOutDirectory) {
+		err := t.fs.Mkdir(ExpectedOutDirectory)
+		if err != nil {
+			return err
+		}
+	}
+
+	expectedFS, err := t.fs.SubDirFs(ExpectedOutDirectory)
+	if err != nil {
+		return err
+	}
+
+	return aferofs.CopyFs2Fs(prjFS, "/", expectedFS, "/")
 }

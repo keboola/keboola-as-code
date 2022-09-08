@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	createOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test/create"
 )
 
 func CreateCommand(p dependencies.Provider) *cobra.Command {
@@ -37,17 +38,24 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 				versionArg = args[1]
 			}
 
-			_, err = d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Ref(), args[0], versionArg))
+			tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Ref(), args[0], versionArg))
 			if err != nil {
 				return err
 			}
 
-			return nil
+			// Options
+			options, err := d.Dialogs().AskCreateTemplateTestOptions(tmpl.Inputs(), d.Options())
+			if err != nil {
+				return err
+			}
+
+			return createOp.Run(d.CommandCtx(), tmpl, options, d)
 		},
 	}
 
 	cmd.Flags().SortFlags = true
-	cmd.Flags().String("test-name", "", "name of a single test to be run")
+	cmd.Flags().String("test-name", "", "name of the test to be created")
+	cmd.Flags().StringP(`inputs-file`, "f", ``, "JSON file with inputs values")
 	cmd.Flags().Bool("verbose", false, "show details about creating test")
 
 	return cmd
