@@ -1,0 +1,4 @@
+%A
+[templatesApi][request][requestId=%a]INFO GET /foo/bar %a
+[templatesApi]INFO endpoint not found | exceptionId=keboola-templates-%a errorName=templates.endpointNotFound errorType=http.NotFoundError response={"statusCode":404,"error":"templates.endpointNotFound","message":"Endpoint not found.","exceptionId":"keboola-templates-%a"}
+[templatesApi][response][requestId=%a]INFO status=404 bytes=%a time=%a

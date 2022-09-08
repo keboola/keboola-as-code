@@ -174,7 +174,7 @@ func waitForAPI(cmdErrCh <-chan error, apiUrl string) error {
 }
 
 // RunApiServer runs the compiled api binary on the background.
-func RunApiServer(t *testing.T, binary string, storageApiHost string, repositories string) string {
+func RunApiServer(t *testing.T, binary string, storageApiHost string, repositories string) (apiUrl string, stdout, stderr *bytes.Buffer) {
 	t.Helper()
 
 	// Get a free port
@@ -184,7 +184,7 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string, repositori
 	}
 
 	// Args
-	apiUrl := fmt.Sprintf("http://localhost:%d", port)
+	apiUrl = fmt.Sprintf("http://localhost:%d", port)
 	args := []string{fmt.Sprintf("--http-port=%d", port), fmt.Sprintf("--repositories=%s", repositories)}
 
 	// Envs
@@ -195,11 +195,12 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string, repositori
 	envs.Set("ETCD_ENABLED", "false")
 
 	// Start API server
-	var stdout, stderr bytes.Buffer
+	stdout = &bytes.Buffer{}
+	stderr = &bytes.Buffer{}
 	cmd := exec.Command(binary, args...)
 	cmd.Env = envs.ToSlice()
-	cmd.Stdout = io.MultiWriter(&stdout, testhelper.VerboseStdout())
-	cmd.Stderr = io.MultiWriter(&stderr, testhelper.VerboseStderr())
+	cmd.Stdout = io.MultiWriter(stdout, testhelper.VerboseStdout())
+	cmd.Stderr = io.MultiWriter(stderr, testhelper.VerboseStderr())
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("Server failed to start: %s", err)
 	}
@@ -226,7 +227,7 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string, repositori
 		)
 	}
 
-	return apiUrl
+	return apiUrl, stdout, stderr
 }
 
 type ApiRequest struct {
@@ -255,7 +256,7 @@ func RunRequests(
 	}
 
 	// Run API server
-	apiUrl := RunApiServer(t, binary, project.StorageAPIHost(), repositories)
+	apiUrl, stdout, stderr := RunApiServer(t, binary, project.StorageAPIHost(), repositories)
 	client := resty.New()
 	client.SetHostURL(apiUrl)
 
@@ -326,7 +327,7 @@ func RunRequests(
 		wildcards.Assert(t, expectedRespBody, respBody, fmt.Sprintf("Unexpected response for request %s.", dir))
 	}
 
-	// Check project state
+	// Optionally check project state
 	expectedStatePath := "expected-state.json"
 	if testDirFs.IsFile(expectedStatePath) {
 		// Read expected state
@@ -354,5 +355,22 @@ func RunRequests(
 			json.MustEncodeString(actualSnapshot, true),
 			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir.`,
 		)
+	}
+
+	// Optionally check API server stdout/stderr
+	expectedStdoutPath := "expected-server-stdout"
+	fmt.Println(testDirFs.Glob("*"))
+	if testDirFs.IsFile(expectedStdoutPath) {
+		file, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStdoutPath))
+		assert.NoError(t, err)
+		expected := testhelper.ReplaceEnvsString(file.Content, envProvider)
+		wildcards.Assert(t, expected, stdout.String(), "Unexpected STDOUT.")
+	}
+	expectedStderrPath := "expected-server-stderr"
+	if testDirFs.IsFile(expectedStderrPath) {
+		file, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStderrPath))
+		assert.NoError(t, err)
+		expected := testhelper.ReplaceEnvsString(file.Content, envProvider)
+		wildcards.Assert(t, expected, stderr.String(), "Unexpected STDERR.")
 	}
 }
