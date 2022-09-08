@@ -139,33 +139,56 @@ func ApiClientTrace() client.TraceFactory {
 
 		// Api request
 		var ctx context.Context
-		var apiReqSpan ddtracer.Span
-		t.GotRequest = func(c context.Context, request client.HTTPRequest) context.Context {
-			resultType := reflect.TypeOf(request.ResultDef())
+		var request client.HTTPRequest
+
+		var requestSpan ddtracer.Span
+		var parsingSpan ddtracer.Span
+		var retryDelaySpan ddtracer.Span
+
+		t.GotRequest = func(c context.Context, r client.HTTPRequest) context.Context {
+			request = r
 			resultTypeString := ""
-			if resultType != nil {
+			if resultType := reflect.TypeOf(request.ResultDef()); resultType != nil {
 				resultTypeString = resultType.String()
 			}
-			apiReqSpan, ctx = ddtracer.StartSpanFromContext(
+			requestSpan, ctx = ddtracer.StartSpanFromContext(
 				c,
 				"api.client.request",
-				ddtracer.ResourceName("request"),
+				ddtracer.ResourceName(request.URL()),
+				ddtracer.Tag(ext.HTTPMethod, request.Method()),
+				ddtracer.Tag(ext.HTTPURL, request.URL()),
 				ddtracer.SpanType("api.client"),
 				ddtracer.Tag("result_type", resultTypeString),
 			)
 			return ctx
 		}
+		t.HTTPRequestDone = func(response *http.Response, err error) {
+			if err == nil {
+				// Create span for body parsing, if the request was successful
+				parsingSpan, _ = ddtracer.StartSpanFromContext(
+					ctx,
+					"api.client.request.parsing",
+					ddtracer.ResourceName(request.URL()),
+					ddtracer.Tag(ext.HTTPMethod, request.Method()),
+					ddtracer.Tag(ext.HTTPURL, request.URL()),
+					ddtracer.SpanType("api.client"),
+				)
+			}
+		}
 		t.RequestProcessed = func(result any, err error) {
-			apiReqSpan.Finish(ddtracer.WithError(err))
+			if parsingSpan != nil {
+				// Finish parsing span, if any
+				parsingSpan.Finish()
+			}
+			requestSpan.Finish(ddtracer.WithError(err))
 		}
 
 		// Retry
-		var retrySpan ddtracer.Span
 		t.HTTPRequestRetry = func(attempt int, delay time.Duration) {
-			retrySpan, _ = ddtracer.StartSpanFromContext(
+			retryDelaySpan, _ = ddtracer.StartSpanFromContext(
 				ctx,
 				"api.client.retry.delay",
-				ddtracer.ResourceName("retry"),
+				ddtracer.ResourceName(request.URL()),
 				ddtracer.SpanType("api.client"),
 				ddtracer.Tag("attempt", attempt),
 				ddtracer.Tag("delay_ms", delay.Milliseconds()),
@@ -173,9 +196,9 @@ func ApiClientTrace() client.TraceFactory {
 			)
 		}
 		t.HTTPRequestStart = func(r *http.Request) {
-			if retrySpan != nil {
-				apiReqSpan.Finish()
-				retrySpan = nil
+			if retryDelaySpan != nil {
+				requestSpan.Finish()
+				retryDelaySpan = nil
 			}
 		}
 		return t
