@@ -16,14 +16,19 @@ type base struct {
 	httpClient client.Client
 }
 
-func NewBaseDeps(envs env.Provider, logger log.Logger, httpClient client.Client) Base {
-	return newBaseDeps(envs, logger, httpClient)
+func NewBaseDeps(envs env.Provider, tracer trace.Tracer, logger log.Logger, httpClient client.Client) Base {
+	return newBaseDeps(envs, tracer, logger, httpClient)
 }
 
-func newBaseDeps(envs env.Provider, logger log.Logger, httpClient client.Client) *base {
+func newBaseDeps(envs env.Provider, tracer trace.Tracer, logger log.Logger, httpClient client.Client) *base {
+	if tracer == nil {
+		// Default no operation tracer
+		tracer = trace.NewNoopTracerProvider().Tracer("")
+	}
+
 	return &base{
 		envs:       envs,
-		tracer:     trace.NewNoopTracerProvider().Tracer(""),
+		tracer:     tracer,
 		logger:     logger,
 		httpClient: httpClient,
 	}

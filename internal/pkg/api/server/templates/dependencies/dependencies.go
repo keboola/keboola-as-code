@@ -25,16 +25,15 @@ package dependencies
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"reflect"
 	"sync"
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/trace"
 	ddHttp "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -129,8 +128,14 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	// Create base HTTP client for all API requests to other APIs
 	httpClient := apiHttpClient(envs, logger, debug, dumpHttp)
 
+	// Create tracer
+	var tracer trace.Tracer = nil
+	if telemetry.IsDataDogEnabled(envs) {
+		tracer = telemetry.NewDataDogTracer()
+	}
+
 	// Create base dependencies
-	baseDeps := dependencies.NewBaseDeps(envs, logger, httpClient)
+	baseDeps := dependencies.NewBaseDeps(envs, tracer, logger, httpClient)
 
 	// Create public dependencies - load API index
 	startTime := time.Now()
@@ -382,7 +387,7 @@ func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) c
 	transport := client.HTTP2Transport()
 
 	// DataDog low-level tracing
-	if envs.Get("DATADOG_ENABLED") != "false" {
+	if telemetry.IsDataDogEnabled(envs) {
 		transport = ddHttp.WrapRoundTripper(transport)
 	}
 
@@ -402,58 +407,9 @@ func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) c
 	}
 
 	// DataDog high-level tracing
-	if envs.Get("DATADOG_ENABLED") != "false" {
-		c = c.AndTrace(ddApiClientTrace())
+	if telemetry.IsDataDogEnabled(envs) {
+		c = c.AndTrace(telemetry.ApiClientTrace())
 	}
 
 	return c
-}
-
-func ddApiClientTrace() client.TraceFactory {
-	return func() *client.Trace {
-		t := &client.Trace{}
-
-		// Api request
-		var ctx context.Context
-		var apiReqSpan tracer.Span
-		t.GotRequest = func(c context.Context, request client.HTTPRequest) context.Context {
-			resultType := reflect.TypeOf(request.ResultDef())
-			resultTypeString := ""
-			if resultType != nil {
-				resultTypeString = resultType.String()
-			}
-			apiReqSpan, ctx = tracer.StartSpanFromContext(
-				c,
-				"api.client.request",
-				tracer.ResourceName("request"),
-				tracer.SpanType("api.client"),
-				tracer.Tag("result_type", resultTypeString),
-			)
-			return ctx
-		}
-		t.RequestProcessed = func(result any, err error) {
-			apiReqSpan.Finish(tracer.WithError(err))
-		}
-
-		// Retry
-		var retrySpan tracer.Span
-		t.HTTPRequestRetry = func(attempt int, delay time.Duration) {
-			retrySpan, _ = tracer.StartSpanFromContext(
-				ctx,
-				"api.client.retry.delay",
-				tracer.ResourceName("retry"),
-				tracer.SpanType("api.client"),
-				tracer.Tag("attempt", attempt),
-				tracer.Tag("delay_ms", delay.Milliseconds()),
-				tracer.Tag("delay_string", delay.String()),
-			)
-		}
-		t.HTTPRequestStart = func(r *http.Request) {
-			if retrySpan != nil {
-				apiReqSpan.Finish()
-				retrySpan = nil
-			}
-		}
-		return t
-	}
 }
