@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -174,7 +175,7 @@ func waitForAPI(cmdErrCh <-chan error, apiUrl string) error {
 }
 
 // RunApiServer runs the compiled api binary on the background.
-func RunApiServer(t *testing.T, binary string, storageApiHost string, repositories string) (apiUrl string, stdout, stderr *bytes.Buffer) {
+func RunApiServer(t *testing.T, binary string, storageApiHost string, repositories string) (apiUrl string, stdout, stderr *cmdOut) {
 	t.Helper()
 
 	// Get a free port
@@ -195,8 +196,8 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string, repositori
 	envs.Set("ETCD_ENABLED", "false")
 
 	// Start API server
-	stdout = &bytes.Buffer{}
-	stderr = &bytes.Buffer{}
+	stdout = newCmdOut()
+	stderr = newCmdOut()
 	cmd := exec.Command(binary, args...)
 	cmd.Env = envs.ToSlice()
 	cmd.Stdout = io.MultiWriter(stdout, testhelper.VerboseStdout())
@@ -373,4 +374,26 @@ func RunRequests(
 		expected := testhelper.ReplaceEnvsString(file.Content, envProvider)
 		wildcards.Assert(t, expected, stderr.String(), "Unexpected STDERR.")
 	}
+}
+
+// cmdOut is used to prevent race conditions, see https://hackmysql.com/post/reading-os-exec-cmd-output-without-race-conditions/
+type cmdOut struct {
+	buf  *bytes.Buffer
+	lock *sync.Mutex
+}
+
+func newCmdOut() *cmdOut {
+	return &cmdOut{buf: &bytes.Buffer{}, lock: &sync.Mutex{}}
+}
+
+func (o *cmdOut) Write(p []byte) (int, error) {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+	return o.buf.Write(p)
+}
+
+func (o *cmdOut) String() string {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+	return o.buf.String()
 }
