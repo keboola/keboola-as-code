@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
@@ -91,7 +92,10 @@ func (v public) EncryptionApiClient() client.Sender {
 	return v.encryptionApiClient
 }
 
-func (v public) Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error) {
+func (v public) Template(ctx context.Context, reference model.TemplateRef) (tmpl *template.Template, err error) {
+	ctx, span := v.base.Tracer().Start(ctx, "kac.lib.dependencies.public.Template")
+	defer telemetry.EndSpan(span, &err)
+
 	// Load repository
 	repo, err := v.TemplateRepository(ctx, reference.Repository(), reference)
 	if err != nil {
@@ -128,7 +132,10 @@ func (v public) Template(ctx context.Context, reference model.TemplateRef) (*tem
 	return template.New(reference, templateRecord, versionRecord, templateDir, repo.CommonDir())
 }
 
-func (v public) TemplateRepository(ctx context.Context, reference model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error) {
+func (v public) TemplateRepository(ctx context.Context, reference model.TemplateRepository, forTemplate model.TemplateRef) (repo *repository.Repository, err error) {
+	ctx, span := v.base.Tracer().Start(ctx, "kac.lib.dependencies.public.TemplateRepository")
+	defer telemetry.EndSpan(span, &err)
+
 	// Get FS
 	fs, err := v.templateRepositoryFs(ctx, reference, forTemplate)
 	if err != nil {
