@@ -265,7 +265,7 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (*
 	state, err := New(project.NewWithManifest(context.Background(), fs, m), d)
 	assert.NoError(t, err)
 	filter := m.Filter()
-	_, localErr, remoteErr := state.Load(LoadOptions{LocalFilter: filter, LoadLocalState: true})
+	_, localErr, remoteErr := state.Load(context.Background(), LoadOptions{LocalFilter: filter, LoadLocalState: true})
 	assert.NoError(t, remoteErr)
 	return state, localErr
 }

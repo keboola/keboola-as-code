@@ -49,7 +49,7 @@ func TestLoadState(t *testing.T) {
 	}
 	state, err := New(project.NewWithManifest(context.Background(), fs, m), d)
 	assert.NoError(t, err)
-	ok, localErr, remoteErr := state.Load(options)
+	ok, localErr, remoteErr := state.Load(context.Background(), options)
 
 	// Check errors
 	assert.True(t, ok)

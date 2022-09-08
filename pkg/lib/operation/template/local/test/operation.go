@@ -360,7 +360,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	}
 
 	// Get mainConfig from applied template
-	err = reloadPrjState(prjState)
+	err = reloadPrjState(ctx, prjState)
 	if err != nil {
 		return err
 	}
@@ -378,8 +378,8 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	return jobsqueueapi.WaitForJob(ctx, queueClient, job)
 }
 
-func reloadPrjState(prjState *project.State) error {
-	ok, localErr, remoteErr := prjState.Load(state.LoadOptions{LoadRemoteState: true})
+func reloadPrjState(ctx context.Context, prjState *project.State) error {
+	ok, localErr, remoteErr := prjState.Load(ctx, state.LoadOptions{LoadRemoteState: true})
 	if remoteErr != nil {
 		return fmt.Errorf(`state reload failed on remote error: %w`, remoteErr)
 	}

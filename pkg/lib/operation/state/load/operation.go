@@ -4,8 +4,10 @@ import (
 	"context"
 
 	"github.com/keboola/go-client/pkg/client"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -105,6 +107,10 @@ type dependencies interface {
 
 func Run(ctx context.Context, container state.ObjectsContainer, o OptionsWithFilter, d dependencies) (s *state.State, err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.state.load")
+	span.SetAttributes(attribute.Bool("remote.load", o.LoadRemoteState))
+	span.SetAttributes(attribute.String("remote.filter", json.MustEncodeString(o.RemoteFilter, false)))
+	span.SetAttributes(attribute.Bool("local.load", o.LoadLocalState))
+	span.SetAttributes(attribute.String("local.filter", json.MustEncodeString(o.LocalFilter, false)))
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()
@@ -123,7 +129,7 @@ func Run(ctx context.Context, container state.ObjectsContainer, o OptionsWithFil
 	}
 
 	// Load objects
-	ok, localErr, remoteErr := projectState.Load(loadOptions)
+	ok, localErr, remoteErr := projectState.Load(ctx, loadOptions)
 	if ok {
 		logger.Debugf("Project state has been successfully loaded.")
 	} else {

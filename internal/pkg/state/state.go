@@ -113,20 +113,20 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 }
 
 // Load - remote and local.
-func (s *State) Load(options LoadOptions) (ok bool, localErr error, remoteErr error) {
+func (s *State) Load(ctx context.Context, options LoadOptions) (ok bool, localErr error, remoteErr error) {
 	localErrors := utils.NewMultiError()
 	remoteErrors := utils.NewMultiError()
 
 	// Remote
 	if options.LoadRemoteState {
 		s.logger.Debugf("Loading project remote state.")
-		remoteErrors.Append(s.loadRemoteState(options.RemoteFilter))
+		remoteErrors.Append(s.loadRemoteState(ctx, options.RemoteFilter))
 	}
 
 	// Local
 	if options.LoadLocalState {
 		s.logger.Debugf("Loading local state.")
-		localErrors.Append(s.loadLocalState(options.LocalFilter, options.IgnoreNotFoundErr))
+		localErrors.Append(s.loadLocalState(ctx, options.LocalFilter, options.IgnoreNotFoundErr))
 	}
 
 	// Validate
@@ -209,7 +209,7 @@ func (s *State) validateValue(value interface{}) error {
 }
 
 // loadLocalState from manifest and local files to unified internal state.
-func (s *State) loadLocalState(_filter *model.ObjectsFilter, ignoreNotFoundErr bool) error {
+func (s *State) loadLocalState(ctx context.Context, _filter *model.ObjectsFilter, ignoreNotFoundErr bool) error {
 	// Create filter if not set
 	var filter model.ObjectsFilter
 	if _filter != nil {
@@ -218,7 +218,7 @@ func (s *State) loadLocalState(_filter *model.ObjectsFilter, ignoreNotFoundErr b
 		filter = model.NoFilter()
 	}
 
-	uow := s.localManager.NewUnitOfWork(s.Ctx())
+	uow := s.localManager.NewUnitOfWork(ctx)
 	if ignoreNotFoundErr {
 		uow.SkipNotFoundErr()
 	}
@@ -227,7 +227,7 @@ func (s *State) loadLocalState(_filter *model.ObjectsFilter, ignoreNotFoundErr b
 }
 
 // loadRemoteState from API to unified internal state.
-func (s *State) loadRemoteState(_filter *model.ObjectsFilter) error {
+func (s *State) loadRemoteState(ctx context.Context, _filter *model.ObjectsFilter) error {
 	// Create filter if not set
 	var filter model.ObjectsFilter
 	if _filter != nil {
@@ -236,7 +236,7 @@ func (s *State) loadRemoteState(_filter *model.ObjectsFilter) error {
 		filter = model.NoFilter()
 	}
 
-	uow := s.remoteManager.NewUnitOfWork(s.Ctx(), "")
+	uow := s.remoteManager.NewUnitOfWork(ctx, "")
 	uow.LoadAll(filter)
 	return uow.Invoke()
 }
