@@ -123,7 +123,7 @@ func Run(ctx context.Context, container state.ObjectsContainer, o OptionsWithFil
 	}
 
 	// Create state
-	projectState, err := state.New(container, d)
+	projectState, err := state.New(ctx, container, d)
 	if err != nil {
 		return nil, err
 	}

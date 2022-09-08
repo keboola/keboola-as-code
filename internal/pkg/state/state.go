@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/client"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
@@ -16,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/registry"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/remote"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -32,6 +34,7 @@ type State struct {
 	container       ObjectsContainer
 	fileLoader      filesystem.FileLoader
 	logger          log.Logger
+	tracer          trace.Tracer
 	manifest        manifest.Manifest
 	mapper          *mapper.Mapper
 	namingGenerator *naming.Generator
@@ -57,12 +60,16 @@ type ObjectsContainer interface {
 }
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Logger() log.Logger
 	Components() *model.ComponentsMap
 	StorageApiClient() client.Sender
 }
 
-func New(container ObjectsContainer, d dependencies) (*State, error) {
+func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *State, err error) {
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.state.new")
+	defer telemetry.EndSpan(span, &err)
+
 	// Get dependencies
 	logger := d.Logger()
 	m := container.Manifest()
@@ -85,10 +92,11 @@ func New(container ObjectsContainer, d dependencies) (*State, error) {
 	namingTemplate := m.NamingTemplate()
 	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
 	pathMatcher := naming.NewPathMatcher(namingTemplate)
-	s := &State{
+	s = &State{
 		Registry:        NewRegistry(knownPaths, namingRegistry, components, m.SortBy()),
 		container:       container,
 		fileLoader:      fileLoader,
+		tracer:          d.Tracer(),
 		logger:          logger,
 		manifest:        m,
 		mapper:          mapperInst,
@@ -209,7 +217,10 @@ func (s *State) validateValue(value interface{}) error {
 }
 
 // loadLocalState from manifest and local files to unified internal state.
-func (s *State) loadLocalState(ctx context.Context, _filter *model.ObjectsFilter, ignoreNotFoundErr bool) error {
+func (s *State) loadLocalState(ctx context.Context, _filter *model.ObjectsFilter, ignoreNotFoundErr bool) (err error) {
+	ctx, span := s.tracer.Start(ctx, "kac.lib.state.load.local")
+	defer telemetry.EndSpan(span, &err)
+
 	// Create filter if not set
 	var filter model.ObjectsFilter
 	if _filter != nil {
@@ -227,7 +238,10 @@ func (s *State) loadLocalState(ctx context.Context, _filter *model.ObjectsFilter
 }
 
 // loadRemoteState from API to unified internal state.
-func (s *State) loadRemoteState(ctx context.Context, _filter *model.ObjectsFilter) error {
+func (s *State) loadRemoteState(ctx context.Context, _filter *model.ObjectsFilter) (err error) {
+	ctx, span := s.tracer.Start(ctx, "kac.lib.state.load.remote")
+	defer telemetry.EndSpan(span, &err)
+
 	// Create filter if not set
 	var filter model.ObjectsFilter
 	if _filter != nil {
