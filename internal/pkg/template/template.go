@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	templateInput "github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
@@ -312,7 +313,10 @@ func (t *Template) LoadState(ctx Context, options loadState.Options, d dependenc
 	}
 }
 
-func (t *Template) evaluate(ctx Context) (*evaluatedTemplate, error) {
+func (t *Template) evaluate(ctx Context) (tmpl *evaluatedTemplate, err error) {
+	_, span := t.deps.Tracer().Start(ctx, "kac.lib.template.evaluate")
+	defer telemetry.EndSpan(span, &err)
+
 	// Evaluate manifest
 	evaluatedManifest, err := t.manifestFile.Evaluate(ctx.JsonNetContext())
 	if err != nil {
