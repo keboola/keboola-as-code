@@ -6,6 +6,8 @@ import (
 
 	"github.com/dimfeld/httptreemux/v5"
 	goaHTTP "goa.design/goa/v3/http"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 type muxer struct {
@@ -13,15 +15,15 @@ type muxer struct {
 }
 
 // newMuxer returns a Muxer implementation with custom 404 not found error handler.
-func newMuxer() goaHTTP.Muxer {
+func newMuxer(logger log.Logger) goaHTTP.Muxer {
 	r := httptreemux.NewContextMux()
 
 	r.EscapeAddedRoutes = true
 	r.NotFoundHandler = func(w http.ResponseWriter, req *http.Request) {
-		_ = writeError(req.Context(), w, NotFoundError{})
+		_ = writeError(req.Context(), logger, w, NotFoundError{})
 	}
 	r.PanicHandler = func(w http.ResponseWriter, req *http.Request, value interface{}) {
-		_ = writeError(req.Context(), w, PanicError{Value: value})
+		_ = writeError(req.Context(), logger, w, PanicError{Value: value})
 	}
 	return &muxer{r}
 }

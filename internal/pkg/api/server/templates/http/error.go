@@ -14,8 +14,8 @@ import (
 	"goa.design/goa/v3/middleware"
 	goa "goa.design/goa/v3/pkg"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -138,7 +138,7 @@ func formatError(err error) goaHTTP.Statuser {
 }
 
 // writeError to HTTP response.
-func writeError(ctx context.Context, w http.ResponseWriter, err error) error {
+func writeError(ctx context.Context, logger log.Logger, w http.ResponseWriter, err error) error {
 	// Default values
 	response := &UnexpectedError{
 		StatusCode:  http.StatusInternalServerError,
@@ -194,8 +194,6 @@ func writeError(ctx context.Context, w http.ResponseWriter, err error) error {
 	response.Message = strhelper.FirstUpper(response.Message)
 
 	// Log error
-	d := ctx.Value(dependencies.ForPublicRequestCtxKey).(dependencies.ForPublicRequest)
-	logger := d.Logger()
 	if response.StatusCode > 499 {
 		logger.Error(errorLogMessage(err, response))
 	} else {

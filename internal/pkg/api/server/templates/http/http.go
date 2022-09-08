@@ -27,7 +27,7 @@ func HandleHTTPServer(ctx context.Context, d dependencies.ForServer, u *url.URL,
 
 	// Build the service HTTP request multiplexer and configure it to serve
 	// HTTP requests to the service endpoints.
-	mux := newMuxer()
+	mux := newMuxer(d.Logger())
 
 	// Wrap the endpoints with the transport specific layers. The generated
 	// server packages contains code generated from the design which maps
@@ -35,7 +35,7 @@ func HandleHTTPServer(ctx context.Context, d dependencies.ForServer, u *url.URL,
 	// responses.
 	docsFs := http.FS(openapi.Fs)
 	swaggerUiFs := http.FS(swaggerui.SwaggerFS)
-	templatesServer := templatesSvr.New(endpoints, mux, decoder, encoder, errorHandler(), errorFormatter(), docsFs, docsFs, docsFs, docsFs, swaggerUiFs)
+	templatesServer := templatesSvr.New(endpoints, mux, newDecoder(), newEncoder(d.Logger()), errorHandler(), errorFormatter(), docsFs, docsFs, docsFs, docsFs, swaggerUiFs)
 	if debug {
 		servers := goaHTTP.Servers{templatesServer}
 		servers.Use(httpMiddleware.Debug(mux, os.Stdout))

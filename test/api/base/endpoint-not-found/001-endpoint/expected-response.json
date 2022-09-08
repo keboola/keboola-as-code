@@ -1,0 +1,6 @@
+{
+  "statusCode": 404,
+  "error": "templates.endpointNotFound",
+  "message": "Endpoint not found.",
+  "exceptionId": "%s"
+}
