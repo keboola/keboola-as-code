@@ -70,7 +70,6 @@ Aliases:
   local template use   use
   template             t
   template repository  r, repo
-  template test run    template test
 
 Flags:
   -h, --help                       print help for command
