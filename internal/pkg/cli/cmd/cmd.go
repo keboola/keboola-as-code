@@ -208,7 +208,6 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		root.addAlias(`t`, `template`)
 		root.addAlias(`r`, `template repository`)
 		root.addAlias(`repo`, `template repository`)
-		root.addAlias(`template test`, `template test run`)
 	}
 
 	// Add aliases to usage template

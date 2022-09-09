@@ -25,6 +25,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 			if len(args) < 1 {
 				return fmt.Errorf(`please enter argument with the template ID you want to use and optionally its version`)
 			}
+			templateId := args[0]
 
 			// Get template repository
 			repo, _, err := d.LocalTemplateRepository(d.CommandCtx())
@@ -38,7 +39,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 				versionArg = args[1]
 			}
 
-			tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Ref(), args[0], versionArg))
+			tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Ref(), templateId, versionArg))
 			if err != nil {
 				return err
 			}

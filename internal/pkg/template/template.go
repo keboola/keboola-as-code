@@ -132,6 +132,12 @@ type Test struct {
 	fs   filesystem.Fs
 }
 
+type CreatedTest struct {
+	*Test
+	inputsValues InputsValues
+	prjFS        filesystem.Fs
+}
+
 func New(reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, templateDir, commonDir filesystem.Fs) (*Template, error) {
 	// Mount <common> directory to:
 	//   template dir FS - used to load manifest, inputs, readme
@@ -264,7 +270,7 @@ func (t *Template) Test(testName string) (*Test, error) {
 	return &Test{name: testName, tmpl: t, fs: testDir}, nil
 }
 
-func (t *Template) CreateTest(testName string) (*Test, error) {
+func (t *Template) CreateTest(testName string, inputsValues InputsValues, prjFS filesystem.Fs) (*CreatedTest, error) {
 	testsDir, err := t.TestsDir()
 	if err != nil {
 		return nil, err
@@ -282,7 +288,7 @@ func (t *Template) CreateTest(testName string) (*Test, error) {
 		return nil, err
 	}
 
-	return &Test{name: testName, tmpl: t, fs: testDir}, nil
+	return &CreatedTest{Test: &Test{name: testName, tmpl: t, fs: testDir}, inputsValues: inputsValues, prjFS: prjFS}, nil
 }
 
 func (t *Template) LongDesc() string {
@@ -439,9 +445,9 @@ func (t *Test) Inputs(provider testhelper.EnvProvider, replaceEnvsFn func(string
 	return inputs, nil
 }
 
-func (t *Test) SaveInputs(inputs map[string]templateInput.Value) error {
+func (t *CreatedTest) SaveInputs() error {
 	res := make(map[string]interface{})
-	for k, v := range inputs {
+	for k, v := range t.inputsValues.ToMap() {
 		res[k] = v.Value
 	}
 
@@ -456,7 +462,7 @@ func (t *Test) SaveInputs(inputs map[string]templateInput.Value) error {
 	return t.fs.WriteFile(f)
 }
 
-func (t *Test) SaveExpectedOutput(prjFS filesystem.Fs) error {
+func (t *CreatedTest) SaveExpectedOutput() error {
 	// Get expected output dir
 	if !t.fs.IsDir(ExpectedOutDirectory) {
 		err := t.fs.Mkdir(ExpectedOutDirectory)
@@ -470,5 +476,5 @@ func (t *Test) SaveExpectedOutput(prjFS filesystem.Fs) error {
 		return err
 	}
 
-	return aferofs.CopyFs2Fs(prjFS, "/", expectedFS, "/")
+	return aferofs.CopyFs2Fs(t.prjFS, "/", expectedFS, "/")
 }
