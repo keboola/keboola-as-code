@@ -15,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	loadRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/load"
 )
 
@@ -103,9 +102,9 @@ func (v public) Template(ctx context.Context, reference model.TemplateRef) (tmpl
 	}
 
 	// Get template
-	templateRecord, found := repo.GetTemplateById(reference.TemplateId())
-	if !found {
-		return nil, manifest.TemplateNotFoundError{}
+	templateRecord, err := repo.GetTemplateByIdOrErr(reference.TemplateId())
+	if err != nil {
+		return nil, err
 	}
 
 	// Get template version
