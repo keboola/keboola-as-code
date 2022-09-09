@@ -45,7 +45,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			options, err := d.Dialogs().AskCreateTemplateTestOptions(tmpl.Inputs(), d.Options())
+			options, err := d.Dialogs().AskCreateTemplateTestOptions(tmpl, d.Options())
 			if err != nil {
 				return err
 			}
