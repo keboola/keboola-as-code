@@ -270,25 +270,34 @@ func (t *Template) Test(testName string) (*Test, error) {
 	return &Test{name: testName, tmpl: t, fs: testDir}, nil
 }
 
-func (t *Template) CreateTest(testName string, inputsValues InputsValues, prjFS filesystem.Fs) (*CreatedTest, error) {
+func (t *Template) CreateTest(testName string, inputsValues InputsValues, prjFS filesystem.Fs) error {
 	testsDir, err := t.TestsDir()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if !testsDir.IsDir(testName) {
 		err = testsDir.Mkdir(testName)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	testDir, err := testsDir.SubDirFs(testName)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &CreatedTest{Test: &Test{name: testName, tmpl: t, fs: testDir}, inputsValues: inputsValues, prjFS: prjFS}, nil
+	test := &CreatedTest{Test: &Test{name: testName, tmpl: t, fs: testDir}, inputsValues: inputsValues, prjFS: prjFS}
+
+	// Save gathered inputs to the template test inputs.json
+	err = test.saveInputs()
+	if err != nil {
+		return err
+	}
+
+	// Save output from use template operation to the template test
+	return test.saveExpectedOutput()
 }
 
 func (t *Template) LongDesc() string {
@@ -445,7 +454,7 @@ func (t *Test) Inputs(provider testhelper.EnvProvider, replaceEnvsFn func(string
 	return inputs, nil
 }
 
-func (t *CreatedTest) SaveInputs() error {
+func (t *CreatedTest) saveInputs() error {
 	res := make(map[string]interface{})
 	for k, v := range t.inputsValues.ToMap() {
 		res[k] = v.Value
@@ -462,7 +471,7 @@ func (t *CreatedTest) SaveInputs() error {
 	return t.fs.WriteFile(f)
 }
 
-func (t *CreatedTest) SaveExpectedOutput() error {
+func (t *CreatedTest) saveExpectedOutput() error {
 	// Get expected output dir
 	if !t.fs.IsDir(ExpectedOutDirectory) {
 		err := t.fs.Mkdir(ExpectedOutDirectory)

@@ -43,17 +43,6 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	defer unlockFn()
 	d.Logger().Debugf(`Working directory set up.`)
 
-	test, err := tmpl.CreateTest(o.TestName, o.Inputs, prjState.Fs())
-	if err != nil {
-		return err
-	}
-
-	// Save gathered inputs to the template test inputs.json
-	err = test.SaveInputs()
-	if err != nil {
-		return err
-	}
-
 	// Run use template operation
 	tmplOpts := useTemplate.Options{
 		InstanceName: "test",
@@ -65,8 +54,8 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 		return err
 	}
 
-	// Save output from use template operation to the template test
-	err = test.SaveExpectedOutput()
+	// Create test files
+	err = tmpl.CreateTest(o.TestName, o.Inputs, prjState.Fs())
 	if err != nil {
 		return err
 	}
