@@ -156,7 +156,7 @@ parent: 124
 trace: 124
 -----
 name: my.operation1
-tags: {"bool":{"Type":"BOOL","Value":true},"error":"some span 1 error","foo":{"Type":"STRING","Value":"bar"},"resource.name":{"Type":"STRING","Value":"my/resource"},"span.type":"web"}
+tags: {"bool":true,"error":"some span 1 error","foo":"bar","resource.name":"my/resource","span.type":"web"}
 start: 2000-01-01 10:10:10 +0000 UTC
 finish: 2000-01-01 10:10:55 +0000 UTC
 spanId: 124

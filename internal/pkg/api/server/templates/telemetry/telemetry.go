@@ -123,7 +123,7 @@ func (s *span) SetName(name string) {
 // the value contained in kv.
 func (s *span) SetAttributes(kv ...attribute.KeyValue) {
 	for _, pair := range kv {
-		s.ddSpan.SetTag(string(pair.Key), pair.Value)
+		s.ddSpan.SetTag(string(pair.Key), pair.Value.AsInterface())
 	}
 }
 
