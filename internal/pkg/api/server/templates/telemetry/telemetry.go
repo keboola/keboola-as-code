@@ -139,43 +139,84 @@ func ApiClientTrace() client.TraceFactory {
 
 		// Api request
 		var ctx context.Context
-		var apiReqSpan ddtracer.Span
-		t.GotRequest = func(c context.Context, request client.HTTPRequest) context.Context {
-			resultType := reflect.TypeOf(request.ResultDef())
-			resultTypeString := ""
-			if resultType != nil {
-				resultTypeString = resultType.String()
+		var clientRequest client.HTTPRequest // high-level request
+		var resultType string
+
+		var requestSpan ddtracer.Span
+		var parsingSpan ddtracer.Span
+		var retryDelaySpan ddtracer.Span
+
+		t.GotRequest = func(c context.Context, r client.HTTPRequest) context.Context {
+			clientRequest = r
+			if v := reflect.TypeOf(clientRequest.ResultDef()); v != nil {
+				resultType = v.String()
 			}
-			apiReqSpan, ctx = ddtracer.StartSpanFromContext(
+			requestSpan, ctx = ddtracer.StartSpanFromContext(
 				c,
-				"api.client.request",
-				ddtracer.ResourceName("request"),
-				ddtracer.SpanType("api.client"),
-				ddtracer.Tag("result_type", resultTypeString),
+				"kac.api.client.request",
+				ddtracer.ResourceName(clientRequest.URL()),
+				ddtracer.SpanType("kac.api.client"),
 			)
+
+			// Set tags
+			requestSpan.SetBaggageItem("kac.api.client.request.method", clientRequest.Method())
+			requestSpan.SetBaggageItem("kac.api.client.request.url", clientRequest.URL())
+			requestSpan.SetBaggageItem("kac.api.client.request.result_type", resultType)
+			for k, v := range clientRequest.PathParams() {
+				requestSpan.SetBaggageItem("kac.api.client.request.params"+k, v)
+			}
+
 			return ctx
 		}
+		t.HTTPRequestStart = func(r *http.Request) {
+			requestSpan.SetTag(ext.HTTPMethod, r.Method)
+			requestSpan.SetTag(ext.HTTPURL, r.URL)
+		}
+		t.HTTPRequestDone = func(response *http.Response, err error) {
+			if response != nil {
+				// Set status code
+				requestSpan.SetTag(ext.HTTPCode, response.StatusCode)
+			}
+
+			if err == nil {
+				// Create span for body parsing, if the request was successful
+				parsingSpan, _ = ddtracer.StartSpanFromContext(
+					ctx,
+					"kac.api.client.request.parsing",
+					ddtracer.ResourceName(clientRequest.URL()),
+					ddtracer.SpanType("kac.api.client"),
+				)
+			}
+		}
 		t.RequestProcessed = func(result any, err error) {
-			apiReqSpan.Finish(ddtracer.WithError(err))
+			// Finish retry span, if any (retry was not performed, an error occurred)
+			if retryDelaySpan != nil {
+				requestSpan.Finish(ddtracer.WithError(err))
+				retryDelaySpan = nil
+			}
+			// Finish parsing span, if any
+			if parsingSpan != nil {
+				parsingSpan.Finish(ddtracer.WithError(err))
+			}
+			requestSpan.Finish(ddtracer.WithError(err))
 		}
 
 		// Retry
-		var retrySpan ddtracer.Span
 		t.HTTPRequestRetry = func(attempt int, delay time.Duration) {
-			retrySpan, _ = ddtracer.StartSpanFromContext(
+			retryDelaySpan, _ = ddtracer.StartSpanFromContext(
 				ctx,
-				"api.client.retry.delay",
-				ddtracer.ResourceName("retry"),
-				ddtracer.SpanType("api.client"),
-				ddtracer.Tag("attempt", attempt),
-				ddtracer.Tag("delay_ms", delay.Milliseconds()),
-				ddtracer.Tag("delay_string", delay.String()),
+				"kac.api.client.retry.delay",
+				ddtracer.ResourceName(clientRequest.URL()),
+				ddtracer.SpanType("kac.api.client"),
+				ddtracer.Tag("retry.attempt", attempt),
+				ddtracer.Tag("retry.delay_ms", delay.Milliseconds()),
+				ddtracer.Tag("retry.delay_string", delay.String()),
 			)
 		}
 		t.HTTPRequestStart = func(r *http.Request) {
-			if retrySpan != nil {
-				apiReqSpan.Finish()
-				retrySpan = nil
+			if retryDelaySpan != nil {
+				requestSpan.Finish()
+				retryDelaySpan = nil
 			}
 		}
 		return t
@@ -205,7 +246,7 @@ func mapSpanStartOpts(parentSpan ddtracer.Span, options []trace.SpanStartOption)
 
 	// Map Attributes -> Tags
 	for _, pair := range config.Attributes() {
-		out = append(out, ddtracer.Tag(string(pair.Key), pair.Value))
+		out = append(out, ddtracer.Tag(string(pair.Key), pair.Value.AsInterface()))
 	}
 
 	// Map NewRoot / parent span
@@ -256,7 +297,7 @@ func mapEventOptions(options []trace.EventOption) (startOpts []ddtracer.StartSpa
 
 	// Map Attributes -> Tags
 	for _, pair := range config.Attributes() {
-		startOpts = append(startOpts, ddtracer.Tag(string(pair.Key), pair.Value))
+		startOpts = append(startOpts, ddtracer.Tag(string(pair.Key), pair.Value.AsInterface()))
 	}
 
 	// Map Timestamp -> StartTime and FinishTime
