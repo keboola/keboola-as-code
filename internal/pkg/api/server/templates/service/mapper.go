@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -11,24 +12,31 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
-func RepositoriesResponse(d dependencies.ForProjectRequest, v []model.TemplateRepository) (*Repositories, error) {
-	out := &Repositories{}
+func RepositoriesResponse(ctx context.Context, d dependencies.ForProjectRequest, v []model.TemplateRepository) (out *Repositories, err error) {
+	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.RepositoriesResponse")
+	defer telemetry.EndSpan(span, &err)
+
+	out = &Repositories{}
 	for _, repoRef := range v {
 		repo, err := repositoryInst(d, repoRef.Name)
 		if err != nil {
 			return nil, err
 		}
-		out.Repositories = append(out.Repositories, RepositoryResponse(repo))
+		out.Repositories = append(out.Repositories, RepositoryResponse(ctx, d, repo))
 	}
 	return out, nil
 }
 
-func RepositoryResponse(v *repository.Repository) *Repository {
+func RepositoryResponse(ctx context.Context, d dependencies.ForProjectRequest, v *repository.Repository) *Repository {
+	_, span := d.Tracer().Start(ctx, "api.server.templates.mapper.RepositoryResponse")
+	defer telemetry.EndSpan(span, nil)
+
 	ref := v.Ref()
 	author := v.Manifest().Author()
 	return &Repository{
@@ -42,11 +50,14 @@ func RepositoryResponse(v *repository.Repository) *Repository {
 	}
 }
 
-func TemplatesResponse(repo *repository.Repository, templates []repository.TemplateRecord) (*Templates, error) {
-	out := &Templates{Repository: RepositoryResponse(repo), Templates: make([]*Template, 0)}
+func TemplatesResponse(ctx context.Context, d dependencies.ForProjectRequest, repo *repository.Repository, templates []repository.TemplateRecord) (out *Templates, err error) {
+	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.TemplatesResponse")
+	defer telemetry.EndSpan(span, &err)
+
+	out = &Templates{Repository: RepositoryResponse(ctx, d, repo), Templates: make([]*Template, 0)}
 	for _, tmpl := range templates {
 		tmpl := tmpl
-		tmplResponse, err := TemplateResponse(&tmpl, out.Repository.Author)
+		tmplResponse, err := TemplateResponse(ctx, d, &tmpl, out.Repository.Author)
 		if err != nil {
 			return nil, err
 		}
@@ -56,13 +67,16 @@ func TemplatesResponse(repo *repository.Repository, templates []repository.Templ
 	return out, nil
 }
 
-func TemplateResponse(tmpl *repository.TemplateRecord, author *Author) (*Template, error) {
+func TemplateResponse(ctx context.Context, d dependencies.ForProjectRequest, tmpl *repository.TemplateRecord, author *Author) (out *Template, err error) {
+	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.TemplateResponse")
+	defer telemetry.EndSpan(span, &err)
+
 	defaultVersion, err := tmpl.DefaultVersionOrErr()
 	if err != nil {
 		return nil, err
 	}
 
-	out := &Template{
+	out = &Template{
 		ID:             tmpl.Id,
 		Name:           tmpl.Name,
 		Components:     defaultVersion.Components,
@@ -79,14 +93,17 @@ func TemplateResponse(tmpl *repository.TemplateRecord, author *Author) (*Templat
 	return out, nil
 }
 
-func TemplateDetailResponse(repo *repository.Repository, tmpl *repository.TemplateRecord) (*TemplateDetail, error) {
+func TemplateDetailResponse(ctx context.Context, d dependencies.ForProjectRequest, repo *repository.Repository, tmpl *repository.TemplateRecord) (out *TemplateDetail, err error) {
+	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.TemplateDetailResponse")
+	defer telemetry.EndSpan(span, &err)
+
 	defaultVersion, err := tmpl.DefaultVersionOrErr()
 	if err != nil {
 		return nil, err
 	}
 
-	repoResponse := RepositoryResponse(repo)
-	out := &TemplateDetail{
+	repoResponse := RepositoryResponse(ctx, d, repo)
+	out = &TemplateDetail{
 		Repository:     repoResponse,
 		ID:             tmpl.Id,
 		Name:           tmpl.Name,
@@ -123,11 +140,14 @@ func VersionDetailResponse(template *template.Template) *VersionDetail {
 	}
 }
 
-func VersionDetailExtendedResponse(repo *repository.Repository, template *template.Template) (*VersionDetailExtended, error) {
-	repoResponse := RepositoryResponse(repo)
+func VersionDetailExtendedResponse(ctx context.Context, d dependencies.ForProjectRequest, repo *repository.Repository, template *template.Template) (out *VersionDetailExtended, err error) {
+	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.VersionDetailExtendedResponse")
+	defer telemetry.EndSpan(span, &err)
+
+	repoResponse := RepositoryResponse(ctx, d, repo)
 	tmplRec := template.TemplateRecord()
 	versionRec := template.VersionRecord()
-	tmplResponse, err := TemplateResponse(&tmplRec, repoResponse.Author)
+	tmplResponse, err := TemplateResponse(ctx, d, &tmplRec, repoResponse.Author)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +164,10 @@ func VersionDetailExtendedResponse(repo *repository.Repository, template *templa
 	}, nil
 }
 
-func InputsResponse(stepsGroups input.StepsGroupsExt) (out *Inputs) {
+func InputsResponse(ctx context.Context, d dependencies.ForProjectRequest, stepsGroups input.StepsGroupsExt) (out *Inputs) {
+	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.InputsResponse")
+	defer telemetry.EndSpan(span, nil)
+
 	out = &Inputs{StepGroups: make([]*StepGroup, 0)}
 	initialValues := make([]*StepPayload, 0)
 
@@ -224,7 +247,10 @@ func OptionsResponse(options input.Options) (out []*InputOption) {
 	return out
 }
 
-func InstancesResponse(prjState *project.State, branchKey model.BranchKey) (out *Instances, err error) {
+func InstancesResponse(ctx context.Context, d dependencies.ForProjectRequest, prjState *project.State, branchKey model.BranchKey) (out *Instances, err error) {
+	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.InstancesResponse")
+	defer telemetry.EndSpan(span, &err)
+
 	// Get branch state
 	branch, found := prjState.GetOrNil(branchKey).(*model.BranchState)
 	if !found {
@@ -276,7 +302,10 @@ func InstancesResponse(prjState *project.State, branchKey model.BranchKey) (out 
 	return out, nil
 }
 
-func InstanceResponse(d dependencies.ForProjectRequest, prjState *project.State, branchKey model.BranchKey, instanceId string) (out *InstanceDetail, err error) {
+func InstanceResponse(ctx context.Context, d dependencies.ForProjectRequest, prjState *project.State, branchKey model.BranchKey, instanceId string) (out *InstanceDetail, err error) {
+	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.InstanceResponse")
+	defer telemetry.EndSpan(span, &err)
+
 	// Get branch state
 	branch, found := prjState.GetOrNil(branchKey).(*model.BranchState)
 	if !found {
@@ -310,7 +339,7 @@ func InstanceResponse(d dependencies.ForProjectRequest, prjState *project.State,
 
 	// Map response
 	out = &InstanceDetail{
-		VersionDetail:  instanceVersionDetail(d, instance),
+		VersionDetail:  instanceVersionDetail(ctx, d, instance),
 		TemplateID:     instance.TemplateId,
 		InstanceID:     instance.InstanceId,
 		Branch:         cast.ToString(branch.Id),
@@ -342,7 +371,7 @@ func InstanceResponse(d dependencies.ForProjectRequest, prjState *project.State,
 	return out, nil
 }
 
-func instanceVersionDetail(d dependencies.ForProjectRequest, instance *model.TemplateInstance) *VersionDetail {
+func instanceVersionDetail(ctx context.Context, d dependencies.ForProjectRequest, instance *model.TemplateInstance) *VersionDetail {
 	repo, tmplRecord, err := templateRecord(d, instance.RepositoryName, instance.TemplateId)
 	if err != nil {
 		return nil
@@ -355,7 +384,7 @@ func instanceVersionDetail(d dependencies.ForProjectRequest, instance *model.Tem
 	if !found {
 		return nil
 	}
-	tmpl, err := d.Template(d.RequestCtx(), model.NewTemplateRef(repo.Ref(), instance.TemplateId, versionRecord.Version.String()))
+	tmpl, err := d.Template(ctx, model.NewTemplateRef(repo.Ref(), instance.TemplateId, versionRecord.Version.String()))
 	if err != nil {
 		return nil
 	}

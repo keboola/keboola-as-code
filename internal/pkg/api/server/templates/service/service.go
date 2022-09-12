@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
@@ -62,7 +63,7 @@ func (s *service) HealthCheck(dependencies.ForPublicRequest) (res string, err er
 }
 
 func (s *service) RepositoriesIndex(d dependencies.ForProjectRequest, _ *RepositoriesIndexPayload) (res *Repositories, err error) {
-	return RepositoriesResponse(d, d.ProjectRepositories())
+	return RepositoriesResponse(d.RequestCtx(), d, d.ProjectRepositories())
 }
 
 func (s *service) RepositoryIndex(d dependencies.ForProjectRequest, payload *RepositoryIndexPayload) (res *Repository, err error) {
@@ -70,7 +71,7 @@ func (s *service) RepositoryIndex(d dependencies.ForProjectRequest, payload *Rep
 	if err != nil {
 		return nil, err
 	}
-	return RepositoryResponse(repo), nil
+	return RepositoryResponse(d.RequestCtx(), d, repo), nil
 }
 
 func (s *service) TemplatesIndex(d dependencies.ForProjectRequest, payload *TemplatesIndexPayload) (res *Templates, err error) {
@@ -78,7 +79,7 @@ func (s *service) TemplatesIndex(d dependencies.ForProjectRequest, payload *Temp
 	if err != nil {
 		return nil, err
 	}
-	return TemplatesResponse(repo, repo.Templates())
+	return TemplatesResponse(d.RequestCtx(), d, repo, repo.Templates())
 }
 
 func (s *service) TemplateIndex(d dependencies.ForProjectRequest, payload *TemplateIndexPayload) (res *TemplateDetail, err error) {
@@ -86,7 +87,7 @@ func (s *service) TemplateIndex(d dependencies.ForProjectRequest, payload *Templ
 	if err != nil {
 		return nil, err
 	}
-	return TemplateDetailResponse(repo, tmplRecord)
+	return TemplateDetailResponse(d.RequestCtx(), d, repo, tmplRecord)
 }
 
 func (s *service) VersionIndex(d dependencies.ForProjectRequest, payload *VersionIndexPayload) (res *VersionDetailExtended, err error) {
@@ -94,7 +95,7 @@ func (s *service) VersionIndex(d dependencies.ForProjectRequest, payload *Versio
 	if err != nil {
 		return nil, err
 	}
-	return VersionDetailExtendedResponse(repo, tmpl)
+	return VersionDetailExtendedResponse(d.RequestCtx(), d, repo, tmpl)
 }
 
 func (s *service) InputsIndex(d dependencies.ForProjectRequest, payload *InputsIndexPayload) (res *Inputs, err error) {
@@ -102,7 +103,7 @@ func (s *service) InputsIndex(d dependencies.ForProjectRequest, payload *InputsI
 	if err != nil {
 		return nil, err
 	}
-	return InputsResponse(tmpl.Inputs().ToExtended()), nil
+	return InputsResponse(d.RequestCtx(), d, tmpl.Inputs().ToExtended()), nil
 }
 
 func (s *service) ValidateInputs(d dependencies.ForProjectRequest, payload *ValidateInputsPayload) (res *ValidationResult, err error) {
@@ -224,10 +225,13 @@ func (s *service) InstancesIndex(d dependencies.ForProjectRequest, payload *Inst
 		return nil, err
 	}
 
-	return InstancesResponse(prjState, branchKey)
+	return InstancesResponse(d.RequestCtx(), d, prjState, branchKey)
 }
 
 func (s *service) InstanceIndex(d dependencies.ForProjectRequest, payload *InstanceIndexPayload) (res *InstanceDetail, err error) {
+	_, span := d.Tracer().Start(d.RequestCtx(), "api.server.templates.service.InstanceIndex")
+	defer telemetry.EndSpan(span, &err)
+
 	branchKey, err := getBranch(d, payload.Branch)
 	if err != nil {
 		return nil, err
@@ -251,7 +255,7 @@ func (s *service) InstanceIndex(d dependencies.ForProjectRequest, payload *Insta
 	if err != nil {
 		return nil, err
 	}
-	return InstanceResponse(d, prjState, branchKey, payload.InstanceID)
+	return InstanceResponse(d.RequestCtx(), d, prjState, branchKey, payload.InstanceID)
 }
 
 func (s *service) UpdateInstance(d dependencies.ForProjectRequest, payload *UpdateInstancePayload) (res *InstanceDetail, err error) {
@@ -285,7 +289,7 @@ func (s *service) UpdateInstance(d dependencies.ForProjectRequest, payload *Upda
 		return nil, err
 	}
 
-	return InstanceResponse(d, prjState, branchKey, payload.InstanceID)
+	return InstanceResponse(d.RequestCtx(), d, prjState, branchKey, payload.InstanceID)
 }
 
 func (s *service) DeleteInstance(d dependencies.ForProjectRequest, payload *DeleteInstancePayload) error {
@@ -390,7 +394,7 @@ func (s *service) UpgradeInstanceInputsIndex(d dependencies.ForProjectRequest, p
 
 	// Generate response
 	stepsGroupsExt := upgrade.ExportInputsValues(d.Logger().InfoWriter(), prjState.State(), branchKey, instance.InstanceId, tmpl.Inputs())
-	return InputsResponse(stepsGroupsExt), nil
+	return InputsResponse(d.RequestCtx(), d, stepsGroupsExt), nil
 }
 
 func (s *service) UpgradeInstanceValidateInputs(d dependencies.ForProjectRequest, payload *UpgradeInstanceValidateInputsPayload) (res *ValidationResult, err error) {
