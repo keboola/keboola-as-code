@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/template/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/template/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 )
@@ -18,8 +19,8 @@ func Commands(p dependencies.Provider) *cobra.Command {
 		ListCommand(p),
 		DescribeCommand(p),
 		CreateCommand(p),
-		TestCommand(p),
 		repository.Commands(p),
+		test.Commands(p),
 	)
 	return cmd
 }

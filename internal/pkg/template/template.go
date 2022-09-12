@@ -132,6 +132,12 @@ type Test struct {
 	fs   filesystem.Fs
 }
 
+type CreatedTest struct {
+	*Test
+	inputsValues InputsValues
+	prjFS        filesystem.Fs
+}
+
 func New(reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, templateDir, commonDir filesystem.Fs) (*Template, error) {
 	// Mount <common> directory to:
 	//   template dir FS - used to load manifest, inputs, readme
@@ -262,6 +268,36 @@ func (t *Template) Test(testName string) (*Test, error) {
 	}
 
 	return &Test{name: testName, tmpl: t, fs: testDir}, nil
+}
+
+func (t *Template) CreateTest(testName string, inputsValues InputsValues, prjFS filesystem.Fs) error {
+	testsDir, err := t.TestsDir()
+	if err != nil {
+		return err
+	}
+
+	if !testsDir.IsDir(testName) {
+		err = testsDir.Mkdir(testName)
+		if err != nil {
+			return err
+		}
+	}
+
+	testDir, err := testsDir.SubDirFs(testName)
+	if err != nil {
+		return err
+	}
+
+	test := &CreatedTest{Test: &Test{name: testName, tmpl: t, fs: testDir}, inputsValues: inputsValues, prjFS: prjFS}
+
+	// Save gathered inputs to the template test inputs.json
+	err = test.saveInputs()
+	if err != nil {
+		return err
+	}
+
+	// Save output from use template operation to the template test
+	return test.saveExpectedOutput()
 }
 
 func (t *Template) LongDesc() string {
@@ -416,4 +452,38 @@ func (t *Test) Inputs(provider testhelper.EnvProvider, replaceEnvsFn func(string
 	}
 
 	return inputs, nil
+}
+
+func (t *CreatedTest) saveInputs() error {
+	res := make(map[string]interface{})
+	for k, v := range t.inputsValues.ToMap() {
+		res[k] = v.Value
+	}
+
+	// Convert to Json
+	jsonContent, err := json.EncodeString(res, true)
+	if err != nil {
+		return err
+	}
+
+	// Write file
+	f := filesystem.NewRawFile(InputsFile, jsonContent)
+	return t.fs.WriteFile(f)
+}
+
+func (t *CreatedTest) saveExpectedOutput() error {
+	// Get expected output dir
+	if !t.fs.IsDir(ExpectedOutDirectory) {
+		err := t.fs.Mkdir(ExpectedOutDirectory)
+		if err != nil {
+			return err
+		}
+	}
+
+	expectedFS, err := t.fs.SubDirFs(ExpectedOutDirectory)
+	if err != nil {
+		return err
+	}
+
+	return aferofs.CopyFs2Fs(t.prjFS, "/", expectedFS, "/")
 }

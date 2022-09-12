@@ -1,4 +1,4 @@
-package test
+package run
 
 import (
 	"context"
@@ -6,30 +6,24 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/jobsqueueapi"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"go.opentelemetry.io/otel/trace"
 
-	dependenciesPkg "github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	fixtures "github.com/keboola/keboola-as-code/internal/pkg/fixtures/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
+	tmplTest "github.com/keboola/keboola-as-code/internal/pkg/template/test"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenvmock"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/testtemplateinputs"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	syncPush "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/push"
-	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Options struct {
@@ -45,7 +39,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies) (err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.template.test")
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.template.test.run")
 	defer telemetry.EndSpan(span, &err)
 
 	tempDir, err := os.MkdirTemp("", "kac-test-template-") //nolint:forbidigo
@@ -100,30 +94,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 }
 
 func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Template, verbose bool, d dependencies) error {
-	// Get OS envs
-	envs, err := env.FromOs()
-	if err != nil {
-		return err
-	}
-
-	// Get a test project
-	testPrj, unlockFn, err := testproject.GetTestProject(envs)
-	if err != nil {
-		return err
-	}
-	defer unlockFn()
-
 	branchID := 1
-
-	// Load fixture with minimal project
-	fixPrjEnvs := env.Empty()
-	fixPrjEnvs.Set("TEST_KBC_STORAGE_API_HOST", testPrj.StorageAPIHost())
-	fixPrjEnvs.Set("LOCAL_PROJECT_ID", strconv.Itoa(testPrj.ID()))
-	fixPrjEnvs.Set("LOCAL_STATE_MAIN_BRANCH_ID", strconv.Itoa(branchID))
-	projectFS, err := fixtures.LoadFS("empty-branch", fixPrjEnvs)
-	if err != nil {
-		return err
-	}
 
 	var logger log.Logger
 	if verbose {
@@ -131,10 +102,13 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 	} else {
 		logger = log.NewNopLogger()
 	}
-	testDeps, err := newTestDependencies(ctx, d.Tracer(), logger, testPrj.StorageAPIHost(), testPrj.StorageAPIToken().Token)
+
+	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, d.Tracer(), logger, branchID, false)
 	if err != nil {
 		return err
 	}
+	defer unlockFn()
+	d.Logger().Debugf(`Working directory set up.`)
 
 	// Re-init template with set-up Storage client
 	tmpl, err = testDeps.Template(ctx, tmpl.Reference())
@@ -142,44 +116,8 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 		return err
 	}
 
-	// Load project state
-	prj, err := project.New(ctx, projectFS, true)
-	if err != nil {
-		return err
-	}
-	prjState, err := prj.LoadState(loadState.LocalOperationOptions(), testDeps)
-	if err != nil {
-		return err
-	}
-	d.Logger().Debugf(`Working directory set up.`)
-
 	// Read inputs and replace env vars
-	envInputsProvider, err := testtemplateinputs.CreateTestInputsEnvProvider(ctx)
-	if err != nil {
-		return err
-	}
-	inputsFile, err := test.Inputs(envInputsProvider, testhelper.ReplaceEnvsStringWithSeparator, "##")
-	if err != nil {
-		return err
-	}
-
-	inputValues := make(template.InputsValues, 0)
-	err = tmpl.Inputs().ToExtended().VisitInputs(func(group *input.StepsGroupExt, step *input.StepExt, inputDef *input.Input) error {
-		var inputValue template.InputValue
-		if v, found := inputsFile[inputDef.Id]; found {
-			inputValue, err = template.ParseInputValue(v, inputDef, true)
-			if err != nil {
-				return utils.PrefixError(err.Error(), fmt.Errorf("please fix the value in the inputs JSON file"))
-			}
-		} else {
-			inputValue, err = template.ParseInputValue(inputDef.DefaultOrEmpty(), inputDef, true)
-			if err != nil {
-				return utils.PrefixError(err.Error(), fmt.Errorf("please define value in the inputs JSON file"))
-			}
-		}
-		inputValues = append(inputValues, inputValue)
-		return nil
-	})
+	inputValues, err := tmplTest.ReadInputValues(ctx, tmpl, test)
 	if err != nil {
 		return err
 	}
@@ -192,6 +130,9 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 		Inputs:       inputValues,
 	}
 	_, _, err = useTemplate.Run(ctx, prjState, tmpl, tmplOpts, testDeps)
+	if err != nil {
+		return err
+	}
 
 	// Copy expected state and replace ENVs
 	expectedDirFs, err := test.ExpectedOutDir()
@@ -203,60 +144,29 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 	replaceEnvs.Set("PROJECT_ID", strconv.Itoa(testPrj.ID()))
 	replaceEnvs.Set("MAIN_BRANCH_ID", strconv.Itoa(branchID))
 	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(ctx, replaceEnvs)
-	testhelper.ReplaceEnvsDir(projectFS, `/`, envProvider)
+	testhelper.ReplaceEnvsDir(prjState.Fs(), `/`, envProvider)
 	testhelper.ReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
 
 	// Compare actual and expected dirs
-	return testhelper.DirectoryContentsSame(expectedDirFs, `/`, projectFS, `/`)
+	return testhelper.DirectoryContentsSame(expectedDirFs, `/`, prjState.Fs(), `/`)
 }
 
 func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Template, verbose bool, d dependencies) error {
-	// Get envs
-	envs, err := env.FromOs()
-	if err != nil {
-		return err
-	}
-
-	// Get a test project
-	testPrj, unlockFn, err := testproject.GetTestProject(envs)
-	if err != nil {
-		return err
-	}
-	defer unlockFn()
-
-	// Clear project
-	err = testPrj.SetState("empty.json")
-	if err != nil {
-		return err
-	}
-
-	defBranch, err := testPrj.DefaultBranch()
-	if err != nil {
-		return err
-	}
-	branchID := int(defBranch.ID)
-	branchKey := model.BranchKey{Id: storageapi.BranchID(branchID)}
-
-	// Load fixture with minimal project
-	fixPrjEnvs := env.Empty()
-	fixPrjEnvs.Set("TEST_KBC_STORAGE_API_HOST", testPrj.StorageAPIHost())
-	fixPrjEnvs.Set("LOCAL_PROJECT_ID", strconv.Itoa(testPrj.ID()))
-	fixPrjEnvs.Set("LOCAL_STATE_MAIN_BRANCH_ID", strconv.Itoa(branchID))
-	prjFS, err := fixtures.LoadFS("empty-branch", fixPrjEnvs)
-	if err != nil {
-		return err
-	}
-
 	var logger log.Logger
 	if verbose {
 		logger = d.Logger()
 	} else {
 		logger = log.NewNopLogger()
 	}
-	testDeps, err := newTestDependencies(ctx, d.Tracer(), logger, testPrj.StorageAPIHost(), testPrj.StorageAPIToken().Token)
+
+	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, d.Tracer(), logger, 0, true)
 	if err != nil {
 		return err
 	}
+	defer unlockFn()
+	d.Logger().Debugf(`Working directory set up.`)
+
+	branchKey := prjState.MainBranch().BranchKey
 
 	// Re-init template with set-up Storage client
 	tmpl, err = testDeps.Template(ctx, tmpl.Reference())
@@ -264,49 +174,8 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 		return err
 	}
 
-	// Load project state
-	prj, err := project.New(ctx, prjFS, true)
-	// Create fake manifest
-	m := project.NewManifest(testPrj.ID(), testPrj.StorageAPIHost())
-	// Load only target branch
-	m.Filter().SetAllowedKeys([]model.Key{branchKey})
-
-	if err != nil {
-		return err
-	}
-	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true}, testDeps)
-	if err != nil {
-		return err
-	}
-	d.Logger().Debugf(`Working directory set up.`)
-
 	// Read inputs and replace env vars
-	envInputsProvider, err := testtemplateinputs.CreateTestInputsEnvProvider(ctx)
-	if err != nil {
-		return err
-	}
-	inputsFile, err := test.Inputs(envInputsProvider, testhelper.ReplaceEnvsStringWithSeparator, "##")
-	if err != nil {
-		return err
-	}
-
-	inputValues := make(template.InputsValues, 0)
-	err = tmpl.Inputs().ToExtended().VisitInputs(func(group *input.StepsGroupExt, step *input.StepExt, inputDef *input.Input) error {
-		var inputValue template.InputValue
-		if v, found := inputsFile[inputDef.Id]; found {
-			inputValue, err = template.ParseInputValue(v, inputDef, true)
-			if err != nil {
-				return utils.PrefixError(err.Error(), fmt.Errorf("please fix the value in the inputs JSON file"))
-			}
-		} else {
-			inputValue, err = template.ParseInputValue(inputDef.DefaultOrEmpty(), inputDef, true)
-			if err != nil {
-				return utils.PrefixError(err.Error(), fmt.Errorf("please define value in the inputs JSON file"))
-			}
-		}
-		inputValues = append(inputValues, inputValue)
-		return nil
-	})
+	inputValues, err := tmplTest.ReadInputValues(ctx, tmpl, test)
 	if err != nil {
 		return err
 	}
@@ -324,6 +193,9 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 		Inputs:       inputValues,
 	}
 	tmplInstID, _, err := useTemplate.Run(ctx, prjState, tmpl, tmplOpts, testDeps)
+	if err != nil {
+		return err
+	}
 
 	// Copy expected state and replace ENVs
 	expectedDirFs, err := test.ExpectedOutDir()
@@ -333,13 +205,13 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	replaceEnvs := env.Empty()
 	replaceEnvs.Set("STORAGE_API_HOST", testPrj.StorageAPIHost())
 	replaceEnvs.Set("PROJECT_ID", strconv.Itoa(testPrj.ID()))
-	replaceEnvs.Set("MAIN_BRANCH_ID", strconv.Itoa(branchID))
+	replaceEnvs.Set("MAIN_BRANCH_ID", prjState.MainBranch().Id.String())
 	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(ctx, replaceEnvs)
-	testhelper.ReplaceEnvsDir(prjFS, `/`, envProvider)
+	testhelper.ReplaceEnvsDir(prjState.Fs(), `/`, envProvider)
 	testhelper.ReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
 
 	// Compare actual and expected dirs
-	err = testhelper.DirectoryContentsSame(expectedDirFs, `/`, prjFS, `/`)
+	err = testhelper.DirectoryContentsSame(expectedDirFs, `/`, prjState.Fs(), `/`)
 	if err != nil {
 		return err
 	}
@@ -414,27 +286,4 @@ func findTmplInst(prjState *project.State, branchKey model.BranchKey, tmplInstID
 		return nil, fmt.Errorf(`template instance "%s" is missing mainConfig.configId in metadata`, tmplInstID)
 	}
 	return tmplInst, nil
-}
-
-type testDependencies struct {
-	dependenciesPkg.Base
-	dependenciesPkg.Public
-	dependenciesPkg.Project
-}
-
-func newTestDependencies(ctx context.Context, tracer trace.Tracer, logger log.Logger, apiHost, apiToken string) (*testDependencies, error) {
-	baseDeps := dependenciesPkg.NewBaseDeps(env.Empty(), tracer, logger, client.NewTestClient())
-	publicDeps, err := dependenciesPkg.NewPublicDeps(ctx, baseDeps, apiHost)
-	if err != nil {
-		return nil, err
-	}
-	projectDeps, err := dependenciesPkg.NewProjectDeps(ctx, baseDeps, publicDeps, apiToken)
-	if err != nil {
-		return nil, err
-	}
-	return &testDependencies{
-		Base:    baseDeps,
-		Public:  publicDeps,
-		Project: projectDeps,
-	}, nil
 }

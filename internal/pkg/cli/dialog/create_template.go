@@ -99,7 +99,7 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 	} else {
 		d.out.Description = d.askDescription()
 	}
-	if err := validateTemplateDescription(d.out.Name); err != nil {
+	if err := validateTemplateDescription(d.out.Description); err != nil {
 		return d.out, err
 	}
 
