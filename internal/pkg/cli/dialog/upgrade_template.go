@@ -34,7 +34,7 @@ func (p *Dialogs) AskUpgradeTemplateOptions(d upgradeTmplDeps, projectState *sta
 
 func (d *upgradeTmplDialog) ask() (upgradeTemplate.Options, error) {
 	// User inputs
-	if v, err := d.askUseTemplateInputs(d.groups, d.options); err != nil {
+	if v, err := d.askUseTemplateInputs(d.groups, d.options, false); err != nil {
 		return d.out, err
 	} else {
 		d.out.Inputs = v

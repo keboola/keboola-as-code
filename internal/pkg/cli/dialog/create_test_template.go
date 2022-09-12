@@ -40,7 +40,7 @@ func (d *createTmplTestDialog) ask() (createOp.Options, error) {
 	}
 
 	// User inputs
-	if v, err := d.askUseTemplateInputs(d.template.Inputs().ToExtended(), d.options); err != nil {
+	if v, err := d.askUseTemplateInputs(d.template.Inputs().ToExtended(), d.options, true); err != nil {
 		return d.out, err
 	} else {
 		d.out.Inputs = v
