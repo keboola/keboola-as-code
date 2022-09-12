@@ -25,6 +25,7 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -401,9 +402,14 @@ func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) c
 	// Force HTTP2 transport
 	transport := client.HTTP2Transport()
 
-	// DataDog low-level tracing
+	// DataDog low-level tracing (raw http requests)
 	if telemetry.IsDataDogEnabled(envs) {
-		transport = ddHttp.WrapRoundTripper(transport)
+		transport = ddHttp.WrapRoundTripper(
+			transport,
+			ddHttp.RTWithResourceNamer(func(r *http.Request) string {
+				// Set resource name to request path
+				return r.URL.Path
+			}))
 	}
 
 	// Create client
