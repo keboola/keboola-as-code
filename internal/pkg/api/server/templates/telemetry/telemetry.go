@@ -160,11 +160,11 @@ func ApiClientTrace() client.TraceFactory {
 			)
 
 			// Set tags
-			requestSpan.SetBaggageItem("kac.api.client.request.method", clientRequest.Method())
-			requestSpan.SetBaggageItem("kac.api.client.request.url", clientRequest.URL())
-			requestSpan.SetBaggageItem("kac.api.client.request.result_type", resultType)
+			requestSpan.SetTag("kac.api.client.request.method", clientRequest.Method())
+			requestSpan.SetTag("kac.api.client.request.url", clientRequest.URL())
+			requestSpan.SetTag("kac.api.client.request.result_type", resultType)
 			for k, v := range clientRequest.PathParams() {
-				requestSpan.SetBaggageItem("kac.api.client.request.params"+k, v)
+				requestSpan.SetTag("kac.api.client.request.params"+k, v)
 			}
 
 			return ctx
