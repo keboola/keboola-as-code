@@ -85,6 +85,7 @@ type ForProjectRequest interface {
 	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
 	TemplateRepository(ctx context.Context, reference model.TemplateRepository) (*repository.Repository, error)
 	ProjectRepositories() []model.TemplateRepository
+	ProjectRepositoriesMap() map[string]model.TemplateRepository
 }
 
 // forServer implements ForServer interface.
@@ -115,6 +116,7 @@ type forProjectRequest struct {
 	logger           log.PrefixLogger
 	repositories     map[string]*repositoryManager.CachedRepository
 	repositoriesList dependencies.Lazy[[]model.TemplateRepository]
+	repositoriesMap  dependencies.Lazy[map[string]model.TemplateRepository]
 }
 
 func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, defaultRepositories []model.TemplateRepository, debug, dumpHttp bool) (v ForServer, err error) {
@@ -343,6 +345,17 @@ func (v *forProjectRequest) ProjectRepositories() []model.TemplateRepository {
 			out = append(out, repo)
 		}
 
+		return out
+	})
+}
+
+func (v *forProjectRequest) ProjectRepositoriesMap() map[string]model.TemplateRepository {
+	return v.repositoriesMap.MustInitAndGet(func() map[string]model.TemplateRepository {
+		// Convert project repositories to map for fast search
+		out := make(map[string]model.TemplateRepository)
+		for _, repo := range v.ProjectRepositories() {
+			out[repo.Name] = repo
+		}
 		return out
 	})
 }

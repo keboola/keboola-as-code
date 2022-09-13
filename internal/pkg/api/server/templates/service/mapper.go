@@ -260,6 +260,9 @@ func InstancesResponse(ctx context.Context, d dependencies.ForProjectRequest, pr
 		}
 	}
 
+	// Get project repositories map for fast search
+	repositoriesMap := d.ProjectRepositoriesMap()
+
 	// Get instances
 	instances, err := branch.Remote.Metadata.TemplatesInstances()
 	if err != nil {
@@ -269,6 +272,11 @@ func InstancesResponse(ctx context.Context, d dependencies.ForProjectRequest, pr
 	// Map response
 	out = &Instances{Instances: make([]*Instance, 0)}
 	for _, instance := range instances {
+		// Skip instance if the repository is no more defined for the project
+		if _, found := repositoriesMap[instance.RepositoryName]; !found {
+			continue
+		}
+
 		outInstance := &Instance{
 			TemplateID:     instance.TemplateId,
 			InstanceID:     instance.InstanceId,
@@ -323,6 +331,14 @@ func InstanceResponse(ctx context.Context, d dependencies.ForProjectRequest, prj
 		return nil, &GenericError{
 			Name:    "templates.instanceNotFound",
 			Message: fmt.Sprintf(`Instance "%s" not found in branch "%d".`, instanceId, branchKey.Id),
+		}
+	}
+
+	// Check if the repository is still defined in the project
+	if _, found := d.ProjectRepositoriesMap()[instance.RepositoryName]; !found {
+		return nil, &GenericError{
+			Name:    "templates.repositoryNotFound",
+			Message: fmt.Sprintf(`Repository "%s" not found.`, instance.RepositoryName),
 		}
 	}
 
