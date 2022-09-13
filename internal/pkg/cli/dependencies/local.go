@@ -13,6 +13,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
+	loadTemplateOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/load"
+	loadRepositoryOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/repository/load"
 )
 
 // local dependencies container implements ForLocalCommand interface.
@@ -56,6 +58,20 @@ func (v *local) Components() *model.ComponentsMap {
 	})
 }
 
+func (v *local) Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error) {
+	// Load repository
+	repo, err := v.templateRepository(ctx, reference.Repository(), loadRepositoryOp.OnlyForTemplate(reference))
+	if err != nil {
+		return nil, err
+	}
+
+	// Update repository reference
+	reference.WithRepository(repo.Definition())
+
+	// Load template
+	return loadTemplateOp.Run(ctx, v, repo, reference)
+}
+
 func (v *local) LocalProject(ignoreErrors bool) (*projectPkg.Project, bool, error) {
 	// Check if the working directory is a project directory
 	if !v.localProject.IsSet() && !v.Fs().IsFile(projectManifest.Path()) {
@@ -92,44 +108,10 @@ func (v *local) LocalTemplateRepository(ctx context.Context) (*repository.Reposi
 		if err != nil {
 			return localRepositoryValue{found: found}, err
 		}
-		repo, err := v.TemplateRepository(ctx, reference, nil)
+		repo, err := v.templateRepository(ctx, reference)
 		return localRepositoryValue{found: true, value: repo}, err
 	})
 	return value.value, value.found, err
-}
-
-func (v *local) Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error) {
-	if repo, err := v.mapRepositoryRelPath(reference.Repository()); err != nil {
-		return nil, err
-	} else {
-		return v.Public.Template(ctx, reference.WithRepository(repo))
-	}
-}
-
-func (v *local) TemplateRepository(ctx context.Context, reference model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error) {
-	// Handle CLI only features
-	modifiedReference, err := v.mapRepositoryRelPath(reference)
-	if err != nil {
-		return nil, err
-	}
-
-	// Update template reference
-	if forTemplate != nil {
-		forTemplate = forTemplate.WithRepository(modifiedReference)
-	}
-
-	// Get repository
-	repo, err := v.Public.TemplateRepository(ctx, modifiedReference, forTemplate)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set working directory to repo FS
-	if repo.Fs().BasePath() == v.Fs().BasePath() {
-		repo.Fs().SetWorkingDir(v.Fs().WorkingDir())
-	}
-
-	return repo, nil
 }
 
 func (v *local) LocalTemplate(ctx context.Context) (*template.Template, bool, error) {
@@ -147,7 +129,7 @@ func (v *local) LocalTemplate(ctx context.Context) (*template.Template, bool, er
 		}
 
 		// Get template
-		templateRecord, found := repo.GetTemplateByPath(paths.TemplateDirName)
+		templateRecord, found := repo.RecordByPath(paths.TemplateDirName)
 		if !found {
 			return localTemplateValue{found: false}, fmt.Errorf(`template with path "%s" not found in "%s"`, paths.TemplateDirName, repo.Manifest().Path())
 		}
@@ -159,7 +141,7 @@ func (v *local) LocalTemplate(ctx context.Context) (*template.Template, bool, er
 		}
 
 		// Load template
-		tmpl, err := v.Template(ctx, model.NewTemplateRef(repo.Ref(), templateRecord.Id, versionRecord.Version.String()))
+		tmpl, err := v.Template(ctx, model.NewTemplateRef(repo.Definition(), templateRecord.Id, versionRecord.Version.String()))
 		if err != nil {
 			return localTemplateValue{found: true, value: tmpl}, err
 		}
@@ -173,6 +155,27 @@ func (v *local) LocalTemplate(ctx context.Context) (*template.Template, bool, er
 	})
 
 	return value.value, value.found, err
+}
+
+func (v *local) templateRepository(ctx context.Context, reference model.TemplateRepository, opts ...loadRepositoryOp.Option) (*repository.Repository, error) {
+	// Handle CLI only features
+	reference, err := v.mapRepositoryRelPath(reference)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load repository
+	repo, err := loadRepositoryOp.Run(ctx, v, reference)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set working directory to repo FS
+	if repo.Fs().BasePath() == v.Fs().BasePath() {
+		repo.Fs().SetWorkingDir(v.Fs().WorkingDir())
+	}
+
+	return repo, nil
 }
 
 // mapRepositoryRelPath adds support for relative repository path.
