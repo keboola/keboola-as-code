@@ -15,6 +15,7 @@ import (
 	ddtracer "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 type tracer struct{}
@@ -154,7 +155,7 @@ func ApiClientTrace() client.TraceFactory {
 			requestSpan, ctx = ddtracer.StartSpanFromContext(
 				c,
 				"kac.api.client.request",
-				ddtracer.ResourceName(clientRequest.URL()),
+				ddtracer.ResourceName(strhelper.MustUrlPathUnescape(clientRequest.URL())),
 				ddtracer.SpanType("kac.api.client"),
 			)
 
@@ -183,7 +184,7 @@ func ApiClientTrace() client.TraceFactory {
 				parsingSpan, _ = ddtracer.StartSpanFromContext(
 					ctx,
 					"kac.api.client.request.parsing",
-					ddtracer.ResourceName(clientRequest.URL()),
+					ddtracer.ResourceName(strhelper.MustUrlPathUnescape(clientRequest.URL())),
 					ddtracer.SpanType("kac.api.client"),
 				)
 			}
@@ -206,7 +207,7 @@ func ApiClientTrace() client.TraceFactory {
 			retryDelaySpan, _ = ddtracer.StartSpanFromContext(
 				ctx,
 				"kac.api.client.retry.delay",
-				ddtracer.ResourceName(clientRequest.URL()),
+				ddtracer.ResourceName(strhelper.MustUrlPathUnescape(clientRequest.URL())),
 				ddtracer.SpanType("kac.api.client"),
 				ddtracer.Tag("retry.attempt", attempt),
 				ddtracer.Tag("retry.delay_ms", delay.Milliseconds()),
