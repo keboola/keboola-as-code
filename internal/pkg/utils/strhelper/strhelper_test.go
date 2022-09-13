@@ -168,3 +168,10 @@ func TestFirstN(t *testing.T) {
 	assert.Equal(t, "abcde", FirstN("abcde", 5))
 	assert.Equal(t, "abcde", FirstN("abcde", 6))
 }
+
+func TestStripMarkdown(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, "unchanged\ntest", StripMarkdown("unchanged\ntest"))
+	assert.Equal(t, "heading", StripMarkdown("### heading"))
+	assert.Equal(t, "link", StripMarkdown("[link](https://google.com/?a=b&c=d#anchor)"))
+}

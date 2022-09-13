@@ -221,7 +221,7 @@ type Step struct {
 	Name              string `json:"name" validate:"required,min=1,max=25"`
 	Description       string `json:"description" validate:"min=1,max=60"`
 	DialogName        string `json:"dialogName,omitempty" validate:"omitempty,max=25"`
-	DialogDescription string `json:"dialogDescription,omitempty" validate:"omitempty,max=200"`
+	DialogDescription string `json:"dialogDescription,omitempty" validate:"omitempty,mdmax=200"`
 	Inputs            Inputs `json:"inputs" validate:"omitempty,dive"`
 }
 

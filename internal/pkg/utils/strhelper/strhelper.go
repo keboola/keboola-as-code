@@ -8,6 +8,7 @@ import (
 
 	"github.com/jpillora/longestcommon"
 	"github.com/umisama/go-regexpcache"
+	stripmd "github.com/writeas/go-strip-markdown"
 	"golang.org/x/text/runes"
 	"golang.org/x/text/transform"
 	"golang.org/x/text/unicode/norm"
@@ -126,4 +127,8 @@ func FirstN(str string, n int) string {
 		n = len(str)
 	}
 	return str[0:n]
+}
+
+func StripMarkdown(str string) string {
+	return stripmd.Strip(str)
 }

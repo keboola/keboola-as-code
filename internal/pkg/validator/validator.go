@@ -11,6 +11,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/go-playground/locales/en"
@@ -20,6 +21,7 @@ import (
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 const (
@@ -163,6 +165,22 @@ func (v *wrapper) registerCustomRules() {
 				return false
 			},
 			ErrorMsg: "{0} does not contain an allowed icon",
+		},
+		Rule{
+			Tag: "mdmax",
+			FuncCtx: func(ctx context.Context, fl validator.FieldLevel) bool {
+				value := fl.Field().String()
+				paramStr := fl.Param()
+				param, err := strconv.Atoi(paramStr)
+				if err != nil {
+					panic(fmt.Sprintf("failed to convert mdmax param \"%v\" to an int", paramStr))
+				}
+				value = strhelper.StripMarkdown(value)
+				return len(value) <= param
+			},
+			ErrorMsgFunc: func(fe validator.FieldError) string {
+				return fmt.Sprintf("%s exceeded maximum length of %s", fe.Tag(), fe.Param())
+			},
 		},
 	)
 }
