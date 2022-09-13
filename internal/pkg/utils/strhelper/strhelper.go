@@ -2,6 +2,7 @@ package strhelper
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 	"unicode"
@@ -131,4 +132,12 @@ func FirstN(str string, n int) string {
 
 func StripMarkdown(str string) string {
 	return stripmd.Strip(str)
+}
+
+func MustUrlPathUnescape(in string) string {
+	out, err := url.PathUnescape(in)
+	if err != nil {
+		return in
+	}
+	return out
 }
