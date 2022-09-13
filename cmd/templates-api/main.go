@@ -58,6 +58,7 @@ func main() {
 			tracer.WithLogger(ddLogger{logger}),
 			tracer.WithRuntimeMetrics(),
 			tracer.WithAnalytics(true),
+			tracer.WithDebugMode(envs.Get("DATADOG_DEBUG") == "true"),
 		)
 		defer tracer.Stop()
 	}

@@ -447,10 +447,10 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 
 	d := dependencies.NewMockedDeps()
 	d.SetFromTestProject(testProject)
-	state, err := New(project.NewWithManifest(context.Background(), testfs.NewMemoryFs(), m), d)
+	state, err := New(context.Background(), project.NewWithManifest(context.Background(), testfs.NewMemoryFs(), m), d)
 	assert.NoError(t, err)
 	filter := m.Filter()
-	_, localErr, remoteErr := state.Load(LoadOptions{RemoteFilter: filter, LoadRemoteState: true})
+	_, localErr, remoteErr := state.Load(context.Background(), LoadOptions{RemoteFilter: filter, LoadRemoteState: true})
 	assert.NoError(t, localErr)
 	return state, testProject.Env(), remoteErr
 }

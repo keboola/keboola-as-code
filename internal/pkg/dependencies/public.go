@@ -12,9 +12,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	loadRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/load"
 )
 
@@ -29,24 +29,24 @@ type public struct {
 	components          *model.ComponentsProvider
 }
 
-func NewPublicDeps(ctx context.Context, baseDeps Base, storageApiHost string) (Public, error) {
-	return newPublicDeps(ctx, baseDeps, storageApiHost)
+func NewPublicDeps(ctx context.Context, base Base, storageApiHost string) (v Public, err error) {
+	ctx, span := base.Tracer().Start(ctx, "kac.lib.dependencies.NewPublicDeps")
+	defer telemetry.EndSpan(span, &err)
+	return newPublicDeps(ctx, base, storageApiHost)
 }
 
-func newPublicDeps(ctx context.Context, baseDeps Base, storageApiHost string) (*public, error) {
+func newPublicDeps(ctx context.Context, base Base, storageApiHost string) (*public, error) {
 	v := &public{
-		base:             baseDeps,
+		base:             base,
 		storageApiHost:   storageApiHost,
-		storageApiClient: storageapi.ClientWithHost(baseDeps.HttpClient(), storageApiHost),
+		storageApiClient: storageapi.ClientWithHost(base.HttpClient(), storageApiHost),
 	}
 
 	// Load API index (stack services, stack features, components)
-	startTime := time.Now()
-	index, err := storageapi.IndexComponentsRequest().Send(ctx, v.StorageApiPublicClient())
+	index, err := storageApiIndex(ctx, base, v.storageApiClient)
 	if err != nil {
 		return nil, err
 	}
-	v.base.Logger().Debugf("Storage API index loaded | %s", time.Since(startTime))
 
 	// Set values derived from the index
 	v.stackFeatures = index.Features.ToMap()
@@ -61,6 +61,19 @@ func newPublicDeps(ctx context.Context, baseDeps Base, storageApiHost string) (*
 	}
 
 	return v, nil
+}
+
+func storageApiIndex(ctx context.Context, d Base, storageApiClient client.Client) (index *storageapi.IndexComponents, err error) {
+	startTime := time.Now()
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.dependencies.public.storageApiIndex")
+	defer telemetry.EndSpan(span, &err)
+
+	index, err = storageapi.IndexComponentsRequest().Send(ctx, storageApiClient)
+	if err != nil {
+		return nil, err
+	}
+	d.Logger().Debugf("Storage API index loaded | %s", time.Since(startTime))
+	return index, nil
 }
 
 func (v public) StorageApiHost() string {
@@ -91,7 +104,10 @@ func (v public) EncryptionApiClient() client.Sender {
 	return v.encryptionApiClient
 }
 
-func (v public) Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error) {
+func (v public) Template(ctx context.Context, reference model.TemplateRef) (tmpl *template.Template, err error) {
+	ctx, span := v.base.Tracer().Start(ctx, "kac.lib.dependencies.public.Template")
+	defer telemetry.EndSpan(span, &err)
+
 	// Load repository
 	repo, err := v.TemplateRepository(ctx, reference.Repository(), reference)
 	if err != nil {
@@ -99,9 +115,9 @@ func (v public) Template(ctx context.Context, reference model.TemplateRef) (*tem
 	}
 
 	// Get template
-	templateRecord, found := repo.GetTemplateById(reference.TemplateId())
-	if !found {
-		return nil, manifest.TemplateNotFoundError{}
+	templateRecord, err := repo.GetTemplateByIdOrErr(reference.TemplateId())
+	if err != nil {
+		return nil, err
 	}
 
 	// Get template version
@@ -128,7 +144,10 @@ func (v public) Template(ctx context.Context, reference model.TemplateRef) (*tem
 	return template.New(reference, templateRecord, versionRecord, templateDir, repo.CommonDir())
 }
 
-func (v public) TemplateRepository(ctx context.Context, reference model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error) {
+func (v public) TemplateRepository(ctx context.Context, reference model.TemplateRepository, forTemplate model.TemplateRef) (repo *repository.Repository, err error) {
+	ctx, span := v.base.Tracer().Start(ctx, "kac.lib.dependencies.public.TemplateRepository")
+	defer telemetry.EndSpan(span, &err)
+
 	// Get FS
 	fs, err := v.templateRepositoryFs(ctx, reference, forTemplate)
 	if err != nil {
@@ -143,7 +162,10 @@ func (v public) TemplateRepository(ctx context.Context, reference model.Template
 	return repository.New(reference, fs, m)
 }
 
-func (v public) templateRepositoryFs(ctx context.Context, definition model.TemplateRepository, template model.TemplateRef) (filesystem.Fs, error) {
+func (v public) templateRepositoryFs(ctx context.Context, definition model.TemplateRepository, template model.TemplateRef) (fs filesystem.Fs, err error) {
+	ctx, span := v.base.Tracer().Start(ctx, "kac.lib.dependencies.public.TemplateRepository.filesystem")
+	defer telemetry.EndSpan(span, &err)
+
 	switch definition.Type {
 	case model.RepositoryTypeDir:
 		return aferofs.NewLocalFs(v.base.Logger(), definition.Url, "")

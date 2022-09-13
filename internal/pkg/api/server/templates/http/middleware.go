@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dimfeld/httptreemux/v5"
 	httpMiddleware "goa.design/goa/v3/http/middleware"
 	"goa.design/goa/v3/middleware"
 	goa "goa.design/goa/v3/pkg"
@@ -28,7 +29,16 @@ func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint g
 			if !strings.Contains(resourceName, "HealthCheck") {
 				// Start operation
 				var span tracer.Span
-				span, ctx = tracer.StartSpanFromContext(ctx, "endpoint.request", tracer.ResourceName(resourceName))
+				span, ctx = tracer.StartSpanFromContext(ctx, "endpoint.request", tracer.SpanType(ext.SpanTypeWeb), tracer.ResourceName(resourceName))
+
+				// Track endpoint info
+				routerData := httptreemux.ContextData(ctx)
+				span.SetBaggageItem("kac.endpoint.name", ctx.Value(goa.MethodKey).(string))
+				span.SetBaggageItem("kac.endpoint.route", routerData.Route())
+				for k, v := range routerData.Params() {
+					span.SetBaggageItem("kac.endpoint.params."+k, v)
+				}
+
 				// Finis operation and log internal error
 				defer func() {
 					// Is internal error?
@@ -63,8 +73,8 @@ func ContextMiddleware(serverDeps dependencies.ForServer, h http.Handler) http.H
 		// Add request ID to DD span
 		if span, ok := tracer.SpanFromContext(ctx); ok {
 			span.SetTag(ext.ResourceName, r.URL.Path)
-			span.SetTag("http.request.id", requestId)
-			span.SetTag("storage.host", serverDeps.StorageApiHost())
+			span.SetBaggageItem("kac.http.request.id", requestId)
+			span.SetBaggageItem("kac.storage.host", serverDeps.StorageApiHost())
 		}
 
 		// Cancel context after request + set timeout

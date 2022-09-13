@@ -1,6 +1,7 @@
 package state_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -65,7 +66,7 @@ func TestValidateState(t *testing.T) {
 	assert.NoError(t, state.Set(configState))
 
 	// Validate
-	localErr, remoteErr := state.Validate()
+	localErr, remoteErr := state.Validate(context.Background())
 	expectedLocalError := `
 local branch "branch" is not valid: name is a required field
 `

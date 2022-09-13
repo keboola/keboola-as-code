@@ -25,6 +25,7 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -41,6 +42,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	telemetryUtils "github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	loadRepositoryManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/manifest/load"
@@ -115,7 +117,15 @@ type forProjectRequest struct {
 	repositoriesList dependencies.Lazy[[]model.TemplateRepository]
 }
 
-func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, defaultRepositories []model.TemplateRepository, debug, dumpHttp bool) (ForServer, error) {
+func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, defaultRepositories []model.TemplateRepository, debug, dumpHttp bool) (v ForServer, err error) {
+	// Create tracer
+	var tracer trace.Tracer = nil
+	if telemetry.IsDataDogEnabled(envs) {
+		tracer = telemetry.NewDataDogTracer()
+		_, span := tracer.Start(serverCtx, "kac.lib.api.server.templates.dependencies.NewServerDeps")
+		defer telemetryUtils.EndSpan(span, &err)
+	}
+
 	// Create wait group - for graceful shutdown
 	serverWg := &sync.WaitGroup{}
 
@@ -127,12 +137,6 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 
 	// Create base HTTP client for all API requests to other APIs
 	httpClient := apiHttpClient(envs, logger, debug, dumpHttp)
-
-	// Create tracer
-	var tracer trace.Tracer = nil
-	if telemetry.IsDataDogEnabled(envs) {
-		tracer = telemetry.NewDataDogTracer()
-	}
 
 	// Create base dependencies
 	baseDeps := dependencies.NewBaseDeps(envs, tracer, logger, httpClient)
@@ -172,6 +176,9 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	return d, nil
 }
 func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, requestId string) ForPublicRequest {
+	_, span := serverDeps.Tracer().Start(requestCtx, "kac.api.server.templates.dependencies.NewDepsForPublicRequest")
+	defer telemetryUtils.EndSpan(span, nil)
+
 	return &forPublicRequest{
 		ForServer:  serverDeps,
 		logger:     serverDeps.PrefixLogger().WithAdditionalPrefix(fmt.Sprintf("[requestId=%s]", requestId)),
@@ -181,6 +188,9 @@ func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, r
 }
 
 func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (ForProjectRequest, error) {
+	_, span := publicDeps.Tracer().Start(ctx, "kac.api.server.templates.dependencies.NewDepsForProjectRequest")
+	defer telemetryUtils.EndSpan(span, nil)
+
 	projectDeps, err := dependencies.NewProjectDeps(ctx, publicDeps, publicDeps, tokenStr)
 	if err != nil {
 		return nil, err
@@ -216,6 +226,9 @@ func (v *forServer) RepositoryManager() *repository.Manager {
 
 func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 	return v.etcdClient.InitAndGet(func() (*etcd.Client, error) {
+		ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.EtcdClient")
+		defer telemetryUtils.EndSpan(span, nil)
+
 		// Check if etcd is enabled
 		if v.Envs().Get("ETCD_ENABLED") == "false" {
 			return nil, fmt.Errorf("etcd integration is disabled")
@@ -318,8 +331,11 @@ func (v *forProjectRequest) PrefixLogger() log.PrefixLogger {
 	return v.logger
 }
 
-func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition model.TemplateRepository, _ model.TemplateRef) (*repository.Repository, error) {
+func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition model.TemplateRepository, _ model.TemplateRef) (repo *repository.Repository, err error) {
 	if _, found := v.repositories[definition.Hash()]; !found {
+		ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.TemplateRepository")
+		defer telemetryUtils.EndSpan(span, &err)
+
 		var fs filesystem.Fs
 		var err error
 		if definition.Type == model.RepositoryTypeGit {
@@ -386,9 +402,14 @@ func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) c
 	// Force HTTP2 transport
 	transport := client.HTTP2Transport()
 
-	// DataDog low-level tracing
+	// DataDog low-level tracing (raw http requests)
 	if telemetry.IsDataDogEnabled(envs) {
-		transport = ddHttp.WrapRoundTripper(transport)
+		transport = ddHttp.WrapRoundTripper(
+			transport,
+			ddHttp.RTWithResourceNamer(func(r *http.Request) string {
+				// Set resource name to request path
+				return r.URL.Path
+			}))
 	}
 
 	// Create client
@@ -406,7 +427,7 @@ func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) c
 		c = c.AndTrace(client.DumpTracer(logger.DebugWriter()))
 	}
 
-	// DataDog high-level tracing
+	// DataDog high-level tracing (api client requests)
 	if telemetry.IsDataDogEnabled(envs) {
 		c = c.AndTrace(telemetry.ApiClientTrace())
 	}

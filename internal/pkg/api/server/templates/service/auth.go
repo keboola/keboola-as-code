@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"goa.design/goa/v3/security"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
@@ -21,8 +22,8 @@ func (s *service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *secur
 
 		// Add tags to DD span
 		if span, ok := tracer.SpanFromContext(ctx); ok {
-			span.SetTag("storage.project.id", projectDeps.ProjectID())
-			span.SetTag("storage.token.id", projectDeps.StorageApiTokenID())
+			span.SetBaggageItem("kac.project.id", strconv.Itoa(projectDeps.ProjectID()))
+			span.SetBaggageItem("kac.storage.token.id", projectDeps.StorageApiTokenID())
 		}
 
 		// Update context

@@ -198,7 +198,7 @@ func (v *mocked) MockedProject(fs filesystem.Fs) *projectPkg.Project {
 }
 
 func (v *mocked) MockedState() *state.State {
-	s, err := state.New(NewObjectsContainer(testfs.NewMemoryFsWithLogger(v.debugLogger), fixtures.NewManifest()), v)
+	s, err := state.New(context.Background(), NewObjectsContainer(testfs.NewMemoryFsWithLogger(v.debugLogger), fixtures.NewManifest()), v)
 	if err != nil {
 		panic(err)
 	}

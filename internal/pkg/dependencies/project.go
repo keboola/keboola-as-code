@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 // project dependencies container implements Project interface.
@@ -22,7 +23,10 @@ type project struct {
 	eventSender        event.Sender
 }
 
-func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr string) (Project, error) {
+func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr string) (v Project, err error) {
+	ctx, span := base.Tracer().Start(ctx, "kac.lib.dependencies.NewProjectDeps")
+	defer telemetry.EndSpan(span, &err)
+
 	token, err := storageapi.VerifyTokenRequest(tokenStr).Send(ctx, public.StorageApiPublicClient())
 	if err != nil {
 		return nil, err
