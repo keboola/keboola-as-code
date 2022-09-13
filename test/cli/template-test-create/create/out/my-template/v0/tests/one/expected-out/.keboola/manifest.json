@@ -1,8 +1,8 @@
 {
   "version": 2,
   "project": {
-    "id": %d,
-    "apiHost": "%s"
+    "id": __PROJECT_ID__,
+    "apiHost": "__STORAGE_API_HOST__"
   },
   "sortBy": "id",
   "naming": {
@@ -31,7 +31,7 @@
   },
   "branches": [
     {
-      "id": 1,
+      "id": __MAIN_BRANCH_ID__,
       "path": "main",
       "metadata": {
         "KBC.KAC.templates.instances": "[{\"instanceId\":\"%s\",\"instanceName\":\"test\",\"templateId\":\"my-template\",\"repositoryName\":\"keboola\",\"version\":\"0.0.1\",\"created\":{\"date\":\"%s\",\"tokenId\":\"%s\"},\"updated\":{\"date\":\"%s\",\"tokenId\":\"%s\"}}]"
@@ -40,7 +40,7 @@
   ],
   "configurations": [
     {
-      "branchId": 1,
+      "branchId": __MAIN_BRANCH_ID__,
       "componentId": "ex-generic-v2",
       "id": "%s",
       "path": "extractor/ex-generic-v2/empty",

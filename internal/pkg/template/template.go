@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/client"
+	"github.com/umisama/go-regexpcache"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -14,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 	templateInput "github.com/keboola/keboola-as-code/internal/pkg/template/input"
@@ -134,8 +136,6 @@ type Test struct {
 
 type CreatedTest struct {
 	*Test
-	inputsValues InputsValues
-	prjFS        filesystem.Fs
 }
 
 func New(reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, templateDir, commonDir filesystem.Fs) (*Template, error) {
@@ -270,7 +270,7 @@ func (t *Template) Test(testName string) (*Test, error) {
 	return &Test{name: testName, tmpl: t, fs: testDir}, nil
 }
 
-func (t *Template) CreateTest(testName string, inputsValues InputsValues, prjFS filesystem.Fs) error {
+func (t *Template) CreateTest(testName string, inputsValues InputsValues, prjState *project.State, tmplInst string) error {
 	testsDir, err := t.TestsDir()
 	if err != nil {
 		return err
@@ -288,16 +288,16 @@ func (t *Template) CreateTest(testName string, inputsValues InputsValues, prjFS 
 		return err
 	}
 
-	test := &CreatedTest{Test: &Test{name: testName, tmpl: t, fs: testDir}, inputsValues: inputsValues, prjFS: prjFS}
+	test := &CreatedTest{Test: &Test{name: testName, tmpl: t, fs: testDir}}
 
 	// Save gathered inputs to the template test inputs.json
-	err = test.saveInputs()
+	err = test.saveInputs(inputsValues)
 	if err != nil {
 		return err
 	}
 
 	// Save output from use template operation to the template test
-	return test.saveExpectedOutput()
+	return test.saveExpectedOutput(prjState, tmplInst)
 }
 
 func (t *Template) LongDesc() string {
@@ -454,9 +454,9 @@ func (t *Test) Inputs(provider testhelper.EnvProvider, replaceEnvsFn func(string
 	return inputs, nil
 }
 
-func (t *CreatedTest) saveInputs() error {
+func (t *CreatedTest) saveInputs(inputsValues InputsValues) error {
 	res := make(map[string]interface{})
-	for k, v := range t.inputsValues.ToMap() {
+	for k, v := range inputsValues.ToMap() {
 		res[k] = v.Value
 	}
 
@@ -471,7 +471,7 @@ func (t *CreatedTest) saveInputs() error {
 	return t.fs.WriteFile(f)
 }
 
-func (t *CreatedTest) saveExpectedOutput() error {
+func (t *CreatedTest) saveExpectedOutput(prjState *project.State, tmplInst string) error {
 	// Get expected output dir
 	if !t.fs.IsDir(ExpectedOutDirectory) {
 		err := t.fs.Mkdir(ExpectedOutDirectory)
@@ -485,5 +485,44 @@ func (t *CreatedTest) saveExpectedOutput() error {
 		return err
 	}
 
-	return aferofs.CopyFs2Fs(t.prjFS, "/", expectedFS, "/")
+	// Replace real IDs for placeholders
+	err = replacePlaceholdersInManifest(prjState, tmplInst)
+	if err != nil {
+		return err
+	}
+
+	return aferofs.CopyFs2Fs(prjState.Fs(), "/", expectedFS, "/")
+}
+
+func replacePlaceholdersInManifest(prjState *project.State, tmplInst string) error {
+	file, err := prjState.Fs().ReadFile(filesystem.NewFileDef(".keboola/manifest.json"))
+	if err != nil {
+		return err
+	}
+	file.Content = regexpcache.
+		MustCompile(fmt.Sprintf(`"(?m)project": {\n    "id": %d,`, prjState.ProjectManifest().ProjectID())).
+		ReplaceAllString(file.Content, "\"project\": {\n    \"id\": __PROJECT_ID__,")
+	file.Content = regexpcache.
+		MustCompile(fmt.Sprintf(`"apiHost": "%s"`, prjState.ProjectManifest().ApiHost())).
+		ReplaceAllString(file.Content, `"apiHost": "__STORAGE_API_HOST__"`)
+	file.Content = regexpcache.
+		MustCompile(fmt.Sprintf(`"(?m)branches": \[\n    {\n      "id": %s`, prjState.MainBranch().Id.String())).
+		ReplaceAllString(file.Content, "\"branches\": [\n    {\n      \"id\": __MAIN_BRANCH_ID__")
+	file.Content = regexpcache.
+		MustCompile(fmt.Sprintf(`"branchId": %s`, prjState.MainBranch().Id.String())).
+		ReplaceAllString(file.Content, `"branchId": __MAIN_BRANCH_ID__`)
+	file.Content = regexpcache.
+		MustCompile(tmplInst).
+		ReplaceAllString(file.Content, `%s`)
+	file.Content = regexpcache.
+		MustCompile(`\\"date\\":\\"[^\\"]+\\"`).
+		ReplaceAllString(file.Content, `\"date\":\"%s\"`)
+	file.Content = regexpcache.
+		MustCompile(`\\"tokenId\\":\\"\d+\\"`).
+		ReplaceAllString(file.Content, `\"tokenId\":\"%s\"`)
+	file.Content = regexpcache.
+		MustCompile(`"id": "\d+"`).
+		ReplaceAllString(file.Content, `"id": "%s"`)
+
+	return prjState.Fs().WriteFile(file)
 }
