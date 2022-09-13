@@ -414,7 +414,7 @@ func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) c
 			transport,
 			ddHttp.RTWithResourceNamer(func(r *http.Request) string {
 				// Set resource name to request path
-				return r.URL.Path
+				return strhelper.MustUrlPathUnescape(r.URL.Path)
 			}))
 	}
 
