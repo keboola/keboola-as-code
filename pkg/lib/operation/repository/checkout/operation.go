@@ -20,7 +20,7 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-func Run(ctx context.Context, repoDef model.TemplateRepository, d dependencies) (repo *git.Repository, err error) {
+func Run(ctx context.Context, def model.TemplateRepository, d dependencies) (repo *git.RemoteRepository, err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.repository.checkout")
 	defer telemetry.EndSpan(span, &err)
 
@@ -29,9 +29,9 @@ func Run(ctx context.Context, repoDef model.TemplateRepository, d dependencies) 
 	defer cancel()
 
 	// Checkout
-	repo, err = git.Checkout(ctx, repoDef.Url, repoDef.Ref, false, d.Logger())
+	repo, err = git.Checkout(ctx, def, false, d.Logger())
 	if err != nil {
-		return nil, fmt.Errorf(`cannot checkout out repository "%s": %w`, repoDef, err)
+		return nil, fmt.Errorf(`cannot checkout out repository "%s": %w`, def, err)
 	}
 
 	// Done
