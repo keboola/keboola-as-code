@@ -299,7 +299,7 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input, isForTest bool) er
 		// Put placeholders for env vars to tests instead of the values
 		question := &prompt.Question{
 			Label:       inputDef.Name,
-			Description: `Enter the name of the environment variable that will fill this input. Note that it will get prefix KAC_SECRET_.`,
+			Description: `Enter the name of the environment variable that will fill this input. Note that it will get prefix KBC_SECRET_.`,
 			Validator: func(raw any) error {
 				value, err := inputDef.Type.ParseValue(raw)
 				if err != nil {
@@ -310,8 +310,8 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input, isForTest bool) er
 				if !regexpcache.MustCompile(`^[A-Z0-9\_]+$`).MatchString(strValue) {
 					return fmt.Errorf(`the variable name "%s" is invalid, it can contain only uppercase letters, numbers and underscores`, strValue)
 				}
-				if strings.HasSuffix(strValue, "KAC_SECRET_") {
-					return fmt.Errorf(`do not start the variable name with KAC_SECRET_ prefix, it will be added automatically`)
+				if strings.HasSuffix(strValue, "KBC_SECRET_") {
+					return fmt.Errorf(`do not start the variable name with KBC_SECRET_ prefix, it will be added automatically`)
 				}
 				return nil
 			},
@@ -320,7 +320,7 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input, isForTest bool) er
 		}
 
 		value, _ := d.Ask(question)
-		return d.addInputValue(fmt.Sprintf("##KAC_SECRET_%s##", value), inputDef, true)
+		return d.addInputValue(fmt.Sprintf("##KBC_SECRET_%s##", value), inputDef, true)
 	}
 
 	switch inputDef.Kind {
