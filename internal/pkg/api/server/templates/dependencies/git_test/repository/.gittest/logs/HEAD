@@ -24,3 +24,25 @@ f4bf236227116803d28fa2f931f28059a5ab588f 6a406dfaaa48848fcd0c8962914b1c465e49e5b
 c6c1f0be98fa8fd49be15022a47dcdca22f0dc41 6a406dfaaa48848fcd0c8962914b1c465e49e5b6 Michal Jurečko <michal.jurecko@gmail.com> 1651218385 +0200	checkout: moving from main to b1
 6a406dfaaa48848fcd0c8962914b1c465e49e5b6 db2c26cc2f75b730f034378031d43df445dd6bec Michal Jurečko <michal.jurecko@gmail.com> 1651218393 +0200	commit: Add repository author
 db2c26cc2f75b730f034378031d43df445dd6bec c6c1f0be98fa8fd49be15022a47dcdca22f0dc41 Michal Jurečko <michal.jurecko@gmail.com> 1651218397 +0200	checkout: moving from b1 to main
+c6c1f0be98fa8fd49be15022a47dcdca22f0dc41 90bc1c00c396c4231a5bc27f3fbcc3b6a5ae61bf Michal Jurečko <michal.jurecko@gmail.com> 1662989968 +0200	commit: Update url
+90bc1c00c396c4231a5bc27f3fbcc3b6a5ae61bf f0461c95ab7e06ec2efa17220a65cf3ce1bcbdee Michal Jurečko <michal.jurecko@gmail.com> 1662989979 +0200	commit: Update author
+f0461c95ab7e06ec2efa17220a65cf3ce1bcbdee db2c26cc2f75b730f034378031d43df445dd6bec Michal Jurečko <michal.jurecko@gmail.com> 1662989983 +0200	checkout: moving from main to b1
+db2c26cc2f75b730f034378031d43df445dd6bec 3e941e92d63b681359d5cecbd59aaab7ad7963ba Michal Jurečko <michal.jurecko@gmail.com> 1662989995 +0200	commit: Update description
+3e941e92d63b681359d5cecbd59aaab7ad7963ba ec20422509a655db82766e675e4fa6601a184fd0 Michal Jurečko <michal.jurecko@gmail.com> 1662989999 +0200	commit: Update description
+ec20422509a655db82766e675e4fa6601a184fd0 f0461c95ab7e06ec2efa17220a65cf3ce1bcbdee Michal Jurečko <michal.jurecko@gmail.com> 1662990006 +0200	checkout: moving from b1 to main
+f0461c95ab7e06ec2efa17220a65cf3ce1bcbdee 68656d1287af0ddb5b849f816f73bf89b6f722a4 Michal Jurečko <michal.jurecko@gmail.com> 1663068619 +0200	commit: Fix template
+68656d1287af0ddb5b849f816f73bf89b6f722a4 13fb6f50ee4fb9b1922b613e88a58728261fda89 Michal Jurečko <michal.jurecko@gmail.com> 1663069405 +0200	commit: Update readme 1
+13fb6f50ee4fb9b1922b613e88a58728261fda89 44c4dfafdd930b0aa9cc465cbf2c547a57379c37 Michal Jurečko <michal.jurecko@gmail.com> 1663069410 +0200	commit: Update readme 2
+44c4dfafdd930b0aa9cc465cbf2c547a57379c37 e8455f2dc0d3d8984c34d6173c92f4aa1c438440 Michal Jurečko <michal.jurecko@gmail.com> 1663069415 +0200	commit: Update readme 2
+e8455f2dc0d3d8984c34d6173c92f4aa1c438440 44c4dfafdd930b0aa9cc465cbf2c547a57379c37 Michal Jurečko <michal.jurecko@gmail.com> 1663069419 +0200	reset: moving to HEAD~1
+44c4dfafdd930b0aa9cc465cbf2c547a57379c37 8bcbae0410deb7fbc3791d3defbd54dad828dfd7 Michal Jurečko <michal.jurecko@gmail.com> 1663069421 +0200	commit: Update readme 3
+8bcbae0410deb7fbc3791d3defbd54dad828dfd7 ec20422509a655db82766e675e4fa6601a184fd0 Michal Jurečko <michal.jurecko@gmail.com> 1663069425 +0200	checkout: moving from main to b1
+ec20422509a655db82766e675e4fa6601a184fd0 7b15d8ec908d5438de7ba8dce764eed10b357561 Michal Jurečko <michal.jurecko@gmail.com> 1663069495 +0200	commit: Fix both templates
+7b15d8ec908d5438de7ba8dce764eed10b357561 8bcbae0410deb7fbc3791d3defbd54dad828dfd7 Michal Jurečko <michal.jurecko@gmail.com> 1663069498 +0200	checkout: moving from b1 to main
+8bcbae0410deb7fbc3791d3defbd54dad828dfd7 13fb6f50ee4fb9b1922b613e88a58728261fda89 Michal Jurečko <michal.jurecko@gmail.com> 1663069501 +0200	reset: moving to HEAD~2
+13fb6f50ee4fb9b1922b613e88a58728261fda89 68656d1287af0ddb5b849f816f73bf89b6f722a4 Michal Jurečko <michal.jurecko@gmail.com> 1663069508 +0200	reset: moving to HEAD~1
+68656d1287af0ddb5b849f816f73bf89b6f722a4 985928c70ad7fa0a450269b30f203c1fd0eb86c5 Michal Jurečko <michal.jurecko@gmail.com> 1663069521 +0200	commit: Update readme 1
+985928c70ad7fa0a450269b30f203c1fd0eb86c5 92ae44c5e661d3e24e13af9e87b7b4c14e7aa903 Michal Jurečko <michal.jurecko@gmail.com> 1663069527 +0200	commit: Update readme 2
+92ae44c5e661d3e24e13af9e87b7b4c14e7aa903 f7932244e53bf41be6371f44e47db1d67b987261 Michal Jurečko <michal.jurecko@gmail.com> 1663069532 +0200	commit: Update readme 2
+f7932244e53bf41be6371f44e47db1d67b987261 92ae44c5e661d3e24e13af9e87b7b4c14e7aa903 Michal Jurečko <michal.jurecko@gmail.com> 1663069535 +0200	reset: moving to HEAD~1
+92ae44c5e661d3e24e13af9e87b7b4c14e7aa903 2f4bc9491639ac4635bc832a05eebf42e62dba9e Michal Jurečko <michal.jurecko@gmail.com> 1663069537 +0200	commit: Update readme 3

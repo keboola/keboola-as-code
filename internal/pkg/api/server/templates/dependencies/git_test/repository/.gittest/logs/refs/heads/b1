@@ -5,3 +5,6 @@ e539348305ec466e80a982b449f9d9f3109a091b 24ad544e0b8e24983487b0c2b0ea70e47faa7c7
 62b368141547714f009d64ba475a0aeb72820522 f4bf236227116803d28fa2f931f28059a5ab588f Jakub Matějka <jakub@keboola.com> 1644250886 +0100	commit: Remove src folder of template2/v1
 f4bf236227116803d28fa2f931f28059a5ab588f 6a406dfaaa48848fcd0c8962914b1c465e49e5b6 Michal Jurečko <michal.jurecko@gmail.com> 1649872645 +0200	commit: Add template icon
 6a406dfaaa48848fcd0c8962914b1c465e49e5b6 db2c26cc2f75b730f034378031d43df445dd6bec Michal Jurečko <michal.jurecko@gmail.com> 1651218393 +0200	commit: Add repository author
+db2c26cc2f75b730f034378031d43df445dd6bec 3e941e92d63b681359d5cecbd59aaab7ad7963ba Michal Jurečko <michal.jurecko@gmail.com> 1662989995 +0200	commit: Update description
+3e941e92d63b681359d5cecbd59aaab7ad7963ba ec20422509a655db82766e675e4fa6601a184fd0 Michal Jurečko <michal.jurecko@gmail.com> 1662989999 +0200	commit: Update description
+ec20422509a655db82766e675e4fa6601a184fd0 7b15d8ec908d5438de7ba8dce764eed10b357561 Michal Jurečko <michal.jurecko@gmail.com> 1663069495 +0200	commit: Fix both templates
