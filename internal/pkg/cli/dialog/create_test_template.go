@@ -22,7 +22,7 @@ type createTmplTestDialog struct {
 }
 
 // AskCreateTemplateTestOptions - dialog for creating a template test.
-func (p *Dialogs) AskCreateTemplateTestOptions(template *template.Template, opts *options.Options) (createOp.Options, error) {
+func (p *Dialogs) AskCreateTemplateTestOptions(template *template.Template, opts *options.Options) (createOp.Options, []string, error) {
 	dialog := &createTmplTestDialog{
 		Dialogs:  p,
 		template: template,
@@ -31,22 +31,23 @@ func (p *Dialogs) AskCreateTemplateTestOptions(template *template.Template, opts
 	return dialog.ask()
 }
 
-func (d *createTmplTestDialog) ask() (createOp.Options, error) {
+func (d *createTmplTestDialog) ask() (createOp.Options, []string, error) {
 	// Instance name
 	if v, err := d.askTestName(); err != nil {
-		return d.out, err
+		return d.out, nil, err
 	} else {
 		d.out.TestName = v
 	}
 
 	// User inputs
-	if v, err := d.askUseTemplateInputs(d.template.Inputs().ToExtended(), d.options, true); err != nil {
-		return d.out, err
+	v, warnings, err := d.askUseTemplateInputs(d.template.Inputs().ToExtended(), d.options, true)
+	if err != nil {
+		return d.out, nil, err
 	} else {
 		d.out.Inputs = v
 	}
 
-	return d.out, nil
+	return d.out, warnings, nil
 }
 
 func (d *createTmplTestDialog) askTestName() (string, error) {

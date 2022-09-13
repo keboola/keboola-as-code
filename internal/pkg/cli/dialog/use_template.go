@@ -62,7 +62,7 @@ func (d *useTmplDialog) ask() (useTemplate.Options, error) {
 	}
 
 	// User inputs
-	if v, err := d.askUseTemplateInputs(d.inputs.ToExtended(), d.options, false); err != nil {
+	if v, _, err := d.askUseTemplateInputs(d.inputs.ToExtended(), d.options, false); err != nil {
 		return d.out, err
 	} else {
 		d.out.Inputs = v
@@ -105,7 +105,7 @@ type useTmplInputsDialog struct {
 }
 
 // askUseTemplateInputs - dialog to enter template inputs.
-func (p *Dialogs) askUseTemplateInputs(groups input.StepsGroupsExt, opts *options.Options, isForTest bool) (template.InputsValues, error) {
+func (p *Dialogs) askUseTemplateInputs(groups input.StepsGroupsExt, opts *options.Options, isForTest bool) (template.InputsValues, []string, error) {
 	dialog := &useTmplInputsDialog{
 		Dialogs:      p,
 		groups:       groups,
@@ -117,20 +117,21 @@ func (p *Dialogs) askUseTemplateInputs(groups input.StepsGroupsExt, opts *option
 	return dialog.ask(isForTest)
 }
 
-func (d *useTmplInputsDialog) ask(isForTest bool) (template.InputsValues, error) {
+func (d *useTmplInputsDialog) ask(isForTest bool) (template.InputsValues, []string, error) {
 	// Load inputs file
 	if d.options.IsSet(inputsFileFlag) {
 		d.useInputsFile = true
 		path := d.options.GetString(inputsFileFlag)
 		content, err := os.ReadFile(path) // nolint:forbidigo // file may be outside the project, so the OS package is used
 		if err != nil {
-			return d.out, fmt.Errorf(`cannot read inputs file "%s": %w`, path, err)
+			return d.out, nil, fmt.Errorf(`cannot read inputs file "%s": %w`, path, err)
 		}
 		if err := json.Decode(content, &d.inputsFile); err != nil {
-			return d.out, fmt.Errorf(`cannot decode inputs file "%s": %w`, path, err)
+			return d.out, nil, fmt.Errorf(`cannot decode inputs file "%s": %w`, path, err)
 		}
 	}
 
+	warnings := make([]string, 0)
 	err := d.groups.VisitInputs(func(group *input.StepsGroupExt, step *input.StepExt, inputDef *input.Input) error {
 		// Print info about group and select steps
 		if !group.Announced {
@@ -176,10 +177,17 @@ func (d *useTmplInputsDialog) ask(isForTest bool) (template.InputsValues, error)
 		}
 
 		// Ask for the input
-		return d.askInput(inputDef, isForTest)
+		warning, err := d.askInput(inputDef, isForTest)
+		if err != nil {
+			return err
+		}
+		if warning != "" {
+			warnings = append(warnings, warning)
+		}
+		return nil
 	})
 
-	return d.out, err
+	return d.out, warnings, err
 }
 
 func (d *useTmplInputsDialog) announceGroup(group *input.StepsGroupExt) error {
@@ -292,14 +300,14 @@ func (d *useTmplInputsDialog) announceStep(step *input.StepExt) error {
 	return nil
 }
 
-func (d *useTmplInputsDialog) askInput(inputDef *input.Input, isForTest bool) error {
+func (d *useTmplInputsDialog) askInput(inputDef *input.Input, isForTest bool) (string, error) {
 	// Ask for input
 
 	if inputDef.Kind == input.KindHidden && isForTest {
 		// Put placeholders for env vars to tests instead of the values
 		question := &prompt.Question{
 			Label:       inputDef.Name,
-			Description: `Enter the name of the environment variable that will fill this input. Note that it will get prefix KBC_SECRET_.`,
+			Description: fmt.Sprintf(`Enter the name of the environment variable that will fill input "%s". Note that it will get prefix KBC_SECRET_.`, inputDef.Name),
 			Validator: func(raw any) error {
 				value, err := inputDef.Type.ParseValue(raw)
 				if err != nil {
@@ -320,7 +328,13 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input, isForTest bool) er
 		}
 
 		value, _ := d.Ask(question)
-		return d.addInputValue(fmt.Sprintf("##KBC_SECRET_%s##", value), inputDef, true)
+		envVar := fmt.Sprintf("KBC_SECRET_%s", value)
+		// Add the env var to the input as placeholder, that's the reason for the surrounding '##'
+		err := d.addInputValue(fmt.Sprintf("##%s##", envVar), inputDef, true)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf(`Input "%s" expects setting of environment variable "%s".`, inputDef.Name, envVar), nil
 	}
 
 	switch inputDef.Kind {
@@ -346,14 +360,14 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input, isForTest bool) er
 			value, _ = d.Ask(question)
 		}
 
-		return d.addInputValue(value, inputDef, true)
+		return "", d.addInputValue(value, inputDef, true)
 	case input.KindConfirm:
 		confirm := &prompt.Confirm{
 			Label:       inputDef.Name,
 			Description: inputDef.Description,
 		}
 		confirm.Default, _ = inputDef.Default.(bool)
-		return d.addInputValue(d.Confirm(confirm), inputDef, true)
+		return "", d.addInputValue(d.Confirm(confirm), inputDef, true)
 	case input.KindSelect:
 		selectPrompt := &prompt.SelectIndex{
 			Label:       inputDef.Name,
@@ -371,7 +385,7 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input, isForTest bool) er
 			}
 		}
 		selectedIndex, _ := d.SelectIndex(selectPrompt)
-		return d.addInputValue(inputDef.Options[selectedIndex].Value, inputDef, true)
+		return "", d.addInputValue(inputDef.Options[selectedIndex].Value, inputDef, true)
 	case input.KindMultiSelect:
 		multiSelect := &prompt.MultiSelectIndex{
 			Label:       inputDef.Name,
@@ -403,16 +417,16 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input, isForTest bool) er
 			selectedValues = append(selectedValues, inputDef.Options[selectedIndex].Value)
 		}
 		// Save value
-		return d.addInputValue(selectedValues, inputDef, true)
+		return "", d.addInputValue(selectedValues, inputDef, true)
 	case input.KindOAuth:
 		// OAuth is not supported in CLI dialog.
-		return d.addInputValue(d.defaultOrEmptyValueFor(inputDef), inputDef, true)
+		return "", d.addInputValue(d.defaultOrEmptyValueFor(inputDef), inputDef, true)
 	case input.KindOAuthAccounts:
 		// OAuth is not supported in CLI dialog.
-		return d.addInputValue(d.defaultOrEmptyValueFor(inputDef), inputDef, true)
+		return "", d.addInputValue(d.defaultOrEmptyValueFor(inputDef), inputDef, true)
 	}
 
-	return nil
+	return "", nil
 }
 
 // addInputValue from CLI dialog or inputs file.
