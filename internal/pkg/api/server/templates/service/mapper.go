@@ -37,12 +37,12 @@ func RepositoryResponse(ctx context.Context, d dependencies.ForProjectRequest, v
 	_, span := d.Tracer().Start(ctx, "api.server.templates.mapper.RepositoryResponse")
 	defer telemetry.EndSpan(span, nil)
 
-	ref := v.Ref()
+	repo := v.Definition()
 	author := v.Manifest().Author()
 	return &Repository{
-		Name: ref.Name,
-		URL:  ref.Url,
-		Ref:  ref.Ref,
+		Name: repo.Name,
+		URL:  repo.Url,
+		Ref:  repo.Ref,
 		Author: &Author{
 			Name: author.Name,
 			URL:  author.Url,
@@ -384,7 +384,7 @@ func instanceVersionDetail(ctx context.Context, d dependencies.ForProjectRequest
 	if !found {
 		return nil
 	}
-	tmpl, err := d.Template(ctx, model.NewTemplateRef(repo.Ref(), instance.TemplateId, versionRecord.Version.String()))
+	tmpl, err := d.Template(ctx, model.NewTemplateRef(repo.Definition(), instance.TemplateId, versionRecord.Version.String()))
 	if err != nil {
 		return nil
 	}
