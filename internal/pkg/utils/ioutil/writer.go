@@ -50,6 +50,8 @@ func (w *Writer) WriteString(s string) (n int, err error) {
 }
 
 func (w *Writer) Flush() (err error) {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
 	for _, writer := range w.writers {
 		if buffWriter, ok := writer.(*bufio.Writer); ok {
 			if err = buffWriter.Flush(); err != nil {
