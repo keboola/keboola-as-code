@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -23,6 +24,10 @@ import (
 
 func TestGit_Checkout(t *testing.T) {
 	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("unstable on windows - random timeouts")
+	}
+
 	logger := log.NewDebugLogger()
 
 	// Copy the git repository to temp
@@ -89,6 +94,10 @@ func TestGit_Checkout(t *testing.T) {
 
 func TestGit_Checkout_Sparse(t *testing.T) {
 	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("unstable on windows - random timeouts")
+	}
+
 	logger := log.NewDebugLogger()
 
 	// Copy the git repository to temp
