@@ -1,5 +1,5 @@
 // nolint: forbidigo
-package repository_test
+package manager_test
 
 import (
 	"context"
@@ -14,9 +14,35 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
 )
 
-func TestNewManager(t *testing.T) {
+func TestNew(t *testing.T) {
+	t.Parallel()
+
+	// Copy the git repository to temp
+	tmpDir := t.TempDir()
+	assert.NoError(t, aferofs.CopyFs2Fs(nil, filepath.Join("test", "repository"), nil, tmpDir))
+	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git")))
+	ref := model.TemplateRepository{
+		Type: model.RepositoryTypeGit,
+		Name: repository.DefaultTemplateRepositoryName,
+		Url:  fmt.Sprintf("file://%s", tmpDir),
+		Ref:  "main",
+	}
+
+	ctx := context.Background()
+	d := dependencies.NewMockedDeps()
+	m, err := manager.New(ctx, nil, d)
+	assert.NoError(t, err)
+	repo, unlockFn, err := m.Repository(ctx, ref)
+	assert.NoError(t, err)
+	defer unlockFn()
+
+	assert.True(t, repo.Fs().Exists("example-file.txt"))
+}
+
+func TestRepository(t *testing.T) {
 	t.Parallel()
 
 	// Copy the git repository to temp
@@ -32,44 +58,21 @@ func TestNewManager(t *testing.T) {
 
 	ctx := context.Background()
 	d := dependencies.NewMockedDeps()
-	m, err := repository.NewManager(ctx, nil, d)
-	assert.NoError(t, err)
-	defaultRepo, err := m.Repository(ctx, repo)
+	m, err := manager.New(ctx, nil, d)
 	assert.NoError(t, err)
 
-	fs, unlockFS := defaultRepo.Fs()
-	defer unlockFS()
-
-	assert.True(t, fs.Exists("example-file.txt"))
-}
-
-func TestManager_Repository(t *testing.T) {
-	t.Parallel()
-
-	// Copy the git repository to temp
-	tmpDir := t.TempDir()
-	assert.NoError(t, aferofs.CopyFs2Fs(nil, filepath.Join("test", "repository"), nil, tmpDir))
-	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git")))
-	repo := model.TemplateRepository{
-		Type: model.RepositoryTypeGit,
-		Name: repository.DefaultTemplateRepositoryName,
-		Url:  fmt.Sprintf("file://%s", tmpDir),
-		Ref:  "main",
-	}
-
-	ctx := context.Background()
-	d := dependencies.NewMockedDeps()
-	m, err := repository.NewManager(ctx, nil, d)
-	assert.NoError(t, err)
-	v, err := m.Repository(ctx, repo)
+	v, unlockFn1, err := m.Repository(ctx, repo)
 	assert.NotNil(t, v)
 	assert.NoError(t, err)
-	v, err = m.Repository(ctx, repo)
+	defer unlockFn1()
+
+	v, unlockFn2, err := m.Repository(ctx, repo)
 	assert.NotNil(t, v)
 	assert.NoError(t, err)
+	defer unlockFn2()
 }
 
-func TestNewManager_DefaultRepositories(t *testing.T) {
+func TestDefaultRepositories(t *testing.T) {
 	t.Parallel()
 
 	// Copy the git repository to temp
@@ -79,6 +82,7 @@ func TestNewManager_DefaultRepositories(t *testing.T) {
 
 	// Define default repositories
 	gitUrl := fmt.Sprintf("file://%s", tmpDir)
+	commitHash := "92d0b5f200129303e31feaf201fa0f46b2739782"
 	defaultRepositories := []model.TemplateRepository{
 		{
 			Type: model.RepositoryTypeGit,
@@ -89,18 +93,19 @@ func TestNewManager_DefaultRepositories(t *testing.T) {
 		{
 			Type: model.RepositoryTypeDir,
 			Name: "dir repo",
-			Url:  "/some/dir",
+			Url:  tmpDir,
 		},
 	}
 
 	// Create manager
 	d := dependencies.NewMockedDeps()
-	m, err := repository.NewManager(context.Background(), defaultRepositories, d)
+	m, err := manager.New(context.Background(), defaultRepositories, d)
 	assert.NoError(t, err)
 
 	// Get list of default repositories
-	assert.Equal(t, m.DefaultRepositories(), defaultRepositories)
-	assert.Equal(t, m.ManagedRepositories(), []string{
-		fmt.Sprintf("%s:main", gitUrl),
-	})
+	assert.Equal(t, defaultRepositories, m.DefaultRepositories())
+	assert.Equal(t, []string{
+		fmt.Sprintf("dir:%s", tmpDir),
+		fmt.Sprintf("%s:main:%s", gitUrl, commitHash),
+	}, m.ManagedRepositories())
 }
