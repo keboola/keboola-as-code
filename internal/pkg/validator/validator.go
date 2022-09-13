@@ -173,7 +173,7 @@ func (v *wrapper) registerCustomRules() {
 				paramStr := fl.Param()
 				param, err := strconv.Atoi(paramStr)
 				if err != nil {
-					panic(fmt.Sprintf("failed to convert mdmax param `%v` to an int", paramStr))
+					panic(fmt.Sprintf("failed to convert mdmax param \"%v\" to an int", paramStr))
 				}
 				value = strhelper.StripMarkdown(value)
 				return len(value) <= param
