@@ -434,7 +434,7 @@ func repositoryInst(d dependencies.ForProjectRequest, repoName string) (*reposit
 	}
 
 	// Get repository
-	repo, err := d.TemplateRepository(d.RequestCtx(), repoRef, nil)
+	repo, err := d.TemplateRepository(d.RequestCtx(), repoRef)
 	if err != nil {
 		return nil, err
 	}
@@ -449,7 +449,7 @@ func templateRecord(d dependencies.ForProjectRequest, repoName, templateId strin
 	}
 
 	// Get template record
-	tmpl, found := repo.GetTemplateById(templateId)
+	tmpl, found := repo.RecordById(templateId)
 	if !found {
 		return nil, nil, &GenericError{
 			Name:    "templates.templateNotFound",
@@ -470,7 +470,7 @@ func getTemplateVersion(d dependencies.ForProjectRequest, repoName, templateId, 
 	var semVersion model.SemVersion
 	if versionStr == "default" {
 		// Default version
-		tmplRecord, found := repo.GetTemplateById(templateId)
+		tmplRecord, found := repo.RecordById(templateId)
 		if !found {
 			return nil, nil, &GenericError{
 				Name:    "templates.templateNotFound",
@@ -496,7 +496,7 @@ func getTemplateVersion(d dependencies.ForProjectRequest, repoName, templateId, 
 	}
 
 	// Get template version
-	tmpl, err := d.Template(d.RequestCtx(), model.NewTemplateRef(repo.Ref(), templateId, semVersion.Original()))
+	tmpl, err := d.Template(d.RequestCtx(), model.NewTemplateRef(repo.Definition(), templateId, semVersion.Original()))
 	if err != nil {
 		if errors.As(err, &manifest.TemplateNotFoundError{}) {
 			return nil, nil, &GenericError{

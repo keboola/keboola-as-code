@@ -64,8 +64,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
@@ -86,8 +84,6 @@ type Public interface {
 	Components() *model.ComponentsMap
 	ComponentsProvider() *model.ComponentsProvider
 	EncryptionApiClient() client.Sender
-	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
-	TemplateRepository(ctx context.Context, reference model.TemplateRepository, forTemplate model.TemplateRef) (*repository.Repository, error)
 }
 
 // Project dependencies require authentication / Storage API token.

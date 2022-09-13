@@ -19,10 +19,15 @@ type TemplateRepository struct {
 	Ref  string                 `json:"ref,omitempty" validate:"required_if=Type git"`
 }
 
+// String returns human-readable name of the repository.
 func (r TemplateRepository) String() string {
+	if r.Type == RepositoryTypeDir {
+		return fmt.Sprintf("dir:%s", r.Url)
+	}
 	return fmt.Sprintf("%s:%s", r.Url, r.Ref)
 }
 
+// Hash returns unique identifier of the repository.
 func (r TemplateRepository) Hash() string {
 	hash := fmt.Sprintf("%s:%s:%s", r.Type, r.Url, r.Ref)
 	sha := sha256.Sum256([]byte(hash))
@@ -34,6 +39,7 @@ type TemplateRef interface {
 	WithRepository(TemplateRepository) TemplateRef
 	TemplateId() string
 	Version() string
+	Name() string
 	FullName() string
 }
 
@@ -69,7 +75,12 @@ func (r templateRef) Version() string {
 	return r.version
 }
 
-// FullName - for example "keboola/my-template/v1.
+// Name without repository, for example "my-template/v1.
+func (r templateRef) Name() string {
+	return fmt.Sprintf("%s/%s", r.templateId, r.version)
+}
+
+// FullName with repository, for example "keboola/my-template/v1.
 func (r templateRef) FullName() string {
 	return fmt.Sprintf("%s/%s/%s", r.repository.Name, r.templateId, r.version)
 }

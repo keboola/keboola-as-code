@@ -27,13 +27,13 @@ func StartRepositoriesPullCron(ctx context.Context, d dependencies.ForServer) er
 		// Start ticker
 		d.Logger().Infof("repository pull cron started at %s, interval=%s", time.Now().Format("15:04:05"), interval)
 		ticker := time.NewTicker(interval)
-		manager.Pull(ctx)
+		manager.Update(ctx)
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				manager.Pull(ctx)
+				manager.Update(ctx)
 			}
 		}
 	}()

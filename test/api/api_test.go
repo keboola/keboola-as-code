@@ -360,7 +360,6 @@ func RunRequests(
 
 	// Optionally check API server stdout/stderr
 	expectedStdoutPath := "expected-server-stdout"
-	fmt.Println(testDirFs.Glob("*"))
 	if testDirFs.IsFile(expectedStdoutPath) {
 		file, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStdoutPath))
 		assert.NoError(t, err)

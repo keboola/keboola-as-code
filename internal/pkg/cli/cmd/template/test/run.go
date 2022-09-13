@@ -35,7 +35,7 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 				if len(args) > 1 {
 					versionArg = args[1]
 				}
-				tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Ref(), args[0], versionArg))
+				tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Definition(), args[0], versionArg))
 				if err != nil {
 					return err
 				}
@@ -46,7 +46,7 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 					if err != nil {
 						return err
 					}
-					tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Ref(), t.Id, v.Version.String()))
+					tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Definition(), t.Id, v.Version.String()))
 					if err != nil {
 						return err
 					}

@@ -18,13 +18,7 @@ type dependencies interface {
 	Logger() log.Logger
 }
 
-type Result struct {
-	OldHash string
-	NewHash string
-	Changed bool
-}
-
-func Run(ctx context.Context, repo *git.Repository, d dependencies) (result *Result, err error) {
+func Run(ctx context.Context, repo *git.RemoteRepository, d dependencies) (result *git.PullResult, err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.repository.pull")
 	defer telemetry.EndSpan(span, &err)
 
@@ -32,23 +26,6 @@ func Run(ctx context.Context, repo *git.Repository, d dependencies) (result *Res
 	ctx, cancel := context.WithTimeout(ctx, Timeout)
 	defer cancel()
 
-	// Get old hash
-	oldHash, err := repo.CommitHash(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// Pull
-	if err := repo.Pull(ctx); err != nil {
-		return nil, err
-	}
-
-	// Get new hash
-	newHash, err := repo.CommitHash(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Done
-	return &Result{OldHash: oldHash, NewHash: newHash, Changed: oldHash != newHash}, nil
+	return repo.Pull(ctx)
 }

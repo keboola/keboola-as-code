@@ -83,7 +83,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	templateCtx := create.NewContext(ctx, o.SourceBranch, o.Configs)
 
 	// Template definition
-	templateDef := model.NewTemplateRef(repo.Ref(), o.Id, versionRecord.Version.String())
+	templateDef := model.NewTemplateRef(repo.Definition(), o.Id, versionRecord.Version.String())
 
 	// Get template instance
 	tmpl, err := d.Template(ctx, templateDef)

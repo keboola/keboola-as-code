@@ -79,7 +79,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 
 		if !o.LocalOnly {
 			if o.Verbose {
-				d.Logger().Infof(`%s %s remote running`, tmpl.FullName(), test)
+				d.Logger().Infof(`%s %s remote running`, tmpl.FullName(), test.Name())
 			}
 			if err := runRemoteTest(ctx, test, tmpl, o.Verbose, d); err != nil {
 				d.Logger().Errorf(`FAIL %s %s remote`, tmpl.FullName(), test.Name())
@@ -109,12 +109,6 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 	}
 	defer unlockFn()
 	d.Logger().Debugf(`Working directory set up.`)
-
-	// Re-init template with set-up Storage client
-	tmpl, err = testDeps.Template(ctx, tmpl.Reference())
-	if err != nil {
-		return err
-	}
 
 	// Read inputs and replace env vars
 	inputValues, err := tmplTest.ReadInputValues(ctx, tmpl, test)
@@ -167,12 +161,6 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	d.Logger().Debugf(`Working directory set up.`)
 
 	branchKey := prjState.MainBranch().BranchKey
-
-	// Re-init template with set-up Storage client
-	tmpl, err = testDeps.Template(ctx, tmpl.Reference())
-	if err != nil {
-		return err
-	}
 
 	// Read inputs and replace env vars
 	inputValues, err := tmplTest.ReadInputValues(ctx, tmpl, test)
