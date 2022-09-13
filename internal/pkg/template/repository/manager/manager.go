@@ -226,7 +226,7 @@ func (m *Manager) repository(ctx context.Context, ref model.TemplateRepository) 
 
 		// Load content of the template repository
 		fs, unlockFn := gitRepo.Fs()
-		data, err := loadRepositoryOp.Run(ctx, m.deps, ref, loadRepositoryOp.WithFs(fs, unlockFn))
+		data, err := loadRepositoryOp.Run(ctx, m.deps, ref, loadRepositoryOp.WithFs(fs))
 		if err != nil {
 			unlockFn()
 			return nil, err

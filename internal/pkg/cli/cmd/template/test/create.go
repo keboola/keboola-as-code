@@ -39,7 +39,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 				versionArg = args[1]
 			}
 
-			tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Ref(), templateId, versionArg))
+			tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Definition(), templateId, versionArg))
 			if err != nil {
 				return err
 			}

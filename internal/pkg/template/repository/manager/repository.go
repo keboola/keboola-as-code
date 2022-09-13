@@ -159,7 +159,7 @@ func (r *CachedRepository) update(ctx context.Context) (*CachedRepository, bool,
 
 		// Reload template repository
 		fs, unlockFn := r.git.Fs()
-		newData, err := loadRepositoryOp.Run(ctx, r.d, r.repo.Definition(), loadRepositoryOp.WithFs(fs, unlockFn))
+		newData, err := loadRepositoryOp.Run(ctx, r.d, r.repo.Definition(), loadRepositoryOp.WithFs(fs))
 		if err != nil {
 			unlockFn()
 			return nil, false, err

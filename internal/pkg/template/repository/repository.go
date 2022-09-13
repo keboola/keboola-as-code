@@ -2,7 +2,6 @@ package repository
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 )
@@ -19,44 +18,32 @@ func LoadManifest(fs filesystem.Fs) (*Manifest, error) {
 }
 
 type Repository struct {
-	ref       model.TemplateRepository
-	fs        filesystem.Fs
-	commonDir filesystem.Fs
-	manifest  *Manifest
+	definition model.TemplateRepository
+	fs         filesystem.Fs
+	commonDir  filesystem.Fs
+	manifest   *Manifest
 }
 
 type TemplateRecord = repositoryManifest.TemplateRecord
 
 type VersionRecord = repositoryManifest.VersionRecord
 
-func New(ref model.TemplateRepository, fs filesystem.Fs, manifest *Manifest) (*Repository, error) {
-	r := &Repository{
-		ref:      ref,
-		fs:       fs,
-		manifest: manifest,
-	}
-
-	// FS for the optional common dir.
-	// It contains common files that can be imported into all templates.
-	if r.fs.IsDir(CommonDirectory) {
-		if v, err := r.fs.SubDirFs(CommonDirectory); err == nil {
-			r.commonDir = v
-		} else {
-			return nil, err
-		}
-	} else {
-		if v, err := aferofs.NewMemoryFs(nil, ""); err == nil {
-			r.commonDir = v
-		} else {
-			return nil, err
-		}
-	}
-
-	return r, nil
+func New(definition model.TemplateRepository, root, commonDir filesystem.Fs, m *Manifest) *Repository {
+	return &Repository{definition: definition, fs: root, commonDir: commonDir, manifest: m}
 }
 
-func (r *Repository) Ref() model.TemplateRepository {
-	return r.ref
+// String returns human-readable name of the repository.
+func (r *Repository) String() string {
+	return r.definition.String()
+}
+
+// Hash returns unique identifier of the repository.
+func (r *Repository) Hash() string {
+	return r.definition.Hash()
+}
+
+func (r *Repository) Definition() model.TemplateRepository {
+	return r.definition
 }
 
 func (r *Repository) Fs() filesystem.Fs {
@@ -75,18 +62,18 @@ func (r *Repository) Templates() []TemplateRecord {
 	return r.manifest.AllTemplates()
 }
 
-func (r *Repository) GetTemplateById(templateId string) (TemplateRecord, bool) {
+func (r *Repository) RecordById(templateId string) (TemplateRecord, bool) {
 	return r.manifest.GetById(templateId)
 }
 
-func (r *Repository) GetTemplateByIdOrErr(templateId string) (TemplateRecord, error) {
+func (r *Repository) RecordByIdOrErr(templateId string) (TemplateRecord, error) {
 	return r.manifest.GetByIdOrErr(templateId)
 }
 
-func (r *Repository) GetTemplateByPath(templatePath string) (TemplateRecord, bool) {
+func (r *Repository) RecordByPath(templatePath string) (TemplateRecord, bool) {
 	return r.manifest.GetByPath(templatePath)
 }
 
-func (r *Repository) GetTemplateVersion(templateId string, version string) (TemplateRecord, VersionRecord, error) {
+func (r *Repository) RecordByIdAndVersion(templateId string, version string) (TemplateRecord, VersionRecord, error) {
 	return r.manifest.GetVersion(templateId, version)
 }
