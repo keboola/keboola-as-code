@@ -18,12 +18,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
-func RepositoriesResponse(ctx context.Context, d dependencies.ForProjectRequest, v []model.TemplateRepository) (out *Repositories, err error) {
+func RepositoriesResponse(ctx context.Context, d dependencies.ForProjectRequest) (out *Repositories, err error) {
 	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.RepositoriesResponse")
 	defer telemetry.EndSpan(span, &err)
 
 	out = &Repositories{}
-	for _, repoRef := range v {
+	for _, repoRef := range d.ProjectRepositories().All() {
 		repo, err := repositoryInst(d, repoRef.Name)
 		if err != nil {
 			return nil, err
@@ -269,6 +269,11 @@ func InstancesResponse(ctx context.Context, d dependencies.ForProjectRequest, pr
 	// Map response
 	out = &Instances{Instances: make([]*Instance, 0)}
 	for _, instance := range instances {
+		// Skip instance if the repository is no more defined for the project
+		if _, found := d.ProjectRepositories().Get(instance.RepositoryName); !found {
+			continue
+		}
+
 		outInstance := &Instance{
 			TemplateID:     instance.TemplateId,
 			InstanceID:     instance.InstanceId,
@@ -323,6 +328,14 @@ func InstanceResponse(ctx context.Context, d dependencies.ForProjectRequest, prj
 		return nil, &GenericError{
 			Name:    "templates.instanceNotFound",
 			Message: fmt.Sprintf(`Instance "%s" not found in branch "%d".`, instanceId, branchKey.Id),
+		}
+	}
+
+	// Check if the repository is still defined in the project
+	if _, found := d.ProjectRepositories().Get(instance.RepositoryName); !found {
+		return nil, &GenericError{
+			Name:    "templates.repositoryNotFound",
+			Message: fmt.Sprintf(`Repository "%s" not found.`, instance.RepositoryName),
 		}
 	}
 

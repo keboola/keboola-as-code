@@ -286,6 +286,7 @@ var _ = Service("templates", func() {
 			Meta("openapi:tag:instance")
 			Response(StatusOK)
 			BranchNotFoundError()
+			RepositoryNotFoundError()
 			InstanceNotFoundError()
 		})
 	})

@@ -63,7 +63,7 @@ func (s *service) HealthCheck(dependencies.ForPublicRequest) (res string, err er
 }
 
 func (s *service) RepositoriesIndex(d dependencies.ForProjectRequest, _ *RepositoriesIndexPayload) (res *Repositories, err error) {
-	return RepositoriesResponse(d.RequestCtx(), d, d.ProjectRepositories())
+	return RepositoriesResponse(d.RequestCtx(), d)
 }
 
 func (s *service) RepositoryIndex(d dependencies.ForProjectRequest, payload *RepositoryIndexPayload) (res *Repository, err error) {
@@ -415,14 +415,13 @@ func (s *service) UpgradeInstanceValidateInputs(d dependencies.ForProjectRequest
 }
 
 func repositoryRef(d dependencies.ForProjectRequest, name string) (model.TemplateRepository, error) {
-	for _, repo := range d.ProjectRepositories() {
-		if repo.Name == name {
-			return repo, nil
+	if repo, found := d.ProjectRepositories().Get(name); found {
+		return repo, nil
+	} else {
+		return model.TemplateRepository{}, &GenericError{
+			Name:    "templates.repositoryNotFound",
+			Message: fmt.Sprintf(`Repository "%s" not found.`, name),
 		}
-	}
-	return model.TemplateRepository{}, &GenericError{
-		Name:    "templates.repositoryNotFound",
-		Message: fmt.Sprintf(`Repository "%s" not found.`, name),
 	}
 }
 
