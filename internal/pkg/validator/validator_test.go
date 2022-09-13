@@ -176,3 +176,24 @@ func TestValidatorTemplateIcon(t *testing.T) {
 		}
 	}
 }
+
+func TestValidatorMarkdownLength(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct{ value, error string }{
+		{"test", ""},
+		{"### test test", ""},
+		{"[test](https://google.com/)", ""},
+		{"this is more than 10 characters", "some_field exceeded maximum length of 10"},
+		{"[this is also more than 10 characters](https://google.com/)", "some_field exceeded maximum length of 10"},
+	}
+
+	for i, c := range cases {
+		err := ValidateCtx(context.Background(), c.value, `mdmax=10`, `some_field`)
+		if c.error == "" {
+			assert.NoError(t, err, fmt.Sprintf("case: %d", i+1))
+		} else {
+			assert.Error(t, err, c.error, fmt.Sprintf("case: %d", i+1))
+		}
+	}
+}
