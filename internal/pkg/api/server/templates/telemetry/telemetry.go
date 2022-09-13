@@ -161,7 +161,7 @@ func ApiClientTrace() client.TraceFactory {
 
 			// Set tags
 			requestSpan.SetTag("kac.api.client.request.method", clientRequest.Method())
-			requestSpan.SetTag("kac.api.client.request.url", clientRequest.URL())
+			requestSpan.SetTag("kac.api.client.request.url", strhelper.MustUrlPathUnescape(clientRequest.URL()))
 			requestSpan.SetTag("kac.api.client.request.result_type", resultType)
 			for k, v := range clientRequest.PathParams() {
 				requestSpan.SetTag("kac.api.client.request.params"+k, v)

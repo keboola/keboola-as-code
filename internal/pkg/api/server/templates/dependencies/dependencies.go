@@ -33,6 +33,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 	ddHttp "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
@@ -398,6 +399,11 @@ func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) c
 	if telemetry.IsDataDogEnabled(envs) {
 		transport = ddHttp.WrapRoundTripper(
 			transport,
+			ddHttp.WithBefore(func(request *http.Request, span ddtrace.Span) {
+				// We use "http.request" operation name for request to the API,
+				// so requests to other API must have different operation name.
+				span.SetOperationName("kac.api.client.http.request")
+			}),
 			ddHttp.RTWithResourceNamer(func(r *http.Request) string {
 				// Set resource name to request path
 				return strhelper.MustUrlPathUnescape(r.URL.Path)
