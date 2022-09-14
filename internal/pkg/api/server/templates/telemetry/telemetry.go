@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
@@ -173,8 +174,22 @@ func ApiClientTrace() client.TraceFactory {
 			return ctx
 		}
 		t.HTTPRequestStart = func(r *http.Request) {
+			// Finish retry delay span
+			if retryDelaySpan != nil {
+				requestSpan.Finish()
+				retryDelaySpan = nil
+			}
+
+			// Update client request span
+			requestSpan.SetTag("http.host", r.URL.Host)
+			if dotPos := strings.IndexByte(r.URL.Host, '.'); dotPos > 0 {
+				// E.g. connection, encryption, scheduler ...
+				requestSpan.SetTag("http.hostPrefix", r.URL.Host[:dotPos])
+			}
 			requestSpan.SetTag(ext.HTTPMethod, r.Method)
-			requestSpan.SetTag(ext.HTTPURL, r.URL)
+			requestSpan.SetTag(ext.HTTPURL, r.URL.Redacted())
+			requestSpan.SetTag("http.path", r.URL.Path)
+			requestSpan.SetTag("http.query", r.URL.Query().Encode())
 		}
 		t.HTTPRequestDone = func(response *http.Response, err error) {
 			if response != nil {
@@ -216,12 +231,6 @@ func ApiClientTrace() client.TraceFactory {
 				ddtracer.Tag("retry.delay_ms", delay.Milliseconds()),
 				ddtracer.Tag("retry.delay_string", delay.String()),
 			)
-		}
-		t.HTTPRequestStart = func(r *http.Request) {
-			if retryDelaySpan != nil {
-				requestSpan.Finish()
-				retryDelaySpan = nil
-			}
 		}
 		return t
 	}
