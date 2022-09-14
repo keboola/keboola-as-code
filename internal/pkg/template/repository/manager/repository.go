@@ -220,7 +220,7 @@ func (r *CachedRepository) markInUse() UnlockFn {
 // free is called when a new version of the repository is ready and the old one can be cleaned.
 // It is waiting until all the requests that use this repository are finished.
 func (r *CachedRepository) free() <-chan struct{} {
-	done := make(chan struct{}, 1)
+	done := make(chan struct{})
 	go func() {
 		r.freeLock.Lock()
 		defer r.freeLock.Unlock()
