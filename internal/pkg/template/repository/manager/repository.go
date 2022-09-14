@@ -226,6 +226,7 @@ func (r *CachedRepository) free() <-chan struct{} {
 		defer r.freeLock.Unlock()
 		r.unlockFn()
 		r.d.Logger().Infof(`cleaned repository cache "%s"`, r.String())
+		close(done)
 	}()
 	return done
 }
