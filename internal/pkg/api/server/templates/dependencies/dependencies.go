@@ -84,7 +84,7 @@ type ForProjectRequest interface {
 	dependencies.Project
 	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
 	TemplateRepository(ctx context.Context, reference model.TemplateRepository) (*repository.Repository, error)
-	ProjectRepositories() []model.TemplateRepository
+	ProjectRepositories() *model.TemplateRepositories
 }
 
 // forServer implements ForServer interface.
@@ -112,9 +112,9 @@ type forPublicRequest struct {
 type forProjectRequest struct {
 	dependencies.Project
 	ForPublicRequest
-	logger           log.PrefixLogger
-	repositories     map[string]*repositoryManager.CachedRepository
-	repositoriesList dependencies.Lazy[[]model.TemplateRepository]
+	logger              log.PrefixLogger
+	repositories        map[string]*repositoryManager.CachedRepository
+	projectRepositories dependencies.Lazy[*model.TemplateRepositories]
 }
 
 func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, defaultRepositories []model.TemplateRepository, debug, dumpHttp bool) (v ForServer, err error) {
@@ -327,11 +327,11 @@ func (v *forProjectRequest) PrefixLogger() log.PrefixLogger {
 	return v.logger
 }
 
-func (v *forProjectRequest) ProjectRepositories() []model.TemplateRepository {
-	return v.repositoriesList.MustInitAndGet(func() []model.TemplateRepository {
+func (v *forProjectRequest) ProjectRepositories() *model.TemplateRepositories {
+	return v.projectRepositories.MustInitAndGet(func() *model.TemplateRepositories {
 		// Project repositories are default repositories modified by the project features.
 		features := v.ProjectFeatures()
-		var out []model.TemplateRepository
+		out := model.NewTemplateRepositories()
 		for _, repo := range v.RepositoryManager().DefaultRepositories() {
 			if repo.Name == repository.DefaultTemplateRepositoryName && repo.Ref == repository.DefaultTemplateRepositoryRefMain {
 				if features.Has(repository.FeatureTemplateRepositoryBeta) {
@@ -340,9 +340,8 @@ func (v *forProjectRequest) ProjectRepositories() []model.TemplateRepository {
 					repo.Ref = repository.DefaultTemplateRepositoryRefDev
 				}
 			}
-			out = append(out, repo)
+			out.Add(repo)
 		}
-
 		return out
 	})
 }

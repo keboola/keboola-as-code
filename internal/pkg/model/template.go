@@ -3,6 +3,8 @@ package model
 import (
 	"crypto/sha256"
 	"fmt"
+
+	"github.com/keboola/go-utils/pkg/deepcopy"
 )
 
 type TemplateRepositoryType string
@@ -11,6 +13,11 @@ const (
 	RepositoryTypeDir = `dir`
 	RepositoryTypeGit = `git`
 )
+
+type TemplateRepositories struct {
+	asSlice []TemplateRepository
+	asMap   map[string]TemplateRepository
+}
 
 type TemplateRepository struct {
 	Type TemplateRepositoryType `json:"type" validate:"oneof=dir git"`
@@ -48,6 +55,24 @@ type templateRef struct {
 	templateId string // for example "my-template"
 	version    string // for example "v1"
 
+}
+
+func NewTemplateRepositories() *TemplateRepositories {
+	return &TemplateRepositories{asMap: make(map[string]TemplateRepository)}
+}
+
+func (v *TemplateRepositories) Add(repo TemplateRepository) {
+	v.asSlice = append(v.asSlice, repo)
+	v.asMap[repo.Name] = repo
+}
+
+func (v *TemplateRepositories) Get(name string) (TemplateRepository, bool) {
+	repo, found := v.asMap[name]
+	return repo, found
+}
+
+func (v *TemplateRepositories) All() []TemplateRepository {
+	return deepcopy.Copy(v.asSlice).([]TemplateRepository)
 }
 
 func NewTemplateRef(repository TemplateRepository, templateId string, version string) TemplateRef {
