@@ -68,13 +68,10 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 		_, err = console.ExpectString("Default Step Description")
 		assert.NoError(t, err)
 
-		_, err = console.ExpectString("")
-		assert.NoError(t, err)
-
 		_, err = console.ExpectString("url description")
 		assert.NoError(t, err)
 
-		_, err = console.ExpectString("? API URL: (https://foo.bar) ")
+		_, err = console.ExpectString("API URL:")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
@@ -84,7 +81,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 		_, err = console.ExpectString(`Enter the name of the environment variable that will fill input "API Token". Note that it will get prefix KBC_SECRET_.`)
 		assert.NoError(t, err)
 
-		_, err = console.ExpectString("? API Token: ")
+		_, err = console.ExpectString("API Token:")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
