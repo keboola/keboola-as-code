@@ -59,14 +59,32 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Api BaseUrl: (https://jsonplaceholder.typicode.com)")
+		_, err := console.ExpectString("Default Group")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Default Step")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("Default Step Description")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("url description")
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("? API URL: (https://foo.bar) ")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(`foo.bar.com`)
 		assert.NoError(t, err)
 
-		_, err = console.ExpectString(`Enter the name of the environment variable that will fill input "Api Token". Note that it will get prefix KBC_SECRET_.`)
+		_, err = console.ExpectString(`Enter the name of the environment variable that will fill input "API Token". Note that it will get prefix KBC_SECRET_.`)
+		assert.NoError(t, err)
+
+		_, err = console.ExpectString("? API Token: ")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)
@@ -101,5 +119,5 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 			},
 		},
 	}, opts)
-	assert.Equal(t, []string{`Input "Api Token" expects setting of environment variable "KBC_SECRET_VAR1".`}, warnings)
+	assert.Equal(t, []string{`Input "API Token" expects setting of environment variable "KBC_SECRET_VAR1".`}, warnings)
 }

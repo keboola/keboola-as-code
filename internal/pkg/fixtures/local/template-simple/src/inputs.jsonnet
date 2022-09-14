@@ -7,19 +7,19 @@
         {
           icon: "common:settings",
           name: "Default Step",
-          description: "Default Step",
+          description: "Default Step Description",
           inputs: [
             {
               id: "generic-url",
-              name: "Api BaseUrl",
+              name: "API URL",
               description: "url description",
               type: "string",
               kind: "input",
-              default: "https://jsonplaceholder.typicode.com",
+              default: "https://foo.bar",
             },
             {
               id: "generic-token",
-              name: "Api Token",
+              name: "API Token",
               description: "token description",
               type: "string",
               kind: "hidden",
