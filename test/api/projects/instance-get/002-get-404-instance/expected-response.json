@@ -1,5 +1,5 @@
 {
   "statusCode": 404,
   "error": "templates.instanceNotFound",
-  "message": "Instance \"inst-002\" not found in branch \"%%TEST_BRANCH_MAIN_ID%%\"."
+  "message": "Instance \"inst-100\" not found in branch \"%%TEST_BRANCH_MAIN_ID%%\"."
 }

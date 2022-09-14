@@ -204,6 +204,7 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 		logger:           logger,
 		Project:          projectDeps,
 		ForPublicRequest: publicDeps,
+		repositories:     make(map[string]*repositoryManager.CachedRepository),
 	}, nil
 }
 
