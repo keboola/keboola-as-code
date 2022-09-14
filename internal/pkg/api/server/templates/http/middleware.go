@@ -33,10 +33,10 @@ func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint g
 
 				// Track endpoint info
 				routerData := httptreemux.ContextData(ctx)
-				span.SetBaggageItem("kac.endpoint.name", ctx.Value(goa.MethodKey).(string))
-				span.SetBaggageItem("kac.endpoint.route", routerData.Route())
+				span.SetTag("kac.endpoint.name", ctx.Value(goa.MethodKey).(string))
+				span.SetTag("kac.endpoint.route", routerData.Route())
 				for k, v := range routerData.Params() {
-					span.SetBaggageItem("kac.endpoint.params."+k, v)
+					span.SetTag("kac.endpoint.params."+k, v)
 				}
 
 				// Finis operation and log internal error
@@ -73,8 +73,8 @@ func ContextMiddleware(serverDeps dependencies.ForServer, h http.Handler) http.H
 		// Add request ID to DD span
 		if span, ok := tracer.SpanFromContext(ctx); ok {
 			span.SetTag(ext.ResourceName, r.URL.Path)
-			span.SetBaggageItem("kac.http.request.id", requestId)
-			span.SetBaggageItem("kac.storage.host", serverDeps.StorageApiHost())
+			span.SetTag("kac.http.request.id", requestId)
+			span.SetTag("kac.storage.host", serverDeps.StorageApiHost())
 		}
 
 		// Cancel context after request + set timeout

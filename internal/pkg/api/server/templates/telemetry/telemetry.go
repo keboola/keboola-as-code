@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
@@ -173,8 +174,14 @@ func ApiClientTrace() client.TraceFactory {
 			return ctx
 		}
 		t.HTTPRequestStart = func(r *http.Request) {
+			requestSpan.SetTag("http.host", r.URL.Host)
+			if dotPos := strings.IndexByte(r.URL.Host, '.'); dotPos > 0 {
+				// E.g. connection, encryption, scheduler ...
+				requestSpan.SetTag("http.hostPrefix", r.URL.Host[:dotPos])
+			}
 			requestSpan.SetTag(ext.HTTPMethod, r.Method)
-			requestSpan.SetTag(ext.HTTPURL, r.URL)
+			requestSpan.SetTag(ext.HTTPURL, r.URL.Redacted()) // full, but without password, if any
+			requestSpan.SetTag("kac.api.client.request.url", strhelper.MustUrlPathUnescape(clientRequest.URL()))
 		}
 		t.HTTPRequestDone = func(response *http.Response, err error) {
 			if response != nil {
