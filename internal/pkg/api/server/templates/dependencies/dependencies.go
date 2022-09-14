@@ -26,6 +26,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -410,7 +411,12 @@ func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) c
 				// We use "http.request" operation name for request to the API,
 				// so requests to other API must have different operation name.
 				span.SetOperationName("kac.api.client.http.request")
-				span.SetTag(ext.HTTPURL, request.URL.Redacted()) // without password, if any
+				span.SetTag("http.host", request.URL.Host)
+				if dotPos := strings.IndexByte(request.URL.Host, '.'); dotPos > 0 {
+					// E.g. connection, encryption, scheduler ...
+					span.SetTag("http.hostPrefix", request.URL.Host[:dotPos])
+				}
+				span.SetTag(ext.HTTPURL, request.URL.Redacted()) // full, but without password, if any
 			}),
 			ddHttp.RTWithResourceNamer(func(r *http.Request) string {
 				// Set resource name to request path

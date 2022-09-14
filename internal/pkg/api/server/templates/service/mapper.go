@@ -348,9 +348,16 @@ func InstanceResponse(ctx context.Context, d dependencies.ForProjectRequest, prj
 		}
 	}
 
+	// Get instance configurations
+	_, spanX := d.Tracer().Start(ctx, "api.server.templates.mapper.InstanceResponse.branchConfigs")
+	branchConfigs := prjState.RemoteObjects().ConfigsWithRowsFrom(branchKey)
+	telemetry.EndSpan(spanX, nil)
+	_, spanY := d.Tracer().Start(ctx, "api.server.templates.mapper.InstanceResponse.instanceConfigs")
+	configs := search.ConfigsForTemplateInstance(branchConfigs, instanceId)
+	telemetry.EndSpan(spanY, nil)
+
 	// Map configurations
 	outConfigs := make([]*Config, 0)
-	configs := search.ConfigsForTemplateInstance(prjState.RemoteObjects().ConfigsWithRowsFrom(branchKey), instanceId)
 	for _, config := range configs {
 		outConfigs = append(outConfigs, &Config{
 			Name:        config.Name,
