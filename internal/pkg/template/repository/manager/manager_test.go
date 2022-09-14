@@ -31,10 +31,13 @@ func TestNew(t *testing.T) {
 		Ref:  "main",
 	}
 
+	// Create manager
 	ctx := context.Background()
 	d := dependencies.NewMockedDeps()
 	m, err := manager.New(ctx, nil, d)
 	assert.NoError(t, err)
+	defer m.Free()
+
 	repo, unlockFn, err := m.Repository(ctx, ref)
 	assert.NoError(t, err)
 	defer unlockFn()
@@ -56,10 +59,12 @@ func TestRepository(t *testing.T) {
 		Ref:  "main",
 	}
 
+	// Create manager
 	ctx := context.Background()
 	d := dependencies.NewMockedDeps()
 	m, err := manager.New(ctx, nil, d)
 	assert.NoError(t, err)
+	defer m.Free()
 
 	v, unlockFn1, err := m.Repository(ctx, repo)
 	assert.NotNil(t, v)
@@ -101,6 +106,7 @@ func TestDefaultRepositories(t *testing.T) {
 	d := dependencies.NewMockedDeps()
 	m, err := manager.New(context.Background(), defaultRepositories, d)
 	assert.NoError(t, err)
+	defer m.Free()
 
 	// Get list of default repositories
 	assert.Equal(t, defaultRepositories, m.DefaultRepositories())
