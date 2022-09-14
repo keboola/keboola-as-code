@@ -40,6 +40,8 @@ func TestNew(t *testing.T) {
 	defer unlockFn()
 
 	assert.True(t, repo.Fs().Exists("example-file.txt"))
+	
+	m.Free()
 }
 
 func TestRepository(t *testing.T) {
@@ -70,6 +72,8 @@ func TestRepository(t *testing.T) {
 	assert.NotNil(t, v)
 	assert.NoError(t, err)
 	defer unlockFn2()
+
+	m.Free()
 }
 
 func TestDefaultRepositories(t *testing.T) {
@@ -108,4 +112,6 @@ func TestDefaultRepositories(t *testing.T) {
 		fmt.Sprintf("dir:%s", tmpDir),
 		fmt.Sprintf("%s:main:%s", gitUrl, commitHash),
 	}, m.ManagedRepositories())
+
+	m.Free()
 }
