@@ -217,7 +217,7 @@ func (r *RemoteRepository) Pull(ctx context.Context) (*PullResult, error) {
 }
 
 func (r *RemoteRepository) Free() <-chan struct{} {
-	done := make(chan struct{}, 1)
+	done := make(chan struct{})
 
 	go func() {
 		// Sync access to the "stableDir" field
@@ -347,7 +347,7 @@ func newFsWithFreeLock(fs filesystem.Fs) *fsWithFreeLock {
 }
 
 func (v *fsWithFreeLock) free() <-chan struct{} {
-	done := make(chan struct{}, 1)
+	done := make(chan struct{})
 	go func() {
 		lock := v.freeLock
 
