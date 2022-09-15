@@ -45,12 +45,22 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			options, err := d.Dialogs().AskCreateTemplateTestOptions(tmpl, d.Options())
+			options, warnings, err := d.Dialogs().AskCreateTemplateTestOptions(tmpl, d.Options())
 			if err != nil {
 				return err
 			}
 
-			return createOp.Run(d.CommandCtx(), tmpl, options, d)
+			err = createOp.Run(d.CommandCtx(), tmpl, options, d)
+			if err != nil {
+				return err
+			}
+
+			if len(warnings) > 0 {
+				for _, w := range warnings {
+					d.Logger().Warnf(w)
+				}
+			}
+			return nil
 		},
 	}
 
