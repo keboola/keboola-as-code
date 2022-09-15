@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
@@ -15,6 +16,7 @@ import (
 	ddtracer "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 type tracer struct{}
@@ -154,23 +156,40 @@ func ApiClientTrace() client.TraceFactory {
 			requestSpan, ctx = ddtracer.StartSpanFromContext(
 				c,
 				"kac.api.client.request",
-				ddtracer.ResourceName(clientRequest.URL()),
+				ddtracer.ResourceName(strhelper.MustUrlPathUnescape(clientRequest.URL())),
 				ddtracer.SpanType("kac.api.client"),
 			)
 
 			// Set tags
-			requestSpan.SetBaggageItem("kac.api.client.request.method", clientRequest.Method())
-			requestSpan.SetBaggageItem("kac.api.client.request.url", clientRequest.URL())
-			requestSpan.SetBaggageItem("kac.api.client.request.result_type", resultType)
+			requestSpan.SetTag("kac.api.client.request.method", clientRequest.Method())
+			requestSpan.SetTag("kac.api.client.request.url", strhelper.MustUrlPathUnescape(clientRequest.URL()))
+			requestSpan.SetTag("kac.api.client.request.result_type", resultType)
+			for k, v := range clientRequest.QueryParams() {
+				requestSpan.SetTag("kac.api.client.request.params.query."+k, v)
+			}
 			for k, v := range clientRequest.PathParams() {
-				requestSpan.SetBaggageItem("kac.api.client.request.params"+k, v)
+				requestSpan.SetTag("kac.api.client.request.params.path."+k, v)
 			}
 
 			return ctx
 		}
 		t.HTTPRequestStart = func(r *http.Request) {
+			// Finish retry delay span
+			if retryDelaySpan != nil {
+				requestSpan.Finish()
+				retryDelaySpan = nil
+			}
+
+			// Update client request span
+			requestSpan.SetTag("http.host", r.URL.Host)
+			if dotPos := strings.IndexByte(r.URL.Host, '.'); dotPos > 0 {
+				// E.g. connection, encryption, scheduler ...
+				requestSpan.SetTag("http.hostPrefix", r.URL.Host[:dotPos])
+			}
 			requestSpan.SetTag(ext.HTTPMethod, r.Method)
-			requestSpan.SetTag(ext.HTTPURL, r.URL)
+			requestSpan.SetTag(ext.HTTPURL, r.URL.Redacted())
+			requestSpan.SetTag("http.path", r.URL.Path)
+			requestSpan.SetTag("http.query", r.URL.Query().Encode())
 		}
 		t.HTTPRequestDone = func(response *http.Response, err error) {
 			if response != nil {
@@ -183,7 +202,7 @@ func ApiClientTrace() client.TraceFactory {
 				parsingSpan, _ = ddtracer.StartSpanFromContext(
 					ctx,
 					"kac.api.client.request.parsing",
-					ddtracer.ResourceName(clientRequest.URL()),
+					ddtracer.ResourceName(strhelper.MustUrlPathUnescape(clientRequest.URL())),
 					ddtracer.SpanType("kac.api.client"),
 				)
 			}
@@ -206,18 +225,12 @@ func ApiClientTrace() client.TraceFactory {
 			retryDelaySpan, _ = ddtracer.StartSpanFromContext(
 				ctx,
 				"kac.api.client.retry.delay",
-				ddtracer.ResourceName(clientRequest.URL()),
+				ddtracer.ResourceName(strhelper.MustUrlPathUnescape(clientRequest.URL())),
 				ddtracer.SpanType("kac.api.client"),
 				ddtracer.Tag("retry.attempt", attempt),
 				ddtracer.Tag("retry.delay_ms", delay.Milliseconds()),
 				ddtracer.Tag("retry.delay_string", delay.String()),
 			)
-		}
-		t.HTTPRequestStart = func(r *http.Request) {
-			if retryDelaySpan != nil {
-				requestSpan.Finish()
-				retryDelaySpan = nil
-			}
 		}
 		return t
 	}
