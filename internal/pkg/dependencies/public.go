@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/encryptionapi"
 	"github.com/keboola/go-client/pkg/storageapi"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -61,6 +62,7 @@ func newPublicDeps(ctx context.Context, base Base, storageApiHost string) (*publ
 func storageApiIndex(ctx context.Context, d Base, storageApiClient client.Client) (index *storageapi.IndexComponents, err error) {
 	startTime := time.Now()
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.dependencies.public.storageApiIndex")
+	span.SetAttributes(attribute.Float64(telemetry.SampleRate, 1.0))
 	defer telemetry.EndSpan(span, &err)
 
 	index, err = storageapi.IndexComponentsRequest().Send(ctx, storageApiClient)

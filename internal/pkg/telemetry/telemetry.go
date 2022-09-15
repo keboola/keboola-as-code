@@ -8,6 +8,7 @@ import (
 
 const HTTPMethod = ext.HTTPMethod
 const HTTPURL = ext.HTTPURL
+const SampleRate = ext.EventSampleRate
 
 func EndSpan(span trace.Span, errPtr *error) {
 	if errPtr != nil {

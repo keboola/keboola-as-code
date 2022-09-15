@@ -24,35 +24,52 @@ const RequestTimeout = 60 * time.Second
 func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint goa.Endpoint) goa.Endpoint {
 	return func(endpoint goa.Endpoint) goa.Endpoint {
 		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+			requestId, _ := ctx.Value(middleware.RequestIDKey).(string)
+			serviceName, _ := ctx.Value(goa.ServiceKey).(string)
+			endpointName, _ := ctx.Value(goa.MethodKey).(string)
+			resourceName := fmt.Sprintf("%s.%s", serviceName, endpointName)
+
 			// Trace all endpoints except health check
-			resourceName := fmt.Sprintf("%s.%s", ctx.Value(goa.ServiceKey), ctx.Value(goa.MethodKey))
-			if !strings.Contains(resourceName, "HealthCheck") {
-				// Start operation
-				var span tracer.Span
-				span, ctx = tracer.StartSpanFromContext(ctx, "endpoint.request", tracer.SpanType(ext.SpanTypeWeb), tracer.ResourceName(resourceName))
-
-				// Track endpoint info
-				routerData := httptreemux.ContextData(ctx)
-				span.SetBaggageItem("kac.endpoint.name", ctx.Value(goa.MethodKey).(string))
-				span.SetBaggageItem("kac.endpoint.route", routerData.Route())
-				for k, v := range routerData.Params() {
-					span.SetBaggageItem("kac.endpoint.params."+k, v)
-				}
-
-				// Finis operation and log internal error
-				defer func() {
-					// Is internal error?
-					if err != nil && errorHttpCode(err) > 499 {
-						span.Finish(tracer.WithError(err))
-						return
-					}
-					// No internal error
-					span.Finish()
-				}()
+			analyticRate := 1.0
+			if strings.Contains(resourceName, "HealthCheck") {
+				analyticRate = 0.0
 			}
 
+			// Create endpoint span
+			var span tracer.Span
+			span, ctx = tracer.StartSpanFromContext(
+				ctx,
+				"endpoint.request",
+				tracer.SpanType(ext.SpanTypeWeb),
+				tracer.ResourceName(resourceName),
+				tracer.AnalyticsRate(analyticRate),
+			)
+
+			// Track info
+			span.SetTag("kac.http.request.id", requestId)
+			span.SetTag("kac.storage.host", serverDeps.StorageApiHost())
+			span.SetTag("kac.endpoint.service", serviceName)
+			span.SetTag("kac.endpoint.name", endpointName)
+			if routerData := httptreemux.ContextData(ctx); routerData != nil {
+				span.SetTag("kac.endpoint.route", routerData.Route())
+				for k, v := range routerData.Params() {
+					span.SetTag("kac.endpoint.params."+k, v)
+				}
+			}
+
+			// Finis operation and log internal error
+			defer func() {
+				// Is internal error?
+				if err != nil && errorHttpCode(err) > 499 {
+					span.Finish(tracer.WithError(err))
+					return
+				}
+				// No internal error
+				span.Finish()
+			}()
+
 			// Add dependencies to the context
-			reqDeps := dependencies.NewDepsForPublicRequest(serverDeps, ctx, ctx.Value(middleware.RequestIDKey).(string))
+			reqDeps := dependencies.NewDepsForPublicRequest(serverDeps, ctx, requestId)
 			ctx = context.WithValue(ctx, dependencies.ForPublicRequestCtxKey, reqDeps)
 
 			// Handle
@@ -70,11 +87,15 @@ func ContextMiddleware(serverDeps dependencies.ForServer, h http.Handler) http.H
 
 		// Add request ID to headers
 		w.Header().Add("X-Request-Id", requestId)
-		// Add request ID to DD span
+
+		// Update span
 		if span, ok := tracer.SpanFromContext(ctx); ok {
 			span.SetTag(ext.ResourceName, r.URL.Path)
-			span.SetBaggageItem("kac.http.request.id", requestId)
-			span.SetBaggageItem("kac.storage.host", serverDeps.StorageApiHost())
+			span.SetTag(ext.HTTPURL, r.URL.Redacted())
+			span.SetTag("http.path", r.URL.Path)
+			span.SetTag("http.query", r.URL.Query().Encode())
+			span.SetTag("kac.http.request.id", requestId)
+			span.SetTag("kac.storage.host", serverDeps.StorageApiHost())
 		}
 
 		// Cancel context after request + set timeout

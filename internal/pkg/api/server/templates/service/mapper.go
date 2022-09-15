@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/upgrade"
 )
 
 func RepositoriesResponse(ctx context.Context, d dependencies.ForProjectRequest) (out *Repositories, err error) {
@@ -162,6 +163,14 @@ func VersionDetailExtendedResponse(ctx context.Context, d dependencies.ForProjec
 		LongDescription: template.LongDesc(),
 		Readme:          template.Readme(),
 	}, nil
+}
+
+func UpgradeInstanceInputsResponse(ctx context.Context, d dependencies.ForProjectRequest, prjState *project.State, branchKey model.BranchKey, instance *model.TemplateInstance, tmpl *template.Template) (out *Inputs) {
+	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.UpgradeInstanceInputsResponse")
+	defer telemetry.EndSpan(span, nil)
+
+	stepsGroupsExt := upgrade.ExportInputsValues(d.Logger().InfoWriter(), prjState.State(), branchKey, instance.InstanceId, tmpl.Inputs())
+	return InputsResponse(ctx, d, stepsGroupsExt)
 }
 
 func InputsResponse(ctx context.Context, d dependencies.ForProjectRequest, stepsGroups input.StepsGroupsExt) (out *Inputs) {
@@ -339,9 +348,16 @@ func InstanceResponse(ctx context.Context, d dependencies.ForProjectRequest, prj
 		}
 	}
 
+	// Get instance configurations
+	_, spanX := d.Tracer().Start(ctx, "api.server.templates.mapper.InstanceResponse.branchConfigs")
+	branchConfigs := prjState.RemoteObjects().ConfigsWithRowsFrom(branchKey)
+	telemetry.EndSpan(spanX, nil)
+	_, spanY := d.Tracer().Start(ctx, "api.server.templates.mapper.InstanceResponse.instanceConfigs")
+	configs := search.ConfigsForTemplateInstance(branchConfigs, instanceId)
+	telemetry.EndSpan(spanY, nil)
+
 	// Map configurations
 	outConfigs := make([]*Config, 0)
-	configs := search.ConfigsForTemplateInstance(prjState.RemoteObjects().ConfigsWithRowsFrom(branchKey), instanceId)
 	for _, config := range configs {
 		outConfigs = append(outConfigs, &Config{
 			Name:        config.Name,
