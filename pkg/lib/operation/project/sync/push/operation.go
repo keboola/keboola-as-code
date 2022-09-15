@@ -32,7 +32,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.sync.pull")
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.sync.push")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()

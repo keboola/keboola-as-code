@@ -20,7 +20,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/upgrade"
 	deleteTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/delete"
 	renameInst "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
 	upgradeTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/upgrade"
@@ -393,8 +392,7 @@ func (s *service) UpgradeInstanceInputsIndex(d dependencies.ForProjectRequest, p
 	}
 
 	// Generate response
-	stepsGroupsExt := upgrade.ExportInputsValues(d.Logger().InfoWriter(), prjState.State(), branchKey, instance.InstanceId, tmpl.Inputs())
-	return InputsResponse(d.RequestCtx(), d, stepsGroupsExt), nil
+	return UpgradeInstanceInputsResponse(d.RequestCtx(), d, prjState, branchKey, instance, tmpl), nil
 }
 
 func (s *service) UpgradeInstanceValidateInputs(d dependencies.ForProjectRequest, payload *UpgradeInstanceValidateInputsPayload) (res *ValidationResult, err error) {
