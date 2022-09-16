@@ -360,13 +360,17 @@ func RunRequests(
 
 	// Optionally check API server stdout/stderr
 	expectedStdoutPath := "expected-server-stdout"
+	expectedStderrPath := "expected-server-stderr"
+	if testDirFs.IsFile(expectedStdoutPath) || testDirFs.IsFile(expectedStderrPath) {
+		// Wait a while the server logs everything for previous requests.
+		time.Sleep(100 * time.Millisecond)
+	}
 	if testDirFs.IsFile(expectedStdoutPath) {
 		file, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStdoutPath))
 		assert.NoError(t, err)
 		expected := testhelper.ReplaceEnvsString(file.Content, envProvider)
 		wildcards.Assert(t, expected, stdout.String(), "Unexpected STDOUT.")
 	}
-	expectedStderrPath := "expected-server-stderr"
 	if testDirFs.IsFile(expectedStderrPath) {
 		file, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStderrPath))
 		assert.NoError(t, err)
