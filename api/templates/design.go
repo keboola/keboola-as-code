@@ -6,13 +6,17 @@ import (
 	. "goa.design/goa/v3/dsl"
 	"goa.design/goa/v3/eval"
 	"goa.design/goa/v3/expr"
+	"goa.design/goa/v3/http/codegen/openapi"
 	cors "goa.design/plugins/v3/cors/dsl"
 
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/anytype"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/dependencies"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/genericerror"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/oneof"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/operationid"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/token"
+	"github.com/keboola/keboola-as-code/internal/pkg/json"
 )
 
 // API definition ------------------------------------------------------------------------------------------------------
@@ -920,6 +924,14 @@ var Input = Type("input", func() {
 		Example("input")
 	})
 	Attribute("default", Any, "Default value, match defined type.", func() {
+		Meta(oneof.Meta, json.MustEncodeString([]*openapi.Schema{
+			{Type: openapi.String},
+			{Type: openapi.Integer},
+			{Type: "double"},
+			{Type: openapi.Boolean},
+			{Type: openapi.Array, Items: &openapi.Schema{Type: openapi.String}},
+			{Type: openapi.Object},
+		}, false))
 		Example("foo bar")
 	})
 	Attribute("options", ArrayOf(InputOption), "Input options for type = select OR multiselect.", func() {
