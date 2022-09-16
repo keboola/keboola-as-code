@@ -927,7 +927,7 @@ var Input = Type("input", func() {
 		Meta(oneof.Meta, json.MustEncodeString([]*openapi.Schema{
 			{Type: openapi.String},
 			{Type: openapi.Integer},
-			{Type: "double"},
+			{Type: openapi.Number},
 			{Type: openapi.Boolean},
 			{Type: openapi.Array, Items: &openapi.Schema{Type: openapi.String}},
 			{Type: openapi.Object},
