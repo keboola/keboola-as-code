@@ -60,6 +60,17 @@
                   "configId": "%%TEST_NEW_TICKET_2%%"
                 },
                 "continueOnFailure": false
+              },
+              {
+                "id": 3,
+                "name": "Task 3 - disabled",
+                "enabled": false,
+                "phase": 2,
+                "task": {
+                  "mode": "run",
+                  "componentId": "ex-generic-v2"
+                },
+                "continueOnFailure": true
               }
             ]
           },
