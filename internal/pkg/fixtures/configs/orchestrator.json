@@ -40,6 +40,18 @@
           "mode": "run"
         },
         "continueOnFailure": false
+      },
+      {
+        "id": 1003,
+        "name": "Task 3 - disabled",
+        "enabled": false,
+        "phase": 456,
+        "task": {
+          "componentId": "%%TEST_ORCHESTRATOR_TASK_3_COMPONENT_ID%%",
+          "configId": "",
+          "mode": "run"
+        },
+        "continueOnFailure": true
       }
     ]
   },
