@@ -1,9 +1,9 @@
 {
   "name": "Task 1",
+  "enabled": true,
   "task": {
     "mode": "run",
     "configPath": "extractor/ex-generic-v2/old-name"
   },
-  "continueOnFailure": false,
-  "enabled": true
+  "continueOnFailure": false
 }
