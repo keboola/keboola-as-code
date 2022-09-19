@@ -209,6 +209,9 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 		errors.Append(err)
 	}
 
+	// Get enabled, optional field, default true
+	task.Enabled, _ = parser.enabled()
+
 	// Get phase
 	phaseId, err := parser.phaseId()
 	if err != nil {
@@ -224,7 +227,10 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 	// Config ID
 	if len(task.ComponentId) > 0 {
 		task.ConfigId, err = parser.configId()
-		if err != nil {
+
+		// UI can save disabled task without ConfigId,
+		// so missing ConfigId error is ignored for disabled tasks.
+		if task.Enabled && err != nil {
 			errors.Append(err)
 		}
 	}
