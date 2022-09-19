@@ -51,7 +51,7 @@ func (p *taskParser) enabled() (bool, error) {
 		// Use default value
 		return true, nil
 	}
-	value, ok := raw.(bool) // JSON int is float64, by default in Go
+	value, ok := raw.(bool)
 	if !ok {
 		return true, fmt.Errorf(`"enabled" must be boolean, found %T`, raw)
 	}
