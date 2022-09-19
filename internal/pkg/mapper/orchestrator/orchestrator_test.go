@@ -124,15 +124,22 @@ func createLocalLoadFixtures(t *testing.T, state *state.State) *model.ConfigStat
 func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets bool) *model.ConfigState {
 	t.Helper()
 
+	phase1Key := model.PhaseKey{
+		BranchId:    123,
+		ComponentId: storageapi.OrchestratorComponentID,
+		ConfigId:    `456`,
+		Index:       0,
+	}
+	phase2Key := model.PhaseKey{
+		BranchId:    123,
+		ComponentId: storageapi.OrchestratorComponentID,
+		ConfigId:    `456`,
+		Index:       1,
+	}
 	orchestration := &model.Orchestration{
 		Phases: []*model.Phase{
 			{
-				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: storageapi.OrchestratorComponentID,
-					ConfigId:    `456`,
-					Index:       0,
-				},
+				PhaseKey:  phase1Key,
 				AbsPath:   model.NewAbsPath(`branch/other/orchestrator/phases`, `001-phase`),
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase`,
@@ -141,17 +148,10 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 				}),
 				Tasks: []*model.Task{
 					{
-						TaskKey: model.TaskKey{
-							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: storageapi.OrchestratorComponentID,
-								ConfigId:    `456`,
-								Index:       0,
-							},
-							Index: 0,
-						},
+						TaskKey:     model.TaskKey{PhaseKey: phase1Key, Index: 0},
 						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
 						Name:        `Task 1`,
+						Enabled:     true,
 						ComponentId: `foo.bar1`,
 						ConfigId:    `123`,
 						ConfigPath:  `branch/extractor/target-config-1`,
@@ -163,21 +163,13 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 								}),
 							},
 							{Key: `continueOnFailure`, Value: false},
-							{Key: `enabled`, Value: true},
 						}),
 					},
 					{
-						TaskKey: model.TaskKey{
-							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: storageapi.OrchestratorComponentID,
-								ConfigId:    `456`,
-								Index:       0,
-							},
-							Index: 1,
-						},
+						TaskKey:     model.TaskKey{PhaseKey: phase1Key, Index: 1},
 						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
-						Name:        `Task 2`,
+						Name:        `Task 2 - disabled`,
+						Enabled:     false,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `789`,
 						ConfigPath:  `branch/extractor/target-config-2`,
@@ -189,42 +181,38 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 								}),
 							},
 							{Key: `continueOnFailure`, Value: false},
-							{Key: `enabled`, Value: false},
+						}),
+					},
+					{
+						TaskKey:     model.TaskKey{PhaseKey: phase1Key, Index: 2},
+						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `003-task-3`),
+						Name:        `Task 3 - disabled without configId`,
+						Enabled:     false,
+						ComponentId: `foo.bar2`,
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
+							{
+								Key: `task`,
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
+									{Key: `mode`, Value: `run`},
+								}),
+							},
+							{Key: `continueOnFailure`, Value: false},
 						}),
 					},
 				},
 			},
 			{
-				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: storageapi.OrchestratorComponentID,
-					ConfigId:    `456`,
-					Index:       1,
-				},
-				AbsPath: model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase-with-deps`),
-				DependsOn: []model.PhaseKey{
-					{
-						BranchId:    123,
-						ComponentId: storageapi.OrchestratorComponentID,
-						ConfigId:    `456`,
-						Index:       0,
-					},
-				},
-				Name:    `Phase With Deps`,
-				Content: orderedmap.New(),
+				PhaseKey:  phase2Key,
+				AbsPath:   model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase-with-deps`),
+				DependsOn: []model.PhaseKey{phase1Key},
+				Name:      `Phase With Deps`,
+				Content:   orderedmap.New(),
 				Tasks: []*model.Task{
 					{
-						TaskKey: model.TaskKey{
-							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: storageapi.OrchestratorComponentID,
-								ConfigId:    `456`,
-								Index:       1,
-							},
-							Index: 0,
-						},
+						TaskKey:     model.TaskKey{PhaseKey: phase2Key, Index: 0},
 						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-3`),
 						Name:        `Task 3`,
+						Enabled:     true,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `456`,
 						ConfigPath:  `branch/extractor/target-config-3`,
@@ -236,7 +224,6 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 								}),
 							},
 							{Key: `continueOnFailure`, Value: false},
-							{Key: `enabled`, Value: true},
 						}),
 					},
 				},

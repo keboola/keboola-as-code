@@ -123,6 +123,7 @@ func (w *localWriter) saveTask(task *model.Task) error {
 	errors := utils.NewMultiError()
 	taskContent := orderedmap.New()
 	taskContent.Set(`name`, task.Name)
+	taskContent.Set(`enabled`, task.Enabled)
 
 	// Copy additional content
 	for _, k := range task.Content.Keys() {
@@ -142,27 +143,33 @@ func (w *localWriter) saveTask(task *model.Task) error {
 		target = orderedmap.New()
 	}
 
-	// Target key
-	targetKey := &model.ConfigKey{
-		BranchId:    task.BranchId,
-		ComponentId: task.ComponentId,
-		Id:          task.ConfigId,
-	}
-
-	// Get target config
-	targetConfig, found := w.Get(targetKey)
-	if found {
-		// Get target path
-		targetPath, err := filesystem.Rel(w.configPath.GetParentPath(), targetConfig.Path())
-		if err != nil {
-			errors.Append(err)
+	// Set configId
+	if len(task.ConfigId) > 0 {
+		// Target key
+		targetKey := &model.ConfigKey{
+			BranchId:    task.BranchId,
+			ComponentId: task.ComponentId,
+			Id:          task.ConfigId,
 		}
 
-		// Set config path
-		target.Set(`configPath`, targetPath)
-		taskContent.Set(`task`, *target)
+		// Get target config
+		targetConfig, found := w.Get(targetKey)
+		if found {
+			// Get target path
+			targetPath, err := filesystem.Rel(w.configPath.GetParentPath(), targetConfig.Path())
+			if err != nil {
+				errors.Append(err)
+			}
+
+			// Set config path
+			target.Set(`configPath`, targetPath)
+			taskContent.Set(`task`, *target)
+		} else {
+			errors.Append(fmt.Errorf(`%s not found`, targetKey.Desc()))
+		}
 	} else {
-		errors.Append(fmt.Errorf(`%s not found`, targetKey.Desc()))
+		// ConfigPath is not set, so componentId must be saved.
+		target.Set(`componentId`, task.ComponentId)
 	}
 
 	// Create file

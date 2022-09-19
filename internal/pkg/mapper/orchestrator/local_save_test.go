@@ -60,14 +60,21 @@ func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 		filesystem.
 			NewRawFile(
 				phasesDir+`/001-phase/001-task-1/task.json`,
-				`{"name":"Task 1","task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false,"enabled":true}`,
+				`{"name":"Task 1","enabled":true,"task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false}`,
 			).
 			AddTag(model.FileKindTaskConfig).
 			AddTag(model.FileTypeJson),
 		filesystem.
 			NewRawFile(
 				phasesDir+`/001-phase/002-task-2/task.json`,
-				`{"name":"Task 2","task":{"mode":"run","configPath":"extractor/target-config-2"},"continueOnFailure":false,"enabled":false}`,
+				`{"name":"Task 2 - disabled","enabled":false,"task":{"mode":"run","configPath":"extractor/target-config-2"},"continueOnFailure":false}`,
+			).
+			AddTag(model.FileKindTaskConfig).
+			AddTag(model.FileTypeJson),
+		filesystem.
+			NewRawFile(
+				phasesDir+`/001-phase/003-task-3/task.json`,
+				`{"name":"Task 3 - disabled without configId","enabled":false,"task":{"mode":"run","componentId":"foo.bar2"},"continueOnFailure":false}`,
 			).
 			AddTag(model.FileKindTaskConfig).
 			AddTag(model.FileTypeJson),
@@ -81,7 +88,7 @@ func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 		filesystem.
 			NewRawFile(
 				phasesDir+`/002-phase-with-deps/001-task-3/task.json`,
-				`{"name":"Task 3","task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false,"enabled":true}`,
+				`{"name":"Task 3","enabled":true,"task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false}`,
 			).
 			AddTag(model.FileKindTaskConfig).
 			AddTag(model.FileTypeJson),
