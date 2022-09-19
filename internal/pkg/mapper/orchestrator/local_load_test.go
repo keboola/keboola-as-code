@@ -30,32 +30,32 @@ func TestMapAfterLocalLoad(t *testing.T) {
 			NewRawFile(
 				phasesDir+`/001-phase/phase.json`,
 				`{"name":"Phase","dependsOn":[],"foo":"bar"}`,
-			).
-			SetDescription(`phase config file`),
+			),
 		filesystem.
 			NewRawFile(
 				phasesDir+`/001-phase/001-task-1/task.json`,
 				`{"name":"Task 1","task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false,"enabled":true}`,
-			).
-			SetDescription(`task config file`),
+			),
 		filesystem.
 			NewRawFile(
 				phasesDir+`/001-phase/002-task-2/task.json`,
-				`{"name":"Task 2","task":{"mode":"run","configPath":"extractor/target-config-2"},"continueOnFailure":false,"enabled":false}`,
-			).
-			SetDescription(`task config file`),
+				`{"name":"Task 2 - disabled","enabled":false,"task":{"mode":"run","configPath":"extractor/target-config-2"},"continueOnFailure":false}`,
+			),
+		filesystem.
+			NewRawFile(
+				phasesDir+`/001-phase/003-task-3/task.json`,
+				`{"name":"Task 3 - disabled without configId","enabled":false,"task":{"mode":"run","componentId":"foo.bar2"},"continueOnFailure":false}`,
+			),
 		filesystem.
 			NewRawFile(
 				phasesDir+`/002-phase-with-deps/phase.json`,
 				`{"name":"Phase With Deps","dependsOn":["001-phase"]}`,
-			).
-			SetDescription(`phase config file`),
+			),
 		filesystem.
 			NewRawFile(
-				phasesDir+`/002-phase-with-deps/001-task-3/task.json`,
-				`{"name":"Task 3","task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false,"enabled":true}`,
-			).
-			SetDescription(`task config file`),
+				phasesDir+`/002-phase-with-deps/001-task-4/task.json`,
+				`{"name":"Task 4","task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false,"enabled":true}`,
+			),
 	}
 	for _, file := range files {
 		assert.NoError(t, fs.WriteFile(file))
@@ -72,8 +72,9 @@ func TestMapAfterLocalLoad(t *testing.T) {
 DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/phase.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/001-task-1/task.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/002-task-2/task.json"
+DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/003-task-3/task.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/phase.json"
-DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/task.json"
+DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-4/task.json"
 `
 	wildcards.Assert(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages(), ``)
 
@@ -89,15 +90,22 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 	assert.Equal(t, orchestratorConfigState.Id, rel3.(*model.UsedInOrchestratorRelation).ConfigId)
 
 	// Orchestration
+	phase1Key := model.PhaseKey{
+		BranchId:    123,
+		ComponentId: storageapi.OrchestratorComponentID,
+		ConfigId:    `456`,
+		Index:       0,
+	}
+	phase2Key := model.PhaseKey{
+		BranchId:    123,
+		ComponentId: storageapi.OrchestratorComponentID,
+		ConfigId:    `456`,
+		Index:       1,
+	}
 	expectedOrchestration := &model.Orchestration{
 		Phases: []*model.Phase{
 			{
-				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: storageapi.OrchestratorComponentID,
-					ConfigId:    `456`,
-					Index:       0,
-				},
+				PhaseKey:  phase1Key,
 				AbsPath:   model.NewAbsPath(`branch/other/orchestrator/phases`, `001-phase`),
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase`,
@@ -106,17 +114,10 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 				}),
 				Tasks: []*model.Task{
 					{
-						TaskKey: model.TaskKey{
-							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: storageapi.OrchestratorComponentID,
-								ConfigId:    `456`,
-								Index:       0,
-							},
-							Index: 0,
-						},
+						TaskKey:     model.TaskKey{PhaseKey: phase1Key, Index: 0},
 						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
 						Name:        `Task 1`,
+						Enabled:     true,
 						ComponentId: `foo.bar1`,
 						ConfigId:    `123`,
 						ConfigPath:  `branch/extractor/target-config-1`,
@@ -128,21 +129,13 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 								}),
 							},
 							{Key: `continueOnFailure`, Value: false},
-							{Key: `enabled`, Value: true},
 						}),
 					},
 					{
-						TaskKey: model.TaskKey{
-							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: storageapi.OrchestratorComponentID,
-								ConfigId:    `456`,
-								Index:       0,
-							},
-							Index: 1,
-						},
+						TaskKey:     model.TaskKey{PhaseKey: phase1Key, Index: 1},
 						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
-						Name:        `Task 2`,
+						Name:        `Task 2 - disabled`,
+						Enabled:     false,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `789`,
 						ConfigPath:  `branch/extractor/target-config-2`,
@@ -154,19 +147,29 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 								}),
 							},
 							{Key: `continueOnFailure`, Value: false},
-							{Key: `enabled`, Value: false},
+						}),
+					},
+					{
+						TaskKey:     model.TaskKey{PhaseKey: phase1Key, Index: 2},
+						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `003-task-3`),
+						Name:        `Task 3 - disabled without configId`,
+						Enabled:     false,
+						ComponentId: `foo.bar2`,
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
+							{
+								Key: `task`,
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
+									{Key: `mode`, Value: `run`},
+								}),
+							},
+							{Key: `continueOnFailure`, Value: false},
 						}),
 					},
 				},
 			},
 			{
-				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: storageapi.OrchestratorComponentID,
-					ConfigId:    `456`,
-					Index:       1,
-				},
-				AbsPath: model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase-with-deps`),
+				PhaseKey: phase2Key,
+				AbsPath:  model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase-with-deps`),
 				DependsOn: []model.PhaseKey{
 					{
 						BranchId:    123,
@@ -179,17 +182,10 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 				Content: orderedmap.New(),
 				Tasks: []*model.Task{
 					{
-						TaskKey: model.TaskKey{
-							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: storageapi.OrchestratorComponentID,
-								ConfigId:    `456`,
-								Index:       1,
-							},
-							Index: 0,
-						},
-						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-3`),
-						Name:        `Task 3`,
+						TaskKey:     model.TaskKey{PhaseKey: phase2Key, Index: 0},
+						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-4`),
+						Name:        `Task 4`,
+						Enabled:     true,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `456`,
 						ConfigPath:  `branch/extractor/target-config-3`,
@@ -201,7 +197,6 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-3/t
 								}),
 							},
 							{Key: `continueOnFailure`, Value: false},
-							{Key: `enabled`, Value: true},
 						}),
 					},
 				},
