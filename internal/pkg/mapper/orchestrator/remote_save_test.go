@@ -18,15 +18,22 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
 
+	phase1Key := model.PhaseKey{
+		BranchId:    123,
+		ComponentId: storageapi.OrchestratorComponentID,
+		ConfigId:    `456`,
+		Index:       0,
+	}
+	phase2Key := model.PhaseKey{
+		BranchId:    123,
+		ComponentId: storageapi.OrchestratorComponentID,
+		ConfigId:    `456`,
+		Index:       1,
+	}
 	orchestration := &model.Orchestration{
 		Phases: []*model.Phase{
 			{
-				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: storageapi.OrchestratorComponentID,
-					ConfigId:    `456`,
-					Index:       0,
-				},
+				PhaseKey:  phase1Key,
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase`,
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
@@ -34,15 +41,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 				}),
 				Tasks: []*model.Task{
 					{
-						TaskKey: model.TaskKey{
-							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: storageapi.OrchestratorComponentID,
-								ConfigId:    `456`,
-								Index:       0,
-							},
-							Index: 0,
-						},
+						TaskKey:     model.TaskKey{PhaseKey: phase1Key, Index: 0},
 						Name:        `Task 1`,
 						Enabled:     true,
 						ComponentId: `foo.bar1`,
@@ -58,15 +57,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 						}),
 					},
 					{
-						TaskKey: model.TaskKey{
-							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: storageapi.OrchestratorComponentID,
-								ConfigId:    `456`,
-								Index:       0,
-							},
-							Index: 1,
-						},
+						TaskKey:     model.TaskKey{PhaseKey: phase1Key, Index: 1},
 						Name:        `Task 3`,
 						Enabled:     false,
 						ComponentId: `foo.bar2`,
@@ -84,31 +75,35 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 				},
 			},
 			{
-				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: storageapi.OrchestratorComponentID,
-					ConfigId:    `456`,
-					Index:       1,
-				},
+				PhaseKey:  phase2Key,
 				DependsOn: []model.PhaseKey{{Index: 0}},
 				Name:      `Phase With Deps`,
 				Content:   orderedmap.New(),
 				Tasks: []*model.Task{
 					{
 
-						TaskKey: model.TaskKey{
-							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: storageapi.OrchestratorComponentID,
-								ConfigId:    `456`,
-								Index:       1,
-							},
-							Index: 0,
-						},
+						TaskKey:     model.TaskKey{PhaseKey: phase2Key, Index: 0},
 						Name:        `Task 2`,
 						Enabled:     true,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `456`,
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
+							{
+								Key: `task`,
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
+									{Key: `mode`, Value: `run`},
+								}),
+							},
+							{Key: `continueOnFailure`, Value: false},
+						}),
+					},
+					{
+						TaskKey:     model.TaskKey{PhaseKey: phase2Key, Index: 1},
+						AbsPath:     model.NewAbsPath(`branch/config/phases/002-phase-with-deps`, `002-task-4-config-data`),
+						Name:        `Task 4 - ConfigData`,
+						Enabled:     true,
+						ComponentId: `foo.bar3`,
+						ConfigData:  orderedmap.FromPairs([]orderedmap.Pair{{Key: "params", Value: "value"}}),
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -190,6 +185,20 @@ func TestMapBeforeRemoteSave(t *testing.T) {
         "mode": "run",
         "componentId": "foo.bar2",
         "configId": "456"
+      },
+      "continueOnFailure": false
+    },
+    {
+      "id": 4,
+      "name": "Task 4 - ConfigData",
+      "enabled": true,
+      "phase": 2,
+      "task": {
+        "mode": "run",
+        "componentId": "foo.bar3",
+        "configData": {
+          "params": "value"
+        }
       },
       "continueOnFailure": false
     }

@@ -84,6 +84,8 @@ func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orch
 			}
 			if len(task.ConfigId) > 0 {
 				target.Set(`configId`, task.ConfigId.String())
+			} else if task.ConfigData != nil {
+				target.Set(`configData`, task.ConfigData)
 			}
 			taskContent.Set(`task`, *target)
 
