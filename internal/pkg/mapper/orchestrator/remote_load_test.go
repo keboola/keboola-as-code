@@ -135,7 +135,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 		ConfigId:    `456`,
 		Index:       0,
 	}
-	pahse2key := model.PhaseKey{
+	phase2Key := model.PhaseKey{
 		BranchId:    123,
 		ComponentId: storageapi.OrchestratorComponentID,
 		ConfigId:    `456`,
@@ -190,7 +190,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 				},
 			},
 			{
-				PhaseKey: pahse2key,
+				PhaseKey: phase2Key,
 				AbsPath:  model.NewAbsPath(`branch/config/phases`, `002-phase-with-deps`),
 				DependsOn: []model.PhaseKey{
 					{
@@ -206,7 +206,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 				}),
 				Tasks: []*model.Task{
 					{
-						TaskKey:     model.TaskKey{PhaseKey: pahse2key, Index: 0},
+						TaskKey:     model.TaskKey{PhaseKey: phase2Key, Index: 0},
 						AbsPath:     model.NewAbsPath(`branch/config/phases/002-phase-with-deps`, `001-task-2`),
 						Name:        `Task 2`,
 						Enabled:     true,
@@ -224,7 +224,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 						}),
 					},
 					{
-						TaskKey:     model.TaskKey{PhaseKey: pahse2key, Index: 1},
+						TaskKey:     model.TaskKey{PhaseKey: phase2Key, Index: 1},
 						AbsPath:     model.NewAbsPath(`branch/config/phases/002-phase-with-deps`, `002-task-4-config-data`),
 						Name:        `Task 4 - ConfigData`,
 						Enabled:     true,
