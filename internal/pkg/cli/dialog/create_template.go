@@ -46,14 +46,12 @@ func (p *Dialogs) AskCreateTemplateOpts(ctx context.Context, deps createTmplDial
 }
 
 func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, error) {
-	opts := d.deps.Options()
-
 	// Host and token
 	errors := utils.NewMultiError()
-	if _, err := d.AskStorageApiHost(opts); err != nil {
+	if _, err := d.AskStorageApiHost(d.deps); err != nil {
 		errors.Append(err)
 	}
-	if _, err := d.AskStorageApiToken(opts); err != nil {
+	if _, err := d.AskStorageApiToken(d.deps); err != nil {
 		errors.Append(err)
 	}
 	if errors.Len() > 0 {

@@ -8,14 +8,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 )
 
 func TestAskStorageApiHostInteractive(t *testing.T) {
 	t.Parallel()
 
 	dialog, console := createDialogs(t, true)
-	o := options.New()
+	d := dependencies.NewMockedDeps()
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -31,7 +31,7 @@ func TestAskStorageApiHostInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out, err := dialog.AskStorageApiHost(o)
+	out, err := dialog.AskStorageApiHost(d)
 	assert.Equal(t, `foo.bar.com`, out)
 	assert.NoError(t, err)
 
@@ -45,11 +45,12 @@ func TestAskStorageApiHostByFlag(t *testing.T) {
 	t.Parallel()
 
 	dialog, _ := createDialogs(t, true)
-	o := options.New()
-	o.Set(`storage-api-host`, `foo.bar.com`)
+	d := dependencies.NewMockedDeps()
+	opts := d.Options()
+	opts.Set(`storage-api-host`, `foo.bar.com`)
 
 	// Run
-	out, err := dialog.AskStorageApiHost(o)
+	out, err := dialog.AskStorageApiHost(d)
 	assert.Equal(t, `foo.bar.com`, out)
 	assert.NoError(t, err)
 }
@@ -58,10 +59,10 @@ func TestAskStorageApiHostMissing(t *testing.T) {
 	t.Parallel()
 
 	dialog, _ := createDialogs(t, false)
-	o := options.New()
+	d := dependencies.NewMockedDeps()
 
 	// Run
-	out, err := dialog.AskStorageApiHost(o)
+	out, err := dialog.AskStorageApiHost(d)
 	assert.Empty(t, out)
 	assert.Error(t, err)
 	assert.Equal(t, `missing Storage API host`, err.Error())
