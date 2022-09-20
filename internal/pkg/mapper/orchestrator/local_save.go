@@ -167,9 +167,16 @@ func (w *localWriter) saveTask(task *model.Task) error {
 		} else {
 			errors.Append(fmt.Errorf(`%s not found`, targetKey.Desc()))
 		}
-	} else {
-		// ConfigPath is not set, so componentId must be saved.
+	} else if task.ConfigData != nil {
+		target.Set("configData", task.ConfigData)
 		target.Set(`componentId`, task.ComponentId)
+	} else {
+		if task.Enabled {
+			errors.Append(fmt.Errorf("task.configId, or task.configData and task.componentId must be specified"))
+		} else {
+			// ComponentId is required even when the task is disabled (for UI)
+			target.Set(`componentId`, task.ComponentId)
+		}
 	}
 
 	// Create file

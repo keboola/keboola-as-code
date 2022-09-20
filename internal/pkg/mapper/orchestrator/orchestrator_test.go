@@ -210,12 +210,29 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 				Tasks: []*model.Task{
 					{
 						TaskKey:     model.TaskKey{PhaseKey: phase2Key, Index: 0},
-						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-3`),
-						Name:        `Task 3`,
+						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-4`),
+						Name:        `Task 4`,
 						Enabled:     true,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `456`,
 						ConfigPath:  `branch/extractor/target-config-3`,
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
+							{
+								Key: `task`,
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
+									{Key: `mode`, Value: `run`},
+								}),
+							},
+							{Key: `continueOnFailure`, Value: false},
+						}),
+					},
+					{
+						TaskKey:     model.TaskKey{PhaseKey: phase2Key, Index: 1},
+						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `002-task-5`),
+						Name:        `Task 5 - configData`,
+						Enabled:     true,
+						ComponentId: `foo.bar3`,
+						ConfigData:  orderedmap.FromPairs([]orderedmap.Pair{{Key: "params", Value: "value"}}),
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,

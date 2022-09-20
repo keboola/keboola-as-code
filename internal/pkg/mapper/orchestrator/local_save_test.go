@@ -87,8 +87,15 @@ func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 			AddTag(model.FileTypeJson),
 		filesystem.
 			NewRawFile(
-				phasesDir+`/002-phase-with-deps/001-task-3/task.json`,
-				`{"name":"Task 3","enabled":true,"task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false}`,
+				phasesDir+`/002-phase-with-deps/001-task-4/task.json`,
+				`{"name":"Task 4","enabled":true,"task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false}`,
+			).
+			AddTag(model.FileKindTaskConfig).
+			AddTag(model.FileTypeJson),
+		filesystem.
+			NewRawFile(
+				phasesDir+`/002-phase-with-deps/002-task-5/task.json`,
+				`{"name":"Task 5 - configData","enabled":true,"task":{"mode":"run","configData":{"params":"value"},"componentId":"foo.bar3"},"continueOnFailure":false}`,
 			).
 			AddTag(model.FileKindTaskConfig).
 			AddTag(model.FileTypeJson),
@@ -123,7 +130,7 @@ WARN  Warning: cannot save orchestrator config "branch/other/orchestrator":
     - cannot save task "002-task-2":
       - config "branch:123/component:foo.bar2/config:789" not found
   - cannot save phase "002-phase-with-deps":
-    - cannot save task "001-task-3":
+    - cannot save task "001-task-4":
       - config "branch:123/component:foo.bar2/config:456" not found
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
