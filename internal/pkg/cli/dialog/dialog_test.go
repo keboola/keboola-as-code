@@ -2,9 +2,7 @@ package dialog_test
 
 import (
 	"testing"
-	"time"
 
-	"github.com/Netflix/go-expect"
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
@@ -12,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	interactivePrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 )
 
 func registerMockedBranchesResponse(httpTransport *httpmock.MockTransport, branches []*storageapi.Branch) {
@@ -22,13 +20,12 @@ func registerMockedBranchesResponse(httpTransport *httpmock.MockTransport, branc
 	)
 }
 
-func createDialogs(t *testing.T, interactive bool) (*dialog.Dialogs, *expect.Console) {
+func createDialogs(t *testing.T, interactive bool) (*dialog.Dialogs, terminal.Console) {
 	t.Helper()
 
 	if interactive {
 		// Create virtual console
-		stdout := testhelper.VerboseStdout()
-		console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+		console, err := terminal.New(t)
 		assert.NoError(t, err)
 
 		// Create prompt

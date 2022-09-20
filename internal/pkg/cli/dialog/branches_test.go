@@ -160,7 +160,7 @@ func TestSelectBranchesInteractive(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Space) // -> select
 		assert.NoError(t, err)
-
+		
 		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // -> confirm
 		assert.NoError(t, err)

@@ -5,20 +5,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 )
 
 func TestPrompt_Select(t *testing.T) {
 	t.Parallel()
 
 	// Create virtual console
-	stdout := testhelper.VerboseStdout()
-	console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+	console, err := terminal.New(t)
 	assert.NoError(t, err)
 	p := interactive.New(console.Tty(), console.Tty(), console.Tty())
 
@@ -59,8 +57,7 @@ func TestPrompt_SelectIndex(t *testing.T) {
 	t.Parallel()
 
 	// Create virtual console
-	stdout := testhelper.VerboseStdout()
-	console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+	console, err := terminal.New(t)
 	assert.NoError(t, err)
 	p := interactive.New(console.Tty(), console.Tty(), console.Tty())
 
@@ -101,8 +98,7 @@ func TestPrompt_MultiSelect(t *testing.T) {
 	t.Parallel()
 
 	// Create virtual console
-	stdout := testhelper.VerboseStdout()
-	console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+	console, err := terminal.New(t)
 	assert.NoError(t, err)
 	p := interactive.New(console.Tty(), console.Tty(), console.Tty())
 
@@ -142,8 +138,7 @@ func TestPrompt_MultiSelectIndex(t *testing.T) {
 	t.Parallel()
 
 	// Create virtual console
-	stdout := testhelper.VerboseStdout()
-	console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+	console, err := terminal.New(t)
 	assert.NoError(t, err)
 	p := interactive.New(console.Tty(), console.Tty(), console.Tty())
 
@@ -183,8 +178,7 @@ func TestPrompt_ShowLeaveBlank(t *testing.T) {
 	t.Parallel()
 
 	// Create virtual console
-	stdout := testhelper.VerboseStdout()
-	console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+	console, err := terminal.New(t)
 	assert.NoError(t, err)
 	p := interactive.New(console.Tty(), console.Tty(), console.Tty())
 
@@ -229,8 +223,7 @@ func TestPrompt_HideLeaveBlank(t *testing.T) {
 	t.Parallel()
 
 	// Create virtual console
-	stdout := testhelper.VerboseStdout()
-	console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+	console, err := terminal.New(t)
 	assert.NoError(t, err)
 	p := interactive.New(console.Tty(), console.Tty(), console.Tty())
 

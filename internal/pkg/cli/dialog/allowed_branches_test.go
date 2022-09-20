@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Netflix/go-expect"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 )
 
 const (
@@ -235,7 +235,7 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 }
 
 // selectOption from interactive select box.
-func selectOption(t *testing.T, option int, c *expect.Console) {
+func selectOption(t *testing.T, option int, c terminal.Console) {
 	t.Helper()
 
 	var err error

@@ -51,7 +51,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		_, err = console.ExpectString("Please enter Keboola Storage API token. The value will be hidden.")
 		assert.NoError(t, err)
 
-		_, err = console.ExpectString("API token: ")
+		_, err = console.ExpectString("API token:")
 		assert.NoError(t, err)
 
 		time.Sleep(20 * time.Millisecond)

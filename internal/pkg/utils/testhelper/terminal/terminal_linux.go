@@ -1,0 +1,240 @@
+//go:build !windows && !darwin
+// +build !windows,!darwin
+
+package terminal
+
+import (
+	"fmt"
+	"io"
+	"os"
+	"runtime"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/ActiveState/vt10x"
+	"github.com/Netflix/go-expect"
+	"github.com/acarl005/stripansi"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
+)
+
+// console implements Console.
+type console struct {
+	*expect.Console
+	state *vt10x.State
+	tty   *tty
+}
+
+// tty implements Tty, it is an os.File wrapper for virtual terminal TTY.
+// Unlike os.File, when Close() is called,
+// all running Read and Write operations are immediately terminated,
+// so the test timeout does not occur.
+type tty struct {
+	file   *os.File
+	closed chan struct{}
+}
+
+func New(t *testing.T, opts ...expect.ConsoleOpt) (Console, error) {
+	t.Helper()
+
+	out := &console{}
+	var err error
+
+	// Log console output to stdout, if TEST_VERBOSE=true
+	debugStdout := testhelper.VerboseStdout()
+	opts = append(
+		opts,
+		expect.WithStdout(debugStdout),
+		expect.WithCloser(debugStdout),
+		expect.WithSendObserver(sendObserver(t, debugStdout)),
+		expect.WithExpectObserver(expectObserver(t, os.Stderr)),
+		expect.WithDefaultTimeout(expectTimeout),
+	)
+
+	out.Console, out.state, err = vt10x.NewVT10XConsole(opts...)
+	out.tty = &tty{file: out.Console.Tty(), closed: make(chan struct{})}
+	return out, err
+}
+
+func (c *console) Tty() Tty {
+	return c.tty
+}
+
+func (c *console) Send(s string) (int, error) {
+	c.waitBeforeSend()
+	return c.Console.Send(s)
+}
+
+func (c *console) SendLine(s string) (int, error) {
+	c.waitBeforeSend()
+	return c.Console.SendLine(s)
+}
+
+func (c *console) SendEnter() error {
+	_, err := c.Send("\n")
+	return err
+}
+
+func (c *console) SendSpace() error {
+	_, err := c.Send(" ")
+	return err
+}
+func (c *console) SendBackspace() error {
+	_, err := c.Send("\u0008")
+	return err
+}
+
+func (c *console) SendUpArrow() error {
+	_, err := c.Send("\u001B[A")
+	return err
+}
+
+func (c *console) SendDownArrow() error {
+	_, err := c.Send("\u001B[B")
+	return err
+}
+
+func (c *console) SendRightArrow() error {
+	_, err := c.Send("\u001B[C")
+	return err
+}
+
+func (c *console) SendLeftArrow() error {
+	_, err := c.Send("\u001B[D")
+	return err
+}
+
+func (c *console) ExpectEOF() (out string, err error) {
+	defer func() {
+		// Close STDIN on error (e.g. timeout)
+		if err != nil {
+			_ = c.Tty().Close()
+		}
+	}()
+
+	// Better error message
+	if str, err := c.Console.ExpectEOF(); err != nil {
+		return "", fmt.Errorf("error while waiting for EOF: %w", err)
+	} else {
+		return str, nil
+	}
+}
+
+// waitBeforeSend delays sending input.
+// We often Expect only the part of the output that is written to the console.
+// But we can send the next input only when the application expects it,
+// so all application output has to be written before.
+// The simplest solution is to wait a bit.
+func (c *console) waitBeforeSend() {
+	time.Sleep(sendDelay)
+}
+
+func (t *tty) Read(p []byte) (n int, err error) {
+	// Within the tests, interactive/Prompt.Editor is called.
+	// It starts a new OS process for the editor (to edit a longer value).
+	// In the tests, instead of the editor (vi, nano, ...), the command "true" is started, which ends immediately.
+	//
+	// The os/exec package works differently with stdin, depending on whether it is *os.File or another io.Reader.
+	// See: https://github.com/golang/go/blob/d7df872267f9071e678732f9469824d629cac595/src/os/exec/exec.go#L350-L357
+	// Our *tty implementation implements io.Reader, it is not an instance of *os.File.
+	//
+	// In os/exec, io.Copy function is called for io.Reader to redirect reader -> pipe.
+	// This blocks the test by unexpected reading from stdin, which does not happen during real execution (*os.File).
+	// For this reason, this call is terminated immediately.
+	if calledFromOsExecCmdStart() {
+		return n, io.EOF
+	}
+
+	done := make(chan struct{})
+	go func() {
+		n, err = t.file.Read(p)
+		close(done)
+	}()
+
+	select {
+	case <-t.closed:
+		return 0, fmt.Errorf("cannot read: tty closed")
+	case <-done:
+		return n, err
+	}
+}
+
+func (t *tty) Write(p []byte) (n int, err error) {
+	done := make(chan struct{})
+	go func() {
+		n, err = t.file.Write(p)
+		close(done)
+	}()
+
+	select {
+	case <-t.closed:
+		return 0, fmt.Errorf("cannot write: tty closed")
+	case <-done:
+		return n, err
+	}
+}
+
+func (t *tty) Fd() uintptr {
+	return t.file.Fd()
+}
+
+func (t *tty) Close() error {
+	select {
+	case <-t.closed:
+		return fmt.Errorf("tty already closed")
+	default:
+		close(t.closed)
+		return t.file.Close()
+	}
+}
+
+func sendObserver(t *testing.T, writer io.Writer) expect.SendObserver {
+	t.Helper()
+	return func(msg string, num int, err error) {
+		t.Helper()
+		if err == nil {
+			_, _ = fmt.Fprintf(writer, "\n\n>>> SEND: %+q\n\n", msg)
+		} else {
+			_, _ = fmt.Fprintf(writer, "\n\n>>> SEND %+q ERROR: %s\n\n", msg, err)
+		}
+	}
+}
+
+func expectObserver(t *testing.T, writer io.Writer) expect.ExpectObserver {
+	t.Helper()
+	return func(matchers []expect.Matcher, buf string, err error) {
+		t.Helper()
+		if err != nil {
+			var criteria []any
+			for _, m := range matchers {
+				criteria = append(criteria, m.Criteria())
+			}
+
+			_, _ = fmt.Fprintf(
+				writer,
+				"\n\nCould not meet expectations %v, error: %v\nTerminal snapshot:\n-----\n%s\n-----\n",
+				criteria, err, stripansi.Strip(buf),
+			)
+		}
+	}
+}
+
+func calledFromOsExecCmdStart() bool {
+	// Get last 20 call stack frames
+	rpc := make([]uintptr, 20)
+	runtime.Callers(0, rpc)
+	frames := runtime.CallersFrames(rpc)
+
+	// Search form os/exec.(*Cmd).Start method
+	for {
+		frame, more := frames.Next()
+		if strings.Contains(frame.Function, "os/exec.(*Cmd).Start") {
+			return true
+		}
+		if !more {
+			break
+		}
+	}
+	return false
+}
