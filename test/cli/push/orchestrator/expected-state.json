@@ -51,6 +51,20 @@
               },
               {
                 "id": 2,
+                "name": "Task 4 - configData",
+                "enabled": false,
+                "phase": 1,
+                "task": {
+                  "mode": "run",
+                  "componentId": "ex-generic-v2",
+                  "configData": {
+                    "params": "value"
+                  }
+                },
+                "continueOnFailure": true
+              },
+              {
+                "id": 3,
                 "name": "Task 2",
                 "enabled": true,
                 "phase": 2,
@@ -62,7 +76,7 @@
                 "continueOnFailure": false
               },
               {
-                "id": 3,
+                "id": 4,
                 "name": "Task 3 - disabled",
                 "enabled": false,
                 "phase": 2,
