@@ -54,9 +54,7 @@ func (p *Prompt) IsInteractive() bool {
 }
 
 func (p *Prompt) Printf(format string, a ...interface{}) {
-	if _, err := fmt.Fprintf(p.stdout, format, a...); err != nil {
-		panic(err)
-	}
+	_, _ = fmt.Fprintf(p.stdout, format, a...)
 }
 
 func (p *Prompt) Confirm(c *prompt.Confirm) bool {
