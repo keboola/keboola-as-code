@@ -20,11 +20,22 @@ const (
 
 type parser = viper.Viper
 
-// Options contains parsed flags and ENV variables.
+type SetBy int
+
+const (
+	SetByUnknown SetBy = iota
+	SetByFlag
+	SetByFlagDefault
+	SetByEnv
+	SetManually
+)
+
+// Options manages parsed flags, ENV files and ENV variables.
 type Options struct {
 	*parser
 	envNaming   *env.NamingConvention
 	envs        *env.Map
+	setBy       map[string]SetBy
 	Verbose     bool   // verbose mode, print details to console
 	VerboseApi  bool   // log each API request and response
 	LogFilePath string // path to the log file
@@ -34,6 +45,7 @@ func New() *Options {
 	envNaming := env.NewNamingConvention()
 	return &Options{
 		envNaming: envNaming,
+		setBy:     make(map[string]SetBy),
 		parser:    viper.New(),
 	}
 }
@@ -58,6 +70,16 @@ func (o *Options) GetEnvName(flagName string) string {
 	return o.envNaming.Replace(flagName)
 }
 
+func (o *Options) Set(key string, value any) {
+	o.parser.Set(key, value)
+	o.setBy[key] = SetManually
+}
+
+// KeySetBy method informs how the value of the key was set.
+func (o *Options) KeySetBy(key string) SetBy {
+	return o.setBy[key]
+}
+
 func (o *Options) bindFlagsAndEnvs(flags *pflag.FlagSet) error {
 	if err := o.BindPFlags(flags); err != nil {
 		return err
@@ -65,15 +87,20 @@ func (o *Options) bindFlagsAndEnvs(flags *pflag.FlagSet) error {
 
 	// For each know flag -> search for ENV
 	envs := make(map[string]interface{})
-	for _, flagName := range o.AllKeys() {
-		envName := o.envNaming.Replace(flagName)
-		if v, found := o.envs.Lookup(envName); found {
-			envs[flagName] = v
+	flags.VisitAll(func(flag *pflag.Flag) {
+		envName := o.envNaming.Replace(flag.Name)
+		if flag.Changed {
+			o.setBy[flag.Name] = SetByFlag
+		} else if v, found := o.envs.Lookup(envName); found {
+			envs[flag.Name] = v
+			o.setBy[flag.Name] = SetByEnv
+		} else {
+			o.setBy[flag.Name] = SetByFlagDefault
 		}
-	}
+	})
 
 	// Set config, it has < priority as flag.
-	// ... so flag value is used if set, otherwise env is used.
+	// ... so flag value is used if set, otherwise ENV is used.
 	return o.MergeConfigMap(envs)
 }
 
