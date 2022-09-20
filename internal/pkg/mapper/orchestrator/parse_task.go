@@ -163,6 +163,19 @@ func (p *taskParser) configPath() (string, error) {
 	return value, nil
 }
 
+func (p *taskParser) hasConfigData() bool {
+	taskRaw, found := p.content.Get(`task`)
+	if !found {
+		return false
+	}
+	task, ok := taskRaw.(*orderedmap.OrderedMap)
+	if !ok {
+		return false
+	}
+	_, found = task.Get(`configData`)
+	return found
+}
+
 func (p *taskParser) configData() (*orderedmap.OrderedMap, error) {
 	taskRaw, found := p.content.Get(`task`)
 	if !found {
