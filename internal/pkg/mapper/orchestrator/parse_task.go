@@ -109,8 +109,8 @@ func (p *taskParser) hasConfigId() bool {
 	if !ok {
 		return false
 	}
-	_, found = task.Get(`configId`)
-	return found
+	value, found := task.Get(`configId`)
+	return found && value != ""
 }
 
 func (p *taskParser) configId() (storageapi.ConfigID, error) {
@@ -147,8 +147,8 @@ func (p *taskParser) hasConfigPath() bool {
 	if !ok {
 		return false
 	}
-	_, found = task.Get(`configPath`)
-	return found
+	value, found := task.Get(`configPath`)
+	return found && value != ""
 }
 
 func (p *taskParser) configPath() (string, error) {
