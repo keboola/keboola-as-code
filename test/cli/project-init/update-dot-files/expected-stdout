@@ -1,4 +1,4 @@
-Loaded env file ".env.local"
+Loaded env file ".env.local".
 Created metadata directory ".keboola".
 Created manifest file ".keboola/manifest.json".
 Updated file ".env.local" - it contains the API token, keep it local and secret.

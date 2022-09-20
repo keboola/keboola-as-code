@@ -36,7 +36,7 @@ func LoadDotEnv(logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string)
 				logger.Warnf(`%s`, err.Error())
 				continue
 			}
-			logger.Infof("Loaded env file \"%s\"", path)
+			logger.Infof("Loaded env file \"%s\".", path)
 
 			// Merge ENVs, existing keys take precedence.
 			envs.Merge(fileEnvs, false)
