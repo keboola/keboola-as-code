@@ -25,6 +25,9 @@ type Phase struct {
 	Content   *orderedmap.OrderedMap `validate:"required"`
 }
 
+// Task is a part of an orchestration Phase.
+// Configuration can be defined by ConfigId or ConfigData.
+// ConfigId and ConfigData can be empty if Enabled=false.
 type Task struct {
 	TaskKey
 	AbsPath     `validate:"dive"`
@@ -32,6 +35,7 @@ type Task struct {
 	Enabled     bool
 	ComponentId storageapi.ComponentID `validate:"required"`
 	ConfigId    storageapi.ConfigID
+	ConfigData  *orderedmap.OrderedMap
 	ConfigPath  string                 // target config path if any
 	Content     *orderedmap.OrderedMap `validate:"dive"`
 }

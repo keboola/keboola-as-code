@@ -52,6 +52,18 @@
           "mode": "run"
         },
         "continueOnFailure": true
+      },
+      {
+        "id": 1004,
+        "name": "Task 4 - configData",
+        "enabled": false,
+        "phase": 123,
+        "task": {
+          "componentId": "%%TEST_ORCHESTRATOR_TASK_4_COMPONENT_ID%%",
+          "configData": {"params":  "value"},
+          "mode": "run"
+        },
+        "continueOnFailure": true
       }
     ]
   },

@@ -56,6 +56,11 @@ func TestMapAfterLocalLoad(t *testing.T) {
 				phasesDir+`/002-phase-with-deps/001-task-4/task.json`,
 				`{"name":"Task 4","task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false,"enabled":true}`,
 			),
+		filesystem.
+			NewRawFile(
+				phasesDir+`/002-phase-with-deps/002-task-5/task.json`,
+				`{"name":"Task 5 - configData","task":{"mode":"run","configData":{"params":"value"},"componentId":"foo.bar3"},"continueOnFailure":false,"enabled":true}`,
+			),
 	}
 	for _, file := range files {
 		assert.NoError(t, fs.WriteFile(file))
@@ -75,6 +80,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/002-task-2/task.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/001-phase/003-task-3/task.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/phase.json"
 DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-4/task.json"
+DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/002-task-5/task.json"
 `
 	wildcards.Assert(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages(), ``)
 
@@ -189,6 +195,23 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/001-task-4/t
 						ComponentId: `foo.bar2`,
 						ConfigId:    `456`,
 						ConfigPath:  `branch/extractor/target-config-3`,
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
+							{
+								Key: `task`,
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
+									{Key: `mode`, Value: `run`},
+								}),
+							},
+							{Key: `continueOnFailure`, Value: false},
+						}),
+					},
+					{
+						TaskKey:     model.TaskKey{PhaseKey: phase2Key, Index: 1},
+						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `002-task-5`),
+						Name:        `Task 5 - configData`,
+						Enabled:     true,
+						ComponentId: `foo.bar3`,
+						ConfigData:  orderedmap.FromPairs([]orderedmap.Pair{{Key: "params", Value: "value"}}),
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,

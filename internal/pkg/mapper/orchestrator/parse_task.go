@@ -100,6 +100,19 @@ func (p *taskParser) componentId() (storageapi.ComponentID, error) {
 	return storageapi.ComponentID(value), nil
 }
 
+func (p *taskParser) hasConfigId() bool {
+	taskRaw, found := p.content.Get(`task`)
+	if !found {
+		return false
+	}
+	task, ok := taskRaw.(*orderedmap.OrderedMap)
+	if !ok {
+		return false
+	}
+	value, found := task.Get(`configId`)
+	return found && value != ""
+}
+
 func (p *taskParser) configId() (storageapi.ConfigID, error) {
 	taskRaw, found := p.content.Get(`task`)
 	if !found {
@@ -134,8 +147,8 @@ func (p *taskParser) hasConfigPath() bool {
 	if !ok {
 		return false
 	}
-	_, found = task.Get(`configPath`)
-	return found
+	value, found := task.Get(`configPath`)
+	return found && value != ""
 }
 
 func (p *taskParser) configPath() (string, error) {
@@ -159,6 +172,41 @@ func (p *taskParser) configPath() (string, error) {
 		return "", fmt.Errorf(`"task.configPath" cannot be empty`)
 	}
 	task.Delete(`configPath`)
+	p.content.Set(`task`, task)
+	return value, nil
+}
+
+func (p *taskParser) hasConfigData() bool {
+	taskRaw, found := p.content.Get(`task`)
+	if !found {
+		return false
+	}
+	task, ok := taskRaw.(*orderedmap.OrderedMap)
+	if !ok {
+		return false
+	}
+	_, found = task.Get(`configData`)
+	return found
+}
+
+func (p *taskParser) configData() (*orderedmap.OrderedMap, error) {
+	taskRaw, found := p.content.Get(`task`)
+	if !found {
+		return nil, fmt.Errorf(`missing "task" key`)
+	}
+	task, ok := taskRaw.(*orderedmap.OrderedMap)
+	if !ok {
+		return nil, fmt.Errorf(`"task" key must be object, found %T`, taskRaw)
+	}
+	raw, found := task.Get(`configData`)
+	if !found {
+		return nil, fmt.Errorf(`missing "task.configData" key`)
+	}
+	value, ok := raw.(*orderedmap.OrderedMap)
+	if !ok {
+		return nil, fmt.Errorf(`"task.configData" must be object, found %T`, raw)
+	}
+	task.Delete(`configData`)
 	p.content.Set(`task`, task)
 	return value, nil
 }
