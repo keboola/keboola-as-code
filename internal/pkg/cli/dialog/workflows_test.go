@@ -3,7 +3,6 @@ package dialog_test
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -34,28 +33,24 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 		_, err := console.ExpectString(`Generate "validate" workflow?`)
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(`n`) // no
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString(`Generate "push" workflow?`)
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter - yes
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString(`Generate "pull" workflow?`)
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(`n`) // no
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString(`Please select the main GitHub branch name:`)
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter - main
 		assert.NoError(t, err)
 

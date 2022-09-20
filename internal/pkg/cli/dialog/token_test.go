@@ -3,7 +3,6 @@ package dialog_test
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -25,7 +24,6 @@ func TestAskStorageApiTokenInteractive(t *testing.T) {
 		_, err := console.ExpectString("API token: ")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(`my-secret`)
 		assert.NoError(t, err)
 

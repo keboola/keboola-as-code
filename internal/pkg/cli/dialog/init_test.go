@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/spf13/pflag"
@@ -40,7 +39,6 @@ func TestDialogs_AskHostAndToken(t *testing.T) {
 		_, err = console.ExpectString("API host: ")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(`foo.bar.com`)
 		assert.NoError(t, err)
 
@@ -50,7 +48,6 @@ func TestDialogs_AskHostAndToken(t *testing.T) {
 		_, err = console.ExpectString("API token: ")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(`my-secret-token`)
 		assert.NoError(t, err)
 
@@ -97,42 +94,36 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 		_, err := console.ExpectString("Allowed project's branches:")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter, first option "only main branch"
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString(`Generate workflows files for GitHub Actions?`)
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter - yes
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString(`Generate "validate" workflow?`)
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter - yes
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString(`Generate "push" workflow?`)
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter - yes
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString(`Generate "pull" workflow?`)
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(`n`) // no
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString(`Please select the main GitHub branch name:`)
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter - main
 		assert.NoError(t, err)
 

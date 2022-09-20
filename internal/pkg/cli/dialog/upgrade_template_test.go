@@ -3,7 +3,6 @@ package dialog_test
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
@@ -153,23 +152,18 @@ func TestAskUpgradeTemplate(t *testing.T) {
 		_, err = console.ExpectString("Step 4 - Step Description")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(DownArrow) // move to step 4
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(DownArrow)
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(DownArrow)
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(Space) // select step 4
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(Enter) // confirm the selection
 		assert.NoError(t, err)
 
@@ -182,7 +176,6 @@ func TestAskUpgradeTemplate(t *testing.T) {
 		_, err = console.ExpectString("(old value 1)")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(Enter) // use default/old value
 		assert.NoError(t, err)
 
@@ -195,7 +188,6 @@ func TestAskUpgradeTemplate(t *testing.T) {
 		_, err = console.ExpectString("(old value 2)")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("new value 2") // fill new value
 		assert.NoError(t, err)
 
@@ -205,7 +197,6 @@ func TestAskUpgradeTemplate(t *testing.T) {
 		_, err = console.ExpectString("input4:")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("value 4")
 		assert.NoError(t, err)
 

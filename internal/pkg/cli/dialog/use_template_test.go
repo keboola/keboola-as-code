@@ -6,7 +6,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -43,14 +42,12 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		_, err := console.ExpectString("Select the target branch:")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter - Main
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Instance Name:")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("My Instance")
 		assert.NoError(t, err)
 
@@ -61,18 +58,15 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		assert.NoError(t, err)
 
 		// username can contain alphanum only
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("u-s")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("username can only contain alphanumeric characters")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(strings.Repeat(Backspace, 3)) // remove "u-s"
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("username")
 		assert.NoError(t, err)
 
@@ -82,25 +76,21 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		_, err = console.ExpectString("Facebook password")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("password")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Enter your age")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("text") // enter invalid string value
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString(`Sorry, your reply was invalid: value "text" is not integer`)
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(strings.Repeat(Backspace, 4)) // remove "text"
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("25") // enter valid numeric value
 		assert.NoError(t, err)
 
@@ -110,7 +100,6 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		_, err = console.ExpectString("Restricted content")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("yes")
 		assert.NoError(t, err)
 
@@ -126,15 +115,12 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		_, err = console.ExpectString("Wine")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.DownArrow) // -> Wine
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Space) // -> select
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // -> confirm
 		assert.NoError(t, err)
 
@@ -153,23 +139,18 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		_, err = console.ExpectString("Whiskey")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Space) // -> select
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.DownArrow) // -> Vodka
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.DownArrow) // -> Whiskey
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Space) // -> select
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // -> confirm
 		assert.NoError(t, err)
 
@@ -288,35 +269,30 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 		_, err := console.ExpectString("Select the target branch:")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter - Main
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Instance Name:")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("My Instance")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Enter your Facebook username")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("username")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Enter your Facebook password")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("password")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Enter your age")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("15")
 		assert.NoError(t, err)
 
@@ -491,14 +467,12 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 		_, err := console.ExpectString("Select the target branch:")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter - Main
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Instance Name:")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("My Instance")
 		assert.NoError(t, err)
 
@@ -508,27 +482,21 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 		_, err = console.ExpectString("Select steps:")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(DownArrow) // skip step 1
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(DownArrow) // skip step 2
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(Space) // select step 3
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(DownArrow) // move to step 4
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(Space) // select step 4
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(Enter) // confirm the selection
 		assert.NoError(t, err)
 
@@ -538,7 +506,6 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 		_, err = console.ExpectString("input3:")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("value for input 3")
 		assert.NoError(t, err)
 
@@ -548,7 +515,6 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 		_, err = console.ExpectString("input4:")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("value for input 4")
 		assert.NoError(t, err)
 

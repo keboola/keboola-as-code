@@ -3,7 +3,6 @@ package dialog_test
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -43,7 +42,6 @@ func TestSelectConfigInteractive(t *testing.T) {
 		_, err = console.ExpectString("Config 3 (foo.bar:3)")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(testhelper.DownArrow) // down arrow -> select Config 2
 		assert.NoError(t, err)
 
@@ -141,27 +139,21 @@ func TestSelectConfigsInteractive(t *testing.T) {
 		_, err = console.ExpectString("Config 5 (foo.bar:5)")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.DownArrow) // -> Config 2
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Space) // -> select
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.DownArrow) // -> Config 3
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.DownArrow) // -> Config 4
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Space) // -> select
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // -> confirm
 		assert.NoError(t, err)
 

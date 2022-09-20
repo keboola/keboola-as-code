@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -34,7 +33,6 @@ func TestAskCreateBranch(t *testing.T) {
 		_, err := console.ExpectString("Enter a name for the new branch")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(`Foo Bar`)
 		assert.NoError(t, err)
 
@@ -101,21 +99,18 @@ func TestAskCreateConfig(t *testing.T) {
 		_, err := console.ExpectString("Select the target branch")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter - Main
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Select the target component")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("extractor generic\n")
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Enter a name for the new config")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(`Foo Bar`)
 		assert.NoError(t, err)
 
@@ -197,21 +192,18 @@ func TestAskCreateRow(t *testing.T) {
 		_, err := console.ExpectString("Select the target branch")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter - My Config
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Select the target config")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter - My Config
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Enter a name for the new config row")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(`Foo Bar`)
 		assert.NoError(t, err)
 

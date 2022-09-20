@@ -46,14 +46,12 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 		_, err := console.ExpectString("Select branch:")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter - Main
 		assert.NoError(t, err)
 
 		_, err = console.ExpectString("Select template instance:")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Enter) // enter - tmpl1
 		assert.NoError(t, err)
 
@@ -63,7 +61,6 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 		_, err = console.ExpectString("(Old Name)")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine("New Name")
 		assert.NoError(t, err)
 

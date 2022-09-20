@@ -3,7 +3,6 @@ package dialog_test
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -74,7 +73,6 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 		_, err = console.ExpectString("API URL:")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(`foo.bar.com`)
 		assert.NoError(t, err)
 
@@ -84,7 +82,6 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 		_, err = console.ExpectString("API Token:")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(`VAR1`)
 		assert.NoError(t, err)
 

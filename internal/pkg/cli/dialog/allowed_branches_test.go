@@ -210,13 +210,10 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 		selectOption(t, 4, console) // type custom definitions
 		_, err := console.ExpectString("Please enter one branch definition per line.")
 		assert.NoError(t, err)
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send("f**\n")
 		assert.NoError(t, err)
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send("b*z\n")
 		assert.NoError(t, err)
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send("\n\n\n")
 		assert.NoError(t, err)
 		_, err = console.ExpectEOF()

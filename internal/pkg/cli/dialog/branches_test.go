@@ -3,7 +3,6 @@ package dialog_test
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -43,7 +42,6 @@ func TestSelectBranchInteractive(t *testing.T) {
 		_, err = console.ExpectString("Branch 3 (3)")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(testhelper.DownArrow) // down arrow -> select Branch 2
 		assert.NoError(t, err)
 
@@ -141,27 +139,21 @@ func TestSelectBranchesInteractive(t *testing.T) {
 		_, err = console.ExpectString("Branch 5 (5)")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.DownArrow) // -> Branch 2
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Space) // -> select
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.DownArrow) // -> Branch 3
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.DownArrow) // -> Branch 4
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.Send(testhelper.Space) // -> select
 		assert.NoError(t, err)
-		
-		time.Sleep(20 * time.Millisecond)
+
 		_, err = console.Send(testhelper.Enter) // -> confirm
 		assert.NoError(t, err)
 

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -27,7 +26,6 @@ func TestAskStorageApiHostInteractive(t *testing.T) {
 		_, err := console.ExpectString("API host: ")
 		assert.NoError(t, err)
 
-		time.Sleep(20 * time.Millisecond)
 		_, err = console.SendLine(`https://foo.bar.com/`)
 		assert.NoError(t, err)
 
