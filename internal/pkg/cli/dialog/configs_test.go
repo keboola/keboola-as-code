@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 func TestSelectConfigInteractive(t *testing.T) {
@@ -42,8 +41,9 @@ func TestSelectConfigInteractive(t *testing.T) {
 		_, err = console.ExpectString("Config 3 (foo.bar:3)")
 		assert.NoError(t, err)
 
-		_, err = console.SendLine(testhelper.DownArrow) // down arrow -> select Config 2
-		assert.NoError(t, err)
+		// down arrow -> select Config 2
+		assert.NoError(t, console.SendDownArrow())
+		assert.NoError(t, console.SendEnter())
 
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)
@@ -139,23 +139,18 @@ func TestSelectConfigsInteractive(t *testing.T) {
 		_, err = console.ExpectString("Config 5 (foo.bar:5)")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.DownArrow) // -> Config 2
+		assert.NoError(t, console.SendDownArrow()) // -> Config 2
+
+		assert.NoError(t, console.SendSpace()) // -> select
+
+		assert.NoError(t, console.SendDownArrow()) // -> Config 3
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Space) // -> select
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow()) // -> Config 4
 
-		_, err = console.Send(testhelper.DownArrow) // -> Config 3
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendSpace()) // -> select
 
-		_, err = console.Send(testhelper.DownArrow) // -> Config 4
-		assert.NoError(t, err)
-
-		_, err = console.Send(testhelper.Space) // -> select
-		assert.NoError(t, err)
-
-		_, err = console.Send(testhelper.Enter) // -> confirm
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> confirm
 
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)

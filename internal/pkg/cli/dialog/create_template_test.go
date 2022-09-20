@@ -16,7 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )
 
@@ -70,20 +69,17 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		_, err = console.ExpectString("Template ID:")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - use generated default value, "my-super-template"
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - use generated default value, "my-super-template"
 
 		_, err = console.ExpectString("Please enter a short template description.")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // -> start editor
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> start editor
 
 		_, err = console.ExpectString("Select the source branch:")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - Main
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - Main
 
 		_, err = console.ExpectString("Select the configurations to include in the template:")
 		assert.NoError(t, err)
@@ -97,50 +93,40 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		_, err = console.ExpectString("Config 3 (keboola.my-component:3)")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Space) // -> select Config 1
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendSpace()) // -> select Config 1
 
-		_, err = console.Send(testhelper.DownArrow) // -> Config 2
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow()) // -> Config 2
 
-		_, err = console.Send(testhelper.DownArrow) // -> Config 3
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow()) // -> Config 3
 
-		_, err = console.Send(testhelper.Space) // -> select
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendSpace()) // -> select
 
-		_, err = console.Send(testhelper.Enter) // -> confirm
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> confirm
 
 		_, err = console.ExpectString("Please enter a human readable ID for each config and config row.")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // -> start editor
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> start editor
 
 		_, err = console.ExpectString("Please select which fields in the configurations should be user inputs.")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // -> start editor
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> start editor
 
 		_, err = console.ExpectString("Please define steps and groups for user inputs specification.")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // -> start editor
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> start editor
 
 		_, err = console.ExpectString("Please complete the user inputs specification.")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // -> start editor
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> start editor
 
 		_, err = console.ExpectString("Select the components that are used in the templates.")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter
 
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)

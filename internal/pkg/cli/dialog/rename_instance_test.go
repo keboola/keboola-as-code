@@ -10,7 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	renameOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -46,14 +45,12 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 		_, err := console.ExpectString("Select branch:")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - Main
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - Main
 
 		_, err = console.ExpectString("Select template instance:")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - tmpl1
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - tmpl1
 
 		_, err = console.ExpectString("Instance Name")
 		assert.NoError(t, err)

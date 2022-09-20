@@ -15,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -42,8 +41,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		_, err := console.ExpectString("Select the target branch:")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - Main
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - Main
 
 		_, err = console.ExpectString("Instance Name:")
 		assert.NoError(t, err)
@@ -115,14 +113,11 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		_, err = console.ExpectString("Wine")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.DownArrow) // -> Wine
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow()) // -> Wine
 
-		_, err = console.Send(testhelper.Space) // -> select
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendSpace()) // -> select
 
-		_, err = console.Send(testhelper.Enter) // -> confirm
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> confirm
 
 		_, err = console.ExpectString("Anything stronger?")
 		assert.NoError(t, err)
@@ -139,20 +134,15 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		_, err = console.ExpectString("Whiskey")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Space) // -> select
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendSpace()) // -> select
 
-		_, err = console.Send(testhelper.DownArrow) // -> Vodka
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow()) // -> Vodka
 
-		_, err = console.Send(testhelper.DownArrow) // -> Whiskey
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow()) // -> Whiskey
 
-		_, err = console.Send(testhelper.Space) // -> select
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendSpace()) // -> select
 
-		_, err = console.Send(testhelper.Enter) // -> confirm
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> confirm
 
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)
@@ -269,8 +259,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 		_, err := console.ExpectString("Select the target branch:")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - Main
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - Main
 
 		_, err = console.ExpectString("Instance Name:")
 		assert.NoError(t, err)
@@ -467,8 +456,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 		_, err := console.ExpectString("Select the target branch:")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - Main
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - Main
 
 		_, err = console.ExpectString("Instance Name:")
 		assert.NoError(t, err)

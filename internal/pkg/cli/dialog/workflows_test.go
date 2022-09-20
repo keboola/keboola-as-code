@@ -9,7 +9,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 )
 
@@ -39,8 +38,7 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 		_, err = console.ExpectString(`Generate "push" workflow?`)
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - yes
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - yes
 
 		_, err = console.ExpectString(`Generate "pull" workflow?`)
 		assert.NoError(t, err)
@@ -51,8 +49,7 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 		_, err = console.ExpectString(`Please select the main GitHub branch name:`)
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - main
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - main
 
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)

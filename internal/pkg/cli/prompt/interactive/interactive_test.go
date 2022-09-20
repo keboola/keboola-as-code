@@ -28,8 +28,7 @@ func TestPrompt_Select(t *testing.T) {
 		_, err := console.ExpectString("My Select")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - default value
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - default value
 
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)
@@ -68,8 +67,7 @@ func TestPrompt_SelectIndex(t *testing.T) {
 		_, err := console.ExpectString("My Select")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - default value
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - default value
 
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)
@@ -108,8 +106,7 @@ func TestPrompt_MultiSelect(t *testing.T) {
 		_, err := console.ExpectString("My Select")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - default value
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - default value
 
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)
@@ -147,8 +144,7 @@ func TestPrompt_MultiSelectIndex(t *testing.T) {
 		_, err := console.ExpectString("My Select")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - default value
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - default value
 
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)
@@ -189,8 +185,7 @@ func TestPrompt_ShowLeaveBlank(t *testing.T) {
 		_, err = console.ExpectString("Leave blank for default value.")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - default value
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - default value
 
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)
@@ -233,8 +228,7 @@ func TestPrompt_HideLeaveBlank(t *testing.T) {
 		_, err = console.ExpectString("Leave blank for default value.")
 		assert.Error(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - default value
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - default value
 
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)

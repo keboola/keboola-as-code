@@ -14,7 +14,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/init"
@@ -94,26 +93,22 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 		_, err := console.ExpectString("Allowed project's branches:")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter, first option "only main branch"
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter, first option "only main branch"
 
 		_, err = console.ExpectString(`Generate workflows files for GitHub Actions?`)
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - yes
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - yes
 
 		_, err = console.ExpectString(`Generate "validate" workflow?`)
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - yes
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - yes
 
 		_, err = console.ExpectString(`Generate "push" workflow?`)
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - yes
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - yes
 
 		_, err = console.ExpectString(`Generate "pull" workflow?`)
 		assert.NoError(t, err)
@@ -124,8 +119,7 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 		_, err = console.ExpectString(`Please select the main GitHub branch name:`)
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - main
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - main
 
 		_, err = console.ExpectEOF()
 		assert.NoError(t, err)

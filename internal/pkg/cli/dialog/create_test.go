@@ -12,7 +12,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
@@ -99,8 +98,7 @@ func TestAskCreateConfig(t *testing.T) {
 		_, err := console.ExpectString("Select the target branch")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - Main
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - Main
 
 		_, err = console.ExpectString("Select the target component")
 		assert.NoError(t, err)
@@ -192,14 +190,12 @@ func TestAskCreateRow(t *testing.T) {
 		_, err := console.ExpectString("Select the target branch")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - My Config
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - My Config
 
 		_, err = console.ExpectString("Select the target config")
 		assert.NoError(t, err)
 
-		_, err = console.Send(testhelper.Enter) // enter - My Config
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - My Config
 
 		_, err = console.ExpectString("Enter a name for the new config row")
 		assert.NoError(t, err)
