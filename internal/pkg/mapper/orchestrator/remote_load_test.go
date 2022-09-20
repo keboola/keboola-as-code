@@ -39,17 +39,18 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
     {
       "id": 1001,
       "name": "Task 1",
+      "enabled": true,
       "phase": 123,
       "task": {
         "componentId": "foo.bar1",
         "configId": "123",
         "mode": "run"
       },
-      "continueOnFailure": false,
-      "enabled": true
+      "continueOnFailure": false
     },
     {
       "id": 1002,
+      "enabled": true,
       "name": "Task 2",
       "phase": 456,
       "task": {
@@ -57,11 +58,11 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
         "configId": "456",
         "mode": "run"
       },
-      "continueOnFailure": false,
-      "enabled": true
+      "continueOnFailure": false
     },
     {
       "id": 1003,
+      "enabled": false,
       "name": "Task 3",
       "phase": 123,
       "task": {
@@ -69,8 +70,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
         "configId": "789",
         "mode": "run"
       },
-      "continueOnFailure": false,
-      "enabled": false
+      "continueOnFailure": false
     }
   ]
 }
@@ -117,33 +117,33 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 	assert.Equal(t, config.Id, rel3.(*model.UsedInOrchestratorRelation).ConfigId)
 
 	// Assert orchestration
+	phase1Key := model.PhaseKey{
+		BranchId:    123,
+		ComponentId: storageapi.OrchestratorComponentID,
+		ConfigId:    `456`,
+		Index:       0,
+	}
+	pahse2key := model.PhaseKey{
+		BranchId:    123,
+		ComponentId: storageapi.OrchestratorComponentID,
+		ConfigId:    `456`,
+		Index:       1,
+	}
 	assert.Equal(t, `{}`, json.MustEncodeString(config.Content, false))
 	assert.Equal(t, &model.Orchestration{
 		Phases: []*model.Phase{
 			{
-				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: storageapi.OrchestratorComponentID,
-					ConfigId:    `456`,
-					Index:       0,
-				},
+				PhaseKey:  phase1Key,
 				AbsPath:   model.NewAbsPath(`branch/config/phases`, `001-phase`),
 				DependsOn: []model.PhaseKey{},
 				Name:      `Phase`,
 				Content:   orderedmap.New(),
 				Tasks: []*model.Task{
 					{
-						TaskKey: model.TaskKey{
-							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: storageapi.OrchestratorComponentID,
-								ConfigId:    `456`,
-								Index:       0,
-							},
-							Index: 0,
-						},
+						TaskKey:     model.TaskKey{PhaseKey: phase1Key, Index: 0},
 						AbsPath:     model.NewAbsPath(`branch/config/phases/001-phase`, `001-task-1`),
 						Name:        `Task 1`,
+						Enabled:     true,
 						ComponentId: `foo.bar1`,
 						ConfigId:    `123`,
 						ConfigPath:  `branch/extractor/target-config-1`,
@@ -155,21 +155,13 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 								}),
 							},
 							{Key: `continueOnFailure`, Value: false},
-							{Key: `enabled`, Value: true},
 						}),
 					},
 					{
-						TaskKey: model.TaskKey{
-							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: storageapi.OrchestratorComponentID,
-								ConfigId:    `456`,
-								Index:       0,
-							},
-							Index: 1,
-						},
+						TaskKey:     model.TaskKey{PhaseKey: phase1Key, Index: 1},
 						AbsPath:     model.NewAbsPath(`branch/config/phases/001-phase`, `002-task-3`),
 						Name:        `Task 3`,
+						Enabled:     false,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `789`,
 						ConfigPath:  `branch/extractor/target-config-2`,
@@ -181,19 +173,13 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 								}),
 							},
 							{Key: `continueOnFailure`, Value: false},
-							{Key: `enabled`, Value: false},
 						}),
 					},
 				},
 			},
 			{
-				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: storageapi.OrchestratorComponentID,
-					ConfigId:    `456`,
-					Index:       1,
-				},
-				AbsPath: model.NewAbsPath(`branch/config/phases`, `002-phase-with-deps`),
+				PhaseKey: pahse2key,
+				AbsPath:  model.NewAbsPath(`branch/config/phases`, `002-phase-with-deps`),
 				DependsOn: []model.PhaseKey{
 					{
 						BranchId:    123,
@@ -208,17 +194,10 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 				}),
 				Tasks: []*model.Task{
 					{
-						TaskKey: model.TaskKey{
-							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: storageapi.OrchestratorComponentID,
-								ConfigId:    `456`,
-								Index:       1,
-							},
-							Index: 0,
-						},
+						TaskKey:     model.TaskKey{PhaseKey: pahse2key, Index: 0},
 						AbsPath:     model.NewAbsPath(`branch/config/phases/002-phase-with-deps`, `001-task-2`),
 						Name:        `Task 2`,
+						Enabled:     true,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `456`,
 						ConfigPath:  `branch/extractor/target-config-3`,
@@ -230,7 +209,6 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 								}),
 							},
 							{Key: `continueOnFailure`, Value: false},
-							{Key: `enabled`, Value: true},
 						}),
 					},
 				},
@@ -351,6 +329,7 @@ WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchest
 							Index: 0,
 						},
 						Name:        `Task 1`,
+						Enabled:     true,
 						ComponentId: `foo.bar1`,
 						ConfigId:    `123`,
 						ConfigPath:  `branch/extractor/target-config-1`,

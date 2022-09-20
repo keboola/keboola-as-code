@@ -28,9 +28,10 @@ type Phase struct {
 type Task struct {
 	TaskKey
 	AbsPath     `validate:"dive"`
-	Name        string                 `validate:"required"`
+	Name        string `validate:"required"`
+	Enabled     bool
 	ComponentId storageapi.ComponentID `validate:"required"`
-	ConfigId    storageapi.ConfigID    `validate:"required"`
+	ConfigId    storageapi.ConfigID
 	ConfigPath  string                 // target config path if any
 	Content     *orderedmap.OrderedMap `validate:"dive"`
 }

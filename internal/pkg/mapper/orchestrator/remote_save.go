@@ -57,6 +57,7 @@ func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orch
 			taskContent := orderedmap.New()
 			taskContent.Set(`id`, taskId)
 			taskContent.Set(`name`, task.Name)
+			taskContent.Set(`enabled`, task.Enabled)
 			taskContent.Set(`phase`, phaseId)
 
 			// Copy additional content
@@ -78,8 +79,12 @@ func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orch
 			}
 
 			// Set componentId/configId
-			target.Set(`componentId`, task.ComponentId.String())
-			target.Set(`configId`, task.ConfigId.String())
+			if len(task.ComponentId) > 0 {
+				target.Set(`componentId`, task.ComponentId.String())
+			}
+			if len(task.ConfigId) > 0 {
+				target.Set(`configId`, task.ConfigId.String())
+			}
 			taskContent.Set(`task`, *target)
 
 			// Add to output

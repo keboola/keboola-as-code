@@ -20,26 +20,38 @@
       {
         "id": 1001,
         "name": "Task 1",
+        "enabled": true,
         "phase": 123,
         "task": {
           "componentId": "%%TEST_ORCHESTRATOR_TASK_1_COMPONENT_ID%%",
           "configId": "%%TEST_ORCHESTRATOR_TASK_1_CONFIG_ID%%",
           "mode": "run"
         },
-        "continueOnFailure": false,
-        "enabled": true
+        "continueOnFailure": false
       },
       {
         "id": 1002,
         "name": "Task 2",
+        "enabled": true,
         "phase": 456,
         "task": {
           "componentId": "%%TEST_ORCHESTRATOR_TASK_2_COMPONENT_ID%%",
           "configId": "%%TEST_ORCHESTRATOR_TASK_2_CONFIG_ID%%",
           "mode": "run"
         },
-        "continueOnFailure": false,
-        "enabled": true
+        "continueOnFailure": false
+      },
+      {
+        "id": 1003,
+        "name": "Task 3 - disabled",
+        "enabled": false,
+        "phase": 456,
+        "task": {
+          "componentId": "%%TEST_ORCHESTRATOR_TASK_3_COMPONENT_ID%%",
+          "configId": "",
+          "mode": "run"
+        },
+        "continueOnFailure": true
       }
     ]
   },

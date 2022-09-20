@@ -197,21 +197,38 @@ func (l *localLoader) parseTaskConfig(task *model.Task) error {
 		errors.Append(err)
 	}
 
-	// Get target config path
-	targetConfigPath, err := parser.configPath()
+	// Get enabled
+	task.Enabled, err = parser.enabled()
 	if err != nil {
 		errors.Append(err)
 	}
 
-	// Get target config
-	targetConfig, err := l.getTargetConfig(targetConfigPath)
+	// Get target config path
+	hasConfigPath := parser.hasConfigPath()
+	targetConfigPath, err := parser.configPath()
 	if err != nil {
-		errors.Append(err)
-	} else if targetConfig != nil {
-		task.ComponentId = targetConfig.ComponentId
-		task.ConfigId = targetConfig.Id
-		task.ConfigPath = l.MustGet(targetConfig.Key()).Path()
-		markConfigUsedInOrchestrator(targetConfig, l.config)
+		// ConfigPath can be missing if task is not enabled
+		if task.Enabled {
+			errors.Append(err)
+		}
+	} else {
+		// Get target config
+		targetConfig, err := l.getTargetConfig(targetConfigPath)
+		if err != nil {
+			errors.Append(err)
+		} else if targetConfig != nil {
+			task.ComponentId = targetConfig.ComponentId
+			task.ConfigId = targetConfig.Id
+			task.ConfigPath = l.MustGet(targetConfig.Key()).Path()
+			markConfigUsedInOrchestrator(targetConfig, l.config)
+		}
+	}
+
+	// Load componentId, if configPath/configId is not set
+	if !hasConfigPath {
+		if task.ComponentId, err = parser.componentId(); err != nil {
+			errors.Append(err)
+		}
 	}
 
 	// Add task to phase

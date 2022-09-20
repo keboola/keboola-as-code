@@ -84,6 +84,34 @@ func TestParseTask(t *testing.T) {
 			fmt.Errorf(`"name" must be string, found float64`),
 		},
 		{
+			`{"enabled":true, "foo":"bar"}`,
+			`{"foo":"bar"}`,
+			func(p *taskParser) (interface{}, error) { return p.enabled() },
+			true,
+			nil,
+		},
+		{
+			`{"enabled":false, "foo":"bar"}`,
+			`{"foo":"bar"}`,
+			func(p *taskParser) (interface{}, error) { return p.enabled() },
+			false,
+			nil,
+		},
+		{
+			`{"foo":"bar"}`,
+			`{"foo":"bar"}`,
+			func(p *taskParser) (interface{}, error) { return p.enabled() },
+			true, // true is default value if key is missing
+			nil,
+		},
+		{
+			`{"enabled":12.34,"foo":"bar"}`,
+			`{"enabled":12.34,"foo":"bar"}`,
+			func(p *taskParser) (interface{}, error) { return p.enabled() },
+			true, // true is default value
+			fmt.Errorf(`"enabled" must be boolean, found float64`),
+		},
+		{
 			`{"phase":123,"foo":"bar"}`,
 			`{"foo":"bar"}`,
 			func(p *taskParser) (interface{}, error) { return p.phaseId() },

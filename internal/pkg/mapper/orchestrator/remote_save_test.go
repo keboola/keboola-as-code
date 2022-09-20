@@ -44,6 +44,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 							Index: 0,
 						},
 						Name:        `Task 1`,
+						Enabled:     true,
 						ComponentId: `foo.bar1`,
 						ConfigId:    `123`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
@@ -54,7 +55,6 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 								}),
 							},
 							{Key: `continueOnFailure`, Value: false},
-							{Key: `enabled`, Value: true},
 						}),
 					},
 					{
@@ -68,6 +68,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 							Index: 1,
 						},
 						Name:        `Task 3`,
+						Enabled:     false,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `789`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
@@ -78,7 +79,6 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 								}),
 							},
 							{Key: `continueOnFailure`, Value: false},
-							{Key: `enabled`, Value: false},
 						}),
 					},
 				},
@@ -106,6 +106,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 							Index: 0,
 						},
 						Name:        `Task 2`,
+						Enabled:     true,
 						ComponentId: `foo.bar2`,
 						ConfigId:    `456`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
@@ -116,7 +117,6 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 								}),
 							},
 							{Key: `continueOnFailure`, Value: false},
-							{Key: `enabled`, Value: true},
 						}),
 					},
 				},
@@ -160,38 +160,38 @@ func TestMapBeforeRemoteSave(t *testing.T) {
     {
       "id": 1,
       "name": "Task 1",
+      "enabled": true,
       "phase": 1,
       "task": {
         "mode": "run",
         "componentId": "foo.bar1",
         "configId": "123"
       },
-      "continueOnFailure": false,
-      "enabled": true
+      "continueOnFailure": false
     },
     {
       "id": 2,
       "name": "Task 3",
+      "enabled": false,
       "phase": 1,
       "task": {
         "mode": "run",
         "componentId": "foo.bar2",
         "configId": "789"
       },
-      "continueOnFailure": false,
-      "enabled": false
+      "continueOnFailure": false
     },
     {
       "id": 3,
       "name": "Task 2",
+      "enabled": true,
       "phase": 2,
       "task": {
         "mode": "run",
         "componentId": "foo.bar2",
         "configId": "456"
       },
-      "continueOnFailure": false,
-      "enabled": true
+      "continueOnFailure": false
     }
   ]
 }

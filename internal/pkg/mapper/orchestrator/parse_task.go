@@ -45,6 +45,20 @@ func (p *taskParser) name() (string, error) {
 	return value, nil
 }
 
+func (p *taskParser) enabled() (bool, error) {
+	raw, found := p.content.Get(`enabled`)
+	if !found {
+		// Use default value
+		return true, nil
+	}
+	value, ok := raw.(bool)
+	if !ok {
+		return true, fmt.Errorf(`"enabled" must be boolean, found %T`, raw)
+	}
+	p.content.Delete(`enabled`)
+	return value, nil
+}
+
 func (p *taskParser) phaseId() (int, error) {
 	raw, found := p.content.Get(`phase`)
 	if !found {
@@ -109,6 +123,19 @@ func (p *taskParser) configId() (storageapi.ConfigID, error) {
 	task.Delete(`configId`)
 	p.content.Set(`task`, task)
 	return storageapi.ConfigID(value), nil
+}
+
+func (p *taskParser) hasConfigPath() bool {
+	taskRaw, found := p.content.Get(`task`)
+	if !found {
+		return false
+	}
+	task, ok := taskRaw.(*orderedmap.OrderedMap)
+	if !ok {
+		return false
+	}
+	_, found = task.Get(`configPath`)
+	return found
 }
 
 func (p *taskParser) configPath() (string, error) {
