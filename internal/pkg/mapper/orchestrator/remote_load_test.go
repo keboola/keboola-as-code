@@ -71,6 +71,18 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
         "mode": "run"
       },
       "continueOnFailure": false
+    },
+    {
+      "id": 1004,
+      "enabled": true,
+      "name": "Task 4 - ConfigData",
+      "phase": 456,
+      "task": {
+        "componentId": "foo.bar3",
+        "configData":{"params":"value"},
+        "mode": "run"
+      },
+      "continueOnFailure": false
     }
   ]
 }
@@ -201,6 +213,23 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 						ComponentId: `foo.bar2`,
 						ConfigId:    `456`,
 						ConfigPath:  `branch/extractor/target-config-3`,
+						Content: orderedmap.FromPairs([]orderedmap.Pair{
+							{
+								Key: `task`,
+								Value: orderedmap.FromPairs([]orderedmap.Pair{
+									{Key: `mode`, Value: `run`},
+								}),
+							},
+							{Key: `continueOnFailure`, Value: false},
+						}),
+					},
+					{
+						TaskKey:     model.TaskKey{PhaseKey: pahse2key, Index: 1},
+						AbsPath:     model.NewAbsPath(`branch/config/phases/002-phase-with-deps`, `002-task-4-config-data`),
+						Name:        `Task 4 - ConfigData`,
+						Enabled:     true,
+						ComponentId: `foo.bar3`,
+						ConfigData:  orderedmap.FromPairs([]orderedmap.Pair{{Key: "params", Value: "value"}}),
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,

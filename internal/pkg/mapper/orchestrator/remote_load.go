@@ -224,14 +224,20 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 		errors.Append(err)
 	}
 
-	// Config ID
+	// ConfigId / ConfigData
 	if len(task.ComponentId) > 0 {
-		task.ConfigId, err = parser.configId()
-
-		// UI can save disabled task without ConfigId,
-		// so missing ConfigId error is ignored for disabled tasks.
-		if task.Enabled && err != nil {
-			errors.Append(err)
+		if parser.hasConfigId() {
+			task.ConfigId, err = parser.configId()
+			if err != nil {
+				errors.Append(err)
+			}
+		} else if parser.hasConfigData() {
+			task.ConfigData, err = parser.configData()
+			if err != nil {
+				errors.Append(err)
+			}
+		} else if task.Enabled {
+			errors.Append(fmt.Errorf("task.configId, or task.configData and task.componentId must be specified"))
 		}
 	}
 

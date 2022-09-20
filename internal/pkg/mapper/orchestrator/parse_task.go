@@ -100,6 +100,19 @@ func (p *taskParser) componentId() (storageapi.ComponentID, error) {
 	return storageapi.ComponentID(value), nil
 }
 
+func (p *taskParser) hasConfigId() bool {
+	taskRaw, found := p.content.Get(`task`)
+	if !found {
+		return false
+	}
+	task, ok := taskRaw.(*orderedmap.OrderedMap)
+	if !ok {
+		return false
+	}
+	_, found = task.Get(`configId`)
+	return found
+}
+
 func (p *taskParser) configId() (storageapi.ConfigID, error) {
 	taskRaw, found := p.content.Get(`task`)
 	if !found {
