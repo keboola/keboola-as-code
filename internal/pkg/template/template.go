@@ -527,6 +527,12 @@ func replacePlaceholdersInManifest(prjState *project.State, tmplInst string) err
 	file.Content = regexpcache.
 		MustCompile(`"id": "\d+"`).
 		ReplaceAllString(file.Content, `"id": "%s"`)
+	file.Content = regexpcache.
+		MustCompile(`\\"idInProject\\":\\"\d+\\"`).
+		ReplaceAllString(file.Content, `\"idInProject\":\"%s\"`)
+	file.Content = regexpcache.
+		MustCompile(`\\"rowId\\":\\"\d+\\"`).
+		ReplaceAllString(file.Content, `\"rowId\":\"%s\"`)
 
 	return prjState.Fs().WriteFile(file)
 }
