@@ -52,6 +52,27 @@
         "KBC.KAC.templates.templateId": "my-template"
       },
       "rows": []
+    },
+    {
+      "branchId": __MAIN_BRANCH_ID__,
+      "componentId": "keboola.ex-db-mysql",
+      "id": "%s",
+      "path": "extractor/keboola.ex-db-mysql/with-rows",
+      "metadata": {
+        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"with-rows\"}",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"ex-db-mysql-db-host\",\"key\":\"parameters.db.host\"}]",
+        "KBC.KAC.templates.instanceId": "%s",
+        "KBC.KAC.templates.repository": "keboola",
+        "KBC.KAC.templates.rowsIds": "[{\"idInProject\":\"%s\",\"idInTemplate\":\"users\"}]",
+        "KBC.KAC.templates.rowsInputs": "[{\"rowId\":\"%s\",\"input\":\"ex-db-mysql-incremental\",\"key\":\"parameters.incremental\"}]",
+        "KBC.KAC.templates.templateId": "my-template"
+      },
+      "rows": [
+        {
+          "id": "%s",
+          "path": "rows/users"
+        }
+      ]
     }
   ]
 }
