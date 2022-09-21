@@ -9,11 +9,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 )
 
-func EnvCommand(p dependencies.Provider) *cobra.Command {
+func SourcesCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   `env`,
-		Short: helpmsg.Read(`dbt/generate/env/short`),
-		Long:  helpmsg.Read(`dbt/generate/env/long`),
+		Use:   `sources`,
+		Short: helpmsg.Read(`dbt/generate/sources/short`),
+		Long:  helpmsg.Read(`dbt/generate/sources/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("not implemented")
 		},

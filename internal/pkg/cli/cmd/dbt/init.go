@@ -1,6 +1,8 @@
 package dbt
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
@@ -12,6 +14,9 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 		Use:   `dbt`,
 		Short: helpmsg.Read(`dbt/init/short`),
 		Long:  helpmsg.Read(`dbt/init/long`),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return fmt.Errorf("not implemented")
+		},
 	}
 	return cmd
 }

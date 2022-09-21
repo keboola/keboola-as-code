@@ -14,8 +14,9 @@ func Commands(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`dbt/generate/long`),
 	}
 	cmd.AddCommand(
-		EnvCommand(p),
 		ProfilesCommand(p),
+		SourcesCommand(p),
+		EnvCommand(p),
 	)
 	return cmd
 }
