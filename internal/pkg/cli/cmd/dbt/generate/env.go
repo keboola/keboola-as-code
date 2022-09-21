@@ -18,5 +18,8 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 			return fmt.Errorf("not implemented")
 		},
 	}
+
+	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
+
 	return cmd
 }
