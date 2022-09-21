@@ -44,6 +44,13 @@ Available Commands:
   remote create                  Create an object in the project.
   remote create branch           Create a new branch from the main branch.
 
+  dbt                            Work with DBT inside your repository.
+  dbt init                       Initialize profiles, sources, and environment variables for use with DBT.
+  dbt generate                   Generate profiles, sources, or environment variables for use with DBT.
+  dbt generate profiles          Generate profiles for use with DBT.
+  dbt generate sources           Generate sources for use with DBT.
+  dbt generate env               Generate environment variables for use with DBT.
+
   template                       Manage templates in the repository directory.
   template list                  List templates in the repository.
   template describe              Describe template and its inputs.

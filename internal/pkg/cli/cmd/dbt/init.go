@@ -11,7 +11,7 @@ import (
 
 func InitCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   `dbt`,
+		Use:   `init`,
 		Short: helpmsg.Read(`dbt/init/short`),
 		Long:  helpmsg.Read(`dbt/init/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {

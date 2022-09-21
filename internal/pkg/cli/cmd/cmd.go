@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/sync"
@@ -169,6 +170,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		ci.Commands(p),
 		local.Commands(p, envs),
 		remote.Commands(p),
+		dbt.Commands(p),
 	)
 
 	// Templates are private beta, can be enabled by ENV

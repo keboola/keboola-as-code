@@ -37,6 +37,7 @@ func TestCliSubCommands(t *testing.T) {
 		"ci",
 		"local",
 		"remote",
+		"dbt",
 	}, names)
 }
 
@@ -57,6 +58,7 @@ func TestCliSubCommandsAndAliases(t *testing.T) {
 		"ci",
 		"local",
 		"remote",
+		"dbt",
 		"i",
 		"d",
 		"pl",
