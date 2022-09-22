@@ -61,6 +61,10 @@ func (c *console) Tty() Tty {
 	return c.tty
 }
 
+func (c *console) TtyRaw() *os.File {
+	return c.Console.Tty()
+}
+
 func (c *console) String() string {
 	return c.state.String()
 }
