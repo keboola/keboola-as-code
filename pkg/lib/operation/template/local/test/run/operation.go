@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/keboola/go-client/pkg/jobsqueueapi"
 	"github.com/keboola/go-client/pkg/storageapi"
@@ -235,7 +236,10 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	if err != nil {
 		return err
 	}
-	return jobsqueueapi.WaitForJob(ctx, queueClient, job)
+
+	timeoutCtx, cancelFn := context.WithTimeout(ctx, time.Minute*10)
+	defer cancelFn()
+	return jobsqueueapi.WaitForJob(timeoutCtx, queueClient, job)
 }
 
 func reloadPrjState(ctx context.Context, prjState *project.State) error {
