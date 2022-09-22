@@ -13,6 +13,8 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/testtemplateinputs"
 )
 
 type EnvProvider interface {
@@ -26,6 +28,22 @@ func ReplaceEnvsStringWithSeparator(str string, provider EnvProvider, envSeparat
 		ReplaceAllStringFunc(str, func(s string) string {
 			return provider.MustGet(strings.Trim(s, envSeparator))
 		})
+}
+
+// ReplaceEnvsStringWithSeparatorE replaces ENVs in given string with chosen separator.
+func ReplaceEnvsStringWithSeparatorE(str string, provider testtemplateinputs.TestInputsEnvProvider, envSeparator string) (string, error) {
+	errs := utils.NewMultiError()
+	res := regexp.
+		MustCompile(fmt.Sprintf(`%s[a-zA-Z0-9][a-zA-Z0-9\-_]*[a-zA-Z0-9]%s`, envSeparator, envSeparator)).
+		ReplaceAllStringFunc(str, func(s string) string {
+			res, err := provider.Get(strings.Trim(s, envSeparator))
+			if err != nil {
+				errs.Append(err)
+				return s
+			}
+			return res
+		})
+	return res, errs.ErrorOrNil()
 }
 
 // ReplaceEnvsString replaces ENVs in given string.

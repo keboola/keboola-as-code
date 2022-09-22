@@ -17,7 +17,7 @@ func ReadInputValues(ctx context.Context, tmpl *template.Template, test *templat
 	if err != nil {
 		return nil, err
 	}
-	inputsFile, err := test.Inputs(envInputsProvider, testhelper.ReplaceEnvsStringWithSeparator, "##")
+	inputsFile, err := test.Inputs(envInputsProvider, testhelper.ReplaceEnvsStringWithSeparatorE, "##")
 	if err != nil {
 		return nil, err
 	}
