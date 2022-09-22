@@ -21,10 +21,12 @@ type EnvProvider interface {
 	MustGet(key string) string
 }
 
+const envPlaceholderTemplate = `%s[a-zA-Z0-9][a-zA-Z0-9\-_]*[a-zA-Z0-9]%s`
+
 // ReplaceEnvsStringWithSeparator replaces ENVs in given string with chosen separator.
 func ReplaceEnvsStringWithSeparator(str string, provider EnvProvider, envSeparator string) string {
 	return regexp.
-		MustCompile(fmt.Sprintf(`%s[a-zA-Z0-9][a-zA-Z0-9\-_]*[a-zA-Z0-9]%s`, envSeparator, envSeparator)).
+		MustCompile(fmt.Sprintf(envPlaceholderTemplate, envSeparator, envSeparator)).
 		ReplaceAllStringFunc(str, func(s string) string {
 			return provider.MustGet(strings.Trim(s, envSeparator))
 		})
@@ -34,7 +36,7 @@ func ReplaceEnvsStringWithSeparator(str string, provider EnvProvider, envSeparat
 func ReplaceEnvsStringWithSeparatorE(str string, provider testtemplateinputs.TestInputsEnvProvider, envSeparator string) (string, error) {
 	errs := utils.NewMultiError()
 	res := regexp.
-		MustCompile(fmt.Sprintf(`%s[a-zA-Z0-9][a-zA-Z0-9\-_]*[a-zA-Z0-9]%s`, envSeparator, envSeparator)).
+		MustCompile(fmt.Sprintf(envPlaceholderTemplate, envSeparator, envSeparator)).
 		ReplaceAllStringFunc(str, func(s string) string {
 			res, err := provider.Get(strings.Trim(s, envSeparator))
 			if err != nil {
