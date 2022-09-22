@@ -54,6 +54,7 @@ func (p *Prompt) IsInteractive() bool {
 }
 
 func (p *Prompt) Printf(format string, a ...interface{}) {
+	// The error can occur mainly in tests, if stdout of the virtual terminal is closed on test failure.
 	_, _ = fmt.Fprintf(p.stdout, format, a...)
 }
 
