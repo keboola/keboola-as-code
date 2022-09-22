@@ -138,7 +138,7 @@ func (c *console) waitBeforeSend() {
 	time.Sleep(sendDelay)
 }
 
-func (t *tty) Read(p []byte) (n int, err error) {
+func (t *tty) Read(p []byte) (int, error) {
 	// Within the tests, interactive/Prompt.Editor is called.
 	// It starts a new OS process for the editor (to edit a longer value).
 	// In the tests, instead of the editor (vi, nano, ...), the command "true" is started, which ends immediately.
@@ -151,10 +151,13 @@ func (t *tty) Read(p []byte) (n int, err error) {
 	// This blocks the test by unexpected reading from stdin, which does not happen during real execution (*os.File).
 	// For this reason, this call is terminated immediately.
 	if calledFromOsExecCmdStart() {
-		return n, io.EOF
+		return 0, io.EOF
 	}
 
+	var n int
+	var err error
 	done := make(chan struct{})
+
 	go func() {
 		n, err = t.file.Read(p)
 		close(done)
@@ -168,8 +171,11 @@ func (t *tty) Read(p []byte) (n int, err error) {
 	}
 }
 
-func (t *tty) Write(p []byte) (n int, err error) {
+func (t *tty) Write(p []byte) (int, error) {
+	var n int
+	var err error
 	done := make(chan struct{})
+
 	go func() {
 		n, err = t.file.Write(p)
 		close(done)
