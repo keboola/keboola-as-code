@@ -32,26 +32,19 @@ func TestDialogs_AskHostAndToken(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Please enter Keboola Storage API host, eg. \"connection.keboola.com\".")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please enter Keboola Storage API host, eg. \"connection.keboola.com\"."))
 
-		_, err = console.ExpectString("API host: ")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("API host: "))
 
-		_, err = console.SendLine(`foo.bar.com`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine(`foo.bar.com`))
 
-		_, err = console.ExpectString("Please enter Keboola Storage API token. The value will be hidden.")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please enter Keboola Storage API token. The value will be hidden."))
 
-		_, err = console.ExpectString("API token: ")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("API token: "))
 
-		_, err = console.SendLine(`my-secret-token`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine(`my-secret-token`))
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -90,39 +83,31 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Allowed project's branches:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Allowed project's branches:"))
 
 		assert.NoError(t, console.SendEnter()) // enter, first option "only main branch"
 
-		_, err = console.ExpectString(`Generate workflows files for GitHub Actions?`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Generate workflows files for GitHub Actions?`))
 
 		assert.NoError(t, console.SendEnter()) // enter - yes
 
-		_, err = console.ExpectString(`Generate "validate" workflow?`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Generate "validate" workflow?`))
 
 		assert.NoError(t, console.SendEnter()) // enter - yes
 
-		_, err = console.ExpectString(`Generate "push" workflow?`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Generate "push" workflow?`))
 
 		assert.NoError(t, console.SendEnter()) // enter - yes
 
-		_, err = console.ExpectString(`Generate "pull" workflow?`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Generate "pull" workflow?`))
+		
+		assert.NoError(t, console.SendLine(`n`))
 
-		_, err = console.SendLine(`n`) // no
-		assert.NoError(t, err)
-
-		_, err = console.ExpectString(`Please select the main GitHub branch name:`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Please select the main GitHub branch name:`))
 
 		assert.NoError(t, console.SendEnter()) // enter - main
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run

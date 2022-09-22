@@ -21,14 +21,11 @@ func TestAskStorageApiTokenInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("API token: ")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("API token: "))
 
-		_, err = console.SendLine(`my-secret`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine(`my-secret`))
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run

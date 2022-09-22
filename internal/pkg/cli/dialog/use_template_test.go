@@ -38,80 +38,56 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Select the target branch:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select the target branch:"))
 
 		assert.NoError(t, console.SendEnter()) // enter - Main
 
-		_, err = console.ExpectString("Instance Name:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Instance Name:"))
 
-		_, err = console.SendLine("My Instance")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("My Instance"))
 
-		_, err = console.ExpectString("Enter your Facebook username")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Enter your Facebook username"))
 
-		_, err = console.ExpectString("Facebook username")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Facebook username"))
 
 		// username can contain alphanum only
-		_, err = console.SendLine("u-s")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("u-s"))
 
-		_, err = console.ExpectString("username can only contain alphanumeric characters")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("username can only contain alphanumeric characters"))
 
-		_, err = console.Send(strings.Repeat(Backspace, 3)) // remove "u-s"
-		assert.NoError(t, err)
+		assert.NoError(t, console.Send(strings.Repeat(Backspace, 3))) // remove "u-s"
 
-		_, err = console.SendLine("username")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("username"))
 
-		_, err = console.ExpectString("Enter your Facebook password")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Enter your Facebook password"))
 
-		_, err = console.ExpectString("Facebook password")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Facebook password"))
 
-		_, err = console.SendLine("password")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("password"))
 
-		_, err = console.ExpectString("Enter your age")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Enter your age"))
 
-		_, err = console.SendLine("text") // enter invalid string value
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("text")) // enter invalid string value
 
-		_, err = console.ExpectString(`Sorry, your reply was invalid: value "text" is not integer`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Sorry, your reply was invalid: value "text" is not integer`))
 
-		_, err = console.Send(strings.Repeat(Backspace, 4)) // remove "text"
-		assert.NoError(t, err)
+		assert.NoError(t, console.Send(strings.Repeat(Backspace, 4))) // remove "text"
 
-		_, err = console.SendLine("25") // enter valid numeric value
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("25")) // enter valid numeric value
 
-		_, err = console.ExpectString("Do you want to see restricted content?")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Do you want to see restricted content?"))
 
-		_, err = console.ExpectString("Restricted content")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Restricted content"))
 
-		_, err = console.SendLine("yes")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("yes"))
 
-		_, err = console.ExpectString("What do you like to drink?")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("What do you like to drink?"))
 
-		_, err = console.ExpectString("Favorite drink")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Favorite drink"))
 
-		_, err = console.ExpectString("Beer")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Beer"))
 
-		_, err = console.ExpectString("Wine")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Wine"))
 
 		assert.NoError(t, console.SendDownArrow()) // -> Wine
 
@@ -119,20 +95,15 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 
 		assert.NoError(t, console.SendEnter()) // -> confirm
 
-		_, err = console.ExpectString("Anything stronger?")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Anything stronger?"))
 
-		_, err = console.ExpectString("Stronger drinks")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Stronger drinks"))
 
-		_, err = console.ExpectString("Rum")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Rum"))
 
-		_, err = console.ExpectString("Vodka")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Vodka"))
 
-		_, err = console.ExpectString("Whiskey")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Whiskey"))
 
 		assert.NoError(t, console.SendSpace()) // -> select
 
@@ -144,8 +115,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 
 		assert.NoError(t, console.SendEnter()) // -> confirm
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -256,37 +226,27 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Select the target branch:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select the target branch:"))
 
 		assert.NoError(t, console.SendEnter()) // enter - Main
 
-		_, err = console.ExpectString("Instance Name:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Instance Name:"))
 
-		_, err = console.SendLine("My Instance")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("My Instance"))
 
-		_, err = console.ExpectString("Enter your Facebook username")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Enter your Facebook username"))
 
-		_, err = console.SendLine("username")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("username"))
 
-		_, err = console.ExpectString("Enter your Facebook password")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Enter your Facebook password"))
 
-		_, err = console.SendLine("password")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("password"))
 
-		_, err = console.ExpectString("Enter your age")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Enter your age"))
 
-		_, err = console.SendLine("15")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("15"))
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -453,61 +413,43 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Select the target branch:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select the target branch:"))
 
 		assert.NoError(t, console.SendEnter()) // enter - Main
 
-		_, err = console.ExpectString("Instance Name:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Instance Name:"))
 
-		_, err = console.SendLine("My Instance")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("My Instance"))
 
-		_, err = console.ExpectString("Please select which steps you want to fill.")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please select which steps you want to fill."))
 
-		_, err = console.ExpectString("Select steps:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select steps:"))
 
-		_, err = console.Send(DownArrow) // skip step 1
-		assert.NoError(t, err)
+		assert.NoError(t, console.Send(DownArrow)) // skip step 1
 
-		_, err = console.Send(DownArrow) // skip step 2
-		assert.NoError(t, err)
+		assert.NoError(t, console.Send(DownArrow)) // skip step 2
 
-		_, err = console.Send(Space) // select step 3
-		assert.NoError(t, err)
+		assert.NoError(t, console.Send(Space)) // select step 3
 
-		_, err = console.Send(DownArrow) // move to step 4
-		assert.NoError(t, err)
+		assert.NoError(t, console.Send(DownArrow)) // move to step 4
 
-		_, err = console.Send(Space) // select step 4
-		assert.NoError(t, err)
+		assert.NoError(t, console.Send(Space)) // select step 4
 
-		_, err = console.Send(Enter) // confirm the selection
-		assert.NoError(t, err)
+		assert.NoError(t, console.Send(Enter)) // confirm the selection
 
-		_, err = console.ExpectString("Step 3")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Step 3"))
 
-		_, err = console.ExpectString("input3:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("input3:"))
 
-		_, err = console.SendLine("value for input 3")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("value for input 3"))
 
-		_, err = console.ExpectString("Step 4")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Step 4"))
 
-		_, err = console.ExpectString("input4:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("input4:"))
 
-		_, err = console.SendLine("value for input 4")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("value for input 4"))
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups, d.Options())

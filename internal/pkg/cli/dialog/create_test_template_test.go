@@ -58,35 +58,25 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Default Group")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Default Group"))
 
-		_, err = console.ExpectString("Default Step")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Default Step"))
 
-		_, err = console.ExpectString("Default Step Description")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Default Step Description"))
 
-		_, err = console.ExpectString("url description")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("url description"))
 
-		_, err = console.ExpectString("API URL:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("API URL:"))
 
-		_, err = console.SendLine(`foo.bar.com`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine(`foo.bar.com`))
 
-		_, err = console.ExpectString(`Enter the name of the environment variable that will fill input "API Token". Note that it will get prefix KBC_SECRET_.`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Enter the name of the environment variable that will fill input "API Token". Note that it will get prefix KBC_SECRET_.`))
 
-		_, err = console.ExpectString("API Token:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("API Token:"))
+		
+		assert.NoError(t, console.SendLine(`VAR1`))
 
-		_, err = console.SendLine(`VAR1`)
-		assert.NoError(t, err)
-
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run

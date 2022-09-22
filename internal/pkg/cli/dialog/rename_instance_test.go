@@ -42,27 +42,21 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Select branch:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select branch:"))
 
 		assert.NoError(t, console.SendEnter()) // enter - Main
 
-		_, err = console.ExpectString("Select template instance:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select template instance:"))
 
 		assert.NoError(t, console.SendEnter()) // enter - tmpl1
 
-		_, err = console.ExpectString("Instance Name")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Instance Name"))
 
-		_, err = console.ExpectString("(Old Name)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("(Old Name)"))
 
-		_, err = console.SendLine("New Name")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("New Name"))
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run

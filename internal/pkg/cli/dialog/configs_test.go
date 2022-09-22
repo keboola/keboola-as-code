@@ -29,24 +29,19 @@ func TestSelectConfigInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("LABEL:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("LABEL:"))
 
-		_, err = console.ExpectString("Config 1 (foo.bar:1)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 1 (foo.bar:1)"))
 
-		_, err = console.ExpectString("Config 2 (foo.bar:2)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 2 (foo.bar:2)"))
 
-		_, err = console.ExpectString("Config 3 (foo.bar:3)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 3 (foo.bar:3)"))
 
 		// down arrow -> select Config 2
 		assert.NoError(t, console.SendDownArrow())
 		assert.NoError(t, console.SendEnter())
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -121,30 +116,23 @@ func TestSelectConfigsInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("LABEL:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("LABEL:"))
 
-		_, err = console.ExpectString("Config 1 (foo.bar:1)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 1 (foo.bar:1)"))
 
-		_, err = console.ExpectString("Config 2 (foo.bar:2)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 2 (foo.bar:2)"))
 
-		_, err = console.ExpectString("Config 3 (foo.bar:3)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 3 (foo.bar:3)"))
 
-		_, err = console.ExpectString("Config 4 (foo.bar:4)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 4 (foo.bar:4)"))
 
-		_, err = console.ExpectString("Config 5 (foo.bar:5)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 5 (foo.bar:5)"))
 
 		assert.NoError(t, console.SendDownArrow()) // -> Config 2
 
 		assert.NoError(t, console.SendSpace()) // -> select
 
 		assert.NoError(t, console.SendDownArrow()) // -> Config 3
-		assert.NoError(t, err)
 
 		assert.NoError(t, console.SendDownArrow()) // -> Config 4
 
@@ -152,8 +140,7 @@ func TestSelectConfigsInteractive(t *testing.T) {
 
 		assert.NoError(t, console.SendEnter()) // -> confirm
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run

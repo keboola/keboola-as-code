@@ -25,13 +25,11 @@ func TestPrompt_Select(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("My Select")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("My Select"))
 
 		assert.NoError(t, console.SendEnter()) // enter - default value
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select
@@ -64,13 +62,11 @@ func TestPrompt_SelectIndex(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("My Select")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("My Select"))
 
 		assert.NoError(t, console.SendEnter()) // enter - default value
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select
@@ -103,13 +99,11 @@ func TestPrompt_MultiSelect(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("My Select")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("My Select"))
 
 		assert.NoError(t, console.SendEnter()) // enter - default value
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select
@@ -141,13 +135,11 @@ func TestPrompt_MultiSelectIndex(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("My Select")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("My Select"))
 
 		assert.NoError(t, console.SendEnter()) // enter - default value
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select
@@ -179,16 +171,13 @@ func TestPrompt_ShowLeaveBlank(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("My input")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("My input"))
 
-		_, err = console.ExpectString("Leave blank for default value.")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Leave blank for default value."))
 
 		assert.NoError(t, console.SendEnter()) // enter - default value
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select
@@ -222,16 +211,14 @@ func TestPrompt_HideLeaveBlank(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("My input")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("My input"))
 
-		_, err = console.ExpectString("Leave blank for default value.")
+		err = console.ExpectString("Leave blank for default value.")
 		assert.Error(t, err)
 
 		assert.NoError(t, console.SendEnter()) // enter - default value
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select

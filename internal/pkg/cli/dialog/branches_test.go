@@ -29,24 +29,19 @@ func TestSelectBranchInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("LABEL:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("LABEL:"))
 
-		_, err = console.ExpectString("Branch 1 (1)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 1 (1)"))
 
-		_, err = console.ExpectString("Branch 2 (2)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 2 (2)"))
 
-		_, err = console.ExpectString("Branch 3 (3)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 3 (3)"))
 
 		// down arrow -> select Branch 2
 		assert.NoError(t, console.SendDownArrow())
 		assert.NoError(t, console.SendEnter())
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -121,23 +116,17 @@ func TestSelectBranchesInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("LABEL:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("LABEL:"))
 
-		_, err = console.ExpectString("Branch 1 (1)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 1 (1)"))
 
-		_, err = console.ExpectString("Branch 2 (2)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 2 (2)"))
 
-		_, err = console.ExpectString("Branch 3 (3)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 3 (3)"))
 
-		_, err = console.ExpectString("Branch 4 (4)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 4 (4)"))
 
-		_, err = console.ExpectString("Branch 5 (5)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 5 (5)"))
 
 		assert.NoError(t, console.SendDownArrow()) // -> Branch 2
 
@@ -151,8 +140,7 @@ func TestSelectBranchesInteractive(t *testing.T) {
 
 		assert.NoError(t, console.SendEnter()) // -> confirm
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run

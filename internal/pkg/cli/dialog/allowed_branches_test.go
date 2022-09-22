@@ -76,8 +76,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		selectOption(t, 1, console) // only main branch
-		_, err := console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -108,8 +107,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		selectOption(t, 2, console) // all branches
-		_, err := console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -145,34 +143,23 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		selectOption(t, 3, console) // selected branches
-		_, err := console.ExpectString(`Main (10)`)
-		assert.NoError(t, err)
-		_, err = console.ExpectString(`foo (20)`)
-		assert.NoError(t, err)
-		_, err = console.ExpectString(`bar (30)`)
-		assert.NoError(t, err)
-		_, err = console.ExpectString(`baz (40)`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Main (10)`))
+		assert.NoError(t, console.ExpectString(`foo (20)`))
+		assert.NoError(t, console.ExpectString(`bar (30)`))
+		assert.NoError(t, console.ExpectString(`baz (40)`))
 		time.Sleep(50 * time.Millisecond)
 
 		// Skip Main
-		_, err = console.Send(DownArrow)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow())
 		// Select foo
-		_, err = console.Send(Space)
-		assert.NoError(t, err)
-		_, err = console.Send(DownArrow)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendSpace())
+		assert.NoError(t, console.SendDownArrow())
 		// Skip bar
-		_, err = console.Send(DownArrow)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow())
 		// Select baz
-		_, err = console.Send(Space)
-		assert.NoError(t, err)
-		_, err = console.Send(Enter)
-		assert.NoError(t, err)
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendSpace())
+		assert.NoError(t, console.SendEnter())
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -208,16 +195,11 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		selectOption(t, 4, console) // type custom definitions
-		_, err := console.ExpectString("Please enter one branch definition per line.")
-		assert.NoError(t, err)
-		_, err = console.Send("f**\n")
-		assert.NoError(t, err)
-		_, err = console.Send("b*z\n")
-		assert.NoError(t, err)
-		_, err = console.Send("\n\n\n")
-		assert.NoError(t, err)
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please enter one branch definition per line."))
+		assert.NoError(t, console.Send("f**\n"))
+		assert.NoError(t, console.Send("b*z\n"))
+		assert.NoError(t, console.Send("\n\n\n"))
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -235,22 +217,13 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 func selectOption(t *testing.T, option int, c terminal.Console) {
 	t.Helper()
 
-	var err error
-	_, err = c.ExpectString("Allowed project's branches:")
-	assert.NoError(t, err)
-	_, err = c.ExpectString(ModeMainBranch)
-	assert.NoError(t, err)
-	_, err = c.ExpectString(ModeAllBranches)
-	assert.NoError(t, err)
-	_, err = c.ExpectString(ModeSelectSpecific)
-	assert.NoError(t, err)
-	_, err = c.ExpectString(ModeTypeList)
-	assert.NoError(t, err)
-	time.Sleep(50 * time.Millisecond)
+	assert.NoError(t, c.ExpectString("Allowed project's branches:"))
+	assert.NoError(t, c.ExpectString(ModeMainBranch))
+	assert.NoError(t, c.ExpectString(ModeAllBranches))
+	assert.NoError(t, c.ExpectString(ModeSelectSpecific))
+	assert.NoError(t, c.ExpectString(ModeTypeList))
 	for i := 1; i < option; i++ {
-		_, err = c.Send(DownArrow)
-		assert.NoError(t, err)
+		assert.NoError(t, c.SendDownArrow())
 	}
-	_, err = c.Send(Enter) // enter
-	assert.NoError(t, err)
+	assert.NoError(t, c.SendEnter())
 }

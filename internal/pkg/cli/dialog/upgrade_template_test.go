@@ -121,87 +121,60 @@ func TestAskUpgradeTemplate(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Please select which steps you want to fill.")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please select which steps you want to fill."))
 
 		// Step 1 and 2 are pre-selected, because Input 1 and 2 have been found in config/row.
-		_, err = console.ExpectString("Select steps:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select steps:"))
 
-		_, err = console.ExpectString("[x]")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("[x]"))
 
-		_, err = console.ExpectString("Step 1 - Step Description")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Step 1 - Step Description"))
 
-		_, err = console.ExpectString("[x]")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("[x]"))
 
-		_, err = console.ExpectString("Step 2 - Step Description")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Step 2 - Step Description"))
 
-		_, err = console.ExpectString("[ ]")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("[ ]"))
 
-		_, err = console.ExpectString("Step 3 - Step Description")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Step 3 - Step Description"))
 
-		_, err = console.ExpectString("[ ]")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("[ ]"))
 
-		_, err = console.ExpectString("Step 4 - Step Description")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Step 4 - Step Description"))
 
-		_, err = console.Send(DownArrow) // move to step 4
-		assert.NoError(t, err)
+		assert.NoError(t, console.Send(DownArrow)) // move to step 4
 
-		_, err = console.Send(DownArrow)
-		assert.NoError(t, err)
+		assert.NoError(t, console.Send(DownArrow))
 
-		_, err = console.Send(DownArrow)
-		assert.NoError(t, err)
+		assert.NoError(t, console.Send(DownArrow))
 
-		_, err = console.Send(Space) // select step 4
-		assert.NoError(t, err)
+		assert.NoError(t, console.Send(Space)) // select step 4
 
-		_, err = console.Send(Enter) // confirm the selection
-		assert.NoError(t, err)
+		assert.NoError(t, console.Send(Enter)) // confirm the selection
 
-		_, err = console.ExpectString("Step 1")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Step 1"))
 
-		_, err = console.ExpectString("input1:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("input1:"))
 
-		_, err = console.ExpectString("(old value 1)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("(old value 1)"))
 
-		_, err = console.SendLine(Enter) // use default/old value
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine(Enter)) // use default/old value
 
-		_, err = console.ExpectString("Step 2")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Step 2"))
 
-		_, err = console.ExpectString("input2:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("input2:"))
 
-		_, err = console.ExpectString("(old value 2)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("(old value 2)"))
 
-		_, err = console.SendLine("new value 2") // fill new value
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("new value 2")) // fill new value
 
-		_, err = console.ExpectString("Step 4")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Step 4"))
 
-		_, err = console.ExpectString("input4:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("input4:"))
 
-		_, err = console.SendLine("value 4")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("value 4"))
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	output, err := dialog.AskUpgradeTemplateOptions(d, projectState, branchKey, instance, stepsGroups)

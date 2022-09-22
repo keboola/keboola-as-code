@@ -29,14 +29,11 @@ func TestAskCreateBranch(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Enter a name for the new branch")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Enter a name for the new branch"))
 
-		_, err = console.SendLine(`Foo Bar`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine(`Foo Bar`))
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -95,25 +92,19 @@ func TestAskCreateConfig(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Select the target branch")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select the target branch"))
 
 		assert.NoError(t, console.SendEnter()) // enter - Main
 
-		_, err = console.ExpectString("Select the target component")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select the target component"))
 
-		_, err = console.SendLine("extractor generic\n")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("extractor generic\n"))
 
-		_, err = console.ExpectString("Enter a name for the new config")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Enter a name for the new config"))
 
-		_, err = console.SendLine(`Foo Bar`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine(`Foo Bar`))
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -187,24 +178,19 @@ func TestAskCreateRow(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Select the target branch")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select the target branch"))
 
 		assert.NoError(t, console.SendEnter()) // enter - My Config
 
-		_, err = console.ExpectString("Select the target config")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select the target config"))
 
 		assert.NoError(t, console.SendEnter()) // enter - My Config
 
-		_, err = console.ExpectString("Enter a name for the new config row")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Enter a name for the new config row"))
+		
+		assert.NoError(t, console.SendLine(`Foo Bar`))
 
-		_, err = console.SendLine(`Foo Bar`)
-		assert.NoError(t, err)
-
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
