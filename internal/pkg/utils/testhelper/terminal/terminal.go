@@ -17,9 +17,9 @@ type Console interface {
 	// terminal device.
 	Tty() Tty
 	// Send writes string s to Console's tty.
-	Send(s string) (int, error)
+	Send(s string) error
 	// SendLine writes string s to Console's tty.
-	SendLine(s string) (int, error)
+	SendLine(s string) error
 	SendEnter() error
 	SendSpace() error
 	SendBackspace() error
@@ -29,10 +29,10 @@ type Console interface {
 	SendLeftArrow() error
 	// ExpectString reads from Console's tty until the provided string is read or
 	// an error occurs, and returns the buffer read by Console.
-	ExpectString(s string) (string, error)
+	ExpectString(s string) error
 	// ExpectEOF reads from Console's tty until EOF or an error occurs, and returns
 	// the buffer read by Console.  We also treat the PTSClosed error as an EOF.
-	ExpectEOF() (string, error)
+	ExpectEOF() error
 	// Close closes both the TTY and afterwards all the readers
 	Close() error
 }

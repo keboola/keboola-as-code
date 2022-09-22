@@ -61,51 +61,51 @@ func (c *console) Tty() Tty {
 	return c.tty
 }
 
-func (c *console) Send(s string) (int, error) {
+func (c *console) Send(s string) error {
 	c.waitBeforeSend()
-	return c.Console.Send(s)
+	_, err := c.Console.Send(s)
+	return err
 }
 
-func (c *console) SendLine(s string) (int, error) {
+func (c *console) SendLine(s string) error {
 	c.waitBeforeSend()
-	return c.Console.SendLine(s)
+	_, err := c.Console.SendLine(s)
+	return err
 }
 
 func (c *console) SendEnter() error {
-	_, err := c.Send("\n")
-	return err
+	return c.Send("\n")
 }
 
 func (c *console) SendSpace() error {
-	_, err := c.Send(" ")
-	return err
+	return c.Send(" ")
 }
 func (c *console) SendBackspace() error {
-	_, err := c.Send("\u0008")
-	return err
+	return c.Send("\u0008")
 }
 
 func (c *console) SendUpArrow() error {
-	_, err := c.Send("\u001B[A")
-	return err
+	return c.Send("\u001B[A")
 }
 
 func (c *console) SendDownArrow() error {
-	_, err := c.Send("\u001B[B")
-	return err
+	return c.Send("\u001B[B")
 }
 
 func (c *console) SendRightArrow() error {
-	_, err := c.Send("\u001B[C")
-	return err
+	return c.Send("\u001B[C")
 }
 
 func (c *console) SendLeftArrow() error {
-	_, err := c.Send("\u001B[D")
+	return c.Send("\u001B[D")
+}
+
+func (c *console) ExpectString(s string) error {
+	_, err := c.Console.ExpectString(s)
 	return err
 }
 
-func (c *console) ExpectEOF() (out string, err error) {
+func (c *console) ExpectEOF() (err error) {
 	defer func() {
 		// Close STDIN on error (e.g. timeout)
 		if err != nil {
@@ -114,10 +114,10 @@ func (c *console) ExpectEOF() (out string, err error) {
 	}()
 
 	// Better error message
-	if str, err := c.Console.ExpectEOF(); err != nil {
-		return "", fmt.Errorf("error while waiting for EOF: %w", err)
+	if _, err := c.Console.ExpectEOF(); err != nil {
+		return fmt.Errorf("error while waiting for EOF: %w", err)
 	} else {
-		return str, nil
+		return nil
 	}
 }
 
