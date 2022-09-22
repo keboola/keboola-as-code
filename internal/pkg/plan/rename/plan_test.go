@@ -92,6 +92,6 @@ func testFs(t *testing.T, inputDir string) filesystem.Fs {
 	envs := env.Empty()
 	envs.Set("LOCAL_PROJECT_ID", "12345")
 	envs.Set("TEST_KBC_STORAGE_API_HOST", "foo.bar")
-	testhelper.ReplaceEnvsDir(fs, `/`, envs)
+	testhelper.MustReplaceEnvsDir(fs, `/`, envs)
 	return fs
 }

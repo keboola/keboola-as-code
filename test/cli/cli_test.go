@@ -103,7 +103,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 		}
 
 		// Replace all %%ENV_VAR%% in "env" file
-		envFileContent := testhelper.ReplaceEnvsString(envFile.Content, envProvider)
+		envFileContent := testhelper.MustReplaceEnvsString(envFile.Content, envProvider)
 
 		// Parse "env" file
 		envsFromFile, err := env.LoadEnvString(envFileContent)
@@ -116,7 +116,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	}
 
 	// Replace all %%ENV_VAR%% in all files in the working directory
-	testhelper.ReplaceEnvsDir(workingDirFs, `/`, envProvider)
+	testhelper.MustReplaceEnvsDir(workingDirFs, `/`, envProvider)
 
 	// Load command arguments from file
 	argsFileName := `args`
@@ -127,7 +127,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 
 	// Load and parse command arguments
 	argsStr := strings.TrimSpace(argsFile.Content)
-	argsStr = testhelper.ReplaceEnvsString(argsStr, envProvider)
+	argsStr = testhelper.MustReplaceEnvsString(argsStr, envProvider)
 	args, err := shlex.Split(argsStr)
 	if err != nil {
 		t.Fatalf(`Cannot parse args "%s": %s`, argsStr, err)
@@ -203,12 +203,12 @@ func AssertExpectations(
 	// Compare stdout
 	expectedStdoutFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-stdout"))
 	assert.NoError(t, err)
-	expectedStdout := testhelper.ReplaceEnvsString(expectedStdoutFile.Content, envProvider)
+	expectedStdout := testhelper.MustReplaceEnvsString(expectedStdoutFile.Content, envProvider)
 
 	// Compare stderr
 	expectedStderrFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-stderr"))
 	assert.NoError(t, err)
-	expectedStderr := testhelper.ReplaceEnvsString(expectedStderrFile.Content, envProvider)
+	expectedStderr := testhelper.MustReplaceEnvsString(expectedStderrFile.Content, envProvider)
 
 	// Compare exit code
 	expectedCodeFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-code"))
@@ -235,7 +235,7 @@ func AssertExpectations(
 
 	// Copy expected state and replace ENVs
 	expectedDirFs := testfs.NewMemoryFsFrom(filesystem.Join(testDirFs.BasePath(), expectedDir))
-	testhelper.ReplaceEnvsDir(expectedDirFs, `/`, envProvider)
+	testhelper.MustReplaceEnvsDir(expectedDirFs, `/`, envProvider)
 
 	// Compare actual and expected dirs
 	testhelper.AssertDirectoryContentsSame(t, expectedDirFs, `/`, workingDirFs, `/`)
@@ -264,7 +264,7 @@ func AssertExpectations(
 		// Compare expected and actual state
 		wildcards.Assert(
 			t,
-			testhelper.ReplaceEnvsString(expectedSnapshot.Content, envProvider),
+			testhelper.MustReplaceEnvsString(expectedSnapshot.Content, envProvider),
 			json.MustEncodeString(actualSnapshot, true),
 			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir.`,
 		)

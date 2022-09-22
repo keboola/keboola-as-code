@@ -437,7 +437,7 @@ func (t *Test) ExpectedOutDir() (filesystem.Fs, error) {
 	return copyFs, nil
 }
 
-func (t *Test) Inputs(provider *testtemplateinputs.TestInputsEnvProvider, replaceEnvsFn func(string, testtemplateinputs.TestInputsEnvProvider, string) (string, error), envSeparator string) (map[string]interface{}, error) {
+func (t *Test) Inputs(provider *testtemplateinputs.EnvProvider, replaceEnvsFn func(string, testtemplateinputs.EnvProvider, string) (string, error), envSeparator string) (map[string]interface{}, error) {
 	// Read inputs file
 	file, err := t.fs.ReadFile(filesystem.NewFileDef(InputsFile).SetDescription("template inputs"))
 	if err != nil {

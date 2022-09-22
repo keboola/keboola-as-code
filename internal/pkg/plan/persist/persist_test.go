@@ -919,7 +919,7 @@ func (tc *testCase) run(t *testing.T) {
 	fs := testfs.NewMemoryFsFrom(inputDir)
 	envs := env.Empty()
 	envs.Set(`LOCAL_PROJECT_ID`, `12345`)
-	testhelper.ReplaceEnvsDir(fs, `/`, envs)
+	testhelper.MustReplaceEnvsDir(fs, `/`, envs)
 
 	// Container
 	d := dependencies.NewMockedDeps()
