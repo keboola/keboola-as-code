@@ -134,7 +134,7 @@ func TestLocalLoadMapper(t *testing.T) {
 	envs.Set("LOCAL_PROJECT_ID", "12345")
 	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", "111")
 	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
-	testhelper.ReplaceEnvsDir(fs, `/`, envs)
+	testhelper.MustReplaceEnvsDir(fs, `/`, envs)
 
 	// Load objects
 	m, err := projectManifest.Load(fs, false)

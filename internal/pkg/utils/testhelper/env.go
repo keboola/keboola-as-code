@@ -13,45 +13,65 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/testtemplateinputs"
 )
 
 type EnvProvider interface {
 	MustGet(key string) string
 }
 
-// ReplaceEnvsStringWithSeparator replaces ENVs in given string with chosen separator.
-func ReplaceEnvsStringWithSeparator(str string, provider EnvProvider, envSeparator string) string {
+const envPlaceholderTemplate = `%s[a-zA-Z0-9][a-zA-Z0-9\-_]*[a-zA-Z0-9]%s`
+
+// MustReplaceEnvsStringWithSeparator replaces ENVs in given string with chosen separator.
+func MustReplaceEnvsStringWithSeparator(str string, provider EnvProvider, envSeparator string) string {
 	return regexp.
-		MustCompile(fmt.Sprintf(`%s[a-zA-Z0-9][a-zA-Z0-9\-_]*[a-zA-Z0-9]%s`, envSeparator, envSeparator)).
+		MustCompile(fmt.Sprintf(envPlaceholderTemplate, envSeparator, envSeparator)).
 		ReplaceAllStringFunc(str, func(s string) string {
 			return provider.MustGet(strings.Trim(s, envSeparator))
 		})
 }
 
-// ReplaceEnvsString replaces ENVs in given string.
-func ReplaceEnvsString(str string, provider EnvProvider) string {
-	return ReplaceEnvsStringWithSeparator(str, provider, "%%")
+// ReplaceEnvsStringWithSeparator replaces ENVs in given string with chosen separator.
+func ReplaceEnvsStringWithSeparator(str string, provider testtemplateinputs.EnvProvider, envSeparator string) (string, error) {
+	errs := utils.NewMultiError()
+	res := regexp.
+		MustCompile(fmt.Sprintf(envPlaceholderTemplate, envSeparator, envSeparator)).
+		ReplaceAllStringFunc(str, func(s string) string {
+			res, err := provider.Get(strings.Trim(s, envSeparator))
+			if err != nil {
+				errs.Append(err)
+				return s
+			}
+			return res
+		})
+	return res, errs.ErrorOrNil()
 }
 
-// ReplaceEnvsFileWithSeparator replaces ENVs in given file with chosen separator.
-func ReplaceEnvsFileWithSeparator(fs filesystem.Fs, path string, provider EnvProvider, envSeparator string) {
+// MustReplaceEnvsString replaces ENVs in given string.
+func MustReplaceEnvsString(str string, provider EnvProvider) string {
+	return MustReplaceEnvsStringWithSeparator(str, provider, "%%")
+}
+
+// MustReplaceEnvsFileWithSeparator replaces ENVs in given file with chosen separator.
+func MustReplaceEnvsFileWithSeparator(fs filesystem.Fs, path string, provider EnvProvider, envSeparator string) {
 	file, err := fs.ReadFile(filesystem.NewFileDef(path))
 	if err != nil {
 		panic(err)
 	}
-	file.Content = ReplaceEnvsStringWithSeparator(file.Content, provider, envSeparator)
+	file.Content = MustReplaceEnvsStringWithSeparator(file.Content, provider, envSeparator)
 	if err := fs.WriteFile(file); err != nil {
 		panic(fmt.Errorf("cannot write to file \"%s\": %w", path, err))
 	}
 }
 
-// ReplaceEnvsFile replaces ENVs in given file.
-func ReplaceEnvsFile(fs filesystem.Fs, path string, provider EnvProvider) {
-	ReplaceEnvsFileWithSeparator(fs, path, provider, "%%")
+// MustReplaceEnvsFile replaces ENVs in given file.
+func MustReplaceEnvsFile(fs filesystem.Fs, path string, provider EnvProvider) {
+	MustReplaceEnvsFileWithSeparator(fs, path, provider, "%%")
 }
 
-// ReplaceEnvsDirWithSeparator replaces ENVs in all files in root directory and sub-directories with chosen separator.
-func ReplaceEnvsDirWithSeparator(fs filesystem.Fs, root string, provider EnvProvider, envSeparator string) {
+// MustReplaceEnvsDirWithSeparator replaces ENVs in all files in root directory and sub-directories with chosen separator.
+func MustReplaceEnvsDirWithSeparator(fs filesystem.Fs, root string, provider EnvProvider, envSeparator string) {
 	// Iterate over directory structure
 	err := fs.Walk(root, func(path string, info filesystem.FileInfo, err error) error {
 		// Stop on error
@@ -66,7 +86,7 @@ func ReplaceEnvsDirWithSeparator(fs filesystem.Fs, root string, provider EnvProv
 
 		// Process file
 		if !info.IsDir() {
-			ReplaceEnvsFileWithSeparator(fs, path, provider, envSeparator)
+			MustReplaceEnvsFileWithSeparator(fs, path, provider, envSeparator)
 		}
 
 		return nil
@@ -76,9 +96,9 @@ func ReplaceEnvsDirWithSeparator(fs filesystem.Fs, root string, provider EnvProv
 	}
 }
 
-// ReplaceEnvsDir replaces ENVs in all files in root directory and sub-directories.
-func ReplaceEnvsDir(fs filesystem.Fs, root string, provider EnvProvider) {
-	ReplaceEnvsDirWithSeparator(fs, root, provider, "%%")
+// MustReplaceEnvsDir replaces ENVs in all files in root directory and sub-directories.
+func MustReplaceEnvsDir(fs filesystem.Fs, root string, provider EnvProvider) {
+	MustReplaceEnvsDirWithSeparator(fs, root, provider, "%%")
 }
 
 // stripAnsiWriter strips ANSI characters from

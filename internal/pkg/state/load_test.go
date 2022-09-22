@@ -165,7 +165,7 @@ func loadTestManifest(t *testing.T, envs *env.Map, localState string) (*projectM
 
 	// Create Fs
 	fs := testfs.NewMemoryFsFrom(stateDir)
-	testhelper.ReplaceEnvsDir(fs, `/`, envs)
+	testhelper.MustReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest
 	m, err := projectManifest.Load(fs, false)
