@@ -8,7 +8,7 @@ import (
 )
 
 const sendDelay = 20 * time.Millisecond
-const expectTimeout = 5 * time.Second
+const expectTimeout = 10 * time.Second
 
 // Console is virtual terminal for tests.
 type Console interface {
