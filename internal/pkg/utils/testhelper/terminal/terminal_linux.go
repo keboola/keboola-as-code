@@ -105,7 +105,7 @@ func (c *console) SendLeftArrow() error {
 }
 
 func (c *console) ExpectString(s string) error {
-	_, err := c.Console.ExpectString(s)
+	_, err := c.Console.Expect(StringWithoutANSI(s))
 	return err
 }
 

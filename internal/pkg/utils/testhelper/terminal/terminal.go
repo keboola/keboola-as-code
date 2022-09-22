@@ -45,3 +45,38 @@ type Tty interface {
 	terminal.FileWriter
 	io.Closer
 }
+
+// stringWithoutANSIMatcher fulfills the Matcher interface to match strings.
+// ANSI escape characters are ignored.
+type stringWithoutANSIMatcher struct {
+	str string
+}
+
+func (m *stringWithoutANSIMatcher) Match(v interface{}) bool {
+	buf, ok := v.(*bytes.Buffer)
+	if !ok {
+		return false
+	}
+	if strings.Contains(stripansi.Strip(buf.String()), m.str) {
+		return true
+	}
+	return false
+}
+
+func (m *stringWithoutANSIMatcher) Criteria() interface{} {
+	return m.str
+}
+
+// StringWithoutANSI adds an Expect condition to exit if the content read from Console's
+// tty contains any of the given strings.
+// ANSI escape characters are ignored.
+func StringWithoutANSI(strs ...string) expect.ExpectOpt {
+	return func(opts *expect.ExpectOpts) error {
+		for _, str := range strs {
+			opts.Matchers = append(opts.Matchers, &stringWithoutANSIMatcher{
+				str: str,
+			})
+		}
+		return nil
+	}
+}
