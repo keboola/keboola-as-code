@@ -1,4 +1,4 @@
-Initialize profiles, sources, and environment variables for use with DBT.
+Initialize profiles, sources, and environment variables for use with dbt.
 
 Usage:
   kbc dbt init [flags]

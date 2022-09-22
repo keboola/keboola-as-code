@@ -1,4 +1,4 @@
-Generate profiles for use with DBT.
+Generate profiles for use with dbt.
 
 Usage:
   kbc dbt generate profiles [flags]

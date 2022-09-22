@@ -1,1 +1,1 @@
-Generate profiles for use with DBT.
+Generate profiles for use with dbt.

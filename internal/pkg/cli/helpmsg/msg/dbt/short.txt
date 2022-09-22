@@ -1,1 +1,1 @@
-Work with DBT inside your repository.
+Work with dbt inside your repository.
