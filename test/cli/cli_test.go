@@ -4,7 +4,6 @@ package cli
 import (
 	"bytes"
 	"context"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -53,14 +52,16 @@ func TestCliE2E(t *testing.T) {
 		workingDir := filepath.Join(testOutputDir, testDirRel)
 		t.Run(testDirRel, func(t *testing.T) {
 			t.Parallel()
-			RunFunctionalTest(t, testDir, workingDir, binary)
+			RunTest(t, testDir, workingDir, binary)
 		})
 	}
 }
 
-// RunFunctionalTest runs one functional test.
-func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) {
+// RunTest runs one E2E test.
+func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 	t.Helper()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	// Clean working dir
 	assert.NoError(t, os.RemoveAll(workingDir))
@@ -93,7 +94,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	}
 
 	// Create ENV provider
-	envProvider := storageenv.CreateStorageEnvTicketProvider(context.Background(), api, envs)
+	envProvider := storageenv.CreateStorageEnvTicketProvider(ctx, api, envs)
 
 	// Add envs from test "env" file if present
 	if testDirFs.Exists(TestEnvFile) {
@@ -137,16 +138,37 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	envs.Set(`KBC_TEMPLATES_PRIVATE_BETA`, `true`)
 
 	// Prepare command
-	var stdout, stderr bytes.Buffer
 	cmd := exec.Command(binary, args...)
 	cmd.Env = envs.ToSlice()
 	cmd.Dir = workingDir
-	cmd.Stdout = io.MultiWriter(&stdout, testhelper.VerboseStdout())
-	cmd.Stderr = io.MultiWriter(&stderr, testhelper.VerboseStderr())
 
-	// Run command
+	// Setup command input/output
+	cmdio, err := setupCmdInOut(t, envProvider, testDirFs, cmd)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	// Start command
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("Cannot start command: %s", err)
+	}
+
+	// Always terminate the command
+	defer func() {
+		_ = cmd.Process.Kill()
+	}()
+
+	// Error handler for errors in interaction
+	interactionErrHandler := func(err error) {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Wait for command
 	exitCode := 0
-	if err := cmd.Run(); err != nil {
+	err = cmdio.InteractAndWait(cmd, interactionErrHandler)
+	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			exitCode = exitError.ExitCode()
 		} else {
@@ -155,7 +177,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	}
 
 	// Assert
-	AssertExpectations(t, envProvider, testDirFs, workingDirFs, exitCode, strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), project)
+	AssertExpectations(t, envProvider, testDirFs, workingDirFs, exitCode, cmdio, project)
 }
 
 // CompileBinary compiles component to binary used in this test.
@@ -194,8 +216,7 @@ func AssertExpectations(
 	testDirFs filesystem.Fs,
 	workingDirFs filesystem.Fs,
 	exitCode int,
-	stdout string,
-	stderr string,
+	inOut *cmdInputOutput,
 	project *testproject.Project,
 ) {
 	t.Helper()
@@ -209,6 +230,10 @@ func AssertExpectations(
 	expectedStderrFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-stderr"))
 	assert.NoError(t, err)
 	expectedStderr := testhelper.ReplaceEnvsString(expectedStderrFile.Content, envProvider)
+
+	// Get outputs
+	stdout := inOut.StdoutString()
+	stderr := inOut.StderrString()
 
 	// Compare exit code
 	expectedCodeFile, err := testDirFs.ReadFile(filesystem.NewFileDef("expected-code"))
