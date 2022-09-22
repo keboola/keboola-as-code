@@ -8,6 +8,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
+	"github.com/mattn/go-isatty"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
@@ -30,10 +31,10 @@ func init() {
 }
 
 func New(stdinRaw io.Reader, stdoutRaw io.Writer, stderrRaw io.Writer) prompt.Prompt {
-	stdin, ok1 := stdinRaw.(*os.File)
-	stdout, ok2 := stdoutRaw.(*os.File)
-	stderr, ok3 := stderrRaw.(*os.File)
-	if ok1 && ok2 && ok3 && isInteractiveTerminal(stdin, stdout) {
+	stdin, ok1 := stdinRaw.(terminal.FileReader)
+	stdout, ok2 := stdoutRaw.(terminal.FileWriter)
+	stderr, ok3 := stderrRaw.(terminal.FileWriter)
+	if ok1 && ok2 && ok3 && isatty.IsTerminal(stdin.Fd()) && isatty.IsTerminal(stdout.Fd()) && isatty.IsTerminal(stderr.Fd()) {
 		return &Prompt{
 			stdin:  stdin,
 			stdout: stdout,
@@ -42,18 +43,6 @@ func New(stdinRaw io.Reader, stdoutRaw io.Writer, stderrRaw io.Writer) prompt.Pr
 	}
 
 	return nop.New()
-}
-
-func isInteractiveTerminal(stdin *os.File, stdout *os.File) bool {
-	if fileInfo, _ := stdin.Stat(); (fileInfo.Mode() & os.ModeCharDevice) == 0 {
-		return false
-	}
-
-	if fileInfo, _ := stdout.Stat(); (fileInfo.Mode() & os.ModeCharDevice) == 0 {
-		return false
-	}
-
-	return true
 }
 
 func (p *Prompt) SetEditor(editor string) {
@@ -65,9 +54,8 @@ func (p *Prompt) IsInteractive() bool {
 }
 
 func (p *Prompt) Printf(format string, a ...interface{}) {
-	if _, err := fmt.Fprintf(p.stdout, format, a...); err != nil {
-		panic(err)
-	}
+	// The error can occur mainly in tests, if stdout of the virtual terminal is closed on test failure.
+	_, _ = fmt.Fprintf(p.stdout, format, a...)
 }
 
 func (p *Prompt) Confirm(c *prompt.Confirm) bool {

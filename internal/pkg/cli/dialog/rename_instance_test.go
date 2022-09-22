@@ -10,7 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	renameOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -43,32 +42,21 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Select branch:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select branch:"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - Main
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - Main
 
-		_, err = console.ExpectString("Select template instance:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select template instance:"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - tmpl1
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - tmpl1
 
-		_, err = console.ExpectString("Instance Name")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Instance Name"))
 
-		_, err = console.ExpectString("(Old Name)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("(Old Name)"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine("New Name")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("New Name"))
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run

@@ -3,13 +3,11 @@ package dialog_test
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 func TestSelectBranchInteractive(t *testing.T) {
@@ -31,24 +29,19 @@ func TestSelectBranchInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("LABEL:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("LABEL:"))
 
-		_, err = console.ExpectString("Branch 1 (1)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 1 (1)"))
 
-		_, err = console.ExpectString("Branch 2 (2)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 2 (2)"))
 
-		_, err = console.ExpectString("Branch 3 (3)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 3 (3)"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(testhelper.DownArrow) // down arrow -> select Branch 2
-		assert.NoError(t, err)
+		// down arrow -> select Branch 2
+		assert.NoError(t, console.SendDownArrow())
+		assert.NoError(t, console.SendEnter())
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -123,50 +116,31 @@ func TestSelectBranchesInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("LABEL:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("LABEL:"))
 
-		_, err = console.ExpectString("Branch 1 (1)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 1 (1)"))
 
-		_, err = console.ExpectString("Branch 2 (2)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 2 (2)"))
 
-		_, err = console.ExpectString("Branch 3 (3)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 3 (3)"))
 
-		_, err = console.ExpectString("Branch 4 (4)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 4 (4)"))
 
-		_, err = console.ExpectString("Branch 5 (5)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Branch 5 (5)"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.DownArrow) // -> Branch 2
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow()) // -> Branch 2
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Space) // -> select
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendSpace()) // -> select
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.DownArrow) // -> Branch 3
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow()) // -> Branch 3
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.DownArrow) // -> Branch 4
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow()) // -> Branch 4
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Space) // -> select
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendSpace()) // -> select
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // -> confirm
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> confirm
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run

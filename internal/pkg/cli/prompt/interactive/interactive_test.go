@@ -3,22 +3,19 @@ package interactive_test
 import (
 	"sync"
 	"testing"
-	"time"
 
-	"github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 )
 
 func TestPrompt_Select(t *testing.T) {
 	t.Parallel()
 
 	// Create virtual console
-	stdout := testhelper.VerboseStdout()
-	console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+	console, err := terminal.New(t)
 	assert.NoError(t, err)
 	p := interactive.New(console.Tty(), console.Tty(), console.Tty())
 
@@ -28,15 +25,11 @@ func TestPrompt_Select(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("My Select")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("My Select"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - default value
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - default value
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select
@@ -59,8 +52,7 @@ func TestPrompt_SelectIndex(t *testing.T) {
 	t.Parallel()
 
 	// Create virtual console
-	stdout := testhelper.VerboseStdout()
-	console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+	console, err := terminal.New(t)
 	assert.NoError(t, err)
 	p := interactive.New(console.Tty(), console.Tty(), console.Tty())
 
@@ -70,15 +62,11 @@ func TestPrompt_SelectIndex(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("My Select")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("My Select"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - default value
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - default value
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select
@@ -101,8 +89,7 @@ func TestPrompt_MultiSelect(t *testing.T) {
 	t.Parallel()
 
 	// Create virtual console
-	stdout := testhelper.VerboseStdout()
-	console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+	console, err := terminal.New(t)
 	assert.NoError(t, err)
 	p := interactive.New(console.Tty(), console.Tty(), console.Tty())
 
@@ -112,15 +99,11 @@ func TestPrompt_MultiSelect(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("My Select")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("My Select"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - default value
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - default value
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select
@@ -142,8 +125,7 @@ func TestPrompt_MultiSelectIndex(t *testing.T) {
 	t.Parallel()
 
 	// Create virtual console
-	stdout := testhelper.VerboseStdout()
-	console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+	console, err := terminal.New(t)
 	assert.NoError(t, err)
 	p := interactive.New(console.Tty(), console.Tty(), console.Tty())
 
@@ -153,15 +135,11 @@ func TestPrompt_MultiSelectIndex(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("My Select")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("My Select"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - default value
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - default value
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select
@@ -183,8 +161,7 @@ func TestPrompt_ShowLeaveBlank(t *testing.T) {
 	t.Parallel()
 
 	// Create virtual console
-	stdout := testhelper.VerboseStdout()
-	console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+	console, err := terminal.New(t)
 	assert.NoError(t, err)
 	p := interactive.New(console.Tty(), console.Tty(), console.Tty())
 
@@ -194,18 +171,13 @@ func TestPrompt_ShowLeaveBlank(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("My input")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("My input"))
 
-		_, err = console.ExpectString("Leave blank for default value.")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Leave blank for default value."))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - default value
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - default value
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Show select
@@ -229,8 +201,7 @@ func TestPrompt_HideLeaveBlank(t *testing.T) {
 	t.Parallel()
 
 	// Create virtual console
-	stdout := testhelper.VerboseStdout()
-	console, _, err := testhelper.NewVirtualTerminal(t, expect.WithStdout(stdout), expect.WithCloser(stdout), expect.WithDefaultTimeout(5*time.Second))
+	console, err := terminal.New(t)
 	assert.NoError(t, err)
 	p := interactive.New(console.Tty(), console.Tty(), console.Tty())
 
@@ -240,18 +211,13 @@ func TestPrompt_HideLeaveBlank(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("My input")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("My input"))
 
-		_, err = console.ExpectString("Leave blank for default value.")
-		assert.Error(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - default value
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - default value
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NotContains(t, console.String(), "Leave blank for default value.")
 	}()
 
 	// Show select

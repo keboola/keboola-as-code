@@ -3,14 +3,12 @@ package dialog_test
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 )
 
@@ -31,36 +29,23 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString(`Generate "validate" workflow?`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Generate "validate" workflow?`))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`n`) // no
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine(`n`)) // no
 
-		_, err = console.ExpectString(`Generate "push" workflow?`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Generate "push" workflow?`))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - yes
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - yes
 
-		_, err = console.ExpectString(`Generate "pull" workflow?`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Generate "pull" workflow?`))
+		
+		assert.NoError(t, console.SendLine(`n`)) // no
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`n`) // no
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Please select the main GitHub branch name:`))
 
-		_, err = console.ExpectString(`Please select the main GitHub branch name:`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - main
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - main
-		assert.NoError(t, err)
-
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run

@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/spf13/pflag"
@@ -15,7 +14,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/init"
@@ -34,28 +32,19 @@ func TestDialogs_AskHostAndToken(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Please enter Keboola Storage API host, eg. \"connection.keboola.com\".")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please enter Keboola Storage API host, eg. \"connection.keboola.com\"."))
 
-		_, err = console.ExpectString("API host: ")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("API host: "))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`foo.bar.com`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine(`foo.bar.com`))
 
-		_, err = console.ExpectString("Please enter Keboola Storage API token. The value will be hidden.")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please enter Keboola Storage API token. The value will be hidden."))
 
-		_, err = console.ExpectString("API token: ")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("API token: "))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`my-secret-token`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine(`my-secret-token`))
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -94,50 +83,31 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Allowed project's branches:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Allowed project's branches:"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter, first option "only main branch"
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter, first option "only main branch"
 
-		_, err = console.ExpectString(`Generate workflows files for GitHub Actions?`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Generate workflows files for GitHub Actions?`))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - yes
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - yes
 
-		_, err = console.ExpectString(`Generate "validate" workflow?`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Generate "validate" workflow?`))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - yes
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - yes
 
-		_, err = console.ExpectString(`Generate "push" workflow?`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Generate "push" workflow?`))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - yes
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - yes
 
-		_, err = console.ExpectString(`Generate "pull" workflow?`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Generate "pull" workflow?`))
+		
+		assert.NoError(t, console.SendLine(`n`))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`n`) // no
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString(`Please select the main GitHub branch name:`))
 
-		_, err = console.ExpectString(`Please select the main GitHub branch name:`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - main
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - main
-		assert.NoError(t, err)
-
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
@@ -31,15 +29,11 @@ func TestAskCreateBranch(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Enter a name for the new branch")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Enter a name for the new branch"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`Foo Bar`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine(`Foo Bar`))
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -98,29 +92,19 @@ func TestAskCreateConfig(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Select the target branch")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select the target branch"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - Main
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - Main
 
-		_, err = console.ExpectString("Select the target component")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select the target component"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine("extractor generic\n")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine("extractor generic\n"))
 
-		_, err = console.ExpectString("Enter a name for the new config")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Enter a name for the new config"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`Foo Bar`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine(`Foo Bar`))
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -194,29 +178,19 @@ func TestAskCreateRow(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Select the target branch")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select the target branch"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - My Config
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - My Config
 
-		_, err = console.ExpectString("Select the target config")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select the target config"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - My Config
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - My Config
 
-		_, err = console.ExpectString("Enter a name for the new config row")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Enter a name for the new config row"))
+		
+		assert.NoError(t, console.SendLine(`Foo Bar`))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`Foo Bar`)
-		assert.NoError(t, err)
-
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run

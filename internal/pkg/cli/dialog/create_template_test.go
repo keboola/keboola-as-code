@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/storageapi"
@@ -17,7 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )
 
@@ -38,129 +36,77 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("Please enter Keboola Storage API host, eg. \"connection.keboola.com\".")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please enter Keboola Storage API host, eg. \"connection.keboola.com\"."))
 
-		_, err = console.ExpectString("API host: ")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("API host: "))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`foo.bar.com`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine(`foo.bar.com`))
 
-		_, err = console.ExpectString("Please enter Keboola Storage API token. The value will be hidden.")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please enter Keboola Storage API token. The value will be hidden."))
 
-		_, err = console.ExpectString("API token: ")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("API token:"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`my-secret-token`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendLine(`my-secret-token`))
 
-		_, err = console.ExpectString("Please enter a template public name for users.")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please enter a template public name for users."))
 
-		_, err = console.ExpectString("Template name:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Template name:"))
+		
+		assert.NoError(t, console.SendLine(`My Super Template`))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(`My Super Template`)
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please enter a template internal ID."))
 
-		_, err = console.ExpectString("Please enter a template internal ID.")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Template ID:"))
 
-		_, err = console.ExpectString("Template ID:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - use generated default value, "my-super-template"
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - use generated default value, "my-super-template"
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please enter a short template description."))
 
-		_, err = console.ExpectString("Please enter a short template description.")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> start editor
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // -> start editor
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select the source branch:"))
 
-		_, err = console.ExpectString("Select the source branch:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter - Main
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter - Main
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select the configurations to include in the template:"))
 
-		_, err = console.ExpectString("Select the configurations to include in the template:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 1 (keboola.my-component:1)"))
 
-		_, err = console.ExpectString("Config 1 (keboola.my-component:1)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 2 (keboola.my-component:2)"))
 
-		_, err = console.ExpectString("Config 2 (keboola.my-component:2)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 3 (keboola.my-component:3)"))
 
-		_, err = console.ExpectString("Config 3 (keboola.my-component:3)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendSpace()) // -> select Config 1
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Space) // -> select Config 1
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow()) // -> Config 2
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.DownArrow) // -> Config 2
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow()) // -> Config 3
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.DownArrow) // -> Config 3
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendSpace()) // -> select
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Space) // -> select
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> confirm
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // -> confirm
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please enter a human readable ID for each config and config row."))
 
-		_, err = console.ExpectString("Please enter a human readable ID for each config and config row.")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> start editor
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // -> start editor
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please select which fields in the configurations should be user inputs."))
 
-		_, err = console.ExpectString("Please select which fields in the configurations should be user inputs.")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> start editor
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // -> start editor
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please define steps and groups for user inputs specification."))
 
-		_, err = console.ExpectString("Please define steps and groups for user inputs specification.")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> start editor
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // -> start editor
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Please complete the user inputs specification."))
 
-		_, err = console.ExpectString("Please complete the user inputs specification.")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> start editor
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // -> start editor
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Select the components that are used in the templates."))
 
-		_, err = console.ExpectString("Select the components that are used in the templates.")
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // enter
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // enter
-		assert.NoError(t, err)
-
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run

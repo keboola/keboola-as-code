@@ -3,13 +3,11 @@ package dialog_test
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 func TestSelectConfigInteractive(t *testing.T) {
@@ -31,24 +29,19 @@ func TestSelectConfigInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("LABEL:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("LABEL:"))
 
-		_, err = console.ExpectString("Config 1 (foo.bar:1)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 1 (foo.bar:1)"))
 
-		_, err = console.ExpectString("Config 2 (foo.bar:2)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 2 (foo.bar:2)"))
 
-		_, err = console.ExpectString("Config 3 (foo.bar:3)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 3 (foo.bar:3)"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.SendLine(testhelper.DownArrow) // down arrow -> select Config 2
-		assert.NoError(t, err)
+		// down arrow -> select Config 2
+		assert.NoError(t, console.SendDownArrow())
+		assert.NoError(t, console.SendEnter())
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
@@ -123,50 +116,31 @@ func TestSelectConfigsInteractive(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		_, err := console.ExpectString("LABEL:")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("LABEL:"))
 
-		_, err = console.ExpectString("Config 1 (foo.bar:1)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 1 (foo.bar:1)"))
 
-		_, err = console.ExpectString("Config 2 (foo.bar:2)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 2 (foo.bar:2)"))
 
-		_, err = console.ExpectString("Config 3 (foo.bar:3)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 3 (foo.bar:3)"))
 
-		_, err = console.ExpectString("Config 4 (foo.bar:4)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 4 (foo.bar:4)"))
 
-		_, err = console.ExpectString("Config 5 (foo.bar:5)")
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectString("Config 5 (foo.bar:5)"))
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.DownArrow) // -> Config 2
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow()) // -> Config 2
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Space) // -> select
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendSpace()) // -> select
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.DownArrow) // -> Config 3
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow()) // -> Config 3
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.DownArrow) // -> Config 4
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendDownArrow()) // -> Config 4
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Space) // -> select
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendSpace()) // -> select
 
-		time.Sleep(20 * time.Millisecond)
-		_, err = console.Send(testhelper.Enter) // -> confirm
-		assert.NoError(t, err)
+		assert.NoError(t, console.SendEnter()) // -> confirm
 
-		_, err = console.ExpectEOF()
-		assert.NoError(t, err)
+		assert.NoError(t, console.ExpectEOF())
 	}()
 
 	// Run
