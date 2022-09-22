@@ -213,12 +213,11 @@ func TestPrompt_HideLeaveBlank(t *testing.T) {
 
 		assert.NoError(t, console.ExpectString("My input"))
 
-		err = console.ExpectString("Leave blank for default value.")
-		assert.Error(t, err)
-
 		assert.NoError(t, console.SendEnter()) // enter - default value
 
 		assert.NoError(t, console.ExpectEOF())
+
+		assert.NotContains(t, console.String(), "Leave blank for default value.")
 	}()
 
 	// Show select

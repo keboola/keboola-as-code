@@ -61,6 +61,10 @@ func (c *console) Tty() Tty {
 	return c.tty
 }
 
+func (c *console) String() string {
+	return c.state.String()
+}
+
 func (c *console) Send(s string) error {
 	c.waitBeforeSend()
 	_, err := c.Console.Send(s)

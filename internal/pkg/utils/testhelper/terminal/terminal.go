@@ -16,6 +16,8 @@ type Console interface {
 	// a pair of pseudo-devices, one of which, the slave, emulates a real text
 	// terminal device.
 	Tty() Tty
+	// String returns a string representation of the terminal output.
+	String() string
 	// Send writes string s to Console's tty.
 	Send(s string) error
 	// SendLine writes string s to Console's tty.
