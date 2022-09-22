@@ -227,7 +227,7 @@ func expectObserver(t *testing.T, writer io.Writer) expect.ExpectObserver {
 
 			_, _ = fmt.Fprintf(
 				writer,
-				"\n\nCould not meet expectations %v, error: %v\nTerminal snapshot:\n-----\n%s\n-----\n",
+				"\n\n>>> Could not meet expectations %v, error: %v\nTerminal snapshot:\n-----\n%s\n-----\n",
 				criteria, err, stripansi.Strip(buf),
 			)
 		}
