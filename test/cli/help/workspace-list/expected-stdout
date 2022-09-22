@@ -1,0 +1,15 @@
+List workspaces in the project.
+
+Usage:
+  kbc remote workspace list [flags]
+
+Flags:
+  -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
+
+Global Flags:
+  -h, --help                       print help for command
+  -l, --log-file string            path to a log file for details
+  -t, --storage-api-token string   storage API token from your project
+  -v, --verbose                    print details
+      --verbose-api                log each API request and response
+  -d, --working-dir string         use other working directory
