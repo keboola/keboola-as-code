@@ -10,7 +10,7 @@ import (
 
 func TestStringWithoutANSI(t *testing.T) {
 	t.Parallel()
-	
+
 	m := stringWithoutANSIMatcher{str: "foo"}
 
 	assert.True(t, m.Match(bytes.NewBufferString("foo")))
