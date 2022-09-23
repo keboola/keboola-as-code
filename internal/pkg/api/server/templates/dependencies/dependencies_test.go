@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -73,6 +74,9 @@ func TestForPublicRequest_Components_Cached(t *testing.T) {
 
 func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("unstable on windows - random git timeouts")
+	}
 
 	// Copy the git repository to a temp dir
 	tmpDir := t.TempDir()
@@ -195,6 +199,9 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 
 func TestForProjectRequest_Template_Cached(t *testing.T) {
 	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("unstable on windows - random git timeouts")
+	}
 
 	// Copy the git repository to a temp dir
 	tmpDir := t.TempDir()
