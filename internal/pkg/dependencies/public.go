@@ -61,6 +61,7 @@ func newPublicDeps(ctx context.Context, base Base, storageApiHost string) (*publ
 func storageApiIndex(ctx context.Context, d Base, storageApiClient client.Client) (index *storageapi.IndexComponents, err error) {
 	startTime := time.Now()
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.dependencies.public.storageApiIndex")
+	span.SetAttributes(telemetry.KeepSpan())
 	defer telemetry.EndSpan(span, &err)
 
 	index, err = storageapi.IndexComponentsRequest().Send(ctx, storageApiClient)
