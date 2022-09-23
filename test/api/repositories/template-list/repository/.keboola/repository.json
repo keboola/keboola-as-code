@@ -15,7 +15,10 @@
           "version": "1.2.3",
           "description": "",
           "stable": false,
-          "path": "v1"
+          "path": "v1","components": [
+            "<keboola.wr-snowflake>",
+            "foo.bar"
+          ]
         }
       ]
     }
