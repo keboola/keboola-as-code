@@ -134,8 +134,9 @@ func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 		t.Fatalf(`Cannot parse args "%s": %s`, argsStr, err)
 	}
 
-	// Enable templates private beta in tests
+	// Enable templates and dbt private beta in tests
 	envs.Set(`KBC_TEMPLATES_PRIVATE_BETA`, `true`)
+	envs.Set(`KBC_DBT_PRIVATE_BETA`, `true`)
 
 	// Prepare command
 	cmd := exec.Command(binary, args...)

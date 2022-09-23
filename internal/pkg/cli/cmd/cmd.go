@@ -169,16 +169,20 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		sync.Commands(p),
 		ci.Commands(p),
 		local.Commands(p, envs),
-		remote.Commands(p),
-		dbt.Commands(p),
+		remote.Commands(p, envs),
 	)
+
+	// Dbt commands are not finished yet.
+	if envs.Get(`KBC_DBT_PRIVATE_BETA`) == `true` {
+		root.AddCommand(dbt.Commands(p))
+	}
 
 	// Templates are private beta, can be enabled by ENV
 	if envs.Get(`KBC_TEMPLATES_PRIVATE_BETA`) == `true` {
 		root.AddCommand(template.Commands(p))
 	}
 
-	// Get all sub-commands by full path, eg. "sync init"
+	// Get all sub-commands by full path, for example "sync init"
 	visitSubCommands(root.Cmd, func(cmd *cobra.Command) (goDeep bool) {
 		cmdPath := cmd.CommandPath()
 		cmdPath = strings.TrimPrefix(cmdPath, root.Use+` `)

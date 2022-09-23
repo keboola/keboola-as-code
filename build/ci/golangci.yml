@@ -121,6 +121,7 @@ issues:
   exclude:
     - 'G306: Expect WriteFile permissions to be 0600 or less'
     - 'string `keboola.*` has .* occurrences, make it a constant'
+    - 'string `true` has .* occurrences, make it a constant'
     - 'string `false` has .* occurrences, make it a constant'
     - 'ineffectual assignment to ctx'
     - 'this value of `ctx` is never use'
