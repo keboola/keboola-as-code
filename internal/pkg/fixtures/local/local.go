@@ -17,7 +17,7 @@ func LoadFS(dirName string, envs testhelper.EnvProvider) (filesystem.Fs, error) 
 
 	// Create Fs
 	fs := testfs.NewMemoryFsFrom(stateDir)
-	testhelper.ReplaceEnvsDir(fs, `/`, envs)
+	testhelper.MustReplaceEnvsDir(fs, `/`, envs)
 
 	return fs, nil
 }

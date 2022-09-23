@@ -418,7 +418,7 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 
 	// Add additional ENVs
 	for k, v := range additionalEnvs {
-		p.setEnv(k, testhelper.ReplaceEnvsString(v, p.envs))
+		p.setEnv(k, testhelper.MustReplaceEnvsString(v, p.envs))
 	}
 
 	// Wait for requests
@@ -475,9 +475,9 @@ func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, sendR
 			}
 
 			// Replace ENVs in config and rows content
-			json.MustDecodeString(testhelper.ReplaceEnvsString(json.MustEncodeString(configWithRows.Content, false), p.envs), &configWithRows.Content)
+			json.MustDecodeString(testhelper.MustReplaceEnvsString(json.MustEncodeString(configWithRows.Content, false), p.envs), &configWithRows.Content)
 			for _, row := range configWithRows.Rows {
-				json.MustDecodeString(testhelper.ReplaceEnvsString(json.MustEncodeString(row.Content, false), p.envs), &row.Content)
+				json.MustDecodeString(testhelper.MustReplaceEnvsString(json.MustEncodeString(row.Content, false), p.envs), &row.Content)
 			}
 
 			// Send request

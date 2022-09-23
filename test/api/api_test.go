@@ -95,7 +95,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	envProvider := storageenv.CreateStorageEnvTicketProvider(context.Background(), api, envs)
 
 	// Replace all %%ENV_VAR%% in all files in the working directory
-	testhelper.ReplaceEnvsDir(workingDirFs, `/`, envProvider)
+	testhelper.MustReplaceEnvsDir(workingDirFs, `/`, envProvider)
 
 	// Assert
 	RunRequests(t, envProvider, testDirFs, workingDirFs, binary, project)
@@ -268,7 +268,7 @@ func RunRequests(
 		// Read the request file
 		requestFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(dir, "request.json")))
 		assert.NoError(t, err)
-		requestFileStr := testhelper.ReplaceEnvsString(requestFile.Content, envProvider)
+		requestFileStr := testhelper.MustReplaceEnvsString(requestFile.Content, envProvider)
 
 		request := &ApiRequest{}
 		err = json.DecodeString(requestFileStr, request)
@@ -300,7 +300,7 @@ func RunRequests(
 		// Compare response body
 		expectedRespFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(dir, "expected-response.json")))
 		assert.NoError(t, err)
-		expectedRespBody := testhelper.ReplaceEnvsString(expectedRespFile.Content, envProvider)
+		expectedRespBody := testhelper.MustReplaceEnvsString(expectedRespFile.Content, envProvider)
 
 		// Decode && encode json to unite indentation of the response with expected-response.json
 		respMap := orderedmap.New()
@@ -352,7 +352,7 @@ func RunRequests(
 		// Compare expected and actual state
 		wildcards.Assert(
 			t,
-			testhelper.ReplaceEnvsString(expectedSnapshot.Content, envProvider),
+			testhelper.MustReplaceEnvsString(expectedSnapshot.Content, envProvider),
 			json.MustEncodeString(actualSnapshot, true),
 			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir.`,
 		)
@@ -368,13 +368,13 @@ func RunRequests(
 	if testDirFs.IsFile(expectedStdoutPath) {
 		file, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStdoutPath))
 		assert.NoError(t, err)
-		expected := testhelper.ReplaceEnvsString(file.Content, envProvider)
+		expected := testhelper.MustReplaceEnvsString(file.Content, envProvider)
 		wildcards.Assert(t, expected, stdout.String(), "Unexpected STDOUT.")
 	}
 	if testDirFs.IsFile(expectedStderrPath) {
 		file, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStderrPath))
 		assert.NoError(t, err)
-		expected := testhelper.ReplaceEnvsString(file.Content, envProvider)
+		expected := testhelper.MustReplaceEnvsString(file.Content, envProvider)
 		wildcards.Assert(t, expected, stderr.String(), "Unexpected STDERR.")
 	}
 }

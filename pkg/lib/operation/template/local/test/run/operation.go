@@ -139,8 +139,8 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 	replaceEnvs.Set("PROJECT_ID", strconv.Itoa(testPrj.ID()))
 	replaceEnvs.Set("MAIN_BRANCH_ID", strconv.Itoa(branchID))
 	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(ctx, replaceEnvs)
-	testhelper.ReplaceEnvsDir(prjState.Fs(), `/`, envProvider)
-	testhelper.ReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
+	testhelper.MustReplaceEnvsDir(prjState.Fs(), `/`, envProvider)
+	testhelper.MustReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
 
 	// Compare actual and expected dirs
 	return testhelper.DirectoryContentsSame(expectedDirFs, `/`, prjState.Fs(), `/`)
@@ -196,8 +196,8 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	replaceEnvs.Set("PROJECT_ID", strconv.Itoa(testPrj.ID()))
 	replaceEnvs.Set("MAIN_BRANCH_ID", prjState.MainBranch().Id.String())
 	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(ctx, replaceEnvs)
-	testhelper.ReplaceEnvsDir(prjState.Fs(), `/`, envProvider)
-	testhelper.ReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
+	testhelper.MustReplaceEnvsDir(prjState.Fs(), `/`, envProvider)
+	testhelper.MustReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
 
 	// Compare actual and expected dirs
 	err = testhelper.DirectoryContentsSame(expectedDirFs, `/`, prjState.Fs(), `/`)
