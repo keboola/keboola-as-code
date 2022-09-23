@@ -12,7 +12,10 @@
     {
       "id": "my-template-id",
       "name": "My Template",
-      "components": [],
+      "components": [
+        "foo.bar",
+        "keboola.wr-%s"
+      ],
       "author": {
         "name": "Example Author",
         "url": "https://example.com"

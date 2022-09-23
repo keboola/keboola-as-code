@@ -38,6 +38,7 @@ func TestCliSubCommands(t *testing.T) {
 		"local",
 		"remote",
 		"dbt",
+		"template",
 	}, names)
 }
 
@@ -59,6 +60,7 @@ func TestCliSubCommandsAndAliases(t *testing.T) {
 		"local",
 		"remote",
 		"dbt",
+		"template",
 		"i",
 		"d",
 		"pl",
@@ -75,6 +77,10 @@ func TestCliSubCommandsAndAliases(t *testing.T) {
 		"persist",
 		"create",
 		"encrypt",
+		"use",
+		"t",
+		"r",
+		"repo",
 	}, names)
 }
 
@@ -213,5 +219,10 @@ func newTestRootCommand(fs filesystem.Fs) (*RootCommand, *ioutil.Writer) {
 	fsFactory := func(logger log.Logger, workingDir string) (filesystem.Fs, error) {
 		return fs, nil
 	}
-	return NewRootCommand(in, out, out, nopPrompt.New(), env.Empty(), fsFactory), out
+
+	envs := env.Empty()
+	envs.Set("KBC_TEMPLATES_PRIVATE_BETA", "true")
+	envs.Set("KBC_DBT_PRIVATE_BETA", "true")
+
+	return NewRootCommand(in, out, out, nopPrompt.New(), envs, fsFactory), out
 }

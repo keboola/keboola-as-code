@@ -1,6 +1,9 @@
 {
   "versionDetail": {
-    "components": [],
+    "components": [
+      "foo.bar",
+      "keboola.wr-%s"
+    ],
     "longDescription": "A long **description**.\n",
     "readme": "### My Template\n\nFull workflow to ...\n\n",
     "version": "1.2.3",
