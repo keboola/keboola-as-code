@@ -17,6 +17,7 @@
           "stable": false,
           "path": "v1",
           "components": [
+            "<keboola.wr-snowflake>",
             "keboola.ex-aws-s3",
             "keboola.ex-facebook"
           ]

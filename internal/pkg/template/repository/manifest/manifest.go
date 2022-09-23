@@ -9,6 +9,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
+// SnowflakeWriterComponentIdPlaceholder can be used in "repository.json"
+// to define Snowflake Writer used in the stack.
+// In Jsonnet files is used function "SnowflakeWriterComponentId",
+// but repository definition is Json, not Jsonnet.
+// Placeholder is replaced when generating API response.
+const SnowflakeWriterComponentIdPlaceholder = "<keboola.wr-snowflake>"
+
 type TemplateNotFoundError struct {
 	error
 }

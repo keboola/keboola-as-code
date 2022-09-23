@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/spf13/cast"
@@ -16,6 +17,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/use"
 )
 
 func RepositoriesResponse(ctx context.Context, d dependencies.ForProjectRequest) (out *Repositories, err error) {
@@ -79,7 +82,7 @@ func TemplateResponse(ctx context.Context, d dependencies.ForProjectRequest, tmp
 	out = &Template{
 		ID:             tmpl.Id,
 		Name:           tmpl.Name,
-		Components:     defaultVersion.Components,
+		Components:     ComponentsResponse(d, defaultVersion.Components),
 		Description:    tmpl.Description,
 		DefaultVersion: defaultVersion.Version.String(),
 		Author:         author,
@@ -107,7 +110,7 @@ func TemplateDetailResponse(ctx context.Context, d dependencies.ForProjectReques
 		Repository:     repoResponse,
 		ID:             tmpl.Id,
 		Name:           tmpl.Name,
-		Components:     defaultVersion.Components,
+		Components:     ComponentsResponse(d, defaultVersion.Components),
 		Description:    tmpl.Description,
 		DefaultVersion: defaultVersion.Version.String(),
 		Author:         repoResponse.Author,
@@ -128,13 +131,13 @@ func VersionResponse(v *repository.VersionRecord) *Version {
 	}
 }
 
-func VersionDetailResponse(template *template.Template) *VersionDetail {
+func VersionDetailResponse(d dependencies.ForProjectRequest, template *template.Template) *VersionDetail {
 	versionRec := template.VersionRecord()
 	return &VersionDetail{
 		Version:         versionRec.Version.String(),
 		Stable:          versionRec.Stable,
 		Description:     versionRec.Description,
-		Components:      template.Components(),
+		Components:      ComponentsResponse(d, template.Components()),
 		LongDescription: template.LongDesc(),
 		Readme:          template.Readme(),
 	}
@@ -158,10 +161,29 @@ func VersionDetailExtendedResponse(ctx context.Context, d dependencies.ForProjec
 		Version:         versionRec.Version.String(),
 		Stable:          versionRec.Stable,
 		Description:     versionRec.Description,
-		Components:      template.Components(),
+		Components:      ComponentsResponse(d, template.Components()),
 		LongDescription: template.LongDesc(),
 		Readme:          template.Readme(),
 	}, nil
+}
+
+func ComponentsResponse(d dependencies.ForProjectRequest, in []string) (out []string) {
+	out = make([]string, 0)
+	for _, componentId := range in {
+		// Map placeholder "<keboola.wr-snowflake>" to real componentId.
+		if componentId == manifest.SnowflakeWriterComponentIdPlaceholder {
+			if _, found := d.Components().Get(use.SnowflakeWriterAws); found {
+				componentId = use.SnowflakeWriterAws.String()
+			} else if _, found := d.Components().Get(use.SnowflakeWriterAzure); found {
+				componentId = use.SnowflakeWriterAzure.String()
+			} else {
+				continue
+			}
+		}
+		out = append(out, componentId)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func InputsResponse(ctx context.Context, d dependencies.ForProjectRequest, stepsGroups input.StepsGroupsExt) (out *Inputs) {
@@ -401,5 +423,5 @@ func instanceVersionDetail(ctx context.Context, d dependencies.ForProjectRequest
 	if err != nil {
 		return nil
 	}
-	return VersionDetailResponse(tmpl)
+	return VersionDetailResponse(d, tmpl)
 }
