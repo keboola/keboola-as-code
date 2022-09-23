@@ -21,6 +21,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
+const SnowflakeWriterAws = storageapi.ComponentID("keboola.wr-db-snowflake")
+const SnowflakeWriterAzure = storageapi.ComponentID("keboola.wr-snowflake-blob-storage")
+
 // Context represents the process of replacing values when applying a template to a remote project.
 //
 // Process description:
@@ -51,6 +54,7 @@ type Context struct {
 	replacements      *replacevalues.Values
 	inputsValues      map[string]template.InputValue
 	tickets           *storageapi.TicketProvider
+	components        *model.ComponentsMap
 	placeholdersCount int
 	ticketsResolved   bool
 
@@ -86,7 +90,7 @@ const (
 	instanceIdShortLength = 8
 )
 
-func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefsMap map[string]*template.Input, tickets *storageapi.TicketProvider) *Context {
+func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefsMap map[string]*template.Input, tickets *storageapi.TicketProvider, components *model.ComponentsMap) *Context {
 	ctx = template.NewContext(ctx)
 	c := &Context{
 		_context:        ctx,
@@ -97,6 +101,7 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 		replacements:    replacevalues.NewValues(),
 		inputsValues:    make(map[string]template.InputValue),
 		tickets:         tickets,
+		components:      components,
 		lock:            &sync.Mutex{},
 		placeholders:    make(PlaceholdersMap),
 		objectIds:       make(metadata.ObjectIdsMap),
@@ -272,6 +277,35 @@ func (c *Context) registerJsonNetFunctions() {
 		Params: ast.Identifiers{},
 		Func: func(params []interface{}) (interface{}, error) {
 			return c.instanceIdShort, nil
+		},
+	})
+
+	// Components
+	c.jsonNetCtx.NativeFunctionWithAlias(&jsonnet.NativeFunction{
+		Name:   `ComponentIsAvailable`,
+		Params: ast.Identifiers{"componentId"},
+		Func: func(params []interface{}) (interface{}, error) {
+			if len(params) != 1 {
+				return nil, fmt.Errorf("one parameter expected, found %d", len(params))
+			} else if componentId, ok := params[0].(string); !ok {
+				return nil, fmt.Errorf("parameter must be a string")
+			} else {
+				_, found := c.components.Get(storageapi.ComponentID(componentId))
+				return found, nil
+			}
+		},
+	})
+	c.jsonNetCtx.NativeFunctionWithAlias(&jsonnet.NativeFunction{
+		Name:   `SnowflakeWriterComponentId`,
+		Params: ast.Identifiers{},
+		Func: func(params []interface{}) (interface{}, error) {
+			if _, found := c.components.Get(SnowflakeWriterAws); found {
+				return SnowflakeWriterAws.String(), nil
+			} else if _, found := c.components.Get(SnowflakeWriterAzure); found {
+				return SnowflakeWriterAzure.String(), nil
+			} else {
+				return nil, fmt.Errorf("no Snowflake Writer component found")
+			}
 		},
 	})
 }

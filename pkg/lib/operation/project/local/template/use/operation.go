@@ -85,7 +85,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	instanceId = idgenerator.TemplateInstanceId()
 
 	// Load template
-	tmplCtx := use.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), instanceId, o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets)
+	tmplCtx := use.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), instanceId, o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components())
 	templateState, err := tmpl.LoadState(tmplCtx, loadState.LocalOperationOptions(), d)
 	if err != nil {
 		return "", nil, err
