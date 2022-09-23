@@ -168,3 +168,86 @@ func TestContext(t *testing.T) {
 		},
 	}, useCtx.InputsUsage())
 }
+
+func TestComponentsFunctions(t *testing.T) {
+	t.Parallel()
+
+	// Mocked ticket provider
+	storageApiClient, _ := client.NewMockedClient()
+	tickets := storageapi.NewTicketProvider(context.Background(), storageApiClient)
+	components := model.NewComponentsMap(storageapi.Components{})
+	targetBranch := model.BranchKey{Id: 123}
+	inputsValues := template.InputsValues{}
+	inputs := map[string]*template.Input{}
+	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
+	instanceId := "my-instance"
+	fs := testfs.NewMemoryFs()
+	ctx := context.Background()
+
+	// Context factory for template use operation
+	newUseCtx := func() *Context {
+		return NewContext(ctx, templateRef, fs, instanceId, targetBranch, inputsValues, inputs, tickets, components)
+	}
+
+	// Jsonnet template
+	code := `
+{
+"keboola.wr-db-snowflake": ComponentIsAvailable("keboola.wr-db-snowflake"),
+"keboola.wr-snowflake-blob-storage": ComponentIsAvailable("keboola.wr-snowflake-blob-storage"),
+"wr-snowflake": SnowflakeWriterComponentId(),
+}
+`
+
+	// Case 1: No component is defined
+	output, err := jsonnet.Evaluate(code, newUseCtx().JsonNetContext())
+	expected := ""
+	assert.Error(t, err)
+	assert.Equal(t, "jsonnet error: RUNTIME ERROR: no Snowflake Writer component found", err.Error())
+	assert.Equal(t, expected, output)
+
+	// Case 2: Only AWS Snowflake Writer
+	components = model.NewComponentsMap(storageapi.Components{
+		{ComponentKey: storageapi.ComponentKey{ID: SnowflakeWriterAws}},
+	})
+	expected = `
+{
+  "keboola.wr-db-snowflake": true,
+  "keboola.wr-snowflake-blob-storage": false,
+  "wr-snowflake": "keboola.wr-db-snowflake"
+}
+`
+	output, err = jsonnet.Evaluate(code, newUseCtx().JsonNetContext())
+	assert.NoError(t, err)
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
+
+	// Case 3: Only Azure Snowflake Writer
+	components = model.NewComponentsMap(storageapi.Components{
+		{ComponentKey: storageapi.ComponentKey{ID: SnowflakeWriterAzure}},
+	})
+	expected = `
+{
+  "keboola.wr-db-snowflake": false,
+  "keboola.wr-snowflake-blob-storage": true,
+  "wr-snowflake": "keboola.wr-snowflake-blob-storage"
+}
+`
+	output, err = jsonnet.Evaluate(code, newUseCtx().JsonNetContext())
+	assert.NoError(t, err)
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
+
+	// Case 4: Both AWS and Azure Snowflake Writer
+	components = model.NewComponentsMap(storageapi.Components{
+		{ComponentKey: storageapi.ComponentKey{ID: SnowflakeWriterAws}},
+		{ComponentKey: storageapi.ComponentKey{ID: SnowflakeWriterAzure}},
+	})
+	expected = `
+{
+  "keboola.wr-db-snowflake": true,
+  "keboola.wr-snowflake-blob-storage": true,
+  "wr-snowflake": "keboola.wr-db-snowflake"
+}
+`
+	output, err = jsonnet.Evaluate(code, newUseCtx().JsonNetContext())
+	assert.NoError(t, err)
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
+}
