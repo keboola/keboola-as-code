@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	. "github.com/keboola/keboola-as-code/internal/pkg/template/use"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
@@ -79,7 +80,7 @@ func TestContext(t *testing.T) {
 	ctx := context.WithValue(context.Background(), jsonnetfiles.FileDefCtxKey, fileDef)
 
 	// Create template use context
-	useCtx := NewContext(ctx, templateRef, fs, instanceId, targetBranch, inputsValues, map[string]*template.Input{}, tickets)
+	useCtx := NewContext(ctx, templateRef, fs, instanceId, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap())
 
 	// Check JsonNet functions
 	code := `

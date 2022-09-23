@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	. "github.com/keboola/keboola-as-code/internal/pkg/template/upgrade"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
@@ -88,7 +89,7 @@ func TestContext(t *testing.T) {
 
 	// Create context
 	fs := testfs.NewMemoryFs()
-	ctx := NewContext(context.Background(), templateRef, fs, instanceId, targetBranch, inputsValues, map[string]*template.Input{}, tickets, projectState)
+	ctx := NewContext(context.Background(), templateRef, fs, instanceId, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState)
 
 	// Check JsonNet functions
 	code := `

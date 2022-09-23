@@ -51,6 +51,7 @@ type Context struct {
 	replacements      *replacevalues.Values
 	inputsValues      map[string]template.InputValue
 	tickets           *storageapi.TicketProvider
+	components        *model.ComponentsMap
 	placeholdersCount int
 	ticketsResolved   bool
 
@@ -86,7 +87,7 @@ const (
 	instanceIdShortLength = 8
 )
 
-func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefsMap map[string]*template.Input, tickets *storageapi.TicketProvider) *Context {
+func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefsMap map[string]*template.Input, tickets *storageapi.TicketProvider, components *model.ComponentsMap) *Context {
 	ctx = template.NewContext(ctx)
 	c := &Context{
 		_context:        ctx,
@@ -97,6 +98,7 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 		replacements:    replacevalues.NewValues(),
 		inputsValues:    make(map[string]template.InputValue),
 		tickets:         tickets,
+		components:      components,
 		lock:            &sync.Mutex{},
 		placeholders:    make(PlaceholdersMap),
 		objectIds:       make(metadata.ObjectIdsMap),

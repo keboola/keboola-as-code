@@ -57,7 +57,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	tickets := d.ObjectIDGeneratorFactory()(ctx)
 
 	// Load template
-	tmplCtx := upgrade.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), o.Instance.InstanceId, o.Branch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, projectState.State())
+	tmplCtx := upgrade.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), o.Instance.InstanceId, o.Branch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components(), projectState.State())
 	templateState, err := tmpl.LoadState(tmplCtx, use.LoadTemplateOptions(), d)
 	if err != nil {
 		return nil, err
