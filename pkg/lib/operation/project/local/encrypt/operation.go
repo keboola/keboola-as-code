@@ -49,7 +49,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		}
 
 		// Invoke
-		if err := plan.Invoke(projectState.Ctx(), d.ProjectID(), logger, encryptionApiClient, projectState.State()); err != nil {
+		if err := plan.Invoke(ctx, d.ProjectID(), logger, encryptionApiClient, projectState.State()); err != nil {
 			return err
 		}
 

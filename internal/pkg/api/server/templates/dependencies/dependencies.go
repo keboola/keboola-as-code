@@ -26,6 +26,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -33,6 +34,8 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 	ddHttp "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
@@ -188,7 +191,7 @@ func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, r
 }
 
 func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (ForProjectRequest, error) {
-	_, span := publicDeps.Tracer().Start(ctx, "kac.api.server.templates.dependencies.NewDepsForProjectRequest")
+	ctx, span := publicDeps.Tracer().Start(ctx, "kac.api.server.templates.dependencies.NewDepsForProjectRequest")
 	defer telemetryUtils.EndSpan(span, nil)
 
 	projectDeps, err := dependencies.NewProjectDeps(ctx, publicDeps, publicDeps, tokenStr)
@@ -346,7 +349,10 @@ func (v *forProjectRequest) ProjectRepositories() *model.TemplateRepositories {
 	})
 }
 
-func (v *forProjectRequest) Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error) {
+func (v *forProjectRequest) Template(ctx context.Context, reference model.TemplateRef) (tmpl *template.Template, err error) {
+	ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.Template")
+	defer telemetryUtils.EndSpan(span, &err)
+
 	// Get repository
 	repo, err := v.cachedTemplateRepository(ctx, reference.Repository())
 	if err != nil {
@@ -357,7 +363,10 @@ func (v *forProjectRequest) Template(ctx context.Context, reference model.Templa
 	return repo.Template(ctx, reference)
 }
 
-func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition model.TemplateRepository) (*repository.Repository, error) {
+func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition model.TemplateRepository) (tmpl *repository.Repository, err error) {
+	ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.TemplateRepository")
+	defer telemetryUtils.EndSpan(span, &err)
+
 	repo, err := v.cachedTemplateRepository(ctx, definition)
 	if err != nil {
 		return nil, err
@@ -367,7 +376,7 @@ func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition m
 
 func (v *forProjectRequest) cachedTemplateRepository(ctx context.Context, definition model.TemplateRepository) (repo *repositoryManager.CachedRepository, err error) {
 	if _, found := v.repositories[definition.Hash()]; !found {
-		ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.TemplateRepository")
+		ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.cachedTemplateRepository")
 		defer telemetryUtils.EndSpan(span, &err)
 
 		// Get git repository
@@ -398,9 +407,23 @@ func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) c
 	if telemetry.IsDataDogEnabled(envs) {
 		transport = ddHttp.WrapRoundTripper(
 			transport,
+			ddHttp.WithBefore(func(request *http.Request, span ddtrace.Span) {
+				// We use "http.request" operation name for request to the API,
+				// so requests to other API must have different operation name.
+				span.SetOperationName("kac.api.client.http.request")
+				span.SetTag("http.host", request.URL.Host)
+				if dotPos := strings.IndexByte(request.URL.Host, '.'); dotPos > 0 {
+					// E.g. connection, encryption, scheduler ...
+					span.SetTag("http.hostPrefix", request.URL.Host[:dotPos])
+				}
+				span.SetTag(ext.EventSampleRate, 1.0)
+				span.SetTag(ext.HTTPURL, request.URL.Redacted())
+				span.SetTag("http.path", request.URL.Path)
+				span.SetTag("http.query", request.URL.Query().Encode())
+			}),
 			ddHttp.RTWithResourceNamer(func(r *http.Request) string {
 				// Set resource name to request path
-				return r.URL.Path
+				return strhelper.MustUrlPathUnescape(r.URL.RequestURI())
 			}))
 	}
 

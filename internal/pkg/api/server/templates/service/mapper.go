@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/upgrade"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/use"
 )
 
@@ -184,6 +185,14 @@ func ComponentsResponse(d dependencies.ForProjectRequest, in []string) (out []st
 	}
 	sort.Strings(out)
 	return out
+}
+
+func UpgradeInstanceInputsResponse(ctx context.Context, d dependencies.ForProjectRequest, prjState *project.State, branchKey model.BranchKey, instance *model.TemplateInstance, tmpl *template.Template) (out *Inputs) {
+	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.UpgradeInstanceInputsResponse")
+	defer telemetry.EndSpan(span, nil)
+
+	stepsGroupsExt := upgrade.ExportInputsValues(d.Logger().InfoWriter(), prjState.State(), branchKey, instance.InstanceId, tmpl.Inputs())
+	return InputsResponse(ctx, d, stepsGroupsExt)
 }
 
 func InputsResponse(ctx context.Context, d dependencies.ForProjectRequest, stepsGroups input.StepsGroupsExt) (out *Inputs) {
@@ -363,8 +372,8 @@ func InstanceResponse(ctx context.Context, d dependencies.ForProjectRequest, prj
 
 	// Map configurations
 	outConfigs := make([]*Config, 0)
-	configs := search.ConfigsForTemplateInstance(prjState.RemoteObjects().ConfigsWithRowsFrom(branchKey), instanceId)
-	for _, config := range configs {
+	branchConfigs := prjState.RemoteObjects().ConfigsWithRowsFrom(branchKey)
+	for _, config := range search.ConfigsForTemplateInstance(branchConfigs, instanceId) {
 		outConfigs = append(outConfigs, &Config{
 			Name:        config.Name,
 			ConfigID:    string(config.Id),
