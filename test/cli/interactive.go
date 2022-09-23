@@ -54,7 +54,7 @@ func setupCmdInOut(t *testing.T, envProvider testhelper.EnvProvider, testDirFs f
 
 		// Replace ENvs in expectations
 		expectations := file.Content
-		v.expectations = testhelper.ReplaceEnvsString(expectations, envProvider)
+		v.expectations = testhelper.MustReplaceEnvsString(expectations, envProvider)
 
 		// Create virtual terminal
 		v.console, err = terminal.New(t, expect.WithStdout(&v.stdoutBuf))
