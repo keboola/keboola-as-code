@@ -1,0 +1,26 @@
+name: Push
+on:
+  push:
+    branches:
+      - 'main'
+env:
+  KBC_STORAGE_API_TOKEN: ${{ secrets.KBC_STORAGE_API_TOKEN }}
+  COMMIT_REF: ${{ github.sha }}
+  COMMIT_MSG: ${{ github.event.head_commit.message }}
+jobs:
+  kbc_push:
+    # Skip automatic pull commits
+    if: "!contains(github.event.head_commit.message, 'Automatic pull')"
+    # Stop all other jobs on the same branch, eg. automatic pull
+    concurrency:
+     group: main_branch
+     cancel-in-progress: true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Install Keboola as Code CLI
+        uses: ./.github/actions/install
+      - name: Push to Keboola Connection
+        run: |
+          kbc push "#KeboolaCLI: commit $COMMIT_REF"

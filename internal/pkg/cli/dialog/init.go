@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
@@ -18,13 +19,18 @@ type initDeps interface {
 	StorageApiClient() client.Sender
 }
 
-func (p *Dialogs) AskHostAndToken(o *options.Options) error {
+type hostAndTokenDependencies interface {
+	Logger() log.Logger
+	Options() *options.Options
+}
+
+func (p *Dialogs) AskHostAndToken(d hostAndTokenDependencies) error {
 	// Host and token
 	errors := utils.NewMultiError()
-	if _, err := p.AskStorageApiHost(o); err != nil {
+	if _, err := p.AskStorageApiHost(d); err != nil {
 		errors.Append(err)
 	}
-	if _, err := p.AskStorageApiToken(o); err != nil {
+	if _, err := p.AskStorageApiToken(d); err != nil {
 		errors.Append(err)
 	}
 	if errors.Len() > 0 {

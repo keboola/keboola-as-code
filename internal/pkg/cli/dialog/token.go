@@ -10,8 +10,9 @@ import (
 
 var ErrMissingStorageApiToken = fmt.Errorf(`missing Storage API token`)
 
-func (p *Dialogs) AskStorageApiToken(options *options.Options) (string, error) {
-	token := options.GetString(`storage-api-token`)
+func (p *Dialogs) AskStorageApiToken(d hostAndTokenDependencies) (string, error) {
+	opts := d.Options()
+	token := opts.GetString(`storage-api-token`)
 	if len(token) == 0 {
 		token, _ = p.Ask(&prompt.Question{
 			Label:       "API token",
@@ -19,6 +20,8 @@ func (p *Dialogs) AskStorageApiToken(options *options.Options) (string, error) {
 			Hidden:      true,
 			Validator:   prompt.ValueRequired,
 		})
+	} else if opts.KeySetBy("storage-api-token") == options.SetByEnv {
+		d.Logger().Infof(`Storage API token set from ENV.`)
 	}
 
 	token = strings.TrimSpace(token)
@@ -26,6 +29,6 @@ func (p *Dialogs) AskStorageApiToken(options *options.Options) (string, error) {
 		return "", ErrMissingStorageApiToken
 	}
 
-	options.Set(`storage-api-token`, token)
+	opts.Set(`storage-api-token`, token)
 	return token, nil
 }

@@ -39,9 +39,9 @@ func TestLoadDotEnv(t *testing.T) {
 
 	expected := `
 DEBUG  Loaded ".env.local"
-INFO  Loaded env file ".env.local"
+INFO  Loaded env file ".env.local".
 DEBUG  Loaded ".env"
-INFO  Loaded env file ".env"
+INFO  Loaded env file ".env".
 `
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
 }

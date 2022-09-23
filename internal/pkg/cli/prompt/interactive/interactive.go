@@ -19,7 +19,7 @@ import (
 type Prompt struct {
 	stdin  terminal.FileReader
 	stdout terminal.FileWriter
-	stderr terminal.FileWriter
+	stderr io.Writer
 	editor string // the editor is started when Editor() is called, if empty, the default is system editor is used
 }
 
@@ -30,11 +30,10 @@ func init() {
 	survey.MultilineQuestionTemplate += `{{"\n"}}`
 }
 
-func New(stdinRaw io.Reader, stdoutRaw io.Writer, stderrRaw io.Writer) prompt.Prompt {
+func New(stdinRaw io.Reader, stdoutRaw io.Writer, stderr io.Writer) prompt.Prompt {
 	stdin, ok1 := stdinRaw.(terminal.FileReader)
 	stdout, ok2 := stdoutRaw.(terminal.FileWriter)
-	stderr, ok3 := stderrRaw.(terminal.FileWriter)
-	if ok1 && ok2 && ok3 && isatty.IsTerminal(stdin.Fd()) && isatty.IsTerminal(stdout.Fd()) && isatty.IsTerminal(stderr.Fd()) {
+	if ok1 && ok2 && isatty.IsTerminal(stdin.Fd()) && isatty.IsTerminal(stdout.Fd()) {
 		return &Prompt{
 			stdin:  stdin,
 			stdout: stdout,

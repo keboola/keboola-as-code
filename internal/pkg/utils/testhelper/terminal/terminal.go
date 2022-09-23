@@ -1,21 +1,26 @@
 package terminal
 
 import (
+	"bytes"
 	"io"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2/terminal"
+	"github.com/Netflix/go-expect"
+	"github.com/acarl005/stripansi"
 )
 
 const sendDelay = 20 * time.Millisecond
-const expectTimeout = 5 * time.Second
+const expectTimeout = 10 * time.Second
 
 // Console is virtual terminal for tests.
 type Console interface {
-	// Tty returns Console's pts (slave part of a pty). A pseudoterminal, or pty is
-	// a pair of pseudo-devices, one of which, the slave, emulates a real text
-	// terminal device.
+	// Tty returns Console's reader/writer, it should be used in unit tests.
 	Tty() Tty
+	// TtyRaw returns Console's pts (slave part of a pty), it should be used to run an OS command.
+	TtyRaw() *os.File
 	// String returns a string representation of the terminal output.
 	String() string
 	// Send writes string s to Console's tty.
@@ -44,4 +49,39 @@ type Tty interface {
 	terminal.FileReader
 	terminal.FileWriter
 	io.Closer
+}
+
+// stringWithoutANSIMatcher fulfills the Matcher interface to match strings.
+// ANSI escape characters are ignored.
+type stringWithoutANSIMatcher struct {
+	str string
+}
+
+func (m *stringWithoutANSIMatcher) Match(v interface{}) bool {
+	buf, ok := v.(*bytes.Buffer)
+	if !ok {
+		return false
+	}
+	if strings.Contains(stripansi.Strip(buf.String()), m.str) {
+		return true
+	}
+	return false
+}
+
+func (m *stringWithoutANSIMatcher) Criteria() interface{} {
+	return m.str
+}
+
+// StringWithoutANSI adds an Expect condition to exit if the content read from Console's
+// tty contains any of the given strings.
+// ANSI escape characters are ignored.
+func StringWithoutANSI(strs ...string) expect.ExpectOpt {
+	return func(opts *expect.ExpectOpts) error {
+		for _, str := range strs {
+			opts.Matchers = append(opts.Matchers, &stringWithoutANSIMatcher{
+				str: str,
+			})
+		}
+		return nil
+	}
 }

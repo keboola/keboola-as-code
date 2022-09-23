@@ -6,14 +6,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 )
 
 func TestAskStorageApiTokenInteractive(t *testing.T) {
 	t.Parallel()
 
 	dialog, console := createDialogs(t, true)
-	o := options.New()
+	d := dependencies.NewMockedDeps()
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -29,7 +29,7 @@ func TestAskStorageApiTokenInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out, err := dialog.AskStorageApiToken(o)
+	out, err := dialog.AskStorageApiToken(d)
 	assert.Equal(t, `my-secret`, out)
 	assert.NoError(t, err)
 
@@ -43,11 +43,12 @@ func TestAskStorageApiTokenByFlag(t *testing.T) {
 	t.Parallel()
 
 	dialog, _ := createDialogs(t, true)
-	o := options.New()
-	o.Set(`storage-api-token`, `my-secret`)
+	d := dependencies.NewMockedDeps()
+	opts := d.Options()
+	opts.Set(`storage-api-token`, `my-secret`)
 
 	// Run
-	out, err := dialog.AskStorageApiToken(o)
+	out, err := dialog.AskStorageApiToken(d)
 	assert.Equal(t, `my-secret`, out)
 	assert.NoError(t, err)
 }
@@ -56,10 +57,10 @@ func TestAskStorageApiTokenMissing(t *testing.T) {
 	t.Parallel()
 
 	dialog, _ := createDialogs(t, false)
-	o := options.New()
+	d := dependencies.NewMockedDeps()
 
 	// Run
-	out, err := dialog.AskStorageApiToken(o)
+	out, err := dialog.AskStorageApiToken(d)
 	assert.Empty(t, out)
 	assert.Error(t, err)
 	assert.Equal(t, `missing Storage API token`, err.Error())

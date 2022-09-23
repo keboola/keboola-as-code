@@ -1,0 +1,18 @@
+name: Validate
+on:
+  push:
+    branches:
+      - '**'
+      - '!main'
+env:
+  KBC_STORAGE_API_TOKEN: ${{ secrets.KBC_STORAGE_API_TOKEN }}
+jobs:
+  kbc-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Install Keboola as Code CLI
+        uses: ./.github/actions/install
+      - name: Push dry run
+        run: kbc push --dry-run

@@ -88,9 +88,44 @@ Each directory in the `src/tests/*` is one functional test.
   ├─expected-stderr     - file with expected stderr
   ├─expected-state.json - optional, if present, the final project's state is compared with the state defined in the file
   ├─initial-state.json  - optional, if present, TEST_PROJECT will be set to defined state befor test
+  ├─interaction.txt     - optional, if present, interactive input/output is executed according to the script
   ├─in                  - dir, initial state of the working directory before program execution
   └─out                 - dir, expected state of the working directory after program execution
 ```
+
+##### `interaction.txt`
+
+- If the file IS NOT present, the command is executed in non-interactive mode.
+- If the file is present, interactive input is simulated based on the contents of the file.
+
+**Format:**
+- Empty lines are used for higher clarity/readability and are ignored.
+- Line starting with `# ` is comment and is ignored.
+- Line starting with `< ` is expected command output.
+- Line starting with `> ` is command input.
+- ENV placeholders, for example `%%TEST_STORAGE_API_HOST%%`, can be used in both: expected outputs and inputs.
+
+**Special inputs:**
+- `<up arrow>`
+- `<down arrow>`
+- `<left arrow>`
+- `<right arrow>`
+- `<enter>`
+
+**Example:**
+```
+< Please enter Keboola Storage API host, eg. "connection.keboola.com".
+> %%TEST_KBC_STORAGE_API_HOST%%
+
+< Please enter Keboola Storage API token. The value will be hidden.
+> %%TEST_KBC_STORAGE_API_TOKEN%%
+
+< Please select which project's branches you want to use with this CLI.
+# Select all branches
+> <down arrow>
+> <enter>
+```
+
 
 #### Wildcards
 

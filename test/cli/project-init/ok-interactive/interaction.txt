@@ -1,0 +1,26 @@
+< Please enter Keboola Storage API host, eg. "connection.keboola.com".
+> %%TEST_KBC_STORAGE_API_HOST%%
+
+< Please enter Keboola Storage API token. The value will be hidden.
+> %%TEST_KBC_STORAGE_API_TOKEN%%
+
+< Please select which project's branches you want to use with this CLI.
+# Select all branches
+> <down arrow>
+> <enter>
+
+< Generate workflows files for GitHub Actions? (Y/n)
+> Y
+
+< Generate "validate" workflow?
+> Y
+
+< Generate "push" workflow?
+> Y
+
+< Generate "pull" workflow?
+> Y
+
+< Please select the main GitHub branch name
+# Select "main"
+> <enter>

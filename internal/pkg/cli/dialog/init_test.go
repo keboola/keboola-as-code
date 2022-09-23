@@ -24,7 +24,8 @@ func TestDialogs_AskHostAndToken(t *testing.T) {
 
 	// testDependencies
 	dialog, console := createDialogs(t, true)
-	opts := options.New()
+	d := dependencies.NewMockedDeps()
+	opts := d.Options()
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -48,7 +49,7 @@ func TestDialogs_AskHostAndToken(t *testing.T) {
 	}()
 
 	// Run
-	err := dialog.AskHostAndToken(opts)
+	err := dialog.AskHostAndToken(d)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
