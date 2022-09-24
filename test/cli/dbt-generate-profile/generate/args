@@ -1,0 +1,1 @@
+dbt generate profile -H %%TEST_KBC_STORAGE_API_HOST%% -t %%TEST_KBC_STORAGE_API_TOKEN%% -T target1
