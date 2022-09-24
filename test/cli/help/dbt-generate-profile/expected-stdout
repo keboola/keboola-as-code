@@ -1,10 +1,11 @@
 Generate profile for use with dbt.
 
 Usage:
-  kbc dbt generate profiles [flags]
+  kbc dbt generate profile [flags]
 
 Flags:
   -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
+  -T, --target-name string        target name of the profile
 
 Global Flags:
   -h, --help                       print help for command
