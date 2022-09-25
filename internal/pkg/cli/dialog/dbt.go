@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
@@ -18,7 +17,6 @@ type dbtGenerateProfileDialogDeps interface {
 	Logger() log.Logger
 	Options() *options.Options
 	Components() *model.ComponentsMap
-	StorageApiClient() client.Sender
 }
 
 type dbtGenerateProfileDialog struct {
@@ -38,11 +36,6 @@ func (p *Dialogs) AskDbtGenerateProfile(deps dbtGenerateProfileDialogDeps) (prof
 }
 
 func (d *dbtGenerateProfileDialog) ask() (profile.Options, error) {
-	// Host
-	if _, err := d.AskStorageApiHost(d.deps); err != nil {
-		return d.out, err
-	}
-
 	// Target Name
 	if d.deps.Options().IsSet(`target-name`) {
 		d.out.TargetName = d.deps.Options().GetString(`target-name`)

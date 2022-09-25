@@ -14,7 +14,7 @@ func ProfileCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`dbt/generate/profile/short`),
 		Long:  helpmsg.Read(`dbt/generate/profile/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d, err := p.DependenciesForRemoteCommand()
+			d, err := p.DependenciesForLocalCommand()
 			if err != nil {
 				return err
 			}
@@ -29,7 +29,6 @@ func ProfileCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
 	cmd.Flags().StringP("target-name", "T", "", "target name of the profile")
 
 	return cmd

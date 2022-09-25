@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/client"
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/yaml.v3"
 
@@ -17,7 +16,6 @@ import (
 type dependencies interface {
 	Fs() filesystem.Fs
 	Logger() log.Logger
-	StorageApiClient() client.Sender
 	Tracer() trace.Tracer
 }
 
