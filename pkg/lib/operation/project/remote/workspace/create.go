@@ -46,6 +46,7 @@ func Create(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 		opts = append(opts, sandbox.WithSize(o.Size))
 	}
 
+	logger.Info(`Creating new workspace, please wait.`)
 	// Create workspace by API
 	if _, err := sandbox.Create(
 		ctx,
@@ -59,6 +60,6 @@ func Create(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 		return fmt.Errorf("cannot create workspace: %w", err)
 	}
 
-	logger.Info(fmt.Sprintf(`Created new workspace "%s".`, o.Name))
+	logger.Infof(`Created new workspace "%s".`, o.Name)
 	return nil
 }
