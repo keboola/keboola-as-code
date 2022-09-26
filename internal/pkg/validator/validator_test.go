@@ -24,7 +24,7 @@ type testStruct2 struct {
 
 func TestValidateStruct(t *testing.T) {
 	t.Parallel()
-	err := Validate(context.Background(), testStruct1{Nested: []testStruct2{{}, {}}})
+	err := New().Validate(context.Background(), testStruct1{Nested: []testStruct2{{}, {}}})
 	expected := `
 - field1 is a required field
 - Field2 is a required field
@@ -39,7 +39,7 @@ func TestValidateStruct(t *testing.T) {
 
 func TestValidateStructWithNamespace(t *testing.T) {
 	t.Parallel()
-	err := ValidateCtx(context.Background(), testStruct1{Nested: []testStruct2{{}, {}}}, "dive", "my.value")
+	err := New().ValidateCtx(context.Background(), testStruct1{Nested: []testStruct2{{}, {}}}, "dive", "my.value")
 	expected := `
 - my.value.field1 is a required field
 - my.value.Field2 is a required field
@@ -54,7 +54,7 @@ func TestValidateStructWithNamespace(t *testing.T) {
 
 func TestValidateSlice(t *testing.T) {
 	t.Parallel()
-	err := Validate(context.Background(), []testStruct2{{}, {}})
+	err := New().Validate(context.Background(), []testStruct2{{}, {}})
 	expected := `
 - [0].field4 is a required field
 - [1].field4 is a required field
@@ -65,7 +65,7 @@ func TestValidateSlice(t *testing.T) {
 
 func TestValidateSliceWithNamespace(t *testing.T) {
 	t.Parallel()
-	err := ValidateCtx(context.Background(), []testStruct2{{}, {}}, "dive", "my.value")
+	err := New().ValidateCtx(context.Background(), []testStruct2{{}, {}}, "dive", "my.value")
 	expected := `
 - my.value.[0].field4 is a required field
 - my.value.[1].field4 is a required field
@@ -76,14 +76,14 @@ func TestValidateSliceWithNamespace(t *testing.T) {
 
 func TestValidateValue(t *testing.T) {
 	t.Parallel()
-	err := ValidateCtx(context.Background(), "", "required", "")
+	err := New().ValidateCtx(context.Background(), "", "required", "")
 	assert.Error(t, err)
 	assert.Equal(t, `is a required field`, err.Error())
 }
 
 func TestValidateValueAddNamespace(t *testing.T) {
 	t.Parallel()
-	err := ValidateCtx(context.Background(), "", "required", "my.value")
+	err := New().ValidateCtx(context.Background(), "", "required", "my.value")
 	assert.Error(t, err)
 	assert.Equal(t, `my.value is a required field`, err.Error())
 }
@@ -103,31 +103,32 @@ func TestValidateErrorMsgFunc(t *testing.T) {
 		},
 	}
 
-	err := ValidateCtx(context.Background(), "foo", "my_rule", "my.value", rule)
+	err := New(rule).ValidateCtx(context.Background(), "foo", "my_rule", "my.value")
 	assert.Error(t, err)
 	assert.Equal(t, `my.value error message for foo`, err.Error())
 
-	err = ValidateCtx(context.Background(), "other", "my_rule", "my.value", rule)
+	err = New(rule).ValidateCtx(context.Background(), "other", "my_rule", "my.value")
 	assert.Error(t, err)
 	assert.Equal(t, `my.value other error message`, err.Error())
 }
 
 func TestValidatorRequiredInProject(t *testing.T) {
 	t.Parallel()
+	v := New()
 
 	// Project
 	projectCtx := context.Background()
-	err := ValidateCtx(projectCtx, `value`, `required_in_project`, `some_field`)
+	err := v.ValidateCtx(projectCtx, `value`, `required_in_project`, `some_field`)
 	assert.NoError(t, err)
-	err = ValidateCtx(projectCtx, ``, `required_in_project`, `some_field`)
+	err = v.ValidateCtx(projectCtx, ``, `required_in_project`, `some_field`)
 	assert.Error(t, err)
 	assert.Equal(t, "some_field is a required field", err.Error())
 
 	// Template
 	templateCtx := context.WithValue(context.Background(), DisableRequiredInProjectKey, true)
-	err = ValidateCtx(templateCtx, ``, `required_in_project`, `some_field`)
+	err = v.ValidateCtx(templateCtx, ``, `required_in_project`, `some_field`)
 	assert.NoError(t, err)
-	err = ValidateCtx(templateCtx, `value`, `required_in_project`, `some_field`)
+	err = v.ValidateCtx(templateCtx, `value`, `required_in_project`, `some_field`)
 	assert.NoError(t, err)
 }
 
@@ -143,8 +144,9 @@ func TestValidatorAlphaNumDash(t *testing.T) {
 		{"123-abc-#", "some_field can only contain alphanumeric characters and dash"},
 	}
 
+	v := New()
 	for i, c := range cases {
-		err := ValidateCtx(context.Background(), c.value, `alphanumdash`, `some_field`)
+		err := v.ValidateCtx(context.Background(), c.value, `alphanumdash`, `some_field`)
 		if c.error == "" {
 			assert.NoError(t, err, fmt.Sprintf("case: %d", i+1))
 		} else {
@@ -167,8 +169,9 @@ func TestValidatorTemplateIcon(t *testing.T) {
 		{"", "some_field does not contain an allowed icon"},
 	}
 
+	v := New()
 	for i, c := range cases {
-		err := ValidateCtx(context.Background(), c.value, `templateicon`, `some_field`)
+		err := v.ValidateCtx(context.Background(), c.value, `templateicon`, `some_field`)
 		if c.error == "" {
 			assert.NoError(t, err, fmt.Sprintf("case: %d", i+1))
 		} else {
@@ -188,8 +191,9 @@ func TestValidatorMarkdownLength(t *testing.T) {
 		{"[this is also more than 10 characters](https://google.com/)", "some_field exceeded maximum length of 10"},
 	}
 
+	v := New()
 	for i, c := range cases {
-		err := ValidateCtx(context.Background(), c.value, `mdmax=10`, `some_field`)
+		err := v.ValidateCtx(context.Background(), c.value, `mdmax=10`, `some_field`)
 		if c.error == "" {
 			assert.NoError(t, err, fmt.Sprintf("case: %d", i+1))
 		} else {
