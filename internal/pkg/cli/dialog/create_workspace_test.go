@@ -26,6 +26,7 @@ func TestAskCreateWorkspace(t *testing.T) {
 
 		assert.NoError(t, console.ExpectString("Select a type for the new workspace"))
 
+		assert.NoError(t, console.SendDownArrow())
 		assert.NoError(t, console.SendEnter()) // python
 
 		assert.NoError(t, console.ExpectString("Select a size for the new workspace"))
