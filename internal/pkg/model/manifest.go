@@ -127,7 +127,7 @@ func (p *Paths) AddRelatedPathInRoot(path string) {
 func (p *Paths) RenameRelatedPaths(oldPath, newPath string) {
 	dir := p.Path()
 	if !filesystem.IsFrom(oldPath, dir) {
-		panic(fmt.Errorf(`old "%s" is not from the dir "%s"`, oldPath, dir))
+		panic(fmt.Errorf(`old "%s" is not from the dir "%s" (%s)`, oldPath, dir, newPath))
 	}
 	if !filesystem.IsFrom(newPath, dir) {
 		panic(fmt.Errorf(`new "%s" is not from the dir "%s"`, oldPath, dir))

@@ -193,7 +193,7 @@ func (r *CachedRepository) loadAllTemplates(ctx context.Context) error {
 				defer wg.Done()
 				ref := model.NewTemplateRef(r.repo.Definition(), t.Id, v.Version.String())
 				if _, err := r.Template(ctx, ref); err != nil {
-					r.d.Logger().Errorf(`cannot load all templates from repository "%s" | %s`, r.String(), time.Since(startTime))
+					r.d.Logger().Errorf(`cannot load template "%s" from repository "%s": %s`, ref.FullName(), r.String(), err)
 					errors.Append(fmt.Errorf(`cannot load template "%s": %w`, ref.Name(), err))
 				}
 			}()
