@@ -58,7 +58,7 @@ func (p *Dialogs) askWorkspaceName(d createWorkspaceDeps) (string, error) {
 func (p *Dialogs) askWorkspaceType(d createWorkspaceDeps) (string, error) {
 	if d.Options().IsSet("type") {
 		typ := d.Options().GetString("type")
-		if _, found := sandbox.TypesMap[typ]; !found {
+		if !sandbox.TypesMap[typ] {
 			return "", fmt.Errorf("invalid workspace type, must be one of: %s", strings.Join(sandbox.TypesOrdered, ", "))
 		}
 		return typ, nil
@@ -77,7 +77,7 @@ func (p *Dialogs) askWorkspaceType(d createWorkspaceDeps) (string, error) {
 func (p *Dialogs) askWorkspaceSize(d createWorkspaceDeps) (string, error) {
 	if d.Options().IsSet("size") {
 		size := d.Options().GetString("size")
-		if _, found := sandbox.SizesMap[size]; !found {
+		if !sandbox.SizesMap[size] {
 			return "", fmt.Errorf("invalid workspace size, must be one of: %s", strings.Join(sandbox.SizesOrdered, ", "))
 		}
 		return size, nil
