@@ -38,7 +38,7 @@ func Create(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
 	// Create workspace by API
