@@ -8,49 +8,32 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/profile"
 )
 
-type dbtGenerateProfileDialogDeps interface {
-	Logger() log.Logger
+type targetNameDialogDeps interface {
 	Options() *options.Options
-	Components() *model.ComponentsMap
 }
 
-type dbtGenerateProfileDialog struct {
-	*Dialogs
-	prompt prompt.Prompt
-	deps   dbtGenerateProfileDialogDeps
-	out    profile.Options
+type TargetNameOptions struct {
+	Name string
 }
 
-// AskDbtGenerateProfile - dialog for generating a dbt profile.
-func (p *Dialogs) AskDbtGenerateProfile(deps dbtGenerateProfileDialogDeps) (profile.Options, error) {
-	return (&dbtGenerateProfileDialog{
-		Dialogs: p,
-		prompt:  p.Prompt,
-		deps:    deps,
-	}).ask()
-}
-
-func (d *dbtGenerateProfileDialog) ask() (profile.Options, error) {
-	// Target Name
-	if d.deps.Options().IsSet(`target-name`) {
-		d.out.TargetName = d.deps.Options().GetString(`target-name`)
+func (p *Dialogs) AskTargetName(d targetNameDialogDeps) (TargetNameOptions, error) {
+	opts := TargetNameOptions{}
+	if d.Options().IsSet(`target-name`) {
+		opts.Name = d.Options().GetString(`target-name`)
 	} else {
-		d.out.TargetName = d.askTargetName()
+		opts.Name = p.askTargetName()
 	}
-	if err := validateTargetName(d.out.TargetName); err != nil {
-		return d.out, err
+	if err := validateTargetName(opts.Name); err != nil {
+		return opts, err
 	}
 
-	return d.out, nil
+	return opts, nil
 }
 
-func (d *dbtGenerateProfileDialog) askTargetName() string {
-	name, _ := d.prompt.Ask(&prompt.Question{
+func (p *Dialogs) askTargetName() string {
+	name, _ := p.Ask(&prompt.Question{
 		Label:       `Target Name`,
 		Description: "Please enter target name.\nAllowed characters: a-z, A-Z, 0-9, \"_\".",
 		Validator:   validateTargetName,
