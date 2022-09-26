@@ -7,7 +7,6 @@ import (
 	"github.com/keboola/go-client/pkg/sandbox"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	workspace "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
 )
 
@@ -30,11 +29,13 @@ func (p *Dialogs) AskCreateWorkspace(d createWorkspaceDeps) (workspace.CreateOpt
 	}
 	opts.Type = typ
 
-	size, err := p.askWorkspaceSize(d)
-	if err != nil {
-		return opts, err
+	if sandbox.SupportsSizes(typ) {
+		size, err := p.askWorkspaceSize(d)
+		if err != nil {
+			return opts, err
+		}
+		opts.Size = size
 	}
-	opts.Size = size
 
 	return opts, nil
 }
@@ -54,23 +55,17 @@ func (p *Dialogs) askWorkspaceName(d createWorkspaceDeps) (string, error) {
 	}
 }
 
-var workspaceTypes = []string{
-	"python",
-	"snowflake",
-	"r",
-}
-
 func (p *Dialogs) askWorkspaceType(d createWorkspaceDeps) (string, error) {
 	if d.Options().IsSet("type") {
 		typ := d.Options().GetString("type")
-		if !utils.Contains(workspaceTypes, typ) {
-			return "", fmt.Errorf("invalid workspace type, must be one of: %s", strings.Join(workspaceTypes, ", "))
+		if _, found := sandbox.TypesMap[typ]; !found {
+			return "", fmt.Errorf("invalid workspace type, must be one of: %s", strings.Join(sandbox.TypesOrdered, ", "))
 		}
 		return typ, nil
 	} else {
 		v, ok := p.Select(&prompt.Select{
 			Label:   "Select a type for the new workspace",
-			Options: workspaceTypes,
+			Options: sandbox.TypesOrdered,
 		})
 		if !ok {
 			return "", fmt.Errorf("missing workspace type, please specify it")
@@ -79,23 +74,17 @@ func (p *Dialogs) askWorkspaceType(d createWorkspaceDeps) (string, error) {
 	}
 }
 
-var workspaceSizes = []string{
-	sandbox.SizeSmall,
-	sandbox.SizeMedium,
-	sandbox.SizeLarge,
-}
-
 func (p *Dialogs) askWorkspaceSize(d createWorkspaceDeps) (string, error) {
 	if d.Options().IsSet("size") {
 		size := d.Options().GetString("size")
-		if !utils.Contains(workspaceSizes, size) {
-			return "", fmt.Errorf("invalid workspace size, must be one of: %s", strings.Join(workspaceSizes, ", "))
+		if _, found := sandbox.SizesMap[size]; !found {
+			return "", fmt.Errorf("invalid workspace size, must be one of: %s", strings.Join(sandbox.SizesOrdered, ", "))
 		}
 		return size, nil
 	} else {
 		v, ok := p.Select(&prompt.Select{
 			Label:   "Select a size for the new workspace",
-			Options: workspaceSizes,
+			Options: sandbox.SizesOrdered,
 		})
 		if !ok {
 			return "", fmt.Errorf("missing workspace size, please specify it")
