@@ -52,13 +52,13 @@ func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 		"target": opts.TargetName,
 		"outputs": map[string]interface{}{
 			opts.TargetName: map[string]interface{}{
-				"account":   fmt.Sprintf("{{ env_var(\"DBT_%s_ACCOUNT\") }}", targetUpper),
-				"database":  fmt.Sprintf("{{ env_var(\"DBT_%s_DATABASE\") }}", targetUpper),
-				"password":  fmt.Sprintf("{{ env_var(\"DBT_%s_PASSWORD\") }}", targetUpper),
-				"schema":    fmt.Sprintf("{{ env_var(\"DBT_%s_SCHEMA\") }}", targetUpper),
-				"type":      fmt.Sprintf("{{ env_var(\"DBT_%s_TYPE\") }}", targetUpper),
-				"user":      fmt.Sprintf("{{ env_var(\"DBT_%s_USER\") }}", targetUpper),
-				"warehouse": fmt.Sprintf("{{ env_var(\"DBT_%s_WAREHOUSE\") }}", targetUpper),
+				"account":   fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_ACCOUNT\") }}", targetUpper),
+				"database":  fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", targetUpper),
+				"password":  fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_PASSWORD\") }}", targetUpper),
+				"schema":    fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_SCHEMA\") }}", targetUpper),
+				"type":      fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_TYPE\") }}", targetUpper),
+				"user":      fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_USER\") }}", targetUpper),
+				"warehouse": fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_WAREHOUSE\") }}", targetUpper),
 			},
 		},
 	}
@@ -72,7 +72,7 @@ func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 		}
 		err = yaml.Unmarshal([]byte(file.Content), &profilesFile)
 		if err != nil {
-			return err
+			return fmt.Errorf(`profiles file "%s" is not valid yaml: %w`, profilePath, err)
 		}
 	}
 	profilesFile[profileName.(string)] = profileDetails

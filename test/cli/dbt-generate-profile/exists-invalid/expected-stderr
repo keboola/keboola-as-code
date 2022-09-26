@@ -1,0 +1,3 @@
+Error:
+  - profiles file "profiles.yml" is not valid yaml: yaml: unmarshal errors:
+    - line 1: cannot unmarshal !!str `y::x` into map[string]interface {}

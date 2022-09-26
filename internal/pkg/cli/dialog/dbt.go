@@ -54,6 +54,7 @@ func (d *dbtGenerateProfileDialog) askTargetName() string {
 		Label:       `Target Name`,
 		Description: "Please enter target name.\nAllowed characters: a-z, A-Z, 0-9, \"_\".",
 		Validator:   validateTargetName,
+		Default:     "dev",
 	})
 	return strings.TrimSpace(name)
 }
