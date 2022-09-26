@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	MetadataDir   = ".keboola"
-	PathSeparator = '/'
+	MetadataDir         = ".keboola"
+	PathSeparator       = '/'
+	PathSeparatorString = "/"
 )
 
 // nolint: gochecknoglobals
@@ -136,11 +137,30 @@ func IsAbs(v string) bool {
 
 // IsFrom returns true if path is from base dir or some sub-dir.
 func IsFrom(path, base string) bool {
+	path = strings.TrimRight(path, PathSeparatorString)
 	if base == "" || base == "." {
 		return true
 	}
-	baseWithSep := base + string(PathSeparator)
-	return strings.HasPrefix(path, baseWithSep)
+
+	lB := len(base)
+	lP := len(path)
+
+	// Path length must be greater than base length
+	if lP <= lB {
+		return false
+	}
+
+	// Path prefix must be equal to base
+	if path[0:lB] != base {
+		return false
+	}
+
+	// The prefix must be followed by the path separator
+	if path[lB] != PathSeparator {
+		return false
+	}
+
+	return true
 }
 
 // ReadSubDirs returns dir entries inside dir.
