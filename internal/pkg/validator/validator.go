@@ -149,6 +149,18 @@ func (v *wrapper) registerCustomRules() {
 			},
 			ErrorMsg: "{0} is a required field",
 		},
+		Rule{
+			Tag: "required_not_empty",
+			Func: func(fl validator.FieldLevel) bool {
+				// Check nil
+				if !fl.Field().IsValid() {
+					return false
+				}
+				// Check empty
+				return fl.Field().Len() > 0
+			},
+			ErrorMsg: "{0} is a required field",
+		},
 		// Alphanumeric string with allowed dash character.
 		Rule{
 			Tag: "alphanumdash",

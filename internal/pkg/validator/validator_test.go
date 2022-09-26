@@ -132,6 +132,29 @@ func TestValidatorRequiredInProject(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestValidatorRequiredNotEmpty(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	v := New()
+
+	// String
+	err := v.ValidateCtx(ctx, `value`, `required_not_empty`, `some_field`)
+	assert.NoError(t, err)
+	err = v.ValidateCtx(ctx, ``, `required_not_empty`, `some_field`)
+	assert.Error(t, err)
+	assert.Equal(t, "some_field is a required field", err.Error())
+
+	// Array
+	err = v.ValidateCtx(ctx, []int{1, 2, 3}, `required_not_empty`, `some_field`)
+	assert.NoError(t, err)
+	err = v.ValidateCtx(ctx, []int{}, `required_not_empty`, `some_field`)
+	assert.Error(t, err)
+	assert.Equal(t, "some_field is a required field", err.Error())
+	err = v.ValidateCtx(ctx, nil, `required_not_empty`, `some_field`)
+	assert.Error(t, err)
+	assert.Equal(t, "some_field is a required field", err.Error())
+}
+
 func TestValidatorAlphaNumDash(t *testing.T) {
 	t.Parallel()
 	cases := []struct{ value, error string }{
