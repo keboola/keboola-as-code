@@ -46,6 +46,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 				Services: storageapi.Services{
 					{ID: "encryption", URL: "https://encryption.mocked.transport.http"},
 					{ID: "scheduler", URL: "https://scheduler.mocked.transport.http"},
+					{ID: "queue", URL: "https://queue.mocked.transport.http"},
 				},
 			},
 			Components: testapi.MockedComponents(),

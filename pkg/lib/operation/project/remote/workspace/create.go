@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/sandbox"
@@ -36,6 +37,9 @@ func Create(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 	if err != nil {
 		return err
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
 
 	// Create workspace by API
 	if _, err := sandbox.Create(
