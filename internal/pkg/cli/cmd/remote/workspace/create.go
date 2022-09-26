@@ -1,12 +1,13 @@
 package workspace
 
 import (
-	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
+	workspace "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
 )
 
 func CreateCommand(p dependencies.Provider) *cobra.Command {
@@ -14,12 +15,34 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		Use:   `create`,
 		Short: helpmsg.Read(`remote/workspace/create/short`),
 		Long:  helpmsg.Read(`remote/workspace/create/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return fmt.Errorf("not implemented")
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
+			start := time.Now()
+
+			d, err := p.DependenciesForRemoteCommand()
+			if err != nil {
+				return err
+			}
+
+			options, err := d.Dialogs().AskCreateWorkspace(d)
+			if err != nil {
+				return err
+			}
+
+			defer func() { d.EventSender().SendCmdEvent(d.CommandCtx(), start, cmdErr, "remote-create-workspace") }()
+
+			err = workspace.Create(d.CommandCtx(), options, d)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 
 	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
+	cmd.Flags().String("name", "", "name of the workspace")
+	cmd.Flags().String("type", "", "type of the workspace")
+	cmd.Flags().String("size", "", "size of the workspace")
 
 	return cmd
 }

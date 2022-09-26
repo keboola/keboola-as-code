@@ -4,7 +4,10 @@ Usage:
   kbc remote workspace create [flags]
 
 Flags:
+      --name string               name of the workspace
+      --size string               size of the workspace
   -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
+      --type string               type of the workspace
 
 Global Flags:
   -h, --help                       print help for command

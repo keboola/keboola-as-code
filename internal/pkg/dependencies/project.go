@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/jobsqueueapi"
 	"github.com/keboola/go-client/pkg/schedulerapi"
 	"github.com/keboola/go-client/pkg/storageapi"
 
@@ -20,6 +21,7 @@ type project struct {
 	projectFeatures    storageapi.FeaturesMap
 	storageApiClient   client.Client
 	schedulerApiClient client.Client
+	jobsQueueAPIClient client.Client
 	eventSender        event.Sender
 }
 
@@ -53,6 +55,12 @@ func newProjectDeps(base Base, public Public, token storageapi.Token) (*project,
 		v.schedulerApiClient = schedulerapi.ClientWithHostAndToken(v.base.HttpClient(), schedulerHost.String(), v.token.Token)
 	}
 
+	if queueHost, found := v.public.StackServices().URLByID("queue"); !found {
+		return nil, fmt.Errorf("queue host not found")
+	} else {
+		v.jobsQueueAPIClient = jobsqueueapi.ClientWithHostAndToken(v.base.HttpClient(), queueHost.String(), v.token.Token)
+	}
+
 	// Setup event sender
 	v.eventSender = event.NewSender(v.base.Logger(), v.StorageApiClient(), v.ProjectID())
 
@@ -81,6 +89,10 @@ func (v project) StorageApiClient() client.Sender {
 
 func (v project) SchedulerApiClient() client.Sender {
 	return v.schedulerApiClient
+}
+
+func (v project) JobsQueueApiClient() client.Sender {
+	return v.jobsQueueAPIClient
 }
 
 func (v project) EventSender() event.Sender {
