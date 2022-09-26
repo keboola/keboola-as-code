@@ -10,7 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 // MapBeforeLocalSave - save code blocks to the disk.
@@ -69,7 +68,7 @@ func (w *localWriter) save() error {
 
 func (w *localWriter) generateBlockFiles(block *model.Block) {
 	// Validate
-	if err := validator.Validate(w.State.Ctx(), block); err != nil {
+	if err := w.ValidateValue(block); err != nil {
 		w.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, block.Path()), err))
 		return
 	}

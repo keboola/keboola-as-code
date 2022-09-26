@@ -15,12 +15,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/registry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
+	validatorPkg "github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 func newTestLocalManager(t *testing.T, components []*storageapi.Component) *Manager {
 	t.Helper()
 
 	logger := log.NewDebugLogger()
+	validator := validatorPkg.New()
 	fs, err := aferofs.NewMemoryFs(logger, "")
 	assert.NoError(t, err)
 	fileLoader := fs.FileLoader()
@@ -34,5 +36,5 @@ func newTestLocalManager(t *testing.T, components []*storageapi.Component) *Mana
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()
 	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
-	return NewManager(logger, fs, fileLoader, manifest, namingGenerator, projectState, mapper.New())
+	return NewManager(logger, validator, fs, fileLoader, manifest, namingGenerator, projectState, mapper.New())
 }

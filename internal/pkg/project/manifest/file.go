@@ -94,7 +94,7 @@ func saveFile(fs filesystem.Fs, f *file) error {
 }
 
 func (c *file) validate() error {
-	if err := validator.Validate(context.Background(), c); err != nil {
+	if err := validator.New().Validate(context.Background(), c); err != nil {
 		return utils.PrefixError("manifest is not valid", err)
 	}
 	return nil
