@@ -41,6 +41,11 @@ func Create(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
+	opts := make([]sandbox.Option, 0)
+	if len(o.Size) > 0 {
+		opts = append(opts, sandbox.WithSize(o.Size))
+	}
+
 	// Create workspace by API
 	if _, err := sandbox.Create(
 		ctx,
@@ -49,7 +54,7 @@ func Create(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 		branch.ID,
 		o.Name,
 		o.Type,
-		sandbox.WithSize(o.Size),
+		opts...,
 	); err != nil {
 		return fmt.Errorf("cannot create workspace: %w", err)
 	}
