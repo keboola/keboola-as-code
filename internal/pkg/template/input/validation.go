@@ -12,7 +12,7 @@ import (
 )
 
 func validateDefinitions(value any) error {
-	return validator.Validate(context.Background(), value, inputDefinitionExtraRules()...)
+	return validator.New(inputDefinitionExtraRules()...).Validate(context.Background(), value)
 }
 
 func inputDefinitionExtraRules() []validator.Rule {

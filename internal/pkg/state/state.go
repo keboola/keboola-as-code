@@ -32,6 +32,7 @@ func NewRegistry(paths *knownpaths.Paths, namingRegistry *naming.Registry, compo
 type State struct {
 	*Registry
 	container       ObjectsContainer
+	validator       validator.Validator
 	fileLoader      filesystem.FileLoader
 	logger          log.Logger
 	tracer          trace.Tracer
@@ -95,6 +96,7 @@ func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *St
 	s = &State{
 		Registry:        NewRegistry(knownPaths, namingRegistry, components, m.SortBy()),
 		container:       container,
+		validator:       validator.New(),
 		fileLoader:      fileLoader,
 		tracer:          d.Tracer(),
 		logger:          logger,
@@ -105,7 +107,7 @@ func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *St
 	}
 
 	// Local manager for load,save,delete ... operations
-	s.localManager = local.NewManager(s.logger, container.ObjectsRoot(), s.fileLoader, m, s.namingGenerator, s.Registry, s.mapper)
+	s.localManager = local.NewManager(s.logger, s.validator, container.ObjectsRoot(), s.fileLoader, m, s.namingGenerator, s.Registry, s.mapper)
 
 	// Remote manager for API operations
 	s.remoteManager = remote.NewManager(s.localManager, storageApi, s.Registry, s.mapper)
@@ -202,7 +204,7 @@ func (s *State) validateLocal(ctx context.Context) (err error) {
 	errors := utils.NewMultiError()
 	for _, objectState := range s.All() {
 		if objectState.HasLocalState() {
-			if err := s.validateValue(objectState.LocalState()); err != nil {
+			if err := s.ValidateValue(objectState.LocalState()); err != nil {
 				errors.Append(utils.PrefixError(fmt.Sprintf(`local %s "%s" is not valid`, objectState.Kind(), objectState.Path()), err))
 			}
 		}
@@ -217,7 +219,7 @@ func (s *State) validateRemote(ctx context.Context) (err error) {
 	errors := utils.NewMultiError()
 	for _, objectState := range s.All() {
 		if objectState.HasRemoteState() {
-			if err := s.validateValue(objectState.RemoteState()); err != nil {
+			if err := s.ValidateValue(objectState.RemoteState()); err != nil {
 				errors.Append(utils.PrefixError(fmt.Sprintf(`remote %s is not valid`, objectState.Desc()), err))
 			}
 		}
@@ -225,8 +227,8 @@ func (s *State) validateRemote(ctx context.Context) (err error) {
 	return errors.ErrorOrNil()
 }
 
-func (s *State) validateValue(value interface{}) error {
-	return validator.ValidateCtx(s.Ctx(), value, "dive", "")
+func (s *State) ValidateValue(value interface{}) error {
+	return s.validator.ValidateCtx(s.Ctx(), value, "dive", "")
 }
 
 // loadLocalState from manifest and local files to unified internal state.

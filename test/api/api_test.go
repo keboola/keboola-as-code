@@ -273,7 +273,7 @@ func RunRequests(
 		request := &ApiRequest{}
 		err = json.DecodeString(requestFileStr, request)
 		assert.NoError(t, err)
-		err = validator.Validate(context.Background(), request)
+		err = validator.New().Validate(context.Background(), request)
 		assert.NoError(t, err)
 
 		// Send the request

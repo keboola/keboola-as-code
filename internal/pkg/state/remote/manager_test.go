@@ -27,6 +27,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
+	validatorPkg "github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 type testMapper struct {
@@ -475,6 +476,7 @@ func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *
 	t.Helper()
 
 	logger := log.NewDebugLogger()
+	validator := validatorPkg.New()
 	fs, err := aferofs.NewMemoryFs(logger, "")
 	assert.NoError(t, err)
 
@@ -484,5 +486,5 @@ func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *
 	namingTemplate := naming.TemplateWithIds()
 	namingRegistry := naming.NewRegistry()
 	namingGenerator := naming.NewGenerator(namingTemplate, namingRegistry)
-	return local.NewManager(logger, fs, fs.FileLoader(), m, namingGenerator, projectState, mapper.New().AddMapper(mappers...)), projectState
+	return local.NewManager(logger, validator, fs, fs.FileLoader(), m, namingGenerator, projectState, mapper.New().AddMapper(mappers...)), projectState
 }

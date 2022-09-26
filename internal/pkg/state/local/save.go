@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 type modelWriter struct {
@@ -38,7 +37,7 @@ func (m *Manager) saveObject(ctx context.Context, manifest model.ObjectManifest,
 
 func (w *modelWriter) save() error {
 	// Validate
-	if err := validator.Validate(w.ctx, w.Object); err != nil {
+	if err := w.validator.Validate(w.ctx, w.Object); err != nil {
 		w.errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, w.Kind().Name, w.Path()), err)
 		return w.errors
 	}

@@ -16,11 +16,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 type Manager struct {
 	logger          log.Logger
 	state           model.ObjectStates
+	validator       validator.Validator
 	fs              filesystem.Fs
 	fileLoader      filesystem.FileLoader
 	manifest        manifest.Manifest
@@ -41,10 +43,11 @@ type UnitOfWork struct {
 	workers *orderedmap.OrderedMap // separated workers for changes in branches, configs and rows
 }
 
-func NewManager(logger log.Logger, fs filesystem.Fs, fileLoader filesystem.FileLoader, m manifest.Manifest, namingGenerator *naming.Generator, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
+func NewManager(logger log.Logger, validator validator.Validator, fs filesystem.Fs, fileLoader filesystem.FileLoader, m manifest.Manifest, namingGenerator *naming.Generator, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
 	return &Manager{
 		logger:          logger,
 		state:           objects,
+		validator:       validator,
 		fs:              fs,
 		fileLoader:      fileLoader,
 		manifest:        m,

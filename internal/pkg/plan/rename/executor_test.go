@@ -18,11 +18,13 @@ import (
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
+	validatorPkg "github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 func TestRename(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
+	validator := validatorPkg.New()
 	fs, err := aferofs.NewMemoryFs(logger, `/`)
 	assert.NoError(t, err)
 	manifest := projectManifest.New(1, "foo")
@@ -53,7 +55,7 @@ func TestRename(t *testing.T) {
 
 	// NewPlan
 	projectState := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
-	localManager := local.NewManager(logger, fs, fs.FileLoader(), manifest, nil, projectState, mapper.New())
+	localManager := local.NewManager(logger, validator, fs, fs.FileLoader(), manifest, nil, projectState, mapper.New())
 	executor := newRenameExecutor(context.Background(), localManager, plan)
 	assert.NoError(t, executor.invoke())
 	logsStr := logger.AllMessages()
@@ -79,6 +81,7 @@ DEBUG  Removed "foo2"
 func TestRenameFailedKeepOldState(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
+	validator := validatorPkg.New()
 	fs, err := aferofs.NewMemoryFs(logger, `/`)
 	assert.NoError(t, err)
 	manifest := projectManifest.New(1, "foo")
@@ -122,7 +125,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 
 	// NewPlan
 	projectState := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
-	localManager := local.NewManager(logger, fs, fs.FileLoader(), manifest, nil, projectState, mapper.New())
+	localManager := local.NewManager(logger, validator, fs, fs.FileLoader(), manifest, nil, projectState, mapper.New())
 	executor := newRenameExecutor(context.Background(), localManager, plan)
 	err = executor.invoke()
 	assert.Error(t, err)

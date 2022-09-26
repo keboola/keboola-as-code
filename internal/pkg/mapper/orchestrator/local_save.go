@@ -11,7 +11,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 func (m *orchestratorMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
@@ -73,7 +72,7 @@ func (w *localWriter) save() {
 
 func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) error {
 	// Validate
-	if err := validator.Validate(w.State.Ctx(), phase); err != nil {
+	if err := w.ValidateValue(phase); err != nil {
 		return err
 	}
 

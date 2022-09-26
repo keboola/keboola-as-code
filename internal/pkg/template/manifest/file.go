@@ -81,7 +81,7 @@ func saveFile(fs filesystem.Fs, content *file) error {
 
 func (f *file) validate() error {
 	ctx := context.WithValue(context.Background(), validator.DisableRequiredInProjectKey, true)
-	if err := validator.ValidateCtx(ctx, f, "dive", ""); err != nil {
+	if err := validator.New().ValidateCtx(ctx, f, "dive", ""); err != nil {
 		return utils.PrefixError("manifest is not valid", err)
 	}
 	return nil

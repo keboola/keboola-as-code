@@ -6,7 +6,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 // loadObject from manifest and filesystem.
@@ -34,7 +33,7 @@ func (m *Manager) loadObject(ctx context.Context, manifest model.ObjectManifest,
 
 	// Validate, if all files loaded without error
 	if errors.Len() == 0 {
-		if err := validator.Validate(ctx, object); err != nil {
+		if err := m.validator.Validate(ctx, object); err != nil {
 			errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, manifest.Kind().Name, manifest.Path()), err)
 		}
 	}

@@ -94,7 +94,7 @@ func saveFile(fs filesystem.Fs, manifestContent *file) error {
 }
 
 func (f *file) validate() error {
-	if err := validator.Validate(context.Background(), f); err != nil {
+	if err := validator.New().Validate(context.Background(), f); err != nil {
 		return utils.PrefixError("repository manifest is not valid", err)
 	}
 	return nil
