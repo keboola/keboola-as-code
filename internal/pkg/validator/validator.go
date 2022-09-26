@@ -31,6 +31,12 @@ const (
 
 type ErrorMsgFunc func(fe validator.FieldError) string
 
+type Validator interface {
+	RegisterRule(rules ...Rule)
+	Validate(ctx context.Context, value interface{}) error
+	ValidateCtx(ctx context.Context, value interface{}, tag string, namespace string) error
+}
+
 // Rule is custom validation rule/tag.
 type Rule struct {
 	Tag          string
@@ -42,29 +48,14 @@ type Rule struct {
 
 type contextKey string
 
-// Validate nested struct fields or slice items.
-func Validate(ctx context.Context, value interface{}, rules ...Rule) error {
-	return ValidateCtx(ctx, value, "dive", "", rules...)
-}
-
-// ValidateCtx validates any value.
-func ValidateCtx(ctx context.Context, value interface{}, tag string, namespace string, rules ...Rule) error {
-	v := newValidator()
-	v.registerRule(rules...)
-
-	// nolint: errorlint // library always returns validator.ValidationErrors
-	if err := v.validator.VarCtx(ctx, value, tag); err != nil {
-		return v.formatError(err.(validator.ValidationErrors), namespace, reflect.ValueOf(value))
-	}
-	return nil
-}
-
+// wrapper implements Validator interface.
+// It is a wrapper around go-playground/validator library.
 type wrapper struct {
 	validator  *validator.Validate
 	translator ut.Translator
 }
 
-func newValidator() *wrapper {
+func New(rules ...Rule) Validator {
 	// Create validator and translator
 	v := &wrapper{
 		validator:  validator.New(),
@@ -93,11 +84,28 @@ func newValidator() *wrapper {
 		return name
 	})
 
+	// Register extra rules
+	v.RegisterRule(rules...)
+
 	return v
 }
 
-// registerRule by tag and function.
-func (v *wrapper) registerRule(rules ...Rule) {
+// Validate nested struct fields or slice items.
+func (v *wrapper) Validate(ctx context.Context, value interface{}) error {
+	return v.ValidateCtx(ctx, value, "dive", "")
+}
+
+// ValidateCtx validates any value.
+func (v *wrapper) ValidateCtx(ctx context.Context, value interface{}, tag string, namespace string) error {
+	// nolint: errorlint // library always returns validator.ValidationErrors
+	if err := v.validator.VarCtx(ctx, value, tag); err != nil {
+		return v.formatError(err.(validator.ValidationErrors), namespace, reflect.ValueOf(value))
+	}
+	return nil
+}
+
+// RegisterRule by tag and function.
+func (v *wrapper) RegisterRule(rules ...Rule) {
 	for _, rule := range rules {
 		// Register validation function
 		switch {
@@ -125,7 +133,7 @@ func (v *wrapper) registerRule(rules ...Rule) {
 }
 
 func (v *wrapper) registerCustomRules() {
-	v.registerRule(
+	v.RegisterRule(
 		// Register default validation for "required_in_project"
 		// Some values are required in the project scope, but ignored in the template scope.
 		// We validate them by default.
@@ -265,14 +273,17 @@ func prefixErrorWithNamespace(e validator.FieldError, errMsg string, customNames
 	errMsgFirstWord := strings.SplitN(errMsg, " ", 2)[0]
 	errMsgContainsField := len(namespaceParts) > 0 && namespaceParts[len(namespaceParts)-1] == errMsgFirstWord
 
-	// Remove first part, if it is a struct name
-	valueType := value.Type()
-	for valueType.Kind() == reflect.Ptr {
-		// Type to which the pointer refers
-		valueType = valueType.Elem()
-	}
-	if valueType.Kind() == reflect.Struct && namespaceParts[0] == valueType.Name() {
-		namespaceParts = namespaceParts[1:]
+	// Check nil value
+	if value.IsValid() {
+		// Remove first part, if it is a struct name
+		valueType := value.Type()
+		for valueType.Kind() == reflect.Ptr {
+			// Type to which the pointer refers
+			valueType = valueType.Elem()
+		}
+		if valueType.Kind() == reflect.Struct && namespaceParts[0] == valueType.Name() {
+			namespaceParts = namespaceParts[1:]
+		}
 	}
 
 	// Remove field name from namespace, if it is present in the error message
