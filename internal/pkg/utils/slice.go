@@ -32,12 +32,3 @@ func SortByName(slice interface{}) interface{} {
 
 	return slice
 }
-
-func Contains[V comparable](slice []V, needle V) bool {
-	for _, v := range slice {
-		if v == needle {
-			return true
-		}
-	}
-	return false
-}
