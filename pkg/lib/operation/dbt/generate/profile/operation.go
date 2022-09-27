@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/yaml.v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -19,13 +20,9 @@ type dependencies interface {
 	Tracer() trace.Tracer
 }
 
-type Options struct {
-	TargetName string
-}
-
 const profilePath = "profiles.yml"
 
-func Run(ctx context.Context, opts Options, d dependencies) (err error) {
+func Run(ctx context.Context, opts dialog.TargetNameOptions, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.dbt.generate.profile")
 	defer telemetry.EndSpan(span, &err)
 
@@ -47,11 +44,11 @@ func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 	}
 
 	logger := d.Logger()
-	targetUpper := strings.ToUpper(opts.TargetName)
+	targetUpper := strings.ToUpper(opts.Name)
 	profileDetails := map[string]interface{}{
-		"target": opts.TargetName,
+		"target": opts.Name,
 		"outputs": map[string]interface{}{
-			opts.TargetName: map[string]interface{}{
+			opts.Name: map[string]interface{}{
 				"account":   fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_ACCOUNT\") }}", targetUpper),
 				"database":  fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", targetUpper),
 				"password":  fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_PASSWORD\") }}", targetUpper),

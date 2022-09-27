@@ -20,7 +20,7 @@ func ProfileCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			opts, err := d.Dialogs().AskDbtGenerateProfile(d)
+			opts, err := d.Dialogs().AskTargetName(d)
 			if err != nil {
 				return err
 			}
