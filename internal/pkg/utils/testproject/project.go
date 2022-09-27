@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/encryptionapi"
 	"github.com/keboola/go-client/pkg/jobsqueueapi"
+	"github.com/keboola/go-client/pkg/sandboxesapi"
 	"github.com/keboola/go-client/pkg/schedulerapi"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/testproject"
@@ -39,6 +40,7 @@ type Project struct {
 	encryptionAPIClient client.Client
 	jobsQueueAPIClient  client.Client
 	schedulerAPIClient  client.Client
+	sandboxesApiClient  client.Client
 	defaultBranch       *storageapi.Branch
 	envs                *env.Map
 	mapsLock            *sync.Mutex
@@ -125,6 +127,15 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	// Init Scheduler API
 	p.schedulerAPIClient = schedulerapi.ClientWithHostAndToken(client.NewTestClient(), schedulerHost.String(), p.Project.StorageAPIToken())
 
+	// Get sandboxes service host
+	sandboxesHost, found := services.URLByID("sandboxes")
+	if !found {
+		cleanupFn()
+		return nil, nil, fmt.Errorf("missing sandboxes service")
+	}
+
+	p.sandboxesApiClient = sandboxesapi.ClientWithHostAndToken(client.NewTestClient(), sandboxesHost.String(), p.Project.StorageAPIToken())
+
 	// Check token/project ID
 	errors := utils.NewMultiError()
 	initWg := &sync.WaitGroup{}
@@ -187,6 +198,10 @@ func (p *Project) JobsQueueAPIClient() client.Client {
 
 func (p *Project) SchedulerAPIClient() client.Client {
 	return p.schedulerAPIClient
+}
+
+func (p *Project) SandboxesAPIClient() client.Client {
+	return p.sandboxesApiClient
 }
 
 // Clean method resets default branch, deletes all project branches (except default), all configurations and all schedules.

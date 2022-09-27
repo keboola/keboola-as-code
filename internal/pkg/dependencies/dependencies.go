@@ -95,6 +95,7 @@ type Project interface {
 	StorageApiClient() client.Sender
 	SchedulerApiClient() client.Sender
 	JobsQueueApiClient() client.Sender
+	SandboxesApiClient() client.Sender
 	EventSender() event.Sender
 	ObjectIDGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider
 }
