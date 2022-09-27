@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/sandbox"
+	"github.com/keboola/go-client/pkg/sandboxesapi"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"go.opentelemetry.io/otel/trace"
 
@@ -41,14 +41,14 @@ func Create(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	opts := make([]sandbox.Option, 0)
+	opts := make([]sandboxesapi.Option, 0)
 	if len(o.Size) > 0 {
-		opts = append(opts, sandbox.WithSize(o.Size))
+		opts = append(opts, sandboxesapi.WithSize(o.Size))
 	}
 
 	logger.Info(`Creating new workspace, please wait.`)
 	// Create workspace by API
-	if _, err := sandbox.Create(
+	if _, err := sandboxesapi.Create(
 		ctx,
 		d.StorageApiClient(),
 		d.JobsQueueApiClient(),
