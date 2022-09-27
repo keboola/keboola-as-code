@@ -40,7 +40,7 @@ func List(ctx context.Context, d listDeps) (err error) {
 	if err != nil {
 		return fmt.Errorf("cannot list workspaces: %w", err)
 	}
-	sandboxesMap := map[string]*sandboxesapi.Sandbox{}
+	sandboxesMap := make(map[string]*sandboxesapi.Sandbox, 0)
 	for _, sandbox := range *sandboxes {
 		sandboxesMap[sandbox.ID.String()] = sandbox
 	}
