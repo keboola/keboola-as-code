@@ -70,3 +70,20 @@ func (p *Dialogs) AskGenerateEnv(d targetNameDialogDeps, allWorkspaces []*sandbo
 		Workspace:  workspace,
 	}, nil
 }
+
+func (p *Dialogs) AskDbtInit(d targetNameDialogDeps) (initOp.DbtInitOptions, error) {
+	targetName, err := p.AskTargetName(d)
+	if err != nil {
+		return initOp.DbtInitOptions{}, err
+	}
+
+	workspaceName, err := p.askWorkspaceName(d)
+	if err != nil {
+		return initOp.DbtInitOptions{}, err
+	}
+
+	return initOp.DbtInitOptions{
+		TargetName:    targetName,
+		WorkspaceName: workspaceName,
+	}, nil
+}
