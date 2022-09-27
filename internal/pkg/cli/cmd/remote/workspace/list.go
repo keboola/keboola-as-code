@@ -2,11 +2,13 @@ package workspace
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
+	workspace "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
 )
 
 func ListCommand(p dependencies.Provider) *cobra.Command {
@@ -14,10 +16,23 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 		Use:   `list`,
 		Short: helpmsg.Read(`remote/workspace/list/short`),
 		Long:  helpmsg.Read(`remote/workspace/list/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
+			start := time.Now()
+
+			d, err := p.DependenciesForRemoteCommand()
+			if err != nil {
+				return err
+			}
+
 			// Ask for host and token if needed
-			baseDeps := p.BaseDependencies()
-			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
+			if err := d.Dialogs().AskHostAndToken(d); err != nil {
+				return err
+			}
+
+			defer func() { d.EventSender().SendCmdEvent(d.CommandCtx(), start, cmdErr, "remote-list-workspace") }()
+
+			err = workspace.List(d.CommandCtx(), d)
+			if err != nil {
 				return err
 			}
 
