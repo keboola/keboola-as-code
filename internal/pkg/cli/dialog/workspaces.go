@@ -25,7 +25,7 @@ func (p *Dialogs) AskWorkspace(d *options.Options, allWorkspaces []*sandboxesapi
 		selectOpts = append(selectOpts, fmt.Sprintf(`%s (%s)`, w.Type, w.ID))
 	}
 	if index, ok := p.SelectIndex(&prompt.SelectIndex{
-		Label:   "workspace",
+		Label:   "Workspace",
 		Options: selectOpts,
 	}); ok {
 		return allWorkspaces[index], nil

@@ -4,9 +4,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	createWorkspace "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestAskCreateWorkspace(t *testing.T) {
