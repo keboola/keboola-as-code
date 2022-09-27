@@ -1,4 +1,3 @@
-Project directory must contain the ".keboola/manifest.json" file.
-You are in the template repository, not in the project directory.
-Please change working directory to a project directory.
+The path "%s" is a templates repository directory.
+Please change working directory to a local project directory.
 Or use the "sync init" command in an empty directory.

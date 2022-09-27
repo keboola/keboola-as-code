@@ -18,6 +18,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -27,18 +28,13 @@ import (
 )
 
 var (
-	ErrMissingStorageApiHost          = fmt.Errorf(`missing Storage API host`)
-	ErrMissingStorageApiToken         = fmt.Errorf(`missing Storage API token`)
-	ErrInvalidStorageApiToken         = fmt.Errorf(`invalid Storage API token`)
-	ErrProjectDirFound                = fmt.Errorf("remote directory not expected, but found")
-	ErrProjectManifestNotFound        = fmt.Errorf("remote manifest not found")
-	ErrTemplateDirFound               = fmt.Errorf("template directory not expected, but found")
-	ErrTemplateManifestNotFound       = fmt.Errorf("template manifest not found")
-	ErrRepositoryDirFound             = fmt.Errorf("repository directory not expected, but found")
-	ErrRepositoryManifestNotFound     = fmt.Errorf("repository manifest not found")
-	ErrExpectedRepositoryFoundProject = fmt.Errorf("repository manifest not found, found remote manifest")
-	ErrExpectedProjectFoundRepository = fmt.Errorf("remote manifest not found, found repository manifest")
-	ErrExpectedProjectFoundTemplate   = fmt.Errorf("remote manifest not found, found template manifest")
+	ErrMissingStorageApiHost      = fmt.Errorf(`missing Storage API host`)
+	ErrMissingStorageApiToken     = fmt.Errorf(`missing Storage API token`)
+	ErrInvalidStorageApiToken     = fmt.Errorf(`invalid Storage API token`)
+	ErrProjectManifestNotFound    = fmt.Errorf("local manifest not found")
+	ErrDbtProjectNotFound         = fmt.Errorf(`dbt project not found, missing file "%s"`, dbt.ProjectFile)
+	ErrTemplateManifestNotFound   = fmt.Errorf("template manifest not found")
+	ErrRepositoryManifestNotFound = fmt.Errorf("repository manifest not found")
 )
 
 // Base interface provides basic CLI dependencies.
@@ -61,6 +57,7 @@ type ForLocalCommand interface {
 	LocalProject(ignoreErrors bool) (*projectPkg.Project, bool, error)
 	LocalTemplate(ctx context.Context) (*template.Template, bool, error)
 	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)
+	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }
 
 // ForRemoteCommand interface provides dependencies for commands that modify remote project.

@@ -17,6 +17,7 @@ type dependencies interface {
 	Fs() filesystem.Fs
 	Logger() log.Logger
 	Tracer() trace.Tracer
+	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }
 
 const profilePath = "profiles.yml"
@@ -24,11 +25,9 @@ const profilePath = "profiles.yml"
 func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.dbt.generate.profile")
 	defer telemetry.EndSpan(span, &err)
-
-	if !d.Fs().Exists(`dbt_project.yml`) {
-		return fmt.Errorf(`missing file "dbt_project.yml" in the current directory`)
-	}
-	file, err := d.Fs().ReadFile(filesystem.NewFileDef(`dbt_project.yml`))
+	
+	// Get dbt project
+	project, _, err := d.LocalDbtProject(ctx)
 	if err != nil {
 		return err
 	}

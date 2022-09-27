@@ -291,48 +291,32 @@ func (root *RootCommand) printError(errRaw error) {
 
 	// Iterate over errors and replace message if needed
 	modifiedErrs := utils.NewMultiError()
+	var errDirNotFound dependencies.DirNotFoundError
 	for _, err := range originalErrs.Errors {
 		switch {
-		case errors.Is(err, dependencies.ErrProjectDirFound):
-			root.logger.Infof(`The path "%s" is an project directory.`, root.fs.BasePath())
-			root.logger.Info(`Please use an empty directory.`)
-			if root.CalledAs() == `init` {
+		case errors.As(err, &errDirNotFound):
+			root.logger.Infof(`The path "%s" is %s.`, root.fs.BasePath(), errDirNotFound.Found())
+			if root.CalledAs() == `init` && errDirNotFound.Found() == dependencies.KbcProjectDir {
+				root.logger.Infof(`Please use %s.`, errDirNotFound.Expected())
 				root.logger.Info(`Or synchronize the current directory with the "pull" command.`)
+			} else if errDirNotFound.Expected() == dependencies.KbcProjectDir {
+				root.logger.Infof(`Please change working directory to %s.`, errDirNotFound.Expected())
+				root.logger.Infof(`Or use the "sync init" command in %s.`, dependencies.EmptyDir)
+			} else {
+				root.logger.Infof(`Please use %s.`, errDirNotFound.Expected())
 			}
-			modifiedErrs.Append(fmt.Errorf(`manifest "%s" exists`, projectManifest.Path()))
-		case errors.Is(err, dependencies.ErrRepositoryDirFound):
-			root.logger.Infof(`The path "%s" is an repository directory.`, root.fs.BasePath())
-			root.logger.Info(`Please use an empty directory.`)
-			modifiedErrs.Append(fmt.Errorf(`manifest "%s" exists`, repositoryManifest.Path()))
-		case errors.Is(err, dependencies.ErrTemplateDirFound):
-			root.logger.Infof(`The path "%s" is an template directory.`, root.fs.BasePath())
-			root.logger.Info(`Please use an empty directory.`)
-			modifiedErrs.Append(fmt.Errorf(`manifest "%s" exists`, repositoryManifest.Path()))
+			if errDirNotFound.Expected() == dependencies.EmptyDir {
+				modifiedErrs.Append(fmt.Errorf("directory is not empty"))
+			} else {
+				modifiedErrs.Append(fmt.Errorf("neither this nor any parent directory is %s", errDirNotFound.Expected()))
+			}
 		case errors.Is(err, dependencies.ErrProjectManifestNotFound):
 			root.logger.Infof(`Project directory must contain the "%s" file.`, projectManifest.Path())
 			root.logger.Infof(`Please change working directory to a project directory.`)
 			root.logger.Infof(`Or use the "sync init" command in an empty directory.`)
 			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is project dir`))
-		case errors.Is(err, dependencies.ErrExpectedProjectFoundRepository):
-			root.logger.Infof(`Project directory must contain the "%s" file.`, projectManifest.Path())
-			root.logger.Infof(`You are in the template repository, not in the project directory.`)
-			root.logger.Infof(`Please change working directory to a project directory.`)
-			root.logger.Infof(`Or use the "sync init" command in an empty directory.`)
-			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is project dir`))
-		case errors.Is(err, dependencies.ErrExpectedProjectFoundTemplate):
-			root.logger.Infof(`Project directory must contain the "%s" file.`, projectManifest.Path())
-			root.logger.Infof(`You are in the template, not in the project directory.`)
-			root.logger.Infof(`Please change working directory to a project directory.`)
-			root.logger.Infof(`Or use the "sync init" command in an empty directory.`)
-			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is project dir`))
 		case errors.Is(err, dependencies.ErrRepositoryManifestNotFound):
 			root.logger.Infof(`Repository directory must contain the "%s" file.`, repositoryManifest.Path())
-			root.logger.Infof(`Please change working directory to a repository directory.`)
-			root.logger.Infof(`Or use the "template repository init" command in an empty directory.`)
-			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is repository dir`))
-		case errors.Is(err, dependencies.ErrExpectedRepositoryFoundProject):
-			root.logger.Infof(`Repository directory must contain the "%s" file.`, repositoryManifest.Path())
-			root.logger.Infof(`You are in the project directory, not in the template repository.`)
 			root.logger.Infof(`Please change working directory to a repository directory.`)
 			root.logger.Infof(`Or use the "template repository init" command in an empty directory.`)
 			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is repository dir`))

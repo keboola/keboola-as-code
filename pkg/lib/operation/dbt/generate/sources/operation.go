@@ -18,8 +18,9 @@ import (
 type dependencies interface {
 	Fs() filesystem.Fs
 	Logger() log.Logger
-	StorageApiClient() client.Sender
 	Tracer() trace.Tracer
+	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
+	StorageApiClient() client.Sender
 }
 
 const sourcesPath = "models/_sources"
@@ -69,8 +70,8 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 	defer telemetry.EndSpan(span, &err)
 
 	// Check that we are in dbt directory
-	if !d.Fs().Exists(`dbt_project.yml`) {
-		return fmt.Errorf(`missing file "dbt_project.yml" in the current directory`)
+	if _, _, err := d.LocalDbtProject(ctx); err != nil {
+		return err
 	}
 
 	if !d.Fs().Exists(sourcesPath) {
