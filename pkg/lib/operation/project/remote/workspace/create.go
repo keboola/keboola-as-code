@@ -29,7 +29,7 @@ type dependencies interface {
 }
 
 func Create(ctx context.Context, o CreateOptions, d dependencies) (err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.create.branch")
+	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.workspace.create")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()
