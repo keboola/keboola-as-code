@@ -159,45 +159,45 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 	}
 
 	res := generateSourcesDefinition("target1", "out.c-main", []*storageapi.Table{mainTable1, mainTable2})
-	assert.Equal(t, map[string]any{
-		"version": 2,
-		"sources": []map[string]any{
+	assert.Equal(t, sourceFile{
+		version: 2,
+		sources: []source{
 			{
-				"name": "out.c-main",
-				"freshness": map[string]any{
-					"warn_after": map[string]any{
-						"count":  1,
-						"period": "day",
+				name: "out.c-main",
+				freshness: sourceFreshness{
+					warnAfter: sourceFreshnessWarnAfter{
+						count:  1,
+						period: "day",
 					},
 				},
-				"database":        "{{ env_var(\"DBT_KBC_TARGET1_DATABASE\") }}",
-				"schema":          "out.c-main",
-				"loaded_at_field": `"_timestamp"`,
-				"tables": []map[string]any{
+				database:      "{{ env_var(\"DBT_KBC_TARGET1_DATABASE\") }}",
+				schema:        "out.c-main",
+				loadedAtField: `"_timestamp"`,
+				tables: []sourceTable{
 					{
-						"name": "products",
-						"quoting": map[string]bool{
-							"database":   true,
-							"schema":     true,
-							"identifier": true,
+						name: "products",
+						quoting: sourceTableQuoting{
+							database:   true,
+							schema:     true,
+							identifier: true,
 						},
-						"columns": []map[string]any{
+						columns: []sourceTableColumn{
 							{
-								"name":  `"primary1"`,
-								"tests": []string{"unique", "not_null"},
+								name:  `"primary1"`,
+								tests: []string{"unique", "not_null"},
 							},
 							{
-								"name":  `"primary2"`,
-								"tests": []string{"unique", "not_null"},
+								name:  `"primary2"`,
+								tests: []string{"unique", "not_null"},
 							},
 						},
 					},
 					{
-						"name": "categories",
-						"quoting": map[string]bool{
-							"database":   true,
-							"schema":     true,
-							"identifier": true,
+						name: "categories",
+						quoting: sourceTableQuoting{
+							database:   true,
+							schema:     true,
+							identifier: true,
 						},
 					},
 				},

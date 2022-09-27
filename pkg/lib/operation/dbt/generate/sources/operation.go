@@ -25,6 +25,46 @@ type dependencies interface {
 
 const sourcesPath = "models/_sources"
 
+type sourceFile struct {
+	version int      `yaml:"version"`
+	sources []source `yaml:"sources"`
+}
+
+type source struct {
+	name          string          `yaml:"name"`
+	freshness     sourceFreshness `yaml:"freshness"`
+	database      string          `yaml:"database"`
+	schema        string          `yaml:"schema"`
+	loadedAtField string          `yaml:"loaded_at_field"` //nolint:tagliatelle
+	tables        []sourceTable   `yaml:"tables"`
+}
+
+type sourceTable struct {
+	name    string              `yaml:"name"`
+	quoting sourceTableQuoting  `yaml:"quoting"`
+	columns []sourceTableColumn `yaml:"columns"`
+}
+
+type sourceTableColumn struct {
+	name  string   `yaml:"name"`
+	tests []string `yaml:"tests"`
+}
+
+type sourceTableQuoting struct {
+	database   bool `yaml:"database"`
+	schema     bool `yaml:"schema"`
+	identifier bool `yaml:"identifier"`
+}
+
+type sourceFreshness struct {
+	warnAfter sourceFreshnessWarnAfter `yaml:"warn_after"` //nolint:tagliatelle
+}
+
+type sourceFreshnessWarnAfter struct {
+	count  int    `yaml:"count"`
+	period string `yaml:"period"`
+}
+
 func Run(ctx context.Context, opts dialog.TargetNameOptions, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.dbt.generate.sources")
 	defer telemetry.EndSpan(span, &err)
@@ -76,45 +116,42 @@ func tablesByBucketsMap(tablesList []*storageapi.Table) map[storageapi.BucketID]
 	return tablesByBuckets
 }
 
-func generateSourcesDefinition(targetName string, bucketID storageapi.BucketID, tablesList []*storageapi.Table) map[string]any {
-	sourceTables := make([]map[string]any, 0)
+func generateSourcesDefinition(targetName string, bucketID storageapi.BucketID, tablesList []*storageapi.Table) sourceFile {
+	sourceTables := make([]sourceTable, 0)
 	for _, table := range tablesList {
-		sourceTable := map[string]any{
-			"name": table.Name,
-			"quoting": map[string]bool{
-				"database":   true,
-				"schema":     true,
-				"identifier": true,
+		sourceTable := sourceTable{
+			name: table.Name,
+			quoting: sourceTableQuoting{
+				database:   true,
+				schema:     true,
+				identifier: true,
 			},
 		}
 		if len(table.PrimaryKey) > 0 {
-			sourceColumns := make([]map[string]any, 0)
+			sourceColumns := make([]sourceTableColumn, 0)
 			for _, primaryKey := range table.PrimaryKey {
-				sourceColumns = append(sourceColumns, map[string]any{
-					"name":  fmt.Sprintf(`"%s"`, primaryKey),
-					"tests": []string{"unique", "not_null"},
+				sourceColumns = append(sourceColumns, sourceTableColumn{
+					name:  fmt.Sprintf(`"%s"`, primaryKey),
+					tests: []string{"unique", "not_null"},
 				})
 			}
-			sourceTable["columns"] = sourceColumns
+			sourceTable.columns = sourceColumns
 		}
 		sourceTables = append(sourceTables, sourceTable)
 	}
-
-	return map[string]any{
-		"version": 2,
-		"sources": []map[string]any{
+	return sourceFile{
+		version: 2,
+		sources: []source{
 			{
-				"name": string(bucketID),
-				"freshness": map[string]any{
-					"warn_after": map[string]any{
-						"count":  1,
-						"period": "day",
-					},
-				},
-				"database":        fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", strings.ToUpper(targetName)),
-				"schema":          string(bucketID),
-				"loaded_at_field": `"_timestamp"`,
-				"tables":          sourceTables,
+				name: string(bucketID),
+				freshness: sourceFreshness{sourceFreshnessWarnAfter{
+					count:  1,
+					period: "day",
+				}},
+				database:      fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", strings.ToUpper(targetName)),
+				schema:        string(bucketID),
+				loadedAtField: `"_timestamp"`,
+				tables:        sourceTables,
 			},
 		},
 	}
