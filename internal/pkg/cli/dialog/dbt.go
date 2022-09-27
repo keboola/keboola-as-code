@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/keboola/go-client/pkg/sandboxesapi"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
 )
 
 type targetNameDialogDeps interface {
@@ -53,4 +55,21 @@ func validateTargetName(val interface{}) error {
 	}
 
 	return nil
+}
+
+func (p *Dialogs) AskGenerateEnv(d targetNameDialogDeps, allWorkspaces []*sandboxesapi.Sandbox) (env.GenerateEnvOptions, error) {
+	opts, err := p.AskTargetName(d)
+	if err != nil {
+		return env.GenerateEnvOptions{}, err
+	}
+
+	workspace, err := p.AskWorkspace(d.Options(), allWorkspaces)
+	if err != nil {
+		return env.GenerateEnvOptions{}, err
+	}
+
+	return env.GenerateEnvOptions{
+		TargetName: opts.Name,
+		Workspace:  workspace,
+	}, nil
 }
