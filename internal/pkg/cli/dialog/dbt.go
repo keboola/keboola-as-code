@@ -10,28 +10,25 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
+	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/init"
 )
 
 type targetNameDialogDeps interface {
 	Options() *options.Options
 }
 
-type TargetNameOptions struct {
-	Name string
-}
-
-func (p *Dialogs) AskTargetName(d targetNameDialogDeps) (TargetNameOptions, error) {
-	opts := TargetNameOptions{}
+func (p *Dialogs) AskTargetName(d targetNameDialogDeps) (string, error) {
+	var name string
 	if d.Options().IsSet(`target-name`) {
-		opts.Name = d.Options().GetString(`target-name`)
+		name = d.Options().GetString(`target-name`)
 	} else {
-		opts.Name = p.askTargetName()
+		name = p.askTargetName()
 	}
-	if err := validateTargetName(opts.Name); err != nil {
-		return opts, err
+	if err := validateTargetName(name); err != nil {
+		return "", err
 	}
 
-	return opts, nil
+	return name, nil
 }
 
 func (p *Dialogs) askTargetName() string {
@@ -58,7 +55,7 @@ func validateTargetName(val interface{}) error {
 }
 
 func (p *Dialogs) AskGenerateEnv(d targetNameDialogDeps, allWorkspaces []*sandboxesapi.Sandbox) (env.GenerateEnvOptions, error) {
-	opts, err := p.AskTargetName(d)
+	targetName, err := p.AskTargetName(d)
 	if err != nil {
 		return env.GenerateEnvOptions{}, err
 	}
@@ -69,7 +66,7 @@ func (p *Dialogs) AskGenerateEnv(d targetNameDialogDeps, allWorkspaces []*sandbo
 	}
 
 	return env.GenerateEnvOptions{
-		TargetName: opts.Name,
+		TargetName: targetName,
 		Workspace:  workspace,
 	}, nil
 }

@@ -20,12 +20,12 @@ func ProfileCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			opts, err := d.Dialogs().AskTargetName(d)
+			targetName, err := d.Dialogs().AskTargetName(d)
 			if err != nil {
 				return err
 			}
 
-			return profile.Run(d.CommandCtx(), opts, d)
+			return profile.Run(d.CommandCtx(), targetName, d)
 		},
 	}
 

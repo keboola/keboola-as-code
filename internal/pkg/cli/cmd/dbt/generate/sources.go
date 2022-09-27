@@ -20,12 +20,12 @@ func SourcesCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			opts, err := d.Dialogs().AskTargetName(d)
+			targetName, err := d.Dialogs().AskTargetName(d)
 			if err != nil {
 				return err
 			}
 
-			return sources.Run(d.CommandCtx(), opts, d)
+			return sources.Run(d.CommandCtx(), targetName, d)
 		},
 	}
 

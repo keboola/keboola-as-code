@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/yaml.v3"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -65,7 +64,7 @@ type sourceFreshnessWarnAfter struct {
 	period string `yaml:"period"`
 }
 
-func Run(ctx context.Context, opts dialog.TargetNameOptions, d dependencies) (err error) {
+func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.dbt.generate.sources")
 	defer telemetry.EndSpan(span, &err)
 
@@ -88,7 +87,7 @@ func Run(ctx context.Context, opts dialog.TargetNameOptions, d dependencies) (er
 	tablesByBuckets := tablesByBucketsMap(*tablesList)
 
 	for bucketID, tables := range tablesByBuckets {
-		sourcesDef := generateSourcesDefinition(opts.Name, bucketID, tables)
+		sourcesDef := generateSourcesDefinition(targetName, bucketID, tables)
 		yamlEnc, err := yaml.Marshal(&sourcesDef)
 		if err != nil {
 			return err
