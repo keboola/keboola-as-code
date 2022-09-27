@@ -1,7 +1,6 @@
 package workspace
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -36,7 +35,7 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			return fmt.Errorf("not implemented")
+			return nil
 		},
 	}
 
