@@ -1,2 +1,9 @@
 Creating new workspace, please wait.
 Created new workspace "foo".
+Credentials:
+  Host: %s
+  User: %s
+  Password: %s
+  Database: %s
+  Schema: %s
+  Warehouse: %s

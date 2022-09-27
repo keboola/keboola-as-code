@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/jobsqueueapi"
+	"github.com/keboola/go-client/pkg/sandboxesapi"
 	"github.com/keboola/go-client/pkg/schedulerapi"
 	"github.com/keboola/go-client/pkg/storageapi"
 
@@ -22,6 +23,7 @@ type project struct {
 	storageApiClient   client.Client
 	schedulerApiClient client.Client
 	jobsQueueAPIClient client.Client
+	sandboxesApiClient client.Client
 	eventSender        event.Sender
 }
 
@@ -61,6 +63,12 @@ func newProjectDeps(base Base, public Public, token storageapi.Token) (*project,
 		v.jobsQueueAPIClient = jobsqueueapi.ClientWithHostAndToken(v.base.HttpClient(), queueHost.String(), v.token.Token)
 	}
 
+	if sandboxesHost, found := v.public.StackServices().URLByID("sandboxes"); !found {
+		return nil, fmt.Errorf("sandboxes host not found")
+	} else {
+		v.sandboxesApiClient = sandboxesapi.ClientWithHostAndToken(v.base.HttpClient(), sandboxesHost.String(), v.token.Token)
+	}
+
 	// Setup event sender
 	v.eventSender = event.NewSender(v.base.Logger(), v.StorageApiClient(), v.ProjectID())
 
@@ -93,6 +101,10 @@ func (v project) SchedulerApiClient() client.Sender {
 
 func (v project) JobsQueueApiClient() client.Sender {
 	return v.jobsQueueAPIClient
+}
+
+func (v project) SandboxesApiClient() client.Sender {
+	return v.sandboxesApiClient
 }
 
 func (v project) EventSender() event.Sender {

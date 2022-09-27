@@ -95,6 +95,7 @@ func NewMockedDeps(opts ...MockedOption) Mocked {
 			{ID: "encryption", URL: "https://encryption.mocked.transport.http"},
 			{ID: "scheduler", URL: "https://scheduler.mocked.transport.http"},
 			{ID: "queue", URL: "https://queue.mocked.transport.http"},
+			{ID: "sandboxes", URL: "https://sandboxes.mocked.transport.http"},
 		},
 		Features:       storageapi.Features{"FeatureA", "FeatureB"},
 		Components:     testapi.MockedComponents(),
