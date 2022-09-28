@@ -5,9 +5,10 @@ import (
 	"strings"
 
 	"github.com/keboola/go-client/pkg/sandboxesapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
-	workspace "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
 )
 
 type createWorkspaceDeps interface {
