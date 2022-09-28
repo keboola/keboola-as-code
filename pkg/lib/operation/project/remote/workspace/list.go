@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"go.opentelemetry.io/otel/trace"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type listDeps interface {
@@ -24,41 +26,65 @@ func List(ctx context.Context, d listDeps) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.workspace.list")
 	defer telemetry.EndSpan(span, &err)
 
-	w := d.Logger().InfoWriter()
+	logger := d.Logger()
 
 	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageApiClient())
 	if err != nil {
 		return fmt.Errorf("cannot find default branch: %w", err)
 	}
 
-	sandboxConfigs, err := sandboxesapi.ListConfigRequest(branch.ID).Send(ctx, d.StorageApiClient())
-	if err != nil {
-		return fmt.Errorf("cannot list workspace configs: %w", err)
-	}
+	logger.Info("Loading workspaces, please wait.")
 
-	sandboxes, err := sandboxesapi.ListRequest().Send(ctx, d.SandboxesApiClient())
-	if err != nil {
-		return fmt.Errorf("cannot list workspaces: %w", err)
-	}
-	sandboxesMap := make(map[string]*sandboxesapi.Sandbox, 0)
-	for _, sandbox := range *sandboxes {
-		sandboxesMap[sandbox.ID.String()] = sandbox
-	}
+	// Load configs and instances in parallel
+	var configs []*storageapi.Config
+	var instances map[string]*sandboxesapi.Sandbox
+	errors := utils.NewMultiError()
+	wg := &sync.WaitGroup{}
 
-	for _, sandboxConfig := range *sandboxConfigs {
-		sandboxId, err := sandboxesapi.GetSandboxID(sandboxConfig)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		data, err := sandboxesapi.ListConfigRequest(branch.ID).Send(ctx, d.StorageApiClient())
 		if err != nil {
-			return fmt.Errorf("invalid workspace config: %w", err)
+			errors.Append(fmt.Errorf("cannot list workspace configs: %w", err))
+			return
 		}
-		sandboxInstance := sandboxesMap[sandboxId.String()]
+		configs = *data
+	}()
 
-		w.Writef("ID: %s", sandboxInstance.ID)
-		w.Writef("Name: %s", sandboxConfig.Name)
-		w.Writef("Type: %s", sandboxInstance.Type)
-		if sandboxesapi.SupportsSizes(sandboxInstance.Type) {
-			w.Writef("Size: %s", sandboxInstance.Size)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		data, err := sandboxesapi.ListRequest().Send(ctx, d.SandboxesApiClient())
+		if err != nil {
+			errors.Append(fmt.Errorf("cannot list workspaces: %w", err))
+			return
 		}
-		w.Writef("")
+		m := make(map[string]*sandboxesapi.Sandbox, 0)
+		for _, sandbox := range *data {
+			m[sandbox.ID.String()] = sandbox
+		}
+		instances = m
+	}()
+
+	wg.Wait()
+
+	logger.Info("Found workspaces:")
+	for _, config := range configs {
+		instanceId, err := sandboxesapi.GetSandboxID(config)
+		if err != nil {
+			logger.Debugf("  invalid workspace config (%s): %w", config.ID, err)
+			continue
+		}
+		instance := instances[instanceId.String()]
+
+		var info string
+		if !sandboxesapi.SupportsSizes(instance.Type) {
+			info = fmt.Sprintf("  ID: %s, Type: %s, Name: %s", instance.ID, instance.Type, config.Name)
+		} else {
+			info = fmt.Sprintf("  ID: %s, Type: %s, Size: %s, Name: %s", instance.ID, instance.Type, instance.Size, config.Name)
+		}
+		logger.Info(info)
 	}
 
 	return nil
