@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/yaml"
 )
 
 type FileLine struct {
@@ -22,6 +23,7 @@ type FileType int
 const (
 	FileTypeRaw     FileType = iota // RawFile
 	FileTypeJson                    // JsonFile
+	FileTypeYaml                    // YamlFile
 	FileTypeJsonNet                 // JsonNetFile
 )
 
@@ -123,6 +125,19 @@ func (f *RawFile) ToJsonFile() (*JsonFile, error) {
 	return file, nil
 }
 
+func (f *RawFile) ToYamlFile() (*YamlFile, error) {
+	yamlMap := orderedmap.New()
+	if err := yaml.DecodeString(f.Content, yamlMap); err != nil {
+		fileDesc := strings.TrimSpace(f.desc + " file")
+		return nil, utils.PrefixError(fmt.Sprintf("%s \"%s\" is invalid", fileDesc, f.path), err)
+	}
+
+	file := NewYamlFile(f.path, yamlMap)
+	file.SetDescription(f.desc)
+	file.AddTag(f.AllTags()...)
+	return file, nil
+}
+
 func (f *RawFile) ToJsonNetFile(ctx *jsonnet.Context) (*JsonNetFile, error) {
 	ast, err := jsonnet.ToAst(f.Content, f.path)
 	if err != nil {
@@ -200,6 +215,53 @@ func (f *JsonFile) ToJsonNetFile() (*JsonNetFile, error) {
 	fileRaw.SetPath(strings.TrimSuffix(f.path, `.json`) + `.jsonnet`)
 	// ctx = nil: JsonNet created from the Json cannot contain variables
 	return fileRaw.ToJsonNetFile(nil)
+}
+
+type YamlFile struct {
+	*FileDef
+	Content *orderedmap.OrderedMap
+}
+
+func NewYamlFile(path string, content *orderedmap.OrderedMap) *YamlFile {
+	file := &YamlFile{FileDef: NewFileDef(path)}
+	file.Content = content
+	return file
+}
+
+func (f *YamlFile) Description() string {
+	return f.desc
+}
+
+func (f *YamlFile) SetDescription(desc string) File {
+	f.desc = desc
+	return f
+}
+
+func (f *YamlFile) Path() string {
+	return f.path
+}
+
+func (f *YamlFile) AddTag(tags ...string) File {
+	f.FileDef.AddTag(tags...)
+	return f
+}
+
+func (f *YamlFile) RemoveTag(tags ...string) File {
+	f.FileDef.RemoveTag(tags...)
+	return f
+}
+
+func (f *YamlFile) ToRawFile() (*RawFile, error) {
+	content, err := yaml.EncodeString(f.Content)
+	if err != nil {
+		fileDesc := strings.TrimSpace(f.desc + " file")
+		return nil, utils.PrefixError(fmt.Sprintf("cannot encode %s \"%s\"", fileDesc, f.path), err)
+	}
+
+	file := NewRawFile(f.path, content)
+	file.SetDescription(f.desc)
+	file.AddTag(f.AllTags()...)
+	return file, nil
 }
 
 type JsonNetFile struct {

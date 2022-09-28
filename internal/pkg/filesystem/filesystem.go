@@ -75,6 +75,10 @@ type FileLoader interface {
 	ReadJsonFileTo(file *FileDef, target interface{}) (*RawFile, error)
 	ReadJsonFieldsTo(file *FileDef, target interface{}, structTag string) (*JsonFile, bool, error)
 	ReadJsonMapTo(file *FileDef, target interface{}, structTag string) (*JsonFile, bool, error)
+	ReadYamlFile(file *FileDef) (*YamlFile, error)
+	ReadYamlFileTo(file *FileDef, target interface{}) (*RawFile, error)
+	ReadYamlFieldsTo(file *FileDef, target interface{}, structTag string) (*YamlFile, bool, error)
+	ReadYamlMapTo(file *FileDef, target interface{}, structTag string) (*YamlFile, bool, error)
 	ReadJsonNetFile(file *FileDef) (*JsonNetFile, error)
 	ReadJsonNetFileTo(file *FileDef, target interface{}) (*JsonNetFile, error)
 	ReadSubDirs(fs Fs, root string) ([]string, error)
@@ -143,7 +147,7 @@ func IsFrom(path, base string) bool {
 	}
 
 	lB := len(base)
-	lP := len(path)
+	lP := len(path) // nolint: ifshort
 
 	// Path length must be greater than base length
 	if lP <= lB {

@@ -19,9 +19,9 @@ import (
 )
 
 type myStruct struct {
-	Field1   string                 `json:"field1" mytag:"field"`
-	Field2   string                 `json:"field2" mytag:"field"`
-	FooField string                 `json:"foo"`
+	Field1   string                 `json:"field1" yaml:"field1" mytag:"field"`
+	Field2   string                 `json:"field2" yaml:"field2" mytag:"field"`
+	FooField string                 `json:"foo" yaml:"foo"`
 	Map      *orderedmap.OrderedMap `mytag:"map"`
 	Content  string                 `mytag:"content"`
 }
@@ -241,6 +241,85 @@ func (*testCases) TestFileLoader_ReadJsonMapTo(t *testing.T, fs filesystem.Fs, l
 	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(file.Content, false))
 	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(target.Map, false))
 	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+}
+
+func (*testCases) TestFileLoader_ReadYamlFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+	// Create file
+	filePath := "file.yaml"
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `foo: bar`)))
+
+	// Read
+	logger.Truncate()
+	file, err := fs.FileLoader().ReadYamlFile(filesystem.NewFileDef(filePath))
+	assert.NoError(t, err)
+	assert.NotNil(t, file)
+	assert.Equal(t, `{"foo":"bar"}`, json.MustEncodeString(file.Content, false))
+	assert.Equal(t, `DEBUG  Loaded "file.yaml"`, strings.TrimSpace(logger.AllMessages()))
+}
+
+func (*testCases) TestFileLoader_ReadYamlFileTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+	// Create file
+	filePath := "file.txt"
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, "foo: bar")))
+
+	// Read
+	logger.Truncate()
+	target := &myStruct{}
+	file, err := fs.FileLoader().ReadYamlFileTo(filesystem.NewFileDef(filePath), target)
+	assert.NoError(t, err)
+	assert.Equal(t, `foo: bar`, file.Content)
+	assert.Equal(t, `bar`, target.FooField)
+	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
+}
+
+func (*testCases) TestFileLoader_ReadYamlFile_Invalid(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
+	// Create file
+	filePath := "file.yaml"
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, ":\n")))
+
+	// Read
+	file, err := fs.FileLoader().ReadYamlFile(filesystem.NewFileDef(filePath))
+	assert.Error(t, err)
+	assert.Nil(t, file)
+	expectedError := `
+file "file.yaml" is invalid: yaml: did not find expected key
+`
+	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
+}
+
+func (*testCases) TestFileLoader_ReadYamlFieldsTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+	// Create file
+	filePath := "file.yaml"
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, "field1: foo\nfield2: bar\n")))
+
+	// Read
+	logger.Truncate()
+	target := &myStruct{}
+	file, tagFound, err := fs.FileLoader().ReadYamlFieldsTo(filesystem.NewFileDef(filePath), target, `mytag:field`)
+	assert.NoError(t, err)
+	assert.True(t, tagFound)
+	assert.NotNil(t, file)
+	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(file.Content, false))
+	assert.Equal(t, `foo`, target.Field1)
+	assert.Equal(t, `bar`, target.Field2)
+	assert.Equal(t, `DEBUG  Loaded "file.yaml"`, strings.TrimSpace(logger.AllMessages()))
+}
+
+func (*testCases) TestFileLoader_ReadYamlMapTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+	// Create file
+	filePath := "file.yaml"
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, "field1: foo\nfield2: bar\n")))
+
+	// Read
+	logger.Truncate()
+	target := &myStruct{}
+	file, tagFound, err := fs.FileLoader().ReadYamlMapTo(filesystem.NewFileDef(filePath), target, `mytag:map`)
+	assert.NoError(t, err)
+	assert.True(t, tagFound)
+	assert.NotNil(t, file)
+	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(file.Content, false))
+	assert.Equal(t, `{"field1":"foo","field2":"bar"}`, json.MustEncodeString(target.Map, false))
+	assert.Equal(t, `DEBUG  Loaded "file.yaml"`, strings.TrimSpace(logger.AllMessages()))
 }
 
 func (*testCases) TestFileLoader_ReadFileContentTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
