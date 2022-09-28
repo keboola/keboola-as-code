@@ -29,9 +29,9 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String("name", "", "name of the workspace")
 	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
 	cmd.Flags().StringP("target-name", "T", "", "target name of the profile")
+	cmd.Flags().StringP("workspace-name", "W", "", "name of workspace to create")
 
 	return cmd
 }

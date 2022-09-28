@@ -77,7 +77,7 @@ func (p *Dialogs) AskDbtInit(d targetNameDialogDeps) (initOp.DbtInitOptions, err
 		return initOp.DbtInitOptions{}, err
 	}
 
-	workspaceName, err := p.askWorkspaceName(d)
+	workspaceName, err := p.askWorkspaceNameForDbtInit(d)
 	if err != nil {
 		return initOp.DbtInitOptions{}, err
 	}
@@ -86,4 +86,19 @@ func (p *Dialogs) AskDbtInit(d targetNameDialogDeps) (initOp.DbtInitOptions, err
 		TargetName:    targetName,
 		WorkspaceName: workspaceName,
 	}, nil
+}
+
+func (p *Dialogs) askWorkspaceNameForDbtInit(d createWorkspaceDeps) (string, error) {
+	if d.Options().IsSet("workspace-name") {
+		return d.Options().GetString("workspace-name"), nil
+	} else {
+		name, ok := p.Ask(&prompt.Question{
+			Label:     "Enter a name for a workspace to create",
+			Validator: prompt.ValueRequired,
+		})
+		if !ok || len(name) == 0 {
+			return "", fmt.Errorf("missing workspace name, please specify it")
+		}
+		return name, nil
+	}
 }
