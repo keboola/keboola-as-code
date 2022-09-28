@@ -68,6 +68,9 @@ func List(ctx context.Context, d listDeps) (err error) {
 	}()
 
 	wg.Wait()
+	if errors.Len() > 0 {
+		return errors
+	}
 
 	logger.Info("Found workspaces:")
 	for _, config := range configs {
@@ -76,15 +79,13 @@ func List(ctx context.Context, d listDeps) (err error) {
 			logger.Debugf("  invalid workspace config (%s): %w", config.ID, err)
 			continue
 		}
-		instance := instances[instanceId.String()]
 
-		var info string
+		instance := instances[instanceId.String()]
 		if !sandboxesapi.SupportsSizes(instance.Type) {
-			info = fmt.Sprintf("  ID: %s, Type: %s, Name: %s", instance.ID, instance.Type, config.Name)
+			logger.Infof("  ID: %s, Type: %s, Name: %s", instance.ID, instance.Type, config.Name)
 		} else {
-			info = fmt.Sprintf("  ID: %s, Type: %s, Size: %s, Name: %s", instance.ID, instance.Type, instance.Size, config.Name)
+			logger.Infof("  ID: %s, Type: %s, Size: %s, Name: %s", instance.ID, instance.Type, instance.Size, config.Name)
 		}
-		logger.Info(info)
 	}
 
 	return nil
