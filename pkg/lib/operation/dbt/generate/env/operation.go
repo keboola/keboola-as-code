@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -20,7 +19,6 @@ type GenerateEnvOptions struct {
 }
 
 type dependencies interface {
-	Fs() filesystem.Fs
 	Logger() log.Logger
 	SandboxesApiClient() client.Sender
 	Tracer() trace.Tracer

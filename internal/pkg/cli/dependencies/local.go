@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -26,7 +25,6 @@ type local struct {
 	localProject            dependencies.Lazy[localProjectValue]
 	localTemplate           dependencies.Lazy[localTemplateValue]
 	localTemplateRepository dependencies.Lazy[localRepositoryValue]
-	localDbtProject         dependencies.Lazy[localDbtProjectValue]
 }
 
 type localProjectValue struct {
@@ -42,11 +40,6 @@ type localRepositoryValue struct {
 type localTemplateValue struct {
 	found bool
 	value *template.Template
-}
-
-type localDbtProjectValue struct {
-	found bool
-	value *dbt.Project
 }
 
 func newPublicDeps(baseDeps Base) (*local, error) {
@@ -159,22 +152,6 @@ func (v *local) LocalTemplate(ctx context.Context) (*template.Template, bool, er
 		}
 
 		return localTemplateValue{found: true, value: tmpl}, nil
-	})
-
-	return value.value, value.found, err
-}
-
-func (v *local) LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error) {
-	value, err := v.localDbtProject.InitAndGet(func() (localDbtProjectValue, error) {
-		// Get directory
-		fs, _, err := v.FsInfo().DbtProjectDir()
-		if err != nil {
-			return localDbtProjectValue{found: false, value: nil}, err
-		}
-
-		// Load project
-		prj, err := dbt.LoadProject(ctx, fs)
-		return localDbtProjectValue{found: true, value: prj}, err
 	})
 
 	return value.value, value.found, err

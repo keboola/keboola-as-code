@@ -17,7 +17,6 @@ import (
 )
 
 type dependencies interface {
-	Fs() filesystem.Fs
 	Logger() log.Logger
 	Tracer() trace.Tracer
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
@@ -28,13 +27,15 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.dbt.generate.sources")
 	defer telemetry.EndSpan(span, &err)
 
-	// Check that we are in dbt directory
-	if _, _, err := d.LocalDbtProject(ctx); err != nil {
+	// Get dbt project
+	project, _, err := d.LocalDbtProject(ctx)
+	if err != nil {
 		return err
 	}
+	fs := project.Fs()
 
-	if !d.Fs().Exists(dbt.SourcesPath) {
-		err = d.Fs().Mkdir(dbt.SourcesPath)
+	if !fs.Exists(dbt.SourcesPath) {
+		err = fs.Mkdir(dbt.SourcesPath)
 		if err != nil {
 			return err
 		}
@@ -52,7 +53,7 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 		if err != nil {
 			return err
 		}
-		err = d.Fs().WriteFile(filesystem.NewRawFile(fmt.Sprintf("%s/%s.yml", dbt.SourcesPath, bucketID), string(yamlEnc)))
+		err = fs.WriteFile(filesystem.NewRawFile(fmt.Sprintf("%s/%s.yml", dbt.SourcesPath, bucketID), string(yamlEnc)))
 		if err != nil {
 			return err
 		}

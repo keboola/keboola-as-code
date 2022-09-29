@@ -14,6 +14,12 @@ func SourcesCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`dbt/generate/sources/short`),
 		Long:  helpmsg.Read(`dbt/generate/sources/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Check that we are in dbt directory
+			if _, _, err := p.LocalDbtProject(cmd.Context()); err != nil {
+				return err
+			}
+
+			// Get dependencies
 			d, err := p.DependenciesForRemoteCommand()
 			if err != nil {
 				return err

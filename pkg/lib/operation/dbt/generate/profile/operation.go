@@ -15,7 +15,6 @@ import (
 )
 
 type dependencies interface {
-	Fs() filesystem.Fs
 	Logger() log.Logger
 	Tracer() trace.Tracer
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
@@ -32,6 +31,7 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 	if err != nil {
 		return err
 	}
+	fs := project.Fs()
 
 	targetUpper := strings.ToUpper(targetName)
 	profileDetails := map[string]interface{}{
@@ -51,8 +51,8 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 	profilesFile := make(map[string]interface{})
 	profilesFile["send_anonymous_usage_stats"] = false
 
-	if d.Fs().Exists(profilePath) {
-		file, err := d.Fs().ReadFile(filesystem.NewFileDef(profilePath))
+	if fs.Exists(profilePath) {
+		file, err := fs.ReadFile(filesystem.NewFileDef(profilePath))
 		if err != nil {
 			return err
 		}
@@ -67,7 +67,7 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 	if err != nil {
 		return err
 	}
-	err = d.Fs().WriteFile(filesystem.NewRawFile(profilePath, string(yamlEnc)))
+	err = fs.WriteFile(filesystem.NewRawFile(profilePath, string(yamlEnc)))
 	if err != nil {
 		return err
 	}

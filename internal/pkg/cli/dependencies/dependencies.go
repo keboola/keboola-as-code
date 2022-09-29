@@ -46,6 +46,7 @@ type Base interface {
 	Dialogs() *dialog.Dialogs
 	Options() *options.Options
 	EmptyDir() (filesystem.Fs, error)
+	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }
 
 // ForLocalCommand interface provides dependencies for commands that do not modify the remote project.
@@ -57,7 +58,6 @@ type ForLocalCommand interface {
 	LocalProject(ignoreErrors bool) (*projectPkg.Project, bool, error)
 	LocalTemplate(ctx context.Context) (*template.Template, bool, error)
 	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)
-	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }
 
 // ForRemoteCommand interface provides dependencies for commands that modify remote project.
@@ -78,4 +78,6 @@ type Provider interface {
 	LocalProject(ignoreErrors bool) (*projectPkg.Project, ForRemoteCommand, error)
 	// LocalRepository method can be used by a CLI command that must be run in the local repository directory.
 	LocalRepository() (*repository.Repository, ForLocalCommand, error)
+	// LocalDbtProject method can be used by a CLI command that must be run in the dbt project directory.
+	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }
