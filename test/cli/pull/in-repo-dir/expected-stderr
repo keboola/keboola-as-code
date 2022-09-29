@@ -1,1 +1,2 @@
-Error: none of this and parent directories is project dir
+Error:
+  - neither this nor any parent directory is a local project directory

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -22,14 +23,30 @@ type local struct {
 	dependencies.Public
 	Base
 	components              dependencies.Lazy[*model.ComponentsMap]
-	localProject            dependencies.Lazy[*projectPkg.Project]
+	localProject            dependencies.Lazy[localProjectValue]
 	localTemplate           dependencies.Lazy[localTemplateValue]
 	localTemplateRepository dependencies.Lazy[localRepositoryValue]
+	localDbtProject         dependencies.Lazy[localDbtProjectValue]
+}
+
+type localProjectValue struct {
+	found bool
+	value *projectPkg.Project
+}
+
+type localRepositoryValue struct {
+	found bool
+	value *repository.Repository
 }
 
 type localTemplateValue struct {
 	found bool
 	value *template.Template
+}
+
+type localDbtProjectValue struct {
+	found bool
+	value *dbt.Project
 }
 
 func newPublicDeps(baseDeps Base) (*local, error) {
@@ -73,33 +90,23 @@ func (v *local) Template(ctx context.Context, reference model.TemplateRef) (*tem
 }
 
 func (v *local) LocalProject(ignoreErrors bool) (*projectPkg.Project, bool, error) {
-	// Check if the working directory is a project directory
-	if !v.localProject.IsSet() && !v.Fs().IsFile(projectManifest.Path()) {
-		if v.FsInfo().LocalTemplateExists() {
-			return nil, false, ErrExpectedProjectFoundTemplate
-		}
-		if v.FsInfo().LocalTemplateRepositoryExists() {
-			return nil, false, ErrExpectedProjectFoundRepository
-		}
-		return nil, false, ErrProjectManifestNotFound
-	}
-
 	// Check version field
-	p, err := v.localProject.InitAndGet(func() (*projectPkg.Project, error) {
+	value, err := v.localProject.InitAndGet(func() (localProjectValue, error) {
+		fs, found, err := v.FsInfo().ProjectDir()
+		if err != nil {
+			return localProjectValue{found: found}, err
+		}
+
 		// Check manifest compatibility
-		if err := version.CheckManifestVersion(v.Logger(), v.Fs(), projectManifest.Path()); err != nil {
-			return nil, err
+		if err := version.CheckManifestVersion(v.Logger(), fs, projectManifest.Path()); err != nil {
+			return localProjectValue{found: true}, err
 		}
 
 		// Create remote instance
-		return projectPkg.New(v.CommandCtx(), v.Fs(), ignoreErrors)
+		p, err := projectPkg.New(v.CommandCtx(), fs, ignoreErrors)
+		return localProjectValue{found: found, value: p}, err
 	})
-	return p, true, err
-}
-
-type localRepositoryValue struct {
-	found bool
-	value *repository.Repository
+	return value.value, value.found, err
 }
 
 func (v *local) LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error) {
@@ -117,7 +124,7 @@ func (v *local) LocalTemplateRepository(ctx context.Context) (*repository.Reposi
 func (v *local) LocalTemplate(ctx context.Context) (*template.Template, bool, error) {
 	value, err := v.localTemplate.InitAndGet(func() (localTemplateValue, error) {
 		// Get template path from current working dir
-		paths, err := v.FsInfo().LocalTemplatePath()
+		paths, err := v.FsInfo().TemplatePath()
 		if err != nil {
 			return localTemplateValue{found: false}, err
 		}
@@ -157,6 +164,22 @@ func (v *local) LocalTemplate(ctx context.Context) (*template.Template, bool, er
 	return value.value, value.found, err
 }
 
+func (v *local) LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error) {
+	value, err := v.localDbtProject.InitAndGet(func() (localDbtProjectValue, error) {
+		// Get directory
+		fs, _, err := v.FsInfo().DbtProjectDir()
+		if err != nil {
+			return localDbtProjectValue{found: false, value: nil}, err
+		}
+
+		// Load project
+		prj, err := dbt.LoadProject(ctx, fs)
+		return localDbtProjectValue{found: true, value: prj}, err
+	})
+
+	return value.value, value.found, err
+}
+
 func (v *local) templateRepository(ctx context.Context, reference model.TemplateRepository, opts ...loadRepositoryOp.Option) (*repository.Repository, error) {
 	// Handle CLI only features
 	reference, err := v.mapRepositoryRelPath(reference)
@@ -183,7 +206,7 @@ func (v *local) templateRepository(ctx context.Context, reference model.Template
 func (v *local) mapRepositoryRelPath(reference model.TemplateRepository) (model.TemplateRepository, error) {
 	if reference.Type == model.RepositoryTypeDir {
 		// Convert relative path to absolute
-		if !filepath.IsAbs(reference.Url) && v.FsInfo().LocalProjectExists() { // nolint: forbidigo
+		if !filepath.IsAbs(reference.Url) && v.FsInfo().ProjectExists() { // nolint: forbidigo
 			// Relative to the remote directory
 			reference.Url = filepath.Join(v.Fs().BasePath(), reference.Url) // nolint: forbidigo
 		}
@@ -193,7 +216,7 @@ func (v *local) mapRepositoryRelPath(reference model.TemplateRepository) (model.
 
 func (v *local) localTemplateRepositoryRef() (model.TemplateRepository, bool, error) {
 	// Get repository dir
-	fs, exists, err := v.FsInfo().LocalTemplateRepositoryDir()
+	fs, exists, err := v.FsInfo().TemplateRepositoryDir()
 	if err != nil {
 		return model.TemplateRepository{}, exists, err
 	}

@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/yaml.v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -17,6 +18,7 @@ type dependencies interface {
 	Fs() filesystem.Fs
 	Logger() log.Logger
 	Tracer() trace.Tracer
+	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }
 
 const profilePath = "profiles.yml"
@@ -25,24 +27,12 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.dbt.generate.profile")
 	defer telemetry.EndSpan(span, &err)
 
-	if !d.Fs().Exists(`dbt_project.yml`) {
-		return fmt.Errorf(`missing file "dbt_project.yml" in the current directory`)
-	}
-	file, err := d.Fs().ReadFile(filesystem.NewFileDef(`dbt_project.yml`))
+	// Get dbt project
+	project, _, err := d.LocalDbtProject(ctx)
 	if err != nil {
 		return err
-	}
-	configFile := make(map[string]interface{})
-	err = yaml.Unmarshal([]byte(file.Content), &configFile)
-	if err != nil {
-		return err
-	}
-	profileName, ok := configFile["profile"]
-	if !ok {
-		return fmt.Errorf(`configuration file "dbt_project.yml" is missing "profile"`)
 	}
 
-	logger := d.Logger()
 	targetUpper := strings.ToUpper(targetName)
 	profileDetails := map[string]interface{}{
 		"target": targetName,
@@ -71,7 +61,7 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 			return fmt.Errorf(`profiles file "%s" is not valid yaml: %w`, profilePath, err)
 		}
 	}
-	profilesFile[profileName.(string)] = profileDetails
+	profilesFile[project.Profile()] = profileDetails
 
 	yamlEnc, err := yaml.Marshal(&profilesFile)
 	if err != nil {
@@ -82,6 +72,6 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 		return err
 	}
 
-	logger.Infof(`Profile stored in "%s".`, profilePath)
+	d.Logger().Infof(`Profile stored in "%s".`, profilePath)
 	return nil
 }

@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/yaml.v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -18,50 +19,9 @@ import (
 type dependencies interface {
 	Fs() filesystem.Fs
 	Logger() log.Logger
-	StorageApiClient() client.Sender
 	Tracer() trace.Tracer
-}
-
-const sourcesPath = "models/_sources"
-
-type SourceFile struct {
-	Version int      `yaml:"version"`
-	Sources []Source `yaml:"sources"`
-}
-
-type Source struct {
-	Name          string          `yaml:"name"`
-	Freshness     SourceFreshness `yaml:"freshness"`
-	Database      string          `yaml:"database"`
-	Schema        string          `yaml:"schema"`
-	LoadedAtField string          `yaml:"loaded_at_field"` //nolint:tagliatelle
-	Tables        []SourceTable   `yaml:"tables"`
-}
-
-type SourceTable struct {
-	Name    string              `yaml:"name"`
-	Quoting SourceTableQuoting  `yaml:"quoting"`
-	Columns []SourceTableColumn `yaml:"columns"`
-}
-
-type SourceTableColumn struct {
-	Name  string   `yaml:"name"`
-	Tests []string `yaml:"tests"`
-}
-
-type SourceTableQuoting struct {
-	Database   bool `yaml:"database"`
-	Schema     bool `yaml:"schema"`
-	Identifier bool `yaml:"identifier"`
-}
-
-type SourceFreshness struct {
-	WarnAfter SourceFreshnessWarnAfter `yaml:"warn_after"` //nolint:tagliatelle
-}
-
-type SourceFreshnessWarnAfter struct {
-	Count  int    `yaml:"count"`
-	Period string `yaml:"period"`
+	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
+	StorageApiClient() client.Sender
 }
 
 func Run(ctx context.Context, targetName string, d dependencies) (err error) {
@@ -69,12 +29,12 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 	defer telemetry.EndSpan(span, &err)
 
 	// Check that we are in dbt directory
-	if !d.Fs().Exists(`dbt_project.yml`) {
-		return fmt.Errorf(`missing file "dbt_project.yml" in the current directory`)
+	if _, _, err := d.LocalDbtProject(ctx); err != nil {
+		return err
 	}
 
-	if !d.Fs().Exists(sourcesPath) {
-		err = d.Fs().Mkdir(sourcesPath)
+	if !d.Fs().Exists(dbt.SourcesPath) {
+		err = d.Fs().Mkdir(dbt.SourcesPath)
 		if err != nil {
 			return err
 		}
@@ -92,13 +52,13 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 		if err != nil {
 			return err
 		}
-		err = d.Fs().WriteFile(filesystem.NewRawFile(fmt.Sprintf("%s/%s.yml", sourcesPath, bucketID), string(yamlEnc)))
+		err = d.Fs().WriteFile(filesystem.NewRawFile(fmt.Sprintf("%s/%s.yml", dbt.SourcesPath, bucketID), string(yamlEnc)))
 		if err != nil {
 			return err
 		}
 	}
 
-	d.Logger().Infof(`Sources stored in "%s" directory.`, sourcesPath)
+	d.Logger().Infof(`Sources stored in "%s" directory.`, dbt.SourcesPath)
 	return nil
 }
 
@@ -115,21 +75,21 @@ func tablesByBucketsMap(tablesList []*storageapi.Table) map[storageapi.BucketID]
 	return tablesByBuckets
 }
 
-func generateSourcesDefinition(targetName string, bucketID storageapi.BucketID, tablesList []*storageapi.Table) SourceFile {
-	sourceTables := make([]SourceTable, 0)
+func generateSourcesDefinition(targetName string, bucketID storageapi.BucketID, tablesList []*storageapi.Table) dbt.SourceFile {
+	sourceTables := make([]dbt.SourceTable, 0)
 	for _, table := range tablesList {
-		sourceTable := SourceTable{
+		sourceTable := dbt.SourceTable{
 			Name: table.Name,
-			Quoting: SourceTableQuoting{
+			Quoting: dbt.SourceTableQuoting{
 				Database:   true,
 				Schema:     true,
 				Identifier: true,
 			},
 		}
 		if len(table.PrimaryKey) > 0 {
-			sourceColumns := make([]SourceTableColumn, 0)
+			sourceColumns := make([]dbt.SourceTableColumn, 0)
 			for _, primaryKey := range table.PrimaryKey {
-				sourceColumns = append(sourceColumns, SourceTableColumn{
+				sourceColumns = append(sourceColumns, dbt.SourceTableColumn{
 					Name:  fmt.Sprintf(`"%s"`, primaryKey),
 					Tests: []string{"unique", "not_null"},
 				})
@@ -138,15 +98,17 @@ func generateSourcesDefinition(targetName string, bucketID storageapi.BucketID, 
 		}
 		sourceTables = append(sourceTables, sourceTable)
 	}
-	return SourceFile{
+	return dbt.SourceFile{
 		Version: 2,
-		Sources: []Source{
+		Sources: []dbt.Source{
 			{
 				Name: string(bucketID),
-				Freshness: SourceFreshness{SourceFreshnessWarnAfter{
-					Count:  1,
-					Period: "day",
-				}},
+				Freshness: dbt.SourceFreshness{
+					WarnAfter: dbt.SourceFreshnessWarnAfter{
+						Count:  1,
+						Period: "day",
+					},
+				},
 				Database:      fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", strings.ToUpper(targetName)),
 				Schema:        string(bucketID),
 				LoadedAtField: `"_timestamp"`,

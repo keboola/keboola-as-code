@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd"
 	interactivePrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/clifs"
 )
 
 func main() {
@@ -20,6 +20,6 @@ func main() {
 	}
 
 	// Run command
-	rootCmd := cmd.NewRootCommand(os.Stdin, os.Stdout, os.Stderr, prompt, osEnvs, aferofs.NewLocalFsFindKeboolaDir)
+	rootCmd := cmd.NewRootCommand(os.Stdin, os.Stdout, os.Stderr, prompt, osEnvs, clifs.New)
 	os.Exit(rootCmd.Execute())
 }

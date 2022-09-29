@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/go-client/pkg/storageapi"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -27,9 +28,10 @@ type dependencies interface {
 	Fs() filesystem.Fs
 	JobsQueueApiClient() client.Sender
 	Logger() log.Logger
+	Tracer() trace.Tracer
+	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	SandboxesApiClient() client.Sender
 	StorageApiClient() client.Sender
-	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
@@ -37,8 +39,8 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 	defer telemetry.EndSpan(span, &err)
 
 	// Check that we are in dbt directory
-	if !d.Fs().Exists(`dbt_project.yml`) {
-		return fmt.Errorf(`missing file "dbt_project.yml" in the current directory`)
+	if _, _, err := d.LocalDbtProject(ctx); err != nil {
+		return err
 	}
 
 	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageApiClient())

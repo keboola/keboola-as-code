@@ -5,6 +5,7 @@ import (
 
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -20,6 +21,7 @@ type dependencies interface {
 	LocalProject(ignoreErrors bool) (*project.Project, bool, error)
 	LocalTemplate(ctx context.Context) (*template.Template, bool, error)
 	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)
+	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }
 
 func Run(ctx context.Context, d dependencies) (err error) {
@@ -58,6 +60,16 @@ func Run(ctx context.Context, d dependencies) (err error) {
 		logger.Infof("Repository directory:  %s", repo.Fs().BasePath())
 		logger.Infof("Working directory:     %s", repo.Fs().WorkingDir())
 		logger.Infof("Manifest path:         %s", repo.Manifest().Path())
+		return nil
+	}
+
+	if prj, found, err := d.LocalDbtProject(ctx); found {
+		if err != nil {
+			return err
+		}
+
+		logger.Infof("Dbt project directory:  %s", prj.Fs().BasePath())
+		logger.Infof("Working directory:      %s", prj.Fs().WorkingDir())
 		return nil
 	}
 

@@ -2,13 +2,13 @@ package env
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/sandboxesapi"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -24,6 +24,7 @@ type dependencies interface {
 	Logger() log.Logger
 	SandboxesApiClient() client.Sender
 	Tracer() trace.Tracer
+	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }
 
 func Run(ctx context.Context, opts GenerateEnvOptions, d dependencies) (err error) {
@@ -31,8 +32,8 @@ func Run(ctx context.Context, opts GenerateEnvOptions, d dependencies) (err erro
 	defer telemetry.EndSpan(span, &err)
 
 	// Check that we are in dbt directory
-	if !d.Fs().Exists(`dbt_project.yml`) {
-		return fmt.Errorf(`missing file "dbt_project.yml" in the current directory`)
+	if _, _, err := d.LocalDbtProject(ctx); err != nil {
+		return err
 	}
 
 	workspace, err := sandboxesapi.GetRequest(opts.Workspace.ID).Send(ctx, d.SandboxesApiClient())
