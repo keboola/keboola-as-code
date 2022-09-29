@@ -5,6 +5,8 @@ Usage:
 
 Flags:
   -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
+  -T, --target-name string        target name of the profile
+  -W, --workspace-name string     name of workspace to create
 
 Global Flags:
   -h, --help                       print help for command

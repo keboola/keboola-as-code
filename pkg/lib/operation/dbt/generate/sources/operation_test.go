@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
 )
 
 func TestTablesByBucketsMap(t *testing.T) {
@@ -159,49 +160,84 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 	}
 
 	res := generateSourcesDefinition("target1", "out.c-main", []*storageapi.Table{mainTable1, mainTable2})
-	assert.Equal(t, sourceFile{
-		version: 2,
-		sources: []source{
+	assert.Equal(t, SourceFile{
+		Version: 2,
+		Sources: []Source{
 			{
-				name: "out.c-main",
-				freshness: sourceFreshness{
-					warnAfter: sourceFreshnessWarnAfter{
-						count:  1,
-						period: "day",
+				Name: "out.c-main",
+				Freshness: SourceFreshness{
+					WarnAfter: SourceFreshnessWarnAfter{
+						Count:  1,
+						Period: "day",
 					},
 				},
-				database:      "{{ env_var(\"DBT_KBC_TARGET1_DATABASE\") }}",
-				schema:        "out.c-main",
-				loadedAtField: `"_timestamp"`,
-				tables: []sourceTable{
+				Database:      "{{ env_var(\"DBT_KBC_TARGET1_DATABASE\") }}",
+				Schema:        "out.c-main",
+				LoadedAtField: `"_timestamp"`,
+				Tables: []SourceTable{
 					{
-						name: "products",
-						quoting: sourceTableQuoting{
-							database:   true,
-							schema:     true,
-							identifier: true,
+						Name: "products",
+						Quoting: SourceTableQuoting{
+							Database:   true,
+							Schema:     true,
+							Identifier: true,
 						},
-						columns: []sourceTableColumn{
+						Columns: []SourceTableColumn{
 							{
-								name:  `"primary1"`,
-								tests: []string{"unique", "not_null"},
+								Name:  `"primary1"`,
+								Tests: []string{"unique", "not_null"},
 							},
 							{
-								name:  `"primary2"`,
-								tests: []string{"unique", "not_null"},
+								Name:  `"primary2"`,
+								Tests: []string{"unique", "not_null"},
 							},
 						},
 					},
 					{
-						name: "categories",
-						quoting: sourceTableQuoting{
-							database:   true,
-							schema:     true,
-							identifier: true,
+						Name: "categories",
+						Quoting: SourceTableQuoting{
+							Database:   true,
+							Schema:     true,
+							Identifier: true,
 						},
 					},
 				},
 			},
 		},
 	}, res)
+
+	yamlEnc, err := yaml.Marshal(&res)
+	assert.NoError(t, err)
+	assert.Equal(t, `version: 2
+sources:
+    - name: out.c-main
+      freshness:
+        warn_after:
+            count: 1
+            period: day
+      database: '{{ env_var("DBT_KBC_TARGET1_DATABASE") }}'
+      schema: out.c-main
+      loaded_at_field: '"_timestamp"'
+      tables:
+        - name: products
+          quoting:
+            database: true
+            schema: true
+            identifier: true
+          columns:
+            - name: '"primary1"'
+              tests:
+                - unique
+                - not_null
+            - name: '"primary2"'
+              tests:
+                - unique
+                - not_null
+        - name: categories
+          quoting:
+            database: true
+            schema: true
+            identifier: true
+          columns: []
+`, string(yamlEnc))
 }
