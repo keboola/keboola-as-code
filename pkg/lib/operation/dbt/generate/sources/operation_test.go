@@ -6,6 +6,8 @@ import (
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 )
 
 func TestTablesByBucketsMap(t *testing.T) {
@@ -160,13 +162,13 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 	}
 
 	res := generateSourcesDefinition("target1", "out.c-main", []*storageapi.Table{mainTable1, mainTable2})
-	assert.Equal(t, SourceFile{
+	assert.Equal(t, dbt.SourceFile{
 		Version: 2,
-		Sources: []Source{
+		Sources: []dbt.Source{
 			{
 				Name: "out.c-main",
-				Freshness: SourceFreshness{
-					WarnAfter: SourceFreshnessWarnAfter{
+				Freshness: dbt.SourceFreshness{
+					WarnAfter: dbt.SourceFreshnessWarnAfter{
 						Count:  1,
 						Period: "day",
 					},
@@ -174,15 +176,15 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 				Database:      "{{ env_var(\"DBT_KBC_TARGET1_DATABASE\") }}",
 				Schema:        "out.c-main",
 				LoadedAtField: `"_timestamp"`,
-				Tables: []SourceTable{
+				Tables: []dbt.SourceTable{
 					{
 						Name: "products",
-						Quoting: SourceTableQuoting{
+						Quoting: dbt.SourceTableQuoting{
 							Database:   true,
 							Schema:     true,
 							Identifier: true,
 						},
-						Columns: []SourceTableColumn{
+						Columns: []dbt.SourceTableColumn{
 							{
 								Name:  `"primary1"`,
 								Tests: []string{"unique", "not_null"},
@@ -195,7 +197,7 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 					},
 					{
 						Name: "categories",
-						Quoting: SourceTableQuoting{
+						Quoting: dbt.SourceTableQuoting{
 							Database:   true,
 							Schema:     true,
 							Identifier: true,
