@@ -284,8 +284,11 @@ func (root *RootCommand) addAlias(alias, cmdPath string) {
 
 func (root *RootCommand) printError(errRaw error) {
 	// Convert to MultiError
-	originalErrs := utils.NewMultiError()
-	if !errors.As(errRaw, &originalErrs) {
+	var originalErrs *utils.MultiError
+	if v, ok := errRaw.(*utils.MultiError); ok { // nolint: errorlint
+		originalErrs = v
+	} else {
+		originalErrs = utils.NewMultiError()
 		originalErrs.Append(errRaw)
 	}
 
