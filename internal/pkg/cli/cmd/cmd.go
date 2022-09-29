@@ -170,12 +170,8 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		ci.Commands(p),
 		local.Commands(p, envs),
 		remote.Commands(p, envs),
+		dbt.Commands(p),
 	)
-
-	// Dbt commands are not finished yet.
-	if envs.Get(`KBC_DBT_PRIVATE_BETA`) == `true` {
-		root.AddCommand(dbt.Commands(p))
-	}
 
 	// Templates are private beta, can be enabled by ENV
 	if envs.Get(`KBC_TEMPLATES_PRIVATE_BETA`) == `true` {
