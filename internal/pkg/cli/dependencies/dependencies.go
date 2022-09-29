@@ -78,4 +78,6 @@ type Provider interface {
 	LocalProject(ignoreErrors bool) (*projectPkg.Project, ForRemoteCommand, error)
 	// LocalRepository method can be used by a CLI command that must be run in the local repository directory.
 	LocalRepository() (*repository.Repository, ForLocalCommand, error)
+	// LocalDbtProject method can be used by a CLI command that must be run in the dbt project directory.
+	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }

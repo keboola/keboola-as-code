@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -108,4 +109,8 @@ func (v *provider) LocalRepository() (*repository.Repository, ForLocalCommand, e
 		return nil, nil, err
 	}
 	return repo, d, nil
+}
+
+func (v *provider) LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error) {
+	return v.BaseDependencies().LocalDbtProject(ctx)
 }

@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
@@ -25,7 +24,6 @@ type DbtInitOptions struct {
 }
 
 type dependencies interface {
-	Fs() filesystem.Fs
 	JobsQueueApiClient() client.Sender
 	Logger() log.Logger
 	Tracer() trace.Tracer
