@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet/fsimporter"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/yaml"
 )
 
 const (
@@ -125,6 +126,58 @@ func (l *loader) ReadJsonMapTo(def *filesystem.FileDef, target interface{}, tag 
 	return nil, false, nil
 }
 
+// ReadYamlFile as an ordered map.
+func (l *loader) ReadYamlFile(def *filesystem.FileDef) (*filesystem.YamlFile, error) {
+	file, err := l.loadFile(def, filesystem.FileTypeYaml)
+	if err != nil {
+		return nil, err
+	}
+	return file.(*filesystem.YamlFile), nil
+}
+
+// ReadYamlFileTo to the target struct.
+func (l *loader) ReadYamlFileTo(def *filesystem.FileDef, target interface{}) (*filesystem.RawFile, error) {
+	file, err := l.ReadRawFile(def)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := yaml.DecodeString(file.Content, target); err != nil {
+		return nil, formatFileError(def, err)
+	}
+
+	return file, nil
+}
+
+// ReadYamlFieldsTo tagged fields in the target struct.
+func (l *loader) ReadYamlFieldsTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.YamlFile, bool, error) {
+	if fields := utils.GetFieldsWithTag(tag, target); len(fields) > 0 {
+		if file, err := l.ReadYamlFile(def); err == nil {
+			utils.SetFields(fields, file.Content, target)
+			return file, true, nil
+		} else {
+			return nil, false, err
+		}
+	}
+
+	return nil, false, nil
+}
+
+// ReadYamlMapTo tagged field in the target struct as ordered map.
+func (l *loader) ReadYamlMapTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.YamlFile, bool, error) {
+	if field := utils.GetOneFieldWithTag(tag, target); field != nil {
+		if file, err := l.ReadYamlFile(def); err == nil {
+			utils.SetField(field, file.Content, target)
+			return file, true, nil
+		} else {
+			// Set empty map if error occurred
+			utils.SetField(field, orderedmap.New(), target)
+			return nil, false, err
+		}
+	}
+	return nil, false, nil
+}
+
 // ReadJsonNetFile as AST.
 func (l *loader) ReadJsonNetFile(def *filesystem.FileDef) (*filesystem.JsonNetFile, error) {
 	file, err := l.loadFile(def, filesystem.FileTypeJsonNet)
@@ -222,6 +275,8 @@ func (l *loader) defaultHandler(def *filesystem.FileDef, fileType filesystem.Fil
 		return rawFile, nil
 	case filesystem.FileTypeJson:
 		return rawFile.ToJsonFile()
+	case filesystem.FileTypeYaml:
+		return rawFile.ToYamlFile()
 	case filesystem.FileTypeJsonNet:
 		return rawFile.ToJsonNetFile(l.jsonNetContext)
 	default:
