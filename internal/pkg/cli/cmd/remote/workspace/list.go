@@ -15,6 +15,12 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/workspace/list/short`),
 		Long:  helpmsg.Read(`remote/workspace/list/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Ask for host and token if needed
+			baseDeps := p.BaseDependencies()
+			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
+				return err
+			}
+
 			return fmt.Errorf("not implemented")
 		},
 	}

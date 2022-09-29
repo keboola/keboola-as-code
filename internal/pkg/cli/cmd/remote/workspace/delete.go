@@ -15,6 +15,12 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/workspace/delete/short`),
 		Long:  helpmsg.Read(`remote/workspace/delete/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Ask for host and token if needed
+			baseDeps := p.BaseDependencies()
+			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
+				return err
+			}
+
 			return fmt.Errorf("not implemented")
 		},
 	}

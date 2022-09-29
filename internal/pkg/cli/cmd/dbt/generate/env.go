@@ -20,6 +20,12 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			// Ask for host and token if needed
+			baseDeps := p.BaseDependencies()
+			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
+				return err
+			}
+
 			// Get dependencies
 			d, err := p.DependenciesForRemoteCommand()
 			if err != nil {
