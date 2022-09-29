@@ -118,7 +118,7 @@ func (v FsInfo) TemplateExists() bool {
 }
 
 func (v FsInfo) DbtProjectExists() bool {
-	return v.fs.IsFile(dbt.ProjectFile)
+	return v.fs.IsFile(dbt.ProjectFilePath)
 }
 
 // TemplatePath returns local template path

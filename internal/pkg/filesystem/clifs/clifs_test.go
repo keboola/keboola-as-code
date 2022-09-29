@@ -33,7 +33,7 @@ func TestFindDbtDir(t *testing.T) {
 	t.Parallel()
 
 	projectDir := t.TempDir()
-	dbtProjectFile := filepath.Join(projectDir, dbt.ProjectFile)
+	dbtProjectFile := filepath.Join(projectDir, dbt.ProjectFilePath)
 	assert.NoError(t, os.WriteFile(dbtProjectFile, []byte("\n"), 0o700))
 
 	// Working dir is a sub-dir of the dbt project dir

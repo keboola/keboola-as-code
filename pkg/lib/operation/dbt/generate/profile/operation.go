@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/yaml.v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -25,23 +26,13 @@ const profilePath = "profiles.yml"
 func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.dbt.generate.profile")
 	defer telemetry.EndSpan(span, &err)
-	
+
 	// Get dbt project
 	project, _, err := d.LocalDbtProject(ctx)
 	if err != nil {
 		return err
 	}
-	configFile := make(map[string]interface{})
-	err = yaml.Unmarshal([]byte(file.Content), &configFile)
-	if err != nil {
-		return err
-	}
-	profileName, ok := configFile["profile"]
-	if !ok {
-		return fmt.Errorf(`configuration file "dbt_project.yml" is missing "profile"`)
-	}
 
-	logger := d.Logger()
 	targetUpper := strings.ToUpper(targetName)
 	profileDetails := map[string]interface{}{
 		"target": targetName,
@@ -70,7 +61,7 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 			return fmt.Errorf(`profiles file "%s" is not valid yaml: %w`, profilePath, err)
 		}
 	}
-	profilesFile[profileName.(string)] = profileDetails
+	profilesFile[project.Profile()] = profileDetails
 
 	yamlEnc, err := yaml.Marshal(&profilesFile)
 	if err != nil {
@@ -81,6 +72,6 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 		return err
 	}
 
-	logger.Infof(`Profile stored in "%s".`, profilePath)
+	d.Logger().Infof(`Profile stored in "%s".`, profilePath)
 	return nil
 }

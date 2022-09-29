@@ -87,7 +87,7 @@ func find(logger log.Logger, workingDir string) (string, error) {
 		}
 
 		// Check "dbt_project.yml"
-		dbtFile := filepath.Join(actualDir, dbt.ProjectFile)
+		dbtFile := filepath.Join(actualDir, dbt.ProjectFilePath)
 		if stat, err := os.Stat(dbtFile); err == nil {
 			if !stat.IsDir() {
 				return actualDir, nil

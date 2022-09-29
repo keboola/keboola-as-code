@@ -32,7 +32,7 @@ var (
 	ErrMissingStorageApiToken     = fmt.Errorf(`missing Storage API token`)
 	ErrInvalidStorageApiToken     = fmt.Errorf(`invalid Storage API token`)
 	ErrProjectManifestNotFound    = fmt.Errorf("local manifest not found")
-	ErrDbtProjectNotFound         = fmt.Errorf(`dbt project not found, missing file "%s"`, dbt.ProjectFile)
+	ErrDbtProjectNotFound         = fmt.Errorf(`dbt project not found, missing file "%s"`, dbt.ProjectFilePath)
 	ErrTemplateManifestNotFound   = fmt.Errorf("template manifest not found")
 	ErrRepositoryManifestNotFound = fmt.Errorf("repository manifest not found")
 )

@@ -3,7 +3,7 @@ package dialog
 import (
 	"fmt"
 	"strings"
-	
+
 	"github.com/keboola/go-client/pkg/sandboxesapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"

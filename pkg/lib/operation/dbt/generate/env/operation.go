@@ -2,13 +2,13 @@ package env
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/sandboxesapi"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
