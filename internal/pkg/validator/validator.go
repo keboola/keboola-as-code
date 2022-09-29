@@ -78,9 +78,17 @@ func New(rules ...Rule) Validator {
 
 		// Prefer JSON field name in error messages
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
-		if name == "-" {
-			return fld.Name
+
+		// Alternatively use YAML field name
+		if name == "" {
+			name = strings.SplitN(fld.Tag.Get("yaml"), ",", 2)[0]
 		}
+
+		// As fallback use field name
+		if name == "" || name == "-" {
+			name = fld.Name
+		}
+
 		return name
 	})
 
