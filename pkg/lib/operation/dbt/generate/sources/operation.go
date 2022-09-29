@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/yaml.v3"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -25,47 +24,47 @@ type dependencies interface {
 
 const sourcesPath = "models/_sources"
 
-type sourceFile struct {
-	version int      `yaml:"version"`
-	sources []source `yaml:"sources"`
+type SourceFile struct {
+	Version int      `yaml:"version"`
+	Sources []Source `yaml:"sources"`
 }
 
-type source struct {
-	name          string          `yaml:"name"`
-	freshness     sourceFreshness `yaml:"freshness"`
-	database      string          `yaml:"database"`
-	schema        string          `yaml:"schema"`
-	loadedAtField string          `yaml:"loaded_at_field"` //nolint:tagliatelle
-	tables        []sourceTable   `yaml:"tables"`
+type Source struct {
+	Name          string          `yaml:"name"`
+	Freshness     SourceFreshness `yaml:"freshness"`
+	Database      string          `yaml:"database"`
+	Schema        string          `yaml:"schema"`
+	LoadedAtField string          `yaml:"loaded_at_field"` //nolint:tagliatelle
+	Tables        []SourceTable   `yaml:"tables"`
 }
 
-type sourceTable struct {
-	name    string              `yaml:"name"`
-	quoting sourceTableQuoting  `yaml:"quoting"`
-	columns []sourceTableColumn `yaml:"columns"`
+type SourceTable struct {
+	Name    string              `yaml:"name"`
+	Quoting SourceTableQuoting  `yaml:"quoting"`
+	Columns []SourceTableColumn `yaml:"columns"`
 }
 
-type sourceTableColumn struct {
-	name  string   `yaml:"name"`
-	tests []string `yaml:"tests"`
+type SourceTableColumn struct {
+	Name  string   `yaml:"name"`
+	Tests []string `yaml:"tests"`
 }
 
-type sourceTableQuoting struct {
-	database   bool `yaml:"database"`
-	schema     bool `yaml:"schema"`
-	identifier bool `yaml:"identifier"`
+type SourceTableQuoting struct {
+	Database   bool `yaml:"database"`
+	Schema     bool `yaml:"schema"`
+	Identifier bool `yaml:"identifier"`
 }
 
-type sourceFreshness struct {
-	warnAfter sourceFreshnessWarnAfter `yaml:"warn_after"` //nolint:tagliatelle
+type SourceFreshness struct {
+	WarnAfter SourceFreshnessWarnAfter `yaml:"warn_after"` //nolint:tagliatelle
 }
 
-type sourceFreshnessWarnAfter struct {
-	count  int    `yaml:"count"`
-	period string `yaml:"period"`
+type SourceFreshnessWarnAfter struct {
+	Count  int    `yaml:"count"`
+	Period string `yaml:"period"`
 }
 
-func Run(ctx context.Context, opts dialog.TargetNameOptions, d dependencies) (err error) {
+func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.dbt.generate.sources")
 	defer telemetry.EndSpan(span, &err)
 
@@ -88,7 +87,7 @@ func Run(ctx context.Context, opts dialog.TargetNameOptions, d dependencies) (er
 	tablesByBuckets := tablesByBucketsMap(*tablesList)
 
 	for bucketID, tables := range tablesByBuckets {
-		sourcesDef := generateSourcesDefinition(opts.Name, bucketID, tables)
+		sourcesDef := generateSourcesDefinition(targetName, bucketID, tables)
 		yamlEnc, err := yaml.Marshal(&sourcesDef)
 		if err != nil {
 			return err
@@ -116,42 +115,42 @@ func tablesByBucketsMap(tablesList []*storageapi.Table) map[storageapi.BucketID]
 	return tablesByBuckets
 }
 
-func generateSourcesDefinition(targetName string, bucketID storageapi.BucketID, tablesList []*storageapi.Table) sourceFile {
-	sourceTables := make([]sourceTable, 0)
+func generateSourcesDefinition(targetName string, bucketID storageapi.BucketID, tablesList []*storageapi.Table) SourceFile {
+	sourceTables := make([]SourceTable, 0)
 	for _, table := range tablesList {
-		sourceTable := sourceTable{
-			name: table.Name,
-			quoting: sourceTableQuoting{
-				database:   true,
-				schema:     true,
-				identifier: true,
+		sourceTable := SourceTable{
+			Name: table.Name,
+			Quoting: SourceTableQuoting{
+				Database:   true,
+				Schema:     true,
+				Identifier: true,
 			},
 		}
 		if len(table.PrimaryKey) > 0 {
-			sourceColumns := make([]sourceTableColumn, 0)
+			sourceColumns := make([]SourceTableColumn, 0)
 			for _, primaryKey := range table.PrimaryKey {
-				sourceColumns = append(sourceColumns, sourceTableColumn{
-					name:  fmt.Sprintf(`"%s"`, primaryKey),
-					tests: []string{"unique", "not_null"},
+				sourceColumns = append(sourceColumns, SourceTableColumn{
+					Name:  fmt.Sprintf(`"%s"`, primaryKey),
+					Tests: []string{"unique", "not_null"},
 				})
 			}
-			sourceTable.columns = sourceColumns
+			sourceTable.Columns = sourceColumns
 		}
 		sourceTables = append(sourceTables, sourceTable)
 	}
-	return sourceFile{
-		version: 2,
-		sources: []source{
+	return SourceFile{
+		Version: 2,
+		Sources: []Source{
 			{
-				name: string(bucketID),
-				freshness: sourceFreshness{sourceFreshnessWarnAfter{
-					count:  1,
-					period: "day",
+				Name: string(bucketID),
+				Freshness: SourceFreshness{SourceFreshnessWarnAfter{
+					Count:  1,
+					Period: "day",
 				}},
-				database:      fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", strings.ToUpper(targetName)),
-				schema:        string(bucketID),
-				loadedAtField: `"_timestamp"`,
-				tables:        sourceTables,
+				Database:      fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", strings.ToUpper(targetName)),
+				Schema:        string(bucketID),
+				LoadedAtField: `"_timestamp"`,
+				Tables:        sourceTables,
 			},
 		},
 	}
