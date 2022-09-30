@@ -159,7 +159,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 			// Ignore error, send to logs
 			root.logger.Debugf(`Version check: %s.`, err.Error())
 		} else {
-			root.logger.Debugf(`Version check: successful.`, err.Error())
+			root.logger.Debugf(`Version check: successful.`)
 		}
 
 		return nil
