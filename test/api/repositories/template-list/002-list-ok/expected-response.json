@@ -13,8 +13,8 @@
       "id": "my-template-id",
       "name": "My Template",
       "components": [
-        "foo.bar",
-        "keboola.wr-%s"
+        "keboola.wr-%s",
+        "foo.bar"
       ],
       "author": {
         "name": "Example Author",

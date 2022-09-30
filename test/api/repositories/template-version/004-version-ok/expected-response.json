@@ -12,9 +12,9 @@
     "id": "my-template-id",
     "name": "My Template",
     "components": [
+      "keboola.wr-%s",
       "keboola.ex-aws-s3",
-      "keboola.ex-facebook",
-      "keboola.wr-%s"
+      "keboola.ex-facebook"
     ],
     "author": {
       "name": "Example Author",
@@ -31,9 +31,9 @@
     ]
   },
   "components": [
+    "keboola.wr-%s",
     "keboola.ex-aws-s3",
-    "keboola.ex-facebook",
-    "keboola.wr-%s"
+    "keboola.ex-facebook"
   ],
   "longDescription": "A long **description**.\n",
   "readme": "### My Template\n\nFull workflow to ...\n\n",
