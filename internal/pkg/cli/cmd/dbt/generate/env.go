@@ -33,7 +33,7 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Get all workspaces for the dialog
-			allWorkspaces, err := sandboxesapi.ListRequest().Send(d.CommandCtx(), d.SandboxesApiClient())
+			allWorkspaces, err := sandboxesapi.ListInstancesRequest().Send(d.CommandCtx(), d.SandboxesApiClient())
 			if err != nil {
 				return err
 			}
