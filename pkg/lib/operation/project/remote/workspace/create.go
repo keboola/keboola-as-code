@@ -49,10 +49,11 @@ func Create(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 
 	logger.Info(`Creating new workspace, please wait.`)
 	// Create workspace by API
-	config, err := sandboxesapi.Create(
+	s, err := sandboxesapi.Create(
 		ctx,
 		d.StorageApiClient(),
 		d.JobsQueueApiClient(),
+		d.SandboxesApiClient(),
 		branch.ID,
 		o.Name,
 		o.Type,
@@ -62,15 +63,7 @@ func Create(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 		return fmt.Errorf("cannot create workspace: %w", err)
 	}
 
-	id, err := sandboxesapi.GetSandboxID(config)
-	if err != nil {
-		return fmt.Errorf("workspace config is invalid: %w", err)
-	}
-
-	sandbox, err := sandboxesapi.GetRequest(id).Send(ctx, d.SandboxesApiClient())
-	if err != nil {
-		return fmt.Errorf("could not retrieve new workspace: %w", err)
-	}
+	sandbox := s.Sandbox
 
 	logger.Infof(`Created new workspace "%s".`, o.Name)
 	switch sandbox.Type {
@@ -88,7 +81,7 @@ func Create(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 		fallthrough
 	case sandboxesapi.TypeR:
 		logger.Infof(
-			"Credentials:\n  host: %s\n  password: %s",
+			"Credentials:\n  Host: %s\n  Password: %s",
 			sandbox.Host,
 			sandbox.Password,
 		)

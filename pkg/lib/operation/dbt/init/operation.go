@@ -51,10 +51,11 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 
 	d.Logger().Info(`Creating new workspace, please wait.`)
 	// Create workspace
-	config, err := sandboxesapi.Create(
+	s, err := sandboxesapi.Create(
 		ctx,
 		d.StorageApiClient(),
 		d.JobsQueueApiClient(),
+		d.SandboxesApiClient(),
 		branch.ID,
 		opts.WorkspaceName,
 		sandboxesapi.TypeSnowflake,
@@ -64,15 +65,7 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 	}
 	d.Logger().Infof(`Created new workspace "%s".`, opts.WorkspaceName)
 
-	id, err := sandboxesapi.GetSandboxID(config)
-	if err != nil {
-		return fmt.Errorf("workspace config is invalid: %w", err)
-	}
-
-	workspace, err := sandboxesapi.GetRequest(id).Send(ctx, d.SandboxesApiClient())
-	if err != nil {
-		return fmt.Errorf("could not retrieve new workspace: %w", err)
-	}
+	workspace := s.Sandbox
 
 	// Generate profile
 	err = profile.Run(ctx, opts.TargetName, d)

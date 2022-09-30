@@ -34,7 +34,7 @@ func Run(ctx context.Context, opts GenerateEnvOptions, d dependencies) (err erro
 		return err
 	}
 
-	workspace, err := sandboxesapi.GetRequest(opts.Workspace.ID).Send(ctx, d.SandboxesApiClient())
+	workspace, err := sandboxesapi.GetInstanceRequest(opts.Workspace.ID).Send(ctx, d.SandboxesApiClient())
 	if err != nil {
 		return err
 	}
