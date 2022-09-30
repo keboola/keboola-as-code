@@ -379,6 +379,8 @@ github.com/keboola/go-client v0.6.1 h1:9JhbivCuSiEfzzODZ56M7eF247AYnVY3/NVULjbmP
 github.com/keboola/go-client v0.6.1/go.mod h1:YPQenBSf8SQhXu8/KvpX/rcPgI7nE6p4iiI7sY5hL6U=
 github.com/keboola/go-client v0.7.0 h1:2wZuvhhUsh49CNagmCSbx/Nka5rDt3zdmCwgAYSUseo=
 github.com/keboola/go-client v0.7.0/go.mod h1:YPQenBSf8SQhXu8/KvpX/rcPgI7nE6p4iiI7sY5hL6U=
+github.com/keboola/go-client v0.7.1 h1:X814hPTBFO2HrZJRwrncDxvWMSCvklbC0VVO4Cz9GcU=
+github.com/keboola/go-client v0.7.1/go.mod h1:YPQenBSf8SQhXu8/KvpX/rcPgI7nE6p4iiI7sY5hL6U=
 github.com/keboola/go-jsonnet v0.18.1-0.20220810085752-aee7595aa305 h1:hS/jX0HQzeGZWjMBSAs/IqrJTrTB5/BlYu7UcjFW9NU=
 github.com/keboola/go-jsonnet v0.18.1-0.20220810085752-aee7595aa305/go.mod h1:2YGGjrWbRtdL5/lAp1anatj8zA+y/fKT0lLWvTqk+/Q=
 github.com/keboola/go-utils v0.5.1 h1:COgfkpMENVEn6m37+G++HGdYZ0uI0jxTvXGsat+3xhQ=
