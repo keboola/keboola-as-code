@@ -43,14 +43,14 @@ func Run(ctx context.Context, opts GenerateEnvOptions, d dependencies) (err erro
 	d.Logger().Infof(`Commands to set environment for the dbt target:`)
 	d.Logger().Infof(`  export DBT_KBC_%s_TYPE=%s`, targetUpper, workspace.Type)
 	d.Logger().Infof(`  export DBT_KBC_%s_SCHEMA=%s`, targetUpper, workspace.Details.Connection.Schema)
-	d.Logger().Infof(`  export DBT_%s_WAREHOUSE=%s`, targetUpper, workspace.Details.Connection.Warehouse)
-	d.Logger().Infof(`  export DBT_%s_DATABASE=%s`, targetUpper, workspace.Details.Connection.Database)
+	d.Logger().Infof(`  export DBT_KBC_%s_WAREHOUSE=%s`, targetUpper, workspace.Details.Connection.Warehouse)
+	d.Logger().Infof(`  export DBT_KBC_%s_DATABASE=%s`, targetUpper, workspace.Details.Connection.Database)
 	host := workspace.Details.Connection.Database
 	if workspace.Type == sandboxesapi.TypeSnowflake {
 		host = strings.Replace(host, ".snowflakecomputing.com", "", 1)
 	}
-	d.Logger().Infof(`  export DBT_%s_ACCOUNT=%s`, targetUpper, host)
-	d.Logger().Infof(`  export DBT_%s_USER=%s`, targetUpper, workspace.User)
-	d.Logger().Infof(`  export DBT_%s_PASSWORD=%s`, targetUpper, workspace.Password)
+	d.Logger().Infof(`  export DBT_KBC_%s_ACCOUNT=%s`, targetUpper, host)
+	d.Logger().Infof(`  export DBT_KBC_%s_USER=%s`, targetUpper, workspace.User)
+	d.Logger().Infof(`  export DBT_KBC_%s_PASSWORD=%s`, targetUpper, workspace.Password)
 	return nil
 }
