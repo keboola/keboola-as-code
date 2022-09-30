@@ -1,4 +1,5 @@
 Profile1:
+    target: target1
     outputs:
         target1:
             account: '{{ env_var("DBT_KBC_TARGET1_ACCOUNT") }}'
@@ -8,6 +9,5 @@ Profile1:
             type: '{{ env_var("DBT_KBC_TARGET1_TYPE") }}'
             user: '{{ env_var("DBT_KBC_TARGET1_USER") }}'
             warehouse: '{{ env_var("DBT_KBC_TARGET1_WAREHOUSE") }}'
-    target: target1
 foo: bar
 send_anonymous_usage_stats: false
