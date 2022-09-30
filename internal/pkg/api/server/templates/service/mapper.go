@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/spf13/cast"
@@ -168,6 +167,8 @@ func VersionDetailExtendedResponse(ctx context.Context, d dependencies.ForProjec
 	}, nil
 }
 
+// ComponentsResponse replaces placeholder in components list.
+// The original order is preserved, it is used in the UI.
 func ComponentsResponse(d dependencies.ForProjectRequest, in []string) (out []string) {
 	out = make([]string, 0)
 	for _, componentId := range in {
@@ -183,7 +184,6 @@ func ComponentsResponse(d dependencies.ForProjectRequest, in []string) (out []st
 		}
 		out = append(out, componentId)
 	}
-	sort.Strings(out)
 	return out
 }
 
