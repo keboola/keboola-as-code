@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"go.opentelemetry.io/otel/trace"
-	"gopkg.in/yaml.v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -33,42 +33,69 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 	}
 	fs := project.Fs()
 
-	targetUpper := strings.ToUpper(targetName)
-	profileDetails := map[string]interface{}{
-		"target": targetName,
-		"outputs": map[string]interface{}{
-			targetName: map[string]interface{}{
-				"account":   fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_ACCOUNT\") }}", targetUpper),
-				"database":  fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", targetUpper),
-				"password":  fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_PASSWORD\") }}", targetUpper),
-				"schema":    fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_SCHEMA\") }}", targetUpper),
-				"type":      fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_TYPE\") }}", targetUpper),
-				"user":      fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_USER\") }}", targetUpper),
-				"warehouse": fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_WAREHOUSE\") }}", targetUpper),
-			},
-		},
-	}
-	profilesFile := make(map[string]interface{})
-	profilesFile["send_anonymous_usage_stats"] = false
-
-	if fs.Exists(profilePath) {
-		file, err := fs.ReadFile(filesystem.NewFileDef(profilePath))
-		if err != nil {
+	// Load profiles file if exists
+	profilesFile := orderedmap.New()
+	profilesFileDef := filesystem.NewFileDef(dbt.ProfilesPath).SetDescription("dbt profiles")
+	if fs.Exists(dbt.ProfilesPath) {
+		if _, err := fs.FileLoader().ReadYamlFileTo(profilesFileDef, profilesFile); err != nil {
 			return err
 		}
-		err = yaml.Unmarshal([]byte(file.Content), &profilesFile)
-		if err != nil {
-			return fmt.Errorf(`profiles file "%s" is not valid yaml: %w`, profilePath, err)
-		}
 	}
-	profilesFile[project.Profile()] = profileDetails
 
-	yamlEnc, err := yaml.Marshal(&profilesFile)
-	if err != nil {
-		return err
+	// Set send_anonymous_usage_stats if missing
+	if _, found := profilesFile.Get("send_anonymous_usage_stats"); !found {
+		profilesFile.Set("send_anonymous_usage_stats", false)
 	}
-	err = fs.WriteFile(filesystem.NewRawFile(profilePath, string(yamlEnc)))
-	if err != nil {
+
+	// Set profile
+	targetUpper := strings.ToUpper(targetName)
+	profilesFile.Set(project.Profile(), orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key:   "target",
+			Value: targetName,
+		},
+		{
+			Key: "outputs",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{
+					Key: targetName,
+					Value: orderedmap.FromPairs([]orderedmap.Pair{
+						{
+							Key:   "account",
+							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_ACCOUNT\") }}", targetUpper),
+						},
+						{
+							Key:   "database",
+							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", targetUpper),
+						},
+						{
+							Key:   "password",
+							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_PASSWORD\") }}", targetUpper),
+						},
+						{
+							Key:   "schema",
+							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_SCHEMA\") }}", targetUpper),
+						},
+						{
+							Key:   "type",
+							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_TYPE\") }}", targetUpper),
+						},
+						{
+							Key:   "user",
+							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_USER\") }}", targetUpper),
+						},
+						{
+							Key:   "warehouse",
+							Value: fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_WAREHOUSE\") }}", targetUpper),
+						},
+					}),
+				},
+			}),
+		},
+	}))
+
+	// Save file
+	if err := fs.WriteFile(filesystem.NewYamlFile(dbt.ProfilesPath, profilesFile).SetDescription("dbt profiles")); err != nil {
 		return err
 	}
 
