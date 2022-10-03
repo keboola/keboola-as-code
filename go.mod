@@ -42,8 +42,8 @@ require (
 	go.opentelemetry.io/otel v1.10.0
 	go.opentelemetry.io/otel/trace v1.10.0
 	go.uber.org/zap v1.23.0
-	goa.design/goa/v3 v3.9.0
-	goa.design/plugins/v3 v3.9.0
+	goa.design/goa/v3 v3.8.5
+	goa.design/plugins/v3 v3.8.5
 	golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.42.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
