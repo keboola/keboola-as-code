@@ -11,10 +11,10 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -26,7 +26,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps()
-	projectState, err := d.MockedProject(testfs.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
+	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
 	// Set fake file editor
@@ -214,7 +214,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps()
-	projectState, err := d.MockedProject(testfs.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
+	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
 	// Set fake file editor
@@ -334,7 +334,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps()
-	projectState, err := d.MockedProject(testfs.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
+	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
 	// Run
@@ -487,7 +487,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 	d.Options().Set("branch", "123") // see MinimalProjectFs
 	d.Options().Set("instance-name", "My Instance")
 	d.Options().Set("inputs-file", inputsFilePath)
-	projectState, err := d.MockedProject(testfs.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
+	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
 	// Run
@@ -581,7 +581,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 	d.Options().Set("branch", "123") // see MinimalProjectFs
 	d.Options().Set("instance-name", "My Instance")
 	d.Options().Set("inputs-file", inputsFilePath)
-	projectState, err := d.MockedProject(testfs.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
+	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
 	// Run
