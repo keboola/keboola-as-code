@@ -54,7 +54,6 @@ linters:
   enable:
     - asciicheck
     #- bodyclose # Not compatible with go 1.18, temporary disable
-    - deadcode
     - depguard
     - dogsled
     - dupl
@@ -78,7 +77,6 @@ linters:
     - gosec
     - gosimple
     - govet
-    - ifshort
     - importas
     - ineffassign
     - makezero
@@ -98,7 +96,6 @@ linters:
     - unconvert
     - unparam
     - unused
-    - varcheck
     #- wastedassign # Not compatible with go 1.18, temporary disable
     - whitespace
     # DISABLED
