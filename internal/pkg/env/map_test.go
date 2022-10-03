@@ -53,7 +53,7 @@ func TestEnvMap(t *testing.T) {
 	m.Set(`X`, `Y`)
 	str, err = m.ToString()
 	assert.NoError(t, err)
-	assert.Equal(t, "A=\"123\"\nX=\"Y\"", str)
+	assert.Equal(t, "A=123\nX=\"Y\"", str)
 }
 
 func TestEnvMapFromMap(t *testing.T) {
@@ -97,7 +97,7 @@ func TestEnvMapMerge(t *testing.T) {
 	str, err := m1.ToString()
 
 	assert.NoError(t, err)
-	assert.Equal(t, "A=\"1\"\nB=\"2\"\nC=\"30\"", str)
+	assert.Equal(t, "A=1\nB=2\nC=30", str)
 }
 
 func TestEnvMapMergeOverwrite(t *testing.T) {
@@ -115,5 +115,5 @@ func TestEnvMapMergeOverwrite(t *testing.T) {
 	str, err := m1.ToString()
 
 	assert.NoError(t, err)
-	assert.Equal(t, "A=\"1\"\nB=\"20\"\nC=\"30\"", str)
+	assert.Equal(t, "A=1\nB=20\nC=30", str)
 }
