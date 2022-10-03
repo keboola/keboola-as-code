@@ -259,7 +259,7 @@ func RunRequests(
 	// Run API server
 	apiUrl, stdout, stderr := RunApiServer(t, binary, project.StorageAPIHost(), repositories)
 	client := resty.New()
-	client.SetHostURL(apiUrl)
+	client.SetBaseURL(apiUrl)
 
 	// request folders should be named e.g. 001-request1, 002-request2
 	dirs, err := testDirFs.Glob("[0-9][0-9][0-9]-*")
