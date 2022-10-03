@@ -250,7 +250,7 @@ func (r *RemoteRepository) runGitCmd(ctx context.Context, args ...string) (cmdRe
 	for {
 		result, err := r.doRunGitCmd(ctx, args...)
 		if result.exitCode == 0 && err == nil {
-			return result, err
+			return result, nil
 		}
 		if delay := retry.NextBackOff(); delay == retry.Stop {
 			return result, err

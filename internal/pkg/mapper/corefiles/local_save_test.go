@@ -14,7 +14,7 @@ import (
 
 func TestSaveCoreFiles(t *testing.T) {
 	t.Parallel()
-	state, _ := createStateWithMapper(t)
+	state := createStateWithMapper(t)
 
 	// Recipe
 	manifest := &fixtures.MockedManifest{}

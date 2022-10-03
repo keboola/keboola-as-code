@@ -17,7 +17,7 @@ import (
 
 func TestLoadCoreFiles(t *testing.T) {
 	t.Parallel()
-	state, _ := createStateWithMapper(t)
+	state := createStateWithMapper(t)
 	fs := state.ObjectsRoot()
 
 	metaFile := `{
@@ -57,7 +57,7 @@ func TestLoadCoreFiles(t *testing.T) {
 
 func TestLoadCoreFiles_SkipChildrenLoadIfParentIsInvalid(t *testing.T) {
 	t.Parallel()
-	state, _ := createStateWithMapper(t)
+	state := createStateWithMapper(t)
 	fs := state.ObjectsRoot()
 	manager := state.LocalManager()
 	manifest := manager.Manifest().(*fixtures.Manifest)

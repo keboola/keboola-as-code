@@ -40,6 +40,7 @@ func TestLazy_InitAndGet(t *testing.T) {
 	assert.Equal(t, "abc", value)
 }
 
+//nolint:unparam
 func TestLazy_InitAndGet_Parallel(t *testing.T) {
 	t.Parallel()
 

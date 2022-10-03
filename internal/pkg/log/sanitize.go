@@ -5,6 +5,6 @@ import (
 )
 
 func Sanitize(in string) string {
-	out := strings.Replace(in, "\n", `\n`, -1)
-	return strings.Replace(out, "\r", `\n`, -1)
+	out := strings.ReplaceAll(in, "\n", `\n`)
+	return strings.ReplaceAll(out, "\r", `\n`)
 }
