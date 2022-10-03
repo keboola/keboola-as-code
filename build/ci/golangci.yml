@@ -77,27 +77,26 @@ linters:
     - goprintffuncname
     - gosec
     - gosimple
-    #- govet # Not compatible with go 1.18, temporary disable
+    - govet
     - ifshort
     - importas
     - ineffassign
     - makezero
     - misspell
     - nakedret
-    #- nilerr # Not compatible with go 1.18, temporary disable
-    #- noctx # Not compatible with go 1.18, temporary disable
+    - nilerr
+    - noctx
     - predeclared
     - promlinter
     #- rowserrcheck # Not compatible with go 1.18, temporary disable
     #- sqlclosecheck # Not compatible with go 1.18, temporary disable
     - staticcheck
-    #- structcheck # Not compatible with go 1.18, temporary disable
     - tagliatelle
     - thelper
-    #- tparallel # Not compatible with go 1.18, temporary disable
+    - tparallel
     - paralleltest
     - unconvert
-    #- unparam # Not compatible with go 1.18, temporary disable
+    - unparam
     - unused
     - varcheck
     #- wastedassign # Not compatible with go 1.18, temporary disable
