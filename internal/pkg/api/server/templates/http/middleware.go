@@ -17,6 +17,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 const RequestTimeout = 60 * time.Second
@@ -118,7 +119,7 @@ func LogMiddleware(d dependencies.ForServer, h http.Handler) http.Handler {
 		// Log request
 		logger.
 			WithAdditionalPrefix(fmt.Sprintf("[request][requestId=%s]", requestId)).
-			Infof("%s %s %s", r.Method, r.URL.String(), from(r))
+			Infof("%s %s %s", r.Method, log.Sanitize(r.URL.String()), log.Sanitize(from(r)))
 
 		// Capture response
 		rw := httpMiddleware.CaptureResponse(w)
