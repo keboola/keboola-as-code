@@ -49,7 +49,7 @@ linters-settings:
 # https://golangci-lint.run/usage/linters
 linters:
   disable-all: true
-  # Some linters are not compatible with go 1.18, so they are temporary disabled.
+  # Some linters are not compatible with go 1.18, so they are temporarily disabled.
   # See https://github.com/golangci/golangci-lint/issues/2649
   enable:
     - asciicheck
@@ -63,7 +63,7 @@ linters:
     - errorlint
     - exportloopref
     - forbidigo
-    - gci
+    #- gci
     - gochecknoglobals
     - gochecknoinits
     - goconst
