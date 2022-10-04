@@ -19,9 +19,9 @@
 //   - Status: [src/github.com/keboola/keboola-as-code/pkg/lib/operation/status/operation.go]
 //
 // Operations are easily composable and testable because:
-//  - Parameters/options are static values.
-//  - Only necessary dependencies are defined.
-//  - Dependencies can be mocked, see [Mocked].
+//   - Parameters/options are static values.
+//   - Only necessary dependencies are defined.
+//   - Dependencies can be mocked, see [Mocked].
 //
 // # Dependency Containers
 //
@@ -44,6 +44,7 @@
 //   - [Public] interface contains dependencies available without authentication (see [NewPublicDeps]).
 //   - [Project] interface contains dependencies available after authentication (see [NewProjectDeps]).
 //   - [Mocked] interface provides dependencies mocked for tests (see [NewMockedDeps]).
+//
 // [command design pattern]: https://refactoring.guru/design-patterns/command
 package dependencies
 

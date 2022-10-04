@@ -5,15 +5,11 @@ import (
 	"io"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/Netflix/go-expect"
 	"github.com/acarl005/stripansi"
 )
-
-const sendDelay = 20 * time.Millisecond
-const expectTimeout = 10 * time.Second
 
 // Console is virtual terminal for tests.
 type Console interface {

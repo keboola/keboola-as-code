@@ -187,7 +187,7 @@ func TestAskCreateRow(t *testing.T) {
 		assert.NoError(t, console.SendEnter()) // enter - My Config
 
 		assert.NoError(t, console.ExpectString("Enter a name for the new config row"))
-		
+
 		assert.NoError(t, console.SendLine(`Foo Bar`))
 
 		assert.NoError(t, console.ExpectEOF())

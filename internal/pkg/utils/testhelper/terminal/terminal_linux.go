@@ -19,6 +19,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
+const (
+	sendDelay     = 20 * time.Millisecond
+	expectTimeout = 10 * time.Second
+)
+
 // console implements Console.
 type console struct {
 	*expect.Console

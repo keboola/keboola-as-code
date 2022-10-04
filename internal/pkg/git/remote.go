@@ -75,7 +75,7 @@ func Checkout(ctx context.Context, ref model.TemplateRepository, sparse bool, lo
 
 	// Create working directory
 	workingDir := filepath.Join(baseDirPath, "working")
-	if err := os.Mkdir(workingDir, 0700); err != nil {
+	if err := os.Mkdir(workingDir, 0o700); err != nil {
 		return nil, fmt.Errorf("cannot create working dir for git repository: %w", err)
 	}
 	workingDirFs, err := aferofs.NewLocalFs(logger, workingDir, "")
@@ -297,7 +297,7 @@ func (r *RemoteRepository) copyWorkingToStableDir(ctx context.Context) (err erro
 		return err
 	}
 	stableDir := filepath.Join(r.baseDirPath, commitHash+"-"+gonanoid.Must(8))
-	if err := os.Mkdir(stableDir, 0700); err != nil {
+	if err := os.Mkdir(stableDir, 0o700); err != nil {
 		return fmt.Errorf("cannot create stable dir for git repository: %w", err)
 	}
 

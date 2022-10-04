@@ -12,8 +12,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
-const LockAcquireTimeout = 2 * time.Second // the lock must be acquired in 2 seconds, otherwise we continue without the lock
-const LockReleaseTimeout = 2 * time.Second // the lock must be released in 2 seconds
+const (
+	LockAcquireTimeout = 2 * time.Second // the lock must be acquired in 2 seconds, otherwise we continue without the lock
+	LockReleaseTimeout = 2 * time.Second // the lock must be released in 2 seconds
+)
 
 type lockerDeps interface {
 	Logger() log.Logger

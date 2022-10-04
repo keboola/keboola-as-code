@@ -13,11 +13,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-const KbcProjectDir = DirType("a local project directory")
-const DbtProjectDir = DirType("a dbt project directory")
-const TemplateRepositoryDir = DirType("a templates repository directory")
-const TemplateDir = DirType("a template directory")
-const EmptyDir = DirType("an empty directory")
+const (
+	KbcProjectDir         = DirType("a local project directory")
+	DbtProjectDir         = DirType("a dbt project directory")
+	TemplateRepositoryDir = DirType("a templates repository directory")
+	TemplateDir           = DirType("a template directory")
+	EmptyDir              = DirType("an empty directory")
+)
 
 type DirType string
 
@@ -34,6 +36,7 @@ type DirNotFoundError struct {
 func (v DirNotFoundError) Expected() DirType {
 	return v.expected
 }
+
 func (v DirNotFoundError) Found() DirType {
 	return v.found
 }

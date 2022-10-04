@@ -15,11 +15,10 @@
 //   - Container [ForProjectRequest] is created for each authenticated HTTP request in the service.APIKeyAuth method, see [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/service/auth.go].
 //
 // Dependencies injection to service endpoints:
-//    - Each service endpoint handler/method gets [ForPublicRequest] container as a parameter.
-//    - If the endpoint use token authentication it gets [ForProjectRequest] container instead.
-//    - It is ensured by [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/dependencies] package.
-//    - See service implementation for details [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/service/service.go].
-//
+//   - Each service endpoint handler/method gets [ForPublicRequest] container as a parameter.
+//   - If the endpoint use token authentication it gets [ForProjectRequest] container instead.
+//   - It is ensured by [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/dependencies] package.
+//   - See service implementation for details [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/service/service.go].
 package dependencies
 
 import (
@@ -51,13 +50,15 @@ import (
 
 type ctxKey string
 
-const ForPublicRequestCtxKey = ctxKey("ForPublicRequest")
-const ForProjectRequestCtxKey = ctxKey("ForProjectRequest")
-const EtcdConnectionTimeoutCtxKey = ctxKey("EtcdConnectionTimeout")
-const EtcdDefaultConnectionTimeout = 2 * time.Second
-const EtcdKeepAliveTimeout = 2 * time.Second
-const EtcdKeepAliveInterval = 10 * time.Second
-const ProjectLockTTLSeconds = 60
+const (
+	ForPublicRequestCtxKey       = ctxKey("ForPublicRequest")
+	ForProjectRequestCtxKey      = ctxKey("ForProjectRequest")
+	EtcdConnectionTimeoutCtxKey  = ctxKey("EtcdConnectionTimeout")
+	EtcdDefaultConnectionTimeout = 2 * time.Second
+	EtcdKeepAliveTimeout         = 2 * time.Second
+	EtcdKeepAliveInterval        = 10 * time.Second
+	ProjectLockTTLSeconds        = 60
+)
 
 // ForServer interface provides dependencies for Templates API server.
 // The container exists during the entire run of the API server.
@@ -178,6 +179,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 
 	return d, nil
 }
+
 func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, requestId string) ForPublicRequest {
 	_, span := serverDeps.Tracer().Start(requestCtx, "kac.api.server.templates.dependencies.NewDepsForPublicRequest")
 	defer telemetryUtils.EndSpan(span, nil)

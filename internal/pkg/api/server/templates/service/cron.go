@@ -7,8 +7,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
 )
 
-const TemplateRepositoriesPullInterval = 5 * time.Minute
-const ComponentsUpdateInterval = 5 * time.Minute
+const (
+	TemplateRepositoriesPullInterval = 5 * time.Minute
+	ComponentsUpdateInterval         = 5 * time.Minute
+)
 
 func StartRepositoriesPullCron(ctx context.Context, d dependencies.ForServer) error {
 	// Get dependencies

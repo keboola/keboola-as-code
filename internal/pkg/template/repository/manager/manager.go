@@ -1,18 +1,18 @@
 // Package manager coordinates loading and caching of template repositories and templates.
 //
 // How it works:
-//  - Manager is created by New function.
-//  - Default repositories are preloaded in New by Manager.Repository method.
-//  - Manager.Repository creates a new CachedRepository by newCachedRepository function.
-//  - newCachedRepository function preloads all templates by CachedRepository.loadAllTemplates method.
-//  - Manager.Repository calls CachedRepository.markInUse method for every request.
-//  - After the request is finished, it must call provided UnlockFn.
-//  - Manager.Update is called periodically, it calls CachedRepository.update.
-//  - If there has been a change in the underlying git repository, then CachedRepository.update will return an updated copy of the repository.
-//  - So there EXIST BOTH a new and an old version at the same time.
-//  - Older requests will finish with the old repository version, new ones will use the new version.
-//  - When all old requests are completed, freeLock is released, so the free method/goroutine is unblocked.
-//  - So the repository and underlying FS are cleaned.
+//   - Manager is created by New function.
+//   - Default repositories are preloaded in New by Manager.Repository method.
+//   - Manager.Repository creates a new CachedRepository by newCachedRepository function.
+//   - newCachedRepository function preloads all templates by CachedRepository.loadAllTemplates method.
+//   - Manager.Repository calls CachedRepository.markInUse method for every request.
+//   - After the request is finished, it must call provided UnlockFn.
+//   - Manager.Update is called periodically, it calls CachedRepository.update.
+//   - If there has been a change in the underlying git repository, then CachedRepository.update will return an updated copy of the repository.
+//   - So there EXIST BOTH a new and an old version at the same time.
+//   - Older requests will finish with the old repository version, new ones will use the new version.
+//   - When all old requests are completed, freeLock is released, so the free method/goroutine is unblocked.
+//   - So the repository and underlying FS are cleaned.
 package manager
 
 import (

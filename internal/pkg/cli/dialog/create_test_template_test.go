@@ -73,7 +73,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 		assert.NoError(t, console.ExpectString(`Enter the name of the environment variable that will fill input "API Token". Note that it will get prefix KBC_SECRET_.`))
 
 		assert.NoError(t, console.ExpectString("API Token:"))
-		
+
 		assert.NoError(t, console.SendLine(`VAR1`))
 
 		assert.NoError(t, console.ExpectEOF())
