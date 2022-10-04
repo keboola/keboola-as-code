@@ -45,7 +45,7 @@ func Run(ctx context.Context, opts GenerateEnvOptions, d dependencies) (err erro
 	d.Logger().Infof(`  export DBT_KBC_%s_SCHEMA=%s`, targetUpper, workspace.Details.Connection.Schema)
 	d.Logger().Infof(`  export DBT_KBC_%s_WAREHOUSE=%s`, targetUpper, workspace.Details.Connection.Warehouse)
 	d.Logger().Infof(`  export DBT_KBC_%s_DATABASE=%s`, targetUpper, workspace.Details.Connection.Database)
-	host := workspace.Details.Connection.Database
+	host := workspace.Host
 	if workspace.Type == sandboxesapi.TypeSnowflake {
 		host = strings.Replace(host, ".snowflakecomputing.com", "", 1)
 	}
