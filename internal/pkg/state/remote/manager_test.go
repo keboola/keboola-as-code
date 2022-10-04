@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
@@ -477,8 +478,7 @@ func newTestLocalManager(t *testing.T, mappers []interface{}) (*local.Manager, *
 
 	logger := log.NewDebugLogger()
 	validator := validatorPkg.New()
-	fs, err := aferofs.NewMemoryFs(logger, "")
-	assert.NoError(t, err)
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 
 	m := manifest.New(1, "foo.bar")
 	projectState := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), testapi.MockedComponentsMap(), model.SortByPath)

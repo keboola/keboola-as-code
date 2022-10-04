@@ -15,8 +15,7 @@ func TestLoadDotEnv(t *testing.T) {
 	t.Parallel()
 	// Memory fs
 	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
-	assert.NoError(t, err)
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 
 	// Write envs to file
 	osEnvs := Empty()
@@ -50,8 +49,7 @@ func TestLoadDotEnv_Invalid(t *testing.T) {
 	t.Parallel()
 	// Memory fs
 	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, ".")
-	assert.NoError(t, err)
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 
 	// Write envs to file
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(".env.local", "invalid")))

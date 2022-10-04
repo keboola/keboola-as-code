@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	. "github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
@@ -25,8 +25,8 @@ func (t *mockedT) Errorf(format string, args ...interface{}) {
 
 func TestAssertDirectoryFileOnlyInExpected(t *testing.T) {
 	t.Parallel()
-	expectedFs := testfs.NewMemoryFs()
-	actualFs := testfs.NewMemoryFs()
+	expectedFs := aferofs.NewMemoryFs()
+	actualFs := aferofs.NewMemoryFs()
 
 	// Create file
 	assert.NoError(t, expectedFs.WriteFile(filesystem.NewRawFile("file.txt", "foo\n")))
@@ -39,8 +39,8 @@ func TestAssertDirectoryFileOnlyInExpected(t *testing.T) {
 
 func TestAssertDirectoryDirOnlyInExpected(t *testing.T) {
 	t.Parallel()
-	expectedFs := testfs.NewMemoryFs()
-	actualFs := testfs.NewMemoryFs()
+	expectedFs := aferofs.NewMemoryFs()
+	actualFs := aferofs.NewMemoryFs()
 
 	// Create directory
 	assert.NoError(t, expectedFs.Mkdir(`myDir`))
@@ -53,8 +53,8 @@ func TestAssertDirectoryDirOnlyInExpected(t *testing.T) {
 
 func TestAssertDirectoryFileOnlyInActual(t *testing.T) {
 	t.Parallel()
-	expectedFs := testfs.NewMemoryFs()
-	actualFs := testfs.NewMemoryFs()
+	expectedFs := aferofs.NewMemoryFs()
+	actualFs := aferofs.NewMemoryFs()
 
 	// Create file
 	assert.NoError(t, actualFs.WriteFile(filesystem.NewRawFile("file.txt", "foo\n")))
@@ -67,8 +67,8 @@ func TestAssertDirectoryFileOnlyInActual(t *testing.T) {
 
 func TestAssertDirectoryDirOnlyInActual(t *testing.T) {
 	t.Parallel()
-	expectedFs := testfs.NewMemoryFs()
-	actualFs := testfs.NewMemoryFs()
+	expectedFs := aferofs.NewMemoryFs()
+	actualFs := aferofs.NewMemoryFs()
 
 	// Create directory
 	assert.NoError(t, actualFs.Mkdir(`myDir`))
@@ -81,8 +81,8 @@ func TestAssertDirectoryDirOnlyInActual(t *testing.T) {
 
 func TestAssertDirectoryFileDifferentType1(t *testing.T) {
 	t.Parallel()
-	expectedFs := testfs.NewMemoryFs()
-	actualFs := testfs.NewMemoryFs()
+	expectedFs := aferofs.NewMemoryFs()
+	actualFs := aferofs.NewMemoryFs()
 
 	// Create file in actual
 	assert.NoError(t, actualFs.WriteFile(filesystem.NewRawFile("myNode", "foo\n")))
@@ -97,8 +97,8 @@ func TestAssertDirectoryFileDifferentType1(t *testing.T) {
 
 func TestAssertDirectoryFileDifferentType2(t *testing.T) {
 	t.Parallel()
-	expectedFs := testfs.NewMemoryFs()
-	actualFs := testfs.NewMemoryFs()
+	expectedFs := aferofs.NewMemoryFs()
+	actualFs := aferofs.NewMemoryFs()
 
 	// Create file in expected
 	assert.NoError(t, expectedFs.WriteFile(filesystem.NewRawFile("myNode", "foo\n")))
@@ -113,8 +113,8 @@ func TestAssertDirectoryFileDifferentType2(t *testing.T) {
 
 func TestAssertDirectoryDifferentContent(t *testing.T) {
 	t.Parallel()
-	expectedFs := testfs.NewMemoryFs()
-	actualFs := testfs.NewMemoryFs()
+	expectedFs := aferofs.NewMemoryFs()
+	actualFs := aferofs.NewMemoryFs()
 
 	// File in expected
 	assert.NoError(t, expectedFs.WriteFile(filesystem.NewRawFile("file.txt", "foo\n")))
@@ -129,8 +129,8 @@ func TestAssertDirectoryDifferentContent(t *testing.T) {
 
 func TestAssertDirectoryDifferentContentWildcards(t *testing.T) {
 	t.Parallel()
-	expectedFs := testfs.NewMemoryFs()
-	actualFs := testfs.NewMemoryFs()
+	expectedFs := aferofs.NewMemoryFs()
+	actualFs := aferofs.NewMemoryFs()
 
 	// File in expected
 	expected := "%c%c%c%c\n" // 4 chars
@@ -147,8 +147,8 @@ func TestAssertDirectoryDifferentContentWildcards(t *testing.T) {
 
 func TestAssertDirectorySameEmpty(t *testing.T) {
 	t.Parallel()
-	expectedFs := testfs.NewMemoryFs()
-	actualFs := testfs.NewMemoryFs()
+	expectedFs := aferofs.NewMemoryFs()
+	actualFs := aferofs.NewMemoryFs()
 	test := newMockedT()
 	AssertDirectoryContentsSame(test, expectedFs, `/`, actualFs, `/`)
 	assert.Equal(t, "", test.buf.String())
@@ -156,8 +156,8 @@ func TestAssertDirectorySameEmpty(t *testing.T) {
 
 func TestAssertDirectoryIgnoreHiddenFiles(t *testing.T) {
 	t.Parallel()
-	expectedFs := testfs.NewMemoryFs()
-	actualFs := testfs.NewMemoryFs()
+	expectedFs := aferofs.NewMemoryFs()
+	actualFs := aferofs.NewMemoryFs()
 
 	// File in expected
 	hiddenFilePath := filesystem.Join("myDir", ".hidden")
@@ -173,8 +173,8 @@ func TestAssertDirectoryIgnoreHiddenFiles(t *testing.T) {
 
 func TestAssertDirectorySame(t *testing.T) {
 	t.Parallel()
-	expectedFs := testfs.NewMemoryFs()
-	actualFs := testfs.NewMemoryFs()
+	expectedFs := aferofs.NewMemoryFs()
+	actualFs := aferofs.NewMemoryFs()
 
 	// File in expected
 	filePath := filesystem.Join("myDir", "file.txt")
@@ -190,8 +190,8 @@ func TestAssertDirectorySame(t *testing.T) {
 
 func TestAssertDirectorySameWildcards(t *testing.T) {
 	t.Parallel()
-	expectedFs := testfs.NewMemoryFs()
-	actualFs := testfs.NewMemoryFs()
+	expectedFs := aferofs.NewMemoryFs()
+	actualFs := aferofs.NewMemoryFs()
 
 	// File in expected
 	filePath := filesystem.Join("myDir", "file.txt")

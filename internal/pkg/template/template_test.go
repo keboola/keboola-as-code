@@ -39,8 +39,7 @@ func TestTemplate_TestsDir(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, "")
-	assert.NoError(t, err)
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 	assert.NoError(t, fs.Mkdir("tests/one"))
 	assert.NoError(t, fs.Mkdir("tests/two"))
 
@@ -56,8 +55,7 @@ func TestTemplate_Test(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, "")
-	assert.NoError(t, err)
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 	assert.NoError(t, fs.Mkdir("tests/one"))
 	assert.NoError(t, fs.Mkdir("tests/one/sub1"))
 	assert.NoError(t, fs.Mkdir("tests/two"))
@@ -74,8 +72,7 @@ func TestTemplate_Tests(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, "")
-	assert.NoError(t, err)
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 	assert.NoError(t, fs.Mkdir("tests/one"))
 	assert.NoError(t, fs.Mkdir("tests/two"))
 
@@ -96,8 +93,7 @@ func TestTemplate_TestInputs(t *testing.T) {
 	t.Parallel()
 
 	logger := log.NewDebugLogger()
-	fs, err := aferofs.NewMemoryFs(logger, "")
-	assert.NoError(t, err)
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 	assert.NoError(t, fs.Mkdir("tests/one"))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("tests/one/inputs.json", `{"foo":"bar"}`)))
 

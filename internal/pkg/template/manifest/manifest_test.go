@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 type test struct {
@@ -40,7 +40,7 @@ func cases() []test {
 func TestLoadManifestFile(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
-		fs := testfs.NewMemoryFs()
+		fs := aferofs.NewMemoryFs()
 
 		// Write file
 		path := Path()
@@ -65,7 +65,7 @@ func TestLoadManifestFile(t *testing.T) {
 func TestSaveManifestFile(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
-		fs := testfs.NewMemoryFs()
+		fs := aferofs.NewMemoryFs()
 
 		// Save
 		manifest := New()

@@ -133,8 +133,7 @@ func invokeLoadLocalFile(t *testing.T, input *filesystem.FileDef, expected files
 	}
 
 	// Default file
-	fs, err := aferofs.NewMemoryFs(logger, `/`)
-	assert.NoError(t, err)
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile("file.txt", "default")))
 	logger.Truncate()
 

@@ -77,11 +77,7 @@ func Run(ctx context.Context, d dependencies, ref model.TemplateRepository, opts
 			return nil, err
 		}
 	} else {
-		if v, err := aferofs.NewMemoryFs(nil, ""); err == nil {
-			commonDir = v
-		} else {
-			return nil, err
-		}
+		commonDir = aferofs.NewMemoryFs()
 	}
 
 	return repository.New(ref, root, commonDir, manifest), nil

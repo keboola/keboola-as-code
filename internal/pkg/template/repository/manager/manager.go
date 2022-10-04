@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/singleflight"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -217,7 +218,7 @@ func (m *Manager) repository(ctx context.Context, ref model.TemplateRepository) 
 			m.logger.Infof(`checked out repository "%s" | %s`, gitRepo, time.Since(startTime))
 		} else {
 			// Local directory
-			fs, err := aferofs.NewLocalFs(m.deps.Logger(), ref.Url, ".")
+			fs, err := aferofs.NewLocalFs(ref.Url, filesystem.WithLogger(m.deps.Logger()))
 			if err != nil {
 				return nil, err
 			}

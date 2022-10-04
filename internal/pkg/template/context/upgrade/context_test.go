@@ -14,13 +14,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	dependenciesPkg "github.com/keboola/keboola-as-code/internal/pkg/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	. "github.com/keboola/keboola-as-code/internal/pkg/template/context/upgrade"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 func TestContext(t *testing.T) {
@@ -88,7 +88,7 @@ func TestContext(t *testing.T) {
 	}))
 
 	// Create context
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 	ctx := NewContext(context.Background(), templateRef, fs, instanceId, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState)
 
 	// Check JsonNet functions

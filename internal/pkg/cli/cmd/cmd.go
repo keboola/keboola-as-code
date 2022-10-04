@@ -136,7 +136,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		// Create filesystem abstraction
 		var err error
 		workingDir, _ := cmd.Flags().GetString(`working-dir`)
-		root.fs, err = fsFactory(root.logger, workingDir)
+		root.fs, err = fsFactory(filesystem.WithLogger(root.logger), filesystem.WithWorkingDir(workingDir))
 		if err != nil {
 			return err
 		}

@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/jsonnetfiles"
@@ -23,7 +24,6 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/template/context/use"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/jsonnet/function"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 func TestContext(t *testing.T) {
@@ -71,7 +71,7 @@ func TestContext(t *testing.T) {
 	// Create context
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
 	instanceId := "my-instance"
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 
 	// Enable inputUsageNotifier
 	objectKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
@@ -182,7 +182,7 @@ func TestComponentsFunctions(t *testing.T) {
 	inputs := map[string]*template.Input{}
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
 	instanceId := "my-instance"
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 	ctx := context.Background()
 
 	// Context factory for template use operation

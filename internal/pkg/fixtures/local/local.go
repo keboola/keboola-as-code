@@ -4,8 +4,8 @@ import (
 	"runtime"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
@@ -16,7 +16,7 @@ func LoadFS(dirName string, envs testhelper.EnvProvider) (filesystem.Fs, error) 
 	stateDir := filesystem.Join(fixturesDir, dirName)
 
 	// Create Fs
-	fs := testfs.NewMemoryFsFrom(stateDir)
+	fs := aferofs.NewMemoryFsFrom(stateDir)
 	testhelper.MustReplaceEnvsDir(fs, `/`, envs)
 
 	return fs, nil

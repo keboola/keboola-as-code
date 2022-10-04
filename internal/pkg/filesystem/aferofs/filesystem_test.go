@@ -22,7 +22,7 @@ func TestLocalFilesystem(t *testing.T) {
 	t.Parallel()
 	createFs := func() (filesystem.Fs, log.DebugLogger) {
 		logger := log.NewDebugLogger()
-		fs, err := NewLocalFs(logger, t.TempDir(), filesystem.Join("my", "dir"))
+		fs, err := NewLocalFs(t.TempDir(), filesystem.WithLogger(logger), filesystem.WithWorkingDir(filesystem.Join("my", "dir")))
 		assert.NoError(t, err)
 		return fs, logger
 	}
@@ -34,8 +34,7 @@ func TestMemoryFilesystem(t *testing.T) {
 	t.Parallel()
 	createFs := func() (filesystem.Fs, log.DebugLogger) {
 		logger := log.NewDebugLogger()
-		fs, err := NewMemoryFs(logger, filesystem.Join("my", "dir"))
-		assert.NoError(t, err)
+		fs := NewMemoryFs(filesystem.WithLogger(logger), filesystem.WithWorkingDir(filesystem.Join("my", "dir")))
 		return fs, logger
 	}
 	cases := &testCases{createFs}
@@ -46,9 +45,8 @@ func TestMountFilesystem_WithoutMountPoint(t *testing.T) {
 	t.Parallel()
 	createFs := func() (filesystem.Fs, log.DebugLogger) {
 		logger := log.NewDebugLogger()
-		rootFs, err := NewMemoryFs(logger, filesystem.Join("my", "dir"))
-		assert.NoError(t, err)
-		fs, err := NewMountFs(rootFs)
+		rootFs := NewMemoryFs(filesystem.WithLogger(logger), filesystem.WithWorkingDir(filesystem.Join("my", "dir")))
+		fs, err := NewMountFs(rootFs, nil)
 		assert.NoError(t, err)
 		return fs, logger
 	}
@@ -60,11 +58,9 @@ func TestMountFilesystem_WithMountPoint(t *testing.T) {
 	t.Parallel()
 	createFs := func() (filesystem.Fs, log.DebugLogger) {
 		logger := log.NewDebugLogger()
-		rootFs, err := NewMemoryFs(logger, filesystem.Join("my", "dir"))
-		assert.NoError(t, err)
-		mountPointFs, err := NewMemoryFs(logger, "")
-		assert.NoError(t, err)
-		fs, err := NewMountFs(rootFs, mountfs.NewMountPoint(filesystem.Join("sub", "dir1"), mountPointFs))
+		rootFs := NewMemoryFs(filesystem.WithLogger(logger), filesystem.WithWorkingDir(filesystem.Join("my", "dir")))
+		mountPointFs := NewMemoryFs(filesystem.WithLogger(logger))
+		fs, err := NewMountFs(rootFs, []mountfs.MountPoint{mountfs.NewMountPoint(filesystem.Join("sub", "dir1"), mountPointFs)})
 		assert.NoError(t, err)
 		return fs, logger
 	}
@@ -76,16 +72,15 @@ func TestMountFilesystem_WithNestedMountPoint(t *testing.T) {
 	t.Parallel()
 	createFs := func() (filesystem.Fs, log.DebugLogger) {
 		logger := log.NewDebugLogger()
-		rootFs, err := NewMemoryFs(logger, filesystem.Join("my", "dir"))
-		assert.NoError(t, err)
-		mountPoint1Fs, err := NewMemoryFs(logger, "")
-		assert.NoError(t, err)
-		mountPoint2Fs, err := NewMemoryFs(logger, "")
-		assert.NoError(t, err)
+		rootFs := NewMemoryFs(filesystem.WithLogger(logger), filesystem.WithWorkingDir(filesystem.Join("my", "dir")))
+		mountPoint1Fs := NewMemoryFs(filesystem.WithLogger(logger))
+		mountPoint2Fs := NewMemoryFs(filesystem.WithLogger(logger))
 		fs, err := NewMountFs(
 			rootFs,
-			mountfs.NewMountPoint("sub/dir1", mountPoint1Fs),
-			mountfs.NewMountPoint("sub/dir1/dir2", mountPoint2Fs),
+			[]mountfs.MountPoint{
+				mountfs.NewMountPoint("sub/dir1", mountPoint1Fs),
+				mountfs.NewMountPoint("sub/dir1/dir2", mountPoint2Fs),
+			},
 		)
 		assert.NoError(t, err)
 		return fs, logger

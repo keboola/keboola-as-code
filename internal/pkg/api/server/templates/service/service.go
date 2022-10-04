@@ -13,6 +13,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -154,10 +155,7 @@ func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *
 	}
 
 	// Create virtual fs, after refactoring it will be removed
-	fs, err := aferofs.NewMemoryFs(d.Logger(), "")
-	if err != nil {
-		return nil, err
-	}
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(d.Logger()))
 
 	// Create fake manifest
 	m := project.NewManifest(123, "foo")
@@ -206,10 +204,7 @@ func (s *service) InstancesIndex(d dependencies.ForProjectRequest, payload *Inst
 	}
 
 	// Create virtual fs, after refactoring it will be removed
-	fs, err := aferofs.NewMemoryFs(d.Logger(), "")
-	if err != nil {
-		return nil, err
-	}
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(d.Logger()))
 
 	// Create fake manifest
 	m := project.NewManifest(123, "foo")
@@ -237,10 +232,7 @@ func (s *service) InstanceIndex(d dependencies.ForProjectRequest, payload *Insta
 	}
 
 	// Create virtual fs, after refactoring it will be removed
-	fs, err := aferofs.NewMemoryFs(d.Logger(), "")
-	if err != nil {
-		return nil, err
-	}
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(d.Logger()))
 
 	// Create fake manifest
 	m := project.NewManifest(123, "foo")
@@ -556,10 +548,7 @@ func getTemplateInstance(d dependencies.ForProjectRequest, branchDef, instanceId
 	}
 
 	// Create virtual fs, after refactoring it will be removed
-	fs, err := aferofs.NewMemoryFs(d.Logger(), "")
-	if err != nil {
-		return nil, branchKey, nil, err
-	}
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(d.Logger()))
 
 	// Create fake manifest
 	m := project.NewManifest(123, "foo")

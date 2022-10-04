@@ -6,10 +6,10 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 func TestNewState(t *testing.T) {
@@ -96,7 +96,7 @@ func TestStateMustGetNotFound(t *testing.T) {
 
 func TestStateTrackRecordNotPersisted(t *testing.T) {
 	t.Parallel()
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar1`, `foo`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar2`, `foo`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar3`, `foo`)))
@@ -121,7 +121,7 @@ func TestStateTrackRecordNotPersisted(t *testing.T) {
 
 func TestStateTrackRecordValid(t *testing.T) {
 	t.Parallel()
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar1`, `foo`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar2`, `foo`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar3`, `foo`)))
@@ -146,7 +146,7 @@ func TestStateTrackRecordValid(t *testing.T) {
 
 func TestStateTrackRecordInvalid(t *testing.T) {
 	t.Parallel()
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar1`, `foo`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar2`, `foo`)))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`foo/bar3`, `foo`)))

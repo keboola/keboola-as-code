@@ -27,7 +27,6 @@ require (
 	github.com/keboola/go-client v0.8.0
 	github.com/keboola/go-utils v0.5.1
 	github.com/kylelemons/godebug v1.1.0
-	github.com/nhatthm/aferocopy v1.2.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.1
 	github.com/spf13/afero v1.9.2
 	github.com/spf13/cast v1.5.0

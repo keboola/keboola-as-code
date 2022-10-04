@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 )
 
 func TestFilesToSave(t *testing.T) {
@@ -78,7 +78,7 @@ type myStruct struct {
 
 func TestFilesLoader(t *testing.T) {
 	t.Parallel()
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 	files := NewFilesLoader(fs.FileLoader())
 
 	// No files

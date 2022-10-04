@@ -30,7 +30,7 @@ func TestLocalFilesystem(t *testing.T) {
 	t.Parallel()
 	createFs := func() (filesystem.Fs, log.DebugLogger) {
 		logger := log.NewDebugLogger()
-		fs, err := aferofs.NewLocalFs(logger, t.TempDir(), filesystem.Join("my", "dir"))
+		fs, err := aferofs.NewLocalFs(t.TempDir(), filesystem.WithLogger(logger), filesystem.WithWorkingDir(filesystem.Join("my", "dir")))
 		assert.NoError(t, err)
 		return fs, logger
 	}
@@ -42,8 +42,7 @@ func TestMemoryFilesystem(t *testing.T) {
 	t.Parallel()
 	createFs := func() (filesystem.Fs, log.DebugLogger) {
 		logger := log.NewDebugLogger()
-		fs, err := aferofs.NewMemoryFs(logger, filesystem.Join("my", "dir"))
-		assert.NoError(t, err)
+		fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger), filesystem.WithWorkingDir(filesystem.Join("my", "dir")))
 		return fs, logger
 	}
 	cases := &testCases{createFs}

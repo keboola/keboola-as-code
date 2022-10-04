@@ -16,8 +16,7 @@ func TestValuesPriority(t *testing.T) {
 	t.Parallel()
 	logger := log.NewNopLogger()
 	workingDir := filesystem.Join("foo", "bar")
-	fs, err := aferofs.NewMemoryFs(logger, workingDir)
-	assert.NoError(t, err)
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger), filesystem.WithWorkingDir(workingDir))
 
 	// Create working and project dir
 	assert.NoError(t, fs.Mkdir(workingDir))
@@ -26,7 +25,7 @@ func TestValuesPriority(t *testing.T) {
 
 	// 1. Key is not defined
 	options := New()
-	err = options.Load(logger, env.Empty(), fs, &pflag.FlagSet{})
+	err := options.Load(logger, env.Empty(), fs, &pflag.FlagSet{})
 	assert.NoError(t, err)
 	assert.Equal(t, "", options.GetString(key))
 	assert.Equal(t, SetByUnknown, options.KeySetBy(key))

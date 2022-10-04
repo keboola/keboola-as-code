@@ -9,12 +9,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/abstract"
 	. "github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/mountfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 func TestNewMountFs(t *testing.T) {
 	t.Parallel()
-	fs := New(testfs.NewMemoryFs().(abstract.BackendProvider).Backend(), "base/path")
+	fs := New(aferofs.NewMemoryFs().(abstract.BackendProvider).Backend(), "base/path")
 	assert.Equal(t, "base/path", fs.BasePath())
 }
 
@@ -22,13 +21,15 @@ func TestMountFs_Rename(t *testing.T) {
 	t.Parallel()
 
 	// Create FS
-	root := testfs.NewMemoryFs()
-	dir1 := testfs.NewMemoryFs()
-	dir2 := testfs.NewMemoryFs()
+	root := aferofs.NewMemoryFs()
+	dir1 := aferofs.NewMemoryFs()
+	dir2 := aferofs.NewMemoryFs()
 	fs, err := aferofs.NewMountFs(
 		root,
-		NewMountPoint(filesystem.Join("/sub/dir1"), dir1),
-		NewMountPoint(filesystem.Join("/sub/dir1/dir2"), dir2),
+		[]MountPoint{
+			NewMountPoint(filesystem.Join("/sub/dir1"), dir1),
+			NewMountPoint(filesystem.Join("/sub/dir1/dir2"), dir2),
+		},
 	)
 	assert.NoError(t, err)
 

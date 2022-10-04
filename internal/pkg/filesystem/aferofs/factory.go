@@ -8,25 +8,55 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/localfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/memoryfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/mountfs"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
-func NewLocalFs(logger log.Logger, rootDir string, workingDirRel string) (fs filesystem.Fs, err error) {
+func NewLocalFs(rootDir string, opts ...filesystem.Option) (fs filesystem.Fs, err error) {
 	backendFs, err := localfs.New(rootDir)
 	if err != nil {
 		return nil, err
 	}
-	return New(logger, backendFs, workingDirRel), nil
+	return New(backendFs, opts...), nil
 }
 
-func NewMemoryFs(logger log.Logger, workingDir string) (fs filesystem.Fs, err error) {
-	return New(logger, memoryfs.New(), workingDir), nil
+func NewMemoryFs(opts ...filesystem.Option) filesystem.Fs {
+	return New(memoryfs.New(), opts...)
 }
 
-func NewMountFs(root filesystem.Fs, mounts ...mountfs.MountPoint) (fs filesystem.Fs, err error) {
+// NewMemoryFsOrErr implements filesystem.Factory interface.
+func NewMemoryFsOrErr(opts ...filesystem.Option) (filesystem.Fs, error) {
+	return New(memoryfs.New(), opts...), nil
+}
+
+func NewMemoryFsFrom(localDir string, opts ...filesystem.Option) filesystem.Fs {
+	memoryFs, err := NewMemoryFsFromOrErr(localDir, opts...)
+	if err != nil {
+		panic(err)
+	}
+	return memoryFs
+}
+
+func NewMemoryFsFromOrErr(localDir string, opts ...filesystem.Option) (filesystem.Fs, error) {
+	memoryFs := NewMemoryFs(opts...)
+	if err := CopyFs2Fs(nil, localDir, memoryFs, ""); err != nil {
+		return nil, fmt.Errorf(`cannot init memory fs from local dir "%s": %w`, localDir, err)
+	}
+	return memoryFs, nil
+}
+
+func NewMountFs(root filesystem.Fs, mounts []mountfs.MountPoint, opts ...filesystem.Option) (fs filesystem.Fs, err error) {
 	rootFs, ok := root.(*Fs)
 	if !ok {
 		return nil, fmt.Errorf(`type "%T" is not supported`, root)
 	}
-	return New(root.Logger(), mountfs.New(rootFs.Backend(), rootFs.BasePath(), mounts...), root.WorkingDir()), nil
+
+	// Use options from root filesystem by default
+	opts = append(
+		[]filesystem.Option{
+			filesystem.WithLogger(root.Logger()),
+			filesystem.WithWorkingDir(root.WorkingDir()),
+		},
+		opts...,
+	)
+
+	return New(mountfs.New(rootFs.Backend(), rootFs.BasePath(), mounts...), opts...), nil
 }

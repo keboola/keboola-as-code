@@ -57,11 +57,7 @@ func New(fs filesystem.Fs, options ...Option) (*Paths, error) {
 }
 
 func NewNop() *Paths {
-	memoryFs, err := aferofs.NewMemoryFs(log.NewNopLogger(), `/`)
-	if err != nil {
-		panic(err)
-	}
-	paths, err := New(memoryFs)
+	paths, err := New(aferofs.NewMemoryFs())
 	if err != nil {
 		panic(err)
 	}

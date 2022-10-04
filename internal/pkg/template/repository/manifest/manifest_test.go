@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 type test struct {
@@ -39,7 +39,7 @@ func TestNewManifest(t *testing.T) {
 
 func TestManifestFileNotFound(t *testing.T) {
 	t.Parallel()
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 
 	// Load
 	manifest, err := Load(fs)
@@ -51,7 +51,7 @@ func TestManifestFileNotFound(t *testing.T) {
 func TestLoadManifestFile(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
-		fs := testfs.NewMemoryFs()
+		fs := aferofs.NewMemoryFs()
 
 		// Write file
 		path := filesystem.Join(filesystem.MetadataDir, FileName)
@@ -70,7 +70,7 @@ func TestLoadManifestFile(t *testing.T) {
 func TestSaveManifestFile(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
-		fs := testfs.NewMemoryFs()
+		fs := aferofs.NewMemoryFs()
 
 		// Save
 		assert.NoError(t, saveFile(fs, c.data))
@@ -113,7 +113,7 @@ func TestManifestContentValidateBadVersion(t *testing.T) {
 
 func TestManifestBadRecordSemanticVersion(t *testing.T) {
 	t.Parallel()
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 
 	fileContent := `
 {

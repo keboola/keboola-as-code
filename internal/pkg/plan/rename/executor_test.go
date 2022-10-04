@@ -25,8 +25,7 @@ func TestRename(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
 	validator := validatorPkg.New()
-	fs, err := aferofs.NewMemoryFs(logger, `/`)
-	assert.NoError(t, err)
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 	manifest := projectManifest.New(1, "foo")
 
 	// Dir structure
@@ -82,8 +81,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
 	validator := validatorPkg.New()
-	fs, err := aferofs.NewMemoryFs(logger, `/`)
-	assert.NoError(t, err)
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 	manifest := projectManifest.New(1, "foo")
 
 	// Dir structure
@@ -127,7 +125,7 @@ func TestRenameFailedKeepOldState(t *testing.T) {
 	projectState := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), model.NewComponentsMap(nil), model.SortByPath)
 	localManager := local.NewManager(logger, validator, fs, fs.FileLoader(), manifest, nil, projectState, mapper.New())
 	executor := newRenameExecutor(context.Background(), localManager, plan)
-	err = executor.invoke()
+	err := executor.invoke()
 	assert.Error(t, err)
 	logsStr := logger.AllMessages()
 	assert.NotContains(t, logsStr, `WARN`)
