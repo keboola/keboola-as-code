@@ -47,7 +47,7 @@ env:
   APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
 
   # WinGet packages
-  WINGET_PACKAGES_REPO_FORK: "JakubMatejka/winget-pkgs"
+  WINGET_PACKAGES_REPO_FORK: "keboola/winget-pkgs"
 
   # macOS notarization
   APPLE_ACCOUNT_USERNAME: "apple@keboola.com"
