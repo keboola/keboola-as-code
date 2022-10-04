@@ -63,7 +63,7 @@ linters:
     - errorlint
     - exportloopref
     - forbidigo
-    #- gci
+    - gci
     - gochecknoglobals
     - gochecknoinits
     - goconst
