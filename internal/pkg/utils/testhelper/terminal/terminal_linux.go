@@ -93,6 +93,7 @@ func (c *console) SendEnter() error {
 func (c *console) SendSpace() error {
 	return c.Send(" ")
 }
+
 func (c *console) SendBackspace() error {
 	return c.Send("\u0008")
 }
