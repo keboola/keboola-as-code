@@ -10,7 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/create"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/context/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )

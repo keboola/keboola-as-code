@@ -14,11 +14,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/context/upgrade"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/jsonnet/function"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/upgrade"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/use"
 )
 
 func RepositoriesResponse(ctx context.Context, d dependencies.ForProjectRequest) (out *Repositories, err error) {
@@ -174,10 +174,10 @@ func ComponentsResponse(d dependencies.ForProjectRequest, in []string) (out []st
 	for _, componentId := range in {
 		// Map placeholder "<keboola.wr-snowflake>" to real componentId.
 		if componentId == manifest.SnowflakeWriterComponentIdPlaceholder {
-			if _, found := d.Components().Get(use.SnowflakeWriterAws); found {
-				componentId = use.SnowflakeWriterAws.String()
-			} else if _, found := d.Components().Get(use.SnowflakeWriterAzure); found {
-				componentId = use.SnowflakeWriterAzure.String()
+			if _, found := d.Components().Get(function.SnowflakeWriterIDAws); found {
+				componentId = function.SnowflakeWriterIDAws.String()
+			} else if _, found := d.Components().Get(function.SnowflakeWriterIDAzure); found {
+				componentId = function.SnowflakeWriterIDAzure.String()
 			} else {
 				continue
 			}

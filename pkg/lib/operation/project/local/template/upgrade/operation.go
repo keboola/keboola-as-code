@@ -17,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/upgrade"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/context/upgrade"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/encrypt"
 	saveProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"

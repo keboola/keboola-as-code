@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/create"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/context/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 )
 
