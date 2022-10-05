@@ -30,7 +30,7 @@ echo
 
 # Run linters
 echo "Running golangci-lint ..."
-if golangci-lint run --timeout=2m0s -c "./build/ci/golangci.yml"; then
+if golangci-lint run --timeout=5m0s -c "./build/ci/golangci.yml"; then
     echo "Ok. The code looks good."
     echo
 else
