@@ -18,7 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	. "github.com/keboola/keboola-as-code/internal/pkg/template/upgrade"
+	. "github.com/keboola/keboola-as-code/internal/pkg/template/context/upgrade"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )

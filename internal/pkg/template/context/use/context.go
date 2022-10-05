@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	jsonnetLib "github.com/google/go-jsonnet"
-	"github.com/google/go-jsonnet/ast"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
@@ -18,12 +17,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/jsonnet/function"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
-)
-
-const (
-	SnowflakeWriterAws   = storageapi.ComponentID("keboola.wr-db-snowflake")
-	SnowflakeWriterAzure = storageapi.ComponentID("keboola.wr-snowflake-blob-storage")
 )
 
 // Context represents the process of replacing values when applying a template to a remote project.
@@ -199,122 +194,19 @@ func (c *Context) RegisterPlaceholder(oldId interface{}, fn PlaceholderResolver)
 }
 
 func (c *Context) registerJsonNetFunctions() {
-	// ConfigId
-	c.jsonNetCtx.NativeFunctionWithAlias(&jsonnet.NativeFunction{
-		Name:   `ConfigId`,
-		Params: ast.Identifiers{"id"},
-		Func: func(params []interface{}) (interface{}, error) {
-			if len(params) != 1 {
-				return nil, fmt.Errorf("one parameter expected, found %d", len(params))
-			} else if id, ok := params[0].(string); !ok {
-				return nil, fmt.Errorf("parameter must be a string")
-			} else {
-				return c.idPlaceholder(storageapi.ConfigID(id)), nil
-			}
-		},
-	})
-
-	// ConfigRowId
-	c.jsonNetCtx.NativeFunctionWithAlias(&jsonnet.NativeFunction{
-		Name:   `ConfigRowId`,
-		Params: ast.Identifiers{"id"},
-		Func: func(params []interface{}) (interface{}, error) {
-			if len(params) != 1 {
-				return nil, fmt.Errorf("one parameter expected, found %d", len(params))
-			} else if id, ok := params[0].(string); !ok {
-				return nil, fmt.Errorf("parameter must be a string")
-			} else {
-				return c.idPlaceholder(storageapi.RowID(id)), nil
-			}
-		},
-	})
-
-	// Inputs
-	c.jsonNetCtx.NativeFunctionWithAlias(&jsonnet.NativeFunction{
-		Name:   `Input`,
-		Params: ast.Identifiers{"id"},
-		Func: func(params []interface{}) (interface{}, error) {
-			if len(params) != 1 {
-				return nil, fmt.Errorf("one parameter expected, found %d", len(params))
-			} else if id, ok := params[0].(string); !ok {
-				return nil, fmt.Errorf("parameter must be a string")
-			} else if v, found := c.inputsValues[id]; !found {
-				return nil, fmt.Errorf(`input "%s" not found`, id)
-			} else {
-				switch v := v.Value.(type) {
-				case int:
-					return float64(v), nil
-				default:
-					return v, nil
-				}
-			}
-		},
-	})
-	c.jsonNetCtx.NativeFunctionWithAlias(&jsonnet.NativeFunction{
-		Name:   `InputIsAvailable`,
-		Params: ast.Identifiers{"id"},
-		Func: func(params []interface{}) (interface{}, error) {
-			if len(params) != 1 {
-				return nil, fmt.Errorf("one parameter expected, found %d", len(params))
-			} else if id, ok := params[0].(string); !ok {
-				return nil, fmt.Errorf("parameter must be a string")
-			} else if v, found := c.inputsValues[id]; !found {
-				return nil, fmt.Errorf(`input "%s" not found`, id)
-			} else {
-				return !v.Skipped, nil
-			}
-		},
-	})
-
-	// InstanceId
-	c.jsonNetCtx.NativeFunctionWithAlias(&jsonnet.NativeFunction{
-		Name:   `InstanceId`,
-		Params: ast.Identifiers{},
-		Func: func(params []interface{}) (interface{}, error) {
-			return c.instanceId, nil
-		},
-	})
-	c.jsonNetCtx.NativeFunctionWithAlias(&jsonnet.NativeFunction{
-		Name:   `InstanceIdShort`,
-		Params: ast.Identifiers{},
-		Func: func(params []interface{}) (interface{}, error) {
-			return c.instanceIdShort, nil
-		},
-	})
-
-	// Components
-	c.jsonNetCtx.NativeFunctionWithAlias(&jsonnet.NativeFunction{
-		Name:   `ComponentIsAvailable`,
-		Params: ast.Identifiers{"componentId"},
-		Func: func(params []interface{}) (interface{}, error) {
-			if len(params) != 1 {
-				return nil, fmt.Errorf("one parameter expected, found %d", len(params))
-			} else if componentId, ok := params[0].(string); !ok {
-				return nil, fmt.Errorf("parameter must be a string")
-			} else {
-				_, found := c.components.Get(storageapi.ComponentID(componentId))
-				return found, nil
-			}
-		},
-	})
-	c.jsonNetCtx.NativeFunctionWithAlias(&jsonnet.NativeFunction{
-		Name:   `SnowflakeWriterComponentId`,
-		Params: ast.Identifiers{},
-		Func: func(params []interface{}) (interface{}, error) {
-			if _, found := c.components.Get(SnowflakeWriterAws); found {
-				return SnowflakeWriterAws.String(), nil
-			} else if _, found := c.components.Get(SnowflakeWriterAzure); found {
-				return SnowflakeWriterAzure.String(), nil
-			} else {
-				return nil, fmt.Errorf("no Snowflake Writer component found")
-			}
-		},
-	})
+	c.jsonNetCtx.NativeFunctionWithAlias(function.ConfigId(c.mapId))
+	c.jsonNetCtx.NativeFunctionWithAlias(function.ConfigRowId(c.mapId))
+	c.jsonNetCtx.NativeFunctionWithAlias(function.Input(c.inputValue))
+	c.jsonNetCtx.NativeFunctionWithAlias(function.InputIsAvailable(c.inputValue))
+	c.jsonNetCtx.NativeFunctionWithAlias(function.InstanceId(c.instanceId))
+	c.jsonNetCtx.NativeFunctionWithAlias(function.InstanceIdShort(c.instanceIdShort))
+	c.jsonNetCtx.NativeFunctionWithAlias(function.ComponentIsAvailable(c.components))
+	c.jsonNetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentId(c.components))
 }
 
-// ConfigId/ConfigRowId in JsonNet files is replaced by a <<~~ticket:123~~>> placeholder.
+// mapId maps ConfigId/ConfigRowId in JsonNet files to a <<~~ticket:123~~>> placeholder.
 // When all JsonNet files are processed, new IDs are generated in parallel.
-func (c *Context) idPlaceholder(oldId interface{}) string {
+func (c *Context) mapId(oldId interface{}) string {
 	p := c.RegisterPlaceholder(oldId, func(p Placeholder, cb ResolveCallback) {
 		// Placeholder -> new ID
 		var newId interface{}
@@ -331,6 +223,11 @@ func (c *Context) idPlaceholder(oldId interface{}) string {
 		})
 	})
 	return p.asString
+}
+
+func (c *Context) inputValue(inputId string) (template.InputValue, bool) {
+	v, ok := c.inputsValues[inputId]
+	return v, ok
 }
 
 func (c *Context) registerInputsUsageNotifier() {
@@ -409,7 +306,7 @@ func (n *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{},
 			Def:     n.inputsDefsMap[inputName],
 		})
 	} else if jsonObject, ok := partialValue.(map[string]any); ok && len(jsonObject) > 0 {
-		// Get and sort JSON keys
+		// Get JSON keys
 		var keys []string
 		for jsonKey := range jsonObject {
 			keys = append(keys, jsonKey)

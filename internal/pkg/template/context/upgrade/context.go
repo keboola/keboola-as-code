@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/use"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/context/use"
 )
 
 // Context is similar to Context.

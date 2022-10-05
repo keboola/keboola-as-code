@@ -14,7 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/create"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/context/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )

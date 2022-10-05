@@ -20,7 +20,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/metadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	. "github.com/keboola/keboola-as-code/internal/pkg/template/use"
+	. "github.com/keboola/keboola-as-code/internal/pkg/template/context/use"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/jsonnet/function"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
@@ -207,7 +208,7 @@ func TestComponentsFunctions(t *testing.T) {
 
 	// Case 2: Only AWS Snowflake Writer
 	components = model.NewComponentsMap(storageapi.Components{
-		{ComponentKey: storageapi.ComponentKey{ID: SnowflakeWriterAws}},
+		{ComponentKey: storageapi.ComponentKey{ID: function.SnowflakeWriterIDAws}},
 	})
 	expected = `
 {
@@ -222,7 +223,7 @@ func TestComponentsFunctions(t *testing.T) {
 
 	// Case 3: Only Azure Snowflake Writer
 	components = model.NewComponentsMap(storageapi.Components{
-		{ComponentKey: storageapi.ComponentKey{ID: SnowflakeWriterAzure}},
+		{ComponentKey: storageapi.ComponentKey{ID: function.SnowflakeWriterIDAzure}},
 	})
 	expected = `
 {
@@ -237,8 +238,8 @@ func TestComponentsFunctions(t *testing.T) {
 
 	// Case 4: Both AWS and Azure Snowflake Writer
 	components = model.NewComponentsMap(storageapi.Components{
-		{ComponentKey: storageapi.ComponentKey{ID: SnowflakeWriterAws}},
-		{ComponentKey: storageapi.ComponentKey{ID: SnowflakeWriterAzure}},
+		{ComponentKey: storageapi.ComponentKey{ID: function.SnowflakeWriterIDAws}},
+		{ComponentKey: storageapi.ComponentKey{ID: function.SnowflakeWriterIDAzure}},
 	})
 	expected = `
 {

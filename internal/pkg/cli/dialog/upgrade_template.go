@@ -6,8 +6,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/context/upgrade"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/upgrade"
 	upgradeTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/upgrade"
 )
 
