@@ -26,7 +26,7 @@ func NewBufferedWriter() *Writer {
 	return &Writer{&sync.Mutex{}, []io.Writer{bufio.NewWriter(&buffer)}, &buffer}
 }
 
-// ConnectTo allows write to multiple targets.
+// ConnectTo allows writes to multiple targets.
 func (w *Writer) ConnectTo(writer io.Writer) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()

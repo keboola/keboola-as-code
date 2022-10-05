@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	renameOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -20,7 +20,7 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps()
-	projectState, err := d.MockedProject(testfs.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
+	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 	branchKey := model.BranchKey{Id: 123}
 	branchRaw, _ := projectState.LocalObjects().Get(branchKey)
@@ -79,7 +79,7 @@ func TestAskRenameInstance_Noninteractive(t *testing.T) {
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
 	d := dependencies.NewMockedDeps()
-	projectState, err := d.MockedProject(testfs.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
+	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 	branchKey := model.BranchKey{Id: 123}
 	branchRaw, _ := projectState.LocalObjects().Get(branchKey)

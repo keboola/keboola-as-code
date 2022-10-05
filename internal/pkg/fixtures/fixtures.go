@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"testing"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 type ProjectSnapshot struct {
@@ -122,6 +126,27 @@ func (c *Config) ObjectName() string {
 
 func (r *ConfigRow) ObjectName() string {
 	return r.Name
+}
+
+func MinimalProjectFs(t *testing.T) filesystem.Fs {
+	t.Helper()
+
+	// nolint: dogsled
+	_, testFile, _, _ := runtime.Caller(0)
+	testDir := filesystem.Dir(testFile)
+
+	// Create Fs
+	inputDir := filesystem.Join(testDir, "local", "minimal")
+	fs := testfs.NewMemoryFsFrom(inputDir)
+
+	// Replace ENVs
+	envs := env.Empty()
+	envs.Set("LOCAL_PROJECT_ID", "12345")
+	envs.Set("TEST_KBC_STORAGE_API_HOST", "foo.bar")
+	envs.Set("LOCAL_STATE_MAIN_BRANCH_ID", "123")
+	envs.Set("LOCAL_STATE_GENERIC_CONFIG_ID", "456")
+	testhelper.MustReplaceEnvsDir(fs, `/`, envs)
+	return fs
 }
 
 func LoadStateFile(path string) (*StateFile, error) {
