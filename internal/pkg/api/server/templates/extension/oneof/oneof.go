@@ -3,7 +3,8 @@
 // It is workaround for error: "union type ... has array elements, not supported by gRCP attribute".
 //
 // Example usage:
-// 	Attribute("foo", Any, func() {
+//
+//	Attribute("foo", Any, func() {
 //		Meta(oneof.Meta, json.MustEncodeString([]*openapi.Schema{
 //			{Type: openapi.String},
 //			{Type: openapi.Array, Items: &openapi.Schema{Type: openapi.String}},
@@ -23,9 +24,11 @@ import (
 	openapiv3 "goa.design/goa/v3/http/codegen/openapi/v3"
 )
 
-const Meta = "openapi:extension:" + oneOfExtensionName
-const oneOfExtensionName = "x-one-of"
-const oneOfFieldName = "oneOf"
+const (
+	Meta               = "openapi:extension:" + oneOfExtensionName
+	oneOfExtensionName = "x-one-of"
+	oneOfFieldName     = "oneOf"
+)
 
 // nolint: gochecknoinits
 func init() {

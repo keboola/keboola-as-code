@@ -29,28 +29,28 @@ const (
 // AddTokenHeaderToPayloads must appear in a Service expression.
 //
 // Example:
-//    var tokenSecurity = APIKeySecurity("storage-api-token", func() {
-//       Description("Storage Api Token Authentication")
-//    })
 //
-//    var _ = Service("templates", func() {
-//      Security(tokenSecurity)
-//      defer AddTokenHeaderToPayloads(tokenSecurity, "storageApiToken", "X-StorageApi-Token")
+//	  var tokenSecurity = APIKeySecurity("storage-api-token", func() {
+//	     Description("Storage Api Token Authentication")
+//	  })
 //
-//      Method("with-no-security", func() {
-//        NoSecurity()
-//        HTTP(func() {
-//          GET("/no-security")
-//  	  })
-//      })
+//	  var _ = Service("templates", func() {
+//	    Security(tokenSecurity)
+//	    defer AddTokenHeaderToPayloads(tokenSecurity, "storageApiToken", "X-StorageApi-Token")
 //
-//      Method("with-token-security", func() {
-//        HTTP(func() {
-//          GET("/token-security")
-//  	  })
-//      })
-//    }
+//	    Method("with-no-security", func() {
+//	      NoSecurity()
+//	      HTTP(func() {
+//	        GET("/no-security")
+//		  })
+//	    })
 //
+//	    Method("with-token-security", func() {
+//	      HTTP(func() {
+//	        GET("/token-security")
+//		  })
+//	    })
+//	  }
 func AddTokenHeaderToPayloads(tokenScheme *expr.SchemeExpr, field, header string) {
 	service, ok := eval.Current().(*expr.ServiceExpr)
 	if !ok {

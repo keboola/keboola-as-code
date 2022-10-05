@@ -19,6 +19,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
+const (
+	sendDelay     = 20 * time.Millisecond
+	expectTimeout = 10 * time.Second
+)
+
 // console implements Console.
 type console struct {
 	*expect.Console
@@ -88,6 +93,7 @@ func (c *console) SendEnter() error {
 func (c *console) SendSpace() error {
 	return c.Send(" ")
 }
+
 func (c *console) SendBackspace() error {
 	return c.Send("\u0008")
 }

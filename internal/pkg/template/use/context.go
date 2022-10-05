@@ -21,27 +21,29 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-const SnowflakeWriterAws = storageapi.ComponentID("keboola.wr-db-snowflake")
-const SnowflakeWriterAzure = storageapi.ComponentID("keboola.wr-snowflake-blob-storage")
+const (
+	SnowflakeWriterAws   = storageapi.ComponentID("keboola.wr-db-snowflake")
+	SnowflakeWriterAzure = storageapi.ComponentID("keboola.wr-snowflake-blob-storage")
+)
 
 // Context represents the process of replacing values when applying a template to a remote project.
 //
 // Process description:
-//   1. There is some template.
-//      - It contains objects IDs defined by functions, for example: ConfigId("my-config-id"), ConfigRowId("my-row-id")
-//   2. When loading JsonNet files, functions are called.
-//      - A placeholder is generated for each unique value.
-//      - For example, each ConfigId("my-config-id") is replaced by "<<~~func:ticket:1~~>>".
-//      - This is because we do not know in advance how many new IDs will need to be generated.
-//      - Function call can contain an expression, for example ConfigId("my-config-" + tableName), and this prevents forward analysis.
-//      - Functions are defined in Context.registerJsonNetFunctions().
-//   3. When the entire template is loaded, the placeholders are replaced with new IDs.
-//      - For example, each "<<~~func:ticket:1~~>>" is replaced by "3496482342".
-//      - Replacements are defined by Context.Replacements().
-//      - Values are replaced by "internal/pkg/mapper/template/replacevalues".
-//    4. Then the objects are copied to the project,
-//      - See "pkg/lib/operation/project/local/template/use/operation.go".
-//      - A new path is generated for each new object, according to the project naming.
+//  1. There is some template.
+//     - It contains objects IDs defined by functions, for example: ConfigId("my-config-id"), ConfigRowId("my-row-id")
+//  2. When loading JsonNet files, functions are called.
+//     - A placeholder is generated for each unique value.
+//     - For example, each ConfigId("my-config-id") is replaced by "<<~~func:ticket:1~~>>".
+//     - This is because we do not know in advance how many new IDs will need to be generated.
+//     - Function call can contain an expression, for example ConfigId("my-config-" + tableName), and this prevents forward analysis.
+//     - Functions are defined in Context.registerJsonNetFunctions().
+//  3. When the entire template is loaded, the placeholders are replaced with new IDs.
+//     - For example, each "<<~~func:ticket:1~~>>" is replaced by "3496482342".
+//     - Replacements are defined by Context.Replacements().
+//     - Values are replaced by "internal/pkg/mapper/template/replacevalues".
+//  4. Then the objects are copied to the project,
+//     - See "pkg/lib/operation/project/local/template/use/operation.go".
+//     - A new path is generated for each new object, according to the project naming.
 //
 // Context.JsonNetContext() returns JsonNet functions.
 // Context.Replacements() returns placeholders for new IDs.

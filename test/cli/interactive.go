@@ -17,16 +17,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 )
 
-const commentLinePrefix = "# "
-const expectLinePrefix = "< "
-const sendLinePrefix = "> "
-const upArrowContent = "<up arrow>"
-const downArrowContent = "<down arrow>"
-const leftArrowContent = "<left arrow>"
-const rightArrowContent = "<right arrow>"
-const enterContent = "<enter>"
-const interactionFilePath = "interaction.txt"
-const interactionLogPrefix = ">>> interaction.txt:line:"
+const (
+	commentLinePrefix    = "# "
+	expectLinePrefix     = "< "
+	sendLinePrefix       = "> "
+	upArrowContent       = "<up arrow>"
+	downArrowContent     = "<down arrow>"
+	leftArrowContent     = "<left arrow>"
+	rightArrowContent    = "<right arrow>"
+	enterContent         = "<enter>"
+	interactionFilePath  = "interaction.txt"
+	interactionLogPrefix = ">>> interaction.txt:line:"
+)
 
 type cmdInputOutput struct {
 	stdin        io.Reader

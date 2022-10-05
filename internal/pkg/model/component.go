@@ -70,15 +70,17 @@ func (p *ComponentsProvider) index(ctx context.Context) (*storageapi.IndexCompon
 	return storageapi.IndexComponentsRequest().Send(ctx, p.storageApiClient)
 }
 
-type componentsMap = storageapi.ComponentsMap
-type ComponentsMap struct {
-	componentsMap
-	components                  storageapi.Components
-	defaultBucketsByComponentId map[storageapi.ComponentID]string
-	defaultBucketsByPrefix      map[string]storageapi.ComponentID
-	usedLock                    *sync.Mutex
-	used                        map[storageapi.ComponentID]bool
-}
+type (
+	componentsMap = storageapi.ComponentsMap
+	ComponentsMap struct {
+		componentsMap
+		components                  storageapi.Components
+		defaultBucketsByComponentId map[storageapi.ComponentID]string
+		defaultBucketsByPrefix      map[string]storageapi.ComponentID
+		usedLock                    *sync.Mutex
+		used                        map[storageapi.ComponentID]bool
+	}
+)
 
 func NewComponentsMap(components storageapi.Components) *ComponentsMap {
 	v := &ComponentsMap{

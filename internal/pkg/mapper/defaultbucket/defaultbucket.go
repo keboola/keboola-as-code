@@ -28,7 +28,8 @@ func (m *defaultBucketMapper) visitStorageInputTables(config configOrRow, conten
 	config configOrRow,
 	sourceTableId string,
 	storageInputTable *orderedmap.OrderedMap,
-) error) error {
+) error,
+) error {
 	inputTablesRaw, _, _ := content.GetNested("storage.input.tables")
 	inputTables, ok := inputTablesRaw.([]interface{})
 	if !ok {

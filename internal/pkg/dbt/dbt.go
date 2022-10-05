@@ -1,5 +1,7 @@
 package dbt
 
-const ProjectFilePath = "dbt_project.yml"
-const SourcesPath = "models/_sources"
-const ProfilesPath = "profiles.yml"
+const (
+	ProjectFilePath = "dbt_project.yml"
+	SourcesPath     = "models/_sources"
+	ProfilesPath    = "profiles.yml"
+)

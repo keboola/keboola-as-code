@@ -51,7 +51,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 		assert.NoError(t, console.ExpectString("Please enter a template public name for users."))
 
 		assert.NoError(t, console.ExpectString("Template name:"))
-		
+
 		assert.NoError(t, console.SendLine(`My Super Template`))
 
 		assert.NoError(t, console.ExpectString("Please enter a template internal ID."))

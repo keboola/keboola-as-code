@@ -6,6 +6,7 @@ import (
 )
 
 // nolint:gochecknoglobals
+//
 //go:embed msg/*
 var msgs embed.FS
 

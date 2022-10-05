@@ -7,9 +7,11 @@ import (
 	ddext "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 )
 
-const HTTPMethod = ddext.HTTPMethod
-const HTTPURL = ddext.HTTPURL
-const SampleRate = ddext.EventSampleRate
+const (
+	HTTPMethod = ddext.HTTPMethod
+	HTTPURL    = ddext.HTTPURL
+	SampleRate = ddext.EventSampleRate
+)
 
 // KeepSpan by tracer retention policy.
 func KeepSpan() attribute.KeyValue {

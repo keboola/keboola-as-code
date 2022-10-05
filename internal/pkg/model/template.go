@@ -54,7 +54,6 @@ type templateRef struct {
 	repository TemplateRepository
 	templateId string // for example "my-template"
 	version    string // for example "v1"
-
 }
 
 func NewTemplateRepositories() *TemplateRepositories {

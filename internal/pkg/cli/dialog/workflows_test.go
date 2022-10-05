@@ -38,7 +38,7 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 		assert.NoError(t, console.SendEnter()) // enter - yes
 
 		assert.NoError(t, console.ExpectString(`Generate "pull" workflow?`))
-		
+
 		assert.NoError(t, console.SendLine(`n`)) // no
 
 		assert.NoError(t, console.ExpectString(`Please select the main GitHub branch name:`))

@@ -157,12 +157,9 @@ func (v *local) LocalTemplate(ctx context.Context) (*template.Template, bool, er
 	return value.value, value.found, err
 }
 
-func (v *local) templateRepository(ctx context.Context, reference model.TemplateRepository, opts ...loadRepositoryOp.Option) (*repository.Repository, error) {
+func (v *local) templateRepository(ctx context.Context, reference model.TemplateRepository, _ ...loadRepositoryOp.Option) (*repository.Repository, error) {
 	// Handle CLI only features
-	reference, err := v.mapRepositoryRelPath(reference)
-	if err != nil {
-		return nil, err
-	}
+	reference = v.mapRepositoryRelPath(reference)
 
 	// Load repository
 	repo, err := loadRepositoryOp.Run(ctx, v, reference)
@@ -180,7 +177,7 @@ func (v *local) templateRepository(ctx context.Context, reference model.Template
 
 // mapRepositoryRelPath adds support for relative repository path.
 // This feature is only available in the CLI.
-func (v *local) mapRepositoryRelPath(reference model.TemplateRepository) (model.TemplateRepository, error) {
+func (v *local) mapRepositoryRelPath(reference model.TemplateRepository) model.TemplateRepository {
 	if reference.Type == model.RepositoryTypeDir {
 		// Convert relative path to absolute
 		if !filepath.IsAbs(reference.Url) && v.FsInfo().ProjectExists() { // nolint: forbidigo
@@ -188,7 +185,7 @@ func (v *local) mapRepositoryRelPath(reference model.TemplateRepository) (model.
 			reference.Url = filepath.Join(v.Fs().BasePath(), reference.Url) // nolint: forbidigo
 		}
 	}
-	return reference, nil
+	return reference
 }
 
 func (v *local) localTemplateRepositoryRef() (model.TemplateRepository, bool, error) {

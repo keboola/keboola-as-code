@@ -88,7 +88,7 @@ func TestTemplate_Tests(t *testing.T) {
 	for _, test := range tests {
 		testNames = append(testNames, test.Name())
 	}
-	
+
 	assert.Equal(t, []string{"one", "two"}, testNames)
 }
 

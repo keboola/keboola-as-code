@@ -162,7 +162,7 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 			// Process results
 			errs := utils.NewMultiError()
 			for key, branch := range branches {
-				if _, err := u.loadObject(branch); err != nil {
+				if err := u.loadObject(branch); err != nil {
 					errs.Append(err)
 					delete(branches, key)
 				}
@@ -179,12 +179,12 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 				} else {
 					config.Metadata = make(model.ConfigMetadata)
 				}
-				if _, err := u.loadObject(config.Config); err != nil {
+				if err := u.loadObject(config.Config); err != nil {
 					errs.Append(err)
 					continue
 				}
 				for _, row := range config.Rows {
-					if _, err := u.loadObject(row); err != nil {
+					if err := u.loadObject(row); err != nil {
 						errs.Append(err)
 					}
 				}
@@ -196,7 +196,7 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 	u.runGroupFor(-1).Add(req)
 }
 
-func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) {
+func (u *UnitOfWork) loadObject(object model.Object) error {
 	// Get object state
 	objectState, found := u.state.Get(object.Key())
 
@@ -205,13 +205,13 @@ func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) 
 		// Create manifest record
 		record, _, err := u.Manifest().CreateOrGetRecord(object.Key())
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		// Create object state
 		objectState, err = u.state.CreateFrom(record)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -222,11 +222,11 @@ func (u *UnitOfWork) loadObject(object model.Object) (model.ObjectState, error) 
 	// Invoke mapper
 	recipe := model.NewRemoteLoadRecipe(objectState.Manifest(), internalObject)
 	if err := u.mapper.MapAfterRemoteLoad(u.ctx, recipe); err != nil {
-		return nil, err
+		return err
 	}
 
 	u.changes.AddLoaded(objectState)
-	return objectState, nil
+	return nil
 }
 
 func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Object, changedFields model.ChangedFields) {

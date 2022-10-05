@@ -81,7 +81,6 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 				Content:   orderedmap.New(),
 				Tasks: []*model.Task{
 					{
-
 						TaskKey:     model.TaskKey{PhaseKey: phase2Key, Index: 0},
 						Name:        `Task 2`,
 						Enabled:     true,
