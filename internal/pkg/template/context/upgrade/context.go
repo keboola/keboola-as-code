@@ -1,3 +1,4 @@
+// Package upgrade represents the process of replacing values when upgrading a template instance.
 package upgrade
 
 import (
@@ -13,7 +14,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/use"
 )
 
-// Context is similar to Context.
+// Context represents the process of the replacing values when upgrading a template instance.
+// It is similar and extends the use.Context.
 // Differences:
 //   - If there is already a config / row that was generated from the template, its ID will be reused.
 type Context struct {

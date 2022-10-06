@@ -1,3 +1,4 @@
+// Package use represents the process of replacing of values when applying a template.
 package use
 
 import (
@@ -21,7 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-// Context represents the process of replacing values when applying a template to a remote project.
+// Context represents the process of the replacing values when applying a template.
 //
 // Process description:
 //  1. There is some template.
@@ -114,7 +115,7 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 	// Replace BranchId, in template all objects have BranchId = 0
 	c.replacements.AddKey(model.BranchKey{Id: 0}, targetBranch)
 
-	// Register JsonNet functions: ConfigId, ConfigRowId, Input
+	// Register JsonNet functions
 	c.registerJsonNetFunctions()
 
 	// Let's see where the inputs were used

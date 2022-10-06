@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/mountfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -19,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/context/load"
 	templateInput "github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
@@ -63,8 +65,8 @@ func NewInputs() *Inputs {
 	return templateInput.NewInputs()
 }
 
-func LoadInputs(fs filesystem.Fs) (StepsGroups, error) {
-	return templateInput.Load(fs)
+func LoadInputs(fs filesystem.Fs, ctx *jsonnet.Context) (StepsGroups, error) {
+	return templateInput.Load(fs, ctx)
 }
 
 func LoadLongDesc(fs filesystem.Fs) (string, error) {
@@ -139,7 +141,7 @@ type CreatedTest struct {
 	*Test
 }
 
-func New(reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, templateDir, commonDir filesystem.Fs) (*Template, error) {
+func New(ctx context.Context, reference model.TemplateRef, template repository.TemplateRecord, version repository.VersionRecord, templateDir, commonDir filesystem.Fs, components *model.ComponentsMap) (*Template, error) {
 	// Mount <common> directory to:
 	//   template dir FS - used to load manifest, inputs, readme
 	//   src dir FS - objects root
@@ -160,6 +162,9 @@ func New(reference model.TemplateRef, template repository.TemplateRecord, versio
 	// Create struct
 	out := &Template{_reference: reference, template: template, version: version, fs: templateDir, srcDir: srcDir}
 
+	// Create load context
+	loadCtx := load.NewContext(ctx, srcDir, components)
+
 	// Load manifest
 	out.manifestFile, err = LoadManifest(templateDir)
 	if err != nil {
@@ -167,7 +172,7 @@ func New(reference model.TemplateRef, template repository.TemplateRecord, versio
 	}
 
 	// Load inputs
-	out.inputs, err = LoadInputs(templateDir)
+	out.inputs, err = LoadInputs(templateDir, loadCtx.JsonNetContext())
 	if err != nil {
 		return nil, err
 	}

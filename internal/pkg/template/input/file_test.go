@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
@@ -19,7 +20,7 @@ func TestLoadInputsFile(t *testing.T) {
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, inputsJsonNet)))
 
 	// Load
-	inputs, err := Load(fs)
+	inputs, err := Load(fs, jsonnet.NewContext())
 	assert.NoError(t, err)
 	assert.Equal(t, testInputs(), inputs)
 }

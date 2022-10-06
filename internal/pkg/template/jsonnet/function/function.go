@@ -14,7 +14,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 )
 
 const (
@@ -59,7 +59,7 @@ func ConfigRowId(idMapper func(id interface{}) string) *jsonnet.NativeFunction {
 }
 
 // Input Jsonnet function returns input value.
-func Input(inputValueProvider func(inputId string) (template.InputValue, bool)) *jsonnet.NativeFunction {
+func Input(inputValueProvider func(inputId string) (input.Value, bool)) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   `Input`,
 		Params: ast.Identifiers{"id"},
@@ -83,7 +83,7 @@ func Input(inputValueProvider func(inputId string) (template.InputValue, bool)) 
 }
 
 // InputIsAvailable Jsonnet function returns true if the input exists.
-func InputIsAvailable(inputValueProvider func(inputId string) (template.InputValue, bool)) *jsonnet.NativeFunction {
+func InputIsAvailable(inputValueProvider func(inputId string) (input.Value, bool)) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   `InputIsAvailable`,
 		Params: ast.Identifiers{"id"},
