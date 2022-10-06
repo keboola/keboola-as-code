@@ -1,3 +1,4 @@
+// Package create represents the process of replacing values when creating a template from a remote project.
 package create
 
 import (

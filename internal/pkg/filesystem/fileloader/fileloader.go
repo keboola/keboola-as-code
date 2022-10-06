@@ -42,8 +42,10 @@ func NewWithHandler(fs filesystem.Fs, handler loadHandlerWithNext) filesystem.Fi
 	return &loader{fs: fs, handler: handler, jsonNetContext: jsonnet.NewContext().WithImporter(fsimporter.New(fs))}
 }
 
-func (l *loader) SetJsonNetContext(ctx *jsonnet.Context) {
-	l.jsonNetContext = ctx
+func (l *loader) WithJsonNetContext(ctx *jsonnet.Context) filesystem.FileLoader {
+	clone := *l
+	clone.jsonNetContext = ctx
+	return &clone
 }
 
 // ReadRawFile - file content is loaded as a string.

@@ -1,6 +1,7 @@
 package dialog_test
 
 import (
+	"context"
 	"sync"
 	"testing"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	createOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test/create"
 )
 
@@ -49,7 +51,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 		Versions:    []repository.VersionRecord{versionRec},
 	}
 
-	tmpl, err := template.New(tmplRef, tmplRec, versionRec, fs, fs)
+	tmpl, err := template.New(context.Background(), tmplRef, tmplRec, versionRec, fs, fs, testapi.MockedComponentsMap())
 	assert.NoError(t, err)
 
 	// Interaction

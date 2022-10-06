@@ -10,11 +10,12 @@ import (
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
-func Load(fs filesystem.Fs) (StepsGroups, error) {
-	f, err := loadFile(fs)
+func Load(fs filesystem.Fs, ctx *jsonnet.Context) (StepsGroups, error) {
+	f, err := loadFile(fs, ctx)
 	if err != nil {
 		return nil, err
 	}

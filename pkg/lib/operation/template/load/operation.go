@@ -14,6 +14,7 @@ import (
 
 type dependencies interface {
 	Tracer() trace.Tracer
+	Components() *model.ComponentsMap
 }
 
 func Run(ctx context.Context, d dependencies, repository *repository.Repository, reference model.TemplateRef) (tmpl *template.Template, err error) {
@@ -48,5 +49,5 @@ func Run(ctx context.Context, d dependencies, repository *repository.Repository,
 	reference = model.NewTemplateRef(reference.Repository(), reference.TemplateId(), versionRecord.Version.String())
 
 	// Load template
-	return template.New(reference, templateRecord, versionRecord, templateDir, repository.CommonDir())
+	return template.New(ctx, reference, templateRecord, versionRecord, templateDir, repository.CommonDir(), d.Components())
 }

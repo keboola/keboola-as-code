@@ -52,6 +52,7 @@ type Manager struct {
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
+	Components() *model.ComponentsMap
 	ServerWaitGroup() *sync.WaitGroup
 }
 

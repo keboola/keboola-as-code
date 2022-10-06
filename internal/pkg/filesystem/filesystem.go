@@ -68,7 +68,7 @@ type Fs interface {
 type LoadHandler func(def *FileDef, fileType FileType) (File, error)
 
 type FileLoader interface {
-	SetJsonNetContext(ctx *jsonnet.Context)
+	WithJsonNetContext(ctx *jsonnet.Context) FileLoader
 	ReadRawFile(file *FileDef) (*RawFile, error)
 	ReadFileContentTo(file *FileDef, target interface{}, structTag string) (*RawFile, bool, error)
 	ReadJsonFile(file *FileDef) (*JsonFile, error)
