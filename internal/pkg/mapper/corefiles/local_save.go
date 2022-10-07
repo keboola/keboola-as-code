@@ -6,7 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 )
 
 const (
@@ -23,7 +23,7 @@ func (m *coreFilesMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.
 
 // createMetaFile meta.json.
 func (m *coreFilesMapper) createMetaFile(recipe *model.LocalSaveRecipe) {
-	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, recipe.Object); metadata != nil {
+	if metadata := reflecthelper.MapFromTaggedFields(model.MetaFileFieldsTag, recipe.Object); metadata != nil {
 		path := m.state.NamingGenerator().MetaFilePath(recipe.Path())
 		jsonFile := filesystem.NewJsonFile(path, metadata)
 
@@ -43,7 +43,7 @@ func (m *coreFilesMapper) createMetaFile(recipe *model.LocalSaveRecipe) {
 
 // createConfigFile config.json.
 func (m *coreFilesMapper) createConfigFile(recipe *model.LocalSaveRecipe) {
-	if configuration := utils.MapFromOneTaggedField(model.ConfigFileFieldTag, recipe.Object); configuration != nil {
+	if configuration := reflecthelper.MapFromOneTaggedField(model.ConfigFileFieldTag, recipe.Object); configuration != nil {
 		path := m.state.NamingGenerator().ConfigFilePath(recipe.Path())
 		jsonFile := filesystem.NewJsonFile(path, configuration)
 		recipe.Files.
@@ -55,7 +55,7 @@ func (m *coreFilesMapper) createConfigFile(recipe *model.LocalSaveRecipe) {
 
 // createDescriptionFile description.md.
 func (m *coreFilesMapper) createDescriptionFile(recipe *model.LocalSaveRecipe) {
-	if description, found := utils.StringFromOneTaggedField(model.DescriptionFileFieldTag, recipe.Object); found {
+	if description, found := reflecthelper.StringFromOneTaggedField(model.DescriptionFileFieldTag, recipe.Object); found {
 		path := m.state.NamingGenerator().DescriptionFilePath(recipe.Path())
 		markdownFile := filesystem.NewRawFile(path, strings.TrimRight(description, " \r\n\t")+"\n")
 		recipe.Files.

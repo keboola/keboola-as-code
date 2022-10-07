@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 )
 
 // NewSnapshot - to validate final project state in tests.
@@ -150,11 +150,11 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	}
 
 	// Sort by name
-	utils.SortByName(snapshot.Branches)
+	reflecthelper.SortByName(snapshot.Branches)
 	for _, b := range snapshot.Branches {
-		utils.SortByName(b.Configs)
+		reflecthelper.SortByName(b.Configs)
 		for _, c := range b.Configs {
-			utils.SortByName(c.Rows)
+			reflecthelper.SortByName(c.Rows)
 		}
 	}
 

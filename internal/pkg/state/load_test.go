@@ -19,7 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	. "github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
@@ -93,7 +93,7 @@ func TestLoadState(t *testing.T) {
 				},
 			},
 		},
-	}, utils.SortByName(state.Branches()))
+	}, reflecthelper.SortByName(state.Branches()))
 	assert.Equal(t, []*model.ConfigState{
 		{
 			Remote: &model.Config{
@@ -152,7 +152,7 @@ func TestLoadState(t *testing.T) {
 			},
 		},
 	}, state.Configs())
-	assert.Empty(t, utils.SortByName(state.ConfigRows()))
+	assert.Empty(t, reflecthelper.SortByName(state.ConfigRows()))
 }
 
 func loadTestManifest(t *testing.T, envs *env.Map, localState string) (*projectManifest.Manifest, filesystem.Fs) {

@@ -1,8 +1,9 @@
-package utils
+package reflecthelper
 
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -108,4 +109,31 @@ func SetFields(fields []*StructField, data *orderedmap.OrderedMap, target interf
 func SetField(field *StructField, value, target interface{}) {
 	reflection := reflect.ValueOf(target).Elem()
 	reflection.FieldByName(field.Name).Set(reflect.ValueOf(value))
+}
+
+type objectWithName interface {
+	ObjectName() string
+	String() string
+}
+
+// SortByName - in tests are IDs and sort random -> so we must sort by name.
+func SortByName(slice interface{}) interface{} {
+	// Check slice
+	t := reflect.TypeOf(slice)
+	if t.Kind() != reflect.Slice {
+		panic(fmt.Errorf("expected slice, given \"%T\"", slice))
+	}
+
+	// Sort by Name, and by String key if names are same
+	value := reflect.ValueOf(slice)
+	sort.SliceStable(slice, func(i, j int) bool {
+		objI := value.Index(i).Interface().(objectWithName)
+		objJ := value.Index(j).Interface().(objectWithName)
+		// value = {name}_{string key}
+		valueI := objI.ObjectName() + `_` + objI.String()
+		valueJ := objJ.ObjectName() + `_` + objJ.String()
+		return valueI < valueJ
+	})
+
+	return slice
 }
