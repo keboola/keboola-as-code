@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"github.com/jpillora/longestcommon"
+	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
 	stripmd "github.com/writeas/go-strip-markdown"
 	"golang.org/x/text/runes"
@@ -140,4 +141,11 @@ func MustUrlPathUnescape(in string) string {
 		return in
 	}
 	return out
+}
+
+func ReplacePlaceholders(path string, placeholders map[string]interface{}) string {
+	for key, value := range placeholders {
+		path = strings.ReplaceAll(path, "{"+key+"}", cast.ToString(value))
+	}
+	return path
 }
