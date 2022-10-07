@@ -8,7 +8,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -55,7 +54,7 @@ func (g Generator) BranchPath(branch *Branch) AbsPath {
 	if branch.IsDefault {
 		p.RelativePath = `main`
 	} else {
-		p.SetRelativePath(utils.ReplacePlaceholders(string(g.template.Branch), map[string]interface{}{
+		p.SetRelativePath(strhelper.ReplacePlaceholders(string(g.template.Branch), map[string]interface{}{
 			"branch_id":   branch.Id,
 			"branch_name": strhelper.NormalizeName(branch.Name),
 		}))
@@ -106,7 +105,7 @@ func (g Generator) ConfigPath(parentPath string, component *storageapi.Component
 
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.SetRelativePath(utils.ReplacePlaceholders(template, map[string]interface{}{
+	p.SetRelativePath(strhelper.ReplacePlaceholders(template, map[string]interface{}{
 		"target_component_id": targetComponentId, // for shared code
 		"component_type":      component.Type,
 		"component_id":        component.ID,
@@ -140,7 +139,7 @@ func (g Generator) ConfigRowPath(parentPath string, component *storageapi.Compon
 	case component.IsVariables():
 		template = string(g.template.VariablesValuesRow)
 		if row.Relations.Has(VariablesValuesForRelType) {
-			template = utils.ReplacePlaceholders(string(g.template.VariablesValuesRow), map[string]interface{}{
+			template = strhelper.ReplacePlaceholders(string(g.template.VariablesValuesRow), map[string]interface{}{
 				"config_row_name": `default`,
 			})
 		}
@@ -163,7 +162,7 @@ func (g Generator) ConfigRowPath(parentPath string, component *storageapi.Compon
 
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.SetRelativePath(utils.ReplacePlaceholders(template, map[string]interface{}{
+	p.SetRelativePath(strhelper.ReplacePlaceholders(template, map[string]interface{}{
 		"config_row_id":   jsonnet.StripIdPlaceholder(row.Id.String()),
 		"config_row_name": strhelper.NormalizeName(name),
 	}))
@@ -177,7 +176,7 @@ func (g Generator) BlocksDir(configDir string) string {
 func (g Generator) BlockPath(parentPath string, block *Block) AbsPath {
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.SetRelativePath(utils.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
+	p.SetRelativePath(strhelper.ReplacePlaceholders(string(blockNameTemplate), map[string]interface{}{
 		"block_order": fmt.Sprintf(`%03d`, block.Index+1),
 		"block_name":  strhelper.NormalizeName(block.Name),
 	}))
@@ -187,7 +186,7 @@ func (g Generator) BlockPath(parentPath string, block *Block) AbsPath {
 func (g Generator) CodePath(parentPath string, code *Code) AbsPath {
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.SetRelativePath(utils.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
+	p.SetRelativePath(strhelper.ReplacePlaceholders(string(codeNameTemplate), map[string]interface{}{
 		"code_order": fmt.Sprintf(`%03d`, code.Index+1),
 		"code_name":  strhelper.NormalizeName(code.Name),
 	}))
@@ -213,7 +212,7 @@ func (g Generator) PhasesDir(configDir string) string {
 func (g Generator) PhasePath(parentPath string, phase *Phase) AbsPath {
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.SetRelativePath(utils.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
+	p.SetRelativePath(strhelper.ReplacePlaceholders(string(phaseNameTemplate), map[string]interface{}{
 		"phase_order": fmt.Sprintf(`%03d`, phase.Index+1),
 		"phase_name":  strhelper.NormalizeName(phase.Name),
 	}))
@@ -227,7 +226,7 @@ func (g Generator) PhaseFilePath(phase *Phase) string {
 func (g Generator) TaskPath(parentPath string, task *Task) AbsPath {
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
-	p.SetRelativePath(utils.ReplacePlaceholders(string(taskNameTemplate), map[string]interface{}{
+	p.SetRelativePath(strhelper.ReplacePlaceholders(string(taskNameTemplate), map[string]interface{}{
 		"task_order": fmt.Sprintf(`%03d`, task.Index+1),
 		"task_name":  strhelper.NormalizeName(task.Name),
 	}))

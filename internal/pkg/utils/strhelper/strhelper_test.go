@@ -175,3 +175,11 @@ func TestStripMarkdown(t *testing.T) {
 	assert.Equal(t, "heading", StripMarkdown("### heading"))
 	assert.Equal(t, "link", StripMarkdown("[link](https://google.com/?a=b&c=d#anchor)"))
 }
+
+func TestReplacePlaceholders(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t, "foo", ReplacePlaceholders("foo", map[string]any{}))
+	assert.Equal(t, "foo", ReplacePlaceholders("foo", map[string]any{"foo": "bar"}))
+	assert.Equal(t, "bar", ReplacePlaceholders("{foo}", map[string]any{"foo": "bar"}))
+	assert.Equal(t, "AbarB", ReplacePlaceholders("A{foo}B", map[string]any{"foo": "bar"}))
+}
