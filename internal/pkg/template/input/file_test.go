@@ -7,13 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 func TestLoadInputsFile(t *testing.T) {
 	t.Parallel()
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 
 	// Write file
 	path := Path()
@@ -27,7 +27,7 @@ func TestLoadInputsFile(t *testing.T) {
 
 func TestSaveInputsFile(t *testing.T) {
 	t.Parallel()
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 
 	// Save
 	assert.NoError(t, testInputs().Save(fs))

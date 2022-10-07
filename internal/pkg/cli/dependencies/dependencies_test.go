@@ -15,17 +15,17 @@ import (
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	t.Parallel()
 
 	// Create manifest
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 	manifestContent := `{"version": 2, "project": {"id": 789, "apiHost": "mocked.transport.http"}}`
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(projectManifest.Path(), manifestContent)))
 

@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 type test struct {
@@ -52,7 +52,7 @@ func TestNewManifest(t *testing.T) {
 
 func TestManifestLoadNotFound(t *testing.T) {
 	t.Parallel()
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 
 	// Load
 	manifest, err := Load(fs, false)
@@ -64,7 +64,7 @@ func TestManifestLoadNotFound(t *testing.T) {
 func TestLoadManifestFile(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
-		fs := testfs.NewMemoryFs()
+		fs := aferofs.NewMemoryFs()
 
 		// Write file
 		path := Path()
@@ -86,7 +86,7 @@ func TestLoadManifestFile(t *testing.T) {
 func TestSaveManifestFile(t *testing.T) {
 	t.Parallel()
 	for _, c := range cases() {
-		fs := testfs.NewMemoryFs()
+		fs := aferofs.NewMemoryFs()
 
 		// Save
 		manifest := New(12345, "foo.bar")
@@ -171,7 +171,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 
 func TestManifestCyclicDependency(t *testing.T) {
 	t.Parallel()
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 
 	// Write file
 	path := filesystem.Join(filesystem.MetadataDir, FileName)

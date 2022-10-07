@@ -15,10 +15,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -916,7 +916,7 @@ func (tc *testCase) run(t *testing.T) {
 	inputDir := filesystem.Join(testDir, `..`, `..`, `fixtures`, `local`, tc.inputDir)
 
 	// Create Fs
-	fs := testfs.NewMemoryFsFrom(inputDir)
+	fs := aferofs.NewMemoryFsFrom(inputDir)
 	envs := env.Empty()
 	envs.Set(`LOCAL_PROJECT_ID`, `12345`)
 	testhelper.MustReplaceEnvsDir(fs, `/`, envs)

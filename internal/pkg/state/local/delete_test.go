@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 func TestLocalDeleteModel(t *testing.T) {
@@ -54,7 +54,7 @@ func TestLocalDeleteModel(t *testing.T) {
 
 func TestDeleteEmptyDirectories(t *testing.T) {
 	t.Parallel()
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 
 	// Structure:
 	// D .hidden

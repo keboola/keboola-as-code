@@ -12,7 +12,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
@@ -137,7 +137,7 @@ func MinimalProjectFs(t *testing.T) filesystem.Fs {
 
 	// Create Fs
 	inputDir := filesystem.Join(testDir, "local", "minimal")
-	fs := testfs.NewMemoryFsFrom(inputDir)
+	fs := aferofs.NewMemoryFsFrom(inputDir)
 
 	// Replace ENVs
 	envs := env.Empty()

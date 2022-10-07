@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/keboola/go-client/pkg/storageapi"
-	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
@@ -23,8 +23,7 @@ func newTestLocalManager(t *testing.T, components []*storageapi.Component) *Mana
 
 	logger := log.NewDebugLogger()
 	validator := validatorPkg.New()
-	fs, err := aferofs.NewMemoryFs(logger, "")
-	assert.NoError(t, err)
+	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 	fileLoader := fs.FileLoader()
 	manifest := fixtures.NewManifest()
 

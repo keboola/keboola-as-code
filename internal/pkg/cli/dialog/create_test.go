@@ -9,9 +9,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
@@ -55,7 +55,7 @@ func TestAskCreateConfig(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 	d := dependencies.NewMockedDeps()
 
 	// Create manifest file
@@ -127,7 +127,7 @@ func TestAskCreateRow(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 	d := dependencies.NewMockedDeps()
 
 	// Create manifest file

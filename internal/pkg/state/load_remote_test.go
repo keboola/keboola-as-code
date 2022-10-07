@@ -11,12 +11,12 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	. "github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
@@ -447,7 +447,7 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 
 	d := dependencies.NewMockedDeps()
 	d.SetFromTestProject(testProject)
-	state, err := New(context.Background(), project.NewWithManifest(context.Background(), testfs.NewMemoryFs(), m), d)
+	state, err := New(context.Background(), project.NewWithManifest(context.Background(), aferofs.NewMemoryFs(), m), d)
 	assert.NoError(t, err)
 	filter := m.Filter()
 	_, localErr, remoteErr := state.Load(context.Background(), LoadOptions{RemoteFilter: filter, LoadRemoteState: true})

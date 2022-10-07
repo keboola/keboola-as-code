@@ -13,14 +13,14 @@ import (
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 func TestCliSubCommands(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testfs.NewMemoryFs())
+	root, _ := newTestRootCommand(aferofs.NewMemoryFs())
 
 	// Map commands to names, skip hidden
 	var names []string
@@ -44,7 +44,7 @@ func TestCliSubCommands(t *testing.T) {
 
 func TestCliSubCommandsAndAliases(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testfs.NewMemoryFs())
+	root, _ := newTestRootCommand(aferofs.NewMemoryFs())
 
 	// Map commands to names
 	var names []string
@@ -86,7 +86,7 @@ func TestCliSubCommandsAndAliases(t *testing.T) {
 
 func TestCliCmdPersistentFlags(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testfs.NewMemoryFs())
+	root, _ := newTestRootCommand(aferofs.NewMemoryFs())
 
 	// Map flags to names
 	var names []string
@@ -108,7 +108,7 @@ func TestCliCmdPersistentFlags(t *testing.T) {
 
 func TestCliCmdFlags(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testfs.NewMemoryFs())
+	root, _ := newTestRootCommand(aferofs.NewMemoryFs())
 
 	// Map flags to names
 	var names []string
@@ -125,7 +125,7 @@ func TestCliCmdFlags(t *testing.T) {
 
 func TestExecute(t *testing.T) {
 	t.Parallel()
-	root, out := newTestRootCommand(testfs.NewMemoryFs())
+	root, out := newTestRootCommand(aferofs.NewMemoryFs())
 
 	// Execute
 	root.logger = log.NewNopLogger()
@@ -135,7 +135,7 @@ func TestExecute(t *testing.T) {
 
 func TestTearDown_RemoveLogFile(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testfs.NewMemoryFs())
+	root, _ := newTestRootCommand(aferofs.NewMemoryFs())
 
 	root.options.LogFilePath = ""
 	root.setupLogger()
@@ -148,7 +148,7 @@ func TestTearDown_RemoveLogFile(t *testing.T) {
 
 func TestTearDown_KeepLogFile(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testfs.NewMemoryFs())
+	root, _ := newTestRootCommand(aferofs.NewMemoryFs())
 	tempDir := t.TempDir()
 
 	root.options.LogFilePath = filepath.Join(tempDir, "log-file.txt") // nolint: forbidigo
@@ -164,7 +164,7 @@ func TestTearDown_KeepLogFile(t *testing.T) {
 func TestTearDown_Panic(t *testing.T) {
 	t.Parallel()
 	logger := log.NewDebugLogger()
-	root, _ := newTestRootCommand(testfs.NewMemoryFs())
+	root, _ := newTestRootCommand(aferofs.NewMemoryFs())
 	root.logger = logger
 	exitCode := root.tearDown(0, fmt.Errorf("panic error"))
 	assert.Equal(t, 1, exitCode)
@@ -187,7 +187,7 @@ Thank you kindly!
 
 func TestGetLogFileTempFile(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testfs.NewMemoryFs())
+	root, _ := newTestRootCommand(aferofs.NewMemoryFs())
 	root.options.LogFilePath = ""
 	root.setupLogger()
 	assert.True(t, root.logFile.IsTemp())
@@ -202,7 +202,7 @@ func TestGetLogFileTempFile(t *testing.T) {
 
 func TestGetLogFileFromFlags(t *testing.T) {
 	t.Parallel()
-	root, _ := newTestRootCommand(testfs.NewMemoryFs())
+	root, _ := newTestRootCommand(aferofs.NewMemoryFs())
 
 	// Note: log file can be outside project directory, so it is NOT using virtual filesystem
 	tempDir := t.TempDir()
@@ -216,7 +216,7 @@ func TestGetLogFileFromFlags(t *testing.T) {
 func newTestRootCommand(fs filesystem.Fs) (*RootCommand, *ioutil.Writer) {
 	in := ioutil.NewBufferedReader()
 	out := ioutil.NewBufferedWriter()
-	fsFactory := func(logger log.Logger, workingDir string) (filesystem.Fs, error) {
+	fsFactory := func(opts ...filesystem.Option) (filesystem.Fs, error) {
 		return fs, nil
 	}
 

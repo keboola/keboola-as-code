@@ -20,7 +20,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenv"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
@@ -28,7 +27,7 @@ import (
 
 const TestEnvFile = "env"
 
-// TestCliE2E runs one functional test per each sub-directory.
+// TestCliE2E runs one functional test per each subdirectory.
 func TestCliE2E(t *testing.T) {
 	t.Parallel()
 
@@ -69,8 +68,10 @@ func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 	assert.NoError(t, os.Chdir(workingDir))
 
 	// Virtual fs for test and working dir
-	testDirFs := testfs.NewBasePathLocalFs(testDir)
-	workingDirFs := testfs.NewBasePathLocalFs(workingDir)
+	testDirFs, err := aferofs.NewLocalFs(testDir)
+	assert.NoError(t, err)
+	workingDirFs, err := aferofs.NewLocalFs(workingDir)
+	assert.NoError(t, err)
 
 	// Copy all from "in" dir to "runtime" dir
 	inDir := `in`
@@ -263,7 +264,7 @@ func AssertExpectations(
 	}
 
 	// Copy expected state and replace ENVs
-	expectedDirFs := testfs.NewMemoryFsFrom(filesystem.Join(testDirFs.BasePath(), expectedDir))
+	expectedDirFs := aferofs.NewMemoryFsFrom(filesystem.Join(testDirFs.BasePath(), expectedDir))
 	testhelper.MustReplaceEnvsDir(expectedDirFs, `/`, envProvider)
 
 	// Compare actual and expected dirs

@@ -146,7 +146,7 @@ func New(ctx context.Context, reference model.TemplateRef, template repository.T
 	//   template dir FS - used to load manifest, inputs, readme
 	//   src dir FS - objects root
 	mountPoint := mountfs.NewMountPoint(repository.CommonDirectoryMountPoint, commonDir)
-	templateDir, err := aferofs.NewMountFs(templateDir, mountPoint)
+	templateDir, err := aferofs.NewMountFs(templateDir, []mountfs.MountPoint{mountPoint})
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func New(ctx context.Context, reference model.TemplateRef, template repository.T
 	if err != nil {
 		return nil, err
 	}
-	srcDir, err = aferofs.NewMountFs(srcDir, mountPoint)
+	srcDir, err = aferofs.NewMountFs(srcDir, []mountfs.MountPoint{mountPoint})
 	if err != nil {
 		return nil, err
 	}
@@ -431,10 +431,7 @@ func (t *Test) ExpectedOutDir() (filesystem.Fs, error) {
 	}
 
 	// Copy FS, so original dir is immutable
-	copyFs, err := aferofs.NewMemoryFs(log.NewNopLogger(), "")
-	if err != nil {
-		return nil, err
-	}
+	copyFs := aferofs.NewMemoryFs()
 	if err := aferofs.CopyFs2Fs(originalFs, "", copyFs, ""); err != nil {
 		return nil, err
 	}

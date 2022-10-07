@@ -21,34 +21,37 @@ import (
 //  1. ".keboola" directory, this indicates a local project or templates repository.
 //  2. "dbt_project.yml" file, this indicates a dbt project.
 //  3. If nothing can be found, returns the current working directory.
-func New(logger log.Logger, workingDir string) (fs filesystem.Fs, err error) {
-	if workingDir == "" {
-		workingDir, err = os.Getwd()
+func New(opts ...filesystem.Option) (fs filesystem.Fs, err error) {
+	config := filesystem.ProcessOptions(opts)
+
+	if config.WorkingDir == "" {
+		config.WorkingDir, err = os.Getwd()
 		if err != nil {
 			return nil, fmt.Errorf(`cannot get working dir from OS: %w`, err)
 		}
 	}
 
 	// Convert working directory path to absolute
-	workingDir, err = filepath.Abs(workingDir)
+	config.WorkingDir, err = filepath.Abs(config.WorkingDir)
 	if err != nil {
 		return nil, err
 	}
 
 	// Find root directory
-	rootDir, err := find(logger, workingDir)
+	rootDir, err := find(config.Logger, config.WorkingDir)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get relative path to the working directory
-	workingDirRel, err := filepath.Rel(rootDir, workingDir)
+	workingDirRel, err := filepath.Rel(rootDir, config.WorkingDir)
 	if err != nil {
 		return nil, fmt.Errorf(`cannot determine working dir relative path: %w`, err)
 	}
 
 	// Create filesystem abstraction
-	return aferofs.NewLocalFs(logger, rootDir, workingDirRel)
+	opts = append(opts, filesystem.WithWorkingDir(workingDirRel))
+	return aferofs.NewLocalFs(rootDir, opts...)
 }
 
 // Find searches for a directory known for the CLI. See New function.

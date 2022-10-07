@@ -10,7 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	. "github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 func TestKnownPathsEmpty(t *testing.T) {
@@ -339,7 +338,7 @@ func loadKnownPaths(t *testing.T, fixture string, options ...Option) (*Paths, er
 	_, testFile, _, _ := runtime.Caller(0)
 	testDir := filesystem.Dir(testFile)
 	projectDir := filesystem.Join(testDir, "..", "..", "fixtures", "local", fixture)
-	fs, err := aferofs.NewLocalFs(log.NewNopLogger(), projectDir, ".")
+	fs, err := aferofs.NewLocalFs(projectDir)
 	assert.NoError(t, err)
 	return New(fs, options...)
 }

@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/nhatthm/aferocopy"
 	"github.com/spf13/afero"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -28,11 +27,9 @@ type Fs struct {
 	workingDir string
 }
 
-func New(logger log.Logger, fs abstract.Backend, workingDir string) filesystem.Fs {
-	if logger == nil {
-		logger = log.NewNopLogger()
-	}
-	return &Fs{fs: fs, logger: logger, workingDir: fs.ToSlash(workingDir)}
+func New(fs abstract.Backend, opts ...filesystem.Option) filesystem.Fs {
+	config := filesystem.ProcessOptions(opts)
+	return &Fs{fs: fs, logger: config.Logger, workingDir: fs.ToSlash(config.WorkingDir)}
 }
 
 // ApiName - name of the file system implementation, for example local, memory, ...
@@ -61,7 +58,7 @@ func (f *Fs) SubDirFs(path string) (filesystem.Fs, error) {
 		return nil, fmt.Errorf(`cannot get sub directory "%s": %w`, path, err)
 	}
 
-	return New(f.logger, subDirFs.(abstract.Backend), f.fs.FromSlash(workingDir)), nil
+	return New(subDirFs.(abstract.Backend), filesystem.WithLogger(f.logger), filesystem.WithWorkingDir(f.fs.FromSlash(workingDir))), nil
 }
 
 // WorkingDir - user current working directory.
@@ -186,17 +183,10 @@ func (f *Fs) Copy(src, dst string) error {
 		return fmt.Errorf(`cannot copy "%s" -> "%s": destination exists`, src, dst)
 	}
 
-	err := aferocopy.Copy(f.fs.FromSlash(src), f.fs.FromSlash(dst), aferocopy.Options{
-		SrcFs:  f.fs,
-		DestFs: f.fs,
-		Sync:   true,
-		OnDirExists: func(srcFs afero.Fs, src string, destFs afero.Fs, dest string) aferocopy.DirExistsAction {
-			return aferocopy.Replace
-		},
-	})
-	if err != nil {
+	if err := CopyFs2Fs(f, src, f, dst); err != nil {
 		return fmt.Errorf(`cannot copy %s: %w`, strhelper.FormatPathChange(src, dst, true), err)
 	}
+
 	// Get common prefix of the old and new path
 	f.logger.Debugf(`Copied %s`, strhelper.FormatPathChange(src, dst, true))
 	return nil

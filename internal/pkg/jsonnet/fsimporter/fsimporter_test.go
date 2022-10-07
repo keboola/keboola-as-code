@@ -6,16 +6,16 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet/fsimporter"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 )
 
 func TestImporter(t *testing.T) {
 	t.Parallel()
 
 	// Create context
-	fs := testfs.NewMemoryFs()
+	fs := aferofs.NewMemoryFs()
 	ctx := jsonnet.NewContext().WithImporter(fsimporter.New(fs))
 
 	// File is missing

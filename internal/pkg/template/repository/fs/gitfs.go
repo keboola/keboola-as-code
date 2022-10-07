@@ -91,10 +91,7 @@ func gitFsFor(ctx context.Context, d dependencies, definition model.TemplateRepo
 	}
 
 	// Copy to memory FS, temp dir will be cleared
-	memoryFs, err = aferofs.NewMemoryFs(d.Logger(), "")
-	if err != nil {
-		return nil, err
-	}
+	memoryFs = aferofs.NewMemoryFs(filesystem.WithLogger(d.Logger()))
 	if err := aferofs.CopyFs2Fs(fs, "", memoryFs, ""); err != nil {
 		return nil, err
 	}

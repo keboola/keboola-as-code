@@ -24,15 +24,15 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenv"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-// TestApiE2E runs one functional test per each sub-directory.
+// TestApiE2E runs one functional test per each subdirectory.
 func TestApiE2E(t *testing.T) {
 	t.Parallel()
 
@@ -76,8 +76,10 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	assert.NoError(t, os.Chdir(workingDir))
 
 	// Virtual fs for test and working dir
-	testDirFs := testfs.NewBasePathLocalFs(testDir)
-	workingDirFs := testfs.NewBasePathLocalFs(workingDir)
+	testDirFs, err := aferofs.NewLocalFs(testDir)
+	assert.NoError(t, err)
+	workingDirFs, err := aferofs.NewLocalFs(workingDir)
+	assert.NoError(t, err)
 
 	// Get test project
 	project := testproject.GetTestProjectForTest(t, env.Empty())

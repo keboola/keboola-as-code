@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
@@ -20,7 +21,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
@@ -200,7 +200,7 @@ func (v *mocked) MockedProject(fs filesystem.Fs) *projectPkg.Project {
 }
 
 func (v *mocked) MockedState() *state.State {
-	s, err := state.New(context.Background(), NewObjectsContainer(testfs.NewMemoryFsWithLogger(v.debugLogger), fixtures.NewManifest()), v)
+	s, err := state.New(context.Background(), NewObjectsContainer(aferofs.NewMemoryFs(filesystem.WithLogger(v.debugLogger)), fixtures.NewManifest()), v)
 	if err != nil {
 		panic(err)
 	}

@@ -13,13 +13,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	. "github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
@@ -164,7 +164,7 @@ func loadTestManifest(t *testing.T, envs *env.Map, localState string) (*projectM
 	stateDir := filesystem.Join(testDir, "..", "fixtures", "local", localState)
 
 	// Create Fs
-	fs := testfs.NewMemoryFsFrom(stateDir)
+	fs := aferofs.NewMemoryFsFrom(stateDir)
 	testhelper.MustReplaceEnvsDir(fs, `/`, envs)
 
 	// Load manifest

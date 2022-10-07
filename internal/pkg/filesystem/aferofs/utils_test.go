@@ -6,16 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 func TestCopyFs2FsRootToRoot_LocalToMemory(t *testing.T) {
 	t.Parallel()
 	tempDir := t.TempDir()
-	localFs, err := NewLocalFs(log.NewNopLogger(), tempDir, "/")
+	localFs, err := NewLocalFs(tempDir)
 	assert.NoError(t, err)
-	memoryFs, err := NewMemoryFs(log.NewNopLogger(), "/")
-	assert.NoError(t, err)
+	memoryFs := NewMemoryFs()
 
 	// Create files
 	assert.NoError(t, localFs.WriteFile(filesystem.NewRawFile("foo.txt", "content1")))
@@ -36,10 +34,10 @@ func TestCopyFs2FsRootToRoot_LocalToMemory(t *testing.T) {
 func TestCopyFs2FsRootToRoot_LocalToLocal(t *testing.T) {
 	t.Parallel()
 	tempDir1 := t.TempDir()
-	localFs1, err := NewLocalFs(log.NewNopLogger(), tempDir1, "/")
+	localFs1, err := NewLocalFs(tempDir1)
 	assert.NoError(t, err)
 	tempDir2 := t.TempDir()
-	localFs2, err := NewLocalFs(log.NewNopLogger(), tempDir2, "/")
+	localFs2, err := NewLocalFs(tempDir2)
 	assert.NoError(t, err)
 
 	// Create files
@@ -61,7 +59,7 @@ func TestCopyFs2FsRootToRoot_LocalToLocal(t *testing.T) {
 func TestCopyFs2FsRootToRoot_BaseToBase(t *testing.T) {
 	t.Parallel()
 	tempDir1 := t.TempDir()
-	localFs1, err := NewLocalFs(log.NewNopLogger(), tempDir1, "/")
+	localFs1, err := NewLocalFs(tempDir1)
 	assert.NoError(t, err)
 	subDir1 := filesystem.Join("sub", "dir", "1")
 	assert.NoError(t, localFs1.Mkdir(subDir1))
@@ -69,7 +67,7 @@ func TestCopyFs2FsRootToRoot_BaseToBase(t *testing.T) {
 	assert.NoError(t, err)
 
 	tempDir2 := t.TempDir()
-	localFs2, err := NewLocalFs(log.NewNopLogger(), tempDir2, "/")
+	localFs2, err := NewLocalFs(tempDir2)
 	assert.NoError(t, err)
 	subDir2 := filesystem.Join("sub", "dir", "2")
 	assert.NoError(t, localFs2.Mkdir(subDir2))
@@ -94,10 +92,9 @@ func TestCopyFs2FsRootToRoot_BaseToBase(t *testing.T) {
 
 func TestCopyFs2FsRootToRoot_MemoryToLocal(t *testing.T) {
 	t.Parallel()
-	memoryFs, err := NewMemoryFs(log.NewNopLogger(), "")
-	assert.NoError(t, err)
+	memoryFs := NewMemoryFs()
 	tempDir := t.TempDir()
-	localFs, err := NewLocalFs(log.NewNopLogger(), tempDir, "")
+	localFs, err := NewLocalFs(tempDir)
 	assert.NoError(t, err)
 
 	// Create files
@@ -118,10 +115,8 @@ func TestCopyFs2FsRootToRoot_MemoryToLocal(t *testing.T) {
 
 func TestCopyFs2FsRootToRoot_MemoryToMemory(t *testing.T) {
 	t.Parallel()
-	memoryFs1, err := NewMemoryFs(log.NewNopLogger(), "")
-	assert.NoError(t, err)
-	memoryFs2, err := NewMemoryFs(log.NewNopLogger(), "")
-	assert.NoError(t, err)
+	memoryFs1 := NewMemoryFs()
+	memoryFs2 := NewMemoryFs()
 
 	// Create files
 	assert.NoError(t, memoryFs1.WriteFile(filesystem.NewRawFile("foo.txt", "content1")))
@@ -142,10 +137,9 @@ func TestCopyFs2FsRootToRoot_MemoryToMemory(t *testing.T) {
 func TestCopyFs2FsDirToDir(t *testing.T) {
 	t.Parallel()
 	tempDir := t.TempDir()
-	localFs, err := NewLocalFs(log.NewNopLogger(), tempDir, "/")
+	localFs, err := NewLocalFs(tempDir)
 	assert.NoError(t, err)
-	memoryFs, err := NewMemoryFs(log.NewNopLogger(), "/")
-	assert.NoError(t, err)
+	memoryFs := NewMemoryFs()
 
 	// Create files
 	assert.NoError(t, localFs.WriteFile(filesystem.NewRawFile(filesystem.Join("my-dir", "bar.txt"), "content")))

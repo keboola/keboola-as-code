@@ -10,8 +10,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -86,7 +86,7 @@ func testFs(t *testing.T, inputDir string) filesystem.Fs {
 	t.Helper()
 
 	// Create Fs
-	fs := testfs.NewMemoryFsFrom(inputDir)
+	fs := aferofs.NewMemoryFsFrom(inputDir)
 
 	// Replace ENVs
 	envs := env.Empty()

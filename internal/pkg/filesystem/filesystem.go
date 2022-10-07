@@ -27,7 +27,40 @@ var (
 	ErrNotExist = os.ErrNotExist
 )
 
-type Factory func(logger log.Logger, workingDir string) (fs Fs, err error)
+type Option func(c *Config)
+
+type Config struct {
+	Logger     log.Logger
+	WorkingDir string
+}
+
+func WithLogger(logger log.Logger) Option {
+	return func(c *Config) {
+		c.Logger = logger
+	}
+}
+
+func WithWorkingDir(workingDir string) Option {
+	return func(c *Config) {
+		c.WorkingDir = workingDir
+	}
+}
+
+func ProcessOptions(opts []Option) Config {
+	c := Config{}
+	for _, o := range opts {
+		o(&c)
+	}
+
+	// Set default logger
+	if c.Logger == nil {
+		c.Logger = log.NewNopLogger()
+	}
+
+	return c
+}
+
+type Factory func(opts ...Option) (fs Fs, err error)
 
 type FileInfo = fs.FileInfo
 
