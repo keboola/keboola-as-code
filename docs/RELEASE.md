@@ -94,10 +94,81 @@ in the repository).
 ## S3 Distribution
 
 - The S3 bucket is publicly available on url https://cli-dist.keboola.com
-- The bucket belongs to legacy multi-tenant account (147946154733)
+- The bucket is provisioned in dedicated AWS account using Terraform.
 
 ## API Release
 
 - `build-and-push-templates-api` step of the [GitHub Workflow](#workflow-steps) builds the API image and pushes it to a repository in AWS and Azure
 - push to Azure ACR triggers a release pipeline `TODO`
 - ![Release pipeline](./api-release-pipeline.jpg)
+
+---
+
+## Terraform Setup
+
+### OIDC authorization for GitHub Actions
+
+See the [documentation](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services) for the OIDC background between AWS and GitHub Actions.
+
+#### 1. Create a GitHub OIDC Provider
+
+- got to the [IAM console -> Identity providers](https://console.aws.amazon.com/iamv2/home?#/identity_providers)
+- click Add new provider
+- select OpenID Connect
+- fill provider url: `https://token.actions.githubusercontent.com` **(Don't forget to click Get Thumbprint)**
+- fill audience: `sts.amazonaws.com`
+- click add provider
+
+#### 2. Create AWS role for GitHub Actions to testing environment
+
+Fill ARN from the previous step in env `GITHUB_OIDC_PROVIDER_ARN`
+
+```shell
+export AWS_PROFILE="Test-Keboola-As-Code-Assets"
+export AWS_DEFAULT_REGION="eu-central-1"
+export GITHUB_ORGANIZATION="keboola"
+export GITHUB_REPOSITORY_NAME="keboola-as-code"
+export GITHUB_OIDC_PROVIDER_ARN=arn:aws:iam::813746015128:oidc-provider/token.actions.githubusercontent.com
+./provisioning/aws/scripts/create-github-testing-role.sh
+```
+
+The script will return the ARN **full admin access** role you will use in [aws-actions/configure-aws-credential](https://github.com/aws-actions/configure-aws-credentials) as a parameter `role-to-assume` to testing workflow.
+
+#### 3. Create AWS roles for GitHub Actions to production environment
+
+- fill ARN from the step one in env `GITHUB_OIDC_PROVIDER_ARN`
+- fill terraform backend prefix CF stack  in env `TERRAFORM_BACKEND_STACK_PREFIX`
+
+```shell
+export AWS_PROFILE="Prod-Keboola-As-Code-Assets"
+export AWS_DEFAULT_REGION="eu-central-1"
+export GITHUB_ORGANIZATION="keboola"
+export GITHUB_REPOSITORY_NAME="keboola-as-code"
+export GITHUB_OIDC_PROVIDER_ARN=
+export TERRAFORM_BACKEND_STACK_PREFIX=keboola-ci-kac-assets
+./provisioning/aws/scripts/create-github-production-role.sh
+```
+The script will return the ARN roles:
+
+- **full admin access** role that can be called in GitHub Actions only over the `main` branch
+- read only role for the whole account and attached policy which allows you to run terraform provisioning plan, you can use this role over any branch
+
+### Terraform backend init
+
+Testing:
+
+```shell
+export AWS_PROFILE="Test-Keboola-As-Code-Assets"
+export AWS_DEFAULT_REGION="eu-central-1"
+export TERRAFORM_BACKEND_STACK_PREFIX="keboola-ci-kac-assets-test"
+./provisioning/aws/scripts/create-backend.sh
+```
+
+Production:
+
+```shell
+export AWS_PROFILE="Prod-Keboola-As-Code-Assets"
+export AWS_DEFAULT_REGION="eu-central-1"
+export TERRAFORM_BACKEND_STACK_PREFIX="keboola-ci-kac-assets"
+./provisioning/aws/scripts/create-backend.sh
+```
