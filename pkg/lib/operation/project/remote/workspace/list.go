@@ -3,7 +3,6 @@ package workspace
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/otel/trace"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 )
 
 type listDeps interface {
@@ -34,58 +32,14 @@ func List(ctx context.Context, d listDeps) (err error) {
 	}
 
 	logger.Info("Loading workspaces, please wait.")
-
-	// Load configs and instances in parallel
-	var configs []*storageapi.Config
-	var instances map[string]*sandboxesapi.Sandbox
-	errors := utils.NewMultiError()
-	wg := &sync.WaitGroup{}
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		data, err := sandboxesapi.ListConfigRequest(branch.ID).Send(ctx, d.StorageApiClient())
-		if err != nil {
-			errors.Append(fmt.Errorf("cannot list workspace configs: %w", err))
-			return
-		}
-		configs = *data
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		data, err := sandboxesapi.ListRequest().Send(ctx, d.SandboxesApiClient())
-		if err != nil {
-			errors.Append(fmt.Errorf("cannot list workspaces: %w", err))
-			return
-		}
-		m := make(map[string]*sandboxesapi.Sandbox, 0)
-		for _, sandbox := range *data {
-			m[sandbox.ID.String()] = sandbox
-		}
-		instances = m
-	}()
-
-	wg.Wait()
-	if errors.Len() > 0 {
-		return errors
+	sandboxes, err := sandboxesapi.List(ctx, d.StorageApiClient(), d.SandboxesApiClient(), branch.ID)
+	if err != nil {
+		return err
 	}
 
 	logger.Info("Found workspaces:")
-	for _, config := range configs {
-		instanceId, err := sandboxesapi.GetSandboxID(config)
-		if err != nil {
-			logger.Debugf("  invalid workspace config (%s): %w", config.ID, err)
-			continue
-		}
-
-		instance := instances[instanceId.String()]
-		if !sandboxesapi.SupportsSizes(instance.Type) {
-			logger.Infof("  ID: %s, Type: %s, Name: %s", instance.ID, instance.Type, config.Name)
-		} else {
-			logger.Infof("  ID: %s, Type: %s, Size: %s, Name: %s", instance.ID, instance.Type, instance.Size, config.Name)
-		}
+	for _, sandbox := range sandboxes {
+		logger.Infof("  %s", sandbox.String())
 	}
 
 	return nil
