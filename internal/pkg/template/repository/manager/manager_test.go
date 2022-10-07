@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,6 +20,9 @@ import (
 
 func TestNew(t *testing.T) {
 	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("unstable on windows - random timeouts")
+	}
 
 	// Copy the git repository to temp
 	tmpDir := t.TempDir()
@@ -47,6 +51,9 @@ func TestNew(t *testing.T) {
 
 func TestRepository(t *testing.T) {
 	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("unstable on windows - random timeouts")
+	}
 
 	// Copy the git repository to temp
 	tmpDir := t.TempDir()
@@ -79,6 +86,9 @@ func TestRepository(t *testing.T) {
 
 func TestDefaultRepositories(t *testing.T) {
 	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("unstable on windows - random timeouts")
+	}
 
 	// Copy the git repository to temp
 	tmpDir := t.TempDir()
