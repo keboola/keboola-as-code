@@ -1,8 +1,9 @@
-package utils
+package reflecthelper
 
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -27,7 +28,8 @@ func MapFromTaggedFields(tag string, model interface{}) *orderedmap.OrderedMap {
 	}
 
 	target := orderedmap.New()
-	reflection := reflect.ValueOf(model).Elem()
+	reflection := unwrap(reflect.ValueOf(model))
+
 	for _, field := range fields {
 		target.Set(field.JsonName(), reflection.FieldByName(field.Name).Interface())
 	}
@@ -39,8 +41,7 @@ func MapFromOneTaggedField(tag string, model interface{}) *orderedmap.OrderedMap
 	if field == nil {
 		return nil
 	}
-
-	reflection := reflect.ValueOf(model).Elem()
+	reflection := unwrap(reflect.ValueOf(model))
 	m := reflection.FieldByName(field.Name).Interface().(*orderedmap.OrderedMap)
 	return m.Clone()
 }
@@ -54,7 +55,7 @@ func StringFromOneTaggedField(tag string, model interface{}) (str string, found 
 		return "", false
 	}
 
-	reflection := reflect.ValueOf(model).Elem()
+	reflection := unwrap(reflect.ValueOf(model))
 	return reflection.FieldByName(field.Name).Interface().(string), true
 }
 
@@ -96,7 +97,7 @@ func GetOneFieldWithTag(tag string, model interface{}) *StructField {
 }
 
 func SetFields(fields []*StructField, data *orderedmap.OrderedMap, target interface{}) {
-	reflection := reflect.ValueOf(target).Elem()
+	reflection := unwrap(reflect.ValueOf(target))
 	for _, field := range fields {
 		// Set value, some values are optional, model will be validated later
 		if value, ok := data.Get(field.JsonName()); ok {
@@ -108,4 +109,42 @@ func SetFields(fields []*StructField, data *orderedmap.OrderedMap, target interf
 func SetField(field *StructField, value, target interface{}) {
 	reflection := reflect.ValueOf(target).Elem()
 	reflection.FieldByName(field.Name).Set(reflect.ValueOf(value))
+}
+
+type objectWithName interface {
+	ObjectName() string
+	String() string
+}
+
+// SortByName - in tests are IDs and sort random -> so we must sort by name.
+func SortByName(slice interface{}) interface{} {
+	// Check slice
+	t := reflect.TypeOf(slice)
+	if t.Kind() != reflect.Slice {
+		panic(fmt.Errorf("expected slice, given \"%T\"", slice))
+	}
+
+	// Sort by Name, and by String key if names are same
+	value := reflect.ValueOf(slice)
+	sort.SliceStable(slice, func(i, j int) bool {
+		objI := value.Index(i).Interface().(objectWithName)
+		objJ := value.Index(j).Interface().(objectWithName)
+		// value = {name}_{string key}
+		valueI := objI.ObjectName() + `_` + objI.String()
+		valueJ := objJ.ObjectName() + `_` + objJ.String()
+		return valueI < valueJ
+	})
+
+	return slice
+}
+
+// unwrap all interfaces and pointers.
+func unwrap(v reflect.Value) reflect.Value {
+	for {
+		if v.Kind() == reflect.Interface || v.Kind() == reflect.Ptr {
+			v = v.Elem()
+		} else {
+			return v
+		}
+	}
 }

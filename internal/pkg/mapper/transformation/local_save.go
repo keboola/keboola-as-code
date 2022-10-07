@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 )
 
 // MapBeforeLocalSave - save code blocks to the disk.
@@ -74,7 +75,7 @@ func (w *localWriter) generateBlockFiles(block *model.Block) {
 	}
 
 	// Create metadata file
-	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, block); metadata != nil {
+	if metadata := reflecthelper.MapFromTaggedFields(model.MetaFileFieldsTag, block); metadata != nil {
 		metadataPath := w.NamingGenerator().MetaFilePath(block.Path())
 		w.createMetadataFile(metadataPath, `block metadata`, model.FileKindBlockMeta, metadata)
 	}
@@ -87,7 +88,7 @@ func (w *localWriter) generateBlockFiles(block *model.Block) {
 
 func (w *localWriter) generateCodeFiles(code *model.Code) {
 	// Create metadata file
-	if metadata := utils.MapFromTaggedFields(model.MetaFileFieldsTag, code); metadata != nil {
+	if metadata := reflecthelper.MapFromTaggedFields(model.MetaFileFieldsTag, code); metadata != nil {
 		metadataPath := w.NamingGenerator().MetaFilePath(code.Path())
 		w.createMetadataFile(metadataPath, `code metadata`, model.FileKindCodeMeta, metadata)
 	}

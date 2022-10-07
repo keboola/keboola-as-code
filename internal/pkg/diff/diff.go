@@ -12,6 +12,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -19,9 +20,9 @@ type typeName string
 
 type Differ struct {
 	objects   model.ObjectStates
-	results   []*Result                         // diff results
-	typeCache map[typeName][]*utils.StructField // reflection cache
-	errors    *utils.MultiError                 // errors
+	results   []*Result                                 // diff results
+	typeCache map[typeName][]*reflecthelper.StructField // reflection cache
+	errors    *utils.MultiError                         // errors
 }
 
 type ResultState int
@@ -58,7 +59,7 @@ type Results struct {
 func NewDiffer(objects model.ObjectStates) *Differ {
 	return &Differ{
 		objects:   objects,
-		typeCache: make(map[typeName][]*utils.StructField),
+		typeCache: make(map[typeName][]*reflecthelper.StructField),
 	}
 }
 
@@ -204,11 +205,11 @@ func (d *Differ) newOptions(reporter *Reporter) cmp.Options {
 	}
 }
 
-func (d *Differ) getDiffFields(t reflect.Type) []*utils.StructField {
+func (d *Differ) getDiffFields(t reflect.Type) []*reflecthelper.StructField {
 	if v, ok := d.typeCache[typeName(t.Name())]; ok {
 		return v
 	} else {
-		diffFields := utils.GetFieldsWithTag("diff:true", t)
+		diffFields := reflecthelper.GetFieldsWithTag("diff:true", t)
 		name := typeName(t.Name())
 		d.typeCache[name] = diffFields
 		return diffFields

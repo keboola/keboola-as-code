@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet/fsimporter"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/yaml"
 )
 
@@ -64,10 +65,10 @@ func (l *loader) ReadRawFile(def *filesystem.FileDef) (*filesystem.RawFile, erro
 
 // ReadFileContentTo to tagged field in target struct as string.
 func (l *loader) ReadFileContentTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.RawFile, bool, error) {
-	if field := utils.GetOneFieldWithTag(tag, target); field != nil {
+	if field := reflecthelper.GetOneFieldWithTag(tag, target); field != nil {
 		if file, err := l.ReadRawFile(def); err == nil {
 			content := strings.TrimRight(file.Content, " \r\n\t")
-			utils.SetField(field, content, target)
+			reflecthelper.SetField(field, content, target)
 			return file, true, nil
 		} else {
 			return nil, false, err
@@ -101,9 +102,9 @@ func (l *loader) ReadJsonFileTo(def *filesystem.FileDef, target interface{}) (*f
 
 // ReadJsonFieldsTo tagged fields in the target struct.
 func (l *loader) ReadJsonFieldsTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.JsonFile, bool, error) {
-	if fields := utils.GetFieldsWithTag(tag, target); len(fields) > 0 {
+	if fields := reflecthelper.GetFieldsWithTag(tag, target); len(fields) > 0 {
 		if file, err := l.ReadJsonFile(def); err == nil {
-			utils.SetFields(fields, file.Content, target)
+			reflecthelper.SetFields(fields, file.Content, target)
 			return file, true, nil
 		} else {
 			return nil, false, err
@@ -115,13 +116,13 @@ func (l *loader) ReadJsonFieldsTo(def *filesystem.FileDef, target interface{}, t
 
 // ReadJsonMapTo tagged field in the target struct as ordered map.
 func (l *loader) ReadJsonMapTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.JsonFile, bool, error) {
-	if field := utils.GetOneFieldWithTag(tag, target); field != nil {
+	if field := reflecthelper.GetOneFieldWithTag(tag, target); field != nil {
 		if file, err := l.ReadJsonFile(def); err == nil {
-			utils.SetField(field, file.Content, target)
+			reflecthelper.SetField(field, file.Content, target)
 			return file, true, nil
 		} else {
 			// Set empty map if error occurred
-			utils.SetField(field, orderedmap.New(), target)
+			reflecthelper.SetField(field, orderedmap.New(), target)
 			return nil, false, err
 		}
 	}
@@ -153,9 +154,9 @@ func (l *loader) ReadYamlFileTo(def *filesystem.FileDef, target interface{}) (*f
 
 // ReadYamlFieldsTo tagged fields in the target struct.
 func (l *loader) ReadYamlFieldsTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.YamlFile, bool, error) {
-	if fields := utils.GetFieldsWithTag(tag, target); len(fields) > 0 {
+	if fields := reflecthelper.GetFieldsWithTag(tag, target); len(fields) > 0 {
 		if file, err := l.ReadYamlFile(def); err == nil {
-			utils.SetFields(fields, file.Content, target)
+			reflecthelper.SetFields(fields, file.Content, target)
 			return file, true, nil
 		} else {
 			return nil, false, err
@@ -167,13 +168,13 @@ func (l *loader) ReadYamlFieldsTo(def *filesystem.FileDef, target interface{}, t
 
 // ReadYamlMapTo tagged field in the target struct as ordered map.
 func (l *loader) ReadYamlMapTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.YamlFile, bool, error) {
-	if field := utils.GetOneFieldWithTag(tag, target); field != nil {
+	if field := reflecthelper.GetOneFieldWithTag(tag, target); field != nil {
 		if file, err := l.ReadYamlFile(def); err == nil {
-			utils.SetField(field, file.Content, target)
+			reflecthelper.SetField(field, file.Content, target)
 			return file, true, nil
 		} else {
 			// Set empty map if error occurred
-			utils.SetField(field, orderedmap.New(), target)
+			reflecthelper.SetField(field, orderedmap.New(), target)
 			return nil, false, err
 		}
 	}

@@ -17,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	. "github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 )
 
 func TestLoadLocalStateMinimal(t *testing.T) {
@@ -51,9 +51,9 @@ func TestLoadLocalStateComplex(t *testing.T) {
 	state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Empty(t, localErr)
-	assert.Equal(t, complexLocalExpectedBranches(), utils.SortByName(state.Branches()))
-	assert.Equal(t, complexLocalExpectedConfigs(), utils.SortByName(state.Configs()))
-	assert.Equal(t, complexLocalExpectedConfigRows(), utils.SortByName(state.ConfigRows()))
+	assert.Equal(t, complexLocalExpectedBranches(), reflecthelper.SortByName(state.Branches()))
+	assert.Equal(t, complexLocalExpectedConfigs(), reflecthelper.SortByName(state.Configs()))
+	assert.Equal(t, complexLocalExpectedConfigRows(), reflecthelper.SortByName(state.ConfigRows()))
 	assert.Equal(t, []string{
 		"123-branch/extractor/ex-generic-v2/456-todos/untracked1",
 		"123-branch/extractor/keboola.ex-db-mysql/untrackedDir",
