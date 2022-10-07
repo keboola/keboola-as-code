@@ -1,4 +1,4 @@
-package workspace
+package list
 
 import (
 	"context"
@@ -13,14 +13,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
-type listDeps interface {
+type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
 	StorageApiClient() client.Sender
 	SandboxesApiClient() client.Sender
 }
 
-func List(ctx context.Context, d listDeps) (err error) {
+func Run(ctx context.Context, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.workspace.list")
 	defer telemetry.EndSpan(span, &err)
 

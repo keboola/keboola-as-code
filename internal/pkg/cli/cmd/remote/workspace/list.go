@@ -7,7 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
-	workspace "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/list"
 )
 
 func ListCommand(p dependencies.Provider) *cobra.Command {
@@ -30,7 +30,7 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 
 			defer func() { d.EventSender().SendCmdEvent(d.CommandCtx(), start, cmdErr, "remote-list-workspace") }()
 
-			err = workspace.List(d.CommandCtx(), d)
+			err = list.Run(d.CommandCtx(), d)
 			if err != nil {
 				return err
 			}
