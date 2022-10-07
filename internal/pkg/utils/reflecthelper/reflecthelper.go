@@ -28,7 +28,8 @@ func MapFromTaggedFields(tag string, model interface{}) *orderedmap.OrderedMap {
 	}
 
 	target := orderedmap.New()
-	reflection := reflect.ValueOf(model).Elem()
+	reflection := unwrap(reflect.ValueOf(model))
+
 	for _, field := range fields {
 		target.Set(field.JsonName(), reflection.FieldByName(field.Name).Interface())
 	}
@@ -40,8 +41,7 @@ func MapFromOneTaggedField(tag string, model interface{}) *orderedmap.OrderedMap
 	if field == nil {
 		return nil
 	}
-
-	reflection := reflect.ValueOf(model).Elem()
+	reflection := unwrap(reflect.ValueOf(model))
 	m := reflection.FieldByName(field.Name).Interface().(*orderedmap.OrderedMap)
 	return m.Clone()
 }
@@ -55,7 +55,7 @@ func StringFromOneTaggedField(tag string, model interface{}) (str string, found 
 		return "", false
 	}
 
-	reflection := reflect.ValueOf(model).Elem()
+	reflection := unwrap(reflect.ValueOf(model))
 	return reflection.FieldByName(field.Name).Interface().(string), true
 }
 
@@ -97,7 +97,7 @@ func GetOneFieldWithTag(tag string, model interface{}) *StructField {
 }
 
 func SetFields(fields []*StructField, data *orderedmap.OrderedMap, target interface{}) {
-	reflection := reflect.ValueOf(target).Elem()
+	reflection := unwrap(reflect.ValueOf(target))
 	for _, field := range fields {
 		// Set value, some values are optional, model will be validated later
 		if value, ok := data.Get(field.JsonName()); ok {
@@ -136,4 +136,15 @@ func SortByName(slice interface{}) interface{} {
 	})
 
 	return slice
+}
+
+// unwrap all interfaces and pointers.
+func unwrap(v reflect.Value) reflect.Value {
+	for {
+		if v.Kind() == reflect.Interface || v.Kind() == reflect.Ptr {
+			v = v.Elem()
+		} else {
+			return v
+		}
+	}
 }
