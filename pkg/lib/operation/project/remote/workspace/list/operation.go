@@ -39,7 +39,11 @@ func Run(ctx context.Context, d dependencies) (err error) {
 
 	logger.Info("Found workspaces:")
 	for _, sandbox := range sandboxes {
-		logger.Infof("  %s", sandbox.String())
+		if sandboxesapi.SupportsSizes(sandbox.Sandbox.Type) {
+			logger.Infof("  %s (ID: %s, Type: %s, Size: %s)", sandbox.Config.Name, sandbox.Sandbox.ID, sandbox.Sandbox.Type, sandbox.Sandbox.Size)
+		} else {
+			logger.Infof("  %s (ID: %s, Type: %s)", sandbox.Config.Name, sandbox.Sandbox.ID, sandbox.Sandbox.Type)
+		}
 	}
 
 	return nil
