@@ -8,15 +8,15 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/create"
 )
 
 type createWorkspaceDeps interface {
 	Options() *options.Options
 }
 
-func (p *Dialogs) AskCreateWorkspace(d createWorkspaceDeps) (workspace.CreateOptions, error) {
-	opts := workspace.CreateOptions{}
+func (p *Dialogs) AskCreateWorkspace(d createWorkspaceDeps) (create.CreateOptions, error) {
+	opts := create.CreateOptions{}
 
 	name, err := p.askWorkspaceName(d)
 	if err != nil {
