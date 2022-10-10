@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/atomic"
 )
 
 func TestLazy_Set(t *testing.T) {
@@ -44,7 +44,7 @@ func TestLazy_InitAndGet(t *testing.T) {
 func TestLazy_InitAndGet_Parallel(t *testing.T) {
 	t.Parallel()
 
-	callCount := utils.NewSafeCounter(0)
+	callCount := atomic.NewCounter(0)
 	initFn := func() (string, error) {
 		callCount.Inc()
 		return "abc", nil

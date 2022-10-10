@@ -9,14 +9,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/atomic"
 )
 
 func TestWorkers(t *testing.T) {
 	t.Parallel()
 	w := NewWorkers(context.Background())
 
-	counter := utils.SafeCounter{}
+	counter := atomic.NewCounter(0)
 	w.AddWorker(func() error {
 		counter.Inc()
 		return nil

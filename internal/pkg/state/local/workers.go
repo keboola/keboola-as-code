@@ -9,6 +9,7 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/atomic"
 )
 
 const MaxLocalWorkers = 32
@@ -18,7 +19,7 @@ type Workers struct {
 	started   *sync.WaitGroup
 	semaphore *semaphore.Weighted
 	group     *errgroup.Group
-	workerNum *utils.SafeCounter
+	workerNum *atomic.Counter
 	lock      *sync.Mutex
 	errors    map[int]error
 	invoked   bool
@@ -30,7 +31,7 @@ func NewWorkers(parentCtx context.Context) *Workers {
 		ctx:       ctx,
 		started:   &sync.WaitGroup{},
 		semaphore: semaphore.NewWeighted(MaxLocalWorkers),
-		workerNum: utils.NewSafeCounter(0),
+		workerNum: atomic.NewCounter(0),
 		group:     group,
 		lock:      &sync.Mutex{},
 		errors:    make(map[int]error),

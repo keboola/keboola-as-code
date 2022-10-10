@@ -1,4 +1,4 @@
-package utils
+package atomic
 
 import (
 	"sync"
@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSafeCounter(t *testing.T) {
+func TestCounter(t *testing.T) {
 	t.Parallel()
-	c := NewSafeCounter(0)
+	c := NewCounter(0)
 	wg := sync.WaitGroup{}
 
 	// Increment in goroutines
