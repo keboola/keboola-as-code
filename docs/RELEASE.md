@@ -172,3 +172,27 @@ The script will return the ARN roles:
 
 - **full admin access** role that can be called in GitHub Actions only over the `main` branch
 - read only role for the whole account and attached policy which allows you to run terraform provisioning plan, you can use this role over any branch
+
+### AWS ACM Certificate configuration
+ACM Certificate for Cloudfront distribution is prepared and validated manually:
+
+#### Test-Keboola-As-Code-Assets
+
+1. Login into `Test-Keboola-As-Code-Assets` AWS account as Administrator
+2. Go to [AWS Certificate manager](https://us-east-1.console.aws.amazon.com/acm/home?region=us-east-1#/welcome) in us-east-1 region
+3. Request Public certificate
+    - Fully qualified domain name: `*.keboola.dev`
+    - Validation methond - DNS validation
+4. Copy the `CNAME name` and `CNAME value` of requested certificate
+5. Switch to `Prod-KBC-multi-tenant-legacy` and create CNAME DNS record from previous step in Route 53 `keboola.dev` Hosted Zone
+6. Switch back
+
+#### Prod-Keboola-As-Code-Assets
+1. Login into `Prod-Keboola-As-Code-Assets` AWS account as Administrator
+2. Go to [AWS Certificate manager](https://us-east-1.console.aws.amazon.com/acm/home?region=us-east-1#/welcome) in us-east-1 region
+3. Request Public certificate
+   - Fully qualified domain name: `*.keboola.com`
+   - Validation methond - DNS validation
+4. Copy the `CNAME name` and `CNAME value` of requested certificate
+5. Switch to `Prod-KBC-multi-tenant-legacy` and create CNAME DNS record from previous step in Route 53 `keboola.com` Hosted Zone
+6. Switch back to `Prod-Keboola-As-Code-Assets` AWS Account and wait until the certificate is validated 
