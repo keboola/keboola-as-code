@@ -1,12 +1,15 @@
 package test
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	testOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test/run"
 )
 
@@ -37,18 +40,18 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 				}
 				tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Definition(), args[0], versionArg))
 				if err != nil {
-					return err
+					return fmt.Errorf(`loading test for template "%s" failed: %w`, args[0], err)
 				}
 				templates = append(templates, tmpl)
 			} else {
 				for _, t := range repo.Templates() {
 					v, err := t.DefaultVersionOrErr()
 					if err != nil {
-						return err
+						return fmt.Errorf(`loading default version for template "%s" failed: %w`, t.Id, err)
 					}
 					tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Definition(), t.Id, v.Version.String()))
 					if err != nil {
-						return err
+						return fmt.Errorf(`loading test for template "%s" failed: %w`, t.Id, err)
 					}
 					templates = append(templates, tmpl)
 				}
@@ -63,13 +66,14 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Test templates
+			errs := utils.NewMultiError()
 			for _, tmpl := range templates {
 				err := testOp.Run(d.CommandCtx(), tmpl, options, d)
 				if err != nil {
-					return err
+					errs.Append(err)
 				}
 			}
-			return nil
+			return errs.ErrorOrNil()
 		},
 	}
 
