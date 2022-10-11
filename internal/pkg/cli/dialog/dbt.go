@@ -54,7 +54,7 @@ func validateTargetName(val interface{}) error {
 	return nil
 }
 
-func (p *Dialogs) AskGenerateEnv(d targetNameDialogDeps, allWorkspaces []*sandboxesapi.Sandbox) (env.GenerateEnvOptions, error) {
+func (p *Dialogs) AskGenerateEnv(d targetNameDialogDeps, allWorkspaces []*sandboxesapi.SandboxWithConfig) (env.GenerateEnvOptions, error) {
 	targetName, err := p.AskTargetName(d)
 	if err != nil {
 		return env.GenerateEnvOptions{}, err
@@ -67,7 +67,7 @@ func (p *Dialogs) AskGenerateEnv(d targetNameDialogDeps, allWorkspaces []*sandbo
 
 	return env.GenerateEnvOptions{
 		TargetName: targetName,
-		Workspace:  workspace,
+		Workspace:  workspace.Sandbox,
 	}, nil
 }
 
