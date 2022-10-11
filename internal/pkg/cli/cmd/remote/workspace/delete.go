@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/spf13/cobra"
-
 	"github.com/keboola/go-client/pkg/sandboxesapi"
 	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/spf13/cobra"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/delete"
+	deleteOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/delete"
 )
 
 func DeleteCommand(p dependencies.Provider) *cobra.Command {
@@ -48,7 +48,7 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			err = delete.Run(d.CommandCtx(), d, branch.ID, sandbox)
+			err = deleteOp.Run(d.CommandCtx(), d, branch.ID, sandbox)
 			if err != nil {
 				return err
 			}
