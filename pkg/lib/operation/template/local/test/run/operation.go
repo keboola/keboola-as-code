@@ -56,7 +56,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	// Run through all tests
 	tests, err := tmpl.Tests()
 	if err != nil {
-		return err
+		return fmt.Errorf(`error running tests for template "%s": %w`, tmpl.TemplateId(), err)
 	}
 
 	errors := utils.NewMultiError()
