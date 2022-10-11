@@ -47,6 +47,7 @@ Available Commands:
   remote workspace create        Create workspaces in the project.
   remote workspace list          List workspaces in the project.
   remote workspace delete        Delete workspaces in the project.
+  remote workspace detail        Print workspace details and credentials.
 
   dbt                            Work with dbt inside your repository.
   dbt init                       Initialize profiles, sources, and environment variables for use with dbt.
