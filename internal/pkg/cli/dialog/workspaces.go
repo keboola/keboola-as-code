@@ -40,7 +40,7 @@ func (p *Dialogs) AskWorkspace(
 func (p *Dialogs) AskWorkspaceId(opts *options.Options) (string, error) {
 	if !opts.IsSet(`workspace-id`) {
 		token, ok := p.Ask(&prompt.Question{
-			Label:       "API token",
+			Label:       "Workspace ID",
 			Description: "Please enter the workspace ID",
 			Hidden:      true,
 			Validator:   prompt.ValueRequired,
