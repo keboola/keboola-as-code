@@ -50,12 +50,12 @@ resource "aws_s3_bucket_website_configuration" "cli_dist_bucket_website_configur
   }
 }
 
+// https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_object
 resource "aws_s3_object" "cli_dist_index" {
   bucket = aws_s3_bucket.cli_dist_bucket.id
 
   key          = "index.html"
-  source       = "./index.html"
+  content      = templatefile("./index.html.tftpl", { bucket = var.bucket_name, distDomainName = var.distribution_domain_name })
   acl          = "public-read"
-  etag         = filemd5("./index.html")
   content_type = "text/html"
 }
