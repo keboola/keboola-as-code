@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
-	createWorkspace "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/create"
 )
 
 func TestAskCreateWorkspace(t *testing.T) {
@@ -45,7 +45,7 @@ func TestAskCreateWorkspace(t *testing.T) {
 	assert.NoError(t, console.Close())
 
 	// Assert
-	assert.Equal(t, createWorkspace.CreateOptions{
+	assert.Equal(t, create.CreateOptions{
 		Name: "foo",
 		Type: "python",
 		Size: "small",
