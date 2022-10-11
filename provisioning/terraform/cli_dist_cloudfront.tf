@@ -13,12 +13,14 @@ resource "aws_cloudfront_distribution" "cli_dist_cloudfront" {
   depends_on = [
     aws_s3_bucket.cli_dist_bucket
   ]
-  aliases         = [
+  aliases = [
     var.distribution_domain_name
   ]
-  enabled         = true
-  http_version    = "http2"
-  is_ipv6_enabled = true
+  enabled             = true
+  http_version        = "http2"
+  is_ipv6_enabled     = true
+  default_root_object = "index.html"
+
   default_cache_behavior {
     cache_policy_id          = aws_cloudfront_cache_policy.cli_dist_cloudfront_cache_policy.id
     compress                 = false
