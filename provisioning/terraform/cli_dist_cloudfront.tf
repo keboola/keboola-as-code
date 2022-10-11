@@ -13,7 +13,9 @@ resource "aws_cloudfront_distribution" "cli_dist_cloudfront" {
   depends_on = [
     aws_s3_bucket.cli_dist_bucket
   ]
-  aliases         = []
+  aliases         = [
+    var.distribution_domain_name
+  ]
   enabled         = true
   http_version    = "http2"
   is_ipv6_enabled = true

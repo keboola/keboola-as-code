@@ -3,7 +3,7 @@ variable "keboola_stack" {
   default = "keboola-dev"
 }
 
-variable "cli_dist_bucket_name" {
+variable "bucket_name" {
   type = string
 }
 
@@ -12,5 +12,9 @@ variable "github_oidc_provider_arn" {
 }
 
 variable "aws_acm_certificate_arn" {
+  type = string
+}
+
+variable "distribution_domain_name" {
   type = string
 }

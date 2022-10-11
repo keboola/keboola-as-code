@@ -1,7 +1,7 @@
 // https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket
 
 resource "aws_s3_bucket" "cli_dist_bucket" {
-  bucket = var.cli_dist_bucket_name
+  bucket = var.bucket_name
 }
 
 // https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_acl
