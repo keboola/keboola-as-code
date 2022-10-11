@@ -40,3 +40,10 @@ target
 
 # Air code watcher temp dir
 /target/.watcher
+
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
