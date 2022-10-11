@@ -41,8 +41,11 @@ func Run(ctx context.Context, d dependencies, configId sandboxesapi.ConfigID) (e
 
 	c, s := sandbox.Config, sandbox.Sandbox
 
-	logger.Infof(`Created new workspace "%s" (%s).`, c.Name, s.ID)
-	logger.Infof("%s (ID: %s, Type: %s, Size: %s)", c.Name, c.ID, s.Type, s.Size)
+	logger.Infof("Workspace \"%s\"\nID: %s\nType: %s", c.Name, c.ID, s.Type)
+	if sandboxesapi.SupportsSizes(s.Type) {
+		logger.Infof(`Size: %s`, s.Size)
+	}
+
 	switch s.Type {
 	case sandboxesapi.TypeSnowflake:
 		logger.Infof(
