@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cobra"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/cli"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/local"
@@ -388,7 +389,7 @@ func (root *RootCommand) tearDown(exitCode int, panicErr interface{}) int {
 		}
 
 		// Process panic
-		exitCode = utils.ProcessPanic(panicErr, root.logger, logFilePath)
+		exitCode = cli.ProcessPanic(panicErr, root.logger, logFilePath)
 	}
 
 	// Close log file

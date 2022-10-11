@@ -1,4 +1,4 @@
-package utils
+package cli
 
 import (
 	"bytes"
@@ -29,38 +29,11 @@ We take privacy seriously, and do not perform any automated log file collection.
 
 Thank you kindly!`
 
-type UserError struct {
-	Message  string
-	ExitCode int
-}
-
-func (e *UserError) Error() string {
-	return e.Message
-}
-
-func NewUserError(message string) *UserError {
-	return &UserError{message, 1}
-}
-
-func NewUserErrorWithCode(exitCode int, message string) *UserError {
-	return &UserError{message, exitCode}
-}
-
 func ProcessPanic(err interface{}, logger log.Logger, logFilePath string) int {
-	switch v := err.(type) {
-	case *UserError:
-		logger.Debugf("User error panic: %s", v.Message)
-		logger.Debugf("Trace:\n" + string(debug.Stack()))
-		if len(logFilePath) > 0 {
-			logger.Infof("Details can be found in the log file \"%s\".\n", logFilePath)
-		}
-		return v.ExitCode
-	default:
-		logger.Debugf("Unexpected panic: %s", err)
-		logger.Debugf("Trace:\n" + string(debug.Stack()))
-		logger.Info(panicMessage(logFilePath))
-		return 1
-	}
+	logger.Debugf("Unexpected panic: %s", err)
+	logger.Debugf("Trace:\n" + string(debug.Stack()))
+	logger.Info(panicMessage(logFilePath))
+	return 1
 }
 
 func panicMessage(logFile string) string {
