@@ -11,12 +11,9 @@ data "aws_cloudfront_origin_request_policy" "aws_managed_origin_request_policy_c
 
 resource "aws_cloudfront_distribution" "cli_dist_cloudfront" {
   depends_on = [
-    //@TODO aws_acm_certificate.keboola_assets_acm_certificate,
     aws_s3_bucket.cli_dist_bucket
   ]
-  aliases = [
-    //@TODO var.hosted_zone_subdomain_name
-  ]
+  aliases         = []
   enabled         = true
   http_version    = "http2"
   is_ipv6_enabled = true
@@ -37,10 +34,9 @@ resource "aws_cloudfront_distribution" "cli_dist_cloudfront" {
     }
   }
   viewer_certificate {
-    //@TODO acm_certificate_arn      = aws_acm_certificate.keboola_assets_acm_certificate.arn
-    cloudfront_default_certificate = true
-    minimum_protocol_version       = "TLSv1.2_2021"
-    ssl_support_method             = "sni-only"
+    acm_certificate_arn      = var.aws_acm_certificate_arn
+    minimum_protocol_version = "TLSv1.2_2021"
+    ssl_support_method       = "sni-only"
   }
   restrictions {
     geo_restriction {
