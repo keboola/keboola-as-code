@@ -7,7 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/create"
 )
 
 func CreateCommand(p dependencies.Provider) *cobra.Command {
@@ -40,7 +40,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 			defer func() { d.EventSender().SendCmdEvent(d.CommandCtx(), start, cmdErr, "remote-create-workspace") }()
 
 			// Run operation
-			err = workspace.Create(d.CommandCtx(), options, d)
+			err = create.Run(d.CommandCtx(), options, d)
 			if err != nil {
 				return err
 			}

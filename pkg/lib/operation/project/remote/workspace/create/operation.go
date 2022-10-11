@@ -1,4 +1,4 @@
-package workspace
+package create
 
 import (
 	"context"
@@ -28,7 +28,7 @@ type dependencies interface {
 	SandboxesApiClient() client.Sender
 }
 
-func Create(ctx context.Context, o CreateOptions, d dependencies) (err error) {
+func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.workspace.create")
 	defer telemetry.EndSpan(span, &err)
 
