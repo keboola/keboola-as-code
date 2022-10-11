@@ -42,7 +42,6 @@ func (p *Dialogs) AskWorkspaceId(opts *options.Options) (string, error) {
 		token, ok := p.Ask(&prompt.Question{
 			Label:       "Workspace ID",
 			Description: "Please enter the workspace ID",
-			Hidden:      true,
 			Validator:   prompt.ValueRequired,
 		})
 		if !ok {
