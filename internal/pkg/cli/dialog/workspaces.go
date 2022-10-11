@@ -41,7 +41,7 @@ func (p *Dialogs) AskWorkspaceId(opts *options.Options) (string, error) {
 	if !opts.IsSet(`workspace-id`) {
 		token, ok := p.Ask(&prompt.Question{
 			Label:       "API token",
-			Description: "Please enter Keboola Storage API token. The value will be hidden.",
+			Description: "Please enter the workspace ID",
 			Hidden:      true,
 			Validator:   prompt.ValueRequired,
 		})
