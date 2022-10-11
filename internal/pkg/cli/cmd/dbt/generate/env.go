@@ -1,7 +1,10 @@
 package generate
 
 import (
+	"fmt"
+
 	"github.com/keboola/go-client/pkg/sandboxesapi"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
@@ -32,14 +35,19 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			branch, err := storageapi.GetDefaultBranchRequest().Send(d.CommandCtx(), d.StorageApiClient())
+			if err != nil {
+				return fmt.Errorf("cannot find default branch: %w", err)
+			}
+
 			// Get all workspaces for the dialog
-			allWorkspaces, err := sandboxesapi.ListInstancesRequest().Send(d.CommandCtx(), d.SandboxesApiClient())
+			allWorkspaces, err := sandboxesapi.List(d.CommandCtx(), d.StorageApiClient(), d.SandboxesApiClient(), branch.ID)
 			if err != nil {
 				return err
 			}
 
 			// Options
-			opts, err := d.Dialogs().AskGenerateEnv(d, *allWorkspaces)
+			opts, err := d.Dialogs().AskGenerateEnv(d, allWorkspaces)
 			if err != nil {
 				return err
 			}

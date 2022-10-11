@@ -9,11 +9,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 )
 
-func (p *Dialogs) AskWorkspace(d *options.Options, allWorkspaces []*sandboxesapi.Sandbox) (*sandboxesapi.Sandbox, error) {
+func (p *Dialogs) AskWorkspace(
+	d *options.Options,
+	allWorkspaces []*sandboxesapi.SandboxWithConfig,
+) (*sandboxesapi.SandboxWithConfig, error) {
 	if d.IsSet(`workspace-id`) {
 		workspaceID := d.GetString(`workspace-id`)
 		for _, w := range allWorkspaces {
-			if string(w.ID) == workspaceID {
+			if string(w.Sandbox.ID) == workspaceID {
 				return w, nil
 			}
 		}
@@ -22,7 +25,7 @@ func (p *Dialogs) AskWorkspace(d *options.Options, allWorkspaces []*sandboxesapi
 
 	selectOpts := make([]string, 0)
 	for _, w := range allWorkspaces {
-		selectOpts = append(selectOpts, fmt.Sprintf(`%s (%s)`, w.Type, w.ID))
+		selectOpts = append(selectOpts, fmt.Sprintf(`%s (%s)`, w.Config.Name, w.Sandbox.ID))
 	}
 	if index, ok := p.SelectIndex(&prompt.SelectIndex{
 		Label:   "Workspace",
