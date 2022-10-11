@@ -5,7 +5,7 @@ Usage:
 
 Flags:
   -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
-  -W, --workspace-id string       id of the workspace to use
+  -W, --workspace-id string       id of the workspace to delete
 
 Global Flags:
   -h, --help                       print help for command

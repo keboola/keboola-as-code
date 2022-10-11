@@ -59,7 +59,7 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 	}
 
 	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().StringP("workspace-id", "W", "", "id of the workspace to use")
+	cmd.Flags().StringP("workspace-id", "W", "", "id of the workspace to delete")
 
 	return cmd
 }
