@@ -10,3 +10,7 @@ variable "cli_dist_bucket_name" {
 variable "github_oidc_provider_arn" {
   type = string
 }
+
+variable "aws_acm_certificate_arn" {
+  type = string
+}
