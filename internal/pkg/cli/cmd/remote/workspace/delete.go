@@ -21,13 +21,14 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			start := time.Now()
 
-			d, err := p.DependenciesForRemoteCommand()
-			if err != nil {
+			// Ask for host and token if needed
+			baseDeps := p.BaseDependencies()
+			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
 				return err
 			}
 
-			// Ask for host and token if needed
-			if err := d.Dialogs().AskHostAndToken(d); err != nil {
+			d, err := p.DependenciesForRemoteCommand()
+			if err != nil {
 				return err
 			}
 
