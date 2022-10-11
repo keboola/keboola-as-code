@@ -30,7 +30,7 @@ func Run(ctx context.Context, d dependencies, branchId storageapi.BranchID, sand
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	logger.Infof(`Deleting workspace "%s" (%s), please wait.`, sandbox.Config.Name, sandbox.Sandbox.ID)
+	logger.Infof(`Deleting workspace "%s" (%s), please wait.`, sandbox.Config.Name, sandbox.Config.ID)
 	err = sandboxesapi.Delete(
 		ctx,
 		d.StorageApiClient(),

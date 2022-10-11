@@ -16,7 +16,7 @@ func (p *Dialogs) AskWorkspace(
 	if d.IsSet(`workspace-id`) {
 		workspaceID := d.GetString(`workspace-id`)
 		for _, w := range allWorkspaces {
-			if string(w.Sandbox.ID) == workspaceID {
+			if string(w.Config.ID) == workspaceID {
 				return w, nil
 			}
 		}
@@ -25,7 +25,7 @@ func (p *Dialogs) AskWorkspace(
 
 	selectOpts := make([]string, 0)
 	for _, w := range allWorkspaces {
-		selectOpts = append(selectOpts, fmt.Sprintf(`%s (%s)`, w.Config.Name, w.Sandbox.ID))
+		selectOpts = append(selectOpts, fmt.Sprintf(`%s (%s)`, w.Config.Name, w.Config.ID))
 	}
 	if index, ok := p.SelectIndex(&prompt.SelectIndex{
 		Label:   "Workspace",
@@ -35,4 +35,21 @@ func (p *Dialogs) AskWorkspace(
 	}
 
 	return nil, fmt.Errorf(`please specify workspace`)
+}
+
+func (p *Dialogs) AskWorkspaceId(opts *options.Options) (string, error) {
+	if !opts.IsSet(`workspace-id`) {
+		token, ok := p.Ask(&prompt.Question{
+			Label:       "API token",
+			Description: "Please enter Keboola Storage API token. The value will be hidden.",
+			Hidden:      true,
+			Validator:   prompt.ValueRequired,
+		})
+		if !ok {
+			return "", fmt.Errorf("please specify workspace ID")
+		}
+		return token, nil
+	} else {
+		return opts.GetString(`workspace-id`), nil
+	}
 }

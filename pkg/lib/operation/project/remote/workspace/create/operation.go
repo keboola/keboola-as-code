@@ -65,7 +65,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 
 	sandbox := s.Sandbox
 
-	logger.Infof(`Created new workspace "%s" (%s).`, o.Name, s.Sandbox.ID)
+	logger.Infof(`Created new workspace "%s" (%s).`, o.Name, s.Config.ID)
 	switch sandbox.Type {
 	case sandboxesapi.TypeSnowflake:
 		logger.Infof(
