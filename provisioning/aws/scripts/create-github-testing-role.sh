@@ -6,7 +6,7 @@ aws cloudformation deploy --stack-name kbc-github-actions-role \
     OIDCProviderArn=$GITHUB_OIDC_PROVIDER_ARN \
     GitHubOrganization=$GITHUB_ORGANIZATION \
     RepositoryName=$GITHUB_REPOSITORY_NAME\
-  --template-file ./provisioning/aws/resources/github-actionts-testing-role.json \
+  --template-file ./provisioning/aws/resources/github-action-testing-role.json \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
   --output text

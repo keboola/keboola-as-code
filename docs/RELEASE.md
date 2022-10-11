@@ -106,6 +106,26 @@ in the repository).
 
 ## Terraform Setup
 
+### Terraform backend init
+
+Testing:
+
+```shell
+export AWS_PROFILE="Test-Keboola-As-Code-Assets"
+export AWS_DEFAULT_REGION="eu-central-1"
+export TERRAFORM_BACKEND_STACK_PREFIX="keboola-ci-kac-assets"
+./provisioning/aws/scripts/create-backend.sh
+```
+
+Production:
+
+```shell
+export AWS_PROFILE="Prod-Keboola-As-Code-Assets"
+export AWS_DEFAULT_REGION="eu-central-1"
+export TERRAFORM_BACKEND_STACK_PREFIX="keboola-prod-kac-assets"
+./provisioning/aws/scripts/create-backend.sh
+```
+
 ### OIDC authorization for GitHub Actions
 
 See the [documentation](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services) for the OIDC background between AWS and GitHub Actions.
@@ -144,7 +164,7 @@ export AWS_PROFILE="Prod-Keboola-As-Code-Assets"
 export AWS_DEFAULT_REGION="eu-central-1"
 export GITHUB_ORGANIZATION="keboola"
 export GITHUB_REPOSITORY_NAME="keboola-as-code"
-export GITHUB_OIDC_PROVIDER_ARN=
+export GITHUB_OIDC_PROVIDER_ARN=arn:aws:iam::455460941449:oidc-provider/token.actions.githubusercontent.com
 export TERRAFORM_BACKEND_STACK_PREFIX=keboola-prod-kac-assets
 ./provisioning/aws/scripts/create-github-production-role.sh
 ```
@@ -152,23 +172,3 @@ The script will return the ARN roles:
 
 - **full admin access** role that can be called in GitHub Actions only over the `main` branch
 - read only role for the whole account and attached policy which allows you to run terraform provisioning plan, you can use this role over any branch
-
-### Terraform backend init
-
-Testing:
-
-```shell
-export AWS_PROFILE="Test-Keboola-As-Code-Assets"
-export AWS_DEFAULT_REGION="eu-central-1"
-export TERRAFORM_BACKEND_STACK_PREFIX="keboola-ci-kac-assets"
-./provisioning/aws/scripts/create-backend.sh
-```
-
-Production:
-
-```shell
-export AWS_PROFILE="Prod-Keboola-As-Code-Assets"
-export AWS_DEFAULT_REGION="eu-central-1"
-export TERRAFORM_BACKEND_STACK_PREFIX="keboola-prod-kac-assets"
-./provisioning/aws/scripts/create-backend.sh
-```
