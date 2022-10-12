@@ -17,6 +17,7 @@ func Commands(p dependencies.Provider) *cobra.Command {
 		CreateCommand(p),
 		ListCommand(p),
 		DeleteCommand(p),
+		DetailCommand(p),
 	)
 	return cmd
 }

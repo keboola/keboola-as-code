@@ -1,0 +1,1 @@
+Print workspace details and credentials.

@@ -1,8 +1,7 @@
-package create
+package detail
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
@@ -14,21 +13,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
-type CreateOptions struct {
-	Name string
-	Type string
-	Size string
-}
-
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
 	StorageApiClient() client.Sender
-	JobsQueueApiClient() client.Sender
 	SandboxesApiClient() client.Sender
 }
 
-func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
+func Run(ctx context.Context, d dependencies, configId sandboxesapi.ConfigID) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.workspace.create")
 	defer telemetry.EndSpan(span, &err)
 
@@ -42,48 +34,36 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	opts := make([]sandboxesapi.Option, 0)
-	if len(o.Size) > 0 {
-		opts = append(opts, sandboxesapi.WithSize(o.Size))
-	}
-
-	logger.Info(`Creating new workspace, please wait.`)
-	// Create workspace by API
-	s, err := sandboxesapi.Create(
-		ctx,
-		d.StorageApiClient(),
-		d.JobsQueueApiClient(),
-		d.SandboxesApiClient(),
-		branch.ID,
-		o.Name,
-		o.Type,
-		opts...,
-	)
+	sandbox, err := sandboxesapi.Get(ctx, d.StorageApiClient(), d.SandboxesApiClient(), branch.ID, configId)
 	if err != nil {
-		return fmt.Errorf("cannot create workspace: %w", err)
+		return err
 	}
 
-	sandbox := s.Sandbox
+	c, s := sandbox.Config, sandbox.Sandbox
 
-	logger.Infof(`Created new workspace "%s" (%s).`, o.Name, s.Config.ID)
-	switch sandbox.Type {
+	logger.Infof("Workspace \"%s\"\nID: %s\nType: %s", c.Name, c.ID, s.Type)
+	if sandboxesapi.SupportsSizes(s.Type) {
+		logger.Infof(`Size: %s`, s.Size)
+	}
+
+	switch s.Type {
 	case sandboxesapi.TypeSnowflake:
 		logger.Infof(
 			"Credentials:\n  Host: %s\n  User: %s\n  Password: %s\n  Database: %s\n  Schema: %s\n  Warehouse: %s",
-			sandbox.Host,
-			sandbox.User,
-			sandbox.Password,
-			sandbox.Details.Connection.Database,
-			sandbox.Details.Connection.Schema,
-			sandbox.Details.Connection.Warehouse,
+			s.Host,
+			s.User,
+			s.Password,
+			s.Details.Connection.Database,
+			s.Details.Connection.Schema,
+			s.Details.Connection.Warehouse,
 		)
 	case sandboxesapi.TypePython:
 		fallthrough
 	case sandboxesapi.TypeR:
 		logger.Infof(
 			"Credentials:\n  Host: %s\n  Password: %s",
-			sandbox.Host,
-			sandbox.Password,
+			s.Host,
+			s.Password,
 		)
 	}
 

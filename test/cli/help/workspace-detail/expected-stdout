@@ -1,11 +1,11 @@
-Delete workspaces in the project.
+Print workspace details and credentials.
 
 Usage:
-  kbc remote workspace delete [flags]
+  kbc remote workspace detail [flags]
 
 Flags:
   -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
-  -W, --workspace-id string       id of the workspace to delete
+  -W, --workspace-id string       id of the workspace to fetch
 
 Global Flags:
   -h, --help                       print help for command
