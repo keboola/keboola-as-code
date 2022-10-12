@@ -198,8 +198,8 @@ jobs:
         env:
           VERSION: ${{ needs.set-version.outputs.version }}
 
-  terraform-testing-deploy:
-    name: 'Deploy Terraform to Testing'
+  cli-dist-testing-deploy:
+    name: 'Deploy CLI Distribution to Testing'
     needs:
       - set-version
     runs-on: ubuntu-latest
@@ -208,7 +208,7 @@ jobs:
       contents: read
     defaults:
       run:
-        working-directory: provisioning/terraform
+        working-directory: provisioning/cli-dist
     env:
       TF_VERSION: 1.1.4
     steps:
@@ -233,17 +233,17 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve -var-file="testing.tfvars" -input=false
 
-  terraform-production-plan:
-    name: 'Terraform Plan for Production'
+  cli-dist-production-plan:
+    name: 'Try CLI Distribution Plan for Production'
     needs:
-      - terraform-testing-deploy
+      - cli-dist-testing-deploy
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
     defaults:
       run:
-        working-directory: provisioning/terraform
+        working-directory: provisioning/cli-dist
     env:
       TF_VERSION: 1.1.4
     steps:
@@ -263,10 +263,10 @@ jobs:
       - name: Terraform Plan
         run: terraform plan -input=false -var-file="production.tfvars"
 
-  terraform-production-deploy:
-    name: 'Deploy Terraform to Production'
+  cli-dist-production-deploy:
+    name: 'Deploy CLI Distribution to Production'
     needs:
-      - terraform-production-plan
+      - cli-dist-production-plan
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') && needs.set-version.outputs.is_semantic_tag == 'true'
     permissions:
@@ -274,7 +274,7 @@ jobs:
       contents: read
     defaults:
       run:
-        working-directory: provisioning/terraform
+        working-directory: provisioning/cli-dist
     env:
       TF_VERSION: 1.1.4
     steps:
@@ -305,7 +305,7 @@ jobs:
       - test
       - lint
       - cross-compile
-      - terraform-production-deploy
+      - cli-dist-production-deploy
     # only one parallel job allowed - used shared S3
     concurrency:
       group: release

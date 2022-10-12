@@ -104,7 +104,7 @@ in the repository).
 
 ---
 
-## Terraform Setup
+## CLI Distribution Terraform Setup
 
 ### Terraform backend init
 
@@ -114,7 +114,7 @@ Testing:
 export AWS_PROFILE="Test-Keboola-As-Code-Assets"
 export AWS_DEFAULT_REGION="eu-central-1"
 export TERRAFORM_BACKEND_STACK_PREFIX="keboola-ci-kac-assets"
-./provisioning/aws/scripts/create-backend.sh
+./provisioning/cli-dist/scripts/create-backend.sh
 ```
 
 Production:
@@ -123,7 +123,7 @@ Production:
 export AWS_PROFILE="Prod-Keboola-As-Code-Assets"
 export AWS_DEFAULT_REGION="eu-central-1"
 export TERRAFORM_BACKEND_STACK_PREFIX="keboola-prod-kac-assets"
-./provisioning/aws/scripts/create-backend.sh
+./provisioning/cli-dist/scripts/create-backend.sh
 ```
 
 ### OIDC authorization for GitHub Actions

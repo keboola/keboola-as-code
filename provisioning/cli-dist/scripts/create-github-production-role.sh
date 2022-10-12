@@ -12,7 +12,7 @@ aws cloudformation deploy --stack-name kbc-github-actions-role \
     GitHubOrganization=$GITHUB_ORGANIZATION \
     RepositoryName=$GITHUB_REPOSITORY_NAME \
     TerraformBackendPlanPolicyArn=$TERRAFORM_BACKEND_PLAN_POLICY_ARN \
-  --template-file ./provisioning/aws/resources/github-action-production-role.json \
+  --template-file ./provisioning/cli-dist/resources/github-action-production-role.json \
   --no-fail-on-empty-changeset \
   --capabilities CAPABILITY_NAMED_IAM \
   --output text
