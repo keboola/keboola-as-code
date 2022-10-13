@@ -221,7 +221,7 @@ func errorLogMessage(err error, response *UnexpectedError) string {
 	// Format message
 	return fmt.Sprintf(
 		"%s | %serrorName=%s errorType=%T response=%s",
-		err.Error(), exceptionIdValue, response.Name, err, json.MustEncodeString(response, false),
+		errors.FormatWithDebug(err), exceptionIdValue, response.Name, err, json.MustEncodeString(response, false),
 	)
 }
 

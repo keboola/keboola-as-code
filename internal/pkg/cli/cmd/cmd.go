@@ -307,36 +307,38 @@ func (root *RootCommand) printError(errRaw error) {
 				root.logger.Infof(`Please use %s.`, errDirNotFound.Expected())
 			}
 			if errDirNotFound.Expected() == dependencies.EmptyDir {
-				modifiedErrs.Append(errors.New("directory is not empty"))
+				modifiedErrs.Append(errors.Wrapf(err, "directory is not empty"))
 			} else {
-				modifiedErrs.Append(errors.Errorf("neither this nor any parent directory is %s", errDirNotFound.Expected()))
+				modifiedErrs.Append(errors.Wrapf(err, "neither this nor any parent directory is %s", errDirNotFound.Expected()))
 			}
 		case errors.Is(err, dependencies.ErrProjectManifestNotFound):
 			root.logger.Infof(`Project directory must contain the "%s" file.`, projectManifest.Path())
 			root.logger.Infof(`Please change working directory to a project directory.`)
 			root.logger.Infof(`Or use the "sync init" command in an empty directory.`)
-			modifiedErrs.Append(errors.New(`none of this and parent directories is project dir`))
+			modifiedErrs.Append(errors.Wrapf(err, `none of this and parent directories is project dir`))
 		case errors.Is(err, dependencies.ErrRepositoryManifestNotFound):
 			root.logger.Infof(`Repository directory must contain the "%s" file.`, repositoryManifest.Path())
 			root.logger.Infof(`Please change working directory to a repository directory.`)
 			root.logger.Infof(`Or use the "template repository init" command in an empty directory.`)
-			modifiedErrs.Append(errors.New(`none of this and parent directories is repository dir`))
+			modifiedErrs.Append(errors.Wrapf(err, `none of this and parent directories is repository dir`))
 		case errors.Is(err, dependencies.ErrTemplateManifestNotFound):
 			root.logger.Infof(`Template directory must contain the "%s" file.`, templateManifest.Path())
 			root.logger.Infof(`You are in the template repository, but not in the template directory.`)
 			root.logger.Infof(`Please change working directory to a template directory, for example "template/v1".`)
 			root.logger.Infof(`Or use the "template create" command.`)
-			modifiedErrs.Append(errors.New(`none of this and parent directories is template dir`))
+			modifiedErrs.Append(errors.Wrapf(err, `none of this and parent directories is template dir`))
 		case errors.Is(err, dependencies.ErrMissingStorageApiHost), errors.Is(err, dialog.ErrMissingStorageApiHost):
-			modifiedErrs.Append(errors.Errorf(`missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, options.StorageApiHostOpt, root.options.GetEnvName(options.StorageApiHostOpt)))
+			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, options.StorageApiHostOpt, root.options.GetEnvName(options.StorageApiHostOpt)))
 		case errors.Is(err, dependencies.ErrMissingStorageApiToken), errors.Is(err, dialog.ErrMissingStorageApiToken):
-			modifiedErrs.Append(errors.Errorf(`missing Storage Api token, please use "--%s" flag or ENV variable "%s"`, options.StorageApiTokenOpt, root.options.GetEnvName(options.StorageApiTokenOpt)))
+			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api token, please use "--%s" flag or ENV variable "%s"`, options.StorageApiTokenOpt, root.options.GetEnvName(options.StorageApiTokenOpt)))
 		default:
 			modifiedErrs.Append(err)
 		}
 	}
 
-	root.PrintErrln(errors.PrefixError(modifiedErrs, "Error"))
+	fullErr := errors.PrefixError(modifiedErrs, "Error")
+	root.logger.Debugf("Error debug log:\n%s", errors.FormatWithDebug(fullErr))
+	root.PrintErrln(fullErr)
 }
 
 func (root *RootCommand) setupLogger() {

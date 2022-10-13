@@ -50,3 +50,7 @@ func MultiErrorForTest() error {
 
 	return e.ErrorOrNil()
 }
+
+func ErrorForTest() error {
+	return New("some error")
+}

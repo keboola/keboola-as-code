@@ -33,3 +33,27 @@ func Unwrap(err error) error {
 func Errorf(format string, a ...any) error {
 	return WithStack(fmt.Errorf(format, a...))
 }
+
+type wrappedError struct {
+	message  string
+	trace    StackTrace
+	original error
+}
+
+func (e *wrappedError) Error() string {
+	return e.message
+}
+
+func (e *wrappedError) StackTrace() StackTrace {
+	return e.trace
+}
+
+func (e *wrappedError) Unwrap() error {
+	return e.original
+}
+
+// Wrapf wraps the error with a different message.
+// It is similar to Errorf, but the original error is not part of the message at all.
+func Wrapf(err error, format string, a ...any) error {
+	return &wrappedError{message: fmt.Sprintf(format, a...), trace: callers(), original: err}
+}
