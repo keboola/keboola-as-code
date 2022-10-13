@@ -8,7 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 )
 
 func TestLoadInputsFile(t *testing.T) {

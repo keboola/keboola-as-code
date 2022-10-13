@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"

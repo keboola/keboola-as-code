@@ -16,7 +16,7 @@ import (
 	dependenciesPkg "github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	. "github.com/keboola/keboola-as-code/internal/pkg/template/context/upgrade"

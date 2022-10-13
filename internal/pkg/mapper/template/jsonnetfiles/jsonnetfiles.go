@@ -1,7 +1,7 @@
 package jsonnetfiles
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 )
 
 type jsonNetMapper struct {

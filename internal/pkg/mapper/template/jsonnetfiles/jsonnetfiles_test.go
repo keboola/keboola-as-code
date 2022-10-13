@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/jsonnetfiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )

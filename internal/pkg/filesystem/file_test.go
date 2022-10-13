@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 )
 
 func TestNewRawFile(t *testing.T) {
