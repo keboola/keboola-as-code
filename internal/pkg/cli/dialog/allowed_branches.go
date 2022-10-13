@@ -2,7 +2,6 @@ package dialog
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strings"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -61,7 +61,7 @@ func (d *branchesDialog) ask(ctx context.Context) (model.AllowedBranches, error)
 		if allowedBranches := d.parseBranchesList(value, `,`); len(allowedBranches) > 0 {
 			return allowedBranches, nil
 		}
-		return nil, fmt.Errorf(`please specify at least one branch`)
+		return nil, errors.New(`please specify at least one branch`)
 	}
 
 	// Ask user
@@ -82,7 +82,7 @@ func (d *branchesDialog) ask(ctx context.Context) (model.AllowedBranches, error)
 		}
 	}
 
-	return nil, fmt.Errorf(`please specify at least one branch`)
+	return nil, errors.New(`please specify at least one branch`)
 }
 
 func (d *branchesDialog) askMode() string {
@@ -131,7 +131,7 @@ func (d *branchesDialog) askBranchesList() model.AllowedBranches {
 				}
 			}
 			if matched == 0 {
-				return fmt.Errorf(`no existing project's branch matches your definitions`)
+				return errors.New(`no existing project's branch matches your definitions`)
 			}
 			return nil
 		},

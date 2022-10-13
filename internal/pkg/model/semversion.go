@@ -6,6 +6,7 @@ import (
 	"github.com/Masterminds/semver"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type value = semver.Version
@@ -71,7 +72,7 @@ func (v *SemVersion) UnmarshalJSON(b []byte) (err error) {
 
 	value, err := semver.NewVersion(versionStr)
 	if err != nil {
-		return fmt.Errorf(`invalid semantic version "%s"`, versionStr)
+		return errors.Errorf(`invalid semantic version "%s"`, versionStr)
 	}
 	v.value = value
 	return nil

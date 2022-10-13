@@ -109,19 +109,19 @@ func TestManifestValidateEmpty(t *testing.T) {
 	err := content.validate()
 	assert.NotNil(t, err)
 	expected := `manifest is not valid:
-  - version is a required field
-  - project.id is a required field
-  - project.apiHost is a required field
-  - sortBy must be one of [id path]
-  - naming.branch is a required field
-  - naming.config is a required field
-  - naming.configRow is a required field
-  - naming.schedulerConfig is a required field
-  - naming.sharedCodeConfig is a required field
-  - naming.sharedCodeConfigRow is a required field
-  - naming.variablesConfig is a required field
-  - naming.variablesValuesRow is a required field
-  - allowedBranches is a required field`
+- version is a required field
+- project.id is a required field
+- project.apiHost is a required field
+- sortBy must be one of [id path]
+- naming.branch is a required field
+- naming.config is a required field
+- naming.configRow is a required field
+- naming.schedulerConfig is a required field
+- naming.sharedCodeConfig is a required field
+- naming.sharedCodeConfigRow is a required field
+- naming.variablesConfig is a required field
+- naming.variablesValuesRow is a required field
+- allowedBranches is a required field`
 	assert.Equal(t, expected, err.Error())
 }
 
@@ -181,7 +181,7 @@ func TestManifestCyclicDependency(t *testing.T) {
 	manifest, err := Load(fs, false)
 	assert.Nil(t, manifest)
 	assert.Error(t, err)
-	assert.Equal(t, "invalid manifest:\n  - a cyclic relation was found when resolving path to config \"branch:123/component:keboola.variables/config:111\"", err.Error())
+	assert.Equal(t, "invalid manifest:\n- a cyclic relation was found when resolving path to config \"branch:123/component:keboola.variables/config:111\"", err.Error())
 }
 
 func minimalJson() string {

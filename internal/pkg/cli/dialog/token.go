@@ -1,14 +1,14 @@
 package dialog
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-var ErrMissingStorageApiToken = fmt.Errorf(`missing Storage API token`)
+var ErrMissingStorageApiToken = errors.New(`missing Storage API token`)
 
 func (p *Dialogs) AskStorageApiToken(d hostAndTokenDependencies) (string, error) {
 	opts := d.Options()

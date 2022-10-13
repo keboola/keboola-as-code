@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/jsonnet/function"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -179,7 +180,7 @@ func (c *Context) RegisterPlaceholder(oldId interface{}, fn PlaceholderResolver)
 		case storageapi.RowID:
 			p.asValue = storageapi.RowID(p.asString)
 		default:
-			panic(fmt.Errorf("unexpected ID type"))
+			panic(errors.New("unexpected ID type"))
 		}
 
 		// Store oldId -> placeholder
@@ -218,7 +219,7 @@ func (c *Context) mapId(oldId interface{}) string {
 			case storageapi.RowID:
 				newId = storageapi.RowID(ticket.ID)
 			default:
-				panic(fmt.Errorf("unexpected ID type"))
+				panic(errors.New("unexpected ID type"))
 			}
 			cb(newId)
 		})
@@ -268,7 +269,7 @@ func (n *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{},
 		case jsonnetLib.ArrayIndexStep:
 			mappedSteps = append(mappedSteps, orderedmap.SliceStep(v.Index))
 		default:
-			panic(fmt.Errorf(`unexpected type "%T"`, v))
+			panic(errors.Errorf(`unexpected type "%T"`, v))
 		}
 	}
 

@@ -13,6 +13,7 @@ import (
 	"github.com/acarl005/stripansi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 )
@@ -61,7 +62,7 @@ func setupCmdInOut(t *testing.T, envProvider testhelper.EnvProvider, testDirFs f
 		// Create virtual terminal
 		v.console, err = terminal.New(t, expect.WithStdout(&v.stdoutBuf))
 		if err != nil {
-			return nil, fmt.Errorf("cannot create virtual terminal: %w", err)
+			return nil, errors.Errorf("cannot create virtual terminal: %w", err)
 		}
 
 		// Setup command
@@ -132,7 +133,7 @@ func (v *cmdInputOutput) InteractAndWait(cmd *exec.Cmd, handleErr errorHandler) 
 
 	// Wait for end of stdout
 	if err := v.console.ExpectEOF(); err != nil {
-		handleErr(fmt.Errorf("interaction: error when waiting for end of stdout: %w", err))
+		handleErr(errors.Errorf("interaction: error when waiting for end of stdout: %w", err))
 	}
 
 	return err
@@ -196,5 +197,5 @@ func (v *cmdInputOutput) logf(format string, args ...any) {
 func (v *cmdInputOutput) errorf(lineNum int, format string, args ...any) error {
 	args = append([]any{lineNum}, args...)
 	format = interactionLogPrefix + "%d:" + format
-	return fmt.Errorf(format, args...)
+	return errors.Errorf(format, args...)
 }

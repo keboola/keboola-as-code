@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // New searches for a local directory known for the CLI.
@@ -27,7 +28,7 @@ func New(opts ...filesystem.Option) (fs filesystem.Fs, err error) {
 	if config.WorkingDir == "" {
 		config.WorkingDir, err = os.Getwd()
 		if err != nil {
-			return nil, fmt.Errorf(`cannot get working dir from OS: %w`, err)
+			return nil, errors.Errorf(`cannot get working dir from OS: %w`, err)
 		}
 	}
 
@@ -46,7 +47,7 @@ func New(opts ...filesystem.Option) (fs filesystem.Fs, err error) {
 	// Get relative path to the working directory
 	workingDirRel, err := filepath.Rel(rootDir, config.WorkingDir)
 	if err != nil {
-		return nil, fmt.Errorf(`cannot determine working dir relative path: %w`, err)
+		return nil, errors.Errorf(`cannot determine working dir relative path: %w`, err)
 	}
 
 	// Create filesystem abstraction
@@ -59,18 +60,18 @@ func find(logger log.Logger, workingDir string) (string, error) {
 	// Working dir must be absolute
 
 	if !filepath.IsAbs(workingDir) {
-		return "", fmt.Errorf(`working directory "%s" must be absolute`, workingDir)
+		return "", errors.Errorf(`working directory "%s" must be absolute`, workingDir)
 	}
 
 	// Check if working dir exists
 	s, err := os.Stat(workingDir)
 	switch {
 	case err != nil && os.IsNotExist(err):
-		return "", fmt.Errorf(`working directory "%s" not found`, workingDir)
+		return "", errors.Errorf(`working directory "%s" not found`, workingDir)
 	case err != nil:
-		return "", fmt.Errorf(`working directory "%s" is invalid: %w`, workingDir, err)
+		return "", errors.Errorf(`working directory "%s" is invalid: %w`, workingDir, err)
 	case !s.IsDir():
-		return "", fmt.Errorf(`working directory "%s" is not directory`, workingDir)
+		return "", errors.Errorf(`working directory "%s" is not directory`, workingDir)
 	}
 
 	sep := string(os.PathSeparator)

@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Plan is based on the diff results.
@@ -69,15 +69,15 @@ func (p *Plan) Log(logger log.Logger) {
 }
 
 func (p *Plan) Validate() error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, action := range p.actions {
 		if err := action.validate(); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
-	if errors.Len() > 0 {
-		return utils.PrefixError(fmt.Sprintf(`cannot perform the "%s" operation`, p.Name()), errors)
+	if errs.Len() > 0 {
+		return errors.PrefixErrorf(errs, `cannot perform the "%s" operation`, p.Name())
 	}
 
 	return nil

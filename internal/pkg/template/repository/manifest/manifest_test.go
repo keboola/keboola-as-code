@@ -87,7 +87,7 @@ func TestManifestContentValidateEmpty(t *testing.T) {
 	c := &file{}
 	err := c.validate()
 	assert.NotNil(t, err)
-	expected := "repository manifest is not valid:\n  - version is a required field\n  - author.name is a required field\n  - author.url is a required field"
+	expected := "repository manifest is not valid:\n- version is a required field\n- author.name is a required field\n- author.url is a required field"
 	assert.Equal(t, expected, err.Error())
 }
 
@@ -144,7 +144,7 @@ func TestManifestBadRecordSemanticVersion(t *testing.T) {
 	// Load
 	_, err := loadFile(fs)
 	assert.Error(t, err)
-	assert.Equal(t, "manifest file \".keboola/repository.json\" is invalid:\n  - invalid semantic version \"foo-bar\"", err.Error())
+	assert.Equal(t, "manifest file \".keboola/repository.json\" is invalid:\n- invalid semantic version \"foo-bar\"", err.Error())
 }
 
 func TestManifest_Records(t *testing.T) {

@@ -1,7 +1,6 @@
 package dialog
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/sandboxesapi"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/init"
 )
@@ -44,11 +44,11 @@ func (p *Dialogs) askTargetName() string {
 func validateTargetName(val interface{}) error {
 	str := strings.TrimSpace(val.(string))
 	if len(str) == 0 {
-		return fmt.Errorf(`target name is required`)
+		return errors.New(`target name is required`)
 	}
 
 	if !regexpcache.MustCompile(`^[a-zA-Z0-9\_]+$`).MatchString(str) {
-		return fmt.Errorf(`invalid target name "%s", please use only a-z, A-Z, 0-9, "_" characters`, str)
+		return errors.Errorf(`invalid target name "%s", please use only a-z, A-Z, 0-9, "_" characters`, str)
 	}
 
 	return nil
@@ -97,7 +97,7 @@ func (p *Dialogs) askWorkspaceNameForDbtInit(d createWorkspaceDeps) (string, err
 			Validator: prompt.ValueRequired,
 		})
 		if !ok || len(name) == 0 {
-			return "", fmt.Errorf("missing workspace name, please specify it")
+			return "", errors.New("missing workspace name, please specify it")
 		}
 		return name, nil
 	}

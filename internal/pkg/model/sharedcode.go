@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/storageapi"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type SharedCodeConfig struct {
@@ -96,10 +98,10 @@ func (t *SharedCodeVariablesForRelation) NewOtherSideRelation(relationDefinedOn 
 func (t *SharedCodeVariablesForRelation) checkDefinedOn(relationDefinedOn Key) (ConfigKey, error) {
 	variables, ok := relationDefinedOn.(ConfigKey)
 	if !ok {
-		return variables, fmt.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.Desc())
+		return variables, errors.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
 	if variables.ComponentId != storageapi.VariablesComponentID {
-		return variables, fmt.Errorf(`relation "%s" must be defined on config from "%s" component, found %s`, t.Type(), storageapi.VariablesComponentID, relationDefinedOn.Desc())
+		return variables, errors.Errorf(`relation "%s" must be defined on config from "%s" component, found %s`, t.Type(), storageapi.VariablesComponentID, relationDefinedOn.Desc())
 	}
 	return variables, nil
 }
@@ -148,10 +150,10 @@ func (t *SharedCodeVariablesFromRelation) NewOtherSideRelation(relationDefinedOn
 func (t *SharedCodeVariablesFromRelation) checkDefinedOn(relationDefinedOn Key) (ConfigRowKey, error) {
 	row, ok := relationDefinedOn.(ConfigRowKey)
 	if !ok {
-		return row, fmt.Errorf(`relation "%s" must be defined on config row, found %s`, t.Type(), relationDefinedOn.Desc())
+		return row, errors.Errorf(`relation "%s" must be defined on config row, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
 	if row.ComponentId != storageapi.SharedCodeComponentID {
-		return row, fmt.Errorf(`relation "%s" must be defined on config row from "%s" component, found %s`, t.Type(), storageapi.SharedCodeComponentID, relationDefinedOn.Desc())
+		return row, errors.Errorf(`relation "%s" must be defined on config row from "%s" component, found %s`, t.Type(), storageapi.SharedCodeComponentID, relationDefinedOn.Desc())
 	}
 	return row, nil
 }

@@ -1,13 +1,12 @@
 package template
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	describeOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/repository/describe"
 )
 
@@ -18,7 +17,7 @@ func DescribeCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`template/describe/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
-				return fmt.Errorf(`please enter argument with the template ID you want to use and optionally its version`)
+				return errors.New(`please enter argument with the template ID you want to use and optionally its version`)
 			}
 
 			// Command must be used in template repository

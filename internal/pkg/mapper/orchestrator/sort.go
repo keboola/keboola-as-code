@@ -1,14 +1,13 @@
 package orchestrator
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
 	"v.io/x/lib/toposort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type phasesSorter struct {
@@ -25,7 +24,7 @@ func newPhasesSorter() *phasesSorter {
 }
 
 func (s *phasesSorter) sortPhases() ([]*model.Phase, error) {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	graph := &toposort.Sorter{}
 
 	// Add dependencies to graph
@@ -41,15 +40,15 @@ func (s *phasesSorter) sortPhases() ([]*model.Phase, error) {
 	// Topological sort by dependencies
 	order, cycles := graph.Sort()
 	if len(cycles) > 0 {
-		err := utils.NewMultiError()
+		err := errors.NewMultiError()
 		for _, cycle := range cycles {
 			var items []string
 			for _, item := range cycle {
 				items = append([]string{item.(string)}, items...) // prepend
 			}
-			err.Append(fmt.Errorf(strings.Join(items, ` -> `)))
+			err.Append(errors.New(strings.Join(items, ` -> `)))
 		}
-		errors.Append(utils.PrefixError(`found cycles in phases "dependsOn"`, err))
+		errs.AppendWithPrefixf(err, `found cycles in phases "dependsOn"`)
 	}
 
 	// Generate slice
@@ -76,7 +75,7 @@ func (s *phasesSorter) sortPhases() ([]*model.Phase, error) {
 		for _, dependsOnKey := range s.phaseDependsOnKeys[key] {
 			dependsOnPhase, found := s.phaseByKey[dependsOnKey]
 			if !found {
-				errors.Append(fmt.Errorf(`missing phase "%s", referenced from "%s"`, dependsOnKey, key))
+				errs.Append(errors.Errorf(`missing phase "%s", referenced from "%s"`, dependsOnKey, key))
 				continue
 			}
 			dependsOn = append(dependsOn, dependsOnPhase)
@@ -94,5 +93,5 @@ func (s *phasesSorter) sortPhases() ([]*model.Phase, error) {
 		}
 	}
 
-	return phases, errors.ErrorOrNil()
+	return phases, errs.ErrorOrNil()
 }

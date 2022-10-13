@@ -2,12 +2,11 @@ package manifest
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -40,7 +39,7 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 	// Check if file exists
 	path := Path()
 	if !fs.IsFile(path) {
-		return nil, fmt.Errorf("manifest \"%s\" not found", path)
+		return nil, errors.Errorf("manifest \"%s\" not found", path)
 	}
 
 	// Read JSON file
@@ -83,7 +82,7 @@ func saveFile(fs filesystem.Fs, manifestContent *file) error {
 	// Write JSON file
 	content, err := json.EncodeString(manifestContent, true)
 	if err != nil {
-		return utils.PrefixError(`cannot encode manifest`, err)
+		return errors.PrefixError(err, "cannot encode manifest")
 	}
 	file := filesystem.NewRawFile(Path(), content)
 	if err := fs.WriteFile(file); err != nil {
@@ -95,7 +94,7 @@ func saveFile(fs filesystem.Fs, manifestContent *file) error {
 
 func (f *file) validate() error {
 	if err := validator.New().Validate(context.Background(), f); err != nil {
-		return utils.PrefixError("repository manifest is not valid", err)
+		return errors.PrefixError(err, "repository manifest is not valid")
 	}
 	return nil
 }

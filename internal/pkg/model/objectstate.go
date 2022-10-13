@@ -1,9 +1,9 @@
 package model
 
 import (
-	"fmt"
-
 	"github.com/keboola/go-client/pkg/storageapi"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type StateType int
@@ -73,7 +73,7 @@ func (b *BranchState) HasState(stateType StateType) bool {
 	case StateTypeRemote:
 		return b.Remote != nil
 	default:
-		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
+		panic(errors.Errorf(`unexpected state type "%T"`, stateType))
 	}
 }
 
@@ -84,7 +84,7 @@ func (c *ConfigState) HasState(stateType StateType) bool {
 	case StateTypeRemote:
 		return c.Remote != nil
 	default:
-		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
+		panic(errors.Errorf(`unexpected state type "%T"`, stateType))
 	}
 }
 
@@ -95,7 +95,7 @@ func (r *ConfigRowState) HasState(stateType StateType) bool {
 	case StateTypeRemote:
 		return r.Remote != nil
 	default:
-		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
+		panic(errors.Errorf(`unexpected state type "%T"`, stateType))
 	}
 }
 
@@ -106,7 +106,7 @@ func (b *BranchState) GetState(stateType StateType) Object {
 	case StateTypeRemote:
 		return b.Remote
 	default:
-		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
+		panic(errors.Errorf(`unexpected state type "%T"`, stateType))
 	}
 }
 
@@ -117,7 +117,7 @@ func (c *ConfigState) GetState(stateType StateType) Object {
 	case StateTypeRemote:
 		return c.Remote
 	default:
-		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
+		panic(errors.Errorf(`unexpected state type "%T"`, stateType))
 	}
 }
 
@@ -128,7 +128,7 @@ func (r *ConfigRowState) GetState(stateType StateType) Object {
 	case StateTypeRemote:
 		return r.Remote
 	default:
-		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
+		panic(errors.Errorf(`unexpected state type "%T"`, stateType))
 	}
 }
 
@@ -235,7 +235,7 @@ func (b *BranchState) LocalOrRemoteState() Object {
 	case b.HasRemoteState():
 		return b.RemoteState()
 	default:
-		panic(fmt.Errorf("object Local or Remote state must be set"))
+		panic(errors.New("object Local or Remote state must be set"))
 	}
 }
 
@@ -246,7 +246,7 @@ func (c *ConfigState) LocalOrRemoteState() Object {
 	case c.HasRemoteState():
 		return c.RemoteState()
 	default:
-		panic(fmt.Errorf("object Local or Remote state must be set"))
+		panic(errors.New("object Local or Remote state must be set"))
 	}
 }
 
@@ -257,7 +257,7 @@ func (r *ConfigRowState) LocalOrRemoteState() Object {
 	case r.HasRemoteState():
 		return r.RemoteState()
 	default:
-		panic(fmt.Errorf("object Local or Remote state must be set"))
+		panic(errors.New("object Local or Remote state must be set"))
 	}
 }
 
@@ -268,7 +268,7 @@ func (b *BranchState) RemoteOrLocalState() Object {
 	case b.HasLocalState():
 		return b.LocalState()
 	default:
-		panic(fmt.Errorf("object Remote or Local state must be set"))
+		panic(errors.New("object Remote or Local state must be set"))
 	}
 }
 
@@ -279,7 +279,7 @@ func (c *ConfigState) RemoteOrLocalState() Object {
 	case c.HasLocalState():
 		return c.LocalState()
 	default:
-		panic(fmt.Errorf("object Remote or Local state must be set"))
+		panic(errors.New("object Remote or Local state must be set"))
 	}
 }
 
@@ -290,7 +290,7 @@ func (r *ConfigRowState) RemoteOrLocalState() Object {
 	case r.HasLocalState():
 		return r.LocalState()
 	default:
-		panic(fmt.Errorf("object Remote or Local state must be set"))
+		panic(errors.New("object Remote or Local state must be set"))
 	}
 }
 

@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (p *Dialogs) SelectBranch(options *options.Options, all []*model.Branch, label string) (*model.Branch, error) {
@@ -29,12 +29,12 @@ func (p *Dialogs) SelectBranch(options *options.Options, all []*model.Branch, la
 		return all[index], nil
 	}
 
-	return nil, fmt.Errorf(`please specify branch`)
+	return nil, errors.New(`please specify branch`)
 }
 
 func (p *Dialogs) SelectBranches(options *options.Options, all []*model.Branch, label string) (results []*model.Branch, err error) {
 	if options.IsSet(`branches`) {
-		errors := utils.NewMultiError()
+		errs := errors.NewMultiError()
 		for _, item := range strings.Split(options.GetString(`branches`), `,`) {
 			item = strings.TrimSpace(item)
 			if len(item) == 0 {
@@ -44,14 +44,14 @@ func (p *Dialogs) SelectBranches(options *options.Options, all []*model.Branch, 
 			if b, err := search.Branch(all, item); err == nil {
 				results = append(results, b)
 			} else {
-				errors.Append(err)
+				errs.Append(err)
 				continue
 			}
 		}
 		if len(results) > 0 {
-			return results, errors.ErrorOrNil()
+			return results, errs.ErrorOrNil()
 		}
-		return nil, fmt.Errorf(`please specify at least one branch`)
+		return nil, errors.New(`please specify at least one branch`)
 	}
 
 	selectOpts := orderedmap.New()
@@ -72,5 +72,5 @@ func (p *Dialogs) SelectBranches(options *options.Options, all []*model.Branch, 
 		return results, nil
 	}
 
-	return nil, fmt.Errorf(`please specify at least one branch`)
+	return nil, errors.New(`please specify at least one branch`)
 }

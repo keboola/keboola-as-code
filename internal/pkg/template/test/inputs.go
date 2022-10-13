@@ -2,11 +2,10 @@ package test
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/testtemplateinputs"
 )
@@ -28,12 +27,12 @@ func ReadInputValues(ctx context.Context, tmpl *template.Template, test *templat
 		if v, found := inputsFile[inputDef.Id]; found {
 			inputValue, err = template.ParseInputValue(v, inputDef, true)
 			if err != nil {
-				return utils.PrefixError(err.Error(), fmt.Errorf("please fix the value in the inputs JSON file"))
+				return errors.NewNestedError(err, errors.New("please fix the value in the inputs JSON file"))
 			}
 		} else {
 			inputValue, err = template.ParseInputValue(inputDef.DefaultOrEmpty(), inputDef, true)
 			if err != nil {
-				return utils.PrefixError(err.Error(), fmt.Errorf("please define value in the inputs JSON file"))
+				return errors.NewNestedError(err, errors.New("please define value in the inputs JSON file"))
 			}
 		}
 		inputValues = append(inputValues, inputValue)

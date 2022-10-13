@@ -2,7 +2,6 @@ package fs
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/otel/trace"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type config struct {
@@ -40,6 +40,6 @@ func For(ctx context.Context, d dependencies, ref model.TemplateRepository, opts
 	case model.RepositoryTypeGit:
 		return gitFsFor(ctx, d, ref, opts...)
 	default:
-		panic(fmt.Errorf(`unexpected repository type "%s"`, ref.Type))
+		panic(errors.Errorf(`unexpected repository type "%s"`, ref.Type))
 	}
 }

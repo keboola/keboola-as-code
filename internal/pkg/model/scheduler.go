@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/storageapi"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // SchedulerForRelation - scheduler for a configuration.
@@ -55,7 +57,7 @@ func (t *SchedulerForRelation) NewOtherSideRelation(_ Object, _ Objects) (Key, R
 func (t *SchedulerForRelation) checkDefinedOn(relationDefinedOn Key) (ConfigKey, error) {
 	config, ok := relationDefinedOn.(ConfigKey)
 	if !ok {
-		return config, fmt.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.Desc())
+		return config, errors.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
 	return config, nil
 }

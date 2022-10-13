@@ -2,12 +2,12 @@ package transformation
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // MapBeforeRemoteSave - save code blocks to the API.
@@ -33,7 +33,7 @@ func (m *transformationMapper) MapBeforeRemoteSave(ctx context.Context, recipe *
 	for _, block := range apiObject.Transformation.Blocks {
 		blockRaw := orderedmap.New()
 		if err := json.ConvertByJson(block, &blockRaw); err != nil {
-			return fmt.Errorf(`cannot convert block to JSON: %w`, err)
+			return errors.Errorf(`cannot convert block to JSON: %w`, err)
 		}
 		blocks = append(blocks, blockRaw)
 	}

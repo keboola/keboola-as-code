@@ -4,21 +4,21 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (m *mapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
 	// Process loaded objects
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, objectState := range changes.Loaded() {
 		if err := m.onRemoteLoad(objectState); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
-	if errors.Len() > 0 {
+	if errs.Len() > 0 {
 		// Convert errors to warning
-		m.logger.Warn(utils.PrefixError(`Warning`, errors))
+		m.logger.Warn(errors.PrefixError(errs, "Warning"))
 	}
 	return nil
 }

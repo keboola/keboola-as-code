@@ -2,7 +2,6 @@ package dependencies
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
@@ -12,6 +11,7 @@ import (
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
 	loadTemplateOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/load"
 	loadRepositoryOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/repository/load"
@@ -131,13 +131,13 @@ func (v *local) LocalTemplate(ctx context.Context) (*template.Template, bool, er
 		// Get template
 		templateRecord, found := repo.RecordByPath(paths.TemplateDirName)
 		if !found {
-			return localTemplateValue{found: false}, fmt.Errorf(`template with path "%s" not found in "%s"`, paths.TemplateDirName, repo.Manifest().Path())
+			return localTemplateValue{found: false}, errors.Errorf(`template with path "%s" not found in "%s"`, paths.TemplateDirName, repo.Manifest().Path())
 		}
 
 		// Get version
 		versionRecord, found := templateRecord.GetByPath(paths.VersionDirName)
 		if !found {
-			return localTemplateValue{found: false}, fmt.Errorf(`template "%s" found, but version directory "%s" is missing`, templateRecord.Name, paths.VersionDirName)
+			return localTemplateValue{found: false}, errors.Errorf(`template "%s" found, but version directory "%s" is missing`, templateRecord.Name, paths.VersionDirName)
 		}
 
 		// Load template

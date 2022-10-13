@@ -1,13 +1,13 @@
 package env
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // LoadDotEnv loads envs from ".env" if exists. Existing envs take precedence.
@@ -49,12 +49,12 @@ func LoadDotEnv(logger log.Logger, osEnvs *Map, fs filesystem.Fs, dirs []string)
 func LoadEnvFile(fs filesystem.Fs, path string) (*Map, error) {
 	file, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("env file"))
 	if err != nil {
-		return nil, fmt.Errorf(`cannot read env file "%s": %w`, path, err)
+		return nil, errors.Errorf(`cannot read env file "%s": %w`, path, err)
 	}
 
 	envs, err := LoadEnvString(file.Content)
 	if err != nil {
-		return nil, fmt.Errorf(`cannot parse env file "%s": %w`, path, err)
+		return nil, errors.Errorf(`cannot parse env file "%s": %w`, path, err)
 	}
 
 	return envs, nil

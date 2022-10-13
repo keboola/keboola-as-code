@@ -647,11 +647,11 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 	_, err = dialog.AskUseTemplateOptions(projectState, stepsGroups, d.Options())
 	expectedErr := `
 steps group 1 "Please select which steps you want to fill." is invalid:
-  - all steps (3) must be selected
-  - number of selected steps (2) is incorrect
-  - in the inputs JSON file, these steps are defined:
-    - Step 1, inputs: input1
-    - Step 3, inputs: input3, input4
+- all steps (3) must be selected
+- number of selected steps (2) is incorrect
+- in the inputs JSON file, these steps are defined:
+  - Step 1, inputs: input1
+  - Step 3, inputs: input3, input4
 `
 	assert.Error(t, err)
 	assert.Equal(t, strings.Trim(expectedErr, "\n"), err.Error())

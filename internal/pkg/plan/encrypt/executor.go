@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type executor struct {
@@ -21,7 +21,7 @@ type executor struct {
 	logger              log.Logger
 	encryptionApiClient client.Sender
 	uow                 *local.UnitOfWork
-	errors              *utils.MultiError
+	errors              errors.MultiError
 }
 
 func newExecutor(ctx context.Context, projectID int, logger log.Logger, encryptionApiClient client.Sender, state *state.State, plan *Plan) *executor {
@@ -32,7 +32,7 @@ func newExecutor(ctx context.Context, projectID int, logger log.Logger, encrypti
 		logger:              logger,
 		encryptionApiClient: encryptionApiClient,
 		uow:                 state.LocalManager().NewUnitOfWork(ctx),
-		errors:              utils.NewMultiError(),
+		errors:              errors.NewMultiError(),
 	}
 }
 

@@ -10,7 +10,7 @@ import (
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -86,22 +86,22 @@ func (v FsInfo) AssertEmptyDir() error {
 	}
 
 	// Filter out ignored files and keep only the first 5 items
-	found := utils.NewMultiError()
+	foundErr := errors.NewMultiError()
 	for _, item := range items {
 		if !filesystem.IsIgnoredPath(item.Name(), item) {
 			path := item.Name()
-			if found.Len() > 5 {
-				found.Append(fmt.Errorf(path + ` ...`))
+			if foundErr.Len() > 5 {
+				foundErr.Append(errors.New(path + ` ...`))
 				break
 			} else {
-				found.Append(fmt.Errorf(path))
+				foundErr.Append(errors.New(path))
 			}
 		}
 	}
 
-	// Directory must be empty
-	if found.Len() > 0 {
-		return utils.PrefixError(fmt.Sprintf(`directory "%s" it not empty, found`, v.fs.BasePath()), found)
+	// Directory must be empty (no error)
+	if foundErr.Len() > 0 {
+		return errors.PrefixErrorf(foundErr, `directory "%s" it not empty, found`, v.fs.BasePath())
 	}
 
 	return nil
@@ -138,7 +138,7 @@ func (v FsInfo) TemplatePath() (LocalTemplatePath, error) {
 	// Get working directory relative to repository directory
 	workingDir, err := filepath.Rel(repoFs.BasePath(), filepath.Join(v.fs.BasePath(), filesystem.FromSlash(v.fs.WorkingDir()))) // nolint: forbidigo
 	if err != nil {
-		return paths, fmt.Errorf(`path "%s" is not from "%s"`, repoFs.BasePath(), v.fs.BasePath())
+		return paths, errors.Errorf(`path "%s" is not from "%s"`, repoFs.BasePath(), v.fs.BasePath())
 	}
 
 	// Template dir is [template]/[version], for example "my-template/v1".
@@ -146,7 +146,7 @@ func (v FsInfo) TemplatePath() (LocalTemplatePath, error) {
 	workingDir = filesystem.ToSlash(workingDir)
 	parts := strings.SplitN(workingDir, string(filesystem.PathSeparator), 3) // nolint: forbidigo
 	if len(parts) < 2 {
-		return paths, fmt.Errorf(`directory "%s" is not a template directory`, filesystem.Join(parts[0:2]...))
+		return paths, errors.Errorf(`directory "%s" is not a template directory`, filesystem.Join(parts[0:2]...))
 	}
 
 	// Get paths

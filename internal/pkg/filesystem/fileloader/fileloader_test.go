@@ -139,7 +139,7 @@ func (*testCases) TestFileLoader_ReadJsonFileTo_Invalid(t *testing.T, fs filesys
 	assert.Error(t, err)
 	expectedError := `
 file "file.txt" is invalid:
-  - unexpected end of JSON input, offset: 7
+- unexpected end of JSON input, offset: 7
 `
 	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
 }
@@ -186,7 +186,7 @@ func (*testCases) TestFileLoader_ReadJsonNetFileTo_Invalid(t *testing.T, fs file
 	assert.Error(t, err)
 	expectedError := `
 file "file.txt" is invalid:
-  - cannot parse jsonnet: file.txt:1:6 Unexpected end of file
+- cannot parse jsonnet: file.txt:1:6 Unexpected end of file
 `
 	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
 }
@@ -202,7 +202,7 @@ func (*testCases) TestFileLoader_ReadJsonFile_Invalid(t *testing.T, fs filesyste
 	assert.Nil(t, file)
 	expectedError := `
 file "file.txt" is invalid:
-  - unexpected end of JSON input, offset: 7
+- unexpected end of JSON input, offset: 7
 `
 	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
 }

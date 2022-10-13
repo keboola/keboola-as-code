@@ -18,7 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/upgrade"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/encrypt"
 	saveProjectManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
@@ -68,7 +68,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 
 	// Prepare operations
 	objects := make(upgradedObjects, 0)
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	renameOp := manager.NewPathsGenerator(true)
 	saveOp := manager.NewUnitOfWork(ctx)
 
@@ -83,7 +83,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 
 	// Update instance metadata
 	if err := branchState.Local.Metadata.UpsertTemplateInstance(time.Now(), o.Instance.InstanceId, o.Instance.InstanceName, tmpl.TemplateId(), tmpl.Repository().Name, tmpl.Version(), d.StorageApiTokenID(), mainConfig); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 	saveOp.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())
 
@@ -115,7 +115,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 
 			// Copy state from template to project
 			if err := projectState.Set(objectState); err != nil {
-				errors.Append(err)
+				errs.Append(err)
 				continue
 			}
 
@@ -149,9 +149,10 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	}
 
 	// Execute rename and save
-	if errors.Len() > 0 {
-		return nil, errors
+	if errs.Len() > 0 {
+		return nil, errs
 	}
+
 	if err := renameOp.Invoke(); err != nil {
 		return nil, err
 	}

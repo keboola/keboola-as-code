@@ -1,9 +1,8 @@
 package model
 
 import (
-	"fmt"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -71,7 +70,7 @@ func (l *FilesLoader) ReadSubDirs(fs filesystem.Fs, root string) ([]string, erro
 
 func (l *FilesLoader) addLoaded(file filesystem.File) {
 	if file == nil {
-		panic(fmt.Errorf(`file cannot be nil`))
+		panic(errors.New(`file cannot be nil`))
 	}
 	l.loaded.Add(file)
 }

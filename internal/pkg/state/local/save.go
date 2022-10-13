@@ -2,12 +2,11 @@ package local
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-utils/pkg/deepcopy"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type modelWriter struct {
@@ -15,13 +14,13 @@ type modelWriter struct {
 	*model.LocalSaveRecipe
 	ctx     context.Context
 	backups map[string]string
-	errors  *utils.MultiError
+	errors  errors.MultiError
 }
 
 // saveObject to manifest and filesystem.
 func (m *Manager) saveObject(ctx context.Context, manifest model.ObjectManifest, object model.Object, changedFields model.ChangedFields) error {
 	if manifest.Key() != object.Key() {
-		panic(fmt.Errorf(`manifest "%T" and object "%T" type mismatch`, manifest, object))
+		panic(errors.Errorf(`manifest "%T" and object "%T" type mismatch`, manifest, object))
 	}
 
 	objectClone := deepcopy.Copy(object).(model.Object)
@@ -30,7 +29,7 @@ func (m *Manager) saveObject(ctx context.Context, manifest model.ObjectManifest,
 		LocalSaveRecipe: model.NewLocalSaveRecipe(manifest, objectClone, changedFields),
 		ctx:             ctx,
 		backups:         make(map[string]string),
-		errors:          utils.NewMultiError(),
+		errors:          errors.NewMultiError(),
 	}
 	return w.save()
 }
@@ -38,7 +37,7 @@ func (m *Manager) saveObject(ctx context.Context, manifest model.ObjectManifest,
 func (w *modelWriter) save() error {
 	// Validate
 	if err := w.validator.Validate(w.ctx, w.Object); err != nil {
-		w.errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, w.Kind().Name, w.Path()), err)
+		w.errors.AppendWithPrefixf(err, `%s "%s" is invalid`, w.Kind().Name, w.Path())
 		return w.errors
 	}
 
@@ -128,7 +127,7 @@ func (w *modelWriter) restoreBackups() {
 	if w.errors.Len() > 0 {
 		for dst, src := range w.backups {
 			if err := w.fs.Move(src, dst); err != nil {
-				w.logger.Debug(fmt.Errorf(`cannot restore backup "%s" -> "%s": %w`, src, dst, err))
+				w.logger.Debug(errors.Errorf(`cannot restore backup "%s" -> "%s": %w`, src, dst, err))
 			}
 		}
 	}
@@ -138,7 +137,7 @@ func (w *modelWriter) restoreBackups() {
 func (w *modelWriter) removeBackups() {
 	for _, path := range w.backups {
 		if err := w.fs.Remove(path); err != nil {
-			w.logger.Debug(fmt.Errorf(`cannot remove backup "%s": %w`, path, err))
+			w.logger.Debug(errors.Errorf(`cannot remove backup "%s": %w`, path, err))
 		}
 	}
 	w.backups = make(map[string]string)

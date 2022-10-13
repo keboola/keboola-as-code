@@ -6,14 +6,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type InvalidManifestError struct {
 	error
 }
 
-func (e *InvalidManifestError) Unwrap() error {
+func (e InvalidManifestError) Unwrap() error {
 	return e.error
 }
 
@@ -63,7 +63,7 @@ func Load(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 
 	// Set records
 	if err := m.records.SetRecords(content.records()); err != nil && !ignoreErrors {
-		return nil, InvalidManifestError{utils.PrefixError("invalid manifest", err)}
+		return nil, InvalidManifestError{errors.PrefixError(err, "invalid manifest")}
 	}
 
 	// Return

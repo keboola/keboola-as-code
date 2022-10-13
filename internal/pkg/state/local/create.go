@@ -1,12 +1,11 @@
 package local
 
 import (
-	"fmt"
-
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (m *Manager) createObject(key model.Key, name string) (model.Object, error) {
@@ -40,7 +39,7 @@ func (m *Manager) createObject(key model.Key, name string) (model.Object, error)
 			Content:      content,
 		}, nil
 	default:
-		panic(fmt.Errorf(`unexpected type "%T"`, key))
+		panic(errors.Errorf(`unexpected type "%T"`, key))
 	}
 }
 

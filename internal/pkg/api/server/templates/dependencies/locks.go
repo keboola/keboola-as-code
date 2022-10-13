@@ -2,14 +2,13 @@ package dependencies
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -63,7 +62,7 @@ func (l *Locker) tryLock(requestCtx context.Context, lockName string) (*concurre
 	// Get client
 	c, err := l.d.EtcdClient(requestCtx)
 	if err != nil {
-		return nil, nil, fmt.Errorf(`cannot get etcd client: %w`, err)
+		return nil, nil, errors.Errorf(`cannot get etcd client: %w`, err)
 	}
 
 	// Acquire timeout
@@ -73,13 +72,13 @@ func (l *Locker) tryLock(requestCtx context.Context, lockName string) (*concurre
 	// Creates a new lease
 	lease, err := c.Grant(acquireCtx, int64(l.ttlSeconds))
 	if err != nil {
-		return nil, nil, fmt.Errorf(`cannot grant lease %w`, err)
+		return nil, nil, errors.Errorf(`cannot grant lease %w`, err)
 	}
 
 	// Get concurrency session with TTL
 	session, err := concurrency.NewSession(c, concurrency.WithContext(requestCtx), concurrency.WithLease(lease.ID))
 	if err != nil {
-		return nil, nil, fmt.Errorf(`cannot obtain session: %w`, err)
+		return nil, nil, errors.Errorf(`cannot obtain session: %w`, err)
 	}
 
 	// Try lock
@@ -87,7 +86,7 @@ func (l *Locker) tryLock(requestCtx context.Context, lockName string) (*concurre
 	if err := mtx.TryLock(acquireCtx); errors.Is(err, concurrency.ErrLocked) {
 		return nil, nil, err
 	} else if err != nil {
-		return nil, nil, fmt.Errorf(`cannot lock mutex: %w`, err)
+		return nil, nil, errors.Errorf(`cannot lock mutex: %w`, err)
 	}
 
 	// End the refresh for the session lease, so TTL will apply

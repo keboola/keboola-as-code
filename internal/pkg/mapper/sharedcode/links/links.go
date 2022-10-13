@@ -1,14 +1,12 @@
 package links
 
 import (
-	"fmt"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/sharedcode/helper"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // mapper replaces "shared_code_id" with "shared_code_path" in local fs.
@@ -35,9 +33,9 @@ func (m *mapper) linkToIdPlaceholder(code *model.Code, link model.Script) (model
 		row, ok := m.state.GetOrNil(link.Target).(*model.ConfigRowState)
 		script := model.StaticScript{Value: m.id.format(row.Id)}
 		if !ok {
-			return script, utils.PrefixError(
-				fmt.Sprintf(`missing shared code "%s"`, link.Target.Desc()),
-				fmt.Errorf(`referenced from %s`, code.Path()),
+			return script, errors.NewNestedError(
+				errors.Errorf(`missing shared code "%s"`, link.Target.Desc()),
+				errors.Errorf(`referenced from %s`, code.Path()),
 			)
 		}
 		return script, nil
@@ -50,9 +48,9 @@ func (m *mapper) linkToPathPlaceholder(code *model.Code, link model.Script, shar
 		row, ok := m.state.GetOrNil(link.Target).(*model.ConfigRowState)
 		if !ok || sharedCode == nil {
 			// Return ID placeholder, if row is not found
-			return model.StaticScript{Value: m.id.format(link.Target.Id)}, utils.PrefixError(
-				fmt.Sprintf(`missing shared code %s`, link.Target.Desc()),
-				fmt.Errorf(`referenced from %s`, code.Path()),
+			return model.StaticScript{Value: m.id.format(link.Target.Id)}, errors.NewNestedError(
+				errors.Errorf(`missing shared code %s`, link.Target.Desc()),
+				errors.Errorf(`referenced from %s`, code.Path()),
 			)
 		}
 
@@ -82,9 +80,9 @@ func (m *mapper) parseIdPlaceholder(code *model.Code, script model.Script, share
 	}
 	row, found := m.state.GetOrNil(rowKey).(*model.ConfigRowState)
 	if !found {
-		return nil, nil, utils.PrefixError(
-			fmt.Sprintf(`missing shared code %s`, rowKey.Desc()),
-			fmt.Errorf(`referenced from %s`, code.Path()),
+		return nil, nil, errors.NewNestedError(
+			errors.Errorf(`missing shared code %s`, rowKey.Desc()),
+			errors.Errorf(`referenced from %s`, code.Path()),
 		)
 	}
 
@@ -103,9 +101,9 @@ func (m *mapper) parsePathPlaceholder(code *model.Code, script model.Script, sha
 	// Get shared code row
 	row, err := m.helper.GetSharedCodeRowByPath(sharedCode, path)
 	if err != nil {
-		return nil, nil, utils.PrefixError(
-			err.Error(),
-			fmt.Errorf(`referenced from "%s"`, code.Path()),
+		return nil, nil, errors.NewNestedError(
+			err,
+			errors.Errorf(`referenced from "%s"`, code.Path()),
 		)
 	}
 

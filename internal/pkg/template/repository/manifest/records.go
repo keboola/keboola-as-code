@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type TemplateRecord struct {
@@ -94,7 +95,7 @@ func (v *TemplateRecord) GetVersionOrErr(wantedStr string) (VersionRecord, error
 	// Get version
 	version, found := v.GetVersion(wanted)
 	if !found {
-		return version, VersionNotFoundError{fmt.Errorf(`template "%s" found but version "%s" is missing`, v.Id, wanted.Original())}
+		return version, VersionNotFoundError{errors.Errorf(`template "%s" found but version "%s" is missing`, v.Id, wanted.Original())}
 	}
 	return version, nil
 }
@@ -149,7 +150,7 @@ func (v *TemplateRecord) DefaultVersion() (VersionRecord, bool) {
 func (v *TemplateRecord) DefaultVersionOrErr() (VersionRecord, error) {
 	version, found := v.DefaultVersion()
 	if !found {
-		return version, VersionNotFoundError{fmt.Errorf(`default version for template "%s" was not found`, v.Id)}
+		return version, VersionNotFoundError{errors.Errorf(`default version for template "%s" was not found`, v.Id)}
 	}
 	return version, nil
 }

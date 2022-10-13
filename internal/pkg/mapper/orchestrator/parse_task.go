@@ -1,12 +1,13 @@
 package orchestrator
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type taskParser struct {
@@ -16,14 +17,14 @@ type taskParser struct {
 func (p *taskParser) id() (int, error) {
 	raw, found := p.content.Get(`id`)
 	if !found {
-		return 0, fmt.Errorf(`missing "id" key`)
+		return 0, errors.New(`missing "id" key`)
 	}
 	value, ok := raw.(float64) // JSON int is float64, by default in Go
 	if !ok {
-		return 0, fmt.Errorf(`"id" must be int, found %T`, raw)
+		return 0, errors.Errorf(`"id" must be int, found %T`, raw)
 	}
 	if _, err := strconv.Atoi(cast.ToString(value)); err != nil {
-		return 0, fmt.Errorf(`"id" must be int, found "%+v"`, raw)
+		return 0, errors.Errorf(`"id" must be int, found "%+v"`, raw)
 	}
 	p.content.Delete(`id`)
 	return int(value), nil
@@ -32,14 +33,14 @@ func (p *taskParser) id() (int, error) {
 func (p *taskParser) name() (string, error) {
 	raw, found := p.content.Get(`name`)
 	if !found {
-		return "", fmt.Errorf(`missing "name" key`)
+		return "", errors.New(`missing "name" key`)
 	}
 	value, ok := raw.(string)
 	if !ok {
-		return "", fmt.Errorf(`"name" must be string, found %T`, raw)
+		return "", errors.Errorf(`"name" must be string, found %T`, raw)
 	}
 	if len(value) == 0 {
-		return "", fmt.Errorf(`"name" cannot be empty`)
+		return "", errors.New(`"name" cannot be empty`)
 	}
 	p.content.Delete(`name`)
 	return value, nil
@@ -53,7 +54,7 @@ func (p *taskParser) enabled() (bool, error) {
 	}
 	value, ok := raw.(bool)
 	if !ok {
-		return true, fmt.Errorf(`"enabled" must be boolean, found %T`, raw)
+		return true, errors.Errorf(`"enabled" must be boolean, found %T`, raw)
 	}
 	p.content.Delete(`enabled`)
 	return value, nil
@@ -62,14 +63,14 @@ func (p *taskParser) enabled() (bool, error) {
 func (p *taskParser) phaseId() (int, error) {
 	raw, found := p.content.Get(`phase`)
 	if !found {
-		return 0, fmt.Errorf(`missing "phase" key`)
+		return 0, errors.New(`missing "phase" key`)
 	}
 	value, ok := raw.(float64) // JSON int is float64, by default in Go
 	if !ok {
-		return 0, fmt.Errorf(`"phase" must be int, found %T`, raw)
+		return 0, errors.Errorf(`"phase" must be int, found %T`, raw)
 	}
 	if _, err := strconv.Atoi(cast.ToString(value)); err != nil {
-		return 0, fmt.Errorf(`"phase" must be int, found "%+v"`, raw)
+		return 0, errors.Errorf(`"phase" must be int, found "%+v"`, raw)
 	}
 	p.content.Delete(`phase`)
 	return int(value), nil
@@ -78,22 +79,22 @@ func (p *taskParser) phaseId() (int, error) {
 func (p *taskParser) componentId() (storageapi.ComponentID, error) {
 	taskRaw, found := p.content.Get(`task`)
 	if !found {
-		return "", fmt.Errorf(`missing "task" key`)
+		return "", errors.New(`missing "task" key`)
 	}
 	task, ok := taskRaw.(*orderedmap.OrderedMap)
 	if !ok {
-		return "", fmt.Errorf(`"task" key must be object, found %T`, taskRaw)
+		return "", errors.Errorf(`"task" key must be object, found %T`, taskRaw)
 	}
 	raw, found := task.Get(`componentId`)
 	if !found {
-		return "", fmt.Errorf(`missing "task.componentId" key`)
+		return "", errors.New(`missing "task.componentId" key`)
 	}
 	value, ok := raw.(string)
 	if !ok {
-		return "", fmt.Errorf(`"task.componentId" must be string, found %T`, raw)
+		return "", errors.Errorf(`"task.componentId" must be string, found %T`, raw)
 	}
 	if len(value) == 0 {
-		return "", fmt.Errorf(`"task.componentId" cannot be empty`)
+		return "", errors.New(`"task.componentId" cannot be empty`)
 	}
 	task.Delete(`componentId`)
 	p.content.Set(`task`, task)
@@ -116,22 +117,22 @@ func (p *taskParser) hasConfigId() bool {
 func (p *taskParser) configId() (storageapi.ConfigID, error) {
 	taskRaw, found := p.content.Get(`task`)
 	if !found {
-		return "", fmt.Errorf(`missing "task" key`)
+		return "", errors.New(`missing "task" key`)
 	}
 	task, ok := taskRaw.(*orderedmap.OrderedMap)
 	if !ok {
-		return "", fmt.Errorf(`"task" key must be object, found %T`, taskRaw)
+		return "", errors.Errorf(`"task" key must be object, found %T`, taskRaw)
 	}
 	raw, found := task.Get(`configId`)
 	if !found {
-		return "", fmt.Errorf(`missing "task.configId" key`)
+		return "", errors.New(`missing "task.configId" key`)
 	}
 	value, ok := raw.(string)
 	if !ok {
-		return "", fmt.Errorf(`"task.configId" must be string, found %T`, raw)
+		return "", errors.Errorf(`"task.configId" must be string, found %T`, raw)
 	}
 	if len(value) == 0 {
-		return "", fmt.Errorf(`"task.configId" cannot be empty`)
+		return "", errors.New(`"task.configId" cannot be empty`)
 	}
 	task.Delete(`configId`)
 	p.content.Set(`task`, task)
@@ -154,22 +155,22 @@ func (p *taskParser) hasConfigPath() bool {
 func (p *taskParser) configPath() (string, error) {
 	taskRaw, found := p.content.Get(`task`)
 	if !found {
-		return "", fmt.Errorf(`missing "task" key`)
+		return "", errors.New(`missing "task" key`)
 	}
 	task, ok := taskRaw.(*orderedmap.OrderedMap)
 	if !ok {
-		return "", fmt.Errorf(`"task" key must be object, found %T`, taskRaw)
+		return "", errors.Errorf(`"task" key must be object, found %T`, taskRaw)
 	}
 	raw, found := task.Get(`configPath`)
 	if !found {
-		return "", fmt.Errorf(`missing "task.configPath" key`)
+		return "", errors.New(`missing "task.configPath" key`)
 	}
 	value, ok := raw.(string)
 	if !ok {
-		return "", fmt.Errorf(`"task.configPath" must be string, found %T`, raw)
+		return "", errors.Errorf(`"task.configPath" must be string, found %T`, raw)
 	}
 	if len(value) == 0 {
-		return "", fmt.Errorf(`"task.configPath" cannot be empty`)
+		return "", errors.New(`"task.configPath" cannot be empty`)
 	}
 	task.Delete(`configPath`)
 	p.content.Set(`task`, task)
@@ -192,19 +193,19 @@ func (p *taskParser) hasConfigData() bool {
 func (p *taskParser) configData() (*orderedmap.OrderedMap, error) {
 	taskRaw, found := p.content.Get(`task`)
 	if !found {
-		return nil, fmt.Errorf(`missing "task" key`)
+		return nil, errors.New(`missing "task" key`)
 	}
 	task, ok := taskRaw.(*orderedmap.OrderedMap)
 	if !ok {
-		return nil, fmt.Errorf(`"task" key must be object, found %T`, taskRaw)
+		return nil, errors.Errorf(`"task" key must be object, found %T`, taskRaw)
 	}
 	raw, found := task.Get(`configData`)
 	if !found {
-		return nil, fmt.Errorf(`missing "task.configData" key`)
+		return nil, errors.New(`missing "task.configData" key`)
 	}
 	value, ok := raw.(*orderedmap.OrderedMap)
 	if !ok {
-		return nil, fmt.Errorf(`"task.configData" must be object, found %T`, raw)
+		return nil, errors.Errorf(`"task.configData" must be object, found %T`, raw)
 	}
 	task.Delete(`configData`)
 	p.content.Set(`task`, task)

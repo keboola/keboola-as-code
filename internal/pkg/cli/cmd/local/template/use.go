@@ -1,7 +1,6 @@
 package template
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -9,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	useOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -41,7 +41,7 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 			manifest := projectState.ProjectManifest()
 			repositoryDef, found := manifest.TemplateRepository(repositoryName)
 			if !found {
-				return fmt.Errorf(`template repository "%s" not found in the "%s"`, repositoryName, manifest.Path())
+				return errors.Errorf(`template repository "%s" not found in the "%s"`, repositoryName, manifest.Path())
 			}
 
 			// Load template
@@ -77,11 +77,11 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 
 func parseTemplateArg(args []string) (repository string, template string, version string, err error) {
 	if len(args) != 1 {
-		return "", "", "", fmt.Errorf(`please enter one argument - the template you want to use, for example "keboola/my-template/v1"`)
+		return "", "", "", errors.New(`please enter one argument - the template you want to use, for example "keboola/my-template/v1"`)
 	}
 	parts := strings.Split(args[0], "/")
 	if len(parts) < 2 || len(parts) > 3 {
-		return "", "", "", fmt.Errorf(`the argument must consist of 2 or 3 parts "{repository}/{template}[/{version}]", found "%s"`, args[0])
+		return "", "", "", errors.Errorf(`the argument must consist of 2 or 3 parts "{repository}/{template}[/{version}]", found "%s"`, args[0])
 	}
 	repository = parts[0]
 	template = parts[1]

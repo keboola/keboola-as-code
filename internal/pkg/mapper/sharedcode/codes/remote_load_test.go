@@ -101,8 +101,8 @@ func TestSharedCodeRemoteLoad_UnexpectedTypeInConfig(t *testing.T) {
 	// Check logs
 	expectedLogs := `
 WARN  Warning:
-  - invalid config "branch:789/component:keboola.shared-code/config:123":
-    - key "componentId" should be string, found "int"
+- invalid config "branch:789/component:keboola.shared-code/config:123":
+  - key "componentId" should be string, found "int"
 `
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 
@@ -129,8 +129,8 @@ func TestSharedCodeRemoteLoad_UnexpectedTypeInRow(t *testing.T) {
 	// Check logs
 	expectedLogs := `
 WARN  Warning:
-  - invalid config row "branch:789/component:keboola.shared-code/config:123/row:456":
-    - key "code_content" should be string or array, found "int"
+- invalid config row "branch:789/component:keboola.shared-code/config:123/row:456":
+  - key "code_content" should be string or array, found "int"
 `
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 

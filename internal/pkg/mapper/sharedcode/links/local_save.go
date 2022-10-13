@@ -2,10 +2,9 @@ package links
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // MapBeforeLocalSave - replace shared codes IDs by paths on local save.
@@ -23,7 +22,7 @@ func (m *mapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSave
 
 	if err := m.replaceSharedCodeIdByPath(transformation); err != nil {
 		// Log errors as warning
-		m.logger.Warn(utils.PrefixError(`Warning`, err))
+		m.logger.Warn(errors.PrefixError(err, "Warning"))
 	}
 
 	return nil
@@ -35,11 +34,11 @@ func (m *mapper) replaceSharedCodeIdByPath(transformation *model.Config) error {
 	sharedCodeState, found := m.state.GetOrNil(sharedCodeKey).(*model.ConfigState)
 
 	// Convert LinkScript to path placeholder
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
 		v, err := m.linkToPathPlaceholder(code, script, sharedCodeState)
 		if err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 		if v != nil {
 			return v
@@ -49,9 +48,9 @@ func (m *mapper) replaceSharedCodeIdByPath(transformation *model.Config) error {
 
 	// Check if shared code is found
 	if !found {
-		return utils.PrefixError(
-			fmt.Sprintf(`missing shared code %s`, sharedCodeKey.Desc()),
-			fmt.Errorf(`referenced from %s`, transformation.Desc()),
+		return errors.NewNestedError(
+			errors.Errorf("missing shared code %s", sharedCodeKey.Desc()),
+			errors.Errorf("referenced from %s", transformation.Desc()),
 		)
 	}
 
@@ -63,5 +62,5 @@ func (m *mapper) replaceSharedCodeIdByPath(transformation *model.Config) error {
 	// Replace Shared Code ID -> Shared Code path
 	transformation.Content.Set(model.SharedCodePathContentKey, sharedCodeState.GetRelativePath())
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

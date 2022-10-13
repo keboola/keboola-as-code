@@ -2,7 +2,6 @@ package load
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/otel/trace"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type dependencies interface {
@@ -36,7 +36,7 @@ func Run(ctx context.Context, d dependencies, repository *repository.Repository,
 	// Check if template dir exists
 	templatePath := versionRecord.Path()
 	if !repository.Fs().IsDir(templatePath) {
-		return nil, fmt.Errorf(`template dir "%s" not found`, templatePath)
+		return nil, errors.Errorf(`template dir "%s" not found`, templatePath)
 	}
 
 	// Template dir

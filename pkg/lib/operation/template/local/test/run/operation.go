@@ -2,7 +2,6 @@ package run
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -20,7 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	tmplTest "github.com/keboola/keboola-as-code/internal/pkg/template/test"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenvmock"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
@@ -56,10 +55,10 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	// Run through all tests
 	tests, err := tmpl.Tests()
 	if err != nil {
-		return fmt.Errorf(`error running tests for template "%s": %w`, tmpl.TemplateId(), err)
+		return errors.Errorf(`error running tests for template "%s": %w`, tmpl.TemplateId(), err)
 	}
 
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, test := range tests {
 		// Run only a single test?
 		if o.TestName != "" && o.TestName != test.Name() {
@@ -72,7 +71,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 			}
 			if err := runLocalTest(ctx, test, tmpl, o.Verbose, d); err != nil {
 				d.Logger().Errorf(`FAIL %s %s local`, tmpl.FullName(), test.Name())
-				errors.Append(fmt.Errorf(`running local test "%s" for template "%s" failed: %w`, test.Name(), tmpl.TemplateId(), err))
+				errs.Append(errors.Errorf(`running local test "%s" for template "%s" failed: %w`, test.Name(), tmpl.TemplateId(), err))
 			} else {
 				d.Logger().Infof(`PASS %s %s local`, tmpl.FullName(), test.Name())
 			}
@@ -84,14 +83,14 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 			}
 			if err := runRemoteTest(ctx, test, tmpl, o.Verbose, d); err != nil {
 				d.Logger().Errorf(`FAIL %s %s remote`, tmpl.FullName(), test.Name())
-				errors.Append(fmt.Errorf(`running remote test "%s" for template "%s" failed: %w`, test.Name(), tmpl.TemplateId(), err))
+				errs.Append(errors.Errorf(`running remote test "%s" for template "%s" failed: %w`, test.Name(), tmpl.TemplateId(), err))
 			} else {
 				d.Logger().Infof(`PASS %s %s remote`, tmpl.FullName(), test.Name())
 			}
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Template, verbose bool, d dependencies) error {
@@ -245,13 +244,13 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 func reloadPrjState(ctx context.Context, prjState *project.State) error {
 	ok, localErr, remoteErr := prjState.Load(ctx, state.LoadOptions{LoadRemoteState: true})
 	if remoteErr != nil {
-		return fmt.Errorf(`state reload failed on remote error: %w`, remoteErr)
+		return errors.Errorf(`state reload failed on remote error: %w`, remoteErr)
 	}
 	if localErr != nil {
-		return fmt.Errorf(`state reload failed on local error: %w`, localErr)
+		return errors.Errorf(`state reload failed on local error: %w`, localErr)
 	}
 	if !ok {
-		return fmt.Errorf(`state reload failed`)
+		return errors.New(`state reload failed`)
 	}
 	return nil
 }
@@ -259,23 +258,23 @@ func reloadPrjState(ctx context.Context, prjState *project.State) error {
 func findTmplInst(prjState *project.State, branchKey model.BranchKey, tmplInstID string) (*model.TemplateInstance, error) {
 	branch, found := prjState.GetOrNil(branchKey).(*model.BranchState)
 	if !found {
-		return nil, fmt.Errorf(`branch "%d" not found`, branchKey.Id)
+		return nil, errors.Errorf(`branch "%d" not found`, branchKey.Id)
 	}
 	tmplInst, found, err := branch.Remote.Metadata.TemplateInstance(tmplInstID)
 	if err != nil {
 		return nil, err
 	}
 	if !found {
-		return nil, fmt.Errorf(`template instance "%s" not found in branch metadata`, tmplInstID)
+		return nil, errors.Errorf(`template instance "%s" not found in branch metadata`, tmplInstID)
 	}
 	if tmplInst.MainConfig == nil {
-		return nil, fmt.Errorf(`template instance "%s" is missing mainConfig in metadata`, tmplInstID)
+		return nil, errors.Errorf(`template instance "%s" is missing mainConfig in metadata`, tmplInstID)
 	}
 	if tmplInst.MainConfig.ComponentId == "" {
-		return nil, fmt.Errorf(`template instance "%s" is missing mainConfig.componentId in metadata`, tmplInstID)
+		return nil, errors.Errorf(`template instance "%s" is missing mainConfig.componentId in metadata`, tmplInstID)
 	}
 	if tmplInst.MainConfig.ConfigId == "" {
-		return nil, fmt.Errorf(`template instance "%s" is missing mainConfig.configId in metadata`, tmplInstID)
+		return nil, errors.Errorf(`template instance "%s" is missing mainConfig.configId in metadata`, tmplInstID)
 	}
 	return tmplInst, nil
 }

@@ -1,10 +1,11 @@
 package prompt
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2/core"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Confirm struct {

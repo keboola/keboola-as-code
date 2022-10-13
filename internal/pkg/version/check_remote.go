@@ -11,6 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const EnvVersionCheck = "KBC_VERSION_CHECK"
@@ -37,12 +38,12 @@ func (c *checker) CheckIfLatest(currentVersion string) error {
 
 	// Dev build
 	if currentVersion == DevVersionValue {
-		return fmt.Errorf(`skipped, found dev build`)
+		return errors.New(`skipped, found dev build`)
 	}
 
 	// Disabled by ENV
 	if value, _ := c.envs.Lookup(EnvVersionCheck); strings.ToLower(value) == "false" {
-		return fmt.Errorf(fmt.Sprintf(`skipped, disabled by ENV "%s"`, EnvVersionCheck))
+		return errors.New(fmt.Sprintf(`skipped, disabled by ENV "%s"`, EnvVersionCheck))
 	}
 
 	latestVersion, err := c.getLatestVersion()
@@ -139,5 +140,5 @@ func (c *checker) getLatestVersion() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf(`failed to parse the latest version`)
+	return "", errors.New(`failed to parse the latest version`)
 }

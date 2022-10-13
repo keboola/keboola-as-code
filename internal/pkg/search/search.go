@@ -1,12 +1,12 @@
 package search
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Branches searches for branches by ID and name.
@@ -28,9 +28,9 @@ func Branch(all []*model.Branch, str string) (*model.Branch, error) {
 		// ok, one match
 		return branches[0], nil
 	case 0:
-		return nil, fmt.Errorf(`no branch matches the specified "%s"`, str)
+		return nil, errors.Errorf(`no branch matches the specified "%s"`, str)
 	default:
-		return nil, fmt.Errorf(`multiple branches match the specified "%s"`, str)
+		return nil, errors.Errorf(`multiple branches match the specified "%s"`, str)
 	}
 }
 
@@ -64,9 +64,9 @@ func Config(all []*model.ConfigWithRows, str string) (*model.ConfigWithRows, err
 		// ok, one match
 		return configs[0], nil
 	case 0:
-		return nil, fmt.Errorf(`no config matches the specified "%s"`, str)
+		return nil, errors.Errorf(`no config matches the specified "%s"`, str)
 	default:
-		return nil, fmt.Errorf(`multiple configs match the specified "%s"`, str)
+		return nil, errors.Errorf(`multiple configs match the specified "%s"`, str)
 	}
 }
 
@@ -89,9 +89,9 @@ func ConfigRow(all []*model.ConfigRow, str string) (*model.ConfigRow, error) {
 		// ok, one match
 		return rows[0], nil
 	case 0:
-		return nil, fmt.Errorf(`no row matches the specified "%s"`, str)
+		return nil, errors.Errorf(`no row matches the specified "%s"`, str)
 	default:
-		return nil, fmt.Errorf(`multiple rows match the specified "%s"`, str)
+		return nil, errors.Errorf(`multiple rows match the specified "%s"`, str)
 	}
 }
 

@@ -2,7 +2,6 @@ package fixtures
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"runtime"
 	"testing"
@@ -13,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
@@ -152,12 +152,12 @@ func MinimalProjectFs(t *testing.T) filesystem.Fs {
 func LoadStateFile(path string) (*StateFile, error) {
 	data, err := os.ReadFile(path) // nolint: forbidigo
 	if err != nil {
-		return nil, fmt.Errorf(`cannot load test project state file "%s": %w`, path, err)
+		return nil, errors.Errorf(`cannot load test project state file "%s": %w`, path, err)
 	}
 
 	stateFile := &StateFile{}
 	if err := json.Unmarshal(data, stateFile); err != nil {
-		return nil, fmt.Errorf("cannot parse test project state file \"%s\": %w", path, err)
+		return nil, errors.Errorf("cannot parse test project state file \"%s\": %w", path, err)
 	}
 
 	// Check if main branch defined
@@ -188,13 +188,13 @@ func LoadConfig(name string) *Config {
 	path := filesystem.Join(testDir, "configs", name+".json")
 	data, err := os.ReadFile(path) // nolint: forbidigo
 	if err != nil {
-		panic(fmt.Errorf(`cannot load test confg file "%s": %w`, path, err))
+		panic(errors.Errorf(`cannot load test confg file "%s": %w`, path, err))
 	}
 
 	// Parse file
 	fixture := &Config{}
 	if err := json.Unmarshal(data, fixture); err != nil {
-		panic(fmt.Errorf("cannot parse test config file \"%s\": %w", path, err))
+		panic(errors.Errorf("cannot parse test config file \"%s\": %w", path, err))
 	}
 
 	return fixture

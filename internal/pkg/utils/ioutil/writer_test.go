@@ -2,10 +2,10 @@ package ioutil
 
 import (
 	"bufio"
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap/buffer"
 )
 
 func TestBufferedWriter(t *testing.T) {
@@ -19,7 +19,7 @@ func TestBufferedWriter(t *testing.T) {
 func TestBufferedWriter_ConnectTo(t *testing.T) {
 	t.Parallel()
 	writer := NewBufferedWriter()
-	otherBuffer := buffer.Buffer{}
+	otherBuffer := bytes.Buffer{}
 	otherWriter := bufio.NewWriter(&otherBuffer)
 	writer.ConnectTo(otherWriter)
 

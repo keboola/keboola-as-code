@@ -1,8 +1,9 @@
 package input
 
 import (
-	"fmt"
 	"strings"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -52,38 +53,38 @@ func (k Kind) ValidateType(t Type) error {
 	switch k {
 	case KindInput:
 		if t != TypeString && t != TypeInt && t != TypeDouble {
-			return fmt.Errorf("should be one of [string, int, double] for kind=%s, found %s", k, t)
+			return errors.Errorf("should be one of [string, int, double] for kind=%s, found %s", k, t)
 		}
 	case KindHidden:
 		if t != TypeString {
-			return fmt.Errorf("should be string for kind=%s, found %s", k, t)
+			return errors.Errorf("should be string for kind=%s, found %s", k, t)
 		}
 	case KindTextarea:
 		if t != TypeString {
-			return fmt.Errorf("should be string for kind=%s, found %s", k, t)
+			return errors.Errorf("should be string for kind=%s, found %s", k, t)
 		}
 	case KindConfirm:
 		if t != TypeBool {
-			return fmt.Errorf("should be bool for kind=%s, found %s", k, t)
+			return errors.Errorf("should be bool for kind=%s, found %s", k, t)
 		}
 	case KindSelect:
 		if t != TypeString {
-			return fmt.Errorf("should be string for kind=%s, found %s", k, t)
+			return errors.Errorf("should be string for kind=%s, found %s", k, t)
 		}
 	case KindMultiSelect:
 		if t != TypeStringArray {
-			return fmt.Errorf("should be string[] for kind=%s, found %s", k, t)
+			return errors.Errorf("should be string[] for kind=%s, found %s", k, t)
 		}
 	case KindOAuth:
 		if t != TypeObject {
-			return fmt.Errorf("should be object for kind=%s, found %s", k, t)
+			return errors.Errorf("should be object for kind=%s, found %s", k, t)
 		}
 	case KindOAuthAccounts:
 		if t != TypeObject {
-			return fmt.Errorf("should be object for kind=%s, found %s", k, t)
+			return errors.Errorf("should be object for kind=%s, found %s", k, t)
 		}
 	default:
-		panic(fmt.Errorf(`unexpected kind "%s"`, t))
+		panic(errors.Errorf(`unexpected kind "%s"`, t))
 	}
 
 	return nil

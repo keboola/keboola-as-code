@@ -5,12 +5,12 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (m *jsonNetMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	// Convert all Json files to JsonNet
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	modified := model.NewFilesToSave()
 	for _, file := range recipe.Files.All() {
 		if file.HasTag(model.FileTypeJson) {
@@ -19,7 +19,7 @@ func (m *jsonNetMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.Lo
 			// Convert
 			jsonNetFile, err := jsonFile.ToJsonNetFile()
 			if err != nil {
-				errors.Append(err)
+				errs.Append(err)
 				continue
 			}
 
@@ -33,5 +33,5 @@ func (m *jsonNetMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.Lo
 	}
 
 	recipe.Files = modified
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

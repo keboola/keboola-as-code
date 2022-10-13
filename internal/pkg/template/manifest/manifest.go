@@ -1,13 +1,12 @@
 package manifest
 
 import (
-	"fmt"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type records = manifest.Records
@@ -35,7 +34,7 @@ func New() *Manifest {
 func Load(fs filesystem.Fs) (*File, error) {
 	path := Path()
 	if !fs.IsFile(path) {
-		return nil, fmt.Errorf("manifest \"%s\" not found", path)
+		return nil, errors.Errorf("manifest \"%s\" not found", path)
 	}
 
 	f, err := fs.ReadFile(filesystem.NewFileDef(path).SetDescription("manifest"))
@@ -59,7 +58,7 @@ func (f *File) Evaluate(jsonNetCtx *jsonnet.Context) (*Manifest, error) {
 
 	// Set records
 	if err := m.records.SetRecords(content.records()); err != nil {
-		return nil, fmt.Errorf(`cannot load manifest: %w`, err)
+		return nil, errors.Errorf(`cannot load manifest: %w`, err)
 	}
 
 	// Set main config

@@ -1,13 +1,12 @@
 package test
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test/create"
 )
 
@@ -23,7 +22,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			if len(args) < 1 {
-				return fmt.Errorf(`please enter argument with the template ID you want to use and optionally its version`)
+				return errors.New(`please enter argument with the template ID you want to use and optionally its version`)
 			}
 			templateId := args[0]
 

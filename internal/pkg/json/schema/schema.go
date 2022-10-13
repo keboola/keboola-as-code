@@ -2,8 +2,6 @@ package schema
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
 	"sort"
 	"strings"
 
@@ -14,11 +12,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func ValidateSchemas(objects model.ObjectStates) error {
-	errs := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, config := range objects.Configs() {
 		// Validate only local files
 		if config.Local == nil {
@@ -31,7 +29,7 @@ func ValidateSchemas(objects model.ObjectStates) error {
 		}
 
 		if err := ValidateConfig(component, config.Local); err != nil {
-			errs.AppendWithPrefix(fmt.Sprintf("config \"%s\" doesn't match schema", filesystem.Join(config.Path(), naming.ConfigFile)), err)
+			errs.AppendWithPrefixf(err, "config \"%s\" doesn't match schema", filesystem.Join(config.Path(), naming.ConfigFile))
 		}
 	}
 
@@ -47,7 +45,7 @@ func ValidateSchemas(objects model.ObjectStates) error {
 		}
 
 		if err := ValidateConfigRow(component, row.Local); err != nil {
-			errs.AppendWithPrefix(fmt.Sprintf("config row \"%s\" doesn't match schema", filesystem.Join(row.Path(), naming.ConfigFile)), err)
+			errs.AppendWithPrefixf(err, "config row \"%s\" doesn't match schema", filesystem.Join(row.Path(), naming.ConfigFile))
 		}
 	}
 
@@ -95,7 +93,7 @@ func validateContent(schema []byte, content *orderedmap.OrderedMap) error {
 
 	// Process schema errors
 	validationErrors := &jsonschema.ValidationError{}
-	errs := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if errors.As(err, &validationErrors) {
 		processErrors(validationErrors.Causes, errs)
 	} else if err != nil {
@@ -108,12 +106,12 @@ func validateContent(schema []byte, content *orderedmap.OrderedMap) error {
 func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
 	schema, err := compileSchema(schemaStr, false)
 	if err != nil {
-		return fmt.Errorf(`invalid JSON schema: %w`, err)
+		return errors.Errorf(`invalid JSON schema: %w`, err)
 	}
 	return schema.Validate(document.ToMap())
 }
 
-func processErrors(errs []*jsonschema.ValidationError, output *utils.MultiError) {
+func processErrors(errs []*jsonschema.ValidationError, output errors.MultiError) {
 	// Sort errors
 	sort.Slice(errs, func(i, j int) bool {
 		return errs[i].InstanceLocation < errs[j].InstanceLocation
@@ -131,9 +129,9 @@ func processErrors(errs []*jsonschema.ValidationError, output *utils.MultiError)
 		path = strings.ReplaceAll(path, "/", ".")
 		msg := strings.ReplaceAll(e.Message, `'`, `"`)
 		if path == "" {
-			output.Append(fmt.Errorf(`%s`, msg))
+			output.Append(errors.Errorf(`%s`, msg))
 		} else {
-			output.Append(fmt.Errorf(`"%s": %s`, path, msg))
+			output.Append(errors.Errorf(`"%s": %s`, path, msg))
 		}
 	}
 }

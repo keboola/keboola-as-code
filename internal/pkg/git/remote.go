@@ -20,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type RemoteRepository struct {
@@ -57,13 +58,13 @@ func Available() bool {
 
 func Checkout(ctx context.Context, ref model.TemplateRepository, sparse bool, logger log.Logger) (r *RemoteRepository, err error) {
 	if !Available() {
-		return nil, fmt.Errorf("git command is not available, you have to install it first")
+		return nil, errors.New("git command is not available, you have to install it first")
 	}
 
 	// Create base directory
 	baseDirPath, err := os.MkdirTemp("", "kac-git-repository-")
 	if err != nil {
-		return nil, fmt.Errorf("cannot create temp dir for git repository: %w", err)
+		return nil, errors.Errorf("cannot create temp dir for git repository: %w", err)
 	}
 
 	// Clear everything if checkout fails
@@ -76,11 +77,11 @@ func Checkout(ctx context.Context, ref model.TemplateRepository, sparse bool, lo
 	// Create working directory
 	workingDir := filepath.Join(baseDirPath, "working")
 	if err := os.Mkdir(workingDir, 0o700); err != nil {
-		return nil, fmt.Errorf("cannot create working dir for git repository: %w", err)
+		return nil, errors.Errorf("cannot create working dir for git repository: %w", err)
 	}
 	workingDirFs, err := aferofs.NewLocalFs(workingDir, filesystem.WithLogger(logger))
 	if err != nil {
-		return nil, fmt.Errorf("cannot setup working fs for git repository: %w", err)
+		return nil, errors.Errorf("cannot setup working fs for git repository: %w", err)
 	}
 
 	// Create repository
@@ -105,10 +106,10 @@ func Checkout(ctx context.Context, ref model.TemplateRepository, sparse bool, lo
 	result, err := r.runGitCmd(ctx, params...)
 	if err != nil {
 		if strings.Contains(result.stdErr, fmt.Sprintf("Remote branch %s not found", r.Ref())) {
-			return nil, fmt.Errorf(`reference "%s" not found in the git repository "%s"`, r.Ref(), r.Url())
+			return nil, errors.Errorf(`reference "%s" not found in the git repository "%s"`, r.Ref(), r.Url())
 		}
 		out := errorMsg(result, err)
-		return nil, fmt.Errorf(`git repository could not be checked out from "%s": %s`, r.Url(), out)
+		return nil, errors.Errorf(`git repository could not be checked out from "%s": %s`, r.Url(), out)
 	}
 
 	// Setup stable dir
@@ -162,7 +163,7 @@ func (r *RemoteRepository) obtainCommitHash(ctx context.Context) (string, error)
 	result, err := r.runGitCmd(ctx, "rev-parse", "HEAD")
 	if err != nil {
 		out := errorMsg(result, err)
-		return "", fmt.Errorf(`cannot get repository hash: %s`, out)
+		return "", errors.Errorf(`cannot get repository hash: %s`, out)
 	}
 	return strings.TrimSuffix(result.stdOut, "\n"), nil
 }
@@ -170,7 +171,7 @@ func (r *RemoteRepository) obtainCommitHash(ctx context.Context) (string, error)
 // Load a path from the remote git repository, if sparse mode is used.
 func (r *RemoteRepository) Load(ctx context.Context, path string) error {
 	if !r.sparse {
-		return fmt.Errorf("sparse checkout is not allowed")
+		return errors.New("sparse checkout is not allowed")
 	}
 	if _, err := r.runGitCmd(ctx, "sparse-checkout", "add", path); err != nil {
 		return err
@@ -196,7 +197,7 @@ func (r *RemoteRepository) Pull(ctx context.Context) (*PullResult, error) {
 	cmdResult, err := r.runGitCmd(ctx, "reset", "--hard", fmt.Sprintf("origin/%s", r.Ref()))
 	if err != nil {
 		out := errorMsg(cmdResult, err)
-		return nil, fmt.Errorf(`cannot reset repository to the origin: %s`, out)
+		return nil, errors.Errorf(`cannot reset repository to the origin: %s`, out)
 	}
 
 	// Get new commit hash
@@ -239,7 +240,7 @@ func (r *RemoteRepository) fetch(ctx context.Context) error {
 	result, err := r.runGitCmd(ctx, "fetch", "origin")
 	if err != nil {
 		out := errorMsg(result, err)
-		return fmt.Errorf(`cannot fetch repository: %s`, out)
+		return errors.Errorf(`cannot fetch repository: %s`, out)
 	}
 
 	return nil
@@ -298,7 +299,7 @@ func (r *RemoteRepository) copyWorkingToStableDir(ctx context.Context) (err erro
 	}
 	stableDir := filepath.Join(r.baseDirPath, commitHash+"-"+gonanoid.Must(8))
 	if err := os.Mkdir(stableDir, 0o700); err != nil {
-		return fmt.Errorf("cannot create stable dir for git repository: %w", err)
+		return errors.Errorf("cannot create stable dir for git repository: %w", err)
 	}
 
 	// Clear stable dir if checkout fails
@@ -311,12 +312,12 @@ func (r *RemoteRepository) copyWorkingToStableDir(ctx context.Context) (err erro
 	// Create FS
 	stableDirFs, err := aferofs.NewLocalFs(stableDir, filesystem.WithLogger(r.logger))
 	if err != nil {
-		return fmt.Errorf("cannot setup stable fs for git repository: %w", err)
+		return errors.Errorf("cannot setup stable fs for git repository: %w", err)
 	}
 
 	// Copy working dir to stable dir
 	if err := aferofs.CopyFs2Fs(r.workingDir, "", stableDirFs, ""); err != nil {
-		return fmt.Errorf("cannot copy working dir to stable dir: %w", err)
+		return errors.Errorf("cannot copy working dir to stable dir: %w", err)
 	}
 
 	// Sync access to fields

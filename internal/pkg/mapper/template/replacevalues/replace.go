@@ -13,6 +13,7 @@ import (
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Values struct {
@@ -62,7 +63,7 @@ func (v *Values) AddKey(oldKey, newKey model.Key) {
 		v.AddValue(oldKey, newKey.(model.ConfigRowKey))
 		v.AddId(oldKey.Id, newKey.(model.ConfigRowKey).Id)
 	default:
-		panic(fmt.Errorf(`unexpected key type "%T"`, oldKey))
+		panic(errors.Errorf(`unexpected key type "%T"`, oldKey))
 	}
 }
 
@@ -80,7 +81,7 @@ func (v *Values) AddId(oldId, newId interface{}) {
 		// ConfigRowId in strings
 		v.AddValue(SubString(old), string(newId.(storageapi.RowID)))
 	default:
-		panic(fmt.Errorf(`unexpected ID type "%T"`, old))
+		panic(errors.Errorf(`unexpected ID type "%T"`, old))
 	}
 }
 
@@ -145,7 +146,7 @@ func (v *Values) validate() error {
 	}
 	for k, count := range valuesMap {
 		if count > 1 {
-			return fmt.Errorf(`the old ID "%s" is defined %dx`, k, count)
+			return errors.Errorf(`the old ID "%s" is defined %dx`, k, count)
 		}
 	}
 
@@ -162,7 +163,7 @@ func (v *Values) validate() error {
 
 	for k, count := range valuesMap {
 		if count > 1 {
-			return fmt.Errorf(`the new ID "%s" is defined %dx`, k, count)
+			return errors.Errorf(`the new ID "%s" is defined %dx`, k, count)
 		}
 	}
 

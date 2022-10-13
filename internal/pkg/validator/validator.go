@@ -20,7 +20,7 @@ import (
 	enTranslation "github.com/go-playground/validator/v10/translations/en"
 	"github.com/umisama/go-regexpcache"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -126,7 +126,7 @@ func (v *wrapper) RegisterRule(rules ...Rule) {
 				panic(err)
 			}
 		default:
-			panic(fmt.Errorf(`please specify validator.Rule.FuncCtx or Func`))
+			panic(errors.New(`please specify validator.Rule.FuncCtx or Func`))
 		}
 
 		switch {
@@ -135,7 +135,7 @@ func (v *wrapper) RegisterRule(rules ...Rule) {
 		case rule.ErrorMsg != "":
 			v.registerErrorMessage(rule.Tag, rule.ErrorMsg)
 		default:
-			panic(fmt.Errorf(`please specify validator.Rule.ErrorMsg or ErrorMsgFunc`))
+			panic(errors.New(`please specify validator.Rule.ErrorMsg or ErrorMsgFunc`))
 		}
 	}
 }
@@ -216,10 +216,10 @@ func (v *wrapper) registerCustomRules() {
 // registerErrorMessage for a tag.
 func (v *wrapper) registerErrorMessage(tag, message string) {
 	if tag == "" {
-		panic(fmt.Errorf(`tag cannot be empty`))
+		panic(errors.New(`tag cannot be empty`))
 	}
 	if message == "" {
-		panic(fmt.Errorf(`message cannot be empty`))
+		panic(errors.New(`message cannot be empty`))
 	}
 
 	registerFn := func(ut ut.Translator) error {
@@ -240,7 +240,7 @@ func (v *wrapper) registerErrorMessage(tag, message string) {
 // registerErrorMessage for a tag.
 func (v *wrapper) registerErrorMessageFunc(tag string, f ErrorMsgFunc) {
 	if tag == "" {
-		panic(fmt.Errorf(`tag cannot be empty`))
+		panic(errors.New(`tag cannot be empty`))
 	}
 
 	registerFn := func(ut ut.Translator) error {
@@ -261,8 +261,8 @@ func (v *wrapper) registerDefaultErrorMessages() {
 }
 
 // formatError creates human-readable error message.
-func (v *wrapper) formatError(err validator.ValidationErrors, namespace string, value reflect.Value) *utils.MultiError {
-	errors := utils.NewMultiError()
+func (v *wrapper) formatError(err validator.ValidationErrors, namespace string, value reflect.Value) errors.MultiError {
+	errs := errors.NewMultiError()
 	for _, e := range err {
 		// Translate error
 		errString := strings.TrimSpace(e.Translate(v.translator))
@@ -272,10 +272,10 @@ func (v *wrapper) formatError(err validator.ValidationErrors, namespace string, 
 		}
 
 		// Prefix error with namespace
-		errors.Append(fmt.Errorf("%s", prefixErrorWithNamespace(e, errString, namespace, value)))
+		errs.Append(errors.Errorf("%s", prefixErrorWithNamespace(e, errString, namespace, value)))
 	}
 
-	return errors
+	return errs
 }
 
 // processNamespace removes struct name (first part), field name (last part) and anonymous fields.

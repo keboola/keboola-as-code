@@ -12,6 +12,7 @@ import (
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const ComponentsUpdateTimeout = 20 * time.Second
@@ -123,7 +124,7 @@ func (m ComponentsMap) Get(id storageapi.ComponentID) (*storageapi.Component, bo
 func (m ComponentsMap) GetOrErr(id storageapi.ComponentID) (*storageapi.Component, error) {
 	v, ok := m.Get(id)
 	if !ok {
-		return nil, fmt.Errorf(`component "%s" not found`, id)
+		return nil, errors.Errorf(`component "%s" not found`, id)
 	}
 	return v, nil
 }

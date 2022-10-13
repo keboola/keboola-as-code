@@ -1,13 +1,13 @@
 package dialog
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/sandboxesapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/create"
 )
 
@@ -50,7 +50,7 @@ func (p *Dialogs) askWorkspaceName(d createWorkspaceDeps) (string, error) {
 			Validator: prompt.ValueRequired,
 		})
 		if !ok || len(name) == 0 {
-			return "", fmt.Errorf("missing name, please specify it")
+			return "", errors.New("missing name, please specify it")
 		}
 		return name, nil
 	}
@@ -60,7 +60,7 @@ func (p *Dialogs) askWorkspaceType(d createWorkspaceDeps) (string, error) {
 	if d.Options().IsSet("type") {
 		typ := d.Options().GetString("type")
 		if !sandboxesapi.TypesMap()[typ] {
-			return "", fmt.Errorf("invalid workspace type, must be one of: %s", strings.Join(sandboxesapi.TypesOrdered(), ", "))
+			return "", errors.Errorf("invalid workspace type, must be one of: %s", strings.Join(sandboxesapi.TypesOrdered(), ", "))
 		}
 		return typ, nil
 	} else {
@@ -69,7 +69,7 @@ func (p *Dialogs) askWorkspaceType(d createWorkspaceDeps) (string, error) {
 			Options: sandboxesapi.TypesOrdered(),
 		})
 		if !ok {
-			return "", fmt.Errorf("missing workspace type, please specify it")
+			return "", errors.New("missing workspace type, please specify it")
 		}
 		return v, nil
 	}
@@ -79,7 +79,7 @@ func (p *Dialogs) askWorkspaceSize(d createWorkspaceDeps) (string, error) {
 	if d.Options().IsSet("size") {
 		size := d.Options().GetString("size")
 		if !sandboxesapi.SizesMap()[size] {
-			return "", fmt.Errorf("invalid workspace size, must be one of: %s", strings.Join(sandboxesapi.SizesOrdered(), ", "))
+			return "", errors.Errorf("invalid workspace size, must be one of: %s", strings.Join(sandboxesapi.SizesOrdered(), ", "))
 		}
 		return size, nil
 	} else {
@@ -88,7 +88,7 @@ func (p *Dialogs) askWorkspaceSize(d createWorkspaceDeps) (string, error) {
 			Options: sandboxesapi.SizesOrdered(),
 		})
 		if !ok {
-			return "", fmt.Errorf("missing workspace size, please specify it")
+			return "", errors.New("missing workspace size, please specify it")
 		}
 		return v, nil
 	}

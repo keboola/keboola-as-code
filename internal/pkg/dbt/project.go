@@ -2,10 +2,9 @@ package dbt
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -24,14 +23,14 @@ func LoadProject(ctx context.Context, fs filesystem.Fs) (*Project, error) {
 	// Load project file
 	fileDef := filesystem.NewFileDef(ProjectFilePath).SetDescription("dbt project")
 	if _, err := fs.FileLoader().ReadYamlFileTo(fileDef, &out.projectFile); errors.Is(err, filesystem.ErrNotExist) {
-		return nil, fmt.Errorf(`missing  "%s" in the "%s"`, ProjectFilePath, fs.BasePath())
+		return nil, errors.Errorf(`missing  "%s" in the "%s"`, ProjectFilePath, fs.BasePath())
 	} else if err != nil {
 		return nil, err
 	}
 
 	// Validate project file
 	if err := validator.New().Validate(ctx, out.projectFile); err != nil {
-		return nil, fmt.Errorf(`dbt project file "%s" is not valid: %w`, ProjectFilePath, err)
+		return nil, errors.Errorf(`dbt project file "%s" is not valid: %w`, ProjectFilePath, err)
 	}
 
 	return out, nil

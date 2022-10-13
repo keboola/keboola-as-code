@@ -1,14 +1,13 @@
 package manifest
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Records contains model.ObjectManifest for each object: branch, config, row.
@@ -45,14 +44,14 @@ func (r *Records) SetRecords(records []model.ObjectManifest) error {
 	r.all = orderedmap.New()
 
 	// Track records
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, record := range records {
 		if err := r.trackRecord(record); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
-	if errors.Len() > 0 {
-		return errors
+	if errs.Len() > 0 {
+		return errs
 	}
 
 	// Resolve parent paths, we can do it when all the records are loaded
@@ -122,7 +121,7 @@ func (r *Records) MustGetRecord(key model.Key) model.ObjectManifest {
 	if record, found := r.GetRecord(key); found {
 		return record
 	} else {
-		panic(fmt.Errorf("manifest record with key \"%s\"", key.String()))
+		panic(errors.Errorf("manifest record with key \"%s\"", key.String()))
 	}
 }
 
@@ -151,7 +150,7 @@ func (r *Records) CreateOrGetRecord(key model.Key) (manifest model.ObjectManifes
 	case model.ConfigRowKey:
 		manifest = &model.ConfigRowManifest{ConfigRowKey: v}
 	default:
-		panic(fmt.Errorf("unexpected type \"%s\"", key))
+		panic(errors.Errorf("unexpected type \"%s\"", key))
 	}
 
 	if err := r.trackRecord(manifest); err != nil {
@@ -171,7 +170,7 @@ func (r *Records) GetParent(manifest model.ObjectManifest) (model.ObjectManifest
 
 	parent, found := r.GetRecord(parentKey)
 	if !found {
-		return nil, fmt.Errorf(`manifest record for %s not found, referenced from %s`, parentKey.Desc(), manifest.Desc())
+		return nil, errors.Errorf(`manifest record for %s not found, referenced from %s`, parentKey.Desc(), manifest.Desc())
 	}
 	return parent, nil
 }
@@ -216,7 +215,7 @@ func (r *Records) trackRecord(record model.ObjectManifest) error {
 
 	// Make sure the key is unique
 	if _, exists := r.all.Get(record.Key().String()); exists {
-		return fmt.Errorf(`duplicate %s in manifest`, record.Desc())
+		return errors.Errorf(`duplicate %s in manifest`, record.Desc())
 	}
 
 	r.all.Set(record.Key().String(), record)
@@ -245,7 +244,7 @@ func (r *Records) ResolveParentPath(record model.ObjectManifest) error {
 // doResolveParentPath recursive + fail on cyclic relations.
 func (r *Records) doResolveParentPath(record, origin model.ObjectManifest) error {
 	if origin != nil && record.Key().String() == origin.Key().String() {
-		return fmt.Errorf(`a cyclic relation was found when resolving path to %s`, origin.Desc())
+		return errors.Errorf(`a cyclic relation was found when resolving path to %s`, origin.Desc())
 	}
 
 	if origin == nil {

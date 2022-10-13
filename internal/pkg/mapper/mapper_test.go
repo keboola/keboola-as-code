@@ -1,7 +1,6 @@
 package mapper
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func TestMappers_ForEach_StopOnFailure(t *testing.T) {
@@ -18,7 +18,7 @@ func TestMappers_ForEach_StopOnFailure(t *testing.T) {
 	mappers := Mappers{`1`, `2`, `3`, `4`, `5`}
 	err := mappers.ForEach(true, func(mapper interface{}) error {
 		callOrder = append(callOrder, mapper.(string))
-		return fmt.Errorf(`error %s`, mapper.(string))
+		return errors.Errorf(`error %s`, mapper.(string))
 	})
 	assert.Error(t, err)
 	assert.Equal(t, `error 1`, err.Error())
@@ -31,7 +31,7 @@ func TestMappers_ForEach_DontStopOnFailure(t *testing.T) {
 	mappers := Mappers{`1`, `2`, `3`, `4`, `5`}
 	err := mappers.ForEach(false, func(mapper interface{}) error {
 		callOrder = append(callOrder, mapper.(string))
-		return fmt.Errorf(`error %s`, mapper.(string))
+		return errors.Errorf(`error %s`, mapper.(string))
 	})
 	assert.Error(t, err)
 	assert.Equal(t, "- error 1\n- error 2\n- error 3\n- error 4\n- error 5", err.Error())
@@ -44,7 +44,7 @@ func TestMappers_ForEachReverse_StopOnFailure(t *testing.T) {
 	mappers := Mappers{`1`, `2`, `3`, `4`, `5`}
 	err := mappers.ForEachReverse(true, func(mapper interface{}) error {
 		callOrder = append(callOrder, mapper.(string))
-		return fmt.Errorf(`error %s`, mapper.(string))
+		return errors.Errorf(`error %s`, mapper.(string))
 	})
 	assert.Error(t, err)
 	assert.Equal(t, `error 5`, err.Error())
@@ -57,7 +57,7 @@ func TestMappers_ForEachReverse_DontStopOnFailure(t *testing.T) {
 	mappers := Mappers{`1`, `2`, `3`, `4`, `5`}
 	err := mappers.ForEachReverse(false, func(mapper interface{}) error {
 		callOrder = append(callOrder, mapper.(string))
-		return fmt.Errorf(`error %s`, mapper.(string))
+		return errors.Errorf(`error %s`, mapper.(string))
 	})
 	assert.Error(t, err)
 	assert.Equal(t, "- error 5\n- error 4\n- error 3\n- error 2\n- error 1", err.Error())

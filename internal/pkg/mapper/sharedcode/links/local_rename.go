@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Find renamed shared codes
 	renamedSharedCodes := make(map[string]model.Key)
@@ -17,7 +17,7 @@ func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
 
 		// Is shared code?
 		if ok, err := m.helper.IsSharedCodeKey(key); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		} else if ok {
 			renamedSharedCodes[key.String()] = key
 			continue
@@ -25,7 +25,7 @@ func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
 
 		// Is shared code row?
 		if ok, err := m.helper.IsSharedCodeRowKey(key); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		} else if ok {
 			configKey := key.(model.ConfigRowKey).ConfigKey()
 			renamedSharedCodes[configKey.String()] = configKey
@@ -55,10 +55,10 @@ func (m *mapper) onRename(renamedObjects []model.RenameAction) error {
 
 	// Save
 	if err := uow.Invoke(); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (m *mapper) getDependentConfig(objectState model.ObjectState, renamedSharedCodes map[string]model.Key) *model.ConfigState {

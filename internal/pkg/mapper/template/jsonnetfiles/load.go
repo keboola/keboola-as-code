@@ -2,11 +2,11 @@ package jsonnetfiles
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type ctxKey string
@@ -40,7 +40,7 @@ func (m *jsonNetMapper) LoadLocalFile(def *filesystem.FileDef, fileType filesyst
 		case filesystem.FileTypeJson:
 			return jsonNetFile.ToJsonFile()
 		default:
-			panic(fmt.Errorf(`unexpected filesystem.FileType = %v`, fileType))
+			panic(errors.Errorf(`unexpected filesystem.FileType = %v`, fileType))
 		}
 	}
 

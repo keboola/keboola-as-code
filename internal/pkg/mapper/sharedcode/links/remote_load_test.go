@@ -56,8 +56,8 @@ func TestRemoteLoadTranWithSharedCode_InvalidSharedCodeId(t *testing.T) {
 	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	expectedLogs := `
 WARN  Warning:
-  - missing shared code config "branch:123/component:keboola.shared-code/config:missing":
-    - referenced from config "branch:123/component:keboola.python-transformation-v2/config:001"
+- missing shared code config "branch:123/component:keboola.shared-code/config:missing":
+  - referenced from config "branch:123/component:keboola.python-transformation-v2/config:001"
 `
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 
@@ -89,8 +89,8 @@ func TestRemoteLoadTranWithSharedCode_InvalidSharedCodeRowId(t *testing.T) {
 	assert.NoError(t, state.Mapper().AfterRemoteOperation(context.Background(), changes))
 	expectedLogs := `
 WARN  Warning:
-  - missing shared code config row "branch:123/component:keboola.shared-code/config:456/row:missing":
-    - referenced from config "branch:123/component:keboola.python-transformation-v2/config:001"
+- missing shared code config row "branch:123/component:keboola.shared-code/config:456/row:missing":
+  - referenced from config "branch:123/component:keboola.python-transformation-v2/config:001"
 `
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 

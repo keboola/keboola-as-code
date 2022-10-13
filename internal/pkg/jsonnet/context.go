@@ -2,11 +2,12 @@ package jsonnet
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/ast"
 	"github.com/spf13/cast"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Context struct {
@@ -178,7 +179,7 @@ func (v globalBinding) registerTo(vm *jsonnet.VM) {
 
 func (v variablesValues) add(name string, value interface{}) {
 	if _, found := v[name]; found {
-		panic(fmt.Errorf(`variable "%s" is already defined`, name))
+		panic(errors.Errorf(`variable "%s" is already defined`, name))
 	}
 	v[name] = value
 }

@@ -2,12 +2,11 @@
 package aferofs
 
 import (
-	"fmt"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/localfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/memoryfs"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/mountfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func NewLocalFs(rootDir string, opts ...filesystem.Option) (fs filesystem.Fs, err error) {
@@ -38,7 +37,7 @@ func NewMemoryFsFrom(localDir string, opts ...filesystem.Option) filesystem.Fs {
 func NewMemoryFsFromOrErr(localDir string, opts ...filesystem.Option) (filesystem.Fs, error) {
 	memoryFs := NewMemoryFs(opts...)
 	if err := CopyFs2Fs(nil, localDir, memoryFs, ""); err != nil {
-		return nil, fmt.Errorf(`cannot init memory fs from local dir "%s": %w`, localDir, err)
+		return nil, errors.Errorf(`cannot init memory fs from local dir "%s": %w`, localDir, err)
 	}
 	return memoryFs, nil
 }
@@ -46,7 +45,7 @@ func NewMemoryFsFromOrErr(localDir string, opts ...filesystem.Option) (filesyste
 func NewMountFs(root filesystem.Fs, mounts []mountfs.MountPoint, opts ...filesystem.Option) (fs filesystem.Fs, err error) {
 	rootFs, ok := root.(*Fs)
 	if !ok {
-		return nil, fmt.Errorf(`type "%T" is not supported`, root)
+		return nil, errors.Errorf(`type "%T" is not supported`, root)
 	}
 
 	// Use options from root filesystem by default

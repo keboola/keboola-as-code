@@ -9,12 +9,12 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // AfterLocalOperation - replace placeholders with default buckets in IM.
 func (m *defaultBucketMapper) AfterLocalOperation(_ context.Context, changes *model.LocalChanges) error {
-	warnings := utils.NewMultiError()
+	warnings := errors.NewMultiError()
 	for _, objectState := range changes.Loaded() {
 		config, ok := objectState.LocalState().(configOrRow)
 		if !ok {
@@ -27,18 +27,18 @@ func (m *defaultBucketMapper) AfterLocalOperation(_ context.Context, changes *mo
 
 	// Log errors as warning
 	if warnings.Len() > 0 {
-		m.logger.Warn(utils.PrefixError(`Warning`, warnings))
+		m.logger.Warn(errors.PrefixError(warnings, "Warning"))
 	}
 
 	// Process renamed objects
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if len(changes.Renamed()) > 0 {
 		if err := m.onObjectsRename(changes.Renamed(), m.state.LocalObjects()); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
@@ -63,11 +63,10 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
 	path := filesystem.Join(branchState.Path(), splitSource[0])
 	sourceConfigState, found := m.state.GetByPath(path)
 	if !found || !sourceConfigState.HasLocalState() {
-		return fmt.Errorf(
+		return errors.Errorf(
 			`%s contains table "%s" in input mapping referencing to a non-existing configuration`,
 			targetConfig.Desc(),
-			inputTableSource,
-		)
+			inputTableSource)
 	}
 	sourceConfig := sourceConfigState.LocalState().(*model.Config)
 

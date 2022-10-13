@@ -2,7 +2,6 @@ package persist
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
@@ -11,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type executor struct {
@@ -20,7 +19,7 @@ type executor struct {
 	logger  log.Logger
 	tickets *storageapi.TicketProvider
 	uow     *local.UnitOfWork
-	errors  *utils.MultiError
+	errors  errors.MultiError
 }
 
 func newExecutor(ctx context.Context, logger log.Logger, storageApiClient client.Sender, projectState *state.State, plan *Plan) *executor {
@@ -30,7 +29,7 @@ func newExecutor(ctx context.Context, logger log.Logger, storageApiClient client
 		logger:  logger,
 		tickets: storageapi.NewTicketProvider(ctx, storageApiClient),
 		uow:     projectState.LocalManager().NewUnitOfWork(context.Background()),
-		errors:  utils.NewMultiError(),
+		errors:  errors.NewMultiError(),
 	}
 }
 
@@ -43,7 +42,7 @@ func (e *executor) invoke() error {
 			objectState, _ := e.State.Get(a.Key())
 			e.uow.DeleteObject(objectState, a.ObjectManifest)
 		default:
-			panic(fmt.Errorf(`unexpected type "%T"`, action))
+			panic(errors.Errorf(`unexpected type "%T"`, action))
 		}
 	}
 
@@ -74,7 +73,7 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 			k.Id = storageapi.RowID(ticket.ID)
 			key = k
 		default:
-			panic(fmt.Errorf(`unexpected type "%s" of the persisted object "%s"`, key.Kind(), key.Desc()))
+			panic(errors.Errorf(`unexpected type "%s" of the persisted object "%s"`, key.Kind(), key.Desc()))
 		}
 
 		// The parent was not persisted for some error -> skip
@@ -88,7 +87,7 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 			e.errors.Append(err)
 			return
 		} else if found {
-			panic(fmt.Errorf(`unexpected state: manifest record "%s" exists, but it should not`, record))
+			panic(errors.Errorf(`unexpected state: manifest record "%s" exists, but it should not`, record))
 		}
 
 		// Invoke mapper
@@ -103,7 +102,7 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 
 		// Update parent path - may be affected by relations
 		if err := e.Manifest().ResolveParentPath(record); err != nil {
-			e.errors.Append(fmt.Errorf(`cannot resolve path: %w`, err))
+			e.errors.Append(errors.Errorf(`cannot resolve path: %w`, err))
 			return
 		}
 

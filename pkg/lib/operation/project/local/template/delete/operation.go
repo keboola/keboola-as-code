@@ -10,7 +10,7 @@ import (
 	deleteTemplate "github.com/keboola/keboola-as-code/internal/pkg/plan/delete-template"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 )
 
@@ -48,7 +48,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	// Invoke
 	if err := plan.Invoke(ctx); err != nil {
-		return utils.PrefixError(`cannot delete template configs`, err)
+		return errors.PrefixError(err, "cannot delete template configs")
 	}
 
 	// Save manifest

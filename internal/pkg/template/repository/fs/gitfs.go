@@ -2,7 +2,6 @@ package fs
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -12,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // gitFsFor returns template FS loaded from a git repository.
@@ -66,10 +65,11 @@ func gitFsFor(ctx context.Context, d dependencies, definition model.TemplateRepo
 		_, version, err := repoManifest.GetVersion(tmpl.TemplateId(), tmpl.Version())
 		if err != nil {
 			// version or template not found
-			e := utils.NewMultiError()
-			e.Append(fmt.Errorf(`searched in git repository "%s"`, gitRepository.Url()))
-			e.Append(fmt.Errorf(`reference "%s"`, gitRepository.Ref()))
-			return nil, utils.PrefixError(err.Error(), e)
+			return nil, errors.NewNestedError(
+				err,
+				errors.Errorf(`searched in git repository "%s"`, gitRepository.Url()),
+				errors.Errorf(`reference "%s"`, gitRepository.Ref()),
+			)
 		}
 
 		// Load template src directory
@@ -78,10 +78,11 @@ func gitFsFor(ctx context.Context, d dependencies, definition model.TemplateRepo
 			return nil, err
 		}
 		if !fs.Exists(srcDir) {
-			e := utils.NewMultiError()
-			e.Append(fmt.Errorf(`searched in git repository "%s"`, gitRepository.Url()))
-			e.Append(fmt.Errorf(`reference "%s"`, gitRepository.Ref()))
-			return nil, utils.PrefixError(fmt.Sprintf(`folder "%s" not found`, srcDir), e)
+			return nil, errors.NewNestedError(
+				errors.Errorf(`folder "%s" not found`, srcDir),
+				errors.Errorf(`searched in git repository "%s"`, gitRepository.Url()),
+				errors.Errorf(`reference "%s"`, gitRepository.Ref()),
+			)
 		}
 
 		// Load common directory, shared between all templates in repository, if it exists

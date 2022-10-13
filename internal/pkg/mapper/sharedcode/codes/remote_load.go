@@ -2,31 +2,30 @@ package codes
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // AfterRemoteOperation converts legacy "code_content" string -> []interface{}.
 func (m *mapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, objectState := range changes.Loaded() {
 		if ok, err := m.IsSharedCodeKey(objectState.Key()); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 			continue
 		} else if ok {
 			if err := m.onConfigRemoteLoad(objectState.(*model.ConfigState).Remote); err != nil {
-				errors.Append(err)
+				errs.Append(err)
 			}
 		}
 	}
 
-	if errors.Len() > 0 {
+	if errs.Len() > 0 {
 		// Convert errors to warning
-		m.logger.Warn(utils.PrefixError(`Warning`, errors))
+		m.logger.Warn(errors.PrefixError(errs, "Warning"))
 	}
 
 	return nil
@@ -47,22 +46,22 @@ func (m *mapper) onConfigRemoteLoad(config *model.Config) error {
 	// Value should be string
 	target, ok := targetRaw.(string)
 	if !ok {
-		return utils.PrefixError(
-			fmt.Sprintf(`invalid %s`, config.Desc()),
-			fmt.Errorf(`key "%s" should be string, found "%T"`, model.ShareCodeTargetComponentKey, targetRaw),
+		return errors.NewNestedError(
+			errors.Errorf(`invalid %s`, config.Desc()),
+			errors.Errorf(`key "%s" should be string, found "%T"`, model.ShareCodeTargetComponentKey, targetRaw),
 		)
 	}
 
 	// Store target component ID to struct
 	config.SharedCode = &model.SharedCodeConfig{Target: storageapi.ComponentID(target)}
 
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, row := range m.state.RemoteObjects().ConfigRowsFrom(config.ConfigKey) {
 		if err := m.onRowRemoteLoad(config, row); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (m *mapper) onRowRemoteLoad(config *model.Config, row *model.ConfigRow) error {
@@ -85,9 +84,9 @@ func (m *mapper) onRowRemoteLoad(config *model.Config, row *model.ConfigRow) err
 	case []interface{}:
 		scripts = model.ScriptsFromSlice(v)
 	default:
-		return utils.PrefixError(
-			fmt.Sprintf(`invalid %s`, row.Desc()),
-			fmt.Errorf(`key "%s" should be string or array, found "%T"`, model.SharedCodeContentKey, raw),
+		return errors.NewNestedError(
+			errors.Errorf(`invalid %s`, row.Desc()),
+			errors.Errorf(`key "%s" should be string or array, found "%T"`, model.SharedCodeContentKey, raw),
 		)
 	}
 

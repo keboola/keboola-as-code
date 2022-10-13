@@ -6,6 +6,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type MockedKey struct {
@@ -210,7 +211,7 @@ func (o *MockedObjectState) HasState(stateType model.StateType) bool {
 	case model.StateTypeRemote:
 		return o.Remote != nil
 	default:
-		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
+		panic(errors.Errorf(`unexpected state type "%T"`, stateType))
 	}
 }
 
@@ -221,7 +222,7 @@ func (o *MockedObjectState) GetState(stateType model.StateType) model.Object {
 	case model.StateTypeRemote:
 		return o.Remote
 	default:
-		panic(fmt.Errorf(`unexpected state type "%T"`, stateType))
+		panic(errors.Errorf(`unexpected state type "%T"`, stateType))
 	}
 }
 
@@ -264,7 +265,7 @@ func (o *MockedObjectState) LocalOrRemoteState() model.Object {
 	case o.HasRemoteState():
 		return o.RemoteState()
 	default:
-		panic(fmt.Errorf("object Local or Remote state must be set"))
+		panic(errors.New("object Local or Remote state must be set"))
 	}
 }
 
@@ -275,7 +276,7 @@ func (o *MockedObjectState) RemoteOrLocalState() model.Object {
 	case o.HasLocalState():
 		return o.LocalState()
 	default:
-		panic(fmt.Errorf("object Remote or Local state must be set"))
+		panic(errors.New("object Remote or Local state must be set"))
 	}
 }
 

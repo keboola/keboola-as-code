@@ -3,12 +3,13 @@ package jsonnet
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 
 	"github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/formatter"
 	"github.com/google/go-jsonnet/parser"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func Evaluate(code string, ctx *Context) (jsonOut string, err error) {
@@ -42,7 +43,7 @@ func EvaluateAst(input ast.Node, ctx *Context) (jsonOut string, err error) {
 	// Evaluate
 	jsonContent, err := vm.Evaluate(node)
 	if err != nil {
-		return "", fmt.Errorf(`jsonnet error: %w`, err)
+		return "", errors.Errorf(`jsonnet error: %w`, err)
 	}
 
 	// Format (go-jsonnet library use 3 space indent)
@@ -78,7 +79,7 @@ func FormatAst(node ast.Node) string {
 func ToAst(code, fileName string) (ast.Node, error) {
 	node, _, err := parser.SnippetToRawAST(code, fileName)
 	if err != nil {
-		return nil, fmt.Errorf(`cannot parse jsonnet: %w`, err)
+		return nil, errors.Errorf(`cannot parse jsonnet: %w`, err)
 	}
 	return node, nil
 }

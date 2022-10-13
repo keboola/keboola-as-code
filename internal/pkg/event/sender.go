@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -29,7 +30,7 @@ func (s Sender) SendCmdEvent(ctx context.Context, cmdStart time.Time, err error,
 	// Catch panic
 	panicErr := recover()
 	if panicErr != nil {
-		err = fmt.Errorf(`%s`, panicErr)
+		err = errors.Errorf(`%s`, panicErr)
 	}
 
 	// Send successful event if no error

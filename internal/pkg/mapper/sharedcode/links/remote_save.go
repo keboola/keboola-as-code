@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // MapBeforeRemoteSave move shared code from Transformation struct to Content.
@@ -27,11 +27,11 @@ func (m *mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSa
 	}()
 
 	// Convert LinkScript to ID placeholder
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
 		v, err := m.linkToIdPlaceholder(code, script)
 		if err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 		if v != nil {
 			return v
@@ -44,5 +44,5 @@ func (m *mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSa
 	transformation.Content.Set(model.SharedCodeIdContentKey, sharedCodeLink.Config.Id.String())
 	transformation.Content.Set(model.SharedCodeRowsIdContentKey, sharedCodeLink.Rows.IdsSlice())
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

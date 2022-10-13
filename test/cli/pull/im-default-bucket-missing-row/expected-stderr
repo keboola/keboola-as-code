@@ -1,3 +1,3 @@
-Warning: - config "branch:%s/component:keboola.ex-aws-s3/config:1234567" not found
-  - referenced from config row "branch:%s/component:keboola.wr-db-mysql/config:%s/row:%s"
-  - input mapping "in.c-keboola-ex-aws-s3-1234567.table"
+Warning: config "branch:%s/component:keboola.ex-aws-s3/config:1234567" not found:
+- referenced from config row "branch:%s/component:keboola.wr-db-mysql/config:%s/row:%s"
+- input mapping "in.c-keboola-ex-aws-s3-1234567.table"

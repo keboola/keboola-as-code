@@ -2,9 +2,9 @@ package variables
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // MapBeforeRemoteSave - add "variables_id" to shared code.
@@ -18,7 +18,7 @@ func (m *mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSa
 	relType := model.SharedCodeVariablesFromRelType
 	relationRaw, err := object.Relations.GetOneByType(relType)
 	if err != nil {
-		return fmt.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
+		return errors.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
 	} else if relationRaw == nil {
 		return nil
 	}

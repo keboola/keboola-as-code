@@ -2,7 +2,6 @@ package transformation
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -10,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // MapAfterLocalLoad - load code blocks from filesystem to Blocks field.
@@ -29,7 +28,7 @@ func (m *transformationMapper) MapAfterLocalLoad(ctx context.Context, recipe *mo
 		logger:          m.logger,
 		config:          recipe.Object.(*model.Config),
 		blocksDir:       m.state.NamingGenerator().BlocksDir(recipe.ObjectManifest.Path()),
-		errors:          utils.NewMultiError(),
+		errors:          errors.NewMultiError(),
 	}
 
 	// Load
@@ -43,7 +42,7 @@ type localLoader struct {
 	config    *model.Config
 	blocksDir string
 	blocks    []*model.Block
-	errors    *utils.MultiError
+	errors    errors.MultiError
 }
 
 func (l *localLoader) loadBlocks() error {
@@ -66,7 +65,7 @@ func (l *localLoader) validate() {
 	if l.errors.Len() == 0 {
 		for _, block := range l.blocks {
 			if err := l.State.ValidateValue(block); err != nil {
-				l.errors.Append(utils.PrefixError(fmt.Sprintf(`block "%s" is not valid`, block.Path()), err))
+				l.errors.AppendWithPrefixf(err, `block "%s" is not valid`, block.Path())
 			}
 		}
 	}
@@ -170,7 +169,7 @@ func (l *localLoader) loadCodeMetaFile(code *model.Code) {
 func (l *localLoader) blockDirs() []string {
 	// Check if blocks dir exists
 	if !l.ObjectsRoot().IsDir(l.blocksDir) {
-		l.errors.Append(fmt.Errorf(`missing blocks dir "%s"`, l.blocksDir))
+		l.errors.Append(errors.Errorf(`missing blocks dir "%s"`, l.blocksDir))
 		return nil
 	}
 
@@ -188,7 +187,7 @@ func (l *localLoader) blockDirs() []string {
 	// Load all dir entries
 	dirs, err := l.FileLoader().ReadSubDirs(l.ObjectsRoot(), l.blocksDir)
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot read transformation blocks from "%s": %w`, l.blocksDir, err))
+		l.errors.Append(errors.Errorf(`cannot read transformation blocks from "%s": %w`, l.blocksDir, err))
 		return nil
 	}
 	return dirs
@@ -197,7 +196,7 @@ func (l *localLoader) blockDirs() []string {
 func (l *localLoader) codeDirs(block *model.Block) []string {
 	dirs, err := l.FileLoader().ReadSubDirs(l.ObjectsRoot(), block.Path())
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot read transformation codes from "%s": %w`, block.Path(), err))
+		l.errors.Append(errors.Errorf(`cannot read transformation codes from "%s": %w`, block.Path(), err))
 		return nil
 	}
 	return dirs
@@ -208,7 +207,7 @@ func (l *localLoader) codeFileName(code *model.Code) string {
 	// File can use an old naming, so the file extension is not specified
 	matches, err := l.ObjectsRoot().Glob(filesystem.Join(code.Path(), naming.CodeFileName+`.*`))
 	if err != nil {
-		l.errors.Append(fmt.Errorf(`cannot search for code file in %s": %w`, code.Path(), err))
+		l.errors.Append(errors.Errorf(`cannot search for code file in %s": %w`, code.Path(), err))
 		return ""
 	}
 	files := make([]string, 0)
@@ -226,17 +225,16 @@ func (l *localLoader) codeFileName(code *model.Code) string {
 
 	// No file?
 	if len(files) == 0 {
-		l.errors.Append(fmt.Errorf(`missing code file in "%s"`, code.Path()))
+		l.errors.Append(errors.Errorf(`missing code file in "%s"`, code.Path()))
 		return ""
 	}
 
 	// Multiple files?
 	if len(files) > 1 {
-		l.errors.Append(fmt.Errorf(
+		l.errors.Append(errors.Errorf(
 			`expected one, but found multiple code files "%s" in "%s"`,
 			strings.Join(files, `", "`),
-			code.Path(),
-		))
+			code.Path()))
 		return ""
 	}
 

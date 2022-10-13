@@ -1,4 +1,5 @@
-WARN	Error: project local state is invalid:
+WARN	Error:
+WARN	- project local state is invalid:
 WARN	  - branch metadata file "main/meta.json" is invalid:
 WARN	    - invalid character 'i' looking for beginning of object key string, offset: 3
 WARN	  - missing branch description file "main/description.md"

@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Inputs []Input
@@ -52,15 +52,16 @@ func NewInputs() *Inputs {
 }
 
 func (i Inputs) ValidateDefinitions() error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Validate rules
 	if err := validateDefinitions(i); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Enhance error messages
-	for index, item := range errors.Errors {
+	enhancedErrs := errors.NewMultiError()
+	for _, item := range errs.WrappedErrors() {
 		// Replace input index by input ID. Example:
 		//   before: [123].default
 		//   after:  input "my-input": default
@@ -69,10 +70,10 @@ func (i Inputs) ValidateDefinitions() error {
 			ReplaceAllStringFunc(item.Error(), func(s string) string {
 				return fmt.Sprintf(`input "%s": `, i.GetIndex(cast.ToInt(strings.Trim(s, "[]."))).Id)
 			})
-		errors.Errors[index] = fmt.Errorf(msg)
+		enhancedErrs.Append(errors.New(msg))
 	}
 
-	return errors.ErrorOrNil()
+	return enhancedErrs.ErrorOrNil()
 }
 
 func (i *Inputs) Add(input Input) {
@@ -122,7 +123,7 @@ type Input struct {
 // ValidateUserInput validates input from the template user using Input.Rules.
 func (i Input) ValidateUserInput(value any) error {
 	if err := i.Type.ValidateValue(reflect.ValueOf(value)); err != nil {
-		return fmt.Errorf("%s %w", i.Name, err)
+		return errors.Errorf("%s %w", i.Name, err)
 	}
 	return i.Rules.ValidateValue(i, value)
 }
@@ -131,7 +132,7 @@ func (i Input) ValidateUserInput(value any) error {
 func (i Input) Available(params map[string]any) (bool, error) {
 	result, err := i.If.Evaluate(params)
 	if err != nil {
-		return false, utils.PrefixError(fmt.Sprintf(`invalid input "%s"`, i.Id), err)
+		return false, errors.PrefixErrorf(err, `invalid input "%s"`, i.Id)
 	}
 	return result, nil
 }

@@ -3,10 +3,11 @@ package ioutil
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"sync"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Writer is a simple buffer writer for testing.
@@ -74,14 +75,14 @@ func (*Writer) Fd() uintptr {
 
 func (w *Writer) Truncate() {
 	if err := w.Flush(); err != nil {
-		panic(fmt.Errorf("cannot flush utils log writer"))
+		panic(errors.New("cannot flush utils log writer"))
 	}
 	w.buffer.Truncate(0)
 }
 
 func (w *Writer) String() string {
 	if err := w.Flush(); err != nil {
-		panic(fmt.Errorf("cannot flush utils log writer"))
+		panic(errors.New("cannot flush utils log writer"))
 	}
 	str := w.buffer.String()
 	w.Truncate()

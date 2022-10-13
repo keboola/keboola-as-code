@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
@@ -22,7 +22,7 @@ type Differ struct {
 	objects   model.ObjectStates
 	results   []*Result                                 // diff results
 	typeCache map[typeName][]*reflecthelper.StructField // reflection cache
-	errors    *utils.MultiError                         // errors
+	errors    errors.MultiError
 }
 
 type ResultState int
@@ -65,7 +65,7 @@ func NewDiffer(objects model.ObjectStates) *Differ {
 
 func (d *Differ) Diff() (*Results, error) {
 	d.results = []*Result{}
-	d.errors = utils.NewMultiError()
+	d.errors = errors.NewMultiError()
 
 	// Diff all objects : branches, config, configRows
 	results := &Results{Equal: true, Results: d.results, Objects: d.objects}
@@ -105,7 +105,7 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 
 	// Are both, Remote and Local state defined?
 	if !state.HasRemoteState() && !state.HasLocalState() {
-		panic(fmt.Errorf("both local and remote state are not set"))
+		panic(errors.New("both local and remote state are not set"))
 	}
 
 	// Not in remote state
@@ -129,13 +129,13 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 
 	// Remote and Local types must be same
 	if remoteType.String() != localType.String() {
-		panic(fmt.Errorf("local(%s) and remote(%s) states must have same data type", remoteType, localType))
+		panic(errors.Errorf("local(%s) and remote(%s) states must have same data type", remoteType, localType))
 	}
 
 	// Get available fields for diff, defined in `diff:"true"` tag in struct
 	diffFields := d.getDiffFields(remoteType)
 	if len(diffFields) == 0 {
-		return nil, fmt.Errorf(`no field with tag "diff:true" in struct "%s"`, remoteType.String())
+		return nil, errors.Errorf(`no field with tag "diff:true" in struct "%s"`, remoteType.String())
 	}
 
 	// Get pointer value
@@ -254,6 +254,6 @@ func (r *Result) Mark() string {
 	case ResultOnlyInLocal:
 		return OnlyInLocalMark
 	default:
-		panic(fmt.Errorf("unexpected type %T", r.State))
+		panic(errors.Errorf("unexpected type %T", r.State))
 	}
 }

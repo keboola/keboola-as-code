@@ -2,7 +2,6 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/atomic"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func TestWorkers(t *testing.T) {
@@ -45,16 +45,16 @@ func TestWorkersErrors(t *testing.T) {
 	w := NewWorkers(context.Background())
 
 	w.AddWorker(func() error {
-		return fmt.Errorf(`first`)
+		return errors.New(`first`)
 	})
 	w.AddWorker(func() error {
-		return fmt.Errorf(`second`)
+		return errors.New(`second`)
 	})
 	w.AddWorker(func() error {
 		return nil
 	})
 	w.AddWorker(func() error {
-		return fmt.Errorf(`third`)
+		return errors.New(`third`)
 	})
 	w.AddWorker(func() error {
 		return nil

@@ -1,11 +1,10 @@
 package input
 
 import (
-	"fmt"
-
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Options for input KindSelect and KindMultiSelect.
@@ -55,7 +54,7 @@ func OptionsFromString(str string) (out Options, err error) {
 	}
 	pairs := orderedmap.New()
 	if err := json.DecodeString(str, pairs); err != nil {
-		return nil, fmt.Errorf(`value "%s" is not valid: %w`, str, err)
+		return nil, errors.Errorf(`value "%s" is not valid: %w`, str, err)
 	}
 
 	for _, key := range pairs.Keys() {
@@ -63,7 +62,7 @@ func OptionsFromString(str string) (out Options, err error) {
 		if v, ok := valueRaw.(string); ok {
 			out = append(out, Option{Value: key, Label: v})
 		} else {
-			return nil, fmt.Errorf(`value "%s" is not valid: value of key "%s" must be string`, str, key)
+			return nil, errors.Errorf(`value "%s" is not valid: value of key "%s" must be string`, str, key)
 		}
 	}
 

@@ -11,7 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func Load(fs filesystem.Fs, ctx *jsonnet.Context) (StepsGroups, error) {
@@ -47,10 +47,10 @@ func (g StepsGroups) InputsMap() map[string]*Input {
 }
 
 func (g StepsGroups) ValidateDefinitions() error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	if len(g) == 0 {
-		errors.Append(fmt.Errorf("at least one steps group must be defined"))
+		errs.Append(errors.New("at least one steps group must be defined"))
 	}
 
 	inputsMap := make(map[string]*Input)
@@ -83,11 +83,11 @@ func (g StepsGroups) ValidateDefinitions() error {
 	for _, inputId := range inputsOccurrences.Keys() {
 		occurrences, _ := inputsOccurrences.GetOrNil(inputId).([]string)
 		if len(occurrences) > 1 {
-			inputsErr := utils.NewMultiError()
+			inputsErr := errors.NewMultiError()
 			for _, occurrence := range occurrences {
-				inputsErr.Append(fmt.Errorf(occurrence))
+				inputsErr.Append(errors.New(occurrence))
 			}
-			errors.AppendWithPrefix(fmt.Sprintf(`input "%s" is defined %d times in`, inputId, len(occurrences)), inputsErr)
+			errs.AppendWithPrefixf(inputsErr, `input "%s" is defined %d times in`, inputId, len(occurrences))
 		}
 	}
 
@@ -98,12 +98,12 @@ func (g StepsGroups) ValidateDefinitions() error {
 	for _, inputId := range inputsReferences.Keys() {
 		if _, found := inputsOccurrences.Get(inputId); !found {
 			// Referenced input is missing
-			inputsErr := utils.NewMultiError()
+			inputsErr := errors.NewMultiError()
 			references, _ := inputsReferences.GetOrNil(inputId).([]string)
 			for _, referencedFrom := range references {
-				inputsErr.Append(fmt.Errorf(referencedFrom))
+				inputsErr.Append(errors.New(referencedFrom))
 			}
-			errors.AppendWithPrefix(fmt.Sprintf(`input "%s" not found, referenced from`, inputId), inputsErr)
+			errs.AppendWithPrefixf(inputsErr, `input "%s" not found, referenced from`, inputId)
 		}
 	}
 
@@ -113,7 +113,7 @@ func (g StepsGroups) ValidateDefinitions() error {
 		if input.Kind == KindOAuthAccounts {
 			if oauthInput, found := inputsMap[input.OauthInputId]; found {
 				if !OauthAccountsSupportedComponents[oauthInput.ComponentId] {
-					errors.Append(fmt.Errorf(`input "%s" (kind=%s) is defined for "%s" component, but it is not supported`, input.Id, input.Kind, oauthInput.ComponentId))
+					errs.Append(errors.Errorf(`input "%s" (kind=%s) is defined for "%s" component, but it is not supported`, input.Id, input.Kind, oauthInput.ComponentId))
 				}
 			}
 		}
@@ -121,11 +121,12 @@ func (g StepsGroups) ValidateDefinitions() error {
 
 	// Validate other rules
 	if err := validateDefinitions(g); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Enhance error messages
-	for index, item := range errors.Errors {
+	enhancedErrors := errors.NewMultiError()
+	for _, item := range errs.WrappedErrors() {
 		msg := item.Error()
 
 		// Replace step and group by index. Example:
@@ -134,6 +135,7 @@ func (g StepsGroups) ValidateDefinitions() error {
 		regex := regexpcache.MustCompile(`^\[(\d+)\](?:\.steps\[(\d+)\])?(?:\.inputs\[(\d+)\])?\.`)
 		submatch := regex.FindStringSubmatch(msg)
 		if submatch == nil {
+			enhancedErrors.Append(errors.New(msg))
 			continue
 		}
 
@@ -166,10 +168,10 @@ func (g StepsGroups) ValidateDefinitions() error {
 		})
 
 		msg = strings.Replace(msg, "steps must contain at least 1 item", "steps must contain at least 1 step", 1)
-		errors.Errors[index] = fmt.Errorf(msg)
+		enhancedErrors.Append(errors.New(msg))
 	}
 
-	return errors.ErrorOrNil()
+	return enhancedErrors.ErrorOrNil()
 }
 
 // StepsGroup is a container for Steps.
@@ -200,16 +202,16 @@ func (g StepsGroup) AreStepsSelectable() bool {
 
 func (g StepsGroup) ValidateStepsCount(all, selected int) error {
 	if g.Required == RequiredAll && selected < all {
-		return fmt.Errorf(requiredAllDescription, all)
+		return errors.Errorf(requiredAllDescription, all)
 	}
 	if g.Required == RequiredAtLeastOne && selected < 1 {
-		return fmt.Errorf(requiredAtLeastOneDescription)
+		return errors.New(requiredAtLeastOneDescription)
 	}
 	if g.Required == RequiredExactlyOne && selected != 1 {
-		return fmt.Errorf(requiredExactlyOneDescription)
+		return errors.New(requiredExactlyOneDescription)
 	}
 	if g.Required == RequiredZeroOrOne && selected > 1 {
-		return fmt.Errorf(requiredZeroOrOneDescription)
+		return errors.New(requiredZeroOrOneDescription)
 	}
 	return nil
 }

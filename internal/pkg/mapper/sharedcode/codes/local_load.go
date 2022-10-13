@@ -2,18 +2,17 @@ package codes
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // MapAfterLocalLoad loads shared code from filesystem to target config.
 func (m *mapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Shared code config
 	if ok, err := m.IsSharedCodeKey(recipe.Object.Key()); err != nil {
@@ -21,7 +20,7 @@ func (m *mapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadR
 	} else if ok {
 		config := recipe.Object.(*model.Config)
 		if err := m.onConfigLocalLoad(config); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
@@ -32,11 +31,11 @@ func (m *mapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadR
 		row := recipe.Object.(*model.ConfigRow)
 		config := m.state.MustGet(row.ConfigKey()).LocalState().(*model.Config)
 		if err := m.onRowLocalLoad(config, row, recipe); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (m *mapper) onConfigLocalLoad(config *model.Config) error {
@@ -54,9 +53,9 @@ func (m *mapper) onConfigLocalLoad(config *model.Config) error {
 	// Value should be string
 	target, ok := targetRaw.(string)
 	if !ok {
-		return utils.PrefixError(
-			fmt.Sprintf(`invalid %s`, config.Desc()),
-			fmt.Errorf(`key "%s" should be string, found "%T"`, model.ShareCodeTargetComponentKey, targetRaw),
+		return errors.NewNestedError(
+			errors.Errorf(`invalid %s`, config.Desc()),
+			errors.Errorf(`key "%s" should be string, found "%T"`, model.ShareCodeTargetComponentKey, targetRaw),
 		)
 	}
 

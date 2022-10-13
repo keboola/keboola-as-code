@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Options struct {
@@ -32,7 +33,7 @@ func Run(ctx context.Context, o Options, d dependencies) (branch *storageapi.Bra
 	// Create branch by API
 	branch = &storageapi.Branch{Name: o.Name}
 	if _, err := storageapi.CreateBranchRequest(branch).Send(ctx, d.StorageApiClient()); err != nil {
-		return nil, fmt.Errorf(`cannot create branch: %w`, err)
+		return nil, errors.Errorf(`cannot create branch: %w`, err)
 	}
 
 	logger.Info(fmt.Sprintf(`Created new branch "%s".`, branch.Name))

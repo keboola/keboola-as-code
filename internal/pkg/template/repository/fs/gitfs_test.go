@@ -40,8 +40,8 @@ func TestTemplateRepositoryFs_Git_SparseCheckout(t *testing.T) {
 	_, err := gitFsFor(ctx, d, repo, OnlyForTemplate(template))
 	assert.Error(t, err)
 	assert.Equal(t, fmt.Sprintf(`template "template2" not found:
-  - searched in git repository "file://%s"
-  - reference "main"`, tmpDir), err.Error())
+- searched in git repository "file://%s"
+- reference "main"`, tmpDir), err.Error())
 
 	// Checkout fail due to non-existing version of existing template
 	repo = model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "b1"}
@@ -49,8 +49,8 @@ func TestTemplateRepositoryFs_Git_SparseCheckout(t *testing.T) {
 	_, err = gitFsFor(ctx, d, repo, OnlyForTemplate(template))
 	assert.Error(t, err)
 	assert.Equal(t, fmt.Sprintf(`template "template2" found but version "1.0.8" is missing:
-  - searched in git repository "file://%s"
-  - reference "b1"`, tmpDir), err.Error())
+- searched in git repository "file://%s"
+- reference "b1"`, tmpDir), err.Error())
 
 	// Checkout fail due to non-existing src folder of existing template
 	repo = model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "b1"}
@@ -58,8 +58,8 @@ func TestTemplateRepositoryFs_Git_SparseCheckout(t *testing.T) {
 	_, err = gitFsFor(ctx, d, repo, OnlyForTemplate(template))
 	assert.Error(t, err)
 	assert.Equal(t, fmt.Sprintf(`folder "template2/v1/src" not found:
-  - searched in git repository "file://%s"
-  - reference "b1"`, tmpDir), err.Error())
+- searched in git repository "file://%s"
+- reference "b1"`, tmpDir), err.Error())
 
 	// Checkout success in main branch
 	repo = model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}

@@ -1,12 +1,11 @@
 package repository
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func FixPathsCommand(_ dependencies.Provider) *cobra.Command {
@@ -15,7 +14,7 @@ func FixPathsCommand(_ dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`template/repository/fix-paths/short`),
 		Long:  helpmsg.Read(`template/repository/fix-paths/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return fmt.Errorf(`not implemented`)
+			return errors.New(`not implemented`)
 		},
 	}
 	return cmd

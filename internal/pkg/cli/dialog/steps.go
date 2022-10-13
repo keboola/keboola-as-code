@@ -2,14 +2,13 @@ package dialog
 
 import (
 	"bufio"
-	"fmt"
 	"strings"
 
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -29,7 +28,7 @@ func (d *stepsDialog) ask() (input.StepsGroupsExt, error) {
 		Validator: func(val interface{}) error {
 			if _, err := d.parse(val.(string)); err != nil {
 				// Print errors to new line
-				return utils.PrefixError("\n", err)
+				return errors.PrefixError(err, "\n")
 			}
 			return nil
 		},
@@ -40,7 +39,7 @@ func (d *stepsDialog) ask() (input.StepsGroupsExt, error) {
 func (d *stepsDialog) parse(result string) (input.StepsGroupsExt, error) {
 	result = strhelper.StripHtmlComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	lineNum := 0
 
 	var currentGroup *input.StepsGroupExt
@@ -70,13 +69,13 @@ func (d *stepsDialog) parse(result string) (input.StepsGroupsExt, error) {
 			// Step definition
 			m := regexpcache.MustCompile(`"([^"]+)"`).FindStringSubmatch(line)
 			if m == nil {
-				errors.Append(fmt.Errorf(`line %d: cannot parse group "%s"`, lineNum, line))
+				errs.Append(errors.Errorf(`line %d: cannot parse group "%s"`, lineNum, line))
 				invalidDefinition = true
 				continue
 			}
 
 			if currentGroup == nil {
-				errors.Append(fmt.Errorf(`line %d: there needs to be a group definition before step "%s"`, lineNum, m[1]))
+				errs.Append(errors.Errorf(`line %d: there needs to be a group definition before step "%s"`, lineNum, m[1]))
 				invalidDefinition = true
 				continue
 			}
@@ -84,7 +83,7 @@ func (d *stepsDialog) parse(result string) (input.StepsGroupsExt, error) {
 			// Step ID must be unique
 			stepId := m[1]
 			if stepIds[stepId] {
-				errors.Append(fmt.Errorf(`line %d: step with id "%s" is already defined`, lineNum, m[1]))
+				errs.Append(errors.Errorf(`line %d: step with id "%s" is already defined`, lineNum, m[1]))
 				invalidDefinition = true
 				continue
 			}
@@ -110,48 +109,48 @@ func (d *stepsDialog) parse(result string) (input.StepsGroupsExt, error) {
 		case strings.HasPrefix(line, `required:`):
 			in := strings.TrimSpace(strings.TrimPrefix(line, `required:`))
 			if currentStep != nil {
-				errors.Append(fmt.Errorf(`line %d: required is not valid option for a step`, lineNum))
+				errs.Append(errors.Errorf(`line %d: required is not valid option for a step`, lineNum))
 				continue
 			}
 
 			currentGroup.Required = input.StepsCountRule(in)
 		case strings.HasPrefix(line, `icon:`):
 			if currentStep == nil {
-				errors.Append(fmt.Errorf(`line %d: icon is not valid option`, lineNum))
+				errs.Append(errors.Errorf(`line %d: icon is not valid option`, lineNum))
 				continue
 			}
 			currentStep.Icon = strings.TrimSpace(strings.TrimPrefix(line, `icon:`))
 		case strings.HasPrefix(line, `name:`):
 			if currentStep == nil {
-				errors.Append(fmt.Errorf(`line %d: name is not valid option`, lineNum))
+				errs.Append(errors.Errorf(`line %d: name is not valid option`, lineNum))
 				continue
 			}
 			currentStep.Name = strings.TrimSpace(strings.TrimPrefix(line, `name:`))
 		case strings.HasPrefix(line, `dialogName:`):
 			if currentStep == nil {
-				errors.Append(fmt.Errorf(`line %d: dialogName is not valid option`, lineNum))
+				errs.Append(errors.Errorf(`line %d: dialogName is not valid option`, lineNum))
 				continue
 			}
 			currentStep.DialogName = strings.TrimSpace(strings.TrimPrefix(line, `dialogName:`))
 		case strings.HasPrefix(line, `dialogDescription:`):
 			if currentStep == nil {
-				errors.Append(fmt.Errorf(`line %d: dialogDescription is not valid option`, lineNum))
+				errs.Append(errors.Errorf(`line %d: dialogDescription is not valid option`, lineNum))
 				continue
 			}
 			currentStep.DialogDescription = strings.TrimSpace(strings.TrimPrefix(line, `dialogDescription:`))
 		default:
 			// Expected object definition
-			errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, strhelper.Truncate(line, 10, "...")))
+			errs.Append(errors.Errorf(`line %d: cannot parse "%s"`, lineNum, strhelper.Truncate(line, 10, "...")))
 			continue
 		}
 	}
 
 	// Validate
 	if err := stepsGroups.ValidateDefinitions(); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
-	return stepsGroups, errors.ErrorOrNil()
+	return stepsGroups, errs.ErrorOrNil()
 }
 
 func (d *stepsDialog) defaultValue() string {

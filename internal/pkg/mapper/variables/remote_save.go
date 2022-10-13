@@ -2,10 +2,9 @@ package variables
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (m *variablesMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
@@ -16,16 +15,16 @@ func (m *variablesMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model
 	}
 
 	// Save variables_id
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	variablesRelation, err := m.saveVariables(config, recipe)
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Save variables_values_id if variables are present
 	if variablesRelation != nil {
 		if err := m.saveVariablesValues(config, recipe); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
@@ -37,7 +36,7 @@ func (m *variablesMapper) saveVariables(config *model.Config, recipe *model.Remo
 	relType := model.VariablesFromRelType
 	relationRaw, err := config.Relations.GetOneByType(relType)
 	if err != nil {
-		return nil, fmt.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
+		return nil, errors.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
 	} else if relationRaw == nil {
 		return nil, nil
 	}
@@ -56,7 +55,7 @@ func (m *variablesMapper) saveVariablesValues(config *model.Config, recipe *mode
 	relType := model.VariablesValuesFromRelType
 	relationRaw, err := config.Relations.GetOneByType(relType)
 	if err != nil {
-		return fmt.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
+		return errors.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
 	} else if relationRaw == nil {
 		return nil
 	}

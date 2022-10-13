@@ -6,6 +6,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -109,7 +110,7 @@ func (p *Paths) GetRelatedPaths() []string {
 func (p *Paths) AddRelatedPath(path string) {
 	dir := p.Path()
 	if !filesystem.IsFrom(path, dir) {
-		panic(fmt.Errorf(`path "%s" is not from the dir "%s"`, path, dir))
+		panic(errors.Errorf(`path "%s" is not from the dir "%s"`, path, dir))
 	}
 
 	relPath, err := filesystem.Rel(dir, path)
@@ -127,10 +128,10 @@ func (p *Paths) AddRelatedPathInRoot(path string) {
 func (p *Paths) RenameRelatedPaths(oldPath, newPath string) {
 	dir := p.Path()
 	if !filesystem.IsFrom(oldPath, dir) {
-		panic(fmt.Errorf(`old "%s" is not from the dir "%s" (%s)`, oldPath, dir, newPath))
+		panic(errors.Errorf(`old "%s" is not from the dir "%s" (%s)`, oldPath, dir, newPath))
 	}
 	if !filesystem.IsFrom(newPath, dir) {
-		panic(fmt.Errorf(`new "%s" is not from the dir "%s"`, oldPath, dir))
+		panic(errors.Errorf(`new "%s" is not from the dir "%s"`, oldPath, dir))
 	}
 	oldRel, err := filesystem.Rel(dir, oldPath)
 	if err != nil {

@@ -1,13 +1,12 @@
 package metadata
 
 import (
-	"fmt"
-
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type metadataMapper struct {
@@ -62,7 +61,7 @@ func NewInputsUsage() *InputsUsage {
 
 func NewMapper(state *state.State, templateRef model.TemplateRef, instanceId string, objectIds ObjectIdsMap, inputsUsage *InputsUsage) *metadataMapper {
 	if instanceId == "" {
-		panic(fmt.Errorf(`template "instanceId" cannot be empty`))
+		panic(errors.New(`template "instanceId" cannot be empty`))
 	}
 	return &metadataMapper{state: state, templateRef: templateRef, instanceId: instanceId, objectIds: objectIds, inputsUsage: inputsUsage}
 }

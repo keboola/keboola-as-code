@@ -116,7 +116,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadConfig(t *testing.T) {
 	// Check warning of missing default bucket config
 	expectedWarnings := `
 WARN  Warning:
-  - config "branch:123/component:keboola.snowflake-transformation/config:789" contains table "{{:default-bucket:extractor/keboola.ex-aws-s3/test2}}.contacts" in input mapping referencing to a non-existing configuration
+- config "branch:123/component:keboola.snowflake-transformation/config:789" contains table "{{:default-bucket:extractor/keboola.ex-aws-s3/test2}}.contacts" in input mapping referencing to a non-existing configuration
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 
@@ -220,7 +220,7 @@ func TestDefaultBucketMapper_MapBeforeLocalLoadRow(t *testing.T) {
 	// Check warning of missing default bucket config
 	expectedWarnings := `
 WARN  Warning:
-  - config row "branch:123/component:keboola.snowflake-transformation/config:789/row:456" contains table "{{:default-bucket:extractor/keboola.ex-aws-s3/test2}}.contacts" in input mapping referencing to a non-existing configuration
+- config row "branch:123/component:keboola.snowflake-transformation/config:789/row:456" contains table "{{:default-bucket:extractor/keboola.ex-aws-s3/test2}}.contacts" in input mapping referencing to a non-existing configuration
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 

@@ -1,13 +1,12 @@
 package persist
 
 import (
-	"fmt"
 	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // NewPlan creates a plan to persist new/deleted objects from local filesystem.
@@ -15,7 +14,7 @@ func NewPlan(projectState *state.State) (*Plan, error) {
 	builder := &persistPlanBuilder{
 		Plan:   &Plan{},
 		State:  projectState,
-		errors: utils.NewMultiError(),
+		errors: errors.NewMultiError(),
 	}
 	builder.build()
 	return builder.Plan, builder.errors.ErrorOrNil()
@@ -24,7 +23,7 @@ func NewPlan(projectState *state.State) (*Plan, error) {
 type persistPlanBuilder struct {
 	*Plan
 	*state.State
-	errors *utils.MultiError
+	errors errors.MultiError
 }
 
 func (b *persistPlanBuilder) build() {
@@ -140,7 +139,7 @@ func (b *persistPlanBuilder) tryAddConfig(path model.AbsPath, parentKey model.Ke
 	case model.ConfigRowKey:
 		configKey = model.ConfigKey{BranchId: k.BranchId, ComponentId: componentId}
 	default:
-		panic(fmt.Errorf(`unexpected parent key type "%T"`, parentKey))
+		panic(errors.Errorf(`unexpected parent key type "%T"`, parentKey))
 	}
 
 	// Create action

@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 )
 
@@ -48,14 +49,14 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		key.Id = storageapi.ConfigID(ticket.ID)
 	})
 	if err := ticketProvider.Resolve(); err != nil {
-		return fmt.Errorf(`cannot generate new ID: %w`, err)
+		return errors.Errorf(`cannot generate new ID: %w`, err)
 	}
 
 	// Create and save object
 	uow := projectState.LocalManager().NewUnitOfWork(ctx)
 	uow.CreateObject(key, o.Name)
 	if err := uow.Invoke(); err != nil {
-		return fmt.Errorf(`cannot create config: %w`, err)
+		return errors.Errorf(`cannot create config: %w`, err)
 	}
 
 	// Save manifest

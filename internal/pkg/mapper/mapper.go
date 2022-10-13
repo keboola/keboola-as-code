@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // LocalSaveMapper is intended to modify how the object will be saved in the filesystem.
@@ -74,31 +74,31 @@ type Mappers []interface{}
 
 // ForEach iterates over Mappers in the order in which they were defined.
 func (m Mappers) ForEach(stopOnFailure bool, callback func(mapper interface{}) error) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, mapper := range m {
 		if err := callback(mapper); err != nil {
 			if stopOnFailure {
 				return err
 			}
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 // ForEachReverse iterates over Mappers in the reverse order in which they were defined.
 func (m Mappers) ForEachReverse(stopOnFailure bool, callback func(mapper interface{}) error) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	l := len(m)
 	for i := l - 1; i >= 0; i-- {
 		if err := callback(m[i]); err != nil {
 			if stopOnFailure {
 				return err
 			}
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 // Mapper maps model.Object between internal/filesystem/API representations.

@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/encrypt"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Options struct {
@@ -30,10 +30,10 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	logger := d.Logger()
 
 	// Validate schemas
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if o.ValidateJsonSchema {
 		if err := schema.ValidateSchemas(projectState); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
@@ -41,13 +41,13 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	if o.ValidateSecrets {
 		plan := encrypt.NewPlan(projectState)
 		if err := plan.ValidateAllEncrypted(); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
 	// Process errors
-	if err := errors.ErrorOrNil(); err != nil {
-		return utils.PrefixError("validation failed", err)
+	if err := errs.ErrorOrNil(); err != nil {
+		return errors.PrefixError(err, "validation failed")
 	}
 
 	logger.Debug("Validation done.")

@@ -1,11 +1,12 @@
 package links
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/storageapi"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -40,7 +41,7 @@ func (v *idUtils) match(script string) storageapi.RowID {
 func (v *idUtils) format(id storageapi.RowID) string {
 	placeholder := strings.ReplaceAll(IdFormat, `<ID>`, id.String())
 	if ok := v.re.MatchString(placeholder); !ok {
-		panic(fmt.Errorf(`shared code id "%s" is invalid`, id))
+		panic(errors.Errorf(`shared code id "%s" is invalid`, id))
 	}
 	return placeholder
 }

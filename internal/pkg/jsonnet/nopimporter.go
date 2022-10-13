@@ -1,9 +1,9 @@
 package jsonnet
 
 import (
-	"fmt"
-
 	"github.com/google/go-jsonnet"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type NopImporter struct{}
@@ -13,5 +13,5 @@ func NewNopImporter() jsonnet.Importer {
 }
 
 func (i NopImporter) Import(_, _ string) (contents jsonnet.Contents, foundAt string, err error) {
-	return jsonnet.Contents{}, "", fmt.Errorf("imports are not enabled")
+	return jsonnet.Contents{}, "", errors.New("imports are not enabled")
 }

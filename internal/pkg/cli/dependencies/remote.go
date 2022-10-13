@@ -2,8 +2,6 @@ package dependencies
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 
@@ -11,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -42,7 +41,7 @@ func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand) (*remote
 		tokenProjectId := projectDeps.ProjectID()
 		manifest := prj.ProjectManifest()
 		if manifest != nil && manifest.ProjectID() != tokenProjectId {
-			return nil, fmt.Errorf(`given token is from the remote "%d", but in manifest is defined remote "%d"`, tokenProjectId, manifest.ProjectID())
+			return nil, errors.Errorf(`given token is from the remote "%d", but in manifest is defined remote "%d"`, tokenProjectId, manifest.ProjectID())
 		}
 	}
 

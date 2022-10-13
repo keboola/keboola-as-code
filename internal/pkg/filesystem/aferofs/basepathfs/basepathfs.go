@@ -2,7 +2,6 @@
 package basepathfs
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type aferoFs = afero.Fs
@@ -29,14 +29,14 @@ type basePathProvider interface {
 func New(rootFs aferoFs, basePath string) (*BasePathFs, error) {
 	// Base path cannot be empty
 	if strings.TrimSpace(basePath) == "" {
-		return nil, fmt.Errorf("path cannot be empty")
+		return nil, errors.New("path cannot be empty")
 	}
 
 	// Check target dir
 	if stat, err := rootFs.Stat(basePath); err != nil {
 		return nil, err
 	} else if !stat.IsDir() {
-		return nil, fmt.Errorf(`path "%s" is not directory`, filesystem.ToSlash(basePath))
+		return nil, errors.Errorf(`path "%s" is not directory`, filesystem.ToSlash(basePath))
 	}
 
 	// Create FS backend

@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/persist"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
 )
@@ -53,7 +53,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 		// Invoke
 		if err := plan.Invoke(ctx, logger, storageApiClient, projectState.State()); err != nil {
-			return utils.PrefixError(`cannot persist objects`, err)
+			return errors.PrefixError(err, "cannot persist objects")
 		}
 
 		// Save manifest

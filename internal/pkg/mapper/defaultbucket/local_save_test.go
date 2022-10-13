@@ -104,9 +104,9 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveConfig(t *testing.T) {
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
-WARN  Warning: - config "branch:123/component:keboola.ex-aws-s3/config:456" not found
-  - referenced from config "branch:123/component:keboola.snowflake-transformation/config:789"
-  - input mapping "in.c-keboola-ex-aws-s3-456.contacts"
+WARN  Warning: config "branch:123/component:keboola.ex-aws-s3/config:456" not found:
+- referenced from config "branch:123/component:keboola.snowflake-transformation/config:789"
+- input mapping "in.c-keboola-ex-aws-s3-456.contacts"
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 
@@ -198,9 +198,9 @@ func TestDefaultBucketMapper_MapBeforeLocalSaveRow(t *testing.T) {
 
 	// Check warning of missing default bucket config
 	expectedWarnings := `
-WARN  Warning: - config "branch:123/component:keboola.ex-aws-s3/config:456" not found
-  - referenced from config row "branch:123/component:keboola.snowflake-transformation/config:789/row:456"
-  - input mapping "in.c-keboola-ex-aws-s3-456.contacts"
+WARN  Warning: config "branch:123/component:keboola.ex-aws-s3/config:456" not found:
+- referenced from config row "branch:123/component:keboola.snowflake-transformation/config:789/row:456"
+- input mapping "in.c-keboola-ex-aws-s3-456.contacts"
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 

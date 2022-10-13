@@ -1,13 +1,13 @@
 package links
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -45,7 +45,7 @@ func (v *pathUtils) match(script string, componentId storageapi.ComponentID) str
 func (v *pathUtils) format(path string, componentId storageapi.ComponentID) string {
 	placeholder := strings.ReplaceAll(PathFormat, `<PATH>`, path)
 	if ok := v.re.MatchString(placeholder); !ok {
-		panic(fmt.Errorf(`shared code path "%s" is invalid`, path))
+		panic(errors.Errorf(`shared code path "%s" is invalid`, path))
 	}
 	comment := naming.CodeFileComment(naming.CodeFileExt(componentId))
 	return comment + ` ` + placeholder

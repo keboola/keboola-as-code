@@ -2,11 +2,11 @@ package cli
 
 import (
 	"bytes"
-	"fmt"
 	"runtime/debug"
 	"text/template"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const userFriendlyPanicTmpl = `
@@ -39,7 +39,7 @@ func ProcessPanic(err interface{}, logger log.Logger, logFilePath string) int {
 func panicMessage(logFile string) string {
 	tmpl, err := template.New("panicMsg").Parse(userFriendlyPanicTmpl)
 	if err != nil {
-		panic(fmt.Errorf("cannot parse panic template: %w", err))
+		panic(errors.Errorf("cannot parse panic template: %w", err))
 	}
 
 	var output bytes.Buffer
@@ -48,7 +48,7 @@ func panicMessage(logFile string) string {
 		struct{ LogFile string }{logFile},
 	)
 	if err != nil {
-		panic(fmt.Errorf("cannot render panic template: %w", err))
+		panic(errors.Errorf("cannot render panic template: %w", err))
 	}
 
 	return output.String()

@@ -2,9 +2,9 @@ package variables
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (m *mapper) MapBeforePersist(ctx context.Context, recipe *model.PersistRecipe) error {
@@ -40,7 +40,7 @@ func (m *mapper) MapBeforePersist(ctx context.Context, recipe *model.PersistReci
 
 	// Branch must be same
 	if sharedCodeRowKey.BranchKey() != configManifest.BranchKey() {
-		panic(fmt.Errorf(`child "%s" and parent "%s" must be from same branch`, configManifest.Desc(), sharedCodeRowKey.Desc()))
+		panic(errors.Errorf(`child "%s" and parent "%s" must be from same branch`, configManifest.Desc(), sharedCodeRowKey.Desc()))
 	}
 
 	// Add relation

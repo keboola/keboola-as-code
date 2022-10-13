@@ -2,12 +2,11 @@ package scheduler
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (m *schedulerMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
@@ -21,7 +20,7 @@ func (m *schedulerMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model
 	relType := model.SchedulerForRelType
 	relationRaw, err := object.Relations.GetOneByType(relType)
 	if err != nil {
-		return fmt.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
+		return errors.Errorf(`unexpected state of %s: %w`, recipe.Desc(), err)
 	} else if relationRaw == nil {
 		return nil
 	}
@@ -31,14 +30,14 @@ func (m *schedulerMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model
 	targetRaw, found := object.Content.Get(model.SchedulerTargetKey)
 	target, ok := targetRaw.(*orderedmap.OrderedMap)
 	if !found {
-		return utils.PrefixError(
-			fmt.Sprintf(`scheduler %s is invalid`, recipe.Desc()),
-			fmt.Errorf(`key "%s" not found`, model.SchedulerTargetKey),
+		return errors.NewNestedError(
+			errors.Errorf(`scheduler %s is invalid`, recipe.Desc()),
+			errors.Errorf(`key "%s" not found`, model.SchedulerTargetKey),
 		)
 	} else if !ok {
-		return utils.PrefixError(
-			fmt.Sprintf(`scheduler %s is invalid`, recipe.Desc()),
-			fmt.Errorf(`key "%s" must be object, found "%T"`, model.SchedulerTargetKey, targetRaw),
+		return errors.NewNestedError(
+			errors.Errorf(`scheduler %s is invalid`, recipe.Desc()),
+			errors.Errorf(`key "%s" must be object, found "%T"`, model.SchedulerTargetKey, targetRaw),
 		)
 	}
 

@@ -14,7 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	createTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/create"
 )
@@ -47,15 +47,15 @@ func (p *Dialogs) AskCreateTemplateOpts(ctx context.Context, deps createTmplDial
 
 func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, error) {
 	// Host and token
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if _, err := d.AskStorageApiHost(d.deps); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 	if _, err := d.AskStorageApiToken(d.deps); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
-	if errors.Len() > 0 {
-		return d.out, errors
+	if errs.Len() > 0 {
+		return d.out, errs
 	}
 
 	// Get Storage API
@@ -206,7 +206,7 @@ func (d *createTmplDialog) askDescription() string {
 func validateTemplateName(val interface{}) error {
 	str := strings.TrimSpace(val.(string))
 	if len(str) == 0 {
-		return fmt.Errorf(`template name is required and cannot be empty`)
+		return errors.New(`template name is required and cannot be empty`)
 	}
 	return nil
 }
@@ -214,7 +214,7 @@ func validateTemplateName(val interface{}) error {
 func validateTemplateDescription(val interface{}) error {
 	str := strings.TrimSpace(val.(string))
 	if len(str) == 0 {
-		return fmt.Errorf(`template description is required and cannot be empty`)
+		return errors.New(`template description is required and cannot be empty`)
 	}
 	return nil
 }
@@ -222,11 +222,11 @@ func validateTemplateDescription(val interface{}) error {
 func validateId(val interface{}) error {
 	str := strings.TrimSpace(val.(string))
 	if len(str) == 0 {
-		return fmt.Errorf(`template ID is required`)
+		return errors.New(`template ID is required`)
 	}
 
 	if !regexpcache.MustCompile(template.IdRegexp).MatchString(str) {
-		return fmt.Errorf(`invalid ID "%s", please use only a-z, A-Z, 0-9, "-" characters`, str)
+		return errors.Errorf(`invalid ID "%s", please use only a-z, A-Z, 0-9, "-" characters`, str)
 	}
 
 	return nil

@@ -1,16 +1,15 @@
 package dialog
 
 import (
-	"errors"
-	"fmt"
 	"net/url"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-var ErrMissingStorageApiHost = fmt.Errorf("missing Storage API host")
+var ErrMissingStorageApiHost = errors.New("missing Storage API host")
 
 func (p *Dialogs) AskStorageApiHost(d hostAndTokenDependencies) (string, error) {
 	opts := d.Options()

@@ -27,7 +27,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
@@ -93,7 +93,7 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	index, err := storageapi.IndexRequest().Send(p.ctx, p.storageApiClient)
 	if err != nil {
 		cleanupFn()
-		return nil, nil, fmt.Errorf("cannot get services: %w", err)
+		return nil, nil, errors.Errorf("cannot get services: %w", err)
 	}
 	services := index.Services.ToMap()
 
@@ -101,7 +101,7 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	encryptionHost, found := services.URLByID("encryption")
 	if !found {
 		cleanupFn()
-		return nil, nil, fmt.Errorf("encryption service not found")
+		return nil, nil, errors.New("encryption service not found")
 	}
 
 	// Init Encryption API
@@ -111,7 +111,7 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	queueHost, found := services.URLByID("queue")
 	if !found {
 		cleanupFn()
-		return nil, nil, fmt.Errorf("queue service not found")
+		return nil, nil, errors.New("queue service not found")
 	}
 
 	// Init Queue API
@@ -121,7 +121,7 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	schedulerHost, found := services.URLByID("scheduler")
 	if !found {
 		cleanupFn()
-		return nil, nil, fmt.Errorf("missing scheduler service")
+		return nil, nil, errors.New("missing scheduler service")
 	}
 
 	// Init Scheduler API
@@ -131,29 +131,29 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	sandboxesHost, found := services.URLByID("sandboxes")
 	if !found {
 		cleanupFn()
-		return nil, nil, fmt.Errorf("missing sandboxes service")
+		return nil, nil, errors.New("missing sandboxes service")
 	}
 
 	p.sandboxesApiClient = sandboxesapi.ClientWithHostAndToken(client.NewTestClient(), sandboxesHost.String(), p.Project.StorageAPIToken())
 
 	// Check token/project ID
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	initWg := &sync.WaitGroup{}
 	initWg.Add(1)
 	go func() {
 		defer initWg.Done()
 		if token, err := storageapi.VerifyTokenRequest(p.Project.StorageAPIToken()).Send(p.ctx, p.storageApiClient); err != nil {
-			errors.Append(fmt.Errorf("invalid token for project %d: %w", p.ID(), err))
+			errs.Append(errors.Errorf("invalid token for project %d: %w", p.ID(), err))
 		} else if p.ID() != token.ProjectID() {
-			errors.Append(fmt.Errorf("test project id and token project id are different"))
+			errs.Append(errors.New("test project id and token project id are different"))
 		} else {
 			p.storageAPIToken = token
 		}
 	}()
 	initWg.Wait()
-	if len(errors.Errors) > 0 {
+	if errs.Len() > 0 {
 		cleanupFn()
-		return nil, nil, errors
+		return nil, nil, errs
 	}
 
 	// Set envs
@@ -174,7 +174,7 @@ func (p *Project) DefaultBranch() (*storageapi.Branch, error) {
 		if v, err := storageapi.GetDefaultBranchRequest().Send(p.ctx, p.storageApiClient); err == nil {
 			p.defaultBranch = v
 		} else {
-			return nil, fmt.Errorf("cannot get default branch: %w", err)
+			return nil, errors.Errorf("cannot get default branch: %w", err)
 		}
 	}
 	return p.defaultBranch, nil
@@ -232,7 +232,7 @@ func (p *Project) Clean() error {
 	})
 
 	if err := grp.Wait(); err != nil {
-		return fmt.Errorf(`cannot clean project "%d": %w`, p.ID(), err)
+		return errors.Errorf(`cannot clean project "%d": %w`, p.ID(), err)
 	}
 	p.logf("■ Cleanup done.")
 	return nil
@@ -335,7 +335,7 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 							p.logf("✔️ Default branch description.")
 							return nil
 						} else {
-							return fmt.Errorf("cannot set default branch description: %w", err)
+							return errors.Errorf("cannot set default branch description: %w", err)
 						}
 					}).
 					SendOrErr(ctx, sender)
@@ -355,7 +355,7 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 					p.logf("✔️ Branch \"%s\"(%s).", fixture.Name, branch.ID)
 					return nil
 				} else {
-					return fmt.Errorf(`cannot create branch: %w`, err)
+					return errors.Errorf(`cannot create branch: %w`, err)
 				}
 			})
 	}
@@ -379,7 +379,7 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 					p.logf("✔️ Branch metadata \"%s\".", fixture.Name)
 					return nil
 				} else {
-					return fmt.Errorf(`cannot set branch metadata: %w`, err)
+					return errors.Errorf(`cannot set branch metadata: %w`, err)
 				}
 			}).
 			SendOrErr(ctx, sender)
@@ -401,13 +401,13 @@ func (p *Project) createConfigsInDefaultBranch(configs []string) error {
 
 	// Generate new IDs
 	if err := tickets.Resolve(); err != nil {
-		return fmt.Errorf(`cannot generate new IDs: %w`, err)
+		return errors.Errorf(`cannot generate new IDs: %w`, err)
 	}
 
 	// Wait for requests
 	close(sendReady) // unblock requests
 	if err := grp.Wait(); err != nil {
-		return fmt.Errorf("cannot create configs: %w", err)
+		return errors.Errorf("cannot create configs: %w", err)
 	}
 	return nil
 }
@@ -428,7 +428,7 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 
 	// Generate new IDs
 	if err := tickets.Resolve(); err != nil {
-		return fmt.Errorf(`cannot generate new IDs: %w`, err)
+		return errors.Errorf(`cannot generate new IDs: %w`, err)
 	}
 
 	// Add additional ENVs
@@ -439,7 +439,7 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 	// Wait for requests
 	close(sendReady) // unblock requests
 	if err := grp.Wait(); err != nil {
-		return fmt.Errorf("cannot create configs: %w", err)
+		return errors.Errorf("cannot create configs: %w", err)
 	}
 	return nil
 }
