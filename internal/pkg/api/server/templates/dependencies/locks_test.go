@@ -2,7 +2,6 @@ package dependencies
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type testDeps struct {
@@ -26,7 +26,7 @@ func (d *testDeps) Logger() log.Logger {
 
 func (d *testDeps) EtcdClient(_ context.Context) (*etcd.Client, error) {
 	if d.etcdClient == nil {
-		return nil, fmt.Errorf("some etcd client error")
+		return nil, errors.New("some etcd client error")
 	}
 	return d.etcdClient, nil
 }

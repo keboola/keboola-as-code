@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
 
@@ -166,7 +166,7 @@ func TestTearDown_Panic(t *testing.T) {
 	logger := log.NewDebugLogger()
 	root, _ := newTestRootCommand(aferofs.NewMemoryFs())
 	root.logger = logger
-	exitCode := root.tearDown(0, fmt.Errorf("panic error"))
+	exitCode := root.tearDown(0, errors.New("panic error"))
 	assert.Equal(t, 1, exitCode)
 	expected := `INFO  
 ---------------------------------------------------

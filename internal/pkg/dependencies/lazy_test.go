@@ -1,13 +1,13 @@
 package dependencies
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/atomic"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func TestLazy_Set(t *testing.T) {
@@ -68,7 +68,7 @@ func TestLazy_InitAndGet_Parallel(t *testing.T) {
 func TestLazy_InitAndGet_Error(t *testing.T) {
 	t.Parallel()
 	initFn := func() (string, error) {
-		return "", fmt.Errorf("some error")
+		return "", errors.New("some error")
 	}
 
 	// Expected error

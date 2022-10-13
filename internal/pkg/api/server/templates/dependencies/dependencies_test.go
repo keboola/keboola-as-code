@@ -3,7 +3,6 @@ package dependencies
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	stdLog "log"
@@ -27,6 +26,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	repositoryManager "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // TestForPublicRequest_Components_Cached tests that the value of the component does not change during the entire request.

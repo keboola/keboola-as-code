@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func TestParsePhase(t *testing.T) {
@@ -31,28 +32,28 @@ func TestParsePhase(t *testing.T) {
 			`{"foo":"bar"}`,
 			func(p *phaseParser) (interface{}, error) { return p.id() },
 			0,
-			fmt.Errorf(`missing "id" key`),
+			errors.New(`missing "id" key`),
 		},
 		{
 			`{"id":12.34,"foo":"bar"}`,
 			`{"id":12.34,"foo":"bar"}`,
 			func(p *phaseParser) (interface{}, error) { return p.id() },
 			0,
-			fmt.Errorf(`"id" must be int, found "12.34"`),
+			errors.New(`"id" must be int, found "12.34"`),
 		},
 		{
 			`{"id":"123","foo":"bar"}`,
 			`{"id":"123","foo":"bar"}`,
 			func(p *phaseParser) (interface{}, error) { return p.id() },
 			0,
-			fmt.Errorf(`"id" must be int, found string`),
+			errors.New(`"id" must be int, found string`),
 		},
 		{
 			`{"id":"","foo":"bar"}`,
 			`{"id":"","foo":"bar"}`,
 			func(p *phaseParser) (interface{}, error) { return p.id() },
 			0,
-			fmt.Errorf(`"id" must be int, found string`),
+			errors.New(`"id" must be int, found string`),
 		},
 		{
 			`{"name":"phase", "foo":"bar"}`,
@@ -66,21 +67,21 @@ func TestParsePhase(t *testing.T) {
 			`{"foo":"bar"}`,
 			func(p *phaseParser) (interface{}, error) { return p.name() },
 			"",
-			fmt.Errorf(`missing "name" key`),
+			errors.New(`missing "name" key`),
 		},
 		{
 			`{"name":"","foo":"bar"}`,
 			`{"name":"","foo":"bar"}`,
 			func(p *phaseParser) (interface{}, error) { return p.name() },
 			``,
-			fmt.Errorf(`"name" cannot be empty`),
+			errors.New(`"name" cannot be empty`),
 		},
 		{
 			`{"name":123,"foo":"bar"}`,
 			`{"name":123,"foo":"bar"}`,
 			func(p *phaseParser) (interface{}, error) { return p.name() },
 			``,
-			fmt.Errorf(`"name" must be string, found float64`),
+			errors.New(`"name" must be string, found float64`),
 		},
 		{
 			`{"dependsOn":[],"foo":"bar"}`,
@@ -108,7 +109,7 @@ func TestParsePhase(t *testing.T) {
 			`{"dependsOn":[1,"2",3],"foo":"bar"}`,
 			func(p *phaseParser) (interface{}, error) { return p.dependsOnIds() },
 			[]int(nil),
-			fmt.Errorf(`"dependsOn" key must contain only integers, found "2", index 1`),
+			errors.New(`"dependsOn" key must contain only integers, found "2", index 1`),
 		},
 		{
 			`{"dependsOn":["foo1", "foo2"],"foo":"bar"}`,
@@ -136,7 +137,7 @@ func TestParsePhase(t *testing.T) {
 			`{"dependsOn":["1",2,"3"],"foo":"bar"}`,
 			func(p *phaseParser) (interface{}, error) { return p.dependsOnPaths() },
 			[]string(nil),
-			fmt.Errorf(`"dependsOn" key must contain only strings, found string, index 1`),
+			errors.New(`"dependsOn" key must contain only strings, found string, index 1`),
 		},
 		{
 			`{"foo":"bar"}`,
@@ -158,7 +159,12 @@ func TestParsePhase(t *testing.T) {
 		value, err := c.callback(p)
 
 		assert.Equal(t, c.expected, value, desc)
-		assert.Equal(t, c.err, err, desc)
 		assert.Equal(t, c.after, json.MustEncodeString(p.content, false), desc)
+		if c.err == nil {
+			assert.NoError(t, err, desc)
+		} else {
+			assert.Error(t, err, desc)
+			assert.Equal(t, c.err.Error(), err.Error(), desc)
+		}
 	}
 }

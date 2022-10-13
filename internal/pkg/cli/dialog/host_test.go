@@ -1,7 +1,6 @@
 package dialog_test
 
 import (
-	"errors"
 	"sync"
 	"testing"
 
@@ -74,6 +73,12 @@ func TestApiHostValidator(t *testing.T) {
 	assert.NoError(t, StorageApiHostValidator("connection.keboola.com/"))
 	assert.NoError(t, StorageApiHostValidator("https://connection.keboola.com"))
 	assert.NoError(t, StorageApiHostValidator("https://connection.keboola.com/"))
-	assert.Equal(t, errors.New("value is required"), StorageApiHostValidator(""))
-	assert.Equal(t, errors.New("invalid host"), StorageApiHostValidator("@#$$%^&%#$&"))
+
+	err := StorageApiHostValidator("")
+	assert.Error(t, err)
+	assert.Equal(t, "value is required", err.Error())
+
+	err = StorageApiHostValidator("@#$$%^&%#$&")
+	assert.Error(t, err)
+	assert.Equal(t, "invalid host", err.Error())
 }

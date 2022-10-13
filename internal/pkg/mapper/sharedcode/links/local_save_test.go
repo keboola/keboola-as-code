@@ -83,8 +83,8 @@ func TestLocalSaveTranWithSharedCode_SharedCodeConfigNotFound(t *testing.T) {
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 	expectedLogs := `
 WARN  Warning:
-  - missing shared code config "branch:123/component:keboola.shared-code/config:missing":
-    - referenced from config "branch:123/component:keboola.python-transformation-v2/config:789"
+- missing shared code config "branch:123/component:keboola.shared-code/config:missing":
+  - referenced from config "branch:123/component:keboola.python-transformation-v2/config:789"
 `
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 
@@ -148,8 +148,8 @@ func TestLocalSaveTranWithSharedCode_SharedCodeRowNotFound(t *testing.T) {
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 	expectedLogs := `
 WARN  Warning:
-  - missing shared code config row "branch:123/component:keboola.shared-code/config:456/row:missing":
-    - referenced from branch/transformation/blocks/block-1/code-2
+- missing shared code config row "branch:123/component:keboola.shared-code/config:456/row:missing":
+  - referenced from branch/transformation/blocks/block-1/code-2
 `
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 
