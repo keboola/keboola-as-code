@@ -2,9 +2,16 @@ run:
   concurrency: 8
   tests: true # check test files
   skip-files: []
-  skip-dirs: []
+  skip-dirs:
+    - build
+    - docs
+    - provisioning
+    - scripts
+    - target
+    - third_party
+    - vendor
   skip-dirs-use-default: true
-  modules-download-mode: readonly
+  modules-download-mode: mod
 
 output:
   sort-results: true
@@ -29,22 +36,25 @@ linters-settings:
   forbidigo:
     forbid:
       # No debug statements
-      - ^(fmt\.Print.*|print|println)$
+      - ^(fmt\.Print.*|print|println)$(# Os ENVs singleton is forbidden, use env.Map instead)?(# No debug statements)?
       # No "os" filesystem ops, use "internal/pkg/filesystem" package instead
-      - ^(os\.(NewFile|Create.*|Open.*|Ch.*|Link|Symlink|Mkdir|ReadFile|Readlink|Remove.*|Rename|Truncate|Lstat|Stat|Getwd))$
-      - ^testhelper.(GetFileContent|Glob)$
+      - ^(os\.(NewFile|Create.*|Open.*|Ch.*|Link|Symlink|Mkdir|ReadFile|Readlink|Remove.*|Rename|Truncate|Lstat|Stat|Getwd))$(# Use "internal/pkg/filesystem" package instead)?
+      - ^testhelper.(GetFileContent|Glob)$(# Use "internal/pkg/filesystem" package instead)?
       # No "filepath" package, use "internal/pkg/filesystem" package instead
-      - ^filepath\..*$
+      - ^filepath\..*$(# Use "internal/pkg/filesystem" package instead)?
       # "httpmock" singleton is forbidden, it doesn't work in parallel tests, use client.Transport = httpmock.NewMockTransport() instead
-      - ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo)$
+      - ^httpmock\.(Activate|ActivateNonDefault|ActivateNonDefault|DeactivateAndReset|RegisterResponder|GetCallCountInfo)$(# "httpmock" singleton is forbidden, it doesn't work in parallel tests, use client\.Transport = httpmock\.NewMockTransport() instead)?
       # Os ENVs singleton is forbidden, use env.Map instead
-      - ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$
-      # Instead of SetBody, use client.Request.SetJsonBody/SetFormBody
-      - ^.*\.SetBody$
-      # Instead of aferocopy.Copy use aferofs.CopyFs2Fs
-      - ^aferocopy\.Copy$
-      # Instead of "zap" package use "internal/log" package
-      - ^zap\.
+      - ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$(# Os ENVs singleton is forbidden, use env\.Map instead)?
+      # No errors.Errorf, use errors.Errorf instead to include stack trace
+      - ^fmt\.Errorf$(# Use errors\.Errorf instead to include stack trace)?
+  depguard:
+    list-type: denylist
+    include-go-root: true
+    packages-with-error-message:
+      - "errors": 'please use the package "github.com/keboola/keboola-as-code/internal/pkg/utils/errors"'
+      - "go.uber.org/zap": 'please use "github.com/keboola/keboola-as-code/internal/pkg/log" package'
+      - "go.nhat.io/aferocopy/*": 'please use "aferofs.CopyFs2Fs" function'
 
 # https://golangci-lint.run/usage/linters
 linters:
@@ -113,6 +123,8 @@ linters:
     #- gomnd
 
 issues:
+  max-same-issues: 25
+
   # List of regexps of issue texts to exclude
   exclude:
     - 'G306: Expect WriteFile permissions to be 0600 or less'
@@ -140,3 +152,23 @@ issues:
     - linters:
         - paralleltest
       text: "Range statement for test TestCliE2E does not use range value in test Run"
+    # Allow standard errors package in internal errors package
+    - path: internal/pkg/utils/errors/.*
+      text: "errors"
+      linters:
+        - depguard
+    - path: internal/pkg/utils/errors/.*
+      text: 'use of `fmt.Errorf` forbidden'
+      linters:
+        - forbidigo
+    # Allow Zap logger in internal log package
+    - path: internal/pkg/log/.*
+      text: "go.uber.org/zap"
+      linters:
+        - depguard
+    # Allow aferocopy package in internal aferofs package
+    - path: internal/pkg/filesystem/aferofs/.*
+      text: "go.nhat.io/aferocopy"
+      linters:
+        - depguard
+
