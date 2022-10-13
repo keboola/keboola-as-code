@@ -286,6 +286,12 @@ func (p *Project) SetState(stateFilePath string) error {
 		return err
 	}
 
+	// Create buckets and tables
+	err = p.createBucketsTables(stateFile.Buckets)
+	if err != nil {
+		return err
+	}
+
 	p.logf("■ Project state set.")
 	return nil
 }
@@ -311,6 +317,44 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) error {
 	if err := grp.Wait(); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
+	ctx, cancelFn := context.WithCancel(context.Background())
+	defer cancelFn()
+
+	// Create buckets
+	grp := client.NewWaitGroup(ctx, p.storageApiClient)
+	for _, b := range buckets {
+		grp.Send(storageapi.CreateBucketRequest(&storageapi.Bucket{
+			Name:        b.Name,
+			Stage:       b.Stage,
+			Description: b.Description,
+		}))
+	}
+	if err := grp.Wait(); err != nil {
+		return err
+	}
+
+	// Create tables
+	grp = client.NewWaitGroup(ctx, p.storageApiClient)
+	for _, b := range buckets {
+		for _, t := range b.Tables {
+			grp.Send(storageapi.CreateTableRequest(&storageapi.Table{
+				Name:       t.Name,
+				PrimaryKey: t.PrimaryKey,
+				Columns:    t.Columns,
+				Bucket: &storageapi.Bucket{
+					ID: b.ID,
+				},
+			}))
+		}
+	}
+	if err := grp.Wait(); err != nil {
+		return err
+	}
+
 	return nil
 }
 

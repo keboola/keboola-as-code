@@ -130,9 +130,61 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		return request.SendOrErr(ctx, p.schedulerAPIClient)
 	})
 
+	// Storage Buckets
+	bucketsMap := map[storageapi.BucketID]*fixtures.Bucket{}
+	grp.Go(func() error {
+		request := storageapi.
+			ListBucketsRequest().
+			WithOnSuccess(func(_ context.Context, _ client.Sender, apiBuckets *[]*storageapi.Bucket) error {
+				for _, b := range *apiBuckets {
+					bucketsMap[b.ID] = &fixtures.Bucket{
+						ID:          b.ID,
+						Uri:         b.Uri,
+						Name:        b.Name,
+						DisplayName: b.DisplayName,
+						Stage:       b.Stage,
+						Description: b.Description,
+						Tables:      make([]*fixtures.Table, 0),
+					}
+				}
+				return nil
+			})
+		return request.SendOrErr(ctx, p.storageApiClient)
+	})
+
+	// Storage Tables
+	var tables []*storageapi.Table
+	grp.Go(func() error {
+		request := storageapi.
+			ListTablesRequest().
+			WithOnSuccess(func(_ context.Context, _ client.Sender, apiTables *[]*storageapi.Table) error {
+				tables = append(tables, *apiTables...)
+				return nil
+			})
+		return request.SendOrErr(ctx, p.storageApiClient)
+	})
+
 	// Wait for requests
 	if err := grp.Wait(); err != nil {
 		return nil, err
+	}
+
+	// Join buckets with tables
+	for _, t := range tables {
+		b := bucketsMap[t.Bucket.ID]
+		b.Tables = append(b.Tables, &fixtures.Table{
+			ID:          t.ID,
+			Uri:         t.Uri,
+			Name:        t.Name,
+			DisplayName: t.DisplayName,
+			PrimaryKey:  t.PrimaryKey,
+			Columns:     t.Columns,
+		})
+	}
+
+	snapshot.Buckets = make([]*fixtures.Bucket, 0)
+	for _, b := range bucketsMap {
+		snapshot.Buckets = append(snapshot.Buckets, b)
 	}
 
 	// Join schedules with config name

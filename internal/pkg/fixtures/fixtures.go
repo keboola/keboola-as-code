@@ -19,6 +19,7 @@ import (
 type ProjectSnapshot struct {
 	Branches  []*BranchWithConfigs `json:"branches"`
 	Schedules []*Schedule          `json:"schedules,omitempty"`
+	Buckets   []*Bucket            `json:"buckets,omitempty"`
 }
 
 type Branch struct {
@@ -40,6 +41,25 @@ type BranchWithConfigs struct {
 
 type Schedule struct {
 	Name string `json:"name"`
+}
+
+type Bucket struct {
+	ID          storageapi.BucketID `json:"id"`
+	Uri         string              `json:"uri"`
+	Name        string              `json:"name"`
+	DisplayName string              `json:"displayName"`
+	Stage       string              `json:"stage"`
+	Description string              `json:"description"`
+	Tables      []*Table            `json:"tables"`
+}
+
+type Table struct {
+	ID          storageapi.TableID `json:"id"`
+	Uri         string             `json:"uri"`
+	Name        string             `json:"name"`
+	DisplayName string             `json:"displayName"`
+	PrimaryKey  []string           `json:"primaryKey"`
+	Columns     []string           `json:"columns"`
 }
 
 type Config struct {
@@ -64,6 +84,7 @@ type ConfigRow struct {
 type StateFile struct {
 	AllBranchesConfigs []string          `json:"allBranchesConfigs" validate:"required"`
 	Branches           []*BranchState    `json:"branches" validate:"required"`
+	Buckets            []*Bucket         `json:"buckets,omitempty"`
 	Envs               map[string]string `json:"envs,omitempty"` // additional ENVs
 }
 
