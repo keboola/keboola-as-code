@@ -118,19 +118,19 @@ func errorHandler() func(context.Context, http.ResponseWriter, error) {
 }
 
 // errorFormatter returns a function that adds HTTP status code to the given error.
-func errorFormatter() func(err error) goaHTTP.Statuser {
+func errorFormatter() func(ctx context.Context, err error) goaHTTP.Statuser {
 	return formatError
 }
 
 // handleError handles an unexpected error.
-func handleError(_ context.Context, w http.ResponseWriter, err error) {
-	formattedErr := formatError(err)
+func handleError(ctx context.Context, w http.ResponseWriter, err error) {
+	formattedErr := formatError(ctx, err)
 	w.WriteHeader(formattedErr.StatusCode())
 	_, _ = w.Write([]byte(json.MustEncodeString(formattedErr, true)))
 }
 
 // formatError sets HTTP status code to error.
-func formatError(err error) goaHTTP.Statuser {
+func formatError(ctx context.Context, err error) goaHTTP.Statuser {
 	return errorWithStatusCode{
 		error:    err,
 		httpCode: errorHttpCode(err),
