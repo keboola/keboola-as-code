@@ -1,2 +1,3 @@
 %A
 INFO	Use --force to override the invalid local state.
+DEBUG	Error debug log:%A
