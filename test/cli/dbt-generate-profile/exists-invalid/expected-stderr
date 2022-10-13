@@ -1,2 +1,3 @@
-Error: dbt profiles file "profiles.yml" is invalid:
+Error:
+- dbt profiles file "profiles.yml" is invalid:
   - cannot unmarshal !!str `y::x` into orderedmap

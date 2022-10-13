@@ -1,6 +1,6 @@
 Warning, validation failed:
-  - config "main/extractor/keboola.ex-azure-cost-management/invalid/config.json" doesn't match schema:
-    - missing properties: "subscriptionId"
+- config "main/extractor/keboola.ex-azure-cost-management/invalid/config.json" doesn't match schema:
+  - missing properties: "subscriptionId"
 
 The project has been pulled, but it is not in a valid state.
 Please correct the problems listed above.

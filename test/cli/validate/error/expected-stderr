@@ -1,4 +1,5 @@
-WARN	Error: validation failed:
+WARN	Error:
+WARN	- validation failed:
 WARN	  - config "foo/extractor/keboola.ex-azure-cost-management/with-schema/config.json" doesn't match schema:
 WARN	    - missing properties: "subscriptionId"
 WARN	  - config row "foo/extractor/keboola.ex-azure-cost-management/with-schema/rows/row-1/config.json" doesn't match schema:
