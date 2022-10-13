@@ -89,9 +89,9 @@ jobs:
             export VERSION="dev"
           fi
           echo "Tag = '$TAG', is semantic tag = '$IS_SEMANTIC_TAG', target version = '$VERSION'"
-          echo "::set-output name=tag::$TAG"
-          echo "::set-output name=is_semantic_tag::$IS_SEMANTIC_TAG"
-          echo "::set-output name=version::$VERSION"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "is_semantic_tag=$IS_SEMANTIC_TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
   test:
     needs:
@@ -121,9 +121,9 @@ jobs:
         if: matrix.name == 'linux'
         run: docker run -d --rm -e ALLOW_NONE_AUTHENTICATION=no -e ETCD_ROOT_PASSWORD=toor -p 2379:2379 docker.io/bitnami/etcd:3.5.4-debian-11-r27
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Load Go cache
@@ -154,9 +154,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Load Go cache
@@ -181,9 +181,9 @@ jobs:
     runs-on: macos-latest # same as release, shared cache
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Load Go cache
@@ -216,9 +216,9 @@ jobs:
       TF_VERSION: 1.1.4
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
+        uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: ${{ env.TF_VERSION }}
       - name: Configure AWS Credentials
@@ -251,9 +251,9 @@ jobs:
       TF_VERSION: 1.1.4
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
+        uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: ${{ env.TF_VERSION }}
       - name: Configure AWS Credentials
@@ -282,9 +282,9 @@ jobs:
       TF_VERSION: 1.1.4
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
+        uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: ${{ env.TF_VERSION }}
       - name: Configure AWS Credentials
@@ -317,13 +317,13 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/') && needs.set-version.outputs.is_semantic_tag == 'true'
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Load Go cache
         uses: ./.github/actions/go-cache
         with:
           key: compile
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Install tools
@@ -385,13 +385,13 @@ jobs:
           envsubst < build/package/homebrew/homebrew.template.rb > target/homebrew/keboola-cli.rb
           cat target/homebrew/keboola-cli.rb
       - name: Upload Homebrew formulae
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: homebrew-formulae
           path: target/homebrew/keboola-cli.rb
           retention-days: 1
       - name: Upload Scoop manifest
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: scoop-manifest
           path: target/keboola-cli.json
@@ -408,7 +408,7 @@ jobs:
       msi_file: ${{ steps.build_msi.outputs.msi_file }}
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Download zipped exe
         id: download_zip
         shell: bash
@@ -417,7 +417,7 @@ jobs:
           TAG: ${{ needs.set-version.outputs.tag }}
         run: |
           hub release download "${TAG}" -i '*windows_amd64*.zip'
-          printf "::set-output name=zip::%s\n" *.zip
+          printf "zip=%s\n" *.zip >> $GITHUB_OUTPUT
           unzip -o *.zip && rm -v *.zip
       - name: Prepare PATH
         id: setup_msbuild
@@ -429,7 +429,7 @@ jobs:
           CERT_CONTENTS: ${{ secrets.WINDOWS_CERT_PFX }}
         run: |
           base64 -d <<<"$CERT_CONTENTS" > ./cert.pfx
-          printf "::set-output name=cert_file::%s\n" ".\\cert.pfx"
+          printf "cert_file=%s\n" ".\\cert.pfx" >> $GITHUB_OUTPUT
       - name: Sign EXE
         env:
           CERT_FILE: ${{ steps.obtain_cert.outputs.cert_file }}
@@ -447,7 +447,7 @@ jobs:
           mkdir msi
           filename="$(basename "$ZIP_FILE" ".zip")"
           "${MSBUILD_PATH}\MSBuild.exe" ./build/package/windows/msi.wixproj -p:SourceDir="$PWD" -p:OutputPath="./msi" -p:OutputName="$filename" -p:ProductVersion="${VERSION}"
-          echo "::set-output name=msi_file::${filename}.msi"
+          echo "msi_file=${filename}.msi" >> $GITHUB_OUTPUT
       - name: Sign MSI
         env:
           CERT_FILE: ${{ steps.obtain_cert.outputs.cert_file }}
@@ -484,7 +484,7 @@ jobs:
           choco install checksum
           checksum=$(checksum -t=sha256 -f="./build/package/windows/msi/${MSI_FILE}")
           echo $checksum
-          echo "::set-output name=msi_checksum::${checksum}"
+          echo "msi_checksum=${checksum}" >> $GITHUB_OUTPUT
 
   update-repositories:
     needs:
@@ -498,7 +498,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/') && needs.set-version.outputs.is_semantic_tag == 'true'
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v1
       - name: Docker login
@@ -507,7 +507,7 @@ jobs:
           username: ${{ env.DOCKERHUB_USER }}
           password: ${{ env.DOCKERHUB_TOKEN }}
       - name: Download Homebrew formulae
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: homebrew-formulae
           path: target/homebrew
@@ -549,7 +549,7 @@ jobs:
       - name: Index Linux packages in Legacy S3
         run: ./build/package/linux/index.sh /s3bucket
       - name: Download Scoop manifest
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: scoop-manifest
           path: target/scoop
@@ -572,7 +572,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/') && needs.set-version.outputs.is_semantic_tag == 'true'
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Push Chocolatey
         env:
           CHOCOLATEY_KEY: ${{ secrets.CHOCOLATEY_KEY }}
@@ -746,7 +746,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/templates-api-v')
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
