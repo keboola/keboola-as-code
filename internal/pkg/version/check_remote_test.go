@@ -11,7 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 

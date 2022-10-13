@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet/fsimporter"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"

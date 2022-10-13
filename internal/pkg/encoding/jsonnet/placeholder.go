@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-jsonnet/parser"
 	"github.com/umisama/go-regexpcache"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 )
 
 const (
