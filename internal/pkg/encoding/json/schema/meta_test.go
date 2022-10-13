@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/json/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json/schema"
 )
 
 func TestFieldMeta_Empty(t *testing.T) {
