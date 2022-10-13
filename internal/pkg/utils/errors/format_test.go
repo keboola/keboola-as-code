@@ -178,6 +178,35 @@ func TestMultiError_Flatten(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expected), merged.Error())
 }
 
+func TestWrapf_Format(t *testing.T) {
+	t.Parallel()
+
+	original := ErrorForTest()
+	err := NewMultiError()
+	err.Append(original)
+	err.Append(Wrapf(original, "different message"))
+	expected := `
+- some error
+- different message
+`
+	assert.Equal(t, strings.TrimSpace(expected), err.Error())
+}
+
+func TestWrapf_FormatWithDebug(t *testing.T) {
+	t.Parallel()
+
+	original := ErrorForTest()
+	err := NewMultiError()
+	err.Append(original)
+	err.Append(Wrapf(original, "different message"))
+	expected := `
+- some error [%s/errors_test.go:55]
+- different message [%s/format_test.go:%s]:
+  - *errors.wrappedError >>> some error [%s/errors_test.go:55]
+`
+	wildcards.Assert(t, strings.TrimSpace(expected), FormatWithDebug(err))
+}
+
 func TestNestedError_Format_1(t *testing.T) {
 	t.Parallel()
 
