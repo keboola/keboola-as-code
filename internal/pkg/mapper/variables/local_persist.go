@@ -2,11 +2,10 @@ package variables
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -36,7 +35,7 @@ func (m *variablesMapper) MapBeforePersist(ctx context.Context, recipe *model.Pe
 
 	// Branch must be same
 	if configKey.BranchKey() != configManifest.BranchKey() {
-		panic(fmt.Errorf(`child "%s" and parent "%s" must be from same branch`, configManifest.Desc(), configKey.Desc()))
+		panic(errors.Errorf(`child "%s" and parent "%s" must be from same branch`, configManifest.Desc(), configKey.Desc()))
 	}
 
 	// Add relation
@@ -52,14 +51,14 @@ func (m *variablesMapper) MapBeforePersist(ctx context.Context, recipe *model.Pe
 func (m *variablesMapper) AfterLocalOperation(_ context.Context, changes *model.LocalChanges) error {
 	// Find new persisted variables configs + include those that have a new persisted row
 	configs := make(map[model.ConfigKey]bool)
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, objectState := range changes.Persisted() {
 		object := objectState.LocalState()
 		if config, ok := object.(*model.Config); ok {
 			// Variables config?
 			component, err := m.state.Components().GetOrErr(config.ComponentId)
 			if err != nil {
-				errors.Append(err)
+				errs.Append(err)
 				continue
 			}
 			if component.IsVariables() {
@@ -69,7 +68,7 @@ func (m *variablesMapper) AfterLocalOperation(_ context.Context, changes *model.
 			// Variables values row?
 			component, err := m.state.Components().GetOrErr(row.ComponentId)
 			if err != nil {
-				errors.Append(err)
+				errs.Append(err)
 				continue
 			}
 			if component.IsVariables() {
@@ -82,11 +81,11 @@ func (m *variablesMapper) AfterLocalOperation(_ context.Context, changes *model.
 	for configKey := range configs {
 		config := m.state.MustGet(configKey).LocalState().(*model.Config)
 		if err := m.ensureOneRowHasRelation(config); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 // ensureOneRowHasRelation VariablesValuesForRelation, it marks variables default values.

@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"sort"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -257,7 +257,7 @@ func (m BranchMetadata) saveTemplateUsages(instances TemplatesInstances) error {
 	})
 	encoded, err := json.EncodeString(instances, false)
 	if err != nil {
-		return fmt.Errorf(`metadata "%s" are not in valid format: %w`, templatesInstancesMetaKey, err)
+		return errors.Errorf(`metadata "%s" are not in valid format: %w`, templatesInstancesMetaKey, err)
 	}
 	m[templatesInstancesMetaKey] = encoded
 	return nil
@@ -316,7 +316,7 @@ func (m BranchMetadata) DeleteTemplateUsage(instanceId string) error {
 		}
 	}
 
-	return fmt.Errorf(`instance "%s" not found`, instanceId)
+	return errors.Errorf(`instance "%s" not found`, instanceId)
 }
 
 func (m BranchMetadata) TemplatesInstances() (TemplatesInstances, error) {
@@ -327,7 +327,7 @@ func (m BranchMetadata) TemplatesInstances() (TemplatesInstances, error) {
 	}
 	err := json.DecodeString(instancesEncoded, instances)
 	if err != nil {
-		return nil, fmt.Errorf(`metadata "%s" are not in valid format: %w`, templatesInstancesMetaKey, err)
+		return nil, errors.Errorf(`metadata "%s" are not in valid format: %w`, templatesInstancesMetaKey, err)
 	}
 	return *instances, nil
 }

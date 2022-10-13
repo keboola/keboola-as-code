@@ -2,14 +2,13 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/atomic"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const MaxLocalWorkers = 32
@@ -67,16 +66,16 @@ func (w *Workers) AddWorker(worker func() error) {
 
 func (w *Workers) StartAndWait() error {
 	if w.invoked {
-		panic(fmt.Errorf(`invoked local.Workers cannot be reused`))
+		panic(errors.New(`invoked local.Workers cannot be reused`))
 	}
 
 	// Unblock workers
 	w.started.Done()
 
 	// Wait for group
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if err := w.group.Wait(); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 	w.invoked = true
 
@@ -84,8 +83,8 @@ func (w *Workers) StartAndWait() error {
 	workersCount := w.workerNum.Get()
 	for i := 0; i < workersCount; i++ {
 		if err, ok := w.errors[i]; ok {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

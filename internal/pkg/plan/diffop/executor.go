@@ -2,12 +2,11 @@ package diffop
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/remote"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type executor struct {
@@ -16,7 +15,7 @@ type executor struct {
 	localManager *local.Manager
 	localWork    *local.UnitOfWork
 	remoteWork   *remote.UnitOfWork
-	errors       *utils.MultiError
+	errors       errors.MultiError
 }
 
 func newExecutor(plan *Plan, logger log.Logger, ctx context.Context, localManager *local.Manager, remoteManager *remote.Manager, changeDescription string) *executor {
@@ -26,7 +25,7 @@ func newExecutor(plan *Plan, logger log.Logger, ctx context.Context, localManage
 		localManager: localManager,
 		localWork:    localManager.NewUnitOfWork(ctx),
 		remoteWork:   remoteManager.NewUnitOfWork(ctx, changeDescription),
-		errors:       utils.NewMultiError(),
+		errors:       errors.NewMultiError(),
 	}
 }
 
@@ -51,7 +50,7 @@ func (e *executor) invoke() error {
 				e.remoteWork.DeleteObject(action.ObjectState)
 			}
 		default:
-			panic(fmt.Errorf(`unexpected action type`))
+			panic(errors.New(`unexpected action type`))
 		}
 	}
 

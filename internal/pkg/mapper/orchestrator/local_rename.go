@@ -6,12 +6,12 @@ import (
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // onObjectsRename - find renamed orchestrators and renamed configs used in an orchestrator.
 func (m *orchestratorMapper) onObjectsRename(renamed []model.RenameAction, allObjects model.Objects) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Find renamed orchestrators and renamed configs used in an orchestrator
 	orchestratorsToUpdate := make(map[string]model.Key)
@@ -20,7 +20,7 @@ func (m *orchestratorMapper) onObjectsRename(renamed []model.RenameAction, allOb
 
 		// Is orchestrator?
 		if ok, err := m.isOrchestratorConfigKey(key); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 			continue
 		} else if ok {
 			orchestratorsToUpdate[key.String()] = key
@@ -59,8 +59,8 @@ func (m *orchestratorMapper) onObjectsRename(renamed []model.RenameAction, allOb
 
 	// Invoke
 	if err := uow.Invoke(); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

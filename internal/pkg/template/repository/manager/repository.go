@@ -13,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	pullOp "github.com/keboola/keboola-as-code/pkg/lib/operation/repository/pull"
 	loadTemplateOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/load"
 	loadRepositoryOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/repository/load"
@@ -88,7 +88,7 @@ func (r *CachedRepository) Fs() filesystem.Fs {
 func (r *CachedRepository) Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error) {
 	// The template must belong to the repository
 	if reference.Repository().Hash() != r.Hash() {
-		return nil, fmt.Errorf(`template "%s" is not from repository "%s"`, reference.FullName(), r.String())
+		return nil, errors.Errorf(`template "%s" is not from repository "%s"`, reference.FullName(), r.String())
 	}
 
 	// Check if is template already loaded
@@ -109,7 +109,7 @@ func (r *CachedRepository) Template(ctx context.Context, reference model.Templat
 		// Load template
 		tmpl, err := loadTemplateOp.Run(ctx, r.d, r.repo, reference)
 		if err != nil {
-			return nil, fmt.Errorf(`cannot load template "%s": %w`, reference.FullName(), err)
+			return nil, errors.Errorf(`cannot load template "%s": %w`, reference.FullName(), err)
 		}
 
 		// Cache value
@@ -183,7 +183,7 @@ func (r *CachedRepository) loadAllTemplates(ctx context.Context) error {
 	r.d.Logger().Infof(`loading all templates from repository "%s"`, r.String())
 
 	wg := &sync.WaitGroup{}
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, t := range r.repo.Templates() {
 		t := t
 		for _, v := range t.AllVersions() {
@@ -194,20 +194,20 @@ func (r *CachedRepository) loadAllTemplates(ctx context.Context) error {
 				ref := model.NewTemplateRef(r.repo.Definition(), t.Id, v.Version.String())
 				if _, err := r.Template(ctx, ref); err != nil {
 					r.d.Logger().Errorf(`cannot load template "%s" from repository "%s": %s`, ref.FullName(), r.String(), err)
-					errors.Append(fmt.Errorf(`cannot load template "%s": %w`, ref.Name(), err))
+					errs.Append(errors.Errorf(`cannot load template "%s": %w`, ref.Name(), err))
 				}
 			}()
 		}
 	}
 
 	wg.Wait()
-	if errors.Len() > 0 {
+	if errs.Len() > 0 {
 		r.d.Logger().Errorf(`cannot load all templates from repository "%s", see previous errors | %s`, r.String(), time.Since(startTime))
 	} else {
 		r.d.Logger().Infof(`loaded all templates from repository "%s" | %s`, r.String(), time.Since(startTime))
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 // markInUse is called when this repository starts to be used by a new request.

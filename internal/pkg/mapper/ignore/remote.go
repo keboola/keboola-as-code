@@ -2,11 +2,11 @@ package ignore
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (m *ignoreMapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
@@ -53,7 +53,7 @@ func (m *ignoreMapper) isIgnored(object model.Object) bool {
 		}
 		return false
 	default:
-		panic(fmt.Errorf(`unexpected object type: %T`, object))
+		panic(errors.Errorf(`unexpected object type: %T`, object))
 	}
 }
 

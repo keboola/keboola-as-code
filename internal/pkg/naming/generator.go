@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -75,7 +76,7 @@ func (g Generator) ConfigPath(parentPath string, component *storageapi.Component
 	}
 
 	if !parentKind.IsEmpty() && len(parentPath) == 0 {
-		panic(fmt.Errorf(`config "%s" parent path cannot be empty"`, config))
+		panic(errors.Errorf(`config "%s" parent path cannot be empty"`, config))
 	}
 
 	// Shared code is handled differently
@@ -83,7 +84,7 @@ func (g Generator) ConfigPath(parentPath string, component *storageapi.Component
 	switch {
 	case (parentKind.IsEmpty() || parentKind.IsBranch()) && component.IsSharedCode():
 		if config.SharedCode == nil {
-			panic(fmt.Errorf(`invalid shared code %s, value is not set`, config.Desc()))
+			panic(errors.Errorf(`invalid shared code %s, value is not set`, config.Desc()))
 		}
 		// Shared code
 		template = string(g.template.SharedCodeConfig)
@@ -100,7 +101,7 @@ func (g Generator) ConfigPath(parentPath string, component *storageapi.Component
 		// Ordinary config
 		template = string(g.template.Config)
 	default:
-		panic(fmt.Errorf(`unexpected config parent type "%s"`, parentKey.Kind()))
+		panic(errors.Errorf(`unexpected config parent type "%s"`, parentKey.Kind()))
 	}
 
 	p := AbsPath{}
@@ -117,7 +118,7 @@ func (g Generator) ConfigPath(parentPath string, component *storageapi.Component
 
 func (g Generator) ConfigRowPath(parentPath string, component *storageapi.Component, row *ConfigRow) AbsPath {
 	if len(parentPath) == 0 {
-		panic(fmt.Errorf(`config row "%s" parent path cannot be empty"`, row))
+		panic(errors.Errorf(`config row "%s" parent path cannot be empty"`, row))
 	}
 
 	// Get parent in the local filesystem
@@ -128,7 +129,7 @@ func (g Generator) ConfigRowPath(parentPath string, component *storageapi.Compon
 
 	// Check parent type
 	if !parentKey.Kind().IsConfig() {
-		panic(fmt.Errorf(`unexpected config row parent type "%s"`, parentKey.Kind()))
+		panic(errors.Errorf(`unexpected config row parent type "%s"`, parentKey.Kind()))
 	}
 
 	// Shared code is handled differently

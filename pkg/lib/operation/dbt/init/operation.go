@@ -2,7 +2,6 @@ package init
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
@@ -13,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/profile"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/sources"
@@ -61,7 +61,7 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 		sandboxesapi.TypeSnowflake,
 	)
 	if err != nil {
-		return fmt.Errorf("cannot create workspace: %w", err)
+		return errors.Errorf("cannot create workspace: %w", err)
 	}
 	d.Logger().Infof(`Created new workspace "%s".`, opts.WorkspaceName)
 
@@ -70,13 +70,13 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 	// Generate profile
 	err = profile.Run(ctx, opts.TargetName, d)
 	if err != nil {
-		return fmt.Errorf("could not generate profile: %w", err)
+		return errors.Errorf("could not generate profile: %w", err)
 	}
 
 	// Generate sources
 	err = sources.Run(ctx, opts.TargetName, d)
 	if err != nil {
-		return fmt.Errorf("could not generate sources: %w", err)
+		return errors.Errorf("could not generate sources: %w", err)
 	}
 
 	// Generate env
@@ -85,7 +85,7 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 		Workspace:  workspace,
 	}, d)
 	if err != nil {
-		return fmt.Errorf("could not generate env: %w", err)
+		return errors.Errorf("could not generate env: %w", err)
 	}
 
 	return nil

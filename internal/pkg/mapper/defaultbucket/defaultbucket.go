@@ -1,13 +1,12 @@
 package defaultbucket
 
 import (
-	"fmt"
-
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type defaultBucketMapper struct {
@@ -70,6 +69,6 @@ func markUsedInInputMapping(omConfig *model.Config, usedIn configOrRow) {
 			UsedIn: v.ConfigRowKey,
 		})
 	default:
-		panic(fmt.Errorf(`unexpected type "%T"`, usedIn))
+		panic(errors.Errorf(`unexpected type "%T"`, usedIn))
 	}
 }

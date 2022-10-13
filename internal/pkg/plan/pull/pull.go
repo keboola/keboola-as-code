@@ -1,10 +1,9 @@
 package pull
 
 import (
-	"fmt"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/diffop"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
@@ -24,7 +23,7 @@ func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
 		case diff.ResultOnlyInRemote:
 			plan.Add(result, diffop.ActionSaveLocal)
 		case diff.ResultNotSet:
-			panic(fmt.Errorf("diff was not generated"))
+			panic(errors.New("diff was not generated"))
 		}
 	}
 

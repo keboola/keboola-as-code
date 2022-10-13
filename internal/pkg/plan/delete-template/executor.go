@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type executor struct {
@@ -24,7 +24,7 @@ func (e *executor) invoke() error {
 
 	branchState := e.Plan.projectState.MustGet(e.Plan.branchKey).(*model.BranchState)
 	if err := branchState.Local.Metadata.DeleteTemplateUsage(e.Plan.instanceId); err != nil {
-		return utils.PrefixError(`cannot remove template instance metadata`, err)
+		return errors.PrefixError(err, "cannot remove template instance metadata")
 	}
 	uow.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())
 

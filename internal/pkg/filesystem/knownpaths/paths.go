@@ -1,7 +1,6 @@
 package knownpaths
 
 import (
-	"fmt"
 	"io/fs"
 	"sort"
 	"strings"
@@ -10,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Paths keeps state of all files/dirs in projectDir.
@@ -186,7 +185,7 @@ func (p *Paths) IsFile(path string) bool {
 
 	v, ok := p.isFile[path]
 	if !ok {
-		panic(fmt.Errorf(`unknown path "%s"`, path))
+		panic(errors.Errorf(`unknown path "%s"`, path))
 	}
 	return v
 }
@@ -235,12 +234,12 @@ func (p *Paths) init() error {
 	p.tracked = make(map[string]bool)
 	p.isFile = make(map[string]bool)
 
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	root := "."
 	err := p.fs.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		// Log error
 		if err != nil {
-			errors.Append(err)
+			errs.Append(err)
 			return nil
 		}
 
@@ -265,10 +264,10 @@ func (p *Paths) init() error {
 	})
 	// Errors are not critical, they can be e.g. problem with permissions
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (p *Paths) isIgnored(path string) (bool, error) {

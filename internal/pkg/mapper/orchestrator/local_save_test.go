@@ -124,14 +124,14 @@ func TestMapBeforeLocalSaveWarnings(t *testing.T) {
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 	expectedWarnings := `
 WARN  Warning: cannot save orchestrator config "branch/other/orchestrator":
-  - cannot save phase "001-phase":
-    - cannot save task "001-task-1":
-      - config "branch:123/component:foo.bar1/config:123" not found
-    - cannot save task "002-task-2":
-      - config "branch:123/component:foo.bar2/config:789" not found
-  - cannot save phase "002-phase-with-deps":
-    - cannot save task "001-task-4":
-      - config "branch:123/component:foo.bar2/config:456" not found
+- cannot save phase "001-phase":
+  - cannot save task "001-task-1":
+    - config "branch:123/component:foo.bar1/config:123" not found
+  - cannot save task "002-task-2":
+    - config "branch:123/component:foo.bar2/config:789" not found
+- cannot save phase "002-phase-with-deps":
+  - cannot save task "001-task-4":
+    - config "branch:123/component:foo.bar2/config:456" not found
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 }

@@ -1,8 +1,6 @@
 package fileloader
 
 import (
-	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -11,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet/fsimporter"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/yaml"
 )
@@ -255,7 +253,7 @@ func (l *loader) IsIgnored(path string) (bool, error) {
 
 func formatFileError(def *filesystem.FileDef, err error) error {
 	fileDesc := strings.TrimSpace(def.Description() + " file")
-	return utils.PrefixError(fmt.Sprintf("%s \"%s\" is invalid", fileDesc, def.Path()), err)
+	return errors.PrefixErrorf(err, `%s "%s" is invalid`, fileDesc, def.Path())
 }
 
 func (l *loader) loadFile(def *filesystem.FileDef, fileType filesystem.FileType) (filesystem.File, error) {
@@ -283,6 +281,6 @@ func (l *loader) defaultHandler(def *filesystem.FileDef, fileType filesystem.Fil
 	case filesystem.FileTypeJsonNet:
 		return rawFile.ToJsonNetFile(l.jsonNetContext)
 	default:
-		panic(fmt.Errorf(`unexpected filesystem.FileType = %v`, fileType))
+		panic(errors.Errorf(`unexpected filesystem.FileType = %v`, fileType))
 	}
 }

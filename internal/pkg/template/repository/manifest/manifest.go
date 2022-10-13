@@ -1,11 +1,11 @@
 package manifest
 
 import (
-	"fmt"
 	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -130,7 +130,7 @@ func (m *Manifest) GetById(id string) (TemplateRecord, bool) {
 func (m *Manifest) GetByIdOrErr(id string) (TemplateRecord, error) {
 	v, found := m.GetById(id)
 	if !found {
-		return v, TemplateNotFoundError{fmt.Errorf(`template "%s" not found`, id)}
+		return v, TemplateNotFoundError{errors.Errorf(`template "%s" not found`, id)}
 	}
 	return v, nil
 }

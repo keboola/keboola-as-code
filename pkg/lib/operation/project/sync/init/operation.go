@@ -2,7 +2,6 @@ package init
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-client/pkg/client"
 	"go.opentelemetry.io/otel/trace"
@@ -13,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createEnvFiles "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/envfiles/create"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
 	createMetaDir "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/metadir/create"
@@ -60,7 +59,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	// Create manifest
 	manifest, err := createManifest.Run(ctx, fs, o.ManifestOptions, d)
 	if err != nil {
-		return fmt.Errorf(`cannot create manifest: %w`, err)
+		return errors.Errorf(`cannot create manifest: %w`, err)
 	}
 
 	// Create ENV files
@@ -69,11 +68,11 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	}
 
 	// Related operations
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Generate CI workflows
 	if err := genWorkflows.Run(ctx, fs, o.Workflows, d); err != nil {
-		errors.Append(utils.PrefixError(`workflows generation failed`, err))
+		errs.AppendWithPrefix(err, "workflows generation failed")
 	}
 
 	logger.Info("Init done.")
@@ -93,9 +92,9 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		// Pull
 		pullOptions := pull.Options{DryRun: false, LogUntrackedPaths: false}
 		if err := pull.Run(ctx, projectState, pullOptions, d); err != nil {
-			errors.Append(utils.PrefixError(`pull failed`, err))
+			errs.AppendWithPrefix(err, "pull failed")
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

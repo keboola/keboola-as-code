@@ -1,10 +1,9 @@
 package diffop
 
 import (
-	"fmt"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -71,7 +70,7 @@ func (a *action) validate() error {
 		if a.action == ActionDeleteRemote {
 			branch := branchState.Remote
 			if branch.IsDefault {
-				return fmt.Errorf("cannot %s, default branch can never be deleted", a.StringVerbose())
+				return errors.Errorf("cannot %s, default branch can never be deleted", a.StringVerbose())
 			}
 		}
 	}

@@ -16,6 +16,7 @@ import (
 	"github.com/Netflix/go-expect"
 	"github.com/acarl005/stripansi"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
@@ -129,7 +130,7 @@ func (c *console) ExpectEOF() (err error) {
 
 	// Better error message
 	if _, err := c.Console.ExpectEOF(); err != nil {
-		return fmt.Errorf("error while waiting for EOF: %w", err)
+		return errors.Errorf("error while waiting for EOF: %w", err)
 	} else {
 		return nil
 	}
@@ -171,7 +172,7 @@ func (t *tty) Read(p []byte) (int, error) {
 
 	select {
 	case <-t.closed:
-		return 0, fmt.Errorf("cannot read: tty closed")
+		return 0, errors.New("cannot read: tty closed")
 	case <-done:
 		return n, err
 	}
@@ -189,7 +190,7 @@ func (t *tty) Write(p []byte) (int, error) {
 
 	select {
 	case <-t.closed:
-		return 0, fmt.Errorf("cannot write: tty closed")
+		return 0, errors.New("cannot write: tty closed")
 	case <-done:
 		return n, err
 	}
@@ -202,7 +203,7 @@ func (t *tty) Fd() uintptr {
 func (t *tty) Close() error {
 	select {
 	case <-t.closed:
-		return fmt.Errorf("tty already closed")
+		return errors.New("tty already closed")
 	default:
 		close(t.closed)
 		return t.file.Close()

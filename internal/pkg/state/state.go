@@ -2,7 +2,6 @@ package state
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-client/pkg/client"
 	"go.opentelemetry.io/otel/trace"
@@ -18,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/state/registry"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/remote"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -85,7 +84,7 @@ func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *St
 
 	knownPaths, err := knownpaths.New(container.ObjectsRoot(), knownpaths.WithFilter(fileLoader.IsIgnored))
 	if err != nil {
-		return nil, utils.PrefixError(`error loading directory structure`, err)
+		return nil, errors.PrefixError(err, "error loading directory structure")
 	}
 
 	// Create state
@@ -124,19 +123,23 @@ func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *St
 
 // Load - remote and local.
 func (s *State) Load(ctx context.Context, options LoadOptions) (ok bool, localErr error, remoteErr error) {
-	localErrors := utils.NewMultiError()
-	remoteErrors := utils.NewMultiError()
+	localErrors := errors.NewMultiError()
+	remoteErrors := errors.NewMultiError()
 
 	// Remote
 	if options.LoadRemoteState {
 		s.logger.Debugf("Loading project remote state.")
-		remoteErrors.Append(s.loadRemoteState(ctx, options.RemoteFilter))
+		if err := s.loadRemoteState(ctx, options.RemoteFilter); err != nil {
+			remoteErrors.Append(err)
+		}
 	}
 
 	// Local
 	if options.LoadLocalState {
 		s.logger.Debugf("Loading local state.")
-		localErrors.Append(s.loadLocalState(ctx, options.LocalFilter, options.IgnoreNotFoundErr))
+		if err := s.loadLocalState(ctx, options.LocalFilter, options.IgnoreNotFoundErr); err != nil {
+			localErrors.Append(err)
+		}
 	}
 
 	// Validate
@@ -201,30 +204,30 @@ func (s *State) validateLocal(ctx context.Context) (err error) {
 	ctx, span := s.tracer.Start(ctx, "kac.lib.state.validation.local")
 	telemetry.EndSpan(span, &err)
 
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, objectState := range s.All() {
 		if objectState.HasLocalState() {
 			if err := s.ValidateValue(objectState.LocalState()); err != nil {
-				errors.Append(utils.PrefixError(fmt.Sprintf(`local %s "%s" is not valid`, objectState.Kind(), objectState.Path()), err))
+				errs.AppendWithPrefixf(err, `local %s "%s" is not valid`, objectState.Kind(), objectState.Path())
 			}
 		}
 	}
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (s *State) validateRemote(ctx context.Context) (err error) {
 	ctx, span := s.tracer.Start(ctx, "kac.lib.state.validation.remote")
 	telemetry.EndSpan(span, &err)
 
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, objectState := range s.All() {
 		if objectState.HasRemoteState() {
 			if err := s.ValidateValue(objectState.RemoteState()); err != nil {
-				errors.Append(utils.PrefixError(fmt.Sprintf(`remote %s is not valid`, objectState.Desc()), err))
+				errs.AppendWithPrefixf(err, `remote %s is not valid`, objectState.Desc())
 			}
 		}
 	}
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (s *State) ValidateValue(value interface{}) error {

@@ -1,11 +1,9 @@
 package service
 
 import (
-	"fmt"
-
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *ValidationResult, allValues template.InputsValues, err error) {
@@ -13,7 +11,7 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 	errFormatter := NewValidationErrorFormatter()
 	stepInputs := inputsPayloadToMap(payload)
 
-	errs := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	allValues = make(template.InputsValues, 0)
 	allValuesMap := make(map[string]interface{})
 	allStepsIds := make(map[string]bool)
@@ -48,7 +46,7 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 
 				// Is input available/visible?
 				if v, err := input.Available(allValuesMap); err != nil {
-					errs.Append(fmt.Errorf(`cannot evaluate "showIf" condition for input "%s": %w`, input.Id, err))
+					errs.Append(errors.Errorf(`cannot evaluate "showIf" condition for input "%s": %w`, input.Id, err))
 				} else {
 					outInput.Visible = v
 				}
@@ -84,7 +82,7 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 			// Check unexpected inputs in the step payload
 			for inputId := range stepInputs[step.Id] {
 				if !stepInputsIds[inputId] {
-					errs.Append(fmt.Errorf(`found unexpected input "%s" in step "%s"`, inputId, step.Id))
+					errs.Append(errors.Errorf(`found unexpected input "%s" in step "%s"`, inputId, step.Id))
 				}
 			}
 
@@ -110,7 +108,7 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 	// Check unexpected steps in payload
 	for _, step := range payload {
 		if !allStepsIds[step.ID] {
-			errs.Append(fmt.Errorf(`found unexpected step "%s"`, step.ID))
+			errs.Append(errors.Errorf(`found unexpected step "%s"`, step.ID))
 			continue
 		}
 	}
@@ -118,7 +116,7 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 	// Format payload errors
 	if errs.Len() > 0 {
 		return nil, nil, BadRequestError{
-			Message: errFormatter.Format(utils.PrefixError("Invalid payload", errs)),
+			Message: errFormatter.Format(errors.PrefixError(errs, "Invalid payload")),
 		}
 	}
 

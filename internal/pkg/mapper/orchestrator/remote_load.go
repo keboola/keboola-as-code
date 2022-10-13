@@ -2,7 +2,6 @@ package orchestrator
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -10,22 +9,22 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (m *orchestratorMapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	allObjects := m.state.RemoteObjects()
 	for _, objectState := range changes.Loaded() {
 		if ok, err := m.isOrchestratorConfigKey(objectState.Key()); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 			continue
 		} else if ok {
 			configState := objectState.(*model.ConfigState)
 			m.onRemoteLoad(configState.Remote, configState.ConfigManifest, allObjects)
 		}
 	}
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (m *orchestratorMapper) onRemoteLoad(config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) {
@@ -35,11 +34,11 @@ func (m *orchestratorMapper) onRemoteLoad(config *model.Config, manifest *model.
 		allObjects:   allObjects,
 		config:       config,
 		manifest:     manifest,
-		errors:       utils.NewMultiError(),
+		errors:       errors.NewMultiError(),
 	}
 	if err := loader.load(); err != nil {
 		// Convert errors to warning
-		m.logger.Warn(`Warning: `, utils.PrefixError(fmt.Sprintf(`invalid orchestrator %s`, config.Desc()), err))
+		m.logger.Warn(`Warning: `, errors.PrefixErrorf(err, `invalid orchestrator %s`, config.Desc()))
 	}
 }
 
@@ -49,7 +48,7 @@ type remoteLoader struct {
 	allObjects model.Objects
 	config     *model.Config
 	manifest   *model.ConfigManifest
-	errors     *utils.MultiError
+	errors     errors.MultiError
 }
 
 func (l *remoteLoader) load() error {
@@ -73,14 +72,14 @@ func (l *remoteLoader) load() error {
 			l.phaseByKey[key] = phase
 			l.phaseDependsOnKeys[key] = dependsOn
 		} else {
-			l.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid phase[%d]`, apiIndex), err))
+			l.errors.AppendWithPrefixf(err, `invalid phase[%d]`, apiIndex)
 		}
 	}
 
 	// Parse tasks
 	for apiIndex, taskRaw := range tasks {
 		if err := l.parseTask(taskRaw); err != nil {
-			l.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid task[%d]`, apiIndex), err))
+			l.errors.AppendWithPrefixf(err, `invalid task[%d]`, apiIndex)
 		}
 	}
 
@@ -124,7 +123,7 @@ func (l *remoteLoader) getPhases() ([]interface{}, error) {
 	}
 	phases, ok := phasesRaw.([]interface{})
 	if !ok {
-		return nil, fmt.Errorf(`missing "%s" key`, model.OrchestratorPhasesContentKey)
+		return nil, errors.Errorf(`missing "%s" key`, model.OrchestratorPhasesContentKey)
 	}
 	l.config.Content.Delete(model.OrchestratorPhasesContentKey)
 	return phases, nil
@@ -137,17 +136,17 @@ func (l *remoteLoader) getTasks() ([]interface{}, error) {
 	}
 	tasks, ok := tasksRaw.([]interface{})
 	if !ok {
-		return nil, fmt.Errorf(`missing "%s" key`, model.OrchestratorTasksContentKey)
+		return nil, errors.Errorf(`missing "%s" key`, model.OrchestratorTasksContentKey)
 	}
 	l.config.Content.Delete(model.OrchestratorTasksContentKey)
 	return tasks, nil
 }
 
 func (l *remoteLoader) parsePhase(phaseRaw interface{}) (*model.Phase, string, []string, error) {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	content, ok := phaseRaw.(*orderedmap.OrderedMap)
 	if !ok {
-		return nil, "", nil, fmt.Errorf(`phase must be JSON object`)
+		return nil, "", nil, errors.New(`phase must be JSON object`)
 	}
 
 	phase := &model.Phase{
@@ -162,13 +161,13 @@ func (l *remoteLoader) parsePhase(phaseRaw interface{}) (*model.Phase, string, [
 	// Get ID
 	id, err := parser.id()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Get name
 	phase.Name, err = parser.name()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Get dependsOn
@@ -179,19 +178,19 @@ func (l *remoteLoader) parsePhase(phaseRaw interface{}) (*model.Phase, string, [
 			dependsOn = append(dependsOn, cast.ToString(dependsOnId))
 		}
 	} else {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Additional content
 	phase.Content = parser.additionalContent()
-	return phase, cast.ToString(id), dependsOn, errors.ErrorOrNil()
+	return phase, cast.ToString(id), dependsOn, errs.ErrorOrNil()
 }
 
 func (l *remoteLoader) parseTask(taskRaw interface{}) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	content, ok := taskRaw.(*orderedmap.OrderedMap)
 	if !ok {
-		return fmt.Errorf(`task must be JSON object`)
+		return errors.New(`task must be JSON object`)
 	}
 
 	task := &model.Task{}
@@ -200,13 +199,13 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 	// Get ID
 	_, err := parser.id()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Get name
 	task.Name, err = parser.name()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Get enabled, optional field, default true
@@ -215,13 +214,13 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 	// Get phase
 	phaseId, err := parser.phaseId()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Component ID
 	task.ComponentId, err = parser.componentId()
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// ConfigId / ConfigData
@@ -229,22 +228,22 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 		if parser.hasConfigId() {
 			task.ConfigId, err = parser.configId()
 			if err != nil {
-				errors.Append(err)
+				errs.Append(err)
 			}
 		} else if parser.hasConfigData() {
 			task.ConfigData, err = parser.configData()
 			if err != nil {
-				errors.Append(err)
+				errs.Append(err)
 			}
 		} else if task.Enabled {
-			errors.Append(fmt.Errorf("task.configId, or task.configData and task.componentId must be specified"))
+			errs.Append(errors.New("task.configId, or task.configData and task.componentId must be specified"))
 		}
 	}
 
 	// Get target config
 	targetConfig, err := l.getTargetConfig(task.ComponentId, task.ConfigId)
 	if err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	} else if targetConfig != nil {
 		task.ConfigPath = l.MustGet(targetConfig.Key()).Path()
 		markConfigUsedInOrchestrator(targetConfig, l.config)
@@ -254,15 +253,15 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 	task.Content = parser.additionalContent()
 
 	// Get phase
-	if errors.Len() == 0 {
+	if errs.Len() == 0 {
 		if phase, found := l.phaseByKey[cast.ToString(phaseId)]; found {
 			phase.Tasks = append(phase.Tasks, task)
 		} else {
-			errors.Append(fmt.Errorf(`phase "%d" not found`, phaseId))
+			errs.Append(errors.Errorf(`phase "%d" not found`, phaseId))
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (l *remoteLoader) getTargetConfig(componentId storageapi.ComponentID, configId storageapi.ConfigID) (*model.Config, error) {
@@ -278,12 +277,12 @@ func (l *remoteLoader) getTargetConfig(componentId storageapi.ComponentID, confi
 
 	configRaw, found := l.allObjects.Get(configKey)
 	if !found {
-		return nil, fmt.Errorf(`%s not found`, configKey.Desc())
+		return nil, errors.Errorf(`%s not found`, configKey.Desc())
 	}
 
 	config, ok := configRaw.(*model.Config)
 	if !ok {
-		return nil, fmt.Errorf(`expected %s, found %s`, configKey.Desc(), configRaw.Desc())
+		return nil, errors.Errorf(`expected %s, found %s`, configKey.Desc(), configRaw.Desc())
 	}
 
 	return config, nil

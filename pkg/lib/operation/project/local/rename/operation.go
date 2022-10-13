@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/rename"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 )
 
@@ -49,7 +49,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 		// Invoke
 		if err := plan.Invoke(projectState.Ctx(), projectState.LocalManager()); err != nil {
-			return false, utils.PrefixError(`cannot rename objects`, err)
+			return false, errors.PrefixError(err, "cannot rename objects")
 		}
 
 		// Save manifest

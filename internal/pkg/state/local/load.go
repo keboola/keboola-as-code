@@ -2,24 +2,23 @@ package local
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // loadObject from manifest and filesystem.
 func (m *Manager) loadObject(ctx context.Context, manifest model.ObjectManifest, object model.Object) (found bool, err error) {
 	// Check if directory exists
 	if !m.fs.IsDir(manifest.Path()) {
-		return false, fmt.Errorf(`%s "%s" not found`, manifest.Kind().Name, manifest.Path())
+		return false, errors.Errorf(`%s "%s" not found`, manifest.Kind().Name, manifest.Path())
 	}
 
 	// Call mappers
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	recipe := model.NewLocalLoadRecipe(m.FileLoader(), manifest, object)
 	if err := m.mapper.MapAfterLocalLoad(context.Background(), recipe); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Set related paths
@@ -32,11 +31,11 @@ func (m *Manager) loadObject(ctx context.Context, manifest model.ObjectManifest,
 	}
 
 	// Validate, if all files loaded without error
-	if errors.Len() == 0 {
+	if errs.Len() == 0 {
 		if err := m.validator.Validate(ctx, object); err != nil {
-			errors.AppendWithPrefix(fmt.Sprintf(`%s "%s" is invalid`, manifest.Kind().Name, manifest.Path()), err)
+			errs.AppendWithPrefixf(err, `%s "%s" is invalid`, manifest.Kind().Name, manifest.Path())
 		}
 	}
 
-	return true, errors.ErrorOrNil()
+	return true, errs.ErrorOrNil()
 }

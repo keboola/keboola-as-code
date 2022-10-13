@@ -1,13 +1,12 @@
 package links
 
 import (
-	"fmt"
 	"sort"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // onLocalLoad replaces shared code path by id in transformation config and blocks.
@@ -29,23 +28,23 @@ func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
 	if !found {
 		return nil
 	} else if !ok {
-		return utils.PrefixError(
-			fmt.Sprintf(`invalid transformation %s`, transformation.Desc()),
-			fmt.Errorf(`key "%s" must be string, found %T`, model.SharedCodePathContentKey, sharedCodePathRaw),
+		return errors.NewNestedError(
+			errors.Errorf(`invalid transformation %s`, transformation.Desc()),
+			errors.Errorf(`key "%s" must be string, found %T`, model.SharedCodePathContentKey, sharedCodePathRaw),
 		)
 	}
 
 	// Get shared code
 	sharedCodeState, err := m.helper.GetSharedCodeByPath(objectState.GetParentPath(), sharedCodePath)
 	if err != nil {
-		return utils.PrefixError(
-			err.Error(),
-			fmt.Errorf(`referenced from %s`, objectState.Desc()),
+		return errors.NewNestedError(
+			err,
+			errors.Errorf(`referenced from %s`, objectState.Desc()),
 		)
 	} else if !sharedCodeState.HasLocalState() {
-		return utils.PrefixError(
-			fmt.Sprintf(`missing shared code %s`, sharedCodeState.Desc()),
-			fmt.Errorf(`referenced from %s`, objectState.Desc()),
+		return errors.NewNestedError(
+			errors.Errorf(`missing shared code %s`, sharedCodeState.Desc()),
+			errors.Errorf(`referenced from %s`, objectState.Desc()),
 		)
 	}
 	sharedCodeConfig := sharedCodeState.LocalState().(*model.Config)
@@ -64,11 +63,11 @@ func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
 	transformation.Transformation.LinkToSharedCode = linkToSharedCode
 
 	// Replace paths -> IDs in code scripts
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	foundSharedCodeRows := make(map[storageapi.RowID]model.ConfigRowKey)
 	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
 		if sharedCodeRow, v, err := m.parsePathPlaceholder(code, script, sharedCodeState); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		} else if v != nil {
 			foundSharedCodeRows[sharedCodeRow.Id] = sharedCodeRow.ConfigRowKey
 			return v
@@ -83,5 +82,5 @@ func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
 	sort.SliceStable(linkToSharedCode.Rows, func(i, j int) bool {
 		return linkToSharedCode.Rows[i].String() < linkToSharedCode.Rows[j].String()
 	})
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

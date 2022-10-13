@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/create"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -34,7 +34,7 @@ func (d *templateIdsDialog) ask() ([]create.ConfigDef, error) {
 		Validator: func(val interface{}) error {
 			if _, err := d.parse(val.(string)); err != nil {
 				// Print errors to new line
-				return utils.PrefixError("\n", err)
+				return errors.PrefixError(err, "\n")
 			}
 			return nil
 		},
@@ -47,7 +47,7 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 	ids := make(map[string]bool)
 	result = strhelper.StripHtmlComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	lineNum := 0
 	for scanner.Scan() {
 		lineNum++
@@ -65,7 +65,7 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 			// Config ID definition
 			m := regexpcache.MustCompile(` ([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+)$`).FindStringSubmatch(line)
 			if m == nil {
-				errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
+				errs.Append(errors.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
 				continue
 			}
 			key = model.ConfigKey{BranchId: d.branch.Id, ComponentId: storageapi.ComponentID(m[1]), Id: storageapi.ConfigID(m[2])}
@@ -73,32 +73,32 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 			// Row ID definition
 			m := regexpcache.MustCompile(` ([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+)$`).FindStringSubmatch(line)
 			if m == nil {
-				errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
+				errs.Append(errors.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
 				continue
 			}
 			key = model.ConfigRowKey{BranchId: d.branch.Id, ComponentId: storageapi.ComponentID(m[1]), ConfigId: storageapi.ConfigID(m[2]), Id: storageapi.RowID(m[3])}
 		default:
-			errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
+			errs.Append(errors.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
 			continue
 		}
 
 		// Parse template ID
 		if !scanner.Scan() {
-			errors.Append(fmt.Errorf(`expected line, found EOF`))
+			errs.Append(errors.New(`expected line, found EOF`))
 			continue
 		}
 		lineNum++
 		id := strings.TrimSpace(scanner.Text())
 		switch {
 		case len(id) == 0:
-			errors.Append(fmt.Errorf(`line %d: unexpected empty line`, lineNum))
+			errs.Append(errors.Errorf(`line %d: unexpected empty line`, lineNum))
 			continue
 		case ids[id]:
-			errors.Append(fmt.Errorf(`line %d: duplicate ID "%s"`, lineNum, id))
+			errs.Append(errors.Errorf(`line %d: duplicate ID "%s"`, lineNum, id))
 			continue
 		default:
 			if err := validateId(id); err != nil {
-				errors.Append(fmt.Errorf(`line %d: %w`, lineNum, err))
+				errs.Append(errors.Errorf(`line %d: %w`, lineNum, err))
 				continue
 			}
 			idByKey[key.String()] = id
@@ -106,8 +106,8 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 		}
 	}
 
-	if errors.Len() > 0 {
-		return nil, errors.ErrorOrNil()
+	if errs.Len() > 0 {
+		return nil, errs.ErrorOrNil()
 	}
 
 	var defs []create.ConfigDef
@@ -115,7 +115,7 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 		// Config definition
 		id := idByKey[c.Key().String()]
 		if len(id) == 0 {
-			errors.Append(fmt.Errorf(`missing ID for %s`, c.Desc()))
+			errs.Append(errors.Errorf(`missing ID for %s`, c.Desc()))
 			continue
 		}
 		configDef := create.ConfigDef{Key: c.ConfigKey, TemplateId: id}
@@ -124,7 +124,7 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 			// Row definition
 			id := idByKey[r.Key().String()]
 			if len(id) == 0 {
-				errors.Append(fmt.Errorf(`missing ID for %s`, r.Desc()))
+				errs.Append(errors.Errorf(`missing ID for %s`, r.Desc()))
 				continue
 			}
 			rowDef := create.ConfigRowDef{Key: r.ConfigRowKey, TemplateId: id}
@@ -134,7 +134,7 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 		defs = append(defs, configDef)
 	}
 
-	return defs, errors.ErrorOrNil()
+	return defs, errs.ErrorOrNil()
 }
 
 func (d *templateIdsDialog) defaultValue() string {

@@ -7,14 +7,13 @@
 package function
 
 import (
-	"fmt"
-
 	"github.com/google/go-jsonnet/ast"
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -30,9 +29,9 @@ func ConfigId(idMapper func(id interface{}) string) *jsonnet.NativeFunction {
 		Params: ast.Identifiers{"id"},
 		Func: func(params []interface{}) (interface{}, error) {
 			if len(params) != 1 {
-				return nil, fmt.Errorf("one parameter expected, found %d", len(params))
+				return nil, errors.Errorf("one parameter expected, found %d", len(params))
 			} else if id, ok := params[0].(string); !ok {
-				return nil, fmt.Errorf("parameter must be a string")
+				return nil, errors.New("parameter must be a string")
 			} else {
 				return idMapper(storageapi.ConfigID(id)), nil
 			}
@@ -48,9 +47,9 @@ func ConfigRowId(idMapper func(id interface{}) string) *jsonnet.NativeFunction {
 		Params: ast.Identifiers{"id"},
 		Func: func(params []interface{}) (interface{}, error) {
 			if len(params) != 1 {
-				return nil, fmt.Errorf("one parameter expected, found %d", len(params))
+				return nil, errors.Errorf("one parameter expected, found %d", len(params))
 			} else if id, ok := params[0].(string); !ok {
-				return nil, fmt.Errorf("parameter must be a string")
+				return nil, errors.New("parameter must be a string")
 			} else {
 				return idMapper(storageapi.RowID(id)), nil
 			}
@@ -65,11 +64,11 @@ func Input(inputValueProvider func(inputId string) (input.Value, bool)) *jsonnet
 		Params: ast.Identifiers{"id"},
 		Func: func(params []interface{}) (interface{}, error) {
 			if len(params) != 1 {
-				return nil, fmt.Errorf("one parameter expected, found %d", len(params))
+				return nil, errors.Errorf("one parameter expected, found %d", len(params))
 			} else if id, ok := params[0].(string); !ok {
-				return nil, fmt.Errorf("parameter must be a string")
+				return nil, errors.New("parameter must be a string")
 			} else if v, found := inputValueProvider(id); !found {
-				return nil, fmt.Errorf(`input "%s" not found`, id)
+				return nil, errors.Errorf(`input "%s" not found`, id)
 			} else {
 				switch v := v.Value.(type) {
 				case int:
@@ -89,11 +88,11 @@ func InputIsAvailable(inputValueProvider func(inputId string) (input.Value, bool
 		Params: ast.Identifiers{"id"},
 		Func: func(params []interface{}) (interface{}, error) {
 			if len(params) != 1 {
-				return nil, fmt.Errorf("one parameter expected, found %d", len(params))
+				return nil, errors.Errorf("one parameter expected, found %d", len(params))
 			} else if id, ok := params[0].(string); !ok {
-				return nil, fmt.Errorf("parameter must be a string")
+				return nil, errors.New("parameter must be a string")
 			} else if v, found := inputValueProvider(id); !found {
-				return nil, fmt.Errorf(`input "%s" not found`, id)
+				return nil, errors.Errorf(`input "%s" not found`, id)
 			} else {
 				return !v.Skipped, nil
 			}
@@ -130,9 +129,9 @@ func ComponentIsAvailable(components *model.ComponentsMap) *jsonnet.NativeFuncti
 		Params: ast.Identifiers{"componentId"},
 		Func: func(params []interface{}) (interface{}, error) {
 			if len(params) != 1 {
-				return nil, fmt.Errorf("one parameter expected, found %d", len(params))
+				return nil, errors.Errorf("one parameter expected, found %d", len(params))
 			} else if componentId, ok := params[0].(string); !ok {
-				return nil, fmt.Errorf("parameter must be a string")
+				return nil, errors.New("parameter must be a string")
 			} else {
 				_, found := components.Get(storageapi.ComponentID(componentId))
 				return found, nil
@@ -152,7 +151,7 @@ func SnowflakeWriterComponentId(components *model.ComponentsMap) *jsonnet.Native
 			} else if _, found := components.Get(SnowflakeWriterIDAzure); found {
 				return SnowflakeWriterIDAzure.String(), nil
 			} else {
-				return nil, fmt.Errorf("no Snowflake Writer component found")
+				return nil, errors.New("no Snowflake Writer component found")
 			}
 		},
 	}

@@ -2,7 +2,6 @@ package dependencies
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/jobsqueueapi"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // project dependencies container implements Project interface.
@@ -52,19 +52,19 @@ func newProjectDeps(base Base, public Public, token storageapi.Token) (*project,
 
 	// Setup Scheduler API
 	if schedulerHost, found := v.public.StackServices().URLByID("scheduler"); !found {
-		return nil, fmt.Errorf("scheduler host not found")
+		return nil, errors.New("scheduler host not found")
 	} else {
 		v.schedulerApiClient = schedulerapi.ClientWithHostAndToken(v.base.HttpClient(), schedulerHost.String(), v.token.Token)
 	}
 
 	if queueHost, found := v.public.StackServices().URLByID("queue"); !found {
-		return nil, fmt.Errorf("queue host not found")
+		return nil, errors.New("queue host not found")
 	} else {
 		v.jobsQueueAPIClient = jobsqueueapi.ClientWithHostAndToken(v.base.HttpClient(), queueHost.String(), v.token.Token)
 	}
 
 	if sandboxesHost, found := v.public.StackServices().URLByID("sandboxes"); !found {
-		return nil, fmt.Errorf("sandboxes host not found")
+		return nil, errors.New("sandboxes host not found")
 	} else {
 		v.sandboxesApiClient = sandboxesapi.ClientWithHostAndToken(v.base.HttpClient(), sandboxesHost.String(), v.token.Token)
 	}

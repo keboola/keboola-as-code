@@ -2,10 +2,10 @@ package testtemplateinputs
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type EnvProvider struct {
@@ -29,7 +29,7 @@ func (p *EnvProvider) MustGet(key string) string {
 func (p *EnvProvider) Get(key string) (string, error) {
 	val := p.envs.Get(key)
 	if len(val) == 0 {
-		return "", fmt.Errorf("missing ENV variable \"%s\"", strings.ToUpper(key))
+		return "", errors.Errorf("missing ENV variable \"%s\"", strings.ToUpper(key))
 	}
 	return val, nil
 }

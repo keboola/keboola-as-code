@@ -1,9 +1,8 @@
 package registry
 
 import (
-	"fmt"
-
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Proxy struct {
@@ -45,7 +44,7 @@ func (f *Proxy) Get(key Key) (Object, bool) {
 func (f *Proxy) MustGet(key Key) Object {
 	objectState, found := f.registry.Get(key)
 	if !found || !objectState.HasState(f.stateType) {
-		panic(fmt.Errorf(`%s not found`, key.Desc()))
+		panic(errors.Errorf(`%s not found`, key.Desc()))
 	}
 	return objectState.GetState(f.stateType)
 }

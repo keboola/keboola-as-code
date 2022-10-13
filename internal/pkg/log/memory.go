@@ -2,10 +2,10 @@
 package log
 
 import (
-	"fmt"
-
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func NewMemoryLogger() *MemoryLogger {
@@ -31,7 +31,7 @@ func (l *MemoryLogger) CopyLogsTo(target Logger) {
 			}
 		}
 	} else {
-		panic(fmt.Errorf(`not implemented: cannot copy logs to "%T"`, target))
+		panic(errors.Errorf(`not implemented: cannot copy logs to "%T"`, target))
 	}
 }
 

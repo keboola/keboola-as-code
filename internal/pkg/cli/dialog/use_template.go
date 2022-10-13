@@ -18,7 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	useTemplate "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/use"
 )
 
@@ -87,7 +87,7 @@ func (d *useTmplDialog) askInstanceName() (string, error) {
 		Validator:   prompt.ValueRequired,
 	})
 	if len(v) == 0 {
-		return "", fmt.Errorf(`please specify the instance name`)
+		return "", errors.New(`please specify the instance name`)
 	}
 	return v, nil
 }
@@ -124,10 +124,10 @@ func (d *useTmplInputsDialog) ask(isForTest bool) (template.InputsValues, []stri
 		path := d.options.GetString(inputsFileFlag)
 		content, err := os.ReadFile(path) // nolint:forbidigo // file may be outside the project, so the OS package is used
 		if err != nil {
-			return d.out, nil, fmt.Errorf(`cannot read inputs file "%s": %w`, path, err)
+			return d.out, nil, errors.Errorf(`cannot read inputs file "%s": %w`, path, err)
 		}
 		if err := json.Decode(content, &d.inputsFile); err != nil {
-			return d.out, nil, fmt.Errorf(`cannot decode inputs file "%s": %w`, path, err)
+			return d.out, nil, errors.Errorf(`cannot decode inputs file "%s": %w`, path, err)
 		}
 	}
 
@@ -166,11 +166,11 @@ func (d *useTmplInputsDialog) ask(isForTest bool) (template.InputsValues, []stri
 		if d.useInputsFile {
 			if v, found := d.inputsFile[inputDef.Id]; found {
 				if err := d.addInputValue(v, inputDef, true); err != nil {
-					return utils.PrefixError(err.Error(), fmt.Errorf("please fix the value in the inputs JSON file"))
+					return errors.NewNestedError(err, errors.New("please fix the value in the inputs JSON file"))
 				}
 			} else {
 				if err := d.addInputValue(d.defaultOrEmptyValueFor(inputDef), inputDef, true); err != nil {
-					return utils.PrefixError(err.Error(), fmt.Errorf("please define value in the inputs JSON file"))
+					return errors.NewNestedError(err, errors.New("please define value in the inputs JSON file"))
 				}
 			}
 			return nil
@@ -248,9 +248,9 @@ func (d *useTmplInputsDialog) announceGroup(group *input.StepsGroupExt) error {
 
 	// Validate steps count
 	if err := group.ValidateStepsCount(len(group.Steps), len(selectedSteps)); err != nil {
-		details := utils.NewMultiError()
+		details := errors.NewMultiError()
 		details.Append(err)
-		details.Append(fmt.Errorf("number of selected steps (%d) is incorrect", len(selectedSteps)))
+		details.Append(errors.Errorf("number of selected steps (%d) is incorrect", len(selectedSteps)))
 		if d.useInputsFile {
 			// List found inputs
 			foundInputs := orderedmap.New()
@@ -265,18 +265,18 @@ func (d *useTmplInputsDialog) announceGroup(group *input.StepsGroupExt) error {
 
 			// Convert list to error message
 			if foundInputs.Len() > 0 {
-				foundInputsErr := utils.NewMultiError()
+				foundInputsErr := errors.NewMultiError()
 				for _, step := range foundInputs.Keys() {
 					inputs := foundInputs.GetOrNil(step).([]string)
-					foundInputsErr.Append(fmt.Errorf(`%s, inputs: %s`, step, strings.Join(inputs, ", ")))
+					foundInputsErr.Append(errors.Errorf(`%s, inputs: %s`, step, strings.Join(inputs, ", ")))
 				}
-				details.AppendWithPrefix("in the inputs JSON file, these steps are defined", foundInputsErr)
+				details.AppendWithPrefix(foundInputsErr, "in the inputs JSON file, these steps are defined")
 			} else {
-				details.Append(fmt.Errorf("there are no inputs for this group in the inputs JSON file"))
+				details.Append(errors.New("there are no inputs for this group in the inputs JSON file"))
 			}
 		}
-		return utils.PrefixError(
-			fmt.Sprintf(`steps group %d "%s" is invalid`, group.GroupIndex+1, group.Description),
+		return errors.NewNestedError(
+			errors.Errorf(`steps group %d "%s" is invalid`, group.GroupIndex+1, group.Description),
 			details,
 		)
 	}
@@ -316,10 +316,10 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input, isForTest bool) (s
 
 				strValue := cast.ToString(value)
 				if !regexpcache.MustCompile(`^[A-Z0-9\_]+$`).MatchString(strValue) {
-					return fmt.Errorf(`the variable name "%s" is invalid, it can contain only uppercase letters, numbers and underscores`, strValue)
+					return errors.Errorf(`the variable name "%s" is invalid, it can contain only uppercase letters, numbers and underscores`, strValue)
 				}
 				if strings.HasSuffix(strValue, "KBC_SECRET_") {
-					return fmt.Errorf(`do not start the variable name with KBC_SECRET_ prefix, it will be added automatically`)
+					return errors.New(`do not start the variable name with KBC_SECRET_ prefix, it will be added automatically`)
 				}
 				return nil
 			},
@@ -450,10 +450,10 @@ func (d *useTmplInputsDialog) defaultOrEmptyValueFor(inputDef *input.Input) any 
 			// Get component ID
 			oauthInput, found := d.inputs[inputDef.OauthInputId]
 			if !found {
-				panic(fmt.Errorf(`oauth input "%s" not found`, inputDef.OauthInputId))
+				panic(errors.Errorf(`oauth input "%s" not found`, inputDef.OauthInputId))
 			}
 			if oauthInput.Kind != input.KindOAuth {
-				panic(fmt.Errorf(`input "%s" has unexpected kind, expected "%s", given "%s"`, inputDef.OauthInputId, input.KindOAuth, oauthInput.Kind))
+				panic(errors.Errorf(`input "%s" has unexpected kind, expected "%s", given "%s"`, inputDef.OauthInputId, input.KindOAuth, oauthInput.Kind))
 			}
 			componentId := oauthInput.ComponentId
 

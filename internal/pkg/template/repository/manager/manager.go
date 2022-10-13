@@ -29,7 +29,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	checkoutOp "github.com/keboola/keboola-as-code/pkg/lib/operation/repository/checkout"
 	loadRepositoryOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/repository/load"
 )
@@ -79,7 +79,7 @@ func New(ctx context.Context, defaultRepositories []model.TemplateRepository, d 
 
 	// Init default repositories in parallel.
 	// It preloads all default repositories and templates in them.
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	initWg := &sync.WaitGroup{}
 	for _, repo := range defaultRepositories {
 		repo := repo
@@ -87,12 +87,12 @@ func New(ctx context.Context, defaultRepositories []model.TemplateRepository, d 
 		go func() {
 			defer initWg.Done()
 			if _, err := m.repository(ctx, repo); err != nil {
-				errors.Append(err)
+				errs.Append(err)
 			}
 		}()
 	}
 	initWg.Wait()
-	return m, errors.ErrorOrNil()
+	return m, errs.ErrorOrNil()
 }
 
 // DefaultRepositories returns list of default repositories configured for the API.
@@ -125,7 +125,7 @@ func (m *Manager) Repository(ctx context.Context, ref model.TemplateRepository) 
 
 func (m *Manager) Update(ctx context.Context) <-chan error {
 	errorCh := make(chan error, 1)
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Lock repositories field (during reading it in following for cycle)
 	m.repositoriesLock.Lock()
@@ -140,7 +140,7 @@ func (m *Manager) Update(ctx context.Context) <-chan error {
 
 			newValue, updated, err := oldValue.update(ctx)
 			if err != nil {
-				errors.Append(err)
+				errs.Append(err)
 				return
 			}
 
@@ -162,7 +162,7 @@ func (m *Manager) Update(ctx context.Context) <-chan error {
 	// Write error to channel if any
 	go func() {
 		wait.Wait()
-		errorCh <- errors.ErrorOrNil()
+		errorCh <- errs.ErrorOrNil()
 	}()
 
 	return errorCh

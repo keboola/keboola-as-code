@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/pull"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
@@ -97,7 +97,7 @@ func CreateBranchCommand(p dependencies.Provider) *cobra.Command {
 				// Pull
 				pullOptions := pull.Options{DryRun: false, LogUntrackedPaths: false}
 				if err := pull.Run(d.CommandCtx(), projectState, pullOptions, d); err != nil {
-					return utils.PrefixError(`pull failed`, err)
+					return errors.PrefixError(err, "pull failed")
 				}
 			}
 			return nil

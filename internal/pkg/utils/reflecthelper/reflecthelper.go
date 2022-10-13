@@ -1,12 +1,13 @@
 package reflecthelper
 
 import (
-	"fmt"
 	"reflect"
 	"sort"
 	"strings"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type StructField struct {
@@ -86,7 +87,7 @@ func GetFieldsWithTag(tag string, model interface{}) []*StructField {
 func GetOneFieldWithTag(tag string, model interface{}) *StructField {
 	fields := GetFieldsWithTag(tag, model)
 	if len(fields) > 1 {
-		panic(fmt.Errorf("struct \"%T\" has multiple fields with tag `%s`, but only one allowed", model, tag))
+		panic(errors.Errorf("struct \"%T\" has multiple fields with tag `%s`, but only one allowed", model, tag))
 	}
 
 	if len(fields) == 1 {
@@ -121,7 +122,7 @@ func SortByName(slice interface{}) interface{} {
 	// Check slice
 	t := reflect.TypeOf(slice)
 	if t.Kind() != reflect.Slice {
-		panic(fmt.Errorf("expected slice, given \"%T\"", slice))
+		panic(errors.Errorf("expected slice, given \"%T\"", slice))
 	}
 
 	// Sort by Name, and by String key if names are same

@@ -1,13 +1,11 @@
 package links
 
 import (
-	"fmt"
-
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // onRemoteLoad move shared code config/rows IDs from Content to Transformation struct.
@@ -30,9 +28,9 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 	if !found {
 		return nil
 	} else if !ok {
-		return utils.PrefixError(
-			fmt.Sprintf(`invalid transformation %s`, transformation.Desc()),
-			fmt.Errorf(`key "%s" should be string, found %T`, model.SharedCodeIdContentKey, sharedCodeIdRaw),
+		return errors.NewNestedError(
+			errors.Errorf(`invalid transformation %s`, transformation.Desc()),
+			errors.Errorf(`key "%s" should be string, found %T`, model.SharedCodeIdContentKey, sharedCodeIdRaw),
 		)
 	}
 
@@ -46,9 +44,9 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 	}
 	sharedCodeState, found := m.state.GetOrNil(linkToSharedCode.Config).(*model.ConfigState)
 	if !found || !sharedCodeState.HasRemoteState() {
-		return utils.PrefixError(
-			fmt.Sprintf(`missing shared code %s`, linkToSharedCode.Config.Desc()),
-			fmt.Errorf(`referenced from %s`, objectState.Desc()),
+		return errors.NewNestedError(
+			errors.Errorf(`missing shared code %s`, linkToSharedCode.Config.Desc()),
+			errors.Errorf(`referenced from %s`, objectState.Desc()),
 		)
 	}
 
@@ -66,17 +64,17 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 	if !found {
 		return nil
 	} else if !ok {
-		return utils.PrefixError(
-			fmt.Sprintf(`invalid transformation %s`, transformation.Desc()),
-			fmt.Errorf(`key "%s" should be array, found %T`, model.SharedCodeRowsIdContentKey, sharedCodeRowsIdsRaw),
+		return errors.NewNestedError(
+			errors.Errorf(`invalid transformation %s`, transformation.Desc()),
+			errors.Errorf(`key "%s" should be array, found %T`, model.SharedCodeRowsIdContentKey, sharedCodeRowsIdsRaw),
 		)
 	}
 
 	// Replace ID placeholder with LinkScript struct
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
 		if _, v, err := m.parseIdPlaceholder(code, script, sharedCodeState); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		} else if v != nil {
 			return v
 		}
@@ -94,12 +92,12 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 		if _, found := m.state.Get(rowKey); found {
 			linkToSharedCode.Rows = append(linkToSharedCode.Rows, rowKey)
 		} else {
-			errors.Append(utils.PrefixError(
-				fmt.Sprintf(`missing shared code %s`, rowKey.Desc()),
-				fmt.Errorf(`referenced from %s`, transformation.Desc()),
+			errs.Append(errors.NewNestedError(
+				errors.Errorf(`missing shared code %s`, rowKey.Desc()),
+				errors.Errorf(`referenced from %s`, transformation.Desc()),
 			))
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

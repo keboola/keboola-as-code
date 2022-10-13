@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/testtemplateinputs"
 )
 
@@ -34,7 +34,7 @@ func MustReplaceEnvsStringWithSeparator(str string, provider EnvProvider, envSep
 
 // ReplaceEnvsStringWithSeparator replaces ENVs in given string with chosen separator.
 func ReplaceEnvsStringWithSeparator(str string, provider testtemplateinputs.EnvProvider, envSeparator string) (string, error) {
-	errs := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	res := regexp.
 		MustCompile(fmt.Sprintf(envPlaceholderTemplate, envSeparator, envSeparator)).
 		ReplaceAllStringFunc(str, func(s string) string {
@@ -61,7 +61,7 @@ func MustReplaceEnvsFileWithSeparator(fs filesystem.Fs, path string, provider En
 	}
 	file.Content = MustReplaceEnvsStringWithSeparator(file.Content, provider, envSeparator)
 	if err := fs.WriteFile(file); err != nil {
-		panic(fmt.Errorf("cannot write to file \"%s\": %w", path, err))
+		panic(errors.Errorf("cannot write to file \"%s\": %w", path, err))
 	}
 }
 
@@ -92,7 +92,7 @@ func MustReplaceEnvsDirWithSeparator(fs filesystem.Fs, root string, provider Env
 		return nil
 	})
 	if err != nil {
-		panic(fmt.Errorf("cannot walk over dir \"%s\": %w", root, err))
+		panic(errors.Errorf("cannot walk over dir \"%s\": %w", root, err))
 	}
 }
 

@@ -26,6 +26,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenv"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
@@ -155,13 +156,13 @@ func waitForAPI(cmdErrCh <-chan error, apiUrl string) error {
 		select {
 		// Handle timeout
 		case <-timeout:
-			return fmt.Errorf("server didn't start within 30 seconds")
+			return errors.New("server didn't start within 30 seconds")
 		// Handle server termination
 		case err := <-cmdErrCh:
 			if err == nil {
-				return fmt.Errorf("the server was terminated unexpectedly")
+				return errors.New("the server was terminated unexpectedly")
 			} else {
-				return fmt.Errorf("the server was terminated unexpectedly with error: %w", err)
+				return errors.Errorf("the server was terminated unexpectedly with error: %w", err)
 			}
 		// Periodically test health check endpoint
 		case <-tick:

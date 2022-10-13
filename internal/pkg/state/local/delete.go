@@ -9,27 +9,27 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// DeleteInvalidObjects from disk, eg. if pull --force used.
+// DeleteInvalidObjects from disk, for example if pull --force used.
 func (m *Manager) DeleteInvalidObjects() error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, objectManifest := range m.manifest.All() {
 		if objectManifest.State().IsInvalid() {
 			if err := m.deleteObject(objectManifest); err != nil {
-				errors.Append(err)
+				errs.Append(err)
 			}
 		}
 	}
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 // DeleteEmptyDirectories from project directory (eg. dir with extractors, but no extractor left)
 // Deleted are only empty directories from know/tracked paths.
 // Hidden dirs are ignored.
 func DeleteEmptyDirectories(fs filesystem.Fs, trackedPaths []string) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	emptyDirs := orderedmap.New()
 	root := `.`
 	err := fs.Walk(root, func(path string, info filesystem.FileInfo, err error) error {
@@ -92,16 +92,16 @@ func DeleteEmptyDirectories(fs filesystem.Fs, trackedPaths []string) error {
 	// Delete
 	for _, dir := range dirsToRemove {
 		if err := fs.Remove(dir); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 // deleteObject from manifest and filesystem.
 func (m *Manager) deleteObject(objectManifest model.ObjectManifest) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// Remove manifest from manifest content
 	m.manifest.Delete(objectManifest)
@@ -110,12 +110,12 @@ func (m *Manager) deleteObject(objectManifest model.ObjectManifest) error {
 	for _, path := range objectManifest.GetRelatedPaths() {
 		if m.fs.IsFile(path) {
 			if err := m.fs.Remove(path); err != nil {
-				errors.Append(err)
+				errs.Append(err)
 			}
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func isIgnoredDir(path string, info fs.FileInfo) bool {

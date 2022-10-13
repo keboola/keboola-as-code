@@ -1,11 +1,9 @@
 package local
 
 import (
-	"fmt"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type PathsGenerator struct {
@@ -23,7 +21,7 @@ func (m *Manager) NewPathsGenerator(rename bool) *PathsGenerator {
 
 func (g *PathsGenerator) Add(objectState model.ObjectState) *PathsGenerator {
 	if g.invoked {
-		panic(fmt.Errorf(`PathsGenerator have already been invoked`))
+		panic(errors.New(`PathsGenerator have already been invoked`))
 	}
 	g.toUpdate = append(g.toUpdate, objectState)
 	return g
@@ -31,7 +29,7 @@ func (g *PathsGenerator) Add(objectState model.ObjectState) *PathsGenerator {
 
 func (g *PathsGenerator) AddRenamed(path model.RenamedPath) {
 	if g.invoked {
-		panic(fmt.Errorf(`PathsGenerator have already been invoked`))
+		panic(errors.New(`PathsGenerator have already been invoked`))
 	}
 	g.renamed = append(g.renamed, path)
 }
@@ -42,23 +40,23 @@ func (g *PathsGenerator) RenameEnabled() bool {
 
 func (g *PathsGenerator) Invoke() error {
 	if g.invoked {
-		panic(fmt.Errorf(`PathsGenerator must be first invoked to get list of the renamed objects`))
+		panic(errors.New(`PathsGenerator must be first invoked to get list of the renamed objects`))
 	}
 
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, objectState := range g.toUpdate {
 		if err := g.doUpdate(objectState, nil); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 	}
 
 	g.invoked = true
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (g *PathsGenerator) Renamed() []model.RenamedPath {
 	if !g.invoked {
-		panic(fmt.Errorf(`PathsGenerator must be first invoked to get list of the renamed objects`))
+		panic(errors.New(`PathsGenerator must be first invoked to get list of the renamed objects`))
 	}
 	return g.renamed
 }
@@ -71,7 +69,7 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 
 	// Detect cyclic relations
 	if origin != nil && objectState.Key().String() == origin.String() {
-		return fmt.Errorf(`a cyclic relation was found when generating path to %s`, origin.Desc())
+		return errors.Errorf(`a cyclic relation was found when generating path to %s`, origin.Desc())
 	}
 	if origin == nil {
 		origin = objectState.Key()
@@ -131,7 +129,7 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 				return err
 			}
 		default:
-			panic(fmt.Errorf(`unexpect type "%T"`, objectState))
+			panic(errors.Errorf(`unexpect type "%T"`, objectState))
 		}
 
 		// Has been object renamed?

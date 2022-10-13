@@ -8,6 +8,8 @@ import (
 	"sync"
 
 	"github.com/joho/godotenv"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Provider is read-only interface to get ENV value.
@@ -108,7 +110,7 @@ func (m *Map) Get(key string) string {
 func (m *Map) MustGet(key string) string {
 	value := m.Get(key)
 	if len(value) == 0 {
-		panic(fmt.Errorf("missing ENV variable \"%s\"", strings.ToUpper(key)))
+		panic(errors.Errorf("missing ENV variable \"%s\"", strings.ToUpper(key)))
 	}
 	return value
 }

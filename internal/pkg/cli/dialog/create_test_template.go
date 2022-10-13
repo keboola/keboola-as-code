@@ -1,7 +1,6 @@
 package dialog
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/umisama/go-regexpcache"
@@ -9,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/local/test/create"
 )
 
@@ -70,18 +70,18 @@ func (d *createTmplTestDialog) askTestName() (string, error) {
 		Validator: func(val interface{}) error {
 			str := strings.TrimSpace(val.(string))
 			if len(str) == 0 {
-				return fmt.Errorf(`test name is required`)
+				return errors.New(`test name is required`)
 			}
 
 			if !regexpcache.MustCompile(template.IdRegexp).MatchString(str) {
-				return fmt.Errorf(`invalid name "%s", please use only a-z, A-Z, 0-9, "-" characters`, str)
+				return errors.Errorf(`invalid name "%s", please use only a-z, A-Z, 0-9, "-" characters`, str)
 			}
 
 			return d.checkTestNameIsUnique(str)
 		},
 	})
 	if len(v) == 0 {
-		return "", fmt.Errorf(`please specify test name`)
+		return "", errors.New(`please specify test name`)
 	}
 	return v, nil
 }
@@ -89,7 +89,7 @@ func (d *createTmplTestDialog) askTestName() (string, error) {
 func (d *createTmplTestDialog) checkTestNameIsUnique(str string) error {
 	_, err := d.template.Test(str)
 	if err == nil {
-		return fmt.Errorf(`test "%s" already exists`, str)
+		return errors.Errorf(`test "%s" already exists`, str)
 	}
 	if !strings.Contains(err.Error(), "not found in template") {
 		return err

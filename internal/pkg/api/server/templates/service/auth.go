@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
-	"fmt"
 
 	"goa.design/goa/v3/security"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (s *service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *security.APIKeyScheme) (context.Context, error) {
@@ -29,5 +29,5 @@ func (s *service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *secur
 		return context.WithValue(ctx, dependencies.ForProjectRequestCtxKey, projectDeps), nil
 	}
 
-	panic(fmt.Errorf("unexpected security scheme: %#v", scheme))
+	panic(errors.Errorf("unexpected security scheme: %#v", scheme))
 }

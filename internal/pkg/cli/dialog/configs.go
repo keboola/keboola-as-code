@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (p *Dialogs) SelectConfig(options *options.Options, all []*model.ConfigWithRows, label string) (result *model.ConfigWithRows, err error) {
@@ -28,7 +28,7 @@ func (p *Dialogs) SelectConfig(options *options.Options, all []*model.ConfigWith
 		}
 	}
 	if result == nil {
-		return nil, fmt.Errorf(`please specify config`)
+		return nil, errors.New(`please specify config`)
 	}
 
 	return result, nil
@@ -43,7 +43,7 @@ func (p *Dialogs) SelectConfigs(options *options.Options, all []*model.ConfigWit
 		}
 
 		// Parse user input
-		errors := utils.NewMultiError()
+		errs := errors.NewMultiError()
 		for _, item := range strings.Split(options.GetString(`configs`), `,`) {
 			item = strings.TrimSpace(item)
 			if len(item) == 0 {
@@ -52,7 +52,7 @@ func (p *Dialogs) SelectConfigs(options *options.Options, all []*model.ConfigWit
 
 			// Check [componentId]:[configId] format
 			if len(strings.Split(item, `:`)) != 2 {
-				errors.Append(fmt.Errorf(`cannot parse "%s", must be in "[componentId]:[configId]" format`, item))
+				errs.Append(errors.Errorf(`cannot parse "%s", must be in "[componentId]:[configId]" format`, item))
 				continue
 			}
 
@@ -60,7 +60,7 @@ func (p *Dialogs) SelectConfigs(options *options.Options, all []*model.ConfigWit
 			if config, ok := configByKey[item]; ok {
 				results = append(results, config)
 			} else {
-				errors.Append(fmt.Errorf(`config "%s" not found`, item))
+				errs.Append(errors.Errorf(`config "%s" not found`, item))
 			}
 		}
 	} else {
@@ -77,7 +77,7 @@ func (p *Dialogs) SelectConfigs(options *options.Options, all []*model.ConfigWit
 	}
 
 	if len(results) == 0 {
-		return nil, fmt.Errorf(`please specify at least one config`)
+		return nil, errors.New(`please specify at least one config`)
 	}
 
 	return results, nil

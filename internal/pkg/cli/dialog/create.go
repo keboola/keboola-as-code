@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
 	createBranch "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/branch"
@@ -118,7 +119,7 @@ func (p *Dialogs) askObjectName(d createDeps, desc string) (string, error) {
 		})
 	}
 	if len(name) == 0 {
-		return ``, fmt.Errorf(`missing name, please specify it`)
+		return ``, errors.New(`missing name, please specify it`)
 	}
 	return name, nil
 }
@@ -150,7 +151,7 @@ func (p *Dialogs) askComponentId(d createDeps) (storageapi.ComponentID, error) {
 	}
 
 	if len(componentId) == 0 {
-		return componentId, fmt.Errorf(`missing component ID, please specify it`)
+		return componentId, errors.New(`missing component ID, please specify it`)
 	}
 
 	// Check if component exists

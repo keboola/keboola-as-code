@@ -6,7 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type replaceKeysMapper struct {
@@ -35,12 +35,12 @@ func (m *replaceKeysMapper) AfterRemoteOperation(_ context.Context, changes *mod
 func (m *replaceKeysMapper) afterOperation(changes changes) error {
 	// Replace keys in the loaded remote objects
 	replaced := make(map[string]model.ObjectState)
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	for _, original := range changes.Loaded() {
 		// Replace values
 		modifiedRaw, err := m.replacements.Replace(original)
 		if err != nil {
-			errors.Append(err)
+			errs.Append(err)
 			continue
 		}
 
@@ -55,7 +55,7 @@ func (m *replaceKeysMapper) afterOperation(changes changes) error {
 		// Set modified object state
 		modified := modifiedRaw.(model.ObjectState)
 		if err := m.state.Set(modified); err != nil {
-			errors.Append(err)
+			errs.Append(err)
 		}
 
 		replaced[original.Key().String()] = modified
@@ -69,5 +69,5 @@ func (m *replaceKeysMapper) afterOperation(changes changes) error {
 		return v
 	})
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

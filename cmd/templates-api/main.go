@@ -4,7 +4,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	stdLog "log"
 	"net"
 	"net/url"
@@ -22,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type ddLogger struct {
@@ -136,7 +136,7 @@ func start(host, port string, repositories []model.TemplateRepository, debug, de
 	go func() {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-		errCh <- fmt.Errorf("%s", <-c)
+		errCh <- errors.Errorf("%s", <-c)
 	}()
 
 	// Create server URL.
@@ -169,21 +169,21 @@ func parseRepositories(paths string) (out []model.TemplateRepository, err error)
 		// Definition parts are separated by "|"
 		parts := strings.Split(definition, "|")
 		if len(parts) < 2 {
-			return nil, fmt.Errorf(`invalid repository definition "%s": required format <name>|https://<repository>|<branch> or <name>|file://<repository>`, definition)
+			return nil, errors.Errorf(`invalid repository definition "%s": required format <name>|https://<repository>|<branch> or <name>|file://<repository>`, definition)
 		}
 		name := parts[0]
 		path := parts[1]
 
 		// Each default repository must have unique name
 		if usedNames[name] {
-			return nil, fmt.Errorf(`duplicate repository name "%s" found when parsing default repositories`, name)
+			return nil, errors.Errorf(`duplicate repository name "%s" found when parsing default repositories`, name)
 		}
 		usedNames[name] = true
 
 		switch {
 		case strings.HasPrefix(path, "file://"):
 			if len(parts) != 2 {
-				return nil, fmt.Errorf(`invalid repository definition "%s": required format <name>|file://<repository>`, definition)
+				return nil, errors.Errorf(`invalid repository definition "%s": required format <name>|file://<repository>`, definition)
 			}
 			out = append(out, model.TemplateRepository{
 				Type: model.RepositoryTypeDir,
@@ -192,10 +192,10 @@ func parseRepositories(paths string) (out []model.TemplateRepository, err error)
 			})
 		case strings.HasPrefix(path, "https://"):
 			if len(parts) != 3 {
-				return nil, fmt.Errorf(`invalid repository definition "%s": required format <name>:https://<repository>:<branch>`, definition)
+				return nil, errors.Errorf(`invalid repository definition "%s": required format <name>:https://<repository>:<branch>`, definition)
 			}
 			if _, err = url.ParseRequestURI(path); err != nil {
-				return nil, fmt.Errorf(`invalid repository url "%s": %w`, path, err)
+				return nil, errors.Errorf(`invalid repository url "%s": %w`, path, err)
 			}
 			out = append(out, model.TemplateRepository{
 				Type: model.RepositoryTypeGit,
@@ -204,7 +204,7 @@ func parseRepositories(paths string) (out []model.TemplateRepository, err error)
 				Ref:  parts[2],
 			})
 		default:
-			return nil, fmt.Errorf(`invalid repository path "%s": must start with "file://" or "https://"`, path)
+			return nil, errors.Errorf(`invalid repository path "%s": must start with "file://" or "https://"`, path)
 		}
 	}
 

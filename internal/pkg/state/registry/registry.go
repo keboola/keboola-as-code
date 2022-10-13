@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -9,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type pathsRO = knownpaths.PathsReadOnly
@@ -46,7 +46,7 @@ func (s *Registry) PathsState() *knownpaths.Paths {
 func (s *Registry) ReloadPathsState() error {
 	// Create a new paths state -> all paths are untracked
 	if err := s.paths.Reset(); err != nil {
-		return fmt.Errorf(`cannot reload paths state: %w`, err)
+		return errors.Errorf(`cannot reload paths state: %w`, err)
 	}
 
 	// Track all known paths
@@ -110,7 +110,7 @@ func (s *Registry) ObjectsInState(stateType StateType) Objects {
 	case StateTypeLocal:
 		return s.LocalObjects()
 	default:
-		panic(fmt.Errorf(`unexpected StateType "%v"`, stateType))
+		panic(errors.Errorf(`unexpected StateType "%v"`, stateType))
 	}
 }
 
@@ -128,7 +128,7 @@ func (s *Registry) MainBranch() *BranchState {
 			return b
 		}
 	}
-	panic(fmt.Errorf("no default branch found"))
+	panic(errors.New("no default branch found"))
 }
 
 func (s *Registry) Branches() (branches []*BranchState) {
@@ -216,7 +216,7 @@ func (s *Registry) GetOrNil(key Key) ObjectState {
 func (s *Registry) MustGet(key Key) ObjectState {
 	state, found := s.Get(key)
 	if !found {
-		panic(fmt.Errorf(`%s not found`, key.Desc()))
+		panic(errors.Errorf(`%s not found`, key.Desc()))
 	}
 	return state
 }
@@ -232,7 +232,7 @@ func (s *Registry) Set(objectState ObjectState) error {
 
 	key := objectState.Key()
 	if _, found := s.objects.Get(key.String()); found {
-		return fmt.Errorf(`object "%s" already exists`, key.Desc())
+		return errors.Errorf(`object "%s" already exists`, key.Desc())
 	}
 
 	if objectState.GetRelativePath() != "" {

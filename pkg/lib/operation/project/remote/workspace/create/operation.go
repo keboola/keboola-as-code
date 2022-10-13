@@ -2,7 +2,6 @@ package create
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type CreateOptions struct {
@@ -60,7 +60,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 		opts...,
 	)
 	if err != nil {
-		return fmt.Errorf("cannot create workspace: %w", err)
+		return errors.Errorf("cannot create workspace: %w", err)
 	}
 
 	sandbox := s.Sandbox

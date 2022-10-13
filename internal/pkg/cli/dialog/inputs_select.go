@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -40,7 +40,7 @@ func (d *inputsSelectDialog) ask() (objectInputsMap, error) {
 		Validator: func(val interface{}) error {
 			if err := d.parse(val.(string)); err != nil {
 				// Print errors to new line
-				return utils.PrefixError("\n", err)
+				return errors.PrefixError(err, "\n")
 			}
 			return nil
 		},
@@ -53,7 +53,7 @@ func (d *inputsSelectDialog) parse(result string) error {
 
 	result = strhelper.StripHtmlComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	lineNum := 0
 
 	var currentObject model.Key
@@ -74,13 +74,13 @@ func (d *inputsSelectDialog) parse(result string) error {
 			// Config ID definition
 			m := regexpcache.MustCompile(` ([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+)$`).FindStringSubmatch(line)
 			if m == nil {
-				errors.Append(fmt.Errorf(`line %d: cannot parse config "%s"`, lineNum, line))
+				errs.Append(errors.Errorf(`line %d: cannot parse config "%s"`, lineNum, line))
 				invalidObject = true
 				continue
 			}
 			key := model.ConfigKey{BranchId: d.branch.Id, ComponentId: storageapi.ComponentID(m[1]), Id: storageapi.ConfigID(m[2])}
 			if _, found := d.objectFields[key]; !found {
-				errors.Append(fmt.Errorf(`line %d: config "%s:%s" not found`, lineNum, m[1], m[2]))
+				errs.Append(errors.Errorf(`line %d: config "%s:%s" not found`, lineNum, m[1], m[2]))
 				invalidObject = true
 				continue
 			}
@@ -90,13 +90,13 @@ func (d *inputsSelectDialog) parse(result string) error {
 			// Row ID definition
 			m := regexpcache.MustCompile(` ([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+)$`).FindStringSubmatch(line)
 			if m == nil {
-				errors.Append(fmt.Errorf(`line %d: cannot parse config row "%s"`, lineNum, line))
+				errs.Append(errors.Errorf(`line %d: cannot parse config row "%s"`, lineNum, line))
 				invalidObject = true
 				continue
 			}
 			key := model.ConfigRowKey{BranchId: d.branch.Id, ComponentId: storageapi.ComponentID(m[1]), ConfigId: storageapi.ConfigID(m[2]), Id: storageapi.RowID(m[3])}
 			if _, found := d.objectFields[key]; !found {
-				errors.Append(fmt.Errorf(`line %d: config row "%s:%s:%s" not found`, lineNum, m[1], m[2], m[3]))
+				errs.Append(errors.Errorf(`line %d: config row "%s:%s:%s" not found`, lineNum, m[1], m[2], m[3]))
 				invalidObject = true
 				continue
 			}
@@ -107,30 +107,30 @@ func (d *inputsSelectDialog) parse(result string) error {
 		case currentObject != nil:
 			// Input definition must be after some Config/Row definition (currentObject is set).
 			if err := d.parseInputLine(currentObject, line, lineNum); err != nil {
-				errors.Append(err)
+				errs.Append(err)
 				continue
 			}
 		default:
 			// Expected object definition
-			errors.Append(fmt.Errorf(`line %d: expected "## Config ..." or "### Row ...", found "%s"`, lineNum, strhelper.Truncate(line, 10, "...")))
+			errs.Append(errors.Errorf(`line %d: expected "## Config ..." or "### Row ...", found "%s"`, lineNum, strhelper.Truncate(line, 10, "...")))
 			continue
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, lineNum int) error {
 	// Get mark
 	if len(line) < 3 {
-		return fmt.Errorf(`line %d: expected "<mark> <input-id> <field.path>", found  "%s"`, lineNum, line)
+		return errors.Errorf(`line %d: expected "<mark> <input-id> <field.path>", found  "%s"`, lineNum, line)
 	}
 	mark := strings.TrimSpace(line[0:3])
 
 	// Split to parts
 	parts := strings.SplitN(strings.TrimSpace(line[3:]), " ", 2)
 	if len(parts) != 2 {
-		return fmt.Errorf(`line %d: expected "<mark> <input-id> <field.path>", found  "%s"`, lineNum, line)
+		return errors.Errorf(`line %d: expected "<mark> <input-id> <field.path>", found  "%s"`, lineNum, line)
 	}
 	inputId := strings.TrimSpace(parts[0])
 	fieldPath := strings.Trim(parts[1], " `")
@@ -141,13 +141,13 @@ func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, li
 		// Get all object fields
 		objectFields, found := d.objectFields[objectKey]
 		if !found {
-			return fmt.Errorf(`line %d: %s not found`, lineNum, objectKey.Desc())
+			return errors.Errorf(`line %d: %s not found`, lineNum, objectKey.Desc())
 		}
 
 		// Get field by path
 		field, found := objectFields[fieldPath]
 		if !found {
-			return fmt.Errorf(`line %d: field "%s" not found in the %s`, lineNum, fieldPath, objectKey.Desc())
+			return errors.Errorf(`line %d: field "%s" not found in the %s`, lineNum, fieldPath, objectKey.Desc())
 		}
 
 		// Modify input ID, if it has been changed by use.
@@ -156,7 +156,7 @@ func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, li
 		// One input can be used multiple times, but type must match.
 		if i, found := d.inputs.Get(field.Input.Id); found {
 			if i.Type != field.Input.Type {
-				return fmt.Errorf(`line %d: input "%s" is already defined with "%s" type, but "%s" has type "%s"`, lineNum, i.Id, i.Type, fieldPath, field.Input.Type)
+				return errors.Errorf(`line %d: input "%s" is already defined with "%s" type, but "%s" has type "%s"`, lineNum, i.Id, i.Type, fieldPath, field.Input.Type)
 			}
 		}
 
@@ -171,7 +171,7 @@ func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, li
 		// scalar value, not user input
 		return nil
 	default:
-		return fmt.Errorf(`line %d: expected "[x] ..." or "[ ] ...", found "%s"`, lineNum, strhelper.Truncate(line, 10, "..."))
+		return errors.Errorf(`line %d: expected "[x] ..." or "[ ] ...", found "%s"`, lineNum, strhelper.Truncate(line, 10, "..."))
 	}
 }
 

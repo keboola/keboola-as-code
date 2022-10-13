@@ -1,11 +1,9 @@
 package local
 
 import (
-	"fmt"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (m *Manager) rename(actions []model.RenameAction) error {
@@ -15,8 +13,8 @@ func (m *Manager) rename(actions []model.RenameAction) error {
 	}
 
 	// Evaluate
-	errors := utils.NewMultiError()
-	warnings := utils.NewMultiError()
+	errs := errors.NewMultiError()
+	warnings := errors.NewMultiError()
 	var newPaths []string
 	var pathsToRemove []string
 	m.logger.Debugf(`Starting renaming of the %d paths.`, len(actions))
@@ -25,11 +23,11 @@ func (m *Manager) rename(actions []model.RenameAction) error {
 		err := m.fs.Copy(action.RenameFrom, action.NewPath)
 
 		if err != nil {
-			errors.AppendWithPrefix(fmt.Sprintf(`cannot copy "%s"`, action.Description), err)
+			errs.AppendWithPrefixf(err, `cannot copy "%s"`, action.Description)
 		} else {
 			// Update manifest
 			if err := m.manifest.PersistRecord(action.Manifest); err != nil {
-				errors.AppendWithPrefix(fmt.Sprintf(`cannot persist "%s"`, action.Manifest.Desc()), err)
+				errs.AppendWithPrefixf(err, `cannot persist "%s"`, action.Manifest.Desc())
 			}
 			if filesystem.IsFrom(action.NewPath, action.Manifest.Path()) {
 				action.Manifest.RenameRelatedPaths(action.RenameFrom, action.NewPath)
@@ -41,12 +39,12 @@ func (m *Manager) rename(actions []model.RenameAction) error {
 		}
 	}
 
-	if errors.Len() == 0 {
+	if errs.Len() == 0 {
 		// No error -> remove old paths
 		m.logger.Debug("Removing old paths.")
 		for _, oldPath := range pathsToRemove {
 			if err := m.fs.Remove(oldPath); err != nil {
-				warnings.AppendWithPrefix(fmt.Sprintf(`cannot remove \"%s\"`, oldPath), err)
+				warnings.AppendWithPrefixf(err, `cannot remove \"%s\"`, oldPath)
 			}
 		}
 	} else {
@@ -54,7 +52,7 @@ func (m *Manager) rename(actions []model.RenameAction) error {
 		m.logger.Debug("An error occurred, reverting rename.")
 		for _, newPath := range newPaths {
 			if err := m.fs.Remove(newPath); err != nil {
-				warnings.AppendWithPrefix(fmt.Sprintf(`cannot remove \"%s\"`, newPath), err)
+				warnings.AppendWithPrefixf(err, `cannot remove \"%s\"`, newPath)
 			}
 		}
 		m.logger.Info(`Error occurred, the rename operation was reverted.`)
@@ -62,8 +60,8 @@ func (m *Manager) rename(actions []model.RenameAction) error {
 
 	// Log warnings
 	if warnings.Len() > 0 {
-		m.logger.Warn(utils.PrefixError(`Warning: cannot finish objects renaming`, warnings))
+		m.logger.Warn(errors.PrefixError(warnings, `Warning: cannot finish objects renaming`))
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

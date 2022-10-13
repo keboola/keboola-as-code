@@ -1,11 +1,10 @@
 package naming
 
 import (
-	"fmt"
-
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type PathMatcher struct {
@@ -29,7 +28,7 @@ func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentId s
 			// Get component ID
 			componentId, ok := matches["component_id"]
 			if !ok || componentId == "" {
-				return "", fmt.Errorf(`config'm component id cannot be determined, path: "%s", path template: "%s"`, path.Path(), m.template.Config)
+				return "", errors.Errorf(`config'm component id cannot be determined, path: "%s", path template: "%s"`, path.Path(), m.template.Config)
 			}
 			return storageapi.ComponentID(componentId), nil
 		}

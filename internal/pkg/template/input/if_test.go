@@ -33,11 +33,11 @@ func TestIf_Evaluate(t *testing.T) {
 	result, err = If("[my-param]").Evaluate(map[string]interface{}{})
 	assert.False(t, result)
 	assert.Error(t, err)
-	assert.Equal(t, "cannot evaluate condition:\n  - expression: [my-param]\n  - error: No parameter 'my-param' found.", err.Error())
+	assert.Equal(t, "cannot evaluate condition:\n- expression: [my-param]\n- error: No parameter 'my-param' found.", err.Error())
 
 	// Invalid expression
 	result, err = If(">>>>>").Evaluate(map[string]interface{}{})
 	assert.False(t, result)
 	assert.Error(t, err)
-	assert.Equal(t, "cannot compile condition:\n  - expression: >>>>>\n  - error: Invalid token: '>>>>>'", err.Error())
+	assert.Equal(t, "cannot compile condition:\n- expression: >>>>>\n- error: Invalid token: '>>>>>'", err.Error())
 }

@@ -2,7 +2,6 @@ package list
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/sandboxesapi"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type dependencies interface {
@@ -28,7 +28,7 @@ func Run(ctx context.Context, d dependencies) (err error) {
 
 	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageApiClient())
 	if err != nil {
-		return fmt.Errorf("cannot find default branch: %w", err)
+		return errors.Errorf("cannot find default branch: %w", err)
 	}
 
 	logger.Info("Loading workspaces, please wait.")

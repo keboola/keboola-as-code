@@ -1,11 +1,10 @@
 package dialog
 
 import (
-	"fmt"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	renameOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
 )
 
@@ -34,7 +33,7 @@ func (p *Dialogs) AskRenameInstance(projectState *project.State, opts *options.O
 	}
 
 	if len(out.NewName) == 0 {
-		return out, fmt.Errorf(`please specify the instance name`)
+		return out, errors.New(`please specify the instance name`)
 	}
 
 	return out, nil

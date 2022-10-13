@@ -1,11 +1,10 @@
 package input
 
 import (
-	"fmt"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -30,7 +29,7 @@ func loadFile(fs filesystem.Fs, ctx *jsonnet.Context) (*file, error) {
 	// Check if file exists
 	path := Path()
 	if !fs.IsFile(path) {
-		return nil, fmt.Errorf("file \"%s\" not found", path)
+		return nil, errors.Errorf("file \"%s\" not found", path)
 	}
 
 	// Read file

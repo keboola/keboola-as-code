@@ -1,13 +1,14 @@
 package input
 
 import (
-	"fmt"
 	"math"
 	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/spf13/cast"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -66,7 +67,7 @@ func (t Type) EmptyValue() interface{} {
 	case TypeObject:
 		return make(map[string]interface{})
 	default:
-		panic(fmt.Errorf(`unexpected input type "%s"`, t))
+		panic(errors.Errorf(`unexpected input type "%s"`, t))
 	}
 }
 
@@ -78,24 +79,24 @@ func (t Type) ValidateValue(value reflect.Value) error {
 	switch t {
 	case TypeString:
 		if valueKind != reflect.String {
-			return fmt.Errorf("should be string, got %s", kindStr)
+			return errors.Errorf("should be string, got %s", kindStr)
 		}
 	case TypeInt:
 		if valueKind != reflect.Int && !(valueKind == reflect.Float64 && math.Trunc(value.Float()) == value.Float()) {
-			return fmt.Errorf("should be int, got %s", kindStr)
+			return errors.Errorf("should be int, got %s", kindStr)
 		}
 	case TypeDouble:
 		if valueKind != reflect.Float64 {
-			return fmt.Errorf("should be double, got %s", kindStr)
+			return errors.Errorf("should be double, got %s", kindStr)
 		}
 	case TypeBool:
 		if valueKind != reflect.Bool {
-			return fmt.Errorf("should be bool, got %s", kindStr)
+			return errors.Errorf("should be bool, got %s", kindStr)
 		}
 	case TypeStringArray:
 		if valueKind != reflect.Slice {
 			// Must be a slice
-			return fmt.Errorf("should be array, got %s", kindStr)
+			return errors.Errorf("should be array, got %s", kindStr)
 		} else {
 			// Each element must be string
 			for i := 0; i < value.Len(); i++ {
@@ -106,16 +107,16 @@ func (t Type) ValidateValue(value reflect.Value) error {
 				}
 				// Check item type
 				if itemKind := item.Kind(); itemKind != reflect.String {
-					return fmt.Errorf("all items should be string, got %s, index %d", reflectKindToStr(itemKind), i)
+					return errors.Errorf("all items should be string, got %s, index %d", reflectKindToStr(itemKind), i)
 				}
 			}
 		}
 	case TypeObject:
 		if valueKind != reflect.Map {
-			return fmt.Errorf("should be object, got %s", kindStr)
+			return errors.Errorf("should be object, got %s", kindStr)
 		}
 	default:
-		panic(fmt.Errorf(`unexpected input type "%s"`, t))
+		panic(errors.Errorf(`unexpected input type "%s"`, t))
 	}
 
 	return nil
@@ -142,7 +143,7 @@ func (t Type) ParseValue(value interface{}) (interface{}, error) {
 				return v, nil
 			}
 		}
-		return nil, fmt.Errorf(`value "%v" is not integer`, value)
+		return nil, errors.Errorf(`value "%v" is not integer`, value)
 	case TypeDouble:
 		// Empty string
 		if value == "" {
@@ -162,7 +163,7 @@ func (t Type) ParseValue(value interface{}) (interface{}, error) {
 				return v, nil
 			}
 		}
-		return nil, fmt.Errorf(`value "%v" is not float`, value)
+		return nil, errors.Errorf(`value "%v" is not float`, value)
 	case TypeBool:
 		if value == "" {
 			return false, nil
@@ -173,7 +174,7 @@ func (t Type) ParseValue(value interface{}) (interface{}, error) {
 		if v, err := strconv.ParseBool(cast.ToString(value)); err == nil {
 			return v, nil
 		}
-		return nil, fmt.Errorf(`value "%v" is not bool`, value)
+		return nil, errors.Errorf(`value "%v" is not bool`, value)
 	case TypeString:
 		return cast.ToString(value), nil
 	case TypeStringArray:
@@ -212,7 +213,7 @@ func (t Type) ParseValue(value interface{}) (interface{}, error) {
 			}
 			return slice, nil
 		} else {
-			return nil, fmt.Errorf("unexpected type \"%T\"", value)
+			return nil, errors.Errorf("unexpected type \"%T\"", value)
 		}
 	}
 	return value, nil

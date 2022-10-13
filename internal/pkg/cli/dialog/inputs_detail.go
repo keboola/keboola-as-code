@@ -14,7 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -37,7 +37,7 @@ func (d *inputsDetailDialog) ask() (input.StepsGroupsExt, error) {
 			_, err := d.parse(val.(string))
 			if err != nil {
 				// Print errors to new line
-				return utils.PrefixError("\n", err)
+				return errors.PrefixError(err, "\n")
 			}
 
 			return nil
@@ -49,7 +49,7 @@ func (d *inputsDetailDialog) ask() (input.StepsGroupsExt, error) {
 func (d *inputsDetailDialog) parse(result string) (input.StepsGroupsExt, error) {
 	result = strhelper.StripHtmlComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	lineNum := 0
 
 	var currentInput *template.Input
@@ -67,7 +67,7 @@ func (d *inputsDetailDialog) parse(result string) (input.StepsGroupsExt, error) 
 
 		// Check that step is defined
 		if inputStep == nil {
-			errors.Append(fmt.Errorf(`input "%s": "step" is not defined`, currentInput.Id))
+			errs.Append(errors.Errorf(`input "%s": "step" is not defined`, currentInput.Id))
 			return
 		}
 
@@ -94,14 +94,14 @@ func (d *inputsDetailDialog) parse(result string) (input.StepsGroupsExt, error) 
 			// Input definition
 			m := regexpcache.MustCompile(`"([^"]+)"`).FindStringSubmatch(line)
 			if m == nil {
-				errors.Append(fmt.Errorf(`line %d: cannot parse config "%s"`, lineNum, line))
+				errs.Append(errors.Errorf(`line %d: cannot parse config "%s"`, lineNum, line))
 				invalidDefinition = true
 				continue
 			}
 			inputId := m[1]
 			i, found := d.inputs.Get(inputId)
 			if !found {
-				errors.Append(fmt.Errorf(`line %d: input "%s" not found`, lineNum, inputId))
+				errs.Append(errors.Errorf(`line %d: input "%s" not found`, lineNum, inputId))
 				invalidDefinition = true
 				continue
 			}
@@ -128,7 +128,7 @@ func (d *inputsDetailDialog) parse(result string) (input.StepsGroupsExt, error) 
 			} else if v, err := currentInput.Type.ParseValue(defaultStr); err == nil {
 				currentInput.Default = v
 			} else {
-				errors.Append(fmt.Errorf(`line %d: %w`, lineNum, err))
+				errs.Append(errors.Errorf(`line %d: %w`, lineNum, err))
 				continue
 			}
 		case strings.HasPrefix(line, `options:`):
@@ -137,25 +137,25 @@ func (d *inputsDetailDialog) parse(result string) (input.StepsGroupsExt, error) 
 				if v, err := input.OptionsFromString(optionsStr); err == nil {
 					currentInput.Options = v
 				} else {
-					errors.Append(fmt.Errorf(`line %d: %w`, lineNum, err))
+					errs.Append(errors.Errorf(`line %d: %w`, lineNum, err))
 					continue
 				}
 			} else {
-				errors.Append(fmt.Errorf(`line %d: options are not expected for kind "%s"`, lineNum, currentInput.Kind))
+				errs.Append(errors.Errorf(`line %d: options are not expected for kind "%s"`, lineNum, currentInput.Kind))
 				continue
 			}
 		case strings.HasPrefix(line, `step:`):
 			stepId := strings.TrimSpace(strings.TrimPrefix(line, `step:`))
 			step, ok := stepsMap[stepId]
 			if !ok {
-				errors.Append(fmt.Errorf(`line %d: step "%s" not found`, lineNum, stepId))
+				errs.Append(errors.Errorf(`line %d: step "%s" not found`, lineNum, stepId))
 				invalidDefinition = true
 				continue
 			}
 			inputStep = step
 		default:
 			// Expected object definition
-			errors.Append(fmt.Errorf(`line %d: cannot parse "%s"`, lineNum, strhelper.Truncate(line, 10, "...")))
+			errs.Append(errors.Errorf(`line %d: cannot parse "%s"`, lineNum, strhelper.Truncate(line, 10, "...")))
 			continue
 		}
 	}
@@ -165,7 +165,7 @@ func (d *inputsDetailDialog) parse(result string) (input.StepsGroupsExt, error) 
 
 	// Validate
 	if err := d.inputs.All().ValidateDefinitions(); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
 	// Sort
@@ -175,7 +175,7 @@ func (d *inputsDetailDialog) parse(result string) (input.StepsGroupsExt, error) 
 		})
 	})
 
-	return stepGroups, errors.ErrorOrNil()
+	return stepGroups, errs.ErrorOrNil()
 }
 
 func (d *inputsDetailDialog) defaultValue() string {

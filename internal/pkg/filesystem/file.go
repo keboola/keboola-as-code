@@ -1,7 +1,6 @@
 package filesystem
 
 import (
-	"fmt"
 	"strings"
 
 	jsonnetast "github.com/google/go-jsonnet/ast"
@@ -9,7 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/yaml"
 )
 
@@ -116,7 +115,7 @@ func (f *RawFile) ToJsonFile() (*JsonFile, error) {
 	jsonMap := orderedmap.New()
 	if err := json.DecodeString(f.Content, jsonMap); err != nil {
 		fileDesc := strings.TrimSpace(f.desc + " file")
-		return nil, utils.PrefixError(fmt.Sprintf("%s \"%s\" is invalid", fileDesc, f.path), err)
+		return nil, errors.PrefixErrorf(err, `%s "%s" is invalid`, fileDesc, f.path)
 	}
 
 	file := NewJsonFile(f.path, jsonMap)
@@ -129,7 +128,7 @@ func (f *RawFile) ToYamlFile() (*YamlFile, error) {
 	yamlMap := orderedmap.New()
 	if err := yaml.DecodeString(f.Content, yamlMap); err != nil {
 		fileDesc := strings.TrimSpace(f.desc + " file")
-		return nil, utils.PrefixError(fmt.Sprintf("%s \"%s\" is invalid", fileDesc, f.path), err)
+		return nil, errors.PrefixErrorf(err, `%s "%s" is invalid`, fileDesc, f.path)
 	}
 
 	file := NewYamlFile(f.path, yamlMap)
@@ -198,7 +197,7 @@ func (f *JsonFile) ToRawFile() (*RawFile, error) {
 	content, err := json.EncodeString(f.Content, true)
 	if err != nil {
 		fileDesc := strings.TrimSpace(f.desc + " file")
-		return nil, utils.PrefixError(fmt.Sprintf("cannot encode %s \"%s\"", fileDesc, f.path), err)
+		return nil, errors.PrefixErrorf(err, "cannot encode %s \"%s\"", fileDesc, f.path)
 	}
 
 	file := NewRawFile(f.path, content)
@@ -255,7 +254,7 @@ func (f *YamlFile) ToRawFile() (*RawFile, error) {
 	content, err := yaml.EncodeString(f.Content)
 	if err != nil {
 		fileDesc := strings.TrimSpace(f.desc + " file")
-		return nil, utils.PrefixError(fmt.Sprintf("cannot encode %s \"%s\"", fileDesc, f.path), err)
+		return nil, errors.PrefixErrorf(err, "cannot encode %s \"%s\"", fileDesc, f.path)
 	}
 
 	file := NewRawFile(f.path, content)
@@ -351,7 +350,7 @@ func (f *Files) GetOneByTag(tag string) File {
 		for _, file := range files {
 			paths = append(paths, file.Path())
 		}
-		panic(fmt.Errorf(`found multiple files with tag "%s": "%s"`, tag, strings.Join(paths, `", "`)))
+		panic(errors.Errorf(`found multiple files with tag "%s": "%s"`, tag, strings.Join(paths, `", "`)))
 	}
 	return nil
 }

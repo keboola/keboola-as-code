@@ -1,12 +1,11 @@
 package aferofs
 
 import (
-	"fmt"
-
 	"github.com/spf13/afero"
 	"go.nhat.io/aferocopy/v2"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const CopyBufferSize uint = 512 * 1024 // 512 kB
@@ -24,7 +23,7 @@ func CopyFs2Fs(srcFs filesystem.Fs, srcPath string, dstFs filesystem.Fs, dstPath
 		// If filesystem implemented by Afero lib -> get lib backend
 		aferoSrc = fs.Backend()
 	} else {
-		return fmt.Errorf(`unexpected type of src filesyste "%T"`, srcFs)
+		return errors.Errorf(`unexpected type of src filesyste "%T"`, srcFs)
 	}
 
 	// Detect dst filesystem
@@ -36,7 +35,7 @@ func CopyFs2Fs(srcFs filesystem.Fs, srcPath string, dstFs filesystem.Fs, dstPath
 		// If filesystem implemented by Afero lib -> get lib backend
 		aferoDst = fs.Backend()
 	} else {
-		return fmt.Errorf(`unexpected type of dst filesyste "%T"`, dstFs)
+		return errors.Errorf(`unexpected type of dst filesyste "%T"`, dstFs)
 	}
 
 	// nolint: forbidigo

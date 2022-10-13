@@ -2,8 +2,6 @@ package remote
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"sort"
 	"sync"
 
@@ -18,7 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Manager struct {
@@ -35,7 +33,7 @@ type UnitOfWork struct {
 	changeDescription string                 // change description used for all modified configs and rows
 	runGroups         *orderedmap.OrderedMap // separated run group for changes in branches, configs and rows
 	changes           *model.RemoteChanges
-	errors            *utils.MultiError
+	errors            errors.MultiError
 	invoked           bool
 	// Only one create/delete branch request can run simultaneously.
 	// Operation is performed via Storage Job, which uses locks.
@@ -65,7 +63,7 @@ func (m *Manager) NewUnitOfWork(ctx context.Context, changeDescription string) *
 		changeDescription: changeDescription,
 		runGroups:         orderedmap.New(),
 		changes:           model.NewRemoteChanges(),
-		errors:            utils.NewMultiError(),
+		errors:            errors.NewMultiError(),
 		branchesSem:       semaphore.NewWeighted(1),
 	}
 }
@@ -160,7 +158,7 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 			}
 
 			// Process results
-			errs := utils.NewMultiError()
+			errs := errors.NewMultiError()
 			for key, branch := range branches {
 				if err := u.loadObject(branch); err != nil {
 					errs.Append(err)
@@ -232,7 +230,7 @@ func (u *UnitOfWork) loadObject(object model.Object) error {
 func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Object, changedFields model.ChangedFields) {
 	if v, ok := objectState.(*model.BranchState); ok && v.Remote == nil {
 		// Branch cannot be created from the CLI
-		u.errors.Append(fmt.Errorf(`branch "%d" (%s) exists only locally, new branch cannot be created by CLI`, v.Local.Id, v.Local.Name))
+		u.errors.Append(errors.Errorf(`branch "%d" (%s) exists only locally, new branch cannot be created by CLI`, v.Local.Id, v.Local.Name))
 		return
 	}
 
@@ -252,7 +250,7 @@ func (u *UnitOfWork) DeleteObject(objectState model.ObjectState) {
 	if v, ok := objectState.(*model.BranchState); ok {
 		branch := v.LocalOrRemoteState().(*model.Branch)
 		if branch.IsDefault {
-			u.errors.Append(fmt.Errorf("default branch cannot be deleted"))
+			u.errors.Append(errors.New("default branch cannot be deleted"))
 			return
 		}
 	}
@@ -261,7 +259,7 @@ func (u *UnitOfWork) DeleteObject(objectState model.ObjectState) {
 
 func (u *UnitOfWork) Invoke() error {
 	if u.invoked {
-		panic(fmt.Errorf(`invoked UnitOfWork cannot be reused`))
+		panic(errors.New(`invoked UnitOfWork cannot be reused`))
 	}
 
 	// Start and wait for all groups
@@ -399,7 +397,7 @@ func (u *UnitOfWork) delete(objectState model.ObjectState) {
 // runGroupFor each level (branches, configs, rows).
 func (u *UnitOfWork) runGroupFor(level int) *client.RunGroup {
 	if u.invoked {
-		panic(fmt.Errorf(`invoked UnitOfWork cannot be reused`))
+		panic(errors.New(`invoked UnitOfWork cannot be reused`))
 	}
 
 	key := cast.ToString(level)

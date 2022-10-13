@@ -1,8 +1,9 @@
 package env
 
 import (
-	"fmt"
 	"strings"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const Prefix = "KBC_"
@@ -17,7 +18,7 @@ func NewNamingConvention() *NamingConvention {
 // for example "storage-api-host" -> "KBC_STORAGE_API_HOST".
 func (*NamingConvention) Replace(flagName string) string {
 	if len(flagName) == 0 {
-		panic(fmt.Errorf("flag name cannot be empty"))
+		panic(errors.New("flag name cannot be empty"))
 	}
 
 	return Prefix + strings.ToUpper(strings.ReplaceAll(flagName, "-", "_"))

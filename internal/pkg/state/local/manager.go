@@ -2,7 +2,6 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"sync"
 
@@ -15,7 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -33,7 +32,7 @@ type Manager struct {
 type UnitOfWork struct {
 	*Manager
 	ctx             context.Context
-	errors          *utils.MultiError
+	errors          errors.MultiError
 	skipNotFoundErr bool
 	localObjects    model.Objects
 	changes         *model.LocalChanges
@@ -76,7 +75,7 @@ func (m *Manager) NewUnitOfWork(ctx context.Context) *UnitOfWork {
 	u := &UnitOfWork{
 		Manager:      m,
 		ctx:          ctx,
-		errors:       utils.NewMultiError(),
+		errors:       errors.NewMultiError(),
 		localObjects: m.state.LocalObjects(),
 		changes:      model.NewLocalChanges(),
 		lock:         &sync.Mutex{},
@@ -145,7 +144,7 @@ func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest, filter model.Obje
 						// Parent is not found
 						manifest.State().SetNotFound()
 						if !u.skipNotFoundErr {
-							return fmt.Errorf(`%s "%s" not found`, manifest.Kind().Name, manifest.Path())
+							return errors.Errorf(`%s "%s" not found`, manifest.Kind().Name, manifest.Path())
 						}
 					}
 					return nil
@@ -167,11 +166,10 @@ func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest, filter model.Obje
 
 			// Validate, object must be allowed
 			if filter.IsObjectIgnored(object) {
-				return fmt.Errorf(
+				return errors.Errorf(
 					`found manifest record for %s "%s", but it is not allowed by the manifest definition`,
 					object.Kind().Name,
-					object.ObjectId(),
-				)
+					object.ObjectId())
 			}
 
 			// Get or create object state
@@ -239,7 +237,7 @@ func (u *UnitOfWork) Rename(actions []model.RenameAction) {
 
 func (u *UnitOfWork) Invoke() error {
 	if u.invoked {
-		panic(fmt.Errorf(`invoked local.UnitOfWork cannot be reused`))
+		panic(errors.New(`invoked local.UnitOfWork cannot be reused`))
 	}
 
 	// Start and wait for all workers
@@ -280,7 +278,7 @@ func (u *UnitOfWork) workersFor(level int) *Workers {
 	defer u.lock.Unlock()
 
 	if u.invoked {
-		panic(fmt.Errorf(`invoked local.UnitOfWork cannot be reused`))
+		panic(errors.New(`invoked local.UnitOfWork cannot be reused`))
 	}
 
 	key := cast.ToString(level)

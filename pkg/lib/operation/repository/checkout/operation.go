@@ -2,7 +2,6 @@ package checkout
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -12,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const Timeout = 30 * time.Second
@@ -33,7 +33,7 @@ func Run(ctx context.Context, def model.TemplateRepository, d dependencies) (rep
 	// Checkout
 	repo, err = git.Checkout(ctx, def, false, d.Logger())
 	if err != nil {
-		return nil, fmt.Errorf(`cannot checkout out repository "%s": %w`, def, err)
+		return nil, errors.Errorf(`cannot checkout out repository "%s": %w`, def, err)
 	} else {
 		span.SetAttributes(attribute.String("kac.repository.id", repo.String()))
 		span.SetAttributes(attribute.String("kac.repository.url", repo.Url()))

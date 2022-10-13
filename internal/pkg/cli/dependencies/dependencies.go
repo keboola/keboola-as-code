@@ -14,7 +14,6 @@ package dependencies
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
@@ -25,16 +24,17 @@ import (
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 var (
-	ErrMissingStorageApiHost      = fmt.Errorf(`missing Storage API host`)
-	ErrMissingStorageApiToken     = fmt.Errorf(`missing Storage API token`)
-	ErrInvalidStorageApiToken     = fmt.Errorf(`invalid Storage API token`)
-	ErrProjectManifestNotFound    = fmt.Errorf("local manifest not found")
-	ErrDbtProjectNotFound         = fmt.Errorf(`dbt project not found, missing file "%s"`, dbt.ProjectFilePath)
-	ErrTemplateManifestNotFound   = fmt.Errorf("template manifest not found")
-	ErrRepositoryManifestNotFound = fmt.Errorf("repository manifest not found")
+	ErrMissingStorageApiHost      = errors.New(`missing Storage API host`)
+	ErrMissingStorageApiToken     = errors.New(`missing Storage API token`)
+	ErrInvalidStorageApiToken     = errors.New(`invalid Storage API token`)
+	ErrProjectManifestNotFound    = errors.New("local manifest not found")
+	ErrDbtProjectNotFound         = errors.Errorf(`dbt project not found, missing file "%s"`, dbt.ProjectFilePath)
+	ErrTemplateManifestNotFound   = errors.New("template manifest not found")
+	ErrRepositoryManifestNotFound = errors.New("repository manifest not found")
 )
 
 // Base interface provides basic CLI dependencies.

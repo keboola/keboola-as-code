@@ -1,13 +1,12 @@
 package template
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	upgradeOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/upgrade"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -40,7 +39,7 @@ func UpgradeCommand(p dependencies.Provider) *cobra.Command {
 			manifest := projectState.ProjectManifest()
 			repositoryDef, found := manifest.TemplateRepository(instance.RepositoryName)
 			if !found {
-				return fmt.Errorf(`template repository "%s" not found in the "%s"`, instance.RepositoryName, manifest.Path())
+				return errors.Errorf(`template repository "%s" not found in the "%s"`, instance.RepositoryName, manifest.Path())
 			}
 
 			// Load template

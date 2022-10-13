@@ -45,6 +45,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManager "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -136,7 +137,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	// Get Storage API host
 	storageApiHost := strhelper.NormalizeHost(envs.MustGet("KBC_STORAGE_API_HOST"))
 	if storageApiHost == "" {
-		return nil, fmt.Errorf("KBC_STORAGE_API_HOST environment variable is not set")
+		return nil, errors.New("KBC_STORAGE_API_HOST environment variable is not set")
 	}
 
 	// Create base HTTP client for all API requests to other APIs
@@ -236,13 +237,13 @@ func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 
 		// Check if etcd is enabled
 		if v.Envs().Get("ETCD_ENABLED") == "false" {
-			return nil, fmt.Errorf("etcd integration is disabled")
+			return nil, errors.New("etcd integration is disabled")
 		}
 
 		// Get endpoint
 		endpoint := v.Envs().Get("ETCD_ENDPOINT")
 		if endpoint == "" {
-			return nil, fmt.Errorf("ETCD_HOST is not set")
+			return nil, errors.New("ETCD_HOST is not set")
 		}
 
 		// Get timeout

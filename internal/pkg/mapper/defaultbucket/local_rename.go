@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // onObjectsRename - find renamed configurations that are used in default buckets placeholders.
@@ -35,7 +35,7 @@ func (m *defaultBucketMapper) onObjectsRename(renamed []model.RenameAction, allO
 
 	// Log and save
 	uow := m.state.LocalManager().NewUnitOfWork(context.Background())
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if len(objectsToUpdate) > 0 {
 		m.logger.Debug(`Need to update configurations:`)
 		for _, key := range objectsToUpdate {
@@ -47,8 +47,8 @@ func (m *defaultBucketMapper) onObjectsRename(renamed []model.RenameAction, allO
 
 	// Invoke
 	if err := uow.Invoke(); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

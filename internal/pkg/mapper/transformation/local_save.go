@@ -2,14 +2,13 @@ package transformation
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 )
 
@@ -27,7 +26,7 @@ func (m *transformationMapper) MapBeforeLocalSave(ctx context.Context, recipe *m
 		State:           m.state,
 		LocalSaveRecipe: recipe,
 		config:          recipe.Object.(*model.Config),
-		errors:          utils.NewMultiError(),
+		errors:          errors.NewMultiError(),
 	}
 
 	// Save
@@ -38,7 +37,7 @@ type localWriter struct {
 	*state.State
 	*model.LocalSaveRecipe
 	config *model.Config
-	errors *utils.MultiError
+	errors errors.MultiError
 }
 
 func (w *localWriter) save() error {
@@ -70,7 +69,7 @@ func (w *localWriter) save() error {
 func (w *localWriter) generateBlockFiles(block *model.Block) {
 	// Validate
 	if err := w.ValidateValue(block); err != nil {
-		w.errors.Append(utils.PrefixError(fmt.Sprintf(`invalid block \"%s\"`, block.Path()), err))
+		w.errors.AppendWithPrefixf(err, `invalid block \"%s\"`, block.Path())
 		return
 	}
 

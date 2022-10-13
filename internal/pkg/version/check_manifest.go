@@ -1,12 +1,12 @@
 package version
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Version field from manifest.
@@ -24,17 +24,17 @@ func CheckManifestVersion(logger log.Logger, fs filesystem.Fs, manifestPath stri
 	// Read version field
 	info := &versionInfo{}
 	if err := json.DecodeString(file.Content, info); err != nil {
-		return fmt.Errorf(`cannot decode manifest "%s": %w`, manifestPath, err)
+		return errors.Errorf(`cannot decode manifest "%s": %w`, manifestPath, err)
 	}
 
 	// Check version
 	if info.Version == nil {
-		return fmt.Errorf(`version field not found in "%s"`, manifestPath)
+		return errors.Errorf(`version field not found in "%s"`, manifestPath)
 	}
 
 	version := *info.Version
 	if version < 1 || version > 2 {
-		return fmt.Errorf(`unknown version "%d" found in "%s"`, version, manifestPath)
+		return errors.Errorf(`unknown version "%d" found in "%s"`, version, manifestPath)
 	}
 
 	if version == 1 {

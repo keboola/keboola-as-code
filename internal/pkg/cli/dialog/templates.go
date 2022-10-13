@@ -6,6 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (p *Dialogs) selectTemplateInstance(options *options.Options, branch *model.Branch, label string) (*model.TemplateInstance, error) {
@@ -17,7 +18,7 @@ func (p *Dialogs) selectTemplateInstance(options *options.Options, branch *model
 		if found {
 			return usage, nil
 		}
-		return nil, fmt.Errorf(`template instance "%s" was not found in branch "%s"`, options.GetString(`instance`), branch.Name)
+		return nil, errors.Errorf(`template instance "%s" was not found in branch "%s"`, options.GetString(`instance`), branch.Name)
 	}
 
 	all, err := branch.Metadata.TemplatesInstances()
@@ -36,5 +37,5 @@ func (p *Dialogs) selectTemplateInstance(options *options.Options, branch *model
 		return &all[index], nil
 	}
 
-	return nil, fmt.Errorf(`please specify template instance`)
+	return nil, errors.New(`please specify template instance`)
 }

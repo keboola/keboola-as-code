@@ -2,7 +2,6 @@ package dependencies
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // public dependencies container implements Public interface.
@@ -50,7 +50,7 @@ func newPublicDeps(ctx context.Context, base Base, storageApiHost string) (*publ
 
 	// Setup Encryption API
 	if encryptionHost, found := v.stackServices.URLByID("encryption"); !found {
-		return nil, fmt.Errorf("encryption host not found")
+		return nil, errors.New("encryption host not found")
 	} else {
 		v.encryptionApiClient = encryptionapi.ClientWithHost(v.base.HttpClient(), encryptionHost.String())
 	}

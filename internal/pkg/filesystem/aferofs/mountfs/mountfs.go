@@ -1,7 +1,6 @@
 package mountfs
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -13,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/abstract"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/basepathfs"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // MountFs allows you to mount a directory in a filesystem.
@@ -135,7 +135,7 @@ func (v *MountFs) Rename(oldName, newName string) error {
 	newName = v.ToSlash(newName)
 	newRel, err := filesystem.Rel(mountDir, newName)
 	if err != nil {
-		return fmt.Errorf(`path "%s" cannot be moved outside mount dir "%s" to "%s"`, oldName, mountDir, newName)
+		return errors.Errorf(`path "%s" cannot be moved outside mount dir "%s" to "%s"`, oldName, mountDir, newName)
 	}
 
 	return targetFs.Rename(v.FromSlash(oldRel), v.FromSlash(newRel))

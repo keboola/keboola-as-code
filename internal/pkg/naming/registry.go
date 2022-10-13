@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -31,15 +32,14 @@ func (r Registry) Attach(key Key, path AbsPath) error {
 	// Object path cannot be empty
 	pathStr := path.Path()
 	if len(pathStr) == 0 {
-		return fmt.Errorf(`naming error: invalid %s: path cannot be empty`, key.Desc())
+		return errors.Errorf(`naming error: invalid %s: path cannot be empty`, key.Desc())
 	}
 
 	// Check if the path is unique
 	if foundKey, found := r.byPath[pathStr]; found && foundKey != key {
-		return fmt.Errorf(
+		return errors.Errorf(
 			`naming error: path "%s" is attached to %s, but new %s has same path`,
-			pathStr, foundKey.Desc(), key.Desc(),
-		)
+			pathStr, foundKey.Desc(), key.Desc())
 	}
 
 	// Remove the previous value attached to the key

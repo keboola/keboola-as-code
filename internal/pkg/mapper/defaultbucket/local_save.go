@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // MapBeforeLocalSave - replace default buckets in IM with placeholders.
@@ -56,11 +56,11 @@ func (m *defaultBucketMapper) getDefaultBucketSourceConfig(config configOrRow, t
 	}
 	sourceConfigState, found := m.state.Get(sourceConfigKey)
 	if !found {
-		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`%s not found`, sourceConfigKey.Desc()))
-		errors.Append(fmt.Errorf(`  - referenced from %s`, config.Desc()))
-		errors.Append(fmt.Errorf(`  - input mapping "%s"`, tableId))
-		return nil, false, errors
+		return nil, false, errors.NewNestedError(
+			errors.Errorf(`%s not found`, sourceConfigKey.Desc()),
+			errors.Errorf(`referenced from %s`, config.Desc()),
+			errors.Errorf(`input mapping "%s"`, tableId),
+		)
 	}
 	return sourceConfigState, true, nil
 }

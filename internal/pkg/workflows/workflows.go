@@ -8,7 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // nolint:gochecknoglobals
@@ -31,11 +31,11 @@ type generator struct {
 	fs      filesystem.Fs
 	options *Options
 	logger  log.Logger
-	errors  *utils.MultiError
+	errors  errors.MultiError
 }
 
 func GenerateFiles(logger log.Logger, fs filesystem.Fs, options *Options) error {
-	g := &generator{fs: fs, options: options, logger: logger, errors: utils.NewMultiError()}
+	g := &generator{fs: fs, options: options, logger: logger, errors: errors.NewMultiError()}
 	return g.generateFiles()
 }
 

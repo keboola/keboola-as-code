@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"go.uber.org/zap/zapcore"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type LevelWriter struct {
@@ -35,7 +37,7 @@ func (w *LevelWriter) Write(p []byte) (n int, err error) {
 
 func (w *LevelWriter) WriteNoErr(p []byte) {
 	if _, err := w.Write(p); err != nil {
-		panic(fmt.Errorf("cannot write: %w", err))
+		panic(errors.Errorf("cannot write: %w", err))
 	}
 }
 

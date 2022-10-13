@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // fileNode is one file/dir in expected or actual directory.
@@ -28,19 +28,19 @@ type fileNodeState struct {
 // DirectoryContentsSame compares two directories, in expected file content can be used wildcards.
 func DirectoryContentsSame(expectedFs filesystem.Fs, expectedDir string, actualFs filesystem.Fs, actualDir string) error {
 	nodesState := compareDirectories(expectedFs, expectedDir, actualFs, actualDir)
-	var errors []string
+	var errs []string
 	for _, node := range nodesState {
 		// Check if present if both dirs (actual/expected) and if has same type (file/dir)
 		switch {
 		case node.actual == nil:
-			errors = append(errors, fmt.Sprintf("only in expected \"%s\"", node.expected.absPath))
+			errs = append(errs, fmt.Sprintf("only in expected \"%s\"", node.expected.absPath))
 		case node.expected == nil:
-			errors = append(errors, fmt.Sprintf("only in actual \"%s\"", node.actual.absPath))
+			errs = append(errs, fmt.Sprintf("only in actual \"%s\"", node.actual.absPath))
 		case node.actual.isDir != node.expected.isDir:
 			if node.actual.isDir {
-				errors = append(errors, fmt.Sprintf("\"%s\" is dir in actual, but file in expected", node.relPath))
+				errs = append(errs, fmt.Sprintf("\"%s\" is dir in actual, but file in expected", node.relPath))
 			} else {
-				errors = append(errors, fmt.Sprintf("\"%s\" is file in actual, but dir in expected", node.relPath))
+				errs = append(errs, fmt.Sprintf("\"%s\" is file in actual, but dir in expected", node.relPath))
 			}
 		default:
 			// Compare content
@@ -58,14 +58,14 @@ func DirectoryContentsSame(expectedFs filesystem.Fs, expectedDir string, actualF
 					actualFile.Content,
 				)
 				if err != nil {
-					return utils.PrefixError(fmt.Sprintf("Different content of the file \"%s\".", node.relPath), err)
+					return errors.PrefixErrorf(err, `different content of the file "%s"`, node.relPath)
 				}
 			}
 		}
 	}
 
-	if len(errors) > 0 {
-		return fmt.Errorf("Directories are not same:\n" + strings.Join(errors, "\n"))
+	if len(errs) > 0 {
+		return errors.New("Directories are not same:\n" + strings.Join(errs, "\n"))
 	}
 	return nil
 }
@@ -116,7 +116,7 @@ func compareDirectories(expectedFs filesystem.Fs, expectedDir string, actualFs f
 	})
 
 	if err != nil {
-		panic(fmt.Errorf(`cannot iterate over directory "%s" in "%s": %w`, actualDir, actualFs.BasePath(), err))
+		panic(errors.Errorf(`cannot iterate over directory "%s" in "%s": %w`, actualDir, actualFs.BasePath(), err))
 	}
 
 	// Process expected dir
@@ -153,7 +153,7 @@ func compareDirectories(expectedFs filesystem.Fs, expectedDir string, actualFs f
 	})
 
 	if err != nil {
-		panic(fmt.Errorf(`cannot iterate over directory "%s" in "%s": %w`, expectedDir, expectedFs.BasePath(), err))
+		panic(errors.Errorf(`cannot iterate over directory "%s" in "%s": %w`, expectedDir, expectedFs.BasePath(), err))
 	}
 
 	return hashMap

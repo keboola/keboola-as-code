@@ -24,6 +24,7 @@ import (
 	templateInput "github.com/keboola/keboola-as-code/internal/pkg/template/input"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/testtemplateinputs"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -94,13 +95,13 @@ func ParseInputValue(value interface{}, inputDef *templateInput.Input, isFilled 
 	// Convert
 	value, err := inputDef.Type.ParseValue(value)
 	if err != nil {
-		return InputValue{}, fmt.Errorf("invalid template input: %w", err)
+		return InputValue{}, errors.Errorf("invalid template input: %w", err)
 	}
 
 	// Validate all except oauth inputs
 	if isFilled && inputDef.Kind != templateInput.KindOAuth && inputDef.Kind != templateInput.KindOAuthAccounts {
 		if err := inputDef.ValidateUserInput(value); err != nil {
-			return InputValue{}, fmt.Errorf("invalid template input: %w", err)
+			return InputValue{}, errors.Errorf("invalid template input: %w", err)
 		}
 	}
 
@@ -219,7 +220,7 @@ func (t *Template) SrcDir() filesystem.Fs {
 func (t *Template) TestsDir() (filesystem.Fs, error) {
 	if t.testsDir == nil {
 		if !t.fs.IsDir(TestsDirectory) {
-			return nil, fmt.Errorf(`directory "%s" not found`, TestsDirectory)
+			return nil, errors.Errorf(`directory "%s" not found`, TestsDirectory)
 		}
 		testDir, err := t.fs.SubDirFs(TestsDirectory)
 		if err == nil {
@@ -265,7 +266,7 @@ func (t *Template) Test(testName string) (*Test, error) {
 	}
 
 	if !testsDir.IsDir(testName) {
-		return nil, fmt.Errorf(`test "%s" not found in template "%s"`, testName, t.FullName())
+		return nil, errors.Errorf(`test "%s" not found in template "%s"`, testName, t.FullName())
 	}
 
 	testDir, err := testsDir.SubDirFs(testName)
@@ -421,7 +422,7 @@ func (t *Test) Name() string {
 
 func (t *Test) ExpectedOutDir() (filesystem.Fs, error) {
 	if !t.fs.IsDir(ExpectedOutDirectory) {
-		return nil, fmt.Errorf(`directory "%s" in test "%s" not found`, ExpectedOutDirectory, t.name)
+		return nil, errors.Errorf(`directory "%s" in test "%s" not found`, ExpectedOutDirectory, t.name)
 	}
 
 	// Get expected output dir
@@ -457,7 +458,7 @@ func (t *Test) Inputs(provider *testtemplateinputs.EnvProvider, replaceEnvsFn fu
 
 	// Decode JSON
 	if err := json.DecodeString(file.Content, &inputs); err != nil {
-		return nil, fmt.Errorf(`cannot decode test inputs file "%s": %w`, InputsFile, err)
+		return nil, errors.Errorf(`cannot decode test inputs file "%s": %w`, InputsFile, err)
 	}
 
 	return inputs, nil

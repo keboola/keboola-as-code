@@ -3,8 +3,8 @@ package json
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"fmt"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type RawMessage = json.RawMessage
@@ -71,10 +71,10 @@ func MustDecodeString(data string, m interface{}) {
 func ConvertByJson(input, target interface{}) error {
 	data, err := Encode(input, false)
 	if err != nil {
-		return fmt.Errorf(`encode error: %w`, err)
+		return errors.Errorf(`encode error: %w`, err)
 	}
 	if err := Decode(data, target); err != nil {
-		return fmt.Errorf(`decode error: %w`, err)
+		return errors.Errorf(`decode error: %w`, err)
 	}
 	return nil
 }
@@ -86,9 +86,9 @@ func processJsonEncodeError(err error) error {
 	switch {
 	// Custom error message
 	case errors.As(err, &typeError):
-		return fmt.Errorf("key \"%s\" has invalid type \"%s\"", typeError.Field, typeError.Value)
+		return errors.Errorf("key \"%s\" has invalid type \"%s\"", typeError.Field, typeError.Value)
 	case errors.As(err, &syntaxError):
-		return fmt.Errorf("%w, offset: %d", err, syntaxError.Offset)
+		return errors.Errorf("%w, offset: %d", err, syntaxError.Offset)
 	default:
 		return err
 	}
@@ -101,12 +101,12 @@ func processJsonDecodeError(data []byte, err error) error {
 	switch {
 	// Custom error message
 	case errors.As(err, &typeError):
-		return fmt.Errorf("key \"%s\" has invalid type \"%s\"", typeError.Field, typeError.Value)
+		return errors.Errorf("key \"%s\" has invalid type \"%s\"", typeError.Field, typeError.Value)
 	case errors.As(err, &syntaxError):
 		if syntaxError.Error() == "unexpected end of JSON input" && len(bytes.TrimSpace(data)) == 0 {
-			return fmt.Errorf(`empty, please use "{}" for an empty JSON`)
+			return errors.New(`empty, please use "{}" for an empty JSON`)
 		}
-		return fmt.Errorf("%w, offset: %d", err, syntaxError.Offset)
+		return errors.Errorf("%w, offset: %d", err, syntaxError.Offset)
 	default:
 		return err
 	}

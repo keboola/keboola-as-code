@@ -2,9 +2,9 @@ package scheduler
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (m *schedulerMapper) MapBeforePersist(ctx context.Context, recipe *model.PersistRecipe) error {
@@ -33,7 +33,7 @@ func (m *schedulerMapper) MapBeforePersist(ctx context.Context, recipe *model.Pe
 
 	// Branch must be same
 	if configKey.BranchKey() != configManifest.BranchKey() {
-		panic(fmt.Errorf(`child "%s" and parent "%s" must be from same branch`, configManifest.Desc(), configKey.Desc()))
+		panic(errors.Errorf(`child "%s" and parent "%s" must be from same branch`, configManifest.Desc(), configKey.Desc()))
 	}
 
 	// Add relation

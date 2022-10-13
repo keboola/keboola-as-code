@@ -2,7 +2,6 @@ package orchestrator
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
@@ -10,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (m *orchestratorMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
@@ -48,11 +47,11 @@ func (w *localWriter) save() {
 		AddTag(model.FileKindGitKeep)
 
 	// Generate files for phases
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	allPhases := w.config.Orchestration.Phases
 	for _, phase := range allPhases {
 		if err := w.savePhase(phase, allPhases); err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save phase "%s"`, phase.RelativePath), err))
+			errs.AppendWithPrefixf(err, `cannot save phase "%s"`, phase.RelativePath)
 		}
 	}
 
@@ -65,8 +64,8 @@ func (w *localWriter) save() {
 	}
 
 	// Convert errors to warning
-	if errors.Len() > 0 {
-		w.logger.Warn(utils.PrefixError(fmt.Sprintf(`Warning: cannot save orchestrator config "%s"`, w.ObjectManifest.Path()), errors))
+	if errs.Len() > 0 {
+		w.logger.Warn(errors.PrefixErrorf(errs, `Warning: cannot save orchestrator config "%s"`, w.ObjectManifest.Path()))
 	}
 }
 
@@ -77,7 +76,7 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 	}
 
 	// Create content
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	phaseContent := orderedmap.New()
 	phaseContent.Set(`name`, phase.Name)
 
@@ -87,7 +86,7 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 		depOnPhase := allPhases[depOnKey.Index]
 		depOnPath, err := filesystem.Rel(phase.GetParentPath(), depOnPhase.Path())
 		if err != nil {
-			errors.Append(err)
+			errs.Append(err)
 			continue
 		}
 		dependsOn = append(dependsOn, depOnPath)
@@ -110,16 +109,16 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 	// Write tasks
 	for _, task := range phase.Tasks {
 		if err := w.saveTask(task); err != nil {
-			errors.Append(utils.PrefixError(fmt.Sprintf(`cannot save task "%s"`, task.RelativePath), err))
+			errs.AppendWithPrefixf(err, `cannot save task "%s"`, task.RelativePath)
 		}
 	}
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 func (w *localWriter) saveTask(task *model.Task) error {
 	// Create content
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	taskContent := orderedmap.New()
 	taskContent.Set(`name`, task.Name)
 	taskContent.Set(`enabled`, task.Enabled)
@@ -157,21 +156,21 @@ func (w *localWriter) saveTask(task *model.Task) error {
 			// Get target path
 			targetPath, err := filesystem.Rel(w.configPath.GetParentPath(), targetConfig.Path())
 			if err != nil {
-				errors.Append(err)
+				errs.Append(err)
 			}
 
 			// Set config path
 			target.Set(`configPath`, targetPath)
 			taskContent.Set(`task`, *target)
 		} else {
-			errors.Append(fmt.Errorf(`%s not found`, targetKey.Desc()))
+			errs.Append(errors.Errorf(`%s not found`, targetKey.Desc()))
 		}
 	} else if task.ConfigData != nil {
 		target.Set("configData", task.ConfigData)
 		target.Set(`componentId`, task.ComponentId)
 	} else {
 		if task.Enabled {
-			errors.Append(fmt.Errorf("task.configId, or task.configData and task.componentId must be specified"))
+			errs.Append(errors.New("task.configId, or task.configData and task.componentId must be specified"))
 		} else {
 			// ComponentId is required even when the task is disabled (for UI)
 			target.Set(`componentId`, task.ComponentId)
@@ -187,5 +186,5 @@ func (w *localWriter) saveTask(task *model.Task) error {
 		AddTag(model.FileTypeJson).
 		AddTag(model.FileKindTaskConfig)
 
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }

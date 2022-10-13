@@ -5,7 +5,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/storageapi"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // VariablesForRelation - variables for target configuration.
@@ -83,10 +83,10 @@ func (t *VariablesForRelation) NewOtherSideRelation(relationDefinedOn Object, _ 
 func (t *VariablesForRelation) checkDefinedOn(relationDefinedOn Key) (ConfigKey, error) {
 	variables, ok := relationDefinedOn.(ConfigKey)
 	if !ok {
-		return variables, fmt.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.Desc())
+		return variables, errors.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
 	if variables.ComponentId != storageapi.VariablesComponentID {
-		return variables, fmt.Errorf(`relation "%s" must be defined on config of the "%s" component`, t.Type(), storageapi.VariablesComponentID)
+		return variables, errors.Errorf(`relation "%s" must be defined on config of the "%s" component`, t.Type(), storageapi.VariablesComponentID)
 	}
 	return variables, nil
 }
@@ -135,7 +135,7 @@ func (t *VariablesFromRelation) NewOtherSideRelation(relationDefinedOn Object, _
 func (t *VariablesFromRelation) checkDefinedOn(relationDefinedOn Key) (ConfigKey, error) {
 	config, ok := relationDefinedOn.(ConfigKey)
 	if !ok {
-		return config, fmt.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.Desc())
+		return config, errors.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
 	return config, nil
 }
@@ -175,19 +175,19 @@ func (t *VariablesValuesForRelation) NewOtherSideRelation(relationDefinedOn Obje
 	}
 	variablesConfigRaw, found := allObjects.Get(variablesConfigKey)
 	if !found {
-		return nil, nil, fmt.Errorf(`%s not found, referenced from %s, by relation "%s"`, variablesConfigKey.Desc(), relationDefinedOn.Desc(), t.Type())
+		return nil, nil, errors.Errorf(`%s not found, referenced from %s, by relation "%s"`, variablesConfigKey.Desc(), relationDefinedOn.Desc(), t.Type())
 	}
 	variablesConfig := variablesConfigRaw.(*Config)
 	variablesForRaw, err := variablesConfig.Relations.GetOneByType(VariablesForRelType)
 	if err != nil {
-		return nil, nil, utils.PrefixError(fmt.Sprintf(`invalid %s`, variablesConfig.Desc()), err)
+		return nil, nil, errors.PrefixErrorf(err, "invalid %s", variablesConfig.Desc())
 	}
 	if variablesForRaw == nil {
-		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`missing relation "%s" in %s`, VariablesForRelType, variablesConfig.Desc()))
-		errors.Append(fmt.Errorf(`  - referenced from %s`, relationDefinedOn.Desc()))
-		errors.Append(fmt.Errorf(`  - by relation "%s"`, t.Type()))
-		return nil, nil, errors
+		return nil, nil, errors.NewNestedError(
+			errors.Errorf(`missing relation "%s" in %s`, VariablesForRelType, variablesConfig.Desc()),
+			errors.Errorf(`referenced from %s`, relationDefinedOn.Desc()),
+			errors.Errorf(`by relation "%s"`, t.Type()),
+		)
 	}
 	variablesForRelation := variablesForRaw.(*VariablesForRelation)
 	otherSide := ConfigKey{
@@ -204,10 +204,10 @@ func (t *VariablesValuesForRelation) NewOtherSideRelation(relationDefinedOn Obje
 func (t *VariablesValuesForRelation) checkDefinedOn(relationDefinedOn Key) (ConfigRowKey, error) {
 	values, ok := relationDefinedOn.(ConfigRowKey)
 	if !ok {
-		return values, fmt.Errorf(`relation "%s" must be defined on config row, found %s`, t.Type(), relationDefinedOn.Desc())
+		return values, errors.Errorf(`relation "%s" must be defined on config row, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
 	if values.ComponentId != storageapi.VariablesComponentID {
-		return values, fmt.Errorf(`relation "%s" must be defined on config of the "%s" component`, t.Type(), storageapi.VariablesComponentID)
+		return values, errors.Errorf(`relation "%s" must be defined on config of the "%s" component`, t.Type(), storageapi.VariablesComponentID)
 	}
 	return values, nil
 }
@@ -244,13 +244,13 @@ func (t *VariablesValuesFromRelation) NewOtherSideRelation(relationDefinedOn Obj
 	config := relationDefinedOn.(*Config)
 	variablesFromRel, err := config.Relations.GetOneByType(VariablesFromRelType)
 	if err != nil {
-		return nil, nil, utils.PrefixError(fmt.Sprintf(`invalid %s`, config.Desc()), err)
+		return nil, nil, errors.PrefixErrorf(err, "invalid %s", config.Desc())
 	} else if variablesFromRel == nil {
-		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`missing relation "%s" in %s`, VariablesFromRelType, config.Desc()))
-		errors.Append(fmt.Errorf(`  - referenced from %s`, relationDefinedOn.Desc()))
-		errors.Append(fmt.Errorf(`  - by relation "%s"`, t.Type()))
-		return nil, nil, errors
+		return nil, nil, errors.NewNestedError(
+			errors.Errorf(`missing relation "%s" in %s`, VariablesFromRelType, config.Desc()),
+			errors.Errorf(`referenced from %s`, relationDefinedOn.Desc()),
+			errors.Errorf(`by relation "%s"`, t.Type()),
+		)
 	}
 
 	otherSideKey := ConfigRowKey{
@@ -266,7 +266,7 @@ func (t *VariablesValuesFromRelation) NewOtherSideRelation(relationDefinedOn Obj
 func (t *VariablesValuesFromRelation) checkDefinedOn(relationDefinedOn Key) (ConfigKey, error) {
 	config, ok := relationDefinedOn.(ConfigKey)
 	if !ok {
-		return config, fmt.Errorf(`relation "%s" must be defined on config row, found %s`, t.Type(), relationDefinedOn.Desc())
+		return config, errors.Errorf(`relation "%s" must be defined on config row, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
 	return config, nil
 }

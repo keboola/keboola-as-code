@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type InvalidRemoteStateError struct {
@@ -134,13 +134,13 @@ func Run(ctx context.Context, container state.ObjectsContainer, o OptionsWithFil
 		logger.Debugf("Project state has been successfully loaded.")
 	} else {
 		if remoteErr != nil {
-			return nil, InvalidRemoteStateError{utils.PrefixError("cannot load project remote state", remoteErr)}
+			return nil, InvalidRemoteStateError{errors.PrefixError(remoteErr, "cannot load project remote state")}
 		}
 		if localErr != nil {
 			if o.IgnoreInvalidLocalState {
 				logger.Info(`Ignoring invalid local state.`)
 			} else {
-				return nil, InvalidLocalStateError{utils.PrefixError("project local state is invalid", localErr)}
+				return nil, InvalidLocalStateError{errors.PrefixError(localErr, "project local state is invalid")}
 			}
 		}
 	}

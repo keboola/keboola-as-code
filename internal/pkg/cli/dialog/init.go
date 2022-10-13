@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/init"
 )
@@ -26,15 +26,15 @@ type hostAndTokenDependencies interface {
 
 func (p *Dialogs) AskHostAndToken(d hostAndTokenDependencies) error {
 	// Host and token
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if _, err := p.AskStorageApiHost(d); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 	if _, err := p.AskStorageApiToken(d); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
-	if errors.Len() > 0 {
-		return errors
+	if errs.Len() > 0 {
+		return errs
 	}
 	return nil
 }

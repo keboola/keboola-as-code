@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (p *Dialogs) AskWorkspace(
@@ -20,7 +21,7 @@ func (p *Dialogs) AskWorkspace(
 				return w, nil
 			}
 		}
-		return nil, fmt.Errorf(`workspace with ID "%s" not found in the project`, workspaceID)
+		return nil, errors.Errorf(`workspace with ID "%s" not found in the project`, workspaceID)
 	}
 
 	selectOpts := make([]string, 0)
@@ -34,7 +35,7 @@ func (p *Dialogs) AskWorkspace(
 		return allWorkspaces[index], nil
 	}
 
-	return nil, fmt.Errorf(`please specify workspace`)
+	return nil, errors.New(`please specify workspace`)
 }
 
 func (p *Dialogs) AskWorkspaceId(opts *options.Options) (string, error) {
@@ -45,7 +46,7 @@ func (p *Dialogs) AskWorkspaceId(opts *options.Options) (string, error) {
 			Validator:   prompt.ValueRequired,
 		})
 		if !ok {
-			return "", fmt.Errorf("please specify workspace ID")
+			return "", errors.New("please specify workspace ID")
 		}
 		return token, nil
 	} else {

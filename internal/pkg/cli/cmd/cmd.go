@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -28,7 +27,7 @@ import (
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/version"
 	versionCheck "github.com/keboola/keboola-as-code/pkg/lib/operation/version/check"
 )
@@ -260,7 +259,7 @@ func (root *RootCommand) listAliases() string {
 func (root *RootCommand) addAlias(alias, cmdPath string) {
 	target, found := root.cmdByPath[cmdPath]
 	if !found {
-		panic(fmt.Errorf(`cannot create cmd alias "%s": command "%s" not found`, alias, cmdPath))
+		panic(errors.Errorf(`cannot create cmd alias "%s": command "%s" not found`, alias, cmdPath))
 	}
 
 	// Add alias
@@ -283,18 +282,18 @@ func (root *RootCommand) addAlias(alias, cmdPath string) {
 
 func (root *RootCommand) printError(errRaw error) {
 	// Convert to MultiError
-	var originalErrs *utils.MultiError
-	if v, ok := errRaw.(*utils.MultiError); ok { // nolint: errorlint
+	var originalErrs errors.MultiError
+	if v, ok := errRaw.(errors.MultiError); ok { // nolint: errorlint
 		originalErrs = v
 	} else {
-		originalErrs = utils.NewMultiError()
+		originalErrs = errors.NewMultiError()
 		originalErrs.Append(errRaw)
 	}
 
 	// Iterate over errors and replace message if needed
-	modifiedErrs := utils.NewMultiError()
+	modifiedErrs := errors.NewMultiError()
 	var errDirNotFound dependencies.DirNotFoundError
-	for _, err := range originalErrs.Errors {
+	for _, err := range originalErrs.WrappedErrors() {
 		switch {
 		case errors.As(err, &errDirNotFound):
 			root.logger.Infof(`The path "%s" is %s.`, root.fs.BasePath(), errDirNotFound.Found())
@@ -308,36 +307,36 @@ func (root *RootCommand) printError(errRaw error) {
 				root.logger.Infof(`Please use %s.`, errDirNotFound.Expected())
 			}
 			if errDirNotFound.Expected() == dependencies.EmptyDir {
-				modifiedErrs.Append(fmt.Errorf("directory is not empty"))
+				modifiedErrs.Append(errors.New("directory is not empty"))
 			} else {
-				modifiedErrs.Append(fmt.Errorf("neither this nor any parent directory is %s", errDirNotFound.Expected()))
+				modifiedErrs.Append(errors.Errorf("neither this nor any parent directory is %s", errDirNotFound.Expected()))
 			}
 		case errors.Is(err, dependencies.ErrProjectManifestNotFound):
 			root.logger.Infof(`Project directory must contain the "%s" file.`, projectManifest.Path())
 			root.logger.Infof(`Please change working directory to a project directory.`)
 			root.logger.Infof(`Or use the "sync init" command in an empty directory.`)
-			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is project dir`))
+			modifiedErrs.Append(errors.New(`none of this and parent directories is project dir`))
 		case errors.Is(err, dependencies.ErrRepositoryManifestNotFound):
 			root.logger.Infof(`Repository directory must contain the "%s" file.`, repositoryManifest.Path())
 			root.logger.Infof(`Please change working directory to a repository directory.`)
 			root.logger.Infof(`Or use the "template repository init" command in an empty directory.`)
-			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is repository dir`))
+			modifiedErrs.Append(errors.New(`none of this and parent directories is repository dir`))
 		case errors.Is(err, dependencies.ErrTemplateManifestNotFound):
 			root.logger.Infof(`Template directory must contain the "%s" file.`, templateManifest.Path())
 			root.logger.Infof(`You are in the template repository, but not in the template directory.`)
 			root.logger.Infof(`Please change working directory to a template directory, for example "template/v1".`)
 			root.logger.Infof(`Or use the "template create" command.`)
-			modifiedErrs.Append(fmt.Errorf(`none of this and parent directories is template dir`))
+			modifiedErrs.Append(errors.New(`none of this and parent directories is template dir`))
 		case errors.Is(err, dependencies.ErrMissingStorageApiHost), errors.Is(err, dialog.ErrMissingStorageApiHost):
-			modifiedErrs.Append(fmt.Errorf(`- missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, options.StorageApiHostOpt, root.options.GetEnvName(options.StorageApiHostOpt)))
+			modifiedErrs.Append(errors.Errorf(`missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, options.StorageApiHostOpt, root.options.GetEnvName(options.StorageApiHostOpt)))
 		case errors.Is(err, dependencies.ErrMissingStorageApiToken), errors.Is(err, dialog.ErrMissingStorageApiToken):
-			modifiedErrs.Append(fmt.Errorf(`- missing Storage Api token, please use "--%s" flag or ENV variable "%s"`, options.StorageApiTokenOpt, root.options.GetEnvName(options.StorageApiTokenOpt)))
+			modifiedErrs.Append(errors.Errorf(`missing Storage Api token, please use "--%s" flag or ENV variable "%s"`, options.StorageApiTokenOpt, root.options.GetEnvName(options.StorageApiTokenOpt)))
 		default:
 			modifiedErrs.Append(err)
 		}
 	}
 
-	root.PrintErrln(utils.PrefixError(`Error`, modifiedErrs))
+	root.PrintErrln(errors.PrefixError(modifiedErrs, "Error"))
 }
 
 func (root *RootCommand) setupLogger() {

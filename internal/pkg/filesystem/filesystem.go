@@ -2,7 +2,6 @@
 package filesystem
 
 import (
-	"fmt"
 	"io/fs"
 	"os"
 	"path"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -137,7 +137,7 @@ func Rel(base, pathStr string) (string, error) {
 		base = ""
 	}
 	if !IsFrom(pathStr, base) {
-		return "", fmt.Errorf(`cannot get relative path, base="%s", path="%s"`, base, pathStr)
+		return "", errors.Errorf(`cannot get relative path, base="%s", path="%s"`, base, pathStr)
 	}
 	return strings.TrimPrefix(pathStr, base+string(PathSeparator)), nil
 }

@@ -2,13 +2,12 @@ package manifest
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -82,7 +81,7 @@ func saveFile(fs filesystem.Fs, content *file) error {
 func (f *file) validate() error {
 	ctx := context.WithValue(context.Background(), validator.DisableRequiredInProjectKey, true)
 	if err := validator.New().ValidateCtx(ctx, f, "dive", ""); err != nil {
-		return utils.PrefixError("manifest is not valid", err)
+		return errors.PrefixError(err, "manifest is not valid")
 	}
 	return nil
 }
@@ -119,7 +118,7 @@ func (f *file) setRecords(records []model.ObjectManifest) {
 		// Generate content, we have to check if parent exists (eg. branch could have been deleted)
 		switch v := manifest.(type) {
 		case *model.BranchManifest:
-			panic(fmt.Errorf(`found unexpected BranchManifest in template manifest`))
+			panic(errors.New(`found unexpected BranchManifest in template manifest`))
 		case *model.ConfigManifest:
 			config := &model.ConfigManifestWithRows{
 				ConfigManifest: *v,
@@ -133,7 +132,7 @@ func (f *file) setRecords(records []model.ObjectManifest) {
 				config.Rows = append(config.Rows, v)
 			}
 		default:
-			panic(fmt.Errorf(`unexpected type "%T"`, manifest))
+			panic(errors.Errorf(`unexpected type "%T"`, manifest))
 		}
 	}
 }

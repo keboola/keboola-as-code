@@ -5,22 +5,22 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // MapAfterLocalLoad loads files to tagged object (Branch, Config,ConfigRow) fields.
 func (m *coreFilesMapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
-	errors := utils.NewMultiError()
+	errs := errors.NewMultiError()
 	if err := m.loadMetaFile(recipe); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 	if err := m.loadConfigFile(recipe); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
 	if err := m.loadDescriptionFile(recipe); err != nil {
-		errors.Append(err)
+		errs.Append(err)
 	}
-	return errors.ErrorOrNil()
+	return errs.ErrorOrNil()
 }
 
 // loadMetaFile from meta.json.

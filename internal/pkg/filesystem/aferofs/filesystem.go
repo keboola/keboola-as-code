@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs/abstract"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/fileloader"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -55,7 +56,7 @@ func (f *Fs) SubDirFs(path string) (filesystem.Fs, error) {
 
 	subDirFs, err := f.fs.SubDirFs(f.fs.FromSlash(path))
 	if err != nil {
-		return nil, fmt.Errorf(`cannot get sub directory "%s": %w`, path, err)
+		return nil, errors.Errorf(`cannot get sub directory "%s": %w`, path, err)
 	}
 
 	return New(subDirFs.(abstract.Backend), filesystem.WithLogger(f.logger), filesystem.WithWorkingDir(f.fs.FromSlash(workingDir))), nil
@@ -120,7 +121,7 @@ func (f *Fs) Exists(path string) bool {
 	if _, err := f.Stat(path); err == nil {
 		return true
 	} else if !os.IsNotExist(err) {
-		panic(fmt.Errorf("cannot test if file exists \"%s\": %w", path, err))
+		panic(errors.Errorf("cannot test if file exists \"%s\": %w", path, err))
 	}
 
 	return false
@@ -131,7 +132,7 @@ func (f *Fs) IsFile(path string) bool {
 	if s, err := f.Stat(path); err == nil {
 		return !s.IsDir()
 	} else if !os.IsNotExist(err) {
-		panic(fmt.Errorf("cannot test if file exists \"%s\": %w", path, err))
+		panic(errors.Errorf("cannot test if file exists \"%s\": %w", path, err))
 	}
 
 	return false
@@ -142,7 +143,7 @@ func (f *Fs) IsDir(path string) bool {
 	if s, err := f.Stat(path); err == nil {
 		return s.IsDir()
 	} else if !os.IsNotExist(err) {
-		panic(fmt.Errorf("cannot test if file exists \"%s\": %w", path, err))
+		panic(errors.Errorf("cannot test if file exists \"%s\": %w", path, err))
 	}
 
 	return false
@@ -168,7 +169,7 @@ func (f *Fs) OpenFile(name string, flag int, perm os.FileMode) (afero.File, erro
 // ParentKey directories will also be created if necessary.
 func (f *Fs) Mkdir(path string) error {
 	if err := f.fs.MkdirAll(f.fs.FromSlash(path), 0o755); err != nil {
-		return fmt.Errorf(`cannot create directory "%s": %w`, path, err)
+		return errors.Errorf(`cannot create directory "%s": %w`, path, err)
 	} else {
 		f.logger.Debugf(`Created directory "%s"`, path)
 		return nil
@@ -180,11 +181,11 @@ func (f *Fs) Mkdir(path string) error {
 // The destination path must not exist.
 func (f *Fs) Copy(src, dst string) error {
 	if f.Exists(dst) {
-		return fmt.Errorf(`cannot copy "%s" -> "%s": destination exists`, src, dst)
+		return errors.Errorf(`cannot copy "%s" -> "%s": destination exists`, src, dst)
 	}
 
 	if err := CopyFs2Fs(f, src, f, dst); err != nil {
-		return fmt.Errorf(`cannot copy %s: %w`, strhelper.FormatPathChange(src, dst, true), err)
+		return errors.Errorf(`cannot copy %s: %w`, strhelper.FormatPathChange(src, dst, true), err)
 	}
 
 	// Get common prefix of the old and new path
@@ -209,7 +210,7 @@ func (f *Fs) CopyForce(src, dst string) error {
 // The destination path must not exist.
 func (f *Fs) Move(src, dst string) error {
 	if f.Exists(dst) {
-		return fmt.Errorf(`cannot move %s: destination exists`, strhelper.FormatPathChange(src, dst, true))
+		return errors.Errorf(`cannot move %s: destination exists`, strhelper.FormatPathChange(src, dst, true))
 	}
 
 	var err error
@@ -262,7 +263,7 @@ func (f *Fs) ReadFile(def *filesystem.FileDef) (*filesystem.RawFile, error) {
 
 	// Check if is dir
 	if f.IsDir(file.Path()) {
-		return nil, newFileError("cannot open", file, fmt.Errorf(`expected file, found dir`))
+		return nil, newFileError("cannot open", file, errors.New(`expected file, found dir`))
 	}
 
 	// Open
@@ -371,8 +372,8 @@ func (f *Fs) CreateOrUpdateFile(def *filesystem.FileDef, lines []filesystem.File
 func newFileError(msg string, file *filesystem.RawFile, err error) error {
 	fileDesc := strings.TrimSpace(file.Description() + " file")
 	if err == nil {
-		return fmt.Errorf("%s %s \"%s\"", msg, fileDesc, file.Path())
+		return errors.Errorf("%s %s \"%s\"", msg, fileDesc, file.Path())
 	} else {
-		return fmt.Errorf("%s %s \"%s\": %w", msg, fileDesc, file.Path(), err)
+		return errors.Errorf("%s %s \"%s\": %w", msg, fileDesc, file.Path(), err)
 	}
 }

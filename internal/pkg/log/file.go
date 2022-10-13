@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type File struct {
@@ -66,14 +68,14 @@ func (f *File) TearDown(errorOccurred bool) {
 	}
 
 	if err := f.file.Close(); err != nil {
-		panic(fmt.Errorf("cannot close log file \"%s\": %w", f.path, err))
+		panic(errors.Errorf("cannot close log file \"%s\": %w", f.path, err))
 	}
 
 	// No error -> remove log file if temporary
 	if !errorOccurred && f.temp {
 		// nolint: forbidigo
 		if err := os.Remove(f.path); err != nil {
-			panic(fmt.Errorf("cannot remove temp log file \"%s\": %w", f.path, err))
+			panic(errors.Errorf("cannot remove temp log file \"%s\": %w", f.path, err))
 		}
 	}
 }

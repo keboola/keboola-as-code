@@ -2,14 +2,13 @@ package model
 
 import (
 	"encoding/json"
-	"fmt"
 	"sort"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	jsonutils "github.com/keboola/keboola-as-code/internal/pkg/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -81,7 +80,7 @@ func (v Relations) ParentKey(source Key) (Key, error) {
 
 	// Multiple parents are forbidden
 	if len(parents) > 1 {
-		return nil, fmt.Errorf(`unexpected state: multiple parents defined by "relations" in %s`, source.Desc())
+		return nil, errors.Errorf(`unexpected state: multiple parents defined by "relations" in %s`, source.Desc())
 	}
 
 	return nil, nil
@@ -171,12 +170,11 @@ func (v Relations) GetOneByType(t RelationType) (Relation, error) {
 	if len(relations) == 0 {
 		return nil, nil
 	} else if len(relations) > 1 {
-		errors := utils.NewMultiError()
-		errors.Append(fmt.Errorf(`only one relation "%s" expected, but found %d`, t, len(relations)))
+		err := errors.NewNestedError(errors.Errorf(`only one relation "%s" expected, but found %d`, t, len(relations)))
 		for _, relation := range relations {
-			errors.Append(fmt.Errorf(`  - %s`, jsonutils.MustEncodeString(relation, false)))
+			err.Append(errors.New(jsonutils.MustEncodeString(relation, false)))
 		}
-		return nil, errors
+		return nil, err
 	}
 	return relations[0], nil
 }
@@ -234,18 +232,18 @@ func (v *Relations) UnmarshalJSON(data []byte) error {
 		// Get type value
 		typeRaw, ok := obj["type"]
 		if !ok {
-			return fmt.Errorf(`missing "type" field in relation definition`)
+			return errors.New(`missing "type" field in relation definition`)
 		}
 
 		typeStr, ok := typeRaw.(string)
 		if !ok {
-			return fmt.Errorf(`field "type" must be string in relation definition, "%T" given`, typeStr)
+			return errors.Errorf(`field "type" must be string in relation definition, "%T" given`, typeStr)
 		}
 
 		// Create instance from type
 		value, err := newEmptyRelation(RelationType(typeStr))
 		if err != nil {
-			return fmt.Errorf(`invalid "type" value "%s" in relation definition`, typeStr)
+			return errors.Errorf(`invalid "type" value "%s" in relation definition`, typeStr)
 		}
 
 		// Unmarshal to concrete sub-type of the Relation
@@ -255,7 +253,7 @@ func (v *Relations) UnmarshalJSON(data []byte) error {
 
 		// Validate, only manifest side should be present in JSON
 		if !value.IsDefinedInManifest() {
-			return fmt.Errorf(`unexpected state: relation "%T" should not be present in JSON, it is not a manifest side`, value)
+			return errors.Errorf(`unexpected state: relation "%T" should not be present in JSON, it is not a manifest side`, value)
 		}
 
 		*v = append(*v, value)
@@ -268,7 +266,7 @@ func (v Relations) MarshalJSON() ([]byte, error) {
 	for _, relation := range v {
 		// Validate, only manifest side should be serialized to JSON
 		if !relation.IsDefinedInManifest() {
-			return nil, fmt.Errorf(`unexpected state: relation "%T" should not be serialized to JSON, it is not an manifest side`, relation)
+			return nil, errors.Errorf(`unexpected state: relation "%T" should not be serialized to JSON, it is not an manifest side`, relation)
 		}
 
 		// Convert struct -> map
@@ -305,6 +303,6 @@ func newEmptyRelation(t RelationType) (Relation, error) {
 	case UsedInRowInputMappingRelType:
 		return &UsedInRowInputMappingRelation{}, nil
 	default:
-		return nil, fmt.Errorf(`unexpected RelationType "%s"`, t)
+		return nil, errors.Errorf(`unexpected RelationType "%s"`, t)
 	}
 }
