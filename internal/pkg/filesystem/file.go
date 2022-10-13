@@ -8,8 +8,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/yaml"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/yaml"
 )
 
 type FileLine struct {
