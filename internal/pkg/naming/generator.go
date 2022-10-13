@@ -5,8 +5,8 @@ import (
 
 	"github.com/keboola/go-client/pkg/storageapi"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"

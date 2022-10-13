@@ -11,8 +11,8 @@ import (
 	diffstr "github.com/kylelemons/godebug/diff"
 	"github.com/spf13/cast"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
