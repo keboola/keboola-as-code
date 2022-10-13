@@ -5,10 +5,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet/fsimporter"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
-	"github.com/keboola/keboola-as-code/internal/pkg/jsonnet/fsimporter"
 )
 
 func TestImporter(t *testing.T) {
