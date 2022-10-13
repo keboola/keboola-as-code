@@ -324,32 +324,51 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 	ctx, cancelFn := context.WithCancel(context.Background())
 	defer cancelFn()
 
-	// Create buckets
+	// Create buckets and tables
 	grp := client.NewWaitGroup(ctx, p.storageApiClient)
 	for _, b := range buckets {
 		grp.Send(storageapi.CreateBucketRequest(&storageapi.Bucket{
 			Name:        b.Name,
 			Stage:       b.Stage,
 			Description: b.Description,
-		}))
-	}
-	if err := grp.Wait(); err != nil {
-		return err
-	}
+		}).
+			WithBefore(func(ctx context.Context, sender client.Sender) error {
+				p.logf("▶ Bucket \"%s.c-%s\"...", b.Stage, b.Name)
+				return nil
+			}).
+			WithOnComplete(func(ctx context.Context, sender client.Sender, apiBucket *storageapi.Bucket, err error) error {
+				if err == nil {
+					p.logf("✔️ Bucket \"%s\".", apiBucket.ID)
 
-	// Create tables
-	grp = client.NewWaitGroup(ctx, p.storageApiClient)
-	for _, b := range buckets {
-		for _, t := range b.Tables {
-			grp.Send(storageapi.CreateTableRequest(&storageapi.Table{
-				Name:       t.Name,
-				PrimaryKey: t.PrimaryKey,
-				Columns:    t.Columns,
-				Bucket: &storageapi.Bucket{
-					ID: b.ID,
-				},
+					for _, t := range b.Tables {
+						_, err := storageapi.CreateTableRequest(&storageapi.Table{
+							Name:       t.Name,
+							PrimaryKey: t.PrimaryKey,
+							Columns:    t.Columns,
+							Bucket: &storageapi.Bucket{
+								ID: b.ID,
+							},
+						}).
+							WithBefore(func(ctx context.Context, sender client.Sender) error {
+								p.logf("▶ Table \"%s\"...", t.Name)
+								return nil
+							}).
+							WithOnComplete(func(ctx context.Context, sender client.Sender, t *storageapi.Table, err error) error {
+								if err == nil {
+									p.logf("✔️ Table \"%s\"(%s).", t.Name, t.ID)
+									return nil
+								} else {
+									return errors.Errorf(`cannot create table "%s": %w`, t.Name, err)
+								}
+							}).Send(ctx, sender)
+						return err
+					}
+
+					return nil
+				} else {
+					return errors.Errorf(`cannot create bucket "%s": %w`, b.Name, err)
+				}
 			}))
-		}
 	}
 	if err := grp.Wait(); err != nil {
 		return err

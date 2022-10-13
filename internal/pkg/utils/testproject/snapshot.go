@@ -139,7 +139,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 				for _, b := range *apiBuckets {
 					bucketsMap[b.ID] = &fixtures.Bucket{
 						ID:          b.ID,
-						Uri:         b.Uri,
+						URI:         b.Uri,
 						Name:        b.Name,
 						DisplayName: b.DisplayName,
 						Stage:       b.Stage,
@@ -174,7 +174,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		b := bucketsMap[t.Bucket.ID]
 		b.Tables = append(b.Tables, &fixtures.Table{
 			ID:          t.ID,
-			Uri:         t.Uri,
+			URI:         t.Uri,
 			Name:        t.Name,
 			DisplayName: t.DisplayName,
 			PrimaryKey:  t.PrimaryKey,

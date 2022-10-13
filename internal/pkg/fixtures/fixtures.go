@@ -45,7 +45,7 @@ type Schedule struct {
 
 type Bucket struct {
 	ID          storageapi.BucketID `json:"id"`
-	Uri         string              `json:"uri"`
+	URI         string              `json:"uri"`
 	Name        string              `json:"name"`
 	DisplayName string              `json:"displayName"`
 	Stage       string              `json:"stage"`
@@ -55,7 +55,7 @@ type Bucket struct {
 
 type Table struct {
 	ID          storageapi.TableID `json:"id"`
-	Uri         string             `json:"uri"`
+	URI         string             `json:"uri"`
 	Name        string             `json:"name"`
 	DisplayName string             `json:"displayName"`
 	PrimaryKey  []string           `json:"primaryKey"`
