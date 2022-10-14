@@ -315,6 +315,9 @@ jobs:
       cancel-in-progress: false
     runs-on: macos-latest
     if: startsWith(github.ref, 'refs/tags/') && needs.set-version.outputs.is_semantic_tag == 'true'
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
@@ -349,7 +352,7 @@ jobs:
         run: |
           brew tap mitchellh/gon
           brew install mitchellh/gon/gon
-      - name: Configure AWS Credentials to KAC Assets AWS
+      - name: Configure AWS Credentials to KAC Assets Account
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
@@ -403,6 +406,9 @@ jobs:
       - release
     runs-on: windows-latest
     if: startsWith(github.ref, 'refs/tags/') && needs.set-version.outputs.is_semantic_tag == 'true'
+    permissions:
+      id-token: write
+      contents: read
     outputs:
       msi_checksum: ${{ steps.checksum.outputs.msi_checksum }}
       msi_file: ${{ steps.build_msi.outputs.msi_file }}
@@ -464,7 +470,7 @@ jobs:
         shell: bash
         run: |
           aws s3 cp "./build/package/windows/msi/${MSI_FILE}" s3://${LEGACY_AWS_BUCKET_NAME}/msi/
-      - name: Configure AWS Credentials to KAC Assets AWS
+      - name: Configure AWS Credentials to KAC Assets Account
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
