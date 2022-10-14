@@ -317,7 +317,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/') && needs.set-version.outputs.is_semantic_tag == 'true'
     permissions:
       id-token: write
-      contents: read
+      contents: write
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
