@@ -548,6 +548,8 @@ jobs:
           aws-region: eu-central-1
       - name: Mount KAC Assets S3 Bucket
         uses: ./.github/actions/mount-s3
+        env:
+          AWS_BUCKET_NAME: ${{ env.CLI_DIST_AWS_BUCKET_NAME }}
       - name: Index Linux packages in KAC Assets S3
         run: ./build/package/linux/index.sh /s3bucket
       - name: Mount Legacy S3 Bucket
@@ -555,6 +557,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
+          AWS_BUCKET_NAME: ${{ env.LEGACY_AWS_BUCKET_NAME }}
       - name: Index Linux packages in Legacy S3
         run: ./build/package/linux/index.sh /s3bucket
       - name: Download Scoop manifest
