@@ -222,7 +222,7 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: arn:aws:iam::813746015128:role/kbc-github-actions-admin-role
           aws-region: eu-central-1
@@ -257,7 +257,7 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-read-only-role
           aws-region: eu-central-1
@@ -288,7 +288,7 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
           aws-region: eu-central-1
@@ -353,7 +353,7 @@ jobs:
           brew tap mitchellh/gon
           brew install mitchellh/gon/gon
       - name: Configure AWS Credentials to KAC Assets Account
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
           aws-region: eu-central-1
@@ -471,7 +471,7 @@ jobs:
         run: |
           aws s3 cp "./build/package/windows/msi/${MSI_FILE}" s3://${LEGACY_AWS_BUCKET_NAME}/msi/
       - name: Configure AWS Credentials to KAC Assets Account
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
           aws-region: eu-central-1
@@ -539,7 +539,7 @@ jobs:
         with:
           type: apk
       - name: Configure AWS Credentials to KAC Assets AWS
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
           aws-region: eu-central-1
@@ -767,7 +767,7 @@ jobs:
           tags: ${{ env.SERVICE_IMAGE_NAME }}:${{ env.TAG }}
           file: Dockerfile-api
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: ${{ env.SERVICE_ECR_PUSH_ROLE }}
           aws-region: ${{ env.SERVICE_ECR_REGION }}
