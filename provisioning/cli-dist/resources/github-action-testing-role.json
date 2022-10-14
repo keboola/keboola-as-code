@@ -1,0 +1,62 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "OIDC full admin access role for GitHub Actions",
+  "Parameters": {
+    "OIDCProviderArn": {
+      "Description": "Arn for the GitHub OIDC Provider.",
+      "Type": "String"
+    },
+    "GitHubOrganization": {
+      "Type": "String",
+      "Description": "GitHub Organization Name"
+    },
+    "RepositoryName": {
+      "Description": "GitHub Repository Name",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "GithubActionAdminRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "kbc-github-actions-admin-role",
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/AdministratorAccess"
+        ],
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Principal": {
+                "Federated": {
+                  "Ref": "OIDCProviderArn"
+                }
+              },
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+                },
+                "StringLike": {
+                  "token.actions.githubusercontent.com:sub": {
+                    "Fn::Sub": "repo:${GitHubOrganization}/${RepositoryName}:*"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "GithubActionAdminRoleArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "GithubActionAdminRole",
+          "Arn"
+        ]
+      }
+    }
+  }
+}

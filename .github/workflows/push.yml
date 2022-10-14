@@ -31,12 +31,15 @@ env:
     connection.keboola.com|8781|${{ secrets.TEST_KBC_PROJECT_8781_TOKEN }};
     connection.keboola.com|8782|${{ secrets.TEST_KBC_PROJECT_8782_TOKEN }};
 
-  # S3 repository
-  IAM_USER: keboola-as-code-dist-s3-upload
-  AWS_BUCKET_NAME: keboola-as-code-dist
-  AWS_REGION: us-east-1
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  # Legacy S3 repository
+  LEGACY_IAM_USER: keboola-as-code-dist-s3-upload
+  LEGACY_AWS_BUCKET_NAME: keboola-as-code-dist
+  LEGACY_AWS_REGION: us-east-1
+  LEGACY_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  LEGACY_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  # S3 Repository in KAC Assets Account
+  CLI_DIST_AWS_BUCKET_NAME: cli-dist-keboola-com
 
   # GPG keys for DEB, RPM and APK Linux packages
   DEB_KEY_PRIVATE: ${{ secrets.DEB_KEY_PRIVATE }}
@@ -198,12 +201,114 @@ jobs:
         env:
           VERSION: ${{ needs.set-version.outputs.version }}
 
+  cli-dist-testing-deploy:
+    name: 'Deploy CLI Distribution to Testing'
+    needs:
+      - set-version
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: provisioning/cli-dist
+    env:
+      TF_VERSION: 1.1.4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::813746015128:role/kbc-github-actions-admin-role
+          aws-region: eu-central-1
+      - name: Terraform Init
+        run: terraform init -backend-config=backend_testing.conf -input=false
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+      - name: Terraform Plan
+        run: terraform plan -var-file="testing.tfvars" -input=false
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var-file="testing.tfvars" -input=false
+
+  cli-dist-production-plan:
+    name: 'Try CLI Distribution Plan for Production'
+    needs:
+      - cli-dist-testing-deploy
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: provisioning/cli-dist
+    env:
+      TF_VERSION: 1.1.4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-read-only-role
+          aws-region: eu-central-1
+      - name: Terraform Init
+        run: terraform init -backend-config=backend_production.conf -input=false
+      - name: Terraform Plan
+        run: terraform plan -input=false -var-file="production.tfvars"
+
+  cli-dist-production-deploy:
+    name: 'Deploy CLI Distribution to Production'
+    needs:
+      - cli-dist-production-plan
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') && needs.set-version.outputs.is_semantic_tag == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: provisioning/cli-dist
+    env:
+      TF_VERSION: 1.1.4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
+          aws-region: eu-central-1
+      - name: Terraform Init
+        run: terraform init -backend-config=backend_production.conf -input=false
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+      - name: Terraform Plan
+        run: terraform plan -input=false -var-file="production.tfvars"
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var-file="production.tfvars" -input=false
+
   release:
     needs:
       - set-version
       - test
       - lint
       - cross-compile
+      - cli-dist-production-deploy
     # only one parallel job allowed - used shared S3
     concurrency:
       group: release
@@ -244,6 +349,11 @@ jobs:
         run: |
           brew tap mitchellh/gon
           brew install mitchellh/gon/gon
+      - name: Configure AWS Credentials to KAC Assets AWS
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
+          aws-region: eu-central-1
       - name: Release
         run: make release
         env:
@@ -294,7 +404,7 @@ jobs:
     runs-on: windows-latest
     if: startsWith(github.ref, 'refs/tags/') && needs.set-version.outputs.is_semantic_tag == 'true'
     outputs:
-      msi_checksum: ${{ steps.upload_msi.outputs.msi_checksum }}
+      msi_checksum: ${{ steps.checksum.outputs.msi_checksum }}
       msi_file: ${{ steps.build_msi.outputs.msi_file }}
     steps:
       - name: Check out the repo
@@ -346,14 +456,31 @@ jobs:
         run: |
           $msi=".\build\package\windows\msi\$env:MSI_FILE"
           .\build\package\windows\signtool sign /d "Keboola CLI" /f $env:CERT_FILE /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v $msi
-      - name: Upload and checksum MSI
-        id: upload_msi
+      - name: Upload MSI to Legacy S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
+          MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
+        shell: bash
+        run: |
+          aws s3 cp "./build/package/windows/msi/${MSI_FILE}" s3://${LEGACY_AWS_BUCKET_NAME}/msi/
+      - name: Configure AWS Credentials to KAC Assets AWS
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
+          aws-region: eu-central-1
+      - name: Upload MSI to KAC Assets S3
         env:
           MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
         shell: bash
         run: |
-          aws s3 cp "./build/package/windows/msi/${MSI_FILE}" s3://${AWS_BUCKET_NAME}/msi/
-          
+          aws s3 cp "./build/package/windows/msi/${MSI_FILE}" s3://${CLI_DIST_AWS_BUCKET_NAME}/msi/
+      - name: Checksum MSI
+        id: checksum
+        env:
+          MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
+        shell: bash
+        run: |
           choco install checksum
           checksum=$(checksum -t=sha256 -f="./build/package/windows/msi/${MSI_FILE}")
           echo $checksum
@@ -405,9 +532,21 @@ jobs:
         uses: ./.github/actions/build-repo-tools
         with:
           type: apk
-      - name: Mount S3 bucket
+      - name: Configure AWS Credentials to KAC Assets AWS
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
+          aws-region: eu-central-1
+      - name: Mount KAC Assets S3 Bucket
         uses: ./.github/actions/mount-s3
-      - name: Index Linux packages
+      - name: Index Linux packages in KAC Assets S3
+        run: ./build/package/linux/index.sh /s3bucket
+      - name: Mount Legacy S3 Bucket
+        uses: ./.github/actions/mount-s3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
+      - name: Index Linux packages in Legacy S3
         run: ./build/package/linux/index.sh /s3bucket
       - name: Download Scoop manifest
         uses: actions/download-artifact@v2
