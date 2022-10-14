@@ -12,7 +12,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"

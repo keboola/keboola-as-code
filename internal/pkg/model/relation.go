@@ -7,7 +7,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
-	jsonutils "github.com/keboola/keboola-as-code/internal/pkg/json"
+	jsonutils "github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 

@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/mocktracer"
 
-	jsonLib "github.com/keboola/keboola-as-code/internal/pkg/json"
+	jsonLib "github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 )
 
 type testError struct {

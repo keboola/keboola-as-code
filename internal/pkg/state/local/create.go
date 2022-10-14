@@ -3,7 +3,7 @@ package local
 import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/json/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )

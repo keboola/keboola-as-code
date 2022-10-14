@@ -16,7 +16,7 @@ import (
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/operationid"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/token"
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 )
 
 // API definition ------------------------------------------------------------------------------------------------------

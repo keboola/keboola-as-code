@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
-	"github.com/keboola/keboola-as-code/internal/pkg/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
