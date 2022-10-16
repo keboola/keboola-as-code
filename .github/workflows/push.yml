@@ -423,7 +423,7 @@ jobs:
           TAG: ${{ needs.set-version.outputs.tag }}
         run: |
           hub release download "${TAG}" -i '*windows_amd64*.zip'
-          printf "zip=%s" *.zip >> $GITHUB_OUTPUT
+          printf "::set-output name=zip::%s\n" *.zip
           unzip -o *.zip && rm -v *.zip
       - name: Prepare PATH
         id: setup_msbuild
@@ -435,7 +435,7 @@ jobs:
           CERT_CONTENTS: ${{ secrets.WINDOWS_CERT_PFX }}
         run: |
           base64 -d <<<"$CERT_CONTENTS" > ./cert.pfx
-          printf "cert_file=%s" ".\\cert.pfx" >> $GITHUB_OUTPUT
+          printf "::set-output name=cert_file::%s\n" ".\\cert.pfx"
       - name: Sign EXE
         env:
           CERT_FILE: ${{ steps.obtain_cert.outputs.cert_file }}
@@ -453,7 +453,7 @@ jobs:
           mkdir msi
           filename="$(basename "$ZIP_FILE" ".zip")"
           "${MSBUILD_PATH}\MSBuild.exe" ./build/package/windows/msi.wixproj -p:SourceDir="$PWD" -p:OutputPath="./msi" -p:OutputName="$filename" -p:ProductVersion="${VERSION}"
-          echo "msi_file=${filename}.msi" >> $GITHUB_OUTPUT
+          echo "::set-output name=msi_file::${filename}.msi"
       - name: Sign MSI
         env:
           CERT_FILE: ${{ steps.obtain_cert.outputs.cert_file }}
