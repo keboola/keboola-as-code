@@ -212,12 +212,6 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	}
 	testhelper.MustReplaceEnvsDirWithSeparator(expectedDirFs, `/`, osEnvs, "##")
 
-	// Compare actual and expected dirs
-	err = testhelper.DirectoryContentsSame(expectedDirFs, `/`, prjState.Fs(), `/`)
-	if err != nil {
-		return err
-	}
-
 	// E2E test
 	// Push the project
 	pushOpts := syncPush.Options{
