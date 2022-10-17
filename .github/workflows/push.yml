@@ -550,6 +550,7 @@ jobs:
         uses: ./.github/actions/mount-s3
         env:
           AWS_BUCKET_NAME: ${{ env.CLI_DIST_AWS_BUCKET_NAME }}
+          MOUNTED_FOLDER: /s3bucket
       - name: Index Linux packages in KAC Assets S3
         run: ./build/package/linux/index.sh /s3bucket
       - name: Mount Legacy S3 Bucket
@@ -558,8 +559,9 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
           AWS_BUCKET_NAME: ${{ env.LEGACY_AWS_BUCKET_NAME }}
+          MOUNTED_FOLDER: /s3bucket-legacy
       - name: Index Linux packages in Legacy S3
-        run: ./build/package/linux/index.sh /s3bucket
+        run: ./build/package/linux/index.sh /s3bucket-legacy
       - name: Download Scoop manifest
         uses: actions/download-artifact@v3
         with:
