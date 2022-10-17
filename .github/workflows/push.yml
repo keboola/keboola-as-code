@@ -34,11 +34,11 @@ env:
   # Legacy S3 repository
   LEGACY_IAM_USER: keboola-as-code-dist-s3-upload
   LEGACY_AWS_BUCKET_NAME: keboola-as-code-dist
-  LEGACY_AWS_REGION: us-east-1
   LEGACY_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   LEGACY_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
   # S3 Repository in KAC Assets Account
+  AWS_REGION: us-east-1
   CLI_DIST_AWS_BUCKET_NAME: cli-dist-keboola-com
 
   # WinGet packages
@@ -534,6 +534,22 @@ jobs:
         uses: ./.github/actions/build-repo-tools
         with:
           type: apk
+      - name: Mount Legacy S3 Bucket
+        uses: ./.github/actions/mount-s3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
+          AWS_BUCKET_NAME: ${{ env.LEGACY_AWS_BUCKET_NAME }}
+        with:
+          mountedFolder: /s3bucket-legacy
+      - name: Index Linux packages in Legacy S3
+        run: ./build/package/linux/index.sh /s3bucket-legacy
+        env:
+          DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
+          RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
+          APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
+      - name: Clean aws credentials file
+        run: rm -rf ${HOME}/.aws
       - name: Configure AWS Credentials to KAC Assets AWS
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
@@ -547,20 +563,6 @@ jobs:
           mountedFolder: /s3bucket
       - name: Index Linux packages in KAC Assets S3
         run: ./build/package/linux/index.sh /s3bucket
-        env:
-          DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
-          RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
-          APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
-      - name: Mount Legacy S3 Bucket
-        uses: ./.github/actions/mount-s3
-        env:
-          AWS_ACCESS_KEY_ID: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
-          AWS_BUCKET_NAME: ${{ env.LEGACY_AWS_BUCKET_NAME }}
-        with:
-          mountedFolder: /s3bucket-legacy
-      - name: Index Linux packages in Legacy S3
-        run: ./build/package/linux/index.sh /s3bucket-legacy
         env:
           DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
           RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
