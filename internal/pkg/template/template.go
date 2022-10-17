@@ -531,6 +531,9 @@ func replacePlaceholdersInManifest(prjState *project.State, tmplInst string) err
 		MustCompile(`\\"tokenId\\":\\"\d+\\"`).
 		ReplaceAllString(file.Content, `\"tokenId\":\"%s\"`)
 	file.Content = regexpcache.
+		MustCompile(`\\"configId\\":\\"\d+\\"`).
+		ReplaceAllString(file.Content, `\"configId\":\"%s\"`)
+	file.Content = regexpcache.
 		MustCompile(`"id": "\d+"`).
 		ReplaceAllString(file.Content, `"id": "%s"`)
 	file.Content = regexpcache.

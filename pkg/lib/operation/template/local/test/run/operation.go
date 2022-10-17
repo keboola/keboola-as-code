@@ -140,6 +140,12 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(ctx, replaceEnvs)
 	testhelper.MustReplaceEnvsDir(prjState.Fs(), `/`, envProvider)
 	testhelper.MustReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
+	// Replace secrets from env vars
+	osEnvs, err := env.FromOs()
+	if err != nil {
+		return err
+	}
+	testhelper.MustReplaceEnvsDirWithSeparator(expectedDirFs, `/`, osEnvs, "##")
 
 	// Compare actual and expected dirs
 	return testhelper.DirectoryContentsSame(expectedDirFs, `/`, prjState.Fs(), `/`)
@@ -197,6 +203,12 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(ctx, replaceEnvs)
 	testhelper.MustReplaceEnvsDir(prjState.Fs(), `/`, envProvider)
 	testhelper.MustReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
+	// Replace secrets from env vars
+	osEnvs, err := env.FromOs()
+	if err != nil {
+		return err
+	}
+	testhelper.MustReplaceEnvsDirWithSeparator(expectedDirFs, `/`, osEnvs, "##")
 
 	// Compare actual and expected dirs
 	err = testhelper.DirectoryContentsSame(expectedDirFs, `/`, prjState.Fs(), `/`)

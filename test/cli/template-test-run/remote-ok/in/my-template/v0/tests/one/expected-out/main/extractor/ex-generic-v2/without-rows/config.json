@@ -2,7 +2,7 @@
   "parameters": {
     "api": {
       "baseUrl": "base/url",
-      "token": "xxxtoken"
+      "token": "##KBC_SECRET_MY_TEMPLATE_TOKEN##"
     }
   }
 }
