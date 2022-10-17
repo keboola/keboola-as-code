@@ -30,6 +30,7 @@ type Options struct {
 	InstanceName string
 	TargetBranch model.BranchKey
 	Inputs       template.InputsValues
+	InstanceId   string
 }
 
 type newObjects []model.ObjectState
@@ -81,8 +82,13 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	// Create tickets provider, to generate new IDS
 	tickets := d.ObjectIDGeneratorFactory()(ctx)
 
-	// Generate ID for the template instance
-	instanceId = idgenerator.TemplateInstanceId()
+	if o.InstanceId != "" {
+		// Get instance ID from Options
+		instanceId = o.InstanceId
+	} else {
+		// Generate ID for the template instance
+		instanceId = idgenerator.TemplateInstanceId()
+	}
 
 	// Load template
 	tmplCtx := use.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), instanceId, o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components())
