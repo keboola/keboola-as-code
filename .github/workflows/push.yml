@@ -41,14 +41,6 @@ env:
   # S3 Repository in KAC Assets Account
   CLI_DIST_AWS_BUCKET_NAME: cli-dist-keboola-com
 
-  # GPG keys for DEB, RPM and APK Linux packages
-  DEB_KEY_PRIVATE: ${{ secrets.DEB_KEY_PRIVATE }}
-  DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
-  RPM_KEY_PRIVATE: ${{ secrets.RPM_KEY_PRIVATE }}
-  RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
-  APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
-  APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
-
   # WinGet packages
   WINGET_PACKAGES_REPO_FORK: "keboola/winget-pkgs"
 
@@ -340,6 +332,10 @@ jobs:
           # The password used to import the PKCS12 file.
           p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
       - name: Write private keys
+        env:
+          DEB_KEY_PRIVATE: ${{ secrets.DEB_KEY_PRIVATE }}
+          RPM_KEY_PRIVATE: ${{ secrets.RPM_KEY_PRIVATE }}
+          APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
         run: |
           mkdir -p /tmp/keys
           echo "$DEB_KEY_PRIVATE" > /tmp/keys/deb.key
@@ -553,6 +549,10 @@ jobs:
           MOUNTED_FOLDER: /s3bucket
       - name: Index Linux packages in KAC Assets S3
         run: ./build/package/linux/index.sh /s3bucket
+        env:
+          DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
+          RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
+          APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
       - name: Mount Legacy S3 Bucket
         uses: ./.github/actions/mount-s3
         env:
@@ -562,6 +562,10 @@ jobs:
           MOUNTED_FOLDER: /s3bucket-legacy
       - name: Index Linux packages in Legacy S3
         run: ./build/package/linux/index.sh /s3bucket-legacy
+        env:
+          DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
+          RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
+          APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
       - name: Download Scoop manifest
         uses: actions/download-artifact@v3
         with:
