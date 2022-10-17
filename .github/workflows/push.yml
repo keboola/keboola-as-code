@@ -36,6 +36,7 @@ env:
   LEGACY_AWS_BUCKET_NAME: keboola-as-code-dist
   LEGACY_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   LEGACY_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  LEGACY_AWS_REGION: us-east-1
 
   # S3 Repository in KAC Assets Account
   AWS_REGION: us-east-1
