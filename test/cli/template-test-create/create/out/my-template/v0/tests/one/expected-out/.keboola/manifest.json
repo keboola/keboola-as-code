@@ -60,7 +60,7 @@
       "path": "extractor/keboola.ex-db-mysql/with-rows",
       "metadata": {
         "KBC.KAC.templates.configId": "{\"idInTemplate\":\"with-rows\"}",
-        "KBC.KAC.templates.configInputs": "[{\"input\":\"ex-db-mysql-db-host\",\"key\":\"parameters.db.host\"}]",
+        "KBC.KAC.templates.configInputs": "[{\"input\":\"ex-db-mysql-db-password\",\"key\":\"parameters.db.#password\"},{\"input\":\"ex-db-mysql-db-host\",\"key\":\"parameters.db.host\"}]",
         "KBC.KAC.templates.instanceId": "%s",
         "KBC.KAC.templates.repository": "keboola",
         "KBC.KAC.templates.rowsIds": "[{\"idInProject\":\"%s\",\"idInTemplate\":\"users\"}]",
