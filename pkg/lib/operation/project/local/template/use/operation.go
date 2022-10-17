@@ -31,6 +31,7 @@ type Options struct {
 	TargetBranch model.BranchKey
 	Inputs       template.InputsValues
 	InstanceId   string
+	SkipEncrypt  bool
 }
 
 type newObjects []model.ObjectState
@@ -157,8 +158,10 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	}
 
 	// Encrypt values
-	if err := encrypt.Run(ctx, projectState, encrypt.Options{DryRun: false, LogEmpty: false}, d); err != nil {
-		return "", nil, err
+	if !o.SkipEncrypt {
+		if err := encrypt.Run(ctx, projectState, encrypt.Options{DryRun: false, LogEmpty: false}, d); err != nil {
+			return "", nil, err
+		}
 	}
 
 	// Save manifest

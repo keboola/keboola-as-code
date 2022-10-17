@@ -49,6 +49,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 		TargetBranch: model.BranchKey{Id: storageapi.BranchID(branchID)},
 		Inputs:       o.Inputs,
 		InstanceId:   template.InstanceId,
+		SkipEncrypt:  true,
 	}
 	tmplInst, _, err := useTemplate.Run(ctx, prjState, tmpl, tmplOpts, testDeps)
 	if err != nil {
