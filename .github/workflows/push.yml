@@ -41,14 +41,6 @@ env:
   # S3 Repository in KAC Assets Account
   CLI_DIST_AWS_BUCKET_NAME: cli-dist-keboola-com
 
-  # GPG keys for DEB, RPM and APK Linux packages
-  DEB_KEY_PRIVATE: ${{ secrets.DEB_KEY_PRIVATE }}
-  DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
-  RPM_KEY_PRIVATE: ${{ secrets.RPM_KEY_PRIVATE }}
-  RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
-  APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
-  APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
-
   # WinGet packages
   WINGET_PACKAGES_REPO_FORK: "keboola/winget-pkgs"
 
@@ -340,6 +332,10 @@ jobs:
           # The password used to import the PKCS12 file.
           p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
       - name: Write private keys
+        env:
+          DEB_KEY_PRIVATE: ${{ secrets.DEB_KEY_PRIVATE }}
+          RPM_KEY_PRIVATE: ${{ secrets.RPM_KEY_PRIVATE }}
+          APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
         run: |
           mkdir -p /tmp/keys
           echo "$DEB_KEY_PRIVATE" > /tmp/keys/deb.key
@@ -423,7 +419,7 @@ jobs:
           TAG: ${{ needs.set-version.outputs.tag }}
         run: |
           hub release download "${TAG}" -i '*windows_amd64*.zip'
-          printf "::set-output name=zip::%s\n" *.zip
+          printf "zip=%s\n" *.zip >> $GITHUB_OUTPUT
           unzip -o *.zip && rm -v *.zip
       - name: Prepare PATH
         id: setup_msbuild
@@ -435,13 +431,11 @@ jobs:
           CERT_CONTENTS: ${{ secrets.WINDOWS_CERT_PFX }}
         run: |
           base64 -d <<<"$CERT_CONTENTS" > ./cert.pfx
-          printf "::set-output name=cert_file::%s\n" ".\\cert.pfx"
       - name: Sign EXE
         env:
-          CERT_FILE: ${{ steps.obtain_cert.outputs.cert_file }}
           CERT_PASS: ${{ secrets.WINDOWS_CERT_PASS }}
         run: |
-          .\build\package\windows\signtool sign /d "Keboola CLI" /f $env:CERT_FILE /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v kbc.exe
+          .\build\package\windows\signtool sign /d "Keboola CLI" /f .\cert.pfx /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v kbc.exe
       - name: Build MSI
         id: build_msi
         shell: bash
@@ -453,15 +447,14 @@ jobs:
           mkdir msi
           filename="$(basename "$ZIP_FILE" ".zip")"
           "${MSBUILD_PATH}\MSBuild.exe" ./build/package/windows/msi.wixproj -p:SourceDir="$PWD" -p:OutputPath="./msi" -p:OutputName="$filename" -p:ProductVersion="${VERSION}"
-          echo "::set-output name=msi_file::${filename}.msi"
+          echo "msi_file=${filename}.msi" >> $GITHUB_OUTPUT
       - name: Sign MSI
         env:
-          CERT_FILE: ${{ steps.obtain_cert.outputs.cert_file }}
           CERT_PASS: ${{ secrets.WINDOWS_CERT_PASS }}
           MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
         run: |
           $msi=".\build\package\windows\msi\$env:MSI_FILE"
-          .\build\package\windows\signtool sign /d "Keboola CLI" /f $env:CERT_FILE /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v $msi
+          .\build\package\windows\signtool sign /d "Keboola CLI" /f .\cert.pfx /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v $msi
       - name: Upload MSI to Legacy S3
         env:
           AWS_ACCESS_KEY_ID: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
@@ -550,16 +543,28 @@ jobs:
         uses: ./.github/actions/mount-s3
         env:
           AWS_BUCKET_NAME: ${{ env.CLI_DIST_AWS_BUCKET_NAME }}
+        with:
+          mountedFolder: /s3bucket
       - name: Index Linux packages in KAC Assets S3
         run: ./build/package/linux/index.sh /s3bucket
+        env:
+          DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
+          RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
+          APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
       - name: Mount Legacy S3 Bucket
         uses: ./.github/actions/mount-s3
         env:
           AWS_ACCESS_KEY_ID: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
           AWS_BUCKET_NAME: ${{ env.LEGACY_AWS_BUCKET_NAME }}
+        with:
+          mountedFolder: /s3bucket-legacy
       - name: Index Linux packages in Legacy S3
-        run: ./build/package/linux/index.sh /s3bucket
+        run: ./build/package/linux/index.sh /s3bucket-legacy
+        env:
+          DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
+          RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
+          APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
       - name: Download Scoop manifest
         uses: actions/download-artifact@v3
         with:
