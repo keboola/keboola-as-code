@@ -419,7 +419,7 @@ jobs:
           TAG: ${{ needs.set-version.outputs.tag }}
         run: |
           hub release download "${TAG}" -i '*windows_amd64*.zip'
-          printf "::set-output name=zip::%s\n" *.zip
+          printf "zip=%s\n" *.zip >> $GITHUB_OUTPUT
           unzip -o *.zip && rm -v *.zip
       - name: Prepare PATH
         id: setup_msbuild
@@ -431,13 +431,11 @@ jobs:
           CERT_CONTENTS: ${{ secrets.WINDOWS_CERT_PFX }}
         run: |
           base64 -d <<<"$CERT_CONTENTS" > ./cert.pfx
-          printf "::set-output name=cert_file::%s\n" ".\\cert.pfx"
       - name: Sign EXE
         env:
-          CERT_FILE: ${{ steps.obtain_cert.outputs.cert_file }}
           CERT_PASS: ${{ secrets.WINDOWS_CERT_PASS }}
         run: |
-          .\build\package\windows\signtool sign /d "Keboola CLI" /f $env:CERT_FILE /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v kbc.exe
+          .\build\package\windows\signtool sign /d "Keboola CLI" /f .\cert.pfx /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v kbc.exe
       - name: Build MSI
         id: build_msi
         shell: bash
@@ -449,15 +447,14 @@ jobs:
           mkdir msi
           filename="$(basename "$ZIP_FILE" ".zip")"
           "${MSBUILD_PATH}\MSBuild.exe" ./build/package/windows/msi.wixproj -p:SourceDir="$PWD" -p:OutputPath="./msi" -p:OutputName="$filename" -p:ProductVersion="${VERSION}"
-          echo "::set-output name=msi_file::${filename}.msi"
+          echo "msi_file=${filename}.msi" >> $GITHUB_OUTPUT
       - name: Sign MSI
         env:
-          CERT_FILE: ${{ steps.obtain_cert.outputs.cert_file }}
           CERT_PASS: ${{ secrets.WINDOWS_CERT_PASS }}
           MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
         run: |
           $msi=".\build\package\windows\msi\$env:MSI_FILE"
-          .\build\package\windows\signtool sign /d "Keboola CLI" /f $env:CERT_FILE /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v $msi
+          .\build\package\windows\signtool sign /d "Keboola CLI" /f .\cert.pfx /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v $msi
       - name: Upload MSI to Legacy S3
         env:
           AWS_ACCESS_KEY_ID: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
