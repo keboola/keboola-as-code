@@ -27,11 +27,12 @@ import (
 )
 
 type Options struct {
-	InstanceName string
-	TargetBranch model.BranchKey
-	Inputs       template.InputsValues
-	InstanceId   string
-	SkipEncrypt  bool
+	InstanceName          string
+	TargetBranch          model.BranchKey
+	Inputs                template.InputsValues
+	InstanceId            string
+	SkipEncrypt           bool
+	SkipSecretsValidation bool
 }
 
 type newObjects []model.ObjectState
@@ -178,7 +179,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	}
 
 	// Validate schemas and encryption
-	if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: true, ValidateJsonSchema: true}, d); err != nil {
+	if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: !o.SkipSecretsValidation, ValidateJsonSchema: true}, d); err != nil {
 		logger.Warn(`Warning, ` + err.Error())
 		logger.Warn()
 		logger.Warnf(`Please correct the problems listed above.`)
