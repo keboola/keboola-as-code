@@ -459,7 +459,7 @@ jobs:
       - name: Upload MSI to Legacy S3
         env:
           AWS_ACCESS_KEY_ID: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.LEGACY_AWS_SECRET_ACCESS_KEY }}
           MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
         shell: bash
         run: |
@@ -539,7 +539,7 @@ jobs:
         uses: ./.github/actions/mount-s3
         env:
           AWS_ACCESS_KEY_ID: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ env.LEGACY_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.LEGACY_AWS_SECRET_ACCESS_KEY }}
           AWS_BUCKET_NAME: ${{ env.LEGACY_AWS_BUCKET_NAME }}
         with:
           mountedFolder: /s3bucket-legacy
