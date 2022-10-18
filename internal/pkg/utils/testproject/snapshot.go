@@ -62,7 +62,12 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 									config.Description = apiConfig.Description
 									config.ChangeDescription = normalizeChangeDesc(apiConfig.ChangeDescription)
 									config.Content = apiConfig.Content
-									branch.Configs = append(branch.Configs, config)
+
+									// Do not snapshot configs which are later joined into a different resource.
+									// The component must still exist in `configsMap` so it can be joined later.
+									if component.ID != sandboxesapi.Component {
+										branch.Configs = append(branch.Configs, config)
+									}
 
 									lock.Lock()
 									configsMap[apiConfig.ConfigKey] = config
@@ -131,7 +136,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		return request.SendOrErr(ctx, p.schedulerAPIClient)
 	})
 
-	var sandboxesMap map[string]*sandboxesapi.Sandbox
+	sandboxesMap := make(map[string]*sandboxesapi.Sandbox)
 	grp.Go(func() error {
 		request := sandboxesapi.
 			ListInstancesRequest().
