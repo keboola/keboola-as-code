@@ -37,7 +37,7 @@ const (
 	ReadmeFile           = "README.md"
 	SrcDirectory         = "src"
 	TestsDirectory       = "tests"
-	InstanceId           = "instance-id"
+	InstanceIdForTest    = "instance-id"
 )
 
 type (

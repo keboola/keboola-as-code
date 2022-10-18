@@ -48,7 +48,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 		InstanceName:          "test",
 		TargetBranch:          model.BranchKey{Id: storageapi.BranchID(branchID)},
 		Inputs:                o.Inputs,
-		InstanceId:            template.InstanceId,
+		InstanceId:            template.InstanceIdForTest,
 		SkipEncrypt:           true,
 		SkipSecretsValidation: true,
 	}

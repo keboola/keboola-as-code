@@ -122,7 +122,7 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 		InstanceName: "test",
 		TargetBranch: model.BranchKey{Id: storageapi.BranchID(branchID)},
 		Inputs:       inputValues,
-		InstanceId:   template.InstanceId,
+		InstanceId:   template.InstanceIdForTest,
 		SkipEncrypt:  true,
 	}
 	_, _, err = useTemplate.Run(ctx, prjState, tmpl, tmplOpts, testDeps)
