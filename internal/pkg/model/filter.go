@@ -3,6 +3,7 @@ package model
 import (
 	"strings"
 
+	"github.com/keboola/go-client/pkg/sandboxesapi"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/spf13/cast"
 
@@ -26,6 +27,10 @@ type ObjectsFilter struct {
 	allowedKeys       map[string]bool
 	allowedBranches   AllowedBranches
 	ignoredComponents ComponentIDs
+}
+
+var alwaysIgnoredComponents = map[string]bool{
+	sandboxesapi.Component: true,
 }
 
 func DefaultAllowedBranches() AllowedBranches {
@@ -58,11 +63,11 @@ func (f ObjectsFilter) IsObjectIgnored(object Object) bool {
 	case *Branch:
 		return !f.allowedBranches.IsBranchAllowed(o)
 	case *Config:
-		return f.ignoredComponents.Contains(o.ComponentId)
+		return f.ignoredComponents.Contains(o.ComponentId) || alwaysIgnoredComponents[o.ComponentId.String()]
 	case *ConfigWithRows:
-		return f.ignoredComponents.Contains(o.ComponentId)
+		return f.ignoredComponents.Contains(o.ComponentId) || alwaysIgnoredComponents[o.ComponentId.String()]
 	case *ConfigRow:
-		return f.ignoredComponents.Contains(o.ComponentId)
+		return f.ignoredComponents.Contains(o.ComponentId) || alwaysIgnoredComponents[o.ComponentId.String()]
 	}
 	return false
 }
