@@ -549,6 +549,9 @@ jobs:
           DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
           RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
           APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
+          DEB_KEY_PRIVATE: ${{ secrets.DEB_KEY_PRIVATE }}
+          RPM_KEY_PRIVATE: ${{ secrets.RPM_KEY_PRIVATE }}
+          APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
       - name: Clean aws credentials file
         run: rm -rf ${HOME}/.aws
       - name: Configure AWS Credentials to KAC Assets AWS
@@ -568,6 +571,9 @@ jobs:
           DEB_KEY_PUBLIC: ${{ secrets.DEB_KEY_PUBLIC }}
           RPM_KEY_PUBLIC: ${{ secrets.RPM_KEY_PUBLIC }}
           APK_KEY_PUBLIC: ${{ secrets.APK_KEY_PUBLIC }}
+          DEB_KEY_PRIVATE: ${{ secrets.DEB_KEY_PRIVATE }}
+          RPM_KEY_PRIVATE: ${{ secrets.RPM_KEY_PRIVATE }}
+          APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
       - name: Download Scoop manifest
         uses: actions/download-artifact@v3
         with:
