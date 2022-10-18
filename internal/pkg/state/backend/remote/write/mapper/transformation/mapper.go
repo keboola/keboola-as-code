@@ -10,8 +10,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // MapBeforeRemoteSave - save code blocks to the API.
-func (m *transformationMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
+func (m *mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
 	// Only for transformation config
 	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
 		return err

@@ -7,7 +7,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m *variablesMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
+func (m *mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
 	// Variables are used by config
 	config, ok := recipe.Object.(*model.Config)
 	if !ok {
@@ -31,7 +42,7 @@ func (m *variablesMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model
 	return nil
 }
 
-func (m *variablesMapper) saveVariables(config *model.Config, recipe *model.RemoteSaveRecipe) (*model.VariablesFromRelation, error) {
+func (m *mapper) saveVariables(config *model.Config, recipe *model.RemoteSaveRecipe) (*model.VariablesFromRelation, error) {
 	// Get relation
 	relType := model.VariablesFromRelType
 	relationRaw, err := config.Relations.GetOneByType(relType)
@@ -50,7 +61,7 @@ func (m *variablesMapper) saveVariables(config *model.Config, recipe *model.Remo
 	return relation, nil
 }
 
-func (m *variablesMapper) saveVariablesValues(config *model.Config, recipe *model.RemoteSaveRecipe) error {
+func (m *mapper) saveVariablesValues(config *model.Config, recipe *model.RemoteSaveRecipe) error {
 	// Get relation
 	relType := model.VariablesValuesFromRelType
 	relationRaw, err := config.Relations.GetOneByType(relType)

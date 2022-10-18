@@ -11,8 +11,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // MapBeforeLocalSave - replace default buckets in IM with placeholders.
-func (m *defaultBucketMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
+func (m *mapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	config, ok := recipe.Object.(configOrRow)
 	if !ok {
 		return nil
@@ -24,7 +35,7 @@ func (m *defaultBucketMapper) MapBeforeLocalSave(ctx context.Context, recipe *mo
 	return nil
 }
 
-func (m *defaultBucketMapper) replaceDefaultBucketWithPlaceholder(
+func (m *mapper) replaceDefaultBucketWithPlaceholder(
 	config configOrRow,
 	sourceTableId string,
 	inputTable *orderedmap.OrderedMap,
@@ -43,7 +54,7 @@ func (m *defaultBucketMapper) replaceDefaultBucketWithPlaceholder(
 	return nil
 }
 
-func (m *defaultBucketMapper) getDefaultBucketSourceConfig(config configOrRow, tableId string) (model.ObjectState, bool, error) {
+func (m *mapper) getDefaultBucketSourceConfig(config configOrRow, tableId string) (model.ObjectState, bool, error) {
 	componentId, configId, match := m.state.Components().GetDefaultBucketByTableId(tableId)
 	if !match {
 		return nil, false, nil

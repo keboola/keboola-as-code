@@ -9,8 +9,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // MapAfterRemoteLoad - load code blocks from API to blocks field.
-func (m *transformationMapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
+func (m *mapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
 	// Only for transformation config
 	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
 		return err

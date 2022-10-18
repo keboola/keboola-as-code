@@ -12,7 +12,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m *orchestratorMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
+func (m *mapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	// Object must be orchestrator config
 	if ok, err := m.isOrchestratorConfigKey(recipe.Object.Key()); err != nil || !ok {
 		return err

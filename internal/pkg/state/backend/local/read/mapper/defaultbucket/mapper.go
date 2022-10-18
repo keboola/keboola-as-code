@@ -12,8 +12,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // AfterLocalOperation - replace placeholders with default buckets in IM.
-func (m *defaultBucketMapper) AfterLocalOperation(_ context.Context, changes *model.LocalChanges) error {
+func (m *mapper) AfterLocalOperation(_ context.Context, changes *model.LocalChanges) error {
 	warnings := errors.NewMultiError()
 	for _, objectState := range changes.Loaded() {
 		config, ok := objectState.LocalState().(configOrRow)
@@ -41,7 +52,7 @@ func (m *defaultBucketMapper) AfterLocalOperation(_ context.Context, changes *mo
 	return errs.ErrorOrNil()
 }
 
-func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
+func (m *mapper) replacePlaceholderWithDefaultBucket(
 	targetConfig configOrRow,
 	inputTableSource string,
 	inputTable *orderedmap.OrderedMap,

@@ -8,8 +8,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // MapAfterLocalLoad - load metadata from manifest to branch.
-func (m *branchMetadataMapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
+func (m *mapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
 	manifest, ok := recipe.ObjectManifest.(*model.BranchManifest)
 	if !ok {
 		return nil

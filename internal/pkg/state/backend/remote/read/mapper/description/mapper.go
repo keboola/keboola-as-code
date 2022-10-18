@@ -7,16 +7,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-// descriptionMapper normalize object description loaded from API.
-// Description is normalized in the same way as when reading a local "description.md" file.
-// The white characters at the end are removed.
-type descriptionMapper struct{}
-
-func NewMapper() *descriptionMapper {
-	return &descriptionMapper{}
+type mapper struct {
+	dependencies
 }
 
-func (m *descriptionMapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
+func (m *mapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
 	switch o := recipe.Object.(type) {
 	case *model.Branch:
 		o.Description = m.normalize(o.Description)
@@ -32,6 +34,6 @@ func (m *descriptionMapper) MapAfterRemoteLoad(ctx context.Context, recipe *mode
 	return nil
 }
 
-func (m *descriptionMapper) normalize(str string) string {
+func (m *mapper) normalize(str string) string {
 	return strings.TrimRight(str, " \r\n\t")
 }

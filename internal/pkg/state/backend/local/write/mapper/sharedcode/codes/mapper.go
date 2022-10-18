@@ -8,6 +8,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // MapBeforeLocalSave saves shared code as native file to filesystem.
 func (m *mapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	// Save config

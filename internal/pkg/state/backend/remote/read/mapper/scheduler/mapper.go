@@ -9,7 +9,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *schedulerMapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
+func (m *mapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
 	// Scheduler is a config
 	object, ok := recipe.Object.(*model.Config)
 	if !ok {

@@ -9,6 +9,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // onLocalLoad replaces shared code path by id in transformation config and blocks.
 func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
 	// Shared code can be used only by transformation - struct must be set

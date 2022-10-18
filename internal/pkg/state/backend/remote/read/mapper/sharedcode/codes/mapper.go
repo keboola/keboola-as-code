@@ -9,6 +9,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // AfterRemoteOperation converts legacy "code_content" string -> []interface{}.
 func (m *mapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
 	errs := errors.NewMultiError()

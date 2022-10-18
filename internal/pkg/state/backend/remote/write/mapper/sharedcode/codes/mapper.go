@@ -6,6 +6,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // MapBeforeRemoteSave saves shared code target component and code to Content.
 func (m *mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
 	// Save config

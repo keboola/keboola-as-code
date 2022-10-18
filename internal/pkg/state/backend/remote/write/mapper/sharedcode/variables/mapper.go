@@ -7,6 +7,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // MapBeforeRemoteSave - add "variables_id" to shared code.
 func (m *mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
 	if ok, err := m.IsSharedCodeRowKey(recipe.Object.Key()); err != nil || !ok {

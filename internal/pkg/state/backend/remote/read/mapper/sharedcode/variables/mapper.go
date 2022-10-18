@@ -8,6 +8,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // MapAfterRemoteLoad - extract shared code "variables_id".
 func (m *mapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
 	if ok, err := m.IsSharedCodeRowKey(recipe.Object.Key()); err != nil || !ok {

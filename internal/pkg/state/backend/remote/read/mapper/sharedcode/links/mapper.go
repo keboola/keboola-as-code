@@ -8,6 +8,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // onRemoteLoad move shared code config/rows IDs from Content to Transformation struct.
 func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 	// Shared code can be used only by transformation - struct must be set

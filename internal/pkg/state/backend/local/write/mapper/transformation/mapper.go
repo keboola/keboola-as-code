@@ -12,8 +12,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // MapBeforeLocalSave - save code blocks to the disk.
-func (m *transformationMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
+func (m *mapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	// Only for transformation config
 	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
 		return err

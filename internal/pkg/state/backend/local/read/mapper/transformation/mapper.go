@@ -12,8 +12,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // MapAfterLocalLoad - load code blocks from filesystem to Blocks field.
-func (m *transformationMapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
+func (m *mapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
 	// Only for transformation config
 	if ok, err := m.isTransformationConfig(recipe.Object); err != nil {
 		return err

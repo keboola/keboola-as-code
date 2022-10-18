@@ -9,12 +9,21 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/reflecthelper"
 )
 
-const (
-	HideMetaFileFieldsAnnotation = `hideMetaFileFields`
-)
+const HideMetaFileFieldsAnnotation = `hideMetaFileFields`
+
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
 
 // MapBeforeLocalSave saves tagged object (Branch, Config,ConfigRow) fields to a files.
-func (m *coreFilesMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
+func (m *mapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSaveRecipe) error {
 	m.createMetaFile(recipe)
 	m.createConfigFile(recipe)
 	m.createDescriptionFile(recipe)
@@ -22,7 +31,7 @@ func (m *coreFilesMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.
 }
 
 // createMetaFile meta.json.
-func (m *coreFilesMapper) createMetaFile(recipe *model.LocalSaveRecipe) {
+func (m *mapper) createMetaFile(recipe *model.LocalSaveRecipe) {
 	if metadata := reflecthelper.MapFromTaggedFields(model.MetaFileFieldsTag, recipe.Object); metadata != nil {
 		path := m.state.NamingGenerator().MetaFilePath(recipe.Path())
 		jsonFile := filesystem.NewJsonFile(path, metadata)
@@ -42,7 +51,7 @@ func (m *coreFilesMapper) createMetaFile(recipe *model.LocalSaveRecipe) {
 }
 
 // createConfigFile config.json.
-func (m *coreFilesMapper) createConfigFile(recipe *model.LocalSaveRecipe) {
+func (m *mapper) createConfigFile(recipe *model.LocalSaveRecipe) {
 	if configuration := reflecthelper.MapFromOneTaggedField(model.ConfigFileFieldTag, recipe.Object); configuration != nil {
 		path := m.state.NamingGenerator().ConfigFilePath(recipe.Path())
 		jsonFile := filesystem.NewJsonFile(path, configuration)
@@ -54,7 +63,7 @@ func (m *coreFilesMapper) createConfigFile(recipe *model.LocalSaveRecipe) {
 }
 
 // createDescriptionFile description.md.
-func (m *coreFilesMapper) createDescriptionFile(recipe *model.LocalSaveRecipe) {
+func (m *mapper) createDescriptionFile(recipe *model.LocalSaveRecipe) {
 	if description, found := reflecthelper.StringFromOneTaggedField(model.DescriptionFileFieldTag, recipe.Object); found {
 		path := m.state.NamingGenerator().DescriptionFilePath(recipe.Path())
 		markdownFile := filesystem.NewRawFile(path, strings.TrimRight(description, " \r\n\t")+"\n")

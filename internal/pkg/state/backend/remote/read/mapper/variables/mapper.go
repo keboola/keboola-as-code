@@ -8,7 +8,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *variablesMapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
+func (m *mapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoadRecipe) error {
 	// Variables are used by config
 	object, ok := recipe.Object.(*model.Config)
 	if !ok {
@@ -20,7 +31,7 @@ func (m *variablesMapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.
 	return nil
 }
 
-func (m *variablesMapper) loadVariables(object *model.Config) {
+func (m *mapper) loadVariables(object *model.Config) {
 	// Variables ID is stored in configuration
 	variablesIdRaw, found := object.Content.Get(model.VariablesIdContentKey)
 	if !found {
@@ -42,7 +53,7 @@ func (m *variablesMapper) loadVariables(object *model.Config) {
 	object.Content.Delete(model.VariablesIdContentKey)
 }
 
-func (m *variablesMapper) loadVariablesValues(object *model.Config) {
+func (m *mapper) loadVariablesValues(object *model.Config) {
 	// Values ID is stored in configuration
 	valuesIdRaw, found := object.Content.Get(model.VariablesValuesIdContentKey)
 	if !found {

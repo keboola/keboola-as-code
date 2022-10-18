@@ -8,8 +8,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // MapAfterLocalLoad loads files to tagged object (Branch, Config,ConfigRow) fields.
-func (m *coreFilesMapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
+func (m *mapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
 	errs := errors.NewMultiError()
 	if err := m.loadMetaFile(recipe); err != nil {
 		errs.Append(err)
@@ -24,7 +35,7 @@ func (m *coreFilesMapper) MapAfterLocalLoad(ctx context.Context, recipe *model.L
 }
 
 // loadMetaFile from meta.json.
-func (m *coreFilesMapper) loadMetaFile(recipe *model.LocalLoadRecipe) error {
+func (m *mapper) loadMetaFile(recipe *model.LocalLoadRecipe) error {
 	_, _, err := recipe.Files.
 		Load(m.state.NamingGenerator().MetaFilePath(recipe.ObjectManifest.Path())).
 		AddMetadata(filesystem.ObjectKeyMetadata, recipe.Key()).
@@ -36,7 +47,7 @@ func (m *coreFilesMapper) loadMetaFile(recipe *model.LocalLoadRecipe) error {
 }
 
 // loadConfigFile from config.json.
-func (m *coreFilesMapper) loadConfigFile(recipe *model.LocalLoadRecipe) error {
+func (m *mapper) loadConfigFile(recipe *model.LocalLoadRecipe) error {
 	_, _, err := recipe.Files.
 		Load(m.state.NamingGenerator().ConfigFilePath(recipe.ObjectManifest.Path())).
 		AddMetadata(filesystem.ObjectKeyMetadata, recipe.Key()).
@@ -48,7 +59,7 @@ func (m *coreFilesMapper) loadConfigFile(recipe *model.LocalLoadRecipe) error {
 }
 
 // loadDescriptionFile from description.md.
-func (m *coreFilesMapper) loadDescriptionFile(recipe *model.LocalLoadRecipe) error {
+func (m *mapper) loadDescriptionFile(recipe *model.LocalLoadRecipe) error {
 	_, _, err := recipe.Files.
 		Load(m.state.NamingGenerator().DescriptionFilePath(recipe.ObjectManifest.Path())).
 		AddMetadata(filesystem.ObjectKeyMetadata, recipe.Key()).

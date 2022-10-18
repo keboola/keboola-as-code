@@ -12,7 +12,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m *orchestratorMapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
+func (m *mapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteChanges) error {
 	errs := errors.NewMultiError()
 	allObjects := m.state.RemoteObjects()
 	for _, objectState := range changes.Loaded() {
@@ -27,7 +38,7 @@ func (m *orchestratorMapper) AfterRemoteOperation(_ context.Context, changes *mo
 	return errs.ErrorOrNil()
 }
 
-func (m *orchestratorMapper) onRemoteLoad(config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) {
+func (m *mapper) onRemoteLoad(config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) {
 	loader := &remoteLoader{
 		State:        m.state,
 		phasesSorter: newPhasesSorter(),

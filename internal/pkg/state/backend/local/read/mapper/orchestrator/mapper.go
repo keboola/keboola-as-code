@@ -11,7 +11,18 @@ import (
 
 const PreviousPhaseLink = "<previous>"
 
-func (m *orchestratorMapper) onLocalLoad(config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) error {
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
+func (m *mapper) onLocalLoad(config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) error {
 	loader := &localLoader{
 		State:        m.state,
 		phasesSorter: newPhasesSorter(),

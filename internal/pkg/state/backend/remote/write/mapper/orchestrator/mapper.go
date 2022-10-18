@@ -8,7 +8,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func (m *orchestratorMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
+func (m *mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSaveRecipe) error {
 	// Object must be orchestrator config
 	if ok, err := m.isOrchestratorConfigKey(recipe.Object.Key()); err != nil || !ok {
 		return err
@@ -26,7 +37,7 @@ func (m *orchestratorMapper) MapBeforeRemoteSave(ctx context.Context, recipe *mo
 	return nil
 }
 
-func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orchestration *model.Orchestration) {
+func (m *mapper) serializeOrchestrationTo(config *model.Config, orchestration *model.Orchestration) {
 	phases := make([]interface{}, 0)
 	tasks := make([]interface{}, 0)
 

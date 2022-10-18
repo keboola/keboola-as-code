@@ -8,8 +8,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
+type mapper struct {
+	dependencies
+}
+
+type dependencies interface {
+}
+
+func NewMapper() *mapper {
+	return &mapper{}
+}
+
 // MapAfterLocalLoad - load relations from manifest to object.
-func (m *relationsMapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
+func (m *mapper) MapAfterLocalLoad(ctx context.Context, recipe *model.LocalLoadRecipe) error {
 	manifest, ok := recipe.ObjectManifest.(model.ObjectManifestWithRelations)
 	if !ok {
 		return nil
