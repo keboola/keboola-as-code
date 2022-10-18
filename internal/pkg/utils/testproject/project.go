@@ -205,7 +205,8 @@ func (p *Project) SandboxesAPIClient() client.Client {
 	return p.sandboxesApiClient
 }
 
-// Clean method resets default branch, deletes all project branches (except default), all configurations and all schedules.
+// Clean method deletes all project branches (except default), all configurations, all schedules, and all sandboxes.
+// It also sets the project's default branch.
 func (p *Project) Clean() error {
 	p.logf("□ Cleaning project...")
 
@@ -216,6 +217,13 @@ func (p *Project) Clean() error {
 	if err := platform.CleanProject(ctx, p.storageApiClient, p.schedulerAPIClient, p.jobsQueueAPIClient, p.sandboxesApiClient); err != nil {
 		return errors.Errorf(`cannot clean project "%d": %w`, p.ID(), err)
 	}
+
+	defaultBranch, err := storageapi.GetDefaultBranchRequest().Send(ctx, p.storageApiClient)
+	if err != nil {
+		return errors.Errorf(`cannot fetch default branch in project "%d": %w`, p.ID(), err)
+	}
+	p.defaultBranch = defaultBranch
+
 	p.logf("■ Cleanup done.")
 	return nil
 }
