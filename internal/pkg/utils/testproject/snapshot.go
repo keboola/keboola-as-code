@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/sandboxesapi"
 	"github.com/keboola/go-client/pkg/schedulerapi"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"golang.org/x/sync/errgroup"
@@ -130,6 +131,19 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		return request.SendOrErr(ctx, p.schedulerAPIClient)
 	})
 
+	var sandboxesMap map[string]*sandboxesapi.Sandbox
+	grp.Go(func() error {
+		request := sandboxesapi.
+			ListInstancesRequest().
+			WithOnSuccess(func(ctx context.Context, sender client.Sender, result *[]*sandboxesapi.Sandbox) error {
+				for _, sandbox := range *result {
+					sandboxesMap[sandbox.ID.String()] = sandbox
+				}
+				return nil
+			})
+		return request.SendOrErr(ctx, p.sandboxesApiClient)
+	})
+
 	// Storage Buckets
 	bucketsMap := map[storageapi.BucketID]*fixtures.Bucket{}
 	grp.Go(func() error {
@@ -187,17 +201,35 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		snapshot.Buckets = append(snapshot.Buckets, b)
 	}
 
+	defBranch, err := p.DefaultBranch()
+	if err != nil {
+		return nil, err
+	}
+
 	// Join schedules with config name
 	for _, schedule := range schedules {
-		defBranch, err := p.DefaultBranch()
-		if err != nil {
-			return nil, err
-		}
 		configKey := storageapi.ConfigKey{BranchID: defBranch.ID, ComponentID: storageapi.SchedulerComponentID, ID: schedule.ConfigID}
 		if scheduleConfig, found := configsMap[configKey]; found {
 			snapshot.Schedules = append(snapshot.Schedules, &fixtures.Schedule{Name: scheduleConfig.Name})
 		} else {
 			snapshot.Schedules = append(snapshot.Schedules, &fixtures.Schedule{Name: "SCHEDULE CONFIG NOT FOUND"})
+		}
+	}
+
+	// Join sandbox instances with config name
+	for _, config := range configsMap {
+		if config.ComponentID == sandboxesapi.Component {
+			sandboxId, err := sandboxesapi.GetSandboxID(config.ToApi().Config)
+			if err != nil {
+				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: "SANDBOX INSTANCE ID NOT SET"})
+				continue
+			}
+
+			if sandbox, found := sandboxesMap[sandboxId.String()]; found {
+				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: config.Name, Type: sandbox.Type, Size: sandbox.Size})
+			} else {
+				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: "SANDBOX INSTANCE NOT FOUND"})
+			}
 		}
 	}
 
