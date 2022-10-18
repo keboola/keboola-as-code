@@ -3,6 +3,7 @@ package model_test
 import (
 	"testing"
 
+	"github.com/keboola/go-client/pkg/sandboxesapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
@@ -88,6 +89,14 @@ func TestFilterIsObjectIgnored(t *testing.T) {
 	assert.False(t, m.IsObjectIgnored(
 		&ConfigRow{ConfigRowKey: ConfigRowKey{ComponentId: "ccc"}}),
 	)
+}
+
+func TestAlwaysIgnoredComponents(t *testing.T) {
+	t.Parallel()
+	m := NoFilter()
+	assert.True(t, m.IsObjectIgnored(
+		&Config{ConfigKey: ConfigKey{ComponentId: sandboxesapi.Component}},
+	))
 }
 
 func TestObjectsFilter_SetAllowedKeys(t *testing.T) {
