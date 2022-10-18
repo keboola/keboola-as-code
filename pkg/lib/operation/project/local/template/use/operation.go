@@ -27,9 +27,12 @@ import (
 )
 
 type Options struct {
-	InstanceName string
-	TargetBranch model.BranchKey
-	Inputs       template.InputsValues
+	InstanceName          string
+	TargetBranch          model.BranchKey
+	Inputs                template.InputsValues
+	InstanceId            string
+	SkipEncrypt           bool
+	SkipSecretsValidation bool
 }
 
 type newObjects []model.ObjectState
@@ -81,8 +84,13 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	// Create tickets provider, to generate new IDS
 	tickets := d.ObjectIDGeneratorFactory()(ctx)
 
-	// Generate ID for the template instance
-	instanceId = idgenerator.TemplateInstanceId()
+	if o.InstanceId != "" {
+		// Get instance ID from Options
+		instanceId = o.InstanceId
+	} else {
+		// Generate ID for the template instance
+		instanceId = idgenerator.TemplateInstanceId()
+	}
 
 	// Load template
 	tmplCtx := use.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), instanceId, o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components())
@@ -151,8 +159,10 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	}
 
 	// Encrypt values
-	if err := encrypt.Run(ctx, projectState, encrypt.Options{DryRun: false, LogEmpty: false}, d); err != nil {
-		return "", nil, err
+	if !o.SkipEncrypt {
+		if err := encrypt.Run(ctx, projectState, encrypt.Options{DryRun: false, LogEmpty: false}, d); err != nil {
+			return "", nil, err
+		}
 	}
 
 	// Save manifest
@@ -169,7 +179,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	}
 
 	// Validate schemas and encryption
-	if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: true, ValidateJsonSchema: true}, d); err != nil {
+	if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: !o.SkipSecretsValidation, ValidateJsonSchema: true}, d); err != nil {
 		logger.Warn(`Warning, ` + err.Error())
 		logger.Warn()
 		logger.Warnf(`Please correct the problems listed above.`)

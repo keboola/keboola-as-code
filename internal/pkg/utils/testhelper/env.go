@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 
@@ -73,20 +74,24 @@ func MustReplaceEnvsFile(fs filesystem.Fs, path string, provider EnvProvider) {
 // MustReplaceEnvsDirWithSeparator replaces ENVs in all files in root directory and sub-directories with chosen separator.
 func MustReplaceEnvsDirWithSeparator(fs filesystem.Fs, root string, provider EnvProvider, envSeparator string) {
 	// Iterate over directory structure
-	err := fs.Walk(root, func(path string, info filesystem.FileInfo, err error) error {
+	err := fs.Walk(root, func(p string, info filesystem.FileInfo, err error) error {
 		// Stop on error
 		if err != nil {
 			return err
 		}
 
 		// Ignore hidden files, except .env*, .gitignore
-		if IsIgnoredFile(path, info) {
+		if IsIgnoredFile(p, info) {
+			return nil
+		}
+
+		if path.Ext(p) == ".sql" || path.Ext(p) == ".py" {
 			return nil
 		}
 
 		// Process file
 		if !info.IsDir() {
-			MustReplaceEnvsFileWithSeparator(fs, path, provider, envSeparator)
+			MustReplaceEnvsFileWithSeparator(fs, p, provider, envSeparator)
 		}
 
 		return nil

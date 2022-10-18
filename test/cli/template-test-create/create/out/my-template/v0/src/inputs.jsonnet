@@ -33,6 +33,13 @@
               kind: "confirm",
               default: false,
             },
+            {
+              id: "ex-db-mysql-db-password",
+              name: "Db Pass",
+              description: "b",
+              type: "string",
+              kind: "hidden",
+            },
           ],
         },
       ],

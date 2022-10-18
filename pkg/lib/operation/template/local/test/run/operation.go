@@ -122,6 +122,8 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 		InstanceName: "test",
 		TargetBranch: model.BranchKey{Id: storageapi.BranchID(branchID)},
 		Inputs:       inputValues,
+		InstanceId:   template.InstanceIdForTest,
+		SkipEncrypt:  true,
 	}
 	_, _, err = useTemplate.Run(ctx, prjState, tmpl, tmplOpts, testDeps)
 	if err != nil {
@@ -209,12 +211,6 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 		return err
 	}
 	testhelper.MustReplaceEnvsDirWithSeparator(expectedDirFs, `/`, osEnvs, "##")
-
-	// Compare actual and expected dirs
-	err = testhelper.DirectoryContentsSame(expectedDirFs, `/`, prjState.Fs(), `/`)
-	if err != nil {
-		return err
-	}
 
 	// E2E test
 	// Push the project
