@@ -210,8 +210,8 @@ func (p *Project) SandboxesAPIClient() client.Client {
 func (p *Project) Clean() error {
 	p.logf("□ Cleaning project...")
 
-	ctx, cancelFn := context.WithCancel(context.Background())
-	defer cancelFn()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
 
 	// Clean whole project - configs, buckets, schedules, sandbox instances, etc.
 	if err := platform.CleanProject(ctx, p.storageApiClient, p.schedulerAPIClient, p.jobsQueueAPIClient, p.sandboxesApiClient); err != nil {
