@@ -77,61 +77,6 @@ func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigStat
 	return configState, rowState
 }
 
-func createLocalSharedCode(t *testing.T, targetComponentId storageapi.ComponentID, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
-	t.Helper()
-
-	// Config
-	configKey := model.ConfigKey{
-		BranchId:    789,
-		Id:          `123`,
-		ComponentId: storageapi.SharedCodeComponentID,
-	}
-	configContent := orderedmap.New()
-	configContent.Set(model.ShareCodeTargetComponentKey, targetComponentId.String())
-	configState := &model.ConfigState{
-		ConfigManifest: &model.ConfigManifest{
-			ConfigKey: configKey,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"branch",
-					"config",
-				),
-			},
-		},
-		Local: &model.Config{
-			ConfigKey: configKey,
-			Content:   configContent,
-		},
-	}
-	assert.NoError(t, state.Set(configState))
-
-	// Row
-	rowKey := model.ConfigRowKey{
-		BranchId:    789,
-		ConfigId:    `123`,
-		Id:          `456`,
-		ComponentId: storageapi.SharedCodeComponentID,
-	}
-	rowState := &model.ConfigRowState{
-		ConfigRowManifest: &model.ConfigRowManifest{
-			ConfigRowKey: rowKey,
-			Paths: model.Paths{
-				AbsPath: model.NewAbsPath(
-					"branch/config",
-					"row",
-				),
-			},
-		},
-		Local: &model.ConfigRow{
-			ConfigRowKey: rowKey,
-			Content:      orderedmap.New(),
-		},
-	}
-	assert.NoError(t, state.Set(rowState))
-
-	return configState, rowState
-}
-
 // nolint: unparam
 func createInternalSharedCode(t *testing.T, targetComponentId storageapi.ComponentID, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
 	t.Helper()

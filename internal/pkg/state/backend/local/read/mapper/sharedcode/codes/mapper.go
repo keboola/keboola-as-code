@@ -7,18 +7,16 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type mapper struct {
-	dependencies
+	state *state.State
 }
 
-type dependencies interface {
-}
-
-func NewMapper() *mapper {
-	return &mapper{}
+func NewMapper(state *state.State) *mapper {
+	return &mapper{state: state}
 }
 
 // MapAfterLocalLoad loads shared code from filesystem to target config.

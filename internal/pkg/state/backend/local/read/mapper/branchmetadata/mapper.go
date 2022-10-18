@@ -6,17 +6,15 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
 type mapper struct {
-	dependencies
+	state *state.State
 }
 
-type dependencies interface {
-}
-
-func NewMapper() *mapper {
-	return &mapper{}
+func NewMapper(state *state.State) *mapper {
+	return &mapper{state: state}
 }
 
 // MapAfterLocalLoad - load metadata from manifest to branch.

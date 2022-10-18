@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func TestConfigMetadataMapper_MapAfterLocalLoad(t *testing.T) {
+func TestBranchMetadataMapper_MapAfterLocalLoad(t *testing.T) {
 	t.Parallel()
 	d := dependencies.NewMockedDeps()
 	logger := d.DebugLogger()

@@ -6,12 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-type mapper struct {
-	dependencies
-}
-
-type dependencies interface {
-}
+type mapper struct{}
 
 func NewMapper() *mapper {
 	return &mapper{}

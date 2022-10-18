@@ -9,16 +9,19 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/read/mapper/corefiles"
 )
 
 func TestLoadCoreFiles(t *testing.T) {
 	t.Parallel()
-	state := createStateWithMapper(t)
-	fs := state.ObjectsRoot()
+	s := createStateWithMapper(t)
+	fs := s.ObjectsRoot()
 
 	metaFile := `{
   "myKey": "3",
@@ -33,12 +36,12 @@ func TestLoadCoreFiles(t *testing.T) {
 	object := &fixtures.MockedObject{}
 	manifest := &fixtures.MockedManifest{}
 	assert.NoError(t, fs.Mkdir(manifest.Path()))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(state.NamingGenerator().MetaFilePath(manifest.Path()), metaFile)))
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(state.NamingGenerator().ConfigFilePath(manifest.Path()), configFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(s.NamingGenerator().MetaFilePath(manifest.Path()), metaFile)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(s.NamingGenerator().ConfigFilePath(manifest.Path()), configFile)))
 
 	// Call mapper
-	recipe := model.NewLocalLoadRecipe(state.FileLoader(), manifest, object)
-	assert.NoError(t, state.Mapper().MapAfterLocalLoad(context.Background(), recipe))
+	recipe := model.NewLocalLoadRecipe(s.FileLoader(), manifest, object)
+	assert.NoError(t, s.Mapper().MapAfterLocalLoad(context.Background(), recipe))
 
 	// Values are loaded and set
 	assert.Equal(t, &fixtures.MockedObject{
@@ -111,4 +114,12 @@ branch metadata file "main/meta.json" is invalid:
 	assert.True(t, configManifest.State().IsInvalid())
 	assert.False(t, branchManifest.State().IsNotFound())
 	assert.False(t, configManifest.State().IsNotFound())
+}
+
+func createStateWithMapper(t *testing.T) *state.State {
+	t.Helper()
+	d := dependencies.NewMockedDeps()
+	mockedState := d.MockedState()
+	mockedState.Mapper().AddMapper(corefiles.NewMapper(mockedState))
+	return mockedState
 }

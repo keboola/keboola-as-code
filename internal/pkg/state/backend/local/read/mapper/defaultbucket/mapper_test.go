@@ -8,8 +8,11 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/read/mapper/defaultbucket"
 )
 
 const localLoadConfigContentSample = `
@@ -227,4 +230,12 @@ WARN  Warning:
 	// Check default bucket replacement
 	configContent := json.MustEncodeString(recipe.Object.(*model.ConfigRow).Content, false)
 	assert.Equal(t, `{"parameters":{},"storage":{"input":{"tables":[{"columns":[],"source":"in.c-keboola-ex-aws-s3-123.accounts","destination":"accounts","where_column":"","where_operator":"eq","where_values":[]},{"columns":[],"source":"{{:default-bucket:extractor/keboola.ex-aws-s3/test2}}.contacts","destination":"contacts","where_column":"","where_operator":"eq","where_values":[]}],"files":[]},"output":{"tables":[],"files":[]}}}`, configContent)
+}
+
+func createStateWithMapper(t *testing.T) (*state.State, dependencies.Mocked) {
+	t.Helper()
+	d := dependencies.NewMockedDeps()
+	mockedState := d.MockedState()
+	mockedState.Mapper().AddMapper(defaultbucket.NewMapper(mockedState, d))
+	return mockedState, d
 }

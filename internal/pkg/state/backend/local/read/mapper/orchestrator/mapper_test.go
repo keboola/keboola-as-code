@@ -10,21 +10,25 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/read/mapper/corefiles"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/backend/local/read/mapper/orchestrator"
 )
 
 func TestMapAfterLocalLoad(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
-	fs := state.ObjectsRoot()
+	s, d := createStateWithMapper(t)
+	fs := s.ObjectsRoot()
 	logger := d.DebugLogger()
 
-	orchestratorConfigState := createLocalLoadFixtures(t, state)
-	target1, target2, target3 := createTargetConfigs(t, state)
+	orchestratorConfigState := createOrchestratorConfig(t, s)
+	target1, target2, target3 := createTargetConfigs(t, s)
 
 	// Local files
-	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
+	phasesDir := s.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
 	files := []filesystem.File{
 		filesystem.
 			NewRawFile(
@@ -70,7 +74,7 @@ func TestMapAfterLocalLoad(t *testing.T) {
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	assert.NoError(t, state.Mapper().AfterLocalOperation(context.Background(), changes))
+	assert.NoError(t, s.Mapper().AfterLocalOperation(context.Background(), changes))
 
 	// Logs
 	expectedLogs := `
@@ -231,13 +235,13 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/002-task-5/t
 
 func TestMapAfterLocalLoadError(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	s, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
-	fs := state.ObjectsRoot()
-	orchestratorConfigState := createLocalLoadFixtures(t, state)
+	fs := s.ObjectsRoot()
+	orchestratorConfigState := createOrchestratorConfig(t, s)
 
 	// Local files
-	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
+	phasesDir := s.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
 	files := []filesystem.File{
 		filesystem.
 			NewRawFile(
@@ -267,7 +271,7 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	err := state.Mapper().AfterLocalOperation(context.Background(), changes)
+	err := s.Mapper().AfterLocalOperation(context.Background(), changes)
 	assert.Error(t, err)
 
 	// Assert error
@@ -287,14 +291,14 @@ invalid orchestrator config "branch/other/orchestrator":
 
 func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	t.Parallel()
-	state, d := createStateWithMapper(t)
+	s, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
-	fs := state.ObjectsRoot()
-	orchestratorConfigState := createLocalLoadFixtures(t, state)
-	createTargetConfigs(t, state)
+	fs := s.ObjectsRoot()
+	orchestratorConfigState := createOrchestratorConfig(t, s)
+	createTargetConfigs(t, s)
 
 	// Local files
-	phasesDir := state.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
+	phasesDir := s.NamingGenerator().PhasesDir(orchestratorConfigState.Path())
 	files := []filesystem.File{
 		filesystem.
 			NewRawFile(
@@ -329,7 +333,7 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	// Load
 	changes := model.NewLocalChanges()
 	changes.AddLoaded(orchestratorConfigState)
-	err := state.Mapper().AfterLocalOperation(context.Background(), changes)
+	err := s.Mapper().AfterLocalOperation(context.Background(), changes)
 	assert.Error(t, err)
 
 	// Assert error
@@ -339,4 +343,111 @@ invalid orchestrator config "branch/other/orchestrator":
     - 002-phase -> 003-phase -> 002-phase
 `
 	assert.Equal(t, strings.Trim(expectedError, "\n"), err.Error())
+}
+
+func createStateWithMapper(t *testing.T) (*state.State, dependencies.Mocked) {
+	t.Helper()
+	d := dependencies.NewMockedDeps()
+	mockedState := d.MockedState()
+	mockedState.Mapper().AddMapper(corefiles.NewMapper(mockedState))
+	mockedState.Mapper().AddMapper(orchestrator.NewMapper(mockedState))
+	return mockedState, d
+}
+
+func createOrchestratorConfig(t *testing.T, state *state.State) *model.ConfigState {
+	t.Helper()
+
+	// Branch
+	branchKey := model.BranchKey{
+		Id: 123,
+	}
+	branchState := &model.BranchState{
+		BranchManifest: &model.BranchManifest{
+			BranchKey: branchKey,
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(``, `branch`),
+			},
+		},
+		Local: &model.Branch{BranchKey: branchKey},
+	}
+	assert.NoError(t, state.Set(branchState))
+
+	// Orchestrator config
+	configKey := model.ConfigKey{
+		BranchId:    123,
+		ComponentId: storageapi.OrchestratorComponentID,
+		Id:          `456`,
+	}
+	configState := &model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{
+			ConfigKey: configKey,
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(`branch`, `other/orchestrator`),
+			},
+		},
+		Local: &model.Config{ConfigKey: configKey, Content: orderedmap.New()},
+	}
+
+	assert.NoError(t, state.Set(configState))
+	return configState
+}
+
+func createTargetConfigs(t *testing.T, state *state.State) (*model.ConfigState, *model.ConfigState, *model.ConfigState) {
+	t.Helper()
+
+	// Target config 1
+	targetConfigKey1 := model.ConfigKey{
+		BranchId:    123,
+		ComponentId: `foo.bar1`,
+		Id:          `123`,
+	}
+	targetConfigState1 := &model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{
+			ConfigKey: targetConfigKey1,
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(`branch/extractor`, `target-config-1`),
+			},
+		},
+		Local:  &model.Config{ConfigKey: targetConfigKey1},
+		Remote: &model.Config{ConfigKey: targetConfigKey1},
+	}
+	assert.NoError(t, state.Set(targetConfigState1))
+
+	// Target config 2
+	targetConfigKey2 := model.ConfigKey{
+		BranchId:    123,
+		ComponentId: `foo.bar2`,
+		Id:          `789`,
+	}
+	targetConfigState2 := &model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{
+			ConfigKey: targetConfigKey2,
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(`branch/extractor`, `target-config-2`),
+			},
+		},
+		Local:  &model.Config{ConfigKey: targetConfigKey2},
+		Remote: &model.Config{ConfigKey: targetConfigKey2},
+	}
+	assert.NoError(t, state.Set(targetConfigState2))
+
+	// Target config 3
+	targetConfigKey3 := model.ConfigKey{
+		BranchId:    123,
+		ComponentId: `foo.bar2`,
+		Id:          `456`,
+	}
+	targetConfigState3 := &model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{
+			ConfigKey: targetConfigKey3,
+			Paths: model.Paths{
+				AbsPath: model.NewAbsPath(`branch/extractor`, `target-config-3`),
+			},
+		},
+		Local:  &model.Config{ConfigKey: targetConfigKey3},
+		Remote: &model.Config{ConfigKey: targetConfigKey3},
+	}
+	assert.NoError(t, state.Set(targetConfigState3))
+
+	return targetConfigState1, targetConfigState2, targetConfigState3
 }

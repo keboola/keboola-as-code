@@ -12,14 +12,11 @@ import (
 const PreviousPhaseLink = "<previous>"
 
 type mapper struct {
-	dependencies
+	state *state.State
 }
 
-type dependencies interface {
-}
-
-func NewMapper() *mapper {
-	return &mapper{}
+func NewMapper(state *state.State) *mapper {
+	return &mapper{state: state}
 }
 
 func (m *mapper) onLocalLoad(config *model.Config, manifest *model.ConfigManifest, allObjects model.Objects) error {
