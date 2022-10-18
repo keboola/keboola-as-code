@@ -29,6 +29,7 @@ type ObjectsFilter struct {
 	ignoredComponents ComponentIDs
 }
 
+// nolint: gochecknoglobals
 var alwaysIgnoredComponents = map[string]bool{
 	sandboxesapi.Component: true,
 }
