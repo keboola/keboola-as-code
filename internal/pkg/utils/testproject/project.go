@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/encryptionapi"
 	"github.com/keboola/go-client/pkg/jobsqueueapi"
+	"github.com/keboola/go-client/pkg/platform"
 	"github.com/keboola/go-client/pkg/sandboxesapi"
 	"github.com/keboola/go-client/pkg/schedulerapi"
 	"github.com/keboola/go-client/pkg/storageapi"
@@ -204,36 +205,25 @@ func (p *Project) SandboxesAPIClient() client.Client {
 	return p.sandboxesApiClient
 }
 
-// Clean method resets default branch, deletes all project branches (except default), all configurations and all schedules.
+// Clean method deletes all project branches (except default), all configurations, all schedules, and all sandboxes.
+// It also sets the project's default branch.
 func (p *Project) Clean() error {
 	p.logf("□ Cleaning project...")
 
-	ctx, cancelFn := context.WithCancel(context.Background())
-	grp, ctx := errgroup.WithContext(ctx)
-	defer cancelFn()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
 
-	// Clean by Storage API
-	grp.Go(func() (err error) {
-		p.defaultBranch, err = storageapi.
-			CleanProjectRequest().
-			WithOnSuccess(func(ctx context.Context, sender client.Sender, defaultBranch *storageapi.Branch) error {
-				p.defaultBranch = defaultBranch
-				return nil
-			}).
-			Send(ctx, p.storageApiClient)
-		return err
-	})
-
-	// Clean by Scheduler API
-	grp.Go(func() error {
-		return schedulerapi.
-			CleanAllSchedulesRequest().
-			SendOrErr(ctx, p.schedulerAPIClient)
-	})
-
-	if err := grp.Wait(); err != nil {
+	// Clean whole project - configs, buckets, schedules, sandbox instances, etc.
+	if err := platform.CleanProject(ctx, p.storageApiClient, p.schedulerAPIClient, p.jobsQueueAPIClient, p.sandboxesApiClient); err != nil {
 		return errors.Errorf(`cannot clean project "%d": %w`, p.ID(), err)
 	}
+
+	defaultBranch, err := storageapi.GetDefaultBranchRequest().Send(ctx, p.storageApiClient)
+	if err != nil {
+		return errors.Errorf(`cannot fetch default branch in project "%d": %w`, p.ID(), err)
+	}
+	p.defaultBranch = defaultBranch
+
 	p.logf("■ Cleanup done.")
 	return nil
 }

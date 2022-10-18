@@ -19,6 +19,7 @@ import (
 type ProjectSnapshot struct {
 	Branches  []*BranchWithConfigs `json:"branches"`
 	Schedules []*Schedule          `json:"schedules,omitempty"`
+	Sandboxes []*Sandbox           `json:"sandboxes,omitempty"`
 	Buckets   []*Bucket            `json:"buckets,omitempty"`
 }
 
@@ -41,6 +42,12 @@ type BranchWithConfigs struct {
 
 type Schedule struct {
 	Name string `json:"name"`
+}
+
+type Sandbox struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+	Size string `json:"size"`
 }
 
 type Bucket struct {
