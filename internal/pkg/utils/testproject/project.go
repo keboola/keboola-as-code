@@ -373,6 +373,7 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 	return nil
 }
 
+// TODO: set env, log ids
 func (p *Project) createSandboxes(defaultBranchId storageapi.BranchID, sandboxes []*fixtures.Sandbox) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -380,30 +381,35 @@ func (p *Project) createSandboxes(defaultBranchId storageapi.BranchID, sandboxes
 	wg := &sync.WaitGroup{}
 	errs := errors.NewMultiError()
 
-	for _, s := range sandboxes {
-		s := s
+	for _, fixture := range sandboxes {
+		fixture := fixture
 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
 			opts := make([]sandboxesapi.Option, 0)
-			if sandboxesapi.SupportsSizes(s.Type) && len(s.Size) > 0 {
-				opts = append(opts, sandboxesapi.WithSize(s.Size))
+			if sandboxesapi.SupportsSizes(fixture.Type) && len(fixture.Size) > 0 {
+				opts = append(opts, sandboxesapi.WithSize(fixture.Size))
 			}
-			_, err := sandboxesapi.Create(
+
+			p.logf("▶ Sandbox \"%s\"...", fixture.Name)
+			sandbox, err := sandboxesapi.Create(
 				ctx,
 				p.storageApiClient,
 				p.jobsQueueAPIClient,
 				p.sandboxesApiClient,
 				defaultBranchId,
-				s.Name,
-				s.Type,
+				fixture.Name,
+				fixture.Type,
 				opts...,
 			)
 			if err != nil {
-				errs.Append(err)
+				errs.Append(errors.Errorf("could not create sandbox \"%s\": %w", fixture.Name, err))
+				return
 			}
+			p.logf("✔️ Sandbox \"%s\"(%s).", sandbox.Config.Name, sandbox.Config.ID)
+			p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_ID", fixture.Name), sandbox.Config.ID.String())
 		}()
 	}
 
