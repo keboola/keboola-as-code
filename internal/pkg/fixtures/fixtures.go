@@ -45,9 +45,9 @@ type Schedule struct {
 }
 
 type Sandbox struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-	Size string `json:"size"`
+	Name string `json:"name" validate:"required"`
+	Type string `json:"type" validate:"required"`
+	Size string `json:"size,omitempty"`
 }
 
 type Bucket struct {
@@ -92,6 +92,7 @@ type StateFile struct {
 	AllBranchesConfigs []string          `json:"allBranchesConfigs" validate:"required"`
 	Branches           []*BranchState    `json:"branches" validate:"required"`
 	Buckets            []*Bucket         `json:"buckets,omitempty"`
+	Sandboxes          []*Sandbox        `json:"sandboxes,omitempty"`
 	Envs               map[string]string `json:"envs,omitempty"` // additional ENVs
 }
 

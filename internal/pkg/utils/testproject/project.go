@@ -282,6 +282,12 @@ func (p *Project) SetState(stateFilePath string) error {
 		return err
 	}
 
+	// Create sandboxes in default branch
+	err = p.createSandboxes(p.defaultBranch.ID, stateFile.Sandboxes)
+	if err != nil {
+		return err
+	}
+
 	p.logf("■ Project state set.")
 	return nil
 }
@@ -362,6 +368,53 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 	}
 	if err := grp.Wait(); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (p *Project) createSandboxes(defaultBranchId storageapi.BranchID, sandboxes []*fixtures.Sandbox) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	wg := &sync.WaitGroup{}
+	errs := errors.NewMultiError()
+
+	for _, fixture := range sandboxes {
+		fixture := fixture
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			opts := make([]sandboxesapi.Option, 0)
+			if sandboxesapi.SupportsSizes(fixture.Type) && len(fixture.Size) > 0 {
+				opts = append(opts, sandboxesapi.WithSize(fixture.Size))
+			}
+
+			p.logf("▶ Sandbox \"%s\"...", fixture.Name)
+			sandbox, err := sandboxesapi.Create(
+				ctx,
+				p.storageApiClient,
+				p.jobsQueueAPIClient,
+				p.sandboxesApiClient,
+				defaultBranchId,
+				fixture.Name,
+				fixture.Type,
+				opts...,
+			)
+			if err != nil {
+				errs.Append(errors.Errorf("could not create sandbox \"%s\": %w", fixture.Name, err))
+				return
+			}
+			p.logf("✔️ Sandbox \"%s\"(%s).", sandbox.Config.Name, sandbox.Config.ID)
+			p.setEnv(fmt.Sprintf("TEST_SANDBOX_%s_ID", fixture.Name), sandbox.Config.ID.String())
+		}()
+	}
+
+	wg.Wait()
+	if errs.Len() > 0 {
+		return errs
 	}
 
 	return nil
