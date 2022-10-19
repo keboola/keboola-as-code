@@ -1,0 +1,22 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    }
+  ],
+  "sandboxes": [
+    {
+      "name": "bar",
+      "type": "snowflake"
+    },
+    {
+      "name": "foo",
+      "type": "snowflake"
+    }
+  ]
+}
