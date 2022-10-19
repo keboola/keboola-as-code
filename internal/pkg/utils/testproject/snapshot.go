@@ -246,6 +246,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 			reflecthelper.SortByName(c.Rows)
 		}
 	}
+	reflecthelper.SortByName(snapshot.Sandboxes)
 
 	return snapshot, nil
 }
