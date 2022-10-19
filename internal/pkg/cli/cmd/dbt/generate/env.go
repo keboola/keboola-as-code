@@ -39,14 +39,20 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 				return errors.Errorf("cannot find default branch: %w", err)
 			}
 
-			// Get all workspaces for the dialog
+			// Get all Snowflake workspaces for the dialog
 			allWorkspaces, err := sandboxesapi.List(d.CommandCtx(), d.StorageApiClient(), d.SandboxesApiClient(), branch.ID)
 			if err != nil {
 				return err
 			}
+			snowflakeWorkspaces := make([]*sandboxesapi.SandboxWithConfig, 0)
+			for _, w := range allWorkspaces {
+				if w.Sandbox.Type == sandboxesapi.TypeSnowflake {
+					snowflakeWorkspaces = append(snowflakeWorkspaces, w)
+				}
+			}
 
 			// Options
-			opts, err := d.Dialogs().AskGenerateEnv(d, allWorkspaces)
+			opts, err := d.Dialogs().AskGenerateEnv(d, snowflakeWorkspaces)
 			if err != nil {
 				return err
 			}
