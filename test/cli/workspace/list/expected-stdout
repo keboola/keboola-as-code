@@ -1,0 +1,4 @@
+Loading workspaces, please wait.
+Found workspaces:
+  bar (ID: %s, Type: snowflake)
+  foo (ID: %s, Type: snowflake)

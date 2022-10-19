@@ -145,6 +145,10 @@ func (r *ConfigRow) String() string {
 	return r.Description
 }
 
+func (s *Sandbox) String() string {
+	return s.Type + "_" + s.Size
+}
+
 func (b *Branch) ObjectName() string {
 	return b.Name
 }
@@ -155,6 +159,10 @@ func (c *Config) ObjectName() string {
 
 func (r *ConfigRow) ObjectName() string {
 	return r.Name
+}
+
+func (s *Sandbox) ObjectName() string {
+	return s.Name
 }
 
 func MinimalProjectFs(t *testing.T) filesystem.Fs {

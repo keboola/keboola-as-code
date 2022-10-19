@@ -2,6 +2,7 @@ package list
 
 import (
 	"context"
+	"sort"
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/sandboxesapi"
@@ -36,6 +37,7 @@ func Run(ctx context.Context, d dependencies) (err error) {
 	if err != nil {
 		return err
 	}
+	sort.Slice(sandboxes, func(i, j int) bool { return sandboxes[i].Config.Name < sandboxes[j].Config.Name })
 
 	logger.Info("Found workspaces:")
 	for _, sandbox := range sandboxes {
