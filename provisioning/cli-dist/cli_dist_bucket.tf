@@ -59,3 +59,13 @@ resource "aws_s3_object" "cli_dist_index" {
   acl          = "public-read"
   content_type = "text/html"
 }
+
+// https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_object
+resource "aws_s3_object" "cli_dist_s3_list" {
+  bucket = aws_s3_bucket.cli_dist_bucket.id
+
+  key          = "s3-list.js"
+  source       = "./s3-list.js"
+  acl          = "public-read"
+  content_type = "text/javascript"
+}

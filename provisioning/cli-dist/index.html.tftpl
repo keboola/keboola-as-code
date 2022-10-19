@@ -13,9 +13,9 @@
   var S3BL_IGNORE_PATH = true;
   var BUCKET_URL = 'https://s3.amazonaws.com/${bucket}';
   var BUCKET_WEBSITE_URL = 'https://${distDomainName}';
-  var EXCLUDE_FILE = 'index.html';
+  var EXCLUDE_FILE = ['index.html', 's3-list.js'];
 </script>
-<script type="text/javascript" src="https://rufuspollock.github.io/s3-bucket-listing/list.js"></script>
+<script type="text/javascript" src="./s3-list.js"></script>
 
 </body>
 </html>
