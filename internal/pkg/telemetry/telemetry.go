@@ -18,7 +18,7 @@ func KeepSpan() attribute.KeyValue {
 	return attribute.Float64(SampleRate, 1.0)
 }
 
-func EndSpan(span trace.Span, errPtr *error) {
+func EndSpan(span trace.Span, errPtr *error, opts ...trace.SpanEndOption) {
 	if errPtr != nil {
 		err := *errPtr
 		if err != nil {
@@ -28,5 +28,5 @@ func EndSpan(span trace.Span, errPtr *error) {
 			span.SetStatus(codes.Ok, "OK")
 		}
 	}
-	span.End()
+	span.End(opts...)
 }
