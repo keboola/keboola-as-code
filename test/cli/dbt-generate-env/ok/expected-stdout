@@ -1,0 +1,8 @@
+Commands to set environment for the dbt target:
+  export DBT_KBC_TARGET1_TYPE=snowflake
+  export DBT_KBC_TARGET1_SCHEMA=%s
+  export DBT_KBC_TARGET1_WAREHOUSE=%s
+  export DBT_KBC_TARGET1_DATABASE=%s
+  export DBT_KBC_TARGET1_ACCOUNT=%s
+  export DBT_KBC_TARGET1_USER=%s
+  export DBT_KBC_TARGET1_PASSWORD=%s
