@@ -17,12 +17,8 @@ func Commands(p dependencies.Provider, envs *env.Map) *cobra.Command {
 	}
 	cmd.AddCommand(
 		CreateCommand(p),
+		workspace.Commands(p),
 	)
-
-	// Workspace commands are not finished yet.
-	if envs.Get(`KBC_DBT_PRIVATE_BETA`) == `true` {
-		cmd.AddCommand(workspace.Commands(p))
-	}
 
 	return cmd
 }

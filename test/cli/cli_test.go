@@ -137,7 +137,6 @@ func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 
 	// Enable templates and dbt private beta in tests
 	envs.Set(`KBC_TEMPLATES_PRIVATE_BETA`, `true`)
-	envs.Set(`KBC_DBT_PRIVATE_BETA`, `true`)
 
 	// Disable version check
 	envs.Set(`KBC_VERSION_CHECK`, `false`)
