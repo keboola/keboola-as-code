@@ -37,13 +37,13 @@ require (
 	github.com/writeas/go-strip-markdown v2.0.1+incompatible
 	go.etcd.io/etcd/client/v3 v3.5.5
 	go.nhat.io/aferocopy/v2 v2.0.1
-	go.opentelemetry.io/otel v1.11.0
-	go.opentelemetry.io/otel/trace v1.11.0
+	go.opentelemetry.io/otel v1.11.1
+	go.opentelemetry.io/otel/trace v1.11.1
 	go.uber.org/zap v1.23.0
 	goa.design/goa/v3 v3.10.1
 	goa.design/plugins/v3 v3.10.1
-	golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0
-	gopkg.in/DataDog/dd-trace-go.v1 v1.42.1
+	golang.org/x/sync v0.1.0
+	gopkg.in/DataDog/dd-trace-go.v1 v1.43.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	v.io/x/lib v0.1.10
 )
@@ -90,7 +90,7 @@ require (
 	golang.org/x/net v0.0.0-20221012135044-0b7e1fb9d458 // indirect
 	golang.org/x/sys v0.0.0-20221010170243-090e33056c14 // indirect
 	golang.org/x/term v0.0.0-20220919170432-7a66f970e087 // indirect
-	golang.org/x/text v0.3.8
+	golang.org/x/text v0.4.0
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
