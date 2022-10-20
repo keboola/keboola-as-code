@@ -32,10 +32,10 @@ type Console interface {
 	SendLeftArrow() error
 	// ExpectString reads from Console's tty until the provided string is read or
 	// an error occurs, and returns the buffer read by Console.
-	ExpectString(s string) error
+	ExpectString(s string, opts ...expect.ExpectOpt) error
 	// ExpectEOF reads from Console's tty until EOF or an error occurs, and returns
 	// the buffer read by Console.  We also treat the PTSClosed error as an EOF.
-	ExpectEOF() error
+	ExpectEOF(opts ...expect.ExpectOpt) error
 	// Close closes both the TTY and afterwards all the readers
 	Close() error
 }

@@ -99,6 +99,7 @@ func (p *Dialogs) askWorkspaceNameForDbtInit(d createWorkspaceDeps) (string, err
 		if !ok || len(name) == 0 {
 			return "", errors.New("missing workspace name, please specify it")
 		}
+
 		return name, nil
 	}
 }

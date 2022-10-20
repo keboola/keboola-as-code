@@ -3,14 +3,18 @@ package cli
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os/exec"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/Netflix/go-expect"
 	"github.com/acarl005/stripansi"
+	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -29,6 +33,7 @@ const (
 	enterContent         = "<enter>"
 	interactionFilePath  = "interaction.txt"
 	interactionLogPrefix = ">>> interaction.txt:line:"
+	EOFTimeout           = 30 * time.Second
 )
 
 type cmdInputOutput struct {
@@ -90,16 +95,47 @@ func (v *cmdInputOutput) StderrString() string {
 	return stripansi.Strip(v.stderrBuf.String())
 }
 
-func (v *cmdInputOutput) InteractAndWait(cmd *exec.Cmd, handleErr errorHandler) error {
-	// Check if interaction is enabled
+func (v *cmdInputOutput) InteractAndWait(ctx context.Context, cmd *exec.Cmd, handleErr errorHandler) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Wait for the command to finish then close interaction
+	var cmdErr error
+	cmdWg := &sync.WaitGroup{}
+	cmdWg.Add(1)
+	go func() {
+		// Wait for command
+		defer cmdWg.Done()
+		cmdErr = cmd.Wait()
+
+		// Close stdin
+		if v.console != nil {
+			v.console.TtyRaw().Close()
+		}
+
+		// Cancel interaction context
+		cancel()
+	}()
+
+	// Skip interaction if it is disabled
 	if v.console == nil {
-		return cmd.Wait()
+		cmdWg.Wait()
+		return cmdErr
 	}
 
 	// For each line
 	s := bufio.NewScanner(strings.NewReader(v.expectations))
 	lineNum := 0
 	for s.Scan() {
+		// Check context
+		select {
+		case <-ctx.Done():
+			break
+		default:
+			// continue
+		}
+
+		// Get line
 		lineNum++
 		line := s.Text()
 
@@ -128,15 +164,18 @@ func (v *cmdInputOutput) InteractAndWait(cmd *exec.Cmd, handleErr errorHandler) 
 		}
 	}
 
-	err := cmd.Wait()
-	v.console.TtyRaw().Close()
-
 	// Wait for end of stdout
-	if err := v.console.ExpectEOF(); err != nil {
-		handleErr(errors.Errorf("interaction: error when waiting for end of stdout: %w", err))
+	select {
+	case <-ctx.Done():
+		// skip waiting
+	default:
+		if err := v.console.ExpectEOF(expect.WithTimeout(EOFTimeout)); err != nil {
+			handleErr(errors.Errorf("interaction: error when waiting for end of stdout: %w", err))
+		}
 	}
 
-	return err
+	cmdWg.Wait()
+	return cmdErr
 }
 
 func (v *cmdInputOutput) handleInteraction(lineNum int, prefix, content string) error {
@@ -146,8 +185,23 @@ func (v *cmdInputOutput) handleInteraction(lineNum int, prefix, content string) 
 		// Skip comment
 		return nil
 	case expectLinePrefix:
+		var opts []expect.ExpectOpt
+
+		// Parse duration
+		match := regexpcache.MustCompile(`^(\[[a-zA-Z0-9]+\]\s*)`).FindStringSubmatch(content)
+		if len(match) > 1 {
+			durationStr := strings.Trim(match[1], " []")
+			content = strings.TrimPrefix(content, match[1])
+			duration, err := time.ParseDuration(durationStr)
+			if err != nil {
+				return v.errorf(lineNum, `could parse duration %+q from expectation %+q: %w`, durationStr, content, err)
+			}
+			opts = append(opts, expect.WithTimeout(duration))
+		}
+
+		// Wait for expected string
 		v.logf("%d: expecting %+q", lineNum, content)
-		if err := v.console.ExpectString(content); err != nil {
+		if err := v.console.ExpectString(content, opts...); err != nil {
 			return v.errorf(lineNum, `could not meet expectation %+q: %w`, content, err)
 		}
 	case sendLinePrefix:
