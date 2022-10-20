@@ -63,8 +63,6 @@ func TestCliE2E(t *testing.T) {
 // RunTest runs one E2E test.
 func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), TestTimeout)
-	defer cancel()
 
 	// Clean working dir
 	assert.NoError(t, os.RemoveAll(workingDir))
@@ -97,6 +95,11 @@ func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 		err := project.SetState(filepath.Join(testDir, projectStateFile))
 		assert.NoError(t, err)
 	}
+
+	// Create context with timeout.
+	// Acquiring a test project and setting it up is not part of the timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), TestTimeout)
+	defer cancel()
 
 	// Create ENV provider
 	envProvider := storageenv.CreateStorageEnvTicketProvider(ctx, api, envs)
