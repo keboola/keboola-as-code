@@ -9,3 +9,6 @@
 
 < Enter a name for a workspace to create:
 > dbt_source
+
+< Creating new workspace, please wait.
+< [60s] Created new workspace "dbt_source".

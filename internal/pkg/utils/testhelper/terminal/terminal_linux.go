@@ -115,12 +115,13 @@ func (c *console) SendLeftArrow() error {
 	return c.Send("\u001B[D")
 }
 
-func (c *console) ExpectString(s string) error {
-	_, err := c.Console.Expect(StringWithoutANSI(s))
+func (c *console) ExpectString(s string, opts ...expect.ExpectOpt) error {
+	opts = append(opts, StringWithoutANSI(s))
+	_, err := c.Console.Expect(opts...)
 	return err
 }
 
-func (c *console) ExpectEOF() (err error) {
+func (c *console) ExpectEOF(opts ...expect.ExpectOpt) (err error) {
 	defer func() {
 		// Close STDIN on error (e.g. timeout)
 		if err != nil {
@@ -129,7 +130,8 @@ func (c *console) ExpectEOF() (err error) {
 	}()
 
 	// Better error message
-	if _, err := c.Console.ExpectEOF(); err != nil {
+	opts = append(opts, expect.EOF, expect.PTSClosed)
+	if _, err := c.Console.Expect(opts...); err != nil {
 		return errors.Errorf("error while waiting for EOF: %w", err)
 	} else {
 		return nil
