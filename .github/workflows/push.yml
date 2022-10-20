@@ -220,14 +220,14 @@ jobs:
           role-to-assume: arn:aws:iam::813746015128:role/kbc-github-actions-admin-role
           aws-region: eu-central-1
       - name: Terraform Init
-        run: terraform init -backend-config=backend_testing.conf -input=false
+        run: terraform init -backend-config=backend_testing.conf -input=false -lock-timeout=5m
       - name: Terraform Validate
         id: validate
         run: terraform validate
       - name: Terraform Plan
-        run: terraform plan -var-file="testing.tfvars" -input=false
+        run: terraform plan -var-file="testing.tfvars" -input=false -lock-timeout=5m
       - name: Terraform Apply
-        run: terraform apply -auto-approve -var-file="testing.tfvars" -input=false
+        run: terraform apply -auto-approve -var-file="testing.tfvars" -input=false -lock-timeout=5m
 
   cli-dist-production-plan:
     name: 'Try CLI Distribution Plan for Production'
@@ -255,9 +255,9 @@ jobs:
           role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-read-only-role
           aws-region: eu-central-1
       - name: Terraform Init
-        run: terraform init -backend-config=backend_production.conf -input=false
+        run: terraform init -backend-config=backend_production.conf -input=false -lock-timeout=5m
       - name: Terraform Plan
-        run: terraform plan -input=false -var-file="production.tfvars"
+        run: terraform plan -input=false -var-file="production.tfvars" -lock-timeout=5m
 
   cli-dist-production-deploy:
     name: 'Deploy CLI Distribution to Production'
