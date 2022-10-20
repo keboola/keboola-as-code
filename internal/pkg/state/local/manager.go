@@ -165,11 +165,32 @@ func (u *UnitOfWork) LoadObject(manifest model.ObjectManifest, filter model.Obje
 			}
 
 			// Validate, object must be allowed
-			if filter.IsObjectIgnored(object) {
-				return errors.Errorf(
-					`found manifest record for %s "%s", but it is not allowed by the manifest definition`,
-					object.Kind().Name,
-					object.ObjectId())
+			if err := filter.AssertObjectAllowed(object); err != nil {
+				switch err.Reason() {
+				case model.IgnoredByAllowedBranches:
+					u.logger.Warn(errors.NewNestedError(
+						errors.Errorf("found manifest record for %s", object.Desc()),
+						errors.New("it is not allowed by the manifest definition"),
+						errors.New("please, remove record from the manifest and the related directory"),
+						errors.New(`or modify "allowedBranches" key in the manifest`),
+					))
+				case model.IgnoredByIgnoredComponents:
+					u.logger.Warn(errors.NewNestedError(
+						errors.Errorf("found manifest record for %s", object.Desc()),
+						errors.New("it is not allowed by the manifest definition"),
+						errors.New("please, remove record from the manifest and the related directory"),
+						errors.New(`or modify "ignoredComponents" key in the manifest`),
+					))
+				case model.IgnoredByAlwaysIgnoredComponents:
+					u.logger.Warn(errors.NewNestedError(
+						errors.Errorf("found manifest record for %s", object.Desc()),
+						errors.New("the component cannot be configured using a definition"),
+						errors.New("please, remove record from the manifest and the related directory"),
+					))
+				default:
+					u.logger.Warn(err)
+				}
+				return nil
 			}
 
 			// Get or create object state

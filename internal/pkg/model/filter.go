@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -15,6 +16,15 @@ const (
 	AllBranchesDef = "__all__"
 	MainBranchDef  = "__main__"
 )
+
+const (
+	IgnoredByAllowedKeys IgnoreReason = iota
+	IgnoredByAllowedBranches
+	IgnoredByIgnoredComponents
+	IgnoredByAlwaysIgnoredComponents
+)
+
+type IgnoreReason int
 
 type AllowedBranch string
 
@@ -27,6 +37,11 @@ type ObjectsFilter struct {
 	allowedKeys       map[string]bool
 	allowedBranches   AllowedBranches
 	ignoredComponents ComponentIDs
+}
+
+type ObjectIsIgnoredError struct {
+	error
+	reason IgnoreReason
 }
 
 // nolint: gochecknoglobals
@@ -53,24 +68,45 @@ func NoFilter() ObjectsFilter {
 }
 
 func (f ObjectsFilter) IsObjectIgnored(object Object) bool {
+	return f.AssertObjectAllowed(object) != nil
+}
+
+func (f ObjectsFilter) AssertObjectAllowed(object Object) *ObjectIsIgnoredError {
 	if len(f.allowedKeys) > 0 {
 		if !f.allowedKeys[object.Key().String()] {
 			// Object key is not allowed -> object is ignored
-			return true
+			return objectIsIgnoredErrorf(IgnoredByAllowedKeys, `%s is ignored`, object.Desc())
 		}
 	}
 
 	switch o := object.(type) {
 	case *Branch:
-		return !f.allowedBranches.IsBranchAllowed(o)
+		if !f.allowedBranches.IsBranchAllowed(o) {
+			return objectIsIgnoredErrorf(IgnoredByAllowedBranches, `%s is ignored`, object.Desc())
+		}
 	case *Config:
-		return f.ignoredComponents.Contains(o.ComponentId) || alwaysIgnoredComponents[o.ComponentId.String()]
+		if f.ignoredComponents.Contains(o.ComponentId) {
+			return objectIsIgnoredErrorf(IgnoredByIgnoredComponents, `%s is ignored`, object.Desc())
+		}
+		if alwaysIgnoredComponents[o.ComponentId.String()] {
+			return objectIsIgnoredErrorf(IgnoredByAlwaysIgnoredComponents, `%s is ignored, the component cannot be configured using a definition`, object.Desc())
+		}
 	case *ConfigWithRows:
-		return f.ignoredComponents.Contains(o.ComponentId) || alwaysIgnoredComponents[o.ComponentId.String()]
+		if f.ignoredComponents.Contains(o.ComponentId) {
+			return objectIsIgnoredErrorf(IgnoredByIgnoredComponents, `%s is ignored`, object.Desc())
+		}
+		if alwaysIgnoredComponents[o.ComponentId.String()] {
+			return objectIsIgnoredErrorf(IgnoredByAlwaysIgnoredComponents, `%s is ignored, the component cannot be configured using a definition`, object.Desc())
+		}
 	case *ConfigRow:
-		return f.ignoredComponents.Contains(o.ComponentId) || alwaysIgnoredComponents[o.ComponentId.String()]
+		if f.ignoredComponents.Contains(o.ComponentId) {
+			return objectIsIgnoredErrorf(IgnoredByIgnoredComponents, `%s is ignored`, object.Desc())
+		}
+		if alwaysIgnoredComponents[o.ComponentId.String()] {
+			return objectIsIgnoredErrorf(IgnoredByAlwaysIgnoredComponents, `%s is ignored, the component cannot be configured using a definition`, object.Desc())
+		}
 	}
-	return false
+	return nil
 }
 
 func (f *ObjectsFilter) SetAllowedKeys(keys []Key) {
@@ -167,4 +203,12 @@ func (v ComponentIDs) Contains(componentId storageapi.ComponentID) bool {
 		}
 	}
 	return false
+}
+
+func (v ObjectIsIgnoredError) Reason() IgnoreReason {
+	return v.reason
+}
+
+func objectIsIgnoredErrorf(reason IgnoreReason, format string, a ...any) *ObjectIsIgnoredError {
+	return &ObjectIsIgnoredError{error: errors.Errorf(format, a...), reason: reason}
 }
