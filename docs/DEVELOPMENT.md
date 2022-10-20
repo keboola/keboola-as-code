@@ -101,7 +101,9 @@ Each directory in the `src/tests/*` is one functional test.
 **Format:**
 - Empty lines are used for higher clarity/readability and are ignored.
 - Line starting with `# ` is comment and is ignored.
-- Line starting with `< ` is expected command output.
+- Line starting with `< ` is expected command output with default timeout `10s` (see `terminal.expectTimeout`).
+- Line starting with `< [...]` is expected command output with specified timeout.
+  - For example definition `< [60s] Expected output.` will wait `60 seconds` for the command output.
 - Line starting with `> ` is command input.
 - ENV placeholders, for example `%%TEST_STORAGE_API_HOST%%`, can be used in both: expected outputs and inputs.
 

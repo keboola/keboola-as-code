@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/shlex"
 	"github.com/keboola/go-utils/pkg/wildcards"
@@ -25,7 +26,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
-const TestEnvFile = "env"
+const (
+	TestEnvFile = "env"
+	TestTimeout = 60 * time.Second
+)
 
 // TestCliE2E runs one functional test per each subdirectory.
 func TestCliE2E(t *testing.T) {
@@ -59,8 +63,6 @@ func TestCliE2E(t *testing.T) {
 // RunTest runs one E2E test.
 func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 	t.Helper()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	// Clean working dir
 	assert.NoError(t, os.RemoveAll(workingDir))
@@ -93,6 +95,11 @@ func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 		err := project.SetState(filepath.Join(testDir, projectStateFile))
 		assert.NoError(t, err)
 	}
+
+	// Create context with timeout.
+	// Acquiring a test project and setting it up is not part of the timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), TestTimeout)
+	defer cancel()
 
 	// Create ENV provider
 	envProvider := storageenv.CreateStorageEnvTicketProvider(ctx, api, envs)
@@ -142,7 +149,7 @@ func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 	envs.Set(`KBC_VERSION_CHECK`, `false`)
 
 	// Prepare command
-	cmd := exec.Command(binary, args...)
+	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Env = envs.ToSlice()
 	cmd.Dir = workingDir
 
@@ -171,7 +178,7 @@ func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 
 	// Wait for command
 	exitCode := 0
-	err = cmdio.InteractAndWait(cmd, interactionErrHandler)
+	err = cmdio.InteractAndWait(ctx, cmd, interactionErrHandler)
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			exitCode = exitError.ExitCode()

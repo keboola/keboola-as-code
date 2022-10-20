@@ -1,0 +1,14 @@
+< Please enter Keboola Storage API host, eg. "connection.keboola.com".
+> %%TEST_KBC_STORAGE_API_HOST%%
+
+< Please enter Keboola Storage API token. The value will be hidden.
+> %%TEST_KBC_STORAGE_API_TOKEN%%
+
+< Please enter target name.
+> target1
+
+< Enter a name for a workspace to create:
+> dbt_source
+
+< Creating new workspace, please wait.
+< [60s] Created new workspace "dbt_source".
