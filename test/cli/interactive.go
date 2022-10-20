@@ -109,7 +109,9 @@ func (v *cmdInputOutput) InteractAndWait(ctx context.Context, cmd *exec.Cmd, han
 		cmdErr = cmd.Wait()
 
 		// Close stdin
-		v.console.TtyRaw().Close()
+		if v.console != nil {
+			v.console.TtyRaw().Close()
+		}
 
 		// Cancel interaction context
 		cancel()
