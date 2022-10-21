@@ -65,7 +65,8 @@ func (w *localWriter) save() {
 
 	// Convert errors to warning
 	if errs.Len() > 0 {
-		w.logger.Warn(errors.PrefixErrorf(errs, `Warning: cannot save orchestrator config "%s"`, w.ObjectManifest.Path()))
+		err := errors.PrefixErrorf(errs, `cannot save orchestrator config "%s"`, w.ObjectManifest.Path())
+		w.logger.Warn(errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
 	}
 }
 

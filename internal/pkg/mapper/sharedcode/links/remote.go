@@ -18,7 +18,7 @@ func (m *mapper) AfterRemoteOperation(_ context.Context, changes *model.RemoteCh
 
 	if errs.Len() > 0 {
 		// Convert errors to warning
-		m.logger.Warn(errors.PrefixError(errs, "Warning"))
+		m.logger.Warn(errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
 	}
 	return nil
 }

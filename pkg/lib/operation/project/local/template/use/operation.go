@@ -180,7 +180,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 
 	// Validate schemas and encryption
 	if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: !o.SkipSecretsValidation, ValidateJsonSchema: true}, d); err != nil {
-		logger.Warn(`Warning, ` + err.Error())
+		logger.Warn(errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
 		logger.Warn()
 		logger.Warnf(`Please correct the problems listed above.`)
 		logger.Warnf(`Push operation is only possible when project is valid.`)

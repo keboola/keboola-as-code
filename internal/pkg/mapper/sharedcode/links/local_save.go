@@ -22,7 +22,7 @@ func (m *mapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSave
 
 	if err := m.replaceSharedCodeIdByPath(transformation); err != nil {
 		// Log errors as warning
-		m.logger.Warn(errors.PrefixError(err, "Warning"))
+		m.logger.Warn(errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
 	}
 
 	return nil

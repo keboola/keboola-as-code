@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	saveManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/save"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/rename"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/validate"
@@ -80,7 +81,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 		// Validate schemas and encryption
 		if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: true, ValidateJsonSchema: true}, d); err != nil {
-			logger.Warn(`Warning, ` + err.Error())
+			logger.Warn(errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
 			logger.Warn()
 			logger.Warnf(`The project has been pulled, but it is not in a valid state.`)
 			logger.Warnf(`Please correct the problems listed above.`)
