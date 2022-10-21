@@ -52,6 +52,11 @@ func (e *wrappedError) Unwrap() error {
 	return e.original
 }
 
+// Wrap wraps the error with a different message.
+func Wrap(err error, msg string) error {
+	return &wrappedError{message: msg, trace: callers(), original: err}
+}
+
 // Wrapf wraps the error with a different message.
 // It is similar to Errorf, but the original error is not part of the message at all.
 func Wrapf(err error, format string, a ...any) error {

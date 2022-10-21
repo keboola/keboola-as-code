@@ -18,11 +18,11 @@ func TestSingleError_Format(t *testing.T) {
 	assert.Equal(t, "foo bar", e.Error())
 }
 
-func TestSingleError_FormatWithDebug(t *testing.T) {
+func TestSingleError_FormatWithStack(t *testing.T) {
 	t.Parallel()
 	e := NewMultiError()
 	e.Append(fmt.Errorf("foo bar"))
-	wildcards.Assert(t, "foo bar [%s/format_test.go:24]", FormatWithDebug(e))
+	wildcards.Assert(t, "foo bar [%s/format_test.go:24]", Format(e, FormatWithStack()))
 }
 
 func TestMultiError_Format(t *testing.T) {
@@ -49,7 +49,31 @@ func TestMultiError_Format(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expected), MultiErrorForTest().Error())
 }
 
-func TestMultiError_FormatWithDebug(t *testing.T) {
+func TestMultiError_Format_WithToSentence(t *testing.T) {
+	t.Parallel()
+	expected := `
+- Error 1.
+- Error with debug trace.
+- Wrapped2: wrapped1: error 2.
+- My prefix:
+  - Abc.
+  - Def.
+  - Sub1:
+    - X.
+    - Y.
+  - Sub2: Z.
+  - Sub3 with format:
+    - This is a very long line from error message, it is printed on new line.
+  - Sub4:
+    - 1.
+    - 2.
+    - 3.
+- Last error.
+`
+	assert.Equal(t, strings.TrimSpace(expected), Format(MultiErrorForTest(), FormatAsSentences()))
+}
+
+func TestMultiError_FormatWithStack(t *testing.T) {
 	t.Parallel()
 	expected := `
 - error 1 [%s/errors_test.go:13]
@@ -73,7 +97,34 @@ func TestMultiError_FormatWithDebug(t *testing.T) {
     - 3 [%s/errors_test.go:44]
 - last error [%s/errors_test.go:49]
 `
-	wildcards.Assert(t, strings.TrimSpace(expected), FormatWithDebug(MultiErrorForTest()))
+	wildcards.Assert(t, strings.TrimSpace(expected), Format(MultiErrorForTest(), FormatWithStack()))
+}
+
+func TestMultiError_FormatWithStack_WithToSentence(t *testing.T) {
+	t.Parallel()
+	expected := `
+- Error 1. [%s/errors_test.go:13]
+- Error with debug trace. [%s/errors_test.go:10]
+- Wrapped2: wrapped1: error 2. [%s/errors_test.go:17]:
+  - *fmt.wrapError >>> Wrapped1: error 2. [%s/errors_test.go:22]:
+    - *fmt.wrapError >>> Error 2. [%s/errors_test.go:22]
+- My prefix. [%s/errors_test.go:48]:
+  - Abc. [%s/errors_test.go:27]
+  - Def. [%s/errors_test.go:28]
+  - Sub1. [%s/errors_test.go:38]:
+    - X. [%s/errors_test.go:31]
+    - Y. [%s/errors_test.go:32]
+  - Sub2. [%s/errors_test.go:39]:
+    - Z. [%s/errors_test.go:34]
+  - Sub3 with format. [%s/errors_test.go:40]:
+    - This is a very long line from error message, it is printed on new line. [%s/errors_test.go:36]
+  - Sub4. [%s/errors_test.go:41]:
+    - 1. [%s/errors_test.go:42]
+    - 2. [%s/errors_test.go:43]
+    - 3. [%s/errors_test.go:44]
+- Last error. [%s/errors_test.go:49]
+`
+	wildcards.Assert(t, strings.TrimSpace(expected), Format(MultiErrorForTest(), FormatWithStack(), FormatAsSentences()))
 }
 
 func TestMultiError_CustomMessageFormatter_Format(t *testing.T) {
@@ -84,7 +135,7 @@ func TestMultiError_CustomMessageFormatter_Format(t *testing.T) {
 		WithPrefixFormatter(func(prefix string) string {
 			return prefix + " --->"
 		}).
-		WithMessageFormatter(func(msg string, _ StackTrace) string {
+		WithMessageFormatter(func(msg string, _ StackTrace, _ FormatConfig) string {
 			return fmt.Sprintf("<<< %s >>>", msg)
 		})
 
@@ -110,7 +161,7 @@ func TestMultiError_CustomMessageFormatter_Format(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expected), f.Format(MultiErrorForTest()))
 }
 
-func TestMultiError_CustomMessageFormatter_FormatWithDebug(t *testing.T) {
+func TestMultiError_CustomMessageFormatter_FormatWithStack(t *testing.T) {
 	t.Parallel()
 
 	// Custom function to modify message
@@ -118,7 +169,7 @@ func TestMultiError_CustomMessageFormatter_FormatWithDebug(t *testing.T) {
 		WithPrefixFormatter(func(prefix string) string {
 			return prefix + " --->"
 		}).
-		WithMessageFormatter(func(msg string, _ StackTrace) string {
+		WithMessageFormatter(func(msg string, _ StackTrace, _ FormatConfig) string {
 			return fmt.Sprintf("| %s |", msg)
 		})
 
@@ -143,7 +194,7 @@ func TestMultiError_CustomMessageFormatter_FormatWithDebug(t *testing.T) {
     - | 3 |
 - | last error |
 `
-	assert.Equal(t, strings.TrimSpace(expected), f.FormatWithDebug(MultiErrorForTest()))
+	assert.Equal(t, strings.TrimSpace(expected), f.Format(MultiErrorForTest(), FormatWithStack()))
 }
 
 func TestMultiError_Flatten(t *testing.T) {
@@ -178,13 +229,13 @@ func TestMultiError_Flatten(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expected), merged.Error())
 }
 
-func TestWrapf_Format(t *testing.T) {
+func TestWrap_Format(t *testing.T) {
 	t.Parallel()
 
 	original := ErrorForTest()
 	err := NewMultiError()
 	err.Append(original)
-	err.Append(Wrapf(original, "different message"))
+	err.Append(Wrap(original, "different message"))
 	expected := `
 - some error
 - different message
@@ -192,19 +243,48 @@ func TestWrapf_Format(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expected), err.Error())
 }
 
-func TestWrapf_FormatWithDebug(t *testing.T) {
+func TestWrap_FormatWithStack(t *testing.T) {
 	t.Parallel()
 
 	original := ErrorForTest()
 	err := NewMultiError()
 	err.Append(original)
-	err.Append(Wrapf(original, "different message"))
+	err.Append(Wrap(original, "different message"))
 	expected := `
 - some error [%s/errors_test.go:55]
 - different message [%s/format_test.go:%s]:
   - *errors.wrappedError >>> some error [%s/errors_test.go:55]
 `
-	wildcards.Assert(t, strings.TrimSpace(expected), FormatWithDebug(err))
+	wildcards.Assert(t, strings.TrimSpace(expected), Format(err, FormatWithStack()))
+}
+
+func TestWrapf_Format(t *testing.T) {
+	t.Parallel()
+
+	original := ErrorForTest()
+	err := NewMultiError()
+	err.Append(original)
+	err.Append(Wrapf(original, "different %s", "message"))
+	expected := `
+- some error
+- different message
+`
+	assert.Equal(t, strings.TrimSpace(expected), err.Error())
+}
+
+func TestWrapf_FormatWithStack(t *testing.T) {
+	t.Parallel()
+
+	original := ErrorForTest()
+	err := NewMultiError()
+	err.Append(original)
+	err.Append(Wrapf(original, "different %s", "message"))
+	expected := `
+- some error [%s/errors_test.go:55]
+- different message [%s/format_test.go:%s]:
+  - *errors.wrappedError >>> some error [%s/errors_test.go:55]
+`
+	wildcards.Assert(t, strings.TrimSpace(expected), Format(err, FormatWithStack()))
 }
 
 func TestNestedError_Format_1(t *testing.T) {
