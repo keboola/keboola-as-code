@@ -20,7 +20,7 @@
               {
                 "id": "shopify-shop",
                 "visible": true,
-                "error": "Shopify-shop is a required field."
+                "error": "Shopify shop name is a required field."
               }
             ]
           }
