@@ -1,7 +1,6 @@
 package input
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 
@@ -61,16 +60,19 @@ func (i Inputs) ValidateDefinitions() error {
 
 	// Enhance error messages
 	enhancedErrs := errors.NewMultiError()
-	for _, item := range errs.WrappedErrors() {
+	for _, err := range errs.WrappedErrors() {
 		// Replace input index by input ID. Example:
 		//   before: [123].default
 		//   after:  input "my-input": default
-		msg := regexpcache.
-			MustCompile(`^\[(\d+)\]\.`).
-			ReplaceAllStringFunc(item.Error(), func(s string) string {
-				return fmt.Sprintf(`input "%s": `, i.GetIndex(cast.ToInt(strings.Trim(s, "[]."))).Id)
-			})
-		enhancedErrs.Append(errors.New(msg))
+		msg := err.Error()
+		match := regexpcache.MustCompile(`^"\[(\d+)\]\.([^"]+)"`).FindStringSubmatch(msg)
+		if match != nil {
+			input := i.GetIndex(cast.ToInt(match[1]))
+			field := match[2]
+			msg = strings.TrimPrefix(msg, match[0])
+			err = errors.Wrapf(err, `input "%s": "%s"%s`, input.Id, field, msg)
+		}
+		enhancedErrs.Append(err)
 	}
 
 	return enhancedErrs.ErrorOrNil()

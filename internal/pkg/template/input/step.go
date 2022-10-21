@@ -132,9 +132,9 @@ func (g StepsGroups) ValidateDefinitions() error {
 		// Replace step and group by index. Example:
 		//   before: [0].steps[0].inputs[0].default
 		//   after:  group 1, step 1, input "foo.bar": default
-		regex := regexpcache.MustCompile(`^\[(\d+)\](?:\.steps\[(\d+)\])?(?:\.inputs\[(\d+)\])?\.`)
-		submatch := regex.FindStringSubmatch(msg)
-		if submatch == nil {
+		regex := regexpcache.MustCompile(`^"\[(\d+)\](?:\.steps\[(\d+)\])?(?:\.inputs\[(\d+)\])?\.([^"]+)"`)
+		match := regex.FindStringSubmatch(msg)
+		if match == nil {
 			enhancedErrors.Append(errors.New(msg))
 			continue
 		}
@@ -143,31 +143,35 @@ func (g StepsGroups) ValidateDefinitions() error {
 			var out strings.Builder
 
 			// Group index
-			groupIndex := cast.ToInt(submatch[1])
+			groupIndex := cast.ToInt(match[1])
 			out.WriteString("group ")
 			out.WriteString(cast.ToString(groupIndex + 1))
 
 			// Step index
 			var stepIndex int
-			if submatch[2] != "" {
-				stepIndex = cast.ToInt(submatch[2])
+			if match[2] != "" {
+				stepIndex = cast.ToInt(match[2])
 				out.WriteString(", step ")
 				out.WriteString(cast.ToString(stepIndex + 1))
 			}
 
 			// Input ID
-			if submatch[3] != "" {
-				inputIndex := cast.ToInt(strings.Trim(submatch[3], "[]."))
+			if match[3] != "" {
+				inputIndex := cast.ToInt(strings.Trim(match[3], "[]."))
 				out.WriteString(`, input "`)
 				out.WriteString(g[groupIndex].Steps[stepIndex].Inputs.GetIndex(inputIndex).Id)
 				out.WriteString(`"`)
 			}
 
+			field := match[4]
 			out.WriteString(": ")
+			out.WriteString(`"`)
+			out.WriteString(field)
+			out.WriteString(`"`)
 			return out.String()
 		})
 
-		msg = strings.Replace(msg, "steps must contain at least 1 item", "steps must contain at least 1 step", 1)
+		msg = strings.Replace(msg, `"steps" must contain at least 1 item`, `"steps" must contain at least 1 step`, 1)
 		enhancedErrors.Append(errors.New(msg))
 	}
 
