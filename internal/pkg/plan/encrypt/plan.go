@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -47,18 +48,37 @@ func (p *Plan) Log(logger log.Logger) {
 func (p *Plan) ValidateAllEncrypted() error {
 	errs := errors.NewMultiError()
 	for _, action := range p.actions {
-		objectErrors := errors.NewMultiError()
-		for _, value := range action.values {
-			objectErrors.Append(errors.New(value.path.String()))
-		}
-
-		errs.AppendWithPrefixf(
-			objectErrors,
-			`%s "%s" contains unencrypted values`,
-			action.Kind(),
-			filesystem.Join(action.ObjectState.Manifest().Path(), naming.ConfigFile),
-		)
+		errs.Append(&UnencryptedValueError{
+			kind:     action.Kind(),
+			filePath: filesystem.Join(action.ObjectState.Manifest().Path(), naming.ConfigFile),
+			values:   action.values,
+		})
 	}
-
 	return errs.ErrorOrNil()
+}
+
+type UnencryptedValueError struct {
+	kind     model.Kind
+	filePath string
+	values   []*UnencryptedValue
+}
+
+func (v UnencryptedValueError) Error() string {
+	return fmt.Sprintf(`%s "%s" contains unencrypted values`, v.kind, v.filePath)
+}
+
+// WriteError prints an example of the found files to the output.
+func (v UnencryptedValueError) WriteError(w errors.Writer, level int, trace errors.StackTrace) {
+	w.WritePrefix(v.Error(), trace)
+	w.WriteNewLine()
+
+	last := len(v.values) - 1
+	for i, value := range v.values {
+		w.WriteIndent(level)
+		w.WriteBullet()
+		w.Write(value.path.String())
+		if i != last {
+			w.WriteNewLine()
+		}
+	}
 }

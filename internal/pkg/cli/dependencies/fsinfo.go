@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -45,6 +46,35 @@ func (v DirNotFoundError) Error() string {
 	return fmt.Sprintf("directory \"%s\" it not %s, found %s", v.path, v.expected, v.found)
 }
 
+type DirNotEmptyError struct {
+	path  string
+	files []os.FileInfo // found files, only first 6
+}
+
+func (v DirNotEmptyError) Error() string {
+	return fmt.Sprintf("directory \"%s\" it not empty", v.path)
+}
+
+// WriteError print an example of the found files to the output.
+func (v DirNotEmptyError) WriteError(w errors.Writer, level int, _ errors.StackTrace) {
+	w.Write(v.Error())
+	w.Write(", found:")
+	w.WriteNewLine()
+
+	last := len(v.files) - 1
+	for i, item := range v.files {
+		w.WriteIndent(level)
+		w.WriteBullet()
+		w.Write(item.Name())
+		if i >= 5 {
+			w.Write(" ...")
+			break
+		} else if i != last {
+			w.WriteNewLine()
+		}
+	}
+}
+
 // FsInfo is a helper for information about the CLI working directory.
 type FsInfo struct {
 	fs filesystem.Fs
@@ -85,23 +115,20 @@ func (v FsInfo) AssertEmptyDir() error {
 		return err
 	}
 
-	// Filter out ignored files and keep only the first 5 items
-	foundErr := errors.NewMultiError()
-	for _, item := range items {
+	// Filter out ignored files and keep only the first 6 items
+	var files []os.FileInfo
+	for i, item := range items {
 		if !filesystem.IsIgnoredPath(item.Name(), item) {
-			path := item.Name()
-			if foundErr.Len() > 5 {
-				foundErr.Append(errors.New(path + ` ...`))
+			files = append(files, item)
+			if i >= 5 {
 				break
-			} else {
-				foundErr.Append(errors.New(path))
 			}
 		}
 	}
 
 	// Directory must be empty (no error)
-	if foundErr.Len() > 0 {
-		return errors.PrefixErrorf(foundErr, `directory "%s" it not empty, found`, v.fs.BasePath())
+	if len(files) > 0 {
+		return &DirNotEmptyError{path: v.fs.BasePath(), files: files}
 	}
 
 	return nil

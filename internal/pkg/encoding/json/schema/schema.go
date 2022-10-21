@@ -93,14 +93,12 @@ func validateContent(schema []byte, content *orderedmap.OrderedMap) error {
 
 	// Process schema errors
 	validationErrors := &jsonschema.ValidationError{}
-	errs := errors.NewMultiError()
 	if errors.As(err, &validationErrors) {
-		processErrors(validationErrors.Causes, errs)
+		return processErrors(validationErrors.Causes)
 	} else if err != nil {
-		errs.Append(err)
+		return err
 	}
-
-	return errs.ErrorOrNil()
+	return nil
 }
 
 func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
@@ -111,16 +109,19 @@ func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
 	return schema.Validate(document.ToMap())
 }
 
-func processErrors(errs []*jsonschema.ValidationError, output errors.MultiError) {
+func processErrors(schemaErrs []*jsonschema.ValidationError) error {
 	// Sort errors
-	sort.Slice(errs, func(i, j int) bool {
-		return errs[i].InstanceLocation < errs[j].InstanceLocation
+	sort.Slice(schemaErrs, func(i, j int) bool {
+		return schemaErrs[i].InstanceLocation < schemaErrs[j].InstanceLocation
 	})
 
-	for _, e := range errs {
+	out := errors.NewMultiError()
+	for _, e := range schemaErrs {
 		// Process nested errors
 		if len(e.Causes) > 0 {
-			processErrors(e.Causes, output)
+			if err := processErrors(e.Causes); err != nil {
+				out.Append(err)
+			}
 			continue
 		}
 
@@ -129,11 +130,12 @@ func processErrors(errs []*jsonschema.ValidationError, output errors.MultiError)
 		path = strings.ReplaceAll(path, "/", ".")
 		msg := strings.ReplaceAll(e.Message, `'`, `"`)
 		if path == "" {
-			output.Append(errors.Errorf(`%s`, msg))
+			out.Append(&ValidationError{message: msg})
 		} else {
-			output.Append(errors.Errorf(`"%s": %s`, path, msg))
+			out.Append(&FieldValidationError{path: path, message: msg})
 		}
 	}
+	return out.ErrorOrNil()
 }
 
 func compileSchema(schemaStr []byte, savePropertyOrder bool) (*jsonschema.Schema, error) {
