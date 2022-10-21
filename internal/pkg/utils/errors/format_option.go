@@ -2,6 +2,7 @@ package errors
 
 type FormatConfig struct {
 	WithStack   bool // see FormatWithStack()
+	WithUnwrap  bool // see FormatWithUnwrap()
 	AsSentences bool // see FormatAsSentences()
 }
 
@@ -11,6 +12,14 @@ type FormatOption func(c *FormatConfig)
 func FormatWithStack() FormatOption {
 	return func(c *FormatConfig) {
 		c.WithStack = true
+		c.WithUnwrap = true
+	}
+}
+
+// FormatWithUnwrap option prints also all wrapped errors. It is enabled also by FormatWithStack option.
+func FormatWithUnwrap() FormatOption {
+	return func(c *FormatConfig) {
+		c.WithUnwrap = true
 	}
 }
 

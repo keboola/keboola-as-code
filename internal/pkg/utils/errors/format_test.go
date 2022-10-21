@@ -73,6 +73,32 @@ func TestMultiError_Format_WithToSentence(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expected), Format(MultiErrorForTest(), FormatAsSentences()))
 }
 
+func TestMultiError_FormatWithUnwrap(t *testing.T) {
+	t.Parallel()
+	expected := `
+- error 1
+- error with debug trace
+- wrapped2: wrapped1: error 2:
+  - *fmt.wrapError >>> wrapped1: error 2:
+    - *fmt.wrapError >>> error 2
+- my prefix:
+  - abc
+  - def
+  - sub1:
+    - x
+    - y
+  - sub2: z
+  - sub3 with format:
+    - this is a very long line from error message, it is printed on new line
+  - sub4:
+    - 1
+    - 2
+    - 3
+- last error
+`
+	wildcards.Assert(t, strings.TrimSpace(expected), Format(MultiErrorForTest(), FormatWithUnwrap()))
+}
+
 func TestMultiError_FormatWithStack(t *testing.T) {
 	t.Parallel()
 	expected := `

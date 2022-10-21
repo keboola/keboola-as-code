@@ -82,7 +82,7 @@ func (w *writer) WriteErrorLevel(level int, err error, trace StackTrace) {
 		v.WriteError(w, level, trace)
 		return
 	default:
-		if w.config.WithStack {
+		if w.config.WithUnwrap {
 			if subErr := Unwrap(v); subErr != nil {
 				// Write current error
 				w.Write(w.formatPrefix(w.formatMessage(v.Error(), trace)))
