@@ -1,6 +1,6 @@
 Error:
-- manifest is not valid:
-  - configurations[0].branchId is a required field
-  - configurations[0].componentId is a required field
-  - configurations[0].id is a required field
-  - configurations[0].path is a required field
+- Manifest is not valid:
+  - "configurations[0].branchId" is a required field
+  - "configurations[0].componentId" is a required field
+  - "configurations[0].id" is a required field
+  - "configurations[0].path" is a required field

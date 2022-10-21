@@ -1,3 +1,3 @@
 Error:
-- cannot perform the "push" operation:
-  - cannot delete branch "main", default branch can never be deleted
+- Cannot perform the "push" operation:
+  - Cannot delete branch "main", default branch can never be deleted.

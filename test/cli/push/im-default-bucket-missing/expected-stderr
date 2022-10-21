@@ -1,2 +1,2 @@
 Warning:
-- config %s
+- Config "%s" contains table "%s" in input mapping referencing to a non-existing configuration.
