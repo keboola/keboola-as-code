@@ -4,11 +4,11 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *ValidationResult, allValues template.InputsValues, err error) {
 	out = &ValidationResult{Valid: true}
-	errFormatter := NewValidationErrorFormatter()
 	stepInputs := inputsPayloadToMap(payload)
 
 	errs := errors.NewMultiError()
@@ -60,7 +60,12 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 				// Validate value
 				if outInput.Error == nil && outStep.Configured && outInput.Visible {
 					if err := input.ValidateUserInput(value); err != nil {
-						msg := errFormatter.Format(err)
+						msg := err.Error()
+
+						// In other parts of the repository, the validation result is a bullet list.
+						// But there is always only one message, so in the API it is formatted as a sentence.
+						msg = strhelper.AsSentence(msg)
+
 						outInput.Error = &msg
 					}
 				}
@@ -94,7 +99,7 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 
 		// Check if required number of steps is configured
 		if err := group.ValidateStepsCount(len(group.Steps), configuredSteps); err != nil {
-			msg := errFormatter.Format(err)
+			msg := strhelper.AsSentence(err.Error())
 			outGroup.Error = &msg
 			outGroup.Valid = false
 		}
@@ -116,7 +121,7 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 	// Format payload errors
 	if errs.Len() > 0 {
 		return nil, nil, BadRequestError{
-			Message: errFormatter.Format(errors.PrefixError(errs, "Invalid payload")),
+			Message: strhelper.AsSentence(errors.PrefixError(errs, "Invalid payload").Error()),
 		}
 	}
 

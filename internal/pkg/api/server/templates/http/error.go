@@ -16,7 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 const (
@@ -179,19 +178,19 @@ func writeError(ctx context.Context, logger log.Logger, w http.ResponseWriter, e
 	}
 
 	// Error message
+	var errForResponse error
 	var messageProvider errorWithUserMessage
 	switch {
 	case errors.As(err, &messageProvider):
-		response.Message = messageProvider.ErrorUserMessage()
+		errForResponse = errors.New(messageProvider.ErrorUserMessage())
 	case response.StatusCode > 499:
-		response.Message = fmt.Sprintf(DefaultErrorMessage, *response.ExceptionID)
+		errForResponse = errors.Errorf(DefaultErrorMessage, *response.ExceptionID)
 	default:
-		response.Message = err.Error()
+		errForResponse = err
 	}
 
-	// Normalize error message
-	response.Message = strings.TrimSuffix(response.Message, ".") + "."
-	response.Message = strhelper.FirstUpper(response.Message)
+	// Convert error to response message
+	response.Message = errors.Format(errForResponse, errors.FormatAsSentences())
 
 	// Log error
 	if response.StatusCode > 499 {
@@ -221,7 +220,7 @@ func errorLogMessage(err error, response *UnexpectedError) string {
 	// Format message
 	return fmt.Sprintf(
 		"%s | %serrorName=%s errorType=%T response=%s",
-		errors.FormatWithDebug(err), exceptionIdValue, response.Name, err, json.MustEncodeString(response, false),
+		errors.Format(err, errors.FormatWithStack()), exceptionIdValue, response.Name, err, json.MustEncodeString(response, false),
 	)
 }
 
