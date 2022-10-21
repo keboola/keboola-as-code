@@ -87,7 +87,7 @@ func TestManifestContentValidateEmpty(t *testing.T) {
 	c := &file{}
 	err := c.validate()
 	assert.NotNil(t, err)
-	expected := "repository manifest is not valid:\n- version is a required field\n- author.name is a required field\n- author.url is a required field"
+	expected := "repository manifest is not valid:\n- \"version\" is a required field\n- \"author.name\" is a required field\n- \"author.url\" is a required field"
 	assert.Equal(t, expected, err.Error())
 }
 
@@ -107,7 +107,7 @@ func TestManifestContentValidateBadVersion(t *testing.T) {
 	manifestContent.Version = 123
 	err := manifestContent.validate()
 	assert.Error(t, err)
-	expected := "repository manifest is not valid: version must be 2 or less"
+	expected := `repository manifest is not valid: "version" must be 2 or less`
 	assert.Equal(t, expected, err.Error())
 }
 

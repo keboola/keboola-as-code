@@ -318,17 +318,18 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 
 	// Warnings
 	expectedWarnings := `
-WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchestrator/config:456":
-- invalid phase[1]: missing "name" key
-- invalid phase[2]:
-  - missing "id" key
-  - missing "name" key
-- invalid task[1]: phase "789" not found
-- invalid task[2]:
-  - missing "id" key
-  - missing "name" key
-  - missing "phase" key
-  - missing "task" key
+WARN  Warning:
+- Invalid orchestrator config "branch:123/component:keboola.orchestrator/config:456":
+  - Invalid phase[1]: Missing "name" key.
+  - Invalid phase[2]:
+    - Missing "id" key.
+    - Missing "name" key.
+  - Invalid task[1]: Phase "789" not found.
+  - Invalid task[2]:
+    - Missing "id" key.
+    - Missing "name" key.
+    - Missing "phase" key.
+    - Missing "task" key.
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 
@@ -620,11 +621,12 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 
 	// Warnings
 	expectedWarnings := `
-WARN  Warning: invalid orchestrator config "branch:123/component:keboola.orchestrator/config:456":
-- found cycles in phases "dependsOn":
-  - 3 -> 4 -> 3
-  - 1 -> 2 -> 1
-  - 5 -> 8 -> 7 -> 6 -> 5
+WARN  Warning:
+- Invalid orchestrator config "branch:123/component:keboola.orchestrator/config:456":
+  - Found cycles in phases "dependsOn":
+    - 3 -> 4 -> 3
+    - 1 -> 2 -> 1
+    - 5 -> 8 -> 7 -> 6 -> 5
 `
 	assert.Equal(t, strings.TrimLeft(expectedWarnings, "\n"), logger.WarnAndErrorMessages())
 }

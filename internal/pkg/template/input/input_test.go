@@ -11,7 +11,7 @@ func TestInput_ValidateUserInput(t *testing.T) {
 
 	input := Input{
 		Id:          "input.id",
-		Name:        "input",
+		Name:        "my input",
 		Description: "input description",
 		Type:        "int",
 		Kind:        "input",
@@ -19,11 +19,11 @@ func TestInput_ValidateUserInput(t *testing.T) {
 	}
 	err := input.ValidateUserInput(1)
 	assert.Error(t, err)
-	assert.Equal(t, "input.id must be 5 or greater", err.Error())
+	assert.Equal(t, "my input must be 5 or greater", err.Error())
 
 	err = input.ValidateUserInput("1")
 	assert.Error(t, err)
-	assert.Equal(t, "input should be int, got string", err.Error())
+	assert.Equal(t, "my input should be int, got string", err.Error())
 
 	assert.Error(t, err)
 	assert.NoError(t, input.ValidateUserInput(7))

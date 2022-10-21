@@ -68,12 +68,13 @@ func TestValidateState(t *testing.T) {
 	// Validate
 	localErr, remoteErr := state.Validate(context.Background())
 	expectedLocalError := `
-local branch "branch" is not valid: name is a required field
+local branch "branch" is not valid:
+  - "name" is a required field
 `
 	expectedRemoteError := `
 remote config "branch:456/component:keboola.foo/config:234" is not valid:
-  - name is a required field
-  - configuration is a required field
+  - "name" is a required field
+  - "configuration" is a required field
 `
 	assert.Error(t, localErr)
 	assert.Error(t, remoteErr)

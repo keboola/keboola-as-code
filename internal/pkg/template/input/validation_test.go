@@ -28,7 +28,7 @@ func TestValidationRules(t *testing.T) {
 					Default:     "def",
 				},
 			},
-			error: `group 1, step 1, input "input#id": id can only contain alphanumeric characters, dots, underscores and dashes`,
+			error: `group 1, step 1, input "input#id": "id" can only contain alphanumeric characters, dots, underscores and dashes`,
 		},
 		{
 			description: "invalid type for kind",
@@ -42,7 +42,7 @@ func TestValidationRules(t *testing.T) {
 					Default:     "def",
 				},
 			},
-			error: "- group 1, step 1, input \"input.id\": type int is not allowed for the specified kind\n- group 1, step 1, input \"input.id\": default must match the specified type",
+			error: "- group 1, step 1, input \"input.id\": \"type\" int is not allowed for the specified kind\n- group 1, step 1, input \"input.id\": \"default\" must match the specified type",
 		},
 		{
 			description: "missing type",
@@ -55,7 +55,7 @@ func TestValidationRules(t *testing.T) {
 					Kind:        "input",
 				},
 			},
-			error: "group 1, step 1, input \"input.id\": type is a required field",
+			error: "group 1, step 1, input \"input.id\": \"type\" is a required field",
 		},
 		{
 			description: "invalid rules",
@@ -70,7 +70,7 @@ func TestValidationRules(t *testing.T) {
 					Default:     33,
 				},
 			},
-			error: "group 1, step 1, input \"input.id\": rules is not valid: undefined validation function 'gtex'",
+			error: "group 1, step 1, input \"input.id\": \"rules\" is not valid: undefined validation function 'gtex'",
 		},
 		{
 			description: "invalid if",
@@ -84,7 +84,7 @@ func TestValidationRules(t *testing.T) {
 					If:          "1+(2-1>1",
 				},
 			},
-			error: "group 1, step 1, input \"input.id2\": showIf cannot compile condition:\n  - expression: 1+(2-1>1\n  - error: Unbalanced parenthesis",
+			error: "group 1, step 1, input \"input.id2\": \"showIf\" cannot compile condition:\n  - expression: 1+(2-1>1\n  - error: Unbalanced parenthesis",
 		},
 		{
 			description: "int default, empty options",
@@ -132,7 +132,7 @@ func TestValidationRules(t *testing.T) {
 					},
 				},
 			},
-			error: "group 1, step 1, input \"input.id\": options should only be set for select and multiselect kinds",
+			error: "group 1, step 1, input \"input.id\": \"options\" should only be set for select and multiselect kinds",
 		},
 		{
 			description: "empty options",
@@ -146,7 +146,7 @@ func TestValidationRules(t *testing.T) {
 					Options:     Options{},
 				},
 			},
-			error: "group 1, step 1, input \"input.id\": options must contain at least one item",
+			error: "group 1, step 1, input \"input.id\": \"options\" must contain at least one item",
 		},
 		{
 			description: "invalid default value for Select",
@@ -164,7 +164,7 @@ func TestValidationRules(t *testing.T) {
 					},
 				},
 			},
-			error: "group 1, step 1, input \"input.id\": default can only contain values from the specified options",
+			error: "group 1, step 1, input \"input.id\": \"default\" can only contain values from the specified options",
 		},
 		{
 			description: "valid options for Select",
@@ -201,7 +201,7 @@ func TestValidationRules(t *testing.T) {
 					},
 				},
 			},
-			error: "group 1, step 1, input \"input.id\": default can only contain values from the specified options",
+			error: "group 1, step 1, input \"input.id\": \"default\" can only contain values from the specified options",
 		},
 		{
 			description: "valid options for MultiSelect",
@@ -247,7 +247,7 @@ func TestValidationRules(t *testing.T) {
 					Kind:        "oauth",
 				},
 			},
-			error: "group 1, step 1, input \"input.id\": componentId is a required field",
+			error: "group 1, step 1, input \"input.id\": \"componentId\" is a required field",
 		},
 		{
 			description: "valid oauthAccounts",
@@ -272,7 +272,7 @@ func TestValidationRules(t *testing.T) {
 			error: "",
 		},
 		{
-			description: "invalid oauthAccounts, unsupported component",
+			description: "invalid \"oauthAccounts\", unsupported component",
 			inputs: Inputs{
 				{
 					Id:           "input.id",
@@ -294,7 +294,7 @@ func TestValidationRules(t *testing.T) {
 			error: "input \"input.id\" (kind=oauthAccounts) is defined for \"foo.bar\" component, but it is not supported",
 		},
 		{
-			description: "missing oauthInputId for oauthAccounts kind",
+			description: "missing \"oauthInputId\" for oauthAccounts kind",
 			inputs: Inputs{
 				{
 					Id:          "input.id",
@@ -304,7 +304,7 @@ func TestValidationRules(t *testing.T) {
 					Kind:        "oauthAccounts",
 				},
 			},
-			error: "group 1, step 1, input \"input.id\": oauthInputId is a required field",
+			error: "group 1, step 1, input \"input.id\": \"oauthInputId\" is a required field",
 		},
 		{
 			description: "missing referenced input from kind oauthAccounts",

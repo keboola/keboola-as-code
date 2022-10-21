@@ -53,7 +53,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		// username can contain alphanum only
 		assert.NoError(t, console.SendLine("u-s"))
 
-		assert.NoError(t, console.ExpectString("username can only contain alphanumeric characters"))
+		assert.NoError(t, console.ExpectString(`Facebook username can only contain alphanumeric characters`))
 
 		assert.NoError(t, console.Send(strings.Repeat(Backspace, 3))) // remove "u-s"
 
