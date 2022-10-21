@@ -375,8 +375,7 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input, isForTest bool) (s
 			Options:     inputDef.Options.Names(),
 			UseDefault:  true,
 			Validator: func(answerRaw any) error {
-				answer := answerRaw.(survey.OptionAnswer)
-				return inputDef.ValidateUserInput(answer.Value)
+				return inputDef.ValidateUserInput(answerRaw.(survey.OptionAnswer).Value)
 			},
 		}
 		if inputDef.Default != nil {
