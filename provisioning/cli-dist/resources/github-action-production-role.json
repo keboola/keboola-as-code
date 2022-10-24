@@ -43,7 +43,7 @@
                 },
                 "StringLike": {
                   "token.actions.githubusercontent.com:sub": {
-                    "Fn::Sub": "repo:${GitHubOrganization}/${RepositoryName}:ref:refs/tags/v*"
+                    "Fn::Sub": "repo:${GitHubOrganization}/${RepositoryName}:ref:refs/heads/main"
                   }
                 }
               }
