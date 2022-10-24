@@ -69,7 +69,7 @@ func (p *Dialogs) AskCreateConfig(projectState *project.State, d createDeps) (cr
 	out.ComponentId = componentId
 
 	// Name
-	name, err := p.askObjectName(d, `config row`)
+	name, err := p.askObjectName(d, `config`)
 	if err != nil {
 		return out, err
 	}
