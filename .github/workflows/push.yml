@@ -194,8 +194,8 @@ jobs:
         env:
           VERSION: ${{ needs.set-version.outputs.version }}
 
-  cli-dist-testing-deploy:
-    name: 'Deploy CLI Distribution to Testing'
+  cli-dist-validate:
+    name: 'Validate CLI Distribution Templates'
     needs:
       - set-version
     runs-on: ubuntu-latest
@@ -224,76 +224,6 @@ jobs:
       - name: Terraform Validate
         id: validate
         run: terraform validate
-      - name: Terraform Plan
-        run: terraform plan -var-file="testing.tfvars" -input=false -lock-timeout=5m
-      - name: Terraform Apply
-        run: terraform apply -auto-approve -var-file="testing.tfvars" -input=false -lock-timeout=5m
-
-  cli-dist-production-plan:
-    name: 'Try CLI Distribution Plan for Production'
-    needs:
-      - cli-dist-testing-deploy
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    defaults:
-      run:
-        working-directory: provisioning/cli-dist
-    env:
-      TF_VERSION: 1.1.4
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-read-only-role
-          aws-region: eu-central-1
-      - name: Terraform Init
-        run: terraform init -backend-config=backend_production.conf -input=false -lock-timeout=5m
-      - name: Terraform Plan
-        run: terraform plan -input=false -var-file="production.tfvars" -lock-timeout=5m
-
-  cli-dist-production-deploy:
-    name: 'Deploy CLI Distribution to Production'
-    needs:
-      - cli-dist-production-plan
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/') && needs.set-version.outputs.is_semantic_tag == 'true'
-    permissions:
-      id-token: write
-      contents: read
-    defaults:
-      run:
-        working-directory: provisioning/cli-dist
-    env:
-      TF_VERSION: 1.1.4
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
-          aws-region: eu-central-1
-      - name: Terraform Init
-        run: terraform init -backend-config=backend_production.conf -input=false
-      - name: Terraform Validate
-        id: validate
-        run: terraform validate
-      - name: Terraform Plan
-        run: terraform plan -input=false -var-file="production.tfvars"
-      - name: Terraform Apply
-        run: terraform apply -auto-approve -var-file="production.tfvars" -input=false
 
   release:
     needs:
@@ -301,7 +231,7 @@ jobs:
       - test
       - lint
       - cross-compile
-      - cli-dist-production-deploy
+      - cli-dist-validate
     # only one parallel job allowed - used shared S3
     concurrency:
       group: release
