@@ -13,7 +13,7 @@ defaults:
 
 jobs:
 
-  cli-dist-testing-deploy:
+  testing-deploy:
     name: 'Deploy to Testing'
     runs-on: ubuntu-latest
     permissions:
@@ -41,10 +41,10 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve -var-file="testing.tfvars" -input=false -lock-timeout=5m
 
-  cli-dist-production-plan:
+  production-plan:
     name: 'Try Plan for Production'
     needs:
-      - cli-dist-testing-deploy
+      - testing-deploy
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -66,12 +66,12 @@ jobs:
       - name: Terraform Plan
         run: terraform plan -input=false -var-file="production.tfvars" -lock-timeout=5m
 
-  cli-dist-production-deploy:
+  production-deploy:
     name: 'Deploy to Production'
     needs:
-      - cli-dist-production-plan
+      - production-plan
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
+    if: github.ref == 'refs/heads/main'
     permissions:
       id-token: write
       contents: read

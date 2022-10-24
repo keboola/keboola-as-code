@@ -194,44 +194,12 @@ jobs:
         env:
           VERSION: ${{ needs.set-version.outputs.version }}
 
-  cli-dist-validate:
-    name: 'Validate CLI Distribution Templates'
-    needs:
-      - set-version
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    defaults:
-      run:
-        working-directory: provisioning/cli-dist
-    env:
-      TF_VERSION: 1.1.4
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          role-to-assume: arn:aws:iam::813746015128:role/kbc-github-actions-admin-role
-          aws-region: eu-central-1
-      - name: Terraform Init
-        run: terraform init -backend-config=backend_testing.conf -input=false -lock-timeout=5m
-      - name: Terraform Validate
-        id: validate
-        run: terraform validate
-
   release:
     needs:
       - set-version
       - test
       - lint
       - cross-compile
-      - cli-dist-validate
     # only one parallel job allowed - used shared S3
     concurrency:
       group: release
