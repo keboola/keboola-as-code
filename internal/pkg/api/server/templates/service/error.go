@@ -2,11 +2,6 @@ package service
 
 import (
 	"net/http"
-
-	"github.com/umisama/go-regexpcache"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 type NotImplementedError struct{}
@@ -41,20 +36,4 @@ func (e BadRequestError) Error() string {
 
 func (e BadRequestError) ErrorUserMessage() string {
 	return e.Message
-}
-
-func NewValidationErrorFormatter() errors.Formatter {
-	return errors.
-		NewFormatter().
-		WithMessageFormatter(func(s string, _ errors.StackTrace) string {
-			// Uppercase first letter
-			s = strhelper.FirstUpper(s)
-
-			// Add period if the message ends with an alphanumeric character
-			lastChar := s[len(s)-1:]
-			if regexpcache.MustCompile("^[a-zA-Z0-9]$").MatchString(lastChar) {
-				s += "."
-			}
-			return s
-		})
 }

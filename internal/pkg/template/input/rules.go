@@ -2,10 +2,13 @@ package input
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -49,5 +52,10 @@ func (r Rules) ValidateValue(input Input, value any) (err error) {
 	}()
 
 	// Validate
-	return validator.New().ValidateCtx(context.Background(), value, rules, input.Id)
+	if err := validator.New().ValidateCtx(context.Background(), value, rules, input.Name); err != nil {
+		// Un-quote input name
+		return errors.Wrap(err, strings.Replace(err.Error(), fmt.Sprintf(`"%s"`, input.Name), input.Name, 1))
+	}
+
+	return nil
 }

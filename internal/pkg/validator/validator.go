@@ -29,8 +29,6 @@ const (
 	anonymousField              = "__anonymous__"
 )
 
-type ErrorMsgFunc func(fe validator.FieldError) string
-
 type Validator interface {
 	RegisterRule(rules ...Rule)
 	Validate(ctx context.Context, value interface{}) error
@@ -44,6 +42,12 @@ type Rule struct {
 	FuncCtx      validator.FuncCtx
 	ErrorMsg     string
 	ErrorMsgFunc ErrorMsgFunc
+}
+
+type ErrorMsgFunc func(fe validator.FieldError) string
+
+type Error struct {
+	message string
 }
 
 type contextKey string
@@ -71,7 +75,7 @@ func New(rules ...Rule) Validator {
 	// Modify fields names in error "namespace".
 	v.validator.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		// Use "anonymousField" name for anonymous fields, so they can be removed from the error namespace.
-		// See "formatError" method.
+		// See "processError" method.
 		if fld.Anonymous {
 			return anonymousField
 		}
@@ -98,6 +102,15 @@ func New(rules ...Rule) Validator {
 	return v
 }
 
+func (v Error) Error() string {
+	return v.message
+}
+
+func (v Error) WriteError(w errors.Writer, _ int, _ errors.StackTrace) {
+	// Disable other formatting
+	w.Write(v.Error())
+}
+
 // Validate nested struct fields or slice items.
 func (v *wrapper) Validate(ctx context.Context, value interface{}) error {
 	return v.ValidateCtx(ctx, value, "dive", "")
@@ -107,7 +120,7 @@ func (v *wrapper) Validate(ctx context.Context, value interface{}) error {
 func (v *wrapper) ValidateCtx(ctx context.Context, value interface{}, tag string, namespace string) error {
 	// nolint: errorlint // library always returns validator.ValidationErrors
 	if err := v.validator.VarCtx(ctx, value, tag); err != nil {
-		return v.formatError(err.(validator.ValidationErrors), namespace, reflect.ValueOf(value))
+		return v.processError(err.(validator.ValidationErrors), namespace, reflect.ValueOf(value))
 	}
 	return nil
 }
@@ -260,8 +273,8 @@ func (v *wrapper) registerDefaultErrorMessages() {
 	}
 }
 
-// formatError creates human-readable error message.
-func (v *wrapper) formatError(err validator.ValidationErrors, namespace string, value reflect.Value) errors.MultiError {
+// processError creates human-readable error message.
+func (v *wrapper) processError(err validator.ValidationErrors, namespace string, value reflect.Value) errors.MultiError {
 	errs := errors.NewMultiError()
 	for _, e := range err {
 		// Translate error
@@ -272,7 +285,7 @@ func (v *wrapper) formatError(err validator.ValidationErrors, namespace string, 
 		}
 
 		// Prefix error with namespace
-		errs.Append(errors.Errorf("%s", prefixErrorWithNamespace(e, errString, namespace, value)))
+		errs.Append(&Error{message: prefixErrorWithNamespace(e, errString, namespace, value)})
 	}
 
 	return errs
@@ -289,9 +302,13 @@ func prefixErrorWithNamespace(e validator.FieldError, errMsg string, customNames
 		namespaceParts = strings.Split(errNamespace, ".")
 	}
 
-	// Is field present at the beginning of the error message?
-	errMsgFirstWord := strings.SplitN(errMsg, " ", 2)[0]
+	// Is field present at the beginning of the error message? Then remove it.
+	errMsgParts := strings.SplitN(errMsg, " ", 2)
+	errMsgFirstWord := errMsgParts[0]
 	errMsgContainsField := len(namespaceParts) > 0 && namespaceParts[len(namespaceParts)-1] == errMsgFirstWord
+	if errMsgContainsField {
+		errMsg = errMsgParts[1]
+	}
 
 	// Check nil value
 	if value.IsValid() {
@@ -306,11 +323,6 @@ func prefixErrorWithNamespace(e validator.FieldError, errMsg string, customNames
 		}
 	}
 
-	// Remove field name from namespace, if it is present in the error message
-	if errMsgContainsField {
-		namespaceParts = namespaceParts[:len(namespaceParts)-1]
-	}
-
 	// Prepend custom namespace
 	if customNamespace != "" {
 		namespaceParts = append(strings.Split(customNamespace, "."), namespaceParts...)
@@ -321,9 +333,7 @@ func prefixErrorWithNamespace(e validator.FieldError, errMsg string, customNames
 	switch {
 	case namespace == "":
 		return errMsg
-	case errMsgContainsField:
-		return namespace + "." + errMsg
 	default:
-		return namespace + " " + errMsg
+		return fmt.Sprintf(`"%s" %s`, namespace, errMsg)
 	}
 }

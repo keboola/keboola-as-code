@@ -96,9 +96,9 @@ func TestRelationsMapperOtherSideMissing(t *testing.T) {
 	// Warning is logged
 	expected := `
 WARN  Warning:
-- mocked key "456" not found:
-  - referenced from mocked key "123"
-  - by relation "manifest_side_relation"
+- Mocked key "456" not found:
+  - Referenced from mocked key "123".
+  - By relation "manifest_side_relation".
 `
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
 }

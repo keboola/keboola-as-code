@@ -1,5 +1,5 @@
 Error:
-- steps group 1 "Choose one of the eshop platforms" is invalid:
-  - exactly one step must be selected
-  - number of selected steps (0) is incorrect
-  - there are no inputs for this group in the inputs JSON file
+- Steps group 1 "Choose one of the eshop platforms" is invalid:
+  - Exactly one step must be selected.
+  - Number of selected steps (0) is incorrect.
+  - There are no inputs for this group in the inputs JSON file.

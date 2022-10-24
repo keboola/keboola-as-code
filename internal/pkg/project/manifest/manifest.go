@@ -17,6 +17,11 @@ func (e InvalidManifestError) Unwrap() error {
 	return e.error
 }
 
+func (e InvalidManifestError) WriteError(w errors.Writer, level int, trace errors.StackTrace) {
+	// Write underlying error
+	w.WriteErrorLevel(level, e.error, trace)
+}
+
 type records = manifest.Records
 
 // Manifest of the project directory

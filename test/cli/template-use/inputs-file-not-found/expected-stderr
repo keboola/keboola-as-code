@@ -1,2 +1,2 @@
 Error:
-- cannot read inputs file "./inputs.json": %s
+- Cannot read inputs file "./inputs.json": %s

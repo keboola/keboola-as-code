@@ -23,12 +23,22 @@ type InvalidLocalStateError struct {
 	error
 }
 
-func (e *InvalidRemoteStateError) Unwrap() error {
+func (e InvalidRemoteStateError) Unwrap() error {
 	return e.error
 }
 
-func (e *InvalidLocalStateError) Unwrap() error {
+func (e InvalidRemoteStateError) WriteError(w errors.Writer, level int, trace errors.StackTrace) {
+	// Write underlying error
+	w.WriteErrorLevel(level, e.error, trace)
+}
+
+func (e InvalidLocalStateError) Unwrap() error {
 	return e.error
+}
+
+func (e InvalidLocalStateError) WriteError(w errors.Writer, level int, trace errors.StackTrace) {
+	// Write underlying error
+	w.WriteErrorLevel(level, e.error, trace)
 }
 
 type Options struct {

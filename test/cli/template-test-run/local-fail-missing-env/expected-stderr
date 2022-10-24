@@ -1,3 +1,4 @@
 FAIL keboola/my-template/0.0.1 one local
 Error:
-- running local test "one" for template "my-template" failed: missing ENV variable "KBC_SECRET_MY_TEMPLATE_TOKEN"
+- Running local test "one" for template "my-template" failed:
+  - Missing ENV variable "KBC_SECRET_MY_TEMPLATE_TOKEN".

@@ -71,7 +71,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 			}
 			if err := runLocalTest(ctx, test, tmpl, o.Verbose, d); err != nil {
 				d.Logger().Errorf(`FAIL %s %s local`, tmpl.FullName(), test.Name())
-				errs.Append(errors.Errorf(`running local test "%s" for template "%s" failed: %w`, test.Name(), tmpl.TemplateId(), err))
+				errs.AppendWithPrefixf(err, `running local test "%s" for template "%s" failed`, test.Name(), tmpl.TemplateId())
 			} else {
 				d.Logger().Infof(`PASS %s %s local`, tmpl.FullName(), test.Name())
 			}
@@ -83,7 +83,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 			}
 			if err := runRemoteTest(ctx, test, tmpl, o.Verbose, d); err != nil {
 				d.Logger().Errorf(`FAIL %s %s remote`, tmpl.FullName(), test.Name())
-				errs.Append(errors.Errorf(`running remote test "%s" for template "%s" failed: %w`, test.Name(), tmpl.TemplateId(), err))
+				errs.AppendWithPrefixf(err, `running remote test "%s" for template "%s" failed`, test.Name(), tmpl.TemplateId())
 			} else {
 				d.Logger().Infof(`PASS %s %s remote`, tmpl.FullName(), test.Name())
 			}

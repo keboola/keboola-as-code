@@ -128,12 +128,12 @@ options: {"value1":"Label 1","value2":"Label 2","value3":123}  <!-- invalid opti
 - line 28: step "sABC" not found
 - line 37: value "{"value1":"Label 1","value2":"Label 2","value3":123}" is not valid: value of key "value3" must be string
 - input "string-array-multiselect": "step" is not defined
-- input "string-input": type string is not allowed for the specified kind
-- input "string-input": rules is not valid: undefined validation function 'foobar'
-- input "string-input": showIf cannot compile condition:
+- input "string-input": "type" string is not allowed for the specified kind
+- input "string-input": "rules" is not valid: undefined validation function 'foobar'
+- input "string-input": "showIf" cannot compile condition:
   - expression: [invalid
   - error: Unclosed parameter bracket
-- input "string-array-multiselect": default can only contain values from the specified options
+- input "string-array-multiselect": "default" can only contain values from the specified options
 `
 
 	// Parse

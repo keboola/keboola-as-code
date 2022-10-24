@@ -285,7 +285,7 @@ func TestValidateInputs(t *testing.T) {
 					Steps: template.Steps{
 						{
 							Inputs: template.Inputs{
-								{Id: "foo", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
+								{Id: "foo", Name: "Foo Name", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
 							},
 						},
 					},
@@ -307,7 +307,7 @@ func TestValidateInputs(t *testing.T) {
 									{
 										ID:      "foo",
 										Visible: true,
-										Error:   strPtr("Foo is a required field."), // <<<<<<<<<<<<<<<<<<<
+										Error:   strPtr("Foo Name is a required field."), // <<<<<<<<<<<<<<<<<<<
 									},
 								},
 							},

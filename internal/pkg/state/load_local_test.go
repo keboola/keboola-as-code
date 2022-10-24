@@ -121,10 +121,10 @@ func TestLoadLocalStateAllowedBranchesWarning(t *testing.T) {
 
 	expected := `
 DEBUG  Loading local state.
-WARN  found manifest record for branch "123":
-- it is not allowed by the manifest definition
-- please, remove record from the manifest and the related directory
-- or modify "allowedBranches" key in the manifest
+WARN  Found manifest record for branch "123":
+- It is not allowed by the manifest definition.
+- Please, remove record from the manifest and the related directory.
+- Or modify "allowedBranches" key in the manifest.
 `
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(d.DebugLogger().AllMessages()))
 }

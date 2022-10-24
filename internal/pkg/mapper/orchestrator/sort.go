@@ -16,6 +16,30 @@ type phasesSorter struct {
 	phaseDependsOnKeys map[string][]string     // phase KEY -> depends on KEYs
 }
 
+type PhasesCyclesError struct {
+	cycles []string
+}
+
+func (v PhasesCyclesError) Error() string {
+	return `found cycles in phases "dependsOn"`
+}
+
+// WriteError prints found cycles to the output.
+func (v PhasesCyclesError) WriteError(w errors.Writer, level int, trace errors.StackTrace) {
+	w.WritePrefix(v.Error(), trace)
+	w.WriteNewLine()
+
+	last := len(v.cycles) - 1
+	for i, cycle := range v.cycles {
+		w.WriteIndent(level)
+		w.WriteBullet()
+		w.Write(cycle)
+		if i != last {
+			w.WriteNewLine()
+		}
+	}
+}
+
 func newPhasesSorter() *phasesSorter {
 	return &phasesSorter{
 		phaseByKey:         make(map[string]*model.Phase),
@@ -40,15 +64,15 @@ func (s *phasesSorter) sortPhases() ([]*model.Phase, error) {
 	// Topological sort by dependencies
 	order, cycles := graph.Sort()
 	if len(cycles) > 0 {
-		err := errors.NewMultiError()
+		var cyclesAsStr []string
 		for _, cycle := range cycles {
 			var items []string
 			for _, item := range cycle {
 				items = append([]string{item.(string)}, items...) // prepend
 			}
-			err.Append(errors.New(strings.Join(items, ` -> `)))
+			cyclesAsStr = append(cyclesAsStr, strings.Join(items, ` -> `))
 		}
-		errs.AppendWithPrefixf(err, `found cycles in phases "dependsOn"`)
+		errs.Append(&PhasesCyclesError{cycles: cyclesAsStr})
 	}
 
 	// Generate slice

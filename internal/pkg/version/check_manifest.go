@@ -39,12 +39,12 @@ func CheckManifestVersion(logger log.Logger, fs filesystem.Fs, manifestPath stri
 
 	if version == 1 {
 		warning := `
-Your project needs to be migrated to the new version of the Keboola CLI.
+Warning: Your project needs to be migrated to the new version of the Keboola CLI.
   1. Make sure you have a backup of the current project directory (eg. git commit, git push).
   2. Then run "kbc pull --force" to overwrite local state.
   3. Manually check that there are no unexpected changes in the project directory (git diff).
 		`
-		logger.Warn(`Warning: `, strings.TrimLeft(warning, "\n"))
+		logger.Warn(strings.TrimLeft(warning, "\n"))
 	} else {
 		logger.Debugf(`Version "%d" in "%s" is up to date.`, version, manifestPath)
 	}

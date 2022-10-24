@@ -92,6 +92,8 @@ func TestFirstLower(t *testing.T) {
 
 func TestFirstUpper(t *testing.T) {
 	t.Parallel()
+	assert.Equal(t, "", FirstUpper(""))
+	assert.Equal(t, " ", FirstUpper(" "))
 	assert.Equal(t, "Foo", FirstUpper("foo"))
 	assert.Equal(t, "FOO", FirstUpper("FOO"))
 	assert.Equal(t, "Foo", FirstUpper("Foo"))
@@ -182,4 +184,33 @@ func TestReplacePlaceholders(t *testing.T) {
 	assert.Equal(t, "foo", ReplacePlaceholders("foo", map[string]any{"foo": "bar"}))
 	assert.Equal(t, "bar", ReplacePlaceholders("{foo}", map[string]any{"foo": "bar"}))
 	assert.Equal(t, "AbarB", ReplacePlaceholders("A{foo}B", map[string]any{"foo": "bar"}))
+}
+
+func TestAsSentence(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		in       string
+		expected string
+	}{
+		{"", ""},
+		{" ", " "},
+		{"1", "1."},
+		{"a", "A."},
+		{"A", "A."},
+		{"foo bar", "Foo bar."},
+		{"foo bar ", "Foo bar."},
+		{"foo bar.", "Foo bar."},
+		{"Foo bar", "Foo bar."},
+		{"Foo bar.", "Foo bar."},
+		{"foo bar:", "Foo bar:"},
+		{"Foo bar:", "Foo bar:"},
+		{"foo bar>", "Foo bar>"},
+		{"Foo bar>", "Foo bar>"},
+		{`foo bar "xyz"`, `Foo bar "xyz".`},
+	}
+
+	for i, c := range cases {
+		assert.Equal(t, c.expected, AsSentence(c.in), "case "+cast.ToString(i))
+	}
 }

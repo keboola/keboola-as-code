@@ -74,6 +74,9 @@ func FirstLower(str string) string {
 }
 
 func FirstUpper(str string) string {
+	if len(str) == 0 {
+		return str
+	}
 	return strings.ToUpper(string(str[0])) + str[1:]
 }
 
@@ -148,4 +151,20 @@ func ReplacePlaceholders(path string, placeholders map[string]interface{}) strin
 		path = strings.ReplaceAll(path, "{"+key+"}", cast.ToString(value))
 	}
 	return path
+}
+
+func AsSentence(msg string) string {
+	out := strings.TrimRight(msg, " ")
+	if len(out) == 0 {
+		return msg
+	}
+
+	// First letter is uppercase.
+	out = FirstUpper(out)
+
+	// Dot is added to the end, if message doesn't end with a special character.
+	if regexpcache.MustCompile(`[a-zA-Z0-9'"]$`).MatchString(out) {
+		out = out + "."
+	}
+	return out
 }

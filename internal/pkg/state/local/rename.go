@@ -60,7 +60,8 @@ func (m *Manager) rename(actions []model.RenameAction) error {
 
 	// Log warnings
 	if warnings.Len() > 0 {
-		m.logger.Warn(errors.PrefixError(warnings, `Warning: cannot finish objects renaming`))
+		err := errors.PrefixError(warnings, "cannot finish objects renaming")
+		m.logger.Warn(errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
 	}
 
 	return errs.ErrorOrNil()

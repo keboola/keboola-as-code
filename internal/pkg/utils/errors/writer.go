@@ -12,15 +12,16 @@ const (
 )
 
 type Writer interface {
-	WithDebugOutput() Writer
+	Write(string)
+	WriteIndent(level int)
+	WriteBullet()
+	WritePrefix(prefix string, trace StackTrace)
+	WriteMessage(msg string, trace StackTrace)
+	WriteNewLine()
 	WriteError(err error)
 	WriteErrorLevel(level int, err error, trace StackTrace)
 	WriteNestedError(level int, main error, errs []error, trace StackTrace)
 	WriteErrorsList(level int, errs []error)
-	WriteIndent(level int)
-	WriteBullet()
-	WriteNewLine()
-	Write(string)
 	String() string
 }
 
@@ -29,20 +30,19 @@ type errorWithWrite interface {
 }
 
 type writer struct {
-	debug            bool
+	config           FormatConfig
 	out              strings.Builder
 	messageFormatter MessageFormatter
 	prefixFormatter  PrefixFormatter
 }
 
-func NewWriter(messageFormatter MessageFormatter, prefixFormatter PrefixFormatter) Writer {
-	return &writer{messageFormatter: messageFormatter, prefixFormatter: prefixFormatter}
-}
-
-func (w *writer) WithDebugOutput() Writer {
-	clone := *w
-	clone.debug = true
-	return &clone
+func NewWriter(messageFormatter MessageFormatter, prefixFormatter PrefixFormatter, opts ...FormatOption) Writer {
+	// Apply options
+	config := FormatConfig{}
+	for _, o := range opts {
+		o(&config)
+	}
+	return &writer{config: config, messageFormatter: messageFormatter, prefixFormatter: prefixFormatter}
 }
 
 func (w *writer) WriteError(err error) {
@@ -82,7 +82,7 @@ func (w *writer) WriteErrorLevel(level int, err error, trace StackTrace) {
 		v.WriteError(w, level, trace)
 		return
 	default:
-		if w.debug {
+		if w.config.WithUnwrap {
 			if subErr := Unwrap(v); subErr != nil {
 				// Write current error
 				w.Write(w.formatPrefix(w.formatMessage(v.Error(), trace)))
@@ -179,6 +179,14 @@ func (w *writer) Write(s string) {
 	_, _ = w.out.WriteString(s)
 }
 
+func (w *writer) WritePrefix(prefix string, trace StackTrace) {
+	w.Write(w.formatPrefix(w.formatMessage(prefix, trace)))
+}
+
+func (w *writer) WriteMessage(msg string, trace StackTrace) {
+	w.Write(w.formatMessage(msg, trace))
+}
+
 func (w *writer) String() string {
 	return w.out.String()
 }
@@ -190,10 +198,7 @@ func (w *writer) clone() Writer {
 }
 
 func (w *writer) formatMessage(message string, trace StackTrace) string {
-	if !w.debug {
-		trace = nil
-	}
-	return w.messageFormatter(message, trace)
+	return w.messageFormatter(message, trace, w.config)
 }
 
 func (w *writer) formatPrefix(prefix string) string {

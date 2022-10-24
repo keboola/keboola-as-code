@@ -337,8 +337,8 @@ func (root *RootCommand) printError(errRaw error) {
 	}
 
 	fullErr := errors.PrefixError(modifiedErrs, "Error")
-	root.logger.Debugf("Error debug log:\n%s", errors.FormatWithDebug(fullErr))
-	root.PrintErrln(fullErr)
+	root.logger.Debugf("Error debug log:\n%s", errors.Format(fullErr, errors.FormatWithStack(), errors.FormatWithUnwrap()))
+	root.PrintErrln(errors.Format(fullErr, errors.FormatAsSentences()))
 }
 
 func (root *RootCommand) setupLogger() {

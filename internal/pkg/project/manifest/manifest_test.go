@@ -109,19 +109,19 @@ func TestManifestValidateEmpty(t *testing.T) {
 	err := content.validate()
 	assert.NotNil(t, err)
 	expected := `manifest is not valid:
-- version is a required field
-- project.id is a required field
-- project.apiHost is a required field
-- sortBy must be one of [id path]
-- naming.branch is a required field
-- naming.config is a required field
-- naming.configRow is a required field
-- naming.schedulerConfig is a required field
-- naming.sharedCodeConfig is a required field
-- naming.sharedCodeConfigRow is a required field
-- naming.variablesConfig is a required field
-- naming.variablesValuesRow is a required field
-- allowedBranches is a required field`
+- "version" is a required field
+- "project.id" is a required field
+- "project.apiHost" is a required field
+- "sortBy" must be one of [id path]
+- "naming.branch" is a required field
+- "naming.config" is a required field
+- "naming.configRow" is a required field
+- "naming.schedulerConfig" is a required field
+- "naming.sharedCodeConfig" is a required field
+- "naming.sharedCodeConfigRow" is a required field
+- "naming.variablesConfig" is a required field
+- "naming.variablesValuesRow" is a required field
+- "allowedBranches" is a required field`
 	assert.Equal(t, expected, err.Error())
 }
 
@@ -146,7 +146,7 @@ func TestManifestValidateBadVersion(t *testing.T) {
 	content.Version = 123
 	err := content.validate()
 	assert.Error(t, err)
-	expected := "manifest is not valid: version must be 2 or less"
+	expected := `manifest is not valid: "version" must be 2 or less`
 	assert.Equal(t, expected, err.Error())
 }
 
@@ -165,7 +165,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 	})
 	err := content.validate()
 	assert.Error(t, err)
-	expected := "manifest is not valid: branches[0].id is a required field"
+	expected := `manifest is not valid: "branches[0].id" is a required field`
 	assert.Equal(t, expected, err.Error())
 }
 

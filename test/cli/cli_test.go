@@ -28,7 +28,7 @@ import (
 
 const (
 	TestEnvFile = "env"
-	TestTimeout = 60 * time.Second
+	TestTimeout = 3 * time.Minute
 )
 
 // TestCliE2E runs one functional test per each subdirectory.
@@ -180,6 +180,7 @@ func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 	exitCode := 0
 	err = cmdio.InteractAndWait(ctx, cmd, interactionErrHandler)
 	if err != nil {
+		t.Logf(`cli command faild: %s`, err.Error())
 		if exitError, ok := err.(*exec.ExitError); ok {
 			exitCode = exitError.ExitCode()
 		} else {

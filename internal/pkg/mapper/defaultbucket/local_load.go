@@ -27,7 +27,7 @@ func (m *defaultBucketMapper) AfterLocalOperation(_ context.Context, changes *mo
 
 	// Log errors as warning
 	if warnings.Len() > 0 {
-		m.logger.Warn(errors.PrefixError(warnings, "Warning"))
+		m.logger.Warn(errors.Format(errors.PrefixError(warnings, "warning"), errors.FormatAsSentences()))
 	}
 
 	// Process renamed objects

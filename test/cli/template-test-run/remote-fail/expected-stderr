@@ -1,3 +1,4 @@
 FAIL keboola/my-template/0.0.1 one remote
 Error:
-- running remote test "one" for template "my-template" failed: job "%s" failed: [%s] logger.ERROR: The 'config' section is required in the configuration. [] []
+- Running remote test "one" for template "my-template" failed:
+  - Job "%s" failed: [%s] logger.ERROR: The 'config' section is required in the configuration. [] []
