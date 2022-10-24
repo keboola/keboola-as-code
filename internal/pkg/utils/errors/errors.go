@@ -45,7 +45,7 @@
 //
 // Use [FormatWithUnwrap] option to see also all wrapped errors:
 //
-//	fmt.Println(errors.Format(err, errors.FormatWithStack()))
+//	fmt.Println(errors.Format(err, errors.FormatWithUnwrap()))
 //
 // Use [FormatAsSentences] option to convert errors messages to sentences:
 //
