@@ -19,11 +19,18 @@ func (m *Manager) createObject(key model.Key, name string) (model.Object, error)
 		if err != nil {
 			return nil, err
 		}
-		return &model.Config{
+		config := &model.Config{
 			ConfigKey: k,
 			Name:      name,
 			Content:   content,
-		}, nil
+		}
+		if component.IsTransformation() {
+			config.Transformation = &model.Transformation{}
+		}
+		if component.IsOrchestrator() {
+			config.Orchestration = &model.Orchestration{}
+		}
+		return config, nil
 	case model.ConfigRowKey:
 		component, err := m.state.Components().GetOrErr(k.ComponentId)
 		if err != nil {
