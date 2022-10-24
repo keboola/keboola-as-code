@@ -14,7 +14,7 @@ resource "aws_cloudfront_distribution" "cli_dist_cloudfront" {
     aws_s3_bucket.cli_dist_bucket
   ]
   aliases = [
-    var.distribution_domain_alias_name
+    var.distribution_domain_name
   ]
   enabled             = true
   http_version        = "http2"

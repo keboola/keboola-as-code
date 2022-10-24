@@ -18,7 +18,3 @@ variable "aws_acm_certificate_arn" {
 variable "distribution_domain_name" {
   type = string
 }
-
-variable "distribution_domain_alias_name" {
-  type = string
-}
