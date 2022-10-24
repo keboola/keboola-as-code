@@ -58,7 +58,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	httpTransport.RegisterResponder(
 		http.MethodGet,
 		"https://mocked.transport.http/v2/storage/tokens/verify",
-		httpmock.NewJsonResponderOrPanic(200, storageapi.Token{Owner: storageapi.TokenOwner{ID: 12345}}),
+		httpmock.NewJsonResponderOrPanic(200, storageapi.Token{IsMaster: true, Owner: storageapi.TokenOwner{ID: 12345}}),
 	)
 
 	// Assert

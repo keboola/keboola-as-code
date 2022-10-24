@@ -42,6 +42,11 @@ func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr stri
 }
 
 func newProjectDeps(base Base, public Public, token storageapi.Token) (*project, error) {
+	// Require master token
+	if !token.IsMaster {
+		return nil, errors.New("a master token of a project administrator is required")
+	}
+
 	v := &project{
 		base:             base,
 		public:           public,
