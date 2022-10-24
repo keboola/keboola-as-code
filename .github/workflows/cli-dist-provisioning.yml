@@ -1,0 +1,98 @@
+name: 'CLI Dist Provisioning'
+on:
+  push:
+    paths:
+      - provisioning/cli-dist/**
+
+env:
+  TF_VERSION: 1.1.4
+
+defaults:
+  run:
+    working-directory: provisioning/cli-dist
+
+jobs:
+
+  testing-deploy:
+    name: 'Deploy to Testing'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          role-to-assume: arn:aws:iam::813746015128:role/kbc-github-actions-admin-role
+          aws-region: eu-central-1
+      - name: Terraform Init
+        run: terraform init -backend-config=backend_testing.conf -input=false -lock-timeout=5m
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+      - name: Terraform Plan
+        run: terraform plan -var-file="testing.tfvars" -input=false -lock-timeout=5m
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var-file="testing.tfvars" -input=false -lock-timeout=5m
+
+  production-plan:
+    name: 'Try Plan for Production'
+    needs:
+      - testing-deploy
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-read-only-role
+          aws-region: eu-central-1
+      - name: Terraform Init
+        run: terraform init -backend-config=backend_production.conf -input=false -lock-timeout=5m
+      - name: Terraform Plan
+        run: terraform plan -input=false -var-file="production.tfvars" -lock-timeout=5m
+
+  production-deploy:
+    name: 'Deploy to Production'
+    needs:
+      - production-plan
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
+          aws-region: eu-central-1
+      - name: Terraform Init
+        run: terraform init -backend-config=backend_production.conf -input=false
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+      - name: Terraform Plan
+        run: terraform plan -input=false -var-file="production.tfvars"
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var-file="production.tfvars" -input=false
