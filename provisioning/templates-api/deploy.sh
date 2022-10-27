@@ -6,4 +6,4 @@ export COMMIT_HASH
 
 export RELEASE_ID="$BUILD_BUILDID-$RELEASE_RELEASENAME"
 
-./provisioning/"$CLOUD_PROVIDER"/scripts/deploy.sh
+./provisioning/"$CLOUD_PROVIDER".sh
