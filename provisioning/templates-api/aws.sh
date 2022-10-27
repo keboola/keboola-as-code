@@ -16,7 +16,7 @@ fi
 aws eks update-kubeconfig --name "$AWS_EKS_CLUSTER_NAME" --region "$AWS_REGION"
 
 # Common part of the deploy
-./common.sh
+. ./common.sh
 
 # AWS specific part of the deploy
 kubectl apply -f ./kubernetes/deploy/aws/service.yaml
