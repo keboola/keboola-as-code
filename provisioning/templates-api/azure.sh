@@ -10,7 +10,6 @@ fi
 
 # Required ENVs
 : ${RESOURCE_GROUP?"Missing RESOURCE_GROUP"}
-: ${APPLICATION_GATEWAY_NAME?"Missing APPLICATION_GATEWAY_NAME"}
 
 # Get cluster name
 CLUSTER_NAME=$(az deployment group show \
