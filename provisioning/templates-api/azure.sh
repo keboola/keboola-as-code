@@ -23,7 +23,7 @@ CLUSTER_NAME=$(az deployment group show \
 az aks get-credentials --name "$CLUSTER_NAME" --resource-group "$RESOURCE_GROUP" --overwrite-existing
 
 # Common part of the deploy
-./common.sh
+. ./common.sh
 
 # Azure Specific part of the deploy
 kubectl apply -f ./kubernetes/deploy/azure/service.yaml
