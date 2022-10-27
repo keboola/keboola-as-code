@@ -47,7 +47,7 @@ func TestApiE2E(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Compile binary, it will be run in the tests
-	projectDir := filepath.Join(rootDir, "..", "..")
+	projectDir := filepath.Join(rootDir, "..", "..", "..")
 	binary := CompileBinary(t, projectDir, tempDir)
 
 	// Clear tests output directory

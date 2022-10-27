@@ -44,11 +44,11 @@ tests-cli: prepare
 tests-cli-verbose: prepare
 	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh -run TestCliE2E
 
-tests-api: prepare
-	TEST_VERBOSE=false TEST_LOG_FORMAT=standard-verbose TEST_PACKAGE=./test/api/... bash ./scripts/tests.sh -run TestApiE2E
+tests-templates-api: prepare
+	TEST_VERBOSE=false TEST_LOG_FORMAT=standard-verbose TEST_PACKAGE=./test/api/templates/... bash ./scripts/tests.sh -run TestApiE2E
 
-tests-api-verbose: prepare
-	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/api/... bash ./scripts/tests.sh -run TestApiE2E
+tests-templates-api-verbose: prepare
+	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/api/templates/... bash ./scripts/tests.sh -run TestApiE2E
 
 mod: prepare
 	bash ./scripts/mod.sh

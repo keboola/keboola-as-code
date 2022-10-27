@@ -17,7 +17,7 @@
 // Dependencies injection to service endpoints:
 //   - Each service endpoint handler/method gets [ForPublicRequest] container as a parameter.
 //   - If the endpoint use token authentication it gets [ForProjectRequest] container instead.
-//   - It is ensured by [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/dependencies] package.
+//   - It is ensured by [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/dependencies] package.
 //   - See service implementation for details [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/service/service.go].
 package dependencies
 
