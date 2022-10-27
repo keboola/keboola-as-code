@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+# CD to the script directory
+cd "$(dirname "$0")"
+
 # Etcd cluster for Templates API
 : "${TEMPLATES_API_ETCD_REPLICAS:=1}"
 ETCD_ROOT_PASSWORD_BASE64=$(kubectl get secret --namespace templates-api templates-api-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null || echo -e '')
@@ -13,14 +16,16 @@ ETCD_INITIAL_CLUSTER=$(seq 0 $(($TEMPLATES_API_ETCD_REPLICAS-1)) | awk '{ print 
 export TEMPLATES_API_ETCD_REPLICAS
 export ETCD_ROOT_PASSWORD_BASE64
 export ETCD_INITIAL_CLUSTER
-envsubst < provisioning/kubernetes/templates/etcd.yaml > provisioning/kubernetes/deploy/etcd.yaml
+envsubst < templates/etcd.yaml > deploy/etcd.yaml
 
 # Templates API
-envsubst < provisioning/kubernetes/templates/namespace.yaml > provisioning/kubernetes/deploy/namespace.yaml
-envsubst < provisioning/kubernetes/templates/config-map.yaml > provisioning/kubernetes/deploy/config-map.yaml
-envsubst < provisioning/kubernetes/templates/templates-api.yaml > provisioning/kubernetes/deploy/templates-api.yaml
-envsubst < provisioning/kubernetes/templates/"$CLOUD_PROVIDER"/service.yaml > provisioning/kubernetes/deploy/"$CLOUD_PROVIDER"/service.yaml
+envsubst < templates/namespace.yaml > deploy/namespace.yaml
+envsubst < templates/config-map.yaml > deploy/config-map.yaml
+envsubst < templates/templates-api.yaml > deploy/templates-api.yaml
 
 if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
-  envsubst < provisioning/kubernetes/templates/aws/ingress.yaml > provisioning/kubernetes/deploy/aws/ingress.yaml
+  envsubst < templates/aws/service.yaml > deploy/aws/service.yaml
+  envsubst < templates/aws/ingress.yaml > deploy/aws/ingress.yaml
+elif [[ "$CLOUD_PROVIDER" == "azure" ]]; then
+  envsubst < templates/azure/service.yaml > deploy/azure/service.yaml
 fi

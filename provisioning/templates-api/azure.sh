@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+# CD to the script directory
+cd "$(dirname "$0")"
+
 CLUSTER_NAME=$(az deployment group show \
   --resource-group "$RESOURCE_GROUP" \
   --name kbc-aks \
@@ -9,13 +12,11 @@ CLUSTER_NAME=$(az deployment group show \
 
 az aks get-credentials --name "$CLUSTER_NAME" --resource-group "$RESOURCE_GROUP" --overwrite-existing
 
-./provisioning/kubernetes/build.sh
+# Common part
+./common.sh
 
-kubectl apply -f ./provisioning/kubernetes/deploy/namespace.yaml
-kubectl apply -f ./provisioning/kubernetes/deploy/etcd.yaml
-kubectl apply -f ./provisioning/kubernetes/deploy/config-map.yaml
-kubectl apply -f ./provisioning/kubernetes/deploy/templates-api.yaml
-kubectl apply -f ./provisioning/kubernetes/deploy/azure/service.yaml
+# Azure Specific
+kubectl apply -f ./kubernetes/deploy/azure/service.yaml
 kubectl rollout status deployment/templates-api --namespace templates-api --timeout=900s
 
 TEMPLATES_API_IP=""
