@@ -1,21 +1,31 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# CD to the script directory
-cd "$(dirname "$0")"
+# Prevent direct run of the script
+if [ "${BASH_SOURCE[0]}" -ef "$0" ]
+then
+    echo 'This script should not be executed directly, please run "deploy.sh" instead.'
+    exit 1
+fi
 
+# Required ENVs
+: ${RESOURCE_GROUP?"Missing RESOURCE_GROUP"}
+: ${APPLICATION_GATEWAY_NAME?"Missing APPLICATION_GATEWAY_NAME"}
+
+# Get cluster name
 CLUSTER_NAME=$(az deployment group show \
   --resource-group "$RESOURCE_GROUP" \
   --name kbc-aks \
   --query "properties.outputs.clusterName.value" \
   --output tsv)
 
+# Get credentials to the Azure Managed Kubernetes Service
 az aks get-credentials --name "$CLUSTER_NAME" --resource-group "$RESOURCE_GROUP" --overwrite-existing
 
-# Common part
+# Common part of the deploy
 ./common.sh
 
-# Azure Specific
+# Azure Specific part of the deploy
 kubectl apply -f ./kubernetes/deploy/azure/service.yaml
 kubectl rollout status deployment/templates-api --namespace templates-api --timeout=900s
 
