@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/jobsqueueapi"
@@ -44,7 +45,7 @@ func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr stri
 func newProjectDeps(base Base, public Public, token storageapi.Token) (*project, error) {
 	// Require master token
 	if !token.IsMaster {
-		return nil, errors.New("a master token of a project administrator is required")
+		return nil, MasterTokenRequiredError{}
 	}
 
 	v := &project{
@@ -120,4 +121,22 @@ func (v project) ObjectIDGeneratorFactory() func(ctx context.Context) *storageap
 	return func(ctx context.Context) *storageapi.TicketProvider {
 		return storageapi.NewTicketProvider(ctx, v.StorageApiClient())
 	}
+}
+
+type MasterTokenRequiredError struct{}
+
+func (MasterTokenRequiredError) StatusCode() int {
+	return http.StatusUnauthorized
+}
+
+func (MasterTokenRequiredError) Error() string {
+	return "a master token of a project administrator is required"
+}
+
+func (MasterTokenRequiredError) ErrorName() string {
+	return "masterTokenRequired"
+}
+
+func (MasterTokenRequiredError) ErrorUserMessage() string {
+	return "Please provide a master token of a project administrator."
 }
