@@ -21,5 +21,7 @@ aws eks update-kubeconfig --name "$AWS_EKS_CLUSTER_NAME" --region "$AWS_REGION"
 # AWS specific part of the deploy
 kubectl apply -f ./kubernetes/deploy/aws/service.yaml
 kubectl apply -f ./kubernetes/deploy/aws/ingress.yaml
+
+# Wait for the deploy
 kubectl rollout status deployment/templates-api --namespace templates-api --timeout=900s
 

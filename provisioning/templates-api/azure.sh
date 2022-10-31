@@ -26,6 +26,8 @@ az aks get-credentials --name "$CLUSTER_NAME" --resource-group "$RESOURCE_GROUP"
 
 # Azure Specific part of the deploy
 kubectl apply -f ./kubernetes/deploy/azure/service.yaml
+
+# Wait for the deploy
 kubectl rollout status deployment/templates-api --namespace templates-api --timeout=900s
 
 TEMPLATES_API_IP=""
