@@ -96,13 +96,6 @@ in the repository).
 - The S3 bucket is publicly available on url https://cli-dist.keboola.com
 - The bucket is provisioned in dedicated AWS account using Terraform.
 
-## API Release
-
-- `build-and-push-templates-api` step of the [GitHub Workflow](#workflow-steps) builds the API image and pushes it to a repository in AWS and Azure
-- push to Azure ACR triggers a release pipeline `TODO`
-- ![Release pipeline](./api-release-pipeline.jpg)
-
----
 
 ## CLI Distribution Terraform Setup
 
