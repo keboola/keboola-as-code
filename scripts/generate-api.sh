@@ -11,11 +11,11 @@ SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$SCRIPT_DIR/.."
 pwd
 
-API_PKG=internal/pkg/api/server/templates
+API_PKG=internal/pkg/api/server/$API_NAME
 
 generate() {
   # Generate code by goa.design lib
-  out=`goa gen github.com/keboola/keboola-as-code/api/templates --output ./$API_PKG 2>&1`
+  out=`goa gen github.com/keboola/keboola-as-code/api/${API_NAME} --output ./$API_PKG 2>&1`
   status="$?"
 
   # Always run finalize
@@ -33,16 +33,16 @@ finalize() {
     rm -rf ./gen
     rm -rf ./goa*
     rm -rf ./$API_PKG/gen/http/cli
-    rm -rf ./$API_PKG/gen/http/templates/client
+    rm -rf ./$API_PKG/gen/http/$API_NAME/client
     mv ./$API_PKG/gen/http/openapi* ./$API_PKG/openapi 2>/dev/null || true
 }
 
-echo "Generating templates API ..."
+echo "Generating ${API_NAME} API ..."
 if generate; then
     echo "Ok."
     echo
 else
-    echo "Design \"api/templates/design.go\" is not valid. Please fix ^^^ errors."
+    echo "Design \"api/${API_NAME}/design.go\" is not valid. Please fix ^^^ errors."
     echo
     exit 1
 fi
