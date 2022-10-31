@@ -34,7 +34,7 @@ finalize() {
     rm -rf ./goa*
     rm -rf ./$API_PKG/gen/http/cli
     rm -rf ./$API_PKG/gen/http/$API_NAME/client
-    mv ./$API_PKG/gen/http/openapi* ./$API_PKG/openapi 2>/dev/null || true
+    mv -f ./$API_PKG/gen/http/openapi* ./$API_PKG/openapi 2>/dev/null
 }
 
 echo "Generating ${API_NAME} API ..."
