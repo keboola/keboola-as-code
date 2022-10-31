@@ -6,11 +6,18 @@ metadata:
   name: templates-api-etcd
   namespace: "templates-api"
   labels:
+    app.kubernetes.io/name: etcd
+    helm.sh/chart: etcd-8.5.8
+    app.kubernetes.io/instance: templates-api-etcd
+    app.kubernetes.io/managed-by: Helm
     app: templates-api-etcd
 spec:
   podSelector:
     matchLabels:
-      app: templates-api-etcd
+      app.kubernetes.io/name: etcd
+      helm.sh/chart: etcd-8.5.8
+      app.kubernetes.io/instance: templates-api-etcd
+      app.kubernetes.io/managed-by: Helm
   policyTypes:
     - Ingress
     - Egress
@@ -28,7 +35,10 @@ spec:
       to:
         - podSelector:
             matchLabels:
-              app: templates-api-etcd
+              app.kubernetes.io/name: etcd
+              helm.sh/chart: etcd-8.5.8
+              app.kubernetes.io/instance: templates-api-etcd
+              app.kubernetes.io/managed-by: Helm
   ingress:
     # Allow inbound connections
     - ports:
@@ -40,7 +50,10 @@ spec:
               templates-api-etcd-client: "true"
         - podSelector:
             matchLabels:
-              app: templates-api-etcd
+              app.kubernetes.io/name: etcd
+              helm.sh/chart: etcd-8.5.8
+              app.kubernetes.io/instance: templates-api-etcd
+              app.kubernetes.io/managed-by: Helm
 ---
 # Source: etcd/templates/secrets.yaml
 apiVersion: v1
@@ -49,6 +62,10 @@ metadata:
   name: templates-api-etcd
   namespace: "templates-api"
   labels:
+    app.kubernetes.io/name: etcd
+    helm.sh/chart: etcd-8.5.8
+    app.kubernetes.io/instance: templates-api-etcd
+    app.kubernetes.io/managed-by: Helm
     app: templates-api-etcd
 type: Opaque
 data:
@@ -61,6 +78,10 @@ metadata:
   name: templates-api-etcd-headless
   namespace: "templates-api"
   labels:
+    app.kubernetes.io/name: etcd
+    helm.sh/chart: etcd-8.5.8
+    app.kubernetes.io/instance: templates-api-etcd
+    app.kubernetes.io/managed-by: Helm
     app: templates-api-etcd
   annotations:
     service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
@@ -76,7 +97,8 @@ spec:
       port: 2380
       targetPort: peer
   selector:
-    app: templates-api-etcd
+    app.kubernetes.io/name: etcd
+    app.kubernetes.io/instance: templates-api-etcd
 ---
 # Source: etcd/templates/svc.yaml
 apiVersion: v1
@@ -85,6 +107,10 @@ metadata:
   name: templates-api-etcd
   namespace: "templates-api"
   labels:
+    app.kubernetes.io/name: etcd
+    helm.sh/chart: etcd-8.5.8
+    app.kubernetes.io/instance: templates-api-etcd
+    app.kubernetes.io/managed-by: Helm
     app: templates-api-etcd
   annotations:
 spec:
@@ -101,7 +127,8 @@ spec:
       targetPort: peer
       nodePort: null
   selector:
-    app: templates-api-etcd
+    app.kubernetes.io/name: etcd
+    app.kubernetes.io/instance: templates-api-etcd
 ---
 # Source: etcd/templates/statefulset.yaml
 apiVersion: apps/v1
@@ -110,12 +137,17 @@ metadata:
   name: templates-api-etcd
   namespace: "templates-api"
   labels:
+    app.kubernetes.io/name: etcd
+    helm.sh/chart: etcd-8.5.8
+    app.kubernetes.io/instance: templates-api-etcd
+    app.kubernetes.io/managed-by: Helm
     app: templates-api-etcd
 spec:
   replicas: $TEMPLATES_API_ETCD_REPLICAS
   selector:
     matchLabels:
-      app: templates-api-etcd
+      app.kubernetes.io/name: etcd
+      app.kubernetes.io/instance: templates-api-etcd
   serviceName: templates-api-etcd-headless
   podManagementPolicy: Parallel
   updateStrategy:
@@ -123,25 +155,29 @@ spec:
   template:
     metadata:
       labels:
-        app: templates-api-etcd
+        app.kubernetes.io/name: etcd
+        helm.sh/chart: etcd-8.5.8
+        app.kubernetes.io/instance: templates-api-etcd
+        app.kubernetes.io/managed-by: Helm
       annotations:
     spec:
-      
+
       affinity:
         podAffinity:
-          
+
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
             - podAffinityTerm:
                 labelSelector:
                   matchLabels:
-                    app: templates-api-etcd
+                    app.kubernetes.io/name: etcd
+                    app.kubernetes.io/instance: templates-api-etcd
                 namespaces:
                   - "templates-api"
                 topologyKey: kubernetes.io/hostname
               weight: 1
         nodeAffinity:
-          
+
       nodeSelector:
         nodepool: main
       tolerations:
@@ -156,6 +192,7 @@ spec:
           image: docker.io/bitnami/etcd:3.5.4-debian-11-r27
           imagePullPolicy: "IfNotPresent"
           securityContext:
+            allowPrivilegeEscalation: false
             runAsNonRoot: true
             runAsUser: 1001
           env:
