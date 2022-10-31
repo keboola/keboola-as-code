@@ -27,9 +27,10 @@ az aks get-credentials --name "$CLUSTER_NAME" --resource-group "$RESOURCE_GROUP"
 # Azure specific part of the deploy
 kubectl apply -f ./kubernetes/deploy/azure/service.yaml
 
-# Wait for the deploy
-kubectl rollout status deployment/templates-api --namespace templates-api --timeout=900s
+# Wait for the rollout
+. ./wait.sh
 
+# Update IP
 TEMPLATES_API_IP=""
 TIME_WAITED=0
 # every 10 seconds but in total max 15 minutes try to fetch TEMPLATES_API_IP
