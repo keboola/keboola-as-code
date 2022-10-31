@@ -24,7 +24,7 @@ az aks get-credentials --name "$CLUSTER_NAME" --resource-group "$RESOURCE_GROUP"
 # Common part of the deploy
 . ./common.sh
 
-# Azure Specific part of the deploy
+# Azure specific part of the deploy
 kubectl apply -f ./kubernetes/deploy/azure/service.yaml
 
 # Wait for the deploy

@@ -40,7 +40,7 @@ echo "Starting deploy ..."
 echo "--------------------------"
 . common.sh
 
-# Local Specific part of the deploy
+# Local specific part of the deploy
 kubectl apply -f ./kubernetes/deploy/local/service.yaml
 
 # Wait for the deploy
