@@ -28,7 +28,7 @@ auth:
     create: true
     allowNoneAuthentication: false
   token:
-    type: simple
+    type: jwt
 
 service:
   clusterIP: None #headless service
