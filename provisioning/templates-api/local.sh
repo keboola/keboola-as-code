@@ -36,24 +36,24 @@ minikube kubectl -- label nodes --overwrite --all nodepool=main > /dev/null
 
 # Common part
 echo
-echo "Starting deploy ..."
+echo "Starting deployment ..."
 echo "--------------------------"
 . common.sh
 
 # Local specific part of the deploy
 kubectl apply -f ./kubernetes/deploy/local/service.yaml
 
-# Wait for the deploy
+# Wait for the deployment
 echo
 echo "Waiting for the deployment ..."
 echo "--------------------------"
 if minikube kubectl -- rollout status deployment/templates-api --namespace templates-api --timeout=300s; then
   echo
-  echo "Deploy successful."
+  echo "Deployment has been successful."
   echo "--------------------------"
 else
   echo
-  echo "Deploy failed."
+  echo "Deployment failed."
   echo "--------------------------"
   minikube kubectl -- logs --namespace templates-api --follow=false --timestamps=true --selector "app=templates-api" &
   exit 1

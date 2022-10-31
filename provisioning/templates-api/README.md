@@ -11,7 +11,7 @@ Directories:
 - `dev` - various auxiliary files for development.
 - `docker` - docker image of the service.
 - `etcd` - configuration of the etcd cluster.
-- `kubernets` - templates of the Kubernetes configurations.
+- `kubernetes` - templates of the Kubernetes configurations.
 
 Included files (they are not called directly):
 - `common.sh` - main file for all deployments.
