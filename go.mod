@@ -56,7 +56,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dimfeld/httppath v0.0.0-20170720192232-ee938bf73598 // indirect
-	github.com/dimfeld/httptreemux/v5 v5.4.0
+	github.com/dimfeld/httptreemux/v5 v5.5.0
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/golang/glog v1.0.0 // indirect
