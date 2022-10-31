@@ -24,7 +24,7 @@ build-templates-api: prepare
 	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o $(TEMPLATES_API_BUILD_TARGET_PATH) ./cmd/templates-api
 
 run-templates-api: prepare
-	air -c ./.air-templates-api.toml
+	air -c ./provisioning/templates-api/dev/.air-templates-api.toml
 
 tests: prepare
 	TEST_PACKAGE=./... bash ./scripts/tests.sh
