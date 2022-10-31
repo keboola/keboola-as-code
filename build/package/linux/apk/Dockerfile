@@ -1,4 +1,4 @@
-FROM alpine
+FROM alpine:3.16
 
 ENV HOME=/opt
 RUN echo 'PS1="\w > "' > ~/.bashrc && chmod 0777 -R ~
