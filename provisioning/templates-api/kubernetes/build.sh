@@ -28,4 +28,6 @@ if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
   envsubst < templates/aws/ingress.yaml > deploy/aws/ingress.yaml
 elif [[ "$CLOUD_PROVIDER" == "azure" ]]; then
   envsubst < templates/azure/service.yaml > deploy/azure/service.yaml
+elif [[ "$CLOUD_PROVIDER" == "local" ]]; then
+  envsubst < templates/local/service.yaml > deploy/local/service.yaml
 fi

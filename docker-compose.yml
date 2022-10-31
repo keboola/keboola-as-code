@@ -2,7 +2,9 @@ version: '3'
 services:
   dev:
     image: keboolabot/keboola-as-code-dev
-    build: .
+    build:
+      context: .
+      dockerfile: ./provisioning/dev/docker/Dockerfile
     links:
       - etcd
     volumes:

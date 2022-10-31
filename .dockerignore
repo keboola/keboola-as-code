@@ -3,5 +3,7 @@
 .idea
 build
 docs
+provisioning
 target
 test
+vendor
