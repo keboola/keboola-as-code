@@ -1,5 +1,6 @@
 # Build container
-FROM golang:1.19 AS buildContainer
+FROM golang:1.19.2-alpine3.16 AS buildContainer
+RUN apk add -U --no-cache bash make curl
 WORKDIR /app
 COPY . .
 #flags: -s -w to remove symbol table and debug info
@@ -7,7 +8,7 @@ RUN make tools
 RUN make build-templates-api
 
 # Production container
-FROM alpine
+FROM alpine:3.16
 RUN apk add -U --no-cache ca-certificates git
 
 COPY --from=buildContainer /app/target/templates-api/server /app/server
