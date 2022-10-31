@@ -1,0 +1,41 @@
+name: 'Templates API provisioning'
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - provisioning/templates-api/**
+
+env:
+  MINIKUBE_PROFILE: templates-api
+
+defaults:
+  run:
+    working-directory: provisioning/templates-api
+
+jobs:
+  test:
+    name: 'Test provisioning of the Templates API'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Start MiniKube
+        id: minikube
+        uses: medyagh/setup-minikube@latest
+      - name: Deploy the previous version, from the BASE branch
+        id: validate
+        run: |
+          set -Eeuo pipefail
+          git checkout "$GITHUB_HEAD_REF"
+          ./deploy_local.sh
+      - name: Deploy the new version, from the HEAD branch
+        id: validate
+        run: |
+          set -Eeuo pipefail
+          git checkout "$GITHUB_BASE_REF"
+          ./deploy_local.sh
+      - name: Check deployment of the etcd
+        run: kubectl rollout status sts/templates-api-etcd --namespace templates-api
+      - name: Check deployment of the API
+        run: kubectl rollout status deployment/templates-api --namespace templates-api
