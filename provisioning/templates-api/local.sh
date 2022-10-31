@@ -44,20 +44,7 @@ echo "--------------------------"
 kubectl apply -f ./kubernetes/deploy/local/service.yaml
 
 # Wait for the deployment
-echo
-echo "Waiting for the deployment ..."
-echo "--------------------------"
-if minikube kubectl -- rollout status deployment/templates-api --namespace templates-api --timeout=300s; then
-  echo
-  echo "Deployment has been successful."
-  echo "--------------------------"
-else
-  echo
-  echo "Deployment failed."
-  echo "--------------------------"
-  minikube kubectl -- logs --namespace templates-api --follow=false --timestamps=true --selector "app=templates-api" &
-  exit 1
-fi
+. ./wait.sh
 
 # Print info
 echo
