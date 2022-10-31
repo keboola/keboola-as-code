@@ -22,9 +22,6 @@ fi
 # Namespace
 kubectl apply -f ./kubernetes/deploy/namespace.yaml
 
-# REMOVE ME: delete old manually deployed resources
-kubectl delete pod,statefulset,configmap,networkpolicy,secret,service,persistentVolumeClaim,persistentVolume --namespace templates-api -l app=templates-api-etcd --ignore-not-found
-
 # Get etcd root password, if it is already present
 export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "templates-api" templates-api-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
 
