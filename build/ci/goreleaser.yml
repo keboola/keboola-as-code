@@ -79,19 +79,6 @@ scoop:
   skip_upload: true
 
 publishers:
-  - name: Upload artifacts to legacy S3
-    signature: true
-    checksum: true
-    cmd: ./build/package/s3/publish.sh "{{ abs .ArtifactPath }}" "{{ .ArtifactName }}" "{{ .ProjectName }}" "{{ .Version }}" "{{ .Os }}" "{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
-    env:
-      - AWS_REGION={{ .Env.LEGACY_AWS_REGION }}
-      - AWS_BUCKET_NAME={{ .Env.LEGACY_AWS_BUCKET_NAME }}
-      - AWS_ACCESS_KEY_ID={{ .Env.LEGACY_AWS_ACCESS_KEY_ID }}
-      - AWS_SECRET_ACCESS_KEY={{ .Env.LEGACY_AWS_SECRET_ACCESS_KEY }}
-    ids:
-      - archives
-      - packages
-      - mac-os-signed
   - name: Upload artifacts to KAC Assets S3
     signature: true
     checksum: true
