@@ -8,6 +8,17 @@ commonLabels:
 podLabels:
   app: templates-api-etcd
 
+podAnnotations:
+  log: "true"
+  ad.datadoghq.com/templates-api-etcd.check_names: '["etcd"]'
+  ad.datadoghq.com/templates-api-etcd.init_configs: '[{}]'
+  ad.datadoghq.com/templates-api-etcd.instances: |
+    [
+      {
+        "prometheus_url": "http://%%host%%:2379/metrics"
+      }
+    ]
+
 resources:
   requests:
     cpu: "200m"
