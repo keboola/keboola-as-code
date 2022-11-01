@@ -2,20 +2,24 @@
 package buffer
 
 import (
+	"fmt"
+	"strings"
+
 	_ "goa.design/goa/v3/codegen/generator"
 	. "goa.design/goa/v3/dsl"
-
-	// "goa.design/goa/v3/eval"
-	// "goa.design/goa/v3/expr"
-
+	"goa.design/goa/v3/eval"
+	"goa.design/goa/v3/expr"
+	"goa.design/goa/v3/http/codegen/openapi"
 	cors "goa.design/plugins/v3/cors/dsl"
 
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/anytype"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/dependencies"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/genericerror"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/operationid"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/token"
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 )
 
 // API definition
@@ -119,27 +123,17 @@ var _ = Service("buffer", func() {
 		Meta("openapi:tag:documentation")
 	})
 
-	// Receiver endpoints
+	// Main endpoints ---------------------------------------------------------------------------------------------
 
-	// TODO: examples
+	// TODO: examples in requests
 
 	Method("CreateReceiver", func() {
 		Meta("openapi:summary", "Create receiver")
 		Description("Create a new receiver for a given project")
 		Result(Receiver)
 		Payload(func() {
-			Attribute("receiverId", String, func() {
-				Description("Unique ID of the receiver. May be null, in which case it will be generated.")
-				MinLength(1)
-				MaxLength(48)
-				Example("github-pull-requests")
-			})
-			Attribute("name", String, func() {
-				Description("Human readable name of the receiver.")
-				MinLength(1)
-				MaxLength(40)
-				Example("GitHub Pull Requests")
-			})
+			receiverId()
+			name("receiver")
 			Attribute("exports", ArrayOf(Export), "List of receiver exports. A receiver may have a maximum of 20 exports.")
 			Required("name", "exports")
 		})
@@ -147,7 +141,6 @@ var _ = Service("buffer", func() {
 			POST("/receivers")
 			Meta("openapi:tag:receiver")
 			Response(StatusOK)
-			// TODO: errors
 		})
 	})
 
@@ -159,7 +152,6 @@ var _ = Service("buffer", func() {
 			GET("/receivers")
 			Meta("openapi:tag:receiver")
 			Response(StatusOK)
-			// TODO: errors
 		})
 	})
 
@@ -168,19 +160,15 @@ var _ = Service("buffer", func() {
 		Description("Get the configuration of a receiver.")
 		Result(Receiver)
 		Payload(func() {
-			Attribute("receiverId", String, func() {
-				Description("Unique ID of the receiver.")
-				MinLength(1)
-				MaxLength(48)
-				Example("github-pull-requests")
-			})
+			receiverId()
 			Required("receiverId")
+
 		})
 		HTTP(func() {
 			GET("/receivers/{receiverId}")
 			Meta("openapi:tag:receiver")
 			Response(StatusOK)
-			// TODO: errors
+			ReceiverNotFoundError()
 		})
 	})
 
@@ -189,19 +177,14 @@ var _ = Service("buffer", func() {
 		Description("Delete a receiver.")
 		Result(Receiver)
 		Payload(func() {
-			Attribute("receiverId", String, func() {
-				Description("Unique ID of the receiver.")
-				MinLength(1)
-				MaxLength(48)
-				Example("github-pull-requests")
-			})
+			receiverId()
 			Required("receiverId")
 		})
 		HTTP(func() {
 			DELETE("/receivers/{receiverId}")
 			Meta("openapi:tag:receiver")
 			Response(StatusOK)
-			// TODO: errors
+			ReceiverNotFoundError()
 		})
 	})
 
@@ -210,35 +193,23 @@ var _ = Service("buffer", func() {
 		Description("Refresh all tokens used by a receiver.")
 		Result(Receiver)
 		Payload(func() {
-			Attribute("receiverId", String, func() {
-				Description("Unique ID of the receiver.")
-				MinLength(1)
-				MaxLength(48)
-				Example("github-pull-requests")
-			})
+			receiverId()
 			Required("receiverId")
 		})
 		HTTP(func() {
 			POST("/receivers/{receiverId}/tokens/refresh")
 			Meta("openapi:tag:receiver")
 			Response(StatusOK)
-			// TODO: errors
+			ReceiverNotFoundError()
 		})
 	})
-
-	// TODO: should export endpoints return full receiver, or only the affected export?
 
 	Method("CreateExport", func() {
 		Meta("openapi:summary", "Create export")
 		Description("Create a new export for an existing receiver.")
 		Result(Receiver)
 		Payload(func() {
-			Attribute("receiverId", String, func() {
-				Description("Unique ID of the receiver.")
-				MinLength(1)
-				MaxLength(48)
-				Example("github-pull-requests")
-			})
+			receiverId()
 			Attribute("export", Export)
 			Required("receiverId", "export")
 		})
@@ -246,7 +217,7 @@ var _ = Service("buffer", func() {
 			POST("/receivers/{receiverId}/exports")
 			Meta("openapi:tag:receiver")
 			Response(StatusOK)
-			// TODO: errors
+			ReceiverNotFoundError()
 		})
 	})
 
@@ -255,18 +226,8 @@ var _ = Service("buffer", func() {
 		Description("Update a receiver export. The export's columns must match the existing table schema.")
 		Result(Receiver)
 		Payload(func() {
-			Attribute("receiverId", String, func() {
-				Description("Unique ID of the receiver.")
-				MinLength(1)
-				MaxLength(48)
-				Example("github-pull-requests")
-			})
-			Attribute("exportId", String, func() {
-				Description("Unique ID of the export.")
-				MinLength(1)
-				MaxLength(48)
-				Example("github-changed-files")
-			})
+			receiverId()
+			exportId()
 			Attribute("export", Export)
 			Required("receiverId", "export")
 		})
@@ -274,7 +235,8 @@ var _ = Service("buffer", func() {
 			PATCH("/receivers/{receiverId}/exports/{exportId}")
 			Meta("openapi:tag:receiver")
 			Response(StatusOK)
-			// TODO: errors
+			ReceiverNotFoundError()
+			ExportNotFoundError()
 		})
 	})
 
@@ -283,29 +245,50 @@ var _ = Service("buffer", func() {
 		Description("Delete a receiver export.")
 		Result(Receiver)
 		Payload(func() {
-			Attribute("receiverId", String, func() {
-				Description("Unique ID of the receiver.")
-				MinLength(1)
-				MaxLength(48)
-				Example("github-pull-requests")
-			})
-			Attribute("exportId", String, func() {
-				Description("Unique ID of the export.")
-				MinLength(1)
-				MaxLength(48)
-				Example("github-changed-files")
-			})
+			receiverId()
+			exportId()
 			Required("receiverId", "exportId")
 		})
 		HTTP(func() {
 			DELETE("/receivers/{receiverId}/exports/{exportId}")
 			Meta("openapi:tag:receiver")
 			Response(StatusOK)
-			// TODO: errors
+			ReceiverNotFoundError()
+			ExportNotFoundError()
 		})
 	})
 
-	// TODO: import endpoint
+	Method("Import", func() {
+		Meta("openapi:summary", "Import data")
+		Description("Upload data into the receiver. The data will be stored until import conditions are met.")
+		Payload(func() {
+			receiverId()
+			Attribute("secret", String, func() {
+				Description("Secret used for authentication.")
+				MinLength(48)
+				MaxLength(48)
+				Example("UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH")
+			})
+			Attribute("data", Any, func() {
+				Meta(oneof.Meta, json.MustEncodeString([]*openapi.Schema{
+					{Type: openapi.String},
+					{Type: openapi.Integer},
+					{Type: openapi.Number},
+					{Type: openapi.Boolean},
+					{Type: openapi.Array, Items: &openapi.Schema{Type: openapi.String}},
+					{Type: openapi.Object},
+				}, false))
+				Example("foobar")
+			})
+			Required("data", "receiverId", "secret")
+		})
+		HTTP(func() {
+			POST("/import/{receiverId}/#/{secret}")
+			Meta("openapi:tag:receiver")
+			Response(StatusOK)
+			ReceiverNotFoundError()
+		})
+	})
 })
 
 // Common attributes
@@ -313,6 +296,38 @@ var _ = Service("buffer", func() {
 var tokenSecurity = APIKeySecurity("storage-api-token", func() {
 	Description("Storage Api Token Authentication.")
 })
+
+var receiverId = func(desc ...string) {
+	Attribute("receiverId", String, func() {
+		if len(desc) > 0 {
+			Description(fmt.Sprintf("Unique ID of the receiver. %s", strings.Join(desc, "")))
+		} else {
+			Description("Unique ID of the receiver.")
+		}
+		MinLength(1)
+		MaxLength(48)
+	})
+}
+
+var exportId = func(desc ...string) {
+	Attribute("exportId", String, func() {
+		if len(desc) > 0 {
+			Description(fmt.Sprintf("Unique ID of the export. %s", strings.Join(desc, "")))
+		} else {
+			Description("Unique ID of the export.")
+		}
+		MinLength(1)
+		MaxLength(48)
+	})
+}
+
+var name = func(what string) {
+	Attribute("name", String, func() {
+		Description(fmt.Sprintf("Human readable name of the %s.", what))
+		MinLength(1)
+		MaxLength(40)
+	})
+}
 
 // Types --------------------------------------------------------------------------------------------------------------
 
@@ -329,54 +344,46 @@ var ServiceDetail = Type("ServiceDetail", func() {
 
 var Receiver = Type("Receiver", func() {
 	Description("Represents an endpoint for importing data. A project may have a maximum of 100 receivers.")
-	Attribute("receiverId", String, func() {
-		Description("Unique ID of the receiver. May be null, in which case it will be generated.")
-		MinLength(1)
-		MaxLength(48)
-		Example("github-pull-requests")
-	})
-	Attribute("name", String, func() {
-		Description("Human readable name of the receiver.")
-		MinLength(1)
-		MaxLength(40)
-		Example("GitHub Pull Requests")
-	})
+	receiverId("May be null, in which case it will be generated.")
+	name("receiver")
 	Attribute("url", String, func() {
 		Description("URL of the receiver. Contains secret used for authentication.")
 	})
-	Attribute("exports", ArrayOf(Export), "List of receiver exports. A receiver may have a maximum of 20 exports.")
+	Attribute("exports", ArrayOf(Export), func() {
+		Description("List of receiver exports. A receiver may have a maximum of 20 exports.")
+	})
+	Example(exampleReceiver())
 })
 
 var Export = Type("Export", func() {
 	Description("Represents a mapping from imported data to a destination table.")
-	Attribute("exportId", String, func() {
-		Description("Unique ID of the export. May be null, in which case it will be generated.")
-		MinLength(1)
-		MaxLength(48)
-		Example("github-changed-files")
+	exportId("May be null, in which case it will be generated.")
+	name("export")
+	Attribute("tableId", String, func() {
+		Description("Destination table ID.")
 	})
-	Attribute("name", String, func() {
-		Description("Human readable name of the export.")
-		MinLength(1)
-		MaxLength(40)
-		Example("GitHub Changed Files")
-	})
-	Attribute("tableId", String, "Destination table ID.")
 	Attribute("incremental", Boolean, func() {
 		Description("Enables incremental loading to the table.")
 		Default(true)
 	})
-	Attribute("columns", ArrayOf(ExportColumn), "List of export column mappings. An export may have a maximum of 50 columns.")
-	Attribute("conditions", ExportConditions, "Table import conditions.")
+	Attribute("columns", ArrayOf(ColumnMapping), func() {
+		Description("List of export column mappings. An export may have a maximum of 50 columns.")
+	})
+	Attribute("conditions", ImportConditions, func() {
+		Description("Table import conditions.")
+	})
 	Required("name", "tableId", "columns")
 })
 
-var ExportColumn = Type("ExportColumn", func() {
+var ColumnMapping = Type("ColumnMapping", func() {
 	Description("An output mapping defined by a template.")
 	Attribute("type", String, func() {
+		Description("Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).")
 		Enum("id", "datetime", "body", "headers", "template")
 	})
-	Attribute("template", TemplateMapping)
+	Attribute("template", TemplateMapping, func() {
+		Description("Template mapping details.")
+	})
 	Required("type")
 })
 
@@ -398,7 +405,7 @@ var TemplateMapping = Type("TemplateMapping", func() {
 	Required("language", "undefinedValueStrategy", "content")
 })
 
-var ExportConditions = Type("Conditions", func() {
+var ImportConditions = Type("Conditions", func() {
 	Description("Table import triggers.")
 	Attribute("count", Int, func() {
 		Description("Maximum import buffer size in number of records.")
@@ -419,3 +426,117 @@ var ExportConditions = Type("Conditions", func() {
 		Default(5 * 60)
 	})
 })
+
+// Errors ------------------------------------------------------------------------------------------------------------
+
+var GenericErrorType = Type("GenericError", func() {
+	Description("Generic error")
+	Attribute("statusCode", Int, "HTTP status code.", func() {
+		Example(StatusInternalServerError)
+	})
+	ErrorName("error", String, "Name of error.", func() {
+		Meta("struct:field:name", "name")
+		Example("templates.internalError")
+	})
+	Attribute("message", String, "Error message.", func() {
+		Example("Internal Error")
+	})
+	Required("statusCode", "error", "message")
+})
+
+func GenericError(statusCode int, name, description, example string) {
+	// Must be called inside HTTP definition
+	endpoint, ok := eval.Current().(*expr.HTTPEndpointExpr)
+	if !ok {
+		eval.IncompatibleDSL()
+	}
+
+	// Add error to the method definition
+	eval.Execute(func() {
+		Error(name, GenericErrorType, func() {
+			Description(description)
+			Example(ExampleError(statusCode, name, example))
+		})
+	}, endpoint.MethodExpr)
+
+	// Add response to the HTTP method definition
+	Response(name, statusCode)
+}
+
+func ReceiverNotFoundError() {
+	GenericError(StatusNotFound, "buffer.receiverNotFound", "Receiver not found error.", `Receiver "github-pull-requests" not found.`)
+}
+
+func ExportNotFoundError() {
+	GenericError(StatusNotFound, "buffer.exportNotFound", "Export not found error.", `Export "github-changed-files" not found.`)
+}
+
+// Examples ------------------------------------------------------------------------------------------------------------
+
+func ExampleError(statusCode int, name, message string) map[string]interface{} {
+	return map[string]interface{}{
+		"statusCode": statusCode,
+		"error":      name,
+		"message":    message,
+	}
+}
+
+func exampleReceiver() map[string]interface{} {
+	id := "github-pull-requests"
+	return map[string]interface{}{
+		"id":      &id,
+		"url":     "https://buffer.keboola.com/v1/import/github-pull-requests/#/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH",
+		"exports": exampleExportArray(),
+	}
+}
+
+func exampleExportArray() []map[string]interface{} {
+	return []map[string]interface{}{
+		exampleExport(),
+	}
+}
+
+func exampleExport() map[string]interface{} {
+	id := "github-changed-files"
+	return map[string]interface{}{
+		"exportId":    &id,
+		"name":        "GitHub Changed Files",
+		"tableID":     "in.c-github.changes",
+		"incremental": true,
+		"columns": []map[string]interface{}{
+			exampleColumnMapping(),
+			exampleColumnMapping_TemplateVariant(),
+		},
+		"conditions": exampleImportConditions(),
+	}
+}
+
+func exampleImportConditions() map[string]interface{} {
+	return map[string]interface{}{
+		"count": 100,
+		"size":  1_000_000,
+		"time":  60,
+	}
+}
+
+func exampleTemplateMapping() map[string]interface{} {
+	return map[string]interface{}{
+		"language":               "jsonnet",
+		"undefinedValueStrategy": "error",
+		"content":                `body.foo + "-" + body.bar`,
+		"dataType":               "STRING",
+	}
+}
+
+func exampleColumnMapping() map[string]interface{} {
+	return map[string]interface{}{
+		"type": "body",
+	}
+}
+
+func exampleColumnMapping_TemplateVariant() map[string]interface{} {
+	return map[string]interface{}{
+		"type":     "template",
+		"template": exampleTemplateMapping(),
+	}
+}
