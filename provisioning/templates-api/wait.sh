@@ -18,7 +18,7 @@ if kubectl rollout status sts/templates-api-etcd --namespace templates-api --tim
 else
   echo
   echo "Etcd deployment failed."
-  minikube kubectl -- logs --namespace templates-api --follow=false --timestamps=true --selector "app=templates-api-etcd" &
+  minikube kubectl -- logs --namespace templates-api --follow=false --timestamps=true --selector "app=templates-api-etcd"
   exit 1
 fi
 
@@ -34,6 +34,6 @@ else
   echo
   echo "API deployment failed."
   echo "--------------------------"
-  minikube kubectl -- logs --namespace templates-api --follow=false --timestamps=true --selector "app=templates-api" &
+  minikube kubectl -- logs --namespace templates-api --follow=false --timestamps=true --selector "app=templates-api"
   exit 1
 fi
