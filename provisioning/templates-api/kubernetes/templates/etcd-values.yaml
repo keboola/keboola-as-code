@@ -47,6 +47,14 @@ service:
 networkPolicy:
   enabled: true
   allowExternal: false
+  extraIngress:
+   # Allow DataDog HTTP calls to the /metrics
+   - ports:
+       - port: 2379
+     from:
+       - podSelector:
+           matchLabels:
+             app: datadog-agent
 
 persistence:
   enabled: true
