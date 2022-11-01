@@ -16,6 +16,9 @@ fi
 : ${TEMPLATES_API_REPLICAS?"Missing TEMPLATES_API_REPLICAS"}
 : ${TEMPLATES_API_ETCD_REPLICAS?"Missing TEMPLATES_API_ETCD_REPLICAS"}
 
+# Constants
+ETCD_HELM_CHART_VERSION="8.5.8"
+
 # Common part of the deployment. Same for AWS/Azure/Local
 ./kubernetes/build.sh
 
@@ -30,7 +33,12 @@ export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "templates-api" templ
 
 # Deploy etcd cluster
 helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
-helm upgrade --install templates-api-etcd bitnami/etcd -f ./kubernetes/deploy/etcd-values.yaml --namespace templates-api --set auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD
+helm upgrade \
+  --install templates-api-etcd bitnami/etcd \
+  --version "$ETCD_HELM_CHART_VERSION" \
+  --values ./kubernetes/deploy/etcd-values.yaml \
+  --namespace templates-api \
+  --set "auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD"
 
 # Deploy templates API
 kubectl apply -f ./kubernetes/deploy/config-map.yaml
