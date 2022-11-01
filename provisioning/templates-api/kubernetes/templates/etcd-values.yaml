@@ -1,6 +1,12 @@
-# DEFAULT VALUES: https://github.com/bitnami/charts/blob/master/bitnami/etcd/values.yaml
+# See default values: https://github.com/bitnami/charts/blob/master/bitnami/etcd/values.yaml
 image:
-  tag: 3.5.4-debian-11-r27
+  tag: 3.5.5-debian-11-r16
+
+commonLabels:
+  app: templates-api-etcd
+
+podLabels:
+  app: templates-api-etcd
 
 resources:
   requests:
@@ -9,7 +15,7 @@ resources:
   limits:
     memory: "256Mi"
 
-replicaCount: 3
+replicaCount: $TEMPLATES_API_ETCD_REPLICAS
 
 removeMemberOnContainerTermination: false
 
@@ -22,7 +28,7 @@ auth:
     create: true
     allowNoneAuthentication: false
   token:
-    type: simple
+    type: jwt
 
 service:
   clusterIP: None #headless service

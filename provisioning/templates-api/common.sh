@@ -16,9 +16,30 @@ fi
 : ${TEMPLATES_API_REPLICAS?"Missing TEMPLATES_API_REPLICAS"}
 : ${TEMPLATES_API_ETCD_REPLICAS?"Missing TEMPLATES_API_ETCD_REPLICAS"}
 
-# Common part of the deployment. Same for AWS/Azure
+# Constants
+ETCD_HELM_CHART_VERSION="8.5.8"
+
+# Common part of the deployment. Same for AWS/Azure/Local
 ./kubernetes/build.sh
+
+# Namespace
 kubectl apply -f ./kubernetes/deploy/namespace.yaml
-kubectl apply -f ./kubernetes/deploy/etcd.yaml
+
+# REMOVE ME: delete old manually deployed resources
+kubectl delete pod,statefulset,configmap,networkpolicy,secret,service,persistentVolumeClaim,persistentVolume --namespace templates-api -l app=templates-api-etcd --ignore-not-found
+
+# Get etcd root password, if it is already present
+export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "templates-api" templates-api-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
+
+# Deploy etcd cluster
+helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
+helm upgrade \
+  --install templates-api-etcd bitnami/etcd \
+  --version "$ETCD_HELM_CHART_VERSION" \
+  --values ./kubernetes/deploy/etcd-values.yaml \
+  --namespace templates-api \
+  --set "auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD"
+
+# Deploy templates API
 kubectl apply -f ./kubernetes/deploy/config-map.yaml
 kubectl apply -f ./kubernetes/deploy/templates-api.yaml
