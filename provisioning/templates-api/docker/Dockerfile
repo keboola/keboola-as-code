@@ -2,9 +2,16 @@
 FROM golang:1.19.2-alpine3.16 AS buildContainer
 RUN apk add -U --no-cache bash make curl
 WORKDIR /app
-COPY . .
-#flags: -s -w to remove symbol table and debug info
+
+COPY Makefile Makefile
+COPY scripts scripts
 RUN make tools
+
+COPY go.mod go.mod
+COPY go.sum go.sum
+RUN go mod download
+
+COPY . .
 RUN make build-templates-api
 
 # Production container
