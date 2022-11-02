@@ -12,8 +12,10 @@ envsubst < templates/etcd/values.yaml > deploy/etcd/values.yaml
 
 # API
 envsubst < templates/api/config-map.yaml > deploy/api/config-map.yaml
+envsubst < templates/api/pdb.yaml        > deploy/api/pdb.yaml
 envsubst < templates/api/deployment.yaml > deploy/api/deployment.yaml
 
+# Cloud specific
 if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
   envsubst < templates/cloud/aws/service.yaml > deploy/cloud/aws/service.yaml
   envsubst < templates/cloud/aws/ingress.yaml > deploy/cloud/aws/ingress.yaml
