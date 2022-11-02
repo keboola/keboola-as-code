@@ -284,6 +284,8 @@ var _ = Service("buffer", func() {
 			Meta("openapi:tag:receiver")
 			Response(StatusOK)
 			ReceiverNotFoundError()
+			PayloadTooLargeError()
+			ResourceLimitReachedError()
 		})
 	})
 })
@@ -466,6 +468,14 @@ func ReceiverNotFoundError() {
 
 func ExportNotFoundError() {
 	GenericError(StatusNotFound, "buffer.exportNotFound", "Export not found error.", `Export "github-changed-files" not found.`)
+}
+
+func PayloadTooLargeError() {
+	GenericError(StatusRequestEntityTooLarge, "buffer.payloadTooLarge", "Payload too large error.", `Payload is too large.`)
+}
+
+func ResourceLimitReachedError() {
+	GenericError(StatusRequestEntityTooLarge, "buffer.resourceLimitReached", "Resource limit reached.", `Resource limit reached.`)
 }
 
 // Examples ------------------------------------------------------------------------------------------------------------
