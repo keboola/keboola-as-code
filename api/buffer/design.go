@@ -187,7 +187,7 @@ var _ = Service("buffer", func() {
 
 	Method("RefreshReceiverTokens", func() {
 		Meta("openapi:summary", "Refresh receiver tokens")
-		Description("Refresh all tokens used by a receiver.")
+		Description("Each export uses its own token scoped to the target bucket, this endpoint refreshes all of those tokens.")
 		Result(Receiver)
 		Payload(func() {
 			receiverId()
