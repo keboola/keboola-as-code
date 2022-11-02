@@ -264,16 +264,15 @@ var _ = Service("buffer", func() {
 				MaxLength(48)
 				Example("UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH")
 			})
-			Attribute("length", Int, func() {
-				Minimum(1)
-				Maximum(1_000_000)
+			Attribute("contentType", String, func() {
+				Example("application/json")
 			})
-			Required("receiverId", "secret", "length")
+			Required("receiverId", "secret", "contentType")
 		})
 		HTTP(func() {
 			POST("/import/{receiverId}/#/{secret}")
 			Meta("openapi:tag:import")
-			Header("length:Content-Length")
+			Header("contentType:Content-Type")
 			SkipRequestBodyEncodeDecode()
 			Response(StatusOK)
 			ReceiverNotFoundError()
