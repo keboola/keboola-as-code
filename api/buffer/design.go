@@ -137,7 +137,7 @@ var _ = Service("buffer", func() {
 		})
 		HTTP(func() {
 			POST("/receivers")
-			Meta("openapi:tag:receiver")
+			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 		})
 	})
@@ -148,7 +148,7 @@ var _ = Service("buffer", func() {
 		Result(ArrayOf(Receiver))
 		HTTP(func() {
 			GET("/receivers")
-			Meta("openapi:tag:receiver")
+			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 		})
 	})
@@ -163,7 +163,7 @@ var _ = Service("buffer", func() {
 		})
 		HTTP(func() {
 			GET("/receivers/{receiverId}")
-			Meta("openapi:tag:receiver")
+			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			ReceiverNotFoundError()
 		})
@@ -179,7 +179,7 @@ var _ = Service("buffer", func() {
 		})
 		HTTP(func() {
 			DELETE("/receivers/{receiverId}")
-			Meta("openapi:tag:receiver")
+			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			ReceiverNotFoundError()
 		})
@@ -195,7 +195,7 @@ var _ = Service("buffer", func() {
 		})
 		HTTP(func() {
 			POST("/receivers/{receiverId}/tokens/refresh")
-			Meta("openapi:tag:receiver")
+			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			ReceiverNotFoundError()
 		})
@@ -212,7 +212,7 @@ var _ = Service("buffer", func() {
 		})
 		HTTP(func() {
 			POST("/receivers/{receiverId}/exports")
-			Meta("openapi:tag:receiver")
+			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			ReceiverNotFoundError()
 		})
@@ -230,7 +230,7 @@ var _ = Service("buffer", func() {
 		})
 		HTTP(func() {
 			PATCH("/receivers/{receiverId}/exports/{exportId}")
-			Meta("openapi:tag:receiver")
+			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			ReceiverNotFoundError()
 			ExportNotFoundError()
@@ -248,7 +248,7 @@ var _ = Service("buffer", func() {
 		})
 		HTTP(func() {
 			DELETE("/receivers/{receiverId}/exports/{exportId}")
-			Meta("openapi:tag:receiver")
+			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			ReceiverNotFoundError()
 			ExportNotFoundError()
@@ -282,7 +282,7 @@ var _ = Service("buffer", func() {
 		})
 		HTTP(func() {
 			POST("/import/{receiverId}/#/{secret}")
-			Meta("openapi:tag:receiver")
+			Meta("openapi:tag:import")
 			Response(StatusOK)
 			ReceiverNotFoundError()
 			PayloadTooLargeError()
