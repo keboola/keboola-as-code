@@ -28,6 +28,14 @@ resources:
 
 replicaCount: $TEMPLATES_API_ETCD_REPLICAS
 
+# Keep 15 minutes of history, see https://etcd.io/docs/v3.5/op-guide/maintenance/#auto-compaction.
+# etcd uses MVCC - multi version concurrency control.
+# All previous versions of the database state are kept.
+# Here, the Auto Compaction Mode is enabled.
+# Each 15 minutes are deleted all old revisions older than 15 minutes.
+autoCompactionMode: "periodic"
+autoCompactionRetention: "15m"
+
 removeMemberOnContainerTermination: false
 
 extraEnvVars:
