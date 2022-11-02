@@ -8,6 +8,7 @@ on:
 
 env:
   MINIKUBE_PROFILE: templates-api
+  ETCD_ENDPOINT: templates-api-etcd:2379
 
 defaults:
   run:
@@ -18,15 +19,12 @@ jobs:
     name: 'Test'
     runs-on: ubuntu-latest
     steps:
-      - name: Start MiniKube
-        uses: medyagh/setup-minikube@latest
+      - name: Checkout
+        uses: actions/checkout@v3
         with:
-          wait: "apiserver,system_pods,default_sa,apps_running,node_ready,kubelet"
-          # https://github.com/kubernetes/minikube/issues/15173
-          kubernetes-version: v1.24.7
-          # Enable Network Policies support
-          network-plugin: cni
-          cni: calico
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Start MiniKube
+        run: ./start_minikube.sh
       - name: Checkout BASE branch
         uses: actions/checkout@v3
         with:
@@ -40,9 +38,49 @@ jobs:
       - name: Deploy the new version, from the HEAD branch
         run: ./deploy_local.sh
       - name: Check deployment of the etcd
+        if: always()
         run: kubectl rollout status sts/templates-api-etcd --namespace templates-api
       - name: Check deployment of the API
+        if: always()
         run: kubectl rollout status deployment/templates-api --namespace templates-api
+      - name: Check access to the etcd from a client
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "templates-api" templates-api-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
+          kubectl run --attach --rm --restart=Never check-etcd-client \
+            --namespace templates-api \
+            --image docker.io/bitnami/etcd \
+            --labels="templates-api-etcd-client=true" \
+            --env="ETCD_ROOT_PASSWORD=$ETCD_ROOT_PASSWORD" \
+            --env="ETCDCTL_ENDPOINTS=$ETCD_ENDPOINT" \
+            --command -- etcdctl --user root:$ETCD_ROOT_PASSWORD put /message Hello
+      - name: Check access to the etcd from the DataDog Agent
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          kubectl run --attach --rm --restart=Never check-etcd-other-data-dog \
+          --namespace templates-api \
+          --image docker.io/alpine/curl \
+          --labels="app=datadog-agent" \
+          --env="ETCD_ENDPOINT=$ETCD_ENDPOINT" \
+          --command -- sh -c "set -eo pipefail; curl -f -L --max-time 15 "$ETCD_ENDPOINT/metrics" | tail" | tail
+      - name: Check forbidden access to the etcd from other places
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          if kubectl run --attach --rm --restart=Never check-etcd-other \
+            --namespace templates-api \
+            --image docker.io/alpine/curl \
+            --env="ETCD_ENDPOINT=$ETCD_ENDPOINT" \
+            --command -- sh -c "set -eo pipefail; curl -f -L --max-time 15 "$ETCD_ENDPOINT/metrics" | tail"; then
+            echo "The command did not fail, but it should have."
+            exit 1
+          else
+            echo "The command failed, OK."
+            exit 0
+          fi
       - name: Check API response
+        if: always()
         run: |
           curl --fail -L -s "$(minikube service --url --namespace templates-api templates-api)"
