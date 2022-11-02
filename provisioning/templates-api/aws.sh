@@ -19,8 +19,8 @@ aws eks update-kubeconfig --name "$AWS_EKS_CLUSTER_NAME" --region "$AWS_REGION"
 . ./common.sh
 
 # AWS specific part of the deploy
-kubectl apply -f ./kubernetes/deploy/aws/service.yaml
-kubectl apply -f ./kubernetes/deploy/aws/ingress.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/aws/service.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/aws/ingress.yaml
 
 # Wait for the rollout
 . ./wait.sh
