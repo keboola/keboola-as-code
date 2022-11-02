@@ -4,13 +4,15 @@ set -Eeuo pipefail
 # CD to the script directory
 cd "$(dirname "$0")"
 
+# Namespace
+envsubst < templates/namespace.yaml > deploy/namespace.yaml
+
 # Etcd
 envsubst < templates/etcd/values.yaml > deploy/etcd/values.yaml
 
-# Templates API
-envsubst < templates/namespace.yaml > deploy/namespace.yaml
-envsubst < templates/config-map.yaml > deploy/config-map.yaml
-envsubst < templates/templates-api.yaml > deploy/templates-api.yaml
+# API
+envsubst < templates/api/config-map.yaml > deploy/api/config-map.yaml
+envsubst < templates/api/deployment.yaml > deploy/api/deployment.yaml
 
 if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
   envsubst < templates/cloud/aws/service.yaml > deploy/cloud/aws/service.yaml

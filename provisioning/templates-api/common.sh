@@ -37,6 +37,6 @@ helm upgrade \
   --namespace templates-api \
   --set "auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD"
 
-# Deploy templates API
-kubectl apply -f ./kubernetes/deploy/config-map.yaml
-kubectl apply -f ./kubernetes/deploy/templates-api.yaml
+# API
+kubectl apply -f ./kubernetes/deploy/api/config-map.yaml
+kubectl apply -f ./kubernetes/deploy/api/deployment.yaml
