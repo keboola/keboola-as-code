@@ -9,17 +9,14 @@ import (
 	. "goa.design/goa/v3/dsl"
 	"goa.design/goa/v3/eval"
 	"goa.design/goa/v3/expr"
-	"goa.design/goa/v3/http/codegen/openapi"
 	cors "goa.design/plugins/v3/cors/dsl"
 
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/anytype"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/dependencies"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/genericerror"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/operationid"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/token"
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 )
 
 // API definition
@@ -267,26 +264,20 @@ var _ = Service("buffer", func() {
 				MaxLength(48)
 				Example("UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH")
 			})
-			Attribute("data", Any, func() {
-				Meta(oneof.Meta, json.MustEncodeString([]*openapi.Schema{
-					{Type: openapi.String},
-					{Type: openapi.Integer},
-					{Type: openapi.Number},
-					{Type: openapi.Boolean},
-					{Type: openapi.Array, Items: &openapi.Schema{Type: openapi.String}},
-					{Type: openapi.Object},
-				}, false))
-				Example("foobar")
+			Attribute("length", Int, func() {
+				Minimum(1)
+				Maximum(1_000_000)
 			})
-			Required("data", "receiverId", "secret")
+			Required("receiverId", "secret", "length")
 		})
 		HTTP(func() {
 			POST("/import/{receiverId}/#/{secret}")
 			Meta("openapi:tag:import")
+			Header("length:Content-Length")
+			SkipRequestBodyEncodeDecode()
 			Response(StatusOK)
 			ReceiverNotFoundError()
 			PayloadTooLargeError()
-			ResourceLimitReachedError()
 		})
 	})
 })
@@ -476,10 +467,6 @@ func ExportNotFoundError() {
 
 func PayloadTooLargeError() {
 	GenericError(StatusRequestEntityTooLarge, "buffer.payloadTooLarge", "Payload too large error.", `Payload is too large.`)
-}
-
-func ResourceLimitReachedError() {
-	GenericError(StatusRequestEntityTooLarge, "buffer.resourceLimitReached", "Resource limit reached.", `Resource limit reached.`)
 }
 
 // Examples ------------------------------------------------------------------------------------------------------------
