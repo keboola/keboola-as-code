@@ -217,7 +217,7 @@ var _ = Service("buffer", func() {
 
 	Method("UpdateExport", func() {
 		Meta("openapi:summary", "Update export")
-		Description("Update a receiver export. The export's columns must match the existing table schema.")
+		Description("Update a receiver export.")
 		Result(Receiver)
 		Payload(func() {
 			receiverId()
