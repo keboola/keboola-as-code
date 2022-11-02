@@ -131,7 +131,7 @@ var _ = Service("buffer", func() {
 		Result(Receiver)
 		Payload(func() {
 			receiverId()
-			name("receiver")
+			name("receiver", "GitHub Pull Requests")
 			Attribute("exports", ArrayOf(Export), "List of receiver exports. A receiver may have a maximum of 20 exports.")
 			Required("name", "exports")
 		})
@@ -305,6 +305,7 @@ var receiverId = func(desc ...string) {
 		}
 		MinLength(1)
 		MaxLength(48)
+		Example("github-pull-requests")
 	})
 }
 
@@ -317,14 +318,16 @@ var exportId = func(desc ...string) {
 		}
 		MinLength(1)
 		MaxLength(48)
+		Example("github-changed-files")
 	})
 }
 
-var name = func(what string) {
+var name = func(what string, example string) {
 	Attribute("name", String, func() {
 		Description(fmt.Sprintf("Human readable name of the %s.", what))
 		MinLength(1)
 		MaxLength(40)
+		Example(example)
 	})
 }
 
@@ -344,7 +347,7 @@ var ServiceDetail = Type("ServiceDetail", func() {
 var Receiver = Type("Receiver", func() {
 	Description("Represents an endpoint for importing data. A project may have a maximum of 100 receivers.")
 	receiverId("May be null, in which case it will be generated.")
-	name("receiver")
+	name("receiver", "GitHub Pull Requests")
 	Attribute("url", String, func() {
 		Description("URL of the receiver. Contains secret used for authentication.")
 	})
@@ -357,7 +360,7 @@ var Receiver = Type("Receiver", func() {
 var Export = Type("Export", func() {
 	Description("Represents a mapping from imported data to a destination table.")
 	exportId("May be null, in which case it will be generated.")
-	name("export")
+	name("export", "GitHub Changed Files")
 	Attribute("tableId", String, func() {
 		Description("Destination table ID.")
 	})
