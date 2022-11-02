@@ -125,8 +125,6 @@ var _ = Service("buffer", func() {
 
 	// Main endpoints ---------------------------------------------------------------------------------------------
 
-	// TODO: examples in requests
-
 	Method("CreateReceiver", func() {
 		Meta("openapi:summary", "Create receiver")
 		Description("Create a new receiver for a given project")
@@ -162,7 +160,6 @@ var _ = Service("buffer", func() {
 		Payload(func() {
 			receiverId()
 			Required("receiverId")
-
 		})
 		HTTP(func() {
 			GET("/receivers/{receiverId}")
