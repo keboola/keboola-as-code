@@ -5,7 +5,7 @@ set -Eeuo pipefail
 cd "$(dirname "$0")"
 
 # Etcd
-envsubst < templates/etcd-values.yaml > deploy/etcd-values.yaml
+envsubst < templates/etcd/values.yaml > deploy/etcd/values.yaml
 
 # Templates API
 envsubst < templates/namespace.yaml > deploy/namespace.yaml
