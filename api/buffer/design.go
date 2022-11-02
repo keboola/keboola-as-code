@@ -257,7 +257,8 @@ var _ = Service("buffer", func() {
 
 	Method("Import", func() {
 		Meta("openapi:summary", "Import data")
-		Description("Upload data into the receiver. The data will be stored until import conditions are met.")
+		Description("Upload data into the receiver.")
+		NoSecurity()
 		Payload(func() {
 			receiverId()
 			Attribute("secret", String, func() {
