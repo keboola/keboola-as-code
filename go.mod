@@ -26,6 +26,7 @@ require (
 	github.com/keboola/go-client v0.13.0
 	github.com/keboola/go-utils v0.6.1
 	github.com/kylelemons/godebug v1.1.0
+	github.com/relvacode/iso8601 v1.1.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.1
 	github.com/spf13/afero v1.9.2
 	github.com/spf13/cast v1.5.0
@@ -126,7 +127,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/relvacode/iso8601 v1.1.0 // indirect
 	github.com/rivo/uniseg v0.4.2 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.5 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.5 // indirect
