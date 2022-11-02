@@ -19,8 +19,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Start MiniKube
-        id: minikube
         uses: medyagh/setup-minikube@latest
+        with:
+          wait: "apiserver,system_pods,default_sa,apps_running,node_ready,kubelet"
+          # https://github.com/kubernetes/minikube/issues/15173
+          kubernetes-version: v1.24.7
+          # Enable Network Policies support
+          network-plugin: cni
+          cni: calico
       - name: Checkout BASE branch
         uses: actions/checkout@v3
         with:
