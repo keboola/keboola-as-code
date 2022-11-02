@@ -347,7 +347,7 @@ var ServiceDetail = Type("ServiceDetail", func() {
 
 var Receiver = Type("Receiver", func() {
 	Description("Represents an endpoint for importing data. A project may have a maximum of 100 receivers.")
-	receiverId("May be null, in which case it will be generated.")
+	receiverId("May be omitted, in which case it will be generated.")
 	name("receiver", "GitHub Pull Requests")
 	Attribute("url", String, func() {
 		Description("URL of the receiver. Contains secret used for authentication.")
@@ -360,7 +360,7 @@ var Receiver = Type("Receiver", func() {
 
 var Export = Type("Export", func() {
 	Description("Represents a mapping from imported data to a destination table.")
-	exportId("May be null, in which case it will be generated.")
+	exportId("May be omitted, in which case it will be generated.")
 	name("export", "GitHub Changed Files")
 	Attribute("tableId", String, func() {
 		Description("Destination table ID.")
