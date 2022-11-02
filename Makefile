@@ -56,10 +56,10 @@ tests-templates-api-verbose: prepare
 mod: prepare
 	bash ./scripts/mod.sh
 
-lint: generate-code
+lint: prepare
 	bash ./scripts/lint.sh
 
-fix: generate-code
+fix: prepare
 	bash ./scripts/fix.sh
 
 ci: mod lint tests
