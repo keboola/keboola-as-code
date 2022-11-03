@@ -1,4 +1,4 @@
-// Package dependencies provides dependencies for Templates API.
+// Package dependencies provides dependencies for Buffer API.
 //
 // # Dependency Containers
 //
@@ -10,15 +10,15 @@
 //   - [ForProjectRequest] short-lived dependencies for a request with authentication.
 //
 // Dependency containers creation:
-//   - Container [ForServer] is created in API main.go entrypoint, in "start" method, see [src/github.com/keboola/keboola-as-code/cmd/templates-api/main.go].
-//   - Container [ForPublicRequest] is created for each HTTP request in the http.ContextMiddleware function, see [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/http/middleware.go].
-//   - Container [ForProjectRequest] is created for each authenticated HTTP request in the service.APIKeyAuth method, see [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/service/auth.go].
+//   - Container [ForServer] is created in API main.go entrypoint, in "start" method, see [src/github.com/keboola/keboola-as-code/cmd/buffer-api/main.go].
+//   - Container [ForPublicRequest] is created for each HTTP request in the http.ContextMiddleware function, see [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/http/middleware.go].
+//   - Container [ForProjectRequest] is created for each authenticated HTTP request in the service.APIKeyAuth method, see [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/service/auth.go].
 //
 // Dependencies injection to service endpoints:
 //   - Each service endpoint handler/method gets [ForPublicRequest] container as a parameter.
 //   - If the endpoint use token authentication it gets [ForProjectRequest] container instead.
 //   - It is ensured by [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/dependencies] package.
-//   - See service implementation for details [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/service/service.go].
+//   - See service implementation for details [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/service/service.go].
 package dependencies
 
 import (
@@ -42,9 +42,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	telemetryUtils "github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/template"
-	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
-	repositoryManager "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
@@ -61,7 +58,7 @@ const (
 	ProjectLockTTLSeconds        = 60
 )
 
-// ForServer interface provides dependencies for Templates API server.
+// ForServer interface provides dependencies for Buffer API server.
 // The container exists during the entire run of the API server.
 type ForServer interface {
 	dependencies.Base
@@ -69,9 +66,7 @@ type ForServer interface {
 	ServerCtx() context.Context
 	ServerWaitGroup() *sync.WaitGroup
 	PrefixLogger() log.PrefixLogger
-	RepositoryManager() *repositoryManager.Manager
 	EtcdClient(ctx context.Context) (*etcd.Client, error)
-	ProjectLocker() *Locker
 }
 
 // ForPublicRequest interface provides dependencies for a public request that does not contain the Storage API token.
@@ -87,21 +82,16 @@ type ForPublicRequest interface {
 type ForProjectRequest interface {
 	ForPublicRequest
 	dependencies.Project
-	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
-	TemplateRepository(ctx context.Context, reference model.TemplateRepository) (*repository.Repository, error)
-	ProjectRepositories() *model.TemplateRepositories
 }
 
 // forServer implements ForServer interface.
 type forServer struct {
 	dependencies.Base
 	dependencies.Public
-	serverCtx         context.Context
-	serverWg          *sync.WaitGroup
-	logger            log.PrefixLogger
-	repositoryManager *repositoryManager.Manager
-	etcdClient        dependencies.Lazy[*etcd.Client]
-	projectLocker     dependencies.Lazy[*Locker]
+	serverCtx  context.Context
+	serverWg   *sync.WaitGroup
+	logger     log.PrefixLogger
+	etcdClient dependencies.Lazy[*etcd.Client]
 }
 
 // forPublicRequest implements ForPublicRequest interface.
@@ -117,12 +107,10 @@ type forPublicRequest struct {
 type forProjectRequest struct {
 	dependencies.Project
 	ForPublicRequest
-	logger              log.PrefixLogger
-	repositories        map[string]*repositoryManager.CachedRepository
-	projectRepositories dependencies.Lazy[*model.TemplateRepositories]
+	logger log.PrefixLogger
 }
 
-func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, defaultRepositories []model.TemplateRepository, debug, dumpHttp bool) (v ForServer, err error) {
+func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, debug, dumpHttp bool) (v ForServer, err error) {
 	// Create tracer
 	var tracer trace.Tracer = nil
 	if telemetry.IsDataDogEnabled(envs) {
@@ -164,13 +152,6 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 		logger:    logger,
 	}
 
-	// Create repository manager
-	if v, err := repositoryManager.New(serverCtx, defaultRepositories, d); err != nil {
-		return nil, err
-	} else {
-		d.repositoryManager = v
-	}
-
 	// Test connection to etcd at server startup
 	// We use a longer timeout when starting the server, because ETCD could be restarted at the same time as the API.
 	etcdCtx := context.WithValue(serverCtx, EtcdConnectionTimeoutCtxKey, 30*time.Second)
@@ -210,7 +191,6 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 		logger:           logger,
 		Project:          projectDeps,
 		ForPublicRequest: publicDeps,
-		repositories:     make(map[string]*repositoryManager.CachedRepository),
 	}, nil
 }
 
@@ -224,10 +204,6 @@ func (v *forServer) ServerWaitGroup() *sync.WaitGroup {
 
 func (v *forServer) PrefixLogger() log.PrefixLogger {
 	return v.logger
-}
-
-func (v *forServer) RepositoryManager() *repositoryManager.Manager {
-	return v.repositoryManager
 }
 
 func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
@@ -296,12 +272,6 @@ func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 	})
 }
 
-func (v *forServer) ProjectLocker() *Locker {
-	return v.projectLocker.MustInitAndGet(func() *Locker {
-		return NewLocker(v, ProjectLockTTLSeconds)
-	})
-}
-
 func (v *forPublicRequest) Logger() log.Logger {
 	return v.logger
 }
@@ -331,75 +301,6 @@ func (v *forProjectRequest) Logger() log.Logger {
 
 func (v *forProjectRequest) PrefixLogger() log.PrefixLogger {
 	return v.logger
-}
-
-func (v *forProjectRequest) ProjectRepositories() *model.TemplateRepositories {
-	return v.projectRepositories.MustInitAndGet(func() *model.TemplateRepositories {
-		// Project repositories are default repositories modified by the project features.
-		features := v.ProjectFeatures()
-		out := model.NewTemplateRepositories()
-		for _, repo := range v.RepositoryManager().DefaultRepositories() {
-			if repo.Name == repository.DefaultTemplateRepositoryName && repo.Ref == repository.DefaultTemplateRepositoryRefMain {
-				if features.Has(repository.FeatureTemplateRepositoryBeta) {
-					repo.Ref = repository.DefaultTemplateRepositoryRefBeta
-				} else if features.Has(repository.FeatureTemplateRepositoryDev) {
-					repo.Ref = repository.DefaultTemplateRepositoryRefDev
-				}
-			}
-			out.Add(repo)
-		}
-		return out
-	})
-}
-
-func (v *forProjectRequest) Template(ctx context.Context, reference model.TemplateRef) (tmpl *template.Template, err error) {
-	ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.Template")
-	defer telemetryUtils.EndSpan(span, &err)
-
-	// Get repository
-	repo, err := v.cachedTemplateRepository(ctx, reference.Repository())
-	if err != nil {
-		return nil, err
-	}
-
-	// Get template
-	return repo.Template(ctx, reference)
-}
-
-func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition model.TemplateRepository) (tmpl *repository.Repository, err error) {
-	ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.TemplateRepository")
-	defer telemetryUtils.EndSpan(span, &err)
-
-	repo, err := v.cachedTemplateRepository(ctx, definition)
-	if err != nil {
-		return nil, err
-	}
-	return repo.Unwrap(), nil
-}
-
-func (v *forProjectRequest) cachedTemplateRepository(ctx context.Context, definition model.TemplateRepository) (repo *repositoryManager.CachedRepository, err error) {
-	if _, found := v.repositories[definition.Hash()]; !found {
-		ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.cachedTemplateRepository")
-		defer telemetryUtils.EndSpan(span, &err)
-
-		// Get git repository
-		repo, unlockFn, err := v.RepositoryManager().Repository(ctx, definition)
-		if err != nil {
-			return nil, err
-		}
-
-		// Unlock repository after the request,
-		// so repository directory won't be deleted during request (if a new version has been pulled).
-		go func() {
-			<-v.RequestCtx().Done()
-			unlockFn()
-		}()
-
-		// Cache value for the request
-		v.repositories[definition.Hash()] = repo
-	}
-
-	return v.repositories[definition.Hash()], nil
 }
 
 func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) client.Client {
