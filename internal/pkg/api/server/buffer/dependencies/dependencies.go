@@ -40,7 +40,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	telemetryUtils "github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -100,7 +99,6 @@ type forPublicRequest struct {
 	logger     log.PrefixLogger
 	requestCtx context.Context
 	requestID  string
-	components dependencies.Lazy[*model.ComponentsMap]
 }
 
 // forProjectRequest implements ForProjectRequest interface.
@@ -286,13 +284,6 @@ func (v *forPublicRequest) RequestCtx() context.Context {
 
 func (v *forPublicRequest) RequestID() string {
 	return v.requestID
-}
-
-func (v *forPublicRequest) Components() *model.ComponentsMap {
-	// Use the same version of the components during the entire request
-	return v.components.MustInitAndGet(func() *model.ComponentsMap {
-		return v.ForServer.Components()
-	})
 }
 
 func (v *forProjectRequest) Logger() log.Logger {
