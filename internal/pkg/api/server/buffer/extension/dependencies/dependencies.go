@@ -16,7 +16,7 @@ func init() {
 	codegen.RegisterPluginFirst("api-dependencies", "gen", nil, generate)
 }
 
-func generate(genpkg string, _ []eval.Root, files []*codegen.File) ([]*codegen.File, error) {
+func generate(_ string, _ []eval.Root, files []*codegen.File) ([]*codegen.File, error) {
 	for _, f := range files {
 		// nolint: forbidigo
 		switch filepath.Base(f.Path) {
