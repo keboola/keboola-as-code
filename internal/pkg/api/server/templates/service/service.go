@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/spf13/cast"
 
+	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"

@@ -9,14 +9,14 @@ import (
 	"goa.design/goa/v3/eval"
 )
 
-const PkgPath = "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
+const PkgPath = "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/dependencies"
 
 // nolint: gochecknoinits
 func init() {
 	codegen.RegisterPluginFirst("api-dependencies", "gen", nil, generate)
 }
 
-func generate(_ string, _ []eval.Root, files []*codegen.File) ([]*codegen.File, error) {
+func generate(genpkg string, _ []eval.Root, files []*codegen.File) ([]*codegen.File, error) {
 	for _, f := range files {
 		// nolint: forbidigo
 		switch filepath.Base(f.Path) {

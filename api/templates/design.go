@@ -10,12 +10,12 @@ import (
 	cors "goa.design/plugins/v3/cors/dsl"
 
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/anytype"
-	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/dependencies"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/genericerror"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/operationid"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/token"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/extension/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 )
 

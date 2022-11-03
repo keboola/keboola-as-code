@@ -11,8 +11,8 @@ import (
 	"goa.design/goa/v3/expr"
 	cors "goa.design/plugins/v3/cors/dsl"
 
+	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/extension/dependencies"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/anytype"
-	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/dependencies"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/genericerror"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/operationid"

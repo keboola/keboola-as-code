@@ -1,12 +1,12 @@
 package service
 
 import (
-	"fmt"
 	"io"
 
+	dependencies "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/gen/buffer"
-	dependencies "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
+	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/service"
 )
 
 type service struct{}
@@ -37,45 +37,45 @@ func (*service) HealthCheck(dependencies.ForPublicRequest) (res string, err erro
 
 // CreateReceiver implements buffer.Service
 func (*service) CreateReceiver(dependencies.ForProjectRequest, *buffer.CreateReceiverPayload) (res *buffer.Receiver, err error) {
-	return nil, fmt.Errorf("not yet implemented")
+	return nil, &NotImplementedError{}
 }
 
 // GetReceiver implements buffer.Service
 func (*service) GetReceiver(dependencies.ForProjectRequest, *buffer.GetReceiverPayload) (res *buffer.Receiver, err error) {
-	return nil, fmt.Errorf("not yet implemented")
+	return nil, &NotImplementedError{}
 }
 
 // ListReceivers implements buffer.Service
 func (*service) ListReceivers(dependencies.ForProjectRequest, *buffer.ListReceiversPayload) (res []*buffer.Receiver, err error) {
-	return nil, fmt.Errorf("not yet implemented")
+	return nil, &NotImplementedError{}
 }
 
 // DeleteReceiver implements buffer.Service
 func (*service) DeleteReceiver(dependencies.ForProjectRequest, *buffer.DeleteReceiverPayload) (res *buffer.Receiver, err error) {
-	return nil, fmt.Errorf("not yet implemented")
+	return nil, &NotImplementedError{}
 }
 
 // RefreshReceiverTokens implements buffer.Service
 func (*service) RefreshReceiverTokens(dependencies.ForProjectRequest, *buffer.RefreshReceiverTokensPayload) (res *buffer.Receiver, err error) {
-	return nil, fmt.Errorf("not yet implemented")
+	return nil, &NotImplementedError{}
 }
 
 // CreateExport implements buffer.Service
 func (*service) CreateExport(dependencies.ForProjectRequest, *buffer.CreateExportPayload) (res *buffer.Receiver, err error) {
-	return nil, fmt.Errorf("not yet implemented")
+	return nil, &NotImplementedError{}
 }
 
 // UpdateExport implements buffer.Service
 func (*service) UpdateExport(dependencies.ForProjectRequest, *buffer.UpdateExportPayload) (res *buffer.Receiver, err error) {
-	return nil, fmt.Errorf("not yet implemented")
+	return nil, &NotImplementedError{}
 }
 
 // DeleteExport implements buffer.Service
 func (*service) DeleteExport(dependencies.ForProjectRequest, *buffer.DeleteExportPayload) (res *buffer.Receiver, err error) {
-	return nil, fmt.Errorf("not yet implemented")
+	return nil, &NotImplementedError{}
 }
 
 // Import implements buffer.Service
 func (*service) Import(dependencies.ForPublicRequest, *buffer.ImportPayload, io.ReadCloser) (err error) {
-	return fmt.Errorf("not yet implemented")
+	return &NotImplementedError{}
 }
