@@ -249,7 +249,7 @@ jobs:
       - name: Configure AWS Credentials to KAC Assets Account
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
-          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
+          role-to-assume: arn:aws:iam::455460941449:role/cli-dist-release
           aws-region: eu-central-1
       - name: Release
         run: make release
@@ -356,7 +356,7 @@ jobs:
       - name: Configure AWS Credentials to KAC Assets Account
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
-          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
+          role-to-assume: arn:aws:iam::455460941449:role/cli-dist-release
           aws-region: eu-central-1
       - name: Upload MSI to KAC Assets S3
         env:
@@ -429,7 +429,7 @@ jobs:
       - name: Configure AWS Credentials to KAC Assets AWS
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
-          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
+          role-to-assume: arn:aws:iam::455460941449:role/cli-dist-release
           aws-region: eu-central-1
       - name: Mount KAC Assets S3 Bucket
         uses: ./.github/actions/mount-s3
