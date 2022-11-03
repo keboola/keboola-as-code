@@ -115,7 +115,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	var tracer trace.Tracer = nil
 	if telemetry.IsDataDogEnabled(envs) {
 		tracer = telemetry.NewDataDogTracer()
-		_, span := tracer.Start(serverCtx, "kac.lib.api.server.templates.dependencies.NewServerDeps")
+		_, span := tracer.Start(serverCtx, "kac.lib.api.server.buffer.dependencies.NewServerDeps")
 		defer telemetryUtils.EndSpan(span, &err)
 	}
 
@@ -163,7 +163,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 }
 
 func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, requestId string) ForPublicRequest {
-	_, span := serverDeps.Tracer().Start(requestCtx, "kac.api.server.templates.dependencies.NewDepsForPublicRequest")
+	_, span := serverDeps.Tracer().Start(requestCtx, "kac.api.server.buffer.dependencies.NewDepsForPublicRequest")
 	defer telemetryUtils.EndSpan(span, nil)
 
 	return &forPublicRequest{
@@ -175,7 +175,7 @@ func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, r
 }
 
 func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (ForProjectRequest, error) {
-	ctx, span := publicDeps.Tracer().Start(ctx, "kac.api.server.templates.dependencies.NewDepsForProjectRequest")
+	ctx, span := publicDeps.Tracer().Start(ctx, "kac.api.server.buffer.dependencies.NewDepsForProjectRequest")
 	defer telemetryUtils.EndSpan(span, nil)
 
 	projectDeps, err := dependencies.NewProjectDeps(ctx, publicDeps, publicDeps, tokenStr)
@@ -208,7 +208,7 @@ func (v *forServer) PrefixLogger() log.PrefixLogger {
 
 func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 	return v.etcdClient.InitAndGet(func() (*etcd.Client, error) {
-		ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.EtcdClient")
+		ctx, span := v.Tracer().Start(ctx, "kac.api.server.buffer.dependencies.EtcdClient")
 		defer telemetryUtils.EndSpan(span, nil)
 
 		// Check if etcd is enabled
@@ -334,7 +334,7 @@ func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) c
 	// Create client
 	c := client.New().
 		WithTransport(transport).
-		WithUserAgent("keboola-templates-api")
+		WithUserAgent("keboola-buffer-api")
 
 	// Log each HTTP client request/response as debug message
 	if debug {
