@@ -160,6 +160,7 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	// Set envs
 	p.envs = envs.Clone()
 	p.setEnv(`TEST_KBC_PROJECT_ID`, cast.ToString(p.ID()))
+	p.setEnv(`TEST_KBC_PROJECT_STAGING_STORAGE`, p.Project.StagingStorage())
 	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.Project.StorageAPIHost())
 	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.Project.StorageAPIToken())
 	p.logf(`■ ️Initialization done.`)

@@ -62,7 +62,7 @@ func (s Sender) sendCmdSuccessfulEvent(ctx context.Context, cmdStart time.Time, 
 		ComponentID: componentID,
 		Type:        "info",
 		Message:     msg,
-		Duration:    storageapi.DurationSeconds(duration),
+		Duration:    client.DurationSeconds(duration),
 		Params:      params,
 		Results:     results,
 	}).Send(ctx, s.client)
@@ -87,7 +87,7 @@ func (s Sender) sendCmdFailedEvent(ctx context.Context, cmdStart time.Time, err 
 		ComponentID: componentID,
 		Type:        "error",
 		Message:     msg,
-		Duration:    storageapi.DurationSeconds(duration),
+		Duration:    client.DurationSeconds(duration),
 		Params:      params,
 		Results:     results,
 	}).Send(ctx, s.client)
