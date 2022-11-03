@@ -23,17 +23,17 @@ release-local: prepare
 	goreleaser release --rm-dist --snapshot --skip-publish -f ./build/ci/goreleaser.yml
 
 TEMPLATES_API_BUILD_TARGET_PATH ?= "./target/templates-api/server"
-build-templates-api: prepare
+build-templates-api: generate-templates-api
 	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o $(TEMPLATES_API_BUILD_TARGET_PATH) ./cmd/templates-api
 
-run-templates-api: prepare
+run-templates-api: generate-templates-api
 	air -c ./provisioning/templates-api/dev/.air-templates-api.toml
 
 BUFFER_API_BUILD_TARGET_PATH ?= "./target/buffer-api/server"
-build-buffer-api: prepare
+build-buffer-api: generate-buffer-api
 	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o $(BUFFER_API_BUILD_TARGET_PATH) ./cmd/buffer-api
 
-run-buffer-api: prepare
+run-buffer-api: generate-buffer-api
 	air -c ./provisioning/buffer-api/dev/.air-buffer-api.toml
 
 tests: prepare
@@ -54,10 +54,10 @@ tests-cli: prepare
 tests-cli-verbose: prepare
 	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh -run TestCliE2E
 
-tests-templates-api: prepare
+tests-templates-api: generate-templates-api
 	TEST_VERBOSE=false TEST_LOG_FORMAT=standard-verbose TEST_PACKAGE=./test/api/templates/... bash ./scripts/tests.sh -run TestApiE2E
 
-tests-templates-api-verbose: prepare
+tests-templates-api-verbose: generate-templates-api
 	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/api/templates/... bash ./scripts/tests.sh -run TestApiE2E
 
 mod: prepare
