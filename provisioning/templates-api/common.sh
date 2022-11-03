@@ -35,6 +35,7 @@ helm upgrade \
   --version "$ETCD_HELM_CHART_VERSION" \
   --values ./kubernetes/deploy/etcd/values.yaml \
   --namespace templates-api \
+  --set "replicaCount=$TEMPLATES_API_ETCD_REPLICAS" \
   --set "auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD"
 
 # API
