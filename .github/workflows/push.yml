@@ -10,30 +10,37 @@ env:
   # Test projects in KBC for integration tests
   # Project name: KBC Internal / [ ci ] Keboola-as-code 1 .. 18
   TEST_KBC_PROJECTS_LINUX: |
-    connection.keboola.com|8763|${{ secrets.TEST_KBC_PROJECT_8763_TOKEN }};
-    connection.keboola.com|8764|${{ secrets.TEST_KBC_PROJECT_8764_TOKEN }};
-    connection.keboola.com|8765|${{ secrets.TEST_KBC_PROJECT_8765_TOKEN }};
-    connection.keboola.com|8766|${{ secrets.TEST_KBC_PROJECT_8766_TOKEN }};
-    connection.keboola.com|8768|${{ secrets.TEST_KBC_PROJECT_8768_TOKEN }};
-    connection.keboola.com|8769|${{ secrets.TEST_KBC_PROJECT_8769_TOKEN }};
+    [
+      {"host":"connection.keboola.com","project":8763,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8763_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8764,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8764_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8765,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8765_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8766,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8766_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8768,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8768_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8769,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8769_TOKEN }}"}
+    ]
   TEST_KBC_PROJECTS_MACOS: |
-    connection.keboola.com|8770|${{ secrets.TEST_KBC_PROJECT_8770_TOKEN }};
-    connection.keboola.com|8771|${{ secrets.TEST_KBC_PROJECT_8771_TOKEN }};
-    connection.keboola.com|8772|${{ secrets.TEST_KBC_PROJECT_8772_TOKEN }};
-    connection.keboola.com|8773|${{ secrets.TEST_KBC_PROJECT_8773_TOKEN }};
-    connection.keboola.com|8776|${{ secrets.TEST_KBC_PROJECT_8776_TOKEN }};
-    connection.keboola.com|8775|${{ secrets.TEST_KBC_PROJECT_8775_TOKEN }};
+    [
+      {"host":"connection.keboola.com","project":8770,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8770_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8771,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8771_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8772,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8772_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8773,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8773_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8776,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8776_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8775,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8775_TOKEN }}"}
+    ]
   TEST_KBC_PROJECTS_WINDOWS: |
-    connection.keboola.com|8777|${{ secrets.TEST_KBC_PROJECT_8777_TOKEN }};
-    connection.keboola.com|8778|${{ secrets.TEST_KBC_PROJECT_8778_TOKEN }};
-    connection.keboola.com|8779|${{ secrets.TEST_KBC_PROJECT_8779_TOKEN }};
-    connection.keboola.com|8780|${{ secrets.TEST_KBC_PROJECT_8780_TOKEN }};
-    connection.keboola.com|8781|${{ secrets.TEST_KBC_PROJECT_8781_TOKEN }};
-    connection.keboola.com|8782|${{ secrets.TEST_KBC_PROJECT_8782_TOKEN }};
+    [
+      {"host":"connection.keboola.com","project":8777,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8777_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8778,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8778_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8779,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8779_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8780,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8780_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8781,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8781_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8782,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8782_TOKEN }}"}
+    ]
 
   # S3 Repository in KAC Assets Account
   AWS_REGION: us-east-1
   CLI_DIST_AWS_BUCKET_NAME: cli-dist-keboola-com
+  CLI_DIST_BASE_URL: "https://cli-dist.keboola.com"
 
   # WinGet packages
   WINGET_PACKAGES_REPO_FORK: "keboola/winget-pkgs"
@@ -43,8 +50,6 @@ env:
   APPLE_BUNDLE_ID: "com.keboola.kbc"
   APPLE_TEAM_ID: "46P6KJ65M2"
   APPLE_TEAM_NAME: "Keboola Industries SE"
-
-  DIST_BASE_URL: "https://keboola-as-code-dist.s3.amazonaws.com"
 
   SERVICE_IMAGE_NAME: "keboola/templates-api"
   SERVICE_ECR_REPOSITORY: "keboola/templates-api"
@@ -243,7 +248,7 @@ jobs:
       - name: Configure AWS Credentials to KAC Assets Account
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
-          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
+          role-to-assume: arn:aws:iam::455460941449:role/cli-dist-release
           aws-region: eu-central-1
       - name: Release
         run: make release
@@ -350,7 +355,7 @@ jobs:
       - name: Configure AWS Credentials to KAC Assets Account
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
-          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
+          role-to-assume: arn:aws:iam::455460941449:role/cli-dist-release
           aws-region: eu-central-1
       - name: Upload MSI to KAC Assets S3
         env:
@@ -423,7 +428,7 @@ jobs:
       - name: Configure AWS Credentials to KAC Assets AWS
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
-          role-to-assume: arn:aws:iam::455460941449:role/kbc-github-actions-admin-role
+          role-to-assume: arn:aws:iam::455460941449:role/cli-dist-release
           aws-region: eu-central-1
       - name: Mount KAC Assets S3 Bucket
         uses: ./.github/actions/mount-s3
@@ -475,7 +480,7 @@ jobs:
           New-Item -ItemType "directory" -Path ".\build\package\chocolatey\push"
           New-Item -ItemType "directory" -Path ".\build\package\chocolatey\push\tools"
           cd .\build\package\chocolatey\push
-          $url="$env:DIST_BASE_URL/msi/$env:MSI_FILE"
+          $url="$env:CLI_DIST_BASE_URL/msi/$env:MSI_FILE"
           ((Get-Content -path ..\keboola-cli.nuspec -Raw) -replace '{VERSION}',$env:VERSION) | Set-Content -Path .\keboola-cli.nuspec
           ((Get-Content -path ..\chocolateyinstall.ps1 -Raw) -replace '{URL}',$url -replace '{CHECKSUM}',$env:MSI_CHECKSUM) | Set-Content -Path .\tools\chocolateyinstall.ps1
           choco apikey -k $env:CHOCOLATEY_KEY -s https://push.chocolatey.org/
@@ -498,7 +503,7 @@ jobs:
           VERSION: ${{ needs.set-version.outputs.version }}
         run: |
           curl -kLSs https://aka.ms/wingetcreate/latest -o wingetcreate.exe
-          msiUrl="${DIST_BASE_URL}/msi/${MSI_FILE}"
+          msiUrl="${CLI_DIST_BASE_URL}/msi/${MSI_FILE}"
           ./wingetcreate.exe update -v $VERSION -u $msiUrl -t $GITHUB_TOKEN Keboola.KeboolaCLI -s
 
   test-install-linux:
@@ -610,7 +615,7 @@ jobs:
         env:
           MSI_FILE: ${{ needs.release-msi-windows.outputs.msi_file }}
         run: |
-          curl "${DIST_BASE_URL}/msi/${MSI_FILE}" --output install.msi
+          curl "${CLI_DIST_BASE_URL}/msi/${MSI_FILE}" --output install.msi
       - name: Install on Windows from MSI
         shell: bash
         run: |
