@@ -17,17 +17,22 @@ func New() Service {
 
 // APIRootIndex implements buffer.Service
 func (*service) APIRootIndex(dependencies.ForPublicRequest) (err error) {
-	return fmt.Errorf("not yet implemented")
+	// Redirect / -> /v1
+	return nil
 }
 
 // APIVersionIndex implements buffer.Service
 func (*service) APIVersionIndex(dependencies.ForPublicRequest) (res *buffer.ServiceDetail, err error) {
-	return nil, fmt.Errorf("not yet implemented")
+	res = &ServiceDetail{
+		API:           "buffer",
+		Documentation: "https://buffer.keboola.com/v1/documentation",
+	}
+	return res, nil
 }
 
 // HealthCheck implements buffer.Service
 func (*service) HealthCheck(dependencies.ForPublicRequest) (res string, err error) {
-	return "", fmt.Errorf("not yet implemented")
+	return "OK", nil
 }
 
 // CreateReceiver implements buffer.Service
