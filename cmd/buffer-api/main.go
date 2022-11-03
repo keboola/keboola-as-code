@@ -50,7 +50,7 @@ func main() {
 	// Start DataDog tracer.
 	if envs.Get("DATADOG_ENABLED") != "false" {
 		tracer.Start(
-			tracer.WithServiceName("templates-api"),
+			tracer.WithServiceName("buffer-api"),
 			tracer.WithLogger(ddLogger{logger}),
 			tracer.WithRuntimeMetrics(),
 			tracer.WithAnalytics(true),
