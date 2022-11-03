@@ -1,8 +1,6 @@
 name: 'Provisioning: Templates API'
 on:
   pull_request:
-    branches:
-      - main
     paths:
       - provisioning/templates-api/**
 
