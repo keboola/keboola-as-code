@@ -82,3 +82,17 @@ jobs:
         if: always()
         run: |
           curl --fail -L -s "$(minikube service --url --namespace templates-api templates-api)"
+      - name: Test etcd defragmentation cron job
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          kubectl create job --namespace templates-api --from=cronjob/templates-api-etcd-defrag test-defrag-job
+          if kubectl wait --namespace templates-api --for=condition=complete --timeout=30s job/test-defrag-job; then
+            echo "The job succeed, logs:"
+            kubectl logs --namespace templates-api --selector="job-name=test-defrag-job"
+            exit 0
+          else
+            echo "The job failed, logs:"
+            kubectl logs --namespace templates-api --selector="job-name=test-defrag-job"
+            exit 1
+          fi
