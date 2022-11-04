@@ -6,7 +6,7 @@ on:
 
 env:
   MINIKUBE_PROFILE: templates-api
-  ETCD_ENDPOINT: templates-api-etcd:2379
+  ETCD_ENDPOINT: templates-api-etcd-headless.templates-api.svc.cluster.local:2379
 
 defaults:
   run:
@@ -57,12 +57,13 @@ jobs:
         if: always()
         run: |
           set -Eeuo pipefail
+          kubectl create namespace datadog
           kubectl run --attach --rm --restart=Never check-etcd-other-data-dog \
-          --namespace templates-api \
+          --namespace datadog \
           --image docker.io/alpine/curl \
           --labels="app=datadog-agent" \
           --env="ETCD_ENDPOINT=$ETCD_ENDPOINT" \
-          --command -- sh -c "set -eo pipefail; curl -f -L --max-time 15 "$ETCD_ENDPOINT/metrics" | tail" | tail
+          --command -- sh -c "set -eo pipefail; curl -f -L --max-time 15 "$ETCD_ENDPOINT/metrics" | tail"
       - name: Check forbidden access to the etcd from other places
         if: always()
         run: |

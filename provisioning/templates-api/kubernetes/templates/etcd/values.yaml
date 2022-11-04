@@ -58,7 +58,10 @@ networkPolicy:
   - ports:
       - port: 2379
     from:
-      - podSelector:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: datadog
+        podSelector:
           matchLabels:
             app: datadog-agent
 
