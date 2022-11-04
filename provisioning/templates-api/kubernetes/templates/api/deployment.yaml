@@ -107,16 +107,3 @@ spec:
           effect: NoSchedule
       nodeSelector:
         nodepool: main
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: templates-api-pdb
-  namespace: templates-api
-  labels:
-    app: templates-api
-spec:
-  maxUnavailable: 1
-  selector:
-    matchLabels:
-      app: templates-api

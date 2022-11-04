@@ -33,10 +33,12 @@ helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
 helm upgrade \
   --install templates-api-etcd bitnami/etcd \
   --version "$ETCD_HELM_CHART_VERSION" \
-  --values ./kubernetes/deploy/etcd-values.yaml \
+  --values ./kubernetes/deploy/etcd/values.yaml \
   --namespace templates-api \
+  --set "replicaCount=$TEMPLATES_API_ETCD_REPLICAS" \
   --set "auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD"
 
-# Deploy templates API
-kubectl apply -f ./kubernetes/deploy/config-map.yaml
-kubectl apply -f ./kubernetes/deploy/templates-api.yaml
+# API
+kubectl apply -f ./kubernetes/deploy/api/config-map.yaml
+kubectl apply -f ./kubernetes/deploy/api/pdb.yaml
+kubectl apply -f ./kubernetes/deploy/api/deployment.yaml

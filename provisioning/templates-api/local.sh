@@ -38,7 +38,7 @@ echo "--------------------------"
 . common.sh
 
 # Local specific part of the deploy
-kubectl apply -f ./kubernetes/deploy/local/service.yaml
+kubectl apply -f ./kubernetes/deploy/cloud/local/service.yaml
 
 # Wait for the deployment
 . ./wait.sh

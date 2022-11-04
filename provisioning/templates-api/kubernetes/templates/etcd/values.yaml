@@ -26,8 +26,6 @@ resources:
   limits:
     memory: "256Mi"
 
-replicaCount: $TEMPLATES_API_ETCD_REPLICAS
-
 # Keep 15 minutes of history, see https://etcd.io/docs/v3.5/op-guide/maintenance/#auto-compaction.
 # etcd uses MVCC - multi version concurrency control.
 # All previous versions of the database state are kept.
@@ -56,13 +54,13 @@ networkPolicy:
   enabled: true
   allowExternal: false
   extraIngress:
-   # Allow DataDog HTTP calls to the /metrics
-   - ports:
-       - port: 2379
-     from:
-       - podSelector:
-           matchLabels:
-             app: datadog-agent
+  # Allow DataDog HTTP calls to the /metrics
+  - ports:
+      - port: 2379
+    from:
+      - podSelector:
+          matchLabels:
+            app: datadog-agent
 
 persistence:
   enabled: true
