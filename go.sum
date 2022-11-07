@@ -517,8 +517,8 @@ go4.org/unsafe/assume-no-moving-gc v0.0.0-20220617031537-928513b29760 h1:FyBZqvo
 go4.org/unsafe/assume-no-moving-gc v0.0.0-20220617031537-928513b29760/go.mod h1:FftLjUGFEDu5k8lt0ddY+HcrH/qU/0qk+H8j9/nTl3E=
 goa.design/goa/v3 v3.10.2 h1:wb6wUsraGTfA+C9lcwGqgp8ksaLVkyuofl8kQM6RRvA=
 goa.design/goa/v3 v3.10.2/go.mod h1:2Wz3eUgGUcniNuEns8ppaRFK7uijE8Tns4yoyc4B0P4=
-goa.design/plugins/v3 v3.10.1 h1:bbekXOQ/4nevN/kF65JUL/nO4HixIvn7JoEigzV/gcc=
-goa.design/plugins/v3 v3.10.1/go.mod h1:+o71BwalF3CYhwJOjgSn+4xmrrFS8KuTOqJv2hFmRys=
+goa.design/plugins/v3 v3.10.2 h1:A2Aai9rHdib8CPwA2Hdqkici2QOtmgZBqD50x0himq8=
+goa.design/plugins/v3 v3.10.2/go.mod h1:sAKNDwq5Rhi6sHydqcgr5edzRwg9U0s69joYmowvkhs=
 golang.org/dl v0.0.0-20190829154251-82a15e2f2ead/go.mod h1:IUMfjQLJQd4UTqG1Z90tenwKoCX93Gn3MAQJMOSBsDQ=
 golang.org/x/crypto v0.0.0-20180904163835-0709b304e793/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
