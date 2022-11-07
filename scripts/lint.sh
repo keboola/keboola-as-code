@@ -22,7 +22,8 @@ fi
 # Check modules
 echo "Running go mod tidy/verify ..."
 go mod tidy
-git diff --exit-code -- go.mod go.sum
+git diff --exit-code -- go.mod
+git diff --exit-code -- go.sum
 go mod verify
 echo "Ok. go.mod and go.sum are valid."
 echo
