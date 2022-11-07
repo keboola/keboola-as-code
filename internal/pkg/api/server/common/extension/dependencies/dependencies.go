@@ -31,19 +31,19 @@ func RegisterPlugin(pkgPath string) {
 						// Add dependencies to the service interface, instead of context (it is included in dependencies)
 						search := `{{ .VarName }}(context.Context`
 						replace := `{{ .VarName }}(
-	{{- $authFound := false}}
-	{{- range .Requirements }}
-		{{- range .Schemes }}
-			{{- if eq .Type "APIKey" -}}
-				dependencies.ForProjectRequest
-				{{- $authFound = true}}
-				{{- break}}
-			{{- end }}
+{{- $authFound := false}}
+{{- range .Requirements }}
+	{{- range .Schemes }}
+		{{- if eq .Type "APIKey" -}}
+			dependencies.ForProjectRequest
+			{{- $authFound = true}}
+			{{- break}}
 		{{- end }}
 	{{- end }}
-	{{- if eq $authFound false -}}
-	dependencies.ForPublicRequest
-	{{- end -}}
+{{- end }}
+{{- if eq $authFound false -}}
+dependencies.ForPublicRequest
+{{- end -}}
 	`
 						s.Source = strings.ReplaceAll(s.Source, search, replace)
 					}
@@ -57,23 +57,23 @@ func RegisterPlugin(pkgPath string) {
 					case "endpoint-method":
 
 						search := `
-	{{- if .ServerStream }}
+{{- if .ServerStream }}
 	`
 						replace := `
-	{{- $authFound := false}}
-	{{- range .Requirements }}
-		{{- range .Schemes }}
-			{{- if eq .Type "APIKey" }}
-				deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
-				{{- $authFound = true}}
-				{{- break}}
-			{{- end }}
+{{- $authFound := false}}
+{{- range .Requirements }}
+	{{- range .Schemes }}
+		{{- if eq .Type "APIKey" }}
+			deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+			{{- $authFound = true}}
+			{{- break}}
 		{{- end }}
 	{{- end }}
-	{{- if eq $authFound false }}
-		deps := ctx.Value(dependencies.ForPublicRequestCtxKey).(dependencies.ForPublicRequest)
-	{{- end }}
-	{{- if .ServerStream }}
+{{- end }}
+{{- if eq $authFound false }}
+	deps := ctx.Value(dependencies.ForPublicRequestCtxKey).(dependencies.ForPublicRequest)
+{{- end }}
+{{- if .ServerStream }}
 	`
 						s.Source = strings.ReplaceAll(s.Source, search, replace)
 
