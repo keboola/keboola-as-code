@@ -33,8 +33,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-// TestTemplatesApiE2E runs one functional test per each subdirectory.
-func TestTemplatesApiE2E(t *testing.T) {
+// TestBufferApiE2E runs one functional test per each subdirectory.
+func TestBufferApiE2E(t *testing.T) {
 	t.Parallel()
 
 	if runtime.GOOS == "windows" {
@@ -108,7 +108,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
 	t.Helper()
 
-	binaryPath := filepath.Join(tempDir, "/templates-api")
+	binaryPath := filepath.Join(tempDir, "/buffer-api")
 	if runtime.GOOS == "windows" {
 		binaryPath += `.exe`
 	}
@@ -116,12 +116,12 @@ func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
 	// Envs
 	envs, err := env.FromOs()
 	assert.NoError(t, err)
-	envs.Set("TEMPLATES_API_BUILD_TARGET_PATH", binaryPath)
+	envs.Set("BUFFER_API_BUILD_TARGET_PATH", binaryPath)
 	envs.Set("SKIP_API_CODE_REGENERATION", "1")
 
 	// Build binary
 	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("make", "build-templates-api")
+	cmd := exec.Command("make", "build-buffer-api")
 	cmd.Dir = projectDir
 	cmd.Env = envs.ToSlice()
 	cmd.Stdout = &stdout
@@ -178,7 +178,7 @@ func waitForAPI(cmdErrCh <-chan error, apiUrl string) error {
 }
 
 // RunApiServer runs the compiled api binary on the background.
-func RunApiServer(t *testing.T, binary string, storageApiHost string, repositories string) (apiUrl string, stdout, stderr *cmdOut) {
+func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl string, stdout, stderr *cmdOut) {
 	t.Helper()
 
 	// Get a free port
@@ -189,7 +189,7 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string, repositori
 
 	// Args
 	apiUrl = fmt.Sprintf("http://localhost:%d", port)
-	args := []string{fmt.Sprintf("--http-port=%d", port), fmt.Sprintf("--repositories=%s", repositories)}
+	args := []string{fmt.Sprintf("--http-port=%d", port)}
 
 	// Envs
 	envs := env.Empty()
@@ -251,16 +251,8 @@ func RunRequests(
 ) {
 	t.Helper()
 
-	// Testing templates repositories
-	var repositories string
-	if testDirFs.Exists("repository") {
-		repositories = fmt.Sprintf("keboola|file://%s", filepath.Join(testDirFs.BasePath(), "repository"))
-	} else {
-		repositories = "keboola|https://github.com/keboola/keboola-as-code-templates.git|main"
-	}
-
 	// Run API server
-	apiUrl, stdout, stderr := RunApiServer(t, binary, project.StorageAPIHost(), repositories)
+	apiUrl, stdout, stderr := RunApiServer(t, binary, project.StorageAPIHost())
 	client := resty.New()
 	client.SetBaseURL(apiUrl)
 
@@ -308,6 +300,7 @@ func RunRequests(
 		// Decode && encode json to unite indentation of the response with expected-response.json
 		respMap := orderedmap.New()
 		if resp.String() != "" {
+			fmt.Println("RESP", resp.String())
 			err = json.DecodeString(resp.String(), &respMap)
 		}
 		assert.NoError(t, err)
