@@ -98,7 +98,7 @@ defragmentation:
     ## @param defragmentation.cronjob.schedule Schedule in Cron format to run defragmentation
     ## See https://en.wikipedia.org/wiki/Cron
     ##
-    schedule: "* */24 * * *"
+    schedule: "0 */24 * * *"
     ## @param defragmentation.cronjob.historyLimit Number of successful finished jobs to retain
     ##
     historyLimit: 1
