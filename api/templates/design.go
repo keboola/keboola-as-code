@@ -10,7 +10,7 @@ import (
 	cors "goa.design/plugins/v3/cors/dsl"
 
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/anytype"
-	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/dependencies"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/genericerror"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/oneof"
@@ -20,6 +20,11 @@ import (
 )
 
 // API definition ------------------------------------------------------------------------------------------------------
+
+// nolint: gochecknoinits
+func init() {
+	dependencies.RegisterPlugin("github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies")
+}
 
 var _ = API("templates", func() {
 	Title("Templates Service")

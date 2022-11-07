@@ -9,27 +9,28 @@ import (
 	"goa.design/goa/v3/eval"
 )
 
-const PkgPath = "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
+func RegisterPlugin(pkgPath string) {
+	addPackageImport := func(s *codegen.SectionTemplate) {
+		data := s.Data.(map[string]interface{})
+		imports := data["Imports"].([]*codegen.ImportSpec)
+		imports = append(imports, &codegen.ImportSpec{Name: "dependencies", Path: pkgPath})
+		data["Imports"] = imports
+	}
 
-// nolint: gochecknoinits
-func init() {
-	codegen.RegisterPluginFirst("api-dependencies", "gen", nil, generate)
-}
-
-func generate(_ string, _ []eval.Root, files []*codegen.File) ([]*codegen.File, error) {
-	for _, f := range files {
-		// nolint: forbidigo
-		switch filepath.Base(f.Path) {
-		case "service.go":
-			for _, s := range f.SectionTemplates {
-				switch s.Name {
-				case "source-header":
-					// Import dependencies package
-					addPackageImport(s)
-				case "service":
-					// Add dependencies to the service interface, instead of context (it is included in dependencies)
-					search := `{{ .VarName }}(context.Context`
-					replace := `{{ .VarName }}(
+	generate := func(genpkg string, roots []eval.Root, files []*codegen.File) ([]*codegen.File, error) {
+		for _, f := range files {
+			// nolint: forbidigo
+			switch filepath.Base(f.Path) {
+			case "service.go":
+				for _, s := range f.SectionTemplates {
+					switch s.Name {
+					case "source-header":
+						// Import dependencies package
+						addPackageImport(s)
+					case "service":
+						// Add dependencies to the service interface, instead of context (it is included in dependencies)
+						search := `{{ .VarName }}(context.Context`
+						replace := `{{ .VarName }}(
 {{- $authFound := false}}
 {{- range .Requirements }}
 	{{- range .Schemes }}
@@ -43,22 +44,22 @@ func generate(_ string, _ []eval.Root, files []*codegen.File) ([]*codegen.File, 
 {{- if eq $authFound false -}}
 dependencies.ForPublicRequest
 {{- end -}}
-`
-					s.Source = strings.ReplaceAll(s.Source, search, replace)
+	`
+						s.Source = strings.ReplaceAll(s.Source, search, replace)
+					}
 				}
-			}
-		case "endpoints.go":
-			for _, s := range f.SectionTemplates {
-				switch s.Name {
-				case "source-header":
-					// Import dependencies package
-					addPackageImport(s)
-				case "endpoint-method":
+			case "endpoints.go":
+				for _, s := range f.SectionTemplates {
+					switch s.Name {
+					case "source-header":
+						// Import dependencies package
+						addPackageImport(s)
+					case "endpoint-method":
 
-					search := `
+						search := `
 {{- if .ServerStream }}
-`
-					replace := `
+	`
+						replace := `
 {{- $authFound := false}}
 {{- range .Requirements }}
 	{{- range .Schemes }}
@@ -73,25 +74,21 @@ dependencies.ForPublicRequest
 	deps := ctx.Value(dependencies.ForPublicRequestCtxKey).(dependencies.ForPublicRequest)
 {{- end }}
 {{- if .ServerStream }}
-`
-					s.Source = strings.ReplaceAll(s.Source, search, replace)
+	`
+						s.Source = strings.ReplaceAll(s.Source, search, replace)
 
-					// Add dependencies to the service method call, instead of context (it is included in dependencies)
-					s.Source = strings.ReplaceAll(
-						s.Source,
-						"s.{{ .VarName }}(ctx",
-						"s.{{ .VarName }}(deps",
-					)
+						// Add dependencies to the service method call, instead of context (it is included in dependencies)
+						s.Source = strings.ReplaceAll(
+							s.Source,
+							"s.{{ .VarName }}(ctx",
+							"s.{{ .VarName }}(deps",
+						)
+					}
 				}
 			}
 		}
+		return files, nil
 	}
-	return files, nil
-}
 
-func addPackageImport(s *codegen.SectionTemplate) {
-	data := s.Data.(map[string]interface{})
-	imports := data["Imports"].([]*codegen.ImportSpec)
-	imports = append(imports, &codegen.ImportSpec{Name: "dependencies", Path: PkgPath})
-	data["Imports"] = imports
+	codegen.RegisterPluginFirst("api-dependencies", "gen", nil, generate)
 }

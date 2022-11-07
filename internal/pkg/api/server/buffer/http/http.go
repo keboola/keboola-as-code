@@ -12,17 +12,17 @@ import (
 	httpMiddleware "goa.design/goa/v3/http/middleware"
 	dataDog "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/gen/buffer"
+	bufferSvr "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/gen/http/buffer/server"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/openapi"
 	commonHttp "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/http"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
-	templatesSvr "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/http/templates/server"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/openapi"
 	swaggerui "github.com/keboola/keboola-as-code/third_party"
 )
 
 // HandleHTTPServer starts configures and starts a HTTP server on the given
 // URL. It shuts down the server if any error is received in the error channel.
-func HandleHTTPServer(ctx context.Context, d dependencies.ForServer, u *url.URL, endpoints *templates.Endpoints, errCh chan error, logger *log.Logger, debug bool) {
+func HandleHTTPServer(ctx context.Context, d dependencies.ForServer, u *url.URL, endpoints *buffer.Endpoints, errCh chan error, logger *log.Logger, debug bool) {
 	// Trace endpoint start, finish and error
 	endpoints.Use(TraceEndpointsMiddleware(d))
 
@@ -36,21 +36,21 @@ func HandleHTTPServer(ctx context.Context, d dependencies.ForServer, u *url.URL,
 	// responses.
 	docsFs := http.FS(openapi.Fs)
 	swaggerUiFs := http.FS(swaggerui.SwaggerFS)
-	templatesServer := templatesSvr.New(endpoints, mux, commonHttp.NewDecoder(), commonHttp.NewEncoder(d.Logger(), writeError), errorHandler(), errorFormatter(), docsFs, docsFs, docsFs, docsFs, swaggerUiFs)
+	bufferServer := bufferSvr.New(endpoints, mux, commonHttp.NewDecoder(), commonHttp.NewEncoder(d.Logger(), writeError), errorHandler(), errorFormatter(), docsFs, docsFs, docsFs, docsFs, swaggerUiFs)
 	if debug {
-		servers := goaHTTP.Servers{templatesServer}
+		servers := goaHTTP.Servers{bufferServer}
 		servers.Use(httpMiddleware.Debug(mux, os.Stdout))
 	}
 
 	// Configure the mux.
-	templatesSvr.Mount(mux, templatesServer)
+	bufferSvr.Mount(mux, bufferServer)
 
 	// Wrap the multiplexer with additional middlewares. Middlewares mounted
 	// here apply to all the service endpoints.
 	var handler http.Handler = mux
 	handler = LogMiddleware(d, handler)
 	handler = ContextMiddleware(d, handler)
-	handler = dataDog.WrapHandler(handler, "templates-api", "", dataDog.WithIgnoreRequest(func(r *http.Request) bool {
+	handler = dataDog.WrapHandler(handler, "buffer-api", "", dataDog.WithIgnoreRequest(func(r *http.Request) bool {
 		// Trace all requests except health check
 		return r.URL.Path == "/health-check"
 	}))
@@ -62,7 +62,7 @@ func HandleHTTPServer(ctx context.Context, d dependencies.ForServer, u *url.URL,
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
-	for _, m := range templatesServer.Mounts {
+	for _, m := range bufferServer.Mounts {
 		logger.Printf("HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 	}
 
