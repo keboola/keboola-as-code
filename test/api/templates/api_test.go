@@ -33,8 +33,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-// TestApiE2E runs one functional test per each subdirectory.
-func TestApiE2E(t *testing.T) {
+// TestTemplatesApiE2E runs one functional test per each subdirectory.
+func TestTemplatesApiE2E(t *testing.T) {
 	t.Parallel()
 
 	if runtime.GOOS == "windows" {
@@ -108,7 +108,7 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
 	t.Helper()
 
-	binaryPath := filepath.Join(tempDir, "/server")
+	binaryPath := filepath.Join(tempDir, "/templates-api")
 	if runtime.GOOS == "windows" {
 		binaryPath += `.exe`
 	}
