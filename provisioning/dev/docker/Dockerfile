@@ -1,4 +1,4 @@
-FROM golang:1.19.2-alpine3.16
+FROM golang:1.19.2
 
 ENV HOME=/my-home
 ENV GOMEMLIMIT=512MiB
