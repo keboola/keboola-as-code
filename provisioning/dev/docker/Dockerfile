@@ -8,8 +8,8 @@ ENV GOFLAGS="-mod=mod"
 ENV GOLANGCI_LINT_CACHE=/tmp/cache/golangci-lint
 ENV PATH="$PATH:$GOPATH/bin"
 
-# Install editor
-RUN apt-get update && apt-get install -y nano
+# Install dependencies
+RUN apk add -U --no-cache bash make curl nano openssl git gcc musl-dev
 ENV EDITOR=nano
 
 # Install tools

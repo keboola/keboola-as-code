@@ -1,6 +1,7 @@
 .git
 .github
 .idea
+.env*
 build
 docs
 provisioning
