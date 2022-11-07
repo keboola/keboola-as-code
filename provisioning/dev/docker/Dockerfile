@@ -1,4 +1,4 @@
-FROM golang:1.19.2-alpine3.16
+FROM golang:1.19.2
 
 ENV HOME=/my-home
 ENV GOMEMLIMIT=512MiB
@@ -8,8 +8,8 @@ ENV GOFLAGS="-mod=mod"
 ENV GOLANGCI_LINT_CACHE=/tmp/cache/golangci-lint
 ENV PATH="$PATH:$GOPATH/bin"
 
-# Install dependencies
-RUN apk add -U --no-cache bash make curl nano openssl git gcc musl-dev
+# Install editor
+RUN apt-get update && apt-get install -y nano
 ENV EDITOR=nano
 
 # Install tools
