@@ -21,11 +21,18 @@ services:
       - KBC_STORAGE_API_HOST
       # Disable DataDog integration
       - DATADOG_ENABLED=false
-      # Etcd
-      - ETCD_ENABLED=true
-      - ETCD_ENDPOINT=etcd:2379
-      - ETCD_USERNAME=root
-      - ETCD_PASSWORD=toor
+      # Etcd for the Templates API
+      - TEMPLATES_API_ETCD_ENABLED=true
+      - TEMPLATES_API_ETCD_ENDPOINT=etcd:2379
+      - TEMPLATES_API_ETCD_USERNAME=root
+      - TEMPLATES_API_ETCD_PASSWORD=toor
+      - TEMPLATES_API_ETCD_NAMESPACE=templates-api
+      # Etcd for the Buffer API and Worker
+      - BUFFER_ETCD_ENABLED=true
+      - BUFFER_ETCD_ENDPOINT=etcd:2379
+      - BUFFER_ETCD_USERNAME=root
+      - BUFFER_ETCD_PASSWORD=toor
+      - BUFFER_ETCD_NAMESPACE=buffer
     ports:
       - "8000:8000"
       - "6060:6060"
