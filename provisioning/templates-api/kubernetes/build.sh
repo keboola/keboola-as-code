@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 envsubst < templates/namespace.yaml > deploy/namespace.yaml
 
 # Etcd
-cp templates/etcd/values.yaml deploy/etcd/values.yaml
+cp ../../common/etcd/values.yaml deploy/etcd/values.yaml
 
 # API
 envsubst < templates/api/config-map.yaml > deploy/api/config-map.yaml
