@@ -37,8 +37,9 @@ spec:
           ports:
             - containerPort: 8000
           env:
+            # 80% of the resources.limits.memory
             - name: GOMEMLIMIT
-              value: "512MiB"
+              value: "400MiB"
             - name: KBC_STORAGE_API_HOST
               valueFrom:
                 configMapKeyRef:
