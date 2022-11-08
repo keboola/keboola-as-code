@@ -28,12 +28,12 @@ require (
 	github.com/kylelemons/godebug v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/relvacode/iso8601 v1.1.0
-	github.com/santhosh-tekuri/jsonschema/v5 v5.0.1
+	github.com/santhosh-tekuri/jsonschema/v5 v5.0.2
 	github.com/spf13/afero v1.9.2
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.13.0
+	github.com/spf13/viper v1.14.0
 	github.com/stretchr/testify v1.8.1
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
 	github.com/writeas/go-strip-markdown v2.0.1+incompatible
@@ -43,9 +43,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.11.1
 	go.uber.org/zap v1.23.0
 	goa.design/goa/v3 v3.10.2
-	goa.design/plugins/v3 v3.10.1
+	goa.design/plugins/v3 v3.10.2
 	golang.org/x/sync v0.1.0
-	gopkg.in/DataDog/dd-trace-go.v1 v1.43.0
+	gopkg.in/DataDog/dd-trace-go.v1 v1.43.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	v.io/x/lib v0.1.10
 )
@@ -133,7 +133,7 @@ require (
 	go4.org/intern v0.0.0-20220617035311-6925f38cc365 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20220617031537-928513b29760 // indirect
 	golang.org/x/image v0.0.0-20220902085622-e7cb96979f69 // indirect
-	google.golang.org/genproto v0.0.0-20221010155953-15ba04fc1c0e // indirect
+	google.golang.org/genproto v0.0.0-20221024183307-1bc688fe9f3e // indirect
 	google.golang.org/grpc v1.50.1 // indirect
 	inet.af/netaddr v0.0.0-20220811202034-502d2d690317 // indirect
 )
