@@ -67,6 +67,7 @@ type ForServer interface {
 	ServerWaitGroup() *sync.WaitGroup
 	PrefixLogger() log.PrefixLogger
 	EtcdClient(ctx context.Context) (*etcd.Client, error)
+	ConfigStore(ctx context.Context) (*ConfigStore, error)
 }
 
 // ForPublicRequest interface provides dependencies for a public request that does not contain the Storage API token.
@@ -88,10 +89,11 @@ type ForProjectRequest interface {
 type forServer struct {
 	dependencies.Base
 	dependencies.Public
-	serverCtx  context.Context
-	serverWg   *sync.WaitGroup
-	logger     log.PrefixLogger
-	etcdClient dependencies.Lazy[*etcd.Client]
+	serverCtx   context.Context
+	serverWg    *sync.WaitGroup
+	logger      log.PrefixLogger
+	etcdClient  dependencies.Lazy[*etcd.Client]
+	configStore dependencies.Lazy[*ConfigStore]
 }
 
 // forPublicRequest implements ForPublicRequest interface.
@@ -280,6 +282,16 @@ func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 
 		v.logger.Infof(`connected to etcd cluster "%s" | %s`, c.Endpoints()[0], time.Since(startTime))
 		return c, nil
+	})
+}
+
+func (v *forServer) ConfigStore(ctx context.Context) (*ConfigStore, error) {
+	return v.configStore.InitAndGet(func() (*ConfigStore, error) {
+		_, err := v.EtcdClient(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return NewConfigStore(v), nil
 	})
 }
 
