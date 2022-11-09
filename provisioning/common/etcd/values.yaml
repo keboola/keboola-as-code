@@ -127,7 +127,7 @@ defragmentation:
       limits:
         memory: "64Mi"
 extraDeploy:
-  # Defragmentation
+  # Defragmentation cron job definition
   - |-
     apiVersion: {{ include "common.capabilities.cronjob.apiVersion" . }}
     kind: CronJob
