@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -193,15 +194,20 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl st
 	args := []string{fmt.Sprintf("--http-port=%d", port)}
 
 	// Envs
+	etcdNamespace := idgenerator.EtcdNamespaceForE2ETest()
+	etcdEndpoint := os.Getenv("BUFFER_ETCD_ENDPOINT")
+	etcdUsername := os.Getenv("BUFFER_ETCD_USERNAME")
+	etcdPassword := os.Getenv("BUFFER_ETCD_PASSWORD")
+
 	envs := env.Empty()
 	envs.Set("PATH", os.Getenv("PATH"))
 	envs.Set("KBC_STORAGE_API_HOST", storageApiHost)
 	envs.Set("DATADOG_ENABLED", "false")
 	envs.Set("BUFFER_ETCD_ENABLED", "true")
-	envs.Set("BUFFER_ETCD_NAMESPACE", idgenerator.EtcdNamespaceForE2ETest())
-	envs.Set("BUFFER_ETCD_ENDPOINT", os.Getenv("BUFFER_ETCD_ENDPOINT"))
-	envs.Set("BUFFER_ETCD_USERNAME", os.Getenv("BUFFER_ETCD_USERNAME"))
-	envs.Set("BUFFER_ETCD_PASSWORD", os.Getenv("BUFFER_ETCD_PASSWORD"))
+	envs.Set("BUFFER_ETCD_NAMESPACE", etcdNamespace)
+	envs.Set("BUFFER_ETCD_ENDPOINT", etcdEndpoint)
+	envs.Set("BUFFER_ETCD_USERNAME", etcdUsername)
+	envs.Set("BUFFER_ETCD_PASSWORD", etcdPassword)
 
 	// Start API server
 	stdout = newCmdOut()
@@ -219,11 +225,23 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl st
 		cmdErrCh <- cmd.Wait()
 	}()
 
-	// Kill API server after test
 	t.Cleanup(func() {
+		// kill api server
 		if err := cmd.Process.Kill(); err != nil {
 			assert.NoError(t, err)
 		}
+
+		// delete etcd namespace
+		ctx := context.Background()
+		client, err := etcd.New(etcd.Config{
+			Context:   ctx,
+			Endpoints: []string{etcdEndpoint},
+			Username:  etcdUsername,
+			Password:  etcdPassword,
+		})
+		assert.NoError(t, err)
+		_, err = client.KV.Delete(ctx, etcdNamespace, etcd.WithPrefix())
+		assert.NoError(t, err)
 	})
 
 	// Wait for API server
