@@ -84,8 +84,7 @@ jobs:
           fi
       - name: Check API response
         if: always()
-        run: |
-          curl --fail -L -s "$(minikube service --url $API_RELEASE_NAME)"
+        run: curl --fail -L -s "$(minikube service --url $API_RELEASE_NAME --namespace $KUBERNETES_NAMESPACE)"
       - name: Test etcd defragmentation cron job
         if: always()
         run: |
