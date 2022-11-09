@@ -19,6 +19,9 @@ fi
 # Constants
 ETCD_HELM_CHART_VERSION="8.5.8"
 
+# Disable pod disruption budget (51%) if replicaCount=1, so it doesn't block the rollout.
+TEMPLATES_API_ETCD_PDB_CREATE=$([[ $TEMPLATES_API_ETCD_REPLICAS -gt 1 ]] && echo 'true' || echo 'false')
+
 # Common part of the deployment. Same for AWS/Azure/Local
 ./kubernetes/build.sh
 
@@ -36,6 +39,7 @@ helm upgrade \
   --values ./kubernetes/deploy/etcd/values.yaml \
   --namespace templates-api \
   --set "replicaCount=$TEMPLATES_API_ETCD_REPLICAS" \
+  --set "pdb.create=$TEMPLATES_API_ETCD_PDB_CREATE" \
   --set "auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD"
 
 # API

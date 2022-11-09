@@ -1,15 +1,28 @@
-# See default values: https://github.com/bitnami/charts/blob/master/bitnami/etcd/values.yaml
+# Common etcd definition for the Templates API and Buffer API.
+# Values can be overridden by Helm --set flag or by another --values files.
+# Chart default values: https://github.com/bitnami/charts/blob/master/bitnami/etcd/values.yaml
+
+# Keboola specific options
+commonLabels:
+  app: "{{ tpl (.Release.Name) . }}"
+podLabels:
+  app: "{{ tpl (.Release.Name) . }}"
+nodeSelector:
+  nodepool: main
+tolerations:
+  - key: app
+    operator: Exists
+    effect: NoSchedule
+
+# Locked/updated etcd image
 image:
   tag: 3.5.5-debian-11-r16
 
-commonLabels:
-  app: templates-api-etcd
-
-podLabels:
-  app: templates-api-etcd
-
+# Additional pod annotations
 podAnnotations:
+  # Enable sending logs to PaperTrail
   log: "true"
+  # Enable pulling of the metrics by DataDog Agent (see also network policy)
   ad.datadoghq.com/etcd.check_names: '["etcd"]'
   ad.datadoghq.com/etcd.init_configs: '[{}]'
   ad.datadoghq.com/etcd.instances: |
@@ -19,6 +32,7 @@ podAnnotations:
       }
     ]
 
+# Resources limits
 resources:
   requests:
     cpu: "200m"
@@ -40,16 +54,21 @@ extraEnvVars:
   - name: ETCD_DISABLE_STORE_MEMBER_ID
     value: "yes"
 
+# The root password is used for authentication, the client gets a JWT token with short expiration.
 auth:
   rbac:
+    enabled: true
     create: true
     allowNoneAuthentication: false
   token:
     type: jwt
+    ttl: 10m
 
+# Only internal communication is allowed: no public IP
 service:
   clusterIP: None #headless service
 
+# Only internal communication is allowed: from a client, between nodes, and from the DataDog
 networkPolicy:
   enabled: true
   allowExternal: false
@@ -65,21 +84,18 @@ networkPolicy:
           matchLabels:
             app: datadog-agent
 
+# Records are persisted
 persistence:
   enabled: true
   size: 512Mi
 
-tolerations:
-  - key: app
-    operator: Exists
-    effect: NoSchedule
-
+# At least 51% of the cluster must be available during rollout,
+# otherwise, the quorum is lost and the cluster will not work.
+# This should be disabled if replicaCount=1, that would block the rollout completely.
 pdb:
-  create: false
+  create: true
 
-nodeSelector:
-  nodepool: main
-
+# Modified probes, to make the cluster available sooner
 startupProbe:
   enabled: true
   initialDelaySeconds: 20
