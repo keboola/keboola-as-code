@@ -1,1 +1,5 @@
-{}
+{
+  "receiverId": "github-pull-requests",
+  "name": "Github Pull Requests",
+  "url": "https://buffer.connection.keboola.com/v1/import/github-pull-requests/#/%s"
+}
