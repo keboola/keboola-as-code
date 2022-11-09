@@ -31,6 +31,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/client"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/namespace"
 	"go.opentelemetry.io/otel/trace"
 	ddHttp "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
@@ -210,14 +211,20 @@ func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 		defer telemetryUtils.EndSpan(span, nil)
 
 		// Check if etcd is enabled
-		if v.Envs().Get("ETCD_ENABLED") == "false" {
+		if v.Envs().Get("BUFFER_ETCD_ENABLED") == "false" {
 			return nil, errors.New("etcd integration is disabled")
 		}
 
 		// Get endpoint
-		endpoint := v.Envs().Get("ETCD_ENDPOINT")
+		endpoint := v.Envs().Get("BUFFER_ETCD_ENDPOINT")
 		if endpoint == "" {
-			return nil, errors.New("ETCD_HOST is not set")
+			return nil, errors.New("BUFFER_ETCD_HOST is not set")
+		}
+
+		// Get namespace
+		namespacePrefix := v.Envs().Get("BUFFER_ETCD_NAMESPACE")
+		if namespacePrefix == "" {
+			return nil, errors.New("BUFFER_ETCD_NAMESPACE is not set")
 		}
 
 		// Get timeout
@@ -235,12 +242,18 @@ func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 			DialTimeout:          connectTimeout,
 			DialKeepAliveTimeout: EtcdKeepAliveTimeout,
 			DialKeepAliveTime:    EtcdKeepAliveInterval,
-			Username:             v.Envs().Get("ETCD_USERNAME"), // optional
-			Password:             v.Envs().Get("ETCD_PASSWORD"), // optional
+			Username:             v.Envs().Get("BUFFER_ETCD_USERNAME"), // optional
+			Password:             v.Envs().Get("BUFFER_ETCD_PASSWORD"), // optional
 		})
 		if err != nil {
 			return nil, err
 		}
+
+		// Prefix client by namespace
+		namespacePrefix = strings.Trim(namespacePrefix, " /") + "/"
+		c.KV = namespace.NewKV(c.KV, namespacePrefix)
+		c.Watcher = namespace.NewWatcher(c.Watcher, namespacePrefix)
+		c.Lease = namespace.NewLease(c.Lease, namespacePrefix)
 
 		// Context for connection test
 		syncCtx, syncCancelFn := context.WithTimeout(ctx, connectTimeout)
