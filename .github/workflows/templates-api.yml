@@ -7,6 +7,8 @@ on:
 env:
   MINIKUBE_PROFILE: templates-api
   KUBERNETES_NAMESPACE: templates-api
+  API_RELEASE_NAME: templates-api
+  ETCD_RELEASE_NAME: templates-api-etcd
   ETCD_ENDPOINT: templates-api-etcd-headless.templates-api.svc.cluster.local:2379
 
 defaults:
@@ -40,18 +42,18 @@ jobs:
         run: ./deploy_local.sh
       - name: Check deployment of the etcd
         if: always()
-        run: kubectl rollout status sts/templates-api-etcd
+        run: kubectl rollout status "sts/$ETCD_RELEASE_NAME"
       - name: Check deployment of the API
         if: always()
-        run: kubectl rollout status deployment/templates-api
+        run: kubectl rollout status "deployment/$API_RELEASE_NAME"
       - name: Check access to the etcd from a client
         if: always()
         run: |
           set -Eeuo pipefail
-          export ETCD_ROOT_PASSWORD=$(kubectl get secret templates-api-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
+          export ETCD_ROOT_PASSWORD=$(kubectl get secret "$ETCD_RELEASE_NAME" -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
           kubectl run --attach --rm --restart=Never check-etcd-client \
             --image docker.io/bitnami/etcd \
-            --labels="templates-api-etcd-client=true" \
+            --labels="${ETCD_RELEASE_NAME}-client=true" \
             --env="ETCD_ROOT_PASSWORD=$ETCD_ROOT_PASSWORD" \
             --env="ETCDCTL_ENDPOINTS=$ETCD_ENDPOINT" \
             --command -- etcdctl --user root:$ETCD_ROOT_PASSWORD put /message Hello
@@ -83,12 +85,16 @@ jobs:
       - name: Check API response
         if: always()
         run: |
-          curl --fail -L -s "$(minikube service --url templates-api)"
+          curl --fail -L -s "$(minikube service --url $API_RELEASE_NAME)"
       - name: Test etcd defragmentation cron job
         if: always()
         run: |
           set -Eeuo pipefail
-          kubectl create job --from=cronjob/templates-api-etcd-defrag test-defrag-job
+          
+          # Create a job from the cron job
+          kubectl create job "--from=cronjob/${ETCD_RELEASE_NAME}-defrag" test-defrag-job
+          
+          # Wait for the job
           if kubectl wait --for=condition=complete --timeout=30s job/test-defrag-job; then
             echo "The job succeed, logs:"
             kubectl logs --selector="job-name=test-defrag-job"
