@@ -1,12 +1,17 @@
 package service
 
 import (
+	"fmt"
 	"io"
+	"strconv"
 
+	"github.com/iancoleman/strcase"
 	dependencies "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/service"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/rand"
 )
 
 type service struct{}
@@ -32,8 +37,46 @@ func (*service) HealthCheck(dependencies.ForPublicRequest) (res string, err erro
 	return "OK", nil
 }
 
-func (*service) CreateReceiver(dependencies.ForProjectRequest, *buffer.CreateReceiverPayload) (res *buffer.Receiver, err error) {
-	return nil, &NotImplementedError{}
+func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.Receiver, err error) {
+	ctx := d.RequestCtx()
+
+	store, err := d.ConfigStore(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	config := model.Receiver{
+		ProjectID: strconv.Itoa(d.ProjectID()),
+		Name:      payload.Name,
+	}
+
+	// Generate receiver ID from Name if needed
+	if payload.ReceiverID != nil {
+		config.ID = *payload.ReceiverID
+	} else {
+		config.ID = strcase.ToKebab(config.Name)
+	}
+
+	// Generate Secret
+	config.Secret = rand.RandomString(32)
+
+	// Persist receiver
+	err = store.CreateReceiver(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: create exports
+
+	url := fmt.Sprintf("https://buffer.%s/v1/import/%s/#/%s", d.StorageApiHost(), config.ID, config.Secret)
+	resp := &buffer.Receiver{
+		ReceiverID: &config.ID,
+		Name:       &config.Name,
+		URL:        &url,
+		Exports:    []*Export{},
+	}
+
+	return resp, nil
 }
 
 func (*service) GetReceiver(dependencies.ForProjectRequest, *buffer.GetReceiverPayload) (res *buffer.Receiver, err error) {
