@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -38,7 +37,8 @@ func main() {
 	}
 }
 
-func start(debug, debugHttp bool, logger log.Logger, envs *env.Map) error {
+// nolint:unparam
+func start(debug, debugHttp bool, logger log.Logger, _ *env.Map) error {
 	// Create context.
 	ctx, cancelFn := context.WithCancel(context.Background())
 	defer cancelFn()
@@ -61,8 +61,9 @@ func start(debug, debugHttp bool, logger log.Logger, envs *env.Map) error {
 		errCh <- errors.Errorf("%s", <-c)
 	}()
 
+	// nolint:godox
 	// TODO worker code
-	fmt.Println("todo use context in a worker code", ctx.Value("todo use context"))
+	logger.Info("todo use context in a worker code", ctx.Value("todo use context"))
 
 	// Wait for signal.
 	logger.Infof("exiting (%v)", <-errCh)
