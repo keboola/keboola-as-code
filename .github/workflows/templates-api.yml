@@ -6,6 +6,7 @@ on:
 
 env:
   MINIKUBE_PROFILE: templates-api
+  KUBERNETES_NAMESPACE: templates-api
   ETCD_ENDPOINT: templates-api-etcd-headless.templates-api.svc.cluster.local:2379
 
 defaults:
@@ -23,6 +24,8 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Start MiniKube
         run: ./start_minikube.sh
+      - name: Set Kubernetes namespace
+        run: kubectl config set-context --current "--namespace=$KUBERNETES_NAMESPACE"
       - name: Checkout BASE branch
         uses: actions/checkout@v3
         with:
@@ -37,17 +40,16 @@ jobs:
         run: ./deploy_local.sh
       - name: Check deployment of the etcd
         if: always()
-        run: kubectl rollout status sts/templates-api-etcd --namespace templates-api
+        run: kubectl rollout status sts/templates-api-etcd
       - name: Check deployment of the API
         if: always()
-        run: kubectl rollout status deployment/templates-api --namespace templates-api
+        run: kubectl rollout status deployment/templates-api
       - name: Check access to the etcd from a client
         if: always()
         run: |
           set -Eeuo pipefail
-          export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "templates-api" templates-api-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
+          export ETCD_ROOT_PASSWORD=$(kubectl get secret templates-api-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
           kubectl run --attach --rm --restart=Never check-etcd-client \
-            --namespace templates-api \
             --image docker.io/bitnami/etcd \
             --labels="templates-api-etcd-client=true" \
             --env="ETCD_ROOT_PASSWORD=$ETCD_ROOT_PASSWORD" \
@@ -69,7 +71,6 @@ jobs:
         run: |
           set -Eeuo pipefail
           if kubectl run --attach --rm --restart=Never check-etcd-other \
-            --namespace templates-api \
             --image docker.io/alpine/curl \
             --env="ETCD_ENDPOINT=$ETCD_ENDPOINT" \
             --command -- sh -c "set -eo pipefail; curl -f -L --max-time 15 "$ETCD_ENDPOINT/metrics" | tail"; then
@@ -82,18 +83,18 @@ jobs:
       - name: Check API response
         if: always()
         run: |
-          curl --fail -L -s "$(minikube service --url --namespace templates-api templates-api)"
+          curl --fail -L -s "$(minikube service --url templates-api)"
       - name: Test etcd defragmentation cron job
         if: always()
         run: |
           set -Eeuo pipefail
-          kubectl create job --namespace templates-api --from=cronjob/templates-api-etcd-defrag test-defrag-job
-          if kubectl wait --namespace templates-api --for=condition=complete --timeout=30s job/test-defrag-job; then
+          kubectl create job --from=cronjob/templates-api-etcd-defrag test-defrag-job
+          if kubectl wait --for=condition=complete --timeout=30s job/test-defrag-job; then
             echo "The job succeed, logs:"
-            kubectl logs --namespace templates-api --selector="job-name=test-defrag-job"
+            kubectl logs --selector="job-name=test-defrag-job"
             exit 0
           else
             echo "The job failed, logs:"
-            kubectl logs --namespace templates-api --selector="job-name=test-defrag-job"
+            kubectl logs --selector="job-name=test-defrag-job"
             exit 1
           fi
