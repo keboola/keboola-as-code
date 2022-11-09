@@ -37,7 +37,7 @@ linters-settings:
   forbidigo:
     forbid:
       # No debug statements
-      - ^(fmt\.Print.*|print|println)$(# Os ENVs singleton is forbidden, use env.Map instead)?(# No debug statements)?
+      - ^(fmt\.Print.*|print|println)$(# Debug statements are forbidden, use a logger)?(# No debug statements)?
       # No "os" filesystem ops, use "internal/pkg/filesystem" package instead
       - ^(os\.(NewFile|Create.*|Open.*|Ch.*|Link|Symlink|Mkdir|ReadFile|Readlink|Remove.*|Rename|Truncate|Lstat|Stat|Getwd))$(# Use "internal/pkg/filesystem" package instead)?
       - ^testhelper.(GetFileContent|Glob)$(# Use "internal/pkg/filesystem" package instead)?

@@ -33,8 +33,15 @@ BUFFER_API_BUILD_TARGET_PATH ?= "./target/buffer-api/server"
 build-buffer-api: generate-buffer-api
 	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o $(BUFFER_API_BUILD_TARGET_PATH) ./cmd/buffer-api
 
+BUFFER_WORKER_BUILD_TARGET_PATH ?= "./target/buffer-api/worker"
+build-buffer-worker:
+	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o $(BUFFER_WORKER_BUILD_TARGET_PATH) ./cmd/buffer-worker
+
 run-buffer-api: generate-buffer-api
 	air -c ./provisioning/buffer-api/dev/.air-buffer-api.toml
+
+run-buffer-worker:
+	air -c ./provisioning/buffer-api/dev/.air-buffer-worker.toml
 
 tests: prepare
 	TEST_PACKAGE=./... bash ./scripts/tests.sh
