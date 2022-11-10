@@ -148,19 +148,19 @@ func newTestEtcdClient(t *testing.T) *etcd.Client {
 	assert.NoError(t, err)
 
 	// Check if etcd is enabled
-	if envs.Get("ETCD_ENABLED") == "false" {
+	if envs.Get("TEMPLATES_API_ETCD_ENABLED") == "false" {
 		t.Skipf("etcd disabled")
 	}
 
 	// Create etcd client
 	etcdClient, err := etcd.New(etcd.Config{
 		Context:              context.Background(),
-		Endpoints:            []string{envs.Get("ETCD_ENDPOINT")},
+		Endpoints:            []string{envs.Get("TEMPLATES_API_ETCD_ENDPOINT")},
 		DialTimeout:          2 * time.Second,
 		DialKeepAliveTimeout: 2 * time.Second,
 		DialKeepAliveTime:    10 * time.Second,
-		Username:             envs.Get("ETCD_USERNAME"), // optional
-		Password:             envs.Get("ETCD_PASSWORD"), // optional
+		Username:             envs.Get("TEMPLATES_API_ETCD_USERNAME"), // optional
+		Password:             envs.Get("TEMPLATES_API_ETCD_PASSWORD"), // optional
 	})
 	assert.NoError(t, err)
 	return etcdClient

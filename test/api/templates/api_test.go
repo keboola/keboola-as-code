@@ -196,7 +196,7 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string, repositori
 	envs.Set("PATH", os.Getenv("PATH"))
 	envs.Set("KBC_STORAGE_API_HOST", storageApiHost)
 	envs.Set("DATADOG_ENABLED", "false")
-	envs.Set("ETCD_ENABLED", "false")
+	envs.Set("TEMPLATES_API_ETCD_ENABLED", "false")
 
 	// Start API server
 	stdout = newCmdOut()
