@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/iancoleman/strcase"
+
 	dependencies "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/gen/buffer"
@@ -66,6 +67,7 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 		return nil, err
 	}
 
+	// nolint: godox
 	// TODO: create exports
 
 	url := fmt.Sprintf("https://buffer.%s/v1/import/%s/#/%s", d.StorageApiHost(), config.ID, config.Secret)

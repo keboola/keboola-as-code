@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	etcd "go.etcd.io/etcd/client/v3"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	etcd "go.etcd.io/etcd/client/v3"
 )
 
 type storeDeps interface {
