@@ -55,6 +55,8 @@ func TestConfigStore_CreateReceiver(t *testing.T) {
 }
 
 func newTestDeps(t *testing.T) (context.Context, *testDeps) {
+	t.Helper()
+
 	ctx := context.Background()
 	d := &testDeps{
 		logger:     log.NewDebugLogger(),
