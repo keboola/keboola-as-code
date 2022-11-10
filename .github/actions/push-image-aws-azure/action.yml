@@ -1,0 +1,71 @@
+name: 'Push image to Amazon ECR and Azure ACR'
+description: 'Push image to Amazon ECR and Azure ACR'
+inputs:
+  imageName:
+    description: Name of the image
+    required: true
+  imageTag:
+    description: Tag of the image
+    required: true
+  ecrRegion:
+    description: Amazon ECR region
+    required: true
+  ecrRepository:
+    description: Amazon ECR repository
+    required: true
+  ecrPushRole:
+    description: Amazon ECR push role
+    required: true
+  acrRegistry:
+    description: Azure ACR registry
+    required: true
+  acrRepository:
+    description: Azure ACR repository
+    required: true
+  acrUsername:
+    description: Azure ACR username
+    required: true
+  acrPassword:
+    description: Azure ACR password
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1-node16
+      with:
+        aws-region: ${{ inputs.ecrRegion }}
+        role-to-assume: ${{ inputs.ecrPushRole }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Push image to Amazon ECR
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.imageName }}
+        TAG: ${{ inputs.imageTag }}
+        REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        REPOSITORY: ${{ inputs.ecrRepository }}
+      run: |
+        docker tag $IMAGE:$TAG $REGISTRY/$REPOSITORY:$TAG
+        docker push $REGISTRY/$REPOSITORY:$TAG
+
+    - name: Login to Azure ACR
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ inputs.acrRegistry }}
+        username: ${{ inputs.acrUsername }}
+        password: ${{ inputs.acrPassword }}
+
+    - name: Push image to Azure ACR
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.imageName }}
+        TAG: ${{ inputs.imageTag }}
+        REGISTRY: ${{ inputs.acrRegistry }}
+        REPOSITORY: ${{ inputs.acrRepository }}
+      run: |
+        docker tag $IMAGE:$TAG $REGISTRY/$REPOSITORY:$TAG
+        docker push $REGISTRY/$REPOSITORY:$TAG

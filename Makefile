@@ -50,25 +50,25 @@ tests-verbose: prepare
 	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PACKAGE=./... bash ./scripts/tests.sh
 
 tests-unit: prepare
-	TEST_VERBOSE=false TEST_PACKAGE=./internal/pkg/... bash ./scripts/tests.sh
+	TEST_PACKAGE=./internal/pkg/... bash ./scripts/tests.sh
 
 tests-unit-verbose: prepare
 	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./internal/pkg... bash ./scripts/tests.sh
 
 tests-cli: prepare
-	TEST_VERBOSE=false TEST_LOG_FORMAT=standard-verbose TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh -run TestCliE2E
+	TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh -run TestCliE2E
 
 tests-cli-verbose: prepare
 	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh -run TestCliE2E
 
 tests-templates-api: generate-templates-api
-	TEST_VERBOSE=false TEST_LOG_FORMAT=standard-verbose TEST_PACKAGE=./test/api/templates/... bash ./scripts/tests.sh -run TestTemplatesApiE2E
+	TEST_PACKAGE=./test/api/templates/... bash ./scripts/tests.sh -run TestTemplatesApiE2E
 
 tests-templates-api-verbose: generate-templates-api
 	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/api/templates/... bash ./scripts/tests.sh -run TestTemplatesApiE2E
 
 tests-buffer-api: generate-buffer-api
-	TEST_VERBOSE=false TEST_LOG_FORMAT=standard-verbose TEST_PACKAGE=./test/api/buffer/... bash ./scripts/tests.sh -run TestBufferApiE2E
+	TEST_PACKAGE=./test/api/buffer/... bash ./scripts/tests.sh -run TestBufferApiE2E
 
 tests-buffer-api-verbose: generate-buffer-api
 	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/api/buffer/... bash ./scripts/tests.sh -run TestBufferApiE2E

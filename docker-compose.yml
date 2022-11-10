@@ -11,12 +11,8 @@ services:
       - ./:/code:z
       - cache:/tmp/cache
     environment:
-      # For CLI
+      # For all
       - TEST_KBC_PROJECTS
-      ## OR
-      - TEST_KBC_PROJECT_ID
-      - TEST_KBC_STORAGE_API_HOST
-      - TEST_KBC_STORAGE_API_TOKEN
       # For Templates API
       - KBC_STORAGE_API_HOST
       # Disable DataDog integration
@@ -36,6 +32,7 @@ services:
     ports:
       - "8000:8000"
       - "6060:6060"
+  # Same etcd is used for all services, but with different namespace
   etcd:
     hostname: etcd
     image: docker.io/bitnami/etcd:3.5.5-debian-11-r16
