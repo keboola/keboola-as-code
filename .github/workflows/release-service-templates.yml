@@ -53,7 +53,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           load: true
-          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
+          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           context: .
           file: provisioning/templates-api/docker/Dockerfile
           cache-from: type=registry,ref=templates-api-build/cache:cache
