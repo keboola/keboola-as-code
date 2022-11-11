@@ -11,8 +11,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/service"
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/rand"
 )
 
 type service struct{}
@@ -59,7 +59,7 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 	}
 
 	// Generate Secret
-	config.Secret = rand.RandomString(32)
+	config.Secret = idgenerator.ReceiverSecret()
 
 	// Persist receiver
 	err = store.CreateReceiver(ctx, config)

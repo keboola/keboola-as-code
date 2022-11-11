@@ -13,10 +13,10 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/rand"
 )
 
 func TestConfigStore_CreateReceiver(t *testing.T) {
@@ -104,7 +104,7 @@ func newTestEtcdClient(t *testing.T, ctx context.Context) *etcd.Client {
 	})
 	assert.NoError(t, err)
 
-	prefix := fmt.Sprintf("buffer-%s/", rand.RandomString(16))
+	prefix := fmt.Sprintf("buffer-%s/", idgenerator.EtcdNamespaceForTest())
 	etcdClient.KV = namespace.NewKV(etcdClient.KV, prefix)
 
 	t.Cleanup(func() {

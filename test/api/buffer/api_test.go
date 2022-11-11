@@ -194,7 +194,7 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl st
 	args := []string{fmt.Sprintf("--http-port=%d", port)}
 
 	// Envs
-	etcdNamespace := idgenerator.EtcdNamespaceForE2ETest()
+	etcdNamespace := idgenerator.EtcdNamespaceForTest()
 	etcdEndpoint := os.Getenv("BUFFER_ETCD_ENDPOINT")
 	etcdUsername := os.Getenv("BUFFER_ETCD_USERNAME")
 	etcdPassword := os.Getenv("BUFFER_ETCD_PASSWORD")
