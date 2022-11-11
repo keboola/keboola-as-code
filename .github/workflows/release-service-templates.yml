@@ -70,4 +70,4 @@ jobs:
           acrRepository: ${{ env.ACR_REPOSITORY }}
           acrRegistry: ${{ env.ACR_REGISTRY }}
           acrUsername: ${{ env.ACR_USERNAME }}
-          acrPassword: ${{ secrets.ACR_PASSWORD }}
+          acrPassword: ${{ secrets.SERVICE_ACR_PASSWORD }}
