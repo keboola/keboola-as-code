@@ -17,15 +17,14 @@ runs:
       uses: actions/cache@v3
       with:
         path: |
-          ~/go/pkg/mod
-          ~\go\pkg\mod
-          ~/.cache/go-build
-          ~/Library/Caches/go-build
-          ~\AppData\Local\go-build
+          ~/go/pkg
+          ~\go\pkg
+          ~/go/bin
+          ~\go\bin
           ~/.cache/golangci-lint
           ~/Library/Caches/golangci-lint
           ~\AppData\Local\golangci-lint
         key: ${{ runner.os }}-go-v2-${{ inputs.key }}-${{ hashFiles('**/go.sum') }}
         restore-keys: |
-          ${{ runner.os }}-go-v2-
-          ${{ runner.os }}-go-v2-${{ inputs.key }}-
+          ${{ runner.os }}-go-v4-
+          ${{ runner.os }}-go-v4-${{ inputs.key }}-

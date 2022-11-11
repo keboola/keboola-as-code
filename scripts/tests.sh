@@ -13,7 +13,7 @@ pwd
 
 TEST_VERBOSE="${TEST_VERBOSE:=false}"
 TEST_PARALLELISM="${TEST_PARALLELISM:=8}"      # number of parallel tests inside package
-TEST_PARALLELISM_PKG="${TEST_PARALLELISM:=8}"  # number of packages tested in parallel
+TEST_PARALLELISM_PKG="${TEST_PARALLELISM_PKG:=8}"  # number of packages tested in parallel
 TEST_LOG_FORMAT="${TEST_LOG_FORMAT:=testname}"
 TEST_DETECT_RACE="${TEST_DETECT_RACE:=true}"
 TEST_COVERAGE="${TEST_COVERAGE:=true}"

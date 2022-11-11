@@ -1,0 +1,50 @@
+name: 'E2E: Templates'
+
+on:
+  workflow_call:
+
+env:
+  GO_VERSION: 1.19
+  TEST_PARALLELISM: 4
+  TEST_PARALLELISM_PKG: 1
+  TEST_KBC_PROJECTS: |
+    [
+      {"host":"connection.keboola.com","project":8768,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8768_TOKEN }}"},
+      {"host":"connection.keboola.com","project":8776,"stagingStorage":"s3","token":"${{ secrets.TEST_KBC_PROJECT_8776_TOKEN }}"},
+      {"host":"connection.north-europe.azure.keboola.com","project":10899,"stagingStorage":"abs","token":"${{ secrets.TEST_KBC_PROJECT_10899_TOKEN }}"},
+      {"host":"connection.north-europe.azure.keboola.com","project":10905,"stagingStorage":"abs","token":"${{ secrets.TEST_KBC_PROJECT_10905_TOKEN }}"}
+    ]
+
+jobs:
+  test:
+    name: test
+    concurrency:
+      group: tests-e2e-service-templates
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup line endings
+        run: git config --global core.autocrlf false
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Load Go cache
+        uses: ./.github/actions/go-cache
+        with:
+          key: e2e
+
+      - name: Install tools
+        run: . ./scripts/tools.sh
+        shell: bash
+
+      - name: Run tests
+        run: make tests-templates-api
+        shell: bash

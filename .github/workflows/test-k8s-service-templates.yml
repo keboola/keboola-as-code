@@ -1,5 +1,7 @@
-name: 'Provisioning: Templates API'
+name: 'K8S: Templates API'
+
 on:
+  workflow_call:
   pull_request:
     paths:
       - provisioning/templates-api/**
@@ -18,7 +20,7 @@ defaults:
 
 jobs:
   test:
-    name: 'Test'
+    name: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

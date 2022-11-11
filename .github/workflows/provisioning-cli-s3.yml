@@ -1,5 +1,7 @@
-name: 'CLI Dist Provisioning'
+name: 'Provisioning: CLI S3 Distribution'
+
 on:
+  workflow_call:
   push:
     paths:
       - provisioning/cli-dist/**
