@@ -70,8 +70,13 @@ jobs:
         continue-on-error: true
         run: |
           set -Eeuo pipefail
-          # Delete empty old replicas
-          kubectl delete --namespace templates-api $(kubectl get all --namespace templates-api | grep replicaset.apps | awk '{if ($2 + $3 + $4 == 0) print $1}')
+          # Delete empty old replica sets
+          emptyReplicaSets=$(kubectl get replicasets --ignore-not-found | tail --lines=+2 | awk '{if ($2 + $3 + $4 == 0) print $1}')
+          echo -e "Found empty replica sets:"
+          echo "$emptyReplicaSets"
+          echo "-------------------------" 
+          echo "$emptyReplicaSets" | xargs --no-run-if-empty -I {} kubectl delete replicaset "{}"
+          
           # Wait for pod startup/termination
           sleep 10
           # Dump objects
