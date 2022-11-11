@@ -26,6 +26,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenv"
@@ -196,7 +197,11 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl st
 	envs.Set("PATH", os.Getenv("PATH"))
 	envs.Set("KBC_STORAGE_API_HOST", storageApiHost)
 	envs.Set("DATADOG_ENABLED", "false")
-	envs.Set("BUFFER_ETCD_ENABLED", "false")
+	envs.Set("BUFFER_ETCD_ENABLED", "true")
+	envs.Set("BUFFER_ETCD_NAMESPACE", idgenerator.EtcdNamespaceForE2ETest())
+	envs.Set("BUFFER_ETCD_ENDPOINT", os.Getenv("BUFFER_ETCD_ENDPOINT"))
+	envs.Set("BUFFER_ETCD_USERNAME", os.Getenv("BUFFER_ETCD_USERNAME"))
+	envs.Set("BUFFER_ETCD_PASSWORD", os.Getenv("BUFFER_ETCD_PASSWORD"))
 
 	// Start API server
 	stdout = newCmdOut()

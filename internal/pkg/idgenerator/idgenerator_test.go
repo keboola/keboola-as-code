@@ -17,3 +17,8 @@ func TestTemplateInstanceId(t *testing.T) {
 	t.Parallel()
 	assert.Len(t, TemplateInstanceId(), TemplateInstanceIdLength)
 }
+
+func TestEtcdNamespaceForE2ETest(t *testing.T) {
+	t.Parallel()
+	assert.Len(t, EtcdNamespaceForE2ETest(), EtcdNamespaceForE2ETestLength)
+}
