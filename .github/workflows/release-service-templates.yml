@@ -27,11 +27,11 @@ jobs:
   test-e2e-service-templates:
     name: "E2E: Templates"
     secrets: inherit
-    uses: ./.github/workflows/test-e2e-templates-api.yml
+    uses: ./.github/workflows/test-e2e-service-templates.yml
   test-k8s-service-templates:
     name: "K8S: Templates"
     secrets: inherit
-    uses: ./.github/workflows/test-k8s-templates-api.yml
+    uses: ./.github/workflows/test-k8s-service-templates.yml
   build-and-push-api-image:
     name: "Build & Push API Image"
     runs-on: ubuntu-latest
