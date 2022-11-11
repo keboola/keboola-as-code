@@ -42,7 +42,6 @@ echo
 
 # Print human readable list
 KINDS_INLINE=$(echo "$KINDS" | sed -z -E 's/\n+/,/g;s/^,//;s/,$//')
-echo kubectl get "$KINDS_INLINE" --namespace templates-api
 echo "Kubernetes overview:"
 echo "----------------------------------"
 kubectl get "$KINDS_INLINE" --namespace templates-api

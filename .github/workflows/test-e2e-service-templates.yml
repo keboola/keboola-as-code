@@ -52,7 +52,7 @@ jobs:
           sudo echo "127.0.0.1 etcd" | sudo tee -a /etc/hosts
 
       - name: Run tests
-        run: docker-compose  tests-templates-api
+        run: make tests-templates-api
         shell: bash
         env:
           TEMPLATES_API_ETCD_ENABLED: true

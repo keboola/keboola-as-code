@@ -23,6 +23,9 @@ process() {
   out="$in.processed.json"
   outKV="$in.processed.kv"
 
+  echo "Processing '$in' ..."
+  echo
+
   # Get ReplicaSet hashes, for example "pod-template-hash: 6749584fd9" -> "6749584fd9"
   hashes=$(cat "$in" | jq '.items[] | select(.kind == "ReplicaSet") | .metadata.labels."pod-template-hash"' --raw-output)
   printf "Found ReplicaSet hashes in '$in' state:\n%s\n" $hashes
@@ -42,6 +45,7 @@ process() {
   toKindAndName=$(echo -e "$toKind\n$toName" | awk 'BEGIN { FS=OFS=SUBSEP="|"}{arr[$1]=arr[$1] (length(arr[$1])>1?"/":"") $2 }END {for (i in arr) print i " <" arr[i] ">"}')
   printf "Item index -> kind and name:\n%s\n" "$toKindAndName"
   echo "$toKindAndName" | xargs -L 2 printf 's:\Q%s\E:%s:\0' | xargs -0 -I '{}' perl -pe '{}' -i "$outKV"
+  echo
 
   # Regexps to remove dynamic values
   regexp="(($keyEndsWith) =)|(($keyContains).* =)"
@@ -51,6 +55,7 @@ process() {
   sed -E "/$regexp/Id" -i "$outKV"
   echo "Ignored dynamic lines:"
   (diff --color=always -u0 "$outKV.original2" "$outKV" | sed 's/\(.\{150\}\).*/\1.../' ) || true
+  echo
 
   # Sort file
   sort -o "$outKV" "$outKV"
