@@ -5,7 +5,7 @@ on:
   pull_request:
     paths:
       - provisioning/templates-api/**
-      - provisioning/common/etcd/**
+      - provisioning/common/**
 
 env:
   MINIKUBE_PROFILE: templates-api
@@ -31,13 +31,16 @@ jobs:
       - name: Create artifacts directory
         run: mkdir -p /tmp/artifacts
 
+      - name: Copy latest scripts to a temp dir
+        run: cp -R ${{ github.workspace }}/provisioning/common/scripts /tmp/latest-scripts
+
       - name: Install gron tool
         run: |
           url="https://github.com/tomnomnom/gron/releases/download/v0.7.1/gron-linux-amd64-0.7.1.tgz"
           curl -L "$url" | tar -xz -C /usr/local/bin
 
       - name: Start MiniKube
-        run: ./start_minikube.sh
+        run: /tmp/latest-scripts/start-minikube.sh
 
       - name: Set Kubernetes namespace
         run: kubectl config set-context --current "--namespace=$KUBERNETES_NAMESPACE"
@@ -53,15 +56,8 @@ jobs:
 
       - name: Dump the old version (for diff)
         continue-on-error: true
-        run: |
-          set -Eeuo pipefail
-          # Wait for pod startup/termination
-          sleep 10
-          # List objects
-          kubectl get all --namespace templates-api
-          # Dump objects (kubectl get all doesn't return all types)
-          kubectl get all,configmaps,pdb --ignore-not-found --sort-by='{.metadata.name}' --output json \
-            > /tmp/artifacts/test-k8s-state.old.json
+        run: sleep 10 && /tmp/latest-scripts/k8s-dump.sh /tmp/artifacts/test-k8s-state.old.json
+
       - name: Checkout HEAD branch
         uses: actions/checkout@v3
         with:
@@ -78,11 +74,8 @@ jobs:
           kubectl delete --namespace templates-api $(kubectl get all --namespace templates-api | grep replicaset.apps | awk '{if ($2 + $3 + $4 == 0) print $1}')
           # Wait for pod startup/termination
           sleep 10
-          # List objects
-          kubectl get all --namespace templates-api
-          # Dump objects (kubectl get all doesn't return all types)
-          kubectl get all,configmaps,pdb --ignore-not-found --sort-by='{.metadata.name}' --output json \
-            > /tmp/artifacts/test-k8s-state.new.json
+          # Dump objects
+          /tmp/latest-scripts/k8s-dump.sh /tmp/artifacts/test-k8s-state.new.json
       - name: Check deployment of the etcd
         if: always()
         run: kubectl rollout status "sts/$ETCD_RELEASE_NAME"
@@ -153,77 +146,26 @@ jobs:
             exit 1
           fi
 
-      - name: Prepare inputs for the diff
-        if: always()
-        run: |
-          set -Eeuo pipefail
-          
-          process() {
-            suffix="$1"
-            # Get paths
-            prefix="/tmp/artifacts/test-k8s-state.$suffix"
-            in="$prefix.json"
-            out="$prefix.processed.json"
-            outKV="$prefix.processed.json.kv"
-            
-            # Get ReplicaSet hashes, for example "pod-template-hash: 6749584fd9" -> "6749584fd9"
-            hashes=$(cat "$in" | jq '.items[] | select(.kind == "ReplicaSet") | .metadata.labels."pod-template-hash"' --raw-output)
-            printf "Found ReplicaSet hashes is $suffix state:\n%s\n" $hashes
-            
-            # Replace ReplicaSet hashes, for example "api-6749584fd9-m7q5c" -> "api-<hash>"
-            cp "$in" "$out" 
-            echo $hashes | xargs -I '{}' sed -i -E 's/-{}(-[a-zA-Z0-9]+)?/-<hash>/g' "$out"
-            echo $hashes | xargs -I '{}' sed -i -E 's/{}/<hash>/g' "$out"
-            
-            # Convert to key=value pairs
-            gron "$out" > "$outKV" 
-          
-            # Regexps to remove dynamic values
-            keyEndsWith="time|timestamp|uid|at|ip|release|hash|tags|((^api)version)|revision|generation|resourceVersion"
-            keyContains="\.status|\.metadata.annotations|\.volumeMounts\[[0-9]+\]\.name|\.volumes\[[0-9]+\]\.name|last-applied|revision-hash"
-            regexp="(($keyEndsWith) =)|(($keyContains).* =)"
-          
-            # Remove dynamic values
-            cp "$outKV" "$outKV.original1"  
-            sed -E "/$regexp/Id" -i "$outKV"
-            echo "Ignored dynamic lines:"
-            diff --color=always -u0 "$outKV.original1" "$outKV" || true
-          
-            # Replace array indexes json.items[123] by <kind/name>
-            cp "$outKV" "$outKV.original2"  
-            toName=$(sed -n -E 's/^(json\.items\[[0-9]+\])\.metadata\.name = "([^"]+)";/\1|\2/p' "$outKV")
-            toKind=$(sed -n -E 's/^(json\.items\[[0-9]+\])\.kind = "([^"]+)";/\1|\2/p' "$outKV")
-            toKindAndName=$(echo -e "$toKind\n$toName" | awk 'BEGIN { FS=OFS=SUBSEP="|"}{arr[$1]=arr[$1] (length(arr[$1])>1?"/":"") $2 }END {for (i in arr) print i " <" arr[i] ">"}')
-            printf "Item index -> kind and name:\n%s\n" "$toKindAndName"
-            echo "$toKindAndName" | xargs -L 2 printf 's:\Q%s\E:%s:\0' | xargs -0 -I '{}' perl -pe '{}' -i "$outKV"
-          
-            # Sort file
-            sort -o "$outKV" "$outKV"
-          }
-          
-          process old
-          process new
-
       - name: Diff the old and the new Kubernetes state
         if: always()
         run: |
           set -Eeuo pipefail
           
           # Diff JSON states
-          (diff --color=always -u0 \
-            /tmp/artifacts/test-k8s-state.old.processed.json.kv \
-            /tmp/artifacts/test-k8s-state.new.processed.json.kv \
-          || true) | tee /tmp/artifacts/test-k8s-state.diff
+          /tmp/latest-scripts/k8s-diff.sh \
+            /tmp/artifacts/test-k8s-state.old.json \
+            /tmp/artifacts/test-k8s-state.new.json \
+            /tmp/artifacts/test-k8s-state.diff
           
           # Remove ANSI sequences
           sed -e 's/\x1b\[[0-9;]*m//g' -i /tmp/artifacts/test-k8s-state.diff || true
           
-          # Prepare comment message
+          # Prepare PR comment message
           echo -e "### Templates API Kubernetes Diff [CI]\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
-          echo -e "Between `base` ${{ github.event.pull_request.base.sha }} :arrow_left:  `head` ${{ github.event.pull_request.head.sha }}.\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
+          echo -e "Between \`base\` ${{ github.event.pull_request.base.sha }} :arrow_left:  \`head\` ${{ github.event.pull_request.head.sha }}.\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
           echo -e "<details>\n<summary>Expand</summary>\n\n\`\`\`diff\n" >> /tmp/artifacts/test-k8s-state.diff.message
-          cat /tmp/artifacts/test-k8s-state.diff >> /tmp/artifacts/test-k8s-state.diff.message
-          echo -e "\n\`\`\`\n</details>" >> /tmp/artifacts/test-k8s-state.diff.message
+          head -c 32768 /tmp/artifacts/test-k8s-state.diff >> /tmp/artifacts/test-k8s-state.diff.message
+          echo -e "\n\n(see artifacts in the Github Action for more information)\n\`\`\`\n</details>" >> /tmp/artifacts/test-k8s-state.diff.message
 
       - name: Upload artifacts
         if: always()
