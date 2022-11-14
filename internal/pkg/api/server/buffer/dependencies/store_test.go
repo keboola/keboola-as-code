@@ -22,6 +22,12 @@ import (
 func TestConfigStore_CreateReceiver(t *testing.T) {
 	t.Parallel()
 
+	envs, _ := env.FromOs()
+
+	if envs.Get("BUFFER_ETCD_ENABLED") == "false" {
+		t.Skip()
+	}
+
 	// Setup
 	ctx, d := newTestDeps(t)
 
