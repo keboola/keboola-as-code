@@ -147,7 +147,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 
 	// Connect to ETCD
 	// We use a longer timeout when starting the server, because ETCD could be restarted at the same time as the API.
-	etcdClient, err := initEtcdClient(serverCtx, tracer, envs, logger, serverWg, 30*time.Second)
+	etcdClient, err := newEtcdClient(serverCtx, tracer, envs, logger, serverWg, 30*time.Second)
 	if err != nil {
 		return nil, err
 	}
@@ -297,7 +297,7 @@ func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) c
 	return c
 }
 
-func initEtcdClient(
+func newEtcdClient(
 	serverCtx context.Context,
 	tracer trace.Tracer,
 	envs env.Provider,
