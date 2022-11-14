@@ -201,10 +201,15 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl st
 	etcdEndpoint := os.Getenv("BUFFER_ETCD_ENDPOINT")
 	etcdUsername := os.Getenv("BUFFER_ETCD_USERNAME")
 	etcdPassword := os.Getenv("BUFFER_ETCD_PASSWORD")
+	bufferApiHost, found := os.LookupEnv("KBC_BUFFER_API_HOST")
+	if !found || len(bufferApiHost) == 0 {
+		bufferApiHost = "buffer.keboola.com"
+	}
 
 	envs := env.Empty()
 	envs.Set("PATH", os.Getenv("PATH"))
 	envs.Set("KBC_STORAGE_API_HOST", storageApiHost)
+	envs.Set("KBC_BUFFER_API_HOST", bufferApiHost)
 	envs.Set("DATADOG_ENABLED", "false")
 	envs.Set("BUFFER_ETCD_ENABLED", "true")
 	envs.Set("BUFFER_ETCD_NAMESPACE", etcdNamespace)

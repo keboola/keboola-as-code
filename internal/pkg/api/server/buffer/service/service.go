@@ -65,7 +65,7 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 	// nolint: godox
 	// TODO: create exports
 
-	url := fmt.Sprintf("https://buffer.%s/v1/import/%s/#/%s", d.StorageApiHost(), config.ID, config.Secret)
+	url := fmt.Sprintf("https://%s/v1/import/%s/#/%s", d.BufferApiHost(), config.ID, config.Secret)
 	resp := &buffer.Receiver{
 		ReceiverID: &config.ID,
 		Name:       &config.Name,

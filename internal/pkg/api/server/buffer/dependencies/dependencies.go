@@ -69,6 +69,7 @@ type ForServer interface {
 	PrefixLogger() log.PrefixLogger
 	EtcdClient() *etcd.Client
 	ConfigStore() *ConfigStore
+	BufferApiHost() string
 }
 
 // ForPublicRequest interface provides dependencies for a public request that does not contain the Storage API token.
@@ -90,11 +91,12 @@ type ForProjectRequest interface {
 type forServer struct {
 	dependencies.Base
 	dependencies.Public
-	serverCtx   context.Context
-	serverWg    *sync.WaitGroup
-	logger      log.PrefixLogger
-	etcdClient  *etcd.Client
-	configStore *ConfigStore
+	serverCtx     context.Context
+	serverWg      *sync.WaitGroup
+	logger        log.PrefixLogger
+	etcdClient    *etcd.Client
+	configStore   *ConfigStore
+	bufferApiHost string
 }
 
 // forPublicRequest implements ForPublicRequest interface.
@@ -130,6 +132,9 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 		return nil, errors.New("KBC_STORAGE_API_HOST environment variable is not set")
 	}
 
+	// Get Buffer API host
+	bufferApiHost := strhelper.NormalizeHost(envs.MustGet("KBC_BUFFER_API_HOST"))
+
 	// Create base HTTP client for all API requests to other APIs
 	httpClient := apiHttpClient(envs, logger, debug, dumpHttp)
 
@@ -159,13 +164,14 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 
 	// Create server dependencies
 	d := &forServer{
-		Base:        baseDeps,
-		Public:      publicDeps,
-		serverCtx:   serverCtx,
-		serverWg:    serverWg,
-		logger:      logger,
-		etcdClient:  etcdClient,
-		configStore: configStore,
+		Base:          baseDeps,
+		Public:        publicDeps,
+		serverCtx:     serverCtx,
+		serverWg:      serverWg,
+		logger:        logger,
+		etcdClient:    etcdClient,
+		configStore:   configStore,
+		bufferApiHost: bufferApiHost,
 	}
 
 	return d, nil
@@ -221,6 +227,10 @@ func (v *forServer) EtcdClient() *etcd.Client {
 
 func (v *forServer) ConfigStore() *ConfigStore {
 	return v.configStore
+}
+
+func (v *forServer) BufferApiHost() string {
+	return v.bufferApiHost
 }
 
 func (v *forPublicRequest) Logger() log.Logger {

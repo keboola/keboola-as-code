@@ -1,5 +1,5 @@
 {
   "receiverId": "github-pull-requests",
   "name": "Github Pull Requests",
-  "url": "https://%s.keboola.com/v1/import/github-pull-requests/#/%s"
+  "url": "https://buffer.keboola.com/v1/import/github-pull-requests/#/%s"
 }
