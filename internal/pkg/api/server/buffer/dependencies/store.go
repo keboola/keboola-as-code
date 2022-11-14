@@ -28,7 +28,7 @@ func (c *ConfigStore) CreateReceiver(ctx context.Context, config model.Receiver)
 
 	key := fmt.Sprintf("config/%s/receiver/%s", config.ProjectID, config.ID)
 
-	logger.Infof("Reading %s count", key)
+	logger.Debugf("Reading %s count", key)
 	r, err := client.KV.Get(ctx, key, etcd.WithCountOnly())
 	if err != nil {
 		return err
@@ -37,13 +37,13 @@ func (c *ConfigStore) CreateReceiver(ctx context.Context, config model.Receiver)
 		return errors.Errorf(`receiver "%s" already exists`, config.ID)
 	}
 
-	logger.Infof("Encoding %s", key)
+	logger.Debugf("Encoding %s", key)
 	value, err := json.EncodeString(config, false)
 	if err != nil {
 		return err
 	}
 
-	logger.Infof("PUT %s %s", key, value)
+	logger.Debugf("PUT %s %s", key, value)
 	_, err = client.KV.Put(ctx, key, value)
 	if err != nil {
 		return err
