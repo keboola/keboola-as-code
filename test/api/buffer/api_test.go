@@ -35,7 +35,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-const SERVER_START_TIMEOUT = 45 * time.Second
+const serverStartTimeout = 45 * time.Second
 
 // TestBufferApiE2E runs one functional test per each subdirectory.
 func TestBufferApiE2E(t *testing.T) {
@@ -154,14 +154,14 @@ func getFreePort() (int, error) {
 func waitForAPI(cmdErrCh <-chan error, apiUrl string) error {
 	client := resty.New()
 
-	timeout := time.After(SERVER_START_TIMEOUT)
+	timeout := time.After(serverStartTimeout)
 	tick := time.Tick(200 * time.Millisecond)
 	// Keep trying until we're timed out or got a result or got an error
 	for {
 		select {
 		// Handle timeout
 		case <-timeout:
-			return errors.Errorf("server didn't start within %s", SERVER_START_TIMEOUT.String())
+			return errors.Errorf("server didn't start within %s", serverStartTimeout.String())
 		// Handle server termination
 		case err := <-cmdErrCh:
 			if err == nil {
