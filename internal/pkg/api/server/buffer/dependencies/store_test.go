@@ -32,7 +32,7 @@ func TestConfigStore_CreateReceiver(t *testing.T) {
 		ID:        "github-pull-requests",
 		ProjectID: 1000,
 		Name:      "Github Pull Requests",
-		Secret:    "test",
+		Secret:    idgenerator.ReceiverSecret(),
 	}
 	err := store.CreateReceiver(ctx, config)
 	assert.NoError(t, err)
