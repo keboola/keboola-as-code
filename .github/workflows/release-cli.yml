@@ -7,7 +7,6 @@ on:
 
 env:
   GO_VERSION: 1.19
-  VERSION: ${{ github.ref_name }}
   TAG: ${{ github.ref_name }}
 
   # DockerHub login
@@ -29,6 +28,23 @@ env:
   APPLE_TEAM_NAME: "Keboola Industries SE"
 
 jobs:
+  version:
+    name: "Parse Version"
+    runs-on: ubuntu-latest
+    outputs:
+      VERSION: ${{ steps.version.outputs.VERSION }}
+    steps:
+      - name: Set version
+        id: version
+        run: |
+          VERSION=$(echo "${{ github.ref_name }}" | sed -n -E 's:^v?([0-9]+\.[0-9]+\.[0-9]+)$:\1:p')
+          if [ -z "$VERSION" ]; then
+            echo "expected a semantic tag, found \"$TAG\""
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
   test-lint:
     name: "Lint"
     secrets: inherit
@@ -41,8 +57,12 @@ jobs:
 
   test-e2e-cli:
     name: "E2E: CLI"
+    needs:
+      - version
     secrets: inherit
     uses: ./.github/workflows/test-e2e-cli.yml
+    with:
+      version: ${{ needs.version.outputs.VERSION }}
 
   provisioning-cli-s3:
     name: "Provisioning: CLI S3"
@@ -53,6 +73,7 @@ jobs:
 
   release:
     needs:
+      - version
       - test-lint
       - test-unit
       - test-e2e-cli
@@ -61,6 +82,8 @@ jobs:
     concurrency:
       group: release
       cancel-in-progress: false
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: macos-latest
     permissions:
       id-token: write
@@ -164,7 +187,10 @@ jobs:
 
   release-msi-windows:
     needs:
+      - version
       - release
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: windows-latest
     permissions:
       id-token: write
@@ -250,7 +276,10 @@ jobs:
 
   update-repositories:
     needs:
+      - version
       - release
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
     # only one parallel job allowed - used shared S3
     concurrency:
       group: release
@@ -350,8 +379,11 @@ jobs:
 
   update-repositories-windows:
     needs:
+      - version
       - release
       - release-msi-windows
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: windows-latest
     steps:
       - name: Check out the repo
@@ -395,9 +427,12 @@ jobs:
 
   test-install-linux:
     needs:
+      - version
       - release
       - update-repositories
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
     steps:
       - name: Install on Ubuntu
         if: always()
@@ -465,8 +500,11 @@ jobs:
 
   test-install-mac-os:
     needs:
+      - version
       - release
       - update-repositories
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: macos-latest
     steps:
       - name: Remove old git package
@@ -481,6 +519,8 @@ jobs:
     needs:
       - release-msi-windows
       - update-repositories
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: windows-latest
     steps:
       - name: Download MSI
