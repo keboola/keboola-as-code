@@ -41,10 +41,7 @@ func (*service) HealthCheck(dependencies.ForPublicRequest) (res string, err erro
 func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.Receiver, err error) {
 	ctx := d.RequestCtx()
 
-	store, err := d.ConfigStore(ctx)
-	if err != nil {
-		return nil, err
-	}
+	store := d.ConfigStore()
 
 	config := model.Receiver{
 		ProjectID: strconv.Itoa(d.ProjectID()),
