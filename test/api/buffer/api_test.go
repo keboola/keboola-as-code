@@ -161,7 +161,7 @@ func waitForAPI(cmdErrCh <-chan error, apiUrl string) error {
 		select {
 		// Handle timeout
 		case <-timeout:
-			return errors.Errorf("server didn't start within %s", serverStartTimeout.String())
+			return errors.Errorf("server didn't start within %s", serverStartTimeout)
 		// Handle server termination
 		case err := <-cmdErrCh:
 			if err == nil {
