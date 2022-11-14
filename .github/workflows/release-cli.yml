@@ -10,6 +10,10 @@ env:
   VERSION: ${{ github.ref_name }}
   TAG: ${{ github.ref_name }}
 
+  # DockerHub login
+  DOCKERHUB_USER: "keboolabot"
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
   # S3 Repository in KAC Assets Account
   BASE_URL: "https://cli-dist.keboola.com"
   AWS_REGION: us-east-1
