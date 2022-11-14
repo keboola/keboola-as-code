@@ -17,16 +17,18 @@ generate() {
   # Generate code by goa.design lib
   out=`goa gen github.com/keboola/keboola-as-code/api/${API_NAME} --output ./$API_PKG 2>&1`
   status="$?"
-  
+
   # Always run finalize
   finalize
 
-  # Print stdout/stderr only if an error occurred
-  if [ "$status" -gt 0 ]; then
+  # Check exit code
+  if [ "$status" -eq 0 ]; then
+    # Move files, if the code has been generated
+    mv -f ./$API_PKG/gen/http/openapi* ./$API_PKG/openapi
+  else
+    # Print stdout/stderr only if an error occurred
     echo $out
   fi
-
-  mv -f ./$API_PKG/gen/http/openapi* ./$API_PKG/openapi || exit 1
 
   return $status
 }

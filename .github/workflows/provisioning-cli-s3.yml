@@ -1,10 +1,24 @@
 name: 'Provisioning: CLI S3 Distribution'
 
 on:
+  # This workflow is also part of the CLI release pipeline.
   workflow_call:
+    inputs:
+      deploy:
+        type: boolean
+        required: true
+  # Run tests in a PR to the main branch.
+  pull_request:
+    paths:
+      - provisioning/cli-dist/**
+    branches:
+      - main
+  # Run tests and deploy on merge to the main branch.
   push:
     paths:
       - provisioning/cli-dist/**
+    branches:
+      - main
 
 env:
   TF_VERSION: 1.1.4
@@ -73,7 +87,7 @@ jobs:
     needs:
       - production-plan
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: inputs.deploy || github.ref == 'refs/heads/main'
     permissions:
       id-token: write
       contents: read
