@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"io"
-	"strconv"
 
 	"github.com/iancoleman/strcase"
 
@@ -44,7 +43,7 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 	store := d.ConfigStore()
 
 	config := model.Receiver{
-		ProjectID: strconv.Itoa(d.ProjectID()),
+		ProjectID: d.ProjectID(),
 		Name:      payload.Name,
 	}
 

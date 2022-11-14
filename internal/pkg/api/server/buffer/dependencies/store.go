@@ -26,7 +26,7 @@ func (c *ConfigStore) CreateReceiver(ctx context.Context, config model.Receiver)
 
 	client := c.etcdClient
 
-	key := fmt.Sprintf("config/%s/receiver/%s", config.ProjectID, config.ID)
+	key := fmt.Sprintf("config/%d/receiver/%s", config.ProjectID, config.ID)
 
 	logger.Debugf(`Reading "%s" count`, key)
 	r, err := client.KV.Get(ctx, key, etcd.WithCountOnly())
