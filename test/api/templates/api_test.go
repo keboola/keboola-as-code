@@ -198,7 +198,7 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string, repositori
 	envs.Set("KBC_STORAGE_API_HOST", storageApiHost)
 	envs.Set("DATADOG_ENABLED", "false")
 	envs.Set("TEMPLATES_API_ETCD_ENABLED", "true")
-	envs.Set("TEMPLATES_API_ETCD_NAMESPACE", idgenerator.EtcdNamespaceForE2ETest())
+	envs.Set("TEMPLATES_API_ETCD_NAMESPACE", idgenerator.EtcdNamespaceForTest())
 	envs.Set("TEMPLATES_API_ETCD_ENDPOINT", os.Getenv("TEMPLATES_API_ETCD_ENDPOINT"))
 	envs.Set("TEMPLATES_API_ETCD_USERNAME", os.Getenv("TEMPLATES_API_ETCD_USERNAME"))
 	envs.Set("TEMPLATES_API_ETCD_PASSWORD", os.Getenv("TEMPLATES_API_ETCD_PASSWORD"))

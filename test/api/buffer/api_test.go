@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -33,6 +34,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
+
+const serverStartTimeout = 45 * time.Second
 
 // TestBufferApiE2E runs one functional test per each subdirectory.
 func TestBufferApiE2E(t *testing.T) {
@@ -150,14 +153,15 @@ func getFreePort() (int, error) {
 
 func waitForAPI(cmdErrCh <-chan error, apiUrl string) error {
 	client := resty.New()
-	timeout := time.After(30 * time.Second)
+
+	timeout := time.After(serverStartTimeout)
 	tick := time.Tick(200 * time.Millisecond)
 	// Keep trying until we're timed out or got a result or got an error
 	for {
 		select {
 		// Handle timeout
 		case <-timeout:
-			return errors.New("server didn't start within 30 seconds")
+			return errors.Errorf("server didn't start within %s", serverStartTimeout)
 		// Handle server termination
 		case err := <-cmdErrCh:
 			if err == nil {
@@ -193,15 +197,25 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl st
 	args := []string{fmt.Sprintf("--http-port=%d", port)}
 
 	// Envs
+	etcdNamespace := idgenerator.EtcdNamespaceForTest()
+	etcdEndpoint := os.Getenv("BUFFER_ETCD_ENDPOINT")
+	etcdUsername := os.Getenv("BUFFER_ETCD_USERNAME")
+	etcdPassword := os.Getenv("BUFFER_ETCD_PASSWORD")
+	bufferApiHost, found := os.LookupEnv("KBC_BUFFER_API_HOST")
+	if !found || len(bufferApiHost) == 0 {
+		bufferApiHost = "buffer.keboola.com"
+	}
+
 	envs := env.Empty()
 	envs.Set("PATH", os.Getenv("PATH"))
 	envs.Set("KBC_STORAGE_API_HOST", storageApiHost)
+	envs.Set("KBC_BUFFER_API_HOST", bufferApiHost)
 	envs.Set("DATADOG_ENABLED", "false")
 	envs.Set("BUFFER_ETCD_ENABLED", "true")
-	envs.Set("BUFFER_ETCD_NAMESPACE", idgenerator.EtcdNamespaceForE2ETest())
-	envs.Set("BUFFER_ETCD_ENDPOINT", os.Getenv("BUFFER_ETCD_ENDPOINT"))
-	envs.Set("BUFFER_ETCD_USERNAME", os.Getenv("BUFFER_ETCD_USERNAME"))
-	envs.Set("BUFFER_ETCD_PASSWORD", os.Getenv("BUFFER_ETCD_PASSWORD"))
+	envs.Set("BUFFER_ETCD_NAMESPACE", etcdNamespace)
+	envs.Set("BUFFER_ETCD_ENDPOINT", etcdEndpoint)
+	envs.Set("BUFFER_ETCD_USERNAME", etcdUsername)
+	envs.Set("BUFFER_ETCD_PASSWORD", etcdPassword)
 
 	// Start API server
 	stdout = newCmdOut()
@@ -219,11 +233,23 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl st
 		cmdErrCh <- cmd.Wait()
 	}()
 
-	// Kill API server after test
 	t.Cleanup(func() {
+		// kill api server
 		if err := cmd.Process.Kill(); err != nil {
 			assert.NoError(t, err)
 		}
+
+		// delete etcd namespace
+		ctx := context.Background()
+		client, err := etcd.New(etcd.Config{
+			Context:   ctx,
+			Endpoints: []string{etcdEndpoint},
+			Username:  etcdUsername,
+			Password:  etcdPassword,
+		})
+		assert.NoError(t, err)
+		_, err = client.KV.Delete(ctx, etcdNamespace, etcd.WithPrefix())
+		assert.NoError(t, err)
 	})
 
 	// Wait for API server
