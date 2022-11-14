@@ -44,6 +44,7 @@ import (
 	telemetryUtils "github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 type ctxKey string
@@ -151,7 +152,9 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 		return nil, err
 	}
 
-	configStore := NewConfigStore(logger, etcdClient)
+	// Create config store
+	validator := validator.New()
+	configStore := NewConfigStore(logger, etcdClient, validator)
 
 	// Create server dependencies
 	d := &forServer{

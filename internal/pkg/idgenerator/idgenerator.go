@@ -7,7 +7,7 @@ const (
 	RequestIdLength               = 15
 	TemplateInstanceIdLength      = 25
 	EtcdNamespaceForE2ETestLength = 10
-	ReceiverSecretLength          = 32
+	ReceiverSecretLength          = 48
 )
 
 // alphabet used in ID generation.
