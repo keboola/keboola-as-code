@@ -23,14 +23,14 @@ func NewConfigStore(logger log.Logger, etcdClient *etcd.Client, validator valida
 	return &ConfigStore{logger, etcdClient, validator}
 }
 
-func (c *ConfigStore) CreateReceiver(ctx context.Context, config model.Receiver) error {
+func (c *ConfigStore) CreateReceiver(ctx context.Context, receiver model.Receiver) error {
 	logger, client := c.logger, c.etcdClient
 
-	if err := c.validator.Validate(ctx, config); err != nil {
+	if err := c.validator.Validate(ctx, receiver); err != nil {
 		return err
 	}
 
-	key := fmt.Sprintf("config/%d/receiver/%s", config.ProjectID, config.ID)
+	key := fmt.Sprintf("config/%d/receiver/%s", receiver.ProjectID, receiver.ID)
 
 	logger.Debugf(`Reading "%s" count`, key)
 	r, err := client.KV.Get(ctx, key, etcd.WithCountOnly())
@@ -38,11 +38,11 @@ func (c *ConfigStore) CreateReceiver(ctx context.Context, config model.Receiver)
 		return err
 	}
 	if r.Count > 0 {
-		return errors.Errorf(`receiver "%s" already exists`, config.ID)
+		return errors.Errorf(`receiver "%s" already exists`, receiver.ID)
 	}
 
 	logger.Debugf(`Encoding "%s"`, key)
-	value, err := json.EncodeString(config, false)
+	value, err := json.EncodeString(receiver, false)
 	if err != nil {
 		return err
 	}
