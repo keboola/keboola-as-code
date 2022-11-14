@@ -66,8 +66,8 @@ type ForServer interface {
 	ServerCtx() context.Context
 	ServerWaitGroup() *sync.WaitGroup
 	PrefixLogger() log.PrefixLogger
-	EtcdClient(ctx context.Context) (*etcd.Client, error)
-	ConfigStore(ctx context.Context) (*ConfigStore, error)
+	EtcdClient() *etcd.Client
+	ConfigStore() *ConfigStore
 }
 
 // ForPublicRequest interface provides dependencies for a public request that does not contain the Storage API token.
@@ -92,8 +92,8 @@ type forServer struct {
 	serverCtx   context.Context
 	serverWg    *sync.WaitGroup
 	logger      log.PrefixLogger
-	etcdClient  dependencies.Lazy[*etcd.Client]
-	configStore dependencies.Lazy[*ConfigStore]
+	etcdClient  *etcd.Client
+	configStore *ConfigStore
 }
 
 // forPublicRequest implements ForPublicRequest interface.
@@ -144,20 +144,24 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	}
 	logger.Infof("loaded Storage API index | %s", time.Since(startTime))
 
-	// Create server dependencies
-	d := &forServer{
-		Base:      baseDeps,
-		Public:    publicDeps,
-		serverCtx: serverCtx,
-		serverWg:  serverWg,
-		logger:    logger,
+	// Connect to ETCD
+	// We use a longer timeout when starting the server, because ETCD could be restarted at the same time as the API.
+	etcdClient, err := initEtcdClient(serverCtx, tracer, envs, logger, serverWg, 30*time.Second)
+	if err != nil {
+		return nil, err
 	}
 
-	// Test connection to etcd at server startup
-	// We use a longer timeout when starting the server, because ETCD could be restarted at the same time as the API.
-	etcdCtx := context.WithValue(serverCtx, EtcdConnectionTimeoutCtxKey, 30*time.Second)
-	if _, err := d.EtcdClient(etcdCtx); err != nil {
-		d.Logger().Warnf("cannot connect to etcd: %s", err.Error())
+	configStore := NewConfigStore(logger, etcdClient)
+
+	// Create server dependencies
+	d := &forServer{
+		Base:        baseDeps,
+		Public:      publicDeps,
+		serverCtx:   serverCtx,
+		serverWg:    serverWg,
+		logger:      logger,
+		etcdClient:  etcdClient,
+		configStore: configStore,
 	}
 
 	return d, nil
@@ -207,92 +211,12 @@ func (v *forServer) PrefixLogger() log.PrefixLogger {
 	return v.logger
 }
 
-func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
-	return v.etcdClient.InitAndGet(func() (*etcd.Client, error) {
-		ctx, span := v.Tracer().Start(ctx, "kac.api.server.buffer.dependencies.EtcdClient")
-		defer telemetryUtils.EndSpan(span, nil)
-
-		// Check if etcd is enabled
-		if v.Envs().Get("BUFFER_ETCD_ENABLED") == "false" {
-			return nil, errors.New("etcd integration is disabled")
-		}
-
-		// Get endpoint
-		endpoint := v.Envs().Get("BUFFER_ETCD_ENDPOINT")
-		if endpoint == "" {
-			return nil, errors.New("BUFFER_ETCD_HOST is not set")
-		}
-
-		// Get namespace
-		namespacePrefix := v.Envs().Get("BUFFER_ETCD_NAMESPACE")
-		if namespacePrefix == "" {
-			return nil, errors.New("BUFFER_ETCD_NAMESPACE is not set")
-		}
-
-		// Get timeout
-		connectTimeout := EtcdDefaultConnectionTimeout
-		if v, found := ctx.Value(EtcdConnectionTimeoutCtxKey).(time.Duration); found {
-			connectTimeout = v
-		}
-
-		// Create client
-		startTime := time.Now()
-		v.logger.Infof("connecting to etcd, timeout=%s", connectTimeout)
-		c, err := etcd.New(etcd.Config{
-			Context:              v.serverCtx, // !!! a long-lived context must be used, client exists as long as the entire server
-			Endpoints:            []string{endpoint},
-			DialTimeout:          connectTimeout,
-			DialKeepAliveTimeout: EtcdKeepAliveTimeout,
-			DialKeepAliveTime:    EtcdKeepAliveInterval,
-			Username:             v.Envs().Get("BUFFER_ETCD_USERNAME"), // optional
-			Password:             v.Envs().Get("BUFFER_ETCD_PASSWORD"), // optional
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		// Prefix client by namespace
-		namespacePrefix = strings.Trim(namespacePrefix, " /") + "/"
-		c.KV = namespace.NewKV(c.KV, namespacePrefix)
-		c.Watcher = namespace.NewWatcher(c.Watcher, namespacePrefix)
-		c.Lease = namespace.NewLease(c.Lease, namespacePrefix)
-
-		// Context for connection test
-		syncCtx, syncCancelFn := context.WithTimeout(ctx, connectTimeout)
-		defer syncCancelFn()
-
-		// Sync endpoints list from cluster (also serves as a connection check)
-		if err := c.Sync(syncCtx); err != nil {
-			c.Close()
-			return nil, err
-		}
-
-		// Close client when shutting down the server
-		wg := v.ServerWaitGroup()
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			<-v.serverCtx.Done()
-			if err := c.Close(); err != nil {
-				v.Logger().Warnf("cannot close connection etcd: %s", err)
-			} else {
-				v.Logger().Info("closed connection to etcd")
-			}
-		}()
-
-		v.logger.Infof(`connected to etcd cluster "%s" | %s`, c.Endpoints()[0], time.Since(startTime))
-		return c, nil
-	})
+func (v *forServer) EtcdClient() *etcd.Client {
+	return v.etcdClient
 }
 
-func (v *forServer) ConfigStore(ctx context.Context) (*ConfigStore, error) {
-	return v.configStore.InitAndGet(func() (*ConfigStore, error) {
-		_, err := v.EtcdClient(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return NewConfigStore(v), nil
-	})
+func (v *forServer) ConfigStore() *ConfigStore {
+	return v.configStore
 }
 
 func (v *forPublicRequest) Logger() log.Logger {
@@ -368,4 +292,76 @@ func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) c
 	}
 
 	return c
+}
+
+func initEtcdClient(
+	serverCtx context.Context,
+	tracer trace.Tracer,
+	envs env.Provider,
+	logger log.Logger,
+	serverWg *sync.WaitGroup,
+	timeout time.Duration,
+) (*etcd.Client, error) {
+	ctx, span := tracer.Start(serverCtx, "kac.api.server.buffer.dependencies.EtcdClient")
+	defer telemetryUtils.EndSpan(span, nil)
+
+	// Get endpoint
+	endpoint := envs.Get("BUFFER_ETCD_ENDPOINT")
+	if endpoint == "" {
+		return nil, errors.New("BUFFER_ETCD_HOST is not set")
+	}
+
+	// Get namespace
+	namespacePrefix := envs.Get("BUFFER_ETCD_NAMESPACE")
+	if namespacePrefix == "" {
+		return nil, errors.New("BUFFER_ETCD_NAMESPACE is not set")
+	}
+
+	// Create client
+	startTime := time.Now()
+	logger.Infof("connecting to etcd, timeout=%s", timeout)
+	c, err := etcd.New(etcd.Config{
+		Context:              serverCtx, // !!! a long-lived context must be used, client exists as long as the entire server
+		Endpoints:            []string{endpoint},
+		DialTimeout:          timeout,
+		DialKeepAliveTimeout: EtcdKeepAliveTimeout,
+		DialKeepAliveTime:    EtcdKeepAliveInterval,
+		Username:             envs.Get("BUFFER_ETCD_USERNAME"), // optional
+		Password:             envs.Get("BUFFER_ETCD_PASSWORD"), // optional
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Prefix client by namespace
+	namespacePrefix = strings.Trim(namespacePrefix, " /") + "/"
+	c.KV = namespace.NewKV(c.KV, namespacePrefix)
+	c.Watcher = namespace.NewWatcher(c.Watcher, namespacePrefix)
+	c.Lease = namespace.NewLease(c.Lease, namespacePrefix)
+
+	// Context for connection test
+	syncCtx, syncCancelFn := context.WithTimeout(ctx, timeout)
+	defer syncCancelFn()
+
+	// Sync endpoints list from cluster (also serves as a connection check)
+	if err := c.Sync(syncCtx); err != nil {
+		c.Close()
+		return nil, err
+	}
+
+	// Close client when shutting down the server
+	wg := serverWg
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-serverCtx.Done()
+		if err := c.Close(); err != nil {
+			logger.Warnf("cannot close connection etcd: %s", err)
+		} else {
+			logger.Info("closed connection to etcd")
+		}
+	}()
+
+	logger.Infof(`connected to etcd cluster "%s" | %s`, c.Endpoints()[0], time.Since(startTime))
+	return c, nil
 }
