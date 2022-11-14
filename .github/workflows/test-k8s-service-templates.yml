@@ -1,13 +1,17 @@
 name: 'K8S: Templates API'
 
 on:
+  # This workflow is also part of the release pipeline,
+  # in that case, the actual version is deployed twice.
   workflow_call:
+  # In PR the previous version is deployed first and then the actual version.
   pull_request:
     paths:
       - provisioning/templates-api/**
       - provisioning/common/**
 
 env:
+  SERVICE_NAME: Templates API
   MINIKUBE_PROFILE: templates-api
   KUBERNETES_NAMESPACE: templates-api
   API_RELEASE_NAME: templates-api
@@ -45,7 +49,7 @@ jobs:
       - name: Set Kubernetes namespace
         run: kubectl config set-context --current "--namespace=$KUBERNETES_NAMESPACE"
 
-      - name: Checkout BASE branch
+      - name: Checkout BASE branch (or HEAD if it is not a pull request)
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.base.ref }}
@@ -70,8 +74,13 @@ jobs:
         continue-on-error: true
         run: |
           set -Eeuo pipefail
-          # Delete empty old replicas
-          kubectl delete --namespace templates-api $(kubectl get all --namespace templates-api | grep replicaset.apps | awk '{if ($2 + $3 + $4 == 0) print $1}')
+          # Delete empty old replica sets
+          emptyReplicaSets=$(kubectl get replicasets --ignore-not-found | tail --lines=+2 | awk '{if ($2 + $3 + $4 == 0) print $1}')
+          echo -e "Found empty replica sets:"
+          echo "$emptyReplicaSets"
+          echo "-------------------------" 
+          echo "$emptyReplicaSets" | xargs --no-run-if-empty -I {} kubectl delete replicaset "{}"
+          
           # Wait for pod startup/termination
           sleep 10
           # Dump objects
@@ -161,7 +170,7 @@ jobs:
           sed -e 's/\x1b\[[0-9;]*m//g' -i /tmp/artifacts/test-k8s-state.diff || true
           
           # Prepare PR comment message
-          echo -e "### Templates API Kubernetes Diff [CI]\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
+          echo -e "### ${{ env.SERVICE_NAME }} Kubernetes Diff [CI]\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
           echo -e "Between \`base\` ${{ github.event.pull_request.base.sha }} :arrow_left:  \`head\` ${{ github.event.pull_request.head.sha }}.\n\n" >> /tmp/artifacts/test-k8s-state.diff.message
           echo -e "<details>\n<summary>Expand</summary>\n\n\`\`\`diff\n" >> /tmp/artifacts/test-k8s-state.diff.message
           head -c 32768 /tmp/artifacts/test-k8s-state.diff >> /tmp/artifacts/test-k8s-state.diff.message
