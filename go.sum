@@ -305,8 +305,8 @@ github.com/keboola/go-client v0.13.0 h1:6uHsLDaXBOiZe4CbHqFRQq0Ek7ijRjJP3T7p1wYG
 github.com/keboola/go-client v0.13.0/go.mod h1:6h1GtDAIR6WVjHEAb3oClKfj3opH59u0CNxFT2cBN7I=
 github.com/keboola/go-jsonnet v0.18.1-0.20220810085752-aee7595aa305 h1:hS/jX0HQzeGZWjMBSAs/IqrJTrTB5/BlYu7UcjFW9NU=
 github.com/keboola/go-jsonnet v0.18.1-0.20220810085752-aee7595aa305/go.mod h1:2YGGjrWbRtdL5/lAp1anatj8zA+y/fKT0lLWvTqk+/Q=
-github.com/keboola/go-utils v0.6.1 h1:+U453ps7jDNcSAYYjFAXr2ECL3zoh2Cg1oISK0he624=
-github.com/keboola/go-utils v0.6.1/go.mod h1:5wkrBfGBpJ/COCkBO0JPckD0e9sdT1PQo09Phx+kqrw=
+github.com/keboola/go-utils v0.6.2 h1:drCyJA1+0xslOe/G53G4zd/M9Bgp7fLIkrj3AkUOanY=
+github.com/keboola/go-utils v0.6.2/go.mod h1:5wkrBfGBpJ/COCkBO0JPckD0e9sdT1PQo09Phx+kqrw=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
