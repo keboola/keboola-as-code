@@ -231,13 +231,16 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl st
 			assert.NoError(t, err)
 		}
 
+		timeout := 45 * time.Second
+
 		// delete etcd namespace
 		ctx := context.Background()
 		client, err := etcd.New(etcd.Config{
-			Context:   ctx,
-			Endpoints: []string{etcdEndpoint},
-			Username:  etcdUsername,
-			Password:  etcdPassword,
+			Context:     ctx,
+			Endpoints:   []string{etcdEndpoint},
+			DialTimeout: timeout,
+			Username:    etcdUsername,
+			Password:    etcdPassword,
 		})
 		assert.NoError(t, err)
 		_, err = client.KV.Delete(ctx, etcdNamespace, etcd.WithPrefix())
