@@ -1,4 +1,4 @@
 {
   "api": "buffer",
-  "documentation": "https://buffer.keboola.com/v1/documentation"
+  "documentation": "https://%s.keboola.com/v1/documentation"
 }
