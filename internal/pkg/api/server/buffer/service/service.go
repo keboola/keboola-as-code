@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/iancoleman/strcase"
-
 	dependencies "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 type service struct{}
@@ -51,7 +50,7 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 	if payload.ReceiverID != nil {
 		config.ID = *payload.ReceiverID
 	} else {
-		config.ID = strcase.ToKebab(config.Name)
+		config.ID = strhelper.NormalizeName(config.Name)
 	}
 
 	// Generate Secret
