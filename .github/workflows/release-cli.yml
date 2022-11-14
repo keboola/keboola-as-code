@@ -11,9 +11,9 @@ env:
   TAG: ${{ github.ref_name }}
 
   # S3 Repository in KAC Assets Account
+  BASE_URL: "https://cli-dist.keboola.com"
   AWS_REGION: us-east-1
   AWS_BUCKET_NAME: cli-dist-keboola-com
-  HOST_BASE_URL: "https://cli-dist.keboola.com"
 
   # WinGet packages
   WINGET_PACKAGES_REPO_FORK: "keboola/winget-pkgs"
@@ -113,6 +113,12 @@ jobs:
         run: make release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CLI_DIST_BASE_URL: ${{ env.BASE_URL }}
+          CLI_DIST_AWS_REGION: ${{ env.AWS_REGION }}
+          CLI_DIST_AWS_BUCKET_NAME: ${{ env.AWS_BUCKET_NAME }}
+          CLI_DIST_AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          CLI_DIST_AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          CLI_DIST_AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
           DEB_KEY_PRIVATE_PATH: /tmp/keys/deb.key
           RPM_KEY_PRIVATE_PATH: /tmp/keys/rpm.key
           APK_KEY_PRIVATE_PATH: /tmp/keys/apk.key
@@ -304,10 +310,13 @@ jobs:
 
       - name: Mount KAC Assets S3 Bucket
         uses: ./.github/actions/mount-s3
-        env:
-          AWS_BUCKET_NAME: ${{ env.AWS_BUCKET_NAME }}
         with:
           mountedFolder: /s3bucket
+          awsRegion: ${{ env.AWS_REGION }}
+          awsBucketName: ${{ env.AWS_BUCKET_NAME }}
+          awsAccessKeyId: ${{ env.AWS_ACCESS_KEY_ID }}
+          awsSecretAccessKey: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          awsSessionToken: ${{ env.AWS_SESSION_TOKEN }}
 
       - name: Index Linux packages in KAC Assets S3
         run: ./build/package/linux/index.sh /s3bucket
@@ -353,7 +362,7 @@ jobs:
           New-Item -ItemType "directory" -Path ".\build\package\chocolatey\push"
           New-Item -ItemType "directory" -Path ".\build\package\chocolatey\push\tools"
           cd .\build\package\chocolatey\push
-          $url="$env:HOST_BASE_URL/msi/$env:MSI_FILE"
+          $url="$env:BASE_URL/msi/$env:MSI_FILE"
           ((Get-Content -path ..\keboola-cli.nuspec -Raw) -replace '{VERSION}',$env:VERSION) | Set-Content -Path .\keboola-cli.nuspec
           ((Get-Content -path ..\chocolateyinstall.ps1 -Raw) -replace '{URL}',$url -replace '{CHECKSUM}',$env:MSI_CHECKSUM) | Set-Content -Path .\tools\chocolateyinstall.ps1
           choco apikey -k $env:CHOCOLATEY_KEY -s https://push.chocolatey.org/
@@ -377,7 +386,7 @@ jobs:
           MSI_FILE: ${{ needs.release-msi-windows.outputs.msi_file }}
         run: |
           curl -kLSs https://aka.ms/wingetcreate/latest -o wingetcreate.exe
-          msiUrl="${HOST_BASE_URL}/msi/${MSI_FILE}"
+          msiUrl="${BASE_URL}/msi/${MSI_FILE}"
           ./wingetcreate.exe update -v $VERSION -u $msiUrl -t $GITHUB_TOKEN Keboola.KeboolaCLI -s
 
   test-install-linux:
@@ -475,7 +484,7 @@ jobs:
         env:
           MSI_FILE: ${{ needs.release-msi-windows.outputs.msi_file }}
         run: |
-          curl "${HOST_BASE_URL}/msi/${MSI_FILE}" --output install.msi
+          curl "${BASE_URL}/msi/${MSI_FILE}" --output install.msi
 
       - name: Install on Windows from MSI
         shell: bash
