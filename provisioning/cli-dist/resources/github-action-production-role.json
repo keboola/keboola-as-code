@@ -41,9 +41,12 @@
                 "StringEquals": {
                   "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
                 },
-                "StringLike": {
+                "ForAnyValue:StringLike": {
                   "token.actions.githubusercontent.com:sub": {
-                    "Fn::Sub": "repo:${GitHubOrganization}/${RepositoryName}:ref:refs/heads/main"
+                    "Fn::Sub": [
+                      "repo:${GitHubOrganization}/${RepositoryName}:ref:refs/heads/main",
+                      "repo:${GitHubOrganization}/${RepositoryName}:ref:refs/tags/v*"
+                    ]
                   }
                 }
               }
