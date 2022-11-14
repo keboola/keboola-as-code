@@ -135,6 +135,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 
 	// Create base dependencies
 	baseDeps := dependencies.NewBaseDeps(envs, tracer, logger, httpClient)
+	tracer = baseDeps.Tracer()
 
 	// Create public dependencies - load API index
 	startTime := time.Now()
