@@ -35,6 +35,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
+const SERVER_START_TIMEOUT = 45 * time.Second
+
 // TestBufferApiE2E runs one functional test per each subdirectory.
 func TestBufferApiE2E(t *testing.T) {
 	t.Parallel()
@@ -151,14 +153,15 @@ func getFreePort() (int, error) {
 
 func waitForAPI(cmdErrCh <-chan error, apiUrl string) error {
 	client := resty.New()
-	timeout := time.After(30 * time.Second)
+
+	timeout := time.After(SERVER_START_TIMEOUT)
 	tick := time.Tick(200 * time.Millisecond)
 	// Keep trying until we're timed out or got a result or got an error
 	for {
 		select {
 		// Handle timeout
 		case <-timeout:
-			return errors.New("server didn't start within 30 seconds")
+			return errors.Errorf("server didn't start within %s", SERVER_START_TIMEOUT.String())
 		// Handle server termination
 		case err := <-cmdErrCh:
 			if err == nil {
@@ -231,16 +234,13 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl st
 			assert.NoError(t, err)
 		}
 
-		timeout := 45 * time.Second
-
 		// delete etcd namespace
 		ctx := context.Background()
 		client, err := etcd.New(etcd.Config{
-			Context:     ctx,
-			Endpoints:   []string{etcdEndpoint},
-			DialTimeout: timeout,
-			Username:    etcdUsername,
-			Password:    etcdPassword,
+			Context:   ctx,
+			Endpoints: []string{etcdEndpoint},
+			Username:  etcdUsername,
+			Password:  etcdPassword,
 		})
 		assert.NoError(t, err)
 		_, err = client.KV.Delete(ctx, etcdNamespace, etcd.WithPrefix())
