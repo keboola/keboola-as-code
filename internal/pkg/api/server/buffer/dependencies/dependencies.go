@@ -127,13 +127,16 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	serverWg := &sync.WaitGroup{}
 
 	// Get Storage API host
-	storageApiHost := strhelper.NormalizeHost(envs.MustGet("KBC_STORAGE_API_HOST"))
+	storageApiHost := strhelper.NormalizeHost(envs.Get("KBC_STORAGE_API_HOST"))
 	if storageApiHost == "" {
-		return nil, errors.New("KBC_STORAGE_API_HOST environment variable is not set")
+		return nil, errors.New("KBC_STORAGE_API_HOST environment variable is empty or not set")
 	}
 
 	// Get Buffer API host
-	bufferApiHost := strhelper.NormalizeHost(envs.MustGet("KBC_BUFFER_API_HOST"))
+	bufferApiHost := strhelper.NormalizeHost(envs.Get("KBC_BUFFER_API_HOST"))
+	if bufferApiHost == "" {
+		return nil, errors.New("KBC_BUFFER_API_HOST environment variable is empty or not set")
+	}
 
 	// Create base HTTP client for all API requests to other APIs
 	httpClient := apiHttpClient(envs, logger, debug, dumpHttp)
