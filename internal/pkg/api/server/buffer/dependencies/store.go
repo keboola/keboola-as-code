@@ -12,26 +12,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type storeDeps interface {
-	Logger() log.Logger
-	EtcdClient(ctx context.Context) (*etcd.Client, error)
-}
-
 type ConfigStore struct {
-	d storeDeps
+	logger     log.Logger
+	etcdClient *etcd.Client
 }
 
-func NewConfigStore(d storeDeps) *ConfigStore {
-	return &ConfigStore{d: d}
+func NewConfigStore(logger log.Logger, etcdClient *etcd.Client) *ConfigStore {
+	return &ConfigStore{logger, etcdClient}
 }
 
 func (c *ConfigStore) CreateReceiver(ctx context.Context, config model.Receiver) error {
-	logger := c.d.Logger()
+	logger := c.logger
 
-	client, err := c.d.EtcdClient(ctx)
-	if err != nil {
-		return err
-	}
+	client := c.etcdClient
 
 	key := fmt.Sprintf("config/%s/receiver/%s", config.ProjectID, config.ID)
 
