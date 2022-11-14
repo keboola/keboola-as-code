@@ -16,7 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 func TestConfigStore_CreateReceiver(t *testing.T) {
@@ -25,12 +25,12 @@ func TestConfigStore_CreateReceiver(t *testing.T) {
 	// Setup
 	ctx, d := newTestDeps(t)
 
-	store := NewConfigStore(d)
+	store := NewConfigStore(d.logger, d.etcdClient, d.validator)
 
 	// Create receiver
 	config := model.Receiver{
 		ID:        "github-pull-requests",
-		ProjectID: "1000",
+		ProjectID: 1000,
 		Name:      "Github Pull Requests",
 		Secret:    "test",
 	}
@@ -46,7 +46,7 @@ func TestConfigStore_CreateReceiver(t *testing.T) {
 
 	found := false
 	for _, v := range r.Kvs {
-		found = strings.HasPrefix(string(v.Key), fmt.Sprintf("config/%s/receiver/%s", config.ProjectID, config.ID))
+		found = strings.HasPrefix(string(v.Key), fmt.Sprintf("config/%d/receiver/%s", config.ProjectID, config.ID))
 		if found {
 			assert.Equal(t, string(v.Value), encodedConfig)
 		}
@@ -61,6 +61,7 @@ func newTestDeps(t *testing.T) (context.Context, *testDeps) {
 	d := &testDeps{
 		logger:     log.NewDebugLogger(),
 		etcdClient: newTestEtcdClient(t, ctx),
+		validator:  validator.New(),
 	}
 	return ctx, d
 }
@@ -68,17 +69,7 @@ func newTestDeps(t *testing.T) (context.Context, *testDeps) {
 type testDeps struct {
 	logger     log.DebugLogger
 	etcdClient *etcd.Client
-}
-
-func (d *testDeps) Logger() log.Logger {
-	return d.logger
-}
-
-func (d *testDeps) EtcdClient(_ context.Context) (*etcd.Client, error) {
-	if d.etcdClient == nil {
-		return nil, errors.New("some etcd client error")
-	}
-	return d.etcdClient, nil
+	validator  validator.Validator
 }
 
 func newTestEtcdClient(t *testing.T, ctx context.Context) *etcd.Client {
@@ -86,11 +77,6 @@ func newTestEtcdClient(t *testing.T, ctx context.Context) *etcd.Client {
 
 	envs, err := env.FromOs()
 	assert.NoError(t, err)
-
-	// Check if etcd is enabled
-	if envs.Get("BUFFER_ETCD_ENABLED") == "false" {
-		t.Skipf("etcd disabled")
-	}
 
 	// Create etcd client
 	etcdClient, err := etcd.New(etcd.Config{
