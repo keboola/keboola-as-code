@@ -100,34 +100,34 @@ func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.Ge
 	return resp, nil
 }
 
-func (*service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListReceiversPayload) (res []*buffer.Receiver, err error) {
+func (*service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListReceiversPayload) (res *buffer.ListReceiversResult, err error) {
 	ctx, store := d.RequestCtx(), d.ConfigStore()
 
 	projectId := d.ProjectID()
 
-	receivers, err := store.ListReceivers(ctx, projectId)
+	data, err := store.ListReceivers(ctx, projectId)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list receivers in project \"%d\"", projectId)
 	}
 
 	bufferApiHost := d.BufferApiHost()
 
-	resp := make([]*buffer.Receiver, 0, len(receivers))
-	for _, receiver := range receivers {
-		url := formatUrl(bufferApiHost, receiver.ID, receiver.Secret)
-		resp = append(resp, &buffer.Receiver{
-			ReceiverID: &receiver.ID,
-			Name:       &receiver.Name,
+	receivers := make([]*buffer.Receiver, 0, len(data))
+	for _, entry := range data {
+		url := formatUrl(bufferApiHost, entry.ID, entry.Secret)
+		receivers = append(receivers, &buffer.Receiver{
+			ReceiverID: &entry.ID,
+			Name:       &entry.Name,
 			URL:        &url,
 			Exports:    []*Export{},
 		})
 	}
 
-	sort.SliceStable(resp, func(i, j int) bool {
-		return *resp[i].ReceiverID < *resp[j].ReceiverID
+	sort.SliceStable(receivers, func(i, j int) bool {
+		return *receivers[i].ReceiverID < *receivers[j].ReceiverID
 	})
 
-	return resp, nil
+	return &buffer.ListReceiversResult{Receivers: receivers}, nil
 }
 
 func (*service) DeleteReceiver(dependencies.ForProjectRequest, *buffer.DeleteReceiverPayload) (res *buffer.Receiver, err error) {

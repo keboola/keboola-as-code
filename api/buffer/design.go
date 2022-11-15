@@ -147,7 +147,9 @@ var _ = Service("buffer", func() {
 	Method("ListReceivers", func() {
 		Meta("openapi:summary", "List all receivers")
 		Description("List all receivers for a given project.")
-		Result(ArrayOf(Receiver))
+		Result(func() {
+			Attribute("receivers", ArrayOf(Receiver))
+		})
 		HTTP(func() {
 			GET("/receivers")
 			Meta("openapi:tag:configuration")
