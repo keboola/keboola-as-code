@@ -3,6 +3,7 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -23,15 +24,8 @@ import (
 func TestConfigStore_CreateReceiver(t *testing.T) {
 	t.Parallel()
 
-	envs, _ := env.FromOs()
-
-	if envs.Get("BUFFER_ETCD_ENABLED") == "false" {
-		t.Skip()
-	}
-
 	// Setup
 	ctx, d := newTestDeps(t)
-
 	store := NewConfigStore(d.logger, d.etcdClient, d.validator, d.tracer)
 
 	// Create receiver
@@ -61,6 +55,73 @@ func TestConfigStore_CreateReceiver(t *testing.T) {
 	assert.True(t, found, "inserted config not found")
 }
 
+func TestConfigStore_GetReceiver(t *testing.T) {
+	t.Parallel()
+
+	// Setup
+	ctx, d := newTestDeps(t)
+	store := NewConfigStore(d.logger, d.etcdClient, d.validator, d.tracer)
+
+	// Create receiver
+	input := &model.Receiver{
+		ID:        "github-pull-requests",
+		ProjectID: 1000,
+		Name:      "Github Pull Requests",
+		Secret:    idgenerator.ReceiverSecret(),
+	}
+	err := store.CreateReceiver(ctx, *input)
+	assert.NoError(t, err)
+
+	// Get receiver
+	receiver, err := store.GetReceiver(ctx, input.ProjectID, input.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, input, receiver)
+}
+
+func TestConfigStore_ListReceivers(t *testing.T) {
+	t.Parallel()
+
+	// Setup
+	ctx, d := newTestDeps(t)
+	store := NewConfigStore(d.logger, d.etcdClient, d.validator, d.tracer)
+
+	projectId := 1000
+
+	// Create receivers
+	input := []*model.Receiver{
+		{
+			ID:        "github-pull-requests",
+			ProjectID: projectId,
+			Name:      "Github Pull Requests",
+			Secret:    idgenerator.ReceiverSecret(),
+		},
+		{
+			ID:        "github-issues",
+			ProjectID: projectId,
+			Name:      "Github Issues",
+			Secret:    idgenerator.ReceiverSecret(),
+		},
+	}
+
+	sort.SliceStable(input, func(i, j int) bool {
+		return input[i].ID < input[j].ID
+	})
+
+	for _, r := range input {
+		err := store.CreateReceiver(ctx, *r)
+		assert.NoError(t, err)
+	}
+
+	// List receivers
+	receivers, err := store.ListReceivers(ctx, projectId)
+	assert.NoError(t, err)
+
+	sort.SliceStable(receivers, func(i, j int) bool {
+		return receivers[i].ID < receivers[j].ID
+	})
+	assert.Equal(t, input, receivers)
+}
+
 type testDeps struct {
 	logger     log.DebugLogger
 	etcdClient *etcd.Client
@@ -86,6 +147,10 @@ func newTestEtcdClient(t *testing.T, ctx context.Context) *etcd.Client {
 
 	envs, err := env.FromOs()
 	assert.NoError(t, err)
+
+	if envs.Get("BUFFER_ETCD_ENABLED") == "false" {
+		t.Skip()
+	}
 
 	// Create etcd client
 	etcdClient, err := etcd.New(etcd.Config{
