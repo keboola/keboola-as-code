@@ -2,9 +2,9 @@ root = "."
 tmp_dir = "target/.watcher"
 
 [build]
-  bin = "./target/buffer-api/worker"
-  args_bin = []
-  cmd = "make build-buffer-worker"
+  bin = "./target/buffer/api"
+  args_bin = ["--http-host=0.0.0.0", "--http-port=8001"]
+  cmd = "make build-buffer-api"
   delay = 2000
   exclude_dir = ["internal/pkg/api/server/buffer/gen"]
   exclude_file = []

@@ -10,7 +10,6 @@ Entrypoint:
 Directories:
 - `dev` - various auxiliary files for development.
 - `docker` - docker image of the service.
-- `etcd` - configuration of the etcd cluster.
 - `kubernetes` - templates of the Kubernetes configurations.
 
 Included files (they are not called directly):
@@ -32,7 +31,7 @@ Included files (they are not called directly):
 
 In most cases, it is enough to run the service locally via Docker.
 ```sh
-docker-compose run --rm -u "$UID:$GID" --service-ports dev bas
+docker-compose run --rm -u "$UID:$GID" --service-ports dev base
 make run-templates-api
 ```
 
@@ -75,8 +74,8 @@ kubectl run --tty --stdin --rm --restart=Never templates-api-etcd-client \
   --image docker.io/bitnami/etcd:3.5.5-debian-11-r16 \
   --labels="templates-api-etcd-client=true" \
   --env="ETCD_ROOT_PASSWORD=$ETCD_ROOT_PASSWORD" \
-  --env="ETCDCTL_ENDPOINTS="templates-api-etcd:2379"" \
-  --command -- sh
+  --env="ETCDCTL_ENDPOINTS=templates-api-etcd:2379" \
+  --command -- bash
 ```
 
 Use client inside container:

@@ -18,7 +18,7 @@ RUN make build-templates-api
 FROM alpine:3.16
 RUN apk add -U --no-cache ca-certificates git
 
-COPY --from=buildContainer /app/target/templates-api/server /app/server
+COPY --from=buildContainer /app/target/templates/api /app/server
 WORKDIR /app
 
 ENV HOST 0.0.0.0
