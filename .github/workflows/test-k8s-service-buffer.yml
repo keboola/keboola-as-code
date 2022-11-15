@@ -1,4 +1,4 @@
-name: 'K8S: Templates API'
+name: 'K8S: Buffer Service'
 
 on:
   # This workflow is also part of the release pipeline,
@@ -7,20 +7,21 @@ on:
   # In PR the previous version is deployed first and then the actual version.
   pull_request:
     paths:
-      - provisioning/templates-api/**
+      - provisioning/buffer/**
       - provisioning/common/**
 
 env:
-  SERVICE_NAME: Templates API
-  MINIKUBE_PROFILE: templates-api
-  KUBERNETES_NAMESPACE: templates-api
-  API_RELEASE_NAME: templates-api
-  ETCD_RELEASE_NAME: templates-api-etcd
-  ETCD_ENDPOINT: templates-api-etcd-headless.templates-api.svc.cluster.local:2379
+  SERVICE_NAME: Buffer
+  MINIKUBE_PROFILE: buffer
+  KUBERNETES_NAMESPACE: buffer
+  API_RELEASE_NAME: buffer-api
+  WORKER_RELEASE_NAME: buffer-worker
+  ETCD_RELEASE_NAME: buffer-etcd
+  ETCD_ENDPOINT: buffer-etcd-headless.buffer.svc.cluster.local:2379
 
 defaults:
   run:
-    working-directory: provisioning/templates-api
+    working-directory: provisioning/buffer
 
 jobs:
   test:
@@ -89,10 +90,6 @@ jobs:
         if: always()
         run: kubectl rollout status "sts/$ETCD_RELEASE_NAME"
 
-      - name: Check deployment of the API
-        if: always()
-        run: kubectl rollout status "deployment/$API_RELEASE_NAME"
-
       - name: Check access to the etcd from a client
         if: always()
         run: |
@@ -131,10 +128,6 @@ jobs:
             echo "The command failed, OK."
             exit 0
           fi
-
-      - name: Check API response
-        if: always()
-        run: curl --fail -L -s "$(minikube service --url $API_RELEASE_NAME --namespace $KUBERNETES_NAMESPACE)"
 
       - name: Test etcd defragmentation cron job
         if: always()

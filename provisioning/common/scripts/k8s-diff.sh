@@ -17,6 +17,8 @@ DIFF_FILE="$3"
 keyEndsWith="time|timestamp|uid|at|ip|release|hash|tags|((^api)version)|revision|generation|resourceVersion"
 keyContains="\.status|\.metadata.annotations|\.volumeMounts\[[0-9]+\]\.name|\.volumes\[[0-9]+\]\.name|last-applied|revision-hash"
 
+limitLineLengthRegexp='s/\(.\{150\}\).*/\1.../'
+
 process() {
   # Get paths
   in="$1"
@@ -35,8 +37,8 @@ process() {
   echo $hashes | xargs -I '{}' sed -i -E 's/-{}(-[a-zA-Z0-9]+)?/-<hash>/g' "$out"
   echo $hashes | xargs -I '{}' sed -i -E 's/{}/<hash>/g' "$out"
 
-  # Convert to key=value pairs
-  gron "$out" > "$outKV"
+  # Convert to key=value pairs (input can be empty)
+  gron "$out" > "$outKV" || true
 
   # Replace array indexes json.items[123] by <kind/name>
   cp "$outKV" "$outKV.original1"
@@ -54,7 +56,7 @@ process() {
   cp "$outKV" "$outKV.original2"
   sed -E "/$regexp/Id" -i "$outKV"
   echo "Ignored dynamic lines:"
-  (diff --color=always -u0 "$outKV.original2" "$outKV" | sed 's/\(.\{150\}\).*/\1.../' ) || true
+  (diff --color=always -u0 "$outKV.original2" "$outKV" | sed "$limitLineLengthRegexp" ) || true
   echo
 
   # Sort file
@@ -66,4 +68,4 @@ process $OLD_STATE_FILE
 process $NEW_STATE_FILE
 
 # Diff
-(diff --color=always -u0 "$OLD_STATE_FILE.processed.kv" "$NEW_STATE_FILE.processed.kv" || true) | tee "$DIFF_FILE"
+(diff --color=always -u0 "$OLD_STATE_FILE.processed.kv" "$NEW_STATE_FILE.processed.kv" | sed "$limitLineLengthRegexp" || true) | tee "$DIFF_FILE"
