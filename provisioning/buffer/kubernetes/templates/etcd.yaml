@@ -1,0 +1,19 @@
+# Extends values from the common directory
+
+# Resources limits
+resources:
+  requests:
+    cpu: "200m"
+    memory: "768Mi"
+  limits:
+    memory: "768Mi"
+
+# Run defragmentation each 2 hours
+defragmentation:
+  cronjob:
+    schedule: "0 */2 * * *"
+
+# Set disk size
+persistence:
+  enabled: true
+  size: 10Gi

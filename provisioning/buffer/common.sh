@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+# Prevent direct run of the script
+if [ "${BASH_SOURCE[0]}" -ef "$0" ]
+then
+    echo 'This script should not be executed directly, please run "deploy.sh" instead.'
+    exit 1
+fi
+
+# Required ENVs
+: ${RELEASE_ID?"Missing RELEASE_ID"}
+: ${KEBOOLA_STACK?"Missing KEBOOLA_STACK"}
+: ${HOSTNAME_SUFFIX?"Missing HOSTNAME_SUFFIX"}
+: ${BUFFER_ETCD_REPLICAS?"Missing BUFFER_ETCD_REPLICAS"}
+
+# Constants
+export NAMESPACE="buffer"
+ETCD_HELM_CHART_VERSION="8.5.8"
+
+# Common part of the deployment. Same for AWS/Azure/Local
+./kubernetes/build.sh
+
+# Namespace
+kubectl apply -f ./kubernetes/deploy/namespace.yaml
+
+# Get etcd root password, if it is already present
+export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "$NAMESPACE" buffer-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
+
+# Deploy etcd cluster
+helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
+helm upgrade \
+  --install buffer-etcd bitnami/etcd \
+  --version "$ETCD_HELM_CHART_VERSION" \
+  --values ./kubernetes/deploy/etcd/values_common.yaml \
+  --values ./kubernetes/deploy/etcd/values_buffer.yaml \
+  --namespace "$NAMESPACE" \
+  --set "replicaCount=$BUFFER_ETCD_REPLICAS" \
+  --set "auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD"
+
+# API
+# TODO
+
+# Worker
+# TODO
