@@ -85,6 +85,13 @@ func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.Ge
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get receiver \"%s\" in project \"%d\"", receiverId, projectId)
 	}
+	if receiver == nil {
+		return nil, &GenericError{
+			StatusCode: 404,
+			Name:       "buffer.receiverNotFound",
+			Message:    fmt.Sprintf("Receiver \"%s\" not found", receiverId),
+		}
+	}
 
 	// nolint: godox
 	// TODO: get exports
