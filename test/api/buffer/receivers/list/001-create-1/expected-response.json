@@ -1,0 +1,5 @@
+{
+  "receiverId": "list-receivers-test-a",
+  "name": "list-receivers-test-a",
+  "url": "https://buffer.keboola.com/v1/import/list-receivers-test-a/#/%s"
+}

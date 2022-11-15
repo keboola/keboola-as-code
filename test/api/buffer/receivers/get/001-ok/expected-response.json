@@ -1,0 +1,5 @@
+{
+  "receiverId": "get-receiver",
+  "name": "get-receiver",
+  "url": "https://buffer.keboola.com/v1/import/get-receiver/#/%s"
+}
