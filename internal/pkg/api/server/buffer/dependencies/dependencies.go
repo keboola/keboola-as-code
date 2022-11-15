@@ -163,7 +163,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 
 	// Create config store
 	validator := validator.New()
-	configStore := NewConfigStore(logger, etcdClient, validator)
+	configStore := NewConfigStore(logger, etcdClient, validator, tracer)
 
 	// Create server dependencies
 	d := &forServer{

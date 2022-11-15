@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/namespace"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -31,7 +32,7 @@ func TestConfigStore_CreateReceiver(t *testing.T) {
 	// Setup
 	ctx, d := newTestDeps(t)
 
-	store := NewConfigStore(d.logger, d.etcdClient, d.validator)
+	store := NewConfigStore(d.logger, d.etcdClient, d.validator, d.tracer)
 
 	// Create receiver
 	config := model.Receiver{
@@ -52,12 +53,19 @@ func TestConfigStore_CreateReceiver(t *testing.T) {
 
 	found := false
 	for _, v := range r.Kvs {
-		found = strings.HasPrefix(string(v.Key), fmt.Sprintf("config/%d/receiver/%s", config.ProjectID, config.ID))
+		found = strings.HasPrefix(string(v.Key), ReceiverKey(config.ProjectID, config.ID))
 		if found {
 			assert.Equal(t, string(v.Value), encodedConfig)
 		}
 	}
 	assert.True(t, found, "inserted config not found")
+}
+
+type testDeps struct {
+	logger     log.DebugLogger
+	etcdClient *etcd.Client
+	validator  validator.Validator
+	tracer     trace.Tracer
 }
 
 func newTestDeps(t *testing.T) (context.Context, *testDeps) {
@@ -68,14 +76,9 @@ func newTestDeps(t *testing.T) (context.Context, *testDeps) {
 		logger:     log.NewDebugLogger(),
 		etcdClient: newTestEtcdClient(t, ctx),
 		validator:  validator.New(),
+		tracer:     trace.NewNoopTracerProvider().Tracer(""),
 	}
 	return ctx, d
-}
-
-type testDeps struct {
-	logger     log.DebugLogger
-	etcdClient *etcd.Client
-	validator  validator.Validator
 }
 
 func newTestEtcdClient(t *testing.T, ctx context.Context) *etcd.Client {
