@@ -3,7 +3,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: templates-api-pdb
-  namespace: templates-api
+  namespace: $NAMESPACE
   labels:
     app: templates-api
 spec:

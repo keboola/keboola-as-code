@@ -3,7 +3,7 @@ kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: templates-api
-  namespace: templates-api
+  namespace: $NAMESPACE
   labels:
     app: templates-api
     releaseId: $RELEASE_ID

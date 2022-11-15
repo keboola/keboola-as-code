@@ -3,7 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: templates-api
-  namespace: templates-api
+  namespace: $NAMESPACE
   labels:
     app: templates-api
 data:

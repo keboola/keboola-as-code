@@ -3,7 +3,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: templates-api
-  namespace: templates-api
+  namespace: $NAMESPACE
   labels:
     app: templates-api
   annotations:

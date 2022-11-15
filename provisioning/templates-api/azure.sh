@@ -31,17 +31,17 @@ kubectl apply -f ./kubernetes/deploy/cloud/azure/service.yaml
 . ./wait.sh
 
 # Update IP
-TEMPLATES_API_IP=""
+IP_ADDRESS=""
 TIME_WAITED=0
-# every 10 seconds but in total max 15 minutes try to fetch TEMPLATES_API_IP
+# every 10 seconds but in total max 15 minutes try to fetch IP_ADDRESS
 #shellcheck disable=2203
-while [[ -z "$TEMPLATES_API_IP" && $TIME_WAITED -lt 15*60 ]]; do
+while [[ -z "$IP_ADDRESS" && $TIME_WAITED -lt 15*60 ]]; do
     echo "Waiting for Templates API ingress IP..."
     sleep 10;
     TIME_WAITED=$((TIME_WAITED + 10))
-    TEMPLATES_API_IP=$(kubectl get services \
+    IP_ADDRESS=$(kubectl get services \
       --selector "app=templates-api" \
-      --namespace templates-api \
+      --namespace "$NAMESPACE" \
       --no-headers \
       --output jsonpath="{.items[0].status.loadBalancer.ingress[0].ip}")
 done
@@ -56,11 +56,11 @@ az network application-gateway address-pool update \
   --gateway-name="$APPLICATION_GATEWAY_NAME" \
   --resource-group "$RESOURCE_GROUP" \
   --name=templates \
-  --servers "$TEMPLATES_API_IP"
+  --servers "$IP_ADDRESS"
 
 az network application-gateway probe update \
   --gateway-name="$APPLICATION_GATEWAY_NAME" \
   --resource-group "$RESOURCE_GROUP" \
   --name=templates-health-probe \
-  --host "$TEMPLATES_API_IP"
+  --host "$IP_ADDRESS"
 

@@ -52,4 +52,4 @@ echo "To clear the MiniKube:"
 echo "MINIKUBE_PROFILE=${MINIKUBE_PROFILE} minikube delete --purge"
 echo
 echo "Load balancer of the service is accessible at:"
-minikube service --url --namespace templates-api templates-api
+minikube service --url --namespace "$NAMESPACE" templates-api
