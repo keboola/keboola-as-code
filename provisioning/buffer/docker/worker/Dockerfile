@@ -18,7 +18,7 @@ RUN make build-buffer-worker
 FROM alpine:3.16
 RUN apk add -U --no-cache ca-certificates git
 
-COPY --from=buildContainer /app/target/buffer-api/worker /app/worker
+COPY --from=buildContainer /app/target/buffer/worker /app/worker
 WORKDIR /app
 
 ENV HOST 0.0.0.0

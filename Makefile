@@ -22,26 +22,26 @@ release: prepare
 release-local: prepare
 	goreleaser release --rm-dist --snapshot --skip-publish -f ./build/ci/goreleaser.yml
 
-TEMPLATES_API_BUILD_TARGET_PATH ?= "./target/templates-api/server"
+TEMPLATES_API_BUILD_TARGET_PATH ?= "./target/templates/api"
 build-templates-api: generate-templates-api
 	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o $(TEMPLATES_API_BUILD_TARGET_PATH) ./cmd/templates-api
 
 run-templates-api: generate-templates-api
-	air -c ./provisioning/templates-api/dev/.air-templates-api.toml
+	air -c ./provisioning/templates-api/dev/.air-api.toml
 
-BUFFER_API_BUILD_TARGET_PATH ?= "./target/buffer-api/server"
+BUFFER_API_BUILD_TARGET_PATH ?= "./target/buffer/api"
 build-buffer-api: generate-buffer-api
 	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o $(BUFFER_API_BUILD_TARGET_PATH) ./cmd/buffer-api
 
-BUFFER_WORKER_BUILD_TARGET_PATH ?= "./target/buffer-api/worker"
+BUFFER_WORKER_BUILD_TARGET_PATH ?= "./target/buffer/worker"
 build-buffer-worker:
 	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o $(BUFFER_WORKER_BUILD_TARGET_PATH) ./cmd/buffer-worker
 
 run-buffer-api: generate-buffer-api
-	air -c ./provisioning/buffer-api/dev/.air-buffer-api.toml
+	air -c ./provisioning/buffer/dev/.air-api.toml
 
 run-buffer-worker:
-	air -c ./provisioning/buffer-api/dev/.air-buffer-worker.toml
+	air -c ./provisioning/buffer/dev/.air-worker.toml
 
 tests: prepare
 	TEST_PACKAGE=./... bash ./scripts/tests.sh
