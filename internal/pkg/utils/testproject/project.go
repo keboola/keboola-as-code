@@ -338,27 +338,12 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 					p.logf("✔️ Bucket \"%s\".", apiBucket.ID)
 
 					for _, t := range b.Tables {
-						_, err := storageapi.CreateTableRequest(&storageapi.Table{
-							Name:       t.Name,
-							PrimaryKey: t.PrimaryKey,
-							Columns:    t.Columns,
-							Bucket: &storageapi.Bucket{
-								ID: b.ID,
-							},
-						}).
-							WithBefore(func(ctx context.Context, sender client.Sender) error {
-								p.logf("▶ Table \"%s\"...", t.Name)
-								return nil
-							}).
-							WithOnComplete(func(ctx context.Context, sender client.Sender, t *storageapi.Table, err error) error {
-								if err == nil {
-									p.logf("✔️ Table \"%s\"(%s).", t.Name, t.ID)
-									return nil
-								} else {
-									return errors.Errorf(`cannot create table "%s": %w`, t.Name, err)
-								}
-							}).Send(ctx, sender)
-						return err
+						p.logf("▶ Table \"%s\"...", t.Name)
+						err = storageapi.CreateTable(ctx, sender, string(b.ID), t.Name, t.Columns, storageapi.WithPrimaryKey(t.PrimaryKey))
+						if err != nil {
+							return err
+						}
+						p.logf("✔️ Table \"%s\"(%s).", t.Name, t.ID)
 					}
 
 					return nil
