@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"sort"
 
 	dependencies "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/dependencies"
@@ -40,6 +41,19 @@ func (*service) HealthCheck(dependencies.ForPublicRequest) (res string, err erro
 
 func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.Receiver, err error) {
 	ctx, store := d.RequestCtx(), d.ConfigStore()
+
+	// Check if receiver limit is reached
+	count, err := store.CountReceivers(ctx, d.ProjectID())
+	if err != nil {
+		return nil, err
+	}
+	if count >= 100 {
+		return nil, &GenericError{
+			StatusCode: http.StatusUnprocessableEntity,
+			Name:       "buffer.resourceLimitReached",
+			Message:    "Maximum number of receivers per project is 100.",
+		}
+	}
 
 	receiver := model.Receiver{
 		ProjectID: d.ProjectID(),
@@ -87,7 +101,7 @@ func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.Ge
 	}
 	if receiver == nil {
 		return nil, &GenericError{
-			StatusCode: 404,
+			StatusCode: http.StatusNotFound,
 			Name:       "buffer.receiverNotFound",
 			Message:    fmt.Sprintf("Receiver \"%s\" not found", receiverId),
 		}

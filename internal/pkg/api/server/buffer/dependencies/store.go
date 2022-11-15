@@ -34,6 +34,23 @@ func ProjectKey(projectId int) string {
 	return fmt.Sprintf("config/%d", projectId)
 }
 
+func (c *ConfigStore) CountReceivers(ctx context.Context, projectId int) (count uint64, err error) {
+	logger, tracer, client := c.logger, c.tracer, c.etcdClient
+
+	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.CreateReceiver")
+	defer telemetryUtils.EndSpan(span, &err)
+
+	key := ProjectKey(projectId)
+
+	logger.Debugf(`Reading "%s" count`, key)
+	r, err := client.KV.Get(ctx, key, etcd.WithPrefix(), etcd.WithCountOnly())
+	if err != nil {
+		return 0, err
+	}
+
+	return uint64(r.Count), nil
+}
+
 // CreateReceiver puts a receiver into the store.
 //
 // This method guarantees that no two receivers in the store will have the same (projectId, receiverId) pair.
