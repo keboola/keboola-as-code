@@ -84,11 +84,11 @@ publishers:
     checksum: true
     cmd: ./build/package/s3/publish.sh "{{ abs .ArtifactPath }}" "{{ .ArtifactName }}" "{{ .ProjectName }}" "{{ .Version }}" "{{ .Os }}" "{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     env:
-      - AWS_REGION={{ .Env.AWS_REGION }}
+      - AWS_REGION={{ .Env.CLI_DIST_AWS_REGION }}
       - AWS_BUCKET_NAME={{ .Env.CLI_DIST_AWS_BUCKET_NAME }}
-      - AWS_ACCESS_KEY_ID={{ .Env.AWS_ACCESS_KEY_ID }}
-      - AWS_SECRET_ACCESS_KEY={{ .Env.AWS_SECRET_ACCESS_KEY }}
-      - AWS_SESSION_TOKEN={{ .Env.AWS_SESSION_TOKEN }}
+      - AWS_ACCESS_KEY_ID={{ .Env.CLI_DIST_AWS_ACCESS_KEY_ID }}
+      - AWS_SECRET_ACCESS_KEY={{ .Env.CLI_DIST_AWS_SECRET_ACCESS_KEY }}
+      - AWS_SESSION_TOKEN={{ .Env.CLI_DIST_AWS_SESSION_TOKEN }}
     ids:
       - archives
       - packages

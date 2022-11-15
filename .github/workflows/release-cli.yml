@@ -6,13 +6,17 @@ on:
       - 'v**'
 
 env:
-  VERSION: ${{ github.ref_name }}
+  GO_VERSION: 1.19
   TAG: ${{ github.ref_name }}
 
+  # DockerHub login
+  DOCKERHUB_USER: "keboolabot"
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
   # S3 Repository in KAC Assets Account
+  BASE_URL: "https://cli-dist.keboola.com"
   AWS_REGION: us-east-1
   AWS_BUCKET_NAME: cli-dist-keboola-com
-  HOST_BASE_URL: "https://cli-dist.keboola.com"
 
   # WinGet packages
   WINGET_PACKAGES_REPO_FORK: "keboola/winget-pkgs"
@@ -24,6 +28,23 @@ env:
   APPLE_TEAM_NAME: "Keboola Industries SE"
 
 jobs:
+  version:
+    name: "Parse Version"
+    runs-on: ubuntu-latest
+    outputs:
+      VERSION: ${{ steps.version.outputs.VERSION }}
+    steps:
+      - name: Set version
+        id: version
+        run: |
+          VERSION=$(echo "${{ github.ref_name }}" | sed -n -E 's:^v?([0-9]+\.[0-9]+\.[0-9]+)$:\1:p')
+          if [ -z "$VERSION" ]; then
+            echo "expected a semantic tag, found \"$TAG\""
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
   test-lint:
     name: "Lint"
     secrets: inherit
@@ -36,15 +57,23 @@ jobs:
 
   test-e2e-cli:
     name: "E2E: CLI"
+    needs:
+      - version
     secrets: inherit
     uses: ./.github/workflows/test-e2e-cli.yml
+    with:
+      version: ${{ needs.version.outputs.VERSION }}
 
   provisioning-cli-s3:
+    name: "Provisioning: CLI S3"
     secrets: inherit
     uses: ./.github/workflows/provisioning-cli-s3.yml
+    with:
+      deploy: true
 
   release:
     needs:
+      - version
       - test-lint
       - test-unit
       - test-e2e-cli
@@ -53,6 +82,8 @@ jobs:
     concurrency:
       group: release
       cancel-in-progress: false
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: macos-latest
     permissions:
       id-token: write
@@ -60,13 +91,18 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
+
       - name: Install Go
         uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
+
       - name: Install tools
-        run: . ./scripts/tools.sh
+        run: |
+          . ./scripts/tools.sh
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
+
       - name: Import Code-Signing Certificates
         uses: Apple-Actions/import-codesign-certs@v1
         with:
@@ -74,6 +110,7 @@ jobs:
           p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
           # The password used to import the PKCS12 file.
           p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+
       - name: Write private keys
         env:
           DEB_KEY_PRIVATE: ${{ secrets.DEB_KEY_PRIVATE }}
@@ -87,23 +124,33 @@ jobs:
           chmod 0600 /tmp/keys/rpm.key
           echo "$APK_KEY_PRIVATE" > /tmp/keys/apk.key
           chmod 0600 /tmp/keys/apk.key
+
       - name: Install Gon
         run: |
           brew tap mitchellh/gon
           brew install mitchellh/gon/gon
+
       - name: Configure AWS Credentials to KAC Assets Account
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: arn:aws:iam::455460941449:role/cli-dist-release
           aws-region: eu-central-1
+
       - name: Release
         run: make release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CLI_DIST_BASE_URL: ${{ env.BASE_URL }}
+          CLI_DIST_AWS_REGION: ${{ env.AWS_REGION }}
+          CLI_DIST_AWS_BUCKET_NAME: ${{ env.AWS_BUCKET_NAME }}
+          CLI_DIST_AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          CLI_DIST_AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          CLI_DIST_AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
           DEB_KEY_PRIVATE_PATH: /tmp/keys/deb.key
           RPM_KEY_PRIVATE_PATH: /tmp/keys/rpm.key
           APK_KEY_PRIVATE_PATH: /tmp/keys/apk.key
           APPLE_ACCOUNT_PASSWORD: ${{ secrets.APPLE_ACCOUNT_PASSWORD }}
+
       - name: Upload artifact to release
         uses: svenstaro/upload-release-action@v2
         with:
@@ -112,6 +159,7 @@ jobs:
           tag: ${{ env.TAG }}
           overwrite: true
           file_glob: true
+
       - name: Create Homebrew formulae
         run: |
           mkdir target/homebrew
@@ -122,12 +170,14 @@ jobs:
           export LINUX_AMD_TARGET_SHA256=$(openssl dgst -sha256   target/gh-release/*linux_amd64.zip  | cut -f 2 -d ' ' )
           envsubst < build/package/homebrew/homebrew.template.rb > target/homebrew/keboola-cli.rb
           cat target/homebrew/keboola-cli.rb
+
       - name: Upload Homebrew formulae
         uses: actions/upload-artifact@v3
         with:
           name: homebrew-formulae
           path: target/homebrew/keboola-cli.rb
           retention-days: 1
+
       - name: Upload Scoop manifest
         uses: actions/upload-artifact@v3
         with:
@@ -137,7 +187,10 @@ jobs:
 
   release-msi-windows:
     needs:
+      - version
       - release
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: windows-latest
     permissions:
       id-token: write
@@ -148,6 +201,7 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
+
       - name: Download zipped exe
         id: download_zip
         shell: bash
@@ -157,9 +211,11 @@ jobs:
           hub release download "${TAG}" -i '*windows_amd64*.zip'
           printf "zip=%s\n" *.zip >> $GITHUB_OUTPUT
           unzip -o *.zip && rm -v *.zip
+
       - name: Prepare PATH
         id: setup_msbuild
         uses: microsoft/setup-msbuild@v1.0.3
+
       - name: Obtain signing cert
         id: obtain_cert
         shell: bash
@@ -167,11 +223,13 @@ jobs:
           CERT_CONTENTS: ${{ secrets.WINDOWS_CERT_PFX }}
         run: |
           base64 -d <<<"$CERT_CONTENTS" > ./cert.pfx
+
       - name: Sign EXE
         env:
           CERT_PASS: ${{ secrets.WINDOWS_CERT_PASS }}
         run: |
           .\build\package\windows\signtool sign /d "Keboola CLI" /f .\cert.pfx /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v kbc.exe
+
       - name: Build MSI
         id: build_msi
         shell: bash
@@ -183,6 +241,7 @@ jobs:
           filename="$(basename "$ZIP_FILE" ".zip")"
           "${MSBUILD_PATH}\MSBuild.exe" ./build/package/windows/msi.wixproj -p:SourceDir="$PWD" -p:OutputPath="./msi" -p:OutputName="$filename" -p:ProductVersion="${VERSION}"
           echo "msi_file=${filename}.msi" >> $GITHUB_OUTPUT
+
       - name: Sign MSI
         env:
           CERT_PASS: ${{ secrets.WINDOWS_CERT_PASS }}
@@ -190,17 +249,20 @@ jobs:
         run: |
           $msi=".\build\package\windows\msi\$env:MSI_FILE"
           .\build\package\windows\signtool sign /d "Keboola CLI" /f .\cert.pfx /p $env:CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /v $msi
+
       - name: Configure AWS Credentials to KAC Assets Account
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: arn:aws:iam::455460941449:role/cli-dist-release
           aws-region: eu-central-1
+
       - name: Upload MSI to KAC Assets S3
         env:
           MSI_FILE: ${{ steps.build_msi.outputs.msi_file }}
         shell: bash
         run: |
           aws s3 cp "./build/package/windows/msi/${MSI_FILE}" s3://${AWS_BUCKET_NAME}/msi/
+
       - name: Checksum MSI
         id: checksum
         env:
@@ -214,7 +276,10 @@ jobs:
 
   update-repositories:
     needs:
+      - version
       - release
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
     # only one parallel job allowed - used shared S3
     concurrency:
       group: release
@@ -226,18 +291,22 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v1
+
       - name: Docker login
         uses: docker/login-action@v1
         with:
           username: ${{ env.DOCKERHUB_USER }}
           password: ${{ env.DOCKERHUB_TOKEN }}
+
       - name: Download Homebrew formulae
         uses: actions/download-artifact@v3
         with:
           name: homebrew-formulae
           path: target/homebrew
+
       - name: Push Homebrew formulae
         uses: cpina/github-action-push-to-another-repository@main
         env:
@@ -247,31 +316,41 @@ jobs:
           destination-github-username: "keboola"
           destination-repository-name: "homebrew-keboola-cli"
           target-branch: main
+
       - name: Build DEB repo tools
         uses: ./.github/actions/build-repo-tools
         with:
           type: deb
+
       - name: Build RPM repo tools
         uses: ./.github/actions/build-repo-tools
         with:
           type: rpm
+
       - name: Build APK repo tools
         uses: ./.github/actions/build-repo-tools
         with:
           type: apk
+
       - name: Clean aws credentials file
         run: rm -rf ${HOME}/.aws
+
       - name: Configure AWS Credentials to KAC Assets AWS
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: arn:aws:iam::455460941449:role/cli-dist-release
           aws-region: eu-central-1
+
       - name: Mount KAC Assets S3 Bucket
         uses: ./.github/actions/mount-s3
-        env:
-          AWS_BUCKET_NAME: ${{ env.AWS_BUCKET_NAME }}
         with:
           mountedFolder: /s3bucket
+          awsRegion: ${{ env.AWS_REGION }}
+          awsBucketName: ${{ env.AWS_BUCKET_NAME }}
+          awsAccessKeyId: ${{ env.AWS_ACCESS_KEY_ID }}
+          awsSecretAccessKey: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          awsSessionToken: ${{ env.AWS_SESSION_TOKEN }}
+
       - name: Index Linux packages in KAC Assets S3
         run: ./build/package/linux/index.sh /s3bucket
         env:
@@ -281,11 +360,13 @@ jobs:
           DEB_KEY_PRIVATE: ${{ secrets.DEB_KEY_PRIVATE }}
           RPM_KEY_PRIVATE: ${{ secrets.RPM_KEY_PRIVATE }}
           APK_KEY_PRIVATE: ${{ secrets.APK_KEY_PRIVATE }}
+
       - name: Download Scoop manifest
         uses: actions/download-artifact@v3
         with:
           name: scoop-manifest
           path: target/scoop
+
       - name: Push Scoop manifest
         uses: cpina/github-action-push-to-another-repository@main
         env:
@@ -298,12 +379,16 @@ jobs:
 
   update-repositories-windows:
     needs:
+      - version
       - release
       - release-msi-windows
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: windows-latest
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
+
       - name: Push Chocolatey
         env:
           CHOCOLATEY_KEY: ${{ secrets.CHOCOLATEY_KEY }}
@@ -313,12 +398,13 @@ jobs:
           New-Item -ItemType "directory" -Path ".\build\package\chocolatey\push"
           New-Item -ItemType "directory" -Path ".\build\package\chocolatey\push\tools"
           cd .\build\package\chocolatey\push
-          $url="$env:HOST_BASE_URL/msi/$env:MSI_FILE"
+          $url="$env:BASE_URL/msi/$env:MSI_FILE"
           ((Get-Content -path ..\keboola-cli.nuspec -Raw) -replace '{VERSION}',$env:VERSION) | Set-Content -Path .\keboola-cli.nuspec
           ((Get-Content -path ..\chocolateyinstall.ps1 -Raw) -replace '{URL}',$url -replace '{CHECKSUM}',$env:MSI_CHECKSUM) | Set-Content -Path .\tools\chocolateyinstall.ps1
           choco apikey -k $env:CHOCOLATEY_KEY -s https://push.chocolatey.org/
           choco pack keboola-cli.nuspec
           choco push keboola-cli.$env:VERSION.nupkg -s https://push.chocolatey.org
+
       - name: Update Winget Repository fork
         uses: TobKed/github-forks-sync-action@master
         with:
@@ -328,6 +414,7 @@ jobs:
           upstream_branch: master
           target_branch: master
           force: true
+
       - name: Submit package to Winget Repository (create PR)
         shell: bash
         env:
@@ -335,14 +422,17 @@ jobs:
           MSI_FILE: ${{ needs.release-msi-windows.outputs.msi_file }}
         run: |
           curl -kLSs https://aka.ms/wingetcreate/latest -o wingetcreate.exe
-          msiUrl="${HOST_BASE_URL}/msi/${MSI_FILE}"
+          msiUrl="${BASE_URL}/msi/${MSI_FILE}"
           ./wingetcreate.exe update -v $VERSION -u $msiUrl -t $GITHUB_TOKEN Keboola.KeboolaCLI -s
 
   test-install-linux:
     needs:
+      - version
       - release
       - update-repositories
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
     steps:
       - name: Install on Ubuntu
         if: always()
@@ -410,12 +500,16 @@ jobs:
 
   test-install-mac-os:
     needs:
+      - version
       - release
       - update-repositories
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: macos-latest
     steps:
       - name: Remove old git package
         run: brew list --full-name | grep '^git@' | xargs -r brew uninstall --ignore-dependencies
+
       - name: Install on MacOS by Homebrew
         run: |
           brew install keboola/keboola-cli/keboola-cli
@@ -425,6 +519,8 @@ jobs:
     needs:
       - release-msi-windows
       - update-repositories
+    env:
+      VERSION: ${{ needs.version.outputs.VERSION }}
     runs-on: windows-latest
     steps:
       - name: Download MSI
@@ -432,12 +528,14 @@ jobs:
         env:
           MSI_FILE: ${{ needs.release-msi-windows.outputs.msi_file }}
         run: |
-          curl "${HOST_BASE_URL}/msi/${MSI_FILE}" --output install.msi
+          curl "${BASE_URL}/msi/${MSI_FILE}" --output install.msi
+
       - name: Install on Windows from MSI
         shell: bash
         run: |
           msiexec /i install.msi /quiet /qn /l*vx install_log.txt
           [ ! -d "C:\Program Files\Keboola CLI" ] && exit 1
+
       - name: Install on Windows using Scoop
         run: |
           Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
