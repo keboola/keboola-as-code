@@ -145,8 +145,21 @@ func (*service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListRe
 	return &buffer.ListReceiversResult{Receivers: receivers}, nil
 }
 
-func (*service) DeleteReceiver(dependencies.ForProjectRequest, *buffer.DeleteReceiverPayload) (res *buffer.Receiver, err error) {
-	return nil, &NotImplementedError{}
+func (*service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer.DeleteReceiverPayload) (err error) {
+	ctx, store := d.RequestCtx(), d.ConfigStore()
+
+	projectId, receiverId := d.ProjectID(), payload.ReceiverID
+
+	deleted, err := store.DeleteReceiver(ctx, projectId, receiverId)
+	if !deleted {
+		return &GenericError{
+			StatusCode: 404,
+			Name:       "buffer.receiverNotFound",
+			Message:    fmt.Sprintf("Receiver \"%s\" not found", receiverId),
+		}
+	}
+
+	return nil
 }
 
 func (*service) RefreshReceiverTokens(dependencies.ForProjectRequest, *buffer.RefreshReceiverTokensPayload) (res *buffer.Receiver, err error) {
