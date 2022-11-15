@@ -149,3 +149,20 @@ func (c *ConfigStore) ListReceivers(ctx context.Context, projectID int) (r []*mo
 
 	return receivers, nil
 }
+
+func (c *ConfigStore) DeleteReceiver(ctx context.Context, projectId int, receiverId string) (deleted bool, err error) {
+	logger, tracer, client := c.logger, c.tracer, c.etcdClient
+
+	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.DeleteReceiver")
+	defer telemetryUtils.EndSpan(span, &err)
+
+	key := ReceiverKey(projectId, receiverId)
+
+	logger.Debugf(`DELETE "%s"`, key)
+	r, err := client.KV.Delete(ctx, key)
+	if err != nil {
+		return r.Deleted > 0, err
+	}
+
+	return r.Deleted > 0, nil
+}
