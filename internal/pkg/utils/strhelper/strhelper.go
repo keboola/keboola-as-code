@@ -97,6 +97,7 @@ func Truncate(str string, max int, suffix string) string {
 	return str[0:max] + suffix
 }
 
+// NormalizeName converts any string into kebab-case.
 func NormalizeName(str string) string {
 	// Prepend all uppercase letters with separator
 	// "--CamelCase" -> "---Camel-Case"

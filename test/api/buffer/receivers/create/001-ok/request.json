@@ -1,0 +1,8 @@
+{
+  "path": "/v1/receivers",
+  "method": "POST",
+  "body": {
+    "name": "Github Pull Requests",
+    "exports": []
+  }
+}
