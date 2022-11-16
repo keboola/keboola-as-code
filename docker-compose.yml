@@ -16,7 +16,7 @@ services:
       # For Templates API
       - KBC_STORAGE_API_HOST
       # For Buffer API
-      - KBC_BUFFER_API_HOST
+      - KBC_BUFFER_API_HOST=buffer.keboola.local
       # Disable DataDog integration
       - DATADOG_ENABLED=false
       # Etcd for the Templates API

@@ -3,6 +3,7 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/namespace"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -19,19 +21,24 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
+func TestProjectKey(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, "config/1000", ProjectKey(1000))
+}
+
+func TestReceiverKey(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, "config/1000/receiver/asdf", ReceiverKey(1000, "asdf"))
+}
+
 func TestConfigStore_CreateReceiver(t *testing.T) {
 	t.Parallel()
 
-	envs, _ := env.FromOs()
-
-	if envs.Get("BUFFER_ETCD_ENABLED") == "false" {
-		t.Skip()
-	}
-
 	// Setup
 	ctx, d := newTestDeps(t)
-
-	store := NewConfigStore(d.logger, d.etcdClient, d.validator)
+	store := NewConfigStore(d.logger, d.etcdClient, d.validator, d.tracer)
 
 	// Create receiver
 	config := model.Receiver{
@@ -52,12 +59,86 @@ func TestConfigStore_CreateReceiver(t *testing.T) {
 
 	found := false
 	for _, v := range r.Kvs {
-		found = strings.HasPrefix(string(v.Key), fmt.Sprintf("config/%d/receiver/%s", config.ProjectID, config.ID))
+		found = strings.HasPrefix(string(v.Key), ReceiverKey(config.ProjectID, config.ID))
 		if found {
 			assert.Equal(t, string(v.Value), encodedConfig)
 		}
 	}
 	assert.True(t, found, "inserted config not found")
+}
+
+func TestConfigStore_GetReceiver(t *testing.T) {
+	t.Parallel()
+
+	// Setup
+	ctx, d := newTestDeps(t)
+	store := NewConfigStore(d.logger, d.etcdClient, d.validator, d.tracer)
+
+	// Create receiver
+	input := &model.Receiver{
+		ID:        "github-pull-requests",
+		ProjectID: 1000,
+		Name:      "Github Pull Requests",
+		Secret:    idgenerator.ReceiverSecret(),
+	}
+	err := store.CreateReceiver(ctx, *input)
+	assert.NoError(t, err)
+
+	// Get receiver
+	receiver, err := store.GetReceiver(ctx, input.ProjectID, input.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, input, receiver)
+}
+
+func TestConfigStore_ListReceivers(t *testing.T) {
+	t.Parallel()
+
+	// Setup
+	ctx, d := newTestDeps(t)
+	store := NewConfigStore(d.logger, d.etcdClient, d.validator, d.tracer)
+
+	projectID := 1000
+
+	// Create receivers
+	input := []*model.Receiver{
+		{
+			ID:        "github-pull-requests",
+			ProjectID: projectID,
+			Name:      "Github Pull Requests",
+			Secret:    idgenerator.ReceiverSecret(),
+		},
+		{
+			ID:        "github-issues",
+			ProjectID: projectID,
+			Name:      "Github Issues",
+			Secret:    idgenerator.ReceiverSecret(),
+		},
+	}
+
+	sort.SliceStable(input, func(i, j int) bool {
+		return input[i].ID < input[j].ID
+	})
+
+	for _, r := range input {
+		err := store.CreateReceiver(ctx, *r)
+		assert.NoError(t, err)
+	}
+
+	// List receivers
+	receivers, err := store.ListReceivers(ctx, projectID)
+	assert.NoError(t, err)
+
+	sort.SliceStable(receivers, func(i, j int) bool {
+		return receivers[i].ID < receivers[j].ID
+	})
+	assert.Equal(t, input, receivers)
+}
+
+type testDeps struct {
+	logger     log.DebugLogger
+	etcdClient *etcd.Client
+	validator  validator.Validator
+	tracer     trace.Tracer
 }
 
 func newTestDeps(t *testing.T) (context.Context, *testDeps) {
@@ -68,14 +149,9 @@ func newTestDeps(t *testing.T) (context.Context, *testDeps) {
 		logger:     log.NewDebugLogger(),
 		etcdClient: newTestEtcdClient(t, ctx),
 		validator:  validator.New(),
+		tracer:     trace.NewNoopTracerProvider().Tracer(""),
 	}
 	return ctx, d
-}
-
-type testDeps struct {
-	logger     log.DebugLogger
-	etcdClient *etcd.Client
-	validator  validator.Validator
 }
 
 func newTestEtcdClient(t *testing.T, ctx context.Context) *etcd.Client {
@@ -83,6 +159,10 @@ func newTestEtcdClient(t *testing.T, ctx context.Context) *etcd.Client {
 
 	envs, err := env.FromOs()
 	assert.NoError(t, err)
+
+	if envs.Get("BUFFER_ETCD_ENABLED") == "false" {
+		t.Skip()
+	}
 
 	// Create etcd client
 	etcdClient, err := etcd.New(etcd.Config{

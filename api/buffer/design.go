@@ -141,13 +141,17 @@ var _ = Service("buffer", func() {
 			POST("/receivers")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
+			ResourceLimitReachedError()
 		})
 	})
 
 	Method("ListReceivers", func() {
 		Meta("openapi:summary", "List all receivers")
 		Description("List all receivers for a given project.")
-		Result(ArrayOf(Receiver))
+		Result(func() {
+			Attribute("receivers", ArrayOf(Receiver))
+			Required("receivers")
+		})
 		HTTP(func() {
 			GET("/receivers")
 			Meta("openapi:tag:configuration")
@@ -471,6 +475,10 @@ func ExportNotFoundError() {
 
 func PayloadTooLargeError() {
 	GenericError(StatusRequestEntityTooLarge, "buffer.payloadTooLarge", "Payload too large error.", `Payload is too large.`)
+}
+
+func ResourceLimitReachedError() {
+	GenericError(StatusUnprocessableEntity, "buffer.resourceLimitReached", "Resource limit reached.", `Maximum number of receivers per project is 100.`)
 }
 
 // Examples ------------------------------------------------------------------------------------------------------------
