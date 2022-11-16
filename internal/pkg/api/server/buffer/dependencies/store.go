@@ -26,21 +26,21 @@ func NewConfigStore(logger log.Logger, etcdClient *etcd.Client, validator valida
 	return &ConfigStore{logger, etcdClient, validator, tracer}
 }
 
-func ReceiverKey(projectId int, receiverId string) string {
-	return fmt.Sprintf("config/%d/receiver/%s", projectId, receiverId)
+func ReceiverKey(projectID int, receiverID string) string {
+	return fmt.Sprintf("config/%d/receiver/%s", projectID, receiverID)
 }
 
-func ProjectKey(projectId int) string {
-	return fmt.Sprintf("config/%d", projectId)
+func ProjectKey(projectID int) string {
+	return fmt.Sprintf("config/%d", projectID)
 }
 
-func (c *ConfigStore) CountReceivers(ctx context.Context, projectId int) (count uint64, err error) {
+func (c *ConfigStore) CountReceivers(ctx context.Context, projectID int) (count uint64, err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
 	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.CreateReceiver")
 	defer telemetryUtils.EndSpan(span, &err)
 
-	key := ProjectKey(projectId)
+	key := ProjectKey(projectID)
 
 	logger.Debugf(`Reading "%s" count`, key)
 	r, err := client.KV.Get(ctx, key, etcd.WithPrefix(), etcd.WithCountOnly())
@@ -53,7 +53,7 @@ func (c *ConfigStore) CountReceivers(ctx context.Context, projectId int) (count 
 
 // CreateReceiver puts a receiver into the store.
 //
-// This method guarantees that no two receivers in the store will have the same (projectId, receiverId) pair.
+// This method guarantees that no two receivers in the store will have the same (projectID, receiverID) pair.
 func (c *ConfigStore) CreateReceiver(ctx context.Context, receiver model.Receiver) (err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
@@ -93,13 +93,13 @@ func (c *ConfigStore) CreateReceiver(ctx context.Context, receiver model.Receive
 // GetReceiver fetches a receiver from the store.
 //
 // This method returns nil if no receiver was found.
-func (c *ConfigStore) GetReceiver(ctx context.Context, projectId int, receiverId string) (r *model.Receiver, err error) {
+func (c *ConfigStore) GetReceiver(ctx context.Context, projectID int, receiverID string) (r *model.Receiver, err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
 	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.GetReceiver")
 	defer telemetryUtils.EndSpan(span, &err)
 
-	key := ReceiverKey(projectId, receiverId)
+	key := ReceiverKey(projectID, receiverID)
 
 	logger.Debugf(`GET "%s"`, key)
 	resp, err := client.KV.Get(ctx, key)
@@ -122,13 +122,13 @@ func (c *ConfigStore) GetReceiver(ctx context.Context, projectId int, receiverId
 	return receiver, nil
 }
 
-func (c *ConfigStore) ListReceivers(ctx context.Context, projectId int) (r []*model.Receiver, err error) {
+func (c *ConfigStore) ListReceivers(ctx context.Context, projectID int) (r []*model.Receiver, err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
 	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.ListReceivers")
 	defer telemetryUtils.EndSpan(span, &err)
 
-	key := ProjectKey(projectId)
+	key := ProjectKey(projectID)
 
 	logger.Debugf(`GET "%s"`, key)
 	resp, err := client.KV.Get(ctx, key, etcd.WithPrefix())

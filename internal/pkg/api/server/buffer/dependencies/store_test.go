@@ -85,19 +85,19 @@ func TestConfigStore_ListReceivers(t *testing.T) {
 	ctx, d := newTestDeps(t)
 	store := NewConfigStore(d.logger, d.etcdClient, d.validator, d.tracer)
 
-	projectId := 1000
+	projectID := 1000
 
 	// Create receivers
 	input := []*model.Receiver{
 		{
 			ID:        "github-pull-requests",
-			ProjectID: projectId,
+			ProjectID: projectID,
 			Name:      "Github Pull Requests",
 			Secret:    idgenerator.ReceiverSecret(),
 		},
 		{
 			ID:        "github-issues",
-			ProjectID: projectId,
+			ProjectID: projectID,
 			Name:      "Github Issues",
 			Secret:    idgenerator.ReceiverSecret(),
 		},
@@ -113,7 +113,7 @@ func TestConfigStore_ListReceivers(t *testing.T) {
 	}
 
 	// List receivers
-	receivers, err := store.ListReceivers(ctx, projectId)
+	receivers, err := store.ListReceivers(ctx, projectID)
 	assert.NoError(t, err)
 
 	sort.SliceStable(receivers, func(i, j int) bool {
