@@ -21,6 +21,18 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
+func TestProjectKey(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, "config/1000", ProjectKey(1000))
+}
+
+func TestReceiverKey(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, "config/1000/receiver/asdf", ReceiverKey(1000, "asdf"))
+}
+
 func TestConfigStore_CreateReceiver(t *testing.T) {
 	t.Parallel()
 
