@@ -150,6 +150,7 @@ var _ = Service("buffer", func() {
 		Description("List all receivers for a given project.")
 		Result(func() {
 			Attribute("receivers", ArrayOf(Receiver))
+			Required("receivers")
 		})
 		HTTP(func() {
 			GET("/receivers")
