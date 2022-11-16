@@ -60,7 +60,7 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 	// Persist receiver
 	err = store.CreateReceiver(ctx, receiver)
 	if err != nil {
-		if errors.Is(err, &dependencies.ReceiverLimitReachedError{}) {
+		if errors.As(err, &dependencies.ReceiverLimitReachedError{}) {
 			return nil, &GenericError{
 				StatusCode: http.StatusUnprocessableEntity,
 				Name:       "buffer.resourceLimitReached",
