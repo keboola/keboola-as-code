@@ -23,7 +23,6 @@ jobs:
         uses: ./.github/actions/go-cache
         with:
           key: lint
-          goVersion: ${{ env.GO_VERSION }}
 
       - name: Install tools
         run: ./scripts/tools.sh

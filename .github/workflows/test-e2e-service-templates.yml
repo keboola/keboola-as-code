@@ -40,7 +40,6 @@ jobs:
         uses: ./.github/actions/go-cache
         with:
           key: e2e
-          goVersion: ${{ env.GO_VERSION }}
 
       - name: Install tools
         run: . ./scripts/tools.sh

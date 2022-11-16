@@ -66,7 +66,6 @@ jobs:
         uses: ./.github/actions/go-cache
         with:
           key: unit-${{ matrix.name }}
-          goVersion: ${{ env.GO_VERSION }}
 
       - name: Install tools
         run: . ./scripts/tools.sh
