@@ -16,6 +16,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
+const MaxReceiverCount = 100
+
 type service struct{}
 
 func New() Service {
@@ -47,11 +49,11 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 	if err != nil {
 		return nil, err
 	}
-	if count >= 100 {
+	if count >= MaxReceiverCount {
 		return nil, &GenericError{
 			StatusCode: http.StatusUnprocessableEntity,
 			Name:       "buffer.resourceLimitReached",
-			Message:    "Maximum number of receivers per project is 100.",
+			Message:    fmt.Sprintf("Maximum number of receivers per project is %d.", MaxReceiverCount),
 		}
 	}
 
