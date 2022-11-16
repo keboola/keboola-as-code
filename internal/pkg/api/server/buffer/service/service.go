@@ -16,8 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-const MaxReceiverCount = 100
-
 type service struct{}
 
 func New() Service {
@@ -44,19 +42,6 @@ func (*service) HealthCheck(dependencies.ForPublicRequest) (res string, err erro
 func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.Receiver, err error) {
 	ctx, store := d.RequestCtx(), d.ConfigStore()
 
-	// Check if receiver limit is reached
-	count, err := store.CountReceivers(ctx, d.ProjectID())
-	if err != nil {
-		return nil, err
-	}
-	if count >= MaxReceiverCount {
-		return nil, &GenericError{
-			StatusCode: http.StatusUnprocessableEntity,
-			Name:       "buffer.resourceLimitReached",
-			Message:    fmt.Sprintf("Maximum number of receivers per project is %d.", MaxReceiverCount),
-		}
-	}
-
 	receiver := model.Receiver{
 		ProjectID: d.ProjectID(),
 		Name:      payload.Name,
@@ -75,6 +60,13 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 	// Persist receiver
 	err = store.CreateReceiver(ctx, receiver)
 	if err != nil {
+		if errors.Is(err, &dependencies.ReceiverLimitReached{}) {
+			return nil, &GenericError{
+				StatusCode: http.StatusUnprocessableEntity,
+				Name:       "buffer.resourceLimitReached",
+				Message:    fmt.Sprintf("Maximum number of receivers per project is %d.", dependencies.MaxReceiverCount),
+			}
+		}
 		return nil, errors.Wrapf(err, "failed to create receiver \"%s\"", receiver.ID)
 	}
 

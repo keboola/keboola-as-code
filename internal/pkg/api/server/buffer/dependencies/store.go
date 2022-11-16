@@ -15,6 +15,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
+const MaxReceiverCount = 100
+
 type ConfigStore struct {
 	logger     log.Logger
 	etcdClient *etcd.Client
@@ -34,21 +36,10 @@ func ProjectKey(projectID int) string {
 	return fmt.Sprintf("config/%d", projectID)
 }
 
-func (c *ConfigStore) CountReceivers(ctx context.Context, projectID int) (count uint64, err error) {
-	logger, tracer, client := c.logger, c.tracer, c.etcdClient
+type ReceiverLimitReached struct{}
 
-	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.CreateReceiver")
-	defer telemetryUtils.EndSpan(span, &err)
-
-	key := ProjectKey(projectID)
-
-	logger.Debugf(`Reading "%s" count`, key)
-	r, err := client.KV.Get(ctx, key, etcd.WithPrefix(), etcd.WithCountOnly())
-	if err != nil {
-		return 0, err
-	}
-
-	return uint64(r.Count), nil
+func (*ReceiverLimitReached) Error() string {
+	return "receiver limit reached"
 }
 
 // CreateReceiver puts a receiver into the store.
@@ -64,14 +55,24 @@ func (c *ConfigStore) CreateReceiver(ctx context.Context, receiver model.Receive
 		return err
 	}
 
-	key := ReceiverKey(receiver.ProjectID, receiver.ID)
-
-	logger.Debugf(`Reading "%s" count`, key)
-	r, err := client.KV.Get(ctx, key, etcd.WithCountOnly())
+	projectKey := ProjectKey(receiver.ProjectID)
+	logger.Debugf(`Reading "%s" count`, projectKey)
+	allReceivers, err := client.KV.Get(ctx, projectKey, etcd.WithPrefix(), etcd.WithCountOnly())
 	if err != nil {
 		return err
 	}
-	if r.Count > 0 {
+	if allReceivers.Count >= MaxReceiverCount {
+		return &ReceiverLimitReached{}
+	}
+
+	key := ReceiverKey(receiver.ProjectID, receiver.ID)
+
+	logger.Debugf(`Reading "%s" count`, key)
+	receivers, err := client.KV.Get(ctx, key, etcd.WithCountOnly())
+	if err != nil {
+		return err
+	}
+	if receivers.Count > 0 {
 		return errors.Errorf(`receiver "%s" already exists`, receiver.ID)
 	}
 
