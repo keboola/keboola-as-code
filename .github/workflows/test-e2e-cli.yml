@@ -78,6 +78,7 @@ jobs:
         uses: ./.github/actions/go-cache
         with:
           key: e2e
+          goVersion: ${{ env.GOVERSION }}
 
       - name: Install tools
         run: . ./scripts/tools.sh

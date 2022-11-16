@@ -4,6 +4,9 @@ inputs:
   key:
     description: Cache key
     required: true
+  goVersion:
+    description: Go version
+    required: true
 runs:
   using: "composite"
   steps:
@@ -24,7 +27,7 @@ runs:
           ~/.cache/golangci-lint
           ~/Library/Caches/golangci-lint
           ~\AppData\Local\golangci-lint
-        key: ${{ runner.os }}-go-v2-${{ inputs.key }}-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-go-${{ inputs.goversion }}-v4-${{ inputs.key }}-${{ hashFiles('**/go.sum') }}
         restore-keys: |
-          ${{ runner.os }}-go-v4-
-          ${{ runner.os }}-go-v4-${{ inputs.key }}-
+          ${{ runner.os }}-go-${{ inputs.goversion }}-v4-
+          ${{ runner.os }}-go-${{ inputs.goversion }}-v4-${{ inputs.key }}-
