@@ -1,10 +1,10 @@
-name: 'E2E: Templates'
+name: "E2E: Templates"
 
 on:
   workflow_call:
 
 env:
-  GO_VERSION: 1.19
+  GO_VERSION: 1.19.3
   TEST_PARALLELISM: 4
   TEST_PARALLELISM_PKG: 1
   TEST_KBC_PROJECTS: |
@@ -60,3 +60,4 @@ jobs:
           TEMPLATES_API_ETCD_USERNAME: root
           TEMPLATES_API_ETCD_PASSWORD: toor
           TEMPLATES_API_ETCD_NAMESPACE: templates-api
+

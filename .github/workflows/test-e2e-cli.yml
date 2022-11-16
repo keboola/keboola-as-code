@@ -1,4 +1,4 @@
-name: 'E2E Tests: CLI'
+name: "E2E Tests: CLI"
 
 on:
   workflow_call:
@@ -8,7 +8,7 @@ on:
         required: false
 
 env:
-  GO_VERSION: 1.19
+  GO_VERSION: 1.19.3
   TEST_PARALLELISM: 8
   TEST_PARALLELISM_PKG: 1
   TEST_PROJECTS_LINUX: |
@@ -89,3 +89,4 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
           TEST_KBC_PROJECTS: ${{ env[matrix.projects] }}
+
