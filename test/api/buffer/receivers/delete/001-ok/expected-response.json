@@ -1,5 +1,0 @@
-{
-  "receiverId": "delete-receiver",
-  "name": "delete-receiver",
-  "url": "https://buffer.keboola.com/v1/import/delete-receiver/#/%s"
-}

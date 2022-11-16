@@ -1,0 +1,6 @@
+{
+  "statusCode": 404,
+  "error": "buffer.receiverNotFound",
+  "message": "Receiver \"delete-receiver\" not found"
+}
+
