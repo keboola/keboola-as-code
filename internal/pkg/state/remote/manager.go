@@ -335,6 +335,8 @@ func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.O
 			if errors.As(err, &storageApiErr) {
 				if storageApiErr.ErrCode == "configurationAlreadyExists" || storageApiErr.ErrCode == "configurationRowAlreadyExists" {
 					// Object exists -> update instead of create
+					// This can happen if there is a disconnected "variables" configuration, and push connects it again.
+					// See TestCliE2E/push/variables-add-relation
 					return u.updateRequest(objectState, object, recipe, nil).SendOrErr(ctx, sender)
 				}
 			}
