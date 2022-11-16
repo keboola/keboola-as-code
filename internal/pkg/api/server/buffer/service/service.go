@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"sort"
 
-	dependencies "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/service"

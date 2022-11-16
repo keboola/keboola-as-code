@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/namespace"
@@ -132,6 +133,56 @@ func TestConfigStore_ListReceivers(t *testing.T) {
 		return receivers[i].ID < receivers[j].ID
 	})
 	assert.Equal(t, input, receivers)
+}
+
+func TestConfigStore_ListExports(t *testing.T) {
+	t.Parallel()
+
+	// Setup
+	ctx, d := newTestDeps(t)
+	store := NewConfigStore(d.logger, d.etcdClient, d.validator, d.tracer)
+
+	projectID := 1000
+	receiverID := "receiver1"
+
+	// Create exports
+	input := []*model.Export{
+		{
+			ID:   "export-1",
+			Name: "Export 1",
+			ImportConditions: []model.ImportCondition{
+				{
+					Count: 5,
+				},
+				{
+					Size: datasize.MustParseString("50kB"),
+				},
+			},
+		},
+		{
+			ID:   "export-2",
+			Name: "Export 2",
+			ImportConditions: []model.ImportCondition{
+				{
+					Time: 5 * time.Minute,
+				},
+			},
+		},
+	}
+
+	for _, i := range input {
+		key := fmt.Sprintf("config/export/%d/%s/%s", projectID, receiverID, i.ID)
+		value, err := json.EncodeString(i, false)
+		assert.NoError(t, err)
+		_, err = d.etcdClient.KV.Put(ctx, key, value)
+		assert.NoError(t, err)
+	}
+
+	// List
+	exports, err := store.ListExports(ctx, projectID, receiverID)
+	assert.NoError(t, err)
+
+	assert.Equal(t, input, exports)
 }
 
 type testDeps struct {
