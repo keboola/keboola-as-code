@@ -38,7 +38,7 @@ func ProjectKey(projectID int) string {
 
 type ReceiverLimitReachedError struct{}
 
-func (*ReceiverLimitReachedError) Error() string {
+func (ReceiverLimitReachedError) Error() string {
 	return fmt.Sprintf("receiver limit reached, the maximum is %d", MaxReceiversPerProject)
 }
 
@@ -62,7 +62,7 @@ func (c *ConfigStore) CreateReceiver(ctx context.Context, receiver model.Receive
 		return err
 	}
 	if allReceivers.Count >= MaxReceiversPerProject {
-		return &ReceiverLimitReachedError{}
+		return ReceiverLimitReachedError{}
 	}
 
 	key := ReceiverKey(receiver.ProjectID, receiver.ID)
