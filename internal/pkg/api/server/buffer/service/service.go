@@ -151,6 +151,9 @@ func (*service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer
 	projectId, receiverId := d.ProjectID(), payload.ReceiverID
 
 	deleted, err := store.DeleteReceiver(ctx, projectId, receiverId)
+	if err != nil {
+		return err
+	}
 	if !deleted {
 		return &GenericError{
 			StatusCode: 404,

@@ -161,7 +161,7 @@ func (c *ConfigStore) DeleteReceiver(ctx context.Context, projectId int, receive
 	logger.Debugf(`DELETE "%s"`, key)
 	r, err := client.KV.Delete(ctx, key)
 	if err != nil {
-		return r.Deleted > 0, err
+		return false, err
 	}
 
 	return r.Deleted > 0, nil
