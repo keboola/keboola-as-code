@@ -87,17 +87,17 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.GetReceiverPayload) (res *buffer.Receiver, err error) {
 	ctx, store := d.RequestCtx(), d.ConfigStore()
 
-	projectId, receiverId := d.ProjectID(), payload.ReceiverID
+	projectID, receiverID := d.ProjectID(), payload.ReceiverID
 
-	receiver, err := store.GetReceiver(ctx, projectId, receiverId)
+	receiver, err := store.GetReceiver(ctx, projectID, receiverID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get receiver \"%s\" in project \"%d\"", receiverId, projectId)
+		return nil, errors.Wrapf(err, "failed to get receiver \"%s\" in project \"%d\"", receiverID, projectID)
 	}
 	if receiver == nil {
 		return nil, &GenericError{
 			StatusCode: http.StatusNotFound,
 			Name:       "buffer.receiverNotFound",
-			Message:    fmt.Sprintf("Receiver \"%s\" not found", receiverId),
+			Message:    fmt.Sprintf("Receiver \"%s\" not found", receiverID),
 		}
 	}
 
@@ -118,11 +118,11 @@ func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.Ge
 func (*service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListReceiversPayload) (res *buffer.ListReceiversResult, err error) {
 	ctx, store := d.RequestCtx(), d.ConfigStore()
 
-	projectId := d.ProjectID()
+	projectID := d.ProjectID()
 
-	data, err := store.ListReceivers(ctx, projectId)
+	data, err := store.ListReceivers(ctx, projectID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list receivers in project \"%d\"", projectId)
+		return nil, errors.Wrapf(err, "failed to list receivers in project \"%d\"", projectID)
 	}
 
 	bufferApiHost := d.BufferApiHost()
@@ -148,9 +148,9 @@ func (*service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListRe
 func (*service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer.DeleteReceiverPayload) (err error) {
 	ctx, store := d.RequestCtx(), d.ConfigStore()
 
-	projectId, receiverId := d.ProjectID(), payload.ReceiverID
+	projectID, receiverID := d.ProjectID(), payload.ReceiverID
 
-	deleted, err := store.DeleteReceiver(ctx, projectId, receiverId)
+	deleted, err := store.DeleteReceiver(ctx, projectID, receiverID)
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (*service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer
 		return &GenericError{
 			StatusCode: 404,
 			Name:       "buffer.receiverNotFound",
-			Message:    fmt.Sprintf("Receiver \"%s\" not found", receiverId),
+			Message:    fmt.Sprintf("Receiver \"%s\" not found", receiverID),
 		}
 	}
 
@@ -185,6 +185,6 @@ func (*service) Import(dependencies.ForPublicRequest, *buffer.ImportPayload, io.
 	return &NotImplementedError{}
 }
 
-func formatUrl(bufferApiHost string, receiverId string, secret string) string {
-	return fmt.Sprintf("https://%s/v1/import/%s/#/%s", bufferApiHost, receiverId, secret)
+func formatUrl(bufferApiHost string, receiverID string, secret string) string {
+	return fmt.Sprintf("https://%s/v1/import/%s/#/%s", bufferApiHost, receiverID, secret)
 }
