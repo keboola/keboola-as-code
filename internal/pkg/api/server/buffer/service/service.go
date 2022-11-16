@@ -64,7 +64,7 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 			return nil, &GenericError{
 				StatusCode: http.StatusUnprocessableEntity,
 				Name:       "buffer.resourceLimitReached",
-				Message:    fmt.Sprintf("Maximum number of receivers per project is %d.", dependencies.MaxReceiverCount),
+				Message:    fmt.Sprintf("Maximum number of receivers per project is %d.", dependencies.MaxReceiversPerProject),
 			}
 		}
 		return nil, errors.Wrapf(err, "failed to create receiver \"%s\"", receiver.ID)

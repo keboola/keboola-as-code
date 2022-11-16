@@ -15,7 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-const MaxReceiverCount = 100
+const MaxReceiversPerProject = 100
 
 type ConfigStore struct {
 	logger     log.Logger
@@ -39,7 +39,7 @@ func ProjectKey(projectID int) string {
 type ReceiverLimitReachedError struct{}
 
 func (*ReceiverLimitReachedError) Error() string {
-	return "receiver limit reached"
+	return fmt.Sprintf("receiver limit reached, the maximum is %d", MaxReceiversPerProject)
 }
 
 // CreateReceiver puts a receiver into the store.
@@ -61,7 +61,7 @@ func (c *ConfigStore) CreateReceiver(ctx context.Context, receiver model.Receive
 	if err != nil {
 		return err
 	}
-	if allReceivers.Count >= MaxReceiverCount {
+	if allReceivers.Count >= MaxReceiversPerProject {
 		return &ReceiverLimitReachedError{}
 	}
 
