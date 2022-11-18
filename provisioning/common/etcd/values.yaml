@@ -139,6 +139,7 @@ extraDeploy:
         helm.sh/chart: {{ include "common.names.chart" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}-defrag
         app.kubernetes.io/managed-by: {{ .Release.Service }}
+        {{ template "common.names.fullname" . }}-client: "true"
         {{- if .Values.commonLabels }}
         {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
         {{- end }}
@@ -158,6 +159,7 @@ extraDeploy:
                 helm.sh/chart: {{ include "common.names.chart" . }}
                 app.kubernetes.io/instance: {{ .Release.Name }}-defrag
                 app.kubernetes.io/managed-by: {{ .Release.Service }}
+                {{ template "common.names.fullname" . }}-client: "true"
                 {{- if .Values.podLabels }}
                 {{- include "common.tplvalues.render" (dict "value" .Values.podLabels "context" $) | nindent 12 }}
                 {{- end }}
