@@ -3,18 +3,24 @@ name: 'Release: Buffer API'
 on:
   push:
     tags:
-      - 'buffer-api-v**'
+      - 'buffer-v**'
 
 env:
-  IMAGE_NAME_API: "keboola/buffer-api"
-  IMAGE_NAME_WORKER: "keboola/buffer-worker"
   IMAGE_TAG: ${{ github.ref_name }}
   ECR_REGION: "us-east-1"
-  ECR_REPOSITORY: "keboola/buffer-api"
-  ECR_PUSH_ROLE: "TODO"
-  ACR_REPOSITORY: "buffer-api"
   ACR_REGISTRY: "keboola.azurecr.io"
-  ACR_USERNAME: "buffer-api-push"
+
+  API_IMAGE_NAME: "keboola/buffer-api"
+  API_ECR_REPOSITORY: "keboola/buffer-api"
+  API_ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-BufferApiPushRole-8SI5TUN6TV99"
+  API_ACR_REPOSITORY: "buffer-api"
+  API_ACR_USERNAME: "buffer-api-push"
+
+  WORKER_IMAGE_NAME: "keboola/buffer-worker"
+  WORKER_ECR_REPOSITORY: "keboola/buffer-worker"
+  WORKER_ECR_PUSH_ROLE: "arn:aws:iam::968984773589:role/kbc-ecr-BufferWorkerPushRole-15AMFOJ64KHB9"
+  WORKER_ACR_REPOSITORY: "buffer-worker"
+  WORKER_ACR_USERNAME: "buffer-worker-push"
 
 jobs:
   test-lint:
@@ -44,5 +50,56 @@ jobs:
       - test-e2e-service-buffer
       - test-k8s-service-buffer
     steps:
-      - name: TODO
-        run: echo "TODO"
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Docker login
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKERHUB_USER }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
+      - name: Build API image
+        uses: docker/build-push-action@v3
+        with:
+          load: true
+          tags: ${{ env.API_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          context: .
+          file: provisioning/buffer/docker/api/Dockerfile
+
+      - name: Build Worker image
+        uses: docker/build-push-action@v3
+        with:
+          load: true
+          tags: ${{ env.WORKER_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          context: .
+          file: provisioning/buffer/docker/worker/Dockerfile
+
+      - name: Push API image to Amazon ECR and Azure ACR
+        uses: ./.github/actions/push-image-aws-azure
+        with:
+          imageName: ${{ env.API_IMAGE_NAME }}
+          imageTag: ${{ env.IMAGE_TAG }}
+          ecrRegion: ${{ env.ECR_REGION }}
+          ecrRepository: ${{ env.API_ECR_REPOSITORY }}
+          ecrPushRole: ${{ env.API_ECR_PUSH_ROLE }}
+          acrRegistry: ${{ env.ACR_REGISTRY }}
+          acrRepository: ${{ env.API_ACR_REPOSITORY }}
+          acrUsername: ${{ env.API_ACR_USERNAME }}
+          acrPassword: ${{ secrets.BUFFER_API_ACR_PASSWORD }}"
+
+      - name: Push Worker image to Amazon ECR and Azure ACR
+        uses: ./.github/actions/push-image-aws-azure
+        with:
+          imageName: ${{ env.WORKER_IMAGE_NAME }}
+          imageTag: ${{ env.IMAGE_TAG }}
+          ecrRegion: ${{ env.ECR_REGION }}
+          ecrRepository: ${{ env.WORKER_ECR_REPOSITORY }}
+          ecrPushRole: ${{ env.WORKER_ECR_PUSH_ROLE }}
+          acrRegistry: ${{ env.ACR_REGISTRY }}
+          acrRepository: ${{ env.WORKER_ACR_REPOSITORY }}
+          acrUsername: ${{ env.WORKER_ACR_USERNAME }}
+          acrPassword: ${{ secrets.BUFFER_WORKER_ACR_PASSWORD }}"
