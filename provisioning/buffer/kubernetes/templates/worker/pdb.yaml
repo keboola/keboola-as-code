@@ -1,0 +1,13 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: buffer-worker-pdb
+  namespace: $NAMESPACE
+  labels:
+    app: buffer-worker
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: buffer-worker

@@ -1,0 +1,114 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: buffer-worker
+  namespace: $NAMESPACE
+  labels:
+    app: buffer-worker
+    releaseId: $RELEASE_ID
+spec:
+  replicas: $BUFFER_WORKER_REPLICAS
+  selector:
+    matchLabels:
+      app: buffer-worker
+  template:
+    metadata:
+      labels:
+        app: buffer-worker
+        releaseId: $RELEASE_ID
+        buffer-etcd-client: "true"
+        tags.datadoghq.com/env: "$KEBOOLA_STACK"
+        tags.datadoghq.com/service: "buffer-worker"
+        tags.datadoghq.com/version: "$RELEASE_ID"
+      annotations:
+        log: "true"
+        ad.datadoghq.com/tags: '{"git.commit.sha": "$COMMIT_HASH", "git.repository_url": "https://github.com/keboola/keboola-as-code"}'
+    spec:
+      containers:
+        - name: buffer-worker
+          image: $BUFFER_WORKER_REPOSITORY:$BUFFER_WORKER_IMAGE_TAG
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "512Mi"
+            limits:
+              memory: "512Mi"
+          ports:
+            - containerPort: 8000
+          env:
+            # 80% of the resources.limits.memory
+            - name: GOMEMLIMIT
+              value: "400MiB"
+            - name: KBC_STORAGE_API_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: buffer-worker
+                  key: storageApiHost
+            - name: BUFFER_ETCD_ENABLED
+              value: "true"
+            - name: BUFFER_ETCD_ENDPOINT
+              value: buffer-etcd-headless.buffer.svc.cluster.local:2379
+            - name: BUFFER_ETCD_USERNAME
+              value: root
+            - name: BUFFER_ETCD_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: buffer-etcd
+                  key: etcd-root-password
+            - name: BUFFER_ETCD_NAMESPACE
+              value: buffer
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_TRACE_ANALYTICS_ENABLED
+              value: "true"
+            - name: DD_PROFILING_ENABLED
+              value: "true"
+            - name: DD_ENV
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/env']
+            - name: DD_SERVICE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/service']
+            - name: DD_VERSION
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/version']
+          startupProbe:
+            httpGet:
+              path: /health-check
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: KubernetesStartupProbe
+            initialDelaySeconds: 10
+            periodSeconds: 1
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health-check
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: KubernetesReadinessProbe
+            periodSeconds: 10
+            failureThreshold: 1
+          livenessProbe:
+            httpGet:
+              path: /health-check
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: KubernetesLivenessProbe
+            periodSeconds: 10
+            failureThreshold: 3
+      tolerations:
+        - key: app
+          operator: Exists
+          effect: NoSchedule
+      nodeSelector:
+        nodepool: main
