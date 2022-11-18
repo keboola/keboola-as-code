@@ -178,7 +178,6 @@ var _ = Service("buffer", func() {
 	Method("DeleteReceiver", func() {
 		Meta("openapi:summary", "Delete receiver")
 		Description("Delete a receiver.")
-		Result(Receiver)
 		Payload(func() {
 			receiverId()
 			Required("receiverId")

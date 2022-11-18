@@ -29,11 +29,11 @@ func NewConfigStore(logger log.Logger, etcdClient *etcd.Client, validator valida
 }
 
 func ReceiverKey(projectID int, receiverID string) string {
-	return fmt.Sprintf("config/%d/receiver/%s", projectID, receiverID)
+	return fmt.Sprintf("config/receiver/%d/%s", projectID, receiverID)
 }
 
-func ProjectKey(projectID int) string {
-	return fmt.Sprintf("config/%d", projectID)
+func ReceiverPrefix(projectID int) string {
+	return fmt.Sprintf("config/receiver/%d", projectID)
 }
 
 type ReceiverLimitReachedError struct{}
@@ -42,9 +42,19 @@ func (ReceiverLimitReachedError) Error() string {
 	return fmt.Sprintf("receiver limit reached, the maximum is %d", MaxReceiversPerProject)
 }
 
+type ReceiverNotFoundError struct {
+	ID string
+}
+
+func (r ReceiverNotFoundError) Error() string {
+	return fmt.Sprintf("receiver \"%s\" not found", r.ID)
+}
+
 // CreateReceiver puts a receiver into the store.
 //
 // This method guarantees that no two receivers in the store will have the same (projectID, receiverID) pair.
+//
+// May fail if receiver limit is reached (`ReceiverLimitReachedError`), or if any of the underlying ETCD calls fail.
 func (c *ConfigStore) CreateReceiver(ctx context.Context, receiver model.Receiver) (err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
@@ -55,9 +65,9 @@ func (c *ConfigStore) CreateReceiver(ctx context.Context, receiver model.Receive
 		return err
 	}
 
-	projectKey := ProjectKey(receiver.ProjectID)
-	logger.Debugf(`Reading "%s" count`, projectKey)
-	allReceivers, err := client.KV.Get(ctx, projectKey, etcd.WithPrefix(), etcd.WithCountOnly())
+	prefix := ReceiverPrefix(receiver.ProjectID)
+	logger.Debugf(`Reading "%s" count`, prefix)
+	allReceivers, err := client.KV.Get(ctx, prefix, etcd.WithPrefix(), etcd.WithCountOnly())
 	if err != nil {
 		return err
 	}
@@ -129,15 +139,15 @@ func (c *ConfigStore) ListReceivers(ctx context.Context, projectID int) (r []*mo
 	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.ListReceivers")
 	defer telemetryUtils.EndSpan(span, &err)
 
-	key := ProjectKey(projectID)
+	prefix := ReceiverPrefix(projectID)
 
-	logger.Debugf(`GET "%s"`, key)
-	resp, err := client.KV.Get(ctx, key, etcd.WithPrefix())
+	logger.Debugf(`GET "%s"`, prefix)
+	resp, err := client.KV.Get(ctx, prefix, etcd.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Debugf(`Decoding list "%s"`, key)
+	logger.Debugf(`Decoding list "%s"`, prefix)
 	receivers := make([]*model.Receiver, 0, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
 		receiver := &model.Receiver{}
@@ -148,4 +158,28 @@ func (c *ConfigStore) ListReceivers(ctx context.Context, projectID int) (r []*mo
 	}
 
 	return receivers, nil
+}
+
+// DeleteReceiver deletes a receiver from the store.
+//
+// May fail if the receiver is not found (`ReceiverNotFoundError`), or if any of the underlying ETCD calls fail.
+func (c *ConfigStore) DeleteReceiver(ctx context.Context, projectID int, receiverID string) (err error) {
+	logger, tracer, client := c.logger, c.tracer, c.etcdClient
+
+	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.DeleteReceiver")
+	defer telemetryUtils.EndSpan(span, &err)
+
+	key := ReceiverKey(projectID, receiverID)
+
+	logger.Debugf(`DELETE "%s"`, key)
+	r, err := client.KV.Delete(ctx, key)
+	if err != nil {
+		return err
+	}
+
+	if r.Deleted == 0 {
+		return ReceiverNotFoundError{ID: receiverID}
+	}
+
+	return nil
 }
