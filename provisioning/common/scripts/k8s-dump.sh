@@ -44,7 +44,7 @@ echo
 KINDS_INLINE=$(echo "$KINDS" | sed -z -E 's/\n+/,/g;s/^,//;s/,$//')
 echo "Kubernetes overview:"
 echo "----------------------------------"
-kubectl get "$KINDS_INLINE" --namespace templates-api
+kubectl get "$KINDS_INLINE"
 echo "----------------------------------"
 echo
 
