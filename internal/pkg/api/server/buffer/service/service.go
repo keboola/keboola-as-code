@@ -150,16 +150,16 @@ func (*service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer
 
 	projectID, receiverID := d.ProjectID(), payload.ReceiverID
 
-	deleted, err := store.DeleteReceiver(ctx, projectID, receiverID)
+	err = store.DeleteReceiver(ctx, projectID, receiverID)
 	if err != nil {
-		return err
-	}
-	if !deleted {
-		return &GenericError{
-			StatusCode: 404,
-			Name:       "buffer.receiverNotFound",
-			Message:    fmt.Sprintf("Receiver \"%s\" not found", receiverID),
+		if errors.As(err, &dependencies.ReceiverNotFoundError{}) {
+			return &GenericError{
+				StatusCode: 404,
+				Name:       "buffer.receiverNotFound",
+				Message:    fmt.Sprintf("Receiver \"%s\" not found", receiverID),
+			}
 		}
+		return err
 	}
 
 	return nil
