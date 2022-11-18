@@ -36,6 +36,10 @@ func ReceiverPrefix(projectID int) string {
 	return fmt.Sprintf("config/receiver/%d", projectID)
 }
 
+func ExportsPrefix(projectID int, receiverID string) string {
+	return fmt.Sprintf("config/export/%d/%s/", projectID, receiverID)
+}
+
 type ReceiverLimitReachedError struct{}
 
 func (ReceiverLimitReachedError) Error() string {
@@ -184,17 +188,13 @@ func (c *ConfigStore) DeleteReceiver(ctx context.Context, projectID int, receive
 	return nil
 }
 
-func ExportsListKey(projectID int, receiverID string) string {
-	return fmt.Sprintf("config/export/%d/%s/", projectID, receiverID)
-}
-
 func (c *ConfigStore) ListExports(ctx context.Context, projectID int, receiverID string) (r []*model.Export, err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
 	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.ListExports")
 	defer telemetryUtils.EndSpan(span, &err)
 
-	key := ExportsListKey(projectID, receiverID)
+	key := ExportsPrefix(projectID, receiverID)
 
 	logger.Debugf(`GET "%s"`, key)
 	resp, err := client.KV.Get(ctx, key, etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
