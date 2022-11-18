@@ -26,6 +26,16 @@ func IsIgnoredDir(path string, d filesystem.FileInfo) bool {
 // GetTestDirs returns list of all functional test directories.
 //
 // Each functional test directory contains some number of requests which are run sequentially.
+//
+// Example:
+//
+//	test/api/buffer
+//	|- base
+//	   |- endpoint-not-found <- functional test
+//	      |- 001-endpoint
+//	|- receivers
+//	   |- create             <- functional test
+//	      |- 001-ok
 func GetTestDirs(t *testing.T, root string) []string {
 	t.Helper()
 	var dirs []string
