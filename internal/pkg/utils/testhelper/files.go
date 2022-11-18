@@ -23,7 +23,9 @@ func IsIgnoredDir(path string, d filesystem.FileInfo) bool {
 	return d.IsDir() && strings.HasPrefix(base, ".")
 }
 
-// GetTestDirs returns list of all [category]/[test] dirs.
+// GetTestDirs returns list of all functional test directories.
+//
+// Each functional test directory contains some number of requests which are run sequentially.
 func GetTestDirs(t *testing.T, root string) []string {
 	t.Helper()
 	var dirs []string
