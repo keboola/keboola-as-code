@@ -49,6 +49,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      - name: Docker login
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKERHUB_USER }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
       - name: Build image
         uses: docker/build-push-action@v3
         with:
@@ -56,8 +62,6 @@ jobs:
           tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           context: .
           file: provisioning/templates-api/docker/Dockerfile
-          #cache-from: type=registry,ref=templates-api-build/cache:cache
-          #cache-to: type=registry,ref=templates-api-build/cache:cache,mode=max
 
       - name: Push image to Amazon ECR and Azure ACR
         uses: ./.github/actions/push-image-aws-azure
@@ -70,4 +74,4 @@ jobs:
           acrRepository: ${{ env.ACR_REPOSITORY }}
           acrRegistry: ${{ env.ACR_REGISTRY }}
           acrUsername: ${{ env.ACR_USERNAME }}
-          acrPassword: ${{ secrets.SERVICE_ACR_PASSWORD }}
+          acrPassword: ${{ secrets.TEMPLATES_API_ACR_PASSWORD }}

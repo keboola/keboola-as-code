@@ -13,6 +13,27 @@ if ! minikube status > /dev/null; then
   ./../common/scripts/start-minikube.sh
 fi
 
+# Build Docker image in the local Docker, so it is cached, if Minikube is destroyed
+API_IMAGE="$BUFFER_API_REPOSITORY:$BUFFER_API_IMAGE_TAG"
+WORKER_IMAGE="$BUFFER_WORKER_REPOSITORY:$BUFFER_WORKER_IMAGE_TAG"
+echo
+echo "Building API image ..."
+echo "--------------------------"
+docker build -t "$API_IMAGE" -f "./docker/api/Dockerfile" "../../"
+echo
+echo "Building Worker image ..."
+echo "--------------------------"
+docker build -t "$WORKER_IMAGE" -f "./docker/worker/Dockerfile" "../../"
+
+# Load the images to the Minikube
+minikube image load --overwrite=true "$API_IMAGE"
+minikube image load --overwrite=true "$WORKER_IMAGE"
+
+echo
+echo "Images in the MiniKube:"
+echo "--------------------------"
+minikube image list
+
 # Set the required node label
 minikube kubectl -- label nodes --overwrite --all nodepool=main > /dev/null
 
