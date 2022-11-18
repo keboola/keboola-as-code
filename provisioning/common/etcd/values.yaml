@@ -134,7 +134,11 @@ extraDeploy:
     metadata:
       name: {{ printf "%s-defrag" (include "common.names.fullname" .) | trunc 63 | trimSuffix "-" }}
       namespace: {{ .Release.Namespace | quote }}
-      labels: {{- include "common.labels.standard" . | nindent 4 }}
+      labels:
+        app.kubernetes.io/name: {{ include "common.names.name" . }}
+        helm.sh/chart: {{ include "common.names.chart" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}-defrag
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
         {{- if .Values.commonLabels }}
         {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
         {{- end }}
@@ -149,7 +153,11 @@ extraDeploy:
         spec:
           template:
             metadata:
-              labels: {{- include "common.labels.standard" . | nindent 12 }}
+              labels:
+                app.kubernetes.io/name: {{ include "common.names.name" . }}
+                helm.sh/chart: {{ include "common.names.chart" . }}
+                app.kubernetes.io/instance: {{ .Release.Name }}-defrag
+                app.kubernetes.io/managed-by: {{ .Release.Service }}
                 {{- if .Values.podLabels }}
                 {{- include "common.tplvalues.render" (dict "value" .Values.podLabels "context" $) | nindent 12 }}
                 {{- end }}
