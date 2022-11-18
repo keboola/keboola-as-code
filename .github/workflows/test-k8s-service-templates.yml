@@ -85,11 +85,12 @@ jobs:
           sleep 10
           # Dump objects
           /tmp/latest-scripts/k8s-dump.sh /tmp/artifacts/test-k8s-state.new.json
+
       - name: Check deployment of the etcd
         if: always()
         run: kubectl rollout status "sts/$ETCD_RELEASE_NAME"
 
-      - name: Check deployment of the API
+      - name: Check deployment of the API nodes
         if: always()
         run: kubectl rollout status "deployment/$API_RELEASE_NAME"
 

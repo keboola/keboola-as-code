@@ -86,9 +86,18 @@ jobs:
           sleep 10
           # Dump objects
           /tmp/latest-scripts/k8s-dump.sh /tmp/artifacts/test-k8s-state.new.json
+
       - name: Check deployment of the etcd
         if: always()
         run: kubectl rollout status "sts/$ETCD_RELEASE_NAME"
+
+      - name: Check deployment of the API nodes
+        if: always()
+        run: kubectl rollout status "deployment/$API_RELEASE_NAME"
+
+      - name: Check deployment of the Worker nodes
+        if: always()
+        run: kubectl rollout status "deployment/$WORKER_RELEASE_NAME"
 
       - name: Check access to the etcd from a client
         if: always()
@@ -128,6 +137,10 @@ jobs:
             echo "The command failed, OK."
             exit 0
           fi
+
+      - name: Check API response
+        if: always()
+        run: curl --fail -L -s "$(minikube service --url $API_RELEASE_NAME --namespace $KUBERNETES_NAMESPACE)"
 
       - name: Test etcd defragmentation cron job
         if: always()
