@@ -11,9 +11,13 @@ on:
       - provisioning/common/**
 
 env:
-  SERVICE_NAME: Buffer
   MINIKUBE_PROFILE: buffer
+  MINIKUBE_DRIVER: docker
+
   KUBERNETES_NAMESPACE: buffer
+  KUBERNETES_ROLLOUT_WAIT: 120s
+
+  SERVICE_NAME: Buffer
   API_RELEASE_NAME: buffer-api
   WORKER_RELEASE_NAME: buffer-worker
   ETCD_RELEASE_NAME: buffer-etcd
@@ -72,7 +76,7 @@ jobs:
         run: ./deploy_local.sh
 
       - name: Dump the new version (for diff)
-        continue-on-error: true
+        if: always()
         run: |
           set -Eeuo pipefail
           # Delete empty old replica sets
@@ -86,9 +90,18 @@ jobs:
           sleep 10
           # Dump objects
           /tmp/latest-scripts/k8s/dump.sh /tmp/artifacts/test-k8s-state.new.json
+
       - name: Check deployment of the etcd
         if: always()
-        run: kubectl rollout status "sts/$ETCD_RELEASE_NAME"
+        run: kubectl rollout status "sts/$ETCD_RELEASE_NAME" --timeout=10s
+
+      - name: Check deployment of the API nodes
+        if: always()
+        run: kubectl rollout status "deployment/$API_RELEASE_NAME" --timeout=10s
+
+      - name: Check deployment of the Worker nodes
+        if: always()
+        run: kubectl rollout status "deployment/$WORKER_RELEASE_NAME" --timeout=10s
 
       - name: Check access to the etcd from a client
         if: always()
@@ -128,6 +141,10 @@ jobs:
             echo "The command failed, OK."
             exit 0
           fi
+
+      - name: Check API response
+        if: always()
+        run: curl --fail -L -s --max-time 5 "$(minikube service --url $API_RELEASE_NAME --namespace $KUBERNETES_NAMESPACE)"
 
       - name: Test etcd defragmentation cron job
         if: always()
