@@ -2,6 +2,10 @@ name: 'Push CI'
 
 on:
   push:
+    tags-ignore:
+      - "v**"
+      - 'buffer-v**'
+      - 'templates-api-v**'
 
 jobs:
   test-lint:
