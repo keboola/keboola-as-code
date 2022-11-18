@@ -6,6 +6,11 @@ on:
       - 'templates-api-v**'
 
 env:
+  # DockerHub login
+  DOCKERHUB_USER: "keboolabot"
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  # API image
   IMAGE_NAME: "keboola/templates-api"
   IMAGE_TAG: ${{ github.ref_name }}
   ECR_REGION: "us-east-1"

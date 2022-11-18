@@ -2,6 +2,9 @@ name: 'Push CI'
 
 on:
   push:
+    # Avoid tags
+    branches:
+      - "*"
 
 jobs:
   test-lint:
