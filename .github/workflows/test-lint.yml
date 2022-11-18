@@ -1,10 +1,10 @@
-name: 'Lint Code'
+name: "Lint Code"
 
 on:
   workflow_call:
 
 env:
-  GO_VERSION: 1.19
+  GO_VERSION: 1.19.3
 
 jobs:
   lint:
@@ -31,3 +31,4 @@ jobs:
       - name: Run code linters
         run: make lint
         shell: bash
+

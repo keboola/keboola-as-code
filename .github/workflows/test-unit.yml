@@ -1,10 +1,10 @@
-name: 'Unit Tests'
+name: "Unit Tests"
 
 on:
   workflow_call:
 
 env:
-  GO_VERSION: 1.19
+  GO_VERSION: 1.19.3
   TEST_PARALLELISM: 6
   TEST_PARALLELISM_PKG: 6
   TEST_PROJECTS_LINUX: |
@@ -95,3 +95,4 @@ jobs:
           BUFFER_ETCD_USERNAME: root
           BUFFER_ETCD_PASSWORD: toor
           BUFFER_ETCD_NAMESPACE: buffer
+

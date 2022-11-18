@@ -1,12 +1,12 @@
-name: 'Release: CLI'
+name: "Release: CLI"
 
 on:
   push:
     tags:
-      - 'v**'
+      - "v**"
 
 env:
-  GO_VERSION: 1.19
+  GO_VERSION: 1.19.3
   TAG: ${{ github.ref_name }}
 
   # DockerHub login
@@ -543,3 +543,4 @@ jobs:
           scoop install keboola/keboola-cli
           kbc --version
           If (-Not (kbc --version | Select-String -Quiet "Version:    $($env:VERSION)")) { throw "kbc command not installed properly" }
+
