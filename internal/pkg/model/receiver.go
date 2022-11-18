@@ -8,7 +8,7 @@ import (
 
 type ImportCondition struct {
 	Count int               `json:"count" validate:"min=1,max=10000000"`
-	Size  datasize.ByteSize `json:"size" validate:"min=100B,max=50MB"`
+	Size  datasize.ByteSize `json:"size" validate:"min=100,max=50000000"`
 	Time  time.Duration     `json:"time" validate:"min=30s,max=24h"`
 }
 
