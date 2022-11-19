@@ -4,6 +4,7 @@ set -Eeuo pipefail
 # Script dumps K8S objects to a JSON file, defined as the first argument.
 if [ $# -ne 1 ]; then
   echo "Please specify one argument: path to the target file"
+  exit 1
 fi
 
 # Arguments

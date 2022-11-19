@@ -6,6 +6,7 @@ set -Eeuo pipefail
 # - Random values, for example timestamps, are ignored, see bellow.
 if [ $# -ne 3 ]; then
   echo "Please specify three arguments: <old state file path> <new state file path> <diff output file>"
+  exit 1
 fi
 
 # Arguments

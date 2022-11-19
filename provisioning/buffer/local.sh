@@ -10,7 +10,7 @@ fi
 
 # Start minikube if needed
 if ! minikube status > /dev/null; then
-  ./../common/scripts/start-minikube.sh
+  ./../common/scripts/minikube/start.sh
 fi
 
 # Build Docker image in the local Docker, so it is cached, if Minikube is destroyed
