@@ -14,13 +14,13 @@ import (
 
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
-	templatesGen "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
-	templatesHttp "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/http"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
+	templatesGen "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
+	templatesHttp "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/http"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 

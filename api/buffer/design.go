@@ -11,19 +11,19 @@ import (
 	"goa.design/goa/v3/expr"
 	cors "goa.design/plugins/v3/cors/dsl"
 
-	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/anytype"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/dependencies"
-	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/genericerror"
-	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/oneof"
-	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/operationid"
-	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/token"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/anytype"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/dependencies"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/genericerror"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/oneof"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/operationid"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/token"
 )
 
 // API definition
 
 // nolint: gochecknoinits
 func init() {
-	dependencies.RegisterPlugin("github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/dependencies")
+	dependencies.RegisterPlugin("github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies")
 }
 
 var _ = API("buffer", func() {

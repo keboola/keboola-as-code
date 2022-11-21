@@ -9,21 +9,21 @@ import (
 	"goa.design/goa/v3/http/codegen/openapi"
 	cors "goa.design/plugins/v3/cors/dsl"
 
-	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/anytype"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/dependencies"
-	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/genericerror"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/oneof"
-	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/oneof"
-	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/operationid"
-	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/token"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/anytype"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/dependencies"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/genericerror"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/oneof"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/oneof"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/operationid"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/token"
 )
 
 // API definition ------------------------------------------------------------------------------------------------------
 
 // nolint: gochecknoinits
 func init() {
-	dependencies.RegisterPlugin("github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies")
+	dependencies.RegisterPlugin("github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies")
 }
 
 var _ = API("templates", func() {

@@ -11,10 +11,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	dependenciesLib "github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	dependenciesLib "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 )
 
 func TestTemplateRepositoryFs_Git_SparseCheckout(t *testing.T) {
