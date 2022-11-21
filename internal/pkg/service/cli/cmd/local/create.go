@@ -3,8 +3,8 @@ package local
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
 	createRow "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/row"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"

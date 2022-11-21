@@ -1,7 +1,7 @@
 package nop
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 )
 
 type Prompt struct{}

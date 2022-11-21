@@ -6,8 +6,8 @@ import (
 	"github.com/keboola/go-client/pkg/sandboxesapi"
 	"github.com/spf13/cobra"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/workspace/detail"
 )
 

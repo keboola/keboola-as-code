@@ -5,9 +5,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd/ci"
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/init"
 )
 

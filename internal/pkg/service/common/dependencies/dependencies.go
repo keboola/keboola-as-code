@@ -28,7 +28,7 @@
 // For easier work with dependencies, there are dependency containers for CLI / API and tests (see [Mocked]).
 //
 // Dependencies containers for API and CLI are in separate packages
-//   - CLI dependencies: [pkg/github.com/keboola/keboola-as-code/internal/pkg/cli/dependencies]
+//   - CLI dependencies: [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies]
 //   - API dependencies: [pkg/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies]
 //
 // Example of difference between CLI and API dependencies implementations:
@@ -57,7 +57,7 @@ import (
 	"github.com/keboola/go-client/pkg/storageapi"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"

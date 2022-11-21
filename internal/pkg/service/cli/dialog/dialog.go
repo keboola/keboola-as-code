@@ -1,6 +1,6 @@
 package dialog
 
-import "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt"
+import "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 
 type Dialogs struct {
 	prompt.Prompt

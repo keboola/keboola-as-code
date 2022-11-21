@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/nop"
+	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 

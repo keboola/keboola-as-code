@@ -3,10 +3,10 @@ package main
 import (
 	"os"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/cli/cmd"
-	interactivePrompt "github.com/keboola/keboola-as-code/internal/pkg/cli/prompt/interactive"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/clifs"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd"
+	interactivePrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
 )
 
 func main() {
