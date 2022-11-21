@@ -41,8 +41,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/telemetry"
-	telemetryUtils "github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManager "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
@@ -129,7 +128,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	if telemetry.IsDataDogEnabled(envs) {
 		tracer = telemetry.NewDataDogTracer()
 		_, span := tracer.Start(serverCtx, "kac.lib.api.server.templates.dependencies.NewServerDeps")
-		defer telemetryUtils.EndSpan(span, &err)
+		defer telemetry.EndSpan(span, &err)
 	}
 
 	// Create wait group - for graceful shutdown
@@ -184,7 +183,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 
 func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, requestId string) ForPublicRequest {
 	_, span := serverDeps.Tracer().Start(requestCtx, "kac.api.server.templates.dependencies.NewDepsForPublicRequest")
-	defer telemetryUtils.EndSpan(span, nil)
+	defer telemetry.EndSpan(span, nil)
 
 	return &forPublicRequest{
 		ForServer:  serverDeps,
@@ -196,7 +195,7 @@ func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, r
 
 func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (ForProjectRequest, error) {
 	ctx, span := publicDeps.Tracer().Start(ctx, "kac.api.server.templates.dependencies.NewDepsForProjectRequest")
-	defer telemetryUtils.EndSpan(span, nil)
+	defer telemetry.EndSpan(span, nil)
 
 	projectDeps, err := dependencies.NewProjectDeps(ctx, publicDeps, publicDeps, tokenStr)
 	if err != nil {
@@ -234,7 +233,7 @@ func (v *forServer) RepositoryManager() *repositoryManager.Manager {
 func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 	return v.etcdClient.InitAndGet(func() (*etcd.Client, error) {
 		ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.EtcdClient")
-		defer telemetryUtils.EndSpan(span, nil)
+		defer telemetry.EndSpan(span, nil)
 
 		// Check if etcd is enabled
 		if v.Envs().Get("TEMPLATES_API_ETCD_ENABLED") == "false" {
@@ -367,7 +366,7 @@ func (v *forProjectRequest) ProjectRepositories() *model.TemplateRepositories {
 
 func (v *forProjectRequest) Template(ctx context.Context, reference model.TemplateRef) (tmpl *template.Template, err error) {
 	ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.Template")
-	defer telemetryUtils.EndSpan(span, &err)
+	defer telemetry.EndSpan(span, &err)
 
 	// Get repository
 	repo, err := v.cachedTemplateRepository(ctx, reference.Repository())
@@ -381,7 +380,7 @@ func (v *forProjectRequest) Template(ctx context.Context, reference model.Templa
 
 func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition model.TemplateRepository) (tmpl *repository.Repository, err error) {
 	ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.TemplateRepository")
-	defer telemetryUtils.EndSpan(span, &err)
+	defer telemetry.EndSpan(span, &err)
 
 	repo, err := v.cachedTemplateRepository(ctx, definition)
 	if err != nil {
@@ -393,7 +392,7 @@ func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition m
 func (v *forProjectRequest) cachedTemplateRepository(ctx context.Context, definition model.TemplateRepository) (repo *repositoryManager.CachedRepository, err error) {
 	if _, found := v.repositories[definition.Hash()]; !found {
 		ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.cachedTemplateRepository")
-		defer telemetryUtils.EndSpan(span, &err)
+		defer telemetry.EndSpan(span, &err)
 
 		// Get git repository
 		repo, unlockFn, err := v.RepositoryManager().Repository(ctx, definition)
@@ -460,7 +459,7 @@ func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) c
 
 	// DataDog high-level tracing (api client requests)
 	if telemetry.IsDataDogEnabled(envs) {
-		c = c.AndTrace(telemetry.ApiClientTrace())
+		c = c.AndTrace(telemetry.HttpClientTraceFactory())
 	}
 
 	return c
