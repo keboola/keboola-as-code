@@ -12,12 +12,12 @@ import (
 func TestMappedColumns(t *testing.T) {
 	t.Parallel()
 
-	input := model.MappedColumns{
-		model.ColumnID{},
-		model.ColumnDatetime{},
-		model.ColumnIP{},
-		model.ColumnBody{},
-		model.ColumnHeaders{},
+	input := model.Columns{
+		model.ID{},
+		model.Datetime{},
+		model.IP{},
+		model.Body{},
+		model.Headers{},
 		model.ColumnTemplate{
 			Language:               "jsonnet",
 			UndefinedValueStrategy: "null",
@@ -29,7 +29,7 @@ func TestMappedColumns(t *testing.T) {
 	bytes, err := json.Marshal(&input)
 	assert.NoError(t, err)
 
-	var output model.MappedColumns
+	var output model.Columns
 	err = json.Unmarshal(bytes, &output)
 	assert.NoError(t, err)
 
