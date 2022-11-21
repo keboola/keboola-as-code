@@ -11,12 +11,12 @@ import (
 	"goa.design/goa/v3/expr"
 	cors "goa.design/plugins/v3/cors/dsl"
 
-	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/api/extension/anytype"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/api/extension/dependencies"
-	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/api/extension/genericerror"
-	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/api/extension/oneof"
-	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/api/extension/operationid"
-	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/api/extension/token"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/anytype"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/dependencies"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/genericerror"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/oneof"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/operationid"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/token"
 )
 
 // API definition
