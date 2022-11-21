@@ -21,6 +21,18 @@ envsubst < templates/worker/config-map.yaml > deploy/worker/config-map.yaml
 envsubst < templates/worker/pdb.yaml        > deploy/worker/pdb.yaml
 envsubst < templates/worker/deployment.yaml > deploy/worker/deployment.yaml
 
+# Remove resources requests/limits to fit all pods to the CI environment
+REMOVE_RESOURCES_LIMITS="${REMOVE_RESOURCES_LIMITS:=false}"
+if [[ "$REMOVE_RESOURCES_LIMITS" == "true" ]]; then
+  echo
+  echo "Removing resources requests/limits ..."
+  echo "--------------------------"
+  # In the regexp is backreference "\1", this ensures that only nested keys that follow are deleted
+  find ./deploy -type f \( -iname \*.yml -o -iname \*.yaml \) \
+  -exec echo "{}" \; \
+  -exec perl -i.original -0777pe "s/(\n *)resources:\s*(\1 +.+)+/\1# <<<REMOVED RESOURCES KEY>>>/g" "{}" \;
+fi
+
 # Cloud specific
 if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
   envsubst < templates/cloud/aws/service.yaml > deploy/cloud/aws/service.yaml

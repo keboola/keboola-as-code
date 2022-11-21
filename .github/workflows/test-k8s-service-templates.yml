@@ -14,6 +14,7 @@ env:
   SERVICE_NAME: Templates API
   MINIKUBE_PROFILE: templates-api
   KUBERNETES_NAMESPACE: templates-api
+  REMOVE_RESOURCES_LIMITS: true
   API_RELEASE_NAME: templates-api
   ETCD_RELEASE_NAME: templates-api-etcd
   ETCD_ENDPOINT: templates-api-etcd-headless.templates-api.svc.cluster.local:2379
