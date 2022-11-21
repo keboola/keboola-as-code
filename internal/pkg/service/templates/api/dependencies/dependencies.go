@@ -459,7 +459,7 @@ func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) c
 
 	// DataDog high-level tracing (api client requests)
 	if telemetry.IsDataDogEnabled(envs) {
-		c = c.AndTrace(telemetry.HttpClientTraceFactory())
+		c = c.AndTrace(telemetry.DDTraceFactory())
 	}
 
 	return c

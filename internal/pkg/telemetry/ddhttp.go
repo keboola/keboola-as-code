@@ -14,7 +14,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-func HttpClientTraceFactory() client.TraceFactory {
+// DDTraceFactory provides TraceFactory for high-level tracing of the API client requests.
+func DDTraceFactory() client.TraceFactory {
 	return func() *client.Trace {
 		t := &client.Trace{}
 
