@@ -252,7 +252,7 @@ extraDeploy:
                           name: {{ include "etcd.secretName" . }}
                           key: {{ include "etcd.secretPasswordKey" . }}
                     {{- end }}
-                    {{- if .Values.defragmentation.cronjob.resources.limits.memory }}
+                    {{- if ((.Values.defragmentation.cronjob.resources).limits).memory }}
                     - name: GOMEMLIMIT
                       value: "{{ .Values.defragmentation.cronjob.resources.limits.memory }}B"
                     {{- end }}

@@ -11,11 +11,13 @@ fi
 : ${RELEASE_ID?"Missing RELEASE_ID"}
 : ${KEBOOLA_STACK?"Missing KEBOOLA_STACK"}
 : ${HOSTNAME_SUFFIX?"Missing HOSTNAME_SUFFIX"}
-: ${BUFFER_ETCD_REPLICAS?"Missing BUFFER_ETCD_REPLICAS"}
 : ${BUFFER_API_REPOSITORY?"Missing BUFFER_API_REPOSITORY"}
 : ${BUFFER_API_IMAGE_TAG?"Missing BUFFER_API_IMAGE_TAG"}
 : ${BUFFER_WORKER_REPOSITORY?"Missing BUFFER_WORKER_REPOSITORY"}
 : ${BUFFER_WORKER_IMAGE_TAG?"Missing BUFFER_WORKER_IMAGE_TAG"}
+: ${BUFFER_API_REPLICAS?"Missing BUFFER_API_REPLICAS"}
+: ${BUFFER_WORKER_REPLICAS?"Missing BUFFER_WORKER_REPLICAS"}
+: ${BUFFER_ETCD_REPLICAS?"Missing BUFFER_ETCD_REPLICAS"}
 
 # Constants
 export NAMESPACE="buffer"
@@ -42,7 +44,11 @@ helm upgrade \
   --set "auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD"
 
 # API
-# TODO
+kubectl apply -f ./kubernetes/deploy/api/config-map.yaml
+kubectl apply -f ./kubernetes/deploy/api/pdb.yaml
+kubectl apply -f ./kubernetes/deploy/api/deployment.yaml
 
 # Worker
-# TODO
+kubectl apply -f ./kubernetes/deploy/worker/config-map.yaml
+kubectl apply -f ./kubernetes/deploy/worker/pdb.yaml
+kubectl apply -f ./kubernetes/deploy/worker/deployment.yaml

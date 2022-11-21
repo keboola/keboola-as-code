@@ -10,7 +10,7 @@ fi
 
 # Start minikube if needed
 if ! minikube status > /dev/null; then
-  ./../common/scripts/start-minikube.sh
+  ./../common/scripts/minikube/start.sh
 fi
 
 # Build Docker image in the local Docker, so it is cached, if Minikube is destroyed
@@ -44,7 +44,7 @@ echo "--------------------------"
 . common.sh
 
 # Local specific part of the deploy
-# TODO
+kubectl apply -f ./kubernetes/deploy/cloud/local/service.yaml
 
 # Wait for the deployment
 . ./wait.sh
@@ -57,3 +57,6 @@ echo
 echo "To clear the MiniKube:"
 echo "MINIKUBE_PROFILE=${MINIKUBE_PROFILE} minikube delete --purge"
 echo
+echo "Load balancer of the service is accessible at:"
+minikube service --url --namespace "$NAMESPACE" buffer-api
+

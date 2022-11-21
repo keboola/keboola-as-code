@@ -96,7 +96,7 @@ jobs:
           acrRegistry: ${{ env.ACR_REGISTRY }}
           acrRepository: ${{ env.API_ACR_REPOSITORY }}
           acrUsername: ${{ env.API_ACR_USERNAME }}
-          acrPassword: ${{ secrets.BUFFER_API_ACR_PASSWORD }}"
+          acrPassword: ${{ secrets.BUFFER_API_ACR_PASSWORD }}
 
       - name: Push Worker image to Amazon ECR and Azure ACR
         uses: ./.github/actions/push-image-aws-azure
@@ -109,4 +109,4 @@ jobs:
           acrRegistry: ${{ env.ACR_REGISTRY }}
           acrRepository: ${{ env.WORKER_ACR_REPOSITORY }}
           acrUsername: ${{ env.WORKER_ACR_USERNAME }}
-          acrPassword: ${{ secrets.BUFFER_WORKER_ACR_PASSWORD }}"
+          acrPassword: ${{ secrets.BUFFER_WORKER_ACR_PASSWORD }}
