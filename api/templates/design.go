@@ -9,14 +9,14 @@ import (
 	"goa.design/goa/v3/http/codegen/openapi"
 	cors "goa.design/plugins/v3/cors/dsl"
 
-	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/anytype"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/dependencies"
-	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/genericerror"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/oneof"
-	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/oneof"
-	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/operationid"
-	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/token"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/api/extension/anytype"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/api/extension/dependencies"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/api/extension/genericerror"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/api/extension/oneof"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/api/extension/oneof"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/api/extension/operationid"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/api/extension/token"
 )
 
 // API definition ------------------------------------------------------------------------------------------------------

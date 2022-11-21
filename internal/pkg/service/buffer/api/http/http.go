@@ -12,11 +12,11 @@ import (
 	httpMiddleware "goa.design/goa/v3/http/middleware"
 	dataDog "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 
-	commonHttp "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	bufferSvr "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/http/buffer/server"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/openapi"
+	commonHttp "github.com/keboola/keboola-as-code/internal/pkg/service/common/api/http"
 	swaggerui "github.com/keboola/keboola-as-code/third_party"
 )
 

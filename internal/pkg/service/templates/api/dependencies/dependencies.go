@@ -17,7 +17,7 @@
 // Dependencies injection to service endpoints:
 //   - Each service endpoint handler/method gets [ForPublicRequest] container as a parameter.
 //   - If the endpoint use token authentication it gets [ForProjectRequest] container instead.
-//   - It is ensured by [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/dependencies] package.
+//   - It is ensured by [src/github.com/keboola/keboola-as-code/internal/pkg/service/common/api/extension/dependencies] package.
 //   - See service implementation for details [src/github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/service/service.go].
 package dependencies
 
@@ -37,11 +37,11 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/common/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/api/telemetry"
 	telemetryUtils "github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"

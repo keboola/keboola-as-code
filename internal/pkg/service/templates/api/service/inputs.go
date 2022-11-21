@@ -1,7 +1,7 @@
 package service
 
 import (
-	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/service"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/api/service"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
