@@ -17,7 +17,7 @@ func TestMappedColumns(t *testing.T) {
 		column.IP{},
 		column.Body{},
 		column.Headers{},
-		column.ColumnTemplate{
+		column.Template{
 			Language:               "jsonnet",
 			UndefinedValueStrategy: "null",
 			Content:                `body.my.key+":"+body.my.value`,

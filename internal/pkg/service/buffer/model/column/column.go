@@ -28,7 +28,7 @@ const (
 	UndefinedValueStrategyError = "error"
 )
 
-type ColumnTemplate struct {
+type Template struct {
 	Language               string `json:"language" validate:"required,oneof=jsonnet"`
 	UndefinedValueStrategy string `json:"undefinedValueStrategy" validate:"required,oneof=null error"`
 	Content                string `json:"content" validate:"required,min=1,max=4096"`
@@ -129,7 +129,7 @@ func columnToType(column any) (string, error) {
 		return columnBodyType, nil
 	case Headers:
 		return columnHeadersType, nil
-	case ColumnTemplate:
+	case Template:
 		return columnTemplateType, nil
 	default:
 		return "", errors.Errorf(`invalid column type "%T"`, column)
@@ -152,7 +152,7 @@ func typeToColumn(typ string) (Column, error) {
 	case columnHeadersType:
 		return Headers{}, nil
 	case columnTemplateType:
-		return ColumnTemplate{}, nil
+		return Template{}, nil
 	default:
 		return dummyColumn{}, errors.Errorf(`invalid column type name "%s"`, typ)
 	}
@@ -163,12 +163,12 @@ type Column interface {
 	IsColumn() bool
 }
 
-func (ID) IsColumn() bool             { return true }
-func (Datetime) IsColumn() bool       { return true }
-func (IP) IsColumn() bool             { return true }
-func (Body) IsColumn() bool           { return true }
-func (Headers) IsColumn() bool        { return true }
-func (ColumnTemplate) IsColumn() bool { return true }
+func (ID) IsColumn() bool       { return true }
+func (Datetime) IsColumn() bool { return true }
+func (IP) IsColumn() bool       { return true }
+func (Body) IsColumn() bool     { return true }
+func (Headers) IsColumn() bool  { return true }
+func (Template) IsColumn() bool { return true }
 
 type dummyColumn struct{}
 
