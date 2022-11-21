@@ -2,7 +2,9 @@ package dependencies
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -11,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
@@ -51,7 +54,16 @@ func NewProvider(commandCtx context.Context, envs env.Provider, logger log.Logge
 
 func (v *provider) BaseDependencies() Base {
 	return v.baseDeps.MustInitAndGet(func() *base {
-		httpClient := cliHttpClient(v.logger, v.options.VerboseApi)
+		// Create base HTTP client for all API requests to other APIs
+		httpClient := httpclient.New(
+			httpclient.WithUserAgent(fmt.Sprintf("keboola-cli/%s", build.BuildVersion)),
+			httpclient.WithDebugOutput(v.logger.DebugWriter()),
+			func(c *httpclient.Config) {
+				if v.options.VerboseApi {
+					httpclient.WithDumpOutput(v.logger.DebugWriter())(c)
+				}
+			},
+		)
 		return newBaseDeps(v.commandCtx, v.envs, v.logger, httpClient, v.fs, v.dialogs, v.options)
 	})
 }

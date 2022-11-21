@@ -24,23 +24,19 @@ package dependencies
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/keboola/go-client/pkg/client"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/namespace"
 	"go.opentelemetry.io/otel/trace"
-	ddHttp "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
@@ -141,8 +137,18 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	}
 
 	// Create base HTTP client for all API requests to other APIs
-	httpClient := apiHttpClient(envs, logger, debug, dumpHttp)
-
+	httpClient := httpclient.New(
+		httpclient.WithUserAgent("keboola-templates-api"),
+		httpclient.WithEnvs(envs),
+		func(c *httpclient.Config) {
+			if debug {
+				httpclient.WithDebugOutput(logger.DebugWriter())(c)
+			}
+			if dumpHttp {
+				httpclient.WithDumpOutput(logger.DebugWriter())(c)
+			}
+		},
+	)
 	// Create base dependencies
 	baseDeps := dependencies.NewBaseDeps(envs, tracer, logger, httpClient)
 
@@ -412,55 +418,4 @@ func (v *forProjectRequest) cachedTemplateRepository(ctx context.Context, defini
 	}
 
 	return v.repositories[definition.Hash()], nil
-}
-
-func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) client.Client {
-	// Force HTTP2 transport
-	transport := client.HTTP2Transport()
-
-	// DataDog low-level tracing (raw http requests)
-	if telemetry.IsDataDogEnabled(envs) {
-		transport = ddHttp.WrapRoundTripper(
-			transport,
-			ddHttp.WithBefore(func(request *http.Request, span ddtrace.Span) {
-				// We use "http.request" operation name for request to the API,
-				// so requests to other API must have different operation name.
-				span.SetOperationName("kac.api.client.http.request")
-				span.SetTag("http.host", request.URL.Host)
-				if dotPos := strings.IndexByte(request.URL.Host, '.'); dotPos > 0 {
-					// E.g. connection, encryption, scheduler ...
-					span.SetTag("http.hostPrefix", request.URL.Host[:dotPos])
-				}
-				span.SetTag(ext.EventSampleRate, 1.0)
-				span.SetTag(ext.HTTPURL, request.URL.Redacted())
-				span.SetTag("http.path", request.URL.Path)
-				span.SetTag("http.query", request.URL.Query().Encode())
-			}),
-			ddHttp.RTWithResourceNamer(func(r *http.Request) string {
-				// Set resource name to request path
-				return strhelper.MustUrlPathUnescape(r.URL.RequestURI())
-			}))
-	}
-
-	// Create client
-	c := client.New().
-		WithTransport(transport).
-		WithUserAgent("keboola-templates-api")
-
-	// Log each HTTP client request/response as debug message
-	if debug {
-		c = c.AndTrace(client.LogTracer(logger.DebugWriter()))
-	}
-
-	// Dump each HTTP client request/response body
-	if dumpHttp {
-		c = c.AndTrace(client.DumpTracer(logger.DebugWriter()))
-	}
-
-	// DataDog high-level tracing (api client requests)
-	if telemetry.IsDataDogEnabled(envs) {
-		c = c.AndTrace(telemetry.DDTraceFactory())
-	}
-
-	return c
 }

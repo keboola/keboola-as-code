@@ -2,11 +2,9 @@ package dependencies
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/keboola/go-client/pkg/client"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -87,21 +85,4 @@ func (v *base) LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error) 
 	})
 
 	return value.value, value.found, err
-}
-
-func cliHttpClient(logger log.Logger, dumpHttp bool) client.Client {
-	c := client.New().
-		WithTransport(client.DefaultTransport()).
-		WithUserAgent(fmt.Sprintf("keboola-cli/%s", build.BuildVersion))
-
-	// Log each HTTP client request/response as debug message
-	// The CLI by default does not display these messages, but they are written always to the log file.
-	c = c.AndTrace(client.LogTracer(logger.DebugWriter()))
-
-	// Dump each HTTP client request/response body
-	if dumpHttp {
-		c = c.AndTrace(client.DumpTracer(logger.DebugWriter()))
-	}
-
-	return c
 }
