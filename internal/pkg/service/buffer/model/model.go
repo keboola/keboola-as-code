@@ -2,10 +2,12 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"time"
 
 	"github.com/c2h5oh/datasize"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -19,6 +21,16 @@ type Export struct {
 	ID               string            `json:"exportId" validate:"required,min=1,max=48"`
 	Name             string            `json:"name" validate:"required,min=1,max=40"`
 	ImportConditions []ImportCondition `json:"importConditions" validate:"required"`
+}
+
+type TableID struct {
+	Stage      string `json:"stage"`
+	BucketName string `json:"bucketName"`
+	TableName  string `json:"tableName"`
+}
+
+func (t TableID) String() string {
+	return fmt.Sprintf("%s.c-%s.%s", t.Stage, t.BucketName, t.TableName)
 }
 
 type Mapping struct {
@@ -43,11 +55,13 @@ type Receiver struct {
 
 type MappedColumns []MappedColumn
 
-type ColumnID struct{}
-type ColumnDatetime struct{}
-type ColumnIP struct{}
-type ColumnBody struct{}
-type ColumnHeaders struct{}
+type (
+	ColumnID       struct{}
+	ColumnDatetime struct{}
+	ColumnIP       struct{}
+	ColumnBody     struct{}
+	ColumnHeaders  struct{}
+)
 
 const (
 	UndefinedValueStrategyNull  = "null"
@@ -74,6 +88,8 @@ func (v MappedColumns) MarshalJSON() ([]byte, error) {
 	var items [][]byte
 
 	for _, column := range v {
+		column := column
+
 		typ, err := columnToType(column)
 		if err != nil {
 			return nil, err
@@ -166,7 +182,6 @@ func columnToType(column any) (string, error) {
 //
 // This function returns `column` as a value.
 func typeToColumn(typ string) (MappedColumn, error) {
-
 	switch typ {
 	case columnIDType:
 		return ColumnID{}, nil

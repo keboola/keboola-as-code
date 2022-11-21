@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 )
 
 func TestMappedColumns(t *testing.T) {
@@ -33,4 +34,15 @@ func TestMappedColumns(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, input, output)
+}
+
+func TestTableID_String(t *testing.T) {
+	t.Parallel()
+
+	tableID := model.TableID{
+		Stage:      "in",
+		BucketName: "main",
+		TableName:  "table1",
+	}
+	assert.Equal(t, "in.c-main.table1", tableID.String())
 }

@@ -7,10 +7,10 @@ import (
 	"sort"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
-	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/httperror"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
