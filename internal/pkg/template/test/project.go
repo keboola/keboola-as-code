@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
-	dependenciesPkg "github.com/keboola/keboola-as-code/internal/pkg/dependencies"
+	dependenciesPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	fixtures "github.com/keboola/keboola-as-code/internal/pkg/fixtures/local"

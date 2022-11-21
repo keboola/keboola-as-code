@@ -85,5 +85,5 @@ fix: prepare
 ci: mod lint tests
 
 godoc:
-	# Example url: http://localhost:6060/pkg/github.com/keboola/keboola-as-code/internal/pkg/dependencies/?m=all
+	# Example url: http://localhost:6060/pkg/github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies/?m=all
 	godoc -http=0.0.0.0:6060
