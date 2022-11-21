@@ -6,7 +6,7 @@ import (
 	"goa.design/goa/v3/security"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 

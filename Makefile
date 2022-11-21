@@ -6,7 +6,7 @@ tools:
 prepare: generate-templates-api generate-buffer-api
 
 generate-templates-api:
-	if [ ! -d "internal/pkg/api/server/templates/gen/http" ] || [ -z $(SKIP_API_CODE_REGENERATION) ]; then API_NAME=templates bash ./scripts/generate-api.sh; fi
+	if [ ! -d "internal/pkg/service/templates/api/gen/http" ] || [ -z $(SKIP_API_CODE_REGENERATION) ]; then API_NAME=templates bash ./scripts/generate-api.sh; fi
 
 generate-buffer-api:
 	if [ ! -d "internal/pkg/api/server/buffer/gen/http" ] || [ -z $(SKIP_API_CODE_REGENERATION) ]; then API_NAME=buffer bash ./scripts/generate-api.sh; fi

@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cast"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/service"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
-	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"

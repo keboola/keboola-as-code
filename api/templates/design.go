@@ -23,7 +23,7 @@ import (
 
 // nolint: gochecknoinits
 func init() {
-	dependencies.RegisterPlugin("github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies")
+	dependencies.RegisterPlugin("github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies")
 }
 
 var _ = API("templates", func() {

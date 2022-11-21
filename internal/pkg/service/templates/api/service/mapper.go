@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cast"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
-	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/search"

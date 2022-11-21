@@ -13,10 +13,10 @@ import (
 	dataDog "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 
 	commonHttp "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/http"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
-	templatesSvr "github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/http/templates/server"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/gen/templates"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/openapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
+	templatesSvr "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/http/templates/server"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/openapi"
 	swaggerui "github.com/keboola/keboola-as-code/third_party"
 )
 

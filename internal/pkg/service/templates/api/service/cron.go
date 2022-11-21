@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 )
 
 const (

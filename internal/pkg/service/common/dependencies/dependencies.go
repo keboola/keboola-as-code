@@ -29,7 +29,7 @@
 //
 // Dependencies containers for API and CLI are in separate packages
 //   - CLI dependencies: [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies]
-//   - API dependencies: [pkg/github.com/keboola/keboola-as-code/internal/pkg/api/server/templates/dependencies]
+//   - API dependencies: [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies]
 //
 // Example of difference between CLI and API dependencies implementations:
 //   - In the CLI the Storage API token is read from ENV or flag.
