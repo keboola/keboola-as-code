@@ -31,12 +31,12 @@ process() {
 
   # Get ReplicaSet hashes, for example "pod-template-hash: 6749584fd9" -> "6749584fd9"
   hashes=$(cat "$in" | jq '.items[] | select(.kind == "ReplicaSet") | .metadata.labels."pod-template-hash"' --raw-output)
-  printf "Found ReplicaSet hashes in '$in' state:\n%s\n" $hashes
+  printf "Found ReplicaSet hashes in '$in' state:\n%s\n" "$hashes"
 
   # Replace ReplicaSet hashes, for example "api-6749584fd9-m7q5c" -> "api-<hash>"
   cp "$in" "$out"
-  echo $hashes | xargs -I '{}' sed -i -E 's/-{}(-[a-zA-Z0-9]+)?/-<hash>/g' "$out"
-  echo $hashes | xargs -I '{}' sed -i -E 's/{}/<hash>/g' "$out"
+  echo "$hashes" | xargs -I '{}' sed -i -E 's/-{}(-[a-zA-Z0-9]+)?/-<hash>/g' "$out"
+  echo "$hashes" | xargs -I '{}' sed -i -E 's/{}/<hash>/g' "$out"
 
   # Convert to key=value pairs (input can be empty)
   gron "$out" > "$outKV" || true
