@@ -1,5 +1,6 @@
 {
   "receiverId": "list-receivers-test-b",
   "name": "list-receivers-test-b",
-  "url": "https://buffer.keboola.local/v1/import/list-receivers-test-b/#/%s"
+  "url": "https://buffer.keboola.local/v1/import/%d/list-receivers-test-b/#/%s"
 }
+

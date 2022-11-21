@@ -3,7 +3,7 @@
     {
       "receiverId": "delete-receiver-b",
       "name": "delete-receiver-b",
-      "url": "https://buffer.keboola.local/v1/import/delete-receiver-b/#/%s"
+      "url": "https://buffer.keboola.local/v1/import/%d/delete-receiver-b/#/%s"
     }
   ]
 }

@@ -1,5 +1,6 @@
 {
   "receiverId": "get-receiver",
   "name": "get-receiver",
-  "url": "https://buffer.keboola.local/v1/import/get-receiver/#/%s"
+  "url": "https://buffer.keboola.local/v1/import/%d/get-receiver/#/%s"
 }
+
