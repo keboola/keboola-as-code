@@ -1,9 +1,9 @@
 package dialog
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 )
 
 // AskTemplateInstance - dialog to select template instance.
