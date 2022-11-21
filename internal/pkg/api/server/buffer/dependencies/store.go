@@ -40,6 +40,10 @@ func ExportsPrefix(projectID int, receiverID string) string {
 	return fmt.Sprintf("config/export/%d/%s/", projectID, receiverID)
 }
 
+func MappingsPrefix(projectID int, receiverID string, exportID string) string {
+	return fmt.Sprintf("config/mapping/revision/%d/%s/%s/", projectID, receiverID, exportID)
+}
+
 type ReceiverLimitReachedError struct{}
 
 func (ReceiverLimitReachedError) Error() string {
@@ -213,4 +217,33 @@ func (c *ConfigStore) ListExports(ctx context.Context, projectID int, receiverID
 	}
 
 	return exports, nil
+}
+
+func (c *ConfigStore) GetCurrentMapping(ctx context.Context, projectID int, receiverID string, exportID string) (r *model.Mapping, err error) {
+	logger, tracer, client := c.logger, c.tracer, c.etcdClient
+
+	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.getCurrentMapping")
+	defer telemetryUtils.EndSpan(span, &err)
+
+	key := MappingsPrefix(projectID, receiverID, exportID)
+
+	logger.Debugf(`GET "%s"`, key)
+	// Get only the last mapping added (i.e. the one with the biggest timestamp)
+	resp, err := client.KV.Get(ctx, key, etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortDescend), etcd.WithLimit(1))
+	if err != nil {
+		return nil, err
+	}
+
+	// No mapping found
+	if len(resp.Kvs) == 0 {
+		logger.Debugf(`No mapping "%s" found`, key)
+		return nil, nil
+	}
+
+	logger.Debugf(`Decoding "%s"`, key)
+	mapping := &model.Mapping{}
+	if err = json.DecodeString(string(resp.Kvs[0].Value), mapping); err != nil {
+		return nil, err
+	}
+	return mapping, nil
 }
