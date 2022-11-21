@@ -1,4 +1,4 @@
-package http
+package httpencode
 
 import (
 	"net/http"

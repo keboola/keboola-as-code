@@ -16,7 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	bufferSvr "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/http/buffer/server"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/openapi"
-	commonHttp "github.com/keboola/keboola-as-code/internal/pkg/service/common/api/http"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpencode"
 	swaggerui "github.com/keboola/keboola-as-code/third_party"
 )
 
@@ -36,7 +36,7 @@ func HandleHTTPServer(ctx context.Context, d dependencies.ForServer, u *url.URL,
 	// responses.
 	docsFs := http.FS(openapi.Fs)
 	swaggerUiFs := http.FS(swaggerui.SwaggerFS)
-	bufferServer := bufferSvr.New(endpoints, mux, commonHttp.NewDecoder(), commonHttp.NewEncoder(d.Logger(), writeError), errorHandler(), errorFormatter(), docsFs, docsFs, docsFs, docsFs, swaggerUiFs)
+	bufferServer := bufferSvr.New(endpoints, mux, httpencode.NewDecoder(), httpencode.NewEncoder(d.Logger(), writeError), errorHandler(), errorFormatter(), docsFs, docsFs, docsFs, docsFs, swaggerUiFs)
 	if debug {
 		servers := goaHTTP.Servers{bufferServer}
 		servers.Use(httpMiddleware.Debug(mux, os.Stdout))

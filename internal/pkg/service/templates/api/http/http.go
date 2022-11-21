@@ -12,7 +12,7 @@ import (
 	httpMiddleware "goa.design/goa/v3/http/middleware"
 	dataDog "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 
-	commonHttp "github.com/keboola/keboola-as-code/internal/pkg/service/common/api/http"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpencode"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	templatesSvr "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/http/templates/server"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
@@ -36,7 +36,7 @@ func HandleHTTPServer(ctx context.Context, d dependencies.ForServer, u *url.URL,
 	// responses.
 	docsFs := http.FS(openapi.Fs)
 	swaggerUiFs := http.FS(swaggerui.SwaggerFS)
-	templatesServer := templatesSvr.New(endpoints, mux, commonHttp.NewDecoder(), commonHttp.NewEncoder(d.Logger(), writeError), errorHandler(), errorFormatter(), docsFs, docsFs, docsFs, docsFs, swaggerUiFs)
+	templatesServer := templatesSvr.New(endpoints, mux, httpencode.NewDecoder(), httpencode.NewEncoder(d.Logger(), writeError), errorHandler(), errorFormatter(), docsFs, docsFs, docsFs, docsFs, swaggerUiFs)
 	if debug {
 		servers := goaHTTP.Servers{templatesServer}
 		servers.Use(httpMiddleware.Debug(mux, os.Stdout))
