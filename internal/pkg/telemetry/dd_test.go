@@ -1,4 +1,3 @@
-// Package connects the OpenTelemetry tracer to the DataDog tracer used in API.
 package telemetry
 
 import (

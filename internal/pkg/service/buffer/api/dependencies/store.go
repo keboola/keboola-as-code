@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
-	telemetryUtils "github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -71,7 +71,7 @@ func (c *ConfigStore) CreateReceiver(ctx context.Context, receiver model.Receive
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
 	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.CreateReceiver")
-	defer telemetryUtils.EndSpan(span, &err)
+	defer telemetry.EndSpan(span, &err)
 
 	if err := c.validator.Validate(ctx, receiver); err != nil {
 		return err
@@ -120,7 +120,7 @@ func (c *ConfigStore) GetReceiver(ctx context.Context, projectID int, receiverID
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
 	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.GetReceiver")
-	defer telemetryUtils.EndSpan(span, &err)
+	defer telemetry.EndSpan(span, &err)
 
 	key := ReceiverKey(projectID, receiverID)
 
@@ -149,7 +149,7 @@ func (c *ConfigStore) ListReceivers(ctx context.Context, projectID int) (r []*mo
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
 	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.ListReceivers")
-	defer telemetryUtils.EndSpan(span, &err)
+	defer telemetry.EndSpan(span, &err)
 
 	prefix := ReceiverPrefix(projectID)
 
@@ -179,7 +179,7 @@ func (c *ConfigStore) DeleteReceiver(ctx context.Context, projectID int, receive
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
 	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.DeleteReceiver")
-	defer telemetryUtils.EndSpan(span, &err)
+	defer telemetry.EndSpan(span, &err)
 
 	key := ReceiverKey(projectID, receiverID)
 
@@ -200,7 +200,7 @@ func (c *ConfigStore) ListExports(ctx context.Context, projectID int, receiverID
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
 	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.ListExports")
-	defer telemetryUtils.EndSpan(span, &err)
+	defer telemetry.EndSpan(span, &err)
 
 	key := ExportsPrefix(projectID, receiverID)
 
@@ -227,7 +227,7 @@ func (c *ConfigStore) GetCurrentMapping(ctx context.Context, projectID int, rece
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
 	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.getCurrentMapping")
-	defer telemetryUtils.EndSpan(span, &err)
+	defer telemetry.EndSpan(span, &err)
 
 	key := MappingsPrefix(projectID, receiverID, exportID)
 

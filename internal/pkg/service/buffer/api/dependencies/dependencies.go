@@ -40,8 +40,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/telemetry"
-	telemetryUtils "github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -120,7 +119,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	if telemetry.IsDataDogEnabled(envs) {
 		tracer = telemetry.NewDataDogTracer()
 		_, span := tracer.Start(serverCtx, "kac.lib.api.server.buffer.dependencies.NewServerDeps")
-		defer telemetryUtils.EndSpan(span, &err)
+		defer telemetry.EndSpan(span, &err)
 	}
 
 	// Create wait group - for graceful shutdown
@@ -182,7 +181,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 
 func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, requestId string) ForPublicRequest {
 	_, span := serverDeps.Tracer().Start(requestCtx, "kac.api.server.buffer.dependencies.NewDepsForPublicRequest")
-	defer telemetryUtils.EndSpan(span, nil)
+	defer telemetry.EndSpan(span, nil)
 
 	return &forPublicRequest{
 		ForServer:  serverDeps,
@@ -194,7 +193,7 @@ func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, r
 
 func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (ForProjectRequest, error) {
 	ctx, span := publicDeps.Tracer().Start(ctx, "kac.api.server.buffer.dependencies.NewDepsForProjectRequest")
-	defer telemetryUtils.EndSpan(span, nil)
+	defer telemetry.EndSpan(span, nil)
 
 	projectDeps, err := dependencies.NewProjectDeps(ctx, publicDeps, publicDeps, tokenStr)
 	if err != nil {
@@ -305,7 +304,7 @@ func apiHttpClient(envs env.Provider, logger log.Logger, debug, dumpHttp bool) c
 
 	// DataDog high-level tracing (api client requests)
 	if telemetry.IsDataDogEnabled(envs) {
-		c = c.AndTrace(telemetry.ApiClientTrace())
+		c = c.AndTrace(telemetry.DDTraceFactory())
 	}
 
 	return c
@@ -320,7 +319,7 @@ func newEtcdClient(
 	timeout time.Duration,
 ) (*etcd.Client, error) {
 	ctx, span := tracer.Start(serverCtx, "kac.api.server.buffer.dependencies.EtcdClient")
-	defer telemetryUtils.EndSpan(span, nil)
+	defer telemetry.EndSpan(span, nil)
 
 	// Get endpoint
 	endpoint := envs.Get("BUFFER_ETCD_ENDPOINT")
