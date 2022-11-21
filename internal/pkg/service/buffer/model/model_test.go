@@ -12,7 +12,7 @@ import (
 func TestMappedColumns(t *testing.T) {
 	t.Parallel()
 
-	input := model.Columns{
+	typed := model.Columns{
 		model.ID{},
 		model.Datetime{},
 		model.IP{},
@@ -25,15 +25,25 @@ func TestMappedColumns(t *testing.T) {
 			DataType:               "STRING",
 		},
 	}
+	untyped := `[{"type":"id"},{"type":"datetime"},{"type":"ip"},{"type":"body"},{"type":"headers"},{"type":"template","language":"jsonnet","undefinedValueStrategy":"null","content":"body.my.key+\":\"+body.my.value","dataType":"STRING"}]`
 
-	bytes, err := json.Marshal(&input)
+	bytes, err := json.Marshal(&typed)
 	assert.NoError(t, err)
+	assert.Equal(t, untyped, string(bytes))
 
 	var output model.Columns
 	err = json.Unmarshal(bytes, &output)
 	assert.NoError(t, err)
+	assert.Equal(t, typed, output)
+}
 
-	assert.Equal(t, input, output)
+func TestMappedColumns_Error(t *testing.T) {
+	t.Parallel()
+
+	// Unmarshal unknown type
+	var output model.Columns
+	err := json.Unmarshal([]byte(`[{"type":"unknown"}]`), &output)
+	assert.Error(t, err, `invalid column type name "unknown"`)
 }
 
 func TestTableID_String(t *testing.T) {

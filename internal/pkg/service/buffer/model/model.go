@@ -85,9 +85,9 @@ const (
 )
 
 func (v Columns) MarshalJSON() ([]byte, error) {
-	var items [][]byte
+	items := []byte("[")
 
-	for _, column := range v {
+	for i, column := range v {
 		column := column
 
 		typ, err := columnToType(column)
@@ -114,31 +114,35 @@ func (v Columns) MarshalJSON() ([]byte, error) {
 		}
 		item = append(item, byte('}'))
 
-		items = append(items, item)
+		items = append(items, item...)
+		if i != len(v)-1 {
+			items = append(items, byte(','))
+		}
 	}
+	items = append(items, ']')
 
-	return json.Marshal(items)
+	return items, nil
 }
 
 func (v *Columns) UnmarshalJSON(b []byte) error {
 	*v = nil
 
-	var items [][]byte
+	var items []map[string]any
 	if err := json.Unmarshal(b, &items); err != nil {
 		return err
 	}
 
-	type TempColumnType struct {
-		Type string `json:"type"`
-	}
-
 	for _, item := range items {
-		var temp TempColumnType
-		if err := json.Unmarshal(item, &temp); err != nil {
+		itemBytes, _ := json.Marshal(item)
+
+		t := struct {
+			Type string `json:"type"`
+		}{}
+		if err := json.Unmarshal(itemBytes, &t); err != nil {
 			return err
 		}
 
-		data, err := typeToColumn(temp.Type)
+		data, err := typeToColumn(t.Type)
 		if err != nil {
 			return err
 		}
@@ -146,7 +150,7 @@ func (v *Columns) UnmarshalJSON(b []byte) error {
 		ptr := reflect.New(reflect.TypeOf(data))
 		ptr.Elem().Set(reflect.ValueOf(data))
 
-		if err := json.Unmarshal(item, ptr.Interface()); err != nil {
+		if err = json.Unmarshal(itemBytes, ptr.Interface()); err != nil {
 			return err
 		}
 
