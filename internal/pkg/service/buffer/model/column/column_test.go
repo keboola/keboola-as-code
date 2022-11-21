@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/column"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/column"
 )
 
 func TestMappedColumns(t *testing.T) {

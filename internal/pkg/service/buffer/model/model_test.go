@@ -3,8 +3,9 @@ package model_test
 import (
 	"testing"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 )
 
 func TestTableID_String(t *testing.T) {
