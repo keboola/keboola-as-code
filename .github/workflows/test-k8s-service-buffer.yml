@@ -49,6 +49,9 @@ jobs:
           url="https://github.com/tomnomnom/gron/releases/download/v0.7.1/gron-linux-amd64-0.7.1.tgz"
           curl -L "$url" | tar -xz -C /usr/local/bin
 
+      - name: Install MiniKube
+        run: /tmp/latest-scripts/minikube/install.sh
+
       - name: Start MiniKube
         run: /tmp/latest-scripts/minikube/start.sh
 
