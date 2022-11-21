@@ -11,14 +11,14 @@
 //
 // Dependency containers creation:
 //   - Container [ForServer] is created in API main.go entrypoint, in "start" method, see [src/github.com/keboola/keboola-as-code/cmd/buffer-api/main.go].
-//   - Container [ForPublicRequest] is created for each HTTP request in the http.ContextMiddleware function, see [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/http/middleware.go].
-//   - Container [ForProjectRequest] is created for each authenticated HTTP request in the service.APIKeyAuth method, see [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/service/auth.go].
+//   - Container [ForPublicRequest] is created for each HTTP request in the http.ContextMiddleware function, see [src/github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/http/middleware.go].
+//   - Container [ForProjectRequest] is created for each authenticated HTTP request in the service.APIKeyAuth method, see [src/github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/auth.go].
 //
 // Dependencies injection to service endpoints:
 //   - Each service endpoint handler/method gets [ForPublicRequest] container as a parameter.
 //   - If the endpoint use token authentication it gets [ForProjectRequest] container instead.
 //   - It is ensured by [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/dependencies] package.
-//   - See service implementation for details [src/github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/service/service.go].
+//   - See service implementation for details [src/github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/service.go].
 package dependencies
 
 import (

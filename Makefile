@@ -9,7 +9,7 @@ generate-templates-api:
 	if [ ! -d "internal/pkg/service/templates/api/gen/http" ] || [ -z $(SKIP_API_CODE_REGENERATION) ]; then API_NAME=templates bash ./scripts/generate-api.sh; fi
 
 generate-buffer-api:
-	if [ ! -d "internal/pkg/api/server/buffer/gen/http" ] || [ -z $(SKIP_API_CODE_REGENERATION) ]; then API_NAME=buffer bash ./scripts/generate-api.sh; fi
+	if [ ! -d "internal/pkg/service/buffer/api/gen/http" ] || [ -z $(SKIP_API_CODE_REGENERATION) ]; then API_NAME=buffer bash ./scripts/generate-api.sh; fi
 
 build: prepare
 	GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --rm-dist --snapshot -f ./build/ci/goreleaser.yml

@@ -16,14 +16,13 @@ import (
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/genericerror"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/operationid"
-	. "github.com/keboola/keboola-as-code/internal/pkg/api/server/common/extension/token"
 )
 
 // API definition
 
 // nolint: gochecknoinits
 func init() {
-	dependencies.RegisterPlugin("github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/dependencies")
+	dependencies.RegisterPlugin("github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies")
 }
 
 var _ = API("buffer", func() {

@@ -13,12 +13,12 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/dependencies"
-	bufferGen "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/gen/buffer"
-	bufferHttp "github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/http"
-	"github.com/keboola/keboola-as-code/internal/pkg/api/server/buffer/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
+	bufferGen "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
+	bufferHttp "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/http"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service"
 )
 
 type ddLogger struct {
