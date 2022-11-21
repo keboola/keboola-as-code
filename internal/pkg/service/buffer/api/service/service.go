@@ -73,7 +73,7 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 	// nolint: godox
 	// TODO: create exports
 
-	url := formatUrl(d.BufferApiHost(), receiver.ID, receiver.Secret)
+	url := formatUrl(d.BufferApiHost(), receiver.ProjectID, receiver.ID, receiver.Secret)
 	resp := &buffer.Receiver{
 		ReceiverID: &receiver.ID,
 		Name:       &receiver.Name,
@@ -104,7 +104,7 @@ func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.Ge
 	// nolint: godox
 	// TODO: get exports
 
-	url := formatUrl(d.BufferApiHost(), receiver.ID, receiver.Secret)
+	url := formatUrl(d.BufferApiHost(), receiver.ProjectID, receiver.ID, receiver.Secret)
 	resp := &buffer.Receiver{
 		ReceiverID: &receiver.ID,
 		Name:       &receiver.Name,
@@ -129,7 +129,7 @@ func (*service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListRe
 
 	receivers := make([]*buffer.Receiver, 0, len(data))
 	for _, entry := range data {
-		url := formatUrl(bufferApiHost, entry.ID, entry.Secret)
+		url := formatUrl(bufferApiHost, entry.ProjectID, entry.ID, entry.Secret)
 		receivers = append(receivers, &buffer.Receiver{
 			ReceiverID: &entry.ID,
 			Name:       &entry.Name,
@@ -185,6 +185,6 @@ func (*service) Import(dependencies.ForPublicRequest, *buffer.ImportPayload, io.
 	return &NotImplementedError{}
 }
 
-func formatUrl(bufferApiHost string, receiverID string, secret string) string {
-	return fmt.Sprintf("https://%s/v1/import/%s/#/%s", bufferApiHost, receiverID, secret)
+func formatUrl(bufferApiHost string, projectID int, receiverID string, secret string) string {
+	return fmt.Sprintf("https://%s/v1/import/%d/%s/#/%s", bufferApiHost, projectID, receiverID, secret)
 }

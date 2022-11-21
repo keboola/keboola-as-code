@@ -9,5 +9,9 @@ import (
 func TestFormatUrl(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, "https://buffer.keboola.local/v1/import/asdf/#/fdsa", formatUrl("buffer.keboola.local", "asdf", "fdsa"))
+	assert.Equal(
+		t,
+		"https://buffer.keboola.local/v1/import/1000/asdf/#/fdsa",
+		formatUrl("buffer.keboola.local", 1000, "asdf", "fdsa"),
+	)
 }

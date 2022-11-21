@@ -266,6 +266,7 @@ var _ = Service("buffer", func() {
 		NoSecurity()
 		Payload(func() {
 			receiverId()
+			Attribute("projectId", Int, "ID of the project")
 			Attribute("secret", String, func() {
 				Description("Secret used for authentication.")
 				MinLength(48)
@@ -275,10 +276,10 @@ var _ = Service("buffer", func() {
 			Attribute("contentType", String, func() {
 				Example("application/json")
 			})
-			Required("receiverId", "secret", "contentType")
+			Required("projectId", "receiverId", "secret", "contentType")
 		})
 		HTTP(func() {
-			POST("/import/{receiverId}/#/{secret}")
+			POST("/import/{projectId}/{receiverId}/#/{secret}")
 			Meta("openapi:tag:import")
 			Header("contentType:Content-Type")
 			SkipRequestBodyEncodeDecode()
@@ -494,7 +495,7 @@ func exampleReceiver() map[string]interface{} {
 	id := "github-pull-requests"
 	return map[string]interface{}{
 		"id":      &id,
-		"url":     "https://buffer.keboola.com/v1/import/github-pull-requests/#/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH",
+		"url":     "https://buffer.keboola.com/v1/import/1000/github-pull-requests/#/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH",
 		"exports": exampleExportArray(),
 	}
 }
