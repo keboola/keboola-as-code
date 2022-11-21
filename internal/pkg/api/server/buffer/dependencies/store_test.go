@@ -185,6 +185,58 @@ func TestConfigStore_ListExports(t *testing.T) {
 	assert.Equal(t, input, exports)
 }
 
+func TestConfigStore_GetCurrentMapping(t *testing.T) {
+	t.Parallel()
+
+	// Setup
+	ctx, d := newTestDeps(t)
+	store := NewConfigStore(d.logger, d.etcdClient, d.validator, d.tracer)
+
+	projectID := 1000
+	receiverID := "receiver1"
+	exportID := "export1"
+	tableID := model.TableID{
+		Stage:      "in",
+		BucketName: "main",
+		TableName:  "table1",
+	}
+
+	// Create mapppings
+	input := []*model.Mapping{
+		{
+			RevisionID:  1,
+			TableID:     tableID,
+			Incremental: false,
+			Columns:     nil,
+		},
+		{
+			RevisionID:  2,
+			TableID:     tableID,
+			Incremental: false,
+			Columns:     nil,
+		},
+		{
+			RevisionID:  10,
+			TableID:     tableID,
+			Incremental: false,
+			Columns:     nil,
+		},
+	}
+
+	for _, i := range input {
+		value, err := json.EncodeString(i, false)
+		assert.NoError(t, err)
+		_, err = d.etcdClient.KV.Put(ctx, MappingKey(projectID, receiverID, exportID, i.RevisionID), value)
+		assert.NoError(t, err)
+	}
+
+	// Get current mapping
+	mapping, err := store.GetCurrentMapping(ctx, projectID, receiverID, exportID)
+	assert.NoError(t, err)
+
+	assert.Equal(t, input[2], mapping)
+}
+
 type testDeps struct {
 	logger     log.DebugLogger
 	etcdClient *etcd.Client

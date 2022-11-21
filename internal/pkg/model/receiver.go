@@ -18,6 +18,15 @@ type Export struct {
 	ImportConditions []ImportCondition `json:"importConditions" validate:"required"`
 }
 
+type MappedColumns []any
+
+type Mapping struct {
+	RevisionID  int           `json:"revisionId" validate:"required"`
+	TableID     TableID       `json:"tableId" validate:"required,min=1,max=198"`
+	Incremental bool          `json:"incremental" validate:"required"`
+	Columns     MappedColumns `json:"columns" validate:"required,min=1,max=50"`
+}
+
 type Receiver struct {
 	ID        string `json:"receiverId" validate:"required,min=1,max=48"`
 	ProjectID int    `json:"projectId" validate:"required"`
