@@ -204,19 +204,19 @@ func TestConfigStore_GetCurrentMapping(t *testing.T) {
 	// Create mapppings
 	input := []*model.Mapping{
 		{
-			RevisionID:  111,
+			RevisionID:  1,
 			TableID:     tableID,
 			Incremental: false,
 			Columns:     nil,
 		},
 		{
-			RevisionID:  222,
+			RevisionID:  2,
 			TableID:     tableID,
 			Incremental: false,
 			Columns:     nil,
 		},
 		{
-			RevisionID:  333,
+			RevisionID:  10,
 			TableID:     tableID,
 			Incremental: false,
 			Columns:     nil,
@@ -224,10 +224,9 @@ func TestConfigStore_GetCurrentMapping(t *testing.T) {
 	}
 
 	for _, i := range input {
-		key := fmt.Sprintf("config/mapping/revision/%d/%s/%s/%d", projectID, receiverID, exportID, i.RevisionID)
 		value, err := json.EncodeString(i, false)
 		assert.NoError(t, err)
-		_, err = d.etcdClient.KV.Put(ctx, key, value)
+		_, err = d.etcdClient.KV.Put(ctx, MappingKey(projectID, receiverID, exportID, i.RevisionID), value)
 		assert.NoError(t, err)
 	}
 

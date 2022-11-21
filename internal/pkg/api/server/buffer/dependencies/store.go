@@ -44,6 +44,10 @@ func MappingsPrefix(projectID int, receiverID string, exportID string) string {
 	return fmt.Sprintf("config/mapping/revision/%d/%s/%s/", projectID, receiverID, exportID)
 }
 
+func MappingKey(projectID int, receiverID string, exportID string, revisionID int) string {
+	return fmt.Sprintf("config/mapping/revision/%d/%s/%s/%08d", projectID, receiverID, exportID, revisionID)
+}
+
 type ReceiverLimitReachedError struct{}
 
 func (ReceiverLimitReachedError) Error() string {
