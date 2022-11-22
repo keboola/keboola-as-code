@@ -9,10 +9,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/column"
 )
 
+const (
+	TableStageIn  = "in"
+	TableStageOut = "out"
+	TableStageSys = "sys"
+)
+
 type TableID struct {
-	Stage      string `json:"stage"`
-	BucketName string `json:"bucketName"`
-	TableName  string `json:"tableName"`
+	Stage      string `json:"stage" validate:"required,oneof=in out sys"`
+	BucketName string `json:"bucketName" validate:"required,min=1,max=96"`
+	TableName  string `json:"tableName" validate:"required,min=1,max=96"`
 }
 
 func (t TableID) String() string {
@@ -21,7 +27,7 @@ func (t TableID) String() string {
 
 type Mapping struct {
 	RevisionID  int            `json:"revisionId" validate:"required"`
-	TableID     TableID        `json:"tableId" validate:"required,min=1,max=198"`
+	TableID     TableID        `json:"tableId" validate:"required"`
 	Incremental bool           `json:"incremental" validate:"required"`
 	Columns     column.Columns `json:"columns" validate:"required,min=1,max=50"`
 }
@@ -36,7 +42,7 @@ type Receiver struct {
 type ImportCondition struct {
 	Count int               `json:"count" validate:"min=1,max=10000000"`
 	Size  datasize.ByteSize `json:"size" validate:"min=100,max=50000000"`
-	Time  time.Duration     `json:"time" validate:"min=30s,max=24h"`
+	Time  time.Duration     `json:"time" validate:"min=30000000000,max=86400000000000"`
 }
 
 type Export struct {

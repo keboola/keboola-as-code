@@ -107,7 +107,12 @@ func (e AlreadyExistsError) Error() string {
 //
 // This method guarantees that no two receivers in the store will have the same (projectID, receiverID) pair.
 //
-// May fail if receiver limit is reached (`LimitReachedError`), if the receiver already exists (`AlreadyExistsError`) or if any of the underlying ETCD calls fail.
+// May fail if
+// - limit is reached (`LimitReachedError`)
+// - already exists (`AlreadyExistsError`)
+// - validation of the model fails
+// - JSON marshalling fails
+// - any of the underlying ETCD calls fail.
 func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
@@ -232,6 +237,62 @@ func (c *Store) DeleteReceiver(ctx context.Context, projectID int, receiverID st
 
 	if r.Deleted == 0 {
 		return NotFoundError{ID: receiverID}
+	}
+
+	return nil
+}
+
+// CreateExport puts an export into the store.
+//
+// This method guarantees that no two receivers in the store will have the same (projectID, receiverID, exportID) tuple.
+//
+// May fail if
+// - limit is reached (`LimitReachedError`)
+// - already exists (`AlreadyExistsError`)
+// - validation of the model fails
+// - JSON marshalling fails
+// - any of the underlying ETCD calls fail.
+func (c *Store) CreateExport(ctx context.Context, projectID int, receiverID string, export model.Export) (err error) {
+	logger, tracer, client := c.logger, c.tracer, c.etcdClient
+
+	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.CreateExport")
+	defer telemetry.EndSpan(span, &err)
+
+	if err := c.validator.Validate(ctx, export); err != nil {
+		return err
+	}
+
+	prefix := ExportsPrefix(projectID, receiverID)
+	logger.Debugf(`Reading "%s" count`, prefix)
+	receiverExports, err := client.KV.Get(ctx, prefix, etcd.WithPrefix(), etcd.WithCountOnly())
+	if err != nil {
+		return err
+	}
+	if receiverExports.Count >= MaxExportsPerReceiver {
+		return LimitReachedError{}
+	}
+
+	key := ExportKey(projectID, receiverID, export.ID)
+
+	logger.Debugf(`Reading "%s" count`, key)
+	exports, err := client.KV.Get(ctx, key, etcd.WithCountOnly())
+	if err != nil {
+		return err
+	}
+	if exports.Count > 0 {
+		return AlreadyExistsError{What: "export", ID: export.ID}
+	}
+
+	logger.Debugf(`Encoding "%s"`, key)
+	value, err := json.EncodeString(export, false)
+	if err != nil {
+		return err
+	}
+
+	logger.Debugf(`PUT "%s" "%s"`, key, value)
+	_, err = client.KV.Put(ctx, key, value)
+	if err != nil {
+		return err
 	}
 
 	return nil

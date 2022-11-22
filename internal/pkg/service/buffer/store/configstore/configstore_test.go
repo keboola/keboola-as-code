@@ -212,7 +212,7 @@ func TestConfigStore_GetCurrentMapping(t *testing.T) {
 	receiverID := "receiver1"
 	exportID := "export1"
 	tableID := model.TableID{
-		Stage:      "in",
+		Stage:      model.TableStageIn,
 		BucketName: "main",
 		TableName:  "table1",
 	}

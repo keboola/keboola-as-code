@@ -12,7 +12,7 @@ func TestTableID_String(t *testing.T) {
 	t.Parallel()
 
 	tableID := model.TableID{
-		Stage:      "in",
+		Stage:      model.TableStageIn,
 		BucketName: "main",
 		TableName:  "table1",
 	}
