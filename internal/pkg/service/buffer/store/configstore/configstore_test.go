@@ -1,4 +1,4 @@
-package dependencies
+package configstore
 
 import (
 	"context"
@@ -39,7 +39,7 @@ func TestConfigStore_CreateReceiver(t *testing.T) {
 
 	// Setup
 	ctx, d := newTestDeps(t)
-	store := NewConfigStore(d.logger, d.etcdClient, d.validator, d.tracer)
+	store := New(d.logger, d.etcdClient, d.validator, d.tracer)
 
 	// Create receiver
 	config := model.Receiver{
@@ -73,7 +73,7 @@ func TestConfigStore_GetReceiver(t *testing.T) {
 
 	// Setup
 	ctx, d := newTestDeps(t)
-	store := NewConfigStore(d.logger, d.etcdClient, d.validator, d.tracer)
+	store := New(d.logger, d.etcdClient, d.validator, d.tracer)
 
 	// Create receiver
 	input := &model.Receiver{
@@ -96,7 +96,7 @@ func TestConfigStore_ListReceivers(t *testing.T) {
 
 	// Setup
 	ctx, d := newTestDeps(t)
-	store := NewConfigStore(d.logger, d.etcdClient, d.validator, d.tracer)
+	store := New(d.logger, d.etcdClient, d.validator, d.tracer)
 
 	projectID := 1000
 
@@ -140,7 +140,7 @@ func TestConfigStore_ListExports(t *testing.T) {
 
 	// Setup
 	ctx, d := newTestDeps(t)
-	store := NewConfigStore(d.logger, d.etcdClient, d.validator, d.tracer)
+	store := New(d.logger, d.etcdClient, d.validator, d.tracer)
 
 	projectID := 1000
 	receiverID := "receiver1"
@@ -190,7 +190,7 @@ func TestConfigStore_GetCurrentMapping(t *testing.T) {
 
 	// Setup
 	ctx, d := newTestDeps(t)
-	store := NewConfigStore(d.logger, d.etcdClient, d.validator, d.tracer)
+	store := New(d.logger, d.etcdClient, d.validator, d.tracer)
 
 	projectID := 1000
 	receiverID := "receiver1"

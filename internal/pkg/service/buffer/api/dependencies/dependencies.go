@@ -32,6 +32,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/configstore"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
@@ -44,13 +45,8 @@ import (
 type ctxKey string
 
 const (
-	ForPublicRequestCtxKey       = ctxKey("ForPublicRequest")
-	ForProjectRequestCtxKey      = ctxKey("ForProjectRequest")
-	EtcdConnectionTimeoutCtxKey  = ctxKey("EtcdConnectionTimeout")
-	EtcdDefaultConnectionTimeout = 2 * time.Second
-	EtcdKeepAliveTimeout         = 2 * time.Second
-	EtcdKeepAliveInterval        = 10 * time.Second
-	ProjectLockTTLSeconds        = 60
+	ForPublicRequestCtxKey  = ctxKey("ForPublicRequest")
+	ForProjectRequestCtxKey = ctxKey("ForProjectRequest")
 )
 
 // ForServer interface provides dependencies for Buffer API server.
@@ -62,7 +58,7 @@ type ForServer interface {
 	ServerWaitGroup() *sync.WaitGroup
 	PrefixLogger() log.PrefixLogger
 	EtcdClient() *etcd.Client
-	ConfigStore() *ConfigStore
+	ConfigStore() *configstore.Store
 	BufferApiHost() string
 }
 
@@ -89,7 +85,7 @@ type forServer struct {
 	serverWg      *sync.WaitGroup
 	logger        log.PrefixLogger
 	etcdClient    *etcd.Client
-	configStore   *ConfigStore
+	configStore   *configstore.Store
 	bufferApiHost string
 }
 
@@ -181,7 +177,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	}
 
 	// Create config store
-	configStore := NewConfigStore(logger, etcdClient, validator.New(), tracer)
+	configStore := configstore.New(logger, etcdClient, validator.New(), tracer)
 
 	// Create server dependencies
 	d := &forServer{
@@ -246,7 +242,7 @@ func (v *forServer) EtcdClient() *etcd.Client {
 	return v.etcdClient
 }
 
-func (v *forServer) ConfigStore() *ConfigStore {
+func (v *forServer) ConfigStore() *configstore.Store {
 	return v.configStore
 }
 

@@ -1,4 +1,5 @@
-package dependencies
+// Package configstore provides database operations for configuring receivers and exports.
+package configstore
 
 import (
 	"context"
@@ -17,15 +18,15 @@ import (
 
 const MaxReceiversPerProject = 100
 
-type ConfigStore struct {
+type Store struct {
 	logger     log.Logger
 	etcdClient *etcd.Client
 	validator  validator.Validator
 	tracer     trace.Tracer
 }
 
-func NewConfigStore(logger log.Logger, etcdClient *etcd.Client, validator validator.Validator, tracer trace.Tracer) *ConfigStore {
-	return &ConfigStore{logger, etcdClient, validator, tracer}
+func New(logger log.Logger, etcdClient *etcd.Client, validator validator.Validator, tracer trace.Tracer) *Store {
+	return &Store{logger, etcdClient, validator, tracer}
 }
 
 func ReceiverKey(projectID int, receiverID string) string {
@@ -67,10 +68,10 @@ func (r ReceiverNotFoundError) Error() string {
 // This method guarantees that no two receivers in the store will have the same (projectID, receiverID) pair.
 //
 // May fail if receiver limit is reached (`ReceiverLimitReachedError`), or if any of the underlying ETCD calls fail.
-func (c *ConfigStore) CreateReceiver(ctx context.Context, receiver model.Receiver) (err error) {
+func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
-	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.CreateReceiver")
+	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.CreateReceiver")
 	defer telemetry.EndSpan(span, &err)
 
 	if err := c.validator.Validate(ctx, receiver); err != nil {
@@ -116,10 +117,10 @@ func (c *ConfigStore) CreateReceiver(ctx context.Context, receiver model.Receive
 // GetReceiver fetches a receiver from the store.
 //
 // This method returns nil if no receiver was found.
-func (c *ConfigStore) GetReceiver(ctx context.Context, projectID int, receiverID string) (r *model.Receiver, err error) {
+func (c *Store) GetReceiver(ctx context.Context, projectID int, receiverID string) (r *model.Receiver, err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
-	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.GetReceiver")
+	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.GetReceiver")
 	defer telemetry.EndSpan(span, &err)
 
 	key := ReceiverKey(projectID, receiverID)
@@ -145,10 +146,10 @@ func (c *ConfigStore) GetReceiver(ctx context.Context, projectID int, receiverID
 	return receiver, nil
 }
 
-func (c *ConfigStore) ListReceivers(ctx context.Context, projectID int) (r []*model.Receiver, err error) {
+func (c *Store) ListReceivers(ctx context.Context, projectID int) (r []*model.Receiver, err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
-	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.ListReceivers")
+	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.ListReceivers")
 	defer telemetry.EndSpan(span, &err)
 
 	prefix := ReceiverPrefix(projectID)
@@ -175,10 +176,10 @@ func (c *ConfigStore) ListReceivers(ctx context.Context, projectID int) (r []*mo
 // DeleteReceiver deletes a receiver from the store.
 //
 // May fail if the receiver is not found (`ReceiverNotFoundError`), or if any of the underlying ETCD calls fail.
-func (c *ConfigStore) DeleteReceiver(ctx context.Context, projectID int, receiverID string) (err error) {
+func (c *Store) DeleteReceiver(ctx context.Context, projectID int, receiverID string) (err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
-	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.DeleteReceiver")
+	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.DeleteReceiver")
 	defer telemetry.EndSpan(span, &err)
 
 	key := ReceiverKey(projectID, receiverID)
@@ -196,10 +197,10 @@ func (c *ConfigStore) DeleteReceiver(ctx context.Context, projectID int, receive
 	return nil
 }
 
-func (c *ConfigStore) ListExports(ctx context.Context, projectID int, receiverID string) (r []*model.Export, err error) {
+func (c *Store) ListExports(ctx context.Context, projectID int, receiverID string) (r []*model.Export, err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
-	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.ListExports")
+	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.ListExports")
 	defer telemetry.EndSpan(span, &err)
 
 	key := ExportsPrefix(projectID, receiverID)
@@ -223,10 +224,10 @@ func (c *ConfigStore) ListExports(ctx context.Context, projectID int, receiverID
 	return exports, nil
 }
 
-func (c *ConfigStore) GetCurrentMapping(ctx context.Context, projectID int, receiverID string, exportID string) (r *model.Mapping, err error) {
+func (c *Store) GetCurrentMapping(ctx context.Context, projectID int, receiverID string, exportID string) (r *model.Mapping, err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
-	_, span := tracer.Start(ctx, "kac.api.server.buffer.dependencies.store.getCurrentMapping")
+	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.GetCurrentMapping")
 	defer telemetry.EndSpan(span, &err)
 
 	key := MappingsPrefix(projectID, receiverID, exportID)
