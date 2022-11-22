@@ -269,7 +269,7 @@ func (c *Store) CreateExport(ctx context.Context, projectID int, receiverID stri
 		return err
 	}
 	if receiverExports.Count >= MaxExportsPerReceiver {
-		return LimitReachedError{}
+		return LimitReachedError{What: "export", Max: MaxExportsPerReceiver}
 	}
 
 	key := ExportKey(projectID, receiverID, export.ID)
