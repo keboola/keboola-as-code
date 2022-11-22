@@ -245,9 +245,9 @@ func TestConfigStore_GetCurrentMapping(t *testing.T) {
 	receiverID := "receiver1"
 	exportID := "export1"
 	tableID := model.TableID{
-		Stage:      model.TableStageIn,
-		BucketName: "main",
-		TableName:  "table1",
+		Stage:  model.TableStageIn,
+		Bucket: "main",
+		Table:  "table1",
 	}
 
 	// Create mapppings
