@@ -26,6 +26,9 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+	"strings"
 	"sync"
 
 	"go.opentelemetry.io/otel/trace"
@@ -62,6 +65,8 @@ type ForPublicRequest interface {
 	ForServer
 	RequestCtx() context.Context
 	RequestID() string
+	RequestHeader() http.Header
+	RequestClientIP() net.IP
 }
 
 // ForProjectRequest interface provides dependencies for an authenticated request that contains the Storage API token.
@@ -84,6 +89,7 @@ type forServer struct {
 type forPublicRequest struct {
 	ForServer
 	logger     log.PrefixLogger
+	request    *http.Request
 	requestCtx context.Context
 	requestID  string
 }
@@ -136,13 +142,14 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	return d, nil
 }
 
-func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, requestId string) ForPublicRequest {
+func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, requestId string, request *http.Request) ForPublicRequest {
 	_, span := serverDeps.Tracer().Start(requestCtx, "kac.api.server.buffer.dependencies.NewDepsForPublicRequest")
 	defer telemetry.EndSpan(span, nil)
 
 	return &forPublicRequest{
 		ForServer:  serverDeps,
 		logger:     serverDeps.PrefixLogger().WithAdditionalPrefix(fmt.Sprintf("[requestId=%s]", requestId)),
+		request:    request,
 		requestCtx: requestCtx,
 		requestID:  requestId,
 	}
@@ -198,6 +205,35 @@ func (v *forPublicRequest) RequestCtx() context.Context {
 
 func (v *forPublicRequest) RequestID() string {
 	return v.requestID
+}
+
+func (v *forPublicRequest) RequestHeader() http.Header {
+	return v.request.Header.Clone()
+}
+
+func (v *forPublicRequest) RequestClientIP() net.IP {
+	// Get IP from the X-REAL-IP header
+	ip := v.request.Header.Get("X-REAL-IP")
+	if netIP := net.ParseIP(ip); netIP != nil {
+		return netIP
+	}
+
+	// Get IP from X-FORWARDED-FOR header
+	ips := v.request.Header.Get("X-FORWARDED-FOR")
+	splitIps := strings.Split(ips, ",")
+	for _, ip := range splitIps {
+		if netIP := net.ParseIP(ip); netIP != nil {
+			return netIP
+		}
+	}
+
+	// Get IP from RemoteAddr
+	ip, _, _ = net.SplitHostPort(v.request.RemoteAddr)
+	if netIP := net.ParseIP(ip); netIP != nil {
+		return netIP
+	}
+
+	return nil
 }
 
 func (v *forProjectRequest) Logger() log.Logger {

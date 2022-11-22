@@ -22,6 +22,10 @@ import (
 
 const RequestTimeout = 60 * time.Second
 
+const httpRequestCtxKey = ctxKey("httpRequest")
+
+type ctxKey string
+
 func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint goa.Endpoint) goa.Endpoint {
 	return func(endpoint goa.Endpoint) goa.Endpoint {
 		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
@@ -70,7 +74,8 @@ func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint g
 			}()
 
 			// Add dependencies to the context
-			reqDeps := dependencies.NewDepsForPublicRequest(serverDeps, ctx, requestId)
+			httpRequest := ctx.Value(httpRequestCtxKey).(*http.Request)
+			reqDeps := dependencies.NewDepsForPublicRequest(serverDeps, ctx, requestId, httpRequest)
 			ctx = context.WithValue(ctx, dependencies.ForPublicRequestCtxKey, reqDeps)
 
 			// Handle
@@ -84,7 +89,9 @@ func ContextMiddleware(serverDeps dependencies.ForServer, h http.Handler) http.H
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Generate unique request ID
 		requestId := idgenerator.RequestId()
-		ctx := context.WithValue(r.Context(), middleware.RequestIDKey, requestId) // nolint:staticcheck // intentionally used the ctx key from external package
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, middleware.RequestIDKey, requestId) // nolint:staticcheck // intentionally used the ctx key from external package
+		ctx = context.WithValue(ctx, httpRequestCtxKey, r)
 
 		// Add request ID to headers
 		w.Header().Add("X-Request-Id", requestId)
