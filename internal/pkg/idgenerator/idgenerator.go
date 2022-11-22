@@ -28,3 +28,7 @@ func EtcdNamespaceForTest() string {
 func ReceiverSecret() string {
 	return gonanoid.MustGenerate(alphabet, ReceiverSecretLength)
 }
+
+func Random(length int) string {
+	return gonanoid.MustGenerate(alphabet, length)
+}

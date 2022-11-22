@@ -2,13 +2,17 @@
 package configstore
 
 import (
+	"bytes"
 	"context"
+	"encoding/csv"
 	"fmt"
+	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -47,6 +51,15 @@ func MappingsPrefix(projectID int, receiverID string, exportID string) string {
 
 func MappingKey(projectID int, receiverID string, exportID string, revisionID int) string {
 	return fmt.Sprintf("config/mapping/revision/%d/%s/%s/%08d", projectID, receiverID, exportID, revisionID)
+}
+
+func RecordKey(projectID int, receiverID string, exportID string, fileID string, sliceID string) string {
+	recordID := FormatTimeForKey(time.Now()) + "_" + idgenerator.Random(5)
+	return fmt.Sprintf("record/%d/%s/%s/%s/%s/%s", projectID, receiverID, exportID, fileID, sliceID, recordID)
+}
+
+func FormatTimeForKey(t time.Time) string {
+	return t.Format("2006-01-02T15:04:05.000Z")
 }
 
 type ReceiverLimitReachedError struct{}
@@ -251,4 +264,33 @@ func (c *Store) GetCurrentMapping(ctx context.Context, projectID int, receiverID
 		return nil, err
 	}
 	return mapping, nil
+}
+
+func (c *Store) CreateRecord(ctx context.Context, record model.Record, csvData []string) (err error) {
+	logger, tracer, client := c.logger, c.tracer, c.etcdClient
+
+	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.CreateRecord")
+	defer telemetry.EndSpan(span, &err)
+
+	key := RecordKey(record.ProjectID, record.ReceiverID, record.ExportID, record.FileID, record.SliceID)
+
+	logger.Debugf(`Encoding "%s"`, key)
+	csvBuffer := new(bytes.Buffer)
+	w := csv.NewWriter(csvBuffer)
+
+	if err := w.WriteAll([][]string{csvData}); err != nil {
+		return err
+	}
+
+	if err := w.Error(); err != nil {
+		return err
+	}
+
+	logger.Debugf(`PUT "%s" "%s"`, key, csvBuffer.String())
+	_, err = client.KV.Put(ctx, key, csvBuffer.String())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
