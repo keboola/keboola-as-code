@@ -24,17 +24,16 @@ package dependencies
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/client/v3/namespace"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -111,11 +110,15 @@ type forProjectRequest struct {
 
 func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, debug, dumpHttp bool) (v ForServer, err error) {
 	// Create tracer
+	ctx := serverCtx
 	var tracer trace.Tracer = nil
 	if telemetry.IsDataDogEnabled(envs) {
+		var span trace.Span
 		tracer = telemetry.NewDataDogTracer()
-		_, span := tracer.Start(serverCtx, "kac.lib.api.server.buffer.dependencies.NewServerDeps")
+		ctx, span = tracer.Start(ctx, "kac.lib.api.server.buffer.dependencies.NewServerDeps")
 		defer telemetry.EndSpan(span, &err)
+	} else {
+		tracer = telemetry.NewNopTracer()
 	}
 
 	// Create wait group - for graceful shutdown
@@ -149,7 +152,6 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 
 	// Create base dependencies
 	baseDeps := dependencies.NewBaseDeps(envs, tracer, logger, httpClient)
-	tracer = baseDeps.Tracer()
 
 	// Create public dependencies - load API index
 	startTime := time.Now()
@@ -162,14 +164,24 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 
 	// Connect to ETCD
 	// We use a longer timeout when starting the server, because ETCD could be restarted at the same time as the API.
-	etcdClient, err := newEtcdClient(serverCtx, tracer, envs, logger, serverWg, 30*time.Second)
+	etcdClient, err := etcdclient.New(
+		serverCtx,
+		tracer,
+		envs.Get("BUFFER_ETCD_ENDPOINT"),
+		envs.Get("BUFFER_ETCD_NAMESPACE"),
+		etcdclient.WithUsername(envs.Get("BUFFER_ETCD_USERNAME")),
+		etcdclient.WithPassword(envs.Get("BUFFER_ETCD_PASSWORD")),
+		etcdclient.WithConnectContext(ctx),
+		etcdclient.WithConnectTimeout(30*time.Second), // longer timeout, the etcd could be started at the same time as the API
+		etcdclient.WithLogger(logger),
+		etcdclient.WithWaitGroup(serverWg),
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create config store
-	validator := validator.New()
-	configStore := NewConfigStore(logger, etcdClient, validator, tracer)
+	configStore := NewConfigStore(logger, etcdClient, validator.New(), tracer)
 
 	// Create server dependencies
 	d := &forServer{
@@ -264,76 +276,4 @@ func (v *forProjectRequest) Logger() log.Logger {
 
 func (v *forProjectRequest) PrefixLogger() log.PrefixLogger {
 	return v.logger
-}
-
-func newEtcdClient(
-	serverCtx context.Context,
-	tracer trace.Tracer,
-	envs env.Provider,
-	logger log.Logger,
-	serverWg *sync.WaitGroup,
-	timeout time.Duration,
-) (*etcd.Client, error) {
-	ctx, span := tracer.Start(serverCtx, "kac.api.server.buffer.dependencies.EtcdClient")
-	defer telemetry.EndSpan(span, nil)
-
-	// Get endpoint
-	endpoint := envs.Get("BUFFER_ETCD_ENDPOINT")
-	if endpoint == "" {
-		return nil, errors.New("BUFFER_ETCD_HOST is not set")
-	}
-
-	// Get namespace
-	namespacePrefix := envs.Get("BUFFER_ETCD_NAMESPACE")
-	if namespacePrefix == "" {
-		return nil, errors.New("BUFFER_ETCD_NAMESPACE is not set")
-	}
-
-	// Create client
-	startTime := time.Now()
-	logger.Infof("connecting to etcd, timeout=%s", timeout)
-	c, err := etcd.New(etcd.Config{
-		Context:              serverCtx, // !!! a long-lived context must be used, client exists as long as the entire server
-		Endpoints:            []string{endpoint},
-		DialTimeout:          timeout,
-		DialKeepAliveTimeout: EtcdKeepAliveTimeout,
-		DialKeepAliveTime:    EtcdKeepAliveInterval,
-		Username:             envs.Get("BUFFER_ETCD_USERNAME"), // optional
-		Password:             envs.Get("BUFFER_ETCD_PASSWORD"), // optional
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Prefix client by namespace
-	namespacePrefix = strings.Trim(namespacePrefix, " /") + "/"
-	c.KV = namespace.NewKV(c.KV, namespacePrefix)
-	c.Watcher = namespace.NewWatcher(c.Watcher, namespacePrefix)
-	c.Lease = namespace.NewLease(c.Lease, namespacePrefix)
-
-	// Context for connection test
-	syncCtx, syncCancelFn := context.WithTimeout(ctx, timeout)
-	defer syncCancelFn()
-
-	// Sync endpoints list from cluster (also serves as a connection check)
-	if err := c.Sync(syncCtx); err != nil {
-		c.Close()
-		return nil, err
-	}
-
-	// Close client when shutting down the server
-	wg := serverWg
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-serverCtx.Done()
-		if err := c.Close(); err != nil {
-			logger.Warnf("cannot close connection etcd: %s", err)
-		} else {
-			logger.Info("closed connection to etcd")
-		}
-	}()
-
-	logger.Infof(`connected to etcd cluster "%s" | %s`, c.Endpoints()[0], time.Since(startTime))
-	return c, nil
 }

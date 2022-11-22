@@ -24,18 +24,17 @@ package dependencies
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/client/v3/namespace"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
@@ -181,7 +180,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	// We use a longer timeout when starting the server, because ETCD could be restarted at the same time as the API.
 	etcdCtx := context.WithValue(serverCtx, EtcdConnectionTimeoutCtxKey, 30*time.Second)
 	if _, err := d.EtcdClient(etcdCtx); err != nil {
-		d.Logger().Warnf("cannot connect to etcd: %s", err.Error())
+		d.Logger().Warnf(err.Error())
 	}
 
 	return d, nil
@@ -241,76 +240,31 @@ func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 		ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.EtcdClient")
 		defer telemetry.EndSpan(span, nil)
 
-		// Check if etcd is enabled
-		if v.Envs().Get("TEMPLATES_API_ETCD_ENABLED") == "false" {
-			return nil, errors.New("etcd integration is disabled")
-		}
-
-		// Get endpoint
-		endpoint := v.Envs().Get("TEMPLATES_API_ETCD_ENDPOINT")
-		if endpoint == "" {
-			return nil, errors.New("TEMPLATES_API_ETCD_HOST is not set")
-		}
-
-		// Get namespace
-		namespacePrefix := v.Envs().Get("TEMPLATES_API_ETCD_NAMESPACE")
-		if namespacePrefix == "" {
-			return nil, errors.New("TEMPLATES_API_ETCD_NAMESPACE is not set")
-		}
-
 		// Get timeout
+		// We use a longer timeout on tge API start,
+		// the etcd could be started at the same time as the API.
 		connectTimeout := EtcdDefaultConnectionTimeout
 		if v, found := ctx.Value(EtcdConnectionTimeoutCtxKey).(time.Duration); found {
 			connectTimeout = v
 		}
 
-		// Create client
-		startTime := time.Now()
-		v.logger.Infof("connecting to etcd, timeout=%s", connectTimeout)
-		c, err := etcd.New(etcd.Config{
-			Context:              v.serverCtx, // !!! a long-lived context must be used, client exists as long as the entire server
-			Endpoints:            []string{endpoint},
-			DialTimeout:          connectTimeout,
-			DialKeepAliveTimeout: EtcdKeepAliveTimeout,
-			DialKeepAliveTime:    EtcdKeepAliveInterval,
-			Username:             v.Envs().Get("TEMPLATES_API_ETCD_USERNAME"), // optional
-			Password:             v.Envs().Get("TEMPLATES_API_ETCD_PASSWORD"), // optional
-		})
-		if err != nil {
-			return nil, err
+		envs := v.Envs()
+		if envs.Get("TEMPLATES_API_ETCD_ENABLED") == "false" {
+			return nil, errors.New("etcd integration is disabled")
 		}
 
-		// Prefix client by namespace
-		namespacePrefix = strings.Trim(namespacePrefix, " /") + "/"
-		c.KV = namespace.NewKV(c.KV, namespacePrefix)
-		c.Watcher = namespace.NewWatcher(c.Watcher, namespacePrefix)
-		c.Lease = namespace.NewLease(c.Lease, namespacePrefix)
-
-		// Context for connection test
-		syncCtx, syncCancelFn := context.WithTimeout(ctx, connectTimeout)
-		defer syncCancelFn()
-
-		// Sync endpoints list from cluster (also serves as a connection check)
-		if err := c.Sync(syncCtx); err != nil {
-			c.Close()
-			return nil, err
-		}
-
-		// Close client when shutting down the server
-		wg := v.ServerWaitGroup()
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			<-v.serverCtx.Done()
-			if err := c.Close(); err != nil {
-				v.Logger().Warnf("cannot close connection etcd: %s", err)
-			} else {
-				v.Logger().Info("closed connection to etcd")
-			}
-		}()
-
-		v.logger.Infof(`connected to etcd cluster "%s" | %s`, c.Endpoints()[0], time.Since(startTime))
-		return c, nil
+		return etcdclient.New(
+			v.serverCtx,
+			v.Tracer(),
+			envs.Get("TEMPLATES_API_ETCD_ENDPOINT"),
+			envs.Get("TEMPLATES_API_ETCD_NAMESPACE"),
+			etcdclient.WithUsername(envs.Get("TEMPLATES_API_ETCD_USERNAME")),
+			etcdclient.WithPassword(envs.Get("TEMPLATES_API_ETCD_PASSWORD")),
+			etcdclient.WithConnectContext(ctx),
+			etcdclient.WithConnectTimeout(connectTimeout),
+			etcdclient.WithLogger(v.logger),
+			etcdclient.WithWaitGroup(v.serverWg),
+		)
 	})
 }
 

@@ -55,7 +55,6 @@ jobs:
         run: make tests-buffer-api
         shell: bash
         env:
-          BUFFER_ETCD_ENABLED: true
           BUFFER_ETCD_ENDPOINT: etcd:2379
           BUFFER_ETCD_USERNAME: root
           BUFFER_ETCD_PASSWORD: toor

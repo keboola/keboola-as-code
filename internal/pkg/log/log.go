@@ -45,19 +45,20 @@ type DebugLogger interface {
 }
 
 type baseLogger interface {
-	Debug(args ...interface{})
-	Info(args ...interface{})
-	Warn(args ...interface{})
-	Error(args ...interface{})
+	Log(level string, args ...any)
+	Debug(args ...any)
+	Info(args ...any)
+	Warn(args ...any)
+	Error(args ...any)
 	Sync() error
 }
 
 type sugaredLogger interface {
-	With(args ...interface{}) Logger // creates a child logger and adds structured context to it.
-	Debugf(template string, args ...interface{})
-	Infof(template string, args ...interface{})
-	Warnf(template string, args ...interface{})
-	Errorf(template string, args ...interface{})
+	With(args ...any) Logger // creates a child logger and adds structured context to it.
+	Debugf(template string, args ...any)
+	Infof(template string, args ...any)
+	Warnf(template string, args ...any)
+	Errorf(template string, args ...any)
 }
 
 type toWriter interface {

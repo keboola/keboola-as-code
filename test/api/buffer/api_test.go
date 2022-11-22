@@ -207,7 +207,6 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl st
 	envs.Set("KBC_STORAGE_API_HOST", storageApiHost)
 	envs.Set("KBC_BUFFER_API_HOST", "buffer.keboola.local")
 	envs.Set("DATADOG_ENABLED", "false")
-	envs.Set("BUFFER_ETCD_ENABLED", "true")
 	envs.Set("BUFFER_ETCD_NAMESPACE", etcdNamespace)
 	envs.Set("BUFFER_ETCD_ENDPOINT", etcdEndpoint)
 	envs.Set("BUFFER_ETCD_USERNAME", etcdUsername)
