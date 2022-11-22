@@ -2,11 +2,13 @@ package model
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -16,17 +18,49 @@ const (
 )
 
 type TableID struct {
-	Stage      string `json:"stage" validate:"required,oneof=in out sys"`
-	BucketName string `json:"bucketName" validate:"required,min=1,max=96"`
-	TableName  string `json:"tableName" validate:"required,min=1,max=96"`
+	Stage  string `json:"stage" validate:"required,oneof=in out sys"`
+	Bucket string `json:"bucketName" validate:"required,min=1,max=96"`
+	Table  string `json:"tableName" validate:"required,min=1,max=96"`
 }
 
 func (t TableID) String() string {
-	return fmt.Sprintf("%s.c-%s.%s", t.Stage, t.BucketName, t.TableName)
+	return fmt.Sprintf("%s.c-%s.%s", t.Stage, t.Bucket, t.Table)
+}
+
+var tableStagesMap = map[string]bool{
+	TableStageIn:  true,
+	TableStageOut: true,
+	TableStageSys: true,
+}
+
+func ParseTableID(v string) (TableID, error) {
+	parts := strings.Split(v, ".")
+	if len(parts) != 3 {
+		return TableID{}, errors.Errorf(`invalid table ID "%s"`, v)
+	}
+
+	stage, bucket, table := parts[0], parts[1], parts[2]
+
+	if !tableStagesMap[stage] {
+		return TableID{}, errors.Errorf(`invalid table ID "%s"`, v)
+	}
+
+	if !strings.HasPrefix(bucket, "c-") {
+		return TableID{}, errors.Errorf(`invalid table ID "%s"`, v)
+	}
+	bucket = strings.TrimPrefix(bucket, "c-")
+
+	id := TableID{
+		Stage:  stage,
+		Bucket: bucket,
+		Table:  table,
+	}
+
+	return id, nil
 }
 
 type Mapping struct {
-	RevisionID  int            `json:"revisionId" validate:"required"`
+	RevisionID  int            `json:"revisionId" validate:"max=100"`
 	TableID     TableID        `json:"tableId" validate:"required"`
 	Incremental bool           `json:"incremental" validate:"required"`
 	Columns     column.Columns `json:"columns" validate:"required,min=1,max=50"`
@@ -34,7 +68,7 @@ type Mapping struct {
 
 type Receiver struct {
 	ID        string `json:"receiverId" validate:"required,min=1,max=48"`
-	ProjectID int    `json:"projectId" validate:"required"`
+	ProjectID int    `json:"projectId"`
 	Name      string `json:"name" validate:"required,min=1,max=40"`
 	Secret    string `json:"secret" validate:"required,len=48"`
 }
