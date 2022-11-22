@@ -2,7 +2,9 @@
 //
 // # Dependency Containers
 //
-// This package extends common dependencies from [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies].
+// This package extends:
+//   - common dependencies from  [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies].
+//   - service dependencies from [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies].
 //
 // These dependencies containers are implemented:
 //   - [ForServer] long-lived dependencies that exist during the entire run of the API server.
@@ -25,21 +27,16 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
-	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/configstore"
+	serviceDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 type ctxKey string
@@ -52,13 +49,10 @@ const (
 // ForServer interface provides dependencies for Buffer API server.
 // The container exists during the entire run of the API server.
 type ForServer interface {
-	dependencies.Base
-	dependencies.Public
+	serviceDependencies.ForService
 	ServerCtx() context.Context
 	ServerWaitGroup() *sync.WaitGroup
 	PrefixLogger() log.PrefixLogger
-	EtcdClient() *etcd.Client
-	ConfigStore() *configstore.Store
 	BufferApiHost() string
 }
 
@@ -79,13 +73,10 @@ type ForProjectRequest interface {
 
 // forServer implements ForServer interface.
 type forServer struct {
-	dependencies.Base
-	dependencies.Public
+	serviceDependencies.ForService
 	serverCtx     context.Context
 	serverWg      *sync.WaitGroup
 	logger        log.PrefixLogger
-	etcdClient    *etcd.Client
-	configStore   *configstore.Store
 	bufferApiHost string
 }
 
@@ -111,7 +102,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	if telemetry.IsDataDogEnabled(envs) {
 		var span trace.Span
 		tracer = telemetry.NewDataDogTracer()
-		ctx, span = tracer.Start(ctx, "kac.lib.api.server.buffer.dependencies.NewServerDeps")
+		ctx, span = tracer.Start(ctx, "keboola.go.buffer.api.dependencies.NewServerDeps")
 		defer telemetry.EndSpan(span, &err)
 	} else {
 		tracer = telemetry.NewNopTracer()
@@ -120,74 +111,25 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	// Create wait group - for graceful shutdown
 	serverWg := &sync.WaitGroup{}
 
-	// Get Storage API host
-	storageApiHost := strhelper.NormalizeHost(envs.Get("KBC_STORAGE_API_HOST"))
-	if storageApiHost == "" {
-		return nil, errors.New("KBC_STORAGE_API_HOST environment variable is empty or not set")
-	}
-
 	// Get Buffer API host
 	bufferApiHost := strhelper.NormalizeHost(envs.Get("KBC_BUFFER_API_HOST"))
 	if bufferApiHost == "" {
 		return nil, errors.New("KBC_BUFFER_API_HOST environment variable is empty or not set")
 	}
 
-	// Create base HTTP client for all API requests to other APIs
-	httpClient := httpclient.New(
-		httpclient.WithUserAgent("keboola-buffer-api"),
-		httpclient.WithEnvs(envs),
-		func(c *httpclient.Config) {
-			if debug {
-				httpclient.WithDebugOutput(logger.DebugWriter())(c)
-			}
-			if dumpHttp {
-				httpclient.WithDumpOutput(logger.DebugWriter())(c)
-			}
-		},
-	)
-
-	// Create base dependencies
-	baseDeps := dependencies.NewBaseDeps(envs, tracer, logger, httpClient)
-
-	// Create public dependencies - load API index
-	startTime := time.Now()
-	logger.Info("loading Storage API index")
-	publicDeps, err := dependencies.NewPublicDeps(serverCtx, baseDeps, storageApiHost)
+	// Create service dependencies
+	userAgent := "keboola-buffer-api"
+	serviceDeps, err := serviceDependencies.NewServiceDeps(serverCtx, ctx, serverWg, tracer, envs, logger, debug, dumpHttp, userAgent)
 	if err != nil {
 		return nil, err
 	}
-	logger.Infof("loaded Storage API index | %s", time.Since(startTime))
-
-	// Connect to ETCD
-	// We use a longer timeout when starting the server, because ETCD could be restarted at the same time as the API.
-	etcdClient, err := etcdclient.New(
-		serverCtx,
-		tracer,
-		envs.Get("BUFFER_ETCD_ENDPOINT"),
-		envs.Get("BUFFER_ETCD_NAMESPACE"),
-		etcdclient.WithUsername(envs.Get("BUFFER_ETCD_USERNAME")),
-		etcdclient.WithPassword(envs.Get("BUFFER_ETCD_PASSWORD")),
-		etcdclient.WithConnectContext(ctx),
-		etcdclient.WithConnectTimeout(30*time.Second), // longer timeout, the etcd could be started at the same time as the API
-		etcdclient.WithLogger(logger),
-		etcdclient.WithWaitGroup(serverWg),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create config store
-	configStore := configstore.New(logger, etcdClient, validator.New(), tracer)
 
 	// Create server dependencies
 	d := &forServer{
-		Base:          baseDeps,
-		Public:        publicDeps,
+		ForService:    serviceDeps,
 		serverCtx:     serverCtx,
 		serverWg:      serverWg,
 		logger:        logger,
-		etcdClient:    etcdClient,
-		configStore:   configStore,
 		bufferApiHost: bufferApiHost,
 	}
 
@@ -236,14 +178,6 @@ func (v *forServer) ServerWaitGroup() *sync.WaitGroup {
 
 func (v *forServer) PrefixLogger() log.PrefixLogger {
 	return v.logger
-}
-
-func (v *forServer) EtcdClient() *etcd.Client {
-	return v.etcdClient
-}
-
-func (v *forServer) ConfigStore() *configstore.Store {
-	return v.configStore
 }
 
 func (v *forServer) BufferApiHost() string {
