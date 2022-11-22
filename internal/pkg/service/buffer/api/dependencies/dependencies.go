@@ -28,7 +28,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strings"
 	"sync"
 
 	"go.opentelemetry.io/otel/trace"
@@ -39,6 +38,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ip"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -212,28 +212,7 @@ func (v *forPublicRequest) RequestHeader() http.Header {
 }
 
 func (v *forPublicRequest) RequestClientIP() net.IP {
-	// Get IP from the X-REAL-IP header
-	ip := v.request.Header.Get("X-REAL-IP")
-	if netIP := net.ParseIP(ip); netIP != nil {
-		return netIP
-	}
-
-	// Get IP from X-FORWARDED-FOR header
-	ips := v.request.Header.Get("X-FORWARDED-FOR")
-	splitIps := strings.Split(ips, ",")
-	for _, ip := range splitIps {
-		if netIP := net.ParseIP(ip); netIP != nil {
-			return netIP
-		}
-	}
-
-	// Get IP from RemoteAddr
-	ip, _, _ = net.SplitHostPort(v.request.RemoteAddr)
-	if netIP := net.ParseIP(ip); netIP != nil {
-		return netIP
-	}
-
-	return nil
+	return ip.From(v.request)
 }
 
 func (v *forProjectRequest) Logger() log.Logger {
