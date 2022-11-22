@@ -327,6 +327,33 @@ func (c *Store) ListExports(ctx context.Context, projectID int, receiverID strin
 	return exports, nil
 }
 
+func (c *Store) CreateMapping(ctx context.Context, projectID int, receiverID string, exportID string, mapping model.Mapping) (err error) {
+	logger, tracer, client := c.logger, c.tracer, c.etcdClient
+
+	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.GetCurrentMapping")
+	defer telemetry.EndSpan(span, &err)
+
+	if err := c.validator.Validate(ctx, mapping); err != nil {
+		return err
+	}
+
+	key := MappingKey(projectID, receiverID, exportID, 0)
+
+	logger.Debugf(`Encoding "%s"`, key)
+	value, err := json.EncodeString(mapping, false)
+	if err != nil {
+		return err
+	}
+
+	logger.Debugf(`PUT "%s" "%s"`, key, value)
+	_, err = client.KV.Put(ctx, key, value)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *Store) GetCurrentMapping(ctx context.Context, projectID int, receiverID string, exportID string) (r *model.Mapping, err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
