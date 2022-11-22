@@ -274,7 +274,6 @@ func (*service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListRe
 
 	receivers := make([]*buffer.Receiver, 0, len(receiverList))
 	for _, receiverData := range receiverList {
-
 		exportList, err := store.ListExports(ctx, projectID, receiverData.ID)
 		if err != nil {
 			return nil, errors.Wrapf(err, `failed to list exports for receiver "%s"`, receiverData.ID)
