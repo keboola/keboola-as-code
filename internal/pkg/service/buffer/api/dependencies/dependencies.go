@@ -26,6 +26,8 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
 	"sync"
 
 	"go.opentelemetry.io/otel/trace"
@@ -36,6 +38,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ip"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -62,6 +65,8 @@ type ForPublicRequest interface {
 	ForServer
 	RequestCtx() context.Context
 	RequestID() string
+	RequestHeader() http.Header
+	RequestClientIP() net.IP
 }
 
 // ForProjectRequest interface provides dependencies for an authenticated request that contains the Storage API token.
@@ -84,6 +89,7 @@ type forServer struct {
 type forPublicRequest struct {
 	ForServer
 	logger     log.PrefixLogger
+	request    *http.Request
 	requestCtx context.Context
 	requestID  string
 }
@@ -136,13 +142,14 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	return d, nil
 }
 
-func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, requestId string) ForPublicRequest {
+func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, requestId string, request *http.Request) ForPublicRequest {
 	_, span := serverDeps.Tracer().Start(requestCtx, "kac.api.server.buffer.dependencies.NewDepsForPublicRequest")
 	defer telemetry.EndSpan(span, nil)
 
 	return &forPublicRequest{
 		ForServer:  serverDeps,
 		logger:     serverDeps.PrefixLogger().WithAdditionalPrefix(fmt.Sprintf("[requestId=%s]", requestId)),
+		request:    request,
 		requestCtx: requestCtx,
 		requestID:  requestId,
 	}
@@ -198,6 +205,14 @@ func (v *forPublicRequest) RequestCtx() context.Context {
 
 func (v *forPublicRequest) RequestID() string {
 	return v.requestID
+}
+
+func (v *forPublicRequest) RequestHeader() http.Header {
+	return v.request.Header.Clone()
+}
+
+func (v *forPublicRequest) RequestClientIP() net.IP {
+	return ip.From(v.request)
 }
 
 func (v *forProjectRequest) Logger() log.Logger {

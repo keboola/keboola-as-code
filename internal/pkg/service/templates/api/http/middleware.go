@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -18,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ip"
 )
 
 const RequestTimeout = 60 * time.Second
@@ -119,7 +119,7 @@ func LogMiddleware(d dependencies.ForServer, h http.Handler) http.Handler {
 		// Log request
 		logger.
 			WithAdditionalPrefix(fmt.Sprintf("[request][requestId=%s]", requestId)).
-			Infof("%s %s %s", r.Method, log.Sanitize(r.URL.String()), log.Sanitize(from(r)))
+			Infof("%s %s %s", r.Method, log.Sanitize(r.URL.String()), log.Sanitize(ip.From(r).String()))
 
 		// Capture response
 		rw := httpMiddleware.CaptureResponse(w)
@@ -130,17 +130,4 @@ func LogMiddleware(d dependencies.ForServer, h http.Handler) http.Handler {
 			WithAdditionalPrefix(fmt.Sprintf("[response][requestId=%s]", requestId)).
 			Infof("status=%d bytes=%d time=%s", rw.StatusCode, rw.ContentLength, time.Since(started).String())
 	})
-}
-
-// from computes the request client IP.
-func from(req *http.Request) string {
-	if f := req.Header.Get("X-Forwarded-For"); f != "" {
-		return f
-	}
-	f := req.RemoteAddr
-	ip, _, err := net.SplitHostPort(f)
-	if err != nil {
-		return f
-	}
-	return ip
 }
