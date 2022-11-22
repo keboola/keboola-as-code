@@ -34,6 +34,22 @@ func TestReceiverKey(t *testing.T) {
 	assert.Equal(t, "config/receiver/1000/asdf", ReceiverKey(1000, "asdf"))
 }
 
+func TestRecordKey(t *testing.T) {
+	t.Parallel()
+
+	key := RecordKey{
+		projectID:  1000,
+		receiverID: "asdf",
+		exportID:   "exp123",
+		fileID:     "file456",
+		sliceID:    "slice789",
+		receivedAt: time.Now(),
+	}
+
+	assert.True(t, strings.HasPrefix(key.String(), "record/1000/asdf/exp123/file456/slice789/"+FormatTimeForKey(key.receivedAt)))
+	assert.NotEqual(t, key.String(), key.String())
+}
+
 func TestConfigStore_CreateReceiver(t *testing.T) {
 	t.Parallel()
 
@@ -235,6 +251,36 @@ func TestConfigStore_GetCurrentMapping(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, input[2], mapping)
+}
+
+func TestConfigStore_CreateRecord(t *testing.T) {
+	t.Parallel()
+
+	// Setup
+	ctx, d := newTestDeps(t)
+	store := New(d.logger, d.etcdClient, d.validator, d.tracer)
+
+	projectID := 1000
+	receiverID := "receiver1"
+	exportID := "export1"
+
+	csv := []string{"one", "two", `th"ree`}
+	record := RecordKey{
+		projectID:  projectID,
+		receiverID: receiverID,
+		exportID:   exportID,
+		fileID:     "file1",
+		sliceID:    "slice1",
+		receivedAt: time.Now(),
+	}
+
+	err := store.CreateRecord(ctx, record, csv)
+	assert.NoError(t, err)
+
+	r, err := d.etcdClient.KV.Get(ctx, "record/1000/receiver1/export1/file1/slice1/"+FormatTimeForKey(record.receivedAt), etcd.WithPrefix())
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(r.Kvs))
+	assert.Equal(t, "one,two,\"th\"\"ree\"\n", string(r.Kvs[0].Value))
 }
 
 type testDeps struct {
