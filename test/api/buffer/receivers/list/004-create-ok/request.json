@@ -3,6 +3,35 @@
   "method": "POST",
   "body": {
     "name": "list-receivers-test-b",
-    "exports": []
+    "exports": [
+      {
+        "exportId": "list-receivers-test-b-export-0",
+        "name": "list-receivers-test-b-export-0",
+        "mapping": {
+          "tableId": "in.c-bucket.table",
+          "incremental": true,
+          "columns": [
+            {
+              "type": "id"
+            },
+            {
+              "type": "template",
+              "template": {
+                "language": "jsonnet",
+                "undefinedValueStrategy": "error",
+                "content": "body.key+\":\"+body.value",
+                "dataType": "STRING"
+              }
+            }
+          ]
+        },
+        "conditions": {
+          "count": 1,
+          "size": 100,
+          "time": 30
+        }
+      }
+    ]
   }
 }
+

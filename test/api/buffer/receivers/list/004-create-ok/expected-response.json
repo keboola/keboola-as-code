@@ -1,6 +1,35 @@
 {
   "receiverId": "list-receivers-test-b",
   "name": "list-receivers-test-b",
-  "url": "https://buffer.keboola.local/v1/import/%d/list-receivers-test-b/#/%s"
+  "url": "https://buffer.keboola.local/v1/import/%d/list-receivers-test-b/#/%s",
+  "exports": [
+    {
+      "exportId": "list-receivers-test-b-export-0",
+      "name": "list-receivers-test-b-export-0",
+      "mapping": {
+        "tableId": "in.c-bucket.table",
+        "incremental": true,
+        "columns": [
+          {
+            "type": "id"
+          },
+          {
+            "type": "template",
+            "template": {
+              "language": "jsonnet",
+              "undefinedValueStrategy": "error",
+              "content": "body.key+\":\"+body.value",
+              "dataType": "STRING"
+            }
+          }
+        ]
+      },
+      "conditions": {
+        "count": 1,
+        "size": 100,
+        "time": 30
+      }
+    }
+  ]
 }
 
