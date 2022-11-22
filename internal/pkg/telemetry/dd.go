@@ -36,6 +36,10 @@ func NewDataDogTracer() trace.Tracer {
 	return &tracer{}
 }
 
+func NewNopTracer() trace.Tracer {
+	return trace.NewNoopTracerProvider().Tracer("")
+}
+
 func (t *tracer) Start(ctx context.Context, spanName string, options ...trace.SpanStartOption) (context.Context, trace.Span) {
 	parentSpan, _ := ddtracer.SpanFromContext(ctx)
 	ddSpan := ddtracer.StartSpan(spanName, mapSpanStartOpts(parentSpan, options)...)

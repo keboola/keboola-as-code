@@ -111,11 +111,15 @@ type forProjectRequest struct {
 
 func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, debug, dumpHttp bool) (v ForServer, err error) {
 	// Create tracer
+	ctx := serverCtx
 	var tracer trace.Tracer = nil
 	if telemetry.IsDataDogEnabled(envs) {
+		var span trace.Span
 		tracer = telemetry.NewDataDogTracer()
-		_, span := tracer.Start(serverCtx, "kac.lib.api.server.buffer.dependencies.NewServerDeps")
+		ctx, span = tracer.Start(ctx, "kac.lib.api.server.buffer.dependencies.NewServerDeps")
 		defer telemetry.EndSpan(span, &err)
+	} else {
+		tracer = telemetry.NewNopTracer()
 	}
 
 	// Create wait group - for graceful shutdown
@@ -149,7 +153,6 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 
 	// Create base dependencies
 	baseDeps := dependencies.NewBaseDeps(envs, tracer, logger, httpClient)
-	tracer = baseDeps.Tracer()
 
 	// Create public dependencies - load API index
 	startTime := time.Now()

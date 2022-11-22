@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 // base dependencies container implements Base interface.
@@ -23,7 +24,7 @@ func NewBaseDeps(envs env.Provider, tracer trace.Tracer, logger log.Logger, http
 func newBaseDeps(envs env.Provider, tracer trace.Tracer, logger log.Logger, httpClient client.Client) *base {
 	if tracer == nil {
 		// Default no operation tracer
-		tracer = trace.NewNoopTracerProvider().Tracer("")
+		tracer = telemetry.NewNopTracer()
 	}
 
 	return &base{
