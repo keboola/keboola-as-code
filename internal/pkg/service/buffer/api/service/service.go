@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/configstore"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/httperror"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -60,11 +61,11 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 	// Persist receiver
 	err = store.CreateReceiver(ctx, receiver)
 	if err != nil {
-		if errors.As(err, &dependencies.ReceiverLimitReachedError{}) {
+		if errors.As(err, &configstore.ReceiverLimitReachedError{}) {
 			return nil, &GenericError{
 				StatusCode: http.StatusUnprocessableEntity,
 				Name:       "buffer.resourceLimitReached",
-				Message:    fmt.Sprintf("Maximum number of receivers per project is %d.", dependencies.MaxReceiversPerProject),
+				Message:    fmt.Sprintf("Maximum number of receivers per project is %d.", configstore.MaxReceiversPerProject),
 			}
 		}
 		return nil, errors.Wrapf(err, "failed to create receiver \"%s\"", receiver.ID)
@@ -152,7 +153,7 @@ func (*service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer
 
 	err = store.DeleteReceiver(ctx, projectID, receiverID)
 	if err != nil {
-		if errors.As(err, &dependencies.ReceiverNotFoundError{}) {
+		if errors.As(err, &configstore.ReceiverNotFoundError{}) {
 			return &GenericError{
 				StatusCode: 404,
 				Name:       "buffer.receiverNotFound",
