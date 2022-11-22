@@ -51,8 +51,6 @@ const (
 	ForProjectRequestCtxKey      = ctxKey("ForProjectRequest")
 	EtcdConnectionTimeoutCtxKey  = ctxKey("EtcdConnectionTimeout")
 	EtcdDefaultConnectionTimeout = 2 * time.Second
-	EtcdKeepAliveTimeout         = 2 * time.Second
-	EtcdKeepAliveInterval        = 10 * time.Second
 	ProjectLockTTLSeconds        = 60
 )
 
@@ -241,7 +239,7 @@ func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 		defer telemetry.EndSpan(span, nil)
 
 		// Get timeout
-		// We use a longer timeout on tge API start,
+		// We use a longer timeout on the API start,
 		// the etcd could be started at the same time as the API.
 		connectTimeout := EtcdDefaultConnectionTimeout
 		if v, found := ctx.Value(EtcdConnectionTimeoutCtxKey).(time.Duration); found {
