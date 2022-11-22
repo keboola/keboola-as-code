@@ -91,20 +91,20 @@ func (e LimitReachedError) Error() string {
 // TODO: use this instead of returning nil from GET methods.
 type NotFoundError struct {
 	What string
-	ID   string
+	Key  string
 }
 
 func (e NotFoundError) Error() string {
-	return fmt.Sprintf("%s \"%s\" not found", e.What, e.ID)
+	return fmt.Sprintf("%s \"%s\" not found", e.What, e.Key)
 }
 
 type AlreadyExistsError struct {
 	What string
-	ID   string
+	Key  string
 }
 
 func (e AlreadyExistsError) Error() string {
-	return fmt.Sprintf(`%s "%s" already exists`, e.What, e.ID)
+	return fmt.Sprintf(`%s "%s" already exists`, e.What, e.Key)
 }
 
 // CreateReceiver puts a receiver into the store.
@@ -145,7 +145,7 @@ func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 		return err
 	}
 	if receivers.Count > 0 {
-		return AlreadyExistsError{What: "receiver", ID: receiver.ID}
+		return AlreadyExistsError{What: "receiver", Key: key}
 	}
 
 	logger.Debugf(`Encoding "%s"`, key)
@@ -165,7 +165,7 @@ func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 
 // GetReceiver fetches a receiver from the store.
 //
-// This method returns nil if no receiver was found.
+// May fail if the receiver was not found (`NotFoundError`)
 func (c *Store) GetReceiver(ctx context.Context, projectID int, receiverID string) (r *model.Receiver, err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
@@ -183,7 +183,7 @@ func (c *Store) GetReceiver(ctx context.Context, projectID int, receiverID strin
 	// No receiver found
 	if len(resp.Kvs) == 0 {
 		logger.Debugf(`No receiver "%s" found`, key)
-		return nil, NotFoundError{What: "receiver", ID: receiverID}
+		return nil, NotFoundError{What: "receiver", Key: key}
 	}
 
 	logger.Debugf(`Decoding "%s"`, key)
@@ -224,7 +224,7 @@ func (c *Store) ListReceivers(ctx context.Context, projectID int) (r []*model.Re
 
 // DeleteReceiver deletes a receiver from the store.
 //
-// May fail if the receiver is not found (`ReceiverNotFoundError`), or if any of the underlying ETCD calls fail.
+// May fail if the receiver is not found (`NotFoundError`), or if any of the underlying ETCD calls fail.
 func (c *Store) DeleteReceiver(ctx context.Context, projectID int, receiverID string) (err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
@@ -240,7 +240,7 @@ func (c *Store) DeleteReceiver(ctx context.Context, projectID int, receiverID st
 	}
 
 	if r.Deleted == 0 {
-		return NotFoundError{ID: receiverID}
+		return NotFoundError{Key: key}
 	}
 
 	return nil
@@ -284,7 +284,7 @@ func (c *Store) CreateExport(ctx context.Context, projectID int, receiverID stri
 		return err
 	}
 	if exports.Count > 0 {
-		return AlreadyExistsError{What: "export", ID: export.ID}
+		return AlreadyExistsError{What: "export", Key: key}
 	}
 
 	logger.Debugf(`Encoding "%s"`, key)
@@ -347,7 +347,7 @@ func (c *Store) GetCurrentMapping(ctx context.Context, projectID int, receiverID
 	// No mapping found
 	if len(resp.Kvs) == 0 {
 		logger.Debugf(`No mapping "%s" found`, key)
-		return nil, nil
+		return nil, NotFoundError{What: "mapping", Key: key}
 	}
 
 	logger.Debugf(`Decoding "%s"`, key)

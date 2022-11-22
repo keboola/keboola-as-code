@@ -99,14 +99,14 @@ func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.Ge
 
 	receiver, err := store.GetReceiver(ctx, projectID, receiverID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get receiver \"%s\" in project \"%d\"", receiverID, projectID)
-	}
-	if receiver == nil {
-		return nil, &GenericError{
-			StatusCode: http.StatusNotFound,
-			Name:       "buffer.receiverNotFound",
-			Message:    fmt.Sprintf("Receiver \"%s\" not found", receiverID),
+		if errors.As(err, &configstore.NotFoundError{}) {
+			return nil, &GenericError{
+				StatusCode: http.StatusNotFound,
+				Name:       "buffer.receiverNotFound",
+				Message:    fmt.Sprintf("Receiver \"%s\" not found", receiverID),
+			}
 		}
+		return nil, errors.Wrapf(err, "failed to get receiver \"%s\" in project \"%d\"", receiverID, projectID)
 	}
 
 	// nolint: godox
