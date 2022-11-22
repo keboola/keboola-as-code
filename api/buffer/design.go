@@ -366,7 +366,6 @@ var Export = Type("Export", func() {
 	name("export", "GitHub Changed Files")
 	Attribute("mapping", Mapping, func() {
 		Description("Export column mapping.")
-		//Description("List of export column mappings. An export may have a maximum of 50 columns.")
 	})
 	Attribute("conditions", ImportConditions, func() {
 		Description("Table import conditions.")

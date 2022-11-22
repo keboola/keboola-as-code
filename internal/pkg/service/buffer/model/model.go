@@ -27,6 +27,7 @@ func (t TableID) String() string {
 	return fmt.Sprintf("%s.c-%s.%s", t.Stage, t.Bucket, t.Table)
 }
 
+// nolint:gochecknoglobals
 var tableStagesMap = map[string]bool{
 	TableStageIn:  true,
 	TableStageOut: true,
