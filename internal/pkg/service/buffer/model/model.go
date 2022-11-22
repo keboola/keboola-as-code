@@ -48,6 +48,5 @@ type ImportConditions struct {
 type Export struct {
 	ID               string           `json:"exportId" validate:"required,min=1,max=48"`
 	Name             string           `json:"name" validate:"required,min=1,max=40"`
-	Incremental      bool             `json:"incremental" validate:"required"`
 	ImportConditions ImportConditions `json:"importConditions" validate:"required"`
 }
