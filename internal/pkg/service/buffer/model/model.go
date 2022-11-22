@@ -39,14 +39,14 @@ type Receiver struct {
 	Secret    string `json:"secret" validate:"required,len=48"`
 }
 
-type ImportCondition struct {
+type ImportConditions struct {
 	Count int               `json:"count" validate:"min=1,max=10000000"`
 	Size  datasize.ByteSize `json:"size" validate:"min=100,max=50000000"`
 	Time  time.Duration     `json:"time" validate:"min=30000000000,max=86400000000000"`
 }
 
 type Export struct {
-	ID               string            `json:"exportId" validate:"required,min=1,max=48"`
-	Name             string            `json:"name" validate:"required,min=1,max=40"`
-	ImportConditions []ImportCondition `json:"importConditions" validate:"required"`
+	ID               string           `json:"exportId" validate:"required,min=1,max=48"`
+	Name             string           `json:"name" validate:"required,min=1,max=40"`
+	ImportConditions ImportConditions `json:"importConditions" validate:"required"`
 }

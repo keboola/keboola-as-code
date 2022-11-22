@@ -165,9 +165,9 @@ func TestConfigStore_CreateExport(t *testing.T) {
 	config := model.Export{
 		ID:   "github-issues",
 		Name: "Github Issues",
-		ImportConditions: []model.ImportCondition{
-			{Count: 1},
-			{Size: 100},
+		ImportConditions: model.ImportConditions{
+			Count: 1,
+			Size:  100,
 		},
 	}
 	err := store.CreateExport(ctx, projectID, receiverID, config)
@@ -205,22 +205,16 @@ func TestConfigStore_ListExports(t *testing.T) {
 		{
 			ID:   "export-1",
 			Name: "Export 1",
-			ImportConditions: []model.ImportCondition{
-				{
-					Count: 5,
-				},
-				{
-					Size: datasize.MustParseString("50kB"),
-				},
+			ImportConditions: model.ImportConditions{
+				Count: 5,
+				Size:  datasize.MustParseString("50kB"),
 			},
 		},
 		{
 			ID:   "export-2",
 			Name: "Export 2",
-			ImportConditions: []model.ImportCondition{
-				{
-					Time: 5 * time.Minute,
-				},
+			ImportConditions: model.ImportConditions{
+				Time: 5 * time.Minute,
 			},
 		},
 	}

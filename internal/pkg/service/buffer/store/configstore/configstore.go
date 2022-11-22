@@ -87,8 +87,6 @@ func (e LimitReachedError) Error() string {
 	return fmt.Sprintf("%s limit reached, the maximum is %d", e.What, e.Max)
 }
 
-// nolint: godox
-// TODO: use this instead of returning nil from GET methods.
 type NotFoundError struct {
 	What string
 	Key  string
