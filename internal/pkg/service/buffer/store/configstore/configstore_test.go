@@ -163,8 +163,9 @@ func TestConfigStore_CreateExport(t *testing.T) {
 	receiverID := "github"
 
 	config := model.Export{
-		ID:   "github-issues",
-		Name: "Github Issues",
+		ID:          "github-issues",
+		Name:        "Github Issues",
+		Incremental: true,
 		ImportConditions: model.ImportConditions{
 			Count: 1,
 			Size:  100,
@@ -203,16 +204,18 @@ func TestConfigStore_ListExports(t *testing.T) {
 	// Create exports
 	input := []*model.Export{
 		{
-			ID:   "export-1",
-			Name: "Export 1",
+			ID:          "export-1",
+			Name:        "Export 1",
+			Incremental: true,
 			ImportConditions: model.ImportConditions{
 				Count: 5,
 				Size:  datasize.MustParseString("50kB"),
 			},
 		},
 		{
-			ID:   "export-2",
-			Name: "Export 2",
+			ID:          "export-2",
+			Name:        "Export 2",
+			Incremental: true,
 			ImportConditions: model.ImportConditions{
 				Time: 5 * time.Minute,
 			},
