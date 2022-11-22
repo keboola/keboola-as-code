@@ -11,14 +11,13 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/client/v3/namespace"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -333,41 +332,9 @@ func newTestDeps(t *testing.T) (context.Context, *testDeps) {
 	ctx := context.Background()
 	d := &testDeps{
 		logger:     log.NewDebugLogger(),
-		etcdClient: newTestEtcdClient(t, ctx),
+		etcdClient: etcdhelper.ClientForTest(t),
 		validator:  validator.New(),
 		tracer:     trace.NewNoopTracerProvider().Tracer(""),
 	}
 	return ctx, d
-}
-
-func newTestEtcdClient(t *testing.T, ctx context.Context) *etcd.Client {
-	t.Helper()
-
-	envs, err := env.FromOs()
-	assert.NoError(t, err)
-
-	if envs.Get("BUFFER_ETCD_ENABLED") == "false" {
-		t.Skip()
-	}
-
-	// Create etcd client
-	etcdClient, err := etcd.New(etcd.Config{
-		Context:              context.Background(),
-		Endpoints:            []string{envs.Get("BUFFER_ETCD_ENDPOINT")},
-		DialTimeout:          2 * time.Second,
-		DialKeepAliveTimeout: 2 * time.Second,
-		DialKeepAliveTime:    10 * time.Second,
-		Username:             envs.Get("BUFFER_ETCD_USERNAME"), // optional
-		Password:             envs.Get("BUFFER_ETCD_PASSWORD"), // optional
-	})
-	assert.NoError(t, err)
-
-	prefix := fmt.Sprintf("buffer-%s/", idgenerator.EtcdNamespaceForTest())
-	etcdClient.KV = namespace.NewKV(etcdClient.KV, prefix)
-
-	t.Cleanup(func() {
-		etcdClient.KV.Delete(ctx, prefix, etcd.WithPrefix())
-	})
-
-	return etcdClient
 }
