@@ -44,6 +44,9 @@ func (*service) HealthCheck(dependencies.ForPublicRequest) (res string, err erro
 	return "OK", nil
 }
 
+// nolint:godox
+// TODO: collect errors instead of bailing on the first one
+
 func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.Receiver, err error) {
 	ctx, store := d.RequestCtx(), d.ConfigStore()
 
@@ -62,28 +65,6 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 	// Generate Secret
 	receiver.Secret = idgenerator.ReceiverSecret()
 
-	// Persist receiver
-	err = store.CreateReceiver(ctx, receiver)
-	if err != nil {
-		if errors.As(err, &configstore.LimitReachedError{}) {
-			return nil, &GenericError{
-				StatusCode: http.StatusUnprocessableEntity,
-				Name:       "buffer.resourceLimitReached",
-				Message:    fmt.Sprintf("Maximum number of receivers per project is %d.", configstore.MaxReceiversPerProject),
-			}
-		}
-		if errors.As(err, &configstore.AlreadyExistsError{}) {
-			return nil, &GenericError{
-				StatusCode: http.StatusConflict,
-				Name:       "buffer.alreadyExists",
-				Message:    fmt.Sprintf(`Receiver "%s" already exists.`, receiver.ID),
-			}
-		}
-		// nolint:godox
-		// TODO: maybe handle validation error
-		return nil, errors.Wrapf(err, "failed to create receiver \"%s\"", receiver.ID)
-	}
-
 	for _, exportData := range payload.Exports {
 		export := model.Export{
 			Name: exportData.Name,
@@ -96,8 +77,8 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 
 		if exportData.Conditions != nil {
 			export.ImportConditions.Count = exportData.Conditions.Count
-			export.ImportConditions.Size = datasize.ByteSize(exportData.Conditions.Count)
-			export.ImportConditions.Time = time.Duration(exportData.Conditions.Time)
+			export.ImportConditions.Size = datasize.ByteSize(exportData.Conditions.Size)
+			export.ImportConditions.Time = time.Duration(exportData.Conditions.Time) * time.Second
 		}
 
 		// Generate export ID from Name if needed
@@ -105,6 +86,44 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 			export.ID = *exportData.ExportID
 		} else {
 			export.ID = strhelper.NormalizeName(export.Name)
+		}
+
+		// nolint:godox
+		// TODO: create mappings
+
+		tableId, err := model.ParseTableID(exportData.Mapping.TableID)
+		if err != nil {
+			return nil, err
+		}
+		columns := make([]column.Column, 0, len(exportData.Mapping.Columns))
+		for _, columnData := range exportData.Mapping.Columns {
+			c, err := column.TypeToColumn(columnData.Type)
+			if err != nil {
+				return nil, err
+			}
+			if template, ok := c.(column.Template); ok {
+				if columnData.Template == nil {
+					return nil, errors.Errorf("missing template column data")
+				}
+				template.Language = columnData.Template.Language
+				template.UndefinedValueStrategy = columnData.Template.UndefinedValueStrategy
+				template.DataType = columnData.Template.DataType
+				template.Content = columnData.Template.Content
+				c = template
+			}
+			columns = append(columns, c)
+		}
+
+		mapping := model.Mapping{
+			TableID:     tableId,
+			Incremental: exportData.Mapping.Incremental,
+			Columns:     columns,
+		}
+
+		// Persist mapping
+		err = store.CreateMapping(ctx, receiver.ProjectID, receiver.ID, export.ID, mapping)
+		if err != nil {
+			return nil, err
 		}
 
 		// Persist export
@@ -128,9 +147,28 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 			// TODO: maybe handle validation error
 			return nil, err
 		}
+	}
 
+	// Persist receiver
+	err = store.CreateReceiver(ctx, receiver)
+	if err != nil {
+		if errors.As(err, &configstore.LimitReachedError{}) {
+			return nil, &GenericError{
+				StatusCode: http.StatusUnprocessableEntity,
+				Name:       "buffer.resourceLimitReached",
+				Message:    fmt.Sprintf("Maximum number of receivers per project is %d.", configstore.MaxReceiversPerProject),
+			}
+		}
+		if errors.As(err, &configstore.AlreadyExistsError{}) {
+			return nil, &GenericError{
+				StatusCode: http.StatusConflict,
+				Name:       "buffer.alreadyExists",
+				Message:    fmt.Sprintf(`Receiver "%s" already exists.`, receiver.ID),
+			}
+		}
 		// nolint:godox
-		// TODO: create mappings
+		// TODO: maybe handle validation error
+		return nil, errors.Wrapf(err, "failed to create receiver \"%s\"", receiver.ID)
 	}
 
 	url := formatUrl(d.BufferApiHost(), receiver.ProjectID, receiver.ID, receiver.Secret)
@@ -161,13 +199,11 @@ func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.Ge
 		return nil, errors.Wrapf(err, "failed to get receiver \"%s\" in project \"%d\"", receiverID, projectID)
 	}
 
-	// nolint: godox
-	// TODO: get exports
-
 	exportList, err := store.ListExports(ctx, projectID, receiverID)
 	if err != nil {
 		return nil, err
 	}
+
 	exports := make([]*Export, 0, len(exportList))
 	for _, export := range exportList {
 		mapping, err := store.GetCurrentMapping(ctx, projectID, receiverID, export.ID)
@@ -186,8 +222,9 @@ func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.Ge
 					DataType:               v.DataType,
 				}
 			}
+			typ, _ := column.ColumnToType(c)
 			columns = append(columns, &Column{
-				Type:     c.TypeName(),
+				Type:     typ,
 				Template: template,
 			})
 		}
@@ -203,7 +240,7 @@ func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.Ge
 			Conditions: &Conditions{
 				Count: export.ImportConditions.Count,
 				Size:  int(export.ImportConditions.Size),
-				Time:  int(export.ImportConditions.Time),
+				Time:  int(export.ImportConditions.Time / time.Second),
 			},
 		})
 	}
@@ -213,7 +250,7 @@ func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.Ge
 		ReceiverID: &receiver.ID,
 		Name:       &receiver.Name,
 		URL:        &url,
-		Exports:    []*Export{},
+		Exports:    exports,
 	}
 
 	return resp, nil
