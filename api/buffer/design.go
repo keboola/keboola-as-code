@@ -142,6 +142,7 @@ var _ = Service("buffer", func() {
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			ResourceLimitReachedError()
+			AlreadyExistsError()
 		})
 	})
 
@@ -220,6 +221,8 @@ var _ = Service("buffer", func() {
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			ReceiverNotFoundError()
+			ResourceLimitReachedError()
+			AlreadyExistsError()
 		})
 	})
 
@@ -479,6 +482,10 @@ func PayloadTooLargeError() {
 
 func ResourceLimitReachedError() {
 	GenericError(StatusUnprocessableEntity, "buffer.resourceLimitReached", "Resource limit reached.", `Maximum number of receivers per project is 100.`)
+}
+
+func AlreadyExistsError() {
+	GenericError(StatusConflict, "buffer.alreadyExists", "Resource already exists.", `Receiver "github-pull-requests" already exists.`)
 }
 
 // Examples ------------------------------------------------------------------------------------------------------------

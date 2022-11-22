@@ -16,11 +16,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 const MaxReceiversPerProject = 100
+const MaxExportsPerReceiver = 20
 
 type Store struct {
 	logger     log.Logger
@@ -43,6 +43,10 @@ func ReceiverPrefix(projectID int) string {
 
 func ExportsPrefix(projectID int, receiverID string) string {
 	return fmt.Sprintf("config/export/%d/%s/", projectID, receiverID)
+}
+
+func ExportKey(projectID int, receiverID string, exportID string) string {
+	return fmt.Sprintf("config/export/%d/%s/%s", projectID, receiverID, exportID)
 }
 
 func MappingsPrefix(projectID int, receiverID string, exportID string) string {
@@ -71,25 +75,39 @@ func FormatTimeForKey(t time.Time) string {
 	return t.Format("2006-01-02T15:04:05.000Z")
 }
 
-type ReceiverLimitReachedError struct{}
-
-func (ReceiverLimitReachedError) Error() string {
-	return fmt.Sprintf("receiver limit reached, the maximum is %d", MaxReceiversPerProject)
+// TODO: use this instead of returning nil
+type LimitReachedError struct {
+	What string
+	Max  int
 }
 
-type ReceiverNotFoundError struct {
-	ID string
+func (e LimitReachedError) Error() string {
+	return fmt.Sprintf("%s limit reached, the maximum is %d", e.What, e.Max)
 }
 
-func (r ReceiverNotFoundError) Error() string {
-	return fmt.Sprintf("receiver \"%s\" not found", r.ID)
+type NotFoundError struct {
+	What string
+	ID   string
+}
+
+func (e NotFoundError) Error() string {
+	return fmt.Sprintf("%s \"%s\" not found", e.What, e.ID)
+}
+
+type AlreadyExistsError struct {
+	What string
+	ID   string
+}
+
+func (e AlreadyExistsError) Error() string {
+	return fmt.Sprintf(`%s "%s" already exists`, e.What, e.ID)
 }
 
 // CreateReceiver puts a receiver into the store.
 //
 // This method guarantees that no two receivers in the store will have the same (projectID, receiverID) pair.
 //
-// May fail if receiver limit is reached (`ReceiverLimitReachedError`), or if any of the underlying ETCD calls fail.
+// May fail if receiver limit is reached (`LimitReachedError`), if the receiver already exists (`AlreadyExistsError`) or if any of the underlying ETCD calls fail.
 func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
@@ -107,7 +125,7 @@ func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 		return err
 	}
 	if allReceivers.Count >= MaxReceiversPerProject {
-		return ReceiverLimitReachedError{}
+		return LimitReachedError{What: "receiver", Max: MaxReceiversPerProject}
 	}
 
 	key := ReceiverKey(receiver.ProjectID, receiver.ID)
@@ -118,7 +136,7 @@ func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 		return err
 	}
 	if receivers.Count > 0 {
-		return errors.Errorf(`receiver "%s" already exists`, receiver.ID)
+		return AlreadyExistsError{What: "receiver", ID: receiver.ID}
 	}
 
 	logger.Debugf(`Encoding "%s"`, key)
@@ -156,7 +174,7 @@ func (c *Store) GetReceiver(ctx context.Context, projectID int, receiverID strin
 	// No receiver found
 	if len(resp.Kvs) == 0 {
 		logger.Debugf(`No receiver "%s" found`, key)
-		return nil, nil
+		return nil, NotFoundError{What: "receiver", ID: receiverID}
 	}
 
 	logger.Debugf(`Decoding "%s"`, key)
@@ -213,7 +231,7 @@ func (c *Store) DeleteReceiver(ctx context.Context, projectID int, receiverID st
 	}
 
 	if r.Deleted == 0 {
-		return ReceiverNotFoundError{ID: receiverID}
+		return NotFoundError{ID: receiverID}
 	}
 
 	return nil
