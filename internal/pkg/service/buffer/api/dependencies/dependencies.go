@@ -2,7 +2,9 @@
 //
 // # Dependency Containers
 //
-// This package extends common dependencies from [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies].
+// This package extends:
+//   - common dependencies from  [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies].
+//   - service dependencies from [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies].
 //
 // These dependencies containers are implemented:
 //   - [ForServer] long-lived dependencies that exist during the entire run of the API server.
@@ -100,7 +102,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	if telemetry.IsDataDogEnabled(envs) {
 		var span trace.Span
 		tracer = telemetry.NewDataDogTracer()
-		ctx, span = tracer.Start(ctx, "kac.lib.api.server.buffer.dependencies.NewServerDeps")
+		ctx, span = tracer.Start(ctx, "keboola.go.buffer.api.dependencies.NewServerDeps")
 		defer telemetry.EndSpan(span, &err)
 	} else {
 		tracer = telemetry.NewNopTracer()

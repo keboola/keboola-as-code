@@ -1,4 +1,4 @@
-// Package dependencies provides common dependencies for the Buffer API / Worker.
+// Package dependencies provides common dependencies for Buffer API / Worker.
 package dependencies
 
 import (
@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -30,7 +31,7 @@ type ForService interface {
 }
 
 func NewServiceDeps(
-	processCtx, connectCtx context.Context,
+	processCtx, ctx context.Context,
 	processWg *sync.WaitGroup,
 	tracer trace.Tracer,
 	envs env.Provider,
@@ -38,6 +39,9 @@ func NewServiceDeps(
 	debug, dumpHttp bool,
 	userAgent string,
 ) (d ForService, err error) {
+	ctx, span := tracer.Start(ctx, "keboola.go.buffer.dependencies.NewServiceDeps")
+	defer telemetry.EndSpan(span, &err)
+
 	// Create validator
 	validatorInst := validator.New()
 
@@ -81,7 +85,7 @@ func NewServiceDeps(
 		envs.Get("BUFFER_ETCD_NAMESPACE"),
 		etcdclient.WithUsername(envs.Get("BUFFER_ETCD_USERNAME")),
 		etcdclient.WithPassword(envs.Get("BUFFER_ETCD_PASSWORD")),
-		etcdclient.WithConnectContext(connectCtx),
+		etcdclient.WithConnectContext(ctx),
 		etcdclient.WithConnectTimeout(30*time.Second), // longer timeout, the etcd could be started at the same time as the API/Worker
 		etcdclient.WithLogger(logger),
 		etcdclient.WithWaitGroup(processWg),
