@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/configstore"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/httperror"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -85,13 +86,18 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 
 	for _, exportData := range payload.Exports {
 		export := model.Export{
-			Name:        exportData.Name,
-			Incremental: exportData.Incremental,
+			Name: exportData.Name,
 			ImportConditions: model.ImportConditions{
-				Count: exportData.Conditions.Count,
-				Size:  datasize.ByteSize(exportData.Conditions.Size),
-				Time:  time.Duration(exportData.Conditions.Time * int(time.Second)),
+				Count: 1,
+				Size:  100,
+				Time:  30 * time.Second,
 			},
+		}
+
+		if exportData.Conditions != nil {
+			export.ImportConditions.Count = exportData.Conditions.Count
+			export.ImportConditions.Size = datasize.ByteSize(exportData.Conditions.Count)
+			export.ImportConditions.Time = time.Duration(exportData.Conditions.Time)
 		}
 
 		// Generate export ID from Name if needed
@@ -157,6 +163,50 @@ func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.Ge
 
 	// nolint: godox
 	// TODO: get exports
+
+	exportList, err := store.ListExports(ctx, projectID, receiverID)
+	if err != nil {
+		return nil, err
+	}
+	exports := make([]*Export, 0, len(exportList))
+	for _, export := range exportList {
+		mapping, err := store.GetCurrentMapping(ctx, projectID, receiverID, export.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		columns := make([]*Column, 0, len(mapping.Columns))
+		for _, c := range mapping.Columns {
+			var template *Template
+			if v, ok := c.(column.Template); ok {
+				template = &Template{
+					Language:               v.Language,
+					UndefinedValueStrategy: v.UndefinedValueStrategy,
+					Content:                v.Content,
+					DataType:               v.DataType,
+				}
+			}
+			columns = append(columns, &Column{
+				Type:     c.TypeName(),
+				Template: template,
+			})
+		}
+
+		exports = append(exports, &Export{
+			ExportID: &export.ID,
+			Name:     export.Name,
+			Mapping: &Mapping{
+				TableID:     mapping.TableID.String(),
+				Incremental: mapping.Incremental,
+				Columns:     columns,
+			},
+			Conditions: &Conditions{
+				Count: export.ImportConditions.Count,
+				Size:  int(export.ImportConditions.Size),
+				Time:  int(export.ImportConditions.Time),
+			},
+		})
+	}
 
 	url := formatUrl(d.BufferApiHost(), receiver.ProjectID, receiver.ID, receiver.Secret)
 	resp := &buffer.Receiver{
