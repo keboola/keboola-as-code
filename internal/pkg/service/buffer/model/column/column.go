@@ -161,15 +161,23 @@ func typeToColumn(typ string) (Column, error) {
 // Column is an interface used to restrict valid column types.
 type Column interface {
 	IsColumn() bool
+	TypeName() string
 }
 
-func (ID) IsColumn() bool       { return true }
-func (Datetime) IsColumn() bool { return true }
-func (IP) IsColumn() bool       { return true }
-func (Body) IsColumn() bool     { return true }
-func (Headers) IsColumn() bool  { return true }
-func (Template) IsColumn() bool { return true }
+func (ID) IsColumn() bool         { return true }
+func (ID) TypeName() string       { return columnIDType }
+func (Datetime) IsColumn() bool   { return true }
+func (Datetime) TypeName() string { return columnDatetimeType }
+func (IP) IsColumn() bool         { return true }
+func (IP) TypeName() string       { return columnIPType }
+func (Body) IsColumn() bool       { return true }
+func (Body) TypeName() string     { return columnBodyType }
+func (Headers) IsColumn() bool    { return true }
+func (Headers) TypeName() string  { return columnHeadersType }
+func (Template) IsColumn() bool   { return true }
+func (Template) TypeName() string { return columnTemplateType }
 
 type dummyColumn struct{}
 
-func (dummyColumn) IsColumn() bool { return true }
+func (dummyColumn) IsColumn() bool   { return true }
+func (dummyColumn) TypeName() string { return "unknown" }
