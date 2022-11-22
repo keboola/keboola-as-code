@@ -19,8 +19,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-const MaxReceiversPerProject = 100
-const MaxExportsPerReceiver = 20
+const (
+	MaxReceiversPerProject = 100
+	MaxExportsPerReceiver  = 20
+)
 
 type Store struct {
 	logger     log.Logger
@@ -85,6 +87,8 @@ func (e LimitReachedError) Error() string {
 	return fmt.Sprintf("%s limit reached, the maximum is %d", e.What, e.Max)
 }
 
+// nolint: godox
+// TODO: use this instead of returning nil from GET methods.
 type NotFoundError struct {
 	What string
 	ID   string
