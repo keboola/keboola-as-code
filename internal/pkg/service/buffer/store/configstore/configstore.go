@@ -163,7 +163,7 @@ func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 
 // GetReceiver fetches a receiver from the store.
 //
-// May fail if the receiver was not found (`NotFoundError`)
+// May fail if the receiver was not found (`NotFoundError`).
 func (c *Store) GetReceiver(ctx context.Context, projectID int, receiverID string) (r *model.Receiver, err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
