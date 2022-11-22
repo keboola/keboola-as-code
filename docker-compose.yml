@@ -26,7 +26,6 @@ services:
       - TEMPLATES_API_ETCD_PASSWORD=toor
       - TEMPLATES_API_ETCD_NAMESPACE=templates-api
       # Etcd for the Buffer API and Worker
-      - BUFFER_ETCD_ENABLED=true
       - BUFFER_ETCD_ENDPOINT=etcd:2379
       - BUFFER_ETCD_USERNAME=root
       - BUFFER_ETCD_PASSWORD=toor

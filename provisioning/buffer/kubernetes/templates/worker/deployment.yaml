@@ -44,8 +44,6 @@ spec:
                 configMapKeyRef:
                   name: buffer-worker
                   key: storageApiHost
-            - name: BUFFER_ETCD_ENABLED
-              value: "true"
             - name: BUFFER_ETCD_ENDPOINT
               value: buffer-etcd-headless.buffer.svc.cluster.local:2379
             - name: BUFFER_ETCD_USERNAME
