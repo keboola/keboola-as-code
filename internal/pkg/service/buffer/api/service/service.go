@@ -245,6 +245,10 @@ func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.Ge
 		})
 	}
 
+	sort.SliceStable(exports, func(i, j int) bool {
+		return *exports[i].ExportID < *exports[j].ExportID
+	})
+
 	url := formatUrl(d.BufferApiHost(), receiver.ProjectID, receiver.ID, receiver.Secret)
 	resp := &buffer.Receiver{
 		ReceiverID: &receiver.ID,
@@ -261,21 +265,72 @@ func (*service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListRe
 
 	projectID := d.ProjectID()
 
-	data, err := store.ListReceivers(ctx, projectID)
+	receiverList, err := store.ListReceivers(ctx, projectID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list receivers in project \"%d\"", projectID)
 	}
 
 	bufferApiHost := d.BufferApiHost()
 
-	receivers := make([]*buffer.Receiver, 0, len(data))
-	for _, entry := range data {
-		url := formatUrl(bufferApiHost, entry.ProjectID, entry.ID, entry.Secret)
+	receivers := make([]*buffer.Receiver, 0, len(receiverList))
+	for _, receiverData := range receiverList {
+
+		exportList, err := store.ListExports(ctx, projectID, receiverData.ID)
+		if err != nil {
+			return nil, errors.Wrapf(err, `failed to list exports for receiver "%s"`, receiverData.ID)
+		}
+
+		exports := make([]*Export, 0, len(exportList))
+		for _, export := range exportList {
+			mapping, err := store.GetCurrentMapping(ctx, projectID, receiverData.ID, export.ID)
+			if err != nil {
+				return nil, err
+			}
+
+			columns := make([]*Column, 0, len(mapping.Columns))
+			for _, c := range mapping.Columns {
+				var template *Template
+				if v, ok := c.(column.Template); ok {
+					template = &Template{
+						Language:               v.Language,
+						UndefinedValueStrategy: v.UndefinedValueStrategy,
+						Content:                v.Content,
+						DataType:               v.DataType,
+					}
+				}
+				typ, _ := column.ColumnToType(c)
+				columns = append(columns, &Column{
+					Type:     typ,
+					Template: template,
+				})
+			}
+
+			exports = append(exports, &Export{
+				ExportID: &export.ID,
+				Name:     export.Name,
+				Mapping: &Mapping{
+					TableID:     mapping.TableID.String(),
+					Incremental: mapping.Incremental,
+					Columns:     columns,
+				},
+				Conditions: &Conditions{
+					Count: export.ImportConditions.Count,
+					Size:  int(export.ImportConditions.Size),
+					Time:  int(export.ImportConditions.Time / time.Second),
+				},
+			})
+		}
+
+		sort.SliceStable(exports, func(i, j int) bool {
+			return *exports[i].ExportID < *exports[j].ExportID
+		})
+
+		url := formatUrl(bufferApiHost, receiverData.ProjectID, receiverData.ID, receiverData.Secret)
 		receivers = append(receivers, &buffer.Receiver{
-			ReceiverID: &entry.ID,
-			Name:       &entry.Name,
+			ReceiverID: &receiverData.ID,
+			Name:       &receiverData.Name,
 			URL:        &url,
-			Exports:    []*Export{},
+			Exports:    exports,
 		})
 	}
 
@@ -290,6 +345,9 @@ func (*service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer
 	ctx, store := d.RequestCtx(), d.ConfigStore()
 
 	projectID, receiverID := d.ProjectID(), payload.ReceiverID
+
+	// nolint:godox
+	// TODO: delete export/mapping
 
 	err = store.DeleteReceiver(ctx, projectID, receiverID)
 	if err != nil {
