@@ -74,14 +74,15 @@ func TestConfigStore_CreateReceiver(t *testing.T) {
 	r, err := d.etcdClient.KV.Get(ctx, "config", etcd.WithPrefix())
 	assert.NoError(t, err)
 
-	found := false
+	var found *string
 	for _, v := range r.Kvs {
-		found = strings.HasPrefix(string(v.Key), ReceiverKey(config.ProjectID, config.ID))
-		if found {
-			assert.Equal(t, string(v.Value), encodedConfig)
+		if strings.HasPrefix(string(v.Key), ReceiverKey(config.ProjectID, config.ID)) {
+			temp := string(v.Value)
+			found = &temp
+			break
 		}
 	}
-	assert.True(t, found, "inserted config not found")
+	assert.Equal(t, *found, encodedConfig, "inserted config not found")
 }
 
 func TestConfigStore_GetReceiver(t *testing.T) {
@@ -149,6 +150,44 @@ func TestConfigStore_ListReceivers(t *testing.T) {
 		return receivers[i].ID < receivers[j].ID
 	})
 	assert.Equal(t, input, receivers)
+}
+
+func TestConfigStore_CreateExport(t *testing.T) {
+	t.Parallel()
+
+	// Setup
+	ctx, d := newTestDeps(t)
+	store := New(d.logger, d.etcdClient, d.validator, d.tracer)
+
+	projectID := 1000
+	receiverID := "github"
+
+	config := model.Export{
+		ID:   "github-issues",
+		Name: "Github Issues",
+		ImportConditions: []model.ImportCondition{
+			{Count: 1},
+			{Size: 100},
+		},
+	}
+	err := store.CreateExport(ctx, projectID, receiverID, config)
+	assert.NoError(t, err)
+
+	encodedConfig, err := json.EncodeString(config, false)
+	assert.NoError(t, err)
+
+	r, err := d.etcdClient.KV.Get(ctx, "config", etcd.WithPrefix())
+	assert.NoError(t, err)
+
+	var found *string
+	for _, v := range r.Kvs {
+		if strings.HasPrefix(string(v.Key), ExportKey(projectID, receiverID, config.ID)) {
+			temp := string(v.Value)
+			found = &temp
+			break
+		}
+	}
+	assert.Equal(t, *found, encodedConfig, "inserted config not found")
 }
 
 func TestConfigStore_ListExports(t *testing.T) {
