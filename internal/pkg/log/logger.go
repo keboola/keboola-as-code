@@ -22,6 +22,27 @@ func (l *zapLogger) With(args ...interface{}) Logger {
 	return loggerFromZapCore(l.core, args...)
 }
 
+func (l *zapLogger) Log(level string, args ...any) {
+	switch level {
+	case "debug", "DEBUG":
+		l.Debug(args...)
+	case "info", "INFO":
+		l.Info(args...)
+	case "warn", "WARN":
+		l.Warn(args...)
+	case "error", "ERROR":
+		l.Error(args...)
+	case "dpanic", "DPANIC":
+		l.DPanic(args...)
+	case "panic", "PANIC":
+		l.Panic(args...)
+	case "fatal", "FATAL":
+		l.Fatal(args...)
+	default:
+		l.Info(args...)
+	}
+}
+
 func (l *zapLogger) DebugWriter() *LevelWriter {
 	return &LevelWriter{logger: l, level: DebugLevel}
 }
