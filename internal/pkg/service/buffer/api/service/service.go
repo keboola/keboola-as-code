@@ -85,11 +85,12 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 
 	for _, exportData := range payload.Exports {
 		export := model.Export{
-			Name: exportData.Name,
+			Name:        exportData.Name,
+			Incremental: exportData.Incremental,
 			ImportConditions: model.ImportConditions{
 				Count: exportData.Conditions.Count,
 				Size:  datasize.ByteSize(exportData.Conditions.Size),
-				Time:  time.Duration(exportData.Conditions.Time),
+				Time:  time.Duration(exportData.Conditions.Time * int(time.Second)),
 			},
 		}
 
@@ -131,7 +132,7 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 		ReceiverID: &receiver.ID,
 		Name:       &receiver.Name,
 		URL:        &url,
-		Exports:    []*Export{},
+		Exports:    payload.Exports,
 	}
 
 	return resp, nil
