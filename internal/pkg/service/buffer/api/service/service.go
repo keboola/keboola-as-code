@@ -5,7 +5,9 @@ import (
 	"io"
 	"net/http"
 	"sort"
+	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
@@ -49,7 +51,7 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 	}
 
 	// Generate receiver ID from Name if needed
-	if payload.ReceiverID != nil {
+	if payload.ReceiverID != nil && len(*payload.ReceiverID) != 0 {
 		receiver.ID = *payload.ReceiverID
 	} else {
 		receiver.ID = strhelper.NormalizeName(receiver.Name)
@@ -75,11 +77,53 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 				Message:    fmt.Sprintf(`Receiver "%s" already exists.`, receiver.ID),
 			}
 		}
+		// nolint:godox
+		// TODO: maybe handle validation error
 		return nil, errors.Wrapf(err, "failed to create receiver \"%s\"", receiver.ID)
 	}
 
-	// nolint: godox
-	// TODO: create exports
+	for _, exportData := range payload.Exports {
+		export := model.Export{
+			Name: exportData.Name,
+			ImportConditions: model.ImportConditions{
+				Count: exportData.Conditions.Count,
+				Size:  datasize.ByteSize(exportData.Conditions.Size),
+				Time:  time.Duration(exportData.Conditions.Time),
+			},
+		}
+
+		// Generate export ID from Name if needed
+		if exportData.ExportID != nil && len(*exportData.ExportID) != 0 {
+			export.ID = *exportData.ExportID
+		} else {
+			export.ID = strhelper.NormalizeName(export.Name)
+		}
+
+		// Persist export
+		err = store.CreateExport(ctx, receiver.ProjectID, receiver.ID, export)
+		if err != nil {
+			if errors.As(err, &configstore.LimitReachedError{}) {
+				return nil, &GenericError{
+					StatusCode: http.StatusUnprocessableEntity,
+					Name:       "buffer.resourceLimitReached",
+					Message:    fmt.Sprintf("Maximum number of exports per receiver is %d.", configstore.MaxExportsPerReceiver),
+				}
+			}
+			if errors.As(err, &configstore.AlreadyExistsError{}) {
+				return nil, &GenericError{
+					StatusCode: http.StatusConflict,
+					Name:       "buffer.alreadyExists",
+					Message:    fmt.Sprintf(`Export "%s" already exists.`, export.ID),
+				}
+			}
+			// nolint:godox
+			// TODO: maybe handle validation error
+			return nil, err
+		}
+
+		// nolint:godox
+		// TODO: create mappings
+	}
 
 	url := formatUrl(d.BufferApiHost(), receiver.ProjectID, receiver.ID, receiver.Secret)
 	resp := &buffer.Receiver{
