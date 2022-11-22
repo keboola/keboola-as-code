@@ -44,11 +44,3 @@ type Export struct {
 	Name             string            `json:"name" validate:"required,min=1,max=40"`
 	ImportConditions []ImportCondition `json:"importConditions" validate:"required"`
 }
-
-type Record struct {
-	ProjectID  int    `json:"projectId" validate:"required"`
-	ReceiverID string `json:"receiverId" validate:"required"`
-	ExportID   string `json:"exportId" validate:"required"`
-	FileID     string `json:"fileId" validate:"required"`
-	SliceID    string `json:"sliceId" validate:"required"`
-}

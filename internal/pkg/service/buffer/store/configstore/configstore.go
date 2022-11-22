@@ -53,9 +53,18 @@ func MappingKey(projectID int, receiverID string, exportID string, revisionID in
 	return fmt.Sprintf("config/mapping/revision/%d/%s/%s/%08d", projectID, receiverID, exportID, revisionID)
 }
 
-func RecordKey(projectID int, receiverID string, exportID string, fileID string, sliceID string) string {
-	recordID := FormatTimeForKey(time.Now()) + "_" + idgenerator.Random(5)
-	return fmt.Sprintf("record/%d/%s/%s/%s/%s/%s", projectID, receiverID, exportID, fileID, sliceID, recordID)
+type RecordKey struct {
+	projectID  int
+	receiverID string
+	exportID   string
+	fileID     string
+	sliceID    string
+	receivedAt time.Time
+}
+
+func (k RecordKey) String() string {
+	recordID := FormatTimeForKey(k.receivedAt) + "_" + idgenerator.Random(5)
+	return fmt.Sprintf("record/%d/%s/%s/%s/%s/%s", k.projectID, k.receiverID, k.exportID, k.fileID, k.sliceID, recordID)
 }
 
 func FormatTimeForKey(t time.Time) string {
@@ -266,13 +275,13 @@ func (c *Store) GetCurrentMapping(ctx context.Context, projectID int, receiverID
 	return mapping, nil
 }
 
-func (c *Store) CreateRecord(ctx context.Context, record model.Record, csvData []string) (err error) {
+func (c *Store) CreateRecord(ctx context.Context, recordKey RecordKey, csvData []string) (err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
 	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.CreateRecord")
 	defer telemetry.EndSpan(span, &err)
 
-	key := RecordKey(record.ProjectID, record.ReceiverID, record.ExportID, record.FileID, record.SliceID)
+	key := recordKey.String()
 
 	logger.Debugf(`Encoding "%s"`, key)
 	csvBuffer := new(bytes.Buffer)
