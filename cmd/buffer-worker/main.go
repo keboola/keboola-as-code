@@ -3,16 +3,27 @@ package main
 import (
 	"context"
 	"flag"
+	stdLog "log"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	"github.com/pkg/errors"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
 )
+
+type ddLogger struct {
+	*stdLog.Logger
+}
+
+func (l ddLogger) Log(msg string) {
+	l.Logger.Print(msg)
+}
 
 func main() {
 	// Flags.
@@ -21,33 +32,49 @@ func main() {
 	flag.Parse()
 
 	// Setup logger.
-	logger := log.NewCliLogger(os.Stdout, os.Stderr, nil, *debugF)
+	logger := stdLog.New(os.Stderr, "[bufferWorker]", 0)
 
 	// Envs.
 	envs, err := env.FromOs()
 	if err != nil {
-		logger.Errorf("cannot load envs: %s", err)
+		logger.Println("cannot load envs: " + err.Error())
 		os.Exit(1)
+	}
+
+	// Start DataDog tracer.
+	if envs.Get("DATADOG_ENABLED") != "false" {
+		tracer.Start(
+			tracer.WithServiceName("buffer-service"),
+			tracer.WithLogger(ddLogger{logger}),
+			tracer.WithRuntimeMetrics(),
+			tracer.WithAnalytics(true),
+			tracer.WithDebugMode(envs.Get("DATADOG_DEBUG") == "true"),
+		)
+		defer tracer.Stop()
 	}
 
 	// Start worker.
 	if err := start(*debugF, *debugHttpF, logger, envs); err != nil {
-		logger.Error(err.Error())
+		logger.Println(err.Error())
 		os.Exit(1)
 	}
 }
 
 // nolint:unparam
-func start(debug, debugHttp bool, logger log.Logger, _ *env.Map) error {
+func start(debug, debugHttp bool, stdLogger *stdLog.Logger, envs *env.Map) error {
 	// Create context.
 	ctx, cancelFn := context.WithCancel(context.Background())
 	defer cancelFn()
 
-	// Create wait group
-	wg := sync.WaitGroup{}
-
-	// Log info
+	// Create logger
+	logger := log.NewApiLogger(stdLogger, "", debug)
 	logger.Infof("starting Buffer API WORKER, debug=%t, debug-http=%t", debug, debugHttp)
+
+	// Create dependencies.
+	d, err := dependencies.NewWorkerDeps(ctx, envs, logger, debug, debugHttp)
+	if err != nil {
+		return err
+	}
 
 	// Create channel used by both the signal handler and server goroutines
 	// to notify the main goroutine when to stop the worker.
@@ -61,9 +88,8 @@ func start(debug, debugHttp bool, logger log.Logger, _ *env.Map) error {
 		errCh <- errors.Errorf("%s", <-c)
 	}()
 
-	// nolint:godox
-	// TODO worker code
-	logger.Info("todo use context in a worker code", ctx.Value("todo use context"))
+	// Start worker code
+	service.New(d).Start()
 
 	// Wait for signal.
 	logger.Infof("exiting (%v)", <-errCh)
@@ -72,7 +98,7 @@ func start(debug, debugHttp bool, logger log.Logger, _ *env.Map) error {
 	cancelFn()
 
 	// Wait for goroutines - graceful shutdown.
-	wg.Wait()
+	d.WorkerWaitGroup().Wait()
 	logger.Info("exited")
 	return nil
 }
