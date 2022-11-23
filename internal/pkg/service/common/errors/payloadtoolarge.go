@@ -1,11 +1,15 @@
-package httperror
+package errors
 
 import (
 	"net/http"
 )
 
 type PayloadTooLargeError struct {
-	Message string
+	err error
+}
+
+func NewPayloadTooLargeError(err error) PayloadTooLargeError {
+	return PayloadTooLargeError{err: err}
 }
 
 func (PayloadTooLargeError) ErrorName() string {
@@ -17,9 +21,9 @@ func (e PayloadTooLargeError) StatusCode() int {
 }
 
 func (e PayloadTooLargeError) Error() string {
-	return e.Message
+	return e.err.Error()
 }
 
 func (e PayloadTooLargeError) ErrorUserMessage() string {
-	return e.Message
+	return e.Error()
 }

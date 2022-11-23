@@ -1,12 +1,15 @@
-// Package httperror provides basic errors for all APIs.
-package httperror
+package errors
 
 import (
 	"net/http"
 )
 
 type BadRequestError struct {
-	Message string
+	err error
+}
+
+func NewBadRequestError(err error) BadRequestError {
+	return BadRequestError{err: err}
 }
 
 func (BadRequestError) ErrorName() string {
@@ -17,10 +20,14 @@ func (e BadRequestError) StatusCode() int {
 	return http.StatusBadRequest
 }
 
+func (e BadRequestError) Unwrap() error {
+	return e.err
+}
+
 func (e BadRequestError) Error() string {
-	return e.Message
+	return e.err.Error()
 }
 
 func (e BadRequestError) ErrorUserMessage() string {
-	return e.Message
+	return e.Error()
 }

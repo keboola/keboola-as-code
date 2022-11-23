@@ -1,7 +1,10 @@
-// Package apierror provides basic errors for all APIs.
-package httperror
+package errors
 
 type NotImplementedError struct{}
+
+func NewNotImplementedError() NotImplementedError {
+	return NotImplementedError{}
+}
 
 func (NotImplementedError) ErrorName() string {
 	return "notImplemented"
