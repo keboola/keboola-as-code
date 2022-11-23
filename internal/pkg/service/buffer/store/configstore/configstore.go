@@ -6,15 +6,14 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -33,48 +32,6 @@ type Store struct {
 
 func New(logger log.Logger, etcdClient *etcd.Client, validator validator.Validator, tracer trace.Tracer) *Store {
 	return &Store{logger, etcdClient, validator, tracer}
-}
-
-func ReceiverKey(projectID int, receiverID string) string {
-	return fmt.Sprintf("config/receiver/%d/%s", projectID, receiverID)
-}
-
-func ReceiverPrefix(projectID int) string {
-	return fmt.Sprintf("config/receiver/%d", projectID)
-}
-
-func ExportsPrefix(projectID int, receiverID string) string {
-	return fmt.Sprintf("config/export/%d/%s/", projectID, receiverID)
-}
-
-func ExportKey(projectID int, receiverID string, exportID string) string {
-	return fmt.Sprintf("config/export/%d/%s/%s", projectID, receiverID, exportID)
-}
-
-func MappingsPrefix(projectID int, receiverID string, exportID string) string {
-	return fmt.Sprintf("config/mapping/revision/%d/%s/%s/", projectID, receiverID, exportID)
-}
-
-func MappingKey(projectID int, receiverID string, exportID string, revisionID int) string {
-	return fmt.Sprintf("config/mapping/revision/%d/%s/%s/%08d", projectID, receiverID, exportID, revisionID)
-}
-
-type RecordKey struct {
-	projectID  int
-	receiverID string
-	exportID   string
-	fileID     string
-	sliceID    string
-	receivedAt time.Time
-}
-
-func (k RecordKey) String() string {
-	recordID := FormatTimeForKey(k.receivedAt) + "_" + idgenerator.Random(5)
-	return fmt.Sprintf("record/%d/%s/%s/%s/%s/%s", k.projectID, k.receiverID, k.exportID, k.fileID, k.sliceID, recordID)
-}
-
-func FormatTimeForKey(t time.Time) string {
-	return t.UTC().Format("2006-01-02T15:04:05.000Z")
 }
 
 type LimitReachedError struct {
@@ -124,9 +81,9 @@ func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 		return err
 	}
 
-	prefix := ReceiverPrefix(receiver.ProjectID)
-	logger.Debugf(`Reading "%s" count`, prefix)
-	allReceivers, err := client.KV.Get(ctx, prefix, etcd.WithPrefix(), etcd.WithCountOnly())
+	prefix := schema.Configs().Receivers().InProject(receiver.ProjectID)
+	logger.Debugf(`Reading "%s" count`, prefix.Prefix())
+	allReceivers, err := client.KV.Get(ctx, prefix.Prefix(), etcd.WithPrefix(), etcd.WithCountOnly())
 	if err != nil {
 		return err
 	}
@@ -134,25 +91,25 @@ func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 		return LimitReachedError{What: "receiver", Max: MaxReceiversPerProject}
 	}
 
-	key := ReceiverKey(receiver.ProjectID, receiver.ID)
+	key := prefix.ID(receiver.ID)
 
-	logger.Debugf(`Reading "%s" count`, key)
-	receivers, err := client.KV.Get(ctx, key, etcd.WithCountOnly())
+	logger.Debugf(`Reading "%s" count`, key.Key())
+	receivers, err := client.KV.Get(ctx, key.Key(), etcd.WithCountOnly())
 	if err != nil {
 		return err
 	}
 	if receivers.Count > 0 {
-		return AlreadyExistsError{What: "receiver", Key: key}
+		return AlreadyExistsError{What: "receiver", Key: key.Key()}
 	}
 
-	logger.Debugf(`Encoding "%s"`, key)
+	logger.Debugf(`Encoding "%s"`, key.Key())
 	value, err := json.EncodeString(receiver, false)
 	if err != nil {
 		return err
 	}
 
 	logger.Debugf(`PUT "%s" "%s"`, key, value)
-	_, err = client.KV.Put(ctx, key, value)
+	_, err = client.KV.Put(ctx, key.Key(), value)
 	if err != nil {
 		return err
 	}
@@ -169,21 +126,21 @@ func (c *Store) GetReceiver(ctx context.Context, projectID int, receiverID strin
 	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.GetReceiver")
 	defer telemetry.EndSpan(span, &err)
 
-	key := ReceiverKey(projectID, receiverID)
+	key := schema.Configs().Receivers().InProject(projectID).ID(receiverID)
 
-	logger.Debugf(`GET "%s"`, key)
-	resp, err := client.KV.Get(ctx, key)
+	logger.Debugf(`GET "%s"`, key.Key())
+	resp, err := client.KV.Get(ctx, key.Key())
 	if err != nil {
 		return nil, err
 	}
 
 	// No receiver found
 	if len(resp.Kvs) == 0 {
-		logger.Debugf(`No receiver "%s" found`, key)
-		return nil, NotFoundError{What: "receiver", Key: key}
+		logger.Debugf(`No receiver "%s" found`, key.Key())
+		return nil, NotFoundError{What: "receiver", Key: key.Key()}
 	}
 
-	logger.Debugf(`Decoding "%s"`, key)
+	logger.Debugf(`Decoding "%s"`, key.Key())
 	receiver := &model.Receiver{}
 	if err = json.DecodeString(string(resp.Kvs[0].Value), receiver); err != nil {
 		return nil, err
@@ -198,15 +155,15 @@ func (c *Store) ListReceivers(ctx context.Context, projectID int) (r []*model.Re
 	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.ListReceivers")
 	defer telemetry.EndSpan(span, &err)
 
-	prefix := ReceiverPrefix(projectID)
+	prefix := schema.Configs().Receivers().InProject(projectID)
 
-	logger.Debugf(`GET "%s"`, prefix)
-	resp, err := client.KV.Get(ctx, prefix, etcd.WithPrefix())
+	logger.Debugf(`GET "%s"`, prefix.Prefix())
+	resp, err := client.KV.Get(ctx, prefix.Prefix(), etcd.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Debugf(`Decoding list "%s"`, prefix)
+	logger.Debugf(`Decoding list "%s"`, prefix.Prefix())
 	receivers := make([]*model.Receiver, 0, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
 		receiver := &model.Receiver{}
@@ -228,16 +185,16 @@ func (c *Store) DeleteReceiver(ctx context.Context, projectID int, receiverID st
 	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.DeleteReceiver")
 	defer telemetry.EndSpan(span, &err)
 
-	key := ReceiverKey(projectID, receiverID)
+	key := schema.Configs().Receivers().InProject(projectID).ID(receiverID)
 
-	logger.Debugf(`DELETE "%s"`, key)
-	r, err := client.KV.Delete(ctx, key)
+	logger.Debugf(`DELETE "%s"`, key.Key())
+	r, err := client.KV.Delete(ctx, key.Key())
 	if err != nil {
 		return err
 	}
 
 	if r.Deleted == 0 {
-		return NotFoundError{Key: key}
+		return NotFoundError{Key: key.Key()}
 	}
 
 	return nil
@@ -263,9 +220,9 @@ func (c *Store) CreateExport(ctx context.Context, projectID int, receiverID stri
 		return err
 	}
 
-	prefix := ExportsPrefix(projectID, receiverID)
-	logger.Debugf(`Reading "%s" count`, prefix)
-	receiverExports, err := client.KV.Get(ctx, prefix, etcd.WithPrefix(), etcd.WithCountOnly())
+	prefix := schema.Configs().Exports().InProject(projectID).InReceiver(receiverID)
+	logger.Debugf(`Reading "%s" count`, prefix.Prefix())
+	receiverExports, err := client.KV.Get(ctx, prefix.Prefix(), etcd.WithPrefix(), etcd.WithCountOnly())
 	if err != nil {
 		return err
 	}
@@ -273,25 +230,25 @@ func (c *Store) CreateExport(ctx context.Context, projectID int, receiverID stri
 		return LimitReachedError{What: "export", Max: MaxExportsPerReceiver}
 	}
 
-	key := ExportKey(projectID, receiverID, export.ID)
+	key := prefix.ID(export.ID)
 
-	logger.Debugf(`Reading "%s" count`, key)
-	exports, err := client.KV.Get(ctx, key, etcd.WithCountOnly())
+	logger.Debugf(`Reading "%s" count`, key.Key())
+	exports, err := client.KV.Get(ctx, key.Key(), etcd.WithCountOnly())
 	if err != nil {
 		return err
 	}
 	if exports.Count > 0 {
-		return AlreadyExistsError{What: "export", Key: key}
+		return AlreadyExistsError{What: "export", Key: key.Key()}
 	}
 
-	logger.Debugf(`Encoding "%s"`, key)
+	logger.Debugf(`Encoding "%s"`, key.Key())
 	value, err := json.EncodeString(export, false)
 	if err != nil {
 		return err
 	}
 
 	logger.Debugf(`PUT "%s" "%s"`, key, value)
-	_, err = client.KV.Put(ctx, key, value)
+	_, err = client.KV.Put(ctx, key.Key(), value)
 	if err != nil {
 		return err
 	}
@@ -305,15 +262,15 @@ func (c *Store) ListExports(ctx context.Context, projectID int, receiverID strin
 	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.ListExports")
 	defer telemetry.EndSpan(span, &err)
 
-	key := ExportsPrefix(projectID, receiverID)
+	prefix := schema.Configs().Exports().InProject(projectID).InReceiver(receiverID)
 
-	logger.Debugf(`GET "%s"`, key)
-	resp, err := client.KV.Get(ctx, key, etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
+	logger.Debugf(`GET "%s"`, prefix.Prefix())
+	resp, err := client.KV.Get(ctx, prefix.Prefix(), etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Debugf(`Decoding list "%s"`, key)
+	logger.Debugf(`Decoding list "%s"`, prefix.Prefix())
 	exports := make([]*model.Export, 0, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
 		export := &model.Export{}
@@ -336,16 +293,16 @@ func (c *Store) CreateMapping(ctx context.Context, projectID int, receiverID str
 		return err
 	}
 
-	key := MappingKey(projectID, receiverID, exportID, mapping.RevisionID)
+	key := schema.Configs().Mappings().InProject(projectID).InReceiver(receiverID).InExport(exportID).Revision(mapping.RevisionID)
 
-	logger.Debugf(`Encoding "%s"`, key)
+	logger.Debugf(`Encoding "%s"`, key.Key())
 	value, err := json.EncodeString(mapping, false)
 	if err != nil {
 		return err
 	}
 
 	logger.Debugf(`PUT "%s" "%s"`, key, value)
-	_, err = client.KV.Put(ctx, key, value)
+	_, err = client.KV.Put(ctx, key.Key(), value)
 	if err != nil {
 		return err
 	}
@@ -359,22 +316,22 @@ func (c *Store) GetCurrentMapping(ctx context.Context, projectID int, receiverID
 	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.GetCurrentMapping")
 	defer telemetry.EndSpan(span, &err)
 
-	key := MappingsPrefix(projectID, receiverID, exportID)
+	prefix := schema.Configs().Mappings().InProject(projectID).InReceiver(receiverID).InExport(exportID)
 
-	logger.Debugf(`GET "%s"`, key)
+	logger.Debugf(`GET "%s"`, prefix.Prefix())
 	// Get only the last mapping added (i.e. the one with the biggest timestamp)
-	resp, err := client.KV.Get(ctx, key, etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortDescend), etcd.WithLimit(1))
+	resp, err := client.KV.Get(ctx, prefix.Prefix(), etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortDescend), etcd.WithLimit(1))
 	if err != nil {
 		return nil, err
 	}
 
 	// No mapping found
 	if len(resp.Kvs) == 0 {
-		logger.Debugf(`No mapping "%s" found`, key)
-		return nil, NotFoundError{What: "mapping", Key: key}
+		logger.Debugf(`No mapping "%s" found`, prefix.Prefix())
+		return nil, NotFoundError{What: "mapping", Key: prefix.Prefix()}
 	}
 
-	logger.Debugf(`Decoding "%s"`, key)
+	logger.Debugf(`Decoding "%s"`, prefix.Prefix())
 	mapping := &model.Mapping{}
 	if err = json.DecodeString(string(resp.Kvs[0].Value), mapping); err != nil {
 		return nil, err
@@ -382,15 +339,15 @@ func (c *Store) GetCurrentMapping(ctx context.Context, projectID int, receiverID
 	return mapping, nil
 }
 
-func (c *Store) CreateRecord(ctx context.Context, recordKey RecordKey, csvData []string) (err error) {
+func (c *Store) CreateRecord(ctx context.Context, recordKey model.RecordKey, csvData []string) (err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
 	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.CreateRecord")
 	defer telemetry.EndSpan(span, &err)
 
-	key := recordKey.String()
+	key := recordKey.Key()
 
-	logger.Debugf(`Encoding "%s"`, key)
+	logger.Debugf(`Encoding "%s"`, key.Key())
 	csvBuffer := new(bytes.Buffer)
 	w := csv.NewWriter(csvBuffer)
 
@@ -403,7 +360,7 @@ func (c *Store) CreateRecord(ctx context.Context, recordKey RecordKey, csvData [
 	}
 
 	logger.Debugf(`PUT "%s" "%s"`, key, csvBuffer.String())
-	_, err = client.KV.Put(ctx, key, csvBuffer.String())
+	_, err = client.KV.Put(ctx, key.Key(), csvBuffer.String())
 	if err != nil {
 		return err
 	}
