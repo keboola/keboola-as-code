@@ -74,7 +74,7 @@ func (k RecordKey) String() string {
 }
 
 func FormatTimeForKey(t time.Time) string {
-	return t.Format("2006-01-02T15:04:05.000Z")
+	return t.UTC().Format("2006-01-02T15:04:05.000Z")
 }
 
 type LimitReachedError struct {
@@ -336,7 +336,7 @@ func (c *Store) CreateMapping(ctx context.Context, projectID int, receiverID str
 		return err
 	}
 
-	key := MappingKey(projectID, receiverID, exportID, 0)
+	key := MappingKey(projectID, receiverID, exportID, mapping.RevisionID)
 
 	logger.Debugf(`Encoding "%s"`, key)
 	value, err := json.EncodeString(mapping, false)
