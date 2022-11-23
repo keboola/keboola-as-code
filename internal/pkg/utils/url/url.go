@@ -2,7 +2,6 @@ package url
 
 import (
 	"net/url"
-	"reflect"
 	"strings"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -40,10 +39,9 @@ func ParseQuery(query string) (m *orderedmap.OrderedMap, err error) {
 		}
 		existingValue, found := m.Get(key)
 		if found {
-			switch reflect.TypeOf(existingValue).Kind() {
-			case reflect.Slice:
-				m.Set(key, append(existingValue.([]any), value))
-			default:
+			if existingValueSlice, ok := existingValue.([]any); ok {
+				m.Set(key, append(existingValueSlice, value))
+			} else {
 				m.Set(key, []any{existingValue, value})
 			}
 		} else {

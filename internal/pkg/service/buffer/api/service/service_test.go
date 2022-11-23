@@ -52,3 +52,15 @@ func TestParseRequestBody_TooLarge(t *testing.T) {
 	_, err := parseRequestBody("application/x-www-form-urlencoded", r)
 	assert.EqualError(t, err, "Payload too large.")
 }
+
+func TestParseRequestBody_CustomJsonApi(t *testing.T) {
+	t.Parallel()
+
+	r := io.NopCloser(strings.NewReader(`{"one":"two","three":"four"}`))
+	res, err := parseRequestBody("application/foo.api+json", r)
+	assert.NoError(t, err)
+	exp := orderedmap.New()
+	exp.Set("one", "two")
+	exp.Set("three", "four")
+	assert.Equal(t, exp, res)
+}
