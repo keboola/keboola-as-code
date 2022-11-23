@@ -366,6 +366,10 @@ func RunRequests(
 		)
 	}
 
+	// Dump process stdout/stderr
+	assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile("process-stdout.txt", stdout.String())))
+	assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile("process-stderr.txt", stderr.String())))
+
 	// Optionally check API server stdout/stderr
 	expectedStdoutPath := "expected-server-stdout"
 	expectedStderrPath := "expected-server-stderr"
