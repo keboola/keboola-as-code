@@ -3,7 +3,6 @@ package configstore
 import (
 	"context"
 	"sort"
-	"strings"
 	"testing"
 	"time"
 
@@ -19,34 +18,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
-
-func TestReceiverPrefix(t *testing.T) {
-	t.Parallel()
-
-	assert.Equal(t, "config/receiver/1000", ReceiverPrefix(1000))
-}
-
-func TestReceiverKey(t *testing.T) {
-	t.Parallel()
-
-	assert.Equal(t, "config/receiver/1000/asdf", ReceiverKey(1000, "asdf"))
-}
-
-func TestRecordKey(t *testing.T) {
-	t.Parallel()
-
-	key := RecordKey{
-		projectID:  1000,
-		receiverID: "asdf",
-		exportID:   "exp123",
-		fileID:     "file456",
-		sliceID:    "slice789",
-		receivedAt: time.Now(),
-	}
-
-	assert.True(t, strings.HasPrefix(key.String(), "record/1000/asdf/exp123/file456/slice789/"+FormatTimeForKey(key.receivedAt)))
-	assert.NotEqual(t, key.String(), key.String())
-}
 
 func TestConfigStore_CreateReceiver(t *testing.T) {
 	t.Parallel()
@@ -424,13 +395,13 @@ func TestConfigStore_CreateRecord(t *testing.T) {
 	assert.NoError(t, err)
 
 	csv := []string{"one", "two", `th"ree`}
-	record := RecordKey{
-		projectID:  projectID,
-		receiverID: receiverID,
-		exportID:   exportID,
-		fileID:     "file1",
-		sliceID:    "slice1",
-		receivedAt: now,
+	record := model.RecordKey{
+		ProjectID:  projectID,
+		ReceiverID: receiverID,
+		ExportID:   exportID,
+		FileID:     "file1",
+		SliceID:    "slice1",
+		ReceivedAt: now,
 	}
 
 	err = store.CreateRecord(ctx, record, csv)

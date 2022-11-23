@@ -13,10 +13,10 @@
 >>>>>
 
 <<<<<
-/config/mapping/revision/%s/create-receiver-with-exports/create-receiver-with-exports-export-0/00000000
+/config/mapping/revision/%s/create-receiver-with-exports/create-receiver-with-exports-export-0/00000001
 -----
 {
-  "revisionId": 0,
+  "revisionId": 1,
   "tableId": {
     "stage": "in",
     "bucketName": "bucket",

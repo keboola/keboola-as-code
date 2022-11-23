@@ -391,13 +391,8 @@ func RunRequests(
 
 	// Write actual etcd KVs
 	etcdDump, err := etcdhelper.DumpAll(context.Background(), etcdClient)
-	if err != nil {
-		assert.FailNow(t, err.Error())
-	}
-	err = workingDirFs.WriteFile(filesystem.NewRawFile("actual-etcd-kvs.txt", etcdDump))
-	if err != nil {
-		assert.FailNow(t, err.Error())
-	}
+	assert.NoError(t, err)
+	assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile("actual-etcd-kvs.txt", etcdDump)))
 
 	// Optionally check etcd KVs
 	expectedEtcdKVsPath := "expected-etcd-kvs.txt"
@@ -416,6 +411,10 @@ func RunRequests(
 			`unexpected etcd state, compare "expected-etcd-kvs.txt" from test and "actual-etcd-kvs.txt" from ".out" dir.`,
 		)
 	}
+
+	// Dump process stdout/stderr
+	assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile("process-stdout.txt", stdout.String())))
+	assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile("process-stderr.txt", stderr.String())))
 
 	// Optionally check API server stdout/stderr
 	expectedStdoutPath := "expected-server-stdout"
