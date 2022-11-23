@@ -1,0 +1,61 @@
+<<<<<
+/config/export/%s/create-receiver-with-exports/create-receiver-with-exports-export-0
+-----
+{
+  "exportId": "create-receiver-with-exports-export-0",
+  "name": "create-receiver-with-exports-export-0",
+  "importConditions": {
+    "count": 1,
+    "size": "100B",
+    "time": 30000000000
+  }
+}
+>>>>>
+
+<<<<<
+/config/mapping/revision/%s/create-receiver-with-exports/create-receiver-with-exports-export-0/00000000
+-----
+{
+  "revisionId": 0,
+  "tableId": {
+    "stage": "in",
+    "bucketName": "bucket",
+    "tableName": "table"
+  },
+  "incremental": true,
+  "columns": [
+    {
+      "type": "id"
+    },
+    {
+      "type": "template",
+      "language": "jsonnet",
+      "undefinedValueStrategy": "error",
+      "content": "body.key+\":\"+body.value",
+      "dataType": "STRING"
+    }
+  ]
+}
+>>>>>
+
+<<<<<
+/config/receiver/%s/create-receiver
+-----
+{
+  "receiverId": "create-receiver",
+  "projectId": %s,
+  "name": "create-receiver",
+  "secret": "%s"
+}
+>>>>>
+
+<<<<<
+/config/receiver/%s/create-receiver-with-exports
+-----
+{
+  "receiverId": "create-receiver-with-exports",
+  "projectId": %s,
+  "name": "create-receiver-with-exports",
+  "secret": "%s"
+}
+>>>>>

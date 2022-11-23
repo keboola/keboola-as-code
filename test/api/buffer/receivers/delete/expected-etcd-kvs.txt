@@ -1,0 +1,10 @@
+<<<<<
+/config/receiver/%s/delete-receiver-b
+-----
+{
+  "receiverId": "delete-receiver-b",
+  "projectId": %s,
+  "name": "delete-receiver-b",
+  "secret": "%s"
+}
+>>>>>

@@ -26,7 +26,6 @@ type testOrBenchmark interface {
 }
 
 func ClientForTest(t testOrBenchmark) *etcd.Client {
-	ctx := context.Background()
 	envs, err := env.FromOs()
 	if err != nil {
 		t.Fatalf("cannot get envs: %s", err)
@@ -37,8 +36,16 @@ func ClientForTest(t testOrBenchmark) *etcd.Client {
 	}
 
 	endpoint := envs.Get("UNIT_ETCD_ENDPOINT")
+	username := envs.Get("UNIT_ETCD_USERNAME")
+	password := envs.Get("UNIT_ETCD_PASSWORD")
+	prefix := fmt.Sprintf("unit-%s/", idgenerator.EtcdNamespaceForTest())
+	return ClientForTestFrom(t, endpoint, username, password, prefix)
+}
+
+func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, prefix string) *etcd.Client {
+	ctx := context.Background()
 	if endpoint == "" {
-		t.Fatalf(`UNIT_ETCD_ENDPOINT is not set`)
+		t.Fatalf(`etcd endpoint is not set`)
 	}
 
 	// Setup logger
@@ -60,8 +67,8 @@ func ClientForTest(t testOrBenchmark) *etcd.Client {
 		DialTimeout:          2 * time.Second,
 		DialKeepAliveTimeout: 2 * time.Second,
 		DialKeepAliveTime:    10 * time.Second,
-		Username:             envs.Get("UNIT_ETCD_USERNAME"), // optional
-		Password:             envs.Get("UNIT_ETCD_PASSWORD"), // optional
+		Username:             username, // optional
+		Password:             password, // optional
 		Logger:               logger,
 		DialOptions: []grpc.DialOption{
 			grpc.WithBlock(), // wait for the connection
@@ -82,7 +89,6 @@ func ClientForTest(t testOrBenchmark) *etcd.Client {
 
 	// Create namespace
 	originalKV := etcdClient.KV // not namespaced client for the cleanup
-	prefix := fmt.Sprintf("unit-%s/", idgenerator.EtcdNamespaceForTest())
 	etcdClient.KV = namespace.NewKV(etcdClient.KV, prefix)
 	etcdClient.Lease = namespace.NewLease(etcdClient.Lease, prefix)
 	etcdClient.Watcher = namespace.NewWatcher(etcdClient.Watcher, prefix)

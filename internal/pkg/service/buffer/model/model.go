@@ -63,7 +63,7 @@ func ParseTableID(v string) (TableID, error) {
 type Mapping struct {
 	RevisionID  int            `json:"revisionId" validate:"max=100"`
 	TableID     TableID        `json:"tableId" validate:"required"`
-	Incremental bool           `json:"incremental" validate:"required"`
+	Incremental bool           `json:"incremental"`
 	Columns     column.Columns `json:"columns" validate:"required,min=1,max=50"`
 }
 
