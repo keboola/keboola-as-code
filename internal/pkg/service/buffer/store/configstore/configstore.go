@@ -10,9 +10,8 @@ import (
 )
 
 const (
-	MaxImportRequestSizeInBytes = 1000000
-	MaxReceiversPerProject      = 100
-	MaxExportsPerReceiver       = 20
+	MaxReceiversPerProject = 100
+	MaxExportsPerReceiver  = 20
 )
 
 type Store struct {

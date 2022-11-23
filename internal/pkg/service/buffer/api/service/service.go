@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/configstore"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/recordstore"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/httperror"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -390,7 +391,8 @@ func (*service) Import(dependencies.ForPublicRequest, *buffer.ImportPayload, io.
 
 func parseRequestBody(contentType string, reader io.ReadCloser) (res *orderedmap.OrderedMap, err error) {
 	// Limit read csv to 1 MB plus 1 B. If the reader fills the limit then the request is bigger than allowed.
-	limitedReader := io.LimitReader(reader, configstore.MaxImportRequestSizeInBytes+1)
+	limit := recordstore.MaxImportRequestSizeInBytes
+	limitedReader := io.LimitReader(reader, int64(limit)+1)
 	defer func() {
 		if closeErr := reader.Close(); closeErr != nil && err == nil {
 			err = errors.Errorf("cannot close request body reading: %w", closeErr)
@@ -404,7 +406,7 @@ func parseRequestBody(contentType string, reader io.ReadCloser) (res *orderedmap
 	}
 
 	// Check that the reader did not read more than the maximum.
-	if buf.Len() > configstore.MaxImportRequestSizeInBytes {
+	if datasize.ByteSize(buf.Len()) > limit {
 		return nil, &PayloadTooLargeError{Message: "Payload too large."}
 	}
 

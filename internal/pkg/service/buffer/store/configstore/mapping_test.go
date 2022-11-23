@@ -1,6 +1,7 @@
 package configstore
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,13 +11,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func TestConfigStore_GetCurrentMapping(t *testing.T) {
+func TestStore_GetCurrentMapping(t *testing.T) {
 	t.Parallel()
 
-	// Setup
-	ctx, d := newTestDeps(t)
-	store := New(d.logger, d.etcdClient, d.validator, d.tracer)
-
+	ctx := context.Background()
+	store := newStoreForTest(t)
 	projectID := 1000
 	receiverID := "receiver1"
 	exportID := "export1"
@@ -59,7 +58,7 @@ func TestConfigStore_GetCurrentMapping(t *testing.T) {
 	assert.Equal(t, &input[2], mapping)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, d.etcdClient, `
+	etcdhelper.AssertKVs(t, store.etcdClient, `
 <<<<<
 config/mapping/revision/1000/receiver1/export1/00000001
 -----

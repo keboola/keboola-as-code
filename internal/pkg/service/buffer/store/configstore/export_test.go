@@ -1,6 +1,7 @@
 package configstore
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -11,13 +12,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func TestConfigStore_CreateExport(t *testing.T) {
+func TestStore_CreateExport(t *testing.T) {
 	t.Parallel()
 
-	// Setup
-	ctx, d := newTestDeps(t)
-	store := New(d.logger, d.etcdClient, d.validator, d.tracer)
-
+	ctx := context.Background()
+	store := newStoreForTest(t)
 	projectID := 1000
 	receiverID := "github"
 
@@ -34,7 +33,7 @@ func TestConfigStore_CreateExport(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, d.etcdClient, `
+	etcdhelper.AssertKVs(t, store.etcdClient, `
 <<<<<
 config/export/1000/github/github-issues
 -----
@@ -51,13 +50,11 @@ config/export/1000/github/github-issues
 `)
 }
 
-func TestConfigStore_ListExports(t *testing.T) {
+func TestStore_ListExports(t *testing.T) {
 	t.Parallel()
 
-	// Setup
-	ctx, d := newTestDeps(t)
-	store := New(d.logger, d.etcdClient, d.validator, d.tracer)
-
+	ctx := context.Background()
+	store := newStoreForTest(t)
 	projectID := 1000
 	receiverID := "receiver1"
 
@@ -94,7 +91,7 @@ func TestConfigStore_ListExports(t *testing.T) {
 	assert.Equal(t, input, output)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, d.etcdClient, `
+	etcdhelper.AssertKVs(t, store.etcdClient, `
 <<<<<
 config/export/1000/receiver1/export-1
 -----

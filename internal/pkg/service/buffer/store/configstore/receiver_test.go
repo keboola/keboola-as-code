@@ -1,6 +1,7 @@
 package configstore
 
 import (
+	"context"
 	"sort"
 	"testing"
 
@@ -11,12 +12,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func TestConfigStore_CreateReceiver(t *testing.T) {
+func TestStore_CreateReceiver(t *testing.T) {
 	t.Parallel()
 
-	// Setup
-	ctx, d := newTestDeps(t)
-	store := New(d.logger, d.etcdClient, d.validator, d.tracer)
+	ctx := context.Background()
+	store := newStoreForTest(t)
 
 	// Create receiver
 	config := model.Receiver{
@@ -29,7 +29,7 @@ func TestConfigStore_CreateReceiver(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, d.etcdClient, `
+	etcdhelper.AssertKVs(t, store.etcdClient, `
 <<<<<
 config/receiver/1000/github-pull-requests
 -----
@@ -43,12 +43,11 @@ config/receiver/1000/github-pull-requests
 `)
 }
 
-func TestConfigStore_GetReceiver(t *testing.T) {
+func TestStore_GetReceiver(t *testing.T) {
 	t.Parallel()
 
-	// Setup
-	ctx, d := newTestDeps(t)
-	store := New(d.logger, d.etcdClient, d.validator, d.tracer)
+	ctx := context.Background()
+	store := newStoreForTest(t)
 
 	// Create receiver
 	input := &model.Receiver{
@@ -66,7 +65,7 @@ func TestConfigStore_GetReceiver(t *testing.T) {
 	assert.Equal(t, input, receiver)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, d.etcdClient, `
+	etcdhelper.AssertKVs(t, store.etcdClient, `
 <<<<<
 config/receiver/1000/github-pull-requests
 -----
@@ -80,12 +79,11 @@ config/receiver/1000/github-pull-requests
 `)
 }
 
-func TestConfigStore_ListReceivers(t *testing.T) {
+func TestStore_ListReceivers(t *testing.T) {
 	t.Parallel()
 
-	// Setup
-	ctx, d := newTestDeps(t)
-	store := New(d.logger, d.etcdClient, d.validator, d.tracer)
+	ctx := context.Background()
+	store := newStoreForTest(t)
 
 	projectID := 1000
 
@@ -124,7 +122,7 @@ func TestConfigStore_ListReceivers(t *testing.T) {
 	assert.Equal(t, input, receivers)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, d.etcdClient, `
+	etcdhelper.AssertKVs(t, store.etcdClient, `
 <<<<<
 config/receiver/1000/github-issues
 -----

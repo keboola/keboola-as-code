@@ -2,12 +2,15 @@
 package recordstore
 
 import (
+	"github.com/c2h5oh/datasize"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
+
+const MaxImportRequestSizeInBytes = 1 * datasize.MB
 
 type Store struct {
 	logger     log.Logger

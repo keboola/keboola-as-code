@@ -1,4 +1,4 @@
-package configstore
+package recordstore
 
 import (
 	"bytes"
