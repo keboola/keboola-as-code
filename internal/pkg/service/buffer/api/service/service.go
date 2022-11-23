@@ -1,13 +1,16 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
@@ -19,6 +22,7 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/httperror"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
+	utilsUrl "github.com/keboola/keboola-as-code/internal/pkg/utils/url"
 )
 
 type service struct{}
@@ -381,6 +385,45 @@ func (*service) DeleteExport(dependencies.ForProjectRequest, *buffer.DeleteExpor
 
 func (*service) Import(dependencies.ForPublicRequest, *buffer.ImportPayload, io.ReadCloser) (err error) {
 	return &NotImplementedError{}
+}
+
+func parseRequestBody(contentType string, reader io.ReadCloser) (res *orderedmap.OrderedMap, err error) {
+	// Limit read csv to 1 MB plus 1 B. If the reader fills the limit then the request is bigger than allowed.
+	limitedReader := io.LimitReader(reader, configstore.MaxImportRequestSizeInBytes+1)
+	defer func() {
+		if closeErr := reader.Close(); closeErr != nil && err == nil {
+			err = errors.Errorf("cannot close request body reading: %w", closeErr)
+		}
+	}()
+
+	buf := new(strings.Builder)
+	_, err = io.Copy(buf, limitedReader)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check that the reader did not read more than the maximum.
+	if buf.Len() > configstore.MaxImportRequestSizeInBytes {
+		return nil, &PayloadTooLargeError{Message: "Payload too large."}
+	}
+
+	var data *orderedmap.OrderedMap
+	if isContentTypeForm(contentType) {
+		data, err = utilsUrl.ParseQuery(buf.String())
+		if err != nil {
+			return nil, &BadRequestError{Message: "Could not parse POST request body into a json."}
+		}
+	} else {
+		err = json.Unmarshal([]byte(buf.String()), &data)
+		if err != nil {
+			return nil, &BadRequestError{Message: "Could not parse form request body into a json."}
+		}
+	}
+	return data, nil
+}
+
+func isContentTypeForm(t string) bool {
+	return strings.HasPrefix(t, "application/x-www-form-urlencoded")
 }
 
 func formatUrl(bufferApiHost string, projectID int, receiverID string, secret string) string {
