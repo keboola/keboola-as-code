@@ -12,6 +12,7 @@ import (
 // AssertKVs dumps all KVs from an etcd database and compares them with the expected string.
 // In the expected string, a wildcards can be used, see the wildcards package.
 func AssertKVs(t *testing.T, client etcd.KV, expected string) {
+	t.Helper()
 	dump, err := DumpAll(context.Background(), client)
 	if err != nil {
 		t.Fatalf(`cannot dump etcd KVs: %s`, err)
