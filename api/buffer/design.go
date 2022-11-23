@@ -130,7 +130,7 @@ var _ = Service("buffer", func() {
 	Method("CreateReceiver", func() {
 		Meta("openapi:summary", "Create receiver")
 		Description("Create a new receiver for a given project")
-		Result(Receiver)
+		Result(ReceiverResponse)
 		Payload(func() {
 			receiverId()
 			name("receiver", "GitHub Pull Requests")
@@ -150,7 +150,7 @@ var _ = Service("buffer", func() {
 		Meta("openapi:summary", "List all receivers")
 		Description("List all receivers for a given project.")
 		Result(func() {
-			Attribute("receivers", ArrayOf(Receiver))
+			Attribute("receivers", ArrayOf(ReceiverResponse))
 			Required("receivers")
 		})
 		HTTP(func() {
@@ -163,7 +163,7 @@ var _ = Service("buffer", func() {
 	Method("GetReceiver", func() {
 		Meta("openapi:summary", "Get receiver")
 		Description("Get the configuration of a receiver.")
-		Result(Receiver)
+		Result(ReceiverResponse)
 		Payload(func() {
 			receiverId()
 			Required("receiverId")
@@ -194,7 +194,7 @@ var _ = Service("buffer", func() {
 	Method("RefreshReceiverTokens", func() {
 		Meta("openapi:summary", "Refresh receiver tokens")
 		Description("Each export uses its own token scoped to the target bucket, this endpoint refreshes all of those tokens.")
-		Result(Receiver)
+		Result(ReceiverResponse)
 		Payload(func() {
 			receiverId()
 			Required("receiverId")
@@ -210,7 +210,7 @@ var _ = Service("buffer", func() {
 	Method("CreateExport", func() {
 		Meta("openapi:summary", "Create export")
 		Description("Create a new export for an existing receiver.")
-		Result(Receiver)
+		Result(ReceiverResponse)
 		Payload(func() {
 			receiverId()
 			Attribute("export", Export)
@@ -229,12 +229,12 @@ var _ = Service("buffer", func() {
 	Method("UpdateExport", func() {
 		Meta("openapi:summary", "Update export")
 		Description("Update a receiver export.")
-		Result(Receiver)
+		Result(ReceiverResponse)
 		Payload(func() {
 			receiverId()
 			exportId()
 			Attribute("export", Export)
-			Required("receiverId", "export")
+			Required("receiverId", "exportId", "export")
 		})
 		HTTP(func() {
 			PATCH("/receivers/{receiverId}/exports/{exportId}")
@@ -248,7 +248,7 @@ var _ = Service("buffer", func() {
 	Method("DeleteExport", func() {
 		Meta("openapi:summary", "Delete export")
 		Description("Delete a receiver export.")
-		Result(Receiver)
+		Result(ReceiverResponse)
 		Payload(func() {
 			receiverId()
 			exportId()
@@ -279,7 +279,7 @@ var _ = Service("buffer", func() {
 			Attribute("contentType", String, func() {
 				Example("application/json")
 			})
-			Required("projectId", "receiverId", "secret", "contentType")
+			Required("receiverId", "projectId", "secret", "contentType")
 		})
 		HTTP(func() {
 			POST("/import/{projectId}/{receiverId}/#/{secret}")
@@ -358,6 +358,15 @@ var Receiver = Type("Receiver", func() {
 		Description("List of receiver exports. A receiver may have a maximum of 20 exports.")
 	})
 	Example(exampleReceiver())
+	Required("name", "url", "exports")
+})
+
+var ReceiverResponse = Type("ReceiverResponse", func() {
+	Attribute("exports", ArrayOf(ExportResponse), func() {
+		Description("List of receiver exports. A receiver may have a maximum of 20 exports.")
+	})
+	Extend(Receiver)
+	Required("receiverId", "exports")
 })
 
 var Export = Type("Export", func() {
@@ -371,6 +380,11 @@ var Export = Type("Export", func() {
 		Description("Table import conditions.")
 	})
 	Required("name", "mapping")
+})
+
+var ExportResponse = Type("ExportResponse", func() {
+	Extend(Export)
+	Required("exportId", "conditions")
 })
 
 var Mapping = Type("Mapping", func() {

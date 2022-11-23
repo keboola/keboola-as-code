@@ -51,7 +51,7 @@ func (*service) HealthCheck(dependencies.ForPublicRequest) (res string, err erro
 // nolint:godox
 // TODO: collect errors instead of bailing on the first one
 
-func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.Receiver, err error) {
+func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.ReceiverResponse, err error) {
 	ctx, store := d.RequestCtx(), d.ConfigStore()
 
 	receiver := model.Receiver{
@@ -177,17 +177,17 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 	}
 
 	url := formatUrl(d.BufferApiHost(), receiver.ProjectID, receiver.ID, receiver.Secret)
-	resp := &buffer.Receiver{
-		ReceiverID: &receiver.ID,
-		Name:       &receiver.Name,
-		URL:        &url,
+	resp := &buffer.ReceiverResponse{
+		ReceiverID: receiver.ID,
+		Name:       receiver.Name,
+		URL:        url,
 		Exports:    payload.Exports,
 	}
 
 	return resp, nil
 }
 
-func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.GetReceiverPayload) (res *buffer.Receiver, err error) {
+func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.GetReceiverPayload) (res *buffer.ReceiverResponse, err error) {
 	ctx, store := d.RequestCtx(), d.ConfigStore()
 
 	projectID, receiverID := d.ProjectID(), payload.ReceiverID
@@ -255,10 +255,10 @@ func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.Ge
 	})
 
 	url := formatUrl(d.BufferApiHost(), receiver.ProjectID, receiver.ID, receiver.Secret)
-	resp := &buffer.Receiver{
-		ReceiverID: &receiver.ID,
-		Name:       &receiver.Name,
-		URL:        &url,
+	resp := &buffer.ReceiverResponse{
+		ReceiverID: receiver.ID,
+		Name:       receiver.Name,
+		URL:        url,
 		Exports:    exports,
 	}
 
@@ -277,7 +277,7 @@ func (*service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListRe
 
 	bufferApiHost := d.BufferApiHost()
 
-	receivers := make([]*buffer.Receiver, 0, len(receiverList))
+	receivers := make([]*buffer.ReceiverResponse, 0, len(receiverList))
 	for _, receiverData := range receiverList {
 		exportList, err := store.ListExports(ctx, projectID, receiverData.ID)
 		if err != nil {
@@ -330,16 +330,16 @@ func (*service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListRe
 		})
 
 		url := formatUrl(bufferApiHost, receiverData.ProjectID, receiverData.ID, receiverData.Secret)
-		receivers = append(receivers, &buffer.Receiver{
-			ReceiverID: &receiverData.ID,
-			Name:       &receiverData.Name,
-			URL:        &url,
+		receivers = append(receivers, &buffer.ReceiverResponse{
+			ReceiverID: receiverData.ID,
+			Name:       receiverData.Name,
+			URL:        url,
 			Exports:    exports,
 		})
 	}
 
 	sort.SliceStable(receivers, func(i, j int) bool {
-		return *receivers[i].ReceiverID < *receivers[j].ReceiverID
+		return receivers[i].ReceiverID < receivers[j].ReceiverID
 	})
 
 	return &buffer.ListReceiversResult{Receivers: receivers}, nil
@@ -368,19 +368,19 @@ func (*service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer
 	return nil
 }
 
-func (*service) RefreshReceiverTokens(dependencies.ForProjectRequest, *buffer.RefreshReceiverTokensPayload) (res *buffer.Receiver, err error) {
+func (*service) RefreshReceiverTokens(dependencies.ForProjectRequest, *buffer.RefreshReceiverTokensPayload) (res *buffer.ReceiverResponse, err error) {
 	return nil, &NotImplementedError{}
 }
 
-func (*service) CreateExport(dependencies.ForProjectRequest, *buffer.CreateExportPayload) (res *buffer.Receiver, err error) {
+func (*service) CreateExport(dependencies.ForProjectRequest, *buffer.CreateExportPayload) (res *buffer.ReceiverResponse, err error) {
 	return nil, &NotImplementedError{}
 }
 
-func (*service) UpdateExport(dependencies.ForProjectRequest, *buffer.UpdateExportPayload) (res *buffer.Receiver, err error) {
+func (*service) UpdateExport(dependencies.ForProjectRequest, *buffer.UpdateExportPayload) (res *buffer.ReceiverResponse, err error) {
 	return nil, &NotImplementedError{}
 }
 
-func (*service) DeleteExport(dependencies.ForProjectRequest, *buffer.DeleteExportPayload) (res *buffer.Receiver, err error) {
+func (*service) DeleteExport(dependencies.ForProjectRequest, *buffer.DeleteExportPayload) (res *buffer.ReceiverResponse, err error) {
 	return nil, &NotImplementedError{}
 }
 
