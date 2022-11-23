@@ -115,6 +115,7 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 		}
 
 		mapping := model.Mapping{
+			RevisionID:  1,
 			TableID:     tableId,
 			Incremental: exportData.Mapping.Incremental,
 			Columns:     columns,
