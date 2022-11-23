@@ -23,8 +23,8 @@ func TestPrefix(t *testing.T) {
 	err := key0.Put("out of the prefix").Do(ctx, etcd)
 	assert.NoError(t, err)
 
-	// AtLestOneExists - not found
-	found, err := pfx.AtLestOneExists().Do(ctx, etcd)
+	// AtLeastOneExists - not found
+	found, err := pfx.AtLeastOneExists().Do(ctx, etcd)
 	assert.NoError(t, err)
 	assert.False(t, found)
 
@@ -47,8 +47,8 @@ func TestPrefix(t *testing.T) {
 	err = key1.Put("foo").Do(ctx, etcd)
 	assert.NoError(t, err)
 
-	// AtLestOneExists - found 1
-	found, err = pfx.AtLestOneExists().Do(ctx, etcd)
+	// AtLeastOneExists - found 1
+	found, err = pfx.AtLeastOneExists().Do(ctx, etcd)
 	assert.NoError(t, err)
 	assert.True(t, found)
 
@@ -75,8 +75,8 @@ func TestPrefix(t *testing.T) {
 	err = key2.Put("bar").Do(ctx, etcd)
 	assert.NoError(t, err)
 
-	// AtLestOneExists - found 2
-	found, err = pfx.AtLestOneExists().Do(ctx, etcd)
+	// AtLeastOneExists - found 2
+	found, err = pfx.AtLeastOneExists().Do(ctx, etcd)
 	assert.NoError(t, err)
 	assert.True(t, found)
 
@@ -117,7 +117,7 @@ func BenchmarkPrefix_AtLestOneExists(b *testing.B) {
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		found, err := pfx.AtLestOneExists().Do(ctx, etcd)
+		found, err := pfx.AtLeastOneExists().Do(ctx, etcd)
 		if err != nil || !found {
 			b.Fatalf("unexpected result")
 		}

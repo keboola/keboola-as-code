@@ -20,7 +20,7 @@ func (v Prefix) Key(key string) Key {
 	return Key(v.Prefix() + key)
 }
 
-func (v Prefix) AtLestOneExists(opts ...etcd.OpOption) BoolOp {
+func (v Prefix) AtLeastOneExists(opts ...etcd.OpOption) BoolOp {
 	opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithCountOnly()}, opts...)
 	return NewBoolOp(etcd.OpGet(v.Prefix(), opts...), func(r etcd.OpResponse) (bool, error) {
 		return r.Get().Count > 0, nil
