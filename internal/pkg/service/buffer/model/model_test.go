@@ -12,9 +12,14 @@ func TestTableID_String(t *testing.T) {
 	t.Parallel()
 
 	tableID := model.TableID{
-		Stage:      "in",
-		BucketName: "main",
-		TableName:  "table1",
+		Stage:  model.TableStageIn,
+		Bucket: "main",
+		Table:  "table1",
 	}
-	assert.Equal(t, "in.c-main.table1", tableID.String())
+	s := tableID.String()
+	assert.Equal(t, "in.c-main.table1", s)
+
+	parsed, err := model.ParseTableID(s)
+	assert.NoError(t, err)
+	assert.Equal(t, tableID, parsed)
 }

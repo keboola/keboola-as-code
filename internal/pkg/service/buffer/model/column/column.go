@@ -50,7 +50,7 @@ func (v Columns) MarshalJSON() ([]byte, error) {
 	for _, column := range v {
 		column := column
 
-		typ, err := columnToType(column)
+		typ, err := ColumnToType(column)
 		if err != nil {
 			return nil, err
 		}
@@ -96,7 +96,7 @@ func (v *Columns) UnmarshalJSON(b []byte) error {
 			return err
 		}
 
-		data, err := typeToColumn(t.Type)
+		data, err := TypeToColumn(t.Type)
 		if err != nil {
 			return err
 		}
@@ -114,10 +114,10 @@ func (v *Columns) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// columnToType returns the stringified type of the column.
+// ColumnToType returns the stringified type of the column.
 //
 // This function expects `column` to be passed by value.
-func columnToType(column any) (string, error) {
+func ColumnToType(column any) (string, error) {
 	switch column.(type) {
 	case ID:
 		return columnIDType, nil
@@ -139,7 +139,7 @@ func columnToType(column any) (string, error) {
 // ColumnToType returns the stringified type of the column.
 //
 // This function returns `column` as a value.
-func typeToColumn(typ string) (Column, error) {
+func TypeToColumn(typ string) (Column, error) {
 	switch typ {
 	case columnIDType:
 		return ID{}, nil

@@ -142,6 +142,7 @@ var _ = Service("buffer", func() {
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			ResourceLimitReachedError()
+			AlreadyExistsError()
 		})
 	})
 
@@ -220,6 +221,8 @@ var _ = Service("buffer", func() {
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			ReceiverNotFoundError()
+			ResourceLimitReachedError()
+			AlreadyExistsError()
 		})
 	})
 
@@ -361,6 +364,17 @@ var Export = Type("Export", func() {
 	Description("Represents a mapping from imported data to a destination table.")
 	exportId("May be omitted, in which case it will be generated from the name. The value cannot be changed later.")
 	name("export", "GitHub Changed Files")
+	Attribute("mapping", Mapping, func() {
+		Description("Export column mapping.")
+	})
+	Attribute("conditions", ImportConditions, func() {
+		Description("Table import conditions.")
+	})
+	Required("name", "mapping")
+})
+
+var Mapping = Type("Mapping", func() {
+	Description("Export column mapping.")
 	Attribute("tableId", String, func() {
 		Description("Destination table ID.")
 	})
@@ -368,28 +382,25 @@ var Export = Type("Export", func() {
 		Description("Enables incremental loading to the table.")
 		Default(true)
 	})
-	Attribute("columns", ArrayOf(ColumnMapping), func() {
+	Attribute("columns", ArrayOf(Column), func() {
 		Description("List of export column mappings. An export may have a maximum of 50 columns.")
 	})
-	Attribute("conditions", ImportConditions, func() {
-		Description("Table import conditions.")
-	})
-	Required("name", "tableId", "columns")
+	Required("tableId", "columns")
 })
 
-var ColumnMapping = Type("ColumnMapping", func() {
+var Column = Type("Column", func() {
 	Description("An output mapping defined by a template.")
 	Attribute("type", String, func() {
 		Description("Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).")
 		Enum("id", "datetime", "body", "headers", "template")
 	})
-	Attribute("template", TemplateMapping, func() {
+	Attribute("template", Template, func() {
 		Description("Template mapping details.")
 	})
 	Required("type")
 })
 
-var TemplateMapping = Type("TemplateMapping", func() {
+var Template = Type("Template", func() {
 	Attribute("language", String, func() {
 		Enum("jsonnet")
 	})
@@ -479,6 +490,10 @@ func PayloadTooLargeError() {
 
 func ResourceLimitReachedError() {
 	GenericError(StatusUnprocessableEntity, "buffer.resourceLimitReached", "Resource limit reached.", `Maximum number of receivers per project is 100.`)
+}
+
+func AlreadyExistsError() {
+	GenericError(StatusConflict, "buffer.alreadyExists", "Resource already exists.", `Receiver "github-pull-requests" already exists.`)
 }
 
 // Examples ------------------------------------------------------------------------------------------------------------

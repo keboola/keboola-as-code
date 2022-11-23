@@ -1,11 +1,11 @@
 {
-  "receiverId": "list-receivers-test-b",
-  "name": "list-receivers-test-b",
-  "url": "https://buffer.keboola.local/v1/import/%d/list-receivers-test-b/#/%s",
+  "receiverId": "create-receiver-with-exports",
+  "name": "create-receiver-with-exports",
+  "url": "https://buffer.keboola.local/v1/import/%d/create-receiver-with-exports/#/%s",
   "exports": [
     {
-      "exportId": "list-receivers-test-b-export-0",
-      "name": "list-receivers-test-b-export-0",
+      "exportId": "create-receiver-with-exports-export-0",
+      "name": "create-receiver-with-exports-export-0",
       "mapping": {
         "tableId": "in.c-bucket.table",
         "incremental": true,

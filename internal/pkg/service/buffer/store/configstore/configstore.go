@@ -16,11 +16,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-const MaxReceiversPerProject = 100
+const (
+	MaxReceiversPerProject = 100
+	MaxExportsPerReceiver  = 20
+)
 
 type Store struct {
 	logger     log.Logger
@@ -43,6 +45,10 @@ func ReceiverPrefix(projectID int) string {
 
 func ExportsPrefix(projectID int, receiverID string) string {
 	return fmt.Sprintf("config/export/%d/%s/", projectID, receiverID)
+}
+
+func ExportKey(projectID int, receiverID string, exportID string) string {
+	return fmt.Sprintf("config/export/%d/%s/%s", projectID, receiverID, exportID)
 }
 
 func MappingsPrefix(projectID int, receiverID string, exportID string) string {
@@ -71,25 +77,43 @@ func FormatTimeForKey(t time.Time) string {
 	return t.Format("2006-01-02T15:04:05.000Z")
 }
 
-type ReceiverLimitReachedError struct{}
-
-func (ReceiverLimitReachedError) Error() string {
-	return fmt.Sprintf("receiver limit reached, the maximum is %d", MaxReceiversPerProject)
+type LimitReachedError struct {
+	What string
+	Max  int
 }
 
-type ReceiverNotFoundError struct {
-	ID string
+func (e LimitReachedError) Error() string {
+	return fmt.Sprintf("%s limit reached, the maximum is %d", e.What, e.Max)
 }
 
-func (r ReceiverNotFoundError) Error() string {
-	return fmt.Sprintf("receiver \"%s\" not found", r.ID)
+type NotFoundError struct {
+	What string
+	Key  string
+}
+
+func (e NotFoundError) Error() string {
+	return fmt.Sprintf("%s \"%s\" not found", e.What, e.Key)
+}
+
+type AlreadyExistsError struct {
+	What string
+	Key  string
+}
+
+func (e AlreadyExistsError) Error() string {
+	return fmt.Sprintf(`%s "%s" already exists`, e.What, e.Key)
 }
 
 // CreateReceiver puts a receiver into the store.
 //
 // This method guarantees that no two receivers in the store will have the same (projectID, receiverID) pair.
 //
-// May fail if receiver limit is reached (`ReceiverLimitReachedError`), or if any of the underlying ETCD calls fail.
+// May fail if
+// - limit is reached (`LimitReachedError`)
+// - already exists (`AlreadyExistsError`)
+// - validation of the model fails
+// - JSON marshalling fails
+// - any of the underlying ETCD calls fail.
 func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
@@ -107,7 +131,7 @@ func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 		return err
 	}
 	if allReceivers.Count >= MaxReceiversPerProject {
-		return ReceiverLimitReachedError{}
+		return LimitReachedError{What: "receiver", Max: MaxReceiversPerProject}
 	}
 
 	key := ReceiverKey(receiver.ProjectID, receiver.ID)
@@ -118,7 +142,7 @@ func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 		return err
 	}
 	if receivers.Count > 0 {
-		return errors.Errorf(`receiver "%s" already exists`, receiver.ID)
+		return AlreadyExistsError{What: "receiver", Key: key}
 	}
 
 	logger.Debugf(`Encoding "%s"`, key)
@@ -138,7 +162,7 @@ func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 
 // GetReceiver fetches a receiver from the store.
 //
-// This method returns nil if no receiver was found.
+// May fail if the receiver was not found (`NotFoundError`).
 func (c *Store) GetReceiver(ctx context.Context, projectID int, receiverID string) (r *model.Receiver, err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
@@ -156,7 +180,7 @@ func (c *Store) GetReceiver(ctx context.Context, projectID int, receiverID strin
 	// No receiver found
 	if len(resp.Kvs) == 0 {
 		logger.Debugf(`No receiver "%s" found`, key)
-		return nil, nil
+		return nil, NotFoundError{What: "receiver", Key: key}
 	}
 
 	logger.Debugf(`Decoding "%s"`, key)
@@ -197,7 +221,7 @@ func (c *Store) ListReceivers(ctx context.Context, projectID int) (r []*model.Re
 
 // DeleteReceiver deletes a receiver from the store.
 //
-// May fail if the receiver is not found (`ReceiverNotFoundError`), or if any of the underlying ETCD calls fail.
+// May fail if the receiver is not found (`NotFoundError`), or if any of the underlying ETCD calls fail.
 func (c *Store) DeleteReceiver(ctx context.Context, projectID int, receiverID string) (err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
@@ -213,7 +237,63 @@ func (c *Store) DeleteReceiver(ctx context.Context, projectID int, receiverID st
 	}
 
 	if r.Deleted == 0 {
-		return ReceiverNotFoundError{ID: receiverID}
+		return NotFoundError{Key: key}
+	}
+
+	return nil
+}
+
+// CreateExport puts an export into the store.
+//
+// This method guarantees that no two receivers in the store will have the same (projectID, receiverID, exportID) tuple.
+//
+// May fail if
+// - limit is reached (`LimitReachedError`)
+// - already exists (`AlreadyExistsError`)
+// - validation of the model fails
+// - JSON marshalling fails
+// - any of the underlying ETCD calls fail.
+func (c *Store) CreateExport(ctx context.Context, projectID int, receiverID string, export model.Export) (err error) {
+	logger, tracer, client := c.logger, c.tracer, c.etcdClient
+
+	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.CreateExport")
+	defer telemetry.EndSpan(span, &err)
+
+	if err := c.validator.Validate(ctx, export); err != nil {
+		return err
+	}
+
+	prefix := ExportsPrefix(projectID, receiverID)
+	logger.Debugf(`Reading "%s" count`, prefix)
+	receiverExports, err := client.KV.Get(ctx, prefix, etcd.WithPrefix(), etcd.WithCountOnly())
+	if err != nil {
+		return err
+	}
+	if receiverExports.Count >= MaxExportsPerReceiver {
+		return LimitReachedError{What: "export", Max: MaxExportsPerReceiver}
+	}
+
+	key := ExportKey(projectID, receiverID, export.ID)
+
+	logger.Debugf(`Reading "%s" count`, key)
+	exports, err := client.KV.Get(ctx, key, etcd.WithCountOnly())
+	if err != nil {
+		return err
+	}
+	if exports.Count > 0 {
+		return AlreadyExistsError{What: "export", Key: key}
+	}
+
+	logger.Debugf(`Encoding "%s"`, key)
+	value, err := json.EncodeString(export, false)
+	if err != nil {
+		return err
+	}
+
+	logger.Debugf(`PUT "%s" "%s"`, key, value)
+	_, err = client.KV.Put(ctx, key, value)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -246,6 +326,33 @@ func (c *Store) ListExports(ctx context.Context, projectID int, receiverID strin
 	return exports, nil
 }
 
+func (c *Store) CreateMapping(ctx context.Context, projectID int, receiverID string, exportID string, mapping model.Mapping) (err error) {
+	logger, tracer, client := c.logger, c.tracer, c.etcdClient
+
+	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.GetCurrentMapping")
+	defer telemetry.EndSpan(span, &err)
+
+	if err := c.validator.Validate(ctx, mapping); err != nil {
+		return err
+	}
+
+	key := MappingKey(projectID, receiverID, exportID, 0)
+
+	logger.Debugf(`Encoding "%s"`, key)
+	value, err := json.EncodeString(mapping, false)
+	if err != nil {
+		return err
+	}
+
+	logger.Debugf(`PUT "%s" "%s"`, key, value)
+	_, err = client.KV.Put(ctx, key, value)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *Store) GetCurrentMapping(ctx context.Context, projectID int, receiverID string, exportID string) (r *model.Mapping, err error) {
 	logger, tracer, client := c.logger, c.tracer, c.etcdClient
 
@@ -264,7 +371,7 @@ func (c *Store) GetCurrentMapping(ctx context.Context, projectID int, receiverID
 	// No mapping found
 	if len(resp.Kvs) == 0 {
 		logger.Debugf(`No mapping "%s" found`, key)
-		return nil, nil
+		return nil, NotFoundError{What: "mapping", Key: key}
 	}
 
 	logger.Debugf(`Decoding "%s"`, key)
