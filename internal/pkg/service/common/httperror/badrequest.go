@@ -1,4 +1,4 @@
-// Package apierror provides basic errors for all APIs.
+// Package httperror provides basic errors for all APIs.
 package httperror
 
 import (

@@ -2,7 +2,12 @@ package column
 
 import (
 	"encoding/json"
+	"net"
+	"net/http"
 	"reflect"
+	"time"
+
+	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -20,10 +25,11 @@ type (
 	Datetime struct{}
 	IP       struct{}
 	Body     struct{}
-	Headers  struct{}
+	Header   struct{}
 )
 
 const (
+	IDPlaceholder               = "<<~~id~~>>"
 	UndefinedValueStrategyNull  = "null"
 	UndefinedValueStrategyError = "error"
 )
@@ -127,7 +133,7 @@ func ColumnToType(column any) (string, error) {
 		return columnIPType, nil
 	case Body:
 		return columnBodyType, nil
-	case Headers:
+	case Header:
 		return columnHeadersType, nil
 	case Template:
 		return columnTemplateType, nil
@@ -150,7 +156,7 @@ func TypeToColumn(typ string) (Column, error) {
 	case columnBodyType:
 		return Body{}, nil
 	case columnHeadersType:
-		return Headers{}, nil
+		return Header{}, nil
 	case columnTemplateType:
 		return Template{}, nil
 	default:
@@ -158,18 +164,61 @@ func TypeToColumn(typ string) (Column, error) {
 	}
 }
 
-// Column is an interface used to restrict valid column types.
-type Column interface {
-	IsColumn() bool
+type ImportCtx struct {
+	Body     *orderedmap.OrderedMap
+	DateTime time.Time
+	Header   http.Header
+	IP       net.IP
 }
 
-func (ID) IsColumn() bool       { return true }
-func (Datetime) IsColumn() bool { return true }
-func (IP) IsColumn() bool       { return true }
-func (Body) IsColumn() bool     { return true }
-func (Headers) IsColumn() bool  { return true }
-func (Template) IsColumn() bool { return true }
+func NewImportCtx(body *orderedmap.OrderedMap, header http.Header, ip net.IP) ImportCtx {
+	return ImportCtx{
+		Body:     body,
+		DateTime: time.Now(),
+		Header:   header,
+		IP:       ip,
+	}
+}
+
+// Column is an interface used to restrict valid column types.
+type Column interface {
+	CsvValue(importCtx ImportCtx) (string, error)
+}
+
+func (ID) CsvValue(_ ImportCtx) (string, error) {
+	return IDPlaceholder, nil
+}
+
+func (Datetime) CsvValue(importCtx ImportCtx) (string, error) {
+	return importCtx.DateTime.Format(time.RFC3339), nil
+}
+
+func (IP) CsvValue(importCtx ImportCtx) (string, error) {
+	return importCtx.IP.String(), nil
+}
+
+func (Body) CsvValue(importCtx ImportCtx) (string, error) {
+	body, err := json.Marshal(importCtx.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
+func (Header) CsvValue(importCtx ImportCtx) (string, error) {
+	header, err := json.Marshal(importCtx.Header)
+	if err != nil {
+		return "", err
+	}
+	return string(header), nil
+}
+
+func (Template) CsvValue(_ ImportCtx) (string, error) {
+	return "", nil
+}
 
 type dummyColumn struct{}
 
-func (dummyColumn) IsColumn() bool { return true }
+func (dummyColumn) CsvValue(_ ImportCtx) (string, error) {
+	return "", nil
+}
