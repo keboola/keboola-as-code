@@ -77,7 +77,6 @@ func FormatTimeForKey(t time.Time) string {
 	return t.Format("2006-01-02T15:04:05.000Z")
 }
 
-// TODO: use this instead of returning nil
 type LimitReachedError struct {
 	What string
 	Max  int
