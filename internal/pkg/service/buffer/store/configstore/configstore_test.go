@@ -2,7 +2,6 @@ package configstore
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"strings"
 	"testing"
@@ -13,10 +12,10 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -66,22 +65,19 @@ func TestConfigStore_CreateReceiver(t *testing.T) {
 	err := store.CreateReceiver(ctx, config)
 	assert.NoError(t, err)
 
-	// Assert that it exists in the DB
-	encodedConfig, err := json.EncodeString(config, false)
-	assert.NoError(t, err)
-
-	r, err := d.etcdClient.KV.Get(ctx, "config", etcd.WithPrefix())
-	assert.NoError(t, err)
-
-	var found *string
-	for _, v := range r.Kvs {
-		if strings.HasPrefix(string(v.Key), ReceiverKey(config.ProjectID, config.ID)) {
-			temp := string(v.Value)
-			found = &temp
-			break
-		}
-	}
-	assert.Equal(t, *found, encodedConfig, "inserted config not found")
+	// Check keys
+	etcdhelper.AssertKVs(t, d.etcdClient, `
+<<<<<
+config/receiver/1000/github-pull-requests
+-----
+{
+  "receiverId": "github-pull-requests",
+  "projectId": 1000,
+  "name": "Github Pull Requests",
+  "secret": "%s"
+}
+>>>>>
+`)
 }
 
 func TestConfigStore_GetReceiver(t *testing.T) {
@@ -105,6 +101,20 @@ func TestConfigStore_GetReceiver(t *testing.T) {
 	receiver, err := store.GetReceiver(ctx, input.ProjectID, input.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, input, receiver)
+
+	// Check keys
+	etcdhelper.AssertKVs(t, d.etcdClient, `
+<<<<<
+config/receiver/1000/github-pull-requests
+-----
+{
+  "receiverId": "github-pull-requests",
+  "projectId": 1000,
+  "name": "Github Pull Requests",
+  "secret": "%s"
+}
+>>>>>
+`)
 }
 
 func TestConfigStore_ListReceivers(t *testing.T) {
@@ -149,6 +159,31 @@ func TestConfigStore_ListReceivers(t *testing.T) {
 		return receivers[i].ID < receivers[j].ID
 	})
 	assert.Equal(t, input, receivers)
+
+	// Check keys
+	etcdhelper.AssertKVs(t, d.etcdClient, `
+<<<<<
+config/receiver/1000/github-issues
+-----
+{
+  "receiverId": "github-issues",
+  "projectId": 1000,
+  "name": "Github Issues",
+  "secret": "%s"
+}
+>>>>>
+
+<<<<<
+config/receiver/1000/github-pull-requests
+-----
+{
+  "receiverId": "github-pull-requests",
+  "projectId": 1000,
+  "name": "Github Pull Requests",
+  "secret": "%s"
+}
+>>>>>
+`)
 }
 
 func TestConfigStore_CreateExport(t *testing.T) {
@@ -173,21 +208,22 @@ func TestConfigStore_CreateExport(t *testing.T) {
 	err := store.CreateExport(ctx, projectID, receiverID, config)
 	assert.NoError(t, err)
 
-	encodedConfig, err := json.EncodeString(config, false)
-	assert.NoError(t, err)
-
-	r, err := d.etcdClient.KV.Get(ctx, "config", etcd.WithPrefix())
-	assert.NoError(t, err)
-
-	var found *string
-	for _, v := range r.Kvs {
-		if strings.HasPrefix(string(v.Key), ExportKey(projectID, receiverID, config.ID)) {
-			temp := string(v.Value)
-			found = &temp
-			break
-		}
-	}
-	assert.Equal(t, *found, encodedConfig, "inserted config not found")
+	// Check keys
+	etcdhelper.AssertKVs(t, d.etcdClient, `
+<<<<<
+config/export/1000/github/github-issues
+-----
+{
+  "exportId": "github-issues",
+  "name": "Github Issues",
+  "importConditions": {
+    "count": 5,
+    "size": "50KB",
+    "time": 1800000000000
+  }
+}
+>>>>>
+`)
 }
 
 func TestConfigStore_ListExports(t *testing.T) {
@@ -222,19 +258,46 @@ func TestConfigStore_ListExports(t *testing.T) {
 		},
 	}
 
-	for _, i := range input {
-		key := fmt.Sprintf("config/export/%d/%s/%s", projectID, receiverID, i.ID)
-		value, err := json.EncodeString(i, false)
-		assert.NoError(t, err)
-		_, err = d.etcdClient.KV.Put(ctx, key, value)
+	for _, e := range input {
+		err := store.CreateExport(ctx, projectID, receiverID, *e)
 		assert.NoError(t, err)
 	}
 
 	// List
-	exports, err := store.ListExports(ctx, projectID, receiverID)
+	output, err := store.ListExports(ctx, projectID, receiverID)
 	assert.NoError(t, err)
+	assert.Equal(t, input, output)
 
-	assert.Equal(t, input, exports)
+	// Check keys
+	etcdhelper.AssertKVs(t, d.etcdClient, `
+<<<<<
+config/export/1000/receiver1/export-1
+-----
+{
+  "exportId": "export-1",
+  "name": "Export 1",
+  "importConditions": {
+    "count": 5,
+    "size": "50KB",
+    "time": 1800000000000
+  }
+}
+>>>>>
+
+<<<<<
+config/export/1000/receiver1/export-2
+-----
+{
+  "exportId": "export-2",
+  "name": "Export 2",
+  "importConditions": {
+    "count": 5,
+    "size": "50KB",
+    "time": 300000000000
+  }
+}
+>>>>>
+`)
 }
 
 func TestConfigStore_GetCurrentMapping(t *testing.T) {
@@ -254,39 +317,96 @@ func TestConfigStore_GetCurrentMapping(t *testing.T) {
 	}
 
 	// Create mapppings
-	input := []*model.Mapping{
+	input := []model.Mapping{
 		{
 			RevisionID:  1,
 			TableID:     tableID,
 			Incremental: false,
-			Columns:     nil,
+			Columns:     column.Columns{column.ID{}},
 		},
 		{
 			RevisionID:  2,
 			TableID:     tableID,
 			Incremental: false,
-			Columns:     nil,
+			Columns:     column.Columns{column.ID{}},
 		},
 		{
 			RevisionID:  10,
 			TableID:     tableID,
-			Incremental: false,
-			Columns:     nil,
+			Incremental: true,
+			Columns:     column.Columns{column.ID{}},
 		},
 	}
 
-	for _, i := range input {
-		value, err := json.EncodeString(i, false)
-		assert.NoError(t, err)
-		_, err = d.etcdClient.KV.Put(ctx, MappingKey(projectID, receiverID, exportID, i.RevisionID), value)
+	for _, m := range input {
+		err := store.CreateMapping(ctx, projectID, receiverID, exportID, m)
 		assert.NoError(t, err)
 	}
 
 	// Get current mapping
 	mapping, err := store.GetCurrentMapping(ctx, projectID, receiverID, exportID)
 	assert.NoError(t, err)
+	assert.Equal(t, &input[2], mapping)
 
-	assert.Equal(t, input[2], mapping)
+	// Check keys
+	etcdhelper.AssertKVs(t, d.etcdClient, `
+<<<<<
+config/mapping/revision/1000/receiver1/export1/00000001
+-----
+{
+  "revisionId": 1,
+  "tableId": {
+    "stage": "in",
+    "bucketName": "main",
+    "tableName": "table1"
+  },
+  "incremental": false,
+  "columns": [
+    {
+      "type": "id"
+    }
+  ]
+}
+>>>>>
+
+<<<<<
+config/mapping/revision/1000/receiver1/export1/00000002
+-----
+{
+  "revisionId": 2,
+  "tableId": {
+    "stage": "in",
+    "bucketName": "main",
+    "tableName": "table1"
+  },
+  "incremental": false,
+  "columns": [
+    {
+      "type": "id"
+    }
+  ]
+}
+>>>>>
+
+<<<<<
+config/mapping/revision/1000/receiver1/export1/00000010
+-----
+{
+  "revisionId": 10,
+  "tableId": {
+    "stage": "in",
+    "bucketName": "main",
+    "tableName": "table1"
+  },
+  "incremental": true,
+  "columns": [
+    {
+      "type": "id"
+    }
+  ]
+}
+>>>>>
+`)
 }
 
 func TestConfigStore_CreateRecord(t *testing.T) {
@@ -300,6 +420,9 @@ func TestConfigStore_CreateRecord(t *testing.T) {
 	receiverID := "receiver1"
 	exportID := "export1"
 
+	now, err := time.Parse(time.RFC3339, `2006-01-02T15:04:05+07:00`)
+	assert.NoError(t, err)
+
 	csv := []string{"one", "two", `th"ree`}
 	record := RecordKey{
 		projectID:  projectID,
@@ -307,16 +430,20 @@ func TestConfigStore_CreateRecord(t *testing.T) {
 		exportID:   exportID,
 		fileID:     "file1",
 		sliceID:    "slice1",
-		receivedAt: time.Now(),
+		receivedAt: now,
 	}
 
-	err := store.CreateRecord(ctx, record, csv)
+	err = store.CreateRecord(ctx, record, csv)
 	assert.NoError(t, err)
 
-	r, err := d.etcdClient.KV.Get(ctx, "record/1000/receiver1/export1/file1/slice1/"+FormatTimeForKey(record.receivedAt), etcd.WithPrefix())
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(r.Kvs))
-	assert.Equal(t, "one,two,\"th\"\"ree\"\n", string(r.Kvs[0].Value))
+	// Check keys
+	etcdhelper.AssertKVs(t, d.etcdClient, `
+<<<<<
+record/1000/receiver1/export1/file1/slice1/2006-01-02T08:04:05.000Z_%c%c%c%c%c
+-----
+one,two,"th""ree"
+>>>>>
+`)
 }
 
 type testDeps struct {
