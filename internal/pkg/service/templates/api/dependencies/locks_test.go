@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
 type testDeps struct {
@@ -66,7 +66,7 @@ func TestLocker_WithEtcd(t *testing.T) {
 	t.Parallel()
 
 	// Create locker
-	d := &testDeps{logger: log.NewDebugLogger(), etcdClient: newTestEtcdClient(t)}
+	d := &testDeps{logger: log.NewDebugLogger(), etcdClient: etcdhelper.ClientForTest(t)}
 	ttlSeconds := 5
 	locker := NewLocker(d, ttlSeconds)
 
@@ -110,7 +110,7 @@ func TestLocker_WithEtcd_TimeToLiveExpired(t *testing.T) {
 	t.Parallel()
 
 	// Create locker
-	d := &testDeps{logger: log.NewDebugLogger(), etcdClient: newTestEtcdClient(t)}
+	d := &testDeps{logger: log.NewDebugLogger(), etcdClient: etcdhelper.ClientForTest(t)}
 	ttlSeconds := 2
 	locker := NewLocker(d, ttlSeconds)
 
@@ -139,29 +139,4 @@ INFO  acquired etcd lock "projectId=456/%s"
 INFO  released etcd lock "projectId=456"
 `
 	wildcards.Assert(t, strings.TrimLeft(expected, "\n"), d.logger.AllMessages())
-}
-
-func newTestEtcdClient(t *testing.T) *etcd.Client {
-	t.Helper()
-
-	envs, err := env.FromOs()
-	assert.NoError(t, err)
-
-	// Check if etcd is enabled
-	if envs.Get("TEMPLATES_API_ETCD_ENABLED") == "false" {
-		t.Skipf("etcd disabled")
-	}
-
-	// Create etcd client
-	etcdClient, err := etcd.New(etcd.Config{
-		Context:              context.Background(),
-		Endpoints:            []string{envs.Get("TEMPLATES_API_ETCD_ENDPOINT")},
-		DialTimeout:          2 * time.Second,
-		DialKeepAliveTimeout: 2 * time.Second,
-		DialKeepAliveTime:    10 * time.Second,
-		Username:             envs.Get("TEMPLATES_API_ETCD_USERNAME"), // optional
-		Password:             envs.Get("TEMPLATES_API_ETCD_PASSWORD"), // optional
-	})
-	assert.NoError(t, err)
-	return etcdClient
 }

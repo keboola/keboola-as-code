@@ -84,15 +84,9 @@ jobs:
         env:
           DATADOG_ENABLED: false
           TEST_KBC_PROJECTS: ${{ env[matrix.projects] }}
-          # Same etcd is used for all services, but with different namespace
-          TEMPLATES_API_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
-          TEMPLATES_API_ETCD_ENDPOINT: etcd:2379
-          TEMPLATES_API_ETCD_USERNAME: root
-          TEMPLATES_API_ETCD_PASSWORD: toor
-          TEMPLATES_API_ETCD_NAMESPACE: templates-api
-          BUFFER_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
-          BUFFER_ETCD_ENDPOINT: etcd:2379
-          BUFFER_ETCD_USERNAME: root
-          BUFFER_ETCD_PASSWORD: toor
-          BUFFER_ETCD_NAMESPACE: buffer
+          UNIT_ETCD_ENABLED: ${{ matrix.name == 'linux' && 'true' || 'false' }}
+          UNIT_ETCD_ENDPOINT: etcd:2379
+          UNIT_ETCD_USERNAME: root
+          UNIT_ETCD_PASSWORD: toor
+          UNIT_ETCD_NAMESPACE: buffer
 
