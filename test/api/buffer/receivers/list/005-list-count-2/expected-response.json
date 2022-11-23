@@ -1,14 +1,12 @@
 {
   "receivers": [
     {
+      "exports": [],
       "receiverId": "list-receivers-test-a",
       "name": "list-receivers-test-a",
       "url": "https://buffer.keboola.local/v1/import/%d/list-receivers-test-a/#/%s"
     },
     {
-      "receiverId": "list-receivers-test-b",
-      "name": "list-receivers-test-b",
-      "url": "https://buffer.keboola.local/v1/import/%d/list-receivers-test-b/#/%s",
       "exports": [
         {
           "exportId": "list-receivers-test-b-export-0",
@@ -37,7 +35,10 @@
             "time": 30
           }
         }
-      ]
+      ],
+      "receiverId": "list-receivers-test-b",
+      "name": "list-receivers-test-b",
+      "url": "https://buffer.keboola.local/v1/import/%d/list-receivers-test-b/#/%s"
     }
   ]
 }

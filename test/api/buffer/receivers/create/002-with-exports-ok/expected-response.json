@@ -1,7 +1,4 @@
 {
-  "receiverId": "create-receiver-with-exports",
-  "name": "create-receiver-with-exports",
-  "url": "https://buffer.keboola.local/v1/import/%d/create-receiver-with-exports/#/%s",
   "exports": [
     {
       "exportId": "create-receiver-with-exports-export-0",
@@ -30,6 +27,9 @@
         "time": 30
       }
     }
-  ]
+  ],
+  "receiverId": "create-receiver-with-exports",
+  "name": "create-receiver-with-exports",
+  "url": "https://buffer.keboola.local/v1/import/%d/create-receiver-with-exports/#/%s"
 }
 

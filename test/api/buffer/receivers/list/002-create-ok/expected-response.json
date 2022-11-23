@@ -1,4 +1,5 @@
 {
+  "exports": [],
   "receiverId": "list-receivers-test-a",
   "name": "list-receivers-test-a",
   "url": "https://buffer.keboola.local/v1/import/%d/list-receivers-test-a/#/%s"
