@@ -424,13 +424,13 @@ func TestConfigStore_CreateRecord(t *testing.T) {
 	assert.NoError(t, err)
 
 	csv := []string{"one", "two", `th"ree`}
-	record := RecordKey{
-		projectID:  projectID,
-		receiverID: receiverID,
-		exportID:   exportID,
-		fileID:     "file1",
-		sliceID:    "slice1",
-		receivedAt: now,
+	record := model.RecordKey{
+		ProjectID:  projectID,
+		ReceiverID: receiverID,
+		ExportID:   exportID,
+		FileID:     "file1",
+		SliceID:    "slice1",
+		ReceivedAt: now,
 	}
 
 	err = store.CreateRecord(ctx, record, csv)
