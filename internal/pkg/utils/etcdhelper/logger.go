@@ -40,7 +40,7 @@ func (v *kvWrapper) Put(ctx context.Context, key, val string, opts ...OpOption) 
 	startTime := time.Now()
 	v.logStart(requestId, "PUT", key)
 	r, err := v.KV.Put(ctx, key, val, opts...)
-	v.logEnd(requestId, "PUT", key, startTime, r.OpResponse(), err)
+	v.logEnd(requestId, "PUT", key, val, startTime, r.OpResponse(), err)
 	return r, err
 }
 
@@ -49,7 +49,7 @@ func (v *kvWrapper) Get(ctx context.Context, key string, opts ...OpOption) (*Get
 	startTime := time.Now()
 	v.logStart(requestId, "GET", key)
 	r, err := v.KV.Get(ctx, key, opts...)
-	v.logEnd(requestId, "GET", key, startTime, r.OpResponse(), err)
+	v.logEnd(requestId, "GET", key, "", startTime, r.OpResponse(), err)
 	return r, err
 }
 
@@ -58,18 +58,20 @@ func (v *kvWrapper) Delete(ctx context.Context, key string, opts ...OpOption) (*
 	startTime := time.Now()
 	v.logStart(requestId, "DEL", key)
 	r, err := v.KV.Delete(ctx, key, opts...)
-	v.logEnd(requestId, "DEL", key, startTime, r.OpResponse(), err)
+	v.logEnd(requestId, "DEL", key, "", startTime, r.OpResponse(), err)
 	return r, err
 }
 
 func (v *kvWrapper) Do(ctx context.Context, op Op) (OpResponse, error) {
 	key := string(op.KeyBytes())
 	var opName string
+	var val string
 	switch {
 	case op.IsGet():
 		opName = "GET"
 	case op.IsPut():
 		opName = "PUT"
+		val = string(op.ValueBytes())
 	case op.IsDelete():
 		opName = "DEL"
 	case op.IsTxn():
@@ -81,7 +83,7 @@ func (v *kvWrapper) Do(ctx context.Context, op Op) (OpResponse, error) {
 	v.logStart(requestId, opName, key)
 
 	r, err := v.KV.Do(ctx, op)
-	v.logEnd(requestId, opName, key, startTime, r, err)
+	v.logEnd(requestId, opName, key, val, startTime, r, err)
 	return r, err
 }
 
@@ -89,11 +91,13 @@ func (v *kvWrapper) logStart(requestId uint64, op, key string) {
 	v.log(requestId, `%s "%s" | start`, op, key)
 }
 
-func (v *kvWrapper) logEnd(requestId uint64, op, key string, startTime time.Time, r OpResponse, err error) {
+func (v *kvWrapper) logEnd(requestId uint64, op, key, val string, startTime time.Time, r OpResponse, err error) {
 	if err != nil {
 		v.log(requestId, `%s "%s" | error | %s | %s`, op, key, err, time.Since(startTime))
 	} else if r.Get() != nil {
 		v.log(requestId, `%s "%s" | done | count: %d | %s`, op, key, r.Get().Count, time.Since(startTime))
+	} else if r.Put() != nil {
+		v.log(requestId, "%s \"%s\" | done | %s | value:\n%s", op, key, time.Since(startTime), val)
 	} else if r.Del() != nil {
 		v.log(requestId, `%s "%s" | done | deleted: %d| %s`, op, key, r.Del().Deleted, time.Since(startTime))
 	} else {
