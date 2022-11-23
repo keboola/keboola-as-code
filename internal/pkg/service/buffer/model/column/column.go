@@ -2,6 +2,7 @@ package column
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
 	"reflect"
 	"time"
@@ -28,6 +29,7 @@ type (
 )
 
 const (
+	IDPlaceholder               = "<<~~id~~>>"
 	UndefinedValueStrategyNull  = "null"
 	UndefinedValueStrategyError = "error"
 )
@@ -163,13 +165,13 @@ func TypeToColumn(typ string) (Column, error) {
 }
 
 type ImportCtx struct {
-	Body     *orderedmap.OrderedMap `json:"body"`
-	DateTime time.Time              `json:"datetime"`
-	Header   http.Header            `json:"header"`
-	IP       string                 `json:"ip"`
+	Body     *orderedmap.OrderedMap
+	DateTime time.Time
+	Header   http.Header
+	IP       net.IP
 }
 
-func NewImportCtx(body *orderedmap.OrderedMap, header http.Header, ip string) ImportCtx {
+func NewImportCtx(body *orderedmap.OrderedMap, header http.Header, ip net.IP) ImportCtx {
 	return ImportCtx{
 		Body:     body,
 		DateTime: time.Now(),
@@ -180,35 +182,29 @@ func NewImportCtx(body *orderedmap.OrderedMap, header http.Header, ip string) Im
 
 // Column is an interface used to restrict valid column types.
 type Column interface {
-	IsColumn() bool
 	CsvValue(importCtx ImportCtx) (string, error)
 }
 
-func (ID) IsColumn() bool { return true }
 func (ID) CsvValue(_ ImportCtx) (string, error) {
-	return "<id>", nil
+	return IDPlaceholder, nil
 }
 
-func (Datetime) IsColumn() bool { return true }
 func (Datetime) CsvValue(importCtx ImportCtx) (string, error) {
 	return importCtx.DateTime.Format(time.RFC3339), nil
 }
 
-func (IP) IsColumn() bool { return true }
 func (IP) CsvValue(importCtx ImportCtx) (string, error) {
-	return importCtx.IP, nil
+	return importCtx.IP.String(), nil
 }
 
-func (Body) IsColumn() bool { return true }
 func (Body) CsvValue(importCtx ImportCtx) (string, error) {
-	body, err := importCtx.Body.MarshalJSON()
+	body, err := json.Marshal(importCtx.Body)
 	if err != nil {
 		return "", err
 	}
 	return string(body), nil
 }
 
-func (Header) IsColumn() bool { return true }
 func (Header) CsvValue(importCtx ImportCtx) (string, error) {
 	header, err := json.Marshal(importCtx.Header)
 	if err != nil {
@@ -217,14 +213,12 @@ func (Header) CsvValue(importCtx ImportCtx) (string, error) {
 	return string(header), nil
 }
 
-func (Template) IsColumn() bool { return true }
 func (Template) CsvValue(_ ImportCtx) (string, error) {
 	return "", nil
 }
 
 type dummyColumn struct{}
 
-func (dummyColumn) IsColumn() bool { return true }
 func (dummyColumn) CsvValue(_ ImportCtx) (string, error) {
 	return "", nil
 }

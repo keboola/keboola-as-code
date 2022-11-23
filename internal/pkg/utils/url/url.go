@@ -2,6 +2,7 @@ package url
 
 import (
 	"net/url"
+	"reflect"
 	"strings"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -10,7 +11,6 @@ import (
 )
 
 // ParseQuery is taken from net/url package but returns ordered map instead of regular map.
-// The implementation does not support array values.
 func ParseQuery(query string) (m *orderedmap.OrderedMap, err error) {
 	m = orderedmap.New()
 	for query != "" {
@@ -38,7 +38,17 @@ func ParseQuery(query string) (m *orderedmap.OrderedMap, err error) {
 			}
 			continue
 		}
-		m.Set(key, value)
+		existingValue, found := m.Get(key)
+		if found {
+			switch reflect.TypeOf(existingValue).Kind() {
+			case reflect.Slice:
+				m.Set(key, append(existingValue.([]any), value))
+			default:
+				m.Set(key, []any{existingValue, value})
+			}
+		} else {
+			m.Set(key, value)
+		}
 	}
 	return m, err
 }

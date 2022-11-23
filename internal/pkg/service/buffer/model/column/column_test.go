@@ -2,6 +2,7 @@ package column_test
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
 	"testing"
 	"time"
@@ -53,18 +54,16 @@ func TestColumn_ID(t *testing.T) {
 	t.Parallel()
 
 	c := column.ID{}
-	assert.True(t, c.IsColumn())
 
 	val, err := c.CsvValue(column.ImportCtx{})
 	assert.NoError(t, err)
-	assert.Equal(t, "<id>", val)
+	assert.Equal(t, column.IDPlaceholder, val)
 }
 
 func TestColumn_DateTime(t *testing.T) {
 	t.Parallel()
 
 	c := column.Datetime{}
-	assert.True(t, c.IsColumn())
 
 	tm := time.Now()
 	val, err := c.CsvValue(column.ImportCtx{DateTime: tm})
@@ -76,9 +75,8 @@ func TestColumn_IP(t *testing.T) {
 	t.Parallel()
 
 	c := column.IP{}
-	assert.True(t, c.IsColumn())
 
-	val, err := c.CsvValue(column.ImportCtx{IP: "1.2.3.4"})
+	val, err := c.CsvValue(column.ImportCtx{IP: net.ParseIP("1.2.3.4")})
 	assert.NoError(t, err)
 	assert.Equal(t, "1.2.3.4", val)
 }
@@ -87,14 +85,13 @@ func TestColumn_Body(t *testing.T) {
 	t.Parallel()
 
 	c := column.Body{}
-	assert.True(t, c.IsColumn())
 
 	body := orderedmap.New()
 	body.Set("one", "two")
 	body.Set("three", "four")
 	val, err := c.CsvValue(column.ImportCtx{Body: body})
 	assert.NoError(t, err)
-	bodyMarshalled, err := body.MarshalJSON()
+	bodyMarshalled, err := json.Marshal(body)
 	assert.NoError(t, err)
 	assert.Equal(t, string(bodyMarshalled), val)
 }
@@ -103,7 +100,6 @@ func TestColumn_Header(t *testing.T) {
 	t.Parallel()
 
 	c := column.Header{}
-	assert.True(t, c.IsColumn())
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")

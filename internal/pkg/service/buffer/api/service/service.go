@@ -411,12 +411,12 @@ func parseRequestBody(contentType string, reader io.ReadCloser) (res *orderedmap
 	if isContentTypeForm(contentType) {
 		data, err = utilsUrl.ParseQuery(buf.String())
 		if err != nil {
-			return nil, &BadRequestError{Message: "Could not parse POST request body into a json."}
+			return nil, &BadRequestError{Message: "Could not parse form request body."}
 		}
 	} else {
 		err = json.Unmarshal([]byte(buf.String()), &data)
 		if err != nil {
-			return nil, &BadRequestError{Message: "Could not parse form request body into a json."}
+			return nil, &BadRequestError{Message: "Could not parse json request body."}
 		}
 	}
 	return data, nil
