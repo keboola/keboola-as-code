@@ -91,6 +91,7 @@ type forServer struct {
 	dependencies.Public
 	serverCtx         context.Context
 	serverWg          *sync.WaitGroup
+	debug             bool
 	logger            log.PrefixLogger
 	repositoryManager *repositoryManager.Manager
 	etcdClient        dependencies.Lazy[*etcd.Client]
@@ -164,6 +165,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 		Public:    publicDeps,
 		serverCtx: serverCtx,
 		serverWg:  serverWg,
+		debug:     debug,
 		logger:    logger,
 	}
 
@@ -261,6 +263,7 @@ func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 			etcdclient.WithConnectContext(ctx),
 			etcdclient.WithConnectTimeout(connectTimeout),
 			etcdclient.WithLogger(v.logger),
+			etcdclient.WithDebugOpLogs(v.debug),
 			etcdclient.WithWaitGroup(v.serverWg),
 		)
 	})

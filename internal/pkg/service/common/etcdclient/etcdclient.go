@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
 const (
@@ -31,6 +32,7 @@ type config struct {
 	username          string
 	password          string
 	namespace         string
+	debugOpLogs       bool
 	connectCtx        context.Context
 	connectTimeout    time.Duration
 	keepAliveTimeout  time.Duration
@@ -51,6 +53,13 @@ func WithUsername(v string) Option {
 func WithPassword(v string) Option {
 	return func(c *config) {
 		c.password = v
+	}
+}
+
+// WithDebugOpLogs allows logging of ach KV operation as a debug message.
+func WithDebugOpLogs(v bool) Option {
+	return func(c *config) {
+		c.debugOpLogs = v
 	}
 }
 
@@ -200,6 +209,11 @@ func New(ctx context.Context, tracer trace.Tracer, endpoint, namespace string, o
 	c.KV = etcdNamespace.NewKV(c.KV, namespace)
 	c.Watcher = etcdNamespace.NewWatcher(c.Watcher, namespace)
 	c.Lease = etcdNamespace.NewLease(c.Lease, namespace)
+
+	// Log each KV operation as a debug message, if enabled
+	if conf.debugOpLogs {
+		c.KV = etcdhelper.KVLogWrapper(c.KV, logger.DebugWriter())
+	}
 
 	// Sync endpoints list from cluster, it is used also as a connection check.
 	if err := c.Sync(connectCtx); err != nil {

@@ -88,6 +88,7 @@ func NewServiceDeps(
 		etcdclient.WithConnectContext(ctx),
 		etcdclient.WithConnectTimeout(30*time.Second), // longer timeout, the etcd could be started at the same time as the API/Worker
 		etcdclient.WithLogger(logger),
+		etcdclient.WithDebugOpLogs(debug),
 		etcdclient.WithWaitGroup(processWg),
 	)
 	if err != nil {
