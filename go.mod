@@ -38,6 +38,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
 	github.com/writeas/go-strip-markdown v2.0.1+incompatible
+	go.etcd.io/etcd/api/v3 v3.5.5
 	go.etcd.io/etcd/client/v3 v3.5.5
 	go.nhat.io/aferocopy/v2 v2.0.1
 	go.opentelemetry.io/otel v1.11.1
@@ -168,7 +169,6 @@ require (
 	github.com/pkg/browser v0.0.0-20210115035449-ce105d075bb4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.2 // indirect
-	go.etcd.io/etcd/api/v3 v3.5.5 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.5 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go4.org/intern v0.0.0-20220617035311-6925f38cc365 // indirect
