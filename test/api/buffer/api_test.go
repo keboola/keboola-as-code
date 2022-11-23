@@ -29,6 +29,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenv"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
@@ -183,7 +184,7 @@ func waitForAPI(cmdErrCh <-chan error, apiUrl string) error {
 }
 
 // RunApiServer runs the compiled api binary on the background.
-func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl string, stdout, stderr *cmdOut) {
+func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl string, p env.Provider, stdout, stderr *cmdOut) {
 	t.Helper()
 
 	// Get a free port
@@ -257,7 +258,7 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl st
 		)
 	}
 
-	return apiUrl, stdout, stderr
+	return apiUrl, envs, stdout, stderr
 }
 
 type ApiRequest struct {
@@ -278,7 +279,7 @@ func RunRequests(
 	t.Helper()
 
 	// Run API server
-	apiUrl, stdout, stderr := RunApiServer(t, binary, project.StorageAPIHost())
+	apiUrl, apiEnvs, stdout, stderr := RunApiServer(t, binary, project.StorageAPIHost())
 	client := resty.New()
 	client.SetBaseURL(apiUrl)
 
@@ -326,7 +327,6 @@ func RunRequests(
 		// Decode && encode json to unite indentation of the response with expected-response.json
 		respMap := orderedmap.New()
 		if resp.String() != "" {
-			fmt.Println("RESP", resp.String())
 			err = json.DecodeString(resp.String(), &respMap)
 		}
 		assert.NoError(t, err)
@@ -377,6 +377,43 @@ func RunRequests(
 			testhelper.MustReplaceEnvsString(expectedSnapshot.Content, envProvider),
 			json.MustEncodeString(actualSnapshot, true),
 			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir.`,
+		)
+	}
+
+	// Connect to the etcd
+	etcdClient := etcdhelper.ClientForTestFrom(
+		t,
+		apiEnvs.Get("BUFFER_ETCD_ENDPOINT"),
+		apiEnvs.Get("BUFFER_ETCD_USERNAME"),
+		apiEnvs.Get("BUFFER_ETCD_PASSWORD"),
+		apiEnvs.Get("BUFFER_ETCD_NAMESPACE"),
+	)
+
+	// Write actual etcd KVs
+	etcdDump, err := etcdhelper.DumpAll(context.Background(), etcdClient)
+	if err != nil {
+		assert.FailNow(t, err.Error())
+	}
+	err = workingDirFs.WriteFile(filesystem.NewRawFile("actual-etcd-kvs.txt", etcdDump))
+	if err != nil {
+		assert.FailNow(t, err.Error())
+	}
+
+	// Optionally check etcd KVs
+	expectedEtcdKVsPath := "expected-etcd-kvs.txt"
+	if testDirFs.IsFile(expectedEtcdKVsPath) {
+		// Read expected state
+		expected, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedEtcdKVsPath))
+		if err != nil {
+			assert.FailNow(t, err.Error())
+		}
+
+		// Compare expected and actual kvs
+		wildcards.Assert(
+			t,
+			testhelper.MustReplaceEnvsString(expected.Content, envProvider),
+			etcdDump,
+			`unexpected etcd state, compare "expected-etcd-kvs.txt" from test and "actual-etcd-kvs.txt" from ".out" dir.`,
 		)
 	}
 
