@@ -1,27 +1,35 @@
 package errors
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
 )
 
-type EndpointNotFoundError struct{}
+type EndpointNotFoundError struct {
+	url *url.URL
+}
 
-func NewEndpointNotFoundError() EndpointNotFoundError {
-	return EndpointNotFoundError{}
+func NewEndpointNotFoundError(url *url.URL) EndpointNotFoundError {
+	return EndpointNotFoundError{url: url}
 }
 
 func (EndpointNotFoundError) StatusCode() int {
 	return http.StatusNotFound
 }
 
-func (EndpointNotFoundError) Error() string {
-	return "endpoint not found"
+func (e EndpointNotFoundError) Error() string {
+	path := "n/a"
+	if e.url != nil {
+		path = e.url.Path
+	}
+	return fmt.Sprintf(`no endpoint found for path "%s"`, path)
 }
 
 func (EndpointNotFoundError) ErrorName() string {
 	return "endpointNotFound"
 }
 
-func (EndpointNotFoundError) ErrorUserMessage() string {
-	return "Endpoint not found."
+func (e EndpointNotFoundError) ErrorUserMessage() string {
+	return e.Error()
 }

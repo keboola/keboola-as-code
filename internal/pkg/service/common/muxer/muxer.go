@@ -1,4 +1,4 @@
-package http
+package muxer
 
 import (
 	"net/http"
@@ -7,23 +7,24 @@ import (
 	"github.com/dimfeld/httptreemux/v5"
 	goaHTTP "goa.design/goa/v3/http"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver"
 )
 
 type muxer struct {
 	*httptreemux.ContextMux
 }
 
-// newMuxer returns a Muxer implementation with custom 404 not found error handler.
-func newMuxer(logger log.Logger) goaHTTP.Muxer {
+// New returns a Muxer implementation with custom not found and panic error handlers.
+func New(errorWriter httpserver.ErrorWriter) goaHTTP.Muxer {
 	r := httptreemux.NewContextMux()
 
 	r.EscapeAddedRoutes = true
 	r.NotFoundHandler = func(w http.ResponseWriter, req *http.Request) {
-		_ = writeError(req.Context(), logger, w, NotFoundError{})
+		errorWriter.Write(req.Context(), w, serviceError.NewEndpointNotFoundError(req.URL))
 	}
-	r.PanicHandler = func(w http.ResponseWriter, req *http.Request, value interface{}) {
-		_ = writeError(req.Context(), logger, w, PanicError{Value: value})
+	r.PanicHandler = func(w http.ResponseWriter, req *http.Request, value any) {
+		errorWriter.Write(req.Context(), w, serviceError.NewPanicError(value))
 	}
 	return &muxer{r}
 }

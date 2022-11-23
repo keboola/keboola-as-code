@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"sort"
 	"strings"
 	"time"
@@ -18,9 +17,8 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/configstore"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/recordstore"
-	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/httperror"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	utilsUrl "github.com/keboola/keboola-as-code/internal/pkg/utils/url"
@@ -84,17 +82,17 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 			export.ImportConditions.Count = exportData.Conditions.Count
 			export.ImportConditions.Size, err = datasize.ParseString(exportData.Conditions.Size)
 			if err != nil {
-				return nil, BadRequestError{Message: fmt.Sprintf(
-					`Value "%s" is not valid buffer size in bytes. Allowed units: B, kB, MB. For example: "5MB".`,
+				return nil, NewBadRequestError(errors.Errorf(
+					`value "%s" is not valid buffer size in bytes. Allowed units: B, kB, MB. For example: "5MB"`,
 					exportData.Conditions.Size,
-				)}
+				))
 			}
 			export.ImportConditions.Time, err = time.ParseDuration(exportData.Conditions.Time)
 			if err != nil {
-				return nil, BadRequestError{Message: fmt.Sprintf(
-					`Value "%s" is not valid time duration. Allowed units: s, m, h. For example: "30s".`,
+				return nil, NewBadRequestError(errors.Errorf(
+					`value "%s" is not valid time duration. Allowed units: s, m, h. For example: "30s"`,
 					exportData.Conditions.Size,
-				)}
+				))
 			}
 		}
 
@@ -145,48 +143,14 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 		}
 
 		// Persist export
-		err = store.CreateExport(ctx, receiver.ProjectID, receiver.ID, export)
-		if err != nil {
-			if errors.As(err, &configstore.LimitReachedError{}) {
-				return nil, &GenericError{
-					StatusCode: http.StatusUnprocessableEntity,
-					Name:       "buffer.resourceLimitReached",
-					Message:    fmt.Sprintf("Maximum number of exports per receiver is %d.", configstore.MaxExportsPerReceiver),
-				}
-			}
-			if errors.As(err, &configstore.AlreadyExistsError{}) {
-				return nil, &GenericError{
-					StatusCode: http.StatusConflict,
-					Name:       "buffer.alreadyExists",
-					Message:    fmt.Sprintf(`Export "%s" already exists.`, export.ID),
-				}
-			}
-			// nolint:godox
-			// TODO: maybe handle validation error
+		if err := store.CreateExport(ctx, receiver.ProjectID, receiver.ID, export); err != nil {
 			return nil, err
 		}
 	}
 
 	// Persist receiver
-	err = store.CreateReceiver(ctx, receiver)
-	if err != nil {
-		if errors.As(err, &configstore.LimitReachedError{}) {
-			return nil, &GenericError{
-				StatusCode: http.StatusUnprocessableEntity,
-				Name:       "buffer.resourceLimitReached",
-				Message:    fmt.Sprintf("Maximum number of receivers per project is %d.", configstore.MaxReceiversPerProject),
-			}
-		}
-		if errors.As(err, &configstore.AlreadyExistsError{}) {
-			return nil, &GenericError{
-				StatusCode: http.StatusConflict,
-				Name:       "buffer.alreadyExists",
-				Message:    fmt.Sprintf(`Receiver "%s" already exists.`, receiver.ID),
-			}
-		}
-		// nolint:godox
-		// TODO: maybe handle validation error
-		return nil, errors.Wrapf(err, "failed to create receiver \"%s\"", receiver.ID)
+	if err := store.CreateReceiver(ctx, receiver); err != nil {
+		return nil, err
 	}
 	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: receiver.ID})
 }
@@ -198,14 +162,7 @@ func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.
 
 	receiver, err := store.GetReceiver(ctx, projectID, receiverID)
 	if err != nil {
-		if errors.As(err, &configstore.NotFoundError{}) {
-			return nil, &GenericError{
-				StatusCode: http.StatusNotFound,
-				Name:       "buffer.receiverNotFound",
-				Message:    fmt.Sprintf("Receiver \"%s\" not found", receiverID),
-			}
-		}
-		return nil, errors.Wrapf(err, "failed to get receiver \"%s\" in project \"%d\"", receiverID, projectID)
+		return nil, err
 	}
 
 	exportList, err := store.ListExports(ctx, projectID, receiverID)
@@ -357,15 +314,7 @@ func (s *service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buff
 	// nolint:godox
 	// TODO: delete export/mapping
 
-	err = store.DeleteReceiver(ctx, projectID, receiverID)
-	if err != nil {
-		if errors.As(err, &configstore.NotFoundError{}) {
-			return &GenericError{
-				StatusCode: 404,
-				Name:       "buffer.receiverNotFound",
-				Message:    fmt.Sprintf("Receiver \"%s\" not found", receiverID),
-			}
-		}
+	if err := store.DeleteReceiver(ctx, projectID, receiverID); err != nil {
 		return err
 	}
 
@@ -373,23 +322,23 @@ func (s *service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buff
 }
 
 func (s *service) RefreshReceiverTokens(dependencies.ForProjectRequest, *buffer.RefreshReceiverTokensPayload) (res *buffer.Receiver, err error) {
-	return nil, &NotImplementedError{}
+	return nil, NewNotImplementedError()
 }
 
 func (s *service) CreateExport(dependencies.ForProjectRequest, *buffer.CreateExportPayload) (res *buffer.Receiver, err error) {
-	return nil, &NotImplementedError{}
+	return nil, NewNotImplementedError()
 }
 
 func (s *service) UpdateExport(dependencies.ForProjectRequest, *buffer.UpdateExportPayload) (res *buffer.Receiver, err error) {
-	return nil, &NotImplementedError{}
+	return nil, NewNotImplementedError()
 }
 
 func (s *service) DeleteExport(dependencies.ForProjectRequest, *buffer.DeleteExportPayload) (res *buffer.Receiver, err error) {
-	return nil, &NotImplementedError{}
+	return nil, NewNotImplementedError()
 }
 
 func (s *service) Import(dependencies.ForPublicRequest, *buffer.ImportPayload, io.ReadCloser) (err error) {
-	return &NotImplementedError{}
+	return NewNotImplementedError()
 }
 
 func parseRequestBody(contentType string, reader io.ReadCloser) (res *orderedmap.OrderedMap, err error) {
@@ -410,19 +359,19 @@ func parseRequestBody(contentType string, reader io.ReadCloser) (res *orderedmap
 
 	// Check that the reader did not read more than the maximum.
 	if datasize.ByteSize(buf.Len()) > limit {
-		return nil, &PayloadTooLargeError{Message: "Payload too large."}
+		return nil, NewPayloadTooLargeError(errors.Errorf("Payload too large, the maximum size is %s.", limit.String()))
 	}
 
 	var data *orderedmap.OrderedMap
 	if isContentTypeForm(contentType) {
 		data, err = utilsUrl.ParseQuery(buf.String())
 		if err != nil {
-			return nil, &BadRequestError{Message: "Could not parse form request body."}
+			return nil, NewBadRequestError(errors.New("Could not parse form request body."))
 		}
 	} else {
 		err = json.Unmarshal([]byte(buf.String()), &data)
 		if err != nil {
-			return nil, &BadRequestError{Message: "Could not parse json request body."}
+			return nil, NewBadRequestError(errors.New("Could not parse json request body."))
 		}
 	}
 	return data, nil

@@ -103,7 +103,7 @@ func start(host, port string, debug, debugHttp bool, stdLogger *stdLog.Logger, e
 	serverUrl := &url.URL{Scheme: "http", Host: net.JoinHostPort(host, port)}
 
 	// Start HTTP server.
-	bufferHttp.HandleHTTPServer(ctx, d, serverUrl, endpoints, errCh, stdLogger, debug)
+	bufferHttp.HandleHTTPServer(ctx, d, serverUrl, endpoints, errCh, debug)
 
 	// Wait for signal.
 	logger.Infof("exiting (%v)", <-errCh)

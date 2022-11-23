@@ -1,7 +1,7 @@
 package service
 
 import (
-	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/httperror"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -121,9 +121,7 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 
 	// Format payload errors
 	if errs.Len() > 0 {
-		return nil, nil, BadRequestError{
-			Message: strhelper.AsSentence(errors.PrefixError(errs, "Invalid payload").Error()),
-		}
+		return nil, nil, NewBadRequestError(errors.PrefixError(errs, "invalid payload"))
 	}
 
 	return out, allValues, nil

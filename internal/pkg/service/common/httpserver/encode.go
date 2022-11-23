@@ -1,4 +1,4 @@
-package httpencode
+package httpserver
 
 import (
 	"context"
@@ -14,13 +14,10 @@ type encoderWrapper struct {
 	logger      log.Logger
 	writer      http.ResponseWriter
 	parent      goaHTTP.Encoder
-	errorWriter errorWriter
+	errorWriter ErrorWriter
 }
 
-type errorWriter func(ctx context.Context, logger log.Logger, w http.ResponseWriter, err error) error
-
-// encoder encodes responses.
-func NewEncoder(logger log.Logger, errorWriter errorWriter) func(ctx context.Context, w http.ResponseWriter) goaHTTP.Encoder {
+func NewEncoder(logger log.Logger, errorWriter ErrorWriter) func(ctx context.Context, w http.ResponseWriter) goaHTTP.Encoder {
 	return func(ctx context.Context, w http.ResponseWriter) goaHTTP.Encoder {
 		return encoderWrapper{
 			writer:      w,
@@ -34,7 +31,7 @@ func NewEncoder(logger log.Logger, errorWriter errorWriter) func(ctx context.Con
 
 func (w encoderWrapper) Encode(v interface{}) error {
 	if err, ok := v.(error); ok {
-		return w.errorWriter(w.ctx, w.logger, w.writer, err)
+		return w.errorWriter.WriteOrErr(w.ctx, w.writer, err)
 	}
 	return w.parent.Encode(v)
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/schema"
+	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -37,7 +38,7 @@ func (c *Store) CreateExport(ctx context.Context, projectID int, receiverID stri
 		return err
 	}
 	if receiverExports.Count >= MaxExportsPerReceiver {
-		return LimitReachedError{What: "export", Max: MaxExportsPerReceiver}
+		return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
 	}
 
 	key := prefix.ID(export.ID)
@@ -47,7 +48,7 @@ func (c *Store) CreateExport(ctx context.Context, projectID int, receiverID stri
 		return err
 	}
 	if exports.Count > 0 {
-		return AlreadyExistsError{What: "export", Key: key.Key()}
+		return serviceError.NewResourceAlreadyExistsError("export", export.ID, "receiver")
 	}
 
 	value, err := json.EncodeString(export, false)

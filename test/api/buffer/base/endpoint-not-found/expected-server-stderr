@@ -1,4 +1,4 @@
 %A
 [bufferApi][request][requestId=%a]INFO GET /foo/bar %a
-[bufferApi]INFO endpoint not found | exceptionId=keboola-buffer-%a errorName=buffer.endpointNotFound errorType=http.NotFoundError response={"statusCode":404,"error":"buffer.endpointNotFound","message":"Endpoint not found.","exceptionId":"keboola-buffer-%a"}
+[bufferApi]INFO no endpoint found for path "/foo/bar" | errorName=buffer.endpointNotFound errorType=errors.EndpointNotFoundError response={"statusCode":404,"error":"buffer.endpointNotFound","message":"No endpoint found for path \"/foo/bar\"."}
 [bufferApi][response][requestId=%a]INFO status=404 bytes=%a time=%a

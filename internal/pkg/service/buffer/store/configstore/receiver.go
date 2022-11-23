@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/schema"
+	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -37,7 +38,7 @@ func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 		return err
 	}
 	if allReceivers.Count >= MaxReceiversPerProject {
-		return LimitReachedError{What: "receiver", Max: MaxReceiversPerProject}
+		return serviceError.NewCountLimitReachedError("receiver", MaxExportsPerReceiver, "project")
 	}
 
 	key := prefix.ID(receiver.ID)
@@ -47,7 +48,7 @@ func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 		return err
 	}
 	if receivers.Count > 0 {
-		return AlreadyExistsError{What: "receiver", Key: key.Key()}
+		return serviceError.NewResourceAlreadyExistsError("receiver", receiver.ID, "project")
 	}
 
 	value, err := json.EncodeString(receiver, false)
@@ -81,7 +82,7 @@ func (c *Store) GetReceiver(ctx context.Context, projectID int, receiverID strin
 
 	// No receiver found
 	if len(resp.Kvs) == 0 {
-		return nil, NotFoundError{What: "receiver", Key: key.Key()}
+		return nil, serviceError.NewResourceNotFoundError("receiver", receiverID)
 	}
 
 	receiver := &model.Receiver{}
@@ -134,7 +135,7 @@ func (c *Store) DeleteReceiver(ctx context.Context, projectID int, receiverID st
 	}
 
 	if r.Deleted == 0 {
-		return NotFoundError{Key: key.Key()}
+		return serviceError.NewResourceNotFoundError("receiver", receiverID)
 	}
 
 	return nil
