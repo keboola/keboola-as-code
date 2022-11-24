@@ -32,12 +32,12 @@ func New() Service {
 	return &service{}
 }
 
-func (*service) APIRootIndex(dependencies.ForPublicRequest) (err error) {
+func (s *service) APIRootIndex(dependencies.ForPublicRequest) (err error) {
 	// Redirect / -> /v1
 	return nil
 }
 
-func (*service) APIVersionIndex(dependencies.ForPublicRequest) (res *buffer.ServiceDetail, err error) {
+func (s *service) APIVersionIndex(dependencies.ForPublicRequest) (res *buffer.ServiceDetail, err error) {
 	res = &ServiceDetail{
 		API:           "buffer",
 		Documentation: "https://buffer.keboola.com/v1/documentation",
@@ -45,14 +45,14 @@ func (*service) APIVersionIndex(dependencies.ForPublicRequest) (res *buffer.Serv
 	return res, nil
 }
 
-func (*service) HealthCheck(dependencies.ForPublicRequest) (res string, err error) {
+func (s *service) HealthCheck(dependencies.ForPublicRequest) (res string, err error) {
 	return "OK", nil
 }
 
 // nolint:godox
 // TODO: collect errors instead of bailing on the first one
 
-func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.Receiver, err error) {
+func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.Receiver, err error) {
 	ctx, store := d.RequestCtx(), d.ConfigStore()
 
 	receiver := model.Receiver{
@@ -82,8 +82,20 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 
 		if exportData.Conditions != nil {
 			export.ImportConditions.Count = exportData.Conditions.Count
-			export.ImportConditions.Size = datasize.ByteSize(exportData.Conditions.Size)
-			export.ImportConditions.Time = time.Duration(exportData.Conditions.Time) * time.Second
+			export.ImportConditions.Size, err = datasize.ParseString(exportData.Conditions.Size)
+			if err != nil {
+				return nil, BadRequestError{Message: fmt.Sprintf(
+					`Value "%s" is not valid buffer size in bytes. Allowed units: B, kB, MB. For example: "5MB".`,
+					exportData.Conditions.Size,
+				)}
+			}
+			export.ImportConditions.Time, err = time.ParseDuration(exportData.Conditions.Time)
+			if err != nil {
+				return nil, BadRequestError{Message: fmt.Sprintf(
+					`Value "%s" is not valid time duration. Allowed units: s, m, h. For example: "30s".`,
+					exportData.Conditions.Size,
+				)}
+			}
 		}
 
 		// Generate export ID from Name if needed
@@ -176,19 +188,10 @@ func (*service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer
 		// TODO: maybe handle validation error
 		return nil, errors.Wrapf(err, "failed to create receiver \"%s\"", receiver.ID)
 	}
-
-	url := formatUrl(d.BufferApiHost(), receiver.ProjectID, receiver.ID, receiver.Secret)
-	resp := &buffer.Receiver{
-		ReceiverID: &receiver.ID,
-		Name:       &receiver.Name,
-		URL:        &url,
-		Exports:    payload.Exports,
-	}
-
-	return resp, nil
+	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: receiver.ID})
 }
 
-func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.GetReceiverPayload) (res *buffer.Receiver, err error) {
+func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.GetReceiverPayload) (res *buffer.Receiver, err error) {
 	ctx, store := d.RequestCtx(), d.ConfigStore()
 
 	projectID, receiverID := d.ProjectID(), payload.ReceiverID
@@ -245,8 +248,8 @@ func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.Ge
 			},
 			Conditions: &Conditions{
 				Count: export.ImportConditions.Count,
-				Size:  int(export.ImportConditions.Size),
-				Time:  int(export.ImportConditions.Time / time.Second),
+				Size:  export.ImportConditions.Size.String(),
+				Time:  export.ImportConditions.Time.String(),
 			},
 		})
 	}
@@ -266,7 +269,7 @@ func (*service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.Ge
 	return resp, nil
 }
 
-func (*service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListReceiversPayload) (res *buffer.ListReceiversResult, err error) {
+func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListReceiversPayload) (res *buffer.ListReceiversResult, err error) {
 	ctx, store := d.RequestCtx(), d.ConfigStore()
 
 	projectID := d.ProjectID()
@@ -320,8 +323,8 @@ func (*service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListRe
 				},
 				Conditions: &Conditions{
 					Count: export.ImportConditions.Count,
-					Size:  int(export.ImportConditions.Size),
-					Time:  int(export.ImportConditions.Time / time.Second),
+					Size:  export.ImportConditions.Size.String(),
+					Time:  export.ImportConditions.Time.String(),
 				},
 			})
 		}
@@ -346,7 +349,7 @@ func (*service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListRe
 	return &buffer.ListReceiversResult{Receivers: receivers}, nil
 }
 
-func (*service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer.DeleteReceiverPayload) (err error) {
+func (s *service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer.DeleteReceiverPayload) (err error) {
 	ctx, store := d.RequestCtx(), d.ConfigStore()
 
 	projectID, receiverID := d.ProjectID(), payload.ReceiverID
@@ -369,23 +372,23 @@ func (*service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer
 	return nil
 }
 
-func (*service) RefreshReceiverTokens(dependencies.ForProjectRequest, *buffer.RefreshReceiverTokensPayload) (res *buffer.Receiver, err error) {
+func (s *service) RefreshReceiverTokens(dependencies.ForProjectRequest, *buffer.RefreshReceiverTokensPayload) (res *buffer.Receiver, err error) {
 	return nil, &NotImplementedError{}
 }
 
-func (*service) CreateExport(dependencies.ForProjectRequest, *buffer.CreateExportPayload) (res *buffer.Receiver, err error) {
+func (s *service) CreateExport(dependencies.ForProjectRequest, *buffer.CreateExportPayload) (res *buffer.Receiver, err error) {
 	return nil, &NotImplementedError{}
 }
 
-func (*service) UpdateExport(dependencies.ForProjectRequest, *buffer.UpdateExportPayload) (res *buffer.Receiver, err error) {
+func (s *service) UpdateExport(dependencies.ForProjectRequest, *buffer.UpdateExportPayload) (res *buffer.Receiver, err error) {
 	return nil, &NotImplementedError{}
 }
 
-func (*service) DeleteExport(dependencies.ForProjectRequest, *buffer.DeleteExportPayload) (res *buffer.Receiver, err error) {
+func (s *service) DeleteExport(dependencies.ForProjectRequest, *buffer.DeleteExportPayload) (res *buffer.Receiver, err error) {
 	return nil, &NotImplementedError{}
 }
 
-func (*service) Import(dependencies.ForPublicRequest, *buffer.ImportPayload, io.ReadCloser) (err error) {
+func (s *service) Import(dependencies.ForPublicRequest, *buffer.ImportPayload, io.ReadCloser) (err error) {
 	return &NotImplementedError{}
 }
 

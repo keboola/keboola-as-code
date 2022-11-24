@@ -426,17 +426,13 @@ var ImportConditions = Type("Conditions", func() {
 		Maximum(10_000_000)
 		Default(1000)
 	})
-	Attribute("size", Int, func() {
-		Description("Maximum import buffer size in bytes.")
-		Minimum(100)
-		Maximum(50_000_000)
-		Default(5_000_000)
+	Attribute("size", String, func() {
+		Description("Maximum import buffer size in bytes. Units: B, KB, MB.")
+		Default("5MB")
 	})
-	Attribute("time", Int, func() {
-		Description("Minimum import interval in seconds.")
-		Minimum(30)
-		Maximum(24 * 60 * 60)
-		Default(5 * 60)
+	Attribute("time", String, func() {
+		Description("Minimum import interval. Units: [s]econd,[m]inute,[h]our.")
+		Default("5m")
 	})
 })
 
