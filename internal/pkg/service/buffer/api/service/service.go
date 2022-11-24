@@ -434,8 +434,8 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 			ProjectID:  payload.ProjectID,
 			ReceiverID: payload.ReceiverID,
 			ExportID:   e.ID,
-			FileID:     "",
-			SliceID:    "",
+			FileID:     "file",
+			SliceID:    "slice",
 			ReceivedAt: receivedAt,
 		}
 		err = store.CreateRecord(ctx, record, csv)
