@@ -1,0 +1,5 @@
+{
+  "statusCode": 409,
+  "error": "buffer.receiverAlreadyExists",
+  "message": "Receiver \"my-receiver\" already exists in the project."
+}

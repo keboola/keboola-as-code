@@ -2,11 +2,11 @@
   "path": "/v1/receivers",
   "method": "POST",
   "body": {
-    "name": "create-receiver-with-exports",
+    "name": "My Receiver With Exports",
     "exports": [
       {
-        "exportId": "create-receiver-with-exports-export-0",
-        "name": "create-receiver-with-exports-export-0",
+        "exportId": "my-export-1",
+        "name": "my-export-1",
         "mapping": {
           "tableId": "in.c-bucket.table",
           "incremental": true,
@@ -26,9 +26,9 @@
           ]
         },
         "conditions": {
-          "count": 1,
-          "size": 100,
-          "time": 30
+          "count": 500,
+          "size": "100kB",
+          "time": "1m"
         }
       }
     ]

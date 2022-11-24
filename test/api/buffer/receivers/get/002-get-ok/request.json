@@ -1,5 +1,5 @@
 {
-  "path": "/v1/receivers/get-receiver",
+  "path": "/v1/receivers/my-receiver",
   "method": "GET"
 }
 

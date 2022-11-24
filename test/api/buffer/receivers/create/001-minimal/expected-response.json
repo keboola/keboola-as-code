@@ -1,0 +1,7 @@
+{
+  "id": "my-receiver",
+  "url": "https://buffer.keboola.local/v1/import/%d/my-receiver/#/%s",
+  "name": "My Receiver",
+  "exports": []
+}
+

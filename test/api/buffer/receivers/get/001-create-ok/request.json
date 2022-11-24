@@ -2,13 +2,12 @@
   "path": "/v1/receivers",
   "method": "POST",
   "body": {
-    "name": "get-receiver",
+    "name": "My Receiver",
     "exports": [
       {
-        "exportId": "get-receiver-export-0",
-        "name": "get-receiver-export-0",
+        "name": "Export 1",
         "mapping": {
-          "tableId": "in.c-bucket.table",
+          "tableId": "in.c-bucket.table1",
           "incremental": true,
           "columns": [
             {
@@ -24,11 +23,29 @@
               }
             }
           ]
+        }
+      },
+      {
+        "name": "Export 2",
+        "mapping": {
+          "tableId": "in.c-bucket.table2",
+          "incremental": false,
+          "columns": [
+            {
+              "type": "id"
+            },
+            {
+              "type": "body"
+            },
+            {
+              "type": "headers"
+            }
+          ]
         },
         "conditions": {
-          "count": 1,
-          "size": 100,
-          "time": 30
+          "count": 123,
+          "size": "456B",
+          "time": "30s"
         }
       }
     ]

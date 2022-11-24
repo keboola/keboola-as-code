@@ -1,9 +1,10 @@
 {
   "receivers": [
     {
-      "receiverId": "list-receivers-test-a",
-      "name": "list-receivers-test-a",
-      "url": "https://buffer.keboola.local/v1/import/%d/list-receivers-test-a/#/%s"
+      "id": "receiver-a",
+      "url": "https://buffer.keboola.local/v1/import/%d/receiver-a/#/%s",
+      "name": "Receiver A",
+      "exports": []
     }
   ]
 }

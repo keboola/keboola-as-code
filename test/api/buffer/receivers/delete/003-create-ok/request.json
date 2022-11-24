@@ -2,7 +2,7 @@
   "path": "/v1/receivers",
   "method": "POST",
   "body": {
-    "name": "Receiver A",
+    "name": "Receiver C",
     "exports": []
   }
 }

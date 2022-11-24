@@ -2,8 +2,6 @@
   "path": "/v1/receivers",
   "method": "POST",
   "body": {
-    "name": "Receiver A",
-    "exports": []
+    "name": "123456789-123456789-123456789-123456789-1"
   }
 }
-

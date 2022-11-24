@@ -2,8 +2,7 @@
   "path": "/v1/receivers",
   "method": "POST",
   "body": {
-    "name": "Receiver A",
-    "exports": []
+    "id": "!!!!~~~~weird|||id##",
+    "name": "Custom Name"
   }
 }
-
