@@ -20,6 +20,7 @@ import (
 
 const (
 	MaxImportRequestSizeInBytes = 1000000
+	MaxMappedCSVRowSizeInBytes  = 1000000
 	MaxReceiversPerProject      = 100
 	MaxExportsPerReceiver       = 20
 )
@@ -360,8 +361,13 @@ func (c *Store) CreateRecord(ctx context.Context, recordKey model.RecordKey, csv
 		return err
 	}
 
-	logger.Debugf(`PUT "%s" "%s"`, key, csvBuffer.String())
-	_, err = client.KV.Put(ctx, key.Key(), csvBuffer.String())
+	csvString := csvBuffer.String()
+	if len(csvString) > MaxMappedCSVRowSizeInBytes {
+		return LimitReachedError{What: "mappedCSV", Max: MaxMappedCSVRowSizeInBytes}
+	}
+
+	logger.Debugf(`PUT "%s" "%s"`, key, log.Sanitize(csvString))
+	_, err = client.KV.Put(ctx, key.Key(), csvString)
 	if err != nil {
 		return err
 	}
