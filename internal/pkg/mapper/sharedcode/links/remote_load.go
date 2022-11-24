@@ -28,10 +28,12 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 	if !found {
 		return nil
 	} else if !ok {
-		return errors.NewNestedError(
+		errs := errors.NewNestedError(
 			errors.Errorf(`invalid transformation %s`, transformation.Desc()),
 			errors.Errorf(`key "%s" should be string, found %T`, model.SharedCodeIdContentKey, sharedCodeIdRaw),
 		)
+		m.logger.Warn(errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
+		return nil
 	}
 
 	// Get shared code
@@ -44,15 +46,18 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 	}
 	sharedCodeState, found := m.state.GetOrNil(linkToSharedCode.Config).(*model.ConfigState)
 	if !found || !sharedCodeState.HasRemoteState() {
-		return errors.NewNestedError(
+		errs := errors.NewNestedError(
 			errors.Errorf(`missing shared code %s`, linkToSharedCode.Config.Desc()),
 			errors.Errorf(`referenced from %s`, objectState.Desc()),
 		)
+		m.logger.Warn(errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
+		return nil
 	}
 
 	// Check: target component of the shared code = transformation component
 	if err := m.helper.CheckTargetComponent(sharedCodeState.LocalOrRemoteState().(*model.Config), transformation.ConfigKey); err != nil {
-		return err
+		m.logger.Warn(errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
+		return nil
 	}
 
 	// Store shared code config key in Transformation structure
@@ -64,10 +69,12 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 	if !found {
 		return nil
 	} else if !ok {
-		return errors.NewNestedError(
+		errs := errors.NewNestedError(
 			errors.Errorf(`invalid transformation %s`, transformation.Desc()),
 			errors.Errorf(`key "%s" should be array, found %T`, model.SharedCodeRowsIdContentKey, sharedCodeRowsIdsRaw),
 		)
+		m.logger.Warn(errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
+		return nil
 	}
 
 	// Replace ID placeholder with LinkScript struct
@@ -99,5 +106,9 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 		}
 	}
 
-	return errs.ErrorOrNil()
+	if errs.Len() > 0 {
+		// Convert errors to warning
+		m.logger.Warn(errors.Format(errors.PrefixError(errs, "warning"), errors.FormatAsSentences()))
+	}
+	return nil
 }
