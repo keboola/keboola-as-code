@@ -60,6 +60,14 @@ func (t TableID) String() string {
 	return fmt.Sprintf("%s.c-%s.%s", t.Stage, t.Bucket, t.Table)
 }
 
+func DefaultConditions() ImportConditions {
+	return ImportConditions{
+		Count: 1000,
+		Size:  1 * datasize.MB,
+		Time:  5 * time.Minute,
+	}
+}
+
 func ParseTableID(v string) (TableID, error) {
 	parts := strings.Split(v, ".")
 	if len(parts) != 3 {
