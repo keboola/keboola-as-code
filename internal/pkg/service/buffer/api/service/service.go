@@ -428,5 +428,5 @@ func isContentTypeForm(t string) bool {
 }
 
 func formatUrl(bufferApiHost string, projectID int, receiverID string, secret string) string {
-	return fmt.Sprintf("https://%s/v1/import/%d/%s/#/%s", bufferApiHost, projectID, receiverID, secret)
+	return fmt.Sprintf("https://%s/v1/import/%d/%s/%s", bufferApiHost, projectID, receiverID, secret)
 }
