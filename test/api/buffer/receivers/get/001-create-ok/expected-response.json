@@ -1,7 +1,7 @@
 {
   "receiverId": "get-receiver",
   "name": "get-receiver",
-  "url": "https://buffer.keboola.local/v1/import/%d/get-receiver/#/%s",
+  "url": "https://buffer.keboola.local/v1/import/%d/get-receiver/%s",
   "exports": [
     {
       "exportId": "get-receiver-export-0",
@@ -32,4 +32,3 @@
     }
   ]
 }
-
