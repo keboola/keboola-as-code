@@ -283,6 +283,25 @@ func RunRequests(
 	client := resty.New()
 	client.SetBaseURL(apiUrl)
 
+	// Connect to the etcd
+	etcdClient := etcdhelper.ClientForTestFrom(
+		t,
+		apiEnvs.Get("BUFFER_ETCD_ENDPOINT"),
+		apiEnvs.Get("BUFFER_ETCD_USERNAME"),
+		apiEnvs.Get("BUFFER_ETCD_PASSWORD"),
+		apiEnvs.Get("BUFFER_ETCD_NAMESPACE"),
+	)
+
+	// Setup etcd state
+	etcdStateFile := "initial-etcd-kvs.txt"
+	if testDirFs.IsFile(etcdStateFile) {
+		etcdStateFileContent, err := testDirFs.ReadFile(filesystem.NewFileDef(etcdStateFile))
+		etcdStateFileContentStr := testhelper.MustReplaceEnvsString(etcdStateFileContent.Content, envProvider)
+		assert.NoError(t, err)
+		err = etcdhelper.PutAllFromSnapshot(context.Background(), etcdClient, etcdStateFileContentStr)
+		assert.NoError(t, err)
+	}
+
 	// request folders should be named e.g. 001-request1, 002-request2
 	dirs, err := testDirFs.Glob("[0-9][0-9][0-9]-*")
 	assert.NoError(t, err)
@@ -379,15 +398,6 @@ func RunRequests(
 			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir.`,
 		)
 	}
-
-	// Connect to the etcd
-	etcdClient := etcdhelper.ClientForTestFrom(
-		t,
-		apiEnvs.Get("BUFFER_ETCD_ENDPOINT"),
-		apiEnvs.Get("BUFFER_ETCD_USERNAME"),
-		apiEnvs.Get("BUFFER_ETCD_PASSWORD"),
-		apiEnvs.Get("BUFFER_ETCD_NAMESPACE"),
-	)
 
 	// Write actual etcd KVs
 	etcdDump, err := etcdhelper.DumpAll(context.Background(), etcdClient)
