@@ -141,8 +141,8 @@ var _ = Service("buffer", func() {
 			POST("/receivers")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
-			ResourceLimitReachedError()
-			AlreadyExistsError()
+			ReceiverAlreadyExistsError()
+			ResourceCountLimitReachedError()
 		})
 	})
 
@@ -221,8 +221,8 @@ var _ = Service("buffer", func() {
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			ReceiverNotFoundError()
-			ResourceLimitReachedError()
-			AlreadyExistsError()
+			ExportAlreadyExistsError()
+			ResourceCountLimitReachedError()
 		})
 	})
 
@@ -480,16 +480,20 @@ func ExportNotFoundError() {
 	GenericError(StatusNotFound, "buffer.exportNotFound", "Export not found error.", `Export "github-changed-files" not found.`)
 }
 
+func ReceiverAlreadyExistsError() {
+	GenericError(StatusConflict, "buffer.receiverAlreadyExists", "Receiver already exists in the project.", `Receiver already exists in the project.`)
+}
+
+func ExportAlreadyExistsError() {
+	GenericError(StatusConflict, "buffer.exportAlreadyExists", "Export already exists in the receiver.", `Export already exists in the receiver.`)
+}
+
 func PayloadTooLargeError() {
-	GenericError(StatusRequestEntityTooLarge, "buffer.payloadTooLarge", "Payload too large error.", `Payload is too large.`)
+	GenericError(StatusRequestEntityTooLarge, "buffer.payloadTooLarge", "Payload too large.", `Payload too large, the maximum size is 1MB.`)
 }
 
-func ResourceLimitReachedError() {
+func ResourceCountLimitReachedError() {
 	GenericError(StatusUnprocessableEntity, "buffer.resourceLimitReached", "Resource limit reached.", `Maximum number of receivers per project is 100.`)
-}
-
-func AlreadyExistsError() {
-	GenericError(StatusConflict, "buffer.alreadyExists", "Resource already exists.", `Receiver "github-pull-requests" already exists.`)
 }
 
 // Examples ------------------------------------------------------------------------------------------------------------
