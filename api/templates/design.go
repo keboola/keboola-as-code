@@ -142,9 +142,7 @@ var _ = Service("templates", func() {
 		Meta("openapi:summary", "Get template repository detail")
 		Description("Get details of specified repository. Use \"keboola\" for default Keboola repository.")
 		Result(Repository)
-		Payload(func() {
-			repositoryAttr()
-		})
+		Payload(RepositoryRequest)
 		HTTP(func() {
 			GET("/repositories/{repository}")
 			Meta("openapi:tag:template")
@@ -157,9 +155,7 @@ var _ = Service("templates", func() {
 		Meta("openapi:summary", "List templates in the repository")
 		Description("List all templates  defined in the repository.")
 		Result(Templates)
-		Payload(func() {
-			repositoryAttr()
-		})
+		Payload(RepositoryRequest)
 		HTTP(func() {
 			GET("/repositories/{repository}/templates")
 			Meta("openapi:tag:template")
@@ -172,10 +168,7 @@ var _ = Service("templates", func() {
 		Meta("openapi:summary", "Get template detail and versions")
 		Description("Get detail and versions of specified template.")
 		Result(TemplateDetail)
-		Payload(func() {
-			repositoryAttr()
-			templateAttr()
-		})
+		Payload(TemplateRequest)
 		HTTP(func() {
 			GET("/repositories/{repository}/templates/{template}")
 			Meta("openapi:tag:template")
@@ -189,11 +182,7 @@ var _ = Service("templates", func() {
 		Meta("openapi:summary", "Get version detail")
 		Description("Get details of specified template version.")
 		Result(VersionDetailExtended)
-		Payload(func() {
-			repositoryAttr()
-			templateAttr()
-			versionAttr()
-		})
+		Payload(TemplateVersionRequest)
 		HTTP(func() {
 			GET("/repositories/{repository}/templates/{template}/{version}")
 			Meta("openapi:tag:template")
@@ -208,11 +197,7 @@ var _ = Service("templates", func() {
 		Meta("openapi:summary", "Get inputs")
 		Description("Get inputs for the \"use\" API call.")
 		Result(Inputs)
-		Payload(func() {
-			repositoryAttr()
-			templateAttr()
-			versionAttr()
-		})
+		Payload(TemplateVersionRequest)
 		HTTP(func() {
 			GET("/repositories/{repository}/templates/{template}/{version}/inputs")
 			Meta("openapi:tag:template")
@@ -227,12 +212,7 @@ var _ = Service("templates", func() {
 		Meta("openapi:summary", "Validate inputs")
 		Description("Validate inputs for the \"use\" API call.\nOnly configured steps should be send.")
 		Result(ValidationResult)
-		Payload(func() {
-			repositoryAttr()
-			templateAttr()
-			versionAttr()
-			inputsPayload()
-		})
+		Payload(ValidateInputsRequest)
 		HTTP(func() {
 			POST("/repositories/{repository}/templates/{template}/{version}/validate")
 			Meta("openapi:tag:template")
@@ -247,15 +227,8 @@ var _ = Service("templates", func() {
 		Meta("openapi:summary", "Use template")
 		Description("Validate inputs and use template in the branch.\nOnly configured steps should be send.")
 		Result(UseTemplateResult)
+		Payload(UseTemplateRequest)
 		Error("InvalidInputs", ValidationError, "Inputs are not valid.")
-		Payload(func() {
-			repositoryAttr()
-			templateAttr()
-			versionAttr()
-			branchAttr()
-			instanceNameAttr()
-			inputsPayload()
-		})
 		HTTP(func() {
 			POST("/repositories/{repository}/templates/{template}/{version}/use")
 			Meta("openapi:tag:template")
@@ -273,9 +246,7 @@ var _ = Service("templates", func() {
 	Method("InstancesIndex", func() {
 		Meta("openapi:summary", "List instances")
 		Result(Instances)
-		Payload(func() {
-			branchAttr()
-		})
+		Payload(BranchRequest)
 		HTTP(func() {
 			GET("/project/{branch}/instances")
 			Meta("openapi:tag:instance")
@@ -286,10 +257,7 @@ var _ = Service("templates", func() {
 	Method("InstanceIndex", func() {
 		Meta("openapi:summary", "Get instance detail")
 		Result(InstanceDetail)
-		Payload(func() {
-			branchAttr()
-			instanceAttr()
-		})
+		Payload(InstanceRequest)
 		HTTP(func() {
 			GET("/project/{branch}/instances/{instanceId}")
 			Meta("openapi:tag:instance")
@@ -303,11 +271,7 @@ var _ = Service("templates", func() {
 	Method("UpdateInstance", func() {
 		Meta("openapi:summary", "Update instance name")
 		Result(InstanceDetail)
-		Payload(func() {
-			branchAttr()
-			instanceAttr()
-			updateInstancePayload()
-		})
+		Payload(UpdateInstanceRequest)
 		HTTP(func() {
 			PUT("/project/{branch}/instances/{instanceId}")
 			Meta("openapi:tag:instance")
@@ -320,10 +284,7 @@ var _ = Service("templates", func() {
 
 	Method("DeleteInstance", func() {
 		Meta("openapi:summary", "Delete instance")
-		Payload(func() {
-			branchAttr()
-			instanceAttr()
-		})
+		Payload(InstanceRequest)
 		HTTP(func() {
 			DELETE("/project/{branch}/instances/{instanceId}")
 			Meta("openapi:tag:instance")
@@ -338,12 +299,7 @@ var _ = Service("templates", func() {
 		Meta("openapi:summary", "Re-generate the instance in the same or different version")
 		Result(UpgradeInstanceResult)
 		Error("InvalidInputs", ValidationError, "Inputs are not valid.")
-		Payload(func() {
-			branchAttr()
-			instanceAttr()
-			versionAttr()
-			inputsPayload()
-		})
+		Payload(UpgradeInstanceRequest)
 		HTTP(func() {
 			POST("/project/{branch}/instances/{instanceId}/upgrade/{version}")
 			Meta("openapi:tag:instance")
@@ -360,11 +316,7 @@ var _ = Service("templates", func() {
 	Method("UpgradeInstanceInputsIndex", func() {
 		Meta("openapi:summary", "Get inputs for upgrade operation")
 		Result(Inputs)
-		Payload(func() {
-			branchAttr()
-			instanceAttr()
-			versionAttr()
-		})
+		Payload(InstanceInputsRequest)
 		HTTP(func() {
 			GET("/project/{branch}/instances/{instanceId}/upgrade/{version}/inputs")
 			Meta("openapi:tag:instance")
@@ -379,12 +331,7 @@ var _ = Service("templates", func() {
 	Method("UpgradeInstanceValidateInputs", func() {
 		Meta("openapi:summary", "Validate inputs for upgrade operation")
 		Result(ValidationResult)
-		Payload(func() {
-			branchAttr()
-			instanceAttr()
-			versionAttr()
-			inputsPayload()
-		})
+		Payload(UpgradeInstanceRequest)
 		HTTP(func() {
 			POST("/project/{branch}/instances/{instanceId}/upgrade/{version}/inputs")
 			Meta("openapi:tag:instance")
@@ -510,52 +457,93 @@ var tokenSecurity = APIKeySecurity("storage-api-token", func() {
 	Description("Storage Api Token Authentication.")
 })
 
-func repositoryAttr() {
+var RepositoryRequest = Type("RepositoryRequest", func() {
 	Attribute("repository", String, func() {
 		Example("keboola")
 		Description("Name of the template repository. Use \"keboola\" for default Keboola repository.")
 	})
 	Required("repository")
-}
+})
 
-func templateAttr() {
+var TemplateRequest = Type("TemplateRequest", func() {
+	Extend(RepositoryRequest)
 	Attribute("template", String, func() {
 		Example("my-template")
 		Description("ID of the template.")
 	})
 	Required("template")
-}
+})
 
-func branchAttr() {
+var TemplateVersionRequest = Type("TemplateVersionRequest", func() {
+	Extend(TemplateRequest)
+	templateVersionAttr()
+})
+
+var BranchRequest = Type("BranchRequest", func() {
 	Attribute("branch", String, func() {
 		Example("default")
 		Description("ID of the branch. Use \"default\" for default branch.")
 	})
 	Required("branch")
-}
+})
 
-func instanceNameAttr() {
-	Attribute("name", String, func() {
-		Example("My Instance")
-		Description("Name of the new template instance.")
-	})
-	Required("name")
-}
-
-func versionAttr() {
-	Attribute("version", String, func() {
-		Example("v1.2.3")
-		Description(`Semantic version of the template. Use "default" for default version.`)
-	})
-	Required("version")
-}
-
-func instanceAttr() {
+var InstanceRequest = Type("InstanceRequest", func() {
+	Extend(BranchRequest)
 	Attribute("instanceId", String, func() {
 		Example("V1StGXR8IZ5jdHi6BAmyT")
 		Description("ID of the template instance.")
 	})
 	Required("instanceId")
+})
+
+var InputsPayload = Type("InputsPayload", func() {
+	Attribute("steps", ArrayOf(StepPayload), "Steps with input values filled in by user.", func() {
+		Example([]ExampleStepPayloadData{ExampleStepPayload()})
+	})
+	Required("steps")
+})
+
+var ValidateInputsRequest = Type("ValidateInputsRequest", func() {
+	Extend(TemplateVersionRequest)
+	Extend(InputsPayload)
+})
+
+var UseTemplateRequest = Type("UseTemplateRequest", func() {
+	Extend(BranchRequest)
+	Extend(TemplateVersionRequest)
+	Extend(InputsPayload)
+	Attribute("name", String, func() {
+		Example("My Instance")
+		Description("Name of the new template instance.")
+	})
+	Required("name")
+})
+
+var UpdateInstanceRequest = Type("UpdateInstanceRequest", func() {
+	Extend(InstanceRequest)
+	Attribute("name", String, "New name of the instance.", func() {
+		Example("My Great Instance")
+	})
+	Required("name")
+})
+
+var UpgradeInstanceRequest = Type("UpgradeInstanceRequest", func() {
+	Extend(InstanceRequest)
+	Extend(InputsPayload)
+	templateVersionAttr()
+})
+
+var InstanceInputsRequest = Type("InstanceInputsRequest", func() {
+	Extend(InstanceRequest)
+	templateVersionAttr()
+})
+
+func templateVersionAttr() {
+	Attribute("version", String, func() {
+		Example("v1.2.3")
+		Description(`Semantic version of the template. Use "default" for default version.`)
+	})
+	Required("version")
 }
 
 func iconAttr() {
@@ -564,20 +552,6 @@ func iconAttr() {
 		MaxLength(40)
 		Example("common:download")
 	})
-}
-
-func inputsPayload() {
-	Attribute("steps", ArrayOf(StepPayload), "Steps with input values filled in by user.", func() {
-		Example([]ExampleStepPayloadData{ExampleStepPayload()})
-	})
-	Required("steps")
-}
-
-func updateInstancePayload() {
-	Attribute("name", String, "New name of the instance.", func() {
-		Example("My Great Instance")
-	})
-	Required("name")
 }
 
 var StepPayload = Type("StepPayload", func() {
