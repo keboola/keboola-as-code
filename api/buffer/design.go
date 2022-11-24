@@ -2,15 +2,13 @@
 package buffer
 
 import (
-	"fmt"
-	"strings"
-
 	_ "goa.design/goa/v3/codegen/generator"
 	. "goa.design/goa/v3/dsl"
 	"goa.design/goa/v3/eval"
 	"goa.design/goa/v3/expr"
 	cors "goa.design/plugins/v3/cors/dsl"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/anytype"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/dependencies"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/genericerror"
@@ -131,12 +129,7 @@ var _ = Service("buffer", func() {
 		Meta("openapi:summary", "Create receiver")
 		Description("Create a new receiver for a given project")
 		Result(Receiver)
-		Payload(func() {
-			receiverId()
-			name("receiver", "GitHub Pull Requests")
-			Attribute("exports", ArrayOf(Export), "List of receiver exports. A receiver may have a maximum of 20 exports.")
-			Required("name", "exports")
-		})
+		Payload(CreateReceiverRequest)
 		HTTP(func() {
 			POST("/receivers")
 			Meta("openapi:tag:configuration")
@@ -146,13 +139,23 @@ var _ = Service("buffer", func() {
 		})
 	})
 
+	Method("UpdateReceiver", func() {
+		Meta("openapi:summary", "Update receiver")
+		Description("Update a receiver export.")
+		Result(Receiver)
+		Payload(UpdateReceiverRequest)
+		HTTP(func() {
+			PATCH("/receivers/{receiverId}")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			ReceiverNotFoundError()
+		})
+	})
+
 	Method("ListReceivers", func() {
 		Meta("openapi:summary", "List all receivers")
 		Description("List all receivers for a given project.")
-		Result(func() {
-			Attribute("receivers", ArrayOf(Receiver))
-			Required("receivers")
-		})
+		Result(ReceiversList)
 		HTTP(func() {
 			GET("/receivers")
 			Meta("openapi:tag:configuration")
@@ -164,10 +167,7 @@ var _ = Service("buffer", func() {
 		Meta("openapi:summary", "Get receiver")
 		Description("Get the configuration of a receiver.")
 		Result(Receiver)
-		Payload(func() {
-			receiverId()
-			Required("receiverId")
-		})
+		Payload(GetReceiverRequest)
 		HTTP(func() {
 			GET("/receivers/{receiverId}")
 			Meta("openapi:tag:configuration")
@@ -179,10 +179,7 @@ var _ = Service("buffer", func() {
 	Method("DeleteReceiver", func() {
 		Meta("openapi:summary", "Delete receiver")
 		Description("Delete a receiver.")
-		Payload(func() {
-			receiverId()
-			Required("receiverId")
-		})
+		Payload(GetReceiverRequest)
 		HTTP(func() {
 			DELETE("/receivers/{receiverId}")
 			Meta("openapi:tag:configuration")
@@ -195,10 +192,7 @@ var _ = Service("buffer", func() {
 		Meta("openapi:summary", "Refresh receiver tokens")
 		Description("Each export uses its own token scoped to the target bucket, this endpoint refreshes all of those tokens.")
 		Result(Receiver)
-		Payload(func() {
-			receiverId()
-			Required("receiverId")
-		})
+		Payload(GetReceiverRequest)
 		HTTP(func() {
 			POST("/receivers/{receiverId}/tokens/refresh")
 			Meta("openapi:tag:configuration")
@@ -210,12 +204,8 @@ var _ = Service("buffer", func() {
 	Method("CreateExport", func() {
 		Meta("openapi:summary", "Create export")
 		Description("Create a new export for an existing receiver.")
-		Result(Receiver)
-		Payload(func() {
-			receiverId()
-			Attribute("export", Export)
-			Required("receiverId", "export")
-		})
+		Result(Export)
+		Payload(CreateExportRequest)
 		HTTP(func() {
 			POST("/receivers/{receiverId}/exports")
 			Meta("openapi:tag:configuration")
@@ -229,13 +219,8 @@ var _ = Service("buffer", func() {
 	Method("UpdateExport", func() {
 		Meta("openapi:summary", "Update export")
 		Description("Update a receiver export.")
-		Result(Receiver)
-		Payload(func() {
-			receiverId()
-			exportId()
-			Attribute("export", Export)
-			Required("receiverId", "export")
-		})
+		Result(Export)
+		Payload(UpdateExportRequest)
 		HTTP(func() {
 			PATCH("/receivers/{receiverId}/exports/{exportId}")
 			Meta("openapi:tag:configuration")
@@ -248,12 +233,7 @@ var _ = Service("buffer", func() {
 	Method("DeleteExport", func() {
 		Meta("openapi:summary", "Delete export")
 		Description("Delete a receiver export.")
-		Result(Receiver)
-		Payload(func() {
-			receiverId()
-			exportId()
-			Required("receiverId", "exportId")
-		})
+		Payload(GetExportRequest)
 		HTTP(func() {
 			DELETE("/receivers/{receiverId}/exports/{exportId}")
 			Meta("openapi:tag:configuration")
@@ -268,8 +248,8 @@ var _ = Service("buffer", func() {
 		Description("Upload data into the receiver.")
 		NoSecurity()
 		Payload(func() {
-			receiverId()
 			Attribute("projectId", Int, "ID of the project")
+			Attribute("receiverId", ReceiverID)
 			Attribute("secret", String, func() {
 				Description("Secret used for authentication.")
 				MinLength(48)
@@ -299,41 +279,6 @@ var tokenSecurity = APIKeySecurity("storage-api-token", func() {
 	Description("Storage Api Token Authentication.")
 })
 
-var receiverId = func(desc ...string) {
-	Attribute("receiverId", String, func() {
-		if len(desc) > 0 {
-			Description(fmt.Sprintf("Unique ID of the receiver. %s", strings.Join(desc, "")))
-		} else {
-			Description("Unique ID of the receiver.")
-		}
-		MinLength(1)
-		MaxLength(48)
-		Example("github-pull-requests")
-	})
-}
-
-var exportId = func(desc ...string) {
-	Attribute("exportId", String, func() {
-		if len(desc) > 0 {
-			Description(fmt.Sprintf("Unique ID of the export. %s", strings.Join(desc, "")))
-		} else {
-			Description("Unique ID of the export.")
-		}
-		MinLength(1)
-		MaxLength(48)
-		Example("github-changed-files")
-	})
-}
-
-var name = func(what string, example string) {
-	Attribute("name", String, func() {
-		Description(fmt.Sprintf("Human readable name of the %s.", what))
-		MinLength(1)
-		MaxLength(40)
-		Example(example)
-	})
-}
-
 // Types --------------------------------------------------------------------------------------------------------------
 
 var ServiceDetail = Type("ServiceDetail", func() {
@@ -347,31 +292,122 @@ var ServiceDetail = Type("ServiceDetail", func() {
 	Required("api", "documentation")
 })
 
+// Receiver -----------------------------------------------------------------------------------------------------------
+
+var ReceiverID = Type("ReceiverID", String, func() {
+	Description("Unique ID of the receiver.")
+	MinLength(1)
+	MaxLength(48)
+	Example("github-webhook-receiver")
+})
+
 var Receiver = Type("Receiver", func() {
-	Description("Represents an endpoint for importing data. A project may have a maximum of 100 receivers.")
-	receiverId("May be omitted, in which case it will be generated from the name. The value cannot be changed later.")
-	name("receiver", "GitHub Pull Requests")
+	Description("An endpoint for importing data, max 100 receivers per a project.")
+	Attribute("id", ReceiverID)
 	Attribute("url", String, func() {
 		Description("URL of the receiver. Contains secret used for authentication.")
 	})
+	receiverFields()
 	Attribute("exports", ArrayOf(Export), func() {
-		Description("List of receiver exports. A receiver may have a maximum of 20 exports.")
+		Description("List of exports, max 20 exports per a receiver.")
+	})
+	Required("id", "url", "name", "exports")
+})
+
+var CreateReceiverRequest = Type("CreateReceiverRequest", func() {
+	Attribute("id", ReceiverID, func() {
+		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
+	})
+	receiverFields()
+	Attribute("exports", ArrayOf(CreateExportPayload), func() {
+		Description("List of exports, max 20 exports per a receiver.")
+	})
+	Required("name")
+})
+
+var GetReceiverRequest = Type("GetReceiverRequest", func() {
+	Attribute("receiverId", ReceiverID)
+	Required("receiverId")
+})
+
+var UpdateReceiverRequest = Type("UpdateReceiverRequest", func() {
+	Extend(GetReceiverRequest)
+	receiverFields()
+})
+
+var ReceiversList = Type("ReceiversList", func() {
+	Attribute("receivers", ArrayOf(Receiver))
+	Required("receivers")
+})
+
+var receiverFields = func() {
+	Attribute("name", String, func() {
+		Description("Human readable name of the receiver.")
+		MinLength(1)
+		MaxLength(40)
+		Example("Github Webhook Receiver")
 	})
 	Example(exampleReceiver())
+}
+
+// Export -------------------------------------------------------------------------------------------------------------
+
+var ExportID = Type("ExportID", String, func() {
+	Description("Unique ID of the export.")
+	MinLength(1)
+	MaxLength(48)
+	Example("github-pr-table-export")
 })
 
 var Export = Type("Export", func() {
-	Description("Represents a mapping from imported data to a destination table.")
-	exportId("May be omitted, in which case it will be generated from the name. The value cannot be changed later.")
-	name("export", "GitHub Changed Files")
+	Description("A mapping from imported data to a destination table.")
+	Attribute("id", ExportID)
+	Attribute("receiverId", ReceiverID)
+	ExportFields()
+	Required("id", "receiverId", "name", "mapping", "conditions")
+})
+
+var CreateExportPayload = Type("CreateExportPyload", func() {
+	Attribute("id", ExportID, func() {
+		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
+	})
+	ExportFields()
+	// Field "conditions" is optional
+	Required("name", "mapping")
+})
+
+var CreateExportRequest = Type("CreateExportRequest", func() {
+	Extend(GetReceiverRequest)
+	Extend(CreateExportPayload)
+})
+
+var GetExportRequest = Type("GetExportRequest", func() {
+	Attribute("receiverId", ReceiverID)
+	Attribute("exportId", ExportID)
+	Required("receiverId", "exportId")
+})
+
+var UpdateExportRequest = Type("UpdateExportRequest", func() {
+	Extend(GetExportRequest)
+	ExportFields()
+})
+
+var ExportFields = func() {
+	Attribute("name", String, func() {
+		Description("Human readable name of the export.")
+		MinLength(1)
+		MaxLength(40)
+		Example("Raw Data Export")
+	})
 	Attribute("mapping", Mapping, func() {
 		Description("Export column mapping.")
 	})
 	Attribute("conditions", ImportConditions, func() {
 		Description("Table import conditions.")
 	})
-	Required("name", "mapping")
-})
+}
+
+// Mapping ------------------------------------------------------------------------------------------------------------
 
 var Mapping = Type("Mapping", func() {
 	Description("Export column mapping.")
@@ -380,7 +416,6 @@ var Mapping = Type("Mapping", func() {
 	})
 	Attribute("incremental", Boolean, func() {
 		Description("Enables incremental loading to the table.")
-		Default(true)
 	})
 	Attribute("columns", ArrayOf(Column), func() {
 		Description("List of export column mappings. An export may have a maximum of 50 columns.")
@@ -419,20 +454,21 @@ var Template = Type("Template", func() {
 })
 
 var ImportConditions = Type("Conditions", func() {
+	def := model.DefaultConditions()
 	Description("Table import triggers.")
 	Attribute("count", Int, func() {
 		Description("Maximum import buffer size in number of records.")
 		Minimum(1)
 		Maximum(10_000_000)
-		Default(1000)
+		Default(def.Count)
 	})
 	Attribute("size", String, func() {
 		Description("Maximum import buffer size in bytes. Units: B, KB, MB.")
-		Default("5MB")
+		Default(def.Size.String())
 	})
 	Attribute("time", String, func() {
 		Description("Minimum import interval. Units: [s]econd,[m]inute,[h]our.")
-		Default("5m")
+		Default(def.Time.String())
 	})
 })
 
@@ -445,7 +481,7 @@ var GenericErrorType = Type("GenericError", func() {
 	})
 	ErrorName("error", String, "Name of error.", func() {
 		Meta("struct:field:name", "name")
-		Example("templates.internalError")
+		Example("buffer.internalError")
 	})
 	Attribute("message", String, "Error message.", func() {
 		Example("Internal Error")
