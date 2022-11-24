@@ -59,8 +59,8 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	}
 
 	// Generate receiver ID from Name if needed
-	if payload.ReceiverID != nil && len(*payload.ReceiverID) != 0 {
-		receiver.ID = *payload.ReceiverID
+	if payload.ID != nil && len(*payload.ID) != 0 {
+		receiver.ID = strhelper.NormalizeName(string(*payload.ID))
 	} else {
 		receiver.ID = strhelper.NormalizeName(receiver.Name)
 	}
@@ -70,12 +70,8 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 
 	for _, exportData := range payload.Exports {
 		export := model.Export{
-			Name: exportData.Name,
-			ImportConditions: model.ImportConditions{
-				Count: 1,
-				Size:  100,
-				Time:  30 * time.Second,
-			},
+			Name:             exportData.Name,
+			ImportConditions: model.DefaultConditions(),
 		}
 
 		if exportData.Conditions != nil {
@@ -97,8 +93,8 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 		}
 
 		// Generate export ID from Name if needed
-		if exportData.ExportID != nil && len(*exportData.ExportID) != 0 {
-			export.ID = *exportData.ExportID
+		if exportData.ID != nil && len(*exportData.ID) != 0 {
+			export.ID = string(*exportData.ID)
 		} else {
 			export.ID = strhelper.NormalizeName(export.Name)
 		}
@@ -132,7 +128,7 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 		mapping := model.Mapping{
 			RevisionID:  1,
 			TableID:     tableId,
-			Incremental: exportData.Mapping.Incremental,
+			Incremental: exportData.Mapping.Incremental == nil || *exportData.Mapping.Incremental, // default true
 			Columns:     columns,
 		}
 
@@ -152,27 +148,31 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	if err := store.CreateReceiver(ctx, receiver); err != nil {
 		return nil, err
 	}
-	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: receiver.ID})
+	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: ReceiverID(receiver.ID)})
 }
 
-func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.GetReceiverPayload) (res *buffer.Receiver, err error) {
+func (s *service) UpdateReceiver(dependencies.ForProjectRequest, *UpdateReceiverPayload) (res *Receiver, err error) {
+	return nil, NewNotImplementedError()
+}
+
+func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *GetReceiverPayload) (res *Receiver, err error) {
 	ctx, store := d.RequestCtx(), d.ConfigStore()
 
 	projectID, receiverID := d.ProjectID(), payload.ReceiverID
 
-	receiver, err := store.GetReceiver(ctx, projectID, receiverID)
+	receiver, err := store.GetReceiver(ctx, projectID, string(receiverID))
 	if err != nil {
 		return nil, err
 	}
 
-	exportList, err := store.ListExports(ctx, projectID, receiverID)
+	exportList, err := store.ListExports(ctx, projectID, string(receiverID))
 	if err != nil {
 		return nil, err
 	}
 
 	exports := make([]*Export, 0, len(exportList))
 	for _, export := range exportList {
-		mapping, err := store.GetCurrentMapping(ctx, projectID, receiverID, export.ID)
+		mapping, err := store.GetCurrentMapping(ctx, projectID, string(receiverID), export.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -196,11 +196,12 @@ func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.
 		}
 
 		exports = append(exports, &Export{
-			ExportID: &export.ID,
-			Name:     export.Name,
+			ID:         ExportID(export.ID),
+			ReceiverID: ReceiverID(receiver.ID),
+			Name:       export.Name,
 			Mapping: &Mapping{
 				TableID:     mapping.TableID.String(),
-				Incremental: mapping.Incremental,
+				Incremental: &mapping.Incremental,
 				Columns:     columns,
 			},
 			Conditions: &Conditions{
@@ -212,21 +213,21 @@ func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.
 	}
 
 	sort.SliceStable(exports, func(i, j int) bool {
-		return *exports[i].ExportID < *exports[j].ExportID
+		return exports[i].ID < exports[j].ID
 	})
 
 	url := formatUrl(d.BufferApiHost(), receiver.ProjectID, receiver.ID, receiver.Secret)
 	resp := &buffer.Receiver{
-		ReceiverID: &receiver.ID,
-		Name:       &receiver.Name,
-		URL:        &url,
-		Exports:    exports,
+		ID:      ReceiverID(receiver.ID),
+		Name:    receiver.Name,
+		URL:     url,
+		Exports: exports,
 	}
 
 	return resp, nil
 }
 
-func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListReceiversPayload) (res *buffer.ListReceiversResult, err error) {
+func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListReceiversPayload) (res *buffer.ReceiversList, err error) {
 	ctx, store := d.RequestCtx(), d.ConfigStore()
 
 	projectID := d.ProjectID()
@@ -271,11 +272,12 @@ func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.List
 			}
 
 			exports = append(exports, &Export{
-				ExportID: &export.ID,
-				Name:     export.Name,
+				ID:         ExportID(export.ID),
+				ReceiverID: ReceiverID(receiverData.ID),
+				Name:       export.Name,
 				Mapping: &Mapping{
 					TableID:     mapping.TableID.String(),
-					Incremental: mapping.Incremental,
+					Incremental: &mapping.Incremental,
 					Columns:     columns,
 				},
 				Conditions: &Conditions{
@@ -287,23 +289,22 @@ func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.List
 		}
 
 		sort.SliceStable(exports, func(i, j int) bool {
-			return *exports[i].ExportID < *exports[j].ExportID
+			return exports[i].ID < exports[j].ID
 		})
 
-		url := formatUrl(bufferApiHost, receiverData.ProjectID, receiverData.ID, receiverData.Secret)
 		receivers = append(receivers, &buffer.Receiver{
-			ReceiverID: &receiverData.ID,
-			Name:       &receiverData.Name,
-			URL:        &url,
-			Exports:    exports,
+			ID:      ReceiverID(receiverData.ID),
+			Name:    receiverData.Name,
+			URL:     formatUrl(bufferApiHost, receiverData.ProjectID, receiverData.ID, receiverData.Secret),
+			Exports: exports,
 		})
 	}
 
 	sort.SliceStable(receivers, func(i, j int) bool {
-		return *receivers[i].ReceiverID < *receivers[j].ReceiverID
+		return receivers[i].ID < receivers[j].ID
 	})
 
-	return &buffer.ListReceiversResult{Receivers: receivers}, nil
+	return &buffer.ReceiversList{Receivers: receivers}, nil
 }
 
 func (s *service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer.DeleteReceiverPayload) (err error) {
@@ -314,7 +315,7 @@ func (s *service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buff
 	// nolint:godox
 	// TODO: delete export/mapping
 
-	if err := store.DeleteReceiver(ctx, projectID, receiverID); err != nil {
+	if err := store.DeleteReceiver(ctx, projectID, string(receiverID)); err != nil {
 		return err
 	}
 
@@ -325,16 +326,16 @@ func (s *service) RefreshReceiverTokens(dependencies.ForProjectRequest, *buffer.
 	return nil, NewNotImplementedError()
 }
 
-func (s *service) CreateExport(dependencies.ForProjectRequest, *buffer.CreateExportPayload) (res *buffer.Receiver, err error) {
+func (s *service) CreateExport(dependencies.ForProjectRequest, *buffer.CreateExportPayload) (res *buffer.Export, err error) {
 	return nil, NewNotImplementedError()
 }
 
-func (s *service) UpdateExport(dependencies.ForProjectRequest, *buffer.UpdateExportPayload) (res *buffer.Receiver, err error) {
+func (s *service) UpdateExport(dependencies.ForProjectRequest, *buffer.UpdateExportPayload) (res *buffer.Export, err error) {
 	return nil, NewNotImplementedError()
 }
 
-func (s *service) DeleteExport(dependencies.ForProjectRequest, *buffer.DeleteExportPayload) (res *buffer.Receiver, err error) {
-	return nil, NewNotImplementedError()
+func (s *service) DeleteExport(dependencies.ForProjectRequest, *buffer.DeleteExportPayload) (err error) {
+	return NewNotImplementedError()
 }
 
 func (s *service) Import(dependencies.ForPublicRequest, *buffer.ImportPayload, io.ReadCloser) (err error) {
