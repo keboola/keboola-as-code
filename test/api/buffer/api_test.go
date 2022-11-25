@@ -329,10 +329,8 @@ func RunRequests(
 				assert.FailNow(t, fmt.Sprintf("request.json for request %s is malformed, body must be JSON for proper JSON content type or string otherwise", dir))
 			}
 		}
-		if len(request.Headers) > 0 {
-			for k, v := range request.Headers {
-				r.SetHeader(k, v)
-			}
+		for k, v := range request.Headers {
+			r.SetHeader(k, v)
 		}
 		var resp *resty.Response
 		switch request.Method {
