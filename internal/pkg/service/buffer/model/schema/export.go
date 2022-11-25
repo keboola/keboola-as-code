@@ -3,43 +3,49 @@ package schema
 import (
 	"strconv"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type exports = PrefixT[model.Export]
+
 type Exports struct {
-	prefix
+	exports
 }
 
 type ExportsInProject struct {
-	prefix
+	exports
 }
 
 type ExportsInReceiver struct {
-	prefix
+	exports
 }
 
 func (v ConfigsRoot) Exports() Exports {
-	return Exports{prefix: v.prefix + "export/"}
+	return Exports{exports: NewTypedPrefix[model.Export](
+		v.prefix.Add("export"),
+		v.schema.serialization,
+	)}
 }
 
 func (v Exports) InProject(projectID int) ExportsInProject {
 	if projectID == 0 {
 		panic(errors.New("export projectID cannot be empty"))
 	}
-	return ExportsInProject{prefix: v.prefix.Add(strconv.Itoa(projectID))}
+	return ExportsInProject{exports: v.exports.Add(strconv.Itoa(projectID))}
 }
 
 func (v ExportsInProject) InReceiver(receiverID string) ExportsInReceiver {
 	if receiverID == "" {
 		panic(errors.New("export receiverID cannot be empty"))
 	}
-	return ExportsInReceiver{prefix: v.prefix.Add(receiverID)}
+	return ExportsInReceiver{exports: v.exports.Add(receiverID)}
 }
 
-func (v ExportsInReceiver) ID(exportID string) Key {
+func (v ExportsInReceiver) ID(exportID string) KeyT[model.Export] {
 	if exportID == "" {
 		panic(errors.New("export exportID cannot be empty"))
 	}
-	return v.prefix.Key(exportID)
+	return v.exports.Key(exportID)
 }

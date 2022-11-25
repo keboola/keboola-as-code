@@ -18,6 +18,7 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/recordstore"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -385,7 +386,7 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 		// nolint:godox
 		// TODO get fileID and sliceID
 
-		record := model.RecordKey{
+		record := schema.RecordKey{
 			ProjectID:  payload.ProjectID,
 			ReceiverID: string(payload.ReceiverID),
 			ExportID:   e.ID,

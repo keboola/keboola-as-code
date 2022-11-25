@@ -7,7 +7,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/schema"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -22,7 +21,7 @@ func (c *Store) CreateMapping(ctx context.Context, projectID int, receiverID str
 		return err
 	}
 
-	key := schema.Configs().Mappings().InProject(projectID).InReceiver(receiverID).InExport(exportID).Revision(mapping.RevisionID)
+	key := c.schema.Configs().Mappings().InProject(projectID).InReceiver(receiverID).InExport(exportID).Revision(mapping.RevisionID)
 
 	value, err := json.EncodeString(mapping, false)
 	if err != nil {
@@ -43,7 +42,7 @@ func (c *Store) GetCurrentMapping(ctx context.Context, projectID int, receiverID
 	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.GetCurrentMapping")
 	defer telemetry.EndSpan(span, &err)
 
-	prefix := schema.Configs().Mappings().InProject(projectID).InReceiver(receiverID).InExport(exportID)
+	prefix := c.schema.Configs().Mappings().InProject(projectID).InReceiver(receiverID).InExport(exportID)
 
 	// Get only the last mapping added (i.e. the one with the biggest timestamp)
 	resp, err := client.KV.Get(ctx, prefix.Prefix(), etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortDescend), etcd.WithLimit(1))

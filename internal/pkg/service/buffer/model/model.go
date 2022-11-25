@@ -17,10 +17,17 @@ const (
 	TableStageSys = "sys"
 )
 
-type TableID struct {
-	Stage  string `json:"stage" validate:"required,oneof=in out sys"`
-	Bucket string `json:"bucketName" validate:"required,min=1,max=96"`
-	Table  string `json:"tableName" validate:"required,min=1,max=96"`
+type Receiver struct {
+	ID        string `json:"receiverId" validate:"required,min=1,max=48"`
+	ProjectID int    `json:"projectId"`
+	Name      string `json:"name" validate:"required,min=1,max=40"`
+	Secret    string `json:"secret" validate:"required,len=48"`
+}
+
+type Export struct {
+	ID               string           `json:"exportId" validate:"required,min=1,max=48"`
+	Name             string           `json:"name" validate:"required,min=1,max=40"`
+	ImportConditions ImportConditions `json:"importConditions" validate:"required"`
 }
 
 type Mapping struct {
@@ -30,23 +37,16 @@ type Mapping struct {
 	Columns     column.Columns `json:"columns" validate:"required,min=1,max=50"`
 }
 
-type Receiver struct {
-	ID        string `json:"receiverId" validate:"required,min=1,max=48"`
-	ProjectID int    `json:"projectId"`
-	Name      string `json:"name" validate:"required,min=1,max=40"`
-	Secret    string `json:"secret" validate:"required,len=48"`
-}
-
 type ImportConditions struct {
 	Count int               `json:"count" validate:"min=1,max=10000000"`
 	Size  datasize.ByteSize `json:"size" validate:"min=100,max=50000000"`               // 100B-50MB
 	Time  time.Duration     `json:"time" validate:"min=30000000000,max=86400000000000"` // 30s-24h
 }
 
-type Export struct {
-	ID               string           `json:"exportId" validate:"required,min=1,max=48"`
-	Name             string           `json:"name" validate:"required,min=1,max=40"`
-	ImportConditions ImportConditions `json:"importConditions" validate:"required"`
+type TableID struct {
+	Stage  string `json:"stage" validate:"required,oneof=in out sys"`
+	Bucket string `json:"bucketName" validate:"required,min=1,max=96"`
+	Table  string `json:"tableName" validate:"required,min=1,max=96"`
 }
 
 // nolint:gochecknoglobals

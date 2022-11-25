@@ -2,79 +2,101 @@ package schema
 
 import (
 	"strconv"
+	"time"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const recordsPrefix = Prefix("record/")
+type records = Prefix
 
 type RecordsRoot struct {
-	prefix
+	records
 }
 
 type RecordsInProject struct {
-	prefix
+	records
 }
 
 type RecordsInReceiver struct {
-	prefix
+	records
 }
 
 type RecordsInExport struct {
-	prefix
+	records
 }
 
 type RecordsInFile struct {
-	prefix
+	records
 }
 
 type RecordsInSlice struct {
-	prefix
+	records
 }
 
-func Records() RecordsRoot {
-	return RecordsRoot{prefix: recordsPrefix}
+type RecordKey struct {
+	ProjectID  int
+	ReceiverID string
+	ExportID   string
+	FileID     string
+	SliceID    string
+	ReceivedAt time.Time
+}
+
+func (v *Schema) Records() RecordsRoot {
+	return RecordsRoot{records: NewPrefix("record")}
+}
+
+func (k RecordKey) In(schema *Schema) Key {
+	return schema.
+		Records().
+		InProject(k.ProjectID).
+		InReceiver(k.ReceiverID).
+		InExport(k.ExportID).
+		InFile(k.FileID).
+		InSlice(k.SliceID).
+		ID(FormatTimeForKey(k.ReceivedAt) + "_" + idgenerator.Random(5))
 }
 
 func (v RecordsRoot) InProject(projectID int) RecordsInProject {
 	if projectID == 0 {
 		panic(errors.New("record projectID cannot be empty"))
 	}
-	return RecordsInProject{prefix: v.prefix.Add(strconv.Itoa(projectID))}
+	return RecordsInProject{records: v.records.Add(strconv.Itoa(projectID))}
 }
 
 func (v RecordsInProject) InReceiver(receiverID string) RecordsInReceiver {
 	if receiverID == "" {
 		panic(errors.New("record receiverID cannot be empty"))
 	}
-	return RecordsInReceiver{prefix: v.prefix.Add(receiverID)}
+	return RecordsInReceiver{records: v.records.Add(receiverID)}
 }
 
 func (v RecordsInReceiver) InExport(exportID string) RecordsInExport {
 	if exportID == "" {
 		panic(errors.New("record exportID cannot be empty"))
 	}
-	return RecordsInExport{prefix: v.prefix.Add(exportID)}
+	return RecordsInExport{records: v.records.Add(exportID)}
 }
 
 func (v RecordsInExport) InFile(fileID string) RecordsInFile {
 	if fileID == "" {
 		panic(errors.New("record fileID cannot be empty"))
 	}
-	return RecordsInFile{prefix: v.prefix.Add(fileID)}
+	return RecordsInFile{records: v.records.Add(fileID)}
 }
 
 func (v RecordsInFile) InSlice(sliceID string) RecordsInSlice {
 	if sliceID == "" {
 		panic(errors.New("record sliceID cannot be empty"))
 	}
-	return RecordsInSlice{prefix: v.prefix.Add(sliceID)}
+	return RecordsInSlice{records: v.records.Add(sliceID)}
 }
 
 func (v RecordsInSlice) ID(recordID string) Key {
 	if recordID == "" {
 		panic(errors.New("record recordID cannot be empty"))
 	}
-	return v.prefix.Key(recordID)
+	return v.records.Key(recordID)
 }
