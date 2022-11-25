@@ -143,7 +143,7 @@ func start(host, port string, repositories []model.TemplateRepository, debug, de
 	serverUrl := &url.URL{Scheme: "http", Host: net.JoinHostPort(host, port)}
 
 	// Start HTTP server.
-	templatesHttp.HandleHTTPServer(ctx, d, serverUrl, endpoints, errCh, stdLogger, debug)
+	templatesHttp.HandleHTTPServer(ctx, d, serverUrl, endpoints, errCh, debug)
 
 	// Wait for signal.
 	logger.Infof("exiting (%v)", <-errCh)

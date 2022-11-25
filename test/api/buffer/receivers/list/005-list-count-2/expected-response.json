@@ -1,20 +1,22 @@
 {
   "receivers": [
     {
-      "receiverId": "list-receivers-test-a",
-      "name": "list-receivers-test-a",
-      "url": "https://buffer.keboola.local/v1/import/%d/list-receivers-test-a/%s"
+      "id": "receiver-a",
+      "url": "https://buffer.keboola.local/v1/import/%d/receiver-a/%s",
+      "name": "Receiver A",
+      "exports": []
     },
     {
-      "receiverId": "list-receivers-test-b",
-      "name": "list-receivers-test-b",
-      "url": "https://buffer.keboola.local/v1/import/%d/list-receivers-test-b/%s",
+      "id": "receiver-b-my-id",
+      "url": "https://buffer.keboola.local/v1/import/%d/receiver-b-my-id/%s",
+      "name": "Receiver B",
       "exports": [
         {
-          "exportId": "list-receivers-test-b-export-0",
-          "name": "list-receivers-test-b-export-0",
+          "id": "export-1-my-id",
+          "receiverId": "receiver-b-my-id",
+          "name": "Export 1",
           "mapping": {
-            "tableId": "in.c-bucket.table",
+            "tableId": "in.c-bucket.table1",
             "incremental": true,
             "columns": [
               {
@@ -32,9 +34,34 @@
             ]
           },
           "conditions": {
-            "count": 1,
-            "size": 100,
-            "time": 30
+            "count": 1000,
+            "size": "1MB",
+            "time": "5m0s"
+          }
+        },
+        {
+          "id": "export-2",
+          "receiverId": "receiver-b-my-id",
+          "name": "Export 2",
+          "mapping": {
+            "tableId": "in.c-bucket.table2",
+            "incremental": false,
+            "columns": [
+              {
+                "type": "id"
+              },
+              {
+                "type": "body"
+              },
+              {
+                "type": "headers"
+              }
+            ]
+          },
+          "conditions": {
+            "count": 123,
+            "size": "456B",
+            "time": "30s"
           }
         }
       ]

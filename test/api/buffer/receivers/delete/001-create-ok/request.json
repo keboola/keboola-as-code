@@ -2,7 +2,7 @@
   "path": "/v1/receivers",
   "method": "POST",
   "body": {
-    "name": "delete-receiver-a",
+    "name": "Receiver A",
     "exports": []
   }
 }

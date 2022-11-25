@@ -28,7 +28,7 @@ generate() {
     mv -f ./$API_PKG/gen/http/openapi* ./$API_PKG/openapi
   else
     # Print stdout/stderr only if an error occurred
-    echo $out
+    echo "$out"
   fi
 
   return $status

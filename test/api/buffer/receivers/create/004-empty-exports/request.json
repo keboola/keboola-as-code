@@ -1,0 +1,9 @@
+{
+  "path": "/v1/receivers",
+  "method": "POST",
+  "body": {
+    "id": "receiver-with-empty-exports",
+    "name": "My Receiver",
+    "exports": []
+  }
+}

@@ -1,10 +1,46 @@
-<<<<<
-/config/receiver/%s/delete-receiver-b
+ <<<<<
+/config/export/%d/receiver-b/export-1
 -----
 {
-  "receiverId": "delete-receiver-b",
-  "projectId": %s,
-  "name": "delete-receiver-b",
+  "exportId": "export-1",
+  "name": "Export 1",
+  "importConditions": {
+    "count": 123,
+    "size": "456B",
+    "time": 30000000000
+  }
+}
+>>>>>
+
+<<<<<
+/config/mapping/revision/%d/receiver-b/export-1/00000001
+-----
+{
+  "revisionId": 1,
+  "tableId": {
+    "stage": "in",
+    "bucketName": "bucket",
+    "tableName": "table"
+  },
+  "incremental": false,
+  "columns": [
+    {
+      "type": "id"
+    },
+    {
+      "type": "body"
+    }
+  ]
+}
+>>>>>
+
+<<<<<
+/config/receiver/%d/receiver-b
+-----
+{
+  "receiverId": "receiver-b",
+  "projectId": %d,
+  "name": "Receiver B",
   "secret": "%s"
 }
 >>>>>

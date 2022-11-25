@@ -1,19 +1,19 @@
 <<<<<
-/config/export/%s/create-receiver-with-exports/create-receiver-with-exports-export-0
+/config/export/%d/my-receiver-with-exports/my-export-1
 -----
 {
-  "exportId": "create-receiver-with-exports-export-0",
-  "name": "create-receiver-with-exports-export-0",
+  "exportId": "my-export-1",
+  "name": "my-export-1",
   "importConditions": {
-    "count": 1,
-    "size": "100B",
-    "time": 30000000000
+    "count": 500,
+    "size": "100KB",
+    "time": 60000000000
   }
 }
 >>>>>
 
 <<<<<
-/config/mapping/revision/%s/create-receiver-with-exports/create-receiver-with-exports-export-0/00000001
+/config/mapping/revision/%d/my-receiver-with-exports/my-export-1/00000001
 -----
 {
   "revisionId": 1,
@@ -39,23 +39,56 @@
 >>>>>
 
 <<<<<
-/config/receiver/%s/create-receiver
+/config/receiver/%d/my-receiver
 -----
 {
-  "receiverId": "create-receiver",
-  "projectId": %s,
-  "name": "create-receiver",
+  "receiverId": "my-receiver",
+  "projectId": %d,
+  "name": "My Receiver",
   "secret": "%s"
 }
 >>>>>
 
 <<<<<
-/config/receiver/%s/create-receiver-with-exports
+/config/receiver/%d/my-receiver-custom-id
 -----
 {
-  "receiverId": "create-receiver-with-exports",
-  "projectId": %s,
-  "name": "create-receiver-with-exports",
+  "receiverId": "my-receiver-custom-id",
+  "projectId": %d,
+  "name": "My Receiver",
+  "secret": "%s"
+}
+>>>>>
+
+<<<<<
+/config/receiver/%d/my-receiver-with-exports
+-----
+{
+  "receiverId": "my-receiver-with-exports",
+  "projectId": %d,
+  "name": "My Receiver With Exports",
+  "secret": "%s"
+}
+>>>>>
+
+<<<<<
+/config/receiver/%d/receiver-with-empty-exports
+-----
+{
+  "receiverId": "receiver-with-empty-exports",
+  "projectId": %d,
+  "name": "My Receiver",
+  "secret": "%s"
+}
+>>>>>
+
+<<<<<
+/config/receiver/%d/weird-id
+-----
+{
+  "receiverId": "weird-id",
+  "projectId": %d,
+  "name": "Custom Name",
   "secret": "%s"
 }
 >>>>>

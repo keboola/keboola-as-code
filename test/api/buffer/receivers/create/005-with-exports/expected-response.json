@@ -1,0 +1,35 @@
+{
+  "id": "my-receiver-with-exports",
+  "url": "https://buffer.keboola.local/v1/import/%d/my-receiver-with-exports/%s",
+  "name": "My Receiver With Exports",
+  "exports": [
+    {
+      "id": "my-export-1",
+      "receiverId": "my-receiver-with-exports",
+      "name": "my-export-1",
+      "mapping": {
+        "tableId": "in.c-bucket.table",
+        "incremental": true,
+        "columns": [
+          {
+            "type": "id"
+          },
+          {
+            "type": "template",
+            "template": {
+              "language": "jsonnet",
+              "undefinedValueStrategy": "error",
+              "content": "body.key+\":\"+body.value",
+              "dataType": "STRING"
+            }
+          }
+        ]
+      },
+      "conditions": {
+        "count": 500,
+        "size": "100KB",
+        "time": "1m0s"
+      }
+    }
+  ]
+}

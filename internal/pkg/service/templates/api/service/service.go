@@ -14,7 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/httperror"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -477,9 +477,7 @@ func getTemplateVersion(d dependencies.ForProjectRequest, repoName, templateId, 
 		}
 	} else if v, err := model.NewSemVersion(versionStr); err != nil {
 		// Invalid semantic version
-		return nil, nil, &BadRequestError{
-			Message: fmt.Sprintf(`Version "%s" is not valid: %s`, versionStr, err),
-		}
+		return nil, nil, NewBadRequestError(errors.Errorf(`version "%s" is not valid: %s`, versionStr, err))
 	} else {
 		// Parsed version
 		semVersion = v
@@ -521,15 +519,10 @@ func getBranch(d dependencies.ForProjectRequest, branchDef string) (model.Branch
 		}
 	} else if branchId, err := strconv.Atoi(branchDef); err != nil {
 		// Branch ID must be numeric
-		return targetBranch, BadRequestError{
-			Message: fmt.Sprintf(`branch ID "%s" is not numeric`, branchDef),
-		}
+		return targetBranch, NewBadRequestError(errors.Errorf(`branch ID "%s" is not numeric`, branchDef))
 	} else if _, err := storageapi.GetBranchRequest(storageapi.BranchKey{ID: storageapi.BranchID(branchId)}).Send(d.RequestCtx(), storageApiClient); err != nil {
 		// Branch not found
-		return targetBranch, &GenericError{
-			Name:    "templates.branchNotFound",
-			Message: fmt.Sprintf(`Branch "%d" not found.`, branchId),
-		}
+		return targetBranch, NewResourceNotFoundError("branch", strconv.Itoa(branchId))
 	} else {
 		// Branch found
 		targetBranch.Id = storageapi.BranchID(branchId)

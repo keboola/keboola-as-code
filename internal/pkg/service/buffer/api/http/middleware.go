@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
+	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ip"
 )
 
@@ -65,7 +66,7 @@ func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint g
 			// Finis operation and log internal error
 			defer func() {
 				// Is internal error?
-				if err != nil && errorHttpCode(err) > 499 {
+				if err != nil && serviceError.HttpCodeFrom(err) > 499 {
 					span.Finish(tracer.WithError(err))
 					return
 				}

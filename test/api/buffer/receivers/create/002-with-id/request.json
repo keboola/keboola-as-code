@@ -1,0 +1,8 @@
+{
+  "path": "/v1/receivers",
+  "method": "POST",
+  "body": {
+    "id": "my-receiver-custom-id",
+    "name": "My Receiver"
+  }
+}
