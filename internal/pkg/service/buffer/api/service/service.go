@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"regexp"
 	"sort"
 	"strings"
@@ -405,11 +404,9 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 
 func parseRequestBody(contentType string, reader io.ReadCloser) (res *orderedmap.OrderedMap, err error) {
 	if !isContentTypeForm(contentType) && !regexp.MustCompile(`^application/([a-zA-Z0-9\.\-]+\+)?json$`).MatchString(contentType) {
-		return nil, &GenericError{
-			StatusCode: http.StatusUnsupportedMediaType,
-			Name:       "buffer.unsupportedMediaType",
-			Message:    "Supported media types are application/json and application/x-www-form-urlencoded.",
-		}
+		return nil, NewUnsupportedMediaTypeError(errors.New(
+			"Supported media types are application/json and application/x-www-form-urlencoded.",
+		))
 	}
 	// Limit read csv to 1 MB plus 1 B. If the reader fills the limit then the request is bigger than allowed.
 	limit := recordstore.MaxImportRequestSizeInBytes
