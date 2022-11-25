@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -20,8 +21,15 @@ type Store struct {
 	etcdClient *etcd.Client
 	validator  validator.Validator
 	tracer     trace.Tracer
+	schema     *schema.Schema
 }
 
 func New(logger log.Logger, etcdClient *etcd.Client, validator validator.Validator, tracer trace.Tracer) *Store {
-	return &Store{logger, etcdClient, validator, tracer}
+	return &Store{
+		logger:     logger,
+		etcdClient: etcdClient,
+		validator:  validator,
+		tracer:     tracer,
+		schema:     schema.New(validator.Validate),
+	}
 }
