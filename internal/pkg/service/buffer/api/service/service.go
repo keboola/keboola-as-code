@@ -399,7 +399,7 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 		}
 	}
 
-	return nil
+	return errs.ErrorOrNil()
 }
 
 func parseRequestBody(contentType string, reader io.ReadCloser) (res *orderedmap.OrderedMap, err error) {
