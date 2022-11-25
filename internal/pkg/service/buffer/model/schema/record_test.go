@@ -1,4 +1,4 @@
-package model
+package schema_test
 
 import (
 	"testing"
@@ -6,6 +6,8 @@ import (
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/schema"
 )
 
 func TestRecordKey_String(t *testing.T) {
@@ -14,7 +16,7 @@ func TestRecordKey_String(t *testing.T) {
 	now, err := time.Parse(time.RFC3339, `2006-01-02T15:04:05+07:00`)
 	assert.NoError(t, err)
 
-	key := RecordKey{
+	key := schema.RecordKey{
 		ProjectID:  1000,
 		ReceiverID: "my-receiver",
 		ExportID:   "my-export",
@@ -22,6 +24,5 @@ func TestRecordKey_String(t *testing.T) {
 		SliceID:    "slice789",
 		ReceivedAt: now,
 	}
-
-	wildcards.Assert(t, "record/1000/my-receiver/my-export/file456/slice789/2006-01-02T08:04:05.000Z_%c%c%c%c%c", key.String())
+	wildcards.Assert(t, "record/1000/my-receiver/my-export/file456/slice789/2006-01-02T08:04:05.000Z_%c%c%c%c%c", key.In(schema.New(noValidation)).Key())
 }

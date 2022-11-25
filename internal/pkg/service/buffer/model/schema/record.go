@@ -35,8 +35,28 @@ type RecordsInSlice struct {
 	records
 }
 
-func Records() RecordsRoot {
-	return RecordsRoot{prefix: recordsPrefix}
+type RecordKey struct {
+	ProjectID  int
+	ReceiverID string
+	ExportID   string
+	FileID     string
+	SliceID    string
+	ReceivedAt time.Time
+}
+
+func (v *Schema) Records() RecordsRoot {
+	return RecordsRoot{records: NewPrefix("record")}
+}
+
+func (k RecordKey) In(schema *Schema) Key {
+	return schema.
+		Records().
+		InProject(k.ProjectID).
+		InReceiver(k.ReceiverID).
+		InExport(k.ExportID).
+		InFile(k.FileID).
+		InSlice(k.SliceID).
+		ID(FormatTimeForKey(k.ReceivedAt) + "_" + idgenerator.Random(5))
 }
 
 func (v RecordsRoot) InProject(projectID int) RecordsInProject {
