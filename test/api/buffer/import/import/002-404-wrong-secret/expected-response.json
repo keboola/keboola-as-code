@@ -1,0 +1,5 @@
+{
+  "statusCode": 404,
+  "error": "buffer.receiverNotFound",
+  "message": "Receiver \"receiver-1\" with given secret not found."
+}
