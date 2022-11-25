@@ -10,7 +10,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-const MaxImportRequestSizeInBytes = 1 * datasize.MB
+const (
+	MaxImportRequestSizeInBytes = 1 * datasize.MB
+	MaxMappedCSVRowSizeInBytes  = 1 * datasize.MB
+)
 
 type Store struct {
 	logger     log.Logger

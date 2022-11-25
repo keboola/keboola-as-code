@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -338,11 +340,77 @@ func (s *service) DeleteExport(dependencies.ForProjectRequest, *buffer.DeleteExp
 	return NewNotImplementedError()
 }
 
-func (s *service) Import(dependencies.ForPublicRequest, *buffer.ImportPayload, io.ReadCloser) (err error) {
-	return NewNotImplementedError()
+func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPayload, reader io.ReadCloser) (err error) {
+	ctx, config, records, header, ip := d.RequestCtx(), d.ConfigStore(), d.RecordStore(), d.RequestHeader(), d.RequestClientIP()
+
+	receiver, err := config.GetReceiver(ctx, payload.ProjectID, string(payload.ReceiverID))
+	if err != nil {
+		return err
+	}
+	if receiver.Secret != payload.Secret {
+		return &GenericError{
+			StatusCode: 404,
+			Name:       "buffer.receiverNotFound",
+			Message:    fmt.Sprintf(`Receiver "%s" with given secret not found.`, payload.ReceiverID),
+		}
+	}
+
+	data, err := parseRequestBody(payload.ContentType, reader)
+	if err != nil {
+		return err
+	}
+
+	exports, err := config.ListExports(d.RequestCtx(), payload.ProjectID, string(payload.ReceiverID))
+	if err != nil {
+		return err
+	}
+
+	importCtx := column.NewImportCtx(data, header, ip)
+	receivedAt := time.Now()
+
+	errs := errors.NewMultiError()
+	for _, e := range exports {
+		mapping, err := config.GetCurrentMapping(ctx, payload.ProjectID, string(payload.ReceiverID), e.ID)
+		if err != nil {
+			return err
+		}
+		csv := make([]string, 0)
+		for _, c := range mapping.Columns {
+			csvValue, err := c.CsvValue(importCtx)
+			if err != nil {
+				return err
+			}
+			csv = append(csv, csvValue)
+		}
+
+		// nolint:godox
+		// TODO get fileID and sliceID
+
+		record := model.RecordKey{
+			ProjectID:  payload.ProjectID,
+			ReceiverID: string(payload.ReceiverID),
+			ExportID:   e.ID,
+			FileID:     "file",
+			SliceID:    "slice",
+			ReceivedAt: receivedAt,
+		}
+		err = records.CreateRecord(ctx, record, csv)
+		if err != nil {
+			errs.AppendWithPrefixf(err, `failed to create record for export "%s"`, e.ID)
+		}
+	}
+
+	return nil
 }
 
 func parseRequestBody(contentType string, reader io.ReadCloser) (res *orderedmap.OrderedMap, err error) {
+	if !isContentTypeForm(contentType) && !regexp.MustCompile(`^application/([a-zA-Z0-9\.\-]+\+)?json$`).MatchString(contentType) {
+		return nil, &GenericError{
+			StatusCode: http.StatusUnsupportedMediaType,
+			Name:       "buffer.unsupportedMediaType",
+			Message:    "Supported media types are application/json and application/x-www-form-urlencoded.",
+		}
+	}
 	// Limit read csv to 1 MB plus 1 B. If the reader fills the limit then the request is bigger than allowed.
 	limit := recordstore.MaxImportRequestSizeInBytes
 	limitedReader := io.LimitReader(reader, int64(limit)+1)
@@ -383,5 +451,5 @@ func isContentTypeForm(t string) bool {
 }
 
 func formatUrl(bufferApiHost string, projectID int, receiverID string, secret string) string {
-	return fmt.Sprintf("https://%s/v1/import/%d/%s/#/%s", bufferApiHost, projectID, receiverID, secret)
+	return fmt.Sprintf("https://%s/v1/import/%d/%s/%s", bufferApiHost, projectID, receiverID, secret)
 }

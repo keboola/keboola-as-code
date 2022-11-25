@@ -5,18 +5,21 @@ import (
 	"context"
 	"encoding/csv"
 
+	"github.com/c2h5oh/datasize"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
+	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (c *Store) CreateRecord(ctx context.Context, recordKey model.RecordKey, csvData []string) (err error) {
 	tracer, client := c.tracer, c.etcdClient
 
-	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.CreateRecord")
+	_, span := tracer.Start(ctx, "keboola.go.buffer.recordstore.CreateRecord")
 	defer telemetry.EndSpan(span, &err)
 
 	key := recordKey.Key()
-
 	csvBuffer := new(bytes.Buffer)
 	w := csv.NewWriter(csvBuffer)
 
@@ -28,10 +31,14 @@ func (c *Store) CreateRecord(ctx context.Context, recordKey model.RecordKey, csv
 		return err
 	}
 
-	_, err = client.KV.Put(ctx, key.Key(), csvBuffer.String())
-	if err != nil {
-		return err
+	csvString := csvBuffer.String()
+	if datasize.ByteSize(len(csvString)) > MaxMappedCSVRowSizeInBytes {
+		return serviceError.NewPayloadTooLargeError(errors.Errorf(
+			"size of the mapped csv row exceeded the limit of %s.",
+			MaxMappedCSVRowSizeInBytes,
+		))
 	}
 
-	return nil
+	_, err = client.KV.Put(ctx, key.Key(), csvString)
+	return err
 }
