@@ -31,7 +31,7 @@ func (c *Store) CreateExport(ctx context.Context, projectID int, receiverID stri
 		return err
 	}
 
-	prefix := schema.Configs().Exports().InProject(projectID).InReceiver(receiverID)
+	prefix := c.schema.Configs().Exports().InProject(projectID).InReceiver(receiverID)
 	receiverExports, err := client.KV.Get(ctx, prefix.Prefix(), etcd.WithPrefix(), etcd.WithCountOnly())
 	if err != nil {
 		return err
@@ -69,7 +69,7 @@ func (c *Store) ListExports(ctx context.Context, projectID int, receiverID strin
 	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.ListExports")
 	defer telemetry.EndSpan(span, &err)
 
-	prefix := schema.Configs().Exports().InProject(projectID).InReceiver(receiverID)
+	prefix := c.schema.Configs().Exports().InProject(projectID).InReceiver(receiverID)
 
 	resp, err := client.KV.Get(ctx, prefix.Prefix(), etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
 	if err != nil {

@@ -7,7 +7,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/schema"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -32,7 +31,7 @@ func (c *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 		return err
 	}
 
-	prefix := schema.Configs().Receivers().InProject(receiver.ProjectID)
+	prefix := c.schema.Configs().Receivers().InProject(receiver.ProjectID)
 	allReceivers, err := client.KV.Get(ctx, prefix.Prefix(), etcd.WithPrefix(), etcd.WithCountOnly())
 	if err != nil {
 		return err
@@ -73,7 +72,7 @@ func (c *Store) GetReceiver(ctx context.Context, projectID int, receiverID strin
 	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.GetReceiver")
 	defer telemetry.EndSpan(span, &err)
 
-	key := schema.Configs().Receivers().InProject(projectID).ID(receiverID)
+	key := c.schema.Configs().Receivers().InProject(projectID).ID(receiverID)
 
 	resp, err := client.KV.Get(ctx, key.Key())
 	if err != nil {
@@ -99,7 +98,7 @@ func (c *Store) ListReceivers(ctx context.Context, projectID int) (r []*model.Re
 	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.ListReceivers")
 	defer telemetry.EndSpan(span, &err)
 
-	prefix := schema.Configs().Receivers().InProject(projectID)
+	prefix := c.schema.Configs().Receivers().InProject(projectID)
 
 	resp, err := client.KV.Get(ctx, prefix.Prefix(), etcd.WithPrefix())
 	if err != nil {
@@ -127,7 +126,7 @@ func (c *Store) DeleteReceiver(ctx context.Context, projectID int, receiverID st
 	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.DeleteReceiver")
 	defer telemetry.EndSpan(span, &err)
 
-	key := schema.Configs().Receivers().InProject(projectID).ID(receiverID)
+	key := c.schema.Configs().Receivers().InProject(projectID).ID(receiverID)
 
 	r, err := client.KV.Delete(ctx, key.Key())
 	if err != nil {
