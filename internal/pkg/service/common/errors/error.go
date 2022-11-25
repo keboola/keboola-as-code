@@ -13,7 +13,7 @@ type WithUserMessage interface {
 	ErrorUserMessage() string
 }
 
-type WithExceptionId interface {
+type WithExceptionID interface {
 	ErrorExceptionId() string
 }
 

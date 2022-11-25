@@ -25,9 +25,9 @@ func KVLogWrapper(kv KV, out io.Writer) KV {
 	return &kvWrapper{KV: kv, out: out, id: 1}
 }
 
-func (v *kvWrapper) log(requestId uint64, format string, a ...any) {
+func (v *kvWrapper) log(requestID uint64, format string, a ...any) {
 	format = "ETCD_REQUEST[%04d] " + format + "\n"
-	a = append([]any{requestId}, a...)
+	a = append([]any{requestID}, a...)
 	_, _ = fmt.Fprintf(v.out, format, a...)
 }
 
@@ -36,29 +36,29 @@ func (v *kvWrapper) nextRequestID() uint64 {
 }
 
 func (v *kvWrapper) Put(ctx context.Context, key, val string, opts ...OpOption) (*PutResponse, error) {
-	requestId := v.nextRequestID()
+	requestID := v.nextRequestID()
 	startTime := time.Now()
-	v.logStart(requestId, "PUT", key)
+	v.logStart(requestID, "PUT", key)
 	r, err := v.KV.Put(ctx, key, val, opts...)
-	v.logEnd(requestId, "PUT", key, val, startTime, r.OpResponse(), err)
+	v.logEnd(requestID, "PUT", key, val, startTime, r.OpResponse(), err)
 	return r, err
 }
 
 func (v *kvWrapper) Get(ctx context.Context, key string, opts ...OpOption) (*GetResponse, error) {
-	requestId := v.nextRequestID()
+	requestID := v.nextRequestID()
 	startTime := time.Now()
-	v.logStart(requestId, "GET", key)
+	v.logStart(requestID, "GET", key)
 	r, err := v.KV.Get(ctx, key, opts...)
-	v.logEnd(requestId, "GET", key, "", startTime, r.OpResponse(), err)
+	v.logEnd(requestID, "GET", key, "", startTime, r.OpResponse(), err)
 	return r, err
 }
 
 func (v *kvWrapper) Delete(ctx context.Context, key string, opts ...OpOption) (*DeleteResponse, error) {
-	requestId := v.nextRequestID()
+	requestID := v.nextRequestID()
 	startTime := time.Now()
-	v.logStart(requestId, "DEL", key)
+	v.logStart(requestID, "DEL", key)
 	r, err := v.KV.Delete(ctx, key, opts...)
-	v.logEnd(requestId, "DEL", key, "", startTime, r.OpResponse(), err)
+	v.logEnd(requestID, "DEL", key, "", startTime, r.OpResponse(), err)
 	return r, err
 }
 
@@ -78,30 +78,30 @@ func (v *kvWrapper) Do(ctx context.Context, op Op) (OpResponse, error) {
 		opName = "TXN"
 	}
 
-	requestId := v.nextRequestID()
+	requestID := v.nextRequestID()
 	startTime := time.Now()
-	v.logStart(requestId, opName, key)
+	v.logStart(requestID, opName, key)
 
 	r, err := v.KV.Do(ctx, op)
-	v.logEnd(requestId, opName, key, val, startTime, r, err)
+	v.logEnd(requestID, opName, key, val, startTime, r, err)
 	return r, err
 }
 
-func (v *kvWrapper) logStart(requestId uint64, op, key string) {
-	v.log(requestId, `%s "%s" | start`, op, key)
+func (v *kvWrapper) logStart(requestID uint64, op, key string) {
+	v.log(requestID, `%s "%s" | start`, op, key)
 }
 
-func (v *kvWrapper) logEnd(requestId uint64, op, key, val string, startTime time.Time, r OpResponse, err error) {
+func (v *kvWrapper) logEnd(requestID uint64, op, key, val string, startTime time.Time, r OpResponse, err error) {
 	if err != nil {
-		v.log(requestId, `%s "%s" | error | %s | %s`, op, key, err, time.Since(startTime))
+		v.log(requestID, `%s "%s" | error | %s | %s`, op, key, err, time.Since(startTime))
 	} else if r.Get() != nil {
-		v.log(requestId, `%s "%s" | done | count: %d | %s`, op, key, r.Get().Count, time.Since(startTime))
+		v.log(requestID, `%s "%s" | done | count: %d | %s`, op, key, r.Get().Count, time.Since(startTime))
 	} else if r.Put() != nil {
-		v.log(requestId, "%s \"%s\" | done | %s | value:\n%s", op, key, time.Since(startTime), val)
+		v.log(requestID, "%s \"%s\" | done | %s | value:\n%s", op, key, time.Since(startTime), val)
 	} else if r.Del() != nil {
-		v.log(requestId, `%s "%s" | done | deleted: %d| %s`, op, key, r.Del().Deleted, time.Since(startTime))
+		v.log(requestID, `%s "%s" | done | deleted: %d| %s`, op, key, r.Del().Deleted, time.Since(startTime))
 	} else {
-		v.log(requestId, `%s "%s" | done | %s`, op, key, time.Since(startTime))
+		v.log(requestID, `%s "%s" | done | %s`, op, key, time.Since(startTime))
 	}
 }
 
@@ -110,15 +110,15 @@ func (v *kvWrapper) Txn(ctx context.Context) Txn {
 }
 
 func (v *txnWrapper) Commit() (*TxnResponse, error) {
-	requestId := v.nextRequestID()
+	requestID := v.nextRequestID()
 	startTime := time.Now()
-	v.log(requestId, `TXN | start`)
+	v.log(requestID, `TXN | start`)
 
 	r, err := v.Txn.Commit()
 	if err != nil {
-		v.log(requestId, `TXN | error | %s | %s`, err, time.Since(startTime))
+		v.log(requestID, `TXN | error | %s | %s`, err, time.Since(startTime))
 	} else {
-		v.log(requestId, `TXN | done | succeeded: %t | %s`, r.Succeeded, time.Since(startTime))
+		v.log(requestID, `TXN | done | succeeded: %t | %s`, r.Succeeded, time.Since(startTime))
 	}
 
 	return r, err

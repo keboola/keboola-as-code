@@ -69,9 +69,9 @@ func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, er
 
 	// Re-use exception ID from Storage or other API, if possible.
 	// Otherwise, generate custom exception ID.
-	var exceptionIdProvider WithExceptionId
-	if errors.As(err, &exceptionIdProvider) {
-		v := exceptionIdProvider.ErrorExceptionId()
+	var exceptionIDProvider WithExceptionID
+	if errors.As(err, &exceptionIDProvider) {
+		v := exceptionIDProvider.ErrorExceptionId()
 		response.ExceptionID = &v
 	} else if response.StatusCode > 499 {
 		v := wr.exceptionIDPrefix + ctx.Value(middleware.RequestIDKey).(string)
