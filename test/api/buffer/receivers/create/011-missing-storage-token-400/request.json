@@ -2,8 +2,7 @@
   "path": "/v1/receivers",
   "method": "POST",
   "headers": {
-    "Content-Type": "application/json",
-    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+    "Content-Type": "application/json"
   },
   "body": {
     "name": "My Receiver"

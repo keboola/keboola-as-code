@@ -1,5 +1,4 @@
 {
   "path": "/foo/bar",
-  "method": "GET",
-  "body": {}
+  "method": "GET"
 }
