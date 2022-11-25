@@ -125,70 +125,70 @@ func (v opFactory) Op(ctx context.Context) (*etcd.Op, error) {
 func (v BoolOp) Do(ctx context.Context, client *etcd.Client) (result bool, err error) {
 	if etcdOp, err := v.opFactory(ctx); err != nil {
 		return false, err
-	} else if r, err := client.Do(ctx, *etcdOp); err == nil {
-		return v.processor(ctx, r)
-	} else {
+	} else if r, err := client.Do(ctx, *etcdOp); err != nil {
 		return false, err
+	} else {
+		return v.processor(ctx, r)
 	}
 }
 
 func (v GetOneOp) Do(ctx context.Context, client *etcd.Client) (kv *KeyValue, err error) {
 	if etcdOp, err := v.opFactory(ctx); err != nil {
 		return nil, err
-	} else if r, err := client.Do(ctx, *etcdOp); err == nil {
-		return v.processor(ctx, r)
-	} else {
+	} else if r, err := client.Do(ctx, *etcdOp); err != nil {
 		return nil, err
+	} else {
+		return v.processor(ctx, r)
 	}
 }
 
 func (v GetOneTOp[T]) Do(ctx context.Context, client *etcd.Client) (kv *KeyValueT[T], err error) {
 	if etcdOp, err := v.opFactory(ctx); err != nil {
 		return nil, err
-	} else if r, err := client.Do(ctx, *etcdOp); err == nil {
-		return v.processor(ctx, r)
-	} else {
+	} else if r, err := client.Do(ctx, *etcdOp); err != nil {
 		return nil, err
+	} else {
+		return v.processor(ctx, r)
 	}
 }
 
 func (v GetManyOp) Do(ctx context.Context, client *etcd.Client) (kvs []*KeyValue, err error) {
 	if etcdOp, err := v.opFactory(ctx); err != nil {
 		return nil, err
-	} else if r, err := client.Do(ctx, *etcdOp); err == nil {
-		return v.processor(ctx, r)
-	} else {
+	} else if r, err := client.Do(ctx, *etcdOp); err != nil {
 		return nil, err
+	} else {
+		return v.processor(ctx, r)
 	}
 }
 
 func (v GetManyTOp[T]) Do(ctx context.Context, client *etcd.Client) (kvs []KeyValueT[T], err error) {
 	if etcdOp, err := v.opFactory(ctx); err != nil {
 		return nil, err
-	} else if r, err := client.Do(ctx, *etcdOp); err == nil {
-		return v.processor(ctx, r)
-	} else {
+	} else if r, err := client.Do(ctx, *etcdOp); err != nil {
 		return nil, err
+	} else {
+		return v.processor(ctx, r)
 	}
 }
 
 func (v CountOp) Do(ctx context.Context, client *etcd.Client) (count int64, err error) {
 	if etcdOp, err := v.opFactory(ctx); err != nil {
 		return 0, err
-	} else if r, err := client.Do(ctx, *etcdOp); err == nil {
-		return v.processor(ctx, r), nil
-	} else {
+	} else if r, err := client.Do(ctx, *etcdOp); err != nil {
 		return 0, err
+	} else {
+		return v.processor(ctx, r), nil
 	}
 }
 
 func (v NoResultOp) Do(ctx context.Context, client *etcd.Client) (err error) {
 	if etcdOp, err := v.opFactory(ctx); err != nil {
 		return err
-	} else if r, err := client.Do(ctx, *etcdOp); err == nil {
-		return v.processor(ctx, r)
-	} else {
+	} else if r, err := client.Do(ctx, *etcdOp); err != nil {
 		return err
+	} else {
+		return v.processor(ctx, r)
 	}
 }
 
