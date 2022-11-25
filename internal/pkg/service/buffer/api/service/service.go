@@ -440,6 +440,9 @@ func parseRequestBody(contentType string, reader io.ReadCloser) (res *orderedmap
 			return nil, NewBadRequestError(errors.New("Could not parse json request body."))
 		}
 	}
+	if data.Len() == 0 {
+		return nil, NewBadRequestError(errors.New("Empty request body."))
+	}
 	return data, nil
 }
 
