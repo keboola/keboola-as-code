@@ -1,8 +1,7 @@
 {
   "path": "/v1/receivers",
   "method": "GET",
-  "body": {
-    "name": "Github Pull Requests",
-    "exports": []
+  "headers": {
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
   }
 }
