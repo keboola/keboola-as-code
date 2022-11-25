@@ -14,7 +14,7 @@ type SharedCodeConfig struct {
 
 type SharedCodeRow struct {
 	Target  storageapi.ComponentID `validate:"required"`
-	Scripts Scripts                `validate:"required"`
+	Scripts Scripts
 }
 
 // LinkScript is reference to shared code used in transformation.
