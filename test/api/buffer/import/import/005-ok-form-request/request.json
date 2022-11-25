@@ -1,0 +1,8 @@
+{
+  "path": "/v1/import/%%TEST_KBC_PROJECT_ID%%/receiver-1/2wsMsoyPA6YsDmnf7GJvqyxlDU6kPX7WWFu1pOMz1O7ybPVI",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/x-www-form-urlencoded"
+  },
+  "body": "col1=val3&col2=val4"
+}
