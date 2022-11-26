@@ -15,7 +15,7 @@ func NewPlan(diffResults *diff.Results) (*diffop.Plan, error) {
 			// nop
 		case diff.ResultNotEqual:
 			// SKIP: if only Relations have changed + no changed relations on the API side
-			if result.ChangedFields.String() == "relations" && !result.ChangedFields.Get("relations").HasPath("InApi") {
+			if result.ChangedFields.String() == "relations" && !result.ChangedFields.Get("relations").HasPath("InAPI") {
 				continue
 			}
 			plan.Add(result, diffop.ActionSaveRemote)

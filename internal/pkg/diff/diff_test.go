@@ -379,7 +379,7 @@ func TestDiffRelations(t *testing.T) {
   + api side relation mocked key "002"
 `
 	assert.Equal(t, strings.Trim(expected, "\n"), reporter.String())
-	assert.Equal(t, []string{"InManifest", "InApi"}, reporter.Paths()) // see model.RelationsBySide
+	assert.Equal(t, []string{"InManifest", "InAPI"}, reporter.Paths()) // see model.RelationsBySide
 }
 
 func TestDiffTransformation(t *testing.T) {
