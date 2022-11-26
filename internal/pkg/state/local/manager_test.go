@@ -79,7 +79,7 @@ func TestLocalSaveMapper(t *testing.T) {
 	projectState.Mapper().AddMapper(testMapperInst)
 
 	// Test object
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, Id: `456`}
+	configKey := model.ConfigKey{BranchID: 123, ComponentID: `foo.bar`, ID: `456`}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
@@ -143,7 +143,7 @@ func TestLocalLoadMapper(t *testing.T) {
 	assert.NoError(t, uow.Invoke())
 
 	// Internal state has been mapped
-	configState := projectState.MustGet(model.ConfigKey{BranchId: 111, ComponentId: `ex-generic-v2`, Id: `456`}).(*model.ConfigState)
+	configState := projectState.MustGet(model.ConfigKey{BranchID: 111, ComponentID: `ex-generic-v2`, ID: `456`}).(*model.ConfigState)
 	assert.Equal(t, `{"parameters":"overwritten","new":"value"}`, json.MustEncodeString(configState.Local.Content, false))
 
 	// AfterLocalOperation event has been called

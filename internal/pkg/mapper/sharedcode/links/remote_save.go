@@ -29,7 +29,7 @@ func (m *mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSa
 	// Convert LinkScript to ID placeholder
 	errs := errors.NewMultiError()
 	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
-		v, err := m.linkToIdPlaceholder(code, script)
+		v, err := m.linkToIDPlaceholder(code, script)
 		if err != nil {
 			errs.Append(err)
 		}
@@ -41,8 +41,8 @@ func (m *mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSa
 
 	// Set shared code config ID and rows IDs
 	// Note: IDs are already validated on remote/local load
-	transformation.Content.Set(model.SharedCodeIdContentKey, sharedCodeLink.Config.Id.String())
-	transformation.Content.Set(model.SharedCodeRowsIdContentKey, sharedCodeLink.Rows.IdsSlice())
+	transformation.Content.Set(model.SharedCodeIDContentKey, sharedCodeLink.Config.ID.String())
+	transformation.Content.Set(model.SharedCodeRowsIDContentKey, sharedCodeLink.Rows.IdsSlice())
 
 	return errs.ErrorOrNil()
 }

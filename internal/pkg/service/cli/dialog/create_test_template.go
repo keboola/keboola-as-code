@@ -73,7 +73,7 @@ func (d *createTmplTestDialog) askTestName() (string, error) {
 				return errors.New(`test name is required`)
 			}
 
-			if !regexpcache.MustCompile(template.IdRegexp).MatchString(str) {
+			if !regexpcache.MustCompile(template.IDRegexp).MatchString(str) {
 				return errors.Errorf(`invalid name "%s", please use only a-z, A-Z, 0-9, "-" characters`, str)
 			}
 

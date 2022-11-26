@@ -80,8 +80,8 @@ func FirstUpper(str string) string {
 	return strings.ToUpper(string(str[0])) + str[1:]
 }
 
-// StripHtmlComments replaces HTML comments with empty lines.
-func StripHtmlComments(str string) string {
+// StripHTMLComments replaces HTML comments with empty lines.
+func StripHTMLComments(str string) string {
 	return regexpcache.
 		MustCompile("(?s)<!--(.*?)-->").
 		ReplaceAllStringFunc(str, func(s string) string {
@@ -139,7 +139,7 @@ func StripMarkdown(str string) string {
 	return stripmd.Strip(str)
 }
 
-func MustUrlPathUnescape(in string) string {
+func MustURLPathUnescape(in string) string {
 	out, err := url.PathUnescape(in)
 	if err != nil {
 		return in

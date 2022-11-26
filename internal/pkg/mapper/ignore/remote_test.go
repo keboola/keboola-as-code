@@ -16,7 +16,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Variables(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Target1
-	targetKey := model.ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", Id: "1"}
+	targetKey := model.ConfigKey{BranchID: 1, ComponentID: "keboola.foo-bar", ID: "1"}
 	targetConfig := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: targetKey},
 		Remote:         &model.Config{ConfigKey: targetKey},
@@ -24,15 +24,15 @@ func TestIgnoreMapper_AfterRemoteOperation_Variables(t *testing.T) {
 	assert.NoError(t, state.Set(targetConfig))
 
 	// Variables for target
-	targetVarsKey := model.ConfigKey{BranchId: 1, ComponentId: storageapi.VariablesComponentID, Id: "2"}
+	targetVarsKey := model.ConfigKey{BranchID: 1, ComponentID: storageapi.VariablesComponentID, ID: "2"}
 	targetVars := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: targetVarsKey},
 		Remote: &model.Config{
 			ConfigKey: targetVarsKey,
 			Relations: model.Relations{
 				&model.VariablesForRelation{
-					ComponentId: targetKey.ComponentId,
-					ConfigId:    targetKey.Id,
+					ComponentID: targetKey.ComponentID,
+					ConfigID:    targetKey.ID,
 				},
 			},
 		},
@@ -40,7 +40,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Variables(t *testing.T) {
 	assert.NoError(t, state.Set(targetVars))
 
 	// Unattached variables
-	unattachedVarsKey := model.ConfigKey{BranchId: 1, ComponentId: storageapi.VariablesComponentID, Id: "3"}
+	unattachedVarsKey := model.ConfigKey{BranchID: 1, ComponentID: storageapi.VariablesComponentID, ID: "3"}
 	unattachedVars := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: unattachedVarsKey},
 		Remote:         &model.Config{ConfigKey: unattachedVarsKey},
@@ -68,7 +68,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Scheduler(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Target for valid scheduler
-	targetKey := model.ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", Id: "1"}
+	targetKey := model.ConfigKey{BranchID: 1, ComponentID: "keboola.foo-bar", ID: "1"}
 	targetConfig := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: targetKey},
 		Remote:         &model.Config{ConfigKey: targetKey},
@@ -76,15 +76,15 @@ func TestIgnoreMapper_AfterRemoteOperation_Scheduler(t *testing.T) {
 	assert.NoError(t, state.Set(targetConfig))
 
 	// Valid scheduler
-	validSchedulerKey := model.ConfigKey{BranchId: 1, ComponentId: storageapi.SchedulerComponentID, Id: "2"}
+	validSchedulerKey := model.ConfigKey{BranchID: 1, ComponentID: storageapi.SchedulerComponentID, ID: "2"}
 	validScheduler := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: validSchedulerKey},
 		Remote: &model.Config{
 			ConfigKey: validSchedulerKey,
 			Relations: model.Relations{
 				&model.SchedulerForRelation{
-					ComponentId: targetKey.ComponentId,
-					ConfigId:    targetKey.Id,
+					ComponentID: targetKey.ComponentID,
+					ConfigID:    targetKey.ID,
 				},
 			},
 		},
@@ -92,16 +92,16 @@ func TestIgnoreMapper_AfterRemoteOperation_Scheduler(t *testing.T) {
 	assert.NoError(t, state.Set(validScheduler))
 
 	// Ignored scheduler
-	missingTargetKey := model.ConfigKey{BranchId: 1, ComponentId: "keboola.foo-bar", Id: "789"}
-	ignoredSchedulerKey := model.ConfigKey{BranchId: 1, ComponentId: storageapi.SchedulerComponentID, Id: "3"}
+	missingTargetKey := model.ConfigKey{BranchID: 1, ComponentID: "keboola.foo-bar", ID: "789"}
+	ignoredSchedulerKey := model.ConfigKey{BranchID: 1, ComponentID: storageapi.SchedulerComponentID, ID: "3"}
 	ignoredScheduler := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: ignoredSchedulerKey},
 		Remote: &model.Config{
 			ConfigKey: ignoredSchedulerKey,
 			Relations: model.Relations{
 				&model.SchedulerForRelation{
-					ComponentId: missingTargetKey.ComponentId,
-					ConfigId:    missingTargetKey.Id,
+					ComponentID: missingTargetKey.ComponentID,
+					ConfigID:    missingTargetKey.ID,
 				},
 			},
 		},

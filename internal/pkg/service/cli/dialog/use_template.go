@@ -164,7 +164,7 @@ func (d *useTmplInputsDialog) ask(isForTest bool) (template.InputsValues, []stri
 
 		// Use value from the inputs file, if it is present
 		if d.useInputsFile {
-			if v, found := d.inputsFile[inputDef.Id]; found {
+			if v, found := d.inputsFile[inputDef.ID]; found {
 				if err := d.addInputValue(v, inputDef, true); err != nil {
 					return errors.NewNestedError(err, errors.New("please fix the value in the inputs JSON file"))
 				}
@@ -215,7 +215,7 @@ func (d *useTmplInputsDialog) announceGroup(group *input.StepsGroupExt) error {
 
 			// Is at least one input defined in the inputs file?
 			for _, inputDef := range step.Inputs {
-				if _, found := d.inputsFile[inputDef.Id]; found {
+				if _, found := d.inputsFile[inputDef.ID]; found {
 					selectedSteps = append(selectedSteps, stepIndex)
 					break // check next step
 				}
@@ -256,9 +256,9 @@ func (d *useTmplInputsDialog) announceGroup(group *input.StepsGroupExt) error {
 			foundInputs := orderedmap.New()
 			for _, step := range group.Steps {
 				for _, inputDef := range step.Inputs {
-					if _, found := d.inputsFile[inputDef.Id]; found {
+					if _, found := d.inputsFile[inputDef.ID]; found {
 						v, _ := foundInputs.GetOrNil(step.Name).([]string)
-						foundInputs.Set(step.Name, append(v, inputDef.Id))
+						foundInputs.Set(step.Name, append(v, inputDef.ID))
 					}
 				}
 			}
@@ -379,7 +379,7 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input, isForTest bool) (s
 			},
 		}
 		if inputDef.Default != nil {
-			if _, index, found := inputDef.Options.GetById(inputDef.Default.(string)); found {
+			if _, index, found := inputDef.Options.GetByID(inputDef.Default.(string)); found {
 				selectPrompt.Default = index
 			}
 		}
@@ -403,7 +403,7 @@ func (d *useTmplInputsDialog) askInput(inputDef *input.Input, isForTest bool) (s
 		if inputDef.Default != nil {
 			defaultIndices := make([]int, 0)
 			for _, id := range inputDef.Default.([]any) {
-				if _, index, found := inputDef.Options.GetById(id.(string)); found {
+				if _, index, found := inputDef.Options.GetByID(id.(string)); found {
 					defaultIndices = append(defaultIndices, index)
 				}
 			}
@@ -435,7 +435,7 @@ func (d *useTmplInputsDialog) addInputValue(value any, inputDef *input.Input, is
 		return err
 	}
 
-	d.inputsValues[inputDef.Id] = inputValue.Value
+	d.inputsValues[inputDef.ID] = inputValue.Value
 	d.out = append(d.out, inputValue)
 	return nil
 }
@@ -447,19 +447,19 @@ func (d *useTmplInputsDialog) defaultOrEmptyValueFor(inputDef *input.Input) any 
 		value := inputDef.DefaultOrEmpty()
 		if inputDef.Default == nil {
 			// Get component ID
-			oauthInput, found := d.inputs[inputDef.OauthInputId]
+			oauthInput, found := d.inputs[inputDef.OauthInputID]
 			if !found {
-				panic(errors.Errorf(`oauth input "%s" not found`, inputDef.OauthInputId))
+				panic(errors.Errorf(`oauth input "%s" not found`, inputDef.OauthInputID))
 			}
 			if oauthInput.Kind != input.KindOAuth {
-				panic(errors.Errorf(`input "%s" has unexpected kind, expected "%s", given "%s"`, inputDef.OauthInputId, input.KindOAuth, oauthInput.Kind))
+				panic(errors.Errorf(`input "%s" has unexpected kind, expected "%s", given "%s"`, inputDef.OauthInputID, input.KindOAuth, oauthInput.Kind))
 			}
-			componentId := oauthInput.ComponentId
+			componentID := oauthInput.ComponentID
 
 			// User must fill in value in UI,
 			// but at least empty keys must be generated in CLI,
 			// so values can be found during the upgrade operation.
-			if v, found := input.OauthAccountsEmptyValue[componentId]; found {
+			if v, found := input.OauthAccountsEmptyValue[componentID]; found {
 				value = v
 			}
 		}

@@ -9,13 +9,13 @@ import (
 )
 
 // NewPlan creates a plan for renaming objects that do not match the naming.
-func NewPlan(projectState *state.State, branchKey model.BranchKey, instanceId string) (*Plan, error) {
+func NewPlan(projectState *state.State, branchKey model.BranchKey, instanceID string) (*Plan, error) {
 	builder := &planBuilder{State: projectState}
-	actions, err := builder.build(branchKey, instanceId)
+	actions, err := builder.build(branchKey, instanceID)
 	if err != nil {
 		return nil, err
 	}
-	return &Plan{actions: actions, projectState: projectState, branchKey: branchKey, instanceId: instanceId}, nil
+	return &Plan{actions: actions, projectState: projectState, branchKey: branchKey, instanceID: instanceID}, nil
 }
 
 type planBuilder struct {
@@ -23,9 +23,9 @@ type planBuilder struct {
 	actions []DeleteAction
 }
 
-func (b *planBuilder) build(branchKey model.BranchKey, instanceId string) ([]DeleteAction, error) {
+func (b *planBuilder) build(branchKey model.BranchKey, instanceID string) ([]DeleteAction, error) {
 	configsMap := map[storageapi.ConfigID]bool{}
-	for _, config := range search.ConfigsForTemplateInstance(b.State.LocalObjects().ConfigsWithRowsFrom(branchKey), instanceId) {
+	for _, config := range search.ConfigsForTemplateInstance(b.State.LocalObjects().ConfigsWithRowsFrom(branchKey), instanceID) {
 		configState := b.MustGet(config.Key())
 		action := DeleteAction{
 			State:    configState,
@@ -33,12 +33,12 @@ func (b *planBuilder) build(branchKey model.BranchKey, instanceId string) ([]Del
 		}
 		b.actions = append(b.actions, action)
 
-		configsMap[config.Id] = true
+		configsMap[config.ID] = true
 	}
 
 	// Search for schedules and delete those belonging to the deleted configs
 	for _, config := range b.ConfigsFrom(branchKey) {
-		component, err := b.Components().GetOrErr(config.ComponentId)
+		component, err := b.Components().GetOrErr(config.ComponentID)
 		if err != nil {
 			return nil, err
 		}
@@ -50,7 +50,7 @@ func (b *planBuilder) build(branchKey model.BranchKey, instanceId string) ([]Del
 			}
 			if rel != nil {
 				schedulerRel := rel.(*model.SchedulerForRelation)
-				if configsMap[schedulerRel.ConfigId] {
+				if configsMap[schedulerRel.ConfigID] {
 					action := DeleteAction{
 						State:    config.NewObjectState(),
 						Manifest: config.Manifest(),

@@ -33,10 +33,10 @@ func TestValidateState(t *testing.T) {
 		"name": "Foo",
 	})
 	assert.NoError(t, err)
-	d.MockedHttpTransport().RegisterResponder("GET", `=~/storage/components/keboola.foo`, getGenericExResponder)
+	d.MockedHTTPTransport().RegisterResponder("GET", `=~/storage/components/keboola.foo`, getGenericExResponder)
 
 	// Add invalid objects
-	branchKey := model.BranchKey{Id: 456}
+	branchKey := model.BranchKey{ID: 456}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{
 			BranchKey: branchKey,
@@ -51,7 +51,7 @@ func TestValidateState(t *testing.T) {
 	assert.NoError(t, state.Set(branchState))
 
 	// Add invalid config
-	configKey := model.ConfigKey{BranchId: 456, ComponentId: "keboola.foo", Id: "234"}
+	configKey := model.ConfigKey{BranchID: 456, ComponentID: "keboola.foo", ID: "234"}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,

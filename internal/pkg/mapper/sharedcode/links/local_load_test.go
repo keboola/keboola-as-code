@@ -34,7 +34,7 @@ func TestLocalLoadTranWithSharedCode(t *testing.T) {
 			Codes: model.Codes{
 				{
 					CodeKey: model.CodeKey{
-						ComponentId: `keboola.python-transformation-v2`,
+						ComponentID: `keboola.python-transformation-v2`,
 					},
 					Name:    `Code 1`,
 					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-1`),
@@ -42,35 +42,35 @@ func TestLocalLoadTranWithSharedCode(t *testing.T) {
 						model.StaticScript{Value: `print(100)`},
 						model.LinkScript{
 							Target: model.ConfigRowKey{
-								BranchId:    123,
-								ComponentId: `keboola.shared-code`,
-								ConfigId:    `456`,
-								Id:          `1234`,
+								BranchID:    123,
+								ComponentID: `keboola.shared-code`,
+								ConfigID:    `456`,
+								ID:          `1234`,
 							},
 						},
 					},
 				},
 				{
 					CodeKey: model.CodeKey{
-						ComponentId: `keboola.python-transformation-v2`,
+						ComponentID: `keboola.python-transformation-v2`,
 					},
 					Name:    `Code 2`,
 					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-2`),
 					Scripts: model.Scripts{
 						model.LinkScript{
 							Target: model.ConfigRowKey{
-								BranchId:    123,
-								ComponentId: `keboola.shared-code`,
-								ConfigId:    `456`,
-								Id:          `5678`,
+								BranchID:    123,
+								ComponentID: `keboola.shared-code`,
+								ConfigID:    `456`,
+								ID:          `5678`,
 							},
 						},
 						model.LinkScript{
 							Target: model.ConfigRowKey{
-								BranchId:    123,
-								ComponentId: `keboola.shared-code`,
-								ConfigId:    `456`,
-								Id:          `1234`,
+								BranchID:    123,
+								ComponentID: `keboola.shared-code`,
+								ConfigID:    `456`,
+								ID:          `1234`,
 							},
 						},
 					},

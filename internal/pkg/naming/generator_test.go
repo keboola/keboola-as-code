@@ -19,20 +19,20 @@ func TestUniquePathSameObjectType(t *testing.T) {
 	component := &storageapi.Component{ComponentKey: storageapi.ComponentKey{ID: "foo"}, Type: "writer"}
 
 	// Default branch
-	assert.Equal(t, "main", g.BranchPath(&Branch{BranchKey: BranchKey{Id: 12}, Name: "a", IsDefault: true}).Path())
-	assert.Equal(t, "main-001", g.BranchPath(&Branch{BranchKey: BranchKey{Id: 23}, Name: "b", IsDefault: true}).Path())
+	assert.Equal(t, "main", g.BranchPath(&Branch{BranchKey: BranchKey{ID: 12}, Name: "a", IsDefault: true}).Path())
+	assert.Equal(t, "main-001", g.BranchPath(&Branch{BranchKey: BranchKey{ID: 23}, Name: "b", IsDefault: true}).Path())
 
 	// Branch
-	assert.Equal(t, "branch-name", g.BranchPath(&Branch{BranchKey: BranchKey{Id: 56}, Name: "branchName"}).Path())
-	assert.Equal(t, "branch-name-001", g.BranchPath(&Branch{BranchKey: BranchKey{Id: 78}, Name: "branch-name"}).Path())
+	assert.Equal(t, "branch-name", g.BranchPath(&Branch{BranchKey: BranchKey{ID: 56}, Name: "branchName"}).Path())
+	assert.Equal(t, "branch-name-001", g.BranchPath(&Branch{BranchKey: BranchKey{ID: 78}, Name: "branch-name"}).Path())
 
 	// Config
-	assert.Equal(t, "my-branch/writer/foo/my-config", g.ConfigPath("my-branch", component, &Config{ConfigKey: ConfigKey{Id: "123"}, Name: "myConfig"}).Path())
-	assert.Equal(t, "my-branch/writer/foo/my-config-001", g.ConfigPath("my-branch", component, &Config{ConfigKey: ConfigKey{Id: "234"}, Name: "my-config"}).Path())
+	assert.Equal(t, "my-branch/writer/foo/my-config", g.ConfigPath("my-branch", component, &Config{ConfigKey: ConfigKey{ID: "123"}, Name: "myConfig"}).Path())
+	assert.Equal(t, "my-branch/writer/foo/my-config-001", g.ConfigPath("my-branch", component, &Config{ConfigKey: ConfigKey{ID: "234"}, Name: "my-config"}).Path())
 
 	// Config row
-	assert.Equal(t, "my-branch/config/rows/my-row", g.ConfigRowPath("my-branch/config", component, &ConfigRow{ConfigRowKey: ConfigRowKey{Id: "456"}, Name: "myRow"}).Path())
-	assert.Equal(t, "my-branch/config/rows/my-row-001", g.ConfigRowPath("my-branch/config", component, &ConfigRow{ConfigRowKey: ConfigRowKey{Id: "678"}, Name: "myRow"}).Path())
+	assert.Equal(t, "my-branch/config/rows/my-row", g.ConfigRowPath("my-branch/config", component, &ConfigRow{ConfigRowKey: ConfigRowKey{ID: "456"}, Name: "myRow"}).Path())
+	assert.Equal(t, "my-branch/config/rows/my-row-001", g.ConfigRowPath("my-branch/config", component, &ConfigRow{ConfigRowKey: ConfigRowKey{ID: "678"}, Name: "myRow"}).Path())
 }
 
 func TestUniquePathDifferentObjects(t *testing.T) {
@@ -46,12 +46,12 @@ func TestUniquePathDifferentObjects(t *testing.T) {
 	rowWithoutName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}})
 	parentPath := "foo"
 
-	assert.Equal(t, "foo/prefix", g.ConfigPath(parentPath, component, &Config{ConfigKey: ConfigKey{Id: "123"}, Name: "a"}).Path())
-	assert.Equal(t, "foo/prefix-001", g.ConfigPath(parentPath, component, &Config{ConfigKey: ConfigKey{Id: "234"}, Name: "b"}).Path())
-	assert.Equal(t, "foo/prefix-002", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{Id: "345"}, Name: "c"}).Path())
-	assert.Equal(t, "foo/prefix-003", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{Id: "456"}, Name: "d"}).Path())
-	assert.Equal(t, "foo/prefix-004", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{Id: "567"}, Name: "", Content: rowWithName}).Path())
-	assert.Equal(t, "foo/prefix-005", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{Id: "678"}, Name: "", Content: rowWithoutName}).Path())
+	assert.Equal(t, "foo/prefix", g.ConfigPath(parentPath, component, &Config{ConfigKey: ConfigKey{ID: "123"}, Name: "a"}).Path())
+	assert.Equal(t, "foo/prefix-001", g.ConfigPath(parentPath, component, &Config{ConfigKey: ConfigKey{ID: "234"}, Name: "b"}).Path())
+	assert.Equal(t, "foo/prefix-002", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{ID: "345"}, Name: "c"}).Path())
+	assert.Equal(t, "foo/prefix-003", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{ID: "456"}, Name: "d"}).Path())
+	assert.Equal(t, "foo/prefix-004", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{ID: "567"}, Name: "", Content: rowWithName}).Path())
+	assert.Equal(t, "foo/prefix-005", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{ID: "678"}, Name: "", Content: rowWithoutName}).Path())
 }
 
 func TestNamingEmptyTemplate(t *testing.T) {
@@ -65,12 +65,12 @@ func TestNamingEmptyTemplate(t *testing.T) {
 	rowWithoutName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}})
 	parentPath := "foo"
 
-	assert.Equal(t, "foo/config", g.ConfigPath(parentPath, component, &Config{ConfigKey: ConfigKey{Id: "123"}, Name: "a"}).Path())
-	assert.Equal(t, "foo/config-001", g.ConfigPath(parentPath, component, &Config{ConfigKey: ConfigKey{Id: "234"}, Name: "b"}).Path())
-	assert.Equal(t, "foo/config-row", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{Id: "345"}, Name: "c"}).Path())
-	assert.Equal(t, "foo/config-row-001", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{Id: "456"}, Name: "d"}).Path())
-	assert.Equal(t, "foo/config-row-002", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{Id: "567"}, Name: "", Content: rowWithName}).Path())
-	assert.Equal(t, "foo/config-row-003", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{Id: "678"}, Name: "", Content: rowWithoutName}).Path())
+	assert.Equal(t, "foo/config", g.ConfigPath(parentPath, component, &Config{ConfigKey: ConfigKey{ID: "123"}, Name: "a"}).Path())
+	assert.Equal(t, "foo/config-001", g.ConfigPath(parentPath, component, &Config{ConfigKey: ConfigKey{ID: "234"}, Name: "b"}).Path())
+	assert.Equal(t, "foo/config-row", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{ID: "345"}, Name: "c"}).Path())
+	assert.Equal(t, "foo/config-row-001", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{ID: "456"}, Name: "d"}).Path())
+	assert.Equal(t, "foo/config-row-002", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{ID: "567"}, Name: "", Content: rowWithName}).Path())
+	assert.Equal(t, "foo/config-row-003", g.ConfigRowPath(parentPath, component, &ConfigRow{ConfigRowKey: ConfigRowKey{ID: "678"}, Name: "", Content: rowWithoutName}).Path())
 }
 
 func TestNamingDefaultTemplate(t *testing.T) {
@@ -84,7 +84,7 @@ func TestNamingDefaultTemplate(t *testing.T) {
 		g.BranchPath(
 			&Branch{
 				BranchKey: BranchKey{
-					Id: 1234,
+					ID: 1234,
 				},
 				Name:      "my Super-BRANCH",
 				IsDefault: false,
@@ -105,9 +105,9 @@ func TestNamingDefaultTemplate(t *testing.T) {
 			},
 			&Config{
 				ConfigKey: ConfigKey{
-					BranchId:    1234,
-					ComponentId: "keboola.ex-foo-bar",
-					Id:          "456",
+					BranchID:    1234,
+					ComponentID: "keboola.ex-foo-bar",
+					ID:          "456",
 				},
 				Name: "MyProductionConfig",
 			},
@@ -124,10 +124,10 @@ func TestNamingDefaultTemplate(t *testing.T) {
 			},
 			&ConfigRow{
 				ConfigRowKey: ConfigRowKey{
-					BranchId:    1234,
-					ComponentId: "keboola.ex-foo-bar",
-					ConfigId:    "456",
-					Id:          "789",
+					BranchID:    1234,
+					ComponentID: "keboola.ex-foo-bar",
+					ConfigID:    "456",
+					ID:          "789",
 				},
 				Name: "---  row AbC---",
 			},
@@ -147,9 +147,9 @@ func TestNamingDefaultTemplate(t *testing.T) {
 			},
 			&Config{
 				ConfigKey: ConfigKey{
-					BranchId:    1234,
-					ComponentId: storageapi.SharedCodeComponentID,
-					Id:          "456",
+					BranchID:    1234,
+					ComponentID: storageapi.SharedCodeComponentID,
+					ID:          "456",
 				},
 				Name:    "MySharedCode",
 				Content: orderedmap.New(),
@@ -170,14 +170,14 @@ func TestNamingDefaultTemplate(t *testing.T) {
 			},
 			&Config{
 				ConfigKey: ConfigKey{
-					BranchId:    1234,
-					ComponentId: storageapi.SchedulerComponentID,
-					Id:          "456",
+					BranchID:    1234,
+					ComponentID: storageapi.SchedulerComponentID,
+					ID:          "456",
 				},
 				Relations: Relations{
 					&SchedulerForRelation{
-						ComponentId: `foo.bar`,
-						ConfigId:    `789`,
+						ComponentID: `foo.bar`,
+						ConfigID:    `789`,
 					},
 				},
 				Name:    "schedule-1",
@@ -196,10 +196,10 @@ func TestNamingDefaultTemplate(t *testing.T) {
 			},
 			&ConfigRow{
 				ConfigRowKey: ConfigRowKey{
-					BranchId:    1234,
-					ComponentId: storageapi.SharedCodeComponentID,
-					ConfigId:    "456",
-					Id:          "789",
+					BranchID:    1234,
+					ComponentID: storageapi.SharedCodeComponentID,
+					ConfigID:    "456",
+					ID:          "789",
 				},
 				Name: "---  code AbC---",
 			},
@@ -216,14 +216,14 @@ func TestNamingDefaultTemplate(t *testing.T) {
 			},
 			&Config{
 				ConfigKey: ConfigKey{
-					BranchId:    1234,
-					ComponentId: storageapi.VariablesComponentID,
-					Id:          "456",
+					BranchID:    1234,
+					ComponentID: storageapi.VariablesComponentID,
+					ID:          "456",
 				},
 				Relations: Relations{
 					&VariablesForRelation{
-						ConfigId:    `4567`,
-						ComponentId: `foo.bar`,
+						ConfigID:    `4567`,
+						ComponentID: `foo.bar`,
 					},
 				},
 				Name:    "Variables",
@@ -242,10 +242,10 @@ func TestNamingDefaultTemplate(t *testing.T) {
 			},
 			&ConfigRow{
 				ConfigRowKey: ConfigRowKey{
-					BranchId:    1234,
-					ComponentId: storageapi.VariablesComponentID,
-					ConfigId:    "456",
-					Id:          "789",
+					BranchID:    1234,
+					ComponentID: storageapi.VariablesComponentID,
+					ConfigID:    "456",
+					ID:          "789",
 				},
 				Name: "Default Values",
 			},

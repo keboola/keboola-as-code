@@ -25,7 +25,7 @@ func TestSharedCodeLinksMatchId(t *testing.T) {
 		{input: "{{ABC}}", expected: "ABC"},
 		{input: "  {{ABC}}  \n", expected: "ABC"},
 	}
-	idUtils := newIdUtils()
+	idUtils := newIDUtils()
 	for i, c := range cases {
 		assert.Equal(t, storageapi.RowID(c.expected), idUtils.match(c.input), fmt.Sprintf(`Case "%d"`, i))
 	}
@@ -33,6 +33,6 @@ func TestSharedCodeLinksMatchId(t *testing.T) {
 
 func TestSharedCodeLinksFormatId(t *testing.T) {
 	t.Parallel()
-	idUtils := newIdUtils()
+	idUtils := newIDUtils()
 	assert.Equal(t, `{{12345}}`, idUtils.format(`12345`))
 }

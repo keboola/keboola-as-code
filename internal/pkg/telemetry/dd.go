@@ -88,13 +88,13 @@ func (s *span) RecordError(err error, options ...trace.EventOption) {
 // is usable even after the End method has been called for the Span.
 func (s *span) SpanContext() trace.SpanContext {
 	// Convert uint64 to byte array
-	traceId := make([]byte, 16)
-	spanId := make([]byte, 8)
-	binary.LittleEndian.PutUint64(traceId, s.ddSpan.Context().TraceID())
-	binary.LittleEndian.PutUint64(spanId, s.ddSpan.Context().SpanID())
+	traceID := make([]byte, 16)
+	spanID := make([]byte, 8)
+	binary.LittleEndian.PutUint64(traceID, s.ddSpan.Context().TraceID())
+	binary.LittleEndian.PutUint64(spanID, s.ddSpan.Context().SpanID())
 	return trace.NewSpanContext(trace.SpanContextConfig{
-		TraceID:    *(*[16]byte)(traceId),
-		SpanID:     *(*[8]byte)(spanId),
+		TraceID:    *(*[16]byte)(traceID),
+		SpanID:     *(*[8]byte)(spanID),
 		TraceFlags: trace.TraceFlags(0),
 		TraceState: trace.TraceState{},
 		Remote:     false,

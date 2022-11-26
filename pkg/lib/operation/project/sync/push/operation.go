@@ -28,7 +28,7 @@ type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
 	ProjectID() int
-	EncryptionApiClient() client.Sender
+	EncryptionAPIClient() client.Sender
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -56,7 +56,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	if !o.SkipValidation {
 		validateOptions := validate.Options{
 			ValidateSecrets:    !o.Encrypt || !o.DryRun,
-			ValidateJsonSchema: true,
+			ValidateJSONSchema: true,
 		}
 		if err := validate.Run(ctx, projectState, validateOptions, d); err != nil {
 			return err

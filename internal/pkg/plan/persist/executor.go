@@ -22,12 +22,12 @@ type executor struct {
 	errors  errors.MultiError
 }
 
-func newExecutor(ctx context.Context, logger log.Logger, storageApiClient client.Sender, projectState *state.State, plan *Plan) *executor {
+func newExecutor(ctx context.Context, logger log.Logger, storageAPIClient client.Sender, projectState *state.State, plan *Plan) *executor {
 	return &executor{
 		Plan:    plan,
 		State:   projectState,
 		logger:  logger,
-		tickets: storageapi.NewTicketProvider(ctx, storageApiClient),
+		tickets: storageapi.NewTicketProvider(ctx, storageAPIClient),
 		uow:     projectState.LocalManager().NewUnitOfWork(context.Background()),
 		errors:  errors.NewMultiError(),
 	}
@@ -67,17 +67,17 @@ func (e *executor) persistNewObject(action *newObjectAction) {
 		// Set new id to the key
 		switch k := key.(type) {
 		case model.ConfigKey:
-			k.Id = storageapi.ConfigID(ticket.ID)
+			k.ID = storageapi.ConfigID(ticket.ID)
 			key = k
 		case model.ConfigRowKey:
-			k.Id = storageapi.RowID(ticket.ID)
+			k.ID = storageapi.RowID(ticket.ID)
 			key = k
 		default:
 			panic(errors.Errorf(`unexpected type "%s" of the persisted object "%s"`, key.Kind(), key.Desc()))
 		}
 
 		// The parent was not persisted for some error -> skip
-		if action.ParentKey != nil && action.ParentKey.ObjectId() == `` {
+		if action.ParentKey != nil && action.ParentKey.ObjectID() == `` {
 			return
 		}
 

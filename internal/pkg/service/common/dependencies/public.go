@@ -16,29 +16,29 @@ import (
 // public dependencies container implements Public interface.
 type public struct {
 	base                Base
-	storageApiHost      string
-	storageApiClient    client.Client
-	encryptionApiClient client.Client
+	storageAPIHost      string
+	storageAPIClient    client.Client
+	encryptionAPIClient client.Client
 	stackFeatures       storageapi.FeaturesMap
 	stackServices       storageapi.ServicesMap
 	components          *model.ComponentsProvider
 }
 
-func NewPublicDeps(ctx context.Context, base Base, storageApiHost string) (v Public, err error) {
+func NewPublicDeps(ctx context.Context, base Base, storageAPIHost string) (v Public, err error) {
 	ctx, span := base.Tracer().Start(ctx, "kac.lib.dependencies.NewPublicDeps")
 	defer telemetry.EndSpan(span, &err)
-	return newPublicDeps(ctx, base, storageApiHost)
+	return newPublicDeps(ctx, base, storageAPIHost)
 }
 
-func newPublicDeps(ctx context.Context, base Base, storageApiHost string) (*public, error) {
+func newPublicDeps(ctx context.Context, base Base, storageAPIHost string) (*public, error) {
 	v := &public{
 		base:             base,
-		storageApiHost:   storageApiHost,
-		storageApiClient: storageapi.ClientWithHost(base.HttpClient(), storageApiHost),
+		storageAPIHost:   storageAPIHost,
+		storageAPIClient: storageapi.ClientWithHost(base.HTTPClient(), storageAPIHost),
 	}
 
 	// Load API index (stack services, stack features, components)
-	index, err := storageApiIndex(ctx, base, v.storageApiClient)
+	index, err := storageAPIIndex(ctx, base, v.storageAPIClient)
 	if err != nil {
 		return nil, err
 	}
@@ -46,25 +46,25 @@ func newPublicDeps(ctx context.Context, base Base, storageApiHost string) (*publ
 	// Set values derived from the index
 	v.stackFeatures = index.Features.ToMap()
 	v.stackServices = index.Services.ToMap()
-	v.components = model.NewComponentsProvider(index, v.base.Logger(), v.StorageApiPublicClient())
+	v.components = model.NewComponentsProvider(index, v.base.Logger(), v.StorageAPIPublicClient())
 
 	// Setup Encryption API
 	if encryptionHost, found := v.stackServices.URLByID("encryption"); !found {
 		return nil, errors.New("encryption host not found")
 	} else {
-		v.encryptionApiClient = encryptionapi.ClientWithHost(v.base.HttpClient(), encryptionHost.String())
+		v.encryptionAPIClient = encryptionapi.ClientWithHost(v.base.HTTPClient(), encryptionHost.String())
 	}
 
 	return v, nil
 }
 
-func storageApiIndex(ctx context.Context, d Base, storageApiClient client.Client) (index *storageapi.IndexComponents, err error) {
+func storageAPIIndex(ctx context.Context, d Base, storageAPIClient client.Client) (index *storageapi.IndexComponents, err error) {
 	startTime := time.Now()
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.dependencies.public.storageApiIndex")
 	span.SetAttributes(telemetry.KeepSpan())
 	defer telemetry.EndSpan(span, &err)
 
-	index, err = storageapi.IndexComponentsRequest().Send(ctx, storageApiClient)
+	index, err = storageapi.IndexComponentsRequest().Send(ctx, storageAPIClient)
 	if err != nil {
 		return nil, err
 	}
@@ -72,12 +72,12 @@ func storageApiIndex(ctx context.Context, d Base, storageApiClient client.Client
 	return index, nil
 }
 
-func (v public) StorageApiHost() string {
-	return v.storageApiHost
+func (v public) StorageAPIHost() string {
+	return v.storageAPIHost
 }
 
-func (v public) StorageApiPublicClient() client.Sender {
-	return v.storageApiClient
+func (v public) StorageAPIPublicClient() client.Sender {
+	return v.storageAPIClient
 }
 
 func (v public) StackFeatures() storageapi.FeaturesMap {
@@ -96,6 +96,6 @@ func (v public) ComponentsProvider() *model.ComponentsProvider {
 	return v.components
 }
 
-func (v public) EncryptionApiClient() client.Sender {
-	return v.encryptionApiClient
+func (v public) EncryptionAPIClient() client.Sender {
+	return v.encryptionAPIClient
 }

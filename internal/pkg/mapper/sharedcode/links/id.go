@@ -10,20 +10,20 @@ import (
 )
 
 const (
-	IdFormat = `{{<ID>}}` // link to shared code used in API
-	IdRegexp = `[0-9a-zA-Z_\-]+`
+	IDFormat = `{{<ID>}}` // link to shared code used in API
+	IDRegexp = `[0-9a-zA-Z_\-]+`
 )
 
 type idUtils struct {
 	re *regexp.Regexp
 }
 
-func newIdUtils() *idUtils {
+func newIDUtils() *idUtils {
 	re := regexp.MustCompile(
 		strings.ReplaceAll(
-			`^`+regexp.QuoteMeta(IdFormat)+`$`,
+			`^`+regexp.QuoteMeta(IDFormat)+`$`,
 			`<ID>`,
-			`(`+IdRegexp+`)`,
+			`(`+IDRegexp+`)`,
 		),
 	)
 	return &idUtils{re: re}
@@ -39,7 +39,7 @@ func (v *idUtils) match(script string) storageapi.RowID {
 }
 
 func (v *idUtils) format(id storageapi.RowID) string {
-	placeholder := strings.ReplaceAll(IdFormat, `<ID>`, id.String())
+	placeholder := strings.ReplaceAll(IDFormat, `<ID>`, id.String())
 	if ok := v.re.MatchString(placeholder); !ok {
 		panic(errors.Errorf(`shared code id "%s" is invalid`, id))
 	}

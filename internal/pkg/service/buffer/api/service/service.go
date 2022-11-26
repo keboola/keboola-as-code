@@ -104,7 +104,7 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 		// nolint:godox
 		// TODO: create mappings
 
-		tableId, err := model.ParseTableID(exportData.Mapping.TableID)
+		tableID, err := model.ParseTableID(exportData.Mapping.TableID)
 		if err != nil {
 			return nil, err
 		}
@@ -129,7 +129,7 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 
 		mapping := model.Mapping{
 			RevisionID:  1,
-			TableID:     tableId,
+			TableID:     tableID,
 			Incremental: exportData.Mapping.Incremental == nil || *exportData.Mapping.Incremental, // default true
 			Columns:     columns,
 		}

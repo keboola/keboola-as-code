@@ -29,7 +29,7 @@ func TestAskStorageApiTokenInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out, err := dialog.AskStorageApiToken(d)
+	out, err := dialog.AskStorageAPIToken(d)
 	assert.Equal(t, `my-secret`, out)
 	assert.NoError(t, err)
 
@@ -48,7 +48,7 @@ func TestAskStorageApiTokenByFlag(t *testing.T) {
 	opts.Set(`storage-api-token`, `my-secret`)
 
 	// Run
-	out, err := dialog.AskStorageApiToken(d)
+	out, err := dialog.AskStorageAPIToken(d)
 	assert.Equal(t, `my-secret`, out)
 	assert.NoError(t, err)
 }
@@ -60,7 +60,7 @@ func TestAskStorageApiTokenMissing(t *testing.T) {
 	d := dependencies.NewMockedDeps()
 
 	// Run
-	out, err := dialog.AskStorageApiToken(d)
+	out, err := dialog.AskStorageAPIToken(d)
 	assert.Empty(t, out)
 	assert.Error(t, err)
 	assert.Equal(t, `missing Storage API token`, err.Error())

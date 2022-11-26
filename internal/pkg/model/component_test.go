@@ -11,7 +11,7 @@ import (
 func TestComponentDefaultBucket(t *testing.T) {
 	t.Parallel()
 
-	componentJson := `
+	componentJSON := `
 {
   "id": "keboola.ex-aws-s3",
   "type": "extractor",
@@ -59,7 +59,7 @@ func TestComponentDefaultBucket(t *testing.T) {
   "documentationUrl": "https://help.keboola.com/extractors/other/aws-s3/"
 }`
 	component := storageapi.Component{}
-	_ = json.Unmarshal([]byte(componentJson), &component)
+	_ = json.Unmarshal([]byte(componentJSON), &component)
 	assert.Equal(t, storageapi.ComponentID("keboola.ex-aws-s3"), component.ID)
 	assert.Equal(t, "AWS S3", component.Name)
 	assert.IsType(t, storageapi.ComponentData{}, component.Data)
@@ -69,7 +69,7 @@ func TestComponentDefaultBucket(t *testing.T) {
 	m := NewComponentsMap([]*storageapi.Component{&component})
 
 	expected1 := map[storageapi.ComponentID]string{"keboola.ex-aws-s3": "in.c-keboola-ex-aws-s3-"}
-	assert.Equal(t, expected1, m.defaultBucketsByComponentId)
+	assert.Equal(t, expected1, m.defaultBucketsByComponentID)
 	expected2 := map[string]storageapi.ComponentID{"in.c-keboola-ex-aws-s3-": "keboola.ex-aws-s3"}
 	assert.Equal(t, expected2, m.defaultBucketsByPrefix)
 }
@@ -78,27 +78,27 @@ func TestMatchDefaultBucketInTableId(t *testing.T) {
 	t.Parallel()
 
 	m := NewComponentsMap(nil)
-	m.defaultBucketsByComponentId = map[storageapi.ComponentID]string{"keboola.ex-aws-s3": "in.c-keboola-ex-aws-s3-"}
+	m.defaultBucketsByComponentID = map[storageapi.ComponentID]string{"keboola.ex-aws-s3": "in.c-keboola-ex-aws-s3-"}
 	m.defaultBucketsByPrefix = map[string]storageapi.ComponentID{"in.c-keboola-ex-aws-s3-": "keboola.ex-aws-s3"}
 
-	componentId, configId, matchesDefaultBucket := m.GetDefaultBucketByTableId("in.c-crm.orders")
-	assert.Equal(t, storageapi.ComponentID(""), componentId)
-	assert.Equal(t, storageapi.ConfigID(""), configId)
+	componentID, configID, matchesDefaultBucket := m.GetDefaultBucketByTableID("in.c-crm.orders")
+	assert.Equal(t, storageapi.ComponentID(""), componentID)
+	assert.Equal(t, storageapi.ConfigID(""), configID)
 	assert.False(t, matchesDefaultBucket)
 
-	componentId, configId, matchesDefaultBucket = m.GetDefaultBucketByTableId("in.c-keboola-ex-aws-s3-123456.orders")
-	assert.Equal(t, storageapi.ComponentID("keboola.ex-aws-s3"), componentId)
-	assert.Equal(t, storageapi.ConfigID("123456"), configId)
+	componentID, configID, matchesDefaultBucket = m.GetDefaultBucketByTableID("in.c-keboola-ex-aws-s3-123456.orders")
+	assert.Equal(t, storageapi.ComponentID("keboola.ex-aws-s3"), componentID)
+	assert.Equal(t, storageapi.ConfigID("123456"), configID)
 	assert.True(t, matchesDefaultBucket)
 
-	componentId, configId, matchesDefaultBucket = m.GetDefaultBucketByTableId("in.c-keboola-ex-aws-s3-123456.my-orders")
-	assert.Equal(t, storageapi.ComponentID("keboola.ex-aws-s3"), componentId)
-	assert.Equal(t, storageapi.ConfigID("123456"), configId)
+	componentID, configID, matchesDefaultBucket = m.GetDefaultBucketByTableID("in.c-keboola-ex-aws-s3-123456.my-orders")
+	assert.Equal(t, storageapi.ComponentID("keboola.ex-aws-s3"), componentID)
+	assert.Equal(t, storageapi.ConfigID("123456"), configID)
 	assert.True(t, matchesDefaultBucket)
 
-	componentId, configId, matchesDefaultBucket = m.GetDefaultBucketByTableId("in.c-keboola-ex-aws-s3.orders")
-	assert.Equal(t, storageapi.ComponentID(""), componentId)
-	assert.Equal(t, storageapi.ConfigID(""), configId)
+	componentID, configID, matchesDefaultBucket = m.GetDefaultBucketByTableID("in.c-keboola-ex-aws-s3.orders")
+	assert.Equal(t, storageapi.ComponentID(""), componentID)
+	assert.Equal(t, storageapi.ConfigID(""), configID)
 	assert.False(t, matchesDefaultBucket)
 }
 
@@ -106,14 +106,14 @@ func TestGetDefaultBucket(t *testing.T) {
 	t.Parallel()
 
 	m := NewComponentsMap(nil)
-	m.defaultBucketsByComponentId = map[storageapi.ComponentID]string{"keboola.ex-aws-s3": "in.c-keboola-ex-aws-s3-"}
+	m.defaultBucketsByComponentID = map[storageapi.ComponentID]string{"keboola.ex-aws-s3": "in.c-keboola-ex-aws-s3-"}
 	m.defaultBucketsByPrefix = map[string]storageapi.ComponentID{"in.c-keboola-ex-aws-s3-": "keboola.ex-aws-s3"}
 
-	defaultBucket, found := m.GetDefaultBucketByComponentId("keboola.ex-aws-s3", "123")
+	defaultBucket, found := m.GetDefaultBucketByComponentID("keboola.ex-aws-s3", "123")
 	assert.True(t, found)
 	assert.Equal(t, "in.c-keboola-ex-aws-s3-123", defaultBucket)
 
-	defaultBucket, found = m.GetDefaultBucketByComponentId("keboola.ex-google-drive", "123")
+	defaultBucket, found = m.GetDefaultBucketByComponentID("keboola.ex-google-drive", "123")
 	assert.False(t, found)
 	assert.Equal(t, "", defaultBucket)
 }

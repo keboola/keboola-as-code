@@ -78,7 +78,7 @@ func TestRemoteSaveMapper(t *testing.T) {
 	uow, httpTransport, _ := newTestRemoteUOW(t, testMapperInst)
 
 	// Test object
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, Id: `456`}
+	configKey := model.ConfigKey{BranchID: 123, ComponentID: `foo.bar`, ID: `456`}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
@@ -189,9 +189,9 @@ func TestRemoteLoadMapper(t *testing.T) {
 	// Config has been loaded
 	assert.Len(t, projectState.Configs(), 1)
 	configRaw, found := projectState.Get(model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `foo.bar`,
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: `foo.bar`,
+		ID:          `456`,
 	})
 	assert.True(t, found)
 	config := configRaw.(*model.ConfigState).Remote
@@ -296,21 +296,21 @@ func TestLoadConfigMetadata(t *testing.T) {
 
 	// Check
 	config1Key := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: "foo.bar",
-		Id:          "456",
+		BranchID:    123,
+		ComponentID: "foo.bar",
+		ID:          "456",
 	}
 	config2Key := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: "foo.bar",
-		Id:          "789",
+		BranchID:    123,
+		ComponentID: "foo.bar",
+		ID:          "789",
 	}
 	assert.Equal(t, model.ConfigMetadata{
 		"KBC.KaC.Meta":  "value1",
 		"KBC.KaC.Meta2": "value2",
 	}, projectState.MustGet(config1Key).(*model.ConfigState).Remote.Metadata)
 	assert.Equal(t, model.ConfigMetadata{}, projectState.MustGet(config2Key).(*model.ConfigState).Remote.Metadata)
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{ID: 123}
 	assert.Equal(t, model.BranchMetadata{
 		"KBC.KaC.branch-meta": "val1",
 	}, projectState.MustGet(branchKey).(*model.BranchState).Remote.Metadata)
@@ -338,7 +338,7 @@ func TestSaveConfigMetadata_Create(t *testing.T) {
 	)
 
 	// Fixtures
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
+	configKey := model.ConfigKey{BranchID: 123, ComponentID: "foo.bar", ID: "456"}
 	config := &model.Config{
 		ConfigKey: configKey,
 		Metadata: map[string]string{
@@ -373,7 +373,7 @@ func TestSaveConfigMetadata_Create_Empty(t *testing.T) {
 	)
 
 	// Fixtures
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
+	configKey := model.ConfigKey{BranchID: 123, ComponentID: "foo.bar", ID: "456"}
 	config := &model.Config{
 		ConfigKey: configKey,
 		Metadata:  map[string]string{},
@@ -410,7 +410,7 @@ func TestSaveConfigMetadata_Update(t *testing.T) {
 	)
 
 	// Fixtures
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
+	configKey := model.ConfigKey{BranchID: 123, ComponentID: "foo.bar", ID: "456"}
 	config := &model.Config{
 		ConfigKey: configKey,
 		Metadata: map[string]string{
@@ -445,7 +445,7 @@ func TestSaveConfigMetadata_Update_NoChange(t *testing.T) {
 	)
 
 	// Fixtures
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
+	configKey := model.ConfigKey{BranchID: 123, ComponentID: "foo.bar", ID: "456"}
 	config := &model.Config{
 		ConfigKey: configKey,
 		Metadata: map[string]string{
@@ -465,11 +465,11 @@ func TestSaveConfigMetadata_Update_NoChange(t *testing.T) {
 
 func newTestRemoteUOW(t *testing.T, mappers ...interface{}) (*remote.UnitOfWork, *httpmock.MockTransport, *state.Registry) {
 	t.Helper()
-	storageApiClient, httpTransport := client.NewMockedClient()
+	storageAPIClient, httpTransport := client.NewMockedClient()
 	localManager, projectState := newTestLocalManager(t, mappers)
 	mapperInst := mapper.New().AddMapper(mappers...)
 
-	remoteManager := remote.NewManager(localManager, storageApiClient, projectState, mapperInst)
+	remoteManager := remote.NewManager(localManager, storageAPIClient, projectState, mapperInst)
 	return remoteManager.NewUnitOfWork(context.Background(), `change desc`), httpTransport, projectState
 }
 

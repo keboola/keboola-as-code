@@ -32,7 +32,7 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 
 			defer func() { d.EventSender().SendCmdEvent(d.CommandCtx(), start, cmdErr, "remote-detail-workspace") }()
 
-			id, err := d.Dialogs().AskWorkspaceId(d.Options())
+			id, err := d.Dialogs().AskWorkspaceID(d.Options())
 			if err != nil {
 				return err
 			}

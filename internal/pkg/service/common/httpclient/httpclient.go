@@ -79,7 +79,7 @@ func New(opts ...Option) client.Client {
 			}),
 			ddHttp.RTWithResourceNamer(func(r *http.Request) string {
 				// Set resource name to request path
-				return strhelper.MustUrlPathUnescape(r.URL.RequestURI())
+				return strhelper.MustURLPathUnescape(r.URL.RequestURI())
 			}))
 	}
 

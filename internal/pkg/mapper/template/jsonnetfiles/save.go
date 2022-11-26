@@ -13,19 +13,19 @@ func (m *jsonNetMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.Lo
 	errs := errors.NewMultiError()
 	modified := model.NewFilesToSave()
 	for _, file := range recipe.Files.All() {
-		if file.HasTag(model.FileTypeJson) {
-			jsonFile := file.(*filesystem.JsonFile)
+		if file.HasTag(model.FileTypeJSON) {
+			jsonFile := file.(*filesystem.JSONFile)
 
 			// Convert
-			jsonNetFile, err := jsonFile.ToJsonNetFile()
+			jsonNetFile, err := jsonFile.ToJSONNETFile()
 			if err != nil {
 				errs.Append(err)
 				continue
 			}
 
 			// Replace file
-			jsonNetFile.RemoveTag(model.FileTypeJson)
-			jsonNetFile.AddTag(model.FileTypeJsonNet)
+			jsonNetFile.RemoveTag(model.FileTypeJSON)
+			jsonNetFile.AddTag(model.FileTypeJSONNET)
 			modified.Add(jsonNetFile)
 		} else {
 			modified.Add(file)

@@ -116,7 +116,7 @@ type forProjectRequest struct {
 	projectRepositories dependencies.Lazy[*model.TemplateRepositories]
 }
 
-func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, defaultRepositories []model.TemplateRepository, debug, dumpHttp bool) (v ForServer, err error) {
+func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, defaultRepositories []model.TemplateRepository, debug, dumpHTTP bool) (v ForServer, err error) {
 	// Create tracer
 	var tracer trace.Tracer = nil
 	if telemetry.IsDataDogEnabled(envs) {
@@ -129,8 +129,8 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	serverWg := &sync.WaitGroup{}
 
 	// Get Storage API host
-	storageApiHost := strhelper.NormalizeHost(envs.MustGet("KBC_STORAGE_API_HOST"))
-	if storageApiHost == "" {
+	storageAPIHost := strhelper.NormalizeHost(envs.MustGet("KBC_STORAGE_API_HOST"))
+	if storageAPIHost == "" {
 		return nil, errors.New("KBC_STORAGE_API_HOST environment variable is not set")
 	}
 
@@ -142,7 +142,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 			if debug {
 				httpclient.WithDebugOutput(logger.DebugWriter())(c)
 			}
-			if dumpHttp {
+			if dumpHTTP {
 				httpclient.WithDumpOutput(logger.DebugWriter())(c)
 			}
 		},
@@ -153,7 +153,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 	// Create public dependencies - load API index
 	startTime := time.Now()
 	logger.Info("loading Storage API index")
-	publicDeps, err := dependencies.NewPublicDeps(serverCtx, baseDeps, storageApiHost)
+	publicDeps, err := dependencies.NewPublicDeps(serverCtx, baseDeps, storageAPIHost)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +208,7 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 	}
 
 	logger := publicDeps.PrefixLogger().WithAdditionalPrefix(
-		fmt.Sprintf("[project=%d][token=%s]", projectDeps.ProjectID(), projectDeps.StorageApiTokenID()),
+		fmt.Sprintf("[project=%d][token=%s]", projectDeps.ProjectID(), projectDeps.StorageAPITokenID()),
 	)
 
 	return &forProjectRequest{

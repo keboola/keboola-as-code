@@ -33,7 +33,7 @@ import (
 //     - For example, each ConfigId("my-config-id") is replaced by "<<~~func:ticket:1~~>>".
 //     - This is because we do not know in advance how many new IDs will need to be generated.
 //     - Function call can contain an expression, for example ConfigId("my-config-" + tableName), and this prevents forward analysis.
-//     - Functions are defined in Context.registerJsonNetFunctions().
+//     - Functions are defined in Context.registerJSONNETFunctions().
 //  3. When the entire template is loaded, the placeholders are replaced with new IDs.
 //     - For example, each "<<~~func:ticket:1~~>>" is replaced by "3496482342".
 //     - Replacements are defined by Context.Replacements().
@@ -42,13 +42,13 @@ import (
 //     - See "pkg/lib/operation/project/local/template/use/operation.go".
 //     - A new path is generated for each new object, according to the project naming.
 //
-// Context.JsonNetContext() returns JsonNet functions.
+// Context.JSONNETContext() returns JsonNet functions.
 // Context.Replacements() returns placeholders for new IDs.
 type Context struct {
 	_context
 	templateRef       model.TemplateRef
-	instanceId        string
-	instanceIdShort   string
+	instanceID        string
+	instanceIDShort   string
 	jsonNetCtx        *jsonnet.Context
 	replacements      *replacevalues.Values
 	inputsValues      map[string]template.InputValue
@@ -71,12 +71,12 @@ type PlaceholdersMap map[interface{}]Placeholder
 
 type Placeholder struct {
 	asString string      // placeholder as string for use in Json file, eg. string("<<~~placeholder:1~~>>)
-	asValue  interface{} // eg. ConfigId, RowId, eg. ConfigId("<<~~placeholder:1~~>>)
+	asValue  interface{} // eg. ConfigId, RowID, eg. ConfigId("<<~~placeholder:1~~>>)
 }
 
 type PlaceholderResolver func(p Placeholder, cb ResolveCallback)
 
-type ResolveCallback func(newId interface{})
+type ResolveCallback func(newID interface{})
 
 type inputUsageNotifier struct {
 	*Context
@@ -86,16 +86,16 @@ type inputUsageNotifier struct {
 const (
 	placeholderStart      = "<<~~"
 	placeholderEnd        = "~~>>"
-	instanceIdShortLength = 8
+	instanceIDShortLength = 8
 )
 
-func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefsMap map[string]*template.Input, tickets *storageapi.TicketProvider, components *model.ComponentsMap) *Context {
+func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceID string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefsMap map[string]*template.Input, tickets *storageapi.TicketProvider, components *model.ComponentsMap) *Context {
 	ctx = template.NewContext(ctx)
 	c := &Context{
 		_context:        ctx,
 		templateRef:     templateRef,
-		instanceId:      instanceId,
-		instanceIdShort: strhelper.FirstN(instanceId, instanceIdShortLength),
+		instanceID:      instanceID,
+		instanceIDShort: strhelper.FirstN(instanceID, instanceIDShortLength),
 		jsonNetCtx:      jsonnet.NewContext().WithCtx(ctx).WithImporter(fsimporter.New(objectsRoot)),
 		replacements:    replacevalues.NewValues(),
 		inputsValues:    make(map[string]template.InputValue),
@@ -110,14 +110,14 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 
 	// Convert inputsValues to map
 	for _, input := range inputsValues {
-		c.inputsValues[input.Id] = input
+		c.inputsValues[input.ID] = input
 	}
 
-	// Replace BranchId, in template all objects have BranchId = 0
-	c.replacements.AddKey(model.BranchKey{Id: 0}, targetBranch)
+	// Replace BranchID, in template all objects have BranchID = 0
+	c.replacements.AddKey(model.BranchKey{ID: 0}, targetBranch)
 
 	// Register JsonNet functions
-	c.registerJsonNetFunctions()
+	c.registerJSONNETFunctions()
 
 	// Let's see where the inputs were used
 	c.registerInputsUsageNotifier()
@@ -129,11 +129,11 @@ func (c *Context) TemplateRef() model.TemplateRef {
 	return c.templateRef
 }
 
-func (c *Context) InstanceId() string {
-	return c.instanceId
+func (c *Context) InstanceID() string {
+	return c.instanceID
 }
 
-func (c *Context) JsonNetContext() *jsonnet.Context {
+func (c *Context) JSONNETContext() *jsonnet.Context {
 	return c.jsonNetCtx
 }
 
@@ -165,16 +165,16 @@ func (c *Context) InputsUsage() *metadata.InputsUsage {
 }
 
 // RegisterPlaceholder for an object oldId, it can be resolved later/async.
-func (c *Context) RegisterPlaceholder(oldId interface{}, fn PlaceholderResolver) Placeholder {
+func (c *Context) RegisterPlaceholder(oldID interface{}, fn PlaceholderResolver) Placeholder {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	if _, found := c.placeholders[oldId]; !found {
+	if _, found := c.placeholders[oldID]; !found {
 		// Generate placeholder, it will be later replaced by a new ID
 		c.placeholdersCount++
 		p := Placeholder{asString: fmt.Sprintf("%splaceholder:%d%s", placeholderStart, c.placeholdersCount, placeholderEnd)}
 
 		// Convert string to an ID value
-		switch oldId.(type) {
+		switch oldID.(type) {
 		case storageapi.ConfigID:
 			p.asValue = storageapi.ConfigID(p.asString)
 		case storageapi.RowID:
@@ -183,52 +183,52 @@ func (c *Context) RegisterPlaceholder(oldId interface{}, fn PlaceholderResolver)
 			panic(errors.New("unexpected ID type"))
 		}
 
-		// Store oldId -> placeholder
-		c.placeholders[oldId] = p
+		// Store oldID -> placeholder
+		c.placeholders[oldID] = p
 
 		// Resolve newId async by provider function
 		fn(p, func(newId interface{}) {
-			c.replacements.AddId(p.asValue, newId)
-			c.objectIds[newId] = oldId
+			c.replacements.AddID(p.asValue, newId)
+			c.objectIds[newId] = oldID
 		})
 	}
-	return c.placeholders[oldId]
+	return c.placeholders[oldID]
 }
 
-func (c *Context) registerJsonNetFunctions() {
-	c.jsonNetCtx.NativeFunctionWithAlias(function.ConfigId(c.mapId))
-	c.jsonNetCtx.NativeFunctionWithAlias(function.ConfigRowId(c.mapId))
+func (c *Context) registerJSONNETFunctions() {
+	c.jsonNetCtx.NativeFunctionWithAlias(function.ConfigID(c.mapID))
+	c.jsonNetCtx.NativeFunctionWithAlias(function.ConfigRowID(c.mapID))
 	c.jsonNetCtx.NativeFunctionWithAlias(function.Input(c.inputValue))
 	c.jsonNetCtx.NativeFunctionWithAlias(function.InputIsAvailable(c.inputValue))
-	c.jsonNetCtx.NativeFunctionWithAlias(function.InstanceId(c.instanceId))
-	c.jsonNetCtx.NativeFunctionWithAlias(function.InstanceIdShort(c.instanceIdShort))
+	c.jsonNetCtx.NativeFunctionWithAlias(function.InstanceID(c.instanceID))
+	c.jsonNetCtx.NativeFunctionWithAlias(function.InstanceIDShort(c.instanceIDShort))
 	c.jsonNetCtx.NativeFunctionWithAlias(function.ComponentIsAvailable(c.components))
-	c.jsonNetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentId(c.components))
+	c.jsonNetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentID(c.components))
 }
 
-// mapId maps ConfigId/ConfigRowId in JsonNet files to a <<~~ticket:123~~>> placeholder.
+// mapID maps ConfigId/ConfigRowId in JsonNet files to a <<~~ticket:123~~>> placeholder.
 // When all JsonNet files are processed, new IDs are generated in parallel.
-func (c *Context) mapId(oldId interface{}) string {
-	p := c.RegisterPlaceholder(oldId, func(p Placeholder, cb ResolveCallback) {
+func (c *Context) mapID(oldID interface{}) string {
+	p := c.RegisterPlaceholder(oldID, func(p Placeholder, cb ResolveCallback) {
 		// Placeholder -> new ID
-		var newId interface{}
+		var newID interface{}
 		c.tickets.Request(func(ticket *storageapi.Ticket) {
 			switch p.asValue.(type) {
 			case storageapi.ConfigID:
-				newId = storageapi.ConfigID(ticket.ID)
+				newID = storageapi.ConfigID(ticket.ID)
 			case storageapi.RowID:
-				newId = storageapi.RowID(ticket.ID)
+				newID = storageapi.RowID(ticket.ID)
 			default:
 				panic(errors.New("unexpected ID type"))
 			}
-			cb(newId)
+			cb(newID)
 		})
 	})
 	return p.asString
 }
 
-func (c *Context) inputValue(inputId string) (template.InputValue, bool) {
-	v, ok := c.inputsValues[inputId]
+func (c *Context) inputValue(inputID string) (template.InputValue, bool) {
+	v, ok := c.inputsValues[inputID]
 	return v, ok
 }
 
@@ -304,7 +304,7 @@ func (n *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{},
 		// Values has been generated by the Input function, store input usage
 		n.inputsUsage.Values[objectKey] = append(n.inputsUsage.Values[objectKey], metadata.InputUsage{
 			Name:    inputName,
-			JsonKey: mappedSteps,
+			JSONKey: mappedSteps,
 			Def:     n.inputsDefsMap[inputName],
 		})
 	} else if jsonObject, ok := partialValue.(map[string]any); ok && len(jsonObject) > 0 {
@@ -317,7 +317,7 @@ func (n *inputUsageNotifier) OnGeneratedValue(fnName string, args []interface{},
 		// Part of the object has been generated by the Input function, store input usage
 		n.inputsUsage.Values[objectKey] = append(n.inputsUsage.Values[objectKey], metadata.InputUsage{
 			Name:       inputName,
-			JsonKey:    mappedSteps,
+			JSONKey:    mappedSteps,
 			Def:        n.inputsDefsMap[inputName],
 			ObjectKeys: keys,
 		})

@@ -31,7 +31,7 @@ func TestNew(t *testing.T) {
 	ref := model.TemplateRepository{
 		Type: model.RepositoryTypeGit,
 		Name: repository.DefaultTemplateRepositoryName,
-		Url:  fmt.Sprintf("file://%s", tmpDir),
+		URL:  fmt.Sprintf("file://%s", tmpDir),
 		Ref:  "main",
 	}
 
@@ -62,7 +62,7 @@ func TestRepository(t *testing.T) {
 	repo := model.TemplateRepository{
 		Type: model.RepositoryTypeGit,
 		Name: repository.DefaultTemplateRepositoryName,
-		Url:  fmt.Sprintf("file://%s", tmpDir),
+		URL:  fmt.Sprintf("file://%s", tmpDir),
 		Ref:  "main",
 	}
 
@@ -96,19 +96,19 @@ func TestDefaultRepositories(t *testing.T) {
 	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git")))
 
 	// Define default repositories
-	gitUrl := fmt.Sprintf("file://%s", tmpDir)
+	gitURL := fmt.Sprintf("file://%s", tmpDir)
 	commitHash := "92d0b5f200129303e31feaf201fa0f46b2739782"
 	defaultRepositories := []model.TemplateRepository{
 		{
 			Type: model.RepositoryTypeGit,
 			Name: "git repo",
-			Url:  gitUrl,
+			URL:  gitURL,
 			Ref:  "main",
 		},
 		{
 			Type: model.RepositoryTypeDir,
 			Name: "dir repo",
-			Url:  tmpDir,
+			URL:  tmpDir,
 		},
 	}
 
@@ -122,6 +122,6 @@ func TestDefaultRepositories(t *testing.T) {
 	assert.Equal(t, defaultRepositories, m.DefaultRepositories())
 	assert.Equal(t, []string{
 		fmt.Sprintf("dir:%s", tmpDir),
-		fmt.Sprintf("%s:main:%s", gitUrl, commitHash),
+		fmt.Sprintf("%s:main:%s", gitURL, commitHash),
 	}, m.ManagedRepositories())
 }

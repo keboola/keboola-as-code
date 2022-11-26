@@ -27,8 +27,8 @@ func TestContext(t *testing.T) {
 	t.Parallel()
 
 	// Mocked ticket provider
-	storageApiClient, httpTransport := client.NewMockedClient()
-	tickets := storageapi.NewTicketProvider(context.Background(), storageApiClient)
+	storageAPIClient, httpTransport := client.NewMockedClient()
+	tickets := storageapi.NewTicketProvider(context.Background(), storageAPIClient)
 
 	// Mocked tickets
 	var ticketResponses []*http.Response
@@ -40,39 +40,39 @@ func TestContext(t *testing.T) {
 	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
 
 	// Inputs
-	targetBranch := model.BranchKey{Id: 123}
+	targetBranch := model.BranchKey{ID: 123}
 	inputsValues := template.InputsValues{
 		{
-			Id:    "input-1",
+			ID:    "input-1",
 			Value: "my-value-1",
 		},
 		{
-			Id:    "input-2",
+			ID:    "input-2",
 			Value: 789,
 		},
 		{
-			Id:    "input-3",
+			ID:    "input-3",
 			Value: 3.50,
 		},
 		{
-			Id:    "input-4",
+			ID:    "input-4",
 			Value: false,
 		},
 	}
 
 	// Template
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
-	instanceId := "my-instance"
+	instanceID := "my-instance"
 
 	// Current project state
 	d := dependenciesPkg.NewMockedDeps()
 	projectState := d.MockedState()
-	configKey := model.ConfigKey{BranchId: targetBranch.Id, ComponentId: "foo.bar", Id: "12345"}
-	rowKey := model.ConfigRowKey{BranchId: targetBranch.Id, ComponentId: "foo.bar", ConfigId: "12345", Id: "67890"}
+	configKey := model.ConfigKey{BranchID: targetBranch.ID, ComponentID: "foo.bar", ID: "12345"}
+	rowKey := model.ConfigRowKey{BranchID: targetBranch.ID, ComponentID: "foo.bar", ConfigID: "12345", ID: "67890"}
 	configMetadata := make(model.ConfigMetadata)
-	configMetadata.SetTemplateInstance(templateRef.Repository().Name, templateRef.TemplateId(), instanceId)
-	configMetadata.SetConfigTemplateId("my-config")
-	configMetadata.AddRowTemplateId("67890", "my-row")
+	configMetadata.SetTemplateInstance(templateRef.Repository().Name, templateRef.TemplateID(), instanceID)
+	configMetadata.SetConfigTemplateID("my-config")
+	configMetadata.AddRowTemplateID("67890", "my-row")
 	assert.NoError(t, projectState.Set(&model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
 		Local: &model.Config{
@@ -89,7 +89,7 @@ func TestContext(t *testing.T) {
 
 	// Create context
 	fs := aferofs.NewMemoryFs()
-	ctx := NewContext(context.Background(), templateRef, fs, instanceId, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState)
+	ctx := NewContext(context.Background(), templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState)
 
 	// Check JsonNet functions
 	code := `
@@ -108,7 +108,7 @@ func TestContext(t *testing.T) {
     },
 }
 `
-	expectedJson := `
+	expectedJSON := `
 {
   "Input1": "my-value-1",
   "Input2": 789,
@@ -124,9 +124,9 @@ func TestContext(t *testing.T) {
   }
 }
 `
-	jsonOutput, err := jsonnet.Evaluate(code, ctx.JsonNetContext())
+	jsonOutput, err := jsonnet.Evaluate(code, ctx.JSONNETContext())
 	assert.NoError(t, err)
-	assert.Equal(t, strings.TrimLeft(expectedJson, "\n"), jsonOutput)
+	assert.Equal(t, strings.TrimLeft(expectedJSON, "\n"), jsonOutput)
 
 	// Check tickets replacement
 	data := orderedmap.New()
@@ -135,9 +135,9 @@ func TestContext(t *testing.T) {
 	assert.NoError(t, err)
 	modifiedData, err := replacements.Replace(data)
 	assert.NoError(t, err)
-	modifiedJson := json.MustEncodeString(modifiedData, true)
+	modifiedJSON := json.MustEncodeString(modifiedData, true)
 
-	expectedJson = `
+	expectedJSON = `
 {
   "Input1": "my-value-1",
   "Input2": 789,
@@ -153,5 +153,5 @@ func TestContext(t *testing.T) {
   }
 }
 `
-	assert.Equal(t, strings.TrimLeft(expectedJson, "\n"), modifiedJson)
+	assert.Equal(t, strings.TrimLeft(expectedJSON, "\n"), modifiedJSON)
 }

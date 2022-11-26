@@ -45,7 +45,7 @@ func (d *templateIdsDialog) ask() ([]create.ConfigDef, error) {
 func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 	idByKey := make(map[string]string)
 	ids := make(map[string]bool)
-	result = strhelper.StripHtmlComments(result)
+	result = strhelper.StripHTMLComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
 	errs := errors.NewMultiError()
 	lineNum := 0
@@ -68,7 +68,7 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 				errs.Append(errors.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
 				continue
 			}
-			key = model.ConfigKey{BranchId: d.branch.Id, ComponentId: storageapi.ComponentID(m[1]), Id: storageapi.ConfigID(m[2])}
+			key = model.ConfigKey{BranchID: d.branch.ID, ComponentID: storageapi.ComponentID(m[1]), ID: storageapi.ConfigID(m[2])}
 		case strings.HasPrefix(line, `### Row`):
 			// Row ID definition
 			m := regexpcache.MustCompile(` ([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+)$`).FindStringSubmatch(line)
@@ -76,7 +76,7 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 				errs.Append(errors.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
 				continue
 			}
-			key = model.ConfigRowKey{BranchId: d.branch.Id, ComponentId: storageapi.ComponentID(m[1]), ConfigId: storageapi.ConfigID(m[2]), Id: storageapi.RowID(m[3])}
+			key = model.ConfigRowKey{BranchID: d.branch.ID, ComponentID: storageapi.ComponentID(m[1]), ConfigID: storageapi.ConfigID(m[2]), ID: storageapi.RowID(m[3])}
 		default:
 			errs.Append(errors.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
 			continue
@@ -97,7 +97,7 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 			errs.Append(errors.Errorf(`line %d: duplicate ID "%s"`, lineNum, id))
 			continue
 		default:
-			if err := validateId(id); err != nil {
+			if err := validateID(id); err != nil {
 				errs.Append(errors.Errorf(`line %d: %w`, lineNum, err))
 				continue
 			}
@@ -118,7 +118,7 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 			errs.Append(errors.Errorf(`missing ID for %s`, c.Desc()))
 			continue
 		}
-		configDef := create.ConfigDef{Key: c.ConfigKey, TemplateId: id}
+		configDef := create.ConfigDef{Key: c.ConfigKey, TemplateID: id}
 
 		for _, r := range c.Rows {
 			// Row definition
@@ -127,7 +127,7 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 				errs.Append(errors.Errorf(`missing ID for %s`, r.Desc()))
 				continue
 			}
-			rowDef := create.ConfigRowDef{Key: r.ConfigRowKey, TemplateId: id}
+			rowDef := create.ConfigRowDef{Key: r.ConfigRowKey, TemplateID: id}
 			configDef.Rows = append(configDef.Rows, rowDef)
 		}
 
@@ -142,9 +142,9 @@ func (d *templateIdsDialog) defaultValue() string {
 	idByKey := make(map[string]string)
 	ids := make(map[string]bool)
 	for _, c := range d.configs {
-		makeUniqueId(c, idByKey, ids)
+		makeUniqueID(c, idByKey, ids)
 		for _, r := range c.Rows {
-			makeUniqueId(r, idByKey, ids)
+			makeUniqueID(r, idByKey, ids)
 		}
 	}
 
@@ -165,16 +165,16 @@ Do not edit lines starting with "#"!
 	var lines strings.Builder
 	lines.WriteString(fileHeader)
 	for _, c := range d.configs {
-		lines.WriteString(fmt.Sprintf("## Config \"%s\" %s:%s\n%s\n\n", c.Name, c.ComponentId, c.Id, idByKey[c.Key().String()]))
+		lines.WriteString(fmt.Sprintf("## Config \"%s\" %s:%s\n%s\n\n", c.Name, c.ComponentID, c.ID, idByKey[c.Key().String()]))
 		for _, r := range c.Rows {
-			lines.WriteString(fmt.Sprintf("### Row \"%s\" %s:%s:%s\n%s\n\n", r.Name, r.ComponentId, r.ConfigId, r.Id, idByKey[r.Key().String()]))
+			lines.WriteString(fmt.Sprintf("### Row \"%s\" %s:%s:%s\n%s\n\n", r.Name, r.ComponentID, r.ConfigID, r.ID, idByKey[r.Key().String()]))
 		}
 	}
 
 	return lines.String()
 }
 
-func makeUniqueId(object model.Object, idByKey map[string]string, ids map[string]bool) {
+func makeUniqueID(object model.Object, idByKey map[string]string, ids map[string]bool) {
 	name := object.ObjectName()
 	id := strhelper.NormalizeName(name)
 	// The generated ID can be empty, e.g. if the name contains only special characters,

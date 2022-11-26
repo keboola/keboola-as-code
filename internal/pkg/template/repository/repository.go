@@ -62,18 +62,18 @@ func (r *Repository) Templates() []TemplateRecord {
 	return r.manifest.AllTemplates()
 }
 
-func (r *Repository) RecordById(templateId string) (TemplateRecord, bool) {
-	return r.manifest.GetById(templateId)
+func (r *Repository) RecordByID(templateID string) (TemplateRecord, bool) {
+	return r.manifest.GetByID(templateID)
 }
 
-func (r *Repository) RecordByIdOrErr(templateId string) (TemplateRecord, error) {
-	return r.manifest.GetByIdOrErr(templateId)
+func (r *Repository) RecordByIDOrErr(templateID string) (TemplateRecord, error) {
+	return r.manifest.GetByIDOrErr(templateID)
 }
 
 func (r *Repository) RecordByPath(templatePath string) (TemplateRecord, bool) {
 	return r.manifest.GetByPath(templatePath)
 }
 
-func (r *Repository) RecordByIdAndVersion(templateId string, version string) (TemplateRecord, VersionRecord, error) {
-	return r.manifest.GetVersion(templateId, version)
+func (r *Repository) RecordByIDAndVersion(templateID string, version string) (TemplateRecord, VersionRecord, error) {
+	return r.manifest.GetVersion(templateID, version)
 }

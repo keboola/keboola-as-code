@@ -34,7 +34,7 @@ func main() {
 	httpHostF := flag.String("http-host", "0.0.0.0", "HTTP host")
 	httpPortF := flag.String("http-port", "8000", "HTTP port")
 	debugF := flag.Bool("debug", false, "Enable debug log level.")
-	debugHttpF := flag.Bool("debug-http", false, "Log HTTP client request and response bodies.")
+	debugHTTPF := flag.Bool("debug-http", false, "Log HTTP client request and response bodies.")
 	flag.Parse()
 
 	// Setup logger.
@@ -60,23 +60,23 @@ func main() {
 	}
 
 	// Start server.
-	if err := start(*httpHostF, *httpPortF, *debugF, *debugHttpF, logger, envs); err != nil {
+	if err := start(*httpHostF, *httpPortF, *debugF, *debugHTTPF, logger, envs); err != nil {
 		logger.Println(err.Error())
 		os.Exit(1)
 	}
 }
 
-func start(host, port string, debug, debugHttp bool, stdLogger *stdLog.Logger, envs *env.Map) error {
+func start(host, port string, debug, debugHTTP bool, stdLogger *stdLog.Logger, envs *env.Map) error {
 	// Create context.
 	ctx, cancelFn := context.WithCancel(context.Background())
 	defer cancelFn()
 
 	// Create logger.
-	logger := log.NewApiLogger(stdLogger, "", debug)
-	logger.Infof("starting Buffer API HTTP server, host=%s, port=%s, debug=%t, debug-http=%t", host, port, debug, debugHttp)
+	logger := log.NewAPILogger(stdLogger, "", debug)
+	logger.Infof("starting Buffer API HTTP server, host=%s, port=%s, debug=%t, debug-http=%t", host, port, debug, debugHTTP)
 
 	// Create dependencies.
-	d, err := dependencies.NewServerDeps(ctx, envs, logger, debug, debugHttp)
+	d, err := dependencies.NewServerDeps(ctx, envs, logger, debug, debugHTTP)
 	if err != nil {
 		return err
 	}
@@ -100,10 +100,10 @@ func start(host, port string, debug, debugHttp bool, stdLogger *stdLog.Logger, e
 	}()
 
 	// Create server URL.
-	serverUrl := &url.URL{Scheme: "http", Host: net.JoinHostPort(host, port)}
+	serverURL := &url.URL{Scheme: "http", Host: net.JoinHostPort(host, port)}
 
 	// Start HTTP server.
-	bufferHttp.HandleHTTPServer(ctx, d, serverUrl, endpoints, errCh, debug)
+	bufferHttp.HandleHTTPServer(ctx, d, serverURL, endpoints, errCh, debug)
 
 	// Wait for signal.
 	logger.Infof("exiting (%v)", <-errCh)

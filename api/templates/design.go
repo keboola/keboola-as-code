@@ -586,7 +586,7 @@ var ServiceDetail = Type("ServiceDetail", func() {
 	Attribute("api", String, "Name of the API", func() {
 		Example("templates")
 	})
-	Attribute("documentation", String, "Url of the API documentation.", func() {
+	Attribute("documentation", String, "URL of the API documentation.", func() {
 		Example("https://templates.keboola.com/v1/documentation")
 	})
 	Required("api", "documentation")
@@ -1043,18 +1043,18 @@ type ExampleErrorData struct {
 
 type ExampleRepositoryData struct {
 	Name   string            `json:"name" yaml:"name"`
-	Url    string            `json:"url" yaml:"url"`
+	URL    string            `json:"url" yaml:"url"`
 	Ref    string            `json:"ref" yaml:"ref"`
 	Author ExampleAuthorData `json:"author" yaml:"author"`
 }
 
 type ExampleAuthorData struct {
 	Name string `json:"name" yaml:"name"`
-	Url  string `json:"url" yaml:"url"`
+	URL  string `json:"url" yaml:"url"`
 }
 
 type ExampleTemplateData struct {
-	Id             string               `json:"id" yaml:"id"`
+	ID             string               `json:"id" yaml:"id"`
 	Name           string               `json:"name" yaml:"name"`
 	Components     []string             `json:"components" yaml:"components"`
 	Author         ExampleAuthorData    `json:"author" yaml:"author"`
@@ -1093,14 +1093,14 @@ type ExampleVersionDetailExtendedData struct {
 }
 
 type ExampleStepGroupData struct {
-	Id          string            `json:"id" yaml:"id"`
+	ID          string            `json:"id" yaml:"id"`
 	Description string            `json:"description" yaml:"description"`
 	Required    string            `json:"required" yaml:"required"`
 	Step        []ExampleStepData `json:"step" yaml:"step"`
 }
 
 type ExampleStepData struct {
-	Id                string      `json:"id" yaml:"id"`
+	ID                string      `json:"id" yaml:"id"`
 	Icon              string      `json:"icon" yaml:"icon"`
 	Name              string      `json:"name" yaml:"name"`
 	Description       string      `json:"description" yaml:"description"`
@@ -1110,7 +1110,7 @@ type ExampleStepData struct {
 }
 
 type ExampleInputData struct {
-	Id          string      `json:"id" yaml:"id"`
+	ID          string      `json:"id" yaml:"id"`
 	Name        string      `json:"name" yaml:"name"`
 	Description string      `json:"description" yaml:"description"`
 	Type        string      `json:"type" yaml:"type"`
@@ -1125,12 +1125,12 @@ type ExampleInputOptionData struct {
 }
 
 type ExampleStepPayloadData struct {
-	Id     string                    `json:"id" yaml:"id"`
+	ID     string                    `json:"id" yaml:"id"`
 	Inputs []ExampleInputPayloadData `json:"inputs" yaml:"inputs"`
 }
 
 type ExampleInputPayloadData struct {
-	Id    string      `json:"id" yaml:"id"`
+	ID    string      `json:"id" yaml:"id"`
 	Value interface{} `json:"value" yaml:"value"`
 }
 
@@ -1170,7 +1170,7 @@ func ExampleError(statusCode int, name, message string) ExampleErrorData {
 func ExampleRepository() ExampleRepositoryData {
 	return ExampleRepositoryData{
 		Name:   "keboola",
-		Url:    "https://github.com/keboola/keboola-as-code-templates",
+		URL:    "https://github.com/keboola/keboola-as-code-templates",
 		Ref:    "main",
 		Author: ExampleAuthor(),
 	}
@@ -1179,13 +1179,13 @@ func ExampleRepository() ExampleRepositoryData {
 func ExampleAuthor() ExampleAuthorData {
 	return ExampleAuthorData{
 		Name: "Keboola",
-		Url:  "https://www.keboola.com",
+		URL:  "https://www.keboola.com",
 	}
 }
 
 func ExampleTemplate1() ExampleTemplateData {
 	return ExampleTemplateData{
-		Id:             "my-template",
+		ID:             "my-template",
 		Name:           "My Template",
 		Components:     ExampleComponents(),
 		Author:         ExampleAuthor(),
@@ -1197,7 +1197,7 @@ func ExampleTemplate1() ExampleTemplateData {
 
 func ExampleTemplate2() ExampleTemplateData {
 	return ExampleTemplateData{
-		Id:             "maximum-length-template-id-dolor-sit-an",
+		ID:             "maximum-length-template-id-dolor-sit-an",
 		Name:           "Maximum length template name ipsum dolo",
 		Components:     ExampleComponents(),
 		Author:         ExampleAuthor(),
@@ -1262,18 +1262,18 @@ func ExampleComponents() []string {
 func ExampleStepGroups() []ExampleStepGroupData {
 	return []ExampleStepGroupData{
 		{
-			Id:          "g01",
+			ID:          "g01",
 			Description: "Choose one of the eshop platforms.",
 			Required:    "atLeastOne",
 			Step:        []ExampleStepData{ExampleStep1(), ExampleStep2()},
 		},
 		{
-			Id:          "g02",
+			ID:          "g02",
 			Description: "",
 			Required:    "all",
 			Step: []ExampleStepData{
 				{
-					Id:                "g02-s01",
+					ID:                "g02-s01",
 					Icon:              "common:download",
 					Name:              "Snowflake",
 					Description:       "Transformation.",
@@ -1284,12 +1284,12 @@ func ExampleStepGroups() []ExampleStepGroupData {
 			},
 		},
 		{
-			Id:          "g03",
+			ID:          "g03",
 			Description: "Select some destinations if you want.",
 			Required:    "optional",
 			Step: []ExampleStepData{
 				{
-					Id:                "g03-s01",
+					ID:                "g03-s01",
 					Icon:              "common:upload",
 					Name:              "Service 1",
 					Description:       "Some external service.",
@@ -1297,7 +1297,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 					DialogDescription: "Some external service.",
 					Inputs: []ExampleInputData{
 						{
-							Id:          "host",
+							ID:          "host",
 							Name:        "Service Host",
 							Description: "Base path of the Service API.",
 							Type:        "string",
@@ -1307,7 +1307,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 					},
 				},
 				{
-					Id:                "g03-s02",
+					ID:                "g03-s02",
 					Icon:              "common:upload",
 					Name:              "Maximum length step name",
 					Description:       "Maximum length desc lorem ipsum dolor sit amet consectetur.",
@@ -1315,7 +1315,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 					DialogDescription: "Maximum dialog description lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nas.",
 					Inputs: []ExampleInputData{
 						{
-							Id:          "host",
+							ID:          "host",
 							Name:        "Input With Max Length Xy",
 							Description: "Far far away, behind the word mountains, far from the countr",
 							Type:        "string",
@@ -1325,7 +1325,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 					},
 				},
 				{
-					Id:                "g03-s03",
+					ID:                "g03-s03",
 					Icon:              "common:upload",
 					Name:              "Service 3",
 					Description:       "Some external service.",
@@ -1334,7 +1334,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 					Inputs:            []ExampleInputData{},
 				},
 				{
-					Id:                "g03-s04",
+					ID:                "g03-s04",
 					Icon:              "common:upload",
 					Name:              "Service 4",
 					Description:       "Some external service.",
@@ -1342,7 +1342,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 					DialogDescription: "Some external service.",
 					Inputs: []ExampleInputData{
 						{
-							Id:          "host",
+							ID:          "host",
 							Name:        "Service Host",
 							Description: "Base path of the Service API.",
 							Type:        "string",
@@ -1352,7 +1352,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 					},
 				},
 				{
-					Id:                "g03-s05",
+					ID:                "g03-s05",
 					Icon:              "common:upload",
 					Name:              "Service 5",
 					Description:       "Some external service.",
@@ -1360,7 +1360,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 					DialogDescription: "Some external service.",
 					Inputs: []ExampleInputData{
 						{
-							Id:          "host",
+							ID:          "host",
 							Name:        "Service Host",
 							Description: "Base path of the Service API.",
 							Type:        "string",
@@ -1376,7 +1376,7 @@ func ExampleStepGroups() []ExampleStepGroupData {
 
 func ExampleStep1() ExampleStepData {
 	return ExampleStepData{
-		Id:                "g01-s01",
+		ID:                "g01-s01",
 		Icon:              "common:download",
 		Name:              "Super Ecommerce",
 		Description:       "Sell online with the Super E-commerce website.",
@@ -1388,7 +1388,7 @@ func ExampleStep1() ExampleStepData {
 
 func ExampleStep2() ExampleStepData {
 	return ExampleStepData{
-		Id:                "g01-s02",
+		ID:                "g01-s02",
 		Icon:              "common:download",
 		Name:              "Other Ecommerce",
 		Description:       "Alternative ecommerce solution.",
@@ -1396,7 +1396,7 @@ func ExampleStep2() ExampleStepData {
 		DialogDescription: "Alternative ecommerce solution.",
 		Inputs: []ExampleInputData{
 			{
-				Id:          "host",
+				ID:          "host",
 				Name:        "Service Host",
 				Description: "Base path of the Service API.",
 				Type:        "string",
@@ -1404,7 +1404,7 @@ func ExampleStep2() ExampleStepData {
 				Default:     "example.com",
 			},
 			{
-				Id:          "token",
+				ID:          "token",
 				Name:        "Service Token",
 				Description: "Service API token.",
 				Type:        "string",
@@ -1417,7 +1417,7 @@ func ExampleStep2() ExampleStepData {
 
 func ExampleInput() ExampleInputData {
 	return ExampleInputData{
-		Id:          "api-token",
+		ID:          "api-token",
 		Name:        "API Token",
 		Description: "Insert Service API Token.",
 		Type:        "string",
@@ -1429,7 +1429,7 @@ func ExampleInput() ExampleInputData {
 func ExampleInputs() []ExampleInputData {
 	return []ExampleInputData{
 		{
-			Id:          "user",
+			ID:          "user",
 			Name:        "User Name",
 			Description: "",
 			Type:        "string",
@@ -1437,7 +1437,7 @@ func ExampleInputs() []ExampleInputData {
 			Default:     "john",
 		},
 		{
-			Id:          "api-token",
+			ID:          "api-token",
 			Name:        "API Token",
 			Description: "Insert Service API Token.",
 			Type:        "string",
@@ -1445,7 +1445,7 @@ func ExampleInputs() []ExampleInputData {
 			Default:     "",
 		},
 		{
-			Id:          "export-description",
+			ID:          "export-description",
 			Name:        "Description",
 			Description: "Please enter a short description of what this export is for.",
 			Type:        "string",
@@ -1453,7 +1453,7 @@ func ExampleInputs() []ExampleInputData {
 			Default:     "This export exports data to ...",
 		},
 		{
-			Id:          "country",
+			ID:          "country",
 			Name:        "Country",
 			Description: "Please select one country.",
 			Type:        "string",
@@ -1462,7 +1462,7 @@ func ExampleInputs() []ExampleInputData {
 			Options:     ExampleInputOptions(),
 		},
 		{
-			Id:          "limit",
+			ID:          "limit",
 			Name:        "Limit",
 			Description: "Enter the maximum number of records.",
 			Type:        "int",
@@ -1470,7 +1470,7 @@ func ExampleInputs() []ExampleInputData {
 			Default:     1000,
 		},
 		{
-			Id:          "person-height",
+			ID:          "person-height",
 			Name:        "Person Height",
 			Description: "",
 			Type:        "double",
@@ -1478,7 +1478,7 @@ func ExampleInputs() []ExampleInputData {
 			Default:     178.5,
 		},
 		{
-			Id:          "dummy-data",
+			ID:          "dummy-data",
 			Name:        "Generate dummy data",
 			Description: "Do you want to generate dummy data?",
 			Type:        "bool",
@@ -1486,7 +1486,7 @@ func ExampleInputs() []ExampleInputData {
 			Default:     true,
 		},
 		{
-			Id:          "countries",
+			ID:          "countries",
 			Name:        "Countries",
 			Description: "Please select at least one country.",
 			Type:        "string[]",
@@ -1516,21 +1516,21 @@ func ExampleInputOptions() []ExampleInputOptionData {
 
 func ExampleStepPayload() ExampleStepPayloadData {
 	return ExampleStepPayloadData{
-		Id:     "g01-s01",
+		ID:     "g01-s01",
 		Inputs: []ExampleInputPayloadData{ExampleInputPayload1(), ExampleInputPayload2()},
 	}
 }
 
 func ExampleInputPayload1() ExampleInputPayloadData {
 	return ExampleInputPayloadData{
-		Id:    "user",
+		ID:    "user",
 		Value: "user@example.com",
 	}
 }
 
 func ExampleInputPayload2() ExampleInputPayloadData {
 	return ExampleInputPayloadData{
-		Id:    "api-token",
+		ID:    "api-token",
 		Value: "123456",
 	}
 }

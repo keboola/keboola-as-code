@@ -16,14 +16,14 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
 
-	variablesConfigId := `123456`
-	valuesConfigRowId := `456789`
+	variablesConfigID := `123456`
+	valuesConfigRowID := `456789`
 	object := &model.Config{Content: orderedmap.New()}
 	object.AddRelation(&model.VariablesFromRelation{
-		VariablesId: storageapi.ConfigID(variablesConfigId),
+		VariablesID: storageapi.ConfigID(variablesConfigID),
 	})
 	object.AddRelation(&model.VariablesValuesFromRelation{
-		VariablesValuesId: storageapi.RowID(valuesConfigRowId),
+		VariablesValuesID: storageapi.RowID(valuesConfigRowID),
 	})
 	recipe := model.NewRemoteSaveRecipe(&model.ConfigManifest{}, object, model.NewChangedFields())
 
@@ -37,12 +37,12 @@ func TestVariablesMapBeforeRemoteSave(t *testing.T) {
 	assert.Empty(t, object.Relations)
 
 	// Object contains variables ID in content
-	v, found := object.Content.Get(model.VariablesIdContentKey)
+	v, found := object.Content.Get(model.VariablesIDContentKey)
 	assert.True(t, found)
-	assert.Equal(t, variablesConfigId, v)
+	assert.Equal(t, variablesConfigID, v)
 
 	// Object contains variables values ID in content
-	v, found = object.Content.Get(model.VariablesValuesIdContentKey)
+	v, found = object.Content.Get(model.VariablesValuesIDContentKey)
 	assert.True(t, found)
-	assert.Equal(t, valuesConfigRowId, v)
+	assert.Equal(t, valuesConfigRowID, v)
 }

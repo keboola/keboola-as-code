@@ -16,16 +16,16 @@ func TestRules_ValidateValue(t *testing.T) {
 	t.Parallel()
 
 	// Valid
-	assert.NoError(t, Rules("").ValidateValue(Input{Id: "my-field", Name: "my field"}, "foo bar"))
-	assert.NoError(t, Rules("required").ValidateValue(Input{Id: "my-field", Name: "my field"}, "foo bar"))
+	assert.NoError(t, Rules("").ValidateValue(Input{ID: "my-field", Name: "my field"}, "foo bar"))
+	assert.NoError(t, Rules("required").ValidateValue(Input{ID: "my-field", Name: "my field"}, "foo bar"))
 
 	// Invalid
-	err := Rules("required").ValidateValue(Input{Id: "my-field", Name: "my field"}, "")
+	err := Rules("required").ValidateValue(Input{ID: "my-field", Name: "my field"}, "")
 	assert.Error(t, err)
 	assert.Equal(t, "my field is a required field", err.Error())
 
 	// Invalid rule
-	err = Rules("foo").ValidateValue(Input{Id: "my-field", Name: "my field"}, "")
+	err = Rules("foo").ValidateValue(Input{ID: "my-field", Name: "my field"}, "")
 	assert.Error(t, err)
 	assert.Equal(t, InvalidRulesError("undefined validation function 'foo'"), err)
 }
@@ -34,15 +34,15 @@ func TestRules_ValidateEmptyObject(t *testing.T) {
 	t.Parallel()
 
 	// Valid
-	assert.NoError(t, Rules("required").ValidateValue(Input{Id: "my-field", Name: "my field", Type: TypeObject}, map[string]any{"foo": "bar"}))
+	assert.NoError(t, Rules("required").ValidateValue(Input{ID: "my-field", Name: "my field", Type: TypeObject}, map[string]any{"foo": "bar"}))
 
 	// Invalid
-	err := Rules("required").ValidateValue(Input{Id: "my-field", Name: "my field", Type: TypeObject}, map[string]any{})
+	err := Rules("required").ValidateValue(Input{ID: "my-field", Name: "my field", Type: TypeObject}, map[string]any{})
 	assert.Error(t, err)
 	assert.Equal(t, "my field is a required field", err.Error())
 
 	// Invalid - multiple rules
-	err = Rules("unique,required,min=1").ValidateValue(Input{Id: "my-field", Name: "my field", Type: TypeObject}, map[string]any{})
+	err = Rules("unique,required,min=1").ValidateValue(Input{ID: "my-field", Name: "my field", Type: TypeObject}, map[string]any{})
 	assert.Error(t, err)
 	assert.Equal(t, "my field is a required field", err.Error())
 }

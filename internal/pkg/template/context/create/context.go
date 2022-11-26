@@ -46,19 +46,19 @@ type _context context.Context
 
 type InputDef struct {
 	Path    orderedmap.Path
-	InputId string
+	InputID string
 }
 
 type ConfigDef struct {
 	Key        model.ConfigKey
-	TemplateId string
+	TemplateID string
 	Inputs     []InputDef
 	Rows       []ConfigRowDef
 }
 
 type ConfigRowDef struct {
 	Key        model.ConfigRowKey
-	TemplateId string
+	TemplateID string
 	Inputs     []InputDef
 }
 
@@ -78,7 +78,7 @@ func (c *Context) LocalObjectsFilter() model.ObjectsFilter {
 	return model.NoFilter()
 }
 
-func (c *Context) JsonNetContext() *jsonnet.Context {
+func (c *Context) JSONNETContext() *jsonnet.Context {
 	// When saving a template, nothing needs to be set.
 	return nil
 }
@@ -90,34 +90,34 @@ func (c *Context) Replacements() (*replacevalues.Values, error) {
 func replacementsForCreate(sourceBranch model.BranchKey, configs []ConfigDef) *replacevalues.Values {
 	replacements := replacevalues.NewValues()
 
-	// Replace BranchId, in template all objects have BranchId = 0
-	replacements.AddKey(sourceBranch, model.BranchKey{Id: 0})
+	// Replace BranchID, in template all objects have BranchID = 0
+	replacements.AddKey(sourceBranch, model.BranchKey{ID: 0})
 
 	// Configs
 	for _, config := range configs {
-		newConfigId := storageapi.ConfigID(jsonnet.ConfigIdPlaceholder(config.TemplateId))
+		newConfigID := storageapi.ConfigID(jsonnet.ConfigIDPlaceholder(config.TemplateID))
 		newConfigKey := config.Key
-		newConfigKey.BranchId = 0
-		newConfigKey.Id = newConfigId
+		newConfigKey.BranchID = 0
+		newConfigKey.ID = newConfigID
 		replacements.AddKey(config.Key, newConfigKey)
 
 		// Config inputs
 		for _, input := range config.Inputs {
-			replacements.AddContentField(config.Key, input.Path, jsonnet.InputPlaceholder(input.InputId))
+			replacements.AddContentField(config.Key, input.Path, jsonnet.InputPlaceholder(input.InputID))
 		}
 
 		// Rows
 		for _, row := range config.Rows {
-			newRowId := storageapi.RowID(jsonnet.ConfigRowIdPlaceholder(row.TemplateId))
+			newRowID := storageapi.RowID(jsonnet.ConfigRowIDPlaceholder(row.TemplateID))
 			newRowKey := row.Key
-			newRowKey.BranchId = 0
-			newRowKey.ConfigId = newConfigId
-			newRowKey.Id = newRowId
+			newRowKey.BranchID = 0
+			newRowKey.ConfigID = newConfigID
+			newRowKey.ID = newRowID
 			replacements.AddKey(row.Key, newRowKey)
 
 			// Row inputs
 			for _, input := range row.Inputs {
-				replacements.AddContentField(row.Key, input.Path, jsonnet.InputPlaceholder(input.InputId))
+				replacements.AddContentField(row.Key, input.Path, jsonnet.InputPlaceholder(input.InputID))
 			}
 		}
 	}

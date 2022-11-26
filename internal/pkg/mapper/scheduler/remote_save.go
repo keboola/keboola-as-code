@@ -42,8 +42,8 @@ func (m *schedulerMapper) MapBeforeRemoteSave(ctx context.Context, recipe *model
 	}
 
 	// Set componentId and configurationId
-	target.Set(model.SchedulerTargetComponentIdKey, relation.ComponentId.String())
-	target.Set(model.SchedulerTargetConfigurationIdKey, relation.ConfigId.String())
+	target.Set(model.SchedulerTargetComponentIDKey, relation.ComponentID.String())
+	target.Set(model.SchedulerTargetConfigurationIDKey, relation.ConfigID.String())
 	object.Content.Set(model.SchedulerTargetKey, target)
 
 	// Delete relation

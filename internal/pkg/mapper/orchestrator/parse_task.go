@@ -60,7 +60,7 @@ func (p *taskParser) enabled() (bool, error) {
 	return value, nil
 }
 
-func (p *taskParser) phaseId() (int, error) {
+func (p *taskParser) phaseID() (int, error) {
 	raw, found := p.content.Get(`phase`)
 	if !found {
 		return 0, errors.New(`missing "phase" key`)
@@ -76,7 +76,7 @@ func (p *taskParser) phaseId() (int, error) {
 	return int(value), nil
 }
 
-func (p *taskParser) componentId() (storageapi.ComponentID, error) {
+func (p *taskParser) componentID() (storageapi.ComponentID, error) {
 	taskRaw, found := p.content.Get(`task`)
 	if !found {
 		return "", errors.New(`missing "task" key`)
@@ -101,7 +101,7 @@ func (p *taskParser) componentId() (storageapi.ComponentID, error) {
 	return storageapi.ComponentID(value), nil
 }
 
-func (p *taskParser) hasConfigId() bool {
+func (p *taskParser) hasConfigID() bool {
 	taskRaw, found := p.content.Get(`task`)
 	if !found {
 		return false
@@ -114,7 +114,7 @@ func (p *taskParser) hasConfigId() bool {
 	return found && value != ""
 }
 
-func (p *taskParser) configId() (storageapi.ConfigID, error) {
+func (p *taskParser) configID() (storageapi.ConfigID, error) {
 	taskRaw, found := p.content.Get(`task`)
 	if !found {
 		return "", errors.New(`missing "task" key`)

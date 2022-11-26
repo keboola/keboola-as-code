@@ -38,11 +38,11 @@ type Templates struct {
 	Repositories []model.TemplateRepository `json:"repositories,omitempty" validate:"dive"`
 }
 
-func newFile(projectId int, apiHost string) *file {
+func newFile(projectID int, apiHost string) *file {
 	return &file{
 		Version:           build.MajorVersion,
-		Project:           Project{Id: projectId, ApiHost: apiHost},
-		SortBy:            model.SortById,
+		Project:           Project{ID: projectID, APIHost: apiHost},
+		SortBy:            model.SortByID,
 		Naming:            naming.TemplateWithIds(),
 		AllowedBranches:   model.DefaultAllowedBranches(),
 		IgnoredComponents: model.ComponentIDs{},
@@ -62,7 +62,7 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 
 	// Read JSON file
 	content := newFile(0, "")
-	if _, err := fs.FileLoader().ReadJsonFileTo(filesystem.NewFileDef(path).SetDescription("manifest"), content); err != nil {
+	if _, err := fs.FileLoader().ReadJSONFileTo(filesystem.NewFileDef(path).SetDescription("manifest"), content); err != nil {
 		return nil, err
 	}
 
@@ -107,9 +107,9 @@ func (c *file) records() []model.ObjectManifest {
 	for _, config := range c.Configs {
 		out = append(out, &config.ConfigManifest)
 		for _, row := range config.Rows {
-			row.BranchId = config.BranchId
-			row.ComponentId = config.ComponentId
-			row.ConfigId = config.Id
+			row.BranchID = config.BranchID
+			row.ComponentID = config.ComponentID
+			row.ConfigID = config.ID
 			out = append(out, row)
 		}
 	}

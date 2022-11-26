@@ -22,16 +22,16 @@ func cases() []test {
 	return []test{
 		{
 			name:    `minimal`,
-			jsonNet: minimalJsonNet(),
+			jsonNet: minimalJSONNET(),
 			records: minimalRecords(),
 		},
 		{
 			name:    `full`,
-			jsonNet: fullJsonNet(),
+			jsonNet: fullJSONNET(),
 			records: fullRecords(),
 			mainConfig: &model.ConfigKey{
-				ComponentId: "keboola.ex-db-oracle",
-				Id:          "config",
+				ComponentID: "keboola.ex-db-oracle",
+				ID:          "config",
 			},
 		},
 	}
@@ -80,7 +80,7 @@ func TestSaveManifestFile(t *testing.T) {
 	}
 }
 
-func minimalJsonNet() string {
+func minimalJSONNET() string {
 	return `{
   configurations: [],
 }
@@ -91,7 +91,7 @@ func minimalRecords() []model.ObjectManifest {
 	return []model.ObjectManifest{}
 }
 
-func fullJsonNet() string {
+func fullJSONNET() string {
 	return `{
   mainConfig: {
     componentId: "keboola.ex-db-oracle",
@@ -125,8 +125,8 @@ func fullRecords() []model.ObjectManifest {
 				Persisted: true,
 			},
 			ConfigKey: model.ConfigKey{
-				ComponentId: "keboola.ex-db-oracle",
-				Id:          "config",
+				ComponentID: "keboola.ex-db-oracle",
+				ID:          "config",
 			},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(
@@ -140,9 +140,9 @@ func fullRecords() []model.ObjectManifest {
 				Persisted: true,
 			},
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "row1",
-				ComponentId: "keboola.ex-db-oracle",
-				ConfigId:    "config",
+				ID:          "row1",
+				ComponentID: "keboola.ex-db-oracle",
+				ConfigID:    "config",
 			},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(
@@ -156,9 +156,9 @@ func fullRecords() []model.ObjectManifest {
 				Persisted: true,
 			},
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "row2",
-				ComponentId: "keboola.ex-db-oracle",
-				ConfigId:    "config",
+				ID:          "row2",
+				ComponentID: "keboola.ex-db-oracle",
+				ConfigID:    "config",
 			},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(

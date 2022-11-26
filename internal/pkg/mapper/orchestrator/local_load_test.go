@@ -87,25 +87,25 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/002-task-5/t
 	// Check target configs relation
 	rel1, err := target1.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
-	assert.Equal(t, orchestratorConfigState.Id, rel1.(*model.UsedInOrchestratorRelation).ConfigId)
+	assert.Equal(t, orchestratorConfigState.ID, rel1.(*model.UsedInOrchestratorRelation).ConfigID)
 	rel2, err := target2.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
-	assert.Equal(t, orchestratorConfigState.Id, rel2.(*model.UsedInOrchestratorRelation).ConfigId)
+	assert.Equal(t, orchestratorConfigState.ID, rel2.(*model.UsedInOrchestratorRelation).ConfigID)
 	rel3, err := target3.Local.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
-	assert.Equal(t, orchestratorConfigState.Id, rel3.(*model.UsedInOrchestratorRelation).ConfigId)
+	assert.Equal(t, orchestratorConfigState.ID, rel3.(*model.UsedInOrchestratorRelation).ConfigID)
 
 	// Orchestration
 	phase1Key := model.PhaseKey{
-		BranchId:    123,
-		ComponentId: storageapi.OrchestratorComponentID,
-		ConfigId:    `456`,
+		BranchID:    123,
+		ComponentID: storageapi.OrchestratorComponentID,
+		ConfigID:    `456`,
 		Index:       0,
 	}
 	phase2Key := model.PhaseKey{
-		BranchId:    123,
-		ComponentId: storageapi.OrchestratorComponentID,
-		ConfigId:    `456`,
+		BranchID:    123,
+		ComponentID: storageapi.OrchestratorComponentID,
+		ConfigID:    `456`,
 		Index:       1,
 	}
 	expectedOrchestration := &model.Orchestration{
@@ -124,8 +124,8 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/002-task-5/t
 						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
 						Name:        `Task 1`,
 						Enabled:     true,
-						ComponentId: `foo.bar1`,
-						ConfigId:    `123`,
+						ComponentID: `foo.bar1`,
+						ConfigID:    `123`,
 						ConfigPath:  `branch/extractor/target-config-1`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
@@ -142,8 +142,8 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/002-task-5/t
 						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
 						Name:        `Task 2 - disabled`,
 						Enabled:     false,
-						ComponentId: `foo.bar2`,
-						ConfigId:    `789`,
+						ComponentID: `foo.bar2`,
+						ConfigID:    `789`,
 						ConfigPath:  `branch/extractor/target-config-2`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
@@ -160,7 +160,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/002-task-5/t
 						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `003-task-3`),
 						Name:        `Task 3 - disabled without configId`,
 						Enabled:     false,
-						ComponentId: `foo.bar2`,
+						ComponentID: `foo.bar2`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -178,9 +178,9 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/002-task-5/t
 				AbsPath:  model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase-with-deps`),
 				DependsOn: []model.PhaseKey{
 					{
-						BranchId:    123,
-						ComponentId: storageapi.OrchestratorComponentID,
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: storageapi.OrchestratorComponentID,
+						ConfigID:    `456`,
 						Index:       0,
 					},
 				},
@@ -192,8 +192,8 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/002-task-5/t
 						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-4`),
 						Name:        `Task 4`,
 						Enabled:     true,
-						ComponentId: `foo.bar2`,
-						ConfigId:    `456`,
+						ComponentID: `foo.bar2`,
+						ConfigID:    `456`,
 						ConfigPath:  `branch/extractor/target-config-3`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
@@ -210,7 +210,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/002-task-5/t
 						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `002-task-5`),
 						Name:        `Task 5 - configData`,
 						Enabled:     true,
-						ComponentId: `foo.bar3`,
+						ComponentID: `foo.bar3`,
 						ConfigData:  orderedmap.FromPairs([]orderedmap.Pair{{Key: "params", Value: "value"}}),
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{

@@ -13,7 +13,7 @@ func TestNamingPathsStorage(t *testing.T) {
 	s := NewRegistry()
 
 	// Attach multiple times with same key
-	key1 := BranchKey{Id: 123}
+	key1 := BranchKey{ID: 123}
 	assert.NoError(t, s.Attach(key1, NewAbsPath("", "my-branch")))
 	assert.NoError(t, s.Attach(key1, NewAbsPath("", "my-branch-123")))
 	assert.NoError(t, s.Attach(key1, NewAbsPath("", "my-branch-abc")))
@@ -23,13 +23,13 @@ func TestNamingPathsStorage(t *testing.T) {
 	assert.Equal(t, NewAbsPath("", "my-branch-abc"), s.byKey[key1.String()])
 
 	// Attach another key
-	key2 := BranchKey{Id: 456}
+	key2 := BranchKey{ID: 456}
 	assert.NoError(t, s.Attach(key2, NewAbsPath("", "my-branch-456")))
 	assert.Len(t, s.byPath, 2)
 	assert.Len(t, s.byKey, 2)
 
 	// Attach another key with same path
-	err := s.Attach(BranchKey{Id: 789}, NewAbsPath("", "my-branch-456"))
+	err := s.Attach(BranchKey{ID: 789}, NewAbsPath("", "my-branch-456"))
 	assert.Error(t, err)
 	msg := `naming error: path "my-branch-456" is attached to branch "456", but new branch "789" has same path`
 	assert.Equal(t, msg, err.Error())
@@ -40,7 +40,7 @@ func TestNamingPathsStorage(t *testing.T) {
 	assert.Len(t, s.byKey, 1)
 
 	// Re-use path
-	assert.NoError(t, s.Attach(BranchKey{Id: 789}, NewAbsPath("", "my-branch-456")))
+	assert.NoError(t, s.Attach(BranchKey{ID: 789}, NewAbsPath("", "my-branch-456")))
 	assert.Len(t, s.byPath, 2)
 	assert.Len(t, s.byKey, 2)
 }

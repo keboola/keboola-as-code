@@ -20,7 +20,7 @@ func (m *mapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSave
 		return nil
 	}
 
-	if err := m.replaceSharedCodeIdByPath(transformation); err != nil {
+	if err := m.replaceSharedCodeIDByPath(transformation); err != nil {
 		// Log errors as warning
 		m.logger.Warn(errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
 	}
@@ -28,7 +28,7 @@ func (m *mapper) MapBeforeLocalSave(ctx context.Context, recipe *model.LocalSave
 	return nil
 }
 
-func (m *mapper) replaceSharedCodeIdByPath(transformation *model.Config) error {
+func (m *mapper) replaceSharedCodeIDByPath(transformation *model.Config) error {
 	// Get shared code
 	sharedCodeKey := transformation.Transformation.LinkToSharedCode.Config
 	sharedCodeState, found := m.state.GetOrNil(sharedCodeKey).(*model.ConfigState)

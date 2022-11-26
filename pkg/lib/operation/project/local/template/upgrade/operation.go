@@ -36,12 +36,12 @@ type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
 	ProjectID() int
-	StorageApiHost() string
-	StorageApiTokenID() string
-	StorageApiClient() client.Sender
-	SchedulerApiClient() client.Sender
+	StorageAPIHost() string
+	StorageAPITokenID() string
+	StorageAPIClient() client.Sender
+	SchedulerAPIClient() client.Sender
 	Components() *model.ComponentsMap
-	EncryptionApiClient() client.Sender
+	EncryptionAPIClient() client.Sender
 	ObjectIDGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider
 }
 
@@ -50,14 +50,14 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()
-	storageApiHost := d.StorageApiHost()
+	storageAPIHost := d.StorageAPIHost()
 	projectID := d.ProjectID()
 
 	// Create tickets provider, to generate new IDs, if needed
 	tickets := d.ObjectIDGeneratorFactory()(ctx)
 
 	// Load template
-	tmplCtx := upgrade.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), o.Instance.InstanceId, o.Branch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components(), projectState.State())
+	tmplCtx := upgrade.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), o.Instance.InstanceID, o.Branch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components(), projectState.State())
 	templateState, err := tmpl.LoadState(tmplCtx, use.LoadTemplateOptions(), d)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	}
 
 	// Update instance metadata
-	if err := branchState.Local.Metadata.UpsertTemplateInstance(time.Now(), o.Instance.InstanceId, o.Instance.InstanceName, tmpl.TemplateId(), tmpl.Repository().Name, tmpl.Version(), d.StorageApiTokenID(), mainConfig); err != nil {
+	if err := branchState.Local.Metadata.UpsertTemplateInstance(time.Now(), o.Instance.InstanceID, o.Instance.InstanceName, tmpl.TemplateID(), tmpl.Repository().Name, tmpl.Version(), d.StorageAPITokenID(), mainConfig); err != nil {
 		errs.Append(err)
 	}
 	saveOp.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())
@@ -131,7 +131,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 
 	// Delete
 	var toDelete []model.Key
-	configs := search.ConfigsForTemplateInstance(projectState.LocalObjects().ConfigsWithRowsFrom(o.Branch), o.Instance.InstanceId)
+	configs := search.ConfigsForTemplateInstance(projectState.LocalObjects().ConfigsWithRowsFrom(o.Branch), o.Instance.InstanceID)
 	for _, config := range configs {
 		if _, found := templateState.Get(config.Key()); !found {
 			toDelete = append(toDelete, config.Key())
@@ -179,7 +179,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	}
 
 	// Validate schemas and encryption
-	if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: true, ValidateJsonSchema: true}, d); err != nil {
+	if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: true, ValidateJSONSchema: true}, d); err != nil {
 		logger.Warn(errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
 		logger.Warn()
 		logger.Warnf(`Please correct the problems listed above.`)
@@ -191,14 +191,14 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	inputValuesMap := o.Inputs.ToMap()
 	for inputName, cKey := range tmplCtx.InputsUsage().OAuthConfigsMap() {
 		if len(inputValuesMap[inputName].Value.(map[string]interface{})) == 0 {
-			warnings = append(warnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", storageApiHost, projectID, cKey.ComponentId, cKey.Id))
+			warnings = append(warnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", storageAPIHost, projectID, cKey.ComponentID, cKey.ID))
 		}
 	}
 	if len(warnings) > 0 {
 		warnings = append([]string{"The template generated configurations that need additional oAuth authorization. Please follow the links and complete the setup:"}, warnings...)
 	}
 
-	logger.Info(fmt.Sprintf(`Template instance "%s" has been upgraded to "%s".`, o.Instance.InstanceId, tmpl.FullName()))
+	logger.Info(fmt.Sprintf(`Template instance "%s" has been upgraded to "%s".`, o.Instance.InstanceID, tmpl.FullName()))
 	return warnings, nil
 }
 

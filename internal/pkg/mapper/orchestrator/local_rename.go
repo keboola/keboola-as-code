@@ -36,9 +36,9 @@ func (m *orchestratorMapper) onObjectsRename(renamed []model.RenameAction, allOb
 				for _, relationRaw := range relations {
 					relation := relationRaw.(*model.UsedInOrchestratorRelation)
 					orchestratorKey := model.ConfigKey{
-						BranchId:    localConfig.BranchId,
-						ComponentId: storageapi.OrchestratorComponentID,
-						Id:          relation.ConfigId,
+						BranchID:    localConfig.BranchID,
+						ComponentID: storageapi.OrchestratorComponentID,
+						ID:          relation.ConfigID,
 					}
 					orchestratorsToUpdate[orchestratorKey.String()] = orchestratorKey
 				}

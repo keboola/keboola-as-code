@@ -28,7 +28,7 @@ func (p *Dialogs) selectTemplateInstance(options *options.Options, branch *model
 
 	selectOpts := make([]string, 0)
 	for _, u := range all {
-		selectOpts = append(selectOpts, fmt.Sprintf(`%s %s (%s)`, u.TemplateId, u.Version, u.InstanceId))
+		selectOpts = append(selectOpts, fmt.Sprintf(`%s %s (%s)`, u.TemplateID, u.Version, u.InstanceID))
 	}
 	if index, ok := p.SelectIndex(&prompt.SelectIndex{
 		Label:   label,

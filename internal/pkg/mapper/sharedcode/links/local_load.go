@@ -69,7 +69,7 @@ func (m *mapper) onLocalLoad(objectState model.ObjectState) error {
 		if sharedCodeRow, v, err := m.parsePathPlaceholder(code, script, sharedCodeState); err != nil {
 			errs.Append(err)
 		} else if v != nil {
-			foundSharedCodeRows[sharedCodeRow.Id] = sharedCodeRow.ConfigRowKey
+			foundSharedCodeRows[sharedCodeRow.ID] = sharedCodeRow.ConfigRowKey
 			return v
 		}
 		return script

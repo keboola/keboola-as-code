@@ -17,7 +17,7 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 	b := BranchMetadata{}
 
 	// First instance
-	assert.NoError(t, b.UpsertTemplateInstance(now, "inst1", "Instance 1", "tmpl1", "repo", "1.0.0", "12345", &TemplateMainConfig{ConfigId: "1234", ComponentId: "foo.bar"}))
+	assert.NoError(t, b.UpsertTemplateInstance(now, "inst1", "Instance 1", "tmpl1", "repo", "1.0.0", "12345", &TemplateMainConfig{ConfigID: "1234", ComponentID: "foo.bar"}))
 	assert.Len(t, b, 1)
 
 	meta, found := b["KBC.KAC.templates.instances"]
@@ -29,14 +29,14 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, TemplatesInstances{
 		{
-			InstanceId:     "inst1",
+			InstanceID:     "inst1",
 			InstanceName:   "Instance 1",
-			TemplateId:     "tmpl1",
+			TemplateID:     "tmpl1",
 			RepositoryName: "repo",
 			Version:        "1.0.0",
-			Created:        ChangedByRecord{Date: now, TokenId: "12345"},
-			Updated:        ChangedByRecord{Date: now, TokenId: "12345"},
-			MainConfig:     &TemplateMainConfig{ConfigId: "1234", ComponentId: "foo.bar"},
+			Created:        ChangedByRecord{Date: now, TokenID: "12345"},
+			Updated:        ChangedByRecord{Date: now, TokenID: "12345"},
+			MainConfig:     &TemplateMainConfig{ConfigID: "1234", ComponentID: "foo.bar"},
 		},
 	}, usages)
 
@@ -46,49 +46,49 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, TemplatesInstances{
 		{
-			InstanceId:     "inst1",
+			InstanceID:     "inst1",
 			InstanceName:   "Instance 1",
-			TemplateId:     "tmpl1",
+			TemplateID:     "tmpl1",
 			RepositoryName: "repo",
 			Version:        "1.0.0",
-			Created:        ChangedByRecord{Date: now, TokenId: "12345"},
-			Updated:        ChangedByRecord{Date: now, TokenId: "12345"},
-			MainConfig:     &TemplateMainConfig{ConfigId: "1234", ComponentId: "foo.bar"},
+			Created:        ChangedByRecord{Date: now, TokenID: "12345"},
+			Updated:        ChangedByRecord{Date: now, TokenID: "12345"},
+			MainConfig:     &TemplateMainConfig{ConfigID: "1234", ComponentID: "foo.bar"},
 		},
 		{
-			InstanceId:     "inst2",
+			InstanceID:     "inst2",
 			InstanceName:   "Instance 2",
-			TemplateId:     "tmpl2",
+			TemplateID:     "tmpl2",
 			RepositoryName: "repo",
 			Version:        "2.0.0",
-			Created:        ChangedByRecord{Date: now, TokenId: "789"},
-			Updated:        ChangedByRecord{Date: now, TokenId: "789"},
+			Created:        ChangedByRecord{Date: now, TokenID: "789"},
+			Updated:        ChangedByRecord{Date: now, TokenID: "789"},
 		},
 	}, usages)
 
 	// First instance - update
-	assert.NoError(t, b.UpsertTemplateInstance(now, "inst1", "Modified Instance 1", "tmpl1", "repo", "1.2.3", "789", &TemplateMainConfig{ConfigId: "7890", ComponentId: "foo.bar"}))
+	assert.NoError(t, b.UpsertTemplateInstance(now, "inst1", "Modified Instance 1", "tmpl1", "repo", "1.2.3", "789", &TemplateMainConfig{ConfigID: "7890", ComponentID: "foo.bar"}))
 	usages, err = b.TemplatesInstances()
 	assert.NoError(t, err)
 	assert.Equal(t, TemplatesInstances{
 		{
-			InstanceId:     "inst1",
+			InstanceID:     "inst1",
 			InstanceName:   "Modified Instance 1",
-			TemplateId:     "tmpl1",
+			TemplateID:     "tmpl1",
 			RepositoryName: "repo",
 			Version:        "1.2.3",
-			Created:        ChangedByRecord{Date: now, TokenId: "12345"},
-			Updated:        ChangedByRecord{Date: now, TokenId: "789"},
-			MainConfig:     &TemplateMainConfig{ConfigId: "7890", ComponentId: "foo.bar"},
+			Created:        ChangedByRecord{Date: now, TokenID: "12345"},
+			Updated:        ChangedByRecord{Date: now, TokenID: "789"},
+			MainConfig:     &TemplateMainConfig{ConfigID: "7890", ComponentID: "foo.bar"},
 		},
 		{
-			InstanceId:     "inst2",
+			InstanceID:     "inst2",
 			InstanceName:   "Instance 2",
-			TemplateId:     "tmpl2",
+			TemplateID:     "tmpl2",
 			RepositoryName: "repo",
 			Version:        "2.0.0",
-			Created:        ChangedByRecord{Date: now, TokenId: "789"},
-			Updated:        ChangedByRecord{Date: now, TokenId: "789"},
+			Created:        ChangedByRecord{Date: now, TokenID: "789"},
+			Updated:        ChangedByRecord{Date: now, TokenID: "789"},
 		},
 	}, usages)
 }
@@ -98,24 +98,24 @@ func TestBranchMetadata_DeleteTemplateUsage(t *testing.T) {
 
 	now := time.Now().Truncate(time.Second).UTC()
 	usage1 := TemplateInstance{
-		InstanceId:     "inst1",
+		InstanceID:     "inst1",
 		InstanceName:   "Instance 1",
-		TemplateId:     "tmpl1",
+		TemplateID:     "tmpl1",
 		RepositoryName: "repo",
 		Version:        "1.0.0",
-		Created:        ChangedByRecord{Date: now, TokenId: "12345"},
-		Updated:        ChangedByRecord{Date: now, TokenId: "12345"},
-		MainConfig:     &TemplateMainConfig{ConfigId: "1234", ComponentId: "foo.bar"},
+		Created:        ChangedByRecord{Date: now, TokenID: "12345"},
+		Updated:        ChangedByRecord{Date: now, TokenID: "12345"},
+		MainConfig:     &TemplateMainConfig{ConfigID: "1234", ComponentID: "foo.bar"},
 	}
 	usage2 := TemplateInstance{
-		InstanceId:     "inst2",
+		InstanceID:     "inst2",
 		InstanceName:   "Instance 2",
-		TemplateId:     "tmpl1",
+		TemplateID:     "tmpl1",
 		RepositoryName: "repo",
 		Version:        "1.0.0",
-		Created:        ChangedByRecord{Date: now, TokenId: "12345"},
-		Updated:        ChangedByRecord{Date: now, TokenId: "12345"},
-		MainConfig:     &TemplateMainConfig{ConfigId: "1234", ComponentId: "foo.bar"},
+		Created:        ChangedByRecord{Date: now, TokenID: "12345"},
+		Updated:        ChangedByRecord{Date: now, TokenID: "12345"},
+		MainConfig:     &TemplateMainConfig{ConfigID: "1234", ComponentID: "foo.bar"},
 	}
 	encUsages, err := json.EncodeString(TemplatesInstances{usage1, usage2}, false)
 	assert.NoError(t, err)

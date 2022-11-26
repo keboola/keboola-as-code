@@ -28,9 +28,9 @@ import (
 )
 
 var (
-	ErrMissingStorageApiHost      = errors.New(`missing Storage API host`)
-	ErrMissingStorageApiToken     = errors.New(`missing Storage API token`)
-	ErrInvalidStorageApiToken     = errors.New(`invalid Storage API token`)
+	ErrMissingStorageAPIHost      = errors.New(`missing Storage API host`)
+	ErrMissingStorageAPIToken     = errors.New(`missing Storage API token`)
+	ErrInvalidStorageAPIToken     = errors.New(`invalid Storage API token`)
 	ErrProjectManifestNotFound    = errors.New("local manifest not found")
 	ErrDbtProjectNotFound         = errors.Errorf(`dbt project not found, missing file "%s"`, dbt.ProjectFilePath)
 	ErrTemplateManifestNotFound   = errors.New("template manifest not found")

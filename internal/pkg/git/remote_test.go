@@ -41,19 +41,19 @@ func TestGit_Checkout(t *testing.T) {
 	defer cancel()
 
 	// Checkout fail from a missing repo
-	ref := model.TemplateRepository{Url: "file://some/missing/repo", Ref: "main"}
+	ref := model.TemplateRepository{URL: "file://some/missing/repo", Ref: "main"}
 	_, err := Checkout(ctx, ref, true, logger)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `git repository could not be checked out from "file://some/missing/repo"`)
 
 	// Checkout fail from a non-existing branch
-	ref = model.TemplateRepository{Url: gitRepo, Ref: "non-existing-ref"}
+	ref = model.TemplateRepository{URL: gitRepo, Ref: "non-existing-ref"}
 	_, err = Checkout(ctx, ref, false, logger)
 	assert.Error(t, err)
 	wildcards.Assert(t, `reference "non-existing-ref" not found in the git repository "%s"`, err.Error(), "unexpected output")
 
 	// Success
-	ref = model.TemplateRepository{Url: gitRepo, Ref: "main"}
+	ref = model.TemplateRepository{URL: gitRepo, Ref: "main"}
 	r, err := Checkout(ctx, ref, false, logger)
 	assert.NoError(t, err)
 
@@ -111,19 +111,19 @@ func TestGit_Checkout_Sparse(t *testing.T) {
 	defer cancel()
 
 	// Checkout fail from a missing repo
-	ref := model.TemplateRepository{Url: "file://some/missing/repo", Ref: "main"}
+	ref := model.TemplateRepository{URL: "file://some/missing/repo", Ref: "main"}
 	_, err := Checkout(ctx, ref, true, logger)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `git repository could not be checked out from "file://some/missing/repo"`)
 
 	// Checkout fail from a non-existing branch
-	ref = model.TemplateRepository{Url: gitRepo, Ref: "non-existing-ref"}
+	ref = model.TemplateRepository{URL: gitRepo, Ref: "non-existing-ref"}
 	_, err = Checkout(ctx, ref, true, logger)
 	assert.Error(t, err)
 	wildcards.Assert(t, `reference "non-existing-ref" not found in the git repository "%s"`, err.Error(), "unexpected output")
 
 	// Success
-	ref = model.TemplateRepository{Url: gitRepo, Ref: "main"}
+	ref = model.TemplateRepository{URL: gitRepo, Ref: "main"}
 	r, err := Checkout(ctx, ref, true, logger)
 	assert.NoError(t, err)
 

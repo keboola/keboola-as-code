@@ -21,7 +21,7 @@ func TestParseRepositories(t *testing.T) {
 		{
 			Type: model.RepositoryTypeDir,
 			Name: "foo",
-			Url:  "bar",
+			URL:  "bar",
 		},
 	}, result)
 
@@ -31,7 +31,7 @@ func TestParseRepositories(t *testing.T) {
 		{
 			Type: model.RepositoryTypeGit,
 			Name: "foo",
-			Url:  "https://bar.com",
+			URL:  "https://bar.com",
 			Ref:  "baz",
 		},
 	}, result)
@@ -42,13 +42,13 @@ func TestParseRepositories(t *testing.T) {
 		{
 			Type: model.RepositoryTypeGit,
 			Name: "foo1",
-			Url:  "https://bar.com",
+			URL:  "https://bar.com",
 			Ref:  "baz",
 		},
 		{
 			Type: model.RepositoryTypeDir,
 			Name: "foo2",
-			Url:  "bar",
+			URL:  "bar",
 		},
 	}, result)
 

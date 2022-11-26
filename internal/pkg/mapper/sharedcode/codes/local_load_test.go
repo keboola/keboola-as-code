@@ -13,15 +13,15 @@ import (
 
 func TestSharedCodeLocalLoad(t *testing.T) {
 	t.Parallel()
-	targetComponentId := storageapi.ComponentID(`keboola.python-transformation-v2`)
+	targetComponentID := storageapi.ComponentID(`keboola.python-transformation-v2`)
 
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
 	fs := state.ObjectsRoot()
-	configState, rowState := createLocalSharedCode(t, targetComponentId, state)
+	configState, rowState := createLocalSharedCode(t, targetComponentID, state)
 
 	// Write file
-	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(rowState.ConfigRowManifest.Path(), targetComponentId))
+	codeFilePath := filesystem.Join(state.NamingGenerator().SharedCodeFilePath(rowState.ConfigRowManifest.Path(), targetComponentID))
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(codeFilePath, `foo bar`)))
 	logger.Truncate()
 
@@ -55,11 +55,11 @@ func TestSharedCodeLocalLoad(t *testing.T) {
 
 func TestSharedCodeLocalLoad_MissingCodeFile(t *testing.T) {
 	t.Parallel()
-	targetComponentId := storageapi.ComponentID(`keboola.python-transformation-v2`)
+	targetComponentID := storageapi.ComponentID(`keboola.python-transformation-v2`)
 
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
-	configState, rowState := createLocalSharedCode(t, targetComponentId, state)
+	configState, rowState := createLocalSharedCode(t, targetComponentID, state)
 
 	// Load config
 	configRecipe := model.NewLocalLoadRecipe(state.FileLoader(), configState.Manifest(), configState.Local)

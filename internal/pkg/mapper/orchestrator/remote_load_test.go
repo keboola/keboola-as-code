@@ -91,9 +91,9 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 	content := orderedmap.New()
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: storageapi.OrchestratorComponentID,
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: storageapi.OrchestratorComponentID,
+		ID:          `456`,
 	}
 	configManifest := &model.ConfigManifest{
 		ConfigKey: configKey,
@@ -120,25 +120,25 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 	// Check target configs relation
 	rel1, err := target1.Remote.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
-	assert.Equal(t, config.Id, rel1.(*model.UsedInOrchestratorRelation).ConfigId)
+	assert.Equal(t, config.ID, rel1.(*model.UsedInOrchestratorRelation).ConfigID)
 	rel2, err := target2.Remote.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
-	assert.Equal(t, config.Id, rel2.(*model.UsedInOrchestratorRelation).ConfigId)
+	assert.Equal(t, config.ID, rel2.(*model.UsedInOrchestratorRelation).ConfigID)
 	rel3, err := target3.Remote.Relations.GetOneByType(model.UsedInOrchestratorRelType)
 	assert.NoError(t, err)
-	assert.Equal(t, config.Id, rel3.(*model.UsedInOrchestratorRelation).ConfigId)
+	assert.Equal(t, config.ID, rel3.(*model.UsedInOrchestratorRelation).ConfigID)
 
 	// Assert orchestration
 	phase1Key := model.PhaseKey{
-		BranchId:    123,
-		ComponentId: storageapi.OrchestratorComponentID,
-		ConfigId:    `456`,
+		BranchID:    123,
+		ComponentID: storageapi.OrchestratorComponentID,
+		ConfigID:    `456`,
 		Index:       0,
 	}
 	phase2Key := model.PhaseKey{
-		BranchId:    123,
-		ComponentId: storageapi.OrchestratorComponentID,
-		ConfigId:    `456`,
+		BranchID:    123,
+		ComponentID: storageapi.OrchestratorComponentID,
+		ConfigID:    `456`,
 		Index:       1,
 	}
 	assert.Equal(t, `{}`, json.MustEncodeString(config.Content, false))
@@ -156,8 +156,8 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 						AbsPath:     model.NewAbsPath(`branch/config/phases/001-phase`, `001-task-1`),
 						Name:        `Task 1`,
 						Enabled:     true,
-						ComponentId: `foo.bar1`,
-						ConfigId:    `123`,
+						ComponentID: `foo.bar1`,
+						ConfigID:    `123`,
 						ConfigPath:  `branch/extractor/target-config-1`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
@@ -174,8 +174,8 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 						AbsPath:     model.NewAbsPath(`branch/config/phases/001-phase`, `002-task-3`),
 						Name:        `Task 3`,
 						Enabled:     false,
-						ComponentId: `foo.bar2`,
-						ConfigId:    `789`,
+						ComponentID: `foo.bar2`,
+						ConfigID:    `789`,
 						ConfigPath:  `branch/extractor/target-config-2`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
@@ -194,9 +194,9 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 				AbsPath:  model.NewAbsPath(`branch/config/phases`, `002-phase-with-deps`),
 				DependsOn: []model.PhaseKey{
 					{
-						BranchId:    123,
-						ComponentId: storageapi.OrchestratorComponentID,
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: storageapi.OrchestratorComponentID,
+						ConfigID:    `456`,
 						Index:       0,
 					},
 				},
@@ -210,8 +210,8 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 						AbsPath:     model.NewAbsPath(`branch/config/phases/002-phase-with-deps`, `001-task-2`),
 						Name:        `Task 2`,
 						Enabled:     true,
-						ComponentId: `foo.bar2`,
-						ConfigId:    `456`,
+						ComponentID: `foo.bar2`,
+						ConfigID:    `456`,
 						ConfigPath:  `branch/extractor/target-config-3`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
@@ -228,7 +228,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 						AbsPath:     model.NewAbsPath(`branch/config/phases/002-phase-with-deps`, `002-task-4-config-data`),
 						Name:        `Task 4 - ConfigData`,
 						Enabled:     true,
-						ComponentId: `foo.bar3`,
+						ComponentID: `foo.bar3`,
 						ConfigData:  orderedmap.FromPairs([]orderedmap.Pair{{Key: "params", Value: "value"}}),
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
@@ -294,9 +294,9 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 	content := orderedmap.New()
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: storageapi.OrchestratorComponentID,
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: storageapi.OrchestratorComponentID,
+		ID:          `456`,
 	}
 	configManifest := &model.ConfigManifest{
 		ConfigKey: configKey,
@@ -339,9 +339,9 @@ WARN  Warning:
 		Phases: []*model.Phase{
 			{
 				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: storageapi.OrchestratorComponentID,
-					ConfigId:    `456`,
+					BranchID:    123,
+					ComponentID: storageapi.OrchestratorComponentID,
+					ConfigID:    `456`,
 					Index:       0,
 				},
 				DependsOn: []model.PhaseKey{},
@@ -351,17 +351,17 @@ WARN  Warning:
 					{
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
-								BranchId:    123,
-								ComponentId: storageapi.OrchestratorComponentID,
-								ConfigId:    `456`,
+								BranchID:    123,
+								ComponentID: storageapi.OrchestratorComponentID,
+								ConfigID:    `456`,
 								Index:       0,
 							},
 							Index: 0,
 						},
 						Name:        `Task 1`,
 						Enabled:     true,
-						ComponentId: `foo.bar1`,
-						ConfigId:    `123`,
+						ComponentID: `foo.bar1`,
+						ConfigID:    `123`,
 						ConfigPath:  `branch/extractor/target-config-1`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
@@ -419,9 +419,9 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 	content := orderedmap.New()
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: storageapi.OrchestratorComponentID,
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: storageapi.OrchestratorComponentID,
+		ID:          `456`,
 	}
 	configManifest := &model.ConfigManifest{
 		ConfigKey: configKey,
@@ -445,9 +445,9 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 		Phases: []*model.Phase{
 			{
 				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: storageapi.OrchestratorComponentID,
-					ConfigId:    `456`,
+					BranchID:    123,
+					ComponentID: storageapi.OrchestratorComponentID,
+					ConfigID:    `456`,
 					Index:       0,
 				},
 				DependsOn: []model.PhaseKey{},
@@ -456,16 +456,16 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 			},
 			{
 				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: storageapi.OrchestratorComponentID,
-					ConfigId:    `456`,
+					BranchID:    123,
+					ComponentID: storageapi.OrchestratorComponentID,
+					ConfigID:    `456`,
 					Index:       1,
 				},
 				DependsOn: []model.PhaseKey{
 					{
-						BranchId:    123,
-						ComponentId: storageapi.OrchestratorComponentID,
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: storageapi.OrchestratorComponentID,
+						ConfigID:    `456`,
 						Index:       0,
 					},
 				},
@@ -474,9 +474,9 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 			},
 			{
 				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: storageapi.OrchestratorComponentID,
-					ConfigId:    `456`,
+					BranchID:    123,
+					ComponentID: storageapi.OrchestratorComponentID,
+					ConfigID:    `456`,
 					Index:       2,
 				},
 				DependsOn: []model.PhaseKey{},
@@ -485,22 +485,22 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 			},
 			{
 				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: storageapi.OrchestratorComponentID,
-					ConfigId:    `456`,
+					BranchID:    123,
+					ComponentID: storageapi.OrchestratorComponentID,
+					ConfigID:    `456`,
 					Index:       3,
 				},
 				DependsOn: []model.PhaseKey{
 					{
-						BranchId:    123,
-						ComponentId: storageapi.OrchestratorComponentID,
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: storageapi.OrchestratorComponentID,
+						ConfigID:    `456`,
 						Index:       0,
 					},
 					{
-						BranchId:    123,
-						ComponentId: storageapi.OrchestratorComponentID,
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: storageapi.OrchestratorComponentID,
+						ConfigID:    `456`,
 						Index:       2,
 					},
 				},
@@ -509,28 +509,28 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 			},
 			{
 				PhaseKey: model.PhaseKey{
-					BranchId:    123,
-					ComponentId: storageapi.OrchestratorComponentID,
-					ConfigId:    `456`,
+					BranchID:    123,
+					ComponentID: storageapi.OrchestratorComponentID,
+					ConfigID:    `456`,
 					Index:       4,
 				},
 				DependsOn: []model.PhaseKey{
 					{
-						BranchId:    123,
-						ComponentId: storageapi.OrchestratorComponentID,
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: storageapi.OrchestratorComponentID,
+						ConfigID:    `456`,
 						Index:       0,
 					},
 					{
-						BranchId:    123,
-						ComponentId: storageapi.OrchestratorComponentID,
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: storageapi.OrchestratorComponentID,
+						ConfigID:    `456`,
 						Index:       1,
 					},
 					{
-						BranchId:    123,
-						ComponentId: storageapi.OrchestratorComponentID,
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: storageapi.OrchestratorComponentID,
+						ConfigID:    `456`,
 						Index:       3,
 					},
 				},
@@ -597,9 +597,9 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 	content := orderedmap.New()
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: storageapi.OrchestratorComponentID,
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: storageapi.OrchestratorComponentID,
+		ID:          `456`,
 	}
 	configManifest := &model.ConfigManifest{
 		ConfigKey: configKey,

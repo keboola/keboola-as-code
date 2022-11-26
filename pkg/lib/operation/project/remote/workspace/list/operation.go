@@ -17,8 +17,8 @@ import (
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageApiClient() client.Sender
-	SandboxesApiClient() client.Sender
+	StorageAPIClient() client.Sender
+	SandboxesAPIClient() client.Sender
 }
 
 func Run(ctx context.Context, d dependencies) (err error) {
@@ -27,13 +27,13 @@ func Run(ctx context.Context, d dependencies) (err error) {
 
 	logger := d.Logger()
 
-	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageApiClient())
+	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageAPIClient())
 	if err != nil {
 		return errors.Errorf("cannot find default branch: %w", err)
 	}
 
 	logger.Info("Loading workspaces, please wait.")
-	sandboxes, err := sandboxesapi.List(ctx, d.StorageApiClient(), d.SandboxesApiClient(), branch.ID)
+	sandboxes, err := sandboxesapi.List(ctx, d.StorageAPIClient(), d.SandboxesAPIClient(), branch.ID)
 	if err != nil {
 		return err
 	}

@@ -35,9 +35,9 @@ func TestLoadTransformationInvalidConfigAndMeta(t *testing.T) {
 
 	// Save files
 	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: "foo.bar",
-		Id:          "456",
+		BranchID:    123,
+		ComponentID: "foo.bar",
+		ID:          "456",
 	}
 	record := &model.ConfigManifest{
 		ConfigKey: configKey,
@@ -178,9 +178,9 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 	expected := []*model.Block{
 		{
 			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.snowflake-transformation",
-				ConfigId:    `456`,
+				BranchID:    123,
+				ComponentID: "keboola.snowflake-transformation",
+				ConfigID:    `456`,
 				Index:       0,
 			},
 			AbsPath: model.NewAbsPath(
@@ -191,9 +191,9 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 			Codes: model.Codes{
 				{
 					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.snowflake-transformation",
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: "keboola.snowflake-transformation",
+						ConfigID:    `456`,
 						BlockIndex:  0,
 						Index:       0,
 					},
@@ -209,9 +209,9 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 				},
 				{
 					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.snowflake-transformation",
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: "keboola.snowflake-transformation",
+						ConfigID:    `456`,
 						BlockIndex:  0,
 						Index:       1,
 					},
@@ -230,9 +230,9 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 		},
 		{
 			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.snowflake-transformation",
-				ConfigId:    `456`,
+				BranchID:    123,
+				ComponentID: "keboola.snowflake-transformation",
+				ConfigID:    `456`,
 				Index:       1,
 			},
 			AbsPath: model.NewAbsPath(
@@ -243,9 +243,9 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 			Codes: model.Codes{
 				{
 					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.snowflake-transformation",
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: "keboola.snowflake-transformation",
+						ConfigID:    `456`,
 						BlockIndex:  1,
 						Index:       0,
 					},
@@ -263,9 +263,9 @@ func TestLoadLocalTransformationSql(t *testing.T) {
 		},
 		{
 			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.snowflake-transformation",
-				ConfigId:    `456`,
+				BranchID:    123,
+				ComponentID: "keboola.snowflake-transformation",
+				ConfigID:    `456`,
 				Index:       2,
 			},
 			AbsPath: model.NewAbsPath(
@@ -321,9 +321,9 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 	expected := []*model.Block{
 		{
 			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.python-transformation-v2",
-				ConfigId:    `456`,
+				BranchID:    123,
+				ComponentID: "keboola.python-transformation-v2",
+				ConfigID:    `456`,
 				Index:       0,
 			},
 			AbsPath: model.NewAbsPath(
@@ -334,9 +334,9 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 			Codes: model.Codes{
 				{
 					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.python-transformation-v2",
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: "keboola.python-transformation-v2",
+						ConfigID:    `456`,
 						BlockIndex:  0,
 						Index:       0,
 					},
@@ -352,9 +352,9 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 				},
 				{
 					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.python-transformation-v2",
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: "keboola.python-transformation-v2",
+						ConfigID:    `456`,
 						BlockIndex:  0,
 						Index:       1,
 					},
@@ -372,9 +372,9 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 		},
 		{
 			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.python-transformation-v2",
-				ConfigId:    `456`,
+				BranchID:    123,
+				ComponentID: "keboola.python-transformation-v2",
+				ConfigID:    `456`,
 				Index:       1,
 			},
 			AbsPath: model.NewAbsPath(
@@ -385,9 +385,9 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 			Codes: model.Codes{
 				{
 					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.python-transformation-v2",
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: "keboola.python-transformation-v2",
+						ConfigID:    `456`,
 						BlockIndex:  1,
 						Index:       0,
 					},
@@ -405,9 +405,9 @@ func TestLoadLocalTransformationPy(t *testing.T) {
 		},
 		{
 			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.python-transformation-v2",
-				ConfigId:    `456`,
+				BranchID:    123,
+				ComponentID: "keboola.python-transformation-v2",
+				ConfigID:    `456`,
 				Index:       2,
 			},
 			AbsPath: model.NewAbsPath(

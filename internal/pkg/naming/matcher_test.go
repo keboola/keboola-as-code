@@ -12,66 +12,66 @@ import (
 func TestNamingMatchConfigPathNotMatched(t *testing.T) {
 	t.Parallel()
 	m := NewPathMatcher(TemplateWithIds())
-	componentId, err := m.MatchConfigPath(
+	componentID, err := m.MatchConfigPath(
 		BranchKey{},
 		NewAbsPath(
 			"parent/path",
 			"foo",
 		))
 	assert.NoError(t, err)
-	assert.Empty(t, componentId)
+	assert.Empty(t, componentID)
 }
 
 func TestNamingMatchConfigPathOrdinary(t *testing.T) {
 	t.Parallel()
 	m := NewPathMatcher(TemplateWithIds())
-	componentId, err := m.MatchConfigPath(
+	componentID, err := m.MatchConfigPath(
 		BranchKey{},
 		NewAbsPath(
 			"parent/path",
 			"extractor/keboola.ex-db-mysql/with-rows",
 		))
 	assert.NoError(t, err)
-	assert.Equal(t, storageapi.ComponentID(`keboola.ex-db-mysql`), componentId)
+	assert.Equal(t, storageapi.ComponentID(`keboola.ex-db-mysql`), componentID)
 }
 
 func TestNamingMatchConfigPathSharedCode(t *testing.T) {
 	t.Parallel()
 	m := NewPathMatcher(TemplateWithIds())
-	componentId, err := m.MatchConfigPath(
+	componentID, err := m.MatchConfigPath(
 		BranchKey{},
 		NewAbsPath(
 			"parent/path",
 			"_shared/keboola.python-transformation-v2",
 		))
 	assert.NoError(t, err)
-	assert.Equal(t, storageapi.SharedCodeComponentID, componentId)
+	assert.Equal(t, storageapi.SharedCodeComponentID, componentID)
 }
 
 func TestNamingMatchConfigPathVariables(t *testing.T) {
 	t.Parallel()
 	n := NewPathMatcher(TemplateWithIds())
-	componentId, err := n.MatchConfigPath(
+	componentID, err := n.MatchConfigPath(
 		ConfigKey{},
 		NewAbsPath(
 			"parent/path",
 			"variables",
 		))
 	assert.NoError(t, err)
-	assert.Equal(t, storageapi.VariablesComponentID, componentId)
+	assert.Equal(t, storageapi.VariablesComponentID, componentID)
 }
 
 func TestNamingMatchSharedCodeVariables(t *testing.T) {
 	t.Parallel()
 	m := NewPathMatcher(TemplateWithIds())
-	componentId, err := m.MatchConfigPath(
-		ConfigRowKey{ComponentId: storageapi.SharedCodeComponentID},
+	componentID, err := m.MatchConfigPath(
+		ConfigRowKey{ComponentID: storageapi.SharedCodeComponentID},
 		NewAbsPath(
 			"shared/code/path",
 			"variables",
 		))
 	assert.NoError(t, err)
-	assert.Equal(t, storageapi.VariablesComponentID, componentId)
+	assert.Equal(t, storageapi.VariablesComponentID, componentID)
 }
 
 func TestNamingMatchConfigRowPathNotMatched(t *testing.T) {

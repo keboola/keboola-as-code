@@ -34,13 +34,13 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			branch, err := storageapi.GetDefaultBranchRequest().Send(d.CommandCtx(), d.StorageApiClient())
+			branch, err := storageapi.GetDefaultBranchRequest().Send(d.CommandCtx(), d.StorageAPIClient())
 			if err != nil {
 				return errors.Errorf("cannot find default branch: %w", err)
 			}
 
 			// Get all Snowflake workspaces for the dialog
-			allWorkspaces, err := sandboxesapi.List(d.CommandCtx(), d.StorageApiClient(), d.SandboxesApiClient(), branch.ID)
+			allWorkspaces, err := sandboxesapi.List(d.CommandCtx(), d.StorageAPIClient(), d.SandboxesAPIClient(), branch.ID)
 			if err != nil {
 				return err
 			}

@@ -24,8 +24,8 @@ type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
 	Components() *model.ComponentsMap
-	StorageApiClient() client.Sender
-	SchedulerApiClient() client.Sender
+	StorageAPIClient() client.Sender
+	SchedulerAPIClient() client.Sender
 }
 
 func LoadStateOptions() loadState.Options {

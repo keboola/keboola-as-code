@@ -31,13 +31,13 @@ import (
 
 const (
 	ExpectedOutDirectory = "expected-out"
-	IdRegexp             = `^[a-zA-Z0-9\-]+$`
+	IDRegexp             = `^[a-zA-Z0-9\-]+$`
 	InputsFile           = "inputs.json"
 	LongDescriptionFile  = "description.md"
 	ReadmeFile           = "README.md"
 	SrcDirectory         = "src"
 	TestsDirectory       = "tests"
-	InstanceIdForTest    = "instance-id"
+	InstanceIDForTest    = "instance-id"
 )
 
 type (
@@ -106,15 +106,15 @@ func ParseInputValue(value interface{}, inputDef *templateInput.Input, isFilled 
 		}
 	}
 
-	return InputValue{Id: inputDef.Id, Value: value, Skipped: !isFilled}, nil
+	return InputValue{ID: inputDef.ID, Value: value, Skipped: !isFilled}, nil
 }
 
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
 	Components() *model.ComponentsMap
-	StorageApiClient() client.Sender
-	SchedulerApiClient() client.Sender
+	StorageAPIClient() client.Sender
+	SchedulerAPIClient() client.Sender
 }
 
 type _reference = model.TemplateRef
@@ -174,7 +174,7 @@ func New(ctx context.Context, reference model.TemplateRef, template repository.T
 	}
 
 	// Load inputs
-	out.inputs, err = LoadInputs(templateDir, loadCtx.JsonNetContext())
+	out.inputs, err = LoadInputs(templateDir, loadCtx.JSONNETContext())
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +361,7 @@ func (t *Template) evaluate(ctx Context) (tmpl *evaluatedTemplate, err error) {
 	defer telemetry.EndSpan(span, &err)
 
 	// Evaluate manifest
-	evaluatedManifest, err := t.manifestFile.Evaluate(ctx.JsonNetContext())
+	evaluatedManifest, err := t.manifestFile.Evaluate(ctx.JSONNETContext())
 	if err != nil {
 		return nil, err
 	}
@@ -414,7 +414,7 @@ func (c *evaluatedTemplate) MainConfig() (*model.TemplateMainConfig, error) {
 	if mainConfig == nil {
 		return nil, nil
 	}
-	return &model.TemplateMainConfig{ConfigId: mainConfig.Id, ComponentId: mainConfig.ComponentId}, nil
+	return &model.TemplateMainConfig{ConfigID: mainConfig.ID, ComponentID: mainConfig.ComponentID}, nil
 }
 
 func (t *Test) Name() string {
@@ -514,13 +514,13 @@ func replacePlaceholdersInManifest(prjState *project.State, tmplInst string) err
 		MustCompile(fmt.Sprintf(`"(?m)project": {\n    "id": %d,`, prjState.ProjectManifest().ProjectID())).
 		ReplaceAllString(file.Content, "\"project\": {\n    \"id\": __PROJECT_ID__,")
 	file.Content = regexpcache.
-		MustCompile(fmt.Sprintf(`"apiHost": "%s"`, prjState.ProjectManifest().ApiHost())).
+		MustCompile(fmt.Sprintf(`"apiHost": "%s"`, prjState.ProjectManifest().APIHost())).
 		ReplaceAllString(file.Content, `"apiHost": "__STORAGE_API_HOST__"`)
 	file.Content = regexpcache.
-		MustCompile(fmt.Sprintf(`"(?m)branches": \[\n    {\n      "id": %s`, prjState.MainBranch().Id.String())).
+		MustCompile(fmt.Sprintf(`"(?m)branches": \[\n    {\n      "id": %s`, prjState.MainBranch().ID.String())).
 		ReplaceAllString(file.Content, "\"branches\": [\n    {\n      \"id\": __MAIN_BRANCH_ID__")
 	file.Content = regexpcache.
-		MustCompile(fmt.Sprintf(`"branchId": %s`, prjState.MainBranch().Id.String())).
+		MustCompile(fmt.Sprintf(`"branchId": %s`, prjState.MainBranch().ID.String())).
 		ReplaceAllString(file.Content, `"branchId": __MAIN_BRANCH_ID__`)
 	file.Content = regexpcache.
 		MustCompile(tmplInst).

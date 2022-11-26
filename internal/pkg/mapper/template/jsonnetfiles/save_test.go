@@ -23,8 +23,8 @@ func TestJsonNetMapper_MapBeforeLocalSave(t *testing.T) {
 	// Some Json and markdown file
 	jsonContent := orderedmap.FromPairs([]orderedmap.Pair{{Key: "key", Value: "value"}})
 	recipe.Files.
-		Add(filesystem.NewJsonFile(`foo.json`, jsonContent)).
-		AddTag(model.FileTypeJson)
+		Add(filesystem.NewJSONFile(`foo.json`, jsonContent)).
+		AddTag(model.FileTypeJSON)
 	recipe.Files.
 		Add(filesystem.NewRawFile(`README.md`, `content`)).
 		AddTag(model.FileTypeMarkdown)
@@ -37,15 +37,15 @@ func TestJsonNetMapper_MapBeforeLocalSave(t *testing.T) {
 	assert.NoError(t, err)
 	expected := model.NewFilesToSave()
 	expected.
-		Add(filesystem.NewJsonNetFile(`foo.jsonnet`, expectedAst, nil)). // <<<<<<<
-		AddTag(model.FileTypeJsonNet)
+		Add(filesystem.NewJSONNETFile(`foo.jsonnet`, expectedAst, nil)). // <<<<<<<
+		AddTag(model.FileTypeJSONNET)
 	expected.
 		Add(filesystem.NewRawFile(`README.md`, `content`)).
 		AddTag(model.FileTypeMarkdown)
 	assert.Equal(t, expected, recipe.Files)
 
 	// JsonNet file content
-	f, err := recipe.Files.GetOneByTag(model.FileTypeJsonNet).ToRawFile()
+	f, err := recipe.Files.GetOneByTag(model.FileTypeJSONNET).ToRawFile()
 	assert.NoError(t, err)
 	assert.Equal(t, "{\n  key: \"value\",\n}\n", f.Content)
 }

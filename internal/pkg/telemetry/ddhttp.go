@@ -36,14 +36,14 @@ func DDTraceFactory() client.TraceFactory {
 			requestSpan, ctx = ddtracer.StartSpanFromContext(
 				c,
 				"kac.api.client.request",
-				ddtracer.ResourceName(strhelper.MustUrlPathUnescape(clientRequest.URL())),
+				ddtracer.ResourceName(strhelper.MustURLPathUnescape(clientRequest.URL())),
 				ddtracer.SpanType("kac.api.client"),
 				ddtracer.AnalyticsRate(1.0),
 			)
 
 			// Set tags
 			requestSpan.SetTag("kac.api.client.request.method", clientRequest.Method())
-			requestSpan.SetTag("kac.api.client.request.url", strhelper.MustUrlPathUnescape(clientRequest.URL()))
+			requestSpan.SetTag("kac.api.client.request.url", strhelper.MustURLPathUnescape(clientRequest.URL()))
 			requestSpan.SetTag("kac.api.client.request.result_type", resultType)
 			for k, v := range clientRequest.QueryParams() {
 				requestSpan.SetTag("kac.api.client.request.params.query."+k, v)
@@ -83,7 +83,7 @@ func DDTraceFactory() client.TraceFactory {
 				parsingSpan, _ = ddtracer.StartSpanFromContext(
 					ctx,
 					"kac.api.client.request.parsing",
-					ddtracer.ResourceName(strhelper.MustUrlPathUnescape(clientRequest.URL())),
+					ddtracer.ResourceName(strhelper.MustURLPathUnescape(clientRequest.URL())),
 					ddtracer.SpanType("kac.api.client"),
 				)
 			}
@@ -106,7 +106,7 @@ func DDTraceFactory() client.TraceFactory {
 			retryDelaySpan, _ = ddtracer.StartSpanFromContext(
 				ctx,
 				"kac.api.client.retry.delay",
-				ddtracer.ResourceName(strhelper.MustUrlPathUnescape(clientRequest.URL())),
+				ddtracer.ResourceName(strhelper.MustURLPathUnescape(clientRequest.URL())),
 				ddtracer.SpanType("kac.api.client"),
 				ddtracer.Tag("retry.attempt", attempt),
 				ddtracer.Tag("retry.delay_ms", delay.Milliseconds()),

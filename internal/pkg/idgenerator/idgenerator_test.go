@@ -10,12 +10,12 @@ import (
 
 func TestRequestId(t *testing.T) {
 	t.Parallel()
-	assert.Len(t, RequestId(), RequestIdLength)
+	assert.Len(t, RequestID(), RequestIDLength)
 }
 
 func TestTemplateInstanceId(t *testing.T) {
 	t.Parallel()
-	assert.Len(t, TemplateInstanceId(), TemplateInstanceIdLength)
+	assert.Len(t, TemplateInstanceID(), TemplateInstanceIDLength)
 }
 
 func TestEtcdNamespaceForE2ETest(t *testing.T) {

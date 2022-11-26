@@ -29,7 +29,7 @@ func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 	var files []filesystem.File
 	for _, file := range recipe.Files.All() {
 		var fileRaw *filesystem.RawFile
-		if f, ok := file.(*filesystem.JsonFile); ok {
+		if f, ok := file.(*filesystem.JSONFile); ok {
 			// Minify JSON
 			fileRaw = filesystem.NewRawFile(f.Path(), json.MustEncodeString(f.Content, false))
 			fileRaw.AddTag(f.AllTags()...)
@@ -56,55 +56,55 @@ func TestOrchestratorMapper_MapBeforeLocalSave(t *testing.T) {
 				`{"name":"Phase","dependsOn":[],"foo":"bar"}`,
 			).
 			AddTag(model.FileKindPhaseConfig).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.
 			NewRawFile(
 				phasesDir+`/001-phase/001-task-1/task.json`,
 				`{"name":"Task 1","enabled":true,"task":{"mode":"run","configPath":"extractor/target-config-1"},"continueOnFailure":false}`,
 			).
 			AddTag(model.FileKindTaskConfig).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.
 			NewRawFile(
 				phasesDir+`/001-phase/002-task-2/task.json`,
 				`{"name":"Task 2 - disabled","enabled":false,"task":{"mode":"run","configPath":"extractor/target-config-2"},"continueOnFailure":false}`,
 			).
 			AddTag(model.FileKindTaskConfig).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.
 			NewRawFile(
 				phasesDir+`/001-phase/003-task-3/task.json`,
 				`{"name":"Task 3 - disabled without configId","enabled":false,"task":{"mode":"run","componentId":"foo.bar2"},"continueOnFailure":false}`,
 			).
 			AddTag(model.FileKindTaskConfig).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.
 			NewRawFile(
 				phasesDir+`/002-phase-with-deps/phase.json`,
 				`{"name":"Phase With Deps","dependsOn":["001-phase"]}`,
 			).
 			AddTag(model.FileKindPhaseConfig).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.
 			NewRawFile(
 				phasesDir+`/002-phase-with-deps/001-task-4/task.json`,
 				`{"name":"Task 4","enabled":true,"task":{"mode":"run","configPath":"extractor/target-config-3"},"continueOnFailure":false}`,
 			).
 			AddTag(model.FileKindTaskConfig).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.
 			NewRawFile(
 				phasesDir+`/002-phase-with-deps/002-task-5/task.json`,
 				`{"name":"Task 5 - configData","enabled":true,"task":{"mode":"run","configData":{"params":"value"},"componentId":"foo.bar3"},"continueOnFailure":false}`,
 			).
 			AddTag(model.FileKindTaskConfig).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.NewRawFile(configDir+`/meta.json`, `{"name":"My Orchestration","isDisabled":false}`).
 			AddTag(model.FileKindObjectMeta).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.NewRawFile(configDir+`/config.json`, `{}`).
 			AddTag(model.FileKindObjectConfig).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.NewRawFile(configDir+`/description.md`, "\n").
 			AddTag(model.FileKindObjectDescription).
 			AddTag(model.FileTypeMarkdown),

@@ -17,7 +17,7 @@ func (m *schedulerMapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.
 	}
 
 	// Check component type
-	component, err := m.state.Components().GetOrErr(object.ComponentId)
+	component, err := m.state.Components().GetOrErr(object.ComponentID)
 	if err != nil {
 		return err
 	}
@@ -38,38 +38,38 @@ func (m *schedulerMapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.
 	}
 
 	// Component ID must be present
-	componentIdRaw, found := target.Get(model.SchedulerTargetComponentIdKey)
+	componentIDRaw, found := target.Get(model.SchedulerTargetComponentIDKey)
 	if !found {
 		return nil
 	}
 
 	// Component ID must be string
-	componentId, ok := componentIdRaw.(string)
+	componentID, ok := componentIDRaw.(string)
 	if !ok {
 		return nil
 	}
 
 	// Configuration ID must be present
-	configurationIdRaw, found := target.Get(model.SchedulerTargetConfigurationIdKey)
+	configurationIDRaw, found := target.Get(model.SchedulerTargetConfigurationIDKey)
 	if !found {
 		return nil
 	}
 
 	// Configuration ID must be string
-	configurationId, ok := configurationIdRaw.(string)
+	configurationID, ok := configurationIDRaw.(string)
 	if !ok {
 		return nil
 	}
 
 	// Create relation
 	object.AddRelation(&model.SchedulerForRelation{
-		ComponentId: storageapi.ComponentID(componentId),
-		ConfigId:    storageapi.ConfigID(configurationId),
+		ComponentID: storageapi.ComponentID(componentID),
+		ConfigID:    storageapi.ConfigID(configurationID),
 	})
 
 	// Remove component and configuration ID
-	target.Delete(model.SchedulerTargetComponentIdKey)
-	target.Delete(model.SchedulerTargetConfigurationIdKey)
+	target.Delete(model.SchedulerTargetComponentIDKey)
+	target.Delete(model.SchedulerTargetConfigurationIDKey)
 	object.Content.Set(model.SchedulerTargetKey, target)
 	return nil
 }

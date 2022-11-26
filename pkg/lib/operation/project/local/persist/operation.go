@@ -23,7 +23,7 @@ type Options struct {
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageApiClient() client.Sender
+	StorageAPIClient() client.Sender
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -33,7 +33,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	logger := d.Logger()
 
 	// Get Storage API
-	storageApiClient := d.StorageApiClient()
+	storageAPIClient := d.StorageAPIClient()
 
 	// Get plan
 	plan, err := persist.NewPlan(projectState.State())
@@ -52,7 +52,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		}
 
 		// Invoke
-		if err := plan.Invoke(ctx, logger, storageApiClient, projectState.State()); err != nil {
+		if err := plan.Invoke(ctx, logger, storageAPIClient, projectState.State()); err != nil {
 			return errors.PrefixError(err, "cannot persist objects")
 		}
 

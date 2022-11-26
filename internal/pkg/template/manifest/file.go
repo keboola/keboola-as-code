@@ -91,8 +91,8 @@ func (f *file) records() []model.ObjectManifest {
 	for _, config := range f.Configs {
 		out = append(out, &config.ConfigManifest)
 		for _, row := range config.Rows {
-			row.ComponentId = config.ComponentId
-			row.ConfigId = config.Id
+			row.ComponentID = config.ComponentID
+			row.ConfigID = config.ID
 			out = append(out, row)
 		}
 	}

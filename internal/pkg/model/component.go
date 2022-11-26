@@ -20,15 +20,15 @@ const ComponentsUpdateTimeout = 20 * time.Second
 type ComponentsProvider struct {
 	updateLock       *sync.RWMutex
 	logger           log.Logger
-	storageApiClient client.Sender
+	storageAPIClient client.Sender
 	value            *ComponentsMap
 }
 
-func NewComponentsProvider(index *storageapi.IndexComponents, logger log.Logger, storageApiClient client.Sender) *ComponentsProvider {
+func NewComponentsProvider(index *storageapi.IndexComponents, logger log.Logger, storageAPIClient client.Sender) *ComponentsProvider {
 	return &ComponentsProvider{
 		updateLock:       &sync.RWMutex{},
 		logger:           logger,
-		storageApiClient: storageApiClient,
+		storageAPIClient: storageAPIClient,
 		value:            NewComponentsMap(index.Components),
 	}
 }
@@ -68,7 +68,7 @@ func (p *ComponentsProvider) Update(ctx context.Context) error {
 }
 
 func (p *ComponentsProvider) index(ctx context.Context) (*storageapi.IndexComponents, error) {
-	return storageapi.IndexComponentsRequest().Send(ctx, p.storageApiClient)
+	return storageapi.IndexComponentsRequest().Send(ctx, p.storageAPIClient)
 }
 
 type (
@@ -76,7 +76,7 @@ type (
 	ComponentsMap struct {
 		componentsMap
 		components                  storageapi.Components
-		defaultBucketsByComponentId map[storageapi.ComponentID]string
+		defaultBucketsByComponentID map[storageapi.ComponentID]string
 		defaultBucketsByPrefix      map[string]storageapi.ComponentID
 		usedLock                    *sync.Mutex
 		used                        map[storageapi.ComponentID]bool
@@ -87,7 +87,7 @@ func NewComponentsMap(components storageapi.Components) *ComponentsMap {
 	v := &ComponentsMap{
 		componentsMap:               components.ToMap(),
 		components:                  components,
-		defaultBucketsByComponentId: make(map[storageapi.ComponentID]string),
+		defaultBucketsByComponentID: make(map[storageapi.ComponentID]string),
 		defaultBucketsByPrefix:      make(map[string]storageapi.ComponentID),
 		used:                        make(map[storageapi.ComponentID]bool),
 		usedLock:                    &sync.Mutex{},
@@ -139,39 +139,39 @@ func (m ComponentsMap) Used() storageapi.Components {
 	return out
 }
 
-func (m ComponentsMap) GetDefaultBucketByTableId(tableId string) (storageapi.ComponentID, storageapi.ConfigID, bool) {
-	dotIndex := strings.LastIndex(tableId, ".")
+func (m ComponentsMap) GetDefaultBucketByTableID(tableID string) (storageapi.ComponentID, storageapi.ConfigID, bool) {
+	dotIndex := strings.LastIndex(tableID, ".")
 	if dotIndex < 1 {
 		return "", "", false
 	}
 
-	bucketId := tableId[0:dotIndex]
-	if !strings.Contains(bucketId, "-") {
+	bucketID := tableID[0:dotIndex]
+	if !strings.Contains(bucketID, "-") {
 		return "", "", false
 	}
 
-	bucketPrefix := bucketId[0 : strings.LastIndex(bucketId, "-")+1]
-	configId := storageapi.ConfigID(bucketId[strings.LastIndex(bucketId, "-")+1:])
+	bucketPrefix := bucketID[0 : strings.LastIndex(bucketID, "-")+1]
+	configID := storageapi.ConfigID(bucketID[strings.LastIndex(bucketID, "-")+1:])
 
-	componentId, found := m.defaultBucketsByPrefix[bucketPrefix]
+	componentID, found := m.defaultBucketsByPrefix[bucketPrefix]
 	if !found {
 		return "", "", false
 	}
 
-	return componentId, configId, len(componentId) > 0 && len(configId) > 0
+	return componentID, configID, len(componentID) > 0 && len(configID) > 0
 }
 
-func (m ComponentsMap) GetDefaultBucketByComponentId(componentId storageapi.ComponentID, configId storageapi.ConfigID) (string, bool) {
-	defaultBucketPrefix, found := m.defaultBucketsByComponentId[componentId]
+func (m ComponentsMap) GetDefaultBucketByComponentID(componentID storageapi.ComponentID, configID storageapi.ConfigID) (string, bool) {
+	defaultBucketPrefix, found := m.defaultBucketsByComponentID[componentID]
 	if !found {
 		return "", false
 	}
-	return fmt.Sprintf("%s%s", defaultBucketPrefix, configId), true
+	return fmt.Sprintf("%s%s", defaultBucketPrefix, configID), true
 }
 
 func (m ComponentsMap) addDefaultBucketPrefix(component *storageapi.Component) {
 	r := regexpcache.MustCompile(`(?i)[^a-zA-Z0-9-]`)
 	bucketPrefix := fmt.Sprintf(`%s.c-%s-`, component.Data.DefaultBucketStage, r.ReplaceAllString(component.ID.String(), `-`))
-	m.defaultBucketsByComponentId[component.ID] = bucketPrefix
+	m.defaultBucketsByComponentID[component.ID] = bucketPrefix
 	m.defaultBucketsByPrefix[bucketPrefix] = component.ID
 }

@@ -36,7 +36,7 @@ func Run(ctx context.Context, def model.TemplateRepository, d dependencies) (rep
 		return nil, errors.Errorf(`cannot checkout out repository "%s": %w`, def, err)
 	} else {
 		span.SetAttributes(attribute.String("kac.repository.id", repo.String()))
-		span.SetAttributes(attribute.String("kac.repository.url", repo.Url()))
+		span.SetAttributes(attribute.String("kac.repository.url", repo.URL()))
 		span.SetAttributes(attribute.String("kac.repository.ref", repo.Ref()))
 		span.SetAttributes(attribute.String("kac.repository.oldHash", ""))
 		span.SetAttributes(attribute.String("kac.repository.newHash", repo.CommitHash()))

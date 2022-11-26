@@ -20,8 +20,8 @@ type Manifest = projectManifest.Manifest
 
 type InvalidManifestError = projectManifest.InvalidManifestError
 
-func NewManifest(projectId int, apiHost string) *Manifest {
-	return projectManifest.New(projectId, apiHost)
+func NewManifest(projectID int, apiHost string) *Manifest {
+	return projectManifest.New(projectID, apiHost)
 }
 
 func LoadManifest(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
@@ -32,8 +32,8 @@ type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
 	Components() *model.ComponentsMap
-	StorageApiClient() client.Sender
-	SchedulerApiClient() client.Sender
+	StorageAPIClient() client.Sender
+	SchedulerAPIClient() client.Sender
 }
 
 type Project struct {

@@ -22,7 +22,7 @@ func (s *service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *secur
 		// Add tags to DD span
 		if span, ok := tracer.SpanFromContext(ctx); ok {
 			span.SetTag("kac.project.id", projectDeps.ProjectID())
-			span.SetTag("kac.storage.token.id", projectDeps.StorageApiTokenID())
+			span.SetTag("kac.storage.token.id", projectDeps.StorageAPITokenID())
 		}
 
 		// Update context

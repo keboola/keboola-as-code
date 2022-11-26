@@ -47,6 +47,6 @@ func (v base) Logger() log.Logger {
 	return v.logger
 }
 
-func (v base) HttpClient() client.Client {
+func (v base) HTTPClient() client.Client {
 	return v.httpClient
 }

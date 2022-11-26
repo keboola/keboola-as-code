@@ -28,16 +28,16 @@ func NewContext(ctx context.Context, objectsRoot filesystem.Fs, components *mode
 	}
 
 	// Register JsonNet functions
-	c.registerJsonNetFunctions()
+	c.registerJSONNETFunctions()
 
 	return c
 }
 
-func (c *Context) JsonNetContext() *jsonnet.Context {
+func (c *Context) JSONNETContext() *jsonnet.Context {
 	return c.jsonNetCtx
 }
 
-func (c *Context) registerJsonNetFunctions() {
+func (c *Context) registerJSONNETFunctions() {
 	c.jsonNetCtx.NativeFunctionWithAlias(function.ComponentIsAvailable(c.components))
-	c.jsonNetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentId(c.components))
+	c.jsonNetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentID(c.components))
 }

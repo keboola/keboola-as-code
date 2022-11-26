@@ -60,11 +60,11 @@ func TestPersistNewConfig(t *testing.T) {
 					"extractor/ex-generic-v2/new-config",
 				),
 				Key: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: "ex-generic-v2",
+					BranchID:    111,
+					ComponentID: "ex-generic-v2",
 				},
 				ParentKey: model.BranchKey{
-					Id: 111,
+					ID: 111,
 				},
 			},
 		},
@@ -72,9 +72,9 @@ func TestPersistNewConfig(t *testing.T) {
 			&model.ConfigState{
 				ConfigManifest: &model.ConfigManifest{
 					ConfigKey: model.ConfigKey{
-						BranchId:    111,
-						ComponentId: "ex-generic-v2",
-						Id:          "1001",
+						BranchID:    111,
+						ComponentID: "ex-generic-v2",
+						ID:          "1001",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -91,9 +91,9 @@ func TestPersistNewConfig(t *testing.T) {
 				Remote: nil,
 				Local: &model.Config{
 					ConfigKey: model.ConfigKey{
-						BranchId:    111,
-						ComponentId: "ex-generic-v2",
-						Id:          "1001",
+						BranchID:    111,
+						ComponentID: "ex-generic-v2",
+						ID:          "1001",
 					},
 					Name:        "foo",
 					Description: "bar",
@@ -135,11 +135,11 @@ func TestPersistNewConfigRow(t *testing.T) {
 					"extractor/keboola.ex-db-mysql/new-config",
 				),
 				Key: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: "keboola.ex-db-mysql",
+					BranchID:    111,
+					ComponentID: "keboola.ex-db-mysql",
 				},
 				ParentKey: model.BranchKey{
-					Id: 111,
+					ID: 111,
 				},
 			},
 			&newObjectAction{
@@ -148,12 +148,12 @@ func TestPersistNewConfigRow(t *testing.T) {
 					"rows/some-row",
 				),
 				Key: model.ConfigRowKey{
-					BranchId:    111,
-					ComponentId: "keboola.ex-db-mysql",
+					BranchID:    111,
+					ComponentID: "keboola.ex-db-mysql",
 				},
 				ParentKey: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: "keboola.ex-db-mysql",
+					BranchID:    111,
+					ComponentID: "keboola.ex-db-mysql",
 				},
 			},
 		},
@@ -161,9 +161,9 @@ func TestPersistNewConfigRow(t *testing.T) {
 			&model.ConfigState{
 				ConfigManifest: &model.ConfigManifest{
 					ConfigKey: model.ConfigKey{
-						BranchId:    111,
-						ComponentId: "keboola.ex-db-mysql",
-						Id:          "1001",
+						BranchID:    111,
+						ComponentID: "keboola.ex-db-mysql",
+						ID:          "1001",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -180,9 +180,9 @@ func TestPersistNewConfigRow(t *testing.T) {
 				Remote: nil,
 				Local: &model.Config{
 					ConfigKey: model.ConfigKey{
-						BranchId:    111,
-						ComponentId: "keboola.ex-db-mysql",
-						Id:          "1001",
+						BranchID:    111,
+						ComponentID: "keboola.ex-db-mysql",
+						ID:          "1001",
 					},
 					Name:        "foo1",
 					Description: "bar1",
@@ -198,10 +198,10 @@ func TestPersistNewConfigRow(t *testing.T) {
 			&model.ConfigRowState{
 				ConfigRowManifest: &model.ConfigRowManifest{
 					ConfigRowKey: model.ConfigRowKey{
-						BranchId:    111,
-						ComponentId: "keboola.ex-db-mysql",
-						ConfigId:    "1001",
-						Id:          "1002",
+						BranchID:    111,
+						ComponentID: "keboola.ex-db-mysql",
+						ConfigID:    "1001",
+						ID:          "1002",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -218,10 +218,10 @@ func TestPersistNewConfigRow(t *testing.T) {
 				Remote: nil,
 				Local: &model.ConfigRow{
 					ConfigRowKey: model.ConfigRowKey{
-						BranchId:    111,
-						ComponentId: "keboola.ex-db-mysql",
-						ConfigId:    "1001",
-						Id:          "1002",
+						BranchID:    111,
+						ComponentID: "keboola.ex-db-mysql",
+						ConfigID:    "1001",
+						ID:          "1002",
 					},
 					Name:        "foo2",
 					Description: "bar2",
@@ -247,9 +247,9 @@ func TestPersistDeleted(t *testing.T) {
 			&deleteManifestRecordAction{
 				ObjectManifest: &model.ConfigManifest{
 					ConfigKey: model.ConfigKey{
-						BranchId:    111,
-						ComponentId: "keboola.ex-db-mysql",
-						Id:          "101",
+						BranchID:    111,
+						ComponentID: "keboola.ex-db-mysql",
+						ID:          "101",
 					},
 					RecordState: model.RecordState{
 						Invalid:   true,
@@ -267,10 +267,10 @@ func TestPersistDeleted(t *testing.T) {
 			&deleteManifestRecordAction{
 				ObjectManifest: &model.ConfigRowManifest{
 					ConfigRowKey: model.ConfigRowKey{
-						BranchId:    111,
-						ComponentId: "keboola.ex-db-mysql",
-						ConfigId:    "101",
-						Id:          "202",
+						BranchID:    111,
+						ComponentID: "keboola.ex-db-mysql",
+						ConfigID:    "101",
+						ID:          "202",
 					},
 					RecordState: model.RecordState{
 						Invalid:   true,
@@ -288,15 +288,15 @@ func TestPersistDeleted(t *testing.T) {
 		},
 		expectedMissing: []model.Key{
 			model.ConfigKey{
-				BranchId:    111,
-				ComponentId: "keboola.ex-db-mysql",
-				Id:          "101",
+				BranchID:    111,
+				ComponentID: "keboola.ex-db-mysql",
+				ID:          "101",
 			},
 			model.ConfigRowKey{
-				BranchId:    111,
-				ComponentId: "keboola.ex-db-mysql",
-				ConfigId:    "101",
-				Id:          "202",
+				BranchID:    111,
+				ComponentID: "keboola.ex-db-mysql",
+				ConfigID:    "101",
+				ID:          "202",
 			},
 		},
 	}
@@ -328,11 +328,11 @@ func TestPersistSharedCode(t *testing.T) {
 					"_shared/keboola.python-transformation-v2",
 				),
 				Key: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: storageapi.SharedCodeComponentID,
+					BranchID:    111,
+					ComponentID: storageapi.SharedCodeComponentID,
 				},
 				ParentKey: model.BranchKey{
-					Id: 111,
+					ID: 111,
 				},
 			},
 			&newObjectAction{
@@ -341,12 +341,12 @@ func TestPersistSharedCode(t *testing.T) {
 					"codes/my-code",
 				),
 				Key: model.ConfigRowKey{
-					BranchId:    111,
-					ComponentId: storageapi.SharedCodeComponentID,
+					BranchID:    111,
+					ComponentID: storageapi.SharedCodeComponentID,
 				},
 				ParentKey: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: storageapi.SharedCodeComponentID,
+					BranchID:    111,
+					ComponentID: storageapi.SharedCodeComponentID,
 				},
 			},
 		},
@@ -354,9 +354,9 @@ func TestPersistSharedCode(t *testing.T) {
 			&model.ConfigState{
 				ConfigManifest: &model.ConfigManifest{
 					ConfigKey: model.ConfigKey{
-						BranchId:    111,
-						ComponentId: storageapi.SharedCodeComponentID,
-						Id:          "1001",
+						BranchID:    111,
+						ComponentID: storageapi.SharedCodeComponentID,
+						ID:          "1001",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -373,9 +373,9 @@ func TestPersistSharedCode(t *testing.T) {
 				Remote: nil,
 				Local: &model.Config{
 					ConfigKey: model.ConfigKey{
-						BranchId:    111,
-						ComponentId: storageapi.SharedCodeComponentID,
-						Id:          "1001",
+						BranchID:    111,
+						ComponentID: storageapi.SharedCodeComponentID,
+						ID:          "1001",
 					},
 					Name:        "Shared Codes",
 					Description: "foo bar",
@@ -389,10 +389,10 @@ func TestPersistSharedCode(t *testing.T) {
 			&model.ConfigRowState{
 				ConfigRowManifest: &model.ConfigRowManifest{
 					ConfigRowKey: model.ConfigRowKey{
-						BranchId:    111,
-						ComponentId: storageapi.SharedCodeComponentID,
-						ConfigId:    "1001",
-						Id:          "1002",
+						BranchID:    111,
+						ComponentID: storageapi.SharedCodeComponentID,
+						ConfigID:    "1001",
+						ID:          "1002",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -409,10 +409,10 @@ func TestPersistSharedCode(t *testing.T) {
 				Remote: nil,
 				Local: &model.ConfigRow{
 					ConfigRowKey: model.ConfigRowKey{
-						BranchId:    111,
-						ComponentId: storageapi.SharedCodeComponentID,
-						ConfigId:    "1001",
-						Id:          "1002",
+						BranchID:    111,
+						ComponentID: storageapi.SharedCodeComponentID,
+						ConfigID:    "1001",
+						ID:          "1002",
 					},
 					Name:        "My code",
 					Description: "test code",
@@ -433,13 +433,13 @@ func TestPersistSharedCode(t *testing.T) {
 func TestPersistSharedCodeWithVariables(t *testing.T) {
 	expectedCodeRelations := model.Relations{
 		&model.SharedCodeVariablesFromRelation{
-			VariablesId: `1003`,
+			VariablesID: `1003`,
 		},
 	}
 	expectedVariablesRelations := model.Relations{
 		&model.SharedCodeVariablesForRelation{
-			ConfigId: `1001`,
-			RowId:    `1002`,
+			ConfigID: `1001`,
+			RowID:    `1002`,
 		},
 	}
 
@@ -471,11 +471,11 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					"_shared/keboola.python-transformation-v2",
 				),
 				Key: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: storageapi.SharedCodeComponentID,
+					BranchID:    111,
+					ComponentID: storageapi.SharedCodeComponentID,
 				},
 				ParentKey: model.BranchKey{
-					Id: 111,
+					ID: 111,
 				},
 			},
 			&newObjectAction{
@@ -484,12 +484,12 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					"codes/my-code",
 				),
 				Key: model.ConfigRowKey{
-					BranchId:    111,
-					ComponentId: storageapi.SharedCodeComponentID,
+					BranchID:    111,
+					ComponentID: storageapi.SharedCodeComponentID,
 				},
 				ParentKey: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: storageapi.SharedCodeComponentID,
+					BranchID:    111,
+					ComponentID: storageapi.SharedCodeComponentID,
 				},
 			},
 			&newObjectAction{
@@ -498,12 +498,12 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 					"variables",
 				),
 				Key: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: storageapi.VariablesComponentID,
+					BranchID:    111,
+					ComponentID: storageapi.VariablesComponentID,
 				},
 				ParentKey: model.ConfigRowKey{
-					BranchId:    111,
-					ComponentId: storageapi.SharedCodeComponentID,
+					BranchID:    111,
+					ComponentID: storageapi.SharedCodeComponentID,
 				},
 			},
 		},
@@ -511,9 +511,9 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 			&model.ConfigState{
 				ConfigManifest: &model.ConfigManifest{
 					ConfigKey: model.ConfigKey{
-						BranchId:    111,
-						ComponentId: storageapi.SharedCodeComponentID,
-						Id:          "1001",
+						BranchID:    111,
+						ComponentID: storageapi.SharedCodeComponentID,
+						ID:          "1001",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -530,9 +530,9 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 				Remote: nil,
 				Local: &model.Config{
 					ConfigKey: model.ConfigKey{
-						BranchId:    111,
-						ComponentId: storageapi.SharedCodeComponentID,
-						Id:          "1001",
+						BranchID:    111,
+						ComponentID: storageapi.SharedCodeComponentID,
+						ID:          "1001",
 					},
 					Name:        "Shared Codes",
 					Description: "foo bar",
@@ -546,10 +546,10 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 			&model.ConfigRowState{
 				ConfigRowManifest: &model.ConfigRowManifest{
 					ConfigRowKey: model.ConfigRowKey{
-						BranchId:    111,
-						ComponentId: storageapi.SharedCodeComponentID,
-						ConfigId:    "1001",
-						Id:          "1002",
+						BranchID:    111,
+						ComponentID: storageapi.SharedCodeComponentID,
+						ConfigID:    "1001",
+						ID:          "1002",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -566,10 +566,10 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 				Remote: nil,
 				Local: &model.ConfigRow{
 					ConfigRowKey: model.ConfigRowKey{
-						BranchId:    111,
-						ComponentId: storageapi.SharedCodeComponentID,
-						ConfigId:    "1001",
-						Id:          "1002",
+						BranchID:    111,
+						ComponentID: storageapi.SharedCodeComponentID,
+						ConfigID:    "1001",
+						ID:          "1002",
 					},
 					Name:        "My code",
 					Description: "test code",
@@ -588,9 +588,9 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 			&model.ConfigState{
 				ConfigManifest: &model.ConfigManifest{
 					ConfigKey: model.ConfigKey{
-						BranchId:    111,
-						ComponentId: storageapi.VariablesComponentID,
-						Id:          "1003",
+						BranchID:    111,
+						ComponentID: storageapi.VariablesComponentID,
+						ID:          "1003",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -608,9 +608,9 @@ func TestPersistSharedCodeWithVariables(t *testing.T) {
 				Remote: nil,
 				Local: &model.Config{
 					ConfigKey: model.ConfigKey{
-						BranchId:    111,
-						ComponentId: storageapi.VariablesComponentID,
-						Id:          "1003",
+						BranchID:    111,
+						ComponentID: storageapi.VariablesComponentID,
+						ID:          "1003",
 					},
 					Name:        "Shared Code Variables",
 					Description: "test fixture",
@@ -655,8 +655,8 @@ func TestPersistVariables(t *testing.T) {
 
 	expectedConfigRelations := model.Relations{
 		&model.VariablesForRelation{
-			ComponentId: `ex-generic-v2`,
-			ConfigId:    `456`,
+			ComponentID: `ex-generic-v2`,
+			ConfigID:    `456`,
 		},
 	}
 	expectedRowRelations := model.Relations{
@@ -684,13 +684,13 @@ func TestPersistVariables(t *testing.T) {
 					"variables",
 				),
 				Key: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: storageapi.VariablesComponentID,
+					BranchID:    111,
+					ComponentID: storageapi.VariablesComponentID,
 				},
 				ParentKey: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: `ex-generic-v2`,
-					Id:          `456`,
+					BranchID:    111,
+					ComponentID: `ex-generic-v2`,
+					ID:          `456`,
 				},
 			},
 			&newObjectAction{
@@ -699,12 +699,12 @@ func TestPersistVariables(t *testing.T) {
 					"values/default",
 				),
 				Key: model.ConfigRowKey{
-					BranchId:    111,
-					ComponentId: storageapi.VariablesComponentID,
+					BranchID:    111,
+					ComponentID: storageapi.VariablesComponentID,
 				},
 				ParentKey: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: storageapi.VariablesComponentID,
+					BranchID:    111,
+					ComponentID: storageapi.VariablesComponentID,
 				},
 			},
 		},
@@ -712,9 +712,9 @@ func TestPersistVariables(t *testing.T) {
 			&model.ConfigState{
 				ConfigManifest: &model.ConfigManifest{
 					ConfigKey: model.ConfigKey{
-						BranchId:    111,
-						ComponentId: storageapi.VariablesComponentID,
-						Id:          "1001",
+						BranchID:    111,
+						ComponentID: storageapi.VariablesComponentID,
+						ID:          "1001",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -732,9 +732,9 @@ func TestPersistVariables(t *testing.T) {
 				Remote: nil,
 				Local: &model.Config{
 					ConfigKey: model.ConfigKey{
-						BranchId:    111,
-						ComponentId: storageapi.VariablesComponentID,
-						Id:          "1001",
+						BranchID:    111,
+						ComponentID: storageapi.VariablesComponentID,
+						ID:          "1001",
 					},
 					Name:        "Variables",
 					Description: "test1",
@@ -762,10 +762,10 @@ func TestPersistVariables(t *testing.T) {
 			&model.ConfigRowState{
 				ConfigRowManifest: &model.ConfigRowManifest{
 					ConfigRowKey: model.ConfigRowKey{
-						BranchId:    111,
-						ComponentId: storageapi.VariablesComponentID,
-						ConfigId:    "1001",
-						Id:          "1002",
+						BranchID:    111,
+						ComponentID: storageapi.VariablesComponentID,
+						ConfigID:    "1001",
+						ID:          "1002",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -783,10 +783,10 @@ func TestPersistVariables(t *testing.T) {
 				Remote: nil,
 				Local: &model.ConfigRow{
 					ConfigRowKey: model.ConfigRowKey{
-						BranchId:    111,
-						ComponentId: storageapi.VariablesComponentID,
-						ConfigId:    "1001",
-						Id:          "1002",
+						BranchID:    111,
+						ComponentID: storageapi.VariablesComponentID,
+						ConfigID:    "1001",
+						ID:          "1002",
 					},
 					Name:        "Default values",
 					Description: "test2",
@@ -820,8 +820,8 @@ func TestPersistScheduler(t *testing.T) {
 
 	expectedRelations := model.Relations{
 		&model.SchedulerForRelation{
-			ComponentId: `ex-generic-v2`,
-			ConfigId:    `456`,
+			ComponentID: `ex-generic-v2`,
+			ConfigID:    `456`,
 		},
 	}
 
@@ -857,13 +857,13 @@ func TestPersistScheduler(t *testing.T) {
 					"schedules/my-scheduler",
 				),
 				Key: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: storageapi.SchedulerComponentID,
+					BranchID:    111,
+					ComponentID: storageapi.SchedulerComponentID,
 				},
 				ParentKey: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: `ex-generic-v2`,
-					Id:          `456`,
+					BranchID:    111,
+					ComponentID: `ex-generic-v2`,
+					ID:          `456`,
 				},
 			},
 		},
@@ -871,9 +871,9 @@ func TestPersistScheduler(t *testing.T) {
 			&model.ConfigState{
 				ConfigManifest: &model.ConfigManifest{
 					ConfigKey: model.ConfigKey{
-						BranchId:    111,
-						ComponentId: storageapi.SchedulerComponentID,
-						Id:          "1001",
+						BranchID:    111,
+						ComponentID: storageapi.SchedulerComponentID,
+						ID:          "1001",
 					},
 					RecordState: model.RecordState{
 						Invalid:   false,
@@ -891,9 +891,9 @@ func TestPersistScheduler(t *testing.T) {
 				Remote: nil,
 				Local: &model.Config{
 					ConfigKey: model.ConfigKey{
-						BranchId:    111,
-						ComponentId: storageapi.SchedulerComponentID,
-						Id:          "1001",
+						BranchID:    111,
+						ComponentID: storageapi.SchedulerComponentID,
+						ID:          "1001",
 					},
 					Name:        "My Scheduler",
 					Description: "",
@@ -931,7 +931,7 @@ func (tc *testCase) run(t *testing.T) {
 		assert.NoError(t, err)
 		ticketResponses = append(ticketResponses, response)
 	}
-	d.MockedHttpTransport().RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
+	d.MockedHTTPTransport().RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
 
 	// Load state
 	projectState, err := d.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true, IgnoreNotFoundErr: true}, d)
@@ -965,10 +965,10 @@ func (tc *testCase) run(t *testing.T) {
 	// Invoke
 	plan, err = NewPlan(projectState.State()) // plan with callbacks
 	assert.NoError(t, err)
-	assert.NoError(t, plan.Invoke(context.Background(), d.Logger(), d.StorageApiClient(), projectState.State()))
+	assert.NoError(t, plan.Invoke(context.Background(), d.Logger(), d.StorageAPIClient(), projectState.State()))
 
 	// Assert new IDs requests count
-	assert.Equal(t, tc.expectedNewIds, d.MockedHttpTransport().GetCallCountInfo()["POST =~/storage/tickets"])
+	assert.Equal(t, tc.expectedNewIds, d.MockedHTTPTransport().GetCallCountInfo()["POST =~/storage/tickets"])
 
 	// Assert state after
 	assert.Empty(t, projectState.UntrackedPaths())

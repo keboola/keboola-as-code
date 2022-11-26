@@ -16,11 +16,11 @@ func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
 
-	variablesConfigId := `123456`
-	valuesConfigRowId := `456789`
+	variablesConfigID := `123456`
+	valuesConfigRowID := `456789`
 	content := orderedmap.New()
-	content.Set(model.VariablesIdContentKey, variablesConfigId)
-	content.Set(model.VariablesValuesIdContentKey, valuesConfigRowId)
+	content.Set(model.VariablesIDContentKey, variablesConfigID)
+	content.Set(model.VariablesValuesIDContentKey, valuesConfigRowID)
 	object := &model.Config{Content: content}
 	recipe := model.NewRemoteLoadRecipe(&model.ConfigManifest{}, object)
 
@@ -32,14 +32,14 @@ func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 	// Internal object has new relation + content without variables ID
 	assert.Equal(t, model.Relations{
 		&model.VariablesFromRelation{
-			VariablesId: storageapi.ConfigID(variablesConfigId),
+			VariablesID: storageapi.ConfigID(variablesConfigID),
 		},
 		&model.VariablesValuesFromRelation{
-			VariablesValuesId: storageapi.RowID(valuesConfigRowId),
+			VariablesValuesID: storageapi.RowID(valuesConfigRowID),
 		},
 	}, object.Relations)
-	_, found := object.Content.Get(model.VariablesIdContentKey)
+	_, found := object.Content.Get(model.VariablesIDContentKey)
 	assert.False(t, found)
-	_, found = object.Content.Get(model.VariablesValuesIdContentKey)
+	_, found = object.Content.Get(model.VariablesValuesIDContentKey)
 	assert.False(t, found)
 }

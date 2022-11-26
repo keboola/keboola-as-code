@@ -94,7 +94,7 @@ func (w *localWriter) generateCodeFiles(code *model.Code) {
 
 	// Create code file
 	w.Files.
-		Add(filesystem.NewRawFile(w.NamingGenerator().CodeFilePath(code), code.Scripts.String(code.ComponentId))).
+		Add(filesystem.NewRawFile(w.NamingGenerator().CodeFilePath(code), code.Scripts.String(code.ComponentID))).
 		SetDescription(`code`).
 		AddTag(model.FileTypeOther).
 		AddTag(model.FileKindNativeCode)
@@ -102,8 +102,8 @@ func (w *localWriter) generateCodeFiles(code *model.Code) {
 
 func (w *localWriter) createMetadataFile(path, desc, tag string, content *orderedmap.OrderedMap) {
 	w.Files.
-		Add(filesystem.NewJsonFile(path, content)).
+		Add(filesystem.NewJSONFile(path, content)).
 		SetDescription(desc).
-		AddTag(model.FileTypeJson).
+		AddTag(model.FileTypeJSON).
 		AddTag(tag)
 }

@@ -15,18 +15,18 @@ const FileDefCtxKey = ctxKey("fileDef")
 
 func (m *jsonNetMapper) LoadLocalFile(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
 	// Load JsonNet file instead of Json file
-	if def.HasTag(model.FileTypeJson) {
+	if def.HasTag(model.FileTypeJSON) {
 		// Modify metadata
-		def.RemoveTag(model.FileTypeJson)
-		def.AddTag(model.FileTypeJsonNet)
+		def.RemoveTag(model.FileTypeJSON)
+		def.AddTag(model.FileTypeJSONNET)
 		def.SetPath(strings.TrimSuffix(def.Path(), `.json`) + `.jsonnet`)
 
 		// Load JsonNet file
-		f, err := next(def, filesystem.FileTypeJsonNet)
+		f, err := next(def, filesystem.FileTypeJSONNET)
 		if err != nil {
 			return nil, err
 		}
-		jsonNetFile := f.(*filesystem.JsonNetFile)
+		jsonNetFile := f.(*filesystem.JSONNETFile)
 
 		// Set context (ctx, variables, ...)
 		ctx := m.jsonNetCtx.Ctx()
@@ -37,8 +37,8 @@ func (m *jsonNetMapper) LoadLocalFile(def *filesystem.FileDef, fileType filesyst
 		switch fileType {
 		case filesystem.FileTypeRaw:
 			return jsonNetFile.ToRawFile()
-		case filesystem.FileTypeJson:
-			return jsonNetFile.ToJsonFile()
+		case filesystem.FileTypeJSON:
+			return jsonNetFile.ToJSONFile()
 		default:
 			panic(errors.Errorf(`unexpected filesystem.FileType = %v`, fileType))
 		}

@@ -16,16 +16,16 @@ func TestSharedCodeMapBeforePersist(t *testing.T) {
 	logger := d.DebugLogger()
 
 	parentKey := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: storageapi.SharedCodeComponentID,
-		ConfigId:    `345`,
-		Id:          `567`,
+		BranchID:    123,
+		ComponentID: storageapi.SharedCodeComponentID,
+		ConfigID:    `345`,
+		ID:          `567`,
 	}
 	configManifest := &model.ConfigManifest{
 		ConfigKey: model.ConfigKey{
-			BranchId:    123,
-			ComponentId: storageapi.VariablesComponentID,
-			Id:          `789`,
+			BranchID:    123,
+			ComponentID: storageapi.VariablesComponentID,
+			ID:          `789`,
 		},
 	}
 	recipe := &model.PersistRecipe{
@@ -41,8 +41,8 @@ func TestSharedCodeMapBeforePersist(t *testing.T) {
 	// Relation has been created
 	assert.Equal(t, model.Relations{
 		&model.SharedCodeVariablesForRelation{
-			ConfigId: `345`,
-			RowId:    `567`,
+			ConfigID: `345`,
+			RowID:    `567`,
 		},
 	}, configManifest.Relations)
 }

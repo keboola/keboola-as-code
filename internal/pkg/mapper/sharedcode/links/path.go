@@ -30,8 +30,8 @@ func newPathUtils() *pathUtils {
 	return &pathUtils{re: re}
 }
 
-func (v *pathUtils) match(script string, componentId storageapi.ComponentID) string {
-	comment := naming.CodeFileComment(naming.CodeFileExt(componentId))
+func (v *pathUtils) match(script string, componentID storageapi.ComponentID) string {
+	comment := naming.CodeFileComment(naming.CodeFileExt(componentID))
 	script = strings.TrimSpace(script)
 	script = strings.TrimPrefix(script, comment)
 	script = strings.TrimSpace(script)
@@ -42,11 +42,11 @@ func (v *pathUtils) match(script string, componentId storageapi.ComponentID) str
 	return ""
 }
 
-func (v *pathUtils) format(path string, componentId storageapi.ComponentID) string {
+func (v *pathUtils) format(path string, componentID storageapi.ComponentID) string {
 	placeholder := strings.ReplaceAll(PathFormat, `<PATH>`, path)
 	if ok := v.re.MatchString(placeholder); !ok {
 		panic(errors.Errorf(`shared code path "%s" is invalid`, path))
 	}
-	comment := naming.CodeFileComment(naming.CodeFileExt(componentId))
+	comment := naming.CodeFileComment(naming.CodeFileExt(componentID))
 	return comment + ` ` + placeholder
 }

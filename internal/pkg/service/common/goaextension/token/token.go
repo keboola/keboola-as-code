@@ -128,13 +128,13 @@ func generate(_ string, roots []eval.Root, files []*codegen.File) ([]*codegen.Fi
 		// Modify OpenApi2 files
 		for _, s := range f.Section("openapi") {
 			if source, ok := s.Data.(*openapiv2.V2); ok {
-				modifyOpenApiV2(roots, source)
+				modifyOpenAPIV2(roots, source)
 			}
 		}
 		// Modify OpenApi3 files
 		for _, s := range f.Section("openapi_v3") {
 			if source, ok := s.Data.(*openapiv3.OpenAPI); ok {
-				modifyOpenApiV3(roots, source)
+				modifyOpenAPIV3(roots, source)
 			}
 		}
 	}
@@ -142,7 +142,7 @@ func generate(_ string, roots []eval.Root, files []*codegen.File) ([]*codegen.Fi
 	return files, nil
 }
 
-func modifyOpenApiV2(roots []eval.Root, data *openapiv2.V2) {
+func modifyOpenAPIV2(roots []eval.Root, data *openapiv2.V2) {
 	modifiedSecurities := make(map[string]string)
 
 	for _, path := range data.Paths {
@@ -196,7 +196,7 @@ func modifyOpenApiV2(roots []eval.Root, data *openapiv2.V2) {
 	}
 }
 
-func modifyOpenApiV3(roots []eval.Root, data *openapiv3.OpenAPI) {
+func modifyOpenAPIV3(roots []eval.Root, data *openapiv3.OpenAPI) {
 	modifiedSecurities := make(map[string]string)
 
 	for _, path := range data.Paths {

@@ -20,7 +20,7 @@ type GenerateEnvOptions struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	SandboxesApiClient() client.Sender
+	SandboxesAPIClient() client.Sender
 	Tracer() trace.Tracer
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }
@@ -34,7 +34,7 @@ func Run(ctx context.Context, opts GenerateEnvOptions, d dependencies) (err erro
 		return err
 	}
 
-	workspace, err := sandboxesapi.GetInstanceRequest(opts.Workspace.ID).Send(ctx, d.SandboxesApiClient())
+	workspace, err := sandboxesapi.GetInstanceRequest(opts.Workspace.ID).Send(ctx, d.SandboxesAPIClient())
 	if err != nil {
 		return err
 	}

@@ -22,35 +22,35 @@ func (m *variablesMapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.
 
 func (m *variablesMapper) loadVariables(object *model.Config) {
 	// Variables ID is stored in configuration
-	variablesIdRaw, found := object.Content.Get(model.VariablesIdContentKey)
+	variablesIDRaw, found := object.Content.Get(model.VariablesIDContentKey)
 	if !found {
 		return
 	}
 
 	// Variables ID must be string
-	variablesId, ok := variablesIdRaw.(string)
+	variablesID, ok := variablesIDRaw.(string)
 	if !ok {
 		return
 	}
 
 	// Create relation
 	object.AddRelation(&model.VariablesFromRelation{
-		VariablesId: storageapi.ConfigID(variablesId),
+		VariablesID: storageapi.ConfigID(variablesID),
 	})
 
 	// Remove variables ID from configuration content
-	object.Content.Delete(model.VariablesIdContentKey)
+	object.Content.Delete(model.VariablesIDContentKey)
 }
 
 func (m *variablesMapper) loadVariablesValues(object *model.Config) {
 	// Values ID is stored in configuration
-	valuesIdRaw, found := object.Content.Get(model.VariablesValuesIdContentKey)
+	valuesIDRaw, found := object.Content.Get(model.VariablesValuesIDContentKey)
 	if !found {
 		return
 	}
 
 	// Values ID must be string
-	valuesId, ok := valuesIdRaw.(string)
+	valuesID, ok := valuesIDRaw.(string)
 	if !ok {
 		return
 	}
@@ -63,9 +63,9 @@ func (m *variablesMapper) loadVariablesValues(object *model.Config) {
 
 	// Create relation
 	object.AddRelation(&model.VariablesValuesFromRelation{
-		VariablesValuesId: storageapi.RowID(valuesId),
+		VariablesValuesID: storageapi.RowID(valuesID),
 	})
 
 	// Remove variables ID from configuration content
-	object.Content.Delete(model.VariablesValuesIdContentKey)
+	object.Content.Delete(model.VariablesValuesIDContentKey)
 }

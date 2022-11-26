@@ -100,16 +100,16 @@ func Checkout(ctx context.Context, ref model.TemplateRepository, sparse bool, lo
 	if r.sparse {
 		params = append(params, "--no-checkout", "--sparse", "--filter=blob:none")
 	}
-	params = append(params, "--", r.Url(), workingDir)
+	params = append(params, "--", r.URL(), workingDir)
 
 	// Clone repository
 	result, err := r.runGitCmd(ctx, params...)
 	if err != nil {
 		if strings.Contains(result.stdErr, fmt.Sprintf("Remote branch %s not found", r.Ref())) {
-			return nil, errors.Errorf(`reference "%s" not found in the git repository "%s"`, r.Ref(), r.Url())
+			return nil, errors.Errorf(`reference "%s" not found in the git repository "%s"`, r.Ref(), r.URL())
 		}
 		out := errorMsg(result, err)
-		return nil, errors.Errorf(`git repository could not be checked out from "%s": %s`, r.Url(), out)
+		return nil, errors.Errorf(`git repository could not be checked out from "%s": %s`, r.URL(), out)
 	}
 
 	// Setup stable dir
@@ -121,16 +121,16 @@ func Checkout(ctx context.Context, ref model.TemplateRepository, sparse bool, lo
 }
 
 func (r *RemoteRepository) String() string {
-	return fmt.Sprintf("%s:%s", r.Url(), r.Ref())
+	return fmt.Sprintf("%s:%s", r.URL(), r.Ref())
 }
 
 func (r *RemoteRepository) Definition() model.TemplateRepository {
 	return r.ref
 }
 
-// Url to Git repository.
-func (r *RemoteRepository) Url() string {
-	return r.ref.Url
+// URL to Git repository.
+func (r *RemoteRepository) URL() string {
+	return r.ref.URL
 }
 
 // Ref is Git branch or tag.

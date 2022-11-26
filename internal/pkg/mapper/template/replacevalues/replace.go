@@ -55,31 +55,31 @@ func (v *Values) AddKey(oldKey, newKey model.Key) {
 	switch oldKey := oldKey.(type) {
 	case model.BranchKey:
 		v.AddValue(oldKey, newKey.(model.BranchKey))
-		v.AddId(oldKey.Id, newKey.(model.BranchKey).Id)
+		v.AddID(oldKey.ID, newKey.(model.BranchKey).ID)
 	case model.ConfigKey:
 		v.AddValue(oldKey, newKey.(model.ConfigKey))
-		v.AddId(oldKey.Id, newKey.(model.ConfigKey).Id)
+		v.AddID(oldKey.ID, newKey.(model.ConfigKey).ID)
 	case model.ConfigRowKey:
 		v.AddValue(oldKey, newKey.(model.ConfigRowKey))
-		v.AddId(oldKey.Id, newKey.(model.ConfigRowKey).Id)
+		v.AddID(oldKey.ID, newKey.(model.ConfigRowKey).ID)
 	default:
 		panic(errors.Errorf(`unexpected key type "%T"`, oldKey))
 	}
 }
 
-// AddId replaces id with id.
-func (v *Values) AddId(oldId, newId interface{}) {
-	switch old := oldId.(type) {
+// AddID replaces id with id.
+func (v *Values) AddID(oldID, newID interface{}) {
+	switch old := oldID.(type) {
 	case storageapi.BranchID:
-		v.AddValue(old, newId.(storageapi.BranchID))
+		v.AddValue(old, newID.(storageapi.BranchID))
 	case storageapi.ConfigID:
-		v.AddValue(old, newId.(storageapi.ConfigID))
-		// ConfigId in strings
-		v.AddValue(SubString(old), string(newId.(storageapi.ConfigID)))
+		v.AddValue(old, newID.(storageapi.ConfigID))
+		// ConfigID in strings
+		v.AddValue(SubString(old), string(newID.(storageapi.ConfigID)))
 	case storageapi.RowID:
-		v.AddValue(old, newId.(storageapi.RowID))
+		v.AddValue(old, newID.(storageapi.RowID))
 		// ConfigRowId in strings
-		v.AddValue(SubString(old), string(newId.(storageapi.RowID)))
+		v.AddValue(SubString(old), string(newID.(storageapi.RowID)))
 	default:
 		panic(errors.Errorf(`unexpected ID type "%T"`, old))
 	}

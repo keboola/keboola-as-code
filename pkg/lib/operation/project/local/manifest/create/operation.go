@@ -22,7 +22,7 @@ type Options struct {
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageApiHost() string
+	StorageAPIHost() string
 	ProjectID() int
 }
 
@@ -33,11 +33,11 @@ func Run(ctx context.Context, fs filesystem.Fs, o Options, d dependencies) (m *p
 	logger := d.Logger()
 
 	// Get project host and ID
-	host := d.StorageApiHost()
-	projectId := d.ProjectID()
+	host := d.StorageAPIHost()
+	projectID := d.ProjectID()
 
 	// Create
-	manifest := project.NewManifest(projectId, host)
+	manifest := project.NewManifest(projectID, host)
 
 	// Configure
 	manifest.SetNamingTemplate(o.Naming)

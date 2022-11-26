@@ -29,17 +29,17 @@ func Run(ctx context.Context, branch *model.BranchState, d dependencies) (err er
 	}
 
 	for _, instance := range instances {
-		w.Writef("Template ID:          %s", instance.TemplateId)
-		w.Writef("Instance ID:          %s", instance.InstanceId)
+		w.Writef("Template ID:          %s", instance.TemplateID)
+		w.Writef("Instance ID:          %s", instance.InstanceID)
 		w.Writef("RepositoryName:       %s", instance.RepositoryName)
 		w.Writef("Version:              %s", instance.Version)
 		w.Writef("Name:                 %s", instance.InstanceName)
 		w.Writef("Created:")
 		w.Writef("  Date:               %s", instance.Created.Date.Format(time.RFC3339))
-		w.Writef("  TokenID:            %s", instance.Created.TokenId)
+		w.Writef("  TokenID:            %s", instance.Created.TokenID)
 		w.Writef("Updated:")
 		w.Writef("  Date:               %s", instance.Updated.Date.Format(time.RFC3339))
-		w.Writef("  TokenID:            %s", instance.Updated.TokenId)
+		w.Writef("  TokenID:            %s", instance.Updated.TokenID)
 		w.Writef("")
 	}
 

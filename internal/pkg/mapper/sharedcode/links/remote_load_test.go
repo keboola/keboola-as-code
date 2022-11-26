@@ -32,9 +32,9 @@ func TestRemoteLoadTranWithSharedCode(t *testing.T) {
 	assert.Equal(t, &model.LinkToSharedCode{Config: sharedCodeKey, Rows: sharedCodeRowsKeys}, transformation.Remote.Transformation.LinkToSharedCode)
 
 	// Keys from Content are deleted
-	_, found := transformation.Remote.Content.Get(model.SharedCodeIdContentKey)
+	_, found := transformation.Remote.Content.Get(model.SharedCodeIDContentKey)
 	assert.False(t, found)
-	_, found = transformation.Remote.Content.Get(model.SharedCodeRowsIdContentKey)
+	_, found = transformation.Remote.Content.Get(model.SharedCodeRowsIDContentKey)
 	assert.False(t, found)
 }
 
@@ -48,7 +48,7 @@ func TestRemoteLoadTranWithSharedCode_InvalidSharedCodeId(t *testing.T) {
 
 	// Create transformation with shared code
 	transformation := createRemoteTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
-	transformation.Remote.Content.Set(model.SharedCodeIdContentKey, `missing`) // <<<<<<<<<<<
+	transformation.Remote.Content.Set(model.SharedCodeIDContentKey, `missing`) // <<<<<<<<<<<
 
 	// Invoke
 	changes := model.NewRemoteChanges()
@@ -65,9 +65,9 @@ WARN  Warning:
 	assert.Nil(t, transformation.Remote.Transformation.LinkToSharedCode)
 
 	// Keys from Content are deleted
-	_, found := transformation.Remote.Content.Get(model.SharedCodeIdContentKey)
+	_, found := transformation.Remote.Content.Get(model.SharedCodeIDContentKey)
 	assert.False(t, found)
-	_, found = transformation.Remote.Content.Get(model.SharedCodeRowsIdContentKey)
+	_, found = transformation.Remote.Content.Get(model.SharedCodeRowsIDContentKey)
 	assert.False(t, found)
 }
 
@@ -81,7 +81,7 @@ func TestRemoteLoadTranWithSharedCode_InvalidSharedCodeRowId(t *testing.T) {
 
 	// Create transformation with shared code
 	transformation := createRemoteTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
-	transformation.Remote.Content.Set(model.SharedCodeRowsIdContentKey, []interface{}{`missing`}) // <<<<<<<<<<<
+	transformation.Remote.Content.Set(model.SharedCodeRowsIDContentKey, []interface{}{`missing`}) // <<<<<<<<<<<
 
 	// Invoke
 	changes := model.NewRemoteChanges()
@@ -98,8 +98,8 @@ WARN  Warning:
 	assert.Equal(t, &model.LinkToSharedCode{Config: sharedCodeKey}, transformation.Remote.Transformation.LinkToSharedCode)
 
 	// Keys from Content are deleted
-	_, found := transformation.Remote.Content.Get(model.SharedCodeIdContentKey)
+	_, found := transformation.Remote.Content.Get(model.SharedCodeIDContentKey)
 	assert.False(t, found)
-	_, found = transformation.Remote.Content.Get(model.SharedCodeRowsIdContentKey)
+	_, found = transformation.Remote.Content.Get(model.SharedCodeRowsIDContentKey)
 	assert.False(t, found)
 }

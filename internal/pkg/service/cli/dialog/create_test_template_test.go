@@ -25,7 +25,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps()
-	addMockedObjectsResponses(d.MockedHttpTransport())
+	addMockedObjectsResponses(d.MockedHTTPTransport())
 
 	// Set fake file editor
 	dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -44,7 +44,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 		AbsPath:     model.NewAbsPath("", "v1"),
 	}
 	tmplRec := repository.TemplateRecord{
-		Id:          tmplRef.TemplateId(),
+		ID:          tmplRef.TemplateID(),
 		Name:        "Template 1",
 		Description: "",
 		AbsPath:     model.NewAbsPath("", "tmpl1"),
@@ -94,12 +94,12 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 		TestName: "one",
 		Inputs: input.Values{
 			{
-				Id:      "generic-url",
+				ID:      "generic-url",
 				Value:   "foo.bar.com",
 				Skipped: false,
 			},
 			{
-				Id:      "generic-token",
+				ID:      "generic-token",
 				Value:   "##KBC_SECRET_VAR1##",
 				Skipped: false,
 			},

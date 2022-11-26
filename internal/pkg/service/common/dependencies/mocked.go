@@ -33,16 +33,16 @@ type mocked struct {
 	options             *options.Options
 	serverWg            *sync.WaitGroup
 	debugLogger         log.DebugLogger
-	mockedHttpTransport *httpmock.MockTransport
+	mockedHTTPTransport *httpmock.MockTransport
 }
 
 type MockedValues struct {
 	Services                           storageapi.Services
 	Features                           storageapi.Features
 	Components                         storageapi.Components
-	StorageApiHost                     string
-	StorageApiToken                    storageapi.Token
-	StorageApiTokenMockedResponseTimes int
+	StorageAPIHost                     string
+	StorageAPIToken                    storageapi.Token
+	StorageAPITokenMockedResponseTimes int
 }
 
 type MockedOption func(values *MockedValues)
@@ -65,21 +65,21 @@ func WithMockedComponents(components storageapi.Components) MockedOption {
 	}
 }
 
-func WithMockedStorageApiHost(host string) MockedOption {
+func WithMockedStorageAPIHost(host string) MockedOption {
 	return func(values *MockedValues) {
-		values.StorageApiHost = host
+		values.StorageAPIHost = host
 	}
 }
 
-func WithMockedStorageApiToken(token storageapi.Token) MockedOption {
+func WithMockedStorageAPIToken(token storageapi.Token) MockedOption {
 	return func(values *MockedValues) {
-		values.StorageApiToken = token
+		values.StorageAPIToken = token
 	}
 }
 
 func WithMockedTokenResponse(times int) MockedOption {
 	return func(values *MockedValues) {
-		values.StorageApiTokenMockedResponseTimes = times
+		values.StorageAPITokenMockedResponseTimes = times
 	}
 }
 
@@ -87,7 +87,7 @@ func NewMockedDeps(opts ...MockedOption) Mocked {
 	ctx := context.Background()
 	envs := env.Empty()
 	logger := log.NewDebugLogger()
-	httpClient, mockedHttpTransport := client.NewMockedClient()
+	httpClient, mockedHTTPTransport := client.NewMockedClient()
 
 	// Default values
 	values := MockedValues{
@@ -99,8 +99,8 @@ func NewMockedDeps(opts ...MockedOption) Mocked {
 		},
 		Features:       storageapi.Features{"FeatureA", "FeatureB"},
 		Components:     testapi.MockedComponents(),
-		StorageApiHost: "mocked.transport.http",
-		StorageApiToken: storageapi.Token{
+		StorageAPIHost: "mocked.transport.http",
+		StorageAPIToken: storageapi.Token{
 			ID:       "token-12345-id",
 			Token:    "my-secret",
 			IsMaster: true,
@@ -110,7 +110,7 @@ func NewMockedDeps(opts ...MockedOption) Mocked {
 				Features: storageapi.Features{"my-feature"},
 			},
 		},
-		StorageApiTokenMockedResponseTimes: 1,
+		StorageAPITokenMockedResponseTimes: 1,
 	}
 
 	// Apply options
@@ -119,28 +119,28 @@ func NewMockedDeps(opts ...MockedOption) Mocked {
 	}
 
 	// Mock API index
-	mockedHttpTransport.RegisterResponder(
+	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/v2/storage/", values.StorageApiHost),
+		fmt.Sprintf("https://%s/v2/storage/", values.StorageAPIHost),
 		httpmock.NewJsonResponderOrPanic(200, &storageapi.IndexComponents{
 			Index: storageapi.Index{Services: values.Services, Features: values.Features}, Components: values.Components,
 		}).Once(),
 	)
 
 	// Mocked token verification
-	mockedHttpTransport.RegisterResponder(
+	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/v2/storage/tokens/verify", values.StorageApiHost),
-		httpmock.NewJsonResponderOrPanic(200, values.StorageApiToken).Times(values.StorageApiTokenMockedResponseTimes),
+		fmt.Sprintf("https://%s/v2/storage/tokens/verify", values.StorageAPIHost),
+		httpmock.NewJsonResponderOrPanic(200, values.StorageAPIToken).Times(values.StorageAPITokenMockedResponseTimes),
 	)
 
 	// Create base, public and project dependencies
 	baseDeps := newBaseDeps(envs, nil, logger, httpClient)
-	publicDeps, err := newPublicDeps(ctx, baseDeps, values.StorageApiHost)
+	publicDeps, err := newPublicDeps(ctx, baseDeps, values.StorageAPIHost)
 	if err != nil {
 		panic(err)
 	}
-	projectDeps, err := newProjectDeps(baseDeps, publicDeps, values.StorageApiToken)
+	projectDeps, err := newProjectDeps(baseDeps, publicDeps, values.StorageAPIToken)
 	if err != nil {
 		panic(err)
 	}
@@ -156,19 +156,19 @@ func NewMockedDeps(opts ...MockedOption) Mocked {
 		options:             options.New(),
 		serverWg:            &sync.WaitGroup{},
 		debugLogger:         logger,
-		mockedHttpTransport: mockedHttpTransport,
+		mockedHTTPTransport: mockedHTTPTransport,
 	}
 }
 
 // SetFromTestProject set test dependencies from a testing project.
 func (v *mocked) SetFromTestProject(project *testproject.Project) {
-	v.storageApiHost = project.StorageAPIHost()
-	v.public.storageApiClient = project.StorageAPIClient()
-	v.project.storageApiClient = project.StorageAPIClient()
+	v.storageAPIHost = project.StorageAPIHost()
+	v.public.storageAPIClient = project.StorageAPIClient()
+	v.project.storageAPIClient = project.StorageAPIClient()
 	v.project.token = *project.StorageAPIToken()
-	v.encryptionApiClient = project.EncryptionAPIClient()
-	v.schedulerApiClient = project.SchedulerAPIClient()
-	v.mockedHttpTransport = nil
+	v.encryptionAPIClient = project.EncryptionAPIClient()
+	v.schedulerAPIClient = project.SchedulerAPIClient()
+	v.mockedHTTPTransport = nil
 }
 
 func (v *mocked) EnvsMutable() *env.Map {
@@ -187,8 +187,8 @@ func (v *mocked) ServerWaitGroup() *sync.WaitGroup {
 	return v.serverWg
 }
 
-func (v *mocked) MockedHttpTransport() *httpmock.MockTransport {
-	return v.mockedHttpTransport
+func (v *mocked) MockedHTTPTransport() *httpmock.MockTransport {
+	return v.mockedHTTPTransport
 }
 
 func (v *mocked) MockedProject(fs filesystem.Fs) *projectPkg.Project {

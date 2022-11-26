@@ -20,13 +20,13 @@ func createStateWithMapper(t *testing.T) (*state.State, dependencies.Mocked) {
 	return mockedState, d
 }
 
-func createTestFixtures(t *testing.T, componentId string) *model.ConfigState {
+func createTestFixtures(t *testing.T, componentID string) *model.ConfigState {
 	t.Helper()
 
 	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: storageapi.ComponentID(componentId),
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: storageapi.ComponentID(componentID),
+		ID:          `456`,
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{

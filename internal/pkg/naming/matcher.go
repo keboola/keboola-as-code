@@ -15,7 +15,7 @@ func NewPathMatcher(template Template) *PathMatcher {
 	return &PathMatcher{template: template}
 }
 
-func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentId storageapi.ComponentID, err error) {
+func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentID storageapi.ComponentID, err error) {
 	parent := parentKey.Kind()
 	if parent.IsBranch() {
 		// Shared code
@@ -26,11 +26,11 @@ func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentId s
 		// Ordinary config
 		if matched, matches := m.template.Config.MatchPath(path.GetRelativePath()); matched {
 			// Get component ID
-			componentId, ok := matches["component_id"]
-			if !ok || componentId == "" {
+			componentID, ok := matches["component_id"]
+			if !ok || componentID == "" {
 				return "", errors.Errorf(`config'm component id cannot be determined, path: "%s", path template: "%s"`, path.Path(), m.template.Config)
 			}
-			return storageapi.ComponentID(componentId), nil
+			return storageapi.ComponentID(componentID), nil
 		}
 	}
 
@@ -47,7 +47,7 @@ func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentId s
 	}
 
 	// Shared code variables, parent is config row
-	if parent.IsConfigRow() && parentKey.(ConfigRowKey).ComponentId == storageapi.SharedCodeComponentID {
+	if parent.IsConfigRow() && parentKey.(ConfigRowKey).ComponentID == storageapi.SharedCodeComponentID {
 		if matched, _ := m.template.VariablesConfig.MatchPath(path.GetRelativePath()); matched {
 			return storageapi.VariablesComponentID, nil
 		}

@@ -17,7 +17,7 @@ func TestLoadInputsFile(t *testing.T) {
 
 	// Write file
 	path := Path()
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, inputsJsonNet)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, inputsJSONNET)))
 
 	// Load
 	inputs, err := Load(fs, jsonnet.NewContext())
@@ -35,10 +35,10 @@ func TestSaveInputsFile(t *testing.T) {
 	// Load file
 	file, err := fs.ReadFile(filesystem.NewFileDef(Path()))
 	assert.NoError(t, err)
-	assert.Equal(t, wildcards.EscapeWhitespaces(inputsJsonNet), wildcards.EscapeWhitespaces(file.Content))
+	assert.Equal(t, wildcards.EscapeWhitespaces(inputsJSONNET), wildcards.EscapeWhitespaces(file.Content))
 }
 
-const inputsJsonNet = `{
+const inputsJSONNET = `{
   stepsGroups: [
     {
       description: "Group One",
@@ -100,21 +100,21 @@ func testInputs() StepsGroups {
 					Description: "Step One",
 					Inputs: Inputs{
 						{
-							Id:          "fb.extractor.username",
+							ID:          "fb.extractor.username",
 							Name:        "Facebook username",
 							Description: "Facebook username description",
 							Type:        "string",
 							Kind:        "input",
 						},
 						{
-							Id:          "fb.extractor.password",
+							ID:          "fb.extractor.password",
 							Name:        "Facebook password",
 							Description: "Facebook password description",
 							Type:        "string",
 							Kind:        "hidden",
 						},
 						{
-							Id:          "fb.extractor.options",
+							ID:          "fb.extractor.options",
 							Name:        "Facebook options",
 							Description: "Facebook options description",
 							Type:        "string",

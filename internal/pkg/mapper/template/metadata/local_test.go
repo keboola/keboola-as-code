@@ -15,23 +15,23 @@ import (
 func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 	t.Parallel()
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
-	instanceId := "my-instance"
+	instanceID := "my-instance"
 	objectIds := metadata.ObjectIdsMap{}
 	objectIds[storageapi.ConfigID("456")] = storageapi.ConfigID("my-config")
 	objectIds[storageapi.RowID("789")] = storageapi.RowID("my-row")
 	inputsUsage := metadata.NewInputsUsage()
-	mockedState, _ := createStateWithMapper(t, templateRef, instanceId, objectIds, inputsUsage)
+	mockedState, _ := createStateWithMapper(t, templateRef, instanceID, objectIds, inputsUsage)
 
 	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: storageapi.ComponentID("keboola.foo-bar"),
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: storageapi.ComponentID("keboola.foo-bar"),
+		ID:          `456`,
 	}
 	configRowKey := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: storageapi.ComponentID("keboola.foo-bar"),
-		ConfigId:    `456`,
-		Id:          `789`,
+		BranchID:    123,
+		ComponentID: storageapi.ComponentID("keboola.foo-bar"),
+		ConfigID:    `456`,
+		ID:          `789`,
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -65,8 +65,8 @@ func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 	config := configState.Local
 	assert.NotEmpty(t, config.Metadata)
 	assert.Equal(t, "my-repository", config.Metadata.Repository())
-	assert.Equal(t, "my-template", config.Metadata.TemplateId())
-	assert.Equal(t, "my-instance", config.Metadata.InstanceId())
-	assert.Equal(t, &model.ConfigIdMetadata{IdInTemplate: "my-config"}, config.Metadata.ConfigTemplateId())
-	assert.Equal(t, []model.RowIdMetadata{{IdInProject: "789", IdInTemplate: "my-row"}}, config.Metadata.RowsTemplateIds())
+	assert.Equal(t, "my-template", config.Metadata.TemplateID())
+	assert.Equal(t, "my-instance", config.Metadata.InstanceID())
+	assert.Equal(t, &model.ConfigIDMetadata{IDInTemplate: "my-config"}, config.Metadata.ConfigTemplateID())
+	assert.Equal(t, []model.RowIDMetadata{{IDInProject: "789", IDInTemplate: "my-row"}}, config.Metadata.RowsTemplateIds())
 }

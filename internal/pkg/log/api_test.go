@@ -14,7 +14,7 @@ func TestApiLogger_VerboseFalse(t *testing.T) {
 
 	out := new(bytes.Buffer)
 	stdLogger := stdLog.New(out, "[std-prefix]", 0)
-	logger := NewApiLogger(stdLogger, "[old-prefix] ", false)
+	logger := NewAPILogger(stdLogger, "[old-prefix] ", false)
 
 	// Log messages
 	assert.Equal(t, "[old-prefix] ", logger.Prefix())
@@ -48,7 +48,7 @@ func TestApiLogger_VerboseTrue(t *testing.T) {
 
 	out := new(bytes.Buffer)
 	stdLogger := stdLog.New(out, "[std-prefix]", 0)
-	logger := NewApiLogger(stdLogger, "[old-prefix] ", true)
+	logger := NewAPILogger(stdLogger, "[old-prefix] ", true)
 
 	// Log messages
 	assert.Equal(t, "[old-prefix] ", logger.Prefix())

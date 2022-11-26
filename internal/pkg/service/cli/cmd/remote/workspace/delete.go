@@ -34,12 +34,12 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 
 			defer func() { d.EventSender().SendCmdEvent(d.CommandCtx(), start, cmdErr, "remote-list-workspace") }()
 
-			branch, err := storageapi.GetDefaultBranchRequest().Send(d.CommandCtx(), d.StorageApiClient())
+			branch, err := storageapi.GetDefaultBranchRequest().Send(d.CommandCtx(), d.StorageAPIClient())
 			if err != nil {
 				return errors.Errorf("cannot find default branch: %w", err)
 			}
 
-			allWorkspaces, err := sandboxesapi.List(d.CommandCtx(), d.StorageApiClient(), d.SandboxesApiClient(), branch.ID)
+			allWorkspaces, err := sandboxesapi.List(d.CommandCtx(), d.StorageAPIClient(), d.SandboxesAPIClient(), branch.ID)
 			if err != nil {
 				return err
 			}

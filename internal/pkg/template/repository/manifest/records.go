@@ -10,7 +10,7 @@ import (
 )
 
 type TemplateRecord struct {
-	Id            string `json:"id" validate:"required,alphanumdash,min=1,max=40"`
+	ID            string `json:"id" validate:"required,alphanumdash,min=1,max=40"`
 	Name          string `json:"name" validate:"required,min=1,max=40"`
 	Description   string `json:"description" validate:"required,min=1,max=200"`
 	model.AbsPath `validate:"dive"`
@@ -95,7 +95,7 @@ func (v *TemplateRecord) GetVersionOrErr(wantedStr string) (VersionRecord, error
 	// Get version
 	version, found := v.GetVersion(wanted)
 	if !found {
-		return version, VersionNotFoundError{errors.Errorf(`template "%s" found but version "%s" is missing`, v.Id, wanted.Original())}
+		return version, VersionNotFoundError{errors.Errorf(`template "%s" found but version "%s" is missing`, v.ID, wanted.Original())}
 	}
 	return version, nil
 }
@@ -150,7 +150,7 @@ func (v *TemplateRecord) DefaultVersion() (VersionRecord, bool) {
 func (v *TemplateRecord) DefaultVersionOrErr() (VersionRecord, error) {
 	version, found := v.DefaultVersion()
 	if !found {
-		return version, VersionNotFoundError{errors.Errorf(`default version for template "%s" was not found`, v.Id)}
+		return version, VersionNotFoundError{errors.Errorf(`default version for template "%s" was not found`, v.ID)}
 	}
 	return version, nil
 }

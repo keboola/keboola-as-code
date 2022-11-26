@@ -10,13 +10,13 @@ import (
 
 // VariablesForRelation - variables for target configuration.
 type VariablesForRelation struct {
-	ComponentId storageapi.ComponentID `json:"componentId" validate:"required"`
-	ConfigId    storageapi.ConfigID    `json:"configId" validate:"required"`
+	ComponentID storageapi.ComponentID `json:"componentId" validate:"required"`
+	ConfigID    storageapi.ConfigID    `json:"configId" validate:"required"`
 }
 
 // VariablesFromRelation - variables from source configuration.
 type VariablesFromRelation struct {
-	VariablesId storageapi.ConfigID `json:"variablesId" validate:"required"`
+	VariablesID storageapi.ConfigID `json:"variablesId" validate:"required"`
 }
 
 // VariablesValuesForRelation - variables default values for target configuration.
@@ -29,7 +29,7 @@ type VariablesValuesForRelation struct {
 
 // VariablesValuesFromRelation - variables default values from source config row.
 type VariablesValuesFromRelation struct {
-	VariablesValuesId storageapi.RowID `json:"variablesValuesId" validate:"required" `
+	VariablesValuesID storageapi.RowID `json:"variablesValuesId" validate:"required" `
 }
 
 func (t *VariablesForRelation) Type() RelationType {
@@ -41,7 +41,7 @@ func (t *VariablesForRelation) Desc() string {
 }
 
 func (t *VariablesForRelation) Key() string {
-	return fmt.Sprintf(`%s_%s_%s`, t.Type(), t.ComponentId, t.ConfigId)
+	return fmt.Sprintf(`%s_%s_%s`, t.Type(), t.ComponentID, t.ConfigID)
 }
 
 func (t *VariablesForRelation) ParentKey(relationDefinedOn Key) (Key, error) {
@@ -50,9 +50,9 @@ func (t *VariablesForRelation) ParentKey(relationDefinedOn Key) (Key, error) {
 		return nil, err
 	}
 	return ConfigKey{
-		BranchId:    variables.BranchId,
-		ComponentId: t.ComponentId,
-		Id:          t.ConfigId,
+		BranchID:    variables.BranchID,
+		ComponentID: t.ComponentID,
+		ID:          t.ConfigID,
 	}, nil
 }
 
@@ -60,7 +60,7 @@ func (t *VariablesForRelation) IsDefinedInManifest() bool {
 	return true
 }
 
-func (t *VariablesForRelation) IsDefinedInApi() bool {
+func (t *VariablesForRelation) IsDefinedInAPI() bool {
 	return false
 }
 
@@ -70,12 +70,12 @@ func (t *VariablesForRelation) NewOtherSideRelation(relationDefinedOn Object, _ 
 		return nil, nil, err
 	}
 	otherSide := ConfigKey{
-		BranchId:    variables.BranchId,
-		ComponentId: t.ComponentId,
-		Id:          t.ConfigId,
+		BranchID:    variables.BranchID,
+		ComponentID: t.ComponentID,
+		ID:          t.ConfigID,
 	}
 	otherSideRelation := &VariablesFromRelation{
-		VariablesId: variables.Id,
+		VariablesID: variables.ID,
 	}
 	return otherSide, otherSideRelation, nil
 }
@@ -85,7 +85,7 @@ func (t *VariablesForRelation) checkDefinedOn(relationDefinedOn Key) (ConfigKey,
 	if !ok {
 		return variables, errors.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
-	if variables.ComponentId != storageapi.VariablesComponentID {
+	if variables.ComponentID != storageapi.VariablesComponentID {
 		return variables, errors.Errorf(`relation "%s" must be defined on config of the "%s" component`, t.Type(), storageapi.VariablesComponentID)
 	}
 	return variables, nil
@@ -100,7 +100,7 @@ func (t *VariablesFromRelation) Desc() string {
 }
 
 func (t *VariablesFromRelation) Key() string {
-	return fmt.Sprintf(`%s_%s`, t.Type(), t.VariablesId)
+	return fmt.Sprintf(`%s_%s`, t.Type(), t.VariablesID)
 }
 
 func (t *VariablesFromRelation) ParentKey(_ Key) (Key, error) {
@@ -111,7 +111,7 @@ func (t *VariablesFromRelation) IsDefinedInManifest() bool {
 	return false
 }
 
-func (t *VariablesFromRelation) IsDefinedInApi() bool {
+func (t *VariablesFromRelation) IsDefinedInAPI() bool {
 	return true
 }
 
@@ -121,13 +121,13 @@ func (t *VariablesFromRelation) NewOtherSideRelation(relationDefinedOn Object, _
 		return nil, nil, err
 	}
 	otherSide := ConfigKey{
-		BranchId:    config.BranchId,
-		ComponentId: storageapi.VariablesComponentID,
-		Id:          t.VariablesId,
+		BranchID:    config.BranchID,
+		ComponentID: storageapi.VariablesComponentID,
+		ID:          t.VariablesID,
 	}
 	otherSideRelation := &VariablesForRelation{
-		ComponentId: config.ComponentId,
-		ConfigId:    config.Id,
+		ComponentID: config.ComponentID,
+		ConfigID:    config.ID,
 	}
 	return otherSide, otherSideRelation, nil
 }
@@ -160,7 +160,7 @@ func (t *VariablesValuesForRelation) IsDefinedInManifest() bool {
 	return true
 }
 
-func (t *VariablesValuesForRelation) IsDefinedInApi() bool {
+func (t *VariablesValuesForRelation) IsDefinedInAPI() bool {
 	return false
 }
 
@@ -191,12 +191,12 @@ func (t *VariablesValuesForRelation) NewOtherSideRelation(relationDefinedOn Obje
 	}
 	variablesForRelation := variablesForRaw.(*VariablesForRelation)
 	otherSide := ConfigKey{
-		BranchId:    variablesConfig.BranchId,
-		ComponentId: variablesForRelation.ComponentId,
-		Id:          variablesForRelation.ConfigId,
+		BranchID:    variablesConfig.BranchID,
+		ComponentID: variablesForRelation.ComponentID,
+		ID:          variablesForRelation.ConfigID,
 	}
 	otherSideRelation := &VariablesValuesFromRelation{
-		VariablesValuesId: valuesRowKey.Id,
+		VariablesValuesID: valuesRowKey.ID,
 	}
 	return otherSide, otherSideRelation, nil
 }
@@ -206,7 +206,7 @@ func (t *VariablesValuesForRelation) checkDefinedOn(relationDefinedOn Key) (Conf
 	if !ok {
 		return values, errors.Errorf(`relation "%s" must be defined on config row, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
-	if values.ComponentId != storageapi.VariablesComponentID {
+	if values.ComponentID != storageapi.VariablesComponentID {
 		return values, errors.Errorf(`relation "%s" must be defined on config of the "%s" component`, t.Type(), storageapi.VariablesComponentID)
 	}
 	return values, nil
@@ -221,7 +221,7 @@ func (t *VariablesValuesFromRelation) Desc() string {
 }
 
 func (t *VariablesValuesFromRelation) Key() string {
-	return fmt.Sprintf(`%s_%s`, t.Type(), t.VariablesValuesId)
+	return fmt.Sprintf(`%s_%s`, t.Type(), t.VariablesValuesID)
 }
 
 func (t *VariablesValuesFromRelation) ParentKey(_ Key) (Key, error) {
@@ -232,7 +232,7 @@ func (t *VariablesValuesFromRelation) IsDefinedInManifest() bool {
 	return false
 }
 
-func (t *VariablesValuesFromRelation) IsDefinedInApi() bool {
+func (t *VariablesValuesFromRelation) IsDefinedInAPI() bool {
 	return true
 }
 
@@ -254,10 +254,10 @@ func (t *VariablesValuesFromRelation) NewOtherSideRelation(relationDefinedOn Obj
 	}
 
 	otherSideKey := ConfigRowKey{
-		BranchId:    config.BranchId,
-		ComponentId: storageapi.VariablesComponentID,
-		ConfigId:    variablesFromRel.(*VariablesFromRelation).VariablesId,
-		Id:          t.VariablesValuesId,
+		BranchID:    config.BranchID,
+		ComponentID: storageapi.VariablesComponentID,
+		ConfigID:    variablesFromRel.(*VariablesFromRelation).VariablesID,
+		ID:          t.VariablesValuesID,
 	}
 	otherSideRelation := &VariablesValuesForRelation{}
 	return otherSideKey, otherSideRelation, nil

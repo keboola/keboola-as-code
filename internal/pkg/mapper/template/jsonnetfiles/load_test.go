@@ -31,13 +31,13 @@ func TestJsonNetMapper_LoadLocalFile(t *testing.T) {
 
 	// Load file
 	fileDef := filesystem.NewFileDef(`my/dir/file.json`)
-	fileDef.AddTag(model.FileTypeJson)
-	jsonFile, err := fileLoader.ReadJsonFile(fileDef)
+	fileDef.AddTag(model.FileTypeJSON)
+	jsonFile, err := fileLoader.ReadJSONFile(fileDef)
 	assert.NoError(t, err)
 
 	// JsonNet file is loaded and converted to a Json file
 	assert.Equal(t, `my/dir/file.jsonnet`, jsonFile.Path())
-	assert.Equal(t, []string{model.FileTypeJsonNet}, jsonFile.AllTags())
+	assert.Equal(t, []string{model.FileTypeJSONNET}, jsonFile.AllTags())
 	assert.Equal(t, orderedmap.FromPairs([]orderedmap.Pair{
 		{Key: "foo", Value: "bar"},
 	}), jsonFile.Content)
