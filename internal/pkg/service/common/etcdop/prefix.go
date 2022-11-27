@@ -111,7 +111,7 @@ func (v PrefixT[T]) GetAll(opts ...etcd.OpOption) GetManyTOp[T] {
 			etcdOp := etcd.OpGet(v.Prefix(), opts...)
 			return &etcdOp, nil
 		},
-		func(ctx context.Context, r etcd.OpResponse) ([]KeyValueT[T], error) {
+		func(ctx context.Context, r etcd.OpResponse) (KeyValuesT[T], error) {
 			kvs := r.Get().Kvs
 			out := make([]KeyValueT[T], len(kvs))
 			for i, kv := range kvs {

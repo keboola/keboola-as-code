@@ -36,6 +36,7 @@ type (
 		Value T
 		KV    *KeyValue
 	}
+	KeyValuesT[T any] []KeyValueT[T]
 	// Serialization encapsulates serialization and deserialization process of a value.
 	Serialization struct {
 		// encode a typed value to the etcd KV.
@@ -68,7 +69,7 @@ type (
 	getManyProcessor func(ctx context.Context, r etcd.OpResponse) ([]*KeyValue, error)
 	// GetManyTOp returns many typed results.
 	GetManyTOp[T any]        Op[getManyTProcessor[T]]
-	getManyTProcessor[T any] func(ctx context.Context, r etcd.OpResponse) ([]KeyValueT[T], error)
+	getManyTProcessor[T any] func(ctx context.Context, r etcd.OpResponse) (KeyValuesT[T], error)
 	// CountOp returns keys count.
 	CountOp           Op[countProcessor]
 	noResultProcessor func(ctx context.Context, r etcd.OpResponse) error
@@ -117,6 +118,14 @@ func NewNoResultOp(factory opFactory, processor noResultProcessor) NoResultOp {
 	return NoResultOp{opFactory: factory, processor: processor}
 }
 
+func (kvs KeyValuesT[T]) Values() (out []T) {
+	out = make([]T, len(kvs))
+	for i, kv := range kvs {
+		out[i] = kv.Value
+	}
+	return out
+}
+
 // Op returns raw etcd.Op.
 func (v opFactory) Op(ctx context.Context) (*etcd.Op, error) {
 	return v(ctx)
@@ -162,7 +171,7 @@ func (v GetManyOp) Do(ctx context.Context, client *etcd.Client) (kvs []*KeyValue
 	}
 }
 
-func (v GetManyTOp[T]) Do(ctx context.Context, client *etcd.Client) (kvs []KeyValueT[T], err error) {
+func (v GetManyTOp[T]) Do(ctx context.Context, client *etcd.Client) (kvs KeyValuesT[T], err error) {
 	if etcdOp, err := v.opFactory(ctx); err != nil {
 		return nil, err
 	} else if r, err := client.Do(ctx, *etcdOp); err != nil {
