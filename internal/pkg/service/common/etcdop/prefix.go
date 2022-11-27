@@ -73,13 +73,13 @@ func (v Prefix) Count(opts ...etcd.OpOption) op.CountOp {
 			opts = append([]etcd.OpOption{etcd.WithCountOnly(), etcd.WithPrefix()}, opts...)
 			return etcd.OpGet(v.Prefix(), opts...), nil
 		},
-		func(_ context.Context, r etcd.OpResponse) int64 {
-			return r.Get().Count
+		func(_ context.Context, r etcd.OpResponse) (int64, error) {
+			return r.Get().Count, nil
 		},
 	)
 }
 
-func (v Prefix) GetAll(opts ...etcd.OpOption) op.GetManyOp {
+func (v Prefix) GetAll(opts ...etcd.OpOption) op.ForType[[]*op.KeyValue] {
 	return op.NewGetManyOp(
 		func(_ context.Context) (etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
@@ -96,13 +96,13 @@ func (v Prefix) DeleteAll(opts ...etcd.OpOption) op.CountOp {
 			opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
 			return etcd.OpDelete(v.Prefix(), opts...), nil
 		},
-		func(_ context.Context, r etcd.OpResponse) int64 {
-			return r.Del().Deleted
+		func(_ context.Context, r etcd.OpResponse) (int64, error) {
+			return r.Del().Deleted, nil
 		},
 	)
 }
 
-func (v PrefixT[T]) GetAll(opts ...etcd.OpOption) op.GetManyTOp[T] {
+func (v PrefixT[T]) GetAll(opts ...etcd.OpOption) op.ForType[op.KeyValuesT[T]] {
 	return op.NewGetManyTOp(
 		func(_ context.Context) (etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)

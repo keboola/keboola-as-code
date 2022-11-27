@@ -106,7 +106,7 @@ func (v Key) PutIfNotExists(val string, opts ...etcd.OpOption) op.BoolOp {
 	)
 }
 
-func (v KeyT[T]) Get(opts ...etcd.OpOption) op.GetOneTOp[T] {
+func (v KeyT[T]) Get(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 	return op.NewGetOneTOp(
 		func(_ context.Context) (etcd.Op, error) {
 			return etcd.OpGet(v.Key(), opts...), nil
