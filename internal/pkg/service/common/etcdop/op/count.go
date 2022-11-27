@@ -20,7 +20,7 @@ func NewCountOp(factory Factory, processor countProcessor) CountOp {
 func (v CountOp) Do(ctx context.Context, client *etcd.Client) (count int64, err error) {
 	if etcdOp, err := v.opFactory(ctx); err != nil {
 		return 0, err
-	} else if r, err := client.Do(ctx, *etcdOp); err != nil {
+	} else if r, err := client.Do(ctx, etcdOp); err != nil {
 		return 0, err
 	} else {
 		return v.processor(ctx, r), nil

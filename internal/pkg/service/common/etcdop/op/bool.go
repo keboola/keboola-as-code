@@ -21,7 +21,7 @@ func NewBoolOp(factory Factory, processor boolProcessor) BoolOp {
 func (v BoolOp) Do(ctx context.Context, client *etcd.Client) (result bool, err error) {
 	if etcdOp, err := v.opFactory(ctx); err != nil {
 		return false, err
-	} else if r, err := client.Do(ctx, *etcdOp); err != nil {
+	} else if r, err := client.Do(ctx, etcdOp); err != nil {
 		return false, err
 	} else {
 		return v.processor(ctx, r)

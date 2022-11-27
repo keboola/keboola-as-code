@@ -31,7 +31,7 @@ func NewGetOneTOp[T any](factory Factory, processor getOneTProcessor[T]) GetOneT
 func (v GetOneOp) Do(ctx context.Context, client *etcd.Client) (kv *KeyValue, err error) {
 	if etcdOp, err := v.opFactory(ctx); err != nil {
 		return nil, err
-	} else if r, err := client.Do(ctx, *etcdOp); err != nil {
+	} else if r, err := client.Do(ctx, etcdOp); err != nil {
 		return nil, err
 	} else {
 		return v.processor(ctx, r)
@@ -41,7 +41,7 @@ func (v GetOneOp) Do(ctx context.Context, client *etcd.Client) (kv *KeyValue, er
 func (v GetOneTOp[T]) Do(ctx context.Context, client *etcd.Client) (kv *KeyValueT[T], err error) {
 	if etcdOp, err := v.opFactory(ctx); err != nil {
 		return nil, err
-	} else if r, err := client.Do(ctx, *etcdOp); err != nil {
+	} else if r, err := client.Do(ctx, etcdOp); err != nil {
 		return nil, err
 	} else {
 		return v.processor(ctx, r)

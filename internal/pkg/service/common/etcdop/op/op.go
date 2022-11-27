@@ -14,9 +14,9 @@ type Op[P any] struct {
 }
 
 // Factory creates an etcd operation.
-type Factory func(ctx context.Context) (*etcd.Op, error)
+type Factory func(ctx context.Context) (etcd.Op, error)
 
 // Op returns raw etcd.Op.
-func (v Factory) Op(ctx context.Context) (*etcd.Op, error) {
+func (v Factory) Op(ctx context.Context) (etcd.Op, error) {
 	return v(ctx)
 }

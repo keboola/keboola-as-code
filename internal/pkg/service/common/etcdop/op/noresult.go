@@ -20,7 +20,7 @@ func NewNoResultOp(factory Factory, processor noResultProcessor) NoResultOp {
 func (v NoResultOp) Do(ctx context.Context, client *etcd.Client) (err error) {
 	if etcdOp, err := v.opFactory(ctx); err != nil {
 		return err
-	} else if r, err := client.Do(ctx, *etcdOp); err != nil {
+	} else if r, err := client.Do(ctx, etcdOp); err != nil {
 		return err
 	} else {
 		return v.processor(ctx, r)

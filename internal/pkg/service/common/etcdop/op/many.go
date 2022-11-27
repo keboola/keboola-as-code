@@ -31,7 +31,7 @@ func NewGetManyTOp[T any](factory Factory, processor getManyTProcessor[T]) GetMa
 func (v GetManyOp) Do(ctx context.Context, client *etcd.Client) (kvs []*KeyValue, err error) {
 	if etcdOp, err := v.opFactory(ctx); err != nil {
 		return nil, err
-	} else if r, err := client.Do(ctx, *etcdOp); err != nil {
+	} else if r, err := client.Do(ctx, etcdOp); err != nil {
 		return nil, err
 	} else {
 		return v.processor(ctx, r)
@@ -41,7 +41,7 @@ func (v GetManyOp) Do(ctx context.Context, client *etcd.Client) (kvs []*KeyValue
 func (v GetManyTOp[T]) Do(ctx context.Context, client *etcd.Client) (kvs KeyValuesT[T], err error) {
 	if etcdOp, err := v.opFactory(ctx); err != nil {
 		return nil, err
-	} else if r, err := client.Do(ctx, *etcdOp); err != nil {
+	} else if r, err := client.Do(ctx, etcdOp); err != nil {
 		return nil, err
 	} else {
 		return v.processor(ctx, r)

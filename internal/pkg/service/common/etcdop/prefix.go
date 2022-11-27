@@ -57,10 +57,9 @@ func NewTypedPrefix[T any](v Prefix, s Serialization) PrefixT[T] {
 
 func (v Prefix) AtLeastOneExists(opts ...etcd.OpOption) op.BoolOp {
 	return op.NewBoolOp(
-		func(_ context.Context) (*etcd.Op, error) {
+		func(_ context.Context) (etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithCountOnly()}, opts...)
-			etcdOp := etcd.OpGet(v.Prefix(), opts...)
-			return &etcdOp, nil
+			return etcd.OpGet(v.Prefix(), opts...), nil
 		},
 		func(_ context.Context, r etcd.OpResponse) (bool, error) {
 			return r.Get().Count > 0, nil
@@ -70,10 +69,9 @@ func (v Prefix) AtLeastOneExists(opts ...etcd.OpOption) op.BoolOp {
 
 func (v Prefix) Count(opts ...etcd.OpOption) op.CountOp {
 	return op.NewCountOp(
-		func(_ context.Context) (*etcd.Op, error) {
+		func(_ context.Context) (etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithCountOnly(), etcd.WithPrefix()}, opts...)
-			etcdOp := etcd.OpGet(v.Prefix(), opts...)
-			return &etcdOp, nil
+			return etcd.OpGet(v.Prefix(), opts...), nil
 		},
 		func(_ context.Context, r etcd.OpResponse) int64 {
 			return r.Get().Count
@@ -83,10 +81,9 @@ func (v Prefix) Count(opts ...etcd.OpOption) op.CountOp {
 
 func (v Prefix) GetAll(opts ...etcd.OpOption) op.GetManyOp {
 	return op.NewGetManyOp(
-		func(_ context.Context) (*etcd.Op, error) {
+		func(_ context.Context) (etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
-			etcdOp := etcd.OpGet(v.Prefix(), opts...)
-			return &etcdOp, nil
+			return etcd.OpGet(v.Prefix(), opts...), nil
 		}, func(_ context.Context, r etcd.OpResponse) ([]*op.KeyValue, error) {
 			return r.Get().Kvs, nil
 		},
@@ -95,10 +92,9 @@ func (v Prefix) GetAll(opts ...etcd.OpOption) op.GetManyOp {
 
 func (v Prefix) DeleteAll(opts ...etcd.OpOption) op.CountOp {
 	return op.NewCountOp(
-		func(_ context.Context) (*etcd.Op, error) {
+		func(_ context.Context) (etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
-			etcdOp := etcd.OpDelete(v.Prefix(), opts...)
-			return &etcdOp, nil
+			return etcd.OpDelete(v.Prefix(), opts...), nil
 		},
 		func(_ context.Context, r etcd.OpResponse) int64 {
 			return r.Del().Deleted
@@ -108,10 +104,9 @@ func (v Prefix) DeleteAll(opts ...etcd.OpOption) op.CountOp {
 
 func (v PrefixT[T]) GetAll(opts ...etcd.OpOption) op.GetManyTOp[T] {
 	return op.NewGetManyTOp(
-		func(_ context.Context) (*etcd.Op, error) {
+		func(_ context.Context) (etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
-			etcdOp := etcd.OpGet(v.Prefix(), opts...)
-			return &etcdOp, nil
+			return etcd.OpGet(v.Prefix(), opts...), nil
 		},
 		func(ctx context.Context, r etcd.OpResponse) (op.KeyValuesT[T], error) {
 			kvs := r.Get().Kvs
