@@ -28,12 +28,12 @@ import (
 // Process description:
 //  1. There is some template.
 //     - It contains objects IDs defined by functions, for example: ConfigId("my-config-id"), ConfigRowId("my-row-id")
-//  2. When loading JsonNet files, functions are called.
+//  2. When loading Jsonnet files, functions are called.
 //     - A placeholder is generated for each unique value.
 //     - For example, each ConfigId("my-config-id") is replaced by "<<~~func:ticket:1~~>>".
 //     - This is because we do not know in advance how many new IDs will need to be generated.
 //     - Function call can contain an expression, for example ConfigId("my-config-" + tableName), and this prevents forward analysis.
-//     - Functions are defined in Context.registerJSONNETFunctions().
+//     - Functions are defined in Context.registerJsonnetFunctions().
 //  3. When the entire template is loaded, the placeholders are replaced with new IDs.
 //     - For example, each "<<~~func:ticket:1~~>>" is replaced by "3496482342".
 //     - Replacements are defined by Context.Replacements().
@@ -42,14 +42,14 @@ import (
 //     - See "pkg/lib/operation/project/local/template/use/operation.go".
 //     - A new path is generated for each new object, according to the project naming.
 //
-// Context.JSONNETContext() returns JsonNet functions.
+// Context.JsonnetContext() returns Jsonnet functions.
 // Context.Replacements() returns placeholders for new IDs.
 type Context struct {
 	_context
 	templateRef       model.TemplateRef
 	instanceID        string
 	instanceIDShort   string
-	jsonNetCtx        *jsonnet.Context
+	jsonnetCtx        *jsonnet.Context
 	replacements      *replacevalues.Values
 	inputsValues      map[string]template.InputValue
 	tickets           *storageapi.TicketProvider
@@ -96,7 +96,7 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 		templateRef:     templateRef,
 		instanceID:      instanceID,
 		instanceIDShort: strhelper.FirstN(instanceID, instanceIDShortLength),
-		jsonNetCtx:      jsonnet.NewContext().WithCtx(ctx).WithImporter(fsimporter.New(objectsRoot)),
+		jsonnetCtx:      jsonnet.NewContext().WithCtx(ctx).WithImporter(fsimporter.New(objectsRoot)),
 		replacements:    replacevalues.NewValues(),
 		inputsValues:    make(map[string]template.InputValue),
 		tickets:         tickets,
@@ -116,8 +116,8 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 	// Replace BranchID, in template all objects have BranchID = 0
 	c.replacements.AddKey(model.BranchKey{ID: 0}, targetBranch)
 
-	// Register JsonNet functions
-	c.registerJSONNETFunctions()
+	// Register Jsonnet functions
+	c.registerJsonnetFunctions()
 
 	// Let's see where the inputs were used
 	c.registerInputsUsageNotifier()
@@ -133,8 +133,8 @@ func (c *Context) InstanceID() string {
 	return c.instanceID
 }
 
-func (c *Context) JSONNETContext() *jsonnet.Context {
-	return c.jsonNetCtx
+func (c *Context) JsonnetContext() *jsonnet.Context {
+	return c.jsonnetCtx
 }
 
 func (c *Context) Replacements() (*replacevalues.Values, error) {
@@ -195,19 +195,19 @@ func (c *Context) RegisterPlaceholder(oldID interface{}, fn PlaceholderResolver)
 	return c.placeholders[oldID]
 }
 
-func (c *Context) registerJSONNETFunctions() {
-	c.jsonNetCtx.NativeFunctionWithAlias(function.ConfigID(c.mapID))
-	c.jsonNetCtx.NativeFunctionWithAlias(function.ConfigRowID(c.mapID))
-	c.jsonNetCtx.NativeFunctionWithAlias(function.Input(c.inputValue))
-	c.jsonNetCtx.NativeFunctionWithAlias(function.InputIsAvailable(c.inputValue))
-	c.jsonNetCtx.NativeFunctionWithAlias(function.InstanceID(c.instanceID))
-	c.jsonNetCtx.NativeFunctionWithAlias(function.InstanceIDShort(c.instanceIDShort))
-	c.jsonNetCtx.NativeFunctionWithAlias(function.ComponentIsAvailable(c.components))
-	c.jsonNetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentID(c.components))
+func (c *Context) registerJsonnetFunctions() {
+	c.jsonnetCtx.NativeFunctionWithAlias(function.ConfigID(c.mapID))
+	c.jsonnetCtx.NativeFunctionWithAlias(function.ConfigRowID(c.mapID))
+	c.jsonnetCtx.NativeFunctionWithAlias(function.Input(c.inputValue))
+	c.jsonnetCtx.NativeFunctionWithAlias(function.InputIsAvailable(c.inputValue))
+	c.jsonnetCtx.NativeFunctionWithAlias(function.InstanceID(c.instanceID))
+	c.jsonnetCtx.NativeFunctionWithAlias(function.InstanceIDShort(c.instanceIDShort))
+	c.jsonnetCtx.NativeFunctionWithAlias(function.ComponentIsAvailable(c.components))
+	c.jsonnetCtx.NativeFunctionWithAlias(function.SnowflakeWriterComponentID(c.components))
 }
 
-// mapID maps ConfigId/ConfigRowId in JsonNet files to a <<~~ticket:123~~>> placeholder.
-// When all JsonNet files are processed, new IDs are generated in parallel.
+// mapID maps ConfigId/ConfigRowId in Jsonnet files to a <<~~ticket:123~~>> placeholder.
+// When all Jsonnet files are processed, new IDs are generated in parallel.
 func (c *Context) mapID(oldID interface{}) string {
 	p := c.RegisterPlaceholder(oldID, func(p Placeholder, cb ResolveCallback) {
 		// Placeholder -> new ID
@@ -233,7 +233,7 @@ func (c *Context) inputValue(inputID string) (template.InputValue, bool) {
 }
 
 func (c *Context) registerInputsUsageNotifier() {
-	c.jsonNetCtx.NotifierFactory(func(ctx context.Context) jsonnetLib.Notifier {
+	c.jsonnetCtx.NotifierFactory(func(ctx context.Context) jsonnetLib.Notifier {
 		return &inputUsageNotifier{Context: c, ctx: ctx}
 	})
 }

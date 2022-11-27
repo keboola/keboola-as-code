@@ -18,6 +18,6 @@ type Context interface {
 	context.Context
 	RemoteObjectsFilter() model.ObjectsFilter
 	LocalObjectsFilter() model.ObjectsFilter
-	JSONNETContext() *jsonnet.Context
+	JsonnetContext() *jsonnet.Context
 	Replacements() (*replacevalues.Values, error)
 }

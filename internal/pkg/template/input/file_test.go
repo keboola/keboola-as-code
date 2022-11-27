@@ -17,7 +17,7 @@ func TestLoadInputsFile(t *testing.T) {
 
 	// Write file
 	path := Path()
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, inputsJSONNET)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, inputsJsonnet)))
 
 	// Load
 	inputs, err := Load(fs, jsonnet.NewContext())
@@ -35,10 +35,10 @@ func TestSaveInputsFile(t *testing.T) {
 	// Load file
 	file, err := fs.ReadFile(filesystem.NewFileDef(Path()))
 	assert.NoError(t, err)
-	assert.Equal(t, wildcards.EscapeWhitespaces(inputsJSONNET), wildcards.EscapeWhitespaces(file.Content))
+	assert.Equal(t, wildcards.EscapeWhitespaces(inputsJsonnet), wildcards.EscapeWhitespaces(file.Content))
 }
 
-const inputsJSONNET = `{
+const inputsJsonnet = `{
   stepsGroups: [
     {
       description: "Group One",

@@ -174,7 +174,7 @@ func New(ctx context.Context, reference model.TemplateRef, template repository.T
 	}
 
 	// Load inputs
-	out.inputs, err = LoadInputs(templateDir, loadCtx.JSONNETContext())
+	out.inputs, err = LoadInputs(templateDir, loadCtx.JsonnetContext())
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +361,7 @@ func (t *Template) evaluate(ctx Context) (tmpl *evaluatedTemplate, err error) {
 	defer telemetry.EndSpan(span, &err)
 
 	// Evaluate manifest
-	evaluatedManifest, err := t.manifestFile.Evaluate(ctx.JSONNETContext())
+	evaluatedManifest, err := t.manifestFile.Evaluate(ctx.JsonnetContext())
 	if err != nil {
 		return nil, err
 	}

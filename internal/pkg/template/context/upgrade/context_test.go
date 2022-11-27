@@ -91,7 +91,7 @@ func TestContext(t *testing.T) {
 	fs := aferofs.NewMemoryFs()
 	ctx := NewContext(context.Background(), templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState)
 
-	// Check JsonNet functions
+	// Check Jsonnet functions
 	code := `
 {
 	Input1: Input("input-1"),
@@ -124,7 +124,7 @@ func TestContext(t *testing.T) {
   }
 }
 `
-	jsonOutput, err := jsonnet.Evaluate(code, ctx.JSONNETContext())
+	jsonOutput, err := jsonnet.Evaluate(code, ctx.JsonnetContext())
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expectedJSON, "\n"), jsonOutput)
 

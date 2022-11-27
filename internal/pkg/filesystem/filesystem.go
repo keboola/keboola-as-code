@@ -101,7 +101,7 @@ type Fs interface {
 type LoadHandler func(def *FileDef, fileType FileType) (File, error)
 
 type FileLoader interface {
-	WithJSONNETContext(ctx *jsonnet.Context) FileLoader
+	WithJsonnetContext(ctx *jsonnet.Context) FileLoader
 	ReadRawFile(file *FileDef) (*RawFile, error)
 	ReadFileContentTo(file *FileDef, target interface{}, structTag string) (*RawFile, bool, error)
 	ReadJSONFile(file *FileDef) (*JSONFile, error)
@@ -112,8 +112,8 @@ type FileLoader interface {
 	ReadYamlFileTo(file *FileDef, target interface{}) (*RawFile, error)
 	ReadYamlFieldsTo(file *FileDef, target interface{}, structTag string) (*YamlFile, bool, error)
 	ReadYamlMapTo(file *FileDef, target interface{}, structTag string) (*YamlFile, bool, error)
-	ReadJSONNETFile(file *FileDef) (*JSONNETFile, error)
-	ReadJSONNETFileTo(file *FileDef, target interface{}) (*JSONNETFile, error)
+	ReadJsonnetFile(file *FileDef) (*JsonnetFile, error)
+	ReadJsonnetFileTo(file *FileDef, target interface{}) (*JsonnetFile, error)
 	ReadSubDirs(fs Fs, root string) ([]string, error)
 	IsIgnored(path string) (bool, error)
 }

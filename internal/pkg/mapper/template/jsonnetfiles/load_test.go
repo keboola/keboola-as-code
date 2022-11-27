@@ -11,20 +11,20 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func TestJsonNetMapper_LoadLocalFile(t *testing.T) {
+func TestJsonnetMapper_LoadLocalFile(t *testing.T) {
 	t.Parallel()
 
 	// Variables
-	jsonNetCtx := jsonnet.NewContext()
-	jsonNetCtx.ExtVar("myKey", "bar")
+	jsonnetCtx := jsonnet.NewContext()
+	jsonnetCtx.ExtVar("myKey", "bar")
 
 	// Create state
-	state := createStateWithMapper(t, jsonNetCtx)
+	state := createStateWithMapper(t, jsonnetCtx)
 
-	// Write JsonNet file with a variable
+	// Write Jsonnet file with a variable
 	fs := state.ObjectsRoot()
-	jsonNetContent := `{ foo: std.extVar("myKey")}`
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`my/dir/file.jsonnet`, jsonNetContent)))
+	jsonnetContent := `{ foo: std.extVar("myKey")}`
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(`my/dir/file.jsonnet`, jsonnetContent)))
 
 	// Create file loader
 	fileLoader := state.Mapper().NewFileLoader(fs)
@@ -35,9 +35,9 @@ func TestJsonNetMapper_LoadLocalFile(t *testing.T) {
 	jsonFile, err := fileLoader.ReadJSONFile(fileDef)
 	assert.NoError(t, err)
 
-	// JsonNet file is loaded and converted to a Json file
+	// Jsonnet file is loaded and converted to a Json file
 	assert.Equal(t, `my/dir/file.jsonnet`, jsonFile.Path())
-	assert.Equal(t, []string{model.FileTypeJSONNET}, jsonFile.AllTags())
+	assert.Equal(t, []string{model.FileTypeJsonnet}, jsonFile.AllTags())
 	assert.Equal(t, orderedmap.FromPairs([]orderedmap.Pair{
 		{Key: "foo", Value: "bar"},
 	}), jsonFile.Content)

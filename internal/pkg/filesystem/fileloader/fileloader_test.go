@@ -144,22 +144,22 @@ file "file.txt" is invalid:
 	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
 }
 
-func (*testCases) TestFileLoader_ReadJsonNetFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+func (*testCases) TestFileLoader_ReadJsonnetFile(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{foo: "bar"}`)))
 
 	// Read
 	logger.Truncate()
-	file, err := fs.FileLoader().ReadJSONNETFile(filesystem.NewFileDef(filePath))
+	file, err := fs.FileLoader().ReadJsonnetFile(filesystem.NewFileDef(filePath))
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
-	jsonNetCode := jsonnet.FormatAst(file.Content)
-	assert.Equal(t, "{ foo: \"bar\" }\n", jsonNetCode)
+	jsonnetCode := jsonnet.FormatAst(file.Content)
+	assert.Equal(t, "{ foo: \"bar\" }\n", jsonnetCode)
 	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
 }
 
-func (*testCases) TestFileLoader_ReadJsonNetFileTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+func (*testCases) TestFileLoader_ReadJsonnetFileTo(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{foo: "bar"}`)))
@@ -167,14 +167,14 @@ func (*testCases) TestFileLoader_ReadJsonNetFileTo(t *testing.T, fs filesystem.F
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	file, err := fs.FileLoader().ReadJSONNETFileTo(filesystem.NewFileDef(filePath), target)
+	file, err := fs.FileLoader().ReadJsonnetFileTo(filesystem.NewFileDef(filePath), target)
 	assert.NotEmpty(t, file.Content)
 	assert.NoError(t, err)
 	assert.Equal(t, `bar`, target.FooField)
 	assert.Equal(t, `DEBUG  Loaded "file.txt"`, strings.TrimSpace(logger.AllMessages()))
 }
 
-func (*testCases) TestFileLoader_ReadJsonNetFileTo_Invalid(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
+func (*testCases) TestFileLoader_ReadJsonnetFileTo_Invalid(t *testing.T, fs filesystem.Fs, logger log.DebugLogger) {
 	// Create file
 	filePath := "file.txt"
 	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(filePath, `{foo:`)))
@@ -182,7 +182,7 @@ func (*testCases) TestFileLoader_ReadJsonNetFileTo_Invalid(t *testing.T, fs file
 	// Read
 	logger.Truncate()
 	target := &myStruct{}
-	_, err := fs.FileLoader().ReadJSONNETFileTo(filesystem.NewFileDef(filePath), target)
+	_, err := fs.FileLoader().ReadJsonnetFileTo(filesystem.NewFileDef(filePath), target)
 	assert.Error(t, err)
 	expectedError := `
 file "file.txt" is invalid:

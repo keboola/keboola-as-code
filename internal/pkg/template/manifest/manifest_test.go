@@ -13,7 +13,7 @@ import (
 
 type test struct {
 	name       string
-	jsonNet    string
+	jsonnet    string
 	records    []model.ObjectManifest
 	mainConfig *model.ConfigKey
 }
@@ -22,12 +22,12 @@ func cases() []test {
 	return []test{
 		{
 			name:    `minimal`,
-			jsonNet: minimalJSONNET(),
+			jsonnet: minimalJsonnet(),
 			records: minimalRecords(),
 		},
 		{
 			name:    `full`,
-			jsonNet: fullJSONNET(),
+			jsonnet: fullJsonnet(),
 			records: fullRecords(),
 			mainConfig: &model.ConfigKey{
 				ComponentID: "keboola.ex-db-oracle",
@@ -44,7 +44,7 @@ func TestLoadManifestFile(t *testing.T) {
 
 		// Write file
 		path := Path()
-		assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, c.jsonNet)))
+		assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, c.jsonnet)))
 
 		// Load
 		manifestFile, err := Load(fs)
@@ -76,11 +76,11 @@ func TestSaveManifestFile(t *testing.T) {
 		// Load file
 		file, err := fs.ReadFile(filesystem.NewFileDef(Path()))
 		assert.NoError(t, err)
-		assert.Equal(t, wildcards.EscapeWhitespaces(c.jsonNet), wildcards.EscapeWhitespaces(file.Content), c.name)
+		assert.Equal(t, wildcards.EscapeWhitespaces(c.jsonnet), wildcards.EscapeWhitespaces(file.Content), c.name)
 	}
 }
 
-func minimalJSONNET() string {
+func minimalJsonnet() string {
 	return `{
   configurations: [],
 }
@@ -91,7 +91,7 @@ func minimalRecords() []model.ObjectManifest {
 	return []model.ObjectManifest{}
 }
 
-func fullJSONNET() string {
+func fullJsonnet() string {
 	return `{
   mainConfig: {
     componentId: "keboola.ex-db-oracle",

@@ -7,7 +7,7 @@ import (
 
 const (
 	FileTypeJSON               = `json`
-	FileTypeJSONNET            = `jsonnet`
+	FileTypeJsonnet            = `jsonnet`
 	FileTypeMarkdown           = `markdown`
 	FileTypeOther              = `other`
 	FileKindObjectConfig       = `objectConfig`

@@ -83,7 +83,7 @@ func TestContext(t *testing.T) {
 	// Create template use context
 	useCtx := NewContext(ctx, templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap())
 
-	// Check JsonNet functions
+	// Check Jsonnet functions
 	code := `
 {
 	Input1: Input("input-1"),
@@ -114,7 +114,7 @@ func TestContext(t *testing.T) {
   }
 }
 `
-	jsonOutput, err := jsonnet.Evaluate(code, useCtx.JSONNETContext())
+	jsonOutput, err := jsonnet.Evaluate(code, useCtx.JsonnetContext())
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expectedJSON, "\n"), jsonOutput)
 
@@ -200,7 +200,7 @@ func TestComponentsFunctions(t *testing.T) {
 `
 
 	// Case 1: No component is defined
-	output, err := jsonnet.Evaluate(code, newUseCtx().JSONNETContext())
+	output, err := jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
 	expected := ""
 	assert.Error(t, err)
 	assert.Equal(t, "jsonnet error: RUNTIME ERROR: no Snowflake Writer component found", err.Error())
@@ -217,7 +217,7 @@ func TestComponentsFunctions(t *testing.T) {
   "wr-snowflake": "keboola.wr-db-snowflake"
 }
 `
-	output, err = jsonnet.Evaluate(code, newUseCtx().JSONNETContext())
+	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
@@ -232,7 +232,7 @@ func TestComponentsFunctions(t *testing.T) {
   "wr-snowflake": "keboola.wr-snowflake-blob-storage"
 }
 `
-	output, err = jsonnet.Evaluate(code, newUseCtx().JSONNETContext())
+	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
@@ -248,7 +248,7 @@ func TestComponentsFunctions(t *testing.T) {
   "wr-snowflake": "keboola.wr-db-snowflake"
 }
 `
-	output, err = jsonnet.Evaluate(code, newUseCtx().JSONNETContext())
+	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 }

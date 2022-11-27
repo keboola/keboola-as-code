@@ -30,7 +30,7 @@ type useContext interface {
 }
 
 func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, error) {
-	jsonNetCtx := ctx.JSONNETContext()
+	jsonnetCtx := ctx.JsonnetContext()
 	replacements, err := ctx.Replacements()
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func MappersFor(s *state.State, d dependencies, ctx Context) (mapper.Mappers, er
 
 	mappers := mapper.Mappers{
 		// Template
-		jsonnetfiles.NewMapper(jsonNetCtx),
+		jsonnetfiles.NewMapper(jsonnetCtx),
 		// Core files
 		corefiles.NewMapper(s),
 		description.NewMapper(),
