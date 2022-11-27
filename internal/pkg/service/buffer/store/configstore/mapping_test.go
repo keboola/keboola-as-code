@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func TestStore_GetCurrentMapping(t *testing.T) {
+func TestStore_GetMapping_GetMappingByRevisionID(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -53,12 +53,27 @@ func TestStore_GetCurrentMapping(t *testing.T) {
 	}
 
 	// Get current mapping
-	mapping, err := store.GetCurrentMapping(ctx, projectID, receiverID, exportID)
+	mapping, err := store.GetMapping(ctx, projectID, receiverID, exportID)
 	assert.NoError(t, err)
-	assert.Equal(t, &input[2], mapping)
+	assert.Equal(t, input[2], mapping)
+
+	// Get mapping 1 by RevisionID
+	mapping, err = store.GetMappingByRevisionID(ctx, projectID, receiverID, exportID, input[0].RevisionID)
+	assert.NoError(t, err)
+	assert.Equal(t, input[0], mapping)
+
+	// Get mapping 2 by RevisionID
+	mapping, err = store.GetMappingByRevisionID(ctx, projectID, receiverID, exportID, input[1].RevisionID)
+	assert.NoError(t, err)
+	assert.Equal(t, input[1], mapping)
+
+	// Get mapping 10 by RevisionID
+	mapping, err = store.GetMappingByRevisionID(ctx, projectID, receiverID, exportID, input[2].RevisionID)
+	assert.NoError(t, err)
+	assert.Equal(t, input[2], mapping)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.etcdClient, `
+	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
 config/mapping/revision/1000/receiver1/export1/00000001
 -----

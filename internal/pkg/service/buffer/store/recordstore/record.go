@@ -14,7 +14,7 @@ import (
 )
 
 func (c *Store) CreateRecord(ctx context.Context, recordKey schema.RecordKey, csvData []string) (err error) {
-	tracer, client := c.tracer, c.etcdClient
+	tracer, client := c.tracer, c.client
 
 	_, span := tracer.Start(ctx, "keboola.go.buffer.recordstore.CreateRecord")
 	defer telemetry.EndSpan(span, &err)

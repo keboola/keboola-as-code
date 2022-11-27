@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	MaxReceiversPerProject = 100
-	MaxExportsPerReceiver  = 20
+	MaxReceiversPerProject       = 100
+	MaxExportsPerReceiver        = 20
+	MaxMappingRevisionsPerExport = 100
 )
 
 type Store struct {

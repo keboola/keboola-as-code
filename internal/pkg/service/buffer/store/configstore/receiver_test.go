@@ -29,7 +29,7 @@ func TestStore_CreateReceiver(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.etcdClient, `
+	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
 config/receiver/1000/github-pull-requests
 -----
@@ -50,13 +50,13 @@ func TestStore_GetReceiver(t *testing.T) {
 	store := newStoreForTest(t)
 
 	// Create receiver
-	input := &model.Receiver{
+	input := model.Receiver{
 		ID:        "github-pull-requests",
 		ProjectID: 1000,
 		Name:      "Github Pull Requests",
 		Secret:    idgenerator.ReceiverSecret(),
 	}
-	err := store.CreateReceiver(ctx, *input)
+	err := store.CreateReceiver(ctx, input)
 	assert.NoError(t, err)
 
 	// Get receiver
@@ -65,7 +65,7 @@ func TestStore_GetReceiver(t *testing.T) {
 	assert.Equal(t, input, receiver)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.etcdClient, `
+	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
 config/receiver/1000/github-pull-requests
 -----
@@ -88,7 +88,7 @@ func TestStore_ListReceivers(t *testing.T) {
 	projectID := 1000
 
 	// Create receivers
-	input := []*model.Receiver{
+	input := []model.Receiver{
 		{
 			ID:        "github-pull-requests",
 			ProjectID: projectID,
@@ -108,7 +108,7 @@ func TestStore_ListReceivers(t *testing.T) {
 	})
 
 	for _, r := range input {
-		err := store.CreateReceiver(ctx, *r)
+		err := store.CreateReceiver(ctx, r)
 		assert.NoError(t, err)
 	}
 
@@ -122,7 +122,7 @@ func TestStore_ListReceivers(t *testing.T) {
 	assert.Equal(t, input, receivers)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.etcdClient, `
+	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
 config/receiver/1000/github-issues
 -----

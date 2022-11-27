@@ -33,7 +33,7 @@ func TestStore_CreateExport(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.etcdClient, `
+	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
 config/export/1000/github/github-issues
 -----
@@ -59,7 +59,7 @@ func TestStore_ListExports(t *testing.T) {
 	receiverID := "receiver1"
 
 	// Create exports
-	input := []*model.Export{
+	input := []model.Export{
 		{
 			ID:   "export-1",
 			Name: "Export 1",
@@ -81,7 +81,7 @@ func TestStore_ListExports(t *testing.T) {
 	}
 
 	for _, e := range input {
-		err := store.CreateExport(ctx, projectID, receiverID, *e)
+		err := store.CreateExport(ctx, projectID, receiverID, e)
 		assert.NoError(t, err)
 	}
 
@@ -91,7 +91,7 @@ func TestStore_ListExports(t *testing.T) {
 	assert.Equal(t, input, output)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.etcdClient, `
+	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
 config/export/1000/receiver1/export-1
 -----
