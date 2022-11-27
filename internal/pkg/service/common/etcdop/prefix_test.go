@@ -16,7 +16,8 @@ func TestPrefix(t *testing.T) {
 	ctx := context.Background()
 	etcd := etcdhelper.ClientForTest(t)
 
-	pfx := Prefix("my/prefix/")
+	root := Prefix("my")
+	pfx := root.Add("prefix")
 	key0 := Key("key0")
 	key1 := pfx.Key("key1")
 	key2 := pfx.Key("key2")
@@ -391,8 +392,10 @@ func BenchmarkPrefixT_DeleteAll(b *testing.B) {
 }
 
 func typedPrefixForTest() PrefixT[fooType] {
+	root := Prefix("my")
+	pfx := root.Add("prefix")
 	return PrefixT[fooType]{
-		prefix:        Prefix("my/prefix/"),
+		prefix:        pfx,
 		serialization: JSONSerialization(nil),
 	}
 }

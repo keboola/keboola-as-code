@@ -35,7 +35,7 @@ func (v PrefixT[T]) Prefix() string {
 }
 
 func (v PrefixT[T]) Add(str string) PrefixT[T] {
-	return PrefixT[T]{prefix: v.prefix.Add(str)}
+	return PrefixT[T]{prefix: v.prefix.Add(str), serialization: v.serialization}
 }
 
 func (v PrefixT[T]) Key(key string) KeyT[T] {
