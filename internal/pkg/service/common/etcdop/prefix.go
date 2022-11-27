@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	etcd "go.etcd.io/etcd/client/v3"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 )
 
 type prefix = Prefix
@@ -53,8 +55,8 @@ func NewTypedPrefix[T any](v Prefix, s Serialization) PrefixT[T] {
 	return PrefixT[T]{prefix: v, serialization: s}
 }
 
-func (v Prefix) AtLeastOneExists(opts ...etcd.OpOption) BoolOp {
-	return NewBoolOp(
+func (v Prefix) AtLeastOneExists(opts ...etcd.OpOption) op.BoolOp {
+	return op.NewBoolOp(
 		func(_ context.Context) (*etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithCountOnly()}, opts...)
 			etcdOp := etcd.OpGet(v.Prefix(), opts...)
@@ -66,8 +68,8 @@ func (v Prefix) AtLeastOneExists(opts ...etcd.OpOption) BoolOp {
 	)
 }
 
-func (v Prefix) Count(opts ...etcd.OpOption) CountOp {
-	return NewCountOp(
+func (v Prefix) Count(opts ...etcd.OpOption) op.CountOp {
+	return op.NewCountOp(
 		func(_ context.Context) (*etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithCountOnly(), etcd.WithPrefix()}, opts...)
 			etcdOp := etcd.OpGet(v.Prefix(), opts...)
@@ -79,20 +81,20 @@ func (v Prefix) Count(opts ...etcd.OpOption) CountOp {
 	)
 }
 
-func (v Prefix) GetAll(opts ...etcd.OpOption) GetManyOp {
-	return NewGetManyOp(
+func (v Prefix) GetAll(opts ...etcd.OpOption) op.GetManyOp {
+	return op.NewGetManyOp(
 		func(_ context.Context) (*etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
 			etcdOp := etcd.OpGet(v.Prefix(), opts...)
 			return &etcdOp, nil
-		}, func(_ context.Context, r etcd.OpResponse) ([]*KeyValue, error) {
+		}, func(_ context.Context, r etcd.OpResponse) ([]*op.KeyValue, error) {
 			return r.Get().Kvs, nil
 		},
 	)
 }
 
-func (v Prefix) DeleteAll(opts ...etcd.OpOption) CountOp {
-	return NewCountOp(
+func (v Prefix) DeleteAll(opts ...etcd.OpOption) op.CountOp {
+	return op.NewCountOp(
 		func(_ context.Context) (*etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
 			etcdOp := etcd.OpDelete(v.Prefix(), opts...)
@@ -104,16 +106,16 @@ func (v Prefix) DeleteAll(opts ...etcd.OpOption) CountOp {
 	)
 }
 
-func (v PrefixT[T]) GetAll(opts ...etcd.OpOption) GetManyTOp[T] {
-	return NewGetManyTOp(
+func (v PrefixT[T]) GetAll(opts ...etcd.OpOption) op.GetManyTOp[T] {
+	return op.NewGetManyTOp(
 		func(_ context.Context) (*etcd.Op, error) {
 			opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
 			etcdOp := etcd.OpGet(v.Prefix(), opts...)
 			return &etcdOp, nil
 		},
-		func(ctx context.Context, r etcd.OpResponse) (KeyValuesT[T], error) {
+		func(ctx context.Context, r etcd.OpResponse) (op.KeyValuesT[T], error) {
 			kvs := r.Get().Kvs
-			out := make([]KeyValueT[T], len(kvs))
+			out := make(op.KeyValuesT[T], len(kvs))
 			for i, kv := range kvs {
 				out[i].KV = kv
 				if err := v.serialization.decodeAndValidate(ctx, kv, &out[i].Value); err != nil {

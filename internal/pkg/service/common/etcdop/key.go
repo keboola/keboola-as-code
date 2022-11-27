@@ -5,6 +5,7 @@ import (
 
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -23,9 +24,9 @@ func (v Key) Key() string {
 	return string(v)
 }
 
-func (v Key) Exists(opts ...etcd.OpOption) BoolOp {
+func (v Key) Exists(opts ...etcd.OpOption) op.BoolOp {
 	opts = append([]etcd.OpOption{etcd.WithCountOnly()}, opts...)
-	return NewBoolOp(
+	return op.NewBoolOp(
 		func(_ context.Context) (*etcd.Op, error) {
 			etcdOp := etcd.OpGet(v.Key(), opts...)
 			return &etcdOp, nil
@@ -43,13 +44,13 @@ func (v Key) Exists(opts ...etcd.OpOption) BoolOp {
 	)
 }
 
-func (v Key) Get(opts ...etcd.OpOption) GetOneOp {
-	return NewGetOneOp(
+func (v Key) Get(opts ...etcd.OpOption) op.GetOneOp {
+	return op.NewGetOneOp(
 		func(_ context.Context) (*etcd.Op, error) {
 			etcdOp := etcd.OpGet(v.Key(), opts...)
 			return &etcdOp, nil
 		},
-		func(_ context.Context, r etcd.OpResponse) (*KeyValue, error) {
+		func(_ context.Context, r etcd.OpResponse) (*op.KeyValue, error) {
 			count := r.Get().Count
 			if count == 0 {
 				return nil, nil
@@ -62,8 +63,8 @@ func (v Key) Get(opts ...etcd.OpOption) GetOneOp {
 	)
 }
 
-func (v Key) Delete(opts ...etcd.OpOption) BoolOp {
-	return NewBoolOp(
+func (v Key) Delete(opts ...etcd.OpOption) op.BoolOp {
+	return op.NewBoolOp(
 		func(_ context.Context) (*etcd.Op, error) {
 			etcdOp := etcd.OpDelete(v.Key(), opts...)
 			return &etcdOp, nil
@@ -81,8 +82,8 @@ func (v Key) Delete(opts ...etcd.OpOption) BoolOp {
 	)
 }
 
-func (v Key) Put(val string, opts ...etcd.OpOption) NoResultOp {
-	return NewNoResultOp(
+func (v Key) Put(val string, opts ...etcd.OpOption) op.NoResultOp {
+	return op.NewNoResultOp(
 		func(_ context.Context) (*etcd.Op, error) {
 			etcdOp := etcd.OpPut(v.Key(), val, opts...)
 			return &etcdOp, nil
@@ -94,8 +95,8 @@ func (v Key) Put(val string, opts ...etcd.OpOption) NoResultOp {
 	)
 }
 
-func (v Key) PutIfNotExists(val string, opts ...etcd.OpOption) BoolOp {
-	return NewBoolOp(
+func (v Key) PutIfNotExists(val string, opts ...etcd.OpOption) op.BoolOp {
+	return op.NewBoolOp(
 		func(_ context.Context) (*etcd.Op, error) {
 			etcdOp := etcd.OpTxn(
 				[]etcd.Cmp{etcd.Compare(etcd.Version(v.Key()), "=", 0)},
@@ -110,13 +111,13 @@ func (v Key) PutIfNotExists(val string, opts ...etcd.OpOption) BoolOp {
 	)
 }
 
-func (v KeyT[T]) Get(opts ...etcd.OpOption) GetOneTOp[T] {
-	return NewGetOneTOp(
+func (v KeyT[T]) Get(opts ...etcd.OpOption) op.GetOneTOp[T] {
+	return op.NewGetOneTOp(
 		func(_ context.Context) (*etcd.Op, error) {
 			etcdOp := etcd.OpGet(v.Key(), opts...)
 			return &etcdOp, nil
 		},
-		func(ctx context.Context, r etcd.OpResponse) (*KeyValueT[T], error) {
+		func(ctx context.Context, r etcd.OpResponse) (*op.KeyValueT[T], error) {
 			count := r.Get().Count
 			if count == 0 {
 				return nil, nil
@@ -126,7 +127,7 @@ func (v KeyT[T]) Get(opts ...etcd.OpOption) GetOneTOp[T] {
 				if err := v.serialization.decodeAndValidate(ctx, kv, target); err != nil {
 					return nil, invalidKeyError(string(kv.Key), err)
 				}
-				return &KeyValueT[T]{Value: *target, KV: kv}, nil
+				return &op.KeyValueT[T]{Value: *target, KV: kv}, nil
 			} else {
 				return nil, errors.Errorf(`etcd get: at most one result result expected, found %d results`, count)
 			}
@@ -134,8 +135,8 @@ func (v KeyT[T]) Get(opts ...etcd.OpOption) GetOneTOp[T] {
 	)
 }
 
-func (v KeyT[T]) Put(val T, opts ...etcd.OpOption) NoResultOp {
-	return NewNoResultOp(
+func (v KeyT[T]) Put(val T, opts ...etcd.OpOption) op.NoResultOp {
+	return op.NewNoResultOp(
 		func(ctx context.Context) (*etcd.Op, error) {
 			encoded, err := v.serialization.validateAndEncode(ctx, &val)
 			if err != nil {
@@ -151,8 +152,8 @@ func (v KeyT[T]) Put(val T, opts ...etcd.OpOption) NoResultOp {
 	)
 }
 
-func (v KeyT[T]) PutIfNotExists(val T, opts ...etcd.OpOption) BoolOp {
-	return NewBoolOp(
+func (v KeyT[T]) PutIfNotExists(val T, opts ...etcd.OpOption) op.BoolOp {
+	return op.NewBoolOp(
 		func(ctx context.Context) (*etcd.Op, error) {
 			encoded, err := v.serialization.validateAndEncode(ctx, &val)
 			if err != nil {
