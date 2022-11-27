@@ -151,7 +151,7 @@ func (v KeyT[T]) Put(val T, opts ...etcd.OpOption) NoResultOp {
 	)
 }
 
-func (v KeyT[T]) PutIfNotExists(val string, opts ...etcd.OpOption) BoolOp {
+func (v KeyT[T]) PutIfNotExists(val T, opts ...etcd.OpOption) BoolOp {
 	return NewBoolOp(
 		func(ctx context.Context) (*etcd.Op, error) {
 			encoded, err := v.serialization.validateAndEncode(ctx, &val)
