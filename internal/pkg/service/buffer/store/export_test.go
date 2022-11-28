@@ -21,7 +21,7 @@ func TestStore_CreateExport(t *testing.T) {
 
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "github"}
 	exportKey := key.ExportKey{ExportID: "github-issues", ReceiverKey: receiverKey}
-	export := model.Export{
+	export := model.ExportBase{
 		ExportKey: exportKey,
 		Name:      "Github Issues",
 		ImportConditions: model.ImportConditions{
@@ -62,7 +62,7 @@ func TestStore_ListExports(t *testing.T) {
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "receiver1"}
 
 	// Create exports
-	input := []model.Export{
+	input := []model.ExportBase{
 		{
 			ExportKey: key.ExportKey{ExportID: "export-1", ReceiverKey: receiverKey},
 			Name:      "Export 1",

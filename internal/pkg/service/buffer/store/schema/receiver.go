@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type receivers = PrefixT[model.Receiver]
+type receivers = PrefixT[model.ReceiverBase]
 
 type Receivers struct {
 	receivers
@@ -20,13 +20,13 @@ type ReceiversInProject struct {
 }
 
 func (v ConfigsRoot) Receivers() Receivers {
-	return Receivers{receivers: NewTypedPrefix[model.Receiver](
+	return Receivers{receivers: NewTypedPrefix[model.ReceiverBase](
 		v.prefix.Add("receiver"),
 		v.schema.serialization,
 	)}
 }
 
-func (v Receivers) ByKey(k storeKey.ReceiverKey) KeyT[model.Receiver] {
+func (v Receivers) ByKey(k storeKey.ReceiverKey) KeyT[model.ReceiverBase] {
 	if k.ReceiverID == "" {
 		panic(errors.New("receiver receiverID cannot be empty"))
 	}

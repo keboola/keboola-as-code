@@ -16,7 +16,7 @@ import (
 // Logic errors:
 // - CountLimitReachedError
 // - ResourceAlreadyExistsError.
-func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (err error) {
+func (s *Store) CreateReceiver(ctx context.Context, receiver model.ReceiverBase) (err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.CreateReceiver")
 	defer telemetry.EndSpan(span, &err)
 
@@ -32,7 +32,7 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 	return err
 }
 
-func (s *Store) createReceiverOp(_ context.Context, receiver model.Receiver) op.BoolOp {
+func (s *Store) createReceiverOp(_ context.Context, receiver model.ReceiverBase) op.BoolOp {
 	return s.schema.
 		Configs().
 		Receivers().
@@ -49,25 +49,25 @@ func (s *Store) createReceiverOp(_ context.Context, receiver model.Receiver) op.
 // GetReceiver fetches a receiver from the store.
 // Logic errors:
 // - ResourceNotFoundError.
-func (s *Store) GetReceiver(ctx context.Context, receiverKey key.ReceiverKey) (r model.Receiver, err error) {
+func (s *Store) GetReceiver(ctx context.Context, receiverKey key.ReceiverKey) (r model.ReceiverBase, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetReceiver")
 	defer telemetry.EndSpan(span, &err)
 
 	kv, err := s.getReceiverOp(ctx, receiverKey).Do(ctx, s.client)
 	if err != nil {
-		return model.Receiver{}, err
+		return model.ReceiverBase{}, err
 	}
 
 	return kv.Value, nil
 }
 
-func (s *Store) getReceiverOp(_ context.Context, receiverKey key.ReceiverKey) op.ForType[*op.KeyValueT[model.Receiver]] {
+func (s *Store) getReceiverOp(_ context.Context, receiverKey key.ReceiverKey) op.ForType[*op.KeyValueT[model.ReceiverBase]] {
 	return s.schema.
 		Configs().
 		Receivers().
 		ByKey(receiverKey).
 		Get().
-		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Receiver], err error) (*op.KeyValueT[model.Receiver], error) {
+		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.ReceiverBase], err error) (*op.KeyValueT[model.ReceiverBase], error) {
 			if kv == nil && err == nil {
 				return nil, serviceError.NewResourceNotFoundError("receiver", receiverKey.String())
 			}
@@ -76,7 +76,7 @@ func (s *Store) getReceiverOp(_ context.Context, receiverKey key.ReceiverKey) op
 }
 
 // ListReceivers from the store.
-func (s *Store) ListReceivers(ctx context.Context, projectID int) (r []model.Receiver, err error) {
+func (s *Store) ListReceivers(ctx context.Context, projectID int) (r []model.ReceiverBase, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.ListReceivers")
 	defer telemetry.EndSpan(span, &err)
 
@@ -88,7 +88,7 @@ func (s *Store) ListReceivers(ctx context.Context, projectID int) (r []model.Rec
 	return kvs.Values(), nil
 }
 
-func (s *Store) listReceiversOp(_ context.Context, projectID int) op.ForType[op.KeyValuesT[model.Receiver]] {
+func (s *Store) listReceiversOp(_ context.Context, projectID int) op.ForType[op.KeyValuesT[model.ReceiverBase]] {
 	receivers := s.schema.Configs().Receivers().InProject(projectID)
 	return receivers.GetAll(etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
 }

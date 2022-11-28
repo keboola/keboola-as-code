@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type exports = PrefixT[model.Export]
+type exports = PrefixT[model.ExportBase]
 
 type Exports struct {
 	exports
@@ -20,13 +20,13 @@ type ExportsInReceiver struct {
 }
 
 func (v ConfigsRoot) Exports() Exports {
-	return Exports{exports: NewTypedPrefix[model.Export](
+	return Exports{exports: NewTypedPrefix[model.ExportBase](
 		v.prefix.Add("export"),
 		v.schema.serialization,
 	)}
 }
 
-func (v Exports) ByKey(k storeKey.ExportKey) KeyT[model.Export] {
+func (v Exports) ByKey(k storeKey.ExportKey) KeyT[model.ExportBase] {
 	return v.InReceiver(k.ReceiverKey).ID(k.ExportID)
 }
 
@@ -40,7 +40,7 @@ func (v Exports) InReceiver(k storeKey.ReceiverKey) ExportsInReceiver {
 	return ExportsInReceiver{exports: v.exports.Add(strconv.Itoa(k.ProjectID)).Add(k.ReceiverID)}
 }
 
-func (v ExportsInReceiver) ID(exportID string) KeyT[model.Export] {
+func (v ExportsInReceiver) ID(exportID string) KeyT[model.ExportBase] {
 	if exportID == "" {
 		panic(errors.New("export exportID cannot be empty"))
 	}

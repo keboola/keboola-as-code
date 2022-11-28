@@ -16,7 +16,7 @@ import (
 // Logic errors:
 // - CountLimitReachedError
 // - ResourceAlreadyExistsError.
-func (s *Store) CreateExport(ctx context.Context, export model.Export) (err error) {
+func (s *Store) CreateExport(ctx context.Context, export model.ExportBase) (err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.CreateExport")
 	defer telemetry.EndSpan(span, &err)
 
@@ -31,7 +31,7 @@ func (s *Store) CreateExport(ctx context.Context, export model.Export) (err erro
 	return err
 }
 
-func (s *Store) createExportOp(_ context.Context, export model.Export) op.BoolOp {
+func (s *Store) createExportOp(_ context.Context, export model.ExportBase) op.BoolOp {
 	return s.schema.
 		Configs().
 		Exports().
@@ -48,24 +48,24 @@ func (s *Store) createExportOp(_ context.Context, export model.Export) op.BoolOp
 // GetExport fetches an export from the store.
 // Logic errors:
 // - ResourceNotFoundError.
-func (s *Store) GetExport(ctx context.Context, exportKey key.ExportKey) (r model.Export, err error) {
+func (s *Store) GetExport(ctx context.Context, exportKey key.ExportKey) (r model.ExportBase, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetExport")
 	defer telemetry.EndSpan(span, &err)
 
 	kv, err := s.getExportOp(ctx, exportKey).Do(ctx, s.client)
 	if err != nil {
-		return model.Export{}, err
+		return model.ExportBase{}, err
 	}
 	return kv.Value, nil
 }
 
-func (s *Store) getExportOp(_ context.Context, exportKey key.ExportKey) op.ForType[*op.KeyValueT[model.Export]] {
+func (s *Store) getExportOp(_ context.Context, exportKey key.ExportKey) op.ForType[*op.KeyValueT[model.ExportBase]] {
 	return s.schema.
 		Configs().
 		Exports().
 		ByKey(exportKey).
 		Get().
-		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Export], err error) (*op.KeyValueT[model.Export], error) {
+		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.ExportBase], err error) (*op.KeyValueT[model.ExportBase], error) {
 			if kv == nil && err == nil {
 				return nil, serviceError.NewResourceNotFoundError("export", exportKey.String())
 			}
@@ -74,7 +74,7 @@ func (s *Store) getExportOp(_ context.Context, exportKey key.ExportKey) op.ForTy
 }
 
 // ListExports from the store.
-func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey) (out []model.Export, err error) {
+func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey) (out []model.ExportBase, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.ListExports")
 	defer telemetry.EndSpan(span, &err)
 
@@ -86,7 +86,7 @@ func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey) (o
 	return kvs.Values(), nil
 }
 
-func (s *Store) listExportsOp(_ context.Context, receiverKey key.ReceiverKey) op.ForType[op.KeyValuesT[model.Export]] {
+func (s *Store) listExportsOp(_ context.Context, receiverKey key.ReceiverKey) op.ForType[op.KeyValuesT[model.ExportBase]] {
 	return s.schema.Configs().Exports().InReceiver(receiverKey).GetAll(etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
 }
 

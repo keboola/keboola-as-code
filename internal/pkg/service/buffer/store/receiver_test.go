@@ -20,10 +20,13 @@ func TestStore_CreateReceiver(t *testing.T) {
 	store := newStoreForTest(t)
 
 	// Create receiver
-	config := model.Receiver{
-		ReceiverKey: key.ReceiverKey{ProjectID: 1000, ReceiverID: "github-pull-requests"},
-		Name:        "Github Pull Requests",
-		Secret:      idgenerator.ReceiverSecret(),
+	config := model.ReceiverBase{
+		ReceiverKey: key.ReceiverKey{
+			ProjectID:  1000,
+			ReceiverID: "github-pull-requests",
+		},
+		Name:   "Github Pull Requests",
+		Secret: idgenerator.ReceiverSecret(),
 	}
 	err := store.CreateReceiver(ctx, config)
 	assert.NoError(t, err)
@@ -50,7 +53,7 @@ func TestStore_GetReceiver(t *testing.T) {
 	store := newStoreForTest(t)
 
 	// Create receiver
-	input := model.Receiver{
+	input := model.ReceiverBase{
 		ReceiverKey: key.ReceiverKey{ProjectID: 1000, ReceiverID: "github-pull-requests"},
 		Name:        "Github Pull Requests",
 		Secret:      idgenerator.ReceiverSecret(),
@@ -87,7 +90,7 @@ func TestStore_ListReceivers(t *testing.T) {
 	projectID := 1000
 
 	// Create receivers
-	input := []model.Receiver{
+	input := []model.ReceiverBase{
 		{
 			ReceiverKey: key.ReceiverKey{ProjectID: 1000, ReceiverID: "github-pull-requests"},
 			Name:        "Github Pull Requests",
