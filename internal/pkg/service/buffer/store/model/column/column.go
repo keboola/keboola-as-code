@@ -9,6 +9,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -30,6 +31,7 @@ type (
 
 const (
 	IDPlaceholder               = "<<~~id~~>>"
+	TemplateLanguageJsonnet     = "jsonnet"
 	UndefinedValueStrategyNull  = "null"
 	UndefinedValueStrategyError = "error"
 )
@@ -213,7 +215,27 @@ func (Header) CsvValue(importCtx ImportCtx) (string, error) {
 	return string(header), nil
 }
 
-func (Template) CsvValue(_ ImportCtx) (string, error) {
+func (t Template) CsvValue(importCtx ImportCtx) (string, error) {
+	if t.Language == TemplateLanguageJsonnet {
+		ctx := jsonnet.NewContext()
+		ctx.GlobalBinding("body", jsonnet.ValueToLiteral(importCtx.Body.ToMap()))
+		headers := make(map[string]any)
+		for k := range importCtx.Header {
+			headers[k] = importCtx.Header.Get(k)
+		}
+		ctx.GlobalBinding("headers", jsonnet.ValueToLiteral(headers))
+
+		ctx.GlobalBinding("currentDatetime", jsonnet.ValueToLiteral(importCtx.DateTime.Format(time.RFC3339)))
+		jsonStr, err := jsonnet.Evaluate(t.Content, ctx)
+		if err != nil {
+			return "", err
+		}
+
+		// nolint:godox
+		// TODO t.UndefinedValueStrategy
+
+		return jsonStr, nil
+	}
 	return "", nil
 }
 

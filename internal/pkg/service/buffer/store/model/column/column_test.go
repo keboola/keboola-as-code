@@ -110,3 +110,37 @@ func TestColumn_Header(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, string(headerMarshalled), val)
 }
+
+func TestColumn_Template_Body(t *testing.T) {
+	t.Parallel()
+
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "body.key1"}
+
+	body := orderedmap.New()
+	body.Set("key1", "val1")
+	body.Set("key2", "val2")
+
+	header := http.Header{}
+	header.Set("Content-Type", "application/json")
+	header.Set("Content-Encoding", "gzip")
+
+	val, err := c.CsvValue(column.ImportCtx{Body: body, Header: header})
+	assert.NoError(t, err)
+	assert.Equal(t, "\"val1\"\n", val)
+}
+
+func TestColumn_Template_Headers(t *testing.T) {
+	t.Parallel()
+
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `headers['Content-Encoding']`}
+
+	body := orderedmap.New()
+
+	header := http.Header{}
+	header.Set("Content-Type", "application/json")
+	header.Set("Content-Encoding", "gzip")
+
+	val, err := c.CsvValue(column.ImportCtx{Body: body, Header: header})
+	assert.NoError(t, err)
+	assert.Equal(t, "\"gzip\"\n", val)
+}
