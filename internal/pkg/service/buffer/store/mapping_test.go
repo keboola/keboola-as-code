@@ -1,4 +1,4 @@
-package configstore
+package store
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 

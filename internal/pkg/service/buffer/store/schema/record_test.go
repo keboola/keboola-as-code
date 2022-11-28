@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 )
 
 func TestRecordKey_String(t *testing.T) {

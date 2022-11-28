@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 )
 
 func TestMappedColumns(t *testing.T) {
