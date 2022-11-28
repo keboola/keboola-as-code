@@ -128,7 +128,6 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 		}
 
 		mapping := model.Mapping{
-			RevisionID:  1,
 			TableID:     tableId,
 			Incremental: exportData.Mapping.Incremental == nil || *exportData.Mapping.Incremental, // default true
 			Columns:     columns,

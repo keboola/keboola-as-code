@@ -7,6 +7,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type prefix = Prefix
@@ -98,6 +99,30 @@ func (v Prefix) DeleteAll(opts ...etcd.OpOption) op.CountOp {
 		},
 		func(_ context.Context, r etcd.OpResponse) (int64, error) {
 			return r.Del().Deleted, nil
+		},
+	)
+}
+
+func (v PrefixT[T]) GetOne(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
+	return op.NewGetOneTOp(
+		func(_ context.Context) (etcd.Op, error) {
+			opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithLimit(1)}, opts...)
+			return etcd.OpGet(v.Prefix(), opts...), nil
+		},
+		func(ctx context.Context, r etcd.OpResponse) (*op.KeyValueT[T], error) {
+			count := len(r.Get().Kvs)
+			if count == 0 {
+				return nil, nil
+			} else if count == 1 {
+				kv := r.Get().Kvs[0]
+				target := new(T)
+				if err := v.serialization.decodeAndValidate(ctx, kv, target); err != nil {
+					return nil, invalidKeyError(string(kv.Key), err)
+				}
+				return &op.KeyValueT[T]{Value: *target, KV: kv}, nil
+			} else {
+				return nil, errors.Errorf(`etcd get: at most one result result expected, found %d results`, count)
+			}
 		},
 	)
 }

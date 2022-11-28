@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -19,14 +20,11 @@ func (s *Store) CreateMapping(ctx context.Context, projectID int, receiverID str
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.CreateMapping")
 	defer telemetry.EndSpan(span, &err)
 
-	// nolint:godox
-	// TODO
-	//if mapping.RevisionID != 0 {
-	//	return errors.New("unexpected state: mapping revision ID should be 0, it is generated on save")
-	//}
+	if mapping.RevisionID != 0 {
+		return errors.New("unexpected state: mapping revision ID should be 0, it is generated on create")
+	}
 
 	mappings := s.schema.Configs().Mappings().InProject(projectID).InReceiver(receiverID).InExport(exportID)
-	key := mappings.Revision(mapping.RevisionID)
 
 	for {
 		// Count
@@ -40,18 +38,17 @@ func (s *Store) CreateMapping(ctx context.Context, projectID int, receiverID str
 			return serviceError.NewCountLimitReachedError("mapping revision", MaxMappingRevisionsPerExport, "export")
 		}
 
-		// nolint:godox
-		// TODO
-		//// Next RevisionID
-		//mapping.RevisionID = int(count) + 1
+		// Next RevisionID
+		mapping.RevisionID = int(count) + 1
 
 		// Put
-		ok, err := key.PutIfNotExists(mapping).Do(ctx, s.client)
+		_, err = s.createMappingOp(ctx, projectID, receiverID, exportID, mapping).Do(ctx, s.client)
 		if err != nil {
+			if errors.As(err, &serviceError.ResourceAlreadyExistsError{}) {
+				// Race condition, some other request has been faster, try again.
+				continue
+			}
 			return err
-		} else if !ok {
-			// Race condition, some other request has been faster, try again.
-			continue
 		}
 
 		break
@@ -60,25 +57,45 @@ func (s *Store) CreateMapping(ctx context.Context, projectID int, receiverID str
 	return nil
 }
 
+func (s *Store) createMappingOp(_ context.Context, projectID int, receiverID string, exportID string, mapping model.Mapping) op.BoolOp {
+	if mapping.RevisionID == 0 {
+		panic(errors.New("unexpected state: mapping revision ID should be set by code one level higher"))
+	}
+
+	mappings := s.schema.Configs().Mappings().InProject(projectID).InReceiver(receiverID).InExport(exportID)
+	return mappings.
+		Revision(mapping.RevisionID).
+		PutIfNotExists(mapping).
+		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
+			if !ok && err == nil {
+				return false, serviceError.NewResourceAlreadyExistsError("mapping", fmt.Sprintf("%s/%s/%08d", receiverID, exportID, mapping.RevisionID), "export")
+			}
+			return ok, err
+		})
+}
+
 // GetMapping fetches the current mapping from the store.
 func (s *Store) GetMapping(ctx context.Context, projectID int, receiverID, exportID string) (r model.Mapping, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetMapping")
 	defer telemetry.EndSpan(span, &err)
 
-	mappings := s.schema.Configs().Mappings().InProject(projectID).InReceiver(receiverID).InExport(exportID)
-	kvs, err := mappings.GetAll(etcd.WithLimit(1), etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx, s.client)
+	kv, err := s.getMappingOp(ctx, projectID, receiverID, exportID).Do(ctx, s.client)
 	if err != nil {
 		return model.Mapping{}, err
 	}
+	return kv.Value, nil
+}
 
-	l := len(kvs)
-	if l > 1 {
-		return model.Mapping{}, errors.Errorf("unexpected state: exactly one result expected, but found %d", l)
-	} else if l == 0 {
-		return model.Mapping{}, errors.Errorf("unexpected state: exactly one result expected, but found nothing")
-	}
-
-	return kvs[0].Value, nil
+func (s *Store) getMappingOp(_ context.Context, projectID int, receiverID, exportID string) op.ForType[*op.KeyValueT[model.Mapping]] {
+	mappings := s.schema.Configs().Mappings().InProject(projectID).InReceiver(receiverID).InExport(exportID)
+	return mappings.
+		GetOne(etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).
+		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Mapping], err error) (*op.KeyValueT[model.Mapping], error) {
+			if kv == nil && err == nil {
+				return nil, serviceError.NewResourceNotFoundError("mapping", fmt.Sprintf("%s/%s/latest", receiverID, exportID))
+			}
+			return kv, err
+		})
 }
 
 // GetMappingByRevisionID fetches a mapping from the store.
@@ -88,13 +105,22 @@ func (s *Store) GetMappingByRevisionID(ctx context.Context, projectID int, recei
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetMappingByRevisionID")
 	defer telemetry.EndSpan(span, &err)
 
-	mappings := s.schema.Configs().Mappings().InProject(projectID).InReceiver(receiverID).InExport(exportID)
-	kv, err := mappings.Revision(revisionID).Get().Do(ctx, s.client)
+	kv, err := s.getMappingByRevisionIDOp(ctx, projectID, receiverID, exportID, revisionID).Do(ctx, s.client)
 	if err != nil {
 		return model.Mapping{}, err
-	} else if kv == nil {
-		return model.Mapping{}, serviceError.NewResourceNotFoundError("mapping", fmt.Sprintf("%s/%s/%08d", receiverID, exportID, revisionID))
 	}
-
 	return kv.Value, nil
+}
+
+func (s *Store) getMappingByRevisionIDOp(_ context.Context, projectID int, receiverID, exportID string, revisionID int) op.ForType[*op.KeyValueT[model.Mapping]] {
+	mappings := s.schema.Configs().Mappings().InProject(projectID).InReceiver(receiverID).InExport(exportID)
+	return mappings.
+		Revision(revisionID).
+		Get().
+		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Mapping], err error) (*op.KeyValueT[model.Mapping], error) {
+			if kv == nil && err == nil {
+				return nil, serviceError.NewResourceNotFoundError("mapping", fmt.Sprintf("%s/%s/%08d", receiverID, exportID, revisionID))
+			}
+			return kv, err
+		})
 }

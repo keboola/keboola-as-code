@@ -48,7 +48,7 @@ func TestStore_GetMapping_GetMappingByRevisionID(t *testing.T) {
 	}
 
 	for _, m := range input {
-		err := store.CreateMapping(ctx, projectID, receiverID, exportID, m)
+		_, err := store.createMappingOp(ctx, projectID, receiverID, exportID, m).Do(ctx, store.client)
 		assert.NoError(t, err)
 	}
 
