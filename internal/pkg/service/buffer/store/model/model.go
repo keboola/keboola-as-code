@@ -19,13 +19,13 @@ const (
 )
 
 type Receiver struct {
-	*ReceiverBase
-	Exports []*Export
+	ReceiverBase
+	Exports []Export
 }
 
 type Export struct {
-	*ExportBase
-	*Mapping
+	ExportBase
+	Mapping
 }
 
 type ReceiverBase struct {

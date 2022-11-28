@@ -15,15 +15,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-func ReceiverPayloadFromModel(bufferAPIHost string, model *model.Receiver) *buffer.Receiver {
+func ReceiverPayloadFromModel(bufferAPIHost string, model model.Receiver) buffer.Receiver {
 	id := buffer.ReceiverID(model.ID)
 	url := formatReceiverURL(bufferAPIHost, model.ProjectID, model.ID, model.Secret)
 	exports := make([]*buffer.Export, 0, len(model.Exports))
-	for _, export := range model.Exports {
-		exports = append(exports, ExportPayloadFromModel(id, export))
+	for _, exportData := range model.Exports {
+		export := ExportPayloadFromModel(id, exportData)
+		exports = append(exports, &export)
 	}
 
-	return &buffer.Receiver{
+	return buffer.Receiver{
 		ID:      id,
 		URL:     url,
 		Name:    model.Name,
@@ -31,23 +32,23 @@ func ReceiverPayloadFromModel(bufferAPIHost string, model *model.Receiver) *buff
 	}
 }
 
-func ExportPayloadFromModel(receiverID buffer.ReceiverID, model *model.Export) *buffer.Export {
+func ExportPayloadFromModel(receiverID buffer.ReceiverID, model model.Export) buffer.Export {
 	mapping := MappingPayloadFromModel(model.Mapping)
 	conditions := &buffer.Conditions{
 		Count: model.ImportConditions.Count,
 		Size:  model.ImportConditions.Size.String(),
 		Time:  model.ImportConditions.Time.String(),
 	}
-	return &buffer.Export{
+	return buffer.Export{
 		ID:         buffer.ExportID(model.ID),
 		ReceiverID: receiverID,
 		Name:       model.Name,
-		Mapping:    mapping,
+		Mapping:    &mapping,
 		Conditions: conditions,
 	}
 }
 
-func MappingPayloadFromModel(model *model.Mapping) *buffer.Mapping {
+func MappingPayloadFromModel(model model.Mapping) buffer.Mapping {
 	columns := make([]*buffer.Column, 0, len(model.Columns))
 	for _, c := range model.Columns {
 		var template *buffer.Template
@@ -65,28 +66,28 @@ func MappingPayloadFromModel(model *model.Mapping) *buffer.Mapping {
 			Template: template,
 		})
 	}
-	return &buffer.Mapping{
+	return buffer.Mapping{
 		TableID:     model.TableID.String(),
 		Incremental: &model.Incremental,
 		Columns:     columns,
 	}
 }
 
-func ReceiverModelFromPayload(projectID int, payload *buffer.CreateReceiverPayload) (r *model.Receiver, err error) {
-	exports := make([]*model.Export, 0, len(payload.Exports))
+func ReceiverModelFromPayload(projectID int, payload buffer.CreateReceiverPayload) (r model.Receiver, err error) {
+	exports := make([]model.Export, 0, len(payload.Exports))
 	for _, exportData := range payload.Exports {
-		mapping, err := MappingFromPayload(exportData.Mapping)
+		mapping, err := MappingFromPayload(*exportData.Mapping)
 		if err != nil {
-			return nil, err
+			return model.Receiver{}, err
 		}
 
-		export, err := ExportBaseFromPayload(exportData)
+		export, err := ExportBaseFromPayload(*exportData)
 		if err != nil {
-			return nil, err
+			return model.Receiver{}, err
 		}
 
 		// Persist export
-		exports = append(exports, &model.Export{
+		exports = append(exports, model.Export{
 			ExportBase: export,
 			Mapping:    mapping,
 		})
@@ -94,13 +95,13 @@ func ReceiverModelFromPayload(projectID int, payload *buffer.CreateReceiverPaylo
 
 	receiverBase := ReceiverBaseFromPayload(projectID, payload)
 
-	return &model.Receiver{
+	return model.Receiver{
 		ReceiverBase: receiverBase,
 		Exports:      exports,
 	}, nil
 }
 
-func ReceiverBaseFromPayload(projectID int, payload *buffer.CreateReceiverPayload) *model.ReceiverBase {
+func ReceiverBaseFromPayload(projectID int, payload buffer.CreateReceiverPayload) model.ReceiverBase {
 	name := payload.Name
 
 	// Generate receiver ID from Name if needed
@@ -114,7 +115,7 @@ func ReceiverBaseFromPayload(projectID int, payload *buffer.CreateReceiverPayloa
 	// Generate Secret
 	secret := idgenerator.ReceiverSecret()
 
-	return &model.ReceiverBase{
+	return model.ReceiverBase{
 		ID:        id,
 		ProjectID: projectID,
 		Name:      name,
@@ -122,7 +123,7 @@ func ReceiverBaseFromPayload(projectID int, payload *buffer.CreateReceiverPayloa
 	}
 }
 
-func ExportBaseFromPayload(payload *buffer.CreateExportData) (r *model.ExportBase, err error) {
+func ExportBaseFromPayload(payload buffer.CreateExportData) (r model.ExportBase, err error) {
 	name := payload.Name
 
 	// Generate export ID from Name if needed
@@ -139,42 +140,42 @@ func ExportBaseFromPayload(payload *buffer.CreateExportData) (r *model.ExportBas
 		conditions.Count = payload.Conditions.Count
 		conditions.Size, err = datasize.ParseString(payload.Conditions.Size)
 		if err != nil {
-			return nil, serviceError.NewBadRequestError(errors.Errorf(
+			return model.ExportBase{}, serviceError.NewBadRequestError(errors.Errorf(
 				`value "%s" is not valid buffer size in bytes. Allowed units: B, kB, MB. For example: "5MB"`,
 				payload.Conditions.Size,
 			))
 		}
 		conditions.Time, err = time.ParseDuration(payload.Conditions.Time)
 		if err != nil {
-			return nil, serviceError.NewBadRequestError(errors.Errorf(
+			return model.ExportBase{}, serviceError.NewBadRequestError(errors.Errorf(
 				`value "%s" is not valid time duration. Allowed units: s, m, h. For example: "30s"`,
 				payload.Conditions.Size,
 			))
 		}
 	}
 
-	return &model.ExportBase{
+	return model.ExportBase{
 		ID:               id,
 		Name:             name,
 		ImportConditions: conditions,
 	}, nil
 }
 
-func MappingFromPayload(payload *buffer.Mapping) (*model.Mapping, error) {
+func MappingFromPayload(payload buffer.Mapping) (model.Mapping, error) {
 	// mapping
 	tableID, err := model.ParseTableID(payload.TableID)
 	if err != nil {
-		return nil, err
+		return model.Mapping{}, err
 	}
 	columns := make([]column.Column, 0, len(payload.Columns))
 	for _, columnData := range payload.Columns {
 		c, err := column.TypeToColumn(columnData.Type)
 		if err != nil {
-			return nil, err
+			return model.Mapping{}, err
 		}
 		if template, ok := c.(column.Template); ok {
 			if columnData.Template == nil {
-				return nil, serviceError.NewBadRequestError(errors.Errorf("missing template column data"))
+				return model.Mapping{}, serviceError.NewBadRequestError(errors.Errorf("missing template column data"))
 			}
 			template.Language = columnData.Template.Language
 			template.UndefinedValueStrategy = columnData.Template.UndefinedValueStrategy
@@ -185,7 +186,7 @@ func MappingFromPayload(payload *buffer.Mapping) (*model.Mapping, error) {
 		columns = append(columns, c)
 	}
 
-	return &model.Mapping{
+	return model.Mapping{
 		TableID:     tableID,
 		Incremental: payload.Incremental == nil || *payload.Incremental, // default true
 		Columns:     columns,

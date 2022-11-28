@@ -15,7 +15,7 @@ import (
 func TestMapperReceiverPayloadToModel(t *testing.T) {
 	t.Parallel()
 
-	payload := &buffer.CreateReceiverPayload{
+	payload := buffer.CreateReceiverPayload{
 		StorageAPIToken: "",
 		ID:              nil,
 		Name:            "Receiver",
@@ -98,16 +98,16 @@ func TestMapperReceiverPayloadToModel(t *testing.T) {
 func TestMapperReceiverModelToPayload(t *testing.T) {
 	t.Parallel()
 
-	model := &model.Receiver{
-		ReceiverBase: &model.ReceiverBase{
+	model := model.Receiver{
+		ReceiverBase: model.ReceiverBase{
 			ID:        "receiver",
 			ProjectID: 1000,
 			Name:      "Receiver",
 			Secret:    "test",
 		},
-		Exports: []*model.Export{
+		Exports: []model.Export{
 			{
-				ExportBase: &model.ExportBase{
+				ExportBase: model.ExportBase{
 					ID:   "export",
 					Name: "Export",
 					ImportConditions: model.ImportConditions{
@@ -116,7 +116,7 @@ func TestMapperReceiverModelToPayload(t *testing.T) {
 						Time:  100_000_000_000,
 					},
 				},
-				Mapping: &model.Mapping{
+				Mapping: model.Mapping{
 					RevisionID: 1,
 					TableID: model.TableID{
 						Stage:  model.TableStageIn,
