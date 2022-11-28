@@ -1,7 +1,9 @@
 package jsonnet
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -113,6 +115,38 @@ func TestVmContext_VariablesTypes(t *testing.T) {
 	output, err := Evaluate(code, ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), output)
+}
+
+func TestVmContext_ValueToLiteral_MapArray(t *testing.T) {
+	t.Parallel()
+
+	result := ValueToLiteral(map[string]any{"one": map[string]any{"two": 2, "three": "four"}, "five": []any{"six", 7, true}})
+
+	vm := jsonnet.MakeVM()
+	vm.Importer(NewNopImporter())
+	ctx := NewContext()
+	ctx.registerTo(vm)
+
+	jsonContent, err := vm.Evaluate(result)
+	assert.NoError(t, err)
+
+	var evaluatedResult bytes.Buffer
+	err = json.Indent(&evaluatedResult, []byte(jsonContent), "", "  ")
+	assert.NoError(t, err)
+
+	expected := `{
+  "five": [
+    "six",
+    7,
+    true
+  ],
+  "one": {
+    "three": "four",
+    "two": 2
+  }
+}
+`
+	assert.Equal(t, expected, evaluatedResult.String())
 }
 
 func TestVmContext_Notifier(t *testing.T) {
