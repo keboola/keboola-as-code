@@ -102,9 +102,9 @@ func (w *localWriter) savePhase(phase *model.Phase, allPhases []*model.Phase) er
 
 	// Create file
 	w.Files.
-		Add(filesystem.NewJsonFile(filesystem.Join(w.NamingGenerator().PhaseFilePath(phase)), phaseContent)).
+		Add(filesystem.NewJSONFile(filesystem.Join(w.NamingGenerator().PhaseFilePath(phase)), phaseContent)).
 		SetDescription(`phase config file`).
-		AddTag(model.FileTypeJson).
+		AddTag(model.FileTypeJSON).
 		AddTag(model.FileKindPhaseConfig)
 
 	// Write tasks
@@ -143,12 +143,12 @@ func (w *localWriter) saveTask(task *model.Task) error {
 	}
 
 	// Set configId
-	if len(task.ConfigId) > 0 {
+	if len(task.ConfigID) > 0 {
 		// Target key
 		targetKey := &model.ConfigKey{
-			BranchId:    task.BranchId,
-			ComponentId: task.ComponentId,
-			Id:          task.ConfigId,
+			BranchID:    task.BranchID,
+			ComponentID: task.ComponentID,
+			ID:          task.ConfigID,
 		}
 
 		// Get target config
@@ -168,23 +168,23 @@ func (w *localWriter) saveTask(task *model.Task) error {
 		}
 	} else if task.ConfigData != nil {
 		target.Set("configData", task.ConfigData)
-		target.Set(`componentId`, task.ComponentId)
+		target.Set(`componentId`, task.ComponentID)
 	} else {
 		if task.Enabled {
 			errs.Append(errors.New("task.configId, or task.configData and task.componentId must be specified"))
 		} else {
-			// ComponentId is required even when the task is disabled (for UI)
-			target.Set(`componentId`, task.ComponentId)
+			// ComponentID is required even when the task is disabled (for UI)
+			target.Set(`componentId`, task.ComponentID)
 		}
 	}
 
 	// Create file
 	file := filesystem.
-		NewJsonFile(filesystem.Join(w.NamingGenerator().TaskFilePath(task)), taskContent).
+		NewJSONFile(filesystem.Join(w.NamingGenerator().TaskFilePath(task)), taskContent).
 		SetDescription(`task config file`)
 	w.Files.
 		Add(file).
-		AddTag(model.FileTypeJson).
+		AddTag(model.FileTypeJSON).
 		AddTag(model.FileKindTaskConfig)
 
 	return errs.ErrorOrNil()

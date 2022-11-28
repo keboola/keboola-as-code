@@ -70,7 +70,7 @@ func (m *defaultBucketMapper) replacePlaceholderWithDefaultBucket(
 	}
 	sourceConfig := sourceConfigState.LocalState().(*model.Config)
 
-	defaultBucket, found := m.state.Components().GetDefaultBucketByComponentId(sourceConfig.ComponentId, sourceConfig.Id)
+	defaultBucket, found := m.state.Components().GetDefaultBucketByComponentID(sourceConfig.ComponentID, sourceConfig.ID)
 	if !found {
 		return nil
 	}

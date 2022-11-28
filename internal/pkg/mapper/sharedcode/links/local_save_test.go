@@ -40,7 +40,7 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 			Codes: model.Codes{
 				{
 					CodeKey: model.CodeKey{
-						ComponentId: `keboola.python-transformation-v2`,
+						ComponentID: `keboola.python-transformation-v2`,
 					},
 					Name: `Code 1`,
 					Scripts: model.Scripts{
@@ -51,7 +51,7 @@ func TestLocalSaveTranWithSharedCode(t *testing.T) {
 				},
 				{
 					CodeKey: model.CodeKey{
-						ComponentId: `keboola.python-transformation-v2`,
+						ComponentID: `keboola.python-transformation-v2`,
 					},
 					Name: `Code 2`,
 					Scripts: model.Scripts{
@@ -76,7 +76,7 @@ func TestLocalSaveTranWithSharedCode_SharedCodeConfigNotFound(t *testing.T) {
 
 	// Create transformation with shared code
 	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
-	transformation.Local.Transformation.LinkToSharedCode.Config.Id = `missing` // <<<<<<<<<<<
+	transformation.Local.Transformation.LinkToSharedCode.Config.ID = `missing` // <<<<<<<<<<<
 
 	// Invoke
 	recipe := model.NewLocalSaveRecipe(transformation.ConfigManifest, transformation.Local, model.NewChangedFields())
@@ -99,24 +99,24 @@ WARN  Warning:
 			Codes: model.Codes{
 				{
 					CodeKey: model.CodeKey{
-						ComponentId: `keboola.python-transformation-v2`,
+						ComponentID: `keboola.python-transformation-v2`,
 					},
 					Name: `Code 1`,
 					Scripts: model.Scripts{
 						model.StaticScript{Value: `print(100)`},
-						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[0].ObjectId())},
+						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[0].ObjectID())},
 					},
 					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-1`),
 				},
 				{
 					CodeKey: model.CodeKey{
-						ComponentId: `keboola.python-transformation-v2`,
+						ComponentID: `keboola.python-transformation-v2`,
 					},
 					Name: `Code 2`,
 
 					Scripts: model.Scripts{
-						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[1].ObjectId())},
-						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[0].ObjectId())},
+						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[1].ObjectID())},
+						model.StaticScript{Value: fmt.Sprintf("{{%s}}", sharedCodeRowsKeys[0].ObjectID())},
 					},
 					AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-2`),
 				},
@@ -137,10 +137,10 @@ func TestLocalSaveTranWithSharedCode_SharedCodeRowNotFound(t *testing.T) {
 	// Create transformation with shared code
 	transformation := createInternalTranWithSharedCode(t, sharedCodeKey, sharedCodeRowsKeys, state)
 	transformation.Local.Transformation.Blocks[0].Codes[1].Scripts[0] = model.LinkScript{Target: model.ConfigRowKey{
-		BranchId:    sharedCodeKey.BranchId,
-		ComponentId: sharedCodeKey.ComponentId,
-		ConfigId:    sharedCodeKey.Id,
-		Id:          `missing`, // <<<<<<<<<<<<
+		BranchID:    sharedCodeKey.BranchID,
+		ComponentID: sharedCodeKey.ComponentID,
+		ConfigID:    sharedCodeKey.ID,
+		ID:          `missing`, // <<<<<<<<<<<<
 	}}
 
 	// Invoke
@@ -154,9 +154,9 @@ WARN  Warning:
 	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 
 	// Link to shared code is set, but without missing row
-	sharedCodeId, found := transformation.Local.Content.Get(model.SharedCodePathContentKey)
+	sharedCodeID, found := transformation.Local.Content.Get(model.SharedCodePathContentKey)
 	assert.True(t, found)
-	assert.Equal(t, sharedCodeId, `_shared/keboola.python-transformation-v2`)
+	assert.Equal(t, sharedCodeID, `_shared/keboola.python-transformation-v2`)
 
 	// IDs in transformation blocks are replaced by paths, except missing row
 	assert.Equal(t, []*model.Block{
@@ -165,7 +165,7 @@ WARN  Warning:
 			Codes: model.Codes{
 				{
 					CodeKey: model.CodeKey{
-						ComponentId: `keboola.python-transformation-v2`,
+						ComponentID: `keboola.python-transformation-v2`,
 					},
 					Name: `Code 1`,
 					Scripts: model.Scripts{
@@ -176,7 +176,7 @@ WARN  Warning:
 				},
 				{
 					CodeKey: model.CodeKey{
-						ComponentId: `keboola.python-transformation-v2`,
+						ComponentID: `keboola.python-transformation-v2`,
 					},
 					Name: `Code 2`,
 					Scripts: model.Scripts{

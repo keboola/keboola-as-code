@@ -21,7 +21,7 @@ func TestRelationsMapperSaveLocal(t *testing.T) {
 
 	// Object has 2 relations
 	manifestSideRel := &fixtures.MockedManifestSideRelation{}
-	apiSideRel := &fixtures.MockedApiSideRelation{}
+	apiSideRel := &fixtures.MockedAPISideRelation{}
 	object.SetRelations(model.Relations{manifestSideRel, apiSideRel})
 
 	assert.Empty(t, objectManifest.Relations)

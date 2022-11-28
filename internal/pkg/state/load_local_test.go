@@ -259,7 +259,7 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (d
 		"configurationRowSchema": map[string]interface{}{},
 	})
 	assert.NoError(t, err)
-	getMySqlExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
+	getMySQLExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
 		"id":                     "keboola.ex-db-mysql",
 		"type":                   "extractor",
 		"name":                   "MySQL",
@@ -267,8 +267,8 @@ func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (d
 		"configurationRowSchema": map[string]interface{}{},
 	})
 	assert.NoError(t, err)
-	d.MockedHttpTransport().RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
-	d.MockedHttpTransport().RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder)
+	d.MockedHTTPTransport().RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder)
+	d.MockedHTTPTransport().RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySQLExResponder)
 
 	// Load state
 	assert.NoError(t, err)
@@ -303,7 +303,7 @@ func complexLocalExpectedBranches() []*model.BranchState {
 		{
 			Local: &model.Branch{
 				BranchKey: model.BranchKey{
-					Id: 123,
+					ID: 123,
 				},
 				Name:        "Branch",
 				Description: "My branch",
@@ -315,7 +315,7 @@ func complexLocalExpectedBranches() []*model.BranchState {
 					Persisted: true,
 				},
 				BranchKey: model.BranchKey{
-					Id: 123,
+					ID: 123,
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -330,7 +330,7 @@ func complexLocalExpectedBranches() []*model.BranchState {
 		{
 			Local: &model.Branch{
 				BranchKey: model.BranchKey{
-					Id: 111,
+					ID: 111,
 				},
 				Name:        "Main",
 				Description: "Main branch",
@@ -342,7 +342,7 @@ func complexLocalExpectedBranches() []*model.BranchState {
 					Persisted: true,
 				},
 				BranchKey: model.BranchKey{
-					Id: 111,
+					ID: 111,
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -362,9 +362,9 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 		{
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    123,
-					ComponentId: "keboola.ex-db-mysql",
-					Id:          "896",
+					BranchID:    123,
+					ComponentID: "keboola.ex-db-mysql",
+					ID:          "896",
 				},
 				Name:        "tables",
 				Description: "tables config",
@@ -391,9 +391,9 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					Persisted: true,
 				},
 				ConfigKey: model.ConfigKey{
-					BranchId:    123,
-					ComponentId: "keboola.ex-db-mysql",
-					Id:          "896",
+					BranchID:    123,
+					ComponentID: "keboola.ex-db-mysql",
+					ID:          "896",
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -407,9 +407,9 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 		{
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: "ex-generic-v2",
-					Id:          "456",
+					BranchID:    111,
+					ComponentID: "ex-generic-v2",
+					ID:          "456",
 				},
 				Name:        "todos",
 				Description: "todos config",
@@ -436,9 +436,9 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					Persisted: true,
 				},
 				ConfigKey: model.ConfigKey{
-					BranchId:    111,
-					ComponentId: "ex-generic-v2",
-					Id:          "456",
+					BranchID:    111,
+					ComponentID: "ex-generic-v2",
+					ID:          "456",
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -452,9 +452,9 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 		{
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    123,
-					ComponentId: "ex-generic-v2",
-					Id:          "456",
+					BranchID:    123,
+					ComponentID: "ex-generic-v2",
+					ID:          "456",
 				},
 				Name:        "todos",
 				Description: "todos config",
@@ -481,9 +481,9 @@ func complexLocalExpectedConfigs() []*model.ConfigState {
 					Persisted: true,
 				},
 				ConfigKey: model.ConfigKey{
-					BranchId:    123,
-					ComponentId: "ex-generic-v2",
-					Id:          "456",
+					BranchID:    123,
+					ComponentID: "ex-generic-v2",
+					ID:          "456",
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -502,10 +502,10 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 		{
 			Local: &model.ConfigRow{
 				ConfigRowKey: model.ConfigRowKey{
-					BranchId:    123,
-					ComponentId: "keboola.ex-db-mysql",
-					ConfigId:    "896",
-					Id:          "56",
+					BranchID:    123,
+					ComponentID: "keboola.ex-db-mysql",
+					ConfigID:    "896",
+					ID:          "56",
 				},
 				Name:        "disabled",
 				Description: "",
@@ -524,10 +524,10 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 					Persisted: true,
 				},
 				ConfigRowKey: model.ConfigRowKey{
-					BranchId:    123,
-					ComponentId: "keboola.ex-db-mysql",
-					ConfigId:    "896",
-					Id:          "56",
+					BranchID:    123,
+					ComponentID: "keboola.ex-db-mysql",
+					ConfigID:    "896",
+					ID:          "56",
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -541,10 +541,10 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 		{
 			Local: &model.ConfigRow{
 				ConfigRowKey: model.ConfigRowKey{
-					BranchId:    123,
-					ComponentId: "keboola.ex-db-mysql",
-					ConfigId:    "896",
-					Id:          "34",
+					BranchID:    123,
+					ComponentID: "keboola.ex-db-mysql",
+					ConfigID:    "896",
+					ID:          "34",
 				},
 				Name:        "test_view",
 				Description: "row description",
@@ -563,10 +563,10 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 					Persisted: true,
 				},
 				ConfigRowKey: model.ConfigRowKey{
-					BranchId:    123,
-					ComponentId: "keboola.ex-db-mysql",
-					ConfigId:    "896",
-					Id:          "34",
+					BranchID:    123,
+					ComponentID: "keboola.ex-db-mysql",
+					ConfigID:    "896",
+					ID:          "34",
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -580,10 +580,10 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 		{
 			Local: &model.ConfigRow{
 				ConfigRowKey: model.ConfigRowKey{
-					BranchId:    123,
-					ComponentId: "keboola.ex-db-mysql",
-					ConfigId:    "896",
-					Id:          "12",
+					BranchID:    123,
+					ComponentID: "keboola.ex-db-mysql",
+					ConfigID:    "896",
+					ID:          "12",
 				},
 				Name:        "users",
 				Description: "",
@@ -602,10 +602,10 @@ func complexLocalExpectedConfigRows() []*model.ConfigRowState {
 					Persisted: true,
 				},
 				ConfigRowKey: model.ConfigRowKey{
-					BranchId:    123,
-					ComponentId: "keboola.ex-db-mysql",
-					ConfigId:    "896",
-					Id:          "12",
+					BranchID:    123,
+					ComponentID: "keboola.ex-db-mysql",
+					ConfigID:    "896",
+					ID:          "12",
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(

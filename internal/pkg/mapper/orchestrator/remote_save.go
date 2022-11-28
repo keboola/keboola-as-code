@@ -31,11 +31,11 @@ func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orch
 	tasks := make([]interface{}, 0)
 
 	// Map structs
-	taskId := 0
+	taskID := 0
 	for index, phase := range orchestration.Phases {
-		phaseId := index + 1
+		phaseID := index + 1
 		phaseContent := orderedmap.New()
-		phaseContent.Set(`id`, phaseId)
+		phaseContent.Set(`id`, phaseID)
 		phaseContent.Set(`name`, phase.Name)
 
 		// Map dependsOn
@@ -53,12 +53,12 @@ func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orch
 
 		// Map tasks
 		for _, task := range phase.Tasks {
-			taskId++
+			taskID++
 			taskContent := orderedmap.New()
-			taskContent.Set(`id`, taskId)
+			taskContent.Set(`id`, taskID)
 			taskContent.Set(`name`, task.Name)
 			taskContent.Set(`enabled`, task.Enabled)
-			taskContent.Set(`phase`, phaseId)
+			taskContent.Set(`phase`, phaseID)
 
 			// Copy additional content
 			for _, k := range task.Content.Keys() {
@@ -79,11 +79,11 @@ func (m *orchestratorMapper) serializeOrchestrationTo(config *model.Config, orch
 			}
 
 			// Set componentId/configId
-			if len(task.ComponentId) > 0 {
-				target.Set(`componentId`, task.ComponentId.String())
+			if len(task.ComponentID) > 0 {
+				target.Set(`componentId`, task.ComponentID.String())
 			}
-			if len(task.ConfigId) > 0 {
-				target.Set(`configId`, task.ConfigId.String())
+			if len(task.ConfigID) > 0 {
+				target.Set(`configId`, task.ConfigID.String())
 			} else if task.ConfigData != nil {
 				target.Set(`configData`, task.ConfigData)
 			}

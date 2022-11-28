@@ -33,8 +33,8 @@ func New(fs abstract.Backend, opts ...filesystem.Option) filesystem.Fs {
 	return &Fs{fs: fs, logger: config.Logger, workingDir: fs.ToSlash(config.WorkingDir)}
 }
 
-// ApiName - name of the file system implementation, for example local, memory, ...
-func (f *Fs) ApiName() string {
+// APIName - name of the file system implementation, for example local, memory, ...
+func (f *Fs) APIName() string {
 	return f.fs.Name()
 }
 

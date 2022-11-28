@@ -17,7 +17,7 @@ import (
 func TestDiffOnlyInLocal(t *testing.T) {
 	t.Parallel()
 	projectState := newProjectState(t)
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{ID: 123}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
 		Local:          &model.Branch{BranchKey: branchKey},
@@ -37,7 +37,7 @@ func TestDiffOnlyInLocal(t *testing.T) {
 func TestDiffOnlyInRemote(t *testing.T) {
 	t.Parallel()
 	projectState := newProjectState(t)
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{ID: 123}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
 		Remote:         &model.Branch{BranchKey: branchKey},
@@ -57,7 +57,7 @@ func TestDiffOnlyInRemote(t *testing.T) {
 func TestDiffEqual(t *testing.T) {
 	t.Parallel()
 	projectState := newProjectState(t)
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{ID: 123}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
 		Remote: &model.Branch{
@@ -89,7 +89,7 @@ func TestDiffEqual(t *testing.T) {
 func TestDiffNotEqual(t *testing.T) {
 	t.Parallel()
 	projectState := newProjectState(t)
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{ID: 123}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
 		Remote: &model.Branch{
@@ -124,7 +124,7 @@ func TestDiffEqualConfig(t *testing.T) {
 	t.Parallel()
 	projectState := newProjectState(t)
 
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{ID: 123}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
 		Remote: &model.Branch{
@@ -143,9 +143,9 @@ func TestDiffEqualConfig(t *testing.T) {
 	assert.NoError(t, projectState.Set(branchState))
 
 	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: "foo.bar",
-		Id:          "456",
+		BranchID:    123,
+		ComponentID: "foo.bar",
+		ID:          "456",
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
@@ -182,7 +182,7 @@ func TestDiffNotEqualConfig(t *testing.T) {
 	t.Parallel()
 	projectState := newProjectState(t)
 
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{ID: 123}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
 		Remote: &model.Branch{
@@ -201,9 +201,9 @@ func TestDiffNotEqualConfig(t *testing.T) {
 	assert.NoError(t, projectState.Set(branchState))
 
 	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: "foo.bar",
-		Id:          "456",
+		BranchID:    123,
+		ComponentID: "foo.bar",
+		ID:          "456",
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
@@ -242,7 +242,7 @@ func TestDiffNotEqualConfigConfiguration(t *testing.T) {
 	t.Parallel()
 	projectState := newProjectState(t)
 
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{ID: 123}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{BranchKey: branchKey},
 		Remote: &model.Branch{
@@ -261,9 +261,9 @@ func TestDiffNotEqualConfigConfiguration(t *testing.T) {
 	assert.NoError(t, projectState.Set(branchState))
 
 	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: "foo.bar",
-		Id:          "456",
+		BranchID:    123,
+		ComponentID: "foo.bar",
+		ID:          "456",
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
@@ -321,7 +321,7 @@ func TestDiffRelations(t *testing.T) {
 
 	// Target object
 	targetKey := fixtures.MockedKey{
-		Id: `123`,
+		ID: `123`,
 	}
 	targetState := &fixtures.MockedObjectState{
 		MockedManifest: &fixtures.MockedManifest{
@@ -332,7 +332,7 @@ func TestDiffRelations(t *testing.T) {
 	assert.NoError(t, projectState.Set(targetState))
 
 	objectKey := fixtures.MockedKey{
-		Id: `345`,
+		ID: `345`,
 	}
 	objectState := &fixtures.MockedObjectState{
 		MockedManifest: &fixtures.MockedManifest{
@@ -342,28 +342,28 @@ func TestDiffRelations(t *testing.T) {
 		Local: &fixtures.MockedObject{
 			MockedKey: objectKey,
 			Relations: model.Relations{
-				&fixtures.MockedApiSideRelation{
-					OtherSide: fixtures.MockedKey{Id: `001`},
+				&fixtures.MockedAPISideRelation{
+					OtherSide: fixtures.MockedKey{ID: `001`},
 				},
-				&fixtures.MockedApiSideRelation{
-					OtherSide: fixtures.MockedKey{Id: `002`},
+				&fixtures.MockedAPISideRelation{
+					OtherSide: fixtures.MockedKey{ID: `002`},
 				},
 				&fixtures.MockedManifestSideRelation{
-					OtherSide: fixtures.MockedKey{Id: `bar`},
+					OtherSide: fixtures.MockedKey{ID: `bar`},
 				},
 			},
 		},
 		Remote: &fixtures.MockedObject{
 			MockedKey: objectKey,
 			Relations: model.Relations{
-				&fixtures.MockedApiSideRelation{
-					OtherSide: fixtures.MockedKey{Id: `123`},
+				&fixtures.MockedAPISideRelation{
+					OtherSide: fixtures.MockedKey{ID: `123`},
 				},
-				&fixtures.MockedApiSideRelation{
-					OtherSide: fixtures.MockedKey{Id: `001`},
+				&fixtures.MockedAPISideRelation{
+					OtherSide: fixtures.MockedKey{ID: `001`},
 				},
 				&fixtures.MockedManifestSideRelation{
-					OtherSide: fixtures.MockedKey{Id: `foo`},
+					OtherSide: fixtures.MockedKey{ID: `foo`},
 				},
 			},
 		},
@@ -379,7 +379,7 @@ func TestDiffRelations(t *testing.T) {
   + api side relation mocked key "002"
 `
 	assert.Equal(t, strings.Trim(expected, "\n"), reporter.String())
-	assert.Equal(t, []string{"InManifest", "InApi"}, reporter.Paths()) // see model.RelationsBySide
+	assert.Equal(t, []string{"InManifest", "InAPI"}, reporter.Paths()) // see model.RelationsBySide
 }
 
 func TestDiffTransformation(t *testing.T) {
@@ -387,7 +387,7 @@ func TestDiffTransformation(t *testing.T) {
 	projectState := newProjectState(t)
 
 	// Object state
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.python-transformation-v2`, Id: `456`}
+	configKey := model.ConfigKey{BranchID: 123, ComponentID: `keboola.python-transformation-v2`, ID: `456`}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
@@ -485,7 +485,7 @@ func TestDiffSharedCode(t *testing.T) {
 	projectState := newProjectState(t)
 
 	// Object state
-	configRowKey := model.ConfigRowKey{BranchId: 123, ComponentId: storageapi.SharedCodeComponentID, Id: `456`}
+	configRowKey := model.ConfigRowKey{BranchID: 123, ComponentID: storageapi.SharedCodeComponentID, ID: `456`}
 	configRowState := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{
 			ConfigRowKey: configRowKey,
@@ -534,7 +534,7 @@ func TestDiffOrchestration(t *testing.T) {
 	projectState := newProjectState(t)
 
 	// Object state
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: storageapi.OrchestratorComponentID, Id: `456`}
+	configKey := model.ConfigKey{BranchID: 123, ComponentID: storageapi.OrchestratorComponentID, ID: `456`}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
@@ -547,9 +547,9 @@ func TestDiffOrchestration(t *testing.T) {
 				Phases: []*model.Phase{
 					{
 						PhaseKey: model.PhaseKey{
-							BranchId:    123,
-							ComponentId: storageapi.OrchestratorComponentID,
-							ConfigId:    `456`,
+							BranchID:    123,
+							ComponentID: storageapi.OrchestratorComponentID,
+							ConfigID:    `456`,
 							Index:       0,
 						},
 						AbsPath:   model.NewAbsPath(`branch/other/orchestrator/phases`, `001-phase`),
@@ -562,17 +562,17 @@ func TestDiffOrchestration(t *testing.T) {
 							{
 								TaskKey: model.TaskKey{
 									PhaseKey: model.PhaseKey{
-										BranchId:    123,
-										ComponentId: storageapi.OrchestratorComponentID,
-										ConfigId:    `456`,
+										BranchID:    123,
+										ComponentID: storageapi.OrchestratorComponentID,
+										ConfigID:    `456`,
 										Index:       0,
 									},
 									Index: 0,
 								},
 								AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-3`),
 								Name:        `Task 3`,
-								ComponentId: `foo.bar3`,
-								ConfigId:    `123`,
+								ComponentID: `foo.bar3`,
+								ConfigID:    `123`,
 								ConfigPath:  `branch/extractor/foo.bar3/123`,
 								Content: orderedmap.FromPairs([]orderedmap.Pair{
 									{
@@ -589,9 +589,9 @@ func TestDiffOrchestration(t *testing.T) {
 					},
 					{
 						PhaseKey: model.PhaseKey{
-							BranchId:    123,
-							ComponentId: storageapi.OrchestratorComponentID,
-							ConfigId:    `456`,
+							BranchID:    123,
+							ComponentID: storageapi.OrchestratorComponentID,
+							ConfigID:    `456`,
 							Index:       1,
 						},
 						AbsPath:   model.NewAbsPath(`branch/other/orchestrator/phases`, `002-phase`),
@@ -609,9 +609,9 @@ func TestDiffOrchestration(t *testing.T) {
 				Phases: []*model.Phase{
 					{
 						PhaseKey: model.PhaseKey{
-							BranchId:    123,
-							ComponentId: storageapi.OrchestratorComponentID,
-							ConfigId:    `456`,
+							BranchID:    123,
+							ComponentID: storageapi.OrchestratorComponentID,
+							ConfigID:    `456`,
 							Index:       0,
 						},
 						AbsPath:   model.NewAbsPath(`branch/other/orchestrator/phases`, `001-phase`),
@@ -624,17 +624,17 @@ func TestDiffOrchestration(t *testing.T) {
 							{
 								TaskKey: model.TaskKey{
 									PhaseKey: model.PhaseKey{
-										BranchId:    123,
-										ComponentId: storageapi.OrchestratorComponentID,
-										ConfigId:    `456`,
+										BranchID:    123,
+										ComponentID: storageapi.OrchestratorComponentID,
+										ConfigID:    `456`,
 										Index:       0,
 									},
 									Index: 0,
 								},
 								AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
 								Name:        `Task 1`,
-								ComponentId: `foo.bar1`,
-								ConfigId:    `123`,
+								ComponentID: `foo.bar1`,
+								ConfigID:    `123`,
 								ConfigPath:  `branch/extractor/foo.bar1/config123`,
 								Content: orderedmap.FromPairs([]orderedmap.Pair{
 									{
@@ -650,17 +650,17 @@ func TestDiffOrchestration(t *testing.T) {
 							{
 								TaskKey: model.TaskKey{
 									PhaseKey: model.PhaseKey{
-										BranchId:    123,
-										ComponentId: storageapi.OrchestratorComponentID,
-										ConfigId:    `456`,
+										BranchID:    123,
+										ComponentID: storageapi.OrchestratorComponentID,
+										ConfigID:    `456`,
 										Index:       0,
 									},
 									Index: 1,
 								},
 								AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
 								Name:        `Task 2`,
-								ComponentId: `foo.bar2`,
-								ConfigId:    `789`,
+								ComponentID: `foo.bar2`,
+								ConfigID:    `789`,
 								Content: orderedmap.FromPairs([]orderedmap.Pair{
 									{
 										Key: `task`,
@@ -722,7 +722,7 @@ func TestDiffMap(t *testing.T) {
 	projectState := newProjectState(t)
 
 	// Object state
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: `keboola.python-transformation-v2`, Id: `456`}
+	configKey := model.ConfigKey{BranchID: 123, ComponentID: `keboola.python-transformation-v2`, ID: `456`}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,

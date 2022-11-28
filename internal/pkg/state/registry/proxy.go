@@ -59,21 +59,21 @@ func (f *Proxy) ConfigsFrom(branch BranchKey) (configs []*Config) {
 }
 
 func (f *Proxy) ConfigsWithRowsFrom(branch BranchKey) (configs []*ConfigWithRows) {
-	configByIdMap := make(map[ConfigKey]*ConfigWithRows)
+	configByIDMap := make(map[ConfigKey]*ConfigWithRows)
 	for _, object := range f.registry.All() {
 		if v, ok := object.(*ConfigState); ok {
-			if v.BranchId != branch.Id || !v.HasState(f.stateType) {
+			if v.BranchID != branch.ID || !v.HasState(f.stateType) {
 				continue
 			}
 			config := v.GetState(f.stateType).(*Config)
 			configWithRows := &ConfigWithRows{Config: config}
-			configByIdMap[configWithRows.ConfigKey] = configWithRows
+			configByIDMap[configWithRows.ConfigKey] = configWithRows
 			configs = append(configs, configWithRows)
 		} else if v, ok := object.(*ConfigRowState); ok {
-			if v.BranchId != branch.Id || !v.HasState(f.stateType) {
+			if v.BranchID != branch.ID || !v.HasState(f.stateType) {
 				continue
 			}
-			if configForRow, found := configByIdMap[v.ConfigKey()]; found {
+			if configForRow, found := configByIDMap[v.ConfigKey()]; found {
 				row := v.GetState(f.stateType).(*ConfigRow)
 				configForRow.Rows = append(configForRow.Rows, row)
 			}

@@ -25,9 +25,9 @@ func createLocalTranWithSharedCode(t *testing.T, state *state.State) *model.Conf
 	t.Helper()
 
 	key := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `keboola.python-transformation-v2`,
-		Id:          `789`,
+		BranchID:    123,
+		ComponentID: `keboola.python-transformation-v2`,
+		ID:          `789`,
 	}
 
 	transformation := &model.ConfigState{
@@ -53,7 +53,7 @@ func createLocalTranWithSharedCode(t *testing.T, state *state.State) *model.Conf
 						Codes: model.Codes{
 							{
 								CodeKey: model.CodeKey{
-									ComponentId: `keboola.python-transformation-v2`,
+									ComponentID: `keboola.python-transformation-v2`,
 								},
 								Name:    `Code 1`,
 								AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-1`),
@@ -64,7 +64,7 @@ func createLocalTranWithSharedCode(t *testing.T, state *state.State) *model.Conf
 							},
 							{
 								CodeKey: model.CodeKey{
-									ComponentId: `keboola.python-transformation-v2`,
+									ComponentID: `keboola.python-transformation-v2`,
 								},
 								Name:    `Code 2`,
 								AbsPath: model.NewAbsPath(`branch/transformation/blocks/block-1`, `code-2`),
@@ -87,9 +87,9 @@ func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKe
 	t.Helper()
 
 	key := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `keboola.python-transformation-v2`,
-		Id:          `789`,
+		BranchID:    123,
+		ComponentID: `keboola.python-transformation-v2`,
+		ID:          `789`,
 	}
 
 	transformation := &model.ConfigState{
@@ -113,7 +113,7 @@ func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKe
 						Codes: model.Codes{
 							{
 								CodeKey: model.CodeKey{
-									ComponentId: `keboola.python-transformation-v2`,
+									ComponentID: `keboola.python-transformation-v2`,
 								},
 								Name: `Code 1`,
 								Scripts: model.Scripts{
@@ -124,7 +124,7 @@ func createInternalTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKe
 							},
 							{
 								CodeKey: model.CodeKey{
-									ComponentId: `keboola.python-transformation-v2`,
+									ComponentID: `keboola.python-transformation-v2`,
 								},
 								Name: `Code 2`,
 								Scripts: model.Scripts{
@@ -151,13 +151,13 @@ func createRemoteTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey,
 	// Rows -> rows IDs
 	var rows []interface{}
 	for _, row := range sharedCodeRowsKeys {
-		rows = append(rows, row.Id.String())
+		rows = append(rows, row.ID.String())
 	}
 
 	key := model.ConfigKey{
-		BranchId:    sharedCodeKey.BranchId,
-		ComponentId: storageapi.ComponentID("keboola.python-transformation-v2"),
-		Id:          storageapi.ConfigID("001"),
+		BranchID:    sharedCodeKey.BranchID,
+		ComponentID: storageapi.ComponentID("keboola.python-transformation-v2"),
+		ID:          storageapi.ConfigID("001"),
 	}
 
 	transformation := &model.ConfigState{
@@ -167,8 +167,8 @@ func createRemoteTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey,
 		Remote: &model.Config{
 			ConfigKey: key,
 			Content: orderedmap.FromPairs([]orderedmap.Pair{
-				{Key: model.SharedCodeIdContentKey, Value: sharedCodeKey.Id.String()},
-				{Key: model.SharedCodeRowsIdContentKey, Value: rows},
+				{Key: model.SharedCodeIDContentKey, Value: sharedCodeKey.ID.String()},
+				{Key: model.SharedCodeRowsIDContentKey, Value: rows},
 			}),
 			Transformation: &model.Transformation{},
 		},

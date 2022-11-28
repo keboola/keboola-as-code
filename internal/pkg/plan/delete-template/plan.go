@@ -19,7 +19,7 @@ type Plan struct {
 	actions      []DeleteAction
 	projectState *state.State
 	branchKey    model.BranchKey
-	instanceId   string
+	instanceID   string
 }
 
 func (p *Plan) Empty() bool {

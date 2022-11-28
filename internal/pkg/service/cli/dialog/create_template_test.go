@@ -25,7 +25,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps()
-	addMockedObjectsResponses(d.MockedHttpTransport())
+	addMockedObjectsResponses(d.MockedHTTPTransport())
 
 	// Set fake file editor
 	dialog.Prompt.(*interactive.Prompt).SetEditor(`true`)
@@ -118,43 +118,43 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, createTemplate.Options{
-		Id:           `my-super-template`,
+		ID:           `my-super-template`,
 		Name:         `My Super Template`,
 		Description:  `Full workflow to ...`,
-		SourceBranch: model.BranchKey{Id: 123},
+		SourceBranch: model.BranchKey{ID: 123},
 		Configs: []create.ConfigDef{
 			{
 				Key: model.ConfigKey{
-					BranchId:    123,
-					ComponentId: `keboola.my-component`,
-					Id:          `1`,
+					BranchID:    123,
+					ComponentID: `keboola.my-component`,
+					ID:          `1`,
 				},
-				TemplateId: `config-1`,
+				TemplateID: `config-1`,
 				Inputs: []create.InputDef{
 					{
-						InputId: "my-component-password",
+						InputID: "my-component-password",
 						Path:    orderedmap.PathFromStr("parameters.#password"),
 					},
 				},
 				Rows: []create.ConfigRowDef{
 					{
 						Key: model.ConfigRowKey{
-							BranchId:    123,
-							ComponentId: `keboola.my-component`,
-							ConfigId:    `1`,
-							Id:          `456`,
+							BranchID:    123,
+							ComponentID: `keboola.my-component`,
+							ConfigID:    `1`,
+							ID:          `456`,
 						},
-						TemplateId: `my-row`,
+						TemplateID: `my-row`,
 					},
 				},
 			},
 			{
 				Key: model.ConfigKey{
-					BranchId:    123,
-					ComponentId: `keboola.my-component`,
-					Id:          `3`,
+					BranchID:    123,
+					ComponentID: `keboola.my-component`,
+					ID:          `3`,
 				},
-				TemplateId: `config-3`,
+				TemplateID: `config-3`,
 			},
 		},
 		StepsGroups: input.StepsGroups{
@@ -168,7 +168,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 						Description: "Default Step",
 						Inputs: input.Inputs{
 							{
-								Id:   "my-component-password",
+								ID:   "my-component-password",
 								Name: "Password",
 								Type: input.TypeString,
 								Kind: input.KindHidden,
@@ -188,7 +188,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
 	d := dependencies.NewMockedDeps()
-	addMockedObjectsResponses(d.MockedHttpTransport())
+	addMockedObjectsResponses(d.MockedHTTPTransport())
 
 	// Flags
 	d.Options().Set(`storage-api-host`, `connection.keboola.com`)
@@ -205,51 +205,51 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, createTemplate.Options{
-		Id:           `my-super-template`,
+		ID:           `my-super-template`,
 		Name:         `My Super Template`,
 		Description:  `Full workflow to ...`,
-		SourceBranch: model.BranchKey{Id: 123},
+		SourceBranch: model.BranchKey{ID: 123},
 		Configs: []create.ConfigDef{
 			{
 				Key: model.ConfigKey{
-					BranchId:    123,
-					ComponentId: `keboola.my-component`,
-					Id:          `1`,
+					BranchID:    123,
+					ComponentID: `keboola.my-component`,
+					ID:          `1`,
 				},
-				TemplateId: `config-1`,
+				TemplateID: `config-1`,
 				Inputs: []create.InputDef{
 					{
-						InputId: "my-component-password",
+						InputID: "my-component-password",
 						Path:    orderedmap.PathFromStr("parameters.#password"),
 					},
 					{
-						InputId: "my-component-int",
+						InputID: "my-component-int",
 						Path:    orderedmap.PathFromStr("parameters.int"),
 					},
 					{
-						InputId: "my-component-string",
+						InputID: "my-component-string",
 						Path:    orderedmap.PathFromStr("parameters.string"),
 					},
 				},
 				Rows: []create.ConfigRowDef{
 					{
 						Key: model.ConfigRowKey{
-							BranchId:    123,
-							ComponentId: `keboola.my-component`,
-							ConfigId:    `1`,
-							Id:          `456`,
+							BranchID:    123,
+							ComponentID: `keboola.my-component`,
+							ConfigID:    `1`,
+							ID:          `456`,
 						},
-						TemplateId: `my-row`,
+						TemplateID: `my-row`,
 					},
 				},
 			},
 			{
 				Key: model.ConfigKey{
-					BranchId:    123,
-					ComponentId: `keboola.my-component`,
-					Id:          `3`,
+					BranchID:    123,
+					ComponentID: `keboola.my-component`,
+					ID:          `3`,
 				},
-				TemplateId: `config-3`,
+				TemplateID: `config-3`,
 			},
 		},
 		StepsGroups: input.StepsGroups{
@@ -263,20 +263,20 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 						Description: "Default Step",
 						Inputs: input.Inputs{
 							{
-								Id:   "my-component-password",
+								ID:   "my-component-password",
 								Name: "Password",
 								Type: input.TypeString,
 								Kind: input.KindHidden,
 							},
 							{
-								Id:      "my-component-int",
+								ID:      "my-component-int",
 								Name:    "Int",
 								Type:    input.TypeInt,
 								Kind:    input.KindInput,
 								Default: 123,
 							},
 							{
-								Id:      "my-component-string",
+								ID:      "my-component-string",
 								Name:    "String",
 								Type:    input.TypeString,
 								Kind:    input.KindInput,
@@ -297,7 +297,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
 	d := dependencies.NewMockedDeps()
-	addMockedObjectsResponses(d.MockedHttpTransport())
+	addMockedObjectsResponses(d.MockedHTTPTransport())
 
 	// Flags
 	d.Options().Set(`storage-api-host`, `connection.keboola.com`)
@@ -313,51 +313,51 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, createTemplate.Options{
-		Id:           `my-super-template`,
+		ID:           `my-super-template`,
 		Name:         `My Super Template`,
 		Description:  `Full workflow to ...`,
-		SourceBranch: model.BranchKey{Id: 123},
+		SourceBranch: model.BranchKey{ID: 123},
 		Configs: []create.ConfigDef{
 			{
 				Key: model.ConfigKey{
-					BranchId:    123,
-					ComponentId: `keboola.my-component`,
-					Id:          `1`,
+					BranchID:    123,
+					ComponentID: `keboola.my-component`,
+					ID:          `1`,
 				},
-				TemplateId: `config-1`,
+				TemplateID: `config-1`,
 				Inputs: []create.InputDef{
 					{
-						InputId: "my-component-password",
+						InputID: "my-component-password",
 						Path:    orderedmap.PathFromStr("parameters.#password"),
 					},
 				},
 				Rows: []create.ConfigRowDef{
 					{
 						Key: model.ConfigRowKey{
-							BranchId:    123,
-							ComponentId: `keboola.my-component`,
-							ConfigId:    `1`,
-							Id:          `456`,
+							BranchID:    123,
+							ComponentID: `keboola.my-component`,
+							ConfigID:    `1`,
+							ID:          `456`,
 						},
-						TemplateId: `my-row`,
+						TemplateID: `my-row`,
 					},
 				},
 			},
 			{
 				Key: model.ConfigKey{
-					BranchId:    123,
-					ComponentId: `keboola.my-component`,
-					Id:          `2`,
+					BranchID:    123,
+					ComponentID: `keboola.my-component`,
+					ID:          `2`,
 				},
-				TemplateId: `config-2`,
+				TemplateID: `config-2`,
 			},
 			{
 				Key: model.ConfigKey{
-					BranchId:    123,
-					ComponentId: `keboola.my-component`,
-					Id:          `3`,
+					BranchID:    123,
+					ComponentID: `keboola.my-component`,
+					ID:          `3`,
 				},
-				TemplateId: `config-3`,
+				TemplateID: `config-3`,
 			},
 		},
 		StepsGroups: input.StepsGroups{
@@ -371,7 +371,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 						Description: "Default Step",
 						Inputs: input.Inputs{
 							{
-								Id:   "my-component-password",
+								ID:   "my-component-password",
 								Name: "Password",
 								Type: input.TypeString,
 								Kind: input.KindHidden,
@@ -386,7 +386,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 }
 
 func addMockedObjectsResponses(httpTransport *httpmock.MockTransport) {
-	configJson := `
+	configJSON := `
 {
   "storage": {
     "foo": "bar"
@@ -399,9 +399,9 @@ func addMockedObjectsResponses(httpTransport *httpmock.MockTransport) {
 }
 `
 	configContent := orderedmap.New()
-	json.MustDecodeString(configJson, configContent)
+	json.MustDecodeString(configJSON, configContent)
 
-	branches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}
+	branches := []*model.Branch{{BranchKey: model.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}
 	configs := []*storageapi.ConfigWithRows{
 		{
 			Config: &storageapi.Config{

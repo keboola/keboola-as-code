@@ -21,7 +21,7 @@ type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
 	ProjectID() int
-	EncryptionApiClient() client.Sender
+	EncryptionAPIClient() client.Sender
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -31,7 +31,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	logger := d.Logger()
 
 	// Get Encryption API
-	encryptionApiClient := d.EncryptionApiClient()
+	encryptionAPIClient := d.EncryptionAPIClient()
 
 	// Get plan
 	plan := encrypt.NewPlan(projectState)
@@ -49,7 +49,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		}
 
 		// Invoke
-		if err := plan.Invoke(ctx, d.ProjectID(), logger, encryptionApiClient, projectState.State()); err != nil {
+		if err := plan.Invoke(ctx, d.ProjectID(), logger, encryptionAPIClient, projectState.State()); err != nil {
 			return err
 		}
 

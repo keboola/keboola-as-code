@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	FileTypeJson               = `json`
-	FileTypeJsonNet            = `jsonnet`
+	FileTypeJSON               = `json`
+	FileTypeJsonnet            = `jsonnet`
 	FileTypeMarkdown           = `markdown`
 	FileTypeOther              = `other`
 	FileKindObjectConfig       = `objectConfig`
@@ -109,8 +109,8 @@ func (f *fileToLoad) ReadFile() (*filesystem.RawFile, error) {
 	return file, nil
 }
 
-func (f *fileToLoad) ReadJsonFieldsTo(target interface{}, tag string) (*filesystem.JsonFile, bool, error) {
-	file, tagFound, err := f.fsLoader.ReadJsonFieldsTo(f.FileDef, target, tag)
+func (f *fileToLoad) ReadJSONFieldsTo(target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
+	file, tagFound, err := f.fsLoader.ReadJSONFieldsTo(f.FileDef, target, tag)
 	if err != nil {
 		return nil, false, err
 	}
@@ -120,8 +120,8 @@ func (f *fileToLoad) ReadJsonFieldsTo(target interface{}, tag string) (*filesyst
 	return file, tagFound, nil
 }
 
-func (f *fileToLoad) ReadJsonMapTo(target interface{}, tag string) (*filesystem.JsonFile, bool, error) {
-	file, tagFound, err := f.fsLoader.ReadJsonMapTo(f.FileDef, target, tag)
+func (f *fileToLoad) ReadJSONMapTo(target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
+	file, tagFound, err := f.fsLoader.ReadJSONMapTo(f.FileDef, target, tag)
 	if err != nil {
 		return nil, false, err
 	}
@@ -142,8 +142,8 @@ func (f *fileToLoad) ReadFileContentTo(target interface{}, tag string) (*filesys
 	return file, tagFound, nil
 }
 
-func (f *fileToLoad) ReadJsonFile() (*filesystem.JsonFile, error) {
-	file, err := f.fsLoader.ReadJsonFile(f.FileDef)
+func (f *fileToLoad) ReadJSONFile() (*filesystem.JSONFile, error) {
+	file, err := f.fsLoader.ReadJSONFile(f.FileDef)
 	if err != nil {
 		return nil, err
 	}
@@ -151,8 +151,8 @@ func (f *fileToLoad) ReadJsonFile() (*filesystem.JsonFile, error) {
 	return file, nil
 }
 
-func (f *fileToLoad) ReadJsonFileTo(target interface{}) (*filesystem.RawFile, error) {
-	file, err := f.fsLoader.ReadJsonFileTo(f.FileDef, target)
+func (f *fileToLoad) ReadJSONFileTo(target interface{}) (*filesystem.RawFile, error) {
+	file, err := f.fsLoader.ReadJSONFileTo(f.FileDef, target)
 	if err != nil {
 		return nil, err
 	}

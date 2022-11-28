@@ -16,8 +16,8 @@ func TestRelationsMapperLinkRelations(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
 
-	key1 := fixtures.MockedKey{Id: "123"}
-	key2 := fixtures.MockedKey{Id: "456"}
+	key1 := fixtures.MockedKey{ID: "123"}
+	key2 := fixtures.MockedKey{ID: "456"}
 
 	// Manifest side
 	object1 := &fixtures.MockedObjectState{
@@ -60,7 +60,7 @@ func TestRelationsMapperLinkRelations(t *testing.T) {
 
 	// Other side relation has been created
 	assert.Equal(t, model.Relations{
-		&fixtures.MockedApiSideRelation{
+		&fixtures.MockedAPISideRelation{
 			OtherSide: key1,
 		},
 	}, object2.Local.Relations)
@@ -71,8 +71,8 @@ func TestRelationsMapperOtherSideMissing(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
 
-	key1 := fixtures.MockedKey{Id: "123"}
-	key2 := fixtures.MockedKey{Id: "456"}
+	key1 := fixtures.MockedKey{ID: "123"}
+	key2 := fixtures.MockedKey{ID: "456"}
 
 	// Manifest side
 	object1 := &fixtures.MockedObjectState{

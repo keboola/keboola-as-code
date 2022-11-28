@@ -112,7 +112,7 @@ type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
 	Components() *model.ComponentsMap
-	StorageApiClient() client.Sender
+	StorageAPIClient() client.Sender
 }
 
 func Run(ctx context.Context, container state.ObjectsContainer, o OptionsWithFilter, d dependencies) (s *state.State, err error) {

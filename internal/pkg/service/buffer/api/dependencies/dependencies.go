@@ -101,7 +101,7 @@ type forProjectRequest struct {
 	logger log.PrefixLogger
 }
 
-func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, debug, dumpHttp bool) (v ForServer, err error) {
+func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, debug, dumpHTTP bool) (v ForServer, err error) {
 	// Create tracer
 	ctx := serverCtx
 	var tracer trace.Tracer = nil
@@ -125,7 +125,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 
 	// Create service dependencies
 	userAgent := "keboola-buffer-api"
-	serviceDeps, err := serviceDependencies.NewServiceDeps(serverCtx, ctx, serverWg, tracer, envs, logger, debug, dumpHttp, userAgent)
+	serviceDeps, err := serviceDependencies.NewServiceDeps(serverCtx, ctx, serverWg, tracer, envs, logger, debug, dumpHTTP, userAgent)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 	}
 
 	logger := publicDeps.PrefixLogger().WithAdditionalPrefix(
-		fmt.Sprintf("[project=%d][token=%s]", projectDeps.ProjectID(), projectDeps.StorageApiTokenID()),
+		fmt.Sprintf("[project=%d][token=%s]", projectDeps.ProjectID(), projectDeps.StorageAPITokenID()),
 	)
 
 	return &forProjectRequest{

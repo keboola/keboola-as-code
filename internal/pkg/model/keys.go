@@ -30,7 +30,7 @@ type Key interface {
 	Kind() Kind     // kind of the object: branch, config, ...
 	Desc() string   // human-readable description of the object
 	String() string // unique string representation of the key
-	ObjectId() string
+	ObjectID() string
 	ParentKey() (Key, error) // unique key of the parent object
 }
 
@@ -39,41 +39,41 @@ type WithKey interface {
 }
 
 type BranchKey struct {
-	Id storageapi.BranchID `json:"id" validate:"required"`
+	ID storageapi.BranchID `json:"id" validate:"required"`
 }
 
 type ConfigKey struct {
-	BranchId    storageapi.BranchID    `json:"branchId,omitempty" validate:"required_in_project"`
-	ComponentId storageapi.ComponentID `json:"componentId" validate:"required"`
-	Id          storageapi.ConfigID    `json:"id" validate:"required"`
+	BranchID    storageapi.BranchID    `json:"branchId,omitempty" validate:"required_in_project"`
+	ComponentID storageapi.ComponentID `json:"componentId" validate:"required"`
+	ID          storageapi.ConfigID    `json:"id" validate:"required"`
 }
 
 type ConfigRowKey struct {
-	BranchId    storageapi.BranchID    `json:"-" validate:"required_in_project"`
-	ComponentId storageapi.ComponentID `json:"-" validate:"required"`
-	ConfigId    storageapi.ConfigID    `json:"-" validate:"required"`
-	Id          storageapi.RowID       `json:"id" validate:"required" `
+	BranchID    storageapi.BranchID    `json:"-" validate:"required_in_project"`
+	ComponentID storageapi.ComponentID `json:"-" validate:"required"`
+	ConfigID    storageapi.ConfigID    `json:"-" validate:"required"`
+	ID          storageapi.RowID       `json:"id" validate:"required" `
 }
 
 type BlockKey struct {
-	BranchId    storageapi.BranchID    `json:"-" validate:"required_in_project" `
-	ComponentId storageapi.ComponentID `json:"-" validate:"required" `
-	ConfigId    storageapi.ConfigID    `json:"-" validate:"required" `
+	BranchID    storageapi.BranchID    `json:"-" validate:"required_in_project" `
+	ComponentID storageapi.ComponentID `json:"-" validate:"required" `
+	ConfigID    storageapi.ConfigID    `json:"-" validate:"required" `
 	Index       int                    `json:"-" validate:"min=0" `
 }
 
 type CodeKey struct {
-	BranchId    storageapi.BranchID    `json:"-" validate:"required_in_project" `
-	ComponentId storageapi.ComponentID `json:"-" validate:"required" `
-	ConfigId    storageapi.ConfigID    `json:"-" validate:"required" `
+	BranchID    storageapi.BranchID    `json:"-" validate:"required_in_project" `
+	ComponentID storageapi.ComponentID `json:"-" validate:"required" `
+	ConfigID    storageapi.ConfigID    `json:"-" validate:"required" `
 	BlockIndex  int                    `json:"-" validate:"min=0" `
 	Index       int                    `json:"-" validate:"min=0" `
 }
 
 type PhaseKey struct {
-	BranchId    storageapi.BranchID    `json:"-" validate:"required_in_project" `
-	ComponentId storageapi.ComponentID `json:"-" validate:"required" `
-	ConfigId    storageapi.ConfigID    `json:"-" validate:"required" `
+	BranchID    storageapi.BranchID    `json:"-" validate:"required_in_project" `
+	ComponentID storageapi.ComponentID `json:"-" validate:"required" `
+	ConfigID    storageapi.ConfigID    `json:"-" validate:"required" `
 	Index       int                    `json:"-" validate:"min=0" `
 }
 
@@ -110,31 +110,31 @@ func (k TaskKey) Kind() Kind {
 	return Kind{Name: TaskKind, Abbr: TaskAbbr}
 }
 
-func (k BranchKey) ObjectId() string {
-	return k.Id.String()
+func (k BranchKey) ObjectID() string {
+	return k.ID.String()
 }
 
-func (k ConfigKey) ObjectId() string {
-	return k.Id.String()
+func (k ConfigKey) ObjectID() string {
+	return k.ID.String()
 }
 
-func (k ConfigRowKey) ObjectId() string {
-	return k.Id.String()
+func (k ConfigRowKey) ObjectID() string {
+	return k.ID.String()
 }
 
-func (k BlockKey) ObjectId() string {
+func (k BlockKey) ObjectID() string {
 	return cast.ToString(k.Index)
 }
 
-func (k CodeKey) ObjectId() string {
+func (k CodeKey) ObjectID() string {
 	return cast.ToString(k.Index)
 }
 
-func (k PhaseKey) ObjectId() string {
+func (k PhaseKey) ObjectID() string {
 	return cast.ToString(k.Index)
 }
 
-func (k TaskKey) ObjectId() string {
+func (k TaskKey) ObjectID() string {
 	return cast.ToString(k.Index)
 }
 
@@ -192,9 +192,9 @@ func (k TaskKey) Key() Key {
 
 func (k BlockKey) ConfigKey() Key {
 	return ConfigKey{
-		BranchId:    k.BranchId,
-		ComponentId: k.ComponentId,
-		Id:          k.ConfigId,
+		BranchID:    k.BranchID,
+		ComponentID: k.ComponentID,
+		ID:          k.ConfigID,
 	}
 }
 
@@ -208,17 +208,17 @@ func (k CodeKey) Key() Key {
 
 func (k CodeKey) ConfigKey() Key {
 	return ConfigKey{
-		BranchId:    k.BranchId,
-		ComponentId: k.ComponentId,
-		Id:          k.ConfigId,
+		BranchID:    k.BranchID,
+		ComponentID: k.ComponentID,
+		ID:          k.ConfigID,
 	}
 }
 
 func (k CodeKey) BlockKey() Key {
 	return BlockKey{
-		BranchId:    k.BranchId,
-		ComponentId: k.ComponentId,
-		ConfigId:    k.ConfigId,
+		BranchID:    k.BranchID,
+		ComponentID: k.ComponentID,
+		ConfigID:    k.ConfigID,
 		Index:       k.BlockIndex,
 	}
 }
@@ -228,43 +228,43 @@ func (k CodeKey) ParentKey() (Key, error) {
 }
 
 func (k BranchKey) Desc() string {
-	return fmt.Sprintf(`%s "%d"`, k.Kind().Name, k.Id)
+	return fmt.Sprintf(`%s "%d"`, k.Kind().Name, k.ID)
 }
 
 func (k ConfigKey) Desc() string {
-	if k.BranchId == 0 {
+	if k.BranchID == 0 {
 		// Config in a template
-		return fmt.Sprintf(`%s "component:%s/config:%s"`, k.Kind().Name, k.ComponentId, k.Id)
+		return fmt.Sprintf(`%s "component:%s/config:%s"`, k.Kind().Name, k.ComponentID, k.ID)
 	}
-	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s"`, k.Kind().Name, k.BranchId, k.ComponentId, k.Id)
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s"`, k.Kind().Name, k.BranchID, k.ComponentID, k.ID)
 }
 
 func (k ConfigRowKey) Desc() string {
-	if k.BranchId == 0 {
+	if k.BranchID == 0 {
 		// Row in a template
-		return fmt.Sprintf(`%s "component:%s/config:%s"`, k.Kind().Name, k.ComponentId, k.Id)
+		return fmt.Sprintf(`%s "component:%s/config:%s"`, k.Kind().Name, k.ComponentID, k.ID)
 	}
-	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/row:%s"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.Id)
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/row:%s"`, k.Kind().Name, k.BranchID, k.ComponentID, k.ConfigID, k.ID)
 }
 
 func (k BlockKey) Desc() string {
-	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/block:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.Index)
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/block:%d"`, k.Kind().Name, k.BranchID, k.ComponentID, k.ConfigID, k.Index)
 }
 
 func (k CodeKey) Desc() string {
-	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/block:%d/code:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.BlockIndex, k.Index)
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/block:%d/code:%d"`, k.Kind().Name, k.BranchID, k.ComponentID, k.ConfigID, k.BlockIndex, k.Index)
 }
 
 func (k PhaseKey) Desc() string {
-	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/phase:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.Index)
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/phase:%d"`, k.Kind().Name, k.BranchID, k.ComponentID, k.ConfigID, k.Index)
 }
 
 func (k TaskKey) Desc() string {
-	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/phase:%d/task:%d"`, k.Kind().Name, k.BranchId, k.ComponentId, k.ConfigId, k.PhaseKey.Index, k.Index)
+	return fmt.Sprintf(`%s "branch:%d/component:%s/config:%s/phase:%d/task:%d"`, k.Kind().Name, k.BranchID, k.ComponentID, k.ConfigID, k.PhaseKey.Index, k.Index)
 }
 
 func (k BranchKey) String() string {
-	return fmt.Sprintf("%02d_%d_branch", k.Level(), k.Id)
+	return fmt.Sprintf("%02d_%d_branch", k.Level(), k.ID)
 }
 
 func (k BranchKey) ParentKey() (Key, error) {
@@ -272,35 +272,35 @@ func (k BranchKey) ParentKey() (Key, error) {
 }
 
 func (k ConfigKey) String() string {
-	return fmt.Sprintf("%02d_%d_%s_%s_config", k.Level(), k.BranchId, k.ComponentId, k.Id)
+	return fmt.Sprintf("%02d_%d_%s_%s_config", k.Level(), k.BranchID, k.ComponentID, k.ID)
 }
 
 func (k ConfigRowKey) String() string {
-	return fmt.Sprintf("%02d_%d_%s_%s_%s_config_row", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.Id)
+	return fmt.Sprintf("%02d_%d_%s_%s_%s_config_row", k.Level(), k.BranchID, k.ComponentID, k.ConfigID, k.ID)
 }
 
 func (k BlockKey) String() string {
-	return fmt.Sprintf("%02d_%d_%s_%s_%03d_block", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.Index)
+	return fmt.Sprintf("%02d_%d_%s_%s_%03d_block", k.Level(), k.BranchID, k.ComponentID, k.ConfigID, k.Index)
 }
 
 func (k CodeKey) String() string {
-	return fmt.Sprintf("%02d_%d_%s_%s_%03d_%03d_code", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.BlockIndex, k.Index)
+	return fmt.Sprintf("%02d_%d_%s_%s_%03d_%03d_code", k.Level(), k.BranchID, k.ComponentID, k.ConfigID, k.BlockIndex, k.Index)
 }
 
 func (k PhaseKey) String() string {
-	return fmt.Sprintf("%02d_%d_%s_%s_%03d_phase", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.Index)
+	return fmt.Sprintf("%02d_%d_%s_%s_%03d_phase", k.Level(), k.BranchID, k.ComponentID, k.ConfigID, k.Index)
 }
 
 func (k TaskKey) String() string {
-	return fmt.Sprintf("%02d_%d_%s_%s_%03d_%03d_task", k.Level(), k.BranchId, k.ComponentId, k.ConfigId, k.PhaseKey.Index, k.Index)
+	return fmt.Sprintf("%02d_%d_%s_%s_%03d_%03d_task", k.Level(), k.BranchID, k.ComponentID, k.ConfigID, k.PhaseKey.Index, k.Index)
 }
 
 func (k ConfigKey) BranchKey() BranchKey {
-	return BranchKey{Id: k.BranchId}
+	return BranchKey{ID: k.BranchID}
 }
 
 func (k ConfigKey) ParentKey() (Key, error) {
-	if k.BranchId == 0 {
+	if k.BranchID == 0 {
 		// Configs in template are not related to any branch
 		return nil, nil
 	}
@@ -312,7 +312,7 @@ func (k ConfigRowKey) BranchKey() BranchKey {
 }
 
 func (k ConfigRowKey) ConfigKey() ConfigKey {
-	return ConfigKey{BranchId: k.BranchId, ComponentId: k.ComponentId, Id: k.ConfigId}
+	return ConfigKey{BranchID: k.BranchID, ComponentID: k.ComponentID, ID: k.ConfigID}
 }
 
 func (k ConfigRowKey) ParentKey() (Key, error) {
@@ -320,18 +320,18 @@ func (k ConfigRowKey) ParentKey() (Key, error) {
 }
 
 func (b Block) ConfigKey() ConfigKey {
-	return ConfigKey{BranchId: b.BranchId, ComponentId: b.ComponentId, Id: b.ConfigId}
+	return ConfigKey{BranchID: b.BranchID, ComponentID: b.ComponentID, ID: b.ConfigID}
 }
 
 func (c Code) ConfigKey() ConfigKey {
-	return ConfigKey{BranchId: c.BranchId, ComponentId: c.ComponentId, Id: c.ConfigId}
+	return ConfigKey{BranchID: c.BranchID, ComponentID: c.ComponentID, ID: c.ConfigID}
 }
 
 func (k PhaseKey) ConfigKey() ConfigKey {
 	return ConfigKey{
-		BranchId:    k.BranchId,
-		ComponentId: k.ComponentId,
-		Id:          k.ConfigId,
+		BranchID:    k.BranchID,
+		ComponentID: k.ComponentID,
+		ID:          k.ConfigID,
 	}
 }
 
@@ -347,11 +347,11 @@ func (k TaskKey) ParentKey() (Key, error) {
 	return k.PhaseKey, nil
 }
 
-type ConfigIdMetadata struct {
-	IdInTemplate storageapi.ConfigID `json:"idInTemplate"`
+type ConfigIDMetadata struct {
+	IDInTemplate storageapi.ConfigID `json:"idInTemplate"`
 }
 
-type RowIdMetadata struct {
-	IdInProject  storageapi.RowID `json:"idInProject"`
-	IdInTemplate storageapi.RowID `json:"idInTemplate"`
+type RowIDMetadata struct {
+	IDInProject  storageapi.RowID `json:"idInProject"`
+	IDInTemplate storageapi.RowID `json:"idInTemplate"`
 }

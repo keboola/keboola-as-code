@@ -52,7 +52,7 @@ type Relation interface {
 	Key() string                                  // unique key within the object on which the relation is defined, for sorting and comparing
 	ParentKey(relationDefinedOn Key) (Key, error) // if relation type is parent <-> child, then parent key is returned, otherwise nil
 	IsDefinedInManifest() bool                    // if true, relation will be present in the manifest
-	IsDefinedInApi() bool                         // if true, relation will be present in API calls
+	IsDefinedInAPI() bool                         // if true, relation will be present in API calls
 	NewOtherSideRelation(relationDefinedOn Object, allObjects Objects) (otherSide Key, relation Relation, err error)
 }
 
@@ -60,7 +60,7 @@ type Relations []Relation
 
 type RelationsBySide struct {
 	InManifest Relations
-	InApi      Relations
+	InAPI      Relations
 }
 
 func (v Relations) ParentKey(source Key) (Key, error) {
@@ -89,14 +89,14 @@ func (v Relations) ParentKey(source Key) (Key, error) {
 func (v Relations) RelationsBySide() RelationsBySide {
 	return RelationsBySide{
 		InManifest: v.OnlyStoredInManifest(),
-		InApi:      v.OnlyStoredInApi(),
+		InAPI:      v.OnlyStoredInAPI(),
 	}
 }
 
-func (v Relations) OnlyStoredInApi() Relations {
+func (v Relations) OnlyStoredInAPI() Relations {
 	var out Relations
 	for _, relation := range v {
-		if relation.IsDefinedInApi() {
+		if relation.IsDefinedInAPI() {
 			out = append(out, relation)
 		}
 	}
@@ -271,7 +271,7 @@ func (v Relations) MarshalJSON() ([]byte, error) {
 
 		// Convert struct -> map
 		relationMap := orderedmap.New()
-		if err := jsonutils.ConvertByJson(relation, &relationMap); err != nil {
+		if err := jsonutils.ConvertByJSON(relation, &relationMap); err != nil {
 			return nil, err
 		}
 		relationMap.Set(`type`, relation.Type().String())

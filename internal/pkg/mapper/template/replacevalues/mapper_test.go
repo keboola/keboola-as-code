@@ -18,8 +18,8 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 	t.Parallel()
 
 	// Remote objects
-	oldBranchKey := model.BranchKey{Id: 123}
-	oldConfigKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
+	oldBranchKey := model.BranchKey{ID: 123}
+	oldConfigKey := model.ConfigKey{BranchID: 123, ComponentID: "foo.bar", ID: "456"}
 	config := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: oldConfigKey,
@@ -30,7 +30,7 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 			Content:   orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}}),
 		},
 	}
-	oldRowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "foo.bar", ConfigId: "456", Id: "789"}
+	oldRowKey := model.ConfigRowKey{BranchID: 123, ComponentID: "foo.bar", ConfigID: "456", ID: "789"}
 	row := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{
 			ConfigRowKey: oldRowKey,
@@ -53,9 +53,9 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 	}
 
 	// Keys to replace
-	newBranchKey := model.BranchKey{Id: 0}
-	newConfigKey := model.ConfigKey{BranchId: 0, ComponentId: "foo.bar", Id: "my-config"}
-	newRowKey := model.ConfigRowKey{BranchId: 0, ComponentId: "foo.bar", ConfigId: "my-config", Id: "my-row"}
+	newBranchKey := model.BranchKey{ID: 0}
+	newConfigKey := model.ConfigKey{BranchID: 0, ComponentID: "foo.bar", ID: "my-config"}
+	newRowKey := model.ConfigRowKey{BranchID: 0, ComponentID: "foo.bar", ConfigID: "my-config", ID: "my-row"}
 	replacements := replacevalues.NewValues()
 	replacements.AddKey(oldBranchKey, newBranchKey)
 	replacements.AddKey(oldConfigKey, newConfigKey)

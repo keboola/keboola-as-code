@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	StorageApiHostOpt  = `storage-api-host`
-	StorageApiTokenOpt = `storage-api-token`
+	StorageAPIHostOpt  = `storage-api-host`
+	StorageAPITokenOpt = `storage-api-token`
 )
 
 type parser = viper.Viper
@@ -37,7 +37,7 @@ type Options struct {
 	envs        *env.Map
 	setBy       map[string]SetBy
 	Verbose     bool   // verbose mode, print details to console
-	VerboseApi  bool   // log each API request and response
+	VerboseAPI  bool   // log each API request and response
 	LogFilePath string // path to the log file
 }
 
@@ -61,7 +61,7 @@ func (o *Options) Load(logger log.Logger, osEnvs *env.Map, fs filesystem.Fs, fla
 
 	// Load global options
 	o.Verbose = o.GetBool(`verbose`)
-	o.VerboseApi = o.GetBool(`verbose-api`)
+	o.VerboseAPI = o.GetBool(`verbose-api`)
 	o.LogFilePath = o.GetString(`log-file`)
 	return nil
 }

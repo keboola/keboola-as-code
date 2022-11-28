@@ -68,7 +68,7 @@ type WalkFunc = filepath.WalkFunc
 
 // Fs - filesystem interface.
 type Fs interface {
-	ApiName() string // name of the used implementation, for example local, memory, ...
+	APIName() string // name of the used implementation, for example local, memory, ...
 	BasePath() string
 	WorkingDir() string
 	SetWorkingDir(workingDir string)
@@ -101,19 +101,19 @@ type Fs interface {
 type LoadHandler func(def *FileDef, fileType FileType) (File, error)
 
 type FileLoader interface {
-	WithJsonNetContext(ctx *jsonnet.Context) FileLoader
+	WithJsonnetContext(ctx *jsonnet.Context) FileLoader
 	ReadRawFile(file *FileDef) (*RawFile, error)
 	ReadFileContentTo(file *FileDef, target interface{}, structTag string) (*RawFile, bool, error)
-	ReadJsonFile(file *FileDef) (*JsonFile, error)
-	ReadJsonFileTo(file *FileDef, target interface{}) (*RawFile, error)
-	ReadJsonFieldsTo(file *FileDef, target interface{}, structTag string) (*JsonFile, bool, error)
-	ReadJsonMapTo(file *FileDef, target interface{}, structTag string) (*JsonFile, bool, error)
+	ReadJSONFile(file *FileDef) (*JSONFile, error)
+	ReadJSONFileTo(file *FileDef, target interface{}) (*RawFile, error)
+	ReadJSONFieldsTo(file *FileDef, target interface{}, structTag string) (*JSONFile, bool, error)
+	ReadJSONMapTo(file *FileDef, target interface{}, structTag string) (*JSONFile, bool, error)
 	ReadYamlFile(file *FileDef) (*YamlFile, error)
 	ReadYamlFileTo(file *FileDef, target interface{}) (*RawFile, error)
 	ReadYamlFieldsTo(file *FileDef, target interface{}, structTag string) (*YamlFile, bool, error)
 	ReadYamlMapTo(file *FileDef, target interface{}, structTag string) (*YamlFile, bool, error)
-	ReadJsonNetFile(file *FileDef) (*JsonNetFile, error)
-	ReadJsonNetFileTo(file *FileDef, target interface{}) (*JsonNetFile, error)
+	ReadJsonnetFile(file *FileDef) (*JsonnetFile, error)
+	ReadJsonnetFileTo(file *FileDef, target interface{}) (*JsonnetFile, error)
 	ReadSubDirs(fs Fs, root string) ([]string, error)
 	IsIgnored(path string) (bool, error)
 }

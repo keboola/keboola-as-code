@@ -35,9 +35,9 @@ func TestEvaluateAst(t *testing.T) {
 func TestFormat(t *testing.T) {
 	t.Parallel()
 	code := `{"foo":"bar"}`
-	jsonNet, err := Format(code)
+	jsonnetStr, err := Format(code)
 	assert.NoError(t, err)
-	assert.Equal(t, "{ foo: \"bar\" }\n", jsonNet)
+	assert.Equal(t, "{ foo: \"bar\" }\n", jsonnetStr)
 }
 
 func TestFormatAst(t *testing.T) {
@@ -52,8 +52,8 @@ func TestFormatAst(t *testing.T) {
 			},
 		},
 	}
-	jsonNet := FormatAst(astNode)
-	assert.Equal(t, "{ foo: \"bar\" }\n", jsonNet)
+	jsonnetStr := FormatAst(astNode)
+	assert.Equal(t, "{ foo: \"bar\" }\n", jsonnetStr)
 }
 
 func TestToAst(t *testing.T) {

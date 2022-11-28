@@ -105,26 +105,26 @@ func TestFilesLoader(t *testing.T) {
 	assert.Equal(t, `my description`, rawFile1.Description())
 	assert.Equal(t, jsonContent, rawFile1.Content)
 
-	// ReadJsonFile
+	// ReadJSONFile
 	jsonFile1, err := files.
 		Load(`foo2.json`).
 		SetDescription(`my description`).
 		AddTag(`tag3`).
 		AddTag(`tag4`).
-		ReadJsonFile()
+		ReadJSONFile()
 	assert.NoError(t, err)
 	assert.Equal(t, `foo2.json`, jsonFile1.Path())
 	assert.Equal(t, `my description`, jsonFile1.Description())
 	assert.Equal(t, jsonMap, jsonFile1.Content)
 
-	// ReadJsonFieldsTo
+	// ReadJSONFieldsTo
 	target1 := &myStruct{}
 	jsonFile2, tagFound, err := files.
 		Load(`foo3.json`).
 		SetDescription(`my description`).
 		AddTag(`tag5`).
 		AddTag(`tag6`).
-		ReadJsonFieldsTo(target1, `mytag:field`)
+		ReadJSONFieldsTo(target1, `mytag:field`)
 	assert.True(t, tagFound)
 	assert.NoError(t, err)
 	assert.Equal(t, `foo3.json`, jsonFile2.Path())
@@ -146,14 +146,14 @@ func TestFilesLoader(t *testing.T) {
 	assert.Equal(t, `my description`, rawFile2.Description())
 	assert.Equal(t, jsonContent, target2.Content)
 
-	// ReadJsonMapTo
+	// ReadJSONMapTo
 	target3 := &myStruct{}
 	jsonFile3, tagFound, err := files.
 		Load(`foo5.json`).
 		SetDescription(`my description`).
 		AddTag(`tag9`).
 		AddTag(`tag10`).
-		ReadJsonMapTo(target3, `mytag:map`)
+		ReadJSONMapTo(target3, `mytag:map`)
 	assert.True(t, tagFound)
 	assert.NoError(t, err)
 	assert.Equal(t, `foo5.json`, jsonFile3.Path())

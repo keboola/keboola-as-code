@@ -20,16 +20,16 @@ func (l *apiLogger) Prefix() string {
 
 // WithPrefix returns a new logger with different prefix.
 func (l *apiLogger) WithPrefix(prefix string) PrefixLogger {
-	return NewApiLogger(l.base, prefix, l.verbose)
+	return NewAPILogger(l.base, prefix, l.verbose)
 }
 
 // WithAdditionalPrefix returns a new logger with the added prefix.
 func (l *apiLogger) WithAdditionalPrefix(prefix string) PrefixLogger {
-	return NewApiLogger(l.base, l.prefix+prefix, l.verbose)
+	return NewAPILogger(l.base, l.prefix+prefix, l.verbose)
 }
 
-// NewApiLogger new production zapLogger for API.
-func NewApiLogger(base *stdLog.Logger, prefix string, verbose bool) PrefixLogger {
+// NewAPILogger new production zapLogger for API.
+func NewAPILogger(base *stdLog.Logger, prefix string, verbose bool) PrefixLogger {
 	var cores []zapcore.Core
 
 	// Log to the standard logger

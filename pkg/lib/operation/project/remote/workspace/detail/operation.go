@@ -16,17 +16,17 @@ import (
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageApiClient() client.Sender
-	SandboxesApiClient() client.Sender
+	StorageAPIClient() client.Sender
+	SandboxesAPIClient() client.Sender
 }
 
-func Run(ctx context.Context, d dependencies, configId sandboxesapi.ConfigID) (err error) {
+func Run(ctx context.Context, d dependencies, configID sandboxesapi.ConfigID) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.workspace.create")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()
 
-	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageApiClient())
+	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageAPIClient())
 	if err != nil {
 		return err
 	}
@@ -34,7 +34,7 @@ func Run(ctx context.Context, d dependencies, configId sandboxesapi.ConfigID) (e
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	sandbox, err := sandboxesapi.Get(ctx, d.StorageApiClient(), d.SandboxesApiClient(), branch.ID, configId)
+	sandbox, err := sandboxesapi.Get(ctx, d.StorageAPIClient(), d.SandboxesAPIClient(), branch.ID, configID)
 	if err != nil {
 		return err
 	}

@@ -37,15 +37,15 @@ type Project struct {
 	initStartedAt       time.Time
 	ctx                 context.Context
 	storageAPIToken     *storageapi.Token
-	storageApiClient    client.Client
+	storageAPIClient    client.Client
 	encryptionAPIClient client.Client
 	jobsQueueAPIClient  client.Client
 	schedulerAPIClient  client.Client
-	sandboxesApiClient  client.Client
+	sandboxesAPIClient  client.Client
 	defaultBranch       *storageapi.Branch
 	envs                *env.Map
 	mapsLock            *sync.Mutex
-	branchesById        map[storageapi.BranchID]*storageapi.Branch
+	branchesByID        map[storageapi.BranchID]*storageapi.Branch
 	branchesByName      map[string]*storageapi.Branch
 	logFn               func(format string, a ...interface{})
 }
@@ -88,10 +88,10 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	}
 
 	// Init storage API
-	p.storageApiClient = storageapi.ClientWithHostAndToken(client.NewTestClient(), p.StorageAPIHost(), p.Project.StorageAPIToken())
+	p.storageAPIClient = storageapi.ClientWithHostAndToken(client.NewTestClient(), p.StorageAPIHost(), p.Project.StorageAPIToken())
 
 	// Load services
-	index, err := storageapi.IndexRequest().Send(p.ctx, p.storageApiClient)
+	index, err := storageapi.IndexRequest().Send(p.ctx, p.storageAPIClient)
 	if err != nil {
 		cleanupFn()
 		return nil, nil, errors.Errorf("cannot get services: %w", err)
@@ -135,7 +135,7 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 		return nil, nil, errors.New("missing sandboxes service")
 	}
 
-	p.sandboxesApiClient = sandboxesapi.ClientWithHostAndToken(client.NewTestClient(), sandboxesHost.String(), p.Project.StorageAPIToken())
+	p.sandboxesAPIClient = sandboxesapi.ClientWithHostAndToken(client.NewTestClient(), sandboxesHost.String(), p.Project.StorageAPIToken())
 
 	// Check token/project ID
 	errs := errors.NewMultiError()
@@ -143,7 +143,7 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	initWg.Add(1)
 	go func() {
 		defer initWg.Done()
-		if token, err := storageapi.VerifyTokenRequest(p.Project.StorageAPIToken()).Send(p.ctx, p.storageApiClient); err != nil {
+		if token, err := storageapi.VerifyTokenRequest(p.Project.StorageAPIToken()).Send(p.ctx, p.storageAPIClient); err != nil {
 			errs.Append(errors.Errorf("invalid token for project %d: %w", p.ID(), err))
 		} else if p.ID() != token.ProjectID() {
 			errs.Append(errors.New("test project id and token project id are different"))
@@ -173,7 +173,7 @@ func (p *Project) Env() *env.Map {
 
 func (p *Project) DefaultBranch() (*storageapi.Branch, error) {
 	if p.defaultBranch == nil {
-		if v, err := storageapi.GetDefaultBranchRequest().Send(p.ctx, p.storageApiClient); err == nil {
+		if v, err := storageapi.GetDefaultBranchRequest().Send(p.ctx, p.storageAPIClient); err == nil {
 			p.defaultBranch = v
 		} else {
 			return nil, errors.Errorf("cannot get default branch: %w", err)
@@ -187,7 +187,7 @@ func (p *Project) StorageAPIToken() *storageapi.Token {
 }
 
 func (p *Project) StorageAPIClient() client.Client {
-	return p.storageApiClient
+	return p.storageAPIClient
 }
 
 func (p *Project) EncryptionAPIClient() client.Client {
@@ -203,7 +203,7 @@ func (p *Project) SchedulerAPIClient() client.Client {
 }
 
 func (p *Project) SandboxesAPIClient() client.Client {
-	return p.sandboxesApiClient
+	return p.sandboxesAPIClient
 }
 
 // Clean method deletes all project branches (except default), all configurations, all schedules, and all sandboxes.
@@ -215,11 +215,11 @@ func (p *Project) Clean() error {
 	defer cancel()
 
 	// Clean whole project - configs, buckets, schedules, sandbox instances, etc.
-	if err := platform.CleanProject(ctx, p.storageApiClient, p.schedulerAPIClient, p.jobsQueueAPIClient, p.sandboxesApiClient); err != nil {
+	if err := platform.CleanProject(ctx, p.storageAPIClient, p.schedulerAPIClient, p.jobsQueueAPIClient, p.sandboxesAPIClient); err != nil {
 		return errors.Errorf(`cannot clean project "%d": %w`, p.ID(), err)
 	}
 
-	defaultBranch, err := storageapi.GetDefaultBranchRequest().Send(ctx, p.storageApiClient)
+	defaultBranch, err := storageapi.GetDefaultBranchRequest().Send(ctx, p.storageAPIClient)
 	if err != nil {
 		return errors.Errorf(`cannot fetch default branch in project "%d": %w`, p.ID(), err)
 	}
@@ -235,7 +235,7 @@ func (p *Project) SetState(stateFilePath string) error {
 	if err != nil {
 		return err
 	}
-	p.branchesById = make(map[storageapi.BranchID]*storageapi.Branch)
+	p.branchesByID = make(map[storageapi.BranchID]*storageapi.Branch)
 	p.branchesByName = make(map[string]*storageapi.Branch)
 
 	// Set new state
@@ -304,7 +304,7 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) error {
 	createBranchSem := semaphore.NewWeighted(1)
 
 	// Create branches
-	grp := client.NewWaitGroup(ctx, p.storageApiClient)
+	grp := client.NewWaitGroup(ctx, p.storageAPIClient)
 	for _, fixture := range branches {
 		fixture := fixture
 		grp.Send(p.createBranchRequest(fixture, createBranchSem))
@@ -322,7 +322,7 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 	defer cancelFn()
 
 	// Create buckets and tables
-	grp := client.NewWaitGroup(ctx, p.storageApiClient)
+	grp := client.NewWaitGroup(ctx, p.storageAPIClient)
 	for _, b := range buckets {
 		grp.Send(storageapi.CreateBucketRequest(&storageapi.Bucket{
 			Name:        b.Name,
@@ -359,7 +359,7 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 	return nil
 }
 
-func (p *Project) createSandboxes(defaultBranchId storageapi.BranchID, sandboxes []*fixtures.Sandbox) error {
+func (p *Project) createSandboxes(defaultBranchID storageapi.BranchID, sandboxes []*fixtures.Sandbox) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -381,10 +381,10 @@ func (p *Project) createSandboxes(defaultBranchId storageapi.BranchID, sandboxes
 			p.logf("▶ Sandbox \"%s\"...", fixture.Name)
 			sandbox, err := sandboxesapi.Create(
 				ctx,
-				p.storageApiClient,
+				p.storageAPIClient,
 				p.jobsQueueAPIClient,
-				p.sandboxesApiClient,
-				defaultBranchId,
+				p.sandboxesAPIClient,
+				defaultBranchID,
 				fixture.Name,
 				fixture.Type,
 				opts...,
@@ -436,7 +436,7 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 	} else {
 		// Create a new branch
 		request = storageapi.
-			CreateBranchRequest(fixture.ToApi()).
+			CreateBranchRequest(fixture.ToAPI()).
 			WithBefore(func(ctx context.Context, _ client.Sender) error {
 				p.logf("▶ Branch \"%s\"...", fixture.Name)
 				return createBranchSem.Acquire(ctx, 1)
@@ -483,7 +483,7 @@ func (p *Project) createConfigsInDefaultBranch(configs []string) error {
 	ctx, cancelFn := context.WithCancel(p.ctx)
 	defer cancelFn()
 
-	tickets := storageapi.NewTicketProvider(ctx, p.storageApiClient)
+	tickets := storageapi.NewTicketProvider(ctx, p.storageAPIClient)
 	grp, ctx := errgroup.WithContext(ctx) // group for all parallel requests
 	sendReady := make(chan struct{})      // block requests until IDs and ENVs will be ready
 
@@ -508,7 +508,7 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 	ctx, cancelFn := context.WithCancel(p.ctx)
 	defer cancelFn()
 
-	tickets := storageapi.NewTicketProvider(ctx, p.storageApiClient)
+	tickets := storageapi.NewTicketProvider(ctx, p.storageAPIClient)
 	grp, ctx := errgroup.WithContext(ctx) // group for all parallel requests
 	sendReady := make(chan struct{})      // block requests until IDs and ENVs will be ready
 
@@ -539,7 +539,7 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, sendReady <-chan struct{}, tickets *storageapi.TicketProvider, envPrefix string, names []string, branch *storageapi.Branch) {
 	for _, name := range names {
 		configFixture := fixtures.LoadConfig(name)
-		configWithRows := configFixture.ToApi()
+		configWithRows := configFixture.ToAPI()
 		configDesc := fmt.Sprintf("%s/%s/%s", branch.Name, configFixture.ComponentID, configFixture.Name)
 
 		// Generate ID for config
@@ -612,7 +612,7 @@ func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, sendR
 					}
 					return nil
 				}).
-				Send(ctx, p.storageApiClient)
+				Send(ctx, p.storageAPIClient)
 			return err
 		})
 	}
@@ -622,7 +622,7 @@ func (p *Project) addBranch(branch *storageapi.Branch) {
 	p.setEnv(fmt.Sprintf("TEST_BRANCH_%s_ID", branch.Name), branch.ID.String())
 	p.mapsLock.Lock()
 	defer p.mapsLock.Unlock()
-	p.branchesById[branch.ID] = branch
+	p.branchesByID[branch.ID] = branch
 	p.branchesByName[branch.Name] = branch
 }
 

@@ -13,32 +13,32 @@ type ctxKey string
 
 const FileDefCtxKey = ctxKey("fileDef")
 
-func (m *jsonNetMapper) LoadLocalFile(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
-	// Load JsonNet file instead of Json file
-	if def.HasTag(model.FileTypeJson) {
+func (m *jsonnetMapper) LoadLocalFile(def *filesystem.FileDef, fileType filesystem.FileType, next filesystem.LoadHandler) (filesystem.File, error) {
+	// Load Jsonnet file instead of Json file
+	if def.HasTag(model.FileTypeJSON) {
 		// Modify metadata
-		def.RemoveTag(model.FileTypeJson)
-		def.AddTag(model.FileTypeJsonNet)
+		def.RemoveTag(model.FileTypeJSON)
+		def.AddTag(model.FileTypeJsonnet)
 		def.SetPath(strings.TrimSuffix(def.Path(), `.json`) + `.jsonnet`)
 
-		// Load JsonNet file
-		f, err := next(def, filesystem.FileTypeJsonNet)
+		// Load Jsonnet file
+		f, err := next(def, filesystem.FileTypeJsonnet)
 		if err != nil {
 			return nil, err
 		}
-		jsonNetFile := f.(*filesystem.JsonNetFile)
+		jsonnetFile := f.(*filesystem.JsonnetFile)
 
 		// Set context (ctx, variables, ...)
-		ctx := m.jsonNetCtx.Ctx()
+		ctx := m.jsonnetCtx.Ctx()
 		ctx = context.WithValue(ctx, FileDefCtxKey, def)
-		jsonNetFile.SetContext(m.jsonNetCtx.WithCtx(ctx))
+		jsonnetFile.SetContext(m.jsonnetCtx.WithCtx(ctx))
 
 		// Convert to Json/Raw
 		switch fileType {
 		case filesystem.FileTypeRaw:
-			return jsonNetFile.ToRawFile()
-		case filesystem.FileTypeJson:
-			return jsonNetFile.ToJsonFile()
+			return jsonnetFile.ToRawFile()
+		case filesystem.FileTypeJSON:
+			return jsonnetFile.ToJSONFile()
 		default:
 			panic(errors.Errorf(`unexpected filesystem.FileType = %v`, fileType))
 		}

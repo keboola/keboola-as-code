@@ -62,12 +62,12 @@ func gitFsFor(ctx context.Context, d dependencies, definition model.TemplateRepo
 
 		// Get version record
 		tmpl := config.onlyForTemplate
-		_, version, err := repoManifest.GetVersion(tmpl.TemplateId(), tmpl.Version())
+		_, version, err := repoManifest.GetVersion(tmpl.TemplateID(), tmpl.Version())
 		if err != nil {
 			// version or template not found
 			return nil, errors.NewNestedError(
 				err,
-				errors.Errorf(`searched in git repository "%s"`, gitRepository.Url()),
+				errors.Errorf(`searched in git repository "%s"`, gitRepository.URL()),
 				errors.Errorf(`reference "%s"`, gitRepository.Ref()),
 			)
 		}
@@ -80,7 +80,7 @@ func gitFsFor(ctx context.Context, d dependencies, definition model.TemplateRepo
 		if !fs.Exists(srcDir) {
 			return nil, errors.NewNestedError(
 				errors.Errorf(`folder "%s" not found`, srcDir),
-				errors.Errorf(`searched in git repository "%s"`, gitRepository.Url()),
+				errors.Errorf(`searched in git repository "%s"`, gitRepository.URL()),
 				errors.Errorf(`reference "%s"`, gitRepository.Ref()),
 			)
 		}

@@ -21,9 +21,9 @@ type FileType int
 
 const (
 	FileTypeRaw     FileType = iota // RawFile
-	FileTypeJson                    // JsonFile
+	FileTypeJSON                    // JSONFile
 	FileTypeYaml                    // YamlFile
-	FileTypeJsonNet                 // JsonNetFile
+	FileTypeJsonnet                 // JsonnetFile
 )
 
 const (
@@ -111,14 +111,14 @@ func (f *RawFile) ToRawFile() (*RawFile, error) {
 	return f, nil
 }
 
-func (f *RawFile) ToJsonFile() (*JsonFile, error) {
+func (f *RawFile) ToJSONFile() (*JSONFile, error) {
 	jsonMap := orderedmap.New()
 	if err := json.DecodeString(f.Content, jsonMap); err != nil {
 		fileDesc := strings.TrimSpace(f.desc + " file")
 		return nil, errors.PrefixErrorf(err, `%s "%s" is invalid`, fileDesc, f.path)
 	}
 
-	file := NewJsonFile(f.path, jsonMap)
+	file := NewJSONFile(f.path, jsonMap)
 	file.SetDescription(f.desc)
 	file.AddTag(f.AllTags()...)
 	return file, nil
@@ -137,13 +137,13 @@ func (f *RawFile) ToYamlFile() (*YamlFile, error) {
 	return file, nil
 }
 
-func (f *RawFile) ToJsonNetFile(ctx *jsonnet.Context) (*JsonNetFile, error) {
+func (f *RawFile) ToJSONNetFile(ctx *jsonnet.Context) (*JsonnetFile, error) {
 	ast, err := jsonnet.ToAst(f.Content, f.path)
 	if err != nil {
 		return nil, err
 	}
 
-	file := NewJsonNetFile(f.path, ast, ctx)
+	file := NewJsonnetFile(f.path, ast, ctx)
 	file.SetDescription(f.desc)
 	file.AddTag(f.AllTags()...)
 	return file, nil
@@ -159,41 +159,41 @@ func (f *RawFile) RemoveTag(tags ...string) File {
 	return f
 }
 
-type JsonFile struct {
+type JSONFile struct {
 	*FileDef
 	Content *orderedmap.OrderedMap
 }
 
-func NewJsonFile(path string, content *orderedmap.OrderedMap) *JsonFile {
-	file := &JsonFile{FileDef: NewFileDef(path)}
+func NewJSONFile(path string, content *orderedmap.OrderedMap) *JSONFile {
+	file := &JSONFile{FileDef: NewFileDef(path)}
 	file.Content = content
 	return file
 }
 
-func (f *JsonFile) Description() string {
+func (f *JSONFile) Description() string {
 	return f.desc
 }
 
-func (f *JsonFile) SetDescription(desc string) File {
+func (f *JSONFile) SetDescription(desc string) File {
 	f.desc = desc
 	return f
 }
 
-func (f *JsonFile) Path() string {
+func (f *JSONFile) Path() string {
 	return f.path
 }
 
-func (f *JsonFile) AddTag(tags ...string) File {
+func (f *JSONFile) AddTag(tags ...string) File {
 	f.FileDef.AddTag(tags...)
 	return f
 }
 
-func (f *JsonFile) RemoveTag(tags ...string) File {
+func (f *JSONFile) RemoveTag(tags ...string) File {
 	f.FileDef.RemoveTag(tags...)
 	return f
 }
 
-func (f *JsonFile) ToRawFile() (*RawFile, error) {
+func (f *JSONFile) ToRawFile() (*RawFile, error) {
 	content, err := json.EncodeString(f.Content, true)
 	if err != nil {
 		fileDesc := strings.TrimSpace(f.desc + " file")
@@ -206,14 +206,14 @@ func (f *JsonFile) ToRawFile() (*RawFile, error) {
 	return file, nil
 }
 
-func (f *JsonFile) ToJsonNetFile() (*JsonNetFile, error) {
+func (f *JSONFile) ToJsonnetFile() (*JsonnetFile, error) {
 	fileRaw, err := f.ToRawFile()
 	if err != nil {
 		return nil, err
 	}
 	fileRaw.SetPath(strings.TrimSuffix(f.path, `.json`) + `.jsonnet`)
-	// ctx = nil: JsonNet created from the Json cannot contain variables
-	return fileRaw.ToJsonNetFile(nil)
+	// ctx = nil: Jsonnet created from the Json cannot contain variables
+	return fileRaw.ToJSONNetFile(nil)
 }
 
 type YamlFile struct {
@@ -263,52 +263,52 @@ func (f *YamlFile) ToRawFile() (*RawFile, error) {
 	return file, nil
 }
 
-type JsonNetFile struct {
+type JsonnetFile struct {
 	*FileDef
 	context *jsonnet.Context
 	Content jsonnetast.Node
 }
 
-func NewJsonNetFile(path string, content jsonnetast.Node, ctx *jsonnet.Context) *JsonNetFile {
-	return &JsonNetFile{FileDef: NewFileDef(path), context: ctx, Content: content}
+func NewJsonnetFile(path string, content jsonnetast.Node, ctx *jsonnet.Context) *JsonnetFile {
+	return &JsonnetFile{FileDef: NewFileDef(path), context: ctx, Content: content}
 }
 
-func (f *JsonNetFile) SetContext(ctx *jsonnet.Context) {
+func (f *JsonnetFile) SetContext(ctx *jsonnet.Context) {
 	f.context = ctx
 }
 
-func (f *JsonNetFile) Description() string {
+func (f *JsonnetFile) Description() string {
 	return f.desc
 }
 
-func (f *JsonNetFile) SetDescription(desc string) File {
+func (f *JsonnetFile) SetDescription(desc string) File {
 	f.desc = desc
 	return f
 }
 
-func (f *JsonNetFile) Path() string {
+func (f *JsonnetFile) Path() string {
 	return f.path
 }
 
-func (f *JsonNetFile) AddTag(tags ...string) File {
+func (f *JsonnetFile) AddTag(tags ...string) File {
 	f.FileDef.AddTag(tags...)
 	return f
 }
 
-func (f *JsonNetFile) RemoveTag(tags ...string) File {
+func (f *JsonnetFile) RemoveTag(tags ...string) File {
 	f.FileDef.RemoveTag(tags...)
 	return f
 }
 
-func (f *JsonNetFile) ToJsonFile() (*JsonFile, error) {
-	fileRaw, err := f.ToJsonRawFile()
+func (f *JsonnetFile) ToJSONFile() (*JSONFile, error) {
+	fileRaw, err := f.ToJSONRawFile()
 	if err != nil {
 		return nil, err
 	}
-	return fileRaw.ToJsonFile()
+	return fileRaw.ToJSONFile()
 }
 
-func (f *JsonNetFile) ToJsonRawFile() (*RawFile, error) {
+func (f *JsonnetFile) ToJSONRawFile() (*RawFile, error) {
 	jsonContent, err := jsonnet.EvaluateAst(f.Content, f.context)
 	if err != nil {
 		return nil, err
@@ -320,7 +320,7 @@ func (f *JsonNetFile) ToJsonRawFile() (*RawFile, error) {
 	return file, nil
 }
 
-func (f *JsonNetFile) ToRawFile() (*RawFile, error) {
+func (f *JsonnetFile) ToRawFile() (*RawFile, error) {
 	file := NewRawFile(f.path, jsonnet.FormatAst(f.Content))
 	file.SetDescription(f.desc)
 	file.AddTag(f.AllTags()...)

@@ -17,16 +17,16 @@ import (
 )
 
 type Options struct {
-	BranchId    storageapi.BranchID
-	ComponentId storageapi.ComponentID
-	ConfigId    storageapi.ConfigID
+	BranchID    storageapi.BranchID
+	ComponentID storageapi.ComponentID
+	ConfigID    storageapi.ConfigID
 	Name        string
 }
 
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageApiClient() client.Sender
+	StorageAPIClient() client.Sender
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -36,19 +36,19 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	logger := d.Logger()
 
 	// Get Storage API
-	storageApiClient := d.StorageApiClient()
+	storageAPIClient := d.StorageAPIClient()
 
 	// Config row key
 	key := model.ConfigRowKey{
-		BranchId:    o.BranchId,
-		ComponentId: o.ComponentId,
-		ConfigId:    o.ConfigId,
+		BranchID:    o.BranchID,
+		ComponentID: o.ComponentID,
+		ConfigID:    o.ConfigID,
 	}
 
 	// Generate unique ID
-	ticketProvider := storageapi.NewTicketProvider(ctx, storageApiClient)
+	ticketProvider := storageapi.NewTicketProvider(ctx, storageAPIClient)
 	ticketProvider.Request(func(ticket *storageapi.Ticket) {
-		key.Id = storageapi.RowID(ticket.ID)
+		key.ID = storageapi.RowID(ticket.ID)
 	})
 	if err := ticketProvider.Resolve(); err != nil {
 		return errors.Errorf(`cannot generate new ID: %w`, err)

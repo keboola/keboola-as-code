@@ -51,23 +51,23 @@ func TestStateConfigRows(t *testing.T) {
 func TestStateConfigsFrom(t *testing.T) {
 	t.Parallel()
 	s := newTestState(t, knownpaths.NewNop())
-	assert.Len(t, s.ConfigsFrom(BranchKey{Id: 123}), 2)
-	assert.Len(t, s.ConfigsFrom(BranchKey{Id: 567}), 0)
-	assert.Len(t, s.ConfigsFrom(BranchKey{Id: 111}), 0)
+	assert.Len(t, s.ConfigsFrom(BranchKey{ID: 123}), 2)
+	assert.Len(t, s.ConfigsFrom(BranchKey{ID: 567}), 0)
+	assert.Len(t, s.ConfigsFrom(BranchKey{ID: 111}), 0)
 }
 
 func TestStateConfigRowsFrom(t *testing.T) {
 	t.Parallel()
 	s := newTestState(t, knownpaths.NewNop())
-	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.bar", Id: `678`}), 2)
-	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.bar", Id: `345`}), 0)
-	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchId: 123, ComponentId: "keboola.bar", Id: `111`}), 0)
+	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchID: 123, ComponentID: "keboola.bar", ID: `678`}), 2)
+	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchID: 123, ComponentID: "keboola.bar", ID: `345`}), 0)
+	assert.Len(t, s.ConfigRowsFrom(ConfigKey{BranchID: 123, ComponentID: "keboola.bar", ID: `111`}), 0)
 }
 
 func TestStateGet(t *testing.T) {
 	t.Parallel()
 	s := newTestState(t, knownpaths.NewNop())
-	state, found := s.Get(BranchKey{Id: 567})
+	state, found := s.Get(BranchKey{ID: 567})
 	assert.NotNil(t, state)
 	assert.True(t, found)
 }
@@ -75,7 +75,7 @@ func TestStateGet(t *testing.T) {
 func TestStateGetNotFound(t *testing.T) {
 	t.Parallel()
 	s := newTestState(t, knownpaths.NewNop())
-	state, found := s.Get(BranchKey{Id: 111})
+	state, found := s.Get(BranchKey{ID: 111})
 	assert.Nil(t, state)
 	assert.False(t, found)
 }
@@ -83,14 +83,14 @@ func TestStateGetNotFound(t *testing.T) {
 func TestStateMustGet(t *testing.T) {
 	t.Parallel()
 	s := newTestState(t, knownpaths.NewNop())
-	assert.Equal(t, "Foo Bar Branch", s.MustGet(BranchKey{Id: 567}).ObjectName())
+	assert.Equal(t, "Foo Bar Branch", s.MustGet(BranchKey{ID: 567}).ObjectName())
 }
 
 func TestStateMustGetNotFound(t *testing.T) {
 	t.Parallel()
 	s := newTestState(t, knownpaths.NewNop())
 	assert.PanicsWithError(t, `branch "111" not found`, func() {
-		s.MustGet(BranchKey{Id: 111})
+		s.MustGet(BranchKey{ID: 111})
 	})
 }
 
@@ -176,14 +176,14 @@ func TestRegistry_GetPath(t *testing.T) {
 	registry := New(knownpaths.NewNop(), naming.NewRegistry(), NewComponentsMap(nil), SortByPath)
 
 	// Not found
-	path, found := registry.GetPath(BranchKey{Id: 123})
+	path, found := registry.GetPath(BranchKey{ID: 123})
 	assert.Empty(t, path)
 	assert.False(t, found)
 
 	// Add branch
 	assert.NoError(t, registry.Set(&BranchState{
 		BranchManifest: &BranchManifest{
-			BranchKey: BranchKey{Id: 123},
+			BranchKey: BranchKey{ID: 123},
 			Paths: Paths{
 				AbsPath: NewAbsPath(``, `my-branch`),
 			},
@@ -191,7 +191,7 @@ func TestRegistry_GetPath(t *testing.T) {
 	}))
 
 	// Found
-	path, found = registry.GetPath(BranchKey{Id: 123})
+	path, found = registry.GetPath(BranchKey{ID: 123})
 	assert.Equal(t, NewAbsPath(``, `my-branch`), path)
 	assert.True(t, found)
 }
@@ -208,7 +208,7 @@ func TestRegistry_GetByPath(t *testing.T) {
 	// Add branch
 	branchState := &BranchState{
 		BranchManifest: &BranchManifest{
-			BranchKey: BranchKey{Id: 123},
+			BranchKey: BranchKey{ID: 123},
 			Paths: Paths{
 				AbsPath: NewAbsPath(``, `my-branch`),
 			},
@@ -228,7 +228,7 @@ func newTestState(t *testing.T, paths *knownpaths.Paths) *Registry {
 	assert.NotNil(t, registry)
 
 	// Branch 1
-	branch1Key := BranchKey{Id: 123}
+	branch1Key := BranchKey{ID: 123}
 	branch1 := &BranchState{
 		BranchManifest: &BranchManifest{
 			BranchKey: branch1Key,
@@ -241,7 +241,7 @@ func newTestState(t *testing.T, paths *knownpaths.Paths) *Registry {
 	assert.NoError(t, registry.Set(branch1))
 
 	// Branch 2
-	branch2Key := BranchKey{Id: 567}
+	branch2Key := BranchKey{ID: 567}
 	branch2 := &BranchState{
 		BranchManifest: &BranchManifest{
 			BranchKey: branch2Key,
@@ -254,7 +254,7 @@ func newTestState(t *testing.T, paths *knownpaths.Paths) *Registry {
 	assert.NoError(t, registry.Set(branch2))
 
 	// Config 1
-	config1Key := ConfigKey{BranchId: 123, ComponentId: "keboola.foo", Id: `345`}
+	config1Key := ConfigKey{BranchID: 123, ComponentID: "keboola.foo", ID: `345`}
 	config1 := &ConfigState{
 		ConfigManifest: &ConfigManifest{ConfigKey: config1Key},
 		Local: &Config{
@@ -264,7 +264,7 @@ func newTestState(t *testing.T, paths *knownpaths.Paths) *Registry {
 	assert.NoError(t, registry.Set(config1))
 
 	// Config 2
-	config2Key := ConfigKey{BranchId: 123, ComponentId: "keboola.bar", Id: `678`}
+	config2Key := ConfigKey{BranchID: 123, ComponentID: "keboola.bar", ID: `678`}
 	config2 := &ConfigState{
 		ConfigManifest: &ConfigManifest{ConfigKey: config2Key},
 		Local: &Config{
@@ -274,7 +274,7 @@ func newTestState(t *testing.T, paths *knownpaths.Paths) *Registry {
 	assert.NoError(t, registry.Set(config2))
 
 	// Config Row 1
-	row1Key := ConfigRowKey{BranchId: 123, ComponentId: "keboola.bar", ConfigId: `678`, Id: `12`}
+	row1Key := ConfigRowKey{BranchID: 123, ComponentID: "keboola.bar", ConfigID: `678`, ID: `12`}
 	row1 := &ConfigRowState{
 		ConfigRowManifest: &ConfigRowManifest{ConfigRowKey: row1Key},
 		Local: &ConfigRow{
@@ -284,7 +284,7 @@ func newTestState(t *testing.T, paths *knownpaths.Paths) *Registry {
 	assert.NoError(t, registry.Set(row1))
 
 	// Config Row 2
-	row2Key := ConfigRowKey{BranchId: 123, ComponentId: "keboola.bar", ConfigId: `678`, Id: `34`}
+	row2Key := ConfigRowKey{BranchID: 123, ComponentID: "keboola.bar", ConfigID: `678`, ID: `34`}
 	row2 := &ConfigRowState{
 		ConfigRowManifest: &ConfigRowManifest{ConfigRowKey: row2Key},
 		Local: &ConfigRow{

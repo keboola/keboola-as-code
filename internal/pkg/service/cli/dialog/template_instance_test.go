@@ -21,15 +21,15 @@ func TestAskTemplateInstance_Interactive(t *testing.T) {
 	d := dependencies.NewMockedDeps()
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
-	branch, _ := projectState.LocalObjects().Get(model.BranchKey{Id: 123})
+	branch, _ := projectState.LocalObjects().Get(model.BranchKey{ID: 123})
 
-	instanceId := "inst1"
-	templateId := "tmpl1"
+	instanceID := "inst1"
+	templateID := "tmpl1"
 	version := "1.0.1"
 	instanceName := "Instance 1"
 	repositoryName := "repo"
-	tokenId := "1234"
-	assert.NoError(t, branch.(*model.Branch).Metadata.UpsertTemplateInstance(time.Now(), instanceId, instanceName, templateId, repositoryName, version, tokenId, nil))
+	tokenID := "1234"
+	assert.NoError(t, branch.(*model.Branch).Metadata.UpsertTemplateInstance(time.Now(), instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -55,8 +55,8 @@ func TestAskTemplateInstance_Interactive(t *testing.T) {
 	wg.Wait()
 	assert.NoError(t, console.Close())
 
-	assert.Equal(t, model.BranchKey{Id: 123}, branchKey)
-	assert.Equal(t, instanceId, instance.InstanceId)
+	assert.Equal(t, model.BranchKey{ID: 123}, branchKey)
+	assert.Equal(t, instanceID, instance.InstanceID)
 }
 
 func TestAskTemplateInstance_Noninteractive_InvalidInstance(t *testing.T) {
@@ -67,15 +67,15 @@ func TestAskTemplateInstance_Noninteractive_InvalidInstance(t *testing.T) {
 	d := dependencies.NewMockedDeps()
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
-	branch, _ := projectState.LocalObjects().Get(model.BranchKey{Id: 123})
+	branch, _ := projectState.LocalObjects().Get(model.BranchKey{ID: 123})
 
-	instanceId := "inst1"
-	templateId := "tmpl1"
+	instanceID := "inst1"
+	templateID := "tmpl1"
 	version := "1.0.1"
 	instanceName := "Instance 1"
 	repositoryName := "repo"
-	tokenId := "1234"
-	assert.NoError(t, branch.(*model.Branch).Metadata.UpsertTemplateInstance(time.Now(), instanceId, instanceName, templateId, repositoryName, version, tokenId, nil))
+	tokenID := "1234"
+	assert.NoError(t, branch.(*model.Branch).Metadata.UpsertTemplateInstance(time.Now(), instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
 
 	options := d.Options()
 	options.Set("branch", 123)
@@ -93,15 +93,15 @@ func TestAskTemplateInstance_Noninteractive(t *testing.T) {
 	d := dependencies.NewMockedDeps()
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
-	branch, _ := projectState.LocalObjects().Get(model.BranchKey{Id: 123})
+	branch, _ := projectState.LocalObjects().Get(model.BranchKey{ID: 123})
 
-	instanceId := "inst1"
-	templateId := "tmpl1"
+	instanceID := "inst1"
+	templateID := "tmpl1"
 	version := "1.0.1"
 	instanceName := "Instance 1"
 	repositoryName := "repo"
-	tokenId := "1234"
-	assert.NoError(t, branch.(*model.Branch).Metadata.UpsertTemplateInstance(time.Now(), instanceId, instanceName, templateId, repositoryName, version, tokenId, nil))
+	tokenID := "1234"
+	assert.NoError(t, branch.(*model.Branch).Metadata.UpsertTemplateInstance(time.Now(), instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
 
 	options := d.Options()
 	options.Set("branch", 123)

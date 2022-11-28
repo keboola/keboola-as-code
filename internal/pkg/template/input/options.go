@@ -17,7 +17,7 @@ type Option struct {
 	Label string `json:"label" validate:"required,min=1,max=25"`
 }
 
-func (options Options) GetById(id string) (Option, int, bool) {
+func (options Options) GetByID(id string) (Option, int, bool) {
 	for i, o := range options {
 		if o.Value == id {
 			return o, i, true
@@ -26,8 +26,8 @@ func (options Options) GetById(id string) (Option, int, bool) {
 	return Option{}, -1, false
 }
 
-func (options Options) ContainsId(id string) bool {
-	_, _, found := options.GetById(id)
+func (options Options) ContainsID(id string) bool {
+	_, _, found := options.GetByID(id)
 	return found
 }
 
@@ -75,7 +75,7 @@ func validateDefaultOptions(value interface{}, kind Kind, options Options) bool 
 	switch kind {
 	case KindSelect:
 		if v, ok := value.(string); ok {
-			return options.ContainsId(v)
+			return options.ContainsID(v)
 		} else {
 			// Unexpected type, it is validated by a separate rule
 			return true
@@ -83,7 +83,7 @@ func validateDefaultOptions(value interface{}, kind Kind, options Options) bool 
 	case KindMultiSelect:
 		if values, ok := value.([]interface{}); ok {
 			for _, value := range values {
-				if valueStr, ok := value.(string); !ok || !options.ContainsId(valueStr) {
+				if valueStr, ok := value.(string); !ok || !options.ContainsID(valueStr) {
 					// Invalid type or not found
 					return false
 				}

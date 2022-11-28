@@ -6,7 +6,7 @@ import (
 
 const (
 	DefaultTemplateRepositoryName    = "keboola"
-	DefaultTemplateRepositoryUrl     = "https://github.com/keboola/keboola-as-code-templates.git"
+	DefaultTemplateRepositoryURL     = "https://github.com/keboola/keboola-as-code-templates.git"
 	DefaultTemplateRepositoryRefBeta = "beta"
 	DefaultTemplateRepositoryRefDev  = "dev"
 	DefaultTemplateRepositoryRefMain = "main"
@@ -19,7 +19,7 @@ func DefaultRepository() model.TemplateRepository {
 	return model.TemplateRepository{
 		Type: model.RepositoryTypeGit,
 		Name: DefaultTemplateRepositoryName,
-		Url:  DefaultTemplateRepositoryUrl,
+		URL:  DefaultTemplateRepositoryURL,
 		Ref:  DefaultTemplateRepositoryRefMain,
 	}
 }

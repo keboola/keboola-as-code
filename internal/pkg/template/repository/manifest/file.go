@@ -25,7 +25,7 @@ type file struct {
 
 type Author struct {
 	Name string `json:"name" validate:"required"`
-	Url  string `json:"url" validate:"required"`
+	URL  string `json:"url" validate:"required"`
 }
 
 func newFile() *file {
@@ -44,7 +44,7 @@ func loadFile(fs filesystem.Fs) (*file, error) {
 
 	// Read JSON file
 	content := newFile()
-	if _, err := fs.FileLoader().ReadJsonFileTo(filesystem.NewFileDef(path).SetDescription("manifest"), content); err != nil {
+	if _, err := fs.FileLoader().ReadJSONFileTo(filesystem.NewFileDef(path).SetDescription("manifest"), content); err != nil {
 		return nil, err
 	}
 

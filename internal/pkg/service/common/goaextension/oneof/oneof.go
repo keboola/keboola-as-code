@@ -40,24 +40,24 @@ func generate(_ string, roots []eval.Root, files []*codegen.File) ([]*codegen.Fi
 		// Modify OpenApi2 files
 		for _, s := range f.Section("openapi") {
 			if source, ok := s.Data.(*openapiv2.V2); ok {
-				s.Data = modifyOpenApiV2(source)
+				s.Data = modifyOpenAPIV2(source)
 			}
 		}
 		// Modify OpenApi3 files
 		for _, s := range f.Section("openapi_v3") {
 			if source, ok := s.Data.(*openapiv3.OpenAPI); ok {
-				s.Data = modifyOpenApiV3(source)
+				s.Data = modifyOpenAPIV3(source)
 			}
 		}
 	}
 	return files, nil
 }
 
-func modifyOpenApiV2(data *openapiv2.V2) *openapiv2.V2 {
+func modifyOpenAPIV2(data *openapiv2.V2) *openapiv2.V2 {
 	return deepcopy.CopyTranslate(data, translate).(*openapiv2.V2)
 }
 
-func modifyOpenApiV3(data *openapiv3.OpenAPI) *openapiv3.OpenAPI {
+func modifyOpenAPIV3(data *openapiv3.OpenAPI) *openapiv3.OpenAPI {
 	return deepcopy.CopyTranslate(data, translate).(*openapiv3.OpenAPI)
 }
 

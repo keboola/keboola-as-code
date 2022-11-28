@@ -19,7 +19,7 @@ func TestLoadRemoteTransformation(t *testing.T) {
 	configState := createTestFixtures(t, "keboola.snowflake-transformation")
 
 	// Api representation
-	configInApi := `
+	configInAPI := `
 {
   "parameters": {
     "blocks": [
@@ -62,7 +62,7 @@ func TestLoadRemoteTransformation(t *testing.T) {
 		ConfigKey: configState.ConfigKey,
 		Content:   orderedmap.New(),
 	}
-	json.MustDecodeString(configInApi, object.Content)
+	json.MustDecodeString(configInAPI, object.Content)
 	recipe := model.NewRemoteLoadRecipe(configState.ConfigManifest, object)
 	assert.NoError(t, state.Mapper().MapAfterRemoteLoad(context.Background(), recipe))
 	assert.Empty(t, logger.WarnAndErrorMessages())
@@ -71,9 +71,9 @@ func TestLoadRemoteTransformation(t *testing.T) {
 	expected := []*model.Block{
 		{
 			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.snowflake-transformation",
-				ConfigId:    `456`,
+				BranchID:    123,
+				ComponentID: "keboola.snowflake-transformation",
+				ConfigID:    `456`,
 				Index:       0,
 			},
 			AbsPath: model.NewAbsPath(
@@ -84,9 +84,9 @@ func TestLoadRemoteTransformation(t *testing.T) {
 			Codes: model.Codes{
 				{
 					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.snowflake-transformation",
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: "keboola.snowflake-transformation",
+						ConfigID:    `456`,
 						BlockIndex:  0,
 						Index:       0,
 					},
@@ -102,9 +102,9 @@ func TestLoadRemoteTransformation(t *testing.T) {
 				},
 				{
 					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.snowflake-transformation",
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: "keboola.snowflake-transformation",
+						ConfigID:    `456`,
 						BlockIndex:  0,
 						Index:       1,
 					},
@@ -123,9 +123,9 @@ func TestLoadRemoteTransformation(t *testing.T) {
 		},
 		{
 			BlockKey: model.BlockKey{
-				BranchId:    123,
-				ComponentId: "keboola.snowflake-transformation",
-				ConfigId:    `456`,
+				BranchID:    123,
+				ComponentID: "keboola.snowflake-transformation",
+				ConfigID:    `456`,
 				Index:       1,
 			},
 			AbsPath: model.NewAbsPath(
@@ -136,9 +136,9 @@ func TestLoadRemoteTransformation(t *testing.T) {
 			Codes: model.Codes{
 				{
 					CodeKey: model.CodeKey{
-						BranchId:    123,
-						ComponentId: "keboola.snowflake-transformation",
-						ConfigId:    `456`,
+						BranchID:    123,
+						ComponentID: "keboola.snowflake-transformation",
+						ConfigID:    `456`,
 						BlockIndex:  1,
 						Index:       0,
 					},

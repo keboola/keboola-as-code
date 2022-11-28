@@ -26,8 +26,8 @@ func (p *Plan) Name() string {
 	return "encrypt"
 }
 
-func (p *Plan) Invoke(ctx context.Context, projectID int, logger log.Logger, encryptionApiClient client.Sender, state *state.State) error {
-	return newExecutor(ctx, projectID, logger, encryptionApiClient, state, p).invoke()
+func (p *Plan) Invoke(ctx context.Context, projectID int, logger log.Logger, encryptionAPIClient client.Sender, state *state.State) error {
+	return newExecutor(ctx, projectID, logger, encryptionAPIClient, state, p).invoke()
 }
 
 func (p *Plan) Log(logger log.Logger) {

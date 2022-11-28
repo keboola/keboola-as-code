@@ -37,7 +37,7 @@ func (d *stepsDialog) ask() (input.StepsGroupsExt, error) {
 }
 
 func (d *stepsDialog) parse(result string) (input.StepsGroupsExt, error) {
-	result = strhelper.StripHtmlComments(result)
+	result = strhelper.StripHTMLComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
 	errs := errors.NewMultiError()
 	lineNum := 0
@@ -81,19 +81,19 @@ func (d *stepsDialog) parse(result string) (input.StepsGroupsExt, error) {
 			}
 
 			// Step ID must be unique
-			stepId := m[1]
-			if stepIds[stepId] {
+			stepID := m[1]
+			if stepIds[stepID] {
 				errs.Append(errors.Errorf(`line %d: step with id "%s" is already defined`, lineNum, m[1]))
 				invalidDefinition = true
 				continue
 			}
-			stepIds[stepId] = true
+			stepIds[stepID] = true
 
 			// Create step
 			currentStep = &input.StepExt{
 				GroupIndex: currentGroup.GroupIndex,
 				StepIndex:  len(currentGroup.Steps),
-				Id:         stepId,
+				ID:         stepID,
 			}
 			currentGroup.AddStep(currentStep)
 			invalidDefinition = false

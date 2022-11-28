@@ -32,7 +32,7 @@ func Run(ctx context.Context, repo *git.RemoteRepository, d dependencies) (resul
 	result, err = repo.Pull(ctx)
 	if result != nil {
 		span.SetAttributes(attribute.String("kac.repository.id", repo.String()))
-		span.SetAttributes(attribute.String("kac.repository.url", repo.Url()))
+		span.SetAttributes(attribute.String("kac.repository.url", repo.URL()))
 		span.SetAttributes(attribute.String("kac.repository.ref", repo.Ref()))
 		span.SetAttributes(attribute.String("kac.repository.oldHash", result.OldHash))
 		span.SetAttributes(attribute.String("kac.repository.newHash", result.NewHash))

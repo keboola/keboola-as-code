@@ -33,8 +33,8 @@ type Task struct {
 	AbsPath     `validate:"dive"`
 	Name        string `validate:"required"`
 	Enabled     bool
-	ComponentId storageapi.ComponentID `validate:"required"`
-	ConfigId    storageapi.ConfigID
+	ComponentID storageapi.ComponentID `validate:"required"`
+	ConfigID    storageapi.ConfigID
 	ConfigData  *orderedmap.OrderedMap
 	ConfigPath  string                 // target config path if any
 	Content     *orderedmap.OrderedMap `validate:"dive"`
@@ -60,7 +60,7 @@ func (p Phase) String() string {
 func (t Task) String() string {
 	targetConfigDesc := t.ConfigPath
 	if len(targetConfigDesc) == 0 {
-		targetConfigDesc = fmt.Sprintf(`branch:%d/componentId:%s/configId:%s`, t.BranchId, t.ComponentId, t.ConfigId)
+		targetConfigDesc = fmt.Sprintf(`branch:%d/componentId:%s/configId:%s`, t.BranchID, t.ComponentID, t.ConfigID)
 	}
 	return fmt.Sprintf(
 		"## %03d %s\n>> %s\n%s",
@@ -73,7 +73,7 @@ func (t Task) String() string {
 
 // UsedInOrchestratorRelation indicates that the owner config is used in an orchestration.
 type UsedInOrchestratorRelation struct {
-	ConfigId storageapi.ConfigID
+	ConfigID storageapi.ConfigID
 }
 
 func (t *UsedInOrchestratorRelation) Type() RelationType {
@@ -81,11 +81,11 @@ func (t *UsedInOrchestratorRelation) Type() RelationType {
 }
 
 func (t *UsedInOrchestratorRelation) Desc() string {
-	return fmt.Sprintf(`used in orchestrator "%s"`, t.ConfigId)
+	return fmt.Sprintf(`used in orchestrator "%s"`, t.ConfigID)
 }
 
 func (t *UsedInOrchestratorRelation) Key() string {
-	return fmt.Sprintf(`%s_%s`, t.Type(), t.ConfigId)
+	return fmt.Sprintf(`%s_%s`, t.Type(), t.ConfigID)
 }
 
 func (t *UsedInOrchestratorRelation) ParentKey(_ Key) (Key, error) {
@@ -100,7 +100,7 @@ func (t *UsedInOrchestratorRelation) IsDefinedInManifest() bool {
 	return false
 }
 
-func (t *UsedInOrchestratorRelation) IsDefinedInApi() bool {
+func (t *UsedInOrchestratorRelation) IsDefinedInAPI() bool {
 	return false
 }
 

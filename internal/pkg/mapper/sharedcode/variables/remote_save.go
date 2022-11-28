@@ -25,7 +25,7 @@ func (m *mapper) MapBeforeRemoteSave(ctx context.Context, recipe *model.RemoteSa
 	relation := relationRaw.(*model.SharedCodeVariablesFromRelation)
 
 	// Set variables ID
-	object.Content.Set(model.SharedCodeVariablesIdContentKey, relation.VariablesId.String())
+	object.Content.Set(model.SharedCodeVariablesIDContentKey, relation.VariablesID.String())
 
 	// Delete relation
 	object.Relations.RemoveByType(relType)

@@ -21,12 +21,12 @@ func cases() []test {
 	return []test{
 		{
 			name: `minimal`,
-			json: minimalJson(),
+			json: minimalJSON(),
 			data: minimalStruct(),
 		},
 		{
 			name: `full`,
-			json: fullJson(),
+			json: fullJSON(),
 			data: fullStruct(),
 		},
 	}
@@ -153,21 +153,21 @@ func TestManifest_Records(t *testing.T) {
 	assert.Len(t, m.records, 0)
 
 	// Get - not found
-	v, found := m.GetById("foo-bar")
+	v, found := m.GetByID("foo-bar")
 	assert.Empty(t, v)
 	assert.False(t, found)
 
 	// GetOrCreate if record does not exist
 	v = m.GetOrCreate("foo-bar")
 	assert.NotEmpty(t, v)
-	assert.Equal(t, "foo-bar", v.Id)
+	assert.Equal(t, "foo-bar", v.ID)
 	assert.Equal(t, "foo-bar", v.Path())
 
 	// Persist
 	m.Persist(v)
 
 	// Get - found
-	v2, found := m.GetById("foo-bar")
+	v2, found := m.GetByID("foo-bar")
 	assert.Equal(t, v, v2)
 	assert.True(t, found)
 
@@ -180,15 +180,15 @@ func TestManifest_Records(t *testing.T) {
 	m.Persist(m.GetOrCreate("abc"))
 	assert.Equal(t, []TemplateRecord{
 		{
-			Id:      "abc",
+			ID:      "abc",
 			AbsPath: model.NewAbsPath("", "abc"),
 		},
 		{
-			Id:      "foo-bar",
+			ID:      "foo-bar",
 			AbsPath: model.NewAbsPath("", "foo-bar"),
 		},
 		{
-			Id:      "xyz",
+			ID:      "xyz",
 			AbsPath: model.NewAbsPath("", "xyz"),
 		},
 	}, m.AllTemplates())
@@ -205,9 +205,9 @@ func TestManifest_GetByPath_NotFound(t *testing.T) {
 func TestManifest_GetByPath_Found(t *testing.T) {
 	t.Parallel()
 	m := New()
-	record1 := TemplateRecord{Id: "foo", AbsPath: model.NewAbsPath("parent", "foo")}
+	record1 := TemplateRecord{ID: "foo", AbsPath: model.NewAbsPath("parent", "foo")}
 	m.Persist(record1)
-	record2 := TemplateRecord{Id: "bar", AbsPath: model.NewAbsPath("parent", "bar")}
+	record2 := TemplateRecord{ID: "bar", AbsPath: model.NewAbsPath("parent", "bar")}
 	m.Persist(record2)
 	record, found := m.GetByPath(`foo`)
 	assert.Equal(t, record1, record)
@@ -217,7 +217,7 @@ func TestManifest_GetByPath_Found(t *testing.T) {
 func TestManifest_GetVersion(t *testing.T) {
 	t.Parallel()
 	m := New()
-	record := TemplateRecord{Id: "foo", AbsPath: model.NewAbsPath("parent", "foo")}
+	record := TemplateRecord{ID: "foo", AbsPath: model.NewAbsPath("parent", "foo")}
 	record.AddVersion(version("1.2.3"), []string{})
 	m.Persist(record)
 
@@ -237,7 +237,7 @@ func TestManifest_GetVersion(t *testing.T) {
 	assert.Equal(t, `template "bar" not found`, err.Error())
 }
 
-func minimalJson() string {
+func minimalJSON() string {
 	return `{
   "version": 2,
   "author": {
@@ -254,13 +254,13 @@ func minimalStruct() *file {
 		Version: 2,
 		Author: Author{
 			Name: "Author",
-			Url:  "https://example.com",
+			URL:  "https://example.com",
 		},
 		Templates: []TemplateRecord{},
 	}
 }
 
-func fullJson() string {
+func fullJSON() string {
 	return `{
   "version": 2,
   "author": {
@@ -302,12 +302,12 @@ func fullStruct() *file {
 		Version: 2,
 		Author: Author{
 			Name: "Author",
-			Url:  "https://example.com",
+			URL:  "https://example.com",
 		},
 		Templates: []TemplateRecord{
 			{
 				AbsPath:     model.NewAbsPath(``, `template-1`),
-				Id:          "template-1",
+				ID:          "template-1",
 				Name:        `Template 1`,
 				Description: `My Template 1`,
 				Versions: []VersionRecord{

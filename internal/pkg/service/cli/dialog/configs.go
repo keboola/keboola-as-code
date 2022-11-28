@@ -39,7 +39,7 @@ func (p *Dialogs) SelectConfigs(options *options.Options, all []*model.ConfigWit
 		// Create configs map
 		configByKey := make(map[string]*model.ConfigWithRows)
 		for _, config := range all {
-			configByKey[fmt.Sprintf(`%s:%s`, config.ComponentId, config.Id)] = config
+			configByKey[fmt.Sprintf(`%s:%s`, config.ComponentID, config.ID)] = config
 		}
 
 		// Parse user input
@@ -92,5 +92,5 @@ func configsSelectOpts(all []*model.ConfigWithRows) []string {
 }
 
 func formatConfig(config *model.ConfigWithRows) string {
-	return fmt.Sprintf(`%s (%s:%s)`, config.ObjectName(), config.ComponentId, config.ObjectId())
+	return fmt.Sprintf(`%s (%s:%s)`, config.ObjectName(), config.ComponentID, config.ObjectID())
 }

@@ -44,15 +44,15 @@ icon: common:settings
 			GroupIndex: 0,
 			StepsGroup: input.StepsGroup{Description: "Group Description", Required: "all"},
 			Steps: input.StepsExt{
-				{GroupIndex: 0, StepIndex: 0, Id: "s1", Step: input.Step{Icon: "common:settings", Name: "Step One", Description: "Description"}},
+				{GroupIndex: 0, StepIndex: 0, ID: "s1", Step: input.Step{Icon: "common:settings", Name: "Step One", Description: "Description"}},
 			},
 		},
 		&input.StepsGroupExt{
 			GroupIndex: 1,
 			StepsGroup: input.StepsGroup{Description: "Group Description", Required: "all"},
 			Steps: input.StepsExt{
-				{GroupIndex: 1, StepIndex: 0, Id: "s2", Step: input.Step{Icon: "common:settings", Name: "Step Two", Description: "Description"}},
-				{GroupIndex: 1, StepIndex: 1, Id: "s3", Step: input.Step{Icon: "common:settings", Name: "Step Three", Description: "Description"}},
+				{GroupIndex: 1, StepIndex: 0, ID: "s2", Step: input.Step{Icon: "common:settings", Name: "Step Two", Description: "Description"}},
+				{GroupIndex: 1, StepIndex: 1, ID: "s3", Step: input.Step{Icon: "common:settings", Name: "Step Three", Description: "Description"}},
 			},
 		},
 	}

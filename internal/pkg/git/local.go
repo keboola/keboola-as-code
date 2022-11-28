@@ -15,7 +15,7 @@ type LocalRepository struct {
 }
 
 func (v LocalRepository) String() string {
-	return fmt.Sprintf("dir:%s", v.ref.Url)
+	return fmt.Sprintf("dir:%s", v.ref.URL)
 }
 
 func (v LocalRepository) Definition() model.TemplateRepository {

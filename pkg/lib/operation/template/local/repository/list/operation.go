@@ -22,7 +22,7 @@ func Run(ctx context.Context, repo *repository.Repository, d dependencies) (err 
 	w := d.Logger().InfoWriter()
 
 	for _, tmpl := range repo.Templates() {
-		w.Writef("Template ID:          %s", tmpl.Id)
+		w.Writef("Template ID:          %s", tmpl.ID)
 		w.Writef("Name:                 %s", tmpl.Name)
 		w.Writef("Description:          %s", tmpl.Description)
 		v, found := tmpl.DefaultVersion()

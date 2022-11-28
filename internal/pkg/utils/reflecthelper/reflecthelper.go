@@ -15,7 +15,7 @@ type StructField struct {
 	reflect.StructField
 }
 
-func (f *StructField) JsonName() string {
+func (f *StructField) JSONName() string {
 	if f.jsonName != "" && f.jsonName != "-" {
 		return f.jsonName
 	}
@@ -32,7 +32,7 @@ func MapFromTaggedFields(tag string, model interface{}) *orderedmap.OrderedMap {
 	reflection := unwrap(reflect.ValueOf(model))
 
 	for _, field := range fields {
-		target.Set(field.JsonName(), reflection.FieldByName(field.Name).Interface())
+		target.Set(field.JSONName(), reflection.FieldByName(field.Name).Interface())
 	}
 	return target
 }
@@ -101,7 +101,7 @@ func SetFields(fields []*StructField, data *orderedmap.OrderedMap, target interf
 	reflection := unwrap(reflect.ValueOf(target))
 	for _, field := range fields {
 		// Set value, some values are optional, model will be validated later
-		if value, ok := data.Get(field.JsonName()); ok {
+		if value, ok := data.Get(field.JSONName()); ok {
 			reflection.FieldByName(field.Name).Set(reflect.ValueOf(value))
 		}
 	}

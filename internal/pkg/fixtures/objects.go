@@ -10,7 +10,7 @@ import (
 )
 
 type MockedKey struct {
-	Id string
+	ID string
 }
 
 type MockedManifest struct {
@@ -41,7 +41,7 @@ type MockedManifestSideRelation struct {
 	OtherSide model.Key
 }
 
-type MockedApiSideRelation struct {
+type MockedAPISideRelation struct {
 	OtherSide model.Key
 }
 
@@ -54,19 +54,19 @@ func (MockedKey) Kind() model.Kind {
 }
 
 func (m MockedKey) Desc() string {
-	return fmt.Sprintf(`mocked key "%s"`, m.Id)
+	return fmt.Sprintf(`mocked key "%s"`, m.ID)
 }
 
 func (m MockedKey) String() string {
-	return "mocked_key_" + m.Id
+	return "mocked_key_" + m.ID
 }
 
-func (m MockedKey) ObjectId() string {
-	return m.Id
+func (m MockedKey) ObjectID() string {
+	return m.ID
 }
 
-func (m *MockedKey) SetObjectId(id any) {
-	m.Id = id.(string)
+func (m *MockedKey) SetObjectID(id any) {
+	m.ID = id.(string)
 }
 
 func (m MockedKey) ParentKey() (model.Key, error) {
@@ -300,46 +300,46 @@ func (r *MockedManifestSideRelation) IsDefinedInManifest() bool {
 	return true
 }
 
-func (r *MockedManifestSideRelation) IsDefinedInApi() bool {
+func (r *MockedManifestSideRelation) IsDefinedInAPI() bool {
 	return false
 }
 
 func (r *MockedManifestSideRelation) NewOtherSideRelation(relationDefinedOn model.Object, _ model.Objects) (model.Key, model.Relation, error) {
 	if r.OtherSide != nil {
-		return r.OtherSide, &MockedApiSideRelation{OtherSide: relationDefinedOn.Key()}, nil
+		return r.OtherSide, &MockedAPISideRelation{OtherSide: relationDefinedOn.Key()}, nil
 	}
 	return nil, nil, nil
 }
 
-func (r *MockedApiSideRelation) Type() model.RelationType {
+func (r *MockedAPISideRelation) Type() model.RelationType {
 	return "api_side_relation"
 }
 
-func (r *MockedApiSideRelation) Desc() string {
+func (r *MockedAPISideRelation) Desc() string {
 	return "api side relation"
 }
 
-func (r *MockedApiSideRelation) Key() string {
+func (r *MockedAPISideRelation) Key() string {
 	return fmt.Sprintf(`%s_%s`, r.Type(), r.OtherSide.String())
 }
 
-func (r *MockedApiSideRelation) ParentKey(_ model.Key) (model.Key, error) {
+func (r *MockedAPISideRelation) ParentKey(_ model.Key) (model.Key, error) {
 	return nil, nil
 }
 
-func (r *MockedApiSideRelation) OtherSideKey(_ model.Key) model.Key {
+func (r *MockedAPISideRelation) OtherSideKey(_ model.Key) model.Key {
 	return r.OtherSide
 }
 
-func (r *MockedApiSideRelation) IsDefinedInManifest() bool {
+func (r *MockedAPISideRelation) IsDefinedInManifest() bool {
 	return false
 }
 
-func (r *MockedApiSideRelation) IsDefinedInApi() bool {
+func (r *MockedAPISideRelation) IsDefinedInAPI() bool {
 	return true
 }
 
-func (r *MockedApiSideRelation) NewOtherSideRelation(relationDefinedOn model.Object, _ model.Objects) (model.Key, model.Relation, error) {
+func (r *MockedAPISideRelation) NewOtherSideRelation(relationDefinedOn model.Object, _ model.Objects) (model.Key, model.Relation, error) {
 	if r.OtherSide != nil {
 		return r.OtherSide, &MockedManifestSideRelation{OtherSide: relationDefinedOn.Key()}, nil
 	}

@@ -26,7 +26,7 @@ func (h *SharedCodeHelper) IsSharedCodeKey(key model.Key) (bool, error) {
 	}
 
 	// Is shared code?
-	component, err := h.state.Components().GetOrErr(configKey.ComponentId)
+	component, err := h.state.Components().GetOrErr(configKey.ComponentID)
 	if err != nil || !component.IsSharedCode() {
 		return false, err
 	}
@@ -41,7 +41,7 @@ func (h *SharedCodeHelper) IsSharedCodeRowKey(key model.Key) (bool, error) {
 	}
 
 	// Is shared code?
-	component, err := h.state.Components().GetOrErr(configRowKey.ComponentId)
+	component, err := h.state.Components().GetOrErr(configRowKey.ComponentID)
 	if err != nil || !component.IsSharedCode() {
 		return false, err
 	}
@@ -56,7 +56,7 @@ func (h *SharedCodeHelper) IsTransformation(key model.Key) (bool, error) {
 	}
 
 	// Is shared code?
-	component, err := h.state.Components().GetOrErr(configKey.ComponentId)
+	component, err := h.state.Components().GetOrErr(configKey.ComponentID)
 	if err != nil || !component.IsTransformation() {
 		return false, err
 	}
@@ -67,10 +67,10 @@ func (h *SharedCodeHelper) CheckTargetComponent(sharedCodeConfig *model.Config, 
 	if sharedCodeConfig.SharedCode == nil {
 		panic(errors.New(`shared code value is not set`))
 	}
-	if sharedCodeConfig.SharedCode.Target != transformation.ComponentId {
+	if sharedCodeConfig.SharedCode.Target != transformation.ComponentID {
 		return errors.NewNestedError(
 			errors.Errorf(`unexpected shared code "%s" in %s`, model.ShareCodeTargetComponentKey, sharedCodeConfig.Desc()),
-			errors.Errorf(`expected "%s"`, transformation.ComponentId),
+			errors.Errorf(`expected "%s"`, transformation.ComponentID),
 			errors.Errorf(`found "%s"`, sharedCodeConfig.SharedCode.Target),
 		)
 	}
@@ -92,7 +92,7 @@ func (h *SharedCodeHelper) GetSharedCodeByPath(parentPath, codePath string) (*mo
 	}
 
 	// Shared code?
-	if configState.ComponentId != storageapi.SharedCodeComponentID {
+	if configState.ComponentID != storageapi.SharedCodeComponentID {
 		return nil, errors.Errorf(`config "%s" is not shared code`, codePath)
 	}
 
@@ -123,18 +123,18 @@ func (h *SharedCodeHelper) GetSharedCodeRowByPath(sharedCode *model.ConfigState,
 	return configRowState, nil
 }
 
-func (h *SharedCodeHelper) GetSharedCodeVariablesId(configRow *model.ConfigRow) (string, bool) {
+func (h *SharedCodeHelper) GetSharedCodeVariablesID(configRow *model.ConfigRow) (string, bool) {
 	// Variables ID is stored in configuration
-	variablesIdRaw, found := configRow.Content.Get(model.SharedCodeVariablesIdContentKey)
+	variablesIDRaw, found := configRow.Content.Get(model.SharedCodeVariablesIDContentKey)
 	if !found {
 		return "", false
 	}
 
 	// Variables ID must be string
-	variablesId, ok := variablesIdRaw.(string)
+	variablesID, ok := variablesIDRaw.(string)
 	if !ok {
 		return "", false
 	}
 
-	return variablesId, true
+	return variablesID, true
 }

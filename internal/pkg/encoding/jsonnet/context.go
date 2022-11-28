@@ -106,14 +106,14 @@ func (c *Context) FilePath() string {
 	return c.filePath
 }
 
-// ExtVar registers variable to the JsonNet context.
-// Variable can be used in the JsonNet code by: std.extVar("<NAME>").
+// ExtVar registers variable to the Jsonnet context.
+// Variable can be used in the Jsonnet code by: std.extVar("<NAME>").
 func (c *Context) ExtVar(name string, value interface{}) {
 	c.extVariables.add(name, value)
 }
 
-// NativeFunction registers native function to the JsonNet context.
-// Function can be called in the JsonNet code by: std.native("<NAME>").
+// NativeFunction registers native function to the Jsonnet context.
+// Function can be called in the Jsonnet code by: std.native("<NAME>").
 func (c *Context) NativeFunction(f *NativeFunction) {
 	c.nativeFunctions.add(f)
 }
@@ -123,8 +123,8 @@ func (c *Context) NotifierFactory(v NotifierFactory) {
 	c.notifierFactory = v
 }
 
-// NativeFunctionWithAlias registers native function to the JsonNet context and creates alias.
-// Function can be called in the JsonNet code by: std.native("<FN_NAME>")(...) or by <FN_NAME>(...)
+// NativeFunctionWithAlias registers native function to the Jsonnet context and creates alias.
+// Function can be called in the Jsonnet code by: std.native("<FN_NAME>")(...) or by <FN_NAME>(...)
 func (c *Context) NativeFunctionWithAlias(f *NativeFunction) {
 	c.nativeFunctions.add(f)
 

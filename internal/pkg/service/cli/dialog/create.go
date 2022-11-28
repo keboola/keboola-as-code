@@ -59,14 +59,14 @@ func (p *Dialogs) AskCreateConfig(projectState *project.State, d createDeps) (cr
 	if err != nil {
 		return out, err
 	}
-	out.BranchId = branch.Id
+	out.BranchID = branch.ID
 
-	// Component Id
-	componentId, err := p.askComponentId(d)
+	// Component ID
+	componentID, err := p.askComponentID(d)
 	if err != nil {
 		return out, err
 	}
-	out.ComponentId = componentId
+	out.ComponentID = componentID
 
 	// Name
 	name, err := p.askObjectName(d, `config`)
@@ -87,7 +87,7 @@ func (p *Dialogs) AskCreateRow(projectState *project.State, d createDeps) (creat
 	if err != nil {
 		return out, err
 	}
-	out.BranchId = branch.Id
+	out.BranchID = branch.ID
 
 	// Config
 	allConfigs := projectState.LocalObjects().ConfigsWithRowsFrom(branch.BranchKey)
@@ -95,8 +95,8 @@ func (p *Dialogs) AskCreateRow(projectState *project.State, d createDeps) (creat
 	if err != nil {
 		return out, err
 	}
-	out.ComponentId = config.ComponentId
-	out.ConfigId = config.Id
+	out.ComponentID = config.ComponentID
+	out.ConfigID = config.ID
 
 	// Name
 	name, err := p.askObjectName(d, `config row`)
@@ -124,12 +124,12 @@ func (p *Dialogs) askObjectName(d createDeps, desc string) (string, error) {
 	return name, nil
 }
 
-func (p *Dialogs) askComponentId(d createDeps) (storageapi.ComponentID, error) {
-	componentId := storageapi.ComponentID("")
+func (p *Dialogs) askComponentID(d createDeps) (storageapi.ComponentID, error) {
+	componentID := storageapi.ComponentID("")
 	components := d.Components()
 
 	if d.Options().IsSet(`component-id`) {
-		componentId = storageapi.ComponentID(strings.TrimSpace(d.Options().GetString(`component-id`)))
+		componentID = storageapi.ComponentID(strings.TrimSpace(d.Options().GetString(`component-id`)))
 	} else {
 		// Make select
 		selectOpts := make([]string, 0)
@@ -146,15 +146,15 @@ func (p *Dialogs) askComponentId(d createDeps) (storageapi.ComponentID, error) {
 			Label:   `Select the target component`,
 			Options: selectOpts,
 		}); ok {
-			componentId = possibleNewComponents[index].ID
+			componentID = possibleNewComponents[index].ID
 		}
 	}
 
-	if len(componentId) == 0 {
-		return componentId, errors.New(`missing component ID, please specify it`)
+	if len(componentID) == 0 {
+		return componentID, errors.New(`missing component ID, please specify it`)
 	}
 
 	// Check if component exists
-	_, err := components.GetOrErr(componentId)
-	return componentId, err
+	_, err := components.GetOrErr(componentID)
+	return componentID, err
 }

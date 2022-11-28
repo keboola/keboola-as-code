@@ -15,8 +15,8 @@ import (
 const (
 	placeholderStart = "<<~~func:"
 	placeholderEnd   = "~~>>"
-	configIdFunc     = "ConfigId"
-	configRowIdFunc  = "ConfigRowId"
+	configIDFunc     = "ConfigId"
+	configRowIDFunc  = "ConfigRowId"
 	inputFunc        = "Input"
 )
 
@@ -26,19 +26,19 @@ var placeholderRegexp = regexpcache.MustCompile(fmt.Sprintf("%s([^:]+):([^~]+)%s
 	regexp.QuoteMeta(placeholderEnd),
 ))
 
-// ConfigIdPlaceholder generates <<~~func:ConfigId:["<ID>"]~~>>.
-func ConfigIdPlaceholder(id string) string {
-	return functionCallPlaceholder(configIdFunc, id)
+// ConfigIDPlaceholder generates <<~~func:ConfigId:["<ID>"]~~>>.
+func ConfigIDPlaceholder(id string) string {
+	return functionCallPlaceholder(configIDFunc, id)
 }
 
-// ConfigRowIdPlaceholder generates <<~~func:ConfigRowId:["<ID>"]~~>>.
-func ConfigRowIdPlaceholder(id string) string {
-	return functionCallPlaceholder(configRowIdFunc, id)
+// ConfigRowIDPlaceholder generates <<~~func:ConfigRowId:["<ID>"]~~>>.
+func ConfigRowIDPlaceholder(id string) string {
+	return functionCallPlaceholder(configRowIDFunc, id)
 }
 
 // InputPlaceholder generates <<~~func:Input:["<InputID>"]~~>>.
-func InputPlaceholder(inputId string) string {
-	return functionCallPlaceholder(inputFunc, inputId)
+func InputPlaceholder(inputID string) string {
+	return functionCallPlaceholder(inputFunc, inputID)
 }
 
 // functionCallPlaceholder generates <<~~func:<FUNC_NAME>>:["<ARG1>","<ARG2>"]~~>>.
@@ -141,16 +141,16 @@ func concatWithBinaryOp(nodes []ast.Node, op ast.BinaryOp) ast.Node {
 	return output
 }
 
-// StripIdPlaceholder converts ConfigId/ConfigRowId placeholder to the value.
+// StripIDPlaceholder converts ConfigId/ConfigRowId placeholder to the value.
 // It is used to remove placeholders from objects paths,
 // if {config_id} or {config_row_id} is used in the naming template.
 // Example input: <<~~func:ConfigId:["my-id"]~~>>
 // Example output: my-id.
-func StripIdPlaceholder(str string) string {
+func StripIDPlaceholder(str string) string {
 	funcName, args, found := parsePlaceholder(str)
 
 	// ConfigId/ConfigRowId function and one string argument - ID
-	if found && len(args) == 1 && (funcName == configIdFunc || funcName == configRowIdFunc) {
+	if found && len(args) == 1 && (funcName == configIDFunc || funcName == configRowIDFunc) {
 		if id, ok := args[0].(string); ok {
 			return id
 		}

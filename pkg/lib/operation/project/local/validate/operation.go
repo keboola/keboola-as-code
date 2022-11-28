@@ -15,7 +15,7 @@ import (
 
 type Options struct {
 	ValidateSecrets    bool
-	ValidateJsonSchema bool
+	ValidateJSONSchema bool
 }
 
 type dependencies interface {
@@ -31,7 +31,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	// Validate schemas
 	errs := errors.NewMultiError()
-	if o.ValidateJsonSchema {
+	if o.ValidateJSONSchema {
 		if err := schema.ValidateSchemas(projectState); err != nil {
 			errs.Append(err)
 		}

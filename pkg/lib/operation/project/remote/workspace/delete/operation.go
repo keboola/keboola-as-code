@@ -16,12 +16,12 @@ import (
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageApiClient() client.Sender
-	SandboxesApiClient() client.Sender
-	JobsQueueApiClient() client.Sender
+	StorageAPIClient() client.Sender
+	SandboxesAPIClient() client.Sender
+	JobsQueueAPIClient() client.Sender
 }
 
-func Run(ctx context.Context, d dependencies, branchId storageapi.BranchID, sandbox *sandboxesapi.SandboxWithConfig) (err error) {
+func Run(ctx context.Context, d dependencies, branchID storageapi.BranchID, sandbox *sandboxesapi.SandboxWithConfig) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.workspace.delete")
 	defer telemetry.EndSpan(span, &err)
 
@@ -33,9 +33,9 @@ func Run(ctx context.Context, d dependencies, branchId storageapi.BranchID, sand
 	logger.Infof(`Deleting workspace "%s" (%s), please wait.`, sandbox.Config.Name, sandbox.Config.ID)
 	err = sandboxesapi.Delete(
 		ctx,
-		d.StorageApiClient(),
-		d.JobsQueueApiClient(),
-		branchId,
+		d.StorageAPIClient(),
+		d.JobsQueueAPIClient(),
+		branchID,
 		sandbox.Config.ID,
 		sandbox.Sandbox.ID,
 	)

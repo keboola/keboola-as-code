@@ -31,7 +31,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 
 	// Set token
 	opts := options.New()
-	opts.Set(options.StorageApiTokenOpt, "my-secret")
+	opts.Set(options.StorageAPITokenOpt, "my-secret")
 
 	// Create http client
 	logger := log.NewNopLogger()

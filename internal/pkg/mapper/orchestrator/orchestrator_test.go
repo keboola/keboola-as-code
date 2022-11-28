@@ -28,9 +28,9 @@ func createTargetConfigs(t *testing.T, state *state.State) (*model.ConfigState, 
 
 	// Target config 1
 	targetConfigKey1 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `foo.bar1`,
-		Id:          `123`,
+		BranchID:    123,
+		ComponentID: `foo.bar1`,
+		ID:          `123`,
 	}
 	targetConfigState1 := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -46,9 +46,9 @@ func createTargetConfigs(t *testing.T, state *state.State) (*model.ConfigState, 
 
 	// Target config 2
 	targetConfigKey2 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `foo.bar2`,
-		Id:          `789`,
+		BranchID:    123,
+		ComponentID: `foo.bar2`,
+		ID:          `789`,
 	}
 	targetConfigState2 := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -64,9 +64,9 @@ func createTargetConfigs(t *testing.T, state *state.State) (*model.ConfigState, 
 
 	// Target config 3
 	targetConfigKey3 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `foo.bar2`,
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: `foo.bar2`,
+		ID:          `456`,
 	}
 	targetConfigState3 := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -88,7 +88,7 @@ func createLocalLoadFixtures(t *testing.T, state *state.State) *model.ConfigStat
 
 	// Branch
 	branchKey := model.BranchKey{
-		Id: 123,
+		ID: 123,
 	}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{
@@ -103,9 +103,9 @@ func createLocalLoadFixtures(t *testing.T, state *state.State) *model.ConfigStat
 
 	// Orchestrator config
 	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: storageapi.OrchestratorComponentID,
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: storageapi.OrchestratorComponentID,
+		ID:          `456`,
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -125,15 +125,15 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 	t.Helper()
 
 	phase1Key := model.PhaseKey{
-		BranchId:    123,
-		ComponentId: storageapi.OrchestratorComponentID,
-		ConfigId:    `456`,
+		BranchID:    123,
+		ComponentID: storageapi.OrchestratorComponentID,
+		ConfigID:    `456`,
 		Index:       0,
 	}
 	phase2Key := model.PhaseKey{
-		BranchId:    123,
-		ComponentId: storageapi.OrchestratorComponentID,
-		ConfigId:    `456`,
+		BranchID:    123,
+		ComponentID: storageapi.OrchestratorComponentID,
+		ConfigID:    `456`,
 		Index:       1,
 	}
 	orchestration := &model.Orchestration{
@@ -152,8 +152,8 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `001-task-1`),
 						Name:        `Task 1`,
 						Enabled:     true,
-						ComponentId: `foo.bar1`,
-						ConfigId:    `123`,
+						ComponentID: `foo.bar1`,
+						ConfigID:    `123`,
 						ConfigPath:  `branch/extractor/target-config-1`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
@@ -170,8 +170,8 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `002-task-2`),
 						Name:        `Task 2 - disabled`,
 						Enabled:     false,
-						ComponentId: `foo.bar2`,
-						ConfigId:    `789`,
+						ComponentID: `foo.bar2`,
+						ConfigID:    `789`,
 						ConfigPath:  `branch/extractor/target-config-2`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
@@ -188,7 +188,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/001-phase`, `003-task-3`),
 						Name:        `Task 3 - disabled without configId`,
 						Enabled:     false,
-						ComponentId: `foo.bar2`,
+						ComponentID: `foo.bar2`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -213,8 +213,8 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `001-task-4`),
 						Name:        `Task 4`,
 						Enabled:     true,
-						ComponentId: `foo.bar2`,
-						ConfigId:    `456`,
+						ComponentID: `foo.bar2`,
+						ConfigID:    `456`,
 						ConfigPath:  `branch/extractor/target-config-3`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
@@ -231,7 +231,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 						AbsPath:     model.NewAbsPath(`branch/other/orchestrator/phases/002-phase-with-deps`, `002-task-5`),
 						Name:        `Task 5 - configData`,
 						Enabled:     true,
-						ComponentId: `foo.bar3`,
+						ComponentID: `foo.bar3`,
 						ConfigData:  orderedmap.FromPairs([]orderedmap.Pair{{Key: "params", Value: "value"}}),
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
@@ -250,7 +250,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 
 	// Branch
 	branchKey := model.BranchKey{
-		Id: 123,
+		ID: 123,
 	}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{
@@ -265,9 +265,9 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 
 	// Orchestrator config
 	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: storageapi.OrchestratorComponentID,
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: storageapi.OrchestratorComponentID,
+		ID:          `456`,
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -292,9 +292,9 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 
 	// Target config 1
 	targetConfigKey1 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `foo.bar1`,
-		Id:          `123`,
+		BranchID:    123,
+		ComponentID: `foo.bar1`,
+		ID:          `123`,
 	}
 	targetConfigState1 := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -309,9 +309,9 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 
 	// Target config 2
 	targetConfigKey2 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `foo.bar2`,
-		Id:          `789`,
+		BranchID:    123,
+		ComponentID: `foo.bar2`,
+		ID:          `789`,
 	}
 	targetConfigState2 := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -326,9 +326,9 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 
 	// Target config 3
 	targetConfigKey3 := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `foo.bar2`,
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: `foo.bar2`,
+		ID:          `456`,
 	}
 	targetConfigState3 := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{

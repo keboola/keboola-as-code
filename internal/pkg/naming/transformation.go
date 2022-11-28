@@ -5,26 +5,26 @@ import (
 )
 
 const (
-	SqlExt       = `sql`
+	SQLExt       = `sql`
 	PyExt        = `py`
 	JuliaExt     = `jl`
 	RExt         = `r`
 	TxtExt       = `txt`
-	SqlComment   = `--`
+	SQLComment   = `--`
 	PyComment    = `#`
 	JuliaComment = `#`
 	RComment     = `#`
 	TxtComment   = `//`
 )
 
-func CodeFileExt(componentId storageapi.ComponentID) string {
-	switch componentId {
+func CodeFileExt(componentID storageapi.ComponentID) string {
+	switch componentID {
 	case `keboola.snowflake-transformation`:
-		return SqlExt
+		return SQLExt
 	case `keboola.synapse-transformation`:
-		return SqlExt
+		return SQLExt
 	case `keboola.oracle-transformation`:
-		return SqlExt
+		return SQLExt
 	case `keboola.r-transformation`:
 		return RExt
 	case `keboola.julia-transformation`:
@@ -44,8 +44,8 @@ func CodeFileExt(componentId storageapi.ComponentID) string {
 
 func CodeFileComment(ext string) string {
 	switch ext {
-	case SqlExt:
-		return SqlComment
+	case SQLExt:
+		return SQLComment
 	case RExt:
 		return RComment
 	case JuliaExt:

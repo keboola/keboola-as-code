@@ -44,7 +44,7 @@ type localTemplateValue struct {
 
 func newPublicDeps(baseDeps Base) (*local, error) {
 	// Get Storage API host
-	host, err := storageApiHost(baseDeps.Fs(), baseDeps.Options())
+	host, err := storageAPIHost(baseDeps.Fs(), baseDeps.Options())
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (v *local) LocalTemplate(ctx context.Context) (*template.Template, bool, er
 		}
 
 		// Load template
-		tmpl, err := v.Template(ctx, model.NewTemplateRef(repo.Definition(), templateRecord.Id, versionRecord.Version.String()))
+		tmpl, err := v.Template(ctx, model.NewTemplateRef(repo.Definition(), templateRecord.ID, versionRecord.Version.String()))
 		if err != nil {
 			return localTemplateValue{found: true, value: tmpl}, err
 		}
@@ -180,9 +180,9 @@ func (v *local) templateRepository(ctx context.Context, reference model.Template
 func (v *local) mapRepositoryRelPath(reference model.TemplateRepository) model.TemplateRepository {
 	if reference.Type == model.RepositoryTypeDir {
 		// Convert relative path to absolute
-		if !filepath.IsAbs(reference.Url) && v.FsInfo().ProjectExists() { // nolint: forbidigo
+		if !filepath.IsAbs(reference.URL) && v.FsInfo().ProjectExists() { // nolint: forbidigo
 			// Relative to the remote directory
-			reference.Url = filepath.Join(v.Fs().BasePath(), reference.Url) // nolint: forbidigo
+			reference.URL = filepath.Join(v.Fs().BasePath(), reference.URL) // nolint: forbidigo
 		}
 	}
 	return reference
@@ -195,5 +195,5 @@ func (v *local) localTemplateRepositoryRef() (model.TemplateRepository, bool, er
 		return model.TemplateRepository{}, exists, err
 	}
 	// Create repository reference
-	return model.TemplateRepository{Name: "keboola", Type: model.RepositoryTypeDir, Url: fs.BasePath()}, true, nil
+	return model.TemplateRepository{Name: "keboola", Type: model.RepositoryTypeDir, URL: fs.BasePath()}, true, nil
 }

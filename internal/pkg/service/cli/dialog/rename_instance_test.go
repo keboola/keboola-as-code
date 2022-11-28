@@ -22,19 +22,19 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 	d := dependencies.NewMockedDeps()
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{ID: 123}
 	branchRaw, _ := projectState.LocalObjects().Get(branchKey)
 	branch := branchRaw.(*model.Branch)
 
 	now := time.Now()
-	instanceId := "inst1"
-	templateId := "tmpl1"
+	instanceID := "inst1"
+	templateID := "tmpl1"
 	version := "1.0.1"
 	instanceName := "Old Name"
 	repositoryName := "repo"
-	tokenId := "1234"
-	assert.NoError(t, branch.Metadata.UpsertTemplateInstance(now, instanceId, instanceName, templateId, repositoryName, version, tokenId, nil))
-	instance, _, _ := branch.Metadata.TemplateInstance(instanceId)
+	tokenID := "1234"
+	assert.NoError(t, branch.Metadata.UpsertTemplateInstance(now, instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
+	instance, _, _ := branch.Metadata.TemplateInstance(instanceID)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -81,19 +81,19 @@ func TestAskRenameInstance_Noninteractive(t *testing.T) {
 	d := dependencies.NewMockedDeps()
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{ID: 123}
 	branchRaw, _ := projectState.LocalObjects().Get(branchKey)
 	branch := branchRaw.(*model.Branch)
 
 	now := time.Now()
-	instanceId := "inst1"
-	templateId := "tmpl1"
+	instanceID := "inst1"
+	templateID := "tmpl1"
 	version := "1.0.1"
 	instanceName := "Old Name"
 	repositoryName := "repo"
-	tokenId := "1234"
-	assert.NoError(t, branch.Metadata.UpsertTemplateInstance(now, instanceId, instanceName, templateId, repositoryName, version, tokenId, nil))
-	instance, _, _ := branch.Metadata.TemplateInstance(instanceId)
+	tokenID := "1234"
+	assert.NoError(t, branch.Metadata.UpsertTemplateInstance(now, instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
+	instance, _, _ := branch.Metadata.TemplateInstance(instanceID)
 
 	options := d.Options()
 	options.Set("branch", 123)

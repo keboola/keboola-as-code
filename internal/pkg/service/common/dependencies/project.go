@@ -21,10 +21,10 @@ type project struct {
 	public             Public
 	token              storageapi.Token
 	projectFeatures    storageapi.FeaturesMap
-	storageApiClient   client.Client
-	schedulerApiClient client.Client
+	storageAPIClient   client.Client
+	schedulerAPIClient client.Client
 	jobsQueueAPIClient client.Client
-	sandboxesApiClient client.Client
+	sandboxesAPIClient client.Client
 	eventSender        event.Sender
 }
 
@@ -32,7 +32,7 @@ func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr stri
 	ctx, span := base.Tracer().Start(ctx, "kac.lib.dependencies.NewProjectDeps")
 	defer telemetry.EndSpan(span, &err)
 
-	token, err := storageapi.VerifyTokenRequest(tokenStr).Send(ctx, public.StorageApiPublicClient())
+	token, err := storageapi.VerifyTokenRequest(tokenStr).Send(ctx, public.StorageAPIPublicClient())
 	if err != nil {
 		return nil, err
 	}
@@ -53,30 +53,30 @@ func newProjectDeps(base Base, public Public, token storageapi.Token) (*project,
 		public:           public,
 		token:            token,
 		projectFeatures:  token.Owner.Features.ToMap(),
-		storageApiClient: storageapi.ClientWithHostAndToken(base.HttpClient(), public.StorageApiHost(), token.Token),
+		storageAPIClient: storageapi.ClientWithHostAndToken(base.HTTPClient(), public.StorageAPIHost(), token.Token),
 	}
 
 	// Setup Scheduler API
 	if schedulerHost, found := v.public.StackServices().URLByID("scheduler"); !found {
 		return nil, errors.New("scheduler host not found")
 	} else {
-		v.schedulerApiClient = schedulerapi.ClientWithHostAndToken(v.base.HttpClient(), schedulerHost.String(), v.token.Token)
+		v.schedulerAPIClient = schedulerapi.ClientWithHostAndToken(v.base.HTTPClient(), schedulerHost.String(), v.token.Token)
 	}
 
 	if queueHost, found := v.public.StackServices().URLByID("queue"); !found {
 		return nil, errors.New("queue host not found")
 	} else {
-		v.jobsQueueAPIClient = jobsqueueapi.ClientWithHostAndToken(v.base.HttpClient(), queueHost.String(), v.token.Token)
+		v.jobsQueueAPIClient = jobsqueueapi.ClientWithHostAndToken(v.base.HTTPClient(), queueHost.String(), v.token.Token)
 	}
 
 	if sandboxesHost, found := v.public.StackServices().URLByID("sandboxes"); !found {
 		return nil, errors.New("sandboxes host not found")
 	} else {
-		v.sandboxesApiClient = sandboxesapi.ClientWithHostAndToken(v.base.HttpClient(), sandboxesHost.String(), v.token.Token)
+		v.sandboxesAPIClient = sandboxesapi.ClientWithHostAndToken(v.base.HTTPClient(), sandboxesHost.String(), v.token.Token)
 	}
 
 	// Setup event sender
-	v.eventSender = event.NewSender(v.base.Logger(), v.StorageApiClient(), v.ProjectID())
+	v.eventSender = event.NewSender(v.base.Logger(), v.StorageAPIClient(), v.ProjectID())
 
 	return v, nil
 }
@@ -93,24 +93,24 @@ func (v project) ProjectFeatures() storageapi.FeaturesMap {
 	return v.projectFeatures
 }
 
-func (v project) StorageApiTokenID() string {
+func (v project) StorageAPITokenID() string {
 	return v.token.ID
 }
 
-func (v project) StorageApiClient() client.Sender {
-	return v.storageApiClient
+func (v project) StorageAPIClient() client.Sender {
+	return v.storageAPIClient
 }
 
-func (v project) SchedulerApiClient() client.Sender {
-	return v.schedulerApiClient
+func (v project) SchedulerAPIClient() client.Sender {
+	return v.schedulerAPIClient
 }
 
-func (v project) JobsQueueApiClient() client.Sender {
+func (v project) JobsQueueAPIClient() client.Sender {
 	return v.jobsQueueAPIClient
 }
 
-func (v project) SandboxesApiClient() client.Sender {
-	return v.sandboxesApiClient
+func (v project) SandboxesAPIClient() client.Sender {
+	return v.sandboxesAPIClient
 }
 
 func (v project) EventSender() event.Sender {
@@ -119,7 +119,7 @@ func (v project) EventSender() event.Sender {
 
 func (v project) ObjectIDGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider {
 	return func(ctx context.Context) *storageapi.TicketProvider {
-		return storageapi.NewTicketProvider(ctx, v.StorageApiClient())
+		return storageapi.NewTicketProvider(ctx, v.StorageAPIClient())
 	}
 }
 

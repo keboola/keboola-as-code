@@ -34,7 +34,7 @@ type forWorker struct {
 	workerWg  *sync.WaitGroup
 }
 
-func NewWorkerDeps(workerCtx context.Context, envs env.Provider, logger log.PrefixLogger, debug, dumpHttp bool) (v ForWorker, err error) {
+func NewWorkerDeps(workerCtx context.Context, envs env.Provider, logger log.PrefixLogger, debug, dumpHTTP bool) (v ForWorker, err error) {
 	// Create tracer
 	ctx := workerCtx
 	var tracer trace.Tracer = nil
@@ -52,7 +52,7 @@ func NewWorkerDeps(workerCtx context.Context, envs env.Provider, logger log.Pref
 
 	// Create service dependencies
 	userAgent := "keboola-buffer-worker"
-	serviceDeps, err := serviceDependencies.NewServiceDeps(workerCtx, ctx, workerWg, tracer, envs, logger, debug, dumpHttp, userAgent)
+	serviceDeps, err := serviceDependencies.NewServiceDeps(workerCtx, ctx, workerWg, tracer, envs, logger, debug, dumpHTTP, userAgent)
 	if err != nil {
 		return nil, err
 	}

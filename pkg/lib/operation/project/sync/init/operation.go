@@ -32,11 +32,11 @@ type dependencies interface {
 	Logger() log.Logger
 	Options() *options.Options
 	Components() *model.ComponentsMap
-	StorageApiHost() string
+	StorageAPIHost() string
 	ProjectID() int
-	StorageApiClient() client.Sender
-	SchedulerApiClient() client.Sender
-	EncryptionApiClient() client.Sender
+	StorageAPIClient() client.Sender
+	SchedulerAPIClient() client.Sender
+	EncryptionAPIClient() client.Sender
 	EmptyDir() (filesystem.Fs, error)
 }
 

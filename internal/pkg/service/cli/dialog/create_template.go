@@ -23,7 +23,7 @@ type createTmplDialogDeps interface {
 	Logger() log.Logger
 	Options() *options.Options
 	Components() *model.ComponentsMap
-	StorageApiClient() client.Sender
+	StorageAPIClient() client.Sender
 }
 
 type createTmplDialog struct {
@@ -48,10 +48,10 @@ func (p *Dialogs) AskCreateTemplateOpts(ctx context.Context, deps createTmplDial
 func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, error) {
 	// Host and token
 	errs := errors.NewMultiError()
-	if _, err := d.AskStorageApiHost(d.deps); err != nil {
+	if _, err := d.AskStorageAPIHost(d.deps); err != nil {
 		errs.Append(err)
 	}
-	if _, err := d.AskStorageApiToken(d.deps); err != nil {
+	if _, err := d.AskStorageAPIToken(d.deps); err != nil {
 		errs.Append(err)
 	}
 	if errs.Len() > 0 {
@@ -59,11 +59,11 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 	}
 
 	// Get Storage API
-	storageApiClient := d.deps.StorageApiClient()
+	storageAPIClient := d.deps.StorageAPIClient()
 
 	// Load branches
 	var allBranches []*model.Branch
-	if result, err := storageapi.ListBranchesRequest().Send(ctx, storageApiClient); err == nil {
+	if result, err := storageapi.ListBranchesRequest().Send(ctx, storageAPIClient); err == nil {
 		for _, apiBranch := range *result {
 			allBranches = append(allBranches, model.NewBranch(apiBranch))
 		}
@@ -81,13 +81,13 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 		return d.out, err
 	}
 
-	// Id
+	// ID
 	if d.deps.Options().IsSet(`id`) {
-		d.out.Id = d.deps.Options().GetString(`id`)
+		d.out.ID = d.deps.Options().GetString(`id`)
 	} else {
-		d.out.Id = d.askId()
+		d.out.ID = d.askID()
 	}
-	if err := validateId(d.out.Id); err != nil {
+	if err := validateID(d.out.ID); err != nil {
 		return d.out, err
 	}
 
@@ -110,8 +110,8 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 	d.out.SourceBranch = d.selectedBranch.BranchKey
 
 	// Load configs
-	branchKey := storageapi.BranchKey{ID: d.selectedBranch.Id}
-	if result, err := storageapi.ListConfigsAndRowsFrom(branchKey).Send(ctx, storageApiClient); err == nil {
+	branchKey := storageapi.BranchKey{ID: d.selectedBranch.ID}
+	if result, err := storageapi.ListConfigsAndRowsFrom(branchKey).Send(ctx, storageAPIClient); err == nil {
 		for _, component := range *result {
 			for _, apiConfig := range component.Configs {
 				d.allConfigs = append(d.allConfigs, model.NewConfigWithRows(apiConfig))
@@ -184,12 +184,12 @@ func (d *createTmplDialog) askName() string {
 	return strings.TrimSpace(name)
 }
 
-func (d *createTmplDialog) askId() string {
+func (d *createTmplDialog) askID() string {
 	name, _ := d.prompt.Ask(&prompt.Question{
 		Label:       `Template ID`,
 		Description: "Please enter a template internal ID.\nAllowed characters: a-z, A-Z, 0-9, \"-\".\nFor example \"lorem-ipsum-ecommerce\".",
 		Default:     strhelper.NormalizeName(d.out.Name),
-		Validator:   validateId,
+		Validator:   validateID,
 	})
 	return strings.TrimSpace(name)
 }
@@ -219,13 +219,13 @@ func validateTemplateDescription(val interface{}) error {
 	return nil
 }
 
-func validateId(val interface{}) error {
+func validateID(val interface{}) error {
 	str := strings.TrimSpace(val.(string))
 	if len(str) == 0 {
 		return errors.New(`template ID is required`)
 	}
 
-	if !regexpcache.MustCompile(template.IdRegexp).MatchString(str) {
+	if !regexpcache.MustCompile(template.IDRegexp).MatchString(str) {
 		return errors.Errorf(`invalid ID "%s", please use only a-z, A-Z, 0-9, "-" characters`, str)
 	}
 

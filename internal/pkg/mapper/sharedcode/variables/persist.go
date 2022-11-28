@@ -15,7 +15,7 @@ func (m *mapper) MapBeforePersist(ctx context.Context, recipe *model.PersistReci
 	}
 
 	// Component must be "variables"
-	variablesComponent, err := m.state.Components().GetOrErr(configManifest.ComponentId)
+	variablesComponent, err := m.state.Components().GetOrErr(configManifest.ComponentID)
 	if err != nil {
 		return err
 	}
@@ -30,7 +30,7 @@ func (m *mapper) MapBeforePersist(ctx context.Context, recipe *model.PersistReci
 	}
 
 	// Parent component must be "variables"
-	parentComponent, err := m.state.Components().GetOrErr(sharedCodeRowKey.ComponentId)
+	parentComponent, err := m.state.Components().GetOrErr(sharedCodeRowKey.ComponentID)
 	if err != nil {
 		return err
 	}
@@ -45,8 +45,8 @@ func (m *mapper) MapBeforePersist(ctx context.Context, recipe *model.PersistReci
 
 	// Add relation
 	configManifest.Relations.Add(&model.SharedCodeVariablesForRelation{
-		ConfigId: sharedCodeRowKey.ConfigId,
-		RowId:    sharedCodeRowKey.Id,
+		ConfigID: sharedCodeRowKey.ConfigID,
+		RowID:    sharedCodeRowKey.ID,
 	})
 
 	return nil

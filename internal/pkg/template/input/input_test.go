@@ -10,7 +10,7 @@ func TestInput_ValidateUserInput(t *testing.T) {
 	t.Parallel()
 
 	input := Input{
-		Id:          "input.id",
+		ID:          "input.id",
 		Name:        "my input",
 		Description: "input description",
 		Type:        "int",
@@ -29,7 +29,7 @@ func TestInput_ValidateUserInput(t *testing.T) {
 	assert.NoError(t, input.ValidateUserInput(7))
 
 	input = Input{
-		Id:          "input.id",
+		ID:          "input.id",
 		Name:        "input",
 		Description: "input description",
 		Type:        "bool",
@@ -45,12 +45,12 @@ func TestInput_ValidateUserInputOAuth(t *testing.T) {
 	t.Parallel()
 
 	input := Input{
-		Id:          "input.oauth",
+		ID:          "input.oauth",
 		Name:        "oauth",
 		Description: "oauth",
 		Type:        "object",
 		Kind:        "oauth",
-		ComponentId: "foo.bar",
+		ComponentID: "foo.bar",
 	}
 	err := input.ValidateUserInput([]string{"one", "two"})
 	assert.Error(t, err)
@@ -65,7 +65,7 @@ func TestInput_Available(t *testing.T) {
 
 	// Check If evaluated as true
 	input := Input{
-		Id:          "input.id",
+		ID:          "input.id",
 		Name:        "input",
 		Description: "input description",
 		Type:        "int",
@@ -80,7 +80,7 @@ func TestInput_Available(t *testing.T) {
 
 	// Check empty If evaluated as true
 	input = Input{
-		Id:          "input.id",
+		ID:          "input.id",
 		Name:        "input",
 		Description: "input description",
 		Type:        "int",
@@ -92,7 +92,7 @@ func TestInput_Available(t *testing.T) {
 
 	// Check If evaluated as false
 	input = Input{
-		Id:          "input.id",
+		ID:          "input.id",
 		Name:        "input",
 		Description: "input description",
 		Type:        "int",

@@ -41,7 +41,7 @@ func Find(objectKey model.Key, component *storageapi.Component, content *ordered
 		}
 
 		// Generate input ID
-		inputId := strhelper.NormalizeName(component.ID.WithoutVendor() + "-" + fieldPath.WithoutFirst().String())
+		inputID := strhelper.NormalizeName(component.ID.WithoutVendor() + "-" + fieldPath.WithoutFirst().String())
 
 		// Detect type, kind and default value
 		var inputType Type
@@ -126,7 +126,7 @@ func Find(objectKey model.Key, component *storageapi.Component, content *ordered
 
 		// Create input definition
 		inputDef := Input{
-			Id:      inputId,
+			ID:      inputID,
 			Type:    inputType,
 			Kind:    inputKind,
 			Default: defaultValue,

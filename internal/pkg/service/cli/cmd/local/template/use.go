@@ -32,7 +32,7 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Parse template argument
-			repositoryName, templateId, version, err := parseTemplateArg(args)
+			repositoryName, templateID, version, err := parseTemplateArg(args)
 			if err != nil {
 				return err
 			}
@@ -45,7 +45,7 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Load template
-			template, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repositoryDef, templateId, version))
+			template, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repositoryDef, templateID, version))
 			if err != nil {
 				return err
 			}

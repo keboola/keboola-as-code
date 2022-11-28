@@ -19,7 +19,7 @@ func Encode(v interface{}, pretty bool) ([]byte, error) {
 		data, err = json.Marshal(v)
 	}
 	if err != nil {
-		return nil, processJsonEncodeError(err)
+		return nil, processJSONEncodeError(err)
 	}
 	return data, nil
 }
@@ -47,7 +47,7 @@ func MustEncodeString(v interface{}, pretty bool) string {
 
 func Decode(data []byte, m interface{}) error {
 	if err := json.Unmarshal(data, m); err != nil {
-		return processJsonDecodeError(data, err)
+		return processJSONDecodeError(data, err)
 	}
 	return nil
 }
@@ -68,7 +68,7 @@ func MustDecodeString(data string, m interface{}) {
 	}
 }
 
-func ConvertByJson(input, target interface{}) error {
+func ConvertByJSON(input, target interface{}) error {
 	data, err := Encode(input, false)
 	if err != nil {
 		return errors.Errorf(`encode error: %w`, err)
@@ -79,7 +79,7 @@ func ConvertByJson(input, target interface{}) error {
 	return nil
 }
 
-func processJsonEncodeError(err error) error {
+func processJSONEncodeError(err error) error {
 	var typeError *json.UnmarshalTypeError
 	var syntaxError *json.SyntaxError
 
@@ -94,7 +94,7 @@ func processJsonEncodeError(err error) error {
 	}
 }
 
-func processJsonDecodeError(data []byte, err error) error {
+func processJSONDecodeError(data []byte, err error) error {
 	var typeError *json.UnmarshalTypeError
 	var syntaxError *json.SyntaxError
 

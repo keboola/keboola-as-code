@@ -24,16 +24,16 @@ func TestAskUpgradeTemplate(t *testing.T) {
 	projectState := d.MockedState()
 
 	// Project state
-	instance := model.TemplateInstance{InstanceId: "12345abc"}
-	branchKey := model.BranchKey{Id: 123}
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "111"}
-	configRowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "foo.bar", ConfigId: "111", Id: "222"}
+	instance := model.TemplateInstance{InstanceID: "12345abc"}
+	branchKey := model.BranchKey{ID: 123}
+	configKey := model.ConfigKey{BranchID: 123, ComponentID: "foo.bar", ID: "111"}
+	configRowKey := model.ConfigRowKey{BranchID: 123, ComponentID: "foo.bar", ConfigID: "111", ID: "222"}
 	configMetadata := model.ConfigMetadata{}
 	configContent := orderedmap.New()
 	rowContent := orderedmap.New()
 	configMetadata.AddInputUsage("input1", orderedmap.PathFromStr("foo.bar"), nil)
 	assert.NoError(t, configContent.SetNested("foo.bar", "old value 1")) // <<<<<<<<<<<
-	configMetadata.AddRowInputUsage(configRowKey.Id, "input2", orderedmap.PathFromStr("foo.bar"), nil)
+	configMetadata.AddRowInputUsage(configRowKey.ID, "input2", orderedmap.PathFromStr("foo.bar"), nil)
 	assert.NoError(t, rowContent.SetNested("foo.bar", "old value 2")) // <<<<<<<<<<<
 	assert.NoError(t, projectState.Set(&model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: configKey},
@@ -45,9 +45,9 @@ func TestAskUpgradeTemplate(t *testing.T) {
 	}))
 
 	// Set instance ID
-	configMetadata.SetTemplateInstance("repo", "template", instance.InstanceId)
-	configMetadata.SetConfigTemplateId("configInTemplate")
-	configMetadata.AddRowTemplateId(configRowKey.Id, "rowInTemplate")
+	configMetadata.SetTemplateInstance("repo", "template", instance.InstanceID)
+	configMetadata.SetConfigTemplateID("configInTemplate")
+	configMetadata.AddRowTemplateID(configRowKey.ID, "rowInTemplate")
 
 	// Template inputs
 	stepsGroups := input.StepsGroups{
@@ -61,7 +61,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 					Description: "Step Description",
 					Inputs: []input.Input{
 						{
-							Id:   "input1",
+							ID:   "input1",
 							Name: "input1",
 							Type: "string",
 							Kind: "input",
@@ -74,7 +74,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 					Description: "Step Description",
 					Inputs: []input.Input{
 						{
-							Id:      "input2",
+							ID:      "input2",
 							Name:    "input2",
 							Type:    "string",
 							Kind:    "input",
@@ -88,7 +88,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 					Description: "Step Description",
 					Inputs: []input.Input{
 						{
-							Id:   "input3",
+							ID:   "input3",
 							Name: "input3",
 							Type: "string",
 							Kind: "input",
@@ -101,7 +101,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 					Description: "Step Description",
 					Inputs: []input.Input{
 						{
-							Id:   "input4",
+							ID:   "input4",
 							Name: "input4",
 							Type: "string",
 							Kind: "input",
@@ -189,10 +189,10 @@ func TestAskUpgradeTemplate(t *testing.T) {
 		Instance: instance,
 		Branch:   branchKey,
 		Inputs: template.InputsValues{
-			{Id: "input1", Value: "old value 1"},
-			{Id: "input2", Value: "new value 2"},
-			{Id: "input3", Value: "", Skipped: true},
-			{Id: "input4", Value: "value 4"},
+			{ID: "input1", Value: "old value 1"},
+			{ID: "input2", Value: "new value 2"},
+			{ID: "input3", Value: "", Skipped: true},
+			{ID: "input4", Value: "value 4"},
 		},
 	}, output)
 }

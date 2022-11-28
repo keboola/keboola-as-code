@@ -206,7 +206,7 @@ func (m *Manager) repository(ctx context.Context, ref model.TemplateRepository) 
 		if ref.Type == model.RepositoryTypeGit {
 			// Remote repository
 			startTime := time.Now()
-			m.logger.Infof(`checking out repository "%s:%s"`, ref.Url, ref.Ref)
+			m.logger.Infof(`checking out repository "%s:%s"`, ref.URL, ref.Ref)
 
 			// Checkout
 			gitRepo, err = checkoutOp.Run(ctx, ref, m.deps)
@@ -218,7 +218,7 @@ func (m *Manager) repository(ctx context.Context, ref model.TemplateRepository) 
 			m.logger.Infof(`checked out repository "%s" | %s`, gitRepo, time.Since(startTime))
 		} else {
 			// Local directory
-			fs, err := aferofs.NewLocalFs(ref.Url, filesystem.WithLogger(m.deps.Logger()))
+			fs, err := aferofs.NewLocalFs(ref.URL, filesystem.WithLogger(m.deps.Logger()))
 			if err != nil {
 				return nil, err
 			}

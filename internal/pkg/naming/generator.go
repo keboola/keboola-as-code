@@ -56,7 +56,7 @@ func (g Generator) BranchPath(branch *Branch) AbsPath {
 		p.RelativePath = `main`
 	} else {
 		p.SetRelativePath(strhelper.ReplacePlaceholders(string(g.template.Branch), map[string]interface{}{
-			"branch_id":   branch.Id,
+			"branch_id":   branch.ID,
 			"branch_name": strhelper.NormalizeName(branch.Name),
 		}))
 	}
@@ -80,7 +80,7 @@ func (g Generator) ConfigPath(parentPath string, component *storageapi.Component
 	}
 
 	// Shared code is handled differently
-	var template, targetComponentId string
+	var template, targetComponentID string
 	switch {
 	case (parentKind.IsEmpty() || parentKind.IsBranch()) && component.IsSharedCode():
 		if config.SharedCode == nil {
@@ -88,13 +88,13 @@ func (g Generator) ConfigPath(parentPath string, component *storageapi.Component
 		}
 		// Shared code
 		template = string(g.template.SharedCodeConfig)
-		targetComponentId = config.SharedCode.Target.String()
+		targetComponentID = config.SharedCode.Target.String()
 	case parentKind.IsConfig() && component.IsScheduler():
 		template = string(g.template.SchedulerConfig)
 	case parentKind.IsConfig() && component.IsVariables():
 		// Regular component with variables
 		template = string(g.template.VariablesConfig)
-	case parentKind.IsConfigRow() && component.IsVariables() && parentKey.(ConfigRowKey).ComponentId == storageapi.SharedCodeComponentID:
+	case parentKind.IsConfigRow() && component.IsVariables() && parentKey.(ConfigRowKey).ComponentID == storageapi.SharedCodeComponentID:
 		// Shared code is config row and can have variables
 		template = string(g.template.VariablesConfig)
 	case parentKind.IsEmpty() || parentKind.IsBranch():
@@ -107,10 +107,10 @@ func (g Generator) ConfigPath(parentPath string, component *storageapi.Component
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(strhelper.ReplacePlaceholders(template, map[string]interface{}{
-		"target_component_id": targetComponentId, // for shared code
+		"target_component_id": targetComponentID, // for shared code
 		"component_type":      component.Type,
 		"component_id":        component.ID,
-		"config_id":           jsonnet.StripIdPlaceholder(config.Id.String()),
+		"config_id":           jsonnet.StripIDPlaceholder(config.ID.String()),
 		"config_name":         strhelper.NormalizeName(config.Name),
 	}))
 	return g.registry.ensureUniquePath(config.Key(), p)
@@ -164,7 +164,7 @@ func (g Generator) ConfigRowPath(parentPath string, component *storageapi.Compon
 	p := AbsPath{}
 	p.SetParentPath(parentPath)
 	p.SetRelativePath(strhelper.ReplacePlaceholders(template, map[string]interface{}{
-		"config_row_id":   jsonnet.StripIdPlaceholder(row.Id.String()),
+		"config_row_id":   jsonnet.StripIDPlaceholder(row.ID.String()),
 		"config_row_name": strhelper.NormalizeName(name),
 	}))
 	return g.registry.ensureUniquePath(row.Key(), p)
@@ -198,12 +198,12 @@ func (g Generator) CodeFilePath(code *Code) string {
 	return filesystem.Join(code.Path(), code.CodeFileName)
 }
 
-func (g Generator) SharedCodeFilePath(parentPath string, targetComponentId storageapi.ComponentID) string {
-	return filesystem.Join(parentPath, g.CodeFileName(targetComponentId))
+func (g Generator) SharedCodeFilePath(parentPath string, targetComponentID storageapi.ComponentID) string {
+	return filesystem.Join(parentPath, g.CodeFileName(targetComponentID))
 }
 
-func (g Generator) CodeFileName(componentId storageapi.ComponentID) string {
-	return CodeFileName + "." + CodeFileExt(componentId)
+func (g Generator) CodeFileName(componentID storageapi.ComponentID) string {
+	return CodeFileName + "." + CodeFileExt(componentID)
 }
 
 func (g Generator) PhasesDir(configDir string) string {

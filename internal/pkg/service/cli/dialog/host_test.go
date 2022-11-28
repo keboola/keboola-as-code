@@ -10,7 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 )
 
-func TestAskStorageApiHostInteractive(t *testing.T) {
+func TestAskStorageAPIHostInteractive(t *testing.T) {
 	t.Parallel()
 
 	dialog, console := createDialogs(t, true)
@@ -30,7 +30,7 @@ func TestAskStorageApiHostInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out, err := dialog.AskStorageApiHost(d)
+	out, err := dialog.AskStorageAPIHost(d)
 	assert.Equal(t, `foo.bar.com`, out)
 	assert.NoError(t, err)
 
@@ -40,7 +40,7 @@ func TestAskStorageApiHostInteractive(t *testing.T) {
 	assert.NoError(t, console.Close())
 }
 
-func TestAskStorageApiHostByFlag(t *testing.T) {
+func TestAskStorageAPIHostByFlag(t *testing.T) {
 	t.Parallel()
 
 	dialog, _ := createDialogs(t, true)
@@ -49,36 +49,36 @@ func TestAskStorageApiHostByFlag(t *testing.T) {
 	opts.Set(`storage-api-host`, `foo.bar.com`)
 
 	// Run
-	out, err := dialog.AskStorageApiHost(d)
+	out, err := dialog.AskStorageAPIHost(d)
 	assert.Equal(t, `foo.bar.com`, out)
 	assert.NoError(t, err)
 }
 
-func TestAskStorageApiHostMissing(t *testing.T) {
+func TestAskStorageAPIHostMissing(t *testing.T) {
 	t.Parallel()
 
 	dialog, _ := createDialogs(t, false)
 	d := dependencies.NewMockedDeps()
 
 	// Run
-	out, err := dialog.AskStorageApiHost(d)
+	out, err := dialog.AskStorageAPIHost(d)
 	assert.Empty(t, out)
 	assert.Error(t, err)
 	assert.Equal(t, `missing Storage API host`, err.Error())
 }
 
-func TestApiHostValidator(t *testing.T) {
+func TestAPIHostValidator(t *testing.T) {
 	t.Parallel()
-	assert.NoError(t, StorageApiHostValidator("connection.keboola.com"))
-	assert.NoError(t, StorageApiHostValidator("connection.keboola.com/"))
-	assert.NoError(t, StorageApiHostValidator("https://connection.keboola.com"))
-	assert.NoError(t, StorageApiHostValidator("https://connection.keboola.com/"))
+	assert.NoError(t, StorageAPIHostValidator("connection.keboola.com"))
+	assert.NoError(t, StorageAPIHostValidator("connection.keboola.com/"))
+	assert.NoError(t, StorageAPIHostValidator("https://connection.keboola.com"))
+	assert.NoError(t, StorageAPIHostValidator("https://connection.keboola.com/"))
 
-	err := StorageApiHostValidator("")
+	err := StorageAPIHostValidator("")
 	assert.Error(t, err)
 	assert.Equal(t, "value is required", err.Error())
 
-	err = StorageApiHostValidator("@#$$%^&%#$&")
+	err = StorageAPIHostValidator("@#$$%^&%#$&")
 	assert.Error(t, err)
 	assert.Equal(t, "invalid host", err.Error())
 }

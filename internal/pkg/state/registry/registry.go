@@ -152,7 +152,7 @@ func (s *Registry) Configs() (configs []*ConfigState) {
 func (s *Registry) ConfigsFrom(branch BranchKey) (configs []*ConfigState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*ConfigState); ok {
-			if v.BranchId != branch.Id {
+			if v.BranchID != branch.ID {
 				continue
 			}
 			configs = append(configs, v)
@@ -173,7 +173,7 @@ func (s *Registry) ConfigRows() (rows []*ConfigRowState) {
 func (s *Registry) ConfigRowsFrom(config ConfigKey) (rows []*ConfigRowState) {
 	for _, object := range s.All() {
 		if v, ok := object.(*ConfigRowState); ok {
-			if v.BranchId != config.BranchId || v.ComponentId != config.ComponentId || v.ConfigId != config.Id {
+			if v.BranchID != config.BranchID || v.ComponentID != config.ComponentID || v.ConfigID != config.ID {
 				continue
 			}
 			rows = append(rows, v)

@@ -13,7 +13,7 @@ type withStatusCode struct {
 	httpCode int
 }
 
-func HttpCodeFrom(err error) int {
+func HTTPCodeFrom(err error) int {
 	httpCode := 500
 	var httpCodeProvider WithStatusCode
 	var serviceError *goa.ServiceError

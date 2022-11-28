@@ -35,14 +35,14 @@ type Manifest struct {
 }
 
 type Project struct {
-	Id      int    `json:"id" validate:"required"`
-	ApiHost string `json:"apiHost" validate:"required,hostname"`
+	ID      int    `json:"id" validate:"required"`
+	APIHost string `json:"apiHost" validate:"required,hostname"`
 }
 
-func New(projectId int, apiHost string) *Manifest {
+func New(projectID int, apiHost string) *Manifest {
 	return &Manifest{
-		records:      manifest.NewRecords(model.SortById),
-		project:      Project{Id: projectId, ApiHost: apiHost},
+		records:      manifest.NewRecords(model.SortByID),
+		project:      Project{ID: projectID, APIHost: apiHost},
 		naming:       naming.TemplateWithIds(),
 		filter:       model.NoFilter(),
 		repositories: []model.TemplateRepository{repository.DefaultRepository()},
@@ -57,7 +57,7 @@ func Load(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 	}
 
 	// Create manifest
-	m := New(content.Project.Id, content.Project.ApiHost)
+	m := New(content.Project.ID, content.Project.APIHost)
 
 	// Set configuration
 	m.SetSortBy(content.SortBy)
@@ -77,7 +77,7 @@ func Load(fs filesystem.Fs, ignoreErrors bool) (*Manifest, error) {
 
 func (m *Manifest) Save(fs filesystem.Fs) error {
 	// Create file content
-	content := newFile(m.ProjectID(), m.ApiHost())
+	content := newFile(m.ProjectID(), m.APIHost())
 	content.SortBy = m.SortBy()
 	content.Naming = m.naming
 	content.AllowedBranches = m.filter.AllowedBranches()
@@ -102,12 +102,12 @@ func (m *Manifest) Filter() *model.ObjectsFilter {
 	return &m.filter
 }
 
-func (m *Manifest) ApiHost() string {
-	return m.project.ApiHost
+func (m *Manifest) APIHost() string {
+	return m.project.APIHost
 }
 
 func (m *Manifest) ProjectID() int {
-	return m.project.Id
+	return m.project.ID
 }
 
 func (m *Manifest) NamingTemplate() naming.Template {

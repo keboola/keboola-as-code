@@ -30,7 +30,7 @@ type branchesDialog struct {
 
 type branchesDialogDeps interface {
 	Options() *options.Options
-	StorageApiClient() client.Sender
+	StorageAPIClient() client.Sender
 }
 
 func (p *Dialogs) AskAllowedBranches(ctx context.Context, deps branchesDialogDeps) (model.AllowedBranches, error) {
@@ -39,10 +39,10 @@ func (p *Dialogs) AskAllowedBranches(ctx context.Context, deps branchesDialogDep
 
 func (d *branchesDialog) ask(ctx context.Context) (model.AllowedBranches, error) {
 	// Get Storage API
-	storageApiClient := d.deps.StorageApiClient()
+	storageAPIClient := d.deps.StorageAPIClient()
 
 	// List all branches
-	if v, err := storageapi.ListBranchesRequest().Send(ctx, storageApiClient); err == nil {
+	if v, err := storageapi.ListBranchesRequest().Send(ctx, storageAPIClient); err == nil {
 		for _, apiBranch := range *v {
 			d.allBranches = append(d.allBranches, model.NewBranch(apiBranch))
 		}
@@ -106,7 +106,7 @@ func (d *branchesDialog) askBranchesList() model.AllowedBranches {
 	end := math.Min(10, float64(len(d.allBranches)))
 	d.Printf("\nExisting project's branches, for inspiration:\n")
 	for _, branch := range d.allBranches[:int(end)] {
-		d.Printf("%s (%d)\n", branch.Name, branch.Id)
+		d.Printf("%s (%d)\n", branch.Name, branch.ID)
 	}
 	if len(d.allBranches) > 10 {
 		d.Printf(`...`)
@@ -173,7 +173,7 @@ func (d *branchesDialog) unique(items model.AllowedBranches) model.AllowedBranch
 
 func branchesToAllowedBranches(branches []*model.Branch) (out model.AllowedBranches) {
 	for _, b := range branches {
-		out = append(out, model.AllowedBranch(b.Id.String()))
+		out = append(out, model.AllowedBranch(b.ID.String()))
 	}
 	return out
 }

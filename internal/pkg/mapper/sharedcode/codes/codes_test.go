@@ -23,16 +23,16 @@ func createStateWithMapper(t *testing.T) (*state.State, dependencies.Mocked) {
 
 func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
-	targetComponentId := storageapi.ComponentID(`keboola.snowflake-transformation`)
+	targetComponentID := storageapi.ComponentID(`keboola.snowflake-transformation`)
 
 	// Config
 	configKey := model.ConfigKey{
-		BranchId:    789,
-		Id:          `123`,
-		ComponentId: storageapi.SharedCodeComponentID,
+		BranchID:    789,
+		ID:          `123`,
+		ComponentID: storageapi.SharedCodeComponentID,
 	}
 	configContent := orderedmap.New()
-	configContent.Set(model.ShareCodeTargetComponentKey, targetComponentId.String())
+	configContent.Set(model.ShareCodeTargetComponentKey, targetComponentID.String())
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
@@ -52,10 +52,10 @@ func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigStat
 
 	// Row
 	rowKey := model.ConfigRowKey{
-		BranchId:    789,
-		ConfigId:    `123`,
-		Id:          `456`,
-		ComponentId: storageapi.SharedCodeComponentID,
+		BranchID:    789,
+		ConfigID:    `123`,
+		ID:          `456`,
+		ComponentID: storageapi.SharedCodeComponentID,
 	}
 	rowState := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{
@@ -77,17 +77,17 @@ func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigStat
 	return configState, rowState
 }
 
-func createLocalSharedCode(t *testing.T, targetComponentId storageapi.ComponentID, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
+func createLocalSharedCode(t *testing.T, targetComponentID storageapi.ComponentID, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
 	// Config
 	configKey := model.ConfigKey{
-		BranchId:    789,
-		Id:          `123`,
-		ComponentId: storageapi.SharedCodeComponentID,
+		BranchID:    789,
+		ID:          `123`,
+		ComponentID: storageapi.SharedCodeComponentID,
 	}
 	configContent := orderedmap.New()
-	configContent.Set(model.ShareCodeTargetComponentKey, targetComponentId.String())
+	configContent.Set(model.ShareCodeTargetComponentKey, targetComponentID.String())
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
 			ConfigKey: configKey,
@@ -107,10 +107,10 @@ func createLocalSharedCode(t *testing.T, targetComponentId storageapi.ComponentI
 
 	// Row
 	rowKey := model.ConfigRowKey{
-		BranchId:    789,
-		ConfigId:    `123`,
-		Id:          `456`,
-		ComponentId: storageapi.SharedCodeComponentID,
+		BranchID:    789,
+		ConfigID:    `123`,
+		ID:          `456`,
+		ComponentID: storageapi.SharedCodeComponentID,
 	}
 	rowState := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{
@@ -133,14 +133,14 @@ func createLocalSharedCode(t *testing.T, targetComponentId storageapi.ComponentI
 }
 
 // nolint: unparam
-func createInternalSharedCode(t *testing.T, targetComponentId storageapi.ComponentID, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
+func createInternalSharedCode(t *testing.T, targetComponentID storageapi.ComponentID, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
 	// Config
 	configKey := model.ConfigKey{
-		BranchId:    789,
-		Id:          `123`,
-		ComponentId: storageapi.SharedCodeComponentID,
+		BranchID:    789,
+		ID:          `123`,
+		ComponentID: storageapi.SharedCodeComponentID,
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -156,14 +156,14 @@ func createInternalSharedCode(t *testing.T, targetComponentId storageapi.Compone
 			ConfigKey: configKey,
 			Content:   orderedmap.New(),
 			SharedCode: &model.SharedCodeConfig{
-				Target: targetComponentId,
+				Target: targetComponentID,
 			},
 		},
 		Remote: &model.Config{
 			ConfigKey: configKey,
 			Content:   orderedmap.New(),
 			SharedCode: &model.SharedCodeConfig{
-				Target: targetComponentId,
+				Target: targetComponentID,
 			},
 		},
 	}
@@ -171,10 +171,10 @@ func createInternalSharedCode(t *testing.T, targetComponentId storageapi.Compone
 
 	// Row
 	rowKey := model.ConfigRowKey{
-		BranchId:    789,
-		ConfigId:    `123`,
-		Id:          `456`,
-		ComponentId: storageapi.SharedCodeComponentID,
+		BranchID:    789,
+		ConfigID:    `123`,
+		ID:          `456`,
+		ComponentID: storageapi.SharedCodeComponentID,
 	}
 	rowState := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{
@@ -190,7 +190,7 @@ func createInternalSharedCode(t *testing.T, targetComponentId storageapi.Compone
 			ConfigRowKey: rowKey,
 			Content:      orderedmap.New(),
 			SharedCode: &model.SharedCodeRow{
-				Target: targetComponentId,
+				Target: targetComponentID,
 				Scripts: model.Scripts{
 					model.StaticScript{Value: `foo`},
 					model.StaticScript{Value: `bar`},
@@ -201,7 +201,7 @@ func createInternalSharedCode(t *testing.T, targetComponentId storageapi.Compone
 			ConfigRowKey: rowKey,
 			Content:      orderedmap.New(),
 			SharedCode: &model.SharedCodeRow{
-				Target: targetComponentId,
+				Target: targetComponentID,
 				Scripts: model.Scripts{
 					model.StaticScript{Value: `foo`},
 					model.StaticScript{Value: `bar`},

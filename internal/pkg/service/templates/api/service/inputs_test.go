@@ -35,7 +35,7 @@ func TestValidateInputs(t *testing.T) {
 					Steps: template.Steps{
 						{
 							Inputs: template.Inputs{
-								{Id: "foo", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
+								{ID: "foo", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
 							},
 						},
 					},
@@ -64,7 +64,7 @@ func TestValidateInputs(t *testing.T) {
 					},
 				},
 			},
-			values: input.Values{{Id: "foo", Value: "bar", Skipped: false}},
+			values: input.Values{{ID: "foo", Value: "bar", Skipped: false}},
 		},
 		// Optional group, step is configured
 		{
@@ -75,7 +75,7 @@ func TestValidateInputs(t *testing.T) {
 					Steps: template.Steps{
 						{
 							Inputs: template.Inputs{
-								{Id: "foo", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
+								{ID: "foo", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
 							},
 						},
 					},
@@ -104,7 +104,7 @@ func TestValidateInputs(t *testing.T) {
 					},
 				},
 			},
-			values: input.Values{{Id: "foo", Value: "bar", Skipped: false}},
+			values: input.Values{{ID: "foo", Value: "bar", Skipped: false}},
 		},
 		// Optional group, step is not configured
 		{
@@ -115,7 +115,7 @@ func TestValidateInputs(t *testing.T) {
 					Steps: template.Steps{
 						{
 							Inputs: template.Inputs{
-								{Id: "foo", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
+								{ID: "foo", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
 							},
 						},
 					},
@@ -144,7 +144,7 @@ func TestValidateInputs(t *testing.T) {
 					},
 				},
 			},
-			values: input.Values{{Id: "foo", Value: "", Skipped: true}},
+			values: input.Values{{ID: "foo", Value: "", Skipped: true}},
 		},
 		// At least one rule, first step is configured, second is not configured
 		{
@@ -155,12 +155,12 @@ func TestValidateInputs(t *testing.T) {
 					Steps: template.Steps{
 						{
 							Inputs: template.Inputs{
-								{Id: "foo", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
+								{ID: "foo", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
 							},
 						},
 						{
 							Inputs: template.Inputs{
-								{Id: "baz", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
+								{ID: "baz", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
 							},
 						},
 					},
@@ -200,7 +200,7 @@ func TestValidateInputs(t *testing.T) {
 					},
 				},
 			},
-			values: input.Values{{Id: "foo", Value: "bar", Skipped: false}, {Id: "baz", Value: "", Skipped: true}},
+			values: input.Values{{ID: "foo", Value: "bar", Skipped: false}, {ID: "baz", Value: "", Skipped: true}},
 		},
 		// Step without inputs is always valid and configured
 		{
@@ -244,7 +244,7 @@ func TestValidateInputs(t *testing.T) {
 					Steps: template.Steps{
 						{
 							Inputs: template.Inputs{
-								{Id: "foo", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
+								{ID: "foo", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
 							},
 						},
 					},
@@ -274,7 +274,7 @@ func TestValidateInputs(t *testing.T) {
 					},
 				},
 			},
-			values: input.Values{{Id: "foo", Value: "", Skipped: true}},
+			values: input.Values{{ID: "foo", Value: "", Skipped: true}},
 		},
 		// Missing input value
 		{
@@ -285,7 +285,7 @@ func TestValidateInputs(t *testing.T) {
 					Steps: template.Steps{
 						{
 							Inputs: template.Inputs{
-								{Id: "foo", Name: "Foo Name", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
+								{ID: "foo", Name: "Foo Name", Type: input.TypeString, Kind: input.KindInput, Rules: "required"},
 							},
 						},
 					},
@@ -315,7 +315,7 @@ func TestValidateInputs(t *testing.T) {
 					},
 				},
 			},
-			values: input.Values{{Id: "foo", Value: "", Skipped: false}},
+			values: input.Values{{ID: "foo", Value: "", Skipped: false}},
 		},
 	}
 

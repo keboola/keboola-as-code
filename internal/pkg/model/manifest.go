@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	SortById   = "id"
+	SortByID   = "id"
 	SortByPath = "path"
 )
 

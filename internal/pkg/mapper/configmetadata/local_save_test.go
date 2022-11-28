@@ -21,9 +21,9 @@ func TestConfigMetadataMapper_MapBeforeLocalSave(t *testing.T) {
 	mockedState.Mapper().AddMapper(configmetadata.NewMapper(mockedState, d))
 
 	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: storageapi.ComponentID("keboola.snowflake-transformation"),
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: storageapi.ComponentID("keboola.snowflake-transformation"),
+		ID:          `456`,
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{

@@ -20,7 +20,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Tracer() trace.Tracer
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
-	StorageApiClient() client.Sender
+	StorageAPIClient() client.Sender
 }
 
 func Run(ctx context.Context, targetName string, d dependencies) (err error) {
@@ -41,7 +41,7 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 		}
 	}
 
-	tablesList, err := storageapi.ListTablesRequest(storageapi.WithBuckets()).Send(ctx, d.StorageApiClient())
+	tablesList, err := storageapi.ListTablesRequest(storageapi.WithBuckets()).Send(ctx, d.StorageAPIClient())
 	if err != nil {
 		return err
 	}

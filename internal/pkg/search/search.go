@@ -13,7 +13,7 @@ import (
 func Branches(all []*model.Branch, str string) []*model.Branch {
 	matches := make([]*model.Branch, 0)
 	for _, object := range all {
-		if matchObjectIdOrName(str, object) {
+		if matchObjectIDOrName(str, object) {
 			matches = append(matches, object)
 		}
 	}
@@ -38,7 +38,7 @@ func Branch(all []*model.Branch, str string) (*model.Branch, error) {
 func Configs(all []*model.ConfigWithRows, str string) []*model.ConfigWithRows {
 	matches := make([]*model.ConfigWithRows, 0)
 	for _, object := range all {
-		if matchObjectIdOrName(str, object) {
+		if matchObjectIDOrName(str, object) {
 			matches = append(matches, object)
 		}
 	}
@@ -46,10 +46,10 @@ func Configs(all []*model.ConfigWithRows, str string) []*model.ConfigWithRows {
 }
 
 // ConfigsForTemplateInstance searches for configs created by template instance.
-func ConfigsForTemplateInstance(all []*model.ConfigWithRows, instanceId string) []*model.ConfigWithRows {
+func ConfigsForTemplateInstance(all []*model.ConfigWithRows, instanceID string) []*model.ConfigWithRows {
 	matches := make([]*model.ConfigWithRows, 0)
 	for _, object := range all {
-		if object.Metadata.InstanceId() == instanceId {
+		if object.Metadata.InstanceID() == instanceID {
 			matches = append(matches, object)
 		}
 	}
@@ -74,7 +74,7 @@ func Config(all []*model.ConfigWithRows, str string) (*model.ConfigWithRows, err
 func ConfigRows(all []*model.ConfigRow, str string) []*model.ConfigRow {
 	matches := make([]*model.ConfigRow, 0)
 	for _, object := range all {
-		if matchObjectIdOrName(str, object) {
+		if matchObjectIDOrName(str, object) {
 			matches = append(matches, object)
 		}
 	}
@@ -95,14 +95,14 @@ func ConfigRow(all []*model.ConfigRow, str string) (*model.ConfigRow, error) {
 	}
 }
 
-type objectIdAndName interface {
-	ObjectId() string
+type objectIDAndName interface {
+	ObjectID() string
 	ObjectName() string
 }
 
-// matchObjectIdOrName returns true if str == objectId or objectName contains str.
-func matchObjectIdOrName(str string, object objectIdAndName) bool {
-	if cast.ToString(object.ObjectId()) == str {
+// matchObjectIDOrName returns true if str == objectId or objectName contains str.
+func matchObjectIDOrName(str string, object objectIDAndName) bool {
+	if cast.ToString(object.ObjectID()) == str {
 		return true
 	}
 

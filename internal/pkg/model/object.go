@@ -17,24 +17,24 @@ const (
 	DescriptionFileFieldTag           = "descriptionFile:true" // marks description field in object struct
 	ShareCodeTargetComponentKey       = `componentId`
 	SharedCodeContentKey              = `code_content`
-	VariablesIdContentKey             = `variables_id`
-	VariablesValuesIdContentKey       = `variables_values_id`
-	SharedCodeVariablesIdContentKey   = `variables_id`
-	SharedCodeIdContentKey            = `shared_code_id`
-	SharedCodeRowsIdContentKey        = `shared_code_row_ids`
+	VariablesIDContentKey             = `variables_id`
+	VariablesValuesIDContentKey       = `variables_values_id`
+	SharedCodeVariablesIDContentKey   = `variables_id`
+	SharedCodeIDContentKey            = `shared_code_id`
+	SharedCodeRowsIDContentKey        = `shared_code_row_ids`
 	SharedCodePathContentKey          = `shared_code_path`
 	SchedulerTargetKey                = `target`
-	SchedulerTargetComponentIdKey     = `componentId`
-	SchedulerTargetConfigurationIdKey = `configurationId`
+	SchedulerTargetComponentIDKey     = `componentId`
+	SchedulerTargetConfigurationIDKey = `configurationId`
 	OrchestratorPhasesContentKey      = `phases`
 	OrchestratorTasksContentKey       = `tasks`
 	ProjectDescriptionMetaKey         = `KBC.projectDescription`
 	templatesInstancesMetaKey         = `KBC.KAC.templates.instances`
-	configIdMetadataKey               = "KBC.KAC.templates.configId"
+	configIDMetadataKey               = "KBC.KAC.templates.configId"
 	rowsIdsMetadataKey                = "KBC.KAC.templates.rowsIds"
 	repositoryMetadataKey             = "KBC.KAC.templates.repository"
-	templateIdMetadataKey             = "KBC.KAC.templates.templateId"
-	instanceIdMetadataKey             = "KBC.KAC.templates.instanceId" // attach config to a template instance
+	templateIDMetadataKey             = "KBC.KAC.templates.templateId"
+	instanceIDMetadataKey             = "KBC.KAC.templates.instanceId" // attach config to a template instance
 	configInputsUsageMetadataKey      = "KBC.KAC.templates.configInputs"
 	rowsInputsUsageMetadataKey        = "KBC.KAC.templates.rowsInputs"
 )
@@ -43,25 +43,25 @@ type Object interface {
 	Key
 	Key() Key
 	ObjectName() string
-	SetObjectId(any)
+	SetObjectID(any)
 }
 
-type ToApiObject interface {
-	ToApiObject(changeDescription string, changedFields ChangedFields) (apiObject storageapi.Object, apiChangedFields []string)
+type ToAPIObject interface {
+	ToAPIObject(changeDescription string, changedFields ChangedFields) (apiObject storageapi.Object, apiChangedFields []string)
 }
 
-type ToApiObjectKey interface {
-	ToApiObjectKey() any
+type ToAPIObjectKey interface {
+	ToAPIObjectKey() any
 }
 
-type ToApiMetadata interface {
-	ToApiObjectKey
-	ToApiMetadata() storageapi.Metadata
+type ToAPIMetadata interface {
+	ToAPIObjectKey
+	ToAPIMetadata() storageapi.Metadata
 }
 
 type ObjectWithContent interface {
 	Object
-	GetComponentId() storageapi.ComponentID
+	GetComponentID() storageapi.ComponentID
 	GetContent() *orderedmap.OrderedMap
 }
 
@@ -113,9 +113,9 @@ type Kind struct {
 type BranchMetadata map[string]string
 
 type TemplateInstance struct {
-	InstanceId     string              `json:"instanceId"`
+	InstanceID     string              `json:"instanceId"`
 	InstanceName   string              `json:"instanceName"`
-	TemplateId     string              `json:"templateId"`
+	TemplateID     string              `json:"templateId"`
 	RepositoryName string              `json:"repositoryName"`
 	Version        string              `json:"version"`
 	Created        ChangedByRecord     `json:"created"`
@@ -126,18 +126,18 @@ type TemplatesInstances []TemplateInstance
 
 type ChangedByRecord struct {
 	Date    time.Time `json:"date"`
-	TokenId string    `json:"tokenId"`
+	TokenID string    `json:"tokenId"`
 }
 
 type TemplateMainConfig struct {
-	ConfigId    storageapi.ConfigID    `json:"configId"`
-	ComponentId storageapi.ComponentID `json:"componentId"`
+	ConfigID    storageapi.ConfigID    `json:"configId"`
+	ComponentID storageapi.ComponentID `json:"componentId"`
 }
 
 // NewBranch creates branch model from API values.
 func NewBranch(apiValue *storageapi.Branch) *Branch {
 	out := &Branch{}
-	out.Id = apiValue.ID
+	out.ID = apiValue.ID
 	out.Name = apiValue.Name
 	out.Description = apiValue.Description
 	out.IsDefault = apiValue.IsDefault
@@ -147,9 +147,9 @@ func NewBranch(apiValue *storageapi.Branch) *Branch {
 // NewConfig creates config model from API values.
 func NewConfig(apiValue *storageapi.Config) *Config {
 	out := &Config{}
-	out.BranchId = apiValue.BranchID
-	out.ComponentId = apiValue.ComponentID
-	out.Id = apiValue.ID
+	out.BranchID = apiValue.BranchID
+	out.ComponentID = apiValue.ComponentID
+	out.ID = apiValue.ID
 	out.Name = apiValue.Name
 	out.Description = apiValue.Description
 	out.IsDisabled = apiValue.IsDisabled
@@ -160,9 +160,9 @@ func NewConfig(apiValue *storageapi.Config) *Config {
 // NewConfigWithRows creates config model from API values.
 func NewConfigWithRows(apiValue *storageapi.ConfigWithRows) *ConfigWithRows {
 	out := &ConfigWithRows{Config: &Config{}}
-	out.BranchId = apiValue.BranchID
-	out.ComponentId = apiValue.ComponentID
-	out.Id = apiValue.ID
+	out.BranchID = apiValue.BranchID
+	out.ComponentID = apiValue.ComponentID
+	out.ID = apiValue.ID
 	out.Name = apiValue.Name
 	out.Description = apiValue.Description
 	out.IsDisabled = apiValue.IsDisabled
@@ -176,10 +176,10 @@ func NewConfigWithRows(apiValue *storageapi.ConfigWithRows) *ConfigWithRows {
 // NewConfigRow creates config row model from API values.
 func NewConfigRow(apiValue *storageapi.ConfigRow) *ConfigRow {
 	out := &ConfigRow{}
-	out.BranchId = apiValue.BranchID
-	out.ComponentId = apiValue.ComponentID
-	out.ConfigId = apiValue.ConfigID
-	out.Id = apiValue.ID
+	out.BranchID = apiValue.BranchID
+	out.ComponentID = apiValue.ComponentID
+	out.ConfigID = apiValue.ConfigID
+	out.ID = apiValue.ID
 	out.Name = apiValue.Name
 	out.Description = apiValue.Description
 	out.IsDisabled = apiValue.IsDisabled
@@ -187,23 +187,23 @@ func NewConfigRow(apiValue *storageapi.ConfigRow) *ConfigRow {
 	return out
 }
 
-// ToApiObject ...
-func (b *Branch) ToApiObject(_ string, changedFields ChangedFields) (storageapi.Object, []string) {
+// ToAPIObject ...
+func (b *Branch) ToAPIObject(_ string, changedFields ChangedFields) (storageapi.Object, []string) {
 	out := &storageapi.Branch{}
-	out.ID = b.Id
+	out.ID = b.ID
 	out.Name = b.Name
 	out.Description = b.Description
 	out.IsDefault = b.IsDefault
 	return out, changedFields.Slice()
 }
 
-// ToApiObject ...
-func (c *Config) ToApiObject(changeDescription string, changedFields ChangedFields) (storageapi.Object, []string) {
+// ToAPIObject ...
+func (c *Config) ToAPIObject(changeDescription string, changedFields ChangedFields) (storageapi.Object, []string) {
 	out := &storageapi.Config{}
 	out.ChangeDescription = changeDescription
-	out.BranchID = c.BranchId
-	out.ComponentID = c.ComponentId
-	out.ID = c.Id
+	out.BranchID = c.BranchID
+	out.ComponentID = c.ComponentID
+	out.ID = c.ID
 	out.Name = c.Name
 	out.Description = c.Description
 	out.IsDisabled = c.IsDisabled
@@ -211,14 +211,14 @@ func (c *Config) ToApiObject(changeDescription string, changedFields ChangedFiel
 	return out, append(changedFields.Slice(), "changeDescription")
 }
 
-// ToApiObject ...
-func (r *ConfigRow) ToApiObject(changeDescription string, changedFields ChangedFields) (storageapi.Object, []string) {
+// ToAPIObject ...
+func (r *ConfigRow) ToAPIObject(changeDescription string, changedFields ChangedFields) (storageapi.Object, []string) {
 	out := &storageapi.ConfigRow{}
 	out.ChangeDescription = changeDescription
-	out.BranchID = r.BranchId
-	out.ComponentID = r.ComponentId
-	out.ConfigID = r.ConfigId
-	out.ID = r.Id
+	out.BranchID = r.BranchID
+	out.ComponentID = r.ComponentID
+	out.ConfigID = r.ConfigID
+	out.ID = r.ID
 	out.Name = r.Name
 	out.Description = r.Description
 	out.IsDisabled = r.IsDisabled
@@ -226,34 +226,34 @@ func (r *ConfigRow) ToApiObject(changeDescription string, changedFields ChangedF
 	return out, append(changedFields.Slice(), "changeDescription")
 }
 
-// ToApiObjectKey ...
-func (b *Branch) ToApiObjectKey() any {
-	return storageapi.BranchKey{ID: b.Id}
+// ToAPIObjectKey ...
+func (b *Branch) ToAPIObjectKey() any {
+	return storageapi.BranchKey{ID: b.ID}
 }
 
-// ToApiObjectKey ...
-func (c *Config) ToApiObjectKey() any {
-	return storageapi.ConfigKey{BranchID: c.BranchId, ComponentID: c.ComponentId, ID: c.Id}
+// ToAPIObjectKey ...
+func (c *Config) ToAPIObjectKey() any {
+	return storageapi.ConfigKey{BranchID: c.BranchID, ComponentID: c.ComponentID, ID: c.ID}
 }
 
-// ToApiObjectKey ...
-func (r *ConfigRow) ToApiObjectKey() any {
-	return storageapi.ConfigRowKey{BranchID: r.BranchId, ComponentID: r.ComponentId, ConfigID: r.ConfigId, ID: r.Id}
+// ToAPIObjectKey ...
+func (r *ConfigRow) ToAPIObjectKey() any {
+	return storageapi.ConfigRowKey{BranchID: r.BranchID, ComponentID: r.ComponentID, ConfigID: r.ConfigID, ID: r.ID}
 }
 
-// ToApiMetadata ...
-func (b *Branch) ToApiMetadata() storageapi.Metadata {
+// ToAPIMetadata ...
+func (b *Branch) ToAPIMetadata() storageapi.Metadata {
 	return storageapi.Metadata(b.Metadata)
 }
 
-// ToApiMetadata ...
-func (c *Config) ToApiMetadata() storageapi.Metadata {
+// ToAPIMetadata ...
+func (c *Config) ToAPIMetadata() storageapi.Metadata {
 	return storageapi.Metadata(c.Metadata)
 }
 
 func (m BranchMetadata) saveTemplateUsages(instances TemplatesInstances) error {
 	sort.SliceStable(instances, func(i, j int) bool {
-		return instances[i].InstanceId < instances[j].InstanceId
+		return instances[i].InstanceID < instances[j].InstanceID
 	})
 	encoded, err := json.EncodeString(instances, false)
 	if err != nil {
@@ -263,27 +263,27 @@ func (m BranchMetadata) saveTemplateUsages(instances TemplatesInstances) error {
 	return nil
 }
 
-func (m BranchMetadata) UpsertTemplateInstanceFrom(now time.Time, tokenId string, d TemplateInstance) error {
-	return m.UpsertTemplateInstance(now, d.InstanceId, d.InstanceName, d.TemplateId, d.RepositoryName, d.Version, tokenId, d.MainConfig)
+func (m BranchMetadata) UpsertTemplateInstanceFrom(now time.Time, tokenID string, d TemplateInstance) error {
+	return m.UpsertTemplateInstance(now, d.InstanceID, d.InstanceName, d.TemplateID, d.RepositoryName, d.Version, tokenID, d.MainConfig)
 }
 
 // UpsertTemplateInstance (update or insert) on use or upgrade operation.
-func (m BranchMetadata) UpsertTemplateInstance(now time.Time, instanceId, instanceName, templateId, repositoryName, version, tokenId string, mainConfig *TemplateMainConfig) error {
+func (m BranchMetadata) UpsertTemplateInstance(now time.Time, instanceID, instanceName, templateID, repositoryName, version, tokenID string, mainConfig *TemplateMainConfig) error {
 	now = now.Truncate(time.Second).UTC()
 	instance := TemplateInstance{
-		InstanceId:     instanceId,
-		TemplateId:     templateId,
+		InstanceID:     instanceID,
+		TemplateID:     templateID,
 		RepositoryName: repositoryName,
 		Version:        version,
-		Created:        ChangedByRecord{Date: now, TokenId: tokenId},
-		Updated:        ChangedByRecord{Date: now, TokenId: tokenId},
+		Created:        ChangedByRecord{Date: now, TokenID: tokenID},
+		Updated:        ChangedByRecord{Date: now, TokenID: tokenID},
 	}
 
 	// Load instance, if exists
 	instancesOld, _ := m.TemplatesInstances() // on error -> empty slice
 	instances := make(TemplatesInstances, 0)
 	for _, item := range instancesOld {
-		if item.InstanceId != instanceId {
+		if item.InstanceID != instanceID {
 			// Pass through other instances
 			instances = append(instances, item)
 		} else {
@@ -295,7 +295,7 @@ func (m BranchMetadata) UpsertTemplateInstance(now time.Time, instanceId, instan
 	// Set/update version, updated date, main config
 	instance.Version = version
 	instance.InstanceName = instanceName
-	instance.Updated = ChangedByRecord{Date: now, TokenId: tokenId}
+	instance.Updated = ChangedByRecord{Date: now, TokenID: tokenID}
 	instance.MainConfig = mainConfig
 
 	// Store instance
@@ -303,20 +303,20 @@ func (m BranchMetadata) UpsertTemplateInstance(now time.Time, instanceId, instan
 	return m.saveTemplateUsages(instances)
 }
 
-func (m BranchMetadata) DeleteTemplateUsage(instanceId string) error {
+func (m BranchMetadata) DeleteTemplateUsage(instanceID string) error {
 	instances, err := m.TemplatesInstances()
 	if err != nil {
 		return err
 	}
 
 	for i, u := range instances {
-		if u.InstanceId == instanceId {
+		if u.InstanceID == instanceID {
 			instances = append(instances[:i], instances[i+1:]...)
 			return m.saveTemplateUsages(instances)
 		}
 	}
 
-	return errors.Errorf(`instance "%s" not found`, instanceId)
+	return errors.Errorf(`instance "%s" not found`, instanceID)
 }
 
 func (m BranchMetadata) TemplatesInstances() (TemplatesInstances, error) {
@@ -338,7 +338,7 @@ func (m BranchMetadata) TemplateInstance(instance string) (*TemplateInstance, bo
 		return &TemplateInstance{}, false, err
 	}
 	for _, usage := range usages {
-		if usage.InstanceId == instance {
+		if usage.InstanceID == instance {
 			return &usage, true, nil
 		}
 	}
@@ -367,27 +367,27 @@ type ConfigMetadata map[string]string
 
 type ConfigInputUsage struct {
 	Input      string   `json:"input"`
-	JsonKey    string   `json:"key"`
+	JSONKey    string   `json:"key"`
 	ObjectKeys []string `json:"objectKeys,omitempty"` // list of object keys generated from the input (empty = all)
 }
 
 type RowInputUsage struct {
-	RowId      storageapi.RowID `json:"rowId"`
+	RowID      storageapi.RowID `json:"rowId"`
 	Input      string           `json:"input"`
-	JsonKey    string           `json:"key"`
+	JSONKey    string           `json:"key"`
 	ObjectKeys []string         `json:"objectKeys,omitempty"` // list of object keys generated from the input (empty = all)
 }
 
-func (m ConfigMetadata) SetConfigTemplateId(templateObjectId storageapi.ConfigID) {
-	m[configIdMetadataKey] = json.MustEncodeString(ConfigIdMetadata{
-		IdInTemplate: templateObjectId,
+func (m ConfigMetadata) SetConfigTemplateID(templateObjectID storageapi.ConfigID) {
+	m[configIDMetadataKey] = json.MustEncodeString(ConfigIDMetadata{
+		IDInTemplate: templateObjectID,
 	}, false)
 }
 
-func (m ConfigMetadata) ConfigTemplateId() *ConfigIdMetadata {
-	out := ConfigIdMetadata{}
-	_ = json.DecodeString(m[configIdMetadataKey], &out) // ignore empty string or other errors
-	if len(out.IdInTemplate) == 0 {
+func (m ConfigMetadata) ConfigTemplateID() *ConfigIDMetadata {
+	out := ConfigIDMetadata{}
+	_ = json.DecodeString(m[configIDMetadataKey], &out) // ignore empty string or other errors
+	if len(out.IDInTemplate) == 0 {
 		return nil
 	}
 	return &out
@@ -403,23 +403,23 @@ func (m ConfigMetadata) AddInputUsage(inputName string, jsonKey orderedmap.Path,
 	sort.Strings(objectKeys)
 	m[configInputsUsageMetadataKey] = json.MustEncodeString(append(m.InputsUsage(), ConfigInputUsage{
 		Input:      inputName,
-		JsonKey:    jsonKey.String(),
+		JSONKey:    jsonKey.String(),
 		ObjectKeys: objectKeys,
 	}), false)
 }
 
-func (m ConfigMetadata) AddRowTemplateId(projectObjectId, templateObjectId storageapi.RowID) {
-	items := append(m.RowsTemplateIds(), RowIdMetadata{
-		IdInProject:  projectObjectId,
-		IdInTemplate: templateObjectId,
+func (m ConfigMetadata) AddRowTemplateID(projectObjectID, templateObjectID storageapi.RowID) {
+	items := append(m.RowsTemplateIds(), RowIDMetadata{
+		IDInProject:  projectObjectID,
+		IDInTemplate: templateObjectID,
 	})
 	sort.SliceStable(items, func(i, j int) bool {
-		return items[i].IdInTemplate < items[j].IdInTemplate
+		return items[i].IDInTemplate < items[j].IDInTemplate
 	})
 	m[rowsIdsMetadataKey] = json.MustEncodeString(items, false)
 }
 
-func (m ConfigMetadata) RowsTemplateIds() (out []RowIdMetadata) {
+func (m ConfigMetadata) RowsTemplateIds() (out []RowIDMetadata) {
 	_ = json.DecodeString(m[rowsIdsMetadataKey], &out) // ignore empty string or other errors
 	return out
 }
@@ -430,12 +430,12 @@ func (m ConfigMetadata) RowsInputsUsage() []RowInputUsage {
 	return out
 }
 
-func (m ConfigMetadata) AddRowInputUsage(rowId storageapi.RowID, inputName string, jsonKey orderedmap.Path, objectKeys []string) {
+func (m ConfigMetadata) AddRowInputUsage(rowID storageapi.RowID, inputName string, jsonKey orderedmap.Path, objectKeys []string) {
 	sort.Strings(objectKeys)
 	values := append(m.RowsInputsUsage(), RowInputUsage{
-		RowId:      rowId,
+		RowID:      rowID,
 		Input:      inputName,
-		JsonKey:    jsonKey.String(),
+		JSONKey:    jsonKey.String(),
 		ObjectKeys: objectKeys,
 	})
 	sort.SliceStable(values, func(i, j int) bool {
@@ -446,20 +446,20 @@ func (m ConfigMetadata) AddRowInputUsage(rowId storageapi.RowID, inputName strin
 
 func (m ConfigMetadata) SetTemplateInstance(repo string, tmpl string, inst string) {
 	m[repositoryMetadataKey] = repo
-	m[templateIdMetadataKey] = tmpl
-	m[instanceIdMetadataKey] = inst
+	m[templateIDMetadataKey] = tmpl
+	m[instanceIDMetadataKey] = inst
 }
 
 func (m ConfigMetadata) Repository() string {
 	return m[repositoryMetadataKey]
 }
 
-func (m ConfigMetadata) TemplateId() string {
-	return m[templateIdMetadataKey]
+func (m ConfigMetadata) TemplateID() string {
+	return m[templateIDMetadataKey]
 }
 
-func (m ConfigMetadata) InstanceId() string {
-	return m[instanceIdMetadataKey]
+func (m ConfigMetadata) InstanceID() string {
+	return m[instanceIDMetadataKey]
 }
 
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
@@ -500,9 +500,9 @@ type ConfigRow struct {
 
 // Job - Storage API job.
 type Job struct {
-	Id      int                    `json:"id" validate:"required"`
+	ID      int                    `json:"id" validate:"required"`
 	Status  string                 `json:"status" validate:"required"`
-	Url     string                 `json:"url" validate:"required"`
+	URL     string                 `json:"url" validate:"required"`
 	Results map[string]interface{} `json:"results"`
 }
 
@@ -518,31 +518,31 @@ func (r *ConfigRow) ObjectName() string {
 	return r.Name
 }
 
-func (b *Branch) SetObjectId(id any) {
-	b.Id = id.(storageapi.BranchID)
+func (b *Branch) SetObjectID(id any) {
+	b.ID = id.(storageapi.BranchID)
 }
 
-func (c *Config) SetObjectId(id any) {
-	c.Id = id.(storageapi.ConfigID)
+func (c *Config) SetObjectID(id any) {
+	c.ID = id.(storageapi.ConfigID)
 }
 
-func (c *ConfigWithRows) SetObjectId(id any) {
-	c.Id = id.(storageapi.ConfigID)
+func (c *ConfigWithRows) SetObjectID(id any) {
+	c.ID = id.(storageapi.ConfigID)
 	for _, row := range c.Rows {
-		row.ConfigId = c.Id
+		row.ConfigID = c.ID
 	}
 }
 
-func (r *ConfigRow) SetObjectId(id any) {
-	r.Id = id.(storageapi.RowID)
+func (r *ConfigRow) SetObjectID(id any) {
+	r.ID = id.(storageapi.RowID)
 }
 
-func (c *Config) GetComponentId() storageapi.ComponentID {
-	return c.ComponentId
+func (c *Config) GetComponentID() storageapi.ComponentID {
+	return c.ComponentID
 }
 
-func (r *ConfigRow) GetComponentId() storageapi.ComponentID {
-	return r.ComponentId
+func (r *ConfigRow) GetComponentID() storageapi.ComponentID {
+	return r.ComponentID
 }
 
 func (c *Config) GetContent() *orderedmap.OrderedMap {

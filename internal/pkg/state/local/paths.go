@@ -116,14 +116,14 @@ func (g *PathsGenerator) doUpdate(objectState model.ObjectState, origin model.Ke
 			v.AbsPath = g.NamingGenerator().BranchPath(object.(*model.Branch))
 		case *model.ConfigState:
 			config := object.(*model.Config)
-			if component, err := g.state.Components().GetOrErr(config.ComponentId); err == nil {
+			if component, err := g.state.Components().GetOrErr(config.ComponentID); err == nil {
 				v.AbsPath = g.NamingGenerator().ConfigPath(v.GetParentPath(), component, config)
 			} else {
 				return err
 			}
 		case *model.ConfigRowState:
 			row := object.(*model.ConfigRow)
-			if component, err := g.state.Components().GetOrErr(row.ComponentId); err == nil {
+			if component, err := g.state.Components().GetOrErr(row.ComponentID); err == nil {
 				v.AbsPath = g.NamingGenerator().ConfigRowPath(v.GetParentPath(), component, row)
 			} else {
 				return err

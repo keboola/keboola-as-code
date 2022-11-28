@@ -40,7 +40,7 @@ func TestInputsDetailDialog_Parse_DefaultValue(t *testing.T) {
 				{
 					GroupIndex: 0,
 					StepIndex:  0,
-					Id:         "s1",
+					ID:         "s1",
 					Step: input.Step{
 						Icon:        "common:settings",
 						Name:        "Step One",
@@ -57,7 +57,7 @@ func TestInputsDetailDialog_Parse_DefaultValue(t *testing.T) {
 				{
 					GroupIndex: 1,
 					StepIndex:  0,
-					Id:         "s2",
+					ID:         "s2",
 					Step: input.Step{
 						Icon:        "common:settings",
 						Name:        "Step Two",
@@ -67,7 +67,7 @@ func TestInputsDetailDialog_Parse_DefaultValue(t *testing.T) {
 				{
 					GroupIndex: 1,
 					StepIndex:  1,
-					Id:         "s3",
+					ID:         "s3",
 					Step: input.Step{
 						Icon:        "common:settings",
 						Name:        "Step Three",
@@ -149,15 +149,15 @@ func testStepsGroups() input.StepsGroupsExt {
 			GroupIndex: 0,
 			StepsGroup: input.StepsGroup{Description: "desc", Required: "all"},
 			Steps: input.StepsExt{
-				{GroupIndex: 0, StepIndex: 0, Id: "s1", Step: input.Step{Icon: "common:settings", Name: "Step One", Description: "Description"}},
+				{GroupIndex: 0, StepIndex: 0, ID: "s1", Step: input.Step{Icon: "common:settings", Name: "Step One", Description: "Description"}},
 			},
 		},
 		&input.StepsGroupExt{
 			GroupIndex: 1,
 			StepsGroup: input.StepsGroup{Description: "desc2", Required: "all"},
 			Steps: input.StepsExt{
-				{GroupIndex: 1, StepIndex: 0, Id: "s2", Step: input.Step{Icon: "common:settings", Name: "Step Two", Description: "Description"}},
-				{GroupIndex: 1, StepIndex: 1, Id: "s3", Step: input.Step{Icon: "common:settings", Name: "Step Three", Description: "Description"}},
+				{GroupIndex: 1, StepIndex: 0, ID: "s2", Step: input.Step{Icon: "common:settings", Name: "Step Two", Description: "Description"}},
+				{GroupIndex: 1, StepIndex: 1, ID: "s3", Step: input.Step{Icon: "common:settings", Name: "Step Three", Description: "Description"}},
 			},
 		},
 	}
@@ -166,7 +166,7 @@ func testStepsGroups() input.StepsGroupsExt {
 func testInputs() input.InputsMap {
 	inputs := input.NewInputsMap()
 	inputs.Add(&template.Input{
-		Id:          "string-input",
+		ID:          "string-input",
 		Name:        "String Input",
 		Description: "Description",
 		Type:        input.TypeString,
@@ -174,21 +174,21 @@ func testInputs() input.InputsMap {
 		Default:     "default",
 	})
 	inputs.Add(&template.Input{
-		Id:          "string-hidden",
+		ID:          "string-hidden",
 		Name:        "String Hidden",
 		Description: "Description",
 		Type:        input.TypeString,
 		Kind:        input.KindHidden,
 	})
 	inputs.Add(&template.Input{
-		Id:          "string-textarea",
+		ID:          "string-textarea",
 		Name:        "String Textarea",
 		Description: "Description",
 		Type:        input.TypeString,
 		Kind:        input.KindTextarea,
 	})
 	inputs.Add(&template.Input{
-		Id:          "string-select",
+		ID:          "string-select",
 		Name:        "String Select",
 		Description: "Description",
 		Type:        input.TypeString,
@@ -206,7 +206,7 @@ func testInputs() input.InputsMap {
 		},
 	})
 	inputs.Add(&template.Input{
-		Id:          "string-int",
+		ID:          "string-int",
 		Name:        "String Double",
 		Description: "Description",
 		Type:        input.TypeInt,
@@ -214,7 +214,7 @@ func testInputs() input.InputsMap {
 		Default:     123,
 	})
 	inputs.Add(&template.Input{
-		Id:          "string-double",
+		ID:          "string-double",
 		Name:        "String Double",
 		Description: "Description",
 		Type:        input.TypeDouble,
@@ -222,7 +222,7 @@ func testInputs() input.InputsMap {
 		Default:     12.34,
 	})
 	inputs.Add(&template.Input{
-		Id:          "bool-confirm",
+		ID:          "bool-confirm",
 		Name:        "Bool Confirm",
 		Description: "Description",
 		Type:        input.TypeBool,
@@ -230,7 +230,7 @@ func testInputs() input.InputsMap {
 		Default:     true,
 	})
 	inputs.Add(&template.Input{
-		Id:          "string-array-multiselect",
+		ID:          "string-array-multiselect",
 		Name:        "String Array",
 		Description: "Description",
 		Type:        input.TypeStringArray,

@@ -21,15 +21,15 @@ func TestNewRawFile(t *testing.T) {
 
 func TestRawFile_ToJsonFile(t *testing.T) {
 	t.Parallel()
-	f, err := NewRawFile(`path`, `{"foo": "bar"}`).ToJsonFile()
+	f, err := NewRawFile(`path`, `{"foo": "bar"}`).ToJSONFile()
 	assert.NoError(t, err)
 	assert.Equal(t, `path`, f.Path())
 	assert.Equal(t, orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}}), f.Content)
 }
 
-func TestRawFile_ToJsonNetFile(t *testing.T) {
+func TestRawFile_ToJsonnetFile(t *testing.T) {
 	t.Parallel()
-	f, err := NewRawFile(`path`, `{foo:"bar"}`).ToJsonNetFile(nil)
+	f, err := NewRawFile(`path`, `{foo:"bar"}`).ToJSONNetFile(nil)
 	assert.NoError(t, err)
 	assert.Equal(t, `path`, f.Path())
 	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", jsonnet.MustEvaluateAst(f.Content, nil))
@@ -38,7 +38,7 @@ func TestRawFile_ToJsonNetFile(t *testing.T) {
 func TestNewJsonFile(t *testing.T) {
 	t.Parallel()
 	m := orderedmap.New()
-	f := NewJsonFile(`path`, m)
+	f := NewJSONFile(`path`, m)
 	f.SetDescription(`desc`)
 	assert.Equal(t, `path`, f.Path())
 	assert.Equal(t, `desc`, f.Description())
@@ -49,34 +49,34 @@ func TestJsonFile_ToRawFile(t *testing.T) {
 	t.Parallel()
 	m := orderedmap.New()
 	m.Set(`foo`, `bar`)
-	f, err := NewJsonFile(`path`, m).SetDescription(`desc`).ToRawFile()
+	f, err := NewJSONFile(`path`, m).SetDescription(`desc`).ToRawFile()
 	assert.NoError(t, err)
 	assert.Equal(t, `path`, f.Path())
 	assert.Equal(t, `desc`, f.Description())
 	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", f.Content)
 }
 
-func TestJsonFile_ToJsonNetFile(t *testing.T) {
+func TestJsonFile_ToJsonnetFile(t *testing.T) {
 	t.Parallel()
 	m := orderedmap.New()
 	m.Set(`foo`, `bar`)
-	f, err := NewJsonFile(`path.json`, m).ToJsonNetFile()
+	f, err := NewJSONFile(`path.json`, m).ToJsonnetFile()
 	assert.NoError(t, err)
 	assert.Equal(t, `path.jsonnet`, f.Path())
 	assert.Equal(t, "{\n  foo: \"bar\",\n}\n", jsonnet.FormatAst(f.Content))
 }
 
-func TestNewJsonNetFile(t *testing.T) {
+func TestNewJsonnetFile(t *testing.T) {
 	t.Parallel()
 	astNode := &ast.Object{}
-	f := NewJsonNetFile(`path`, astNode, nil)
+	f := NewJsonnetFile(`path`, astNode, nil)
 	f.SetDescription(`desc`)
 	assert.Equal(t, `path`, f.Path())
 	assert.Equal(t, `desc`, f.Description())
 	assert.Equal(t, astNode, f.Content)
 }
 
-func TestJsonNetFile_ToRawFile(t *testing.T) {
+func TestJsonnetFile_ToRawFile(t *testing.T) {
 	t.Parallel()
 	astNode := &ast.Object{
 		Fields: ast.ObjectFields{
@@ -88,15 +88,15 @@ func TestJsonNetFile_ToRawFile(t *testing.T) {
 			},
 		},
 	}
-	jsonNetFile := NewJsonNetFile(`path`, astNode, nil).SetDescription(`desc`)
-	file, err := jsonNetFile.ToRawFile()
+	jsonnetFile := NewJsonnetFile(`path`, astNode, nil).SetDescription(`desc`)
+	file, err := jsonnetFile.ToRawFile()
 	assert.NoError(t, err)
 	assert.Equal(t, `path`, file.Path())
 	assert.Equal(t, `desc`, file.Description())
 	assert.Equal(t, "{ foo: \"bar\" }\n", file.Content)
 }
 
-func TestJsonNetFile_ToJsonFile(t *testing.T) {
+func TestJsonnetFile_ToJsonFile(t *testing.T) {
 	t.Parallel()
 	astNode := &ast.Object{
 		Fields: ast.ObjectFields{
@@ -108,26 +108,26 @@ func TestJsonNetFile_ToJsonFile(t *testing.T) {
 			},
 		},
 	}
-	jsonNetFile := NewJsonNetFile(`path`, astNode, nil)
-	jsonNetFile.SetDescription(`desc`)
-	jsonFile, err := jsonNetFile.ToJsonFile()
+	jsonnetFile := NewJsonnetFile(`path`, astNode, nil)
+	jsonnetFile.SetDescription(`desc`)
+	jsonFile, err := jsonnetFile.ToJSONFile()
 	assert.NoError(t, err)
 	assert.Equal(t, `path`, jsonFile.Path())
 	assert.Equal(t, `desc`, jsonFile.Description())
 	assert.Equal(t, orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}}), jsonFile.Content)
 }
 
-func TestJsonNetFile_ToJsonFile_Variables(t *testing.T) {
+func TestJsonnetFile_ToJsonFile_Variables(t *testing.T) {
 	t.Parallel()
 	ctx := jsonnet.NewContext()
 	ctx.ExtVar("myKey", "bar")
-	jsonNetFile := NewJsonNetFile(`path`, jsonnet.MustToAst(`{foo: std.extVar("myKey")}`, ""), ctx)
-	jsonFile, err := jsonNetFile.ToJsonFile()
+	jsonnetFile := NewJsonnetFile(`path`, jsonnet.MustToAst(`{foo: std.extVar("myKey")}`, ""), ctx)
+	jsonFile, err := jsonnetFile.ToJSONFile()
 	assert.NoError(t, err)
 	assert.Equal(t, orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}}), jsonFile.Content)
 }
 
-func TestJsonNetFile_ToRawJsonFile(t *testing.T) {
+func TestJsonnetFile_ToRawJsonFile(t *testing.T) {
 	t.Parallel()
 	astNode := &ast.Object{
 		Fields: ast.ObjectFields{
@@ -139,13 +139,13 @@ func TestJsonNetFile_ToRawJsonFile(t *testing.T) {
 			},
 		},
 	}
-	jsonNetFile := NewJsonNetFile(`path`, astNode, nil)
-	jsonNetFile.SetDescription(`desc`)
-	rawJsonFile, err := jsonNetFile.ToJsonRawFile()
+	jsonnetFile := NewJsonnetFile(`path`, astNode, nil)
+	jsonnetFile.SetDescription(`desc`)
+	rawJSONFile, err := jsonnetFile.ToJSONRawFile()
 	assert.NoError(t, err)
-	assert.Equal(t, `path`, rawJsonFile.Path())
-	assert.Equal(t, `desc`, rawJsonFile.Description())
-	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", rawJsonFile.Content)
+	assert.Equal(t, `path`, rawJSONFile.Path())
+	assert.Equal(t, `desc`, rawJSONFile.Description())
+	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", rawJSONFile.Content)
 }
 
 func TestFiles(t *testing.T) {

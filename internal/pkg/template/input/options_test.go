@@ -9,9 +9,9 @@ import (
 func TestOptions_ContainsId(t *testing.T) {
 	t.Parallel()
 	options := Options{Option{Value: "id1", Label: "Label 1"}, Option{Value: "id2", Label: "Label 2"}}
-	assert.True(t, options.ContainsId("id1"))
-	assert.True(t, options.ContainsId("id2"))
-	assert.False(t, options.ContainsId("id3"))
+	assert.True(t, options.ContainsID("id1"))
+	assert.True(t, options.ContainsID("id2"))
+	assert.False(t, options.ContainsID("id3"))
 }
 
 func TestOptions_GetById(t *testing.T) {
@@ -19,17 +19,17 @@ func TestOptions_GetById(t *testing.T) {
 
 	options := Options{Option{Value: "id1", Label: "Label 1"}, Option{Value: "id2", Label: "Label 2"}}
 
-	option, index, found := options.GetById("id1")
+	option, index, found := options.GetByID("id1")
 	assert.Equal(t, Option{Value: "id1", Label: "Label 1"}, option)
 	assert.Equal(t, 0, index)
 	assert.True(t, found)
 
-	option, index, found = options.GetById("id2")
+	option, index, found = options.GetByID("id2")
 	assert.Equal(t, Option{Value: "id2", Label: "Label 2"}, option)
 	assert.Equal(t, 1, index)
 	assert.True(t, found)
 
-	option, index, found = options.GetById("id3")
+	option, index, found = options.GetByID("id3")
 	assert.Equal(t, Option{}, option)
 	assert.Equal(t, -1, index)
 	assert.False(t, found)

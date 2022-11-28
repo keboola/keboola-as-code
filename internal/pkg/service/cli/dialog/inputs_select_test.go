@@ -139,11 +139,11 @@ func TestInputsSelectDialog_Parse(t *testing.T) {
 	assert.NoError(t, dialog.parse(result))
 
 	// Assert inputs definitions
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo.bar", Id: "my-config-1"}
-	rowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"}
+	configKey := model.ConfigKey{BranchID: 123, ComponentID: "keboola.foo.bar", ID: "my-config-1"}
+	rowKey := model.ConfigRowKey{BranchID: 123, ComponentID: "keboola.foo.bar", ConfigID: "my-config-2", ID: "row-2"}
 	assert.Equal(t, template.Inputs{
-		{Id: "foo-bar-password", Type: input.TypeString, Kind: input.KindHidden, Name: "Password"},
-		{Id: "foo-bar-object-array-1-password", Type: input.TypeString, Kind: input.KindHidden, Name: "Object Array Password"},
+		{ID: "foo-bar-password", Type: input.TypeString, Kind: input.KindHidden, Name: "Password"},
+		{ID: "foo-bar-object-array-1-password", Type: input.TypeString, Kind: input.KindHidden, Name: "Object Array Password"},
 	}, dialog.inputs.All())
 
 	// Assert object inputs
@@ -151,13 +151,13 @@ func TestInputsSelectDialog_Parse(t *testing.T) {
 		configKey: {
 			{
 				Path:    orderedmap.PathFromStr("parameters.#password"),
-				InputId: "foo-bar-password",
+				InputID: "foo-bar-password",
 			},
 		},
 		rowKey: {
 			{
 				Path:    orderedmap.PathFromStr("parameters.object.array[1].#password"),
-				InputId: "foo-bar-object-array-1-password",
+				InputID: "foo-bar-object-array-1-password",
 			},
 		},
 	}, dialog.objectInputs)
@@ -191,16 +191,16 @@ func TestInputsSelectDialog_Parse_All(t *testing.T) {
 	assert.NoError(t, dialog.parse(result))
 
 	// Assert inputs definitions
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "keboola.foo.bar", Id: "my-config-1"}
-	rowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"}
+	configKey := model.ConfigKey{BranchID: 123, ComponentID: "keboola.foo.bar", ID: "my-config-1"}
+	rowKey := model.ConfigRowKey{BranchID: 123, ComponentID: "keboola.foo.bar", ConfigID: "my-config-2", ID: "row-2"}
 	assert.Equal(t, template.Inputs{
-		{Id: "foo-bar-password", Type: input.TypeString, Kind: input.KindHidden, Name: "Password"},
-		{Id: "foo-bar-bool", Type: input.TypeBool, Kind: input.KindConfirm, Default: false, Name: "Bool"},
-		{Id: "foo-bar-double", Type: input.TypeDouble, Kind: input.KindInput, Default: 78.9, Name: "Double"},
-		{Id: "foo-bar-int", Type: input.TypeInt, Kind: input.KindInput, Default: 123, Name: "Int"},
-		{Id: "foo-bar-string", Type: input.TypeString, Kind: input.KindInput, Default: "my string", Name: "String"},
+		{ID: "foo-bar-password", Type: input.TypeString, Kind: input.KindHidden, Name: "Password"},
+		{ID: "foo-bar-bool", Type: input.TypeBool, Kind: input.KindConfirm, Default: false, Name: "Bool"},
+		{ID: "foo-bar-double", Type: input.TypeDouble, Kind: input.KindInput, Default: 78.9, Name: "Double"},
+		{ID: "foo-bar-int", Type: input.TypeInt, Kind: input.KindInput, Default: 123, Name: "Int"},
+		{ID: "foo-bar-string", Type: input.TypeString, Kind: input.KindInput, Default: "my string", Name: "String"},
 		{
-			Id:      "foo-bar-strings",
+			ID:      "foo-bar-strings",
 			Name:    "Strings",
 			Type:    input.TypeStringArray,
 			Kind:    input.KindMultiSelect,
@@ -216,9 +216,9 @@ func TestInputsSelectDialog_Parse_All(t *testing.T) {
 				},
 			},
 		},
-		{Id: "foo-bar-object-array-1-double", Type: input.TypeDouble, Kind: input.KindInput, Default: 78.9, Name: "Object Array Double"},
-		{Id: "foo-bar-object-array-1-int", Type: input.TypeInt, Kind: input.KindInput, Default: 123, Name: "Object Array Int"},
-		{Id: "foo-bar-object-array-1-string", Type: input.TypeString, Kind: input.KindInput, Name: "Object Array String", Default: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore"},
+		{ID: "foo-bar-object-array-1-double", Type: input.TypeDouble, Kind: input.KindInput, Default: 78.9, Name: "Object Array Double"},
+		{ID: "foo-bar-object-array-1-int", Type: input.TypeInt, Kind: input.KindInput, Default: 123, Name: "Object Array Int"},
+		{ID: "foo-bar-object-array-1-string", Type: input.TypeString, Kind: input.KindInput, Name: "Object Array String", Default: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore"},
 	}, dialog.inputs.All())
 
 	// Assert object inputs
@@ -226,49 +226,49 @@ func TestInputsSelectDialog_Parse_All(t *testing.T) {
 		configKey: {
 			{
 				Path:    orderedmap.PathFromStr("parameters.#password"),
-				InputId: "foo-bar-password",
+				InputID: "foo-bar-password",
 			},
 			{
 				Path:    orderedmap.PathFromStr("parameters.bool"),
-				InputId: "foo-bar-bool",
+				InputID: "foo-bar-bool",
 			},
 			{
 				Path:    orderedmap.PathFromStr("parameters.double"),
-				InputId: "foo-bar-double",
+				InputID: "foo-bar-double",
 			},
 			{
 				Path:    orderedmap.PathFromStr("parameters.int"),
-				InputId: "foo-bar-int",
+				InputID: "foo-bar-int",
 			},
 			{
 				Path:    orderedmap.PathFromStr("parameters.string"),
-				InputId: "foo-bar-string",
+				InputID: "foo-bar-string",
 			},
 			{
 				Path:    orderedmap.PathFromStr("parameters.strings"),
-				InputId: "foo-bar-strings",
+				InputID: "foo-bar-strings",
 			},
 		},
 		rowKey: {
 			{
 				Path:    orderedmap.PathFromStr("parameters.object.array[1].#password"),
-				InputId: "foo-bar-password",
+				InputID: "foo-bar-password",
 			},
 			{
 				Path:    orderedmap.PathFromStr("parameters.object.array[1].bool"),
-				InputId: "foo-bar-bool",
+				InputID: "foo-bar-bool",
 			},
 			{
 				Path:    orderedmap.PathFromStr("parameters.object.array[1].double"),
-				InputId: "foo-bar-object-array-1-double",
+				InputID: "foo-bar-object-array-1-double",
 			},
 			{
 				Path:    orderedmap.PathFromStr("parameters.object.array[1].int"),
-				InputId: "foo-bar-object-array-1-int",
+				InputID: "foo-bar-object-array-1-int",
 			},
 			{
 				Path:    orderedmap.PathFromStr("parameters.object.array[1].string"),
-				InputId: "foo-bar-object-array-1-string",
+				InputID: "foo-bar-object-array-1-string",
 			},
 		},
 	}, dialog.objectInputs)
@@ -329,7 +329,7 @@ invalid
 }
 
 func configsWithContent() (*model.Branch, []*model.ConfigWithRows) {
-	configJson := `
+	configJSON := `
 {
   "storage": {
     "foo": "bar"
@@ -344,7 +344,7 @@ func configsWithContent() (*model.Branch, []*model.ConfigWithRows) {
   }
 }
 `
-	rowJson := `
+	rowJSON := `
 {
   "storage": {
     "foo": "bar"
@@ -367,37 +367,37 @@ func configsWithContent() (*model.Branch, []*model.ConfigWithRows) {
 `
 	configContent := orderedmap.New()
 	rowContent := orderedmap.New()
-	json.MustDecodeString(configJson, configContent)
-	json.MustDecodeString(rowJson, rowContent)
+	json.MustDecodeString(configJSON, configContent)
+	json.MustDecodeString(rowJSON, rowContent)
 
-	branch := &model.Branch{BranchKey: model.BranchKey{Id: 123}}
+	branch := &model.Branch{BranchKey: model.BranchKey{ID: 123}}
 	configs := []*model.ConfigWithRows{
 		{
 			Config: &model.Config{
-				ConfigKey: model.ConfigKey{BranchId: branch.Id, ComponentId: "keboola.foo.bar", Id: "my-config-1"},
+				ConfigKey: model.ConfigKey{BranchID: branch.ID, ComponentID: "keboola.foo.bar", ID: "my-config-1"},
 				Name:      "My Config 1",
 				Content:   configContent,
 			},
 		},
 		{
 			Config: &model.Config{
-				ConfigKey: model.ConfigKey{BranchId: branch.Id, ComponentId: "keboola.foo.bar", Id: "my-config-2"},
+				ConfigKey: model.ConfigKey{BranchID: branch.ID, ComponentID: "keboola.foo.bar", ID: "my-config-2"},
 				Name:      "My Config 2",
 				Content:   orderedmap.New(),
 			},
 			Rows: []*model.ConfigRow{
 				{
-					ConfigRowKey: model.ConfigRowKey{BranchId: branch.Id, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-1"},
+					ConfigRowKey: model.ConfigRowKey{BranchID: branch.ID, ComponentID: "keboola.foo.bar", ConfigID: "my-config-2", ID: "row-1"},
 					Name:         "My Row",
 					Content:      orderedmap.New(),
 				},
 				{
-					ConfigRowKey: model.ConfigRowKey{BranchId: branch.Id, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-2"},
+					ConfigRowKey: model.ConfigRowKey{BranchID: branch.ID, ComponentID: "keboola.foo.bar", ConfigID: "my-config-2", ID: "row-2"},
 					Name:         "My Row",
 					Content:      rowContent,
 				},
 				{
-					ConfigRowKey: model.ConfigRowKey{BranchId: branch.Id, ComponentId: "keboola.foo.bar", ConfigId: "my-config-2", Id: "row-3"},
+					ConfigRowKey: model.ConfigRowKey{BranchID: branch.ID, ComponentID: "keboola.foo.bar", ConfigID: "my-config-2", ID: "row-3"},
 					Name:         "My Row",
 					Content:      orderedmap.New(),
 				},

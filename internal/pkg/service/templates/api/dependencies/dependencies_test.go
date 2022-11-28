@@ -43,7 +43,7 @@ func TestForPublicRequest_Components_Cached(t *testing.T) {
 	assert.NotEqual(t, components1, components2)
 
 	// Create mocked dependencies for server with "components1"
-	nopApiLogger := log.NewApiLogger(stdLog.New(io.Discard, "", 0), "", false)
+	nopApiLogger := log.NewAPILogger(stdLog.New(io.Discard, "", 0), "", false)
 	mockedDeps := dependencies.NewMockedDeps(dependencies.WithMockedComponents(components1))
 	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, serverCtx: context.Background(), logger: nopApiLogger}
 
@@ -53,9 +53,9 @@ func TestForPublicRequest_Components_Cached(t *testing.T) {
 	assert.Equal(t, components1, req1Deps.Components().All())
 
 	// Components are updated to "components2"
-	mockedDeps.MockedHttpTransport().RegisterResponder(
+	mockedDeps.MockedHTTPTransport().RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/v2/storage/", mockedDeps.StorageApiHost()),
+		fmt.Sprintf("https://%s/v2/storage/", mockedDeps.StorageAPIHost()),
 		httpmock.NewJsonResponderOrPanic(200, &storageapi.IndexComponents{
 			Components: components2,
 		}).Once(),
@@ -82,18 +82,18 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 	tmpDir := t.TempDir()
 	assert.NoError(t, aferofs.CopyFs2Fs(nil, filesystem.Join("git_test", "repository"), nil, tmpDir))
 	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
-	repoDef := model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
+	repoDef := model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", URL: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
 
 	// Create mocked dependencies for server
 	ctx := context.Background()
-	nopApiLogger := log.NewApiLogger(stdLog.New(io.Discard, "", 0), "", false)
+	nopApiLogger := log.NewAPILogger(stdLog.New(io.Discard, "", 0), "", false)
 	mockedDeps := dependencies.NewMockedDeps(dependencies.WithMockedTokenResponse(3))
 	manager, err := repositoryManager.New(ctx, nil, mockedDeps)
 	assert.NoError(t, err)
 	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, serverCtx: ctx, logger: nopApiLogger, repositoryManager: manager}
 	requestDepsFactory := func(ctx context.Context) (ForProjectRequest, error) {
 		requestId := gonanoid.Must(8)
-		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, ctx, requestId), ctx, mockedDeps.StorageApiTokenID())
+		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, ctx, requestId), ctx, mockedDeps.StorageAPITokenID())
 	}
 
 	// Get repository for request 1
@@ -207,19 +207,19 @@ func TestForProjectRequest_Template_Cached(t *testing.T) {
 	tmpDir := t.TempDir()
 	assert.NoError(t, aferofs.CopyFs2Fs(nil, filesystem.Join("git_test", "repository"), nil, tmpDir))
 	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
-	repoDef := model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", Url: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
+	repoDef := model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", URL: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
 	tmplDef := model.NewTemplateRef(repoDef, "template1", "1.0.3")
 
 	// Create mocked dependencies for server
 	ctx := context.Background()
-	nopApiLogger := log.NewApiLogger(stdLog.New(io.Discard, "", 0), "", false)
+	nopApiLogger := log.NewAPILogger(stdLog.New(io.Discard, "", 0), "", false)
 	mockedDeps := dependencies.NewMockedDeps(dependencies.WithMockedTokenResponse(4))
 	manager, err := repositoryManager.New(ctx, nil, mockedDeps)
 	assert.NoError(t, err)
 	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, serverCtx: ctx, logger: nopApiLogger, repositoryManager: manager}
 	requestDepsFactory := func(ctx context.Context) (ForProjectRequest, error) {
 		requestId := gonanoid.Must(8)
-		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, ctx, requestId), ctx, mockedDeps.StorageApiTokenID())
+		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, ctx, requestId), ctx, mockedDeps.StorageAPITokenID())
 	}
 
 	// Get template for request 1

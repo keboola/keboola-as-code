@@ -17,13 +17,13 @@ type Options struct {
 	Branch   model.BranchKey
 	Instance model.TemplateInstance
 	NewName  string
-	TokenId  string
+	TokenID  string
 }
 
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageApiTokenID() string
+	StorageAPITokenID() string
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -37,7 +37,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	// Rename
 	o.Instance.InstanceName = o.NewName
-	err = branchState.Local.Metadata.UpsertTemplateInstanceFrom(time.Now(), d.StorageApiTokenID(), o.Instance)
+	err = branchState.Local.Metadata.UpsertTemplateInstanceFrom(time.Now(), d.StorageAPITokenID(), o.Instance)
 	if err != nil {
 		return err
 	}

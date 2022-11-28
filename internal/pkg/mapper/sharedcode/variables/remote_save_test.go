@@ -16,13 +16,13 @@ func TestSharedCodeMapBeforeRemoteSave(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
 
-	variablesConfigId := `123456`
+	variablesConfigID := `123456`
 	object := &model.ConfigRow{
-		ConfigRowKey: model.ConfigRowKey{ComponentId: storageapi.SharedCodeComponentID},
+		ConfigRowKey: model.ConfigRowKey{ComponentID: storageapi.SharedCodeComponentID},
 		Content:      orderedmap.New(),
 	}
 	object.AddRelation(&model.SharedCodeVariablesFromRelation{
-		VariablesId: storageapi.ConfigID(variablesConfigId),
+		VariablesID: storageapi.ConfigID(variablesConfigID),
 	})
 	recipe := model.NewRemoteSaveRecipe(&model.ConfigManifest{}, object, model.NewChangedFields())
 
@@ -36,7 +36,7 @@ func TestSharedCodeMapBeforeRemoteSave(t *testing.T) {
 	assert.Empty(t, object.Relations)
 
 	// Api object contains variables ID in content
-	v, found := object.Content.Get(model.SharedCodeVariablesIdContentKey)
+	v, found := object.Content.Get(model.SharedCodeVariablesIDContentKey)
 	assert.True(t, found)
-	assert.Equal(t, variablesConfigId, v)
+	assert.Equal(t, variablesConfigID, v)
 }

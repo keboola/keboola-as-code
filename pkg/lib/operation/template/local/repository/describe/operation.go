@@ -22,7 +22,7 @@ func Run(ctx context.Context, tmpl *template.Template, d dependencies) (err erro
 
 	w := d.Logger().InfoWriter()
 
-	w.Writef("Template ID:          %s", tmpl.TemplateRecord().Id)
+	w.Writef("Template ID:          %s", tmpl.TemplateRecord().ID)
 	w.Writef("Name:                 %s", tmpl.TemplateRecord().Name)
 	w.Writef("Description:          %s", tmpl.TemplateRecord().Description)
 	w.Writef("")
@@ -47,14 +47,14 @@ func Run(ctx context.Context, tmpl *template.Template, d dependencies) (err erro
 
 	// Groups
 	for _, group := range tmpl.Inputs().ToExtended() {
-		w.Writef("Group ID:             %s", group.Id)
+		w.Writef("Group ID:             %s", group.ID)
 		w.Writef("Description:          %s", group.Description)
 		w.Writef("Required:             %s", string(group.Required))
 		w.Writef("")
 
 		// Steps
 		for _, step := range group.Steps {
-			w.Writef("  Step ID:            %s", step.Id)
+			w.Writef("  Step ID:            %s", step.ID)
 			w.Writef("  Name:               %s", step.Name)
 			w.Writef("  Description:        %s", step.Description)
 			w.Writef("  Dialog Name:        %s", step.NameForDialog())
@@ -63,7 +63,7 @@ func Run(ctx context.Context, tmpl *template.Template, d dependencies) (err erro
 
 			// Inputs
 			for _, in := range step.Inputs {
-				w.Writef("    Input ID:         %s", in.Id)
+				w.Writef("    Input ID:         %s", in.ID)
 				w.Writef("    Name:             %s", in.Name)
 				w.Writef("    Description:      %s", in.Description)
 				w.Writef("    Type:             %s", in.Type)

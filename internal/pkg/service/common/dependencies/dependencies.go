@@ -73,18 +73,18 @@ type Base interface {
 	Envs() env.Provider
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	HttpClient() client.Client
+	HTTPClient() client.Client
 }
 
 // Public dependencies are available from the Storage API and other sources without authentication / Storage API token.
 type Public interface {
-	StorageApiHost() string
-	StorageApiPublicClient() client.Sender
+	StorageAPIHost() string
+	StorageAPIPublicClient() client.Sender
 	StackFeatures() storageapi.FeaturesMap
 	StackServices() storageapi.ServicesMap
 	Components() *model.ComponentsMap
 	ComponentsProvider() *model.ComponentsProvider
-	EncryptionApiClient() client.Sender
+	EncryptionAPIClient() client.Sender
 }
 
 // Project dependencies require authentication / Storage API token.
@@ -92,11 +92,11 @@ type Project interface {
 	ProjectID() int
 	ProjectName() string
 	ProjectFeatures() storageapi.FeaturesMap
-	StorageApiTokenID() string
-	StorageApiClient() client.Sender
-	SchedulerApiClient() client.Sender
-	JobsQueueApiClient() client.Sender
-	SandboxesApiClient() client.Sender
+	StorageAPITokenID() string
+	StorageAPIClient() client.Sender
+	SchedulerAPIClient() client.Sender
+	JobsQueueAPIClient() client.Sender
+	SandboxesAPIClient() client.Sender
 	EventSender() event.Sender
 	ObjectIDGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider
 }
@@ -115,5 +115,5 @@ type Mocked interface {
 	DebugLogger() log.DebugLogger
 	MockedState() *state.State
 	MockedProject(fs filesystem.Fs) *projectPkg.Project
-	MockedHttpTransport() *httpmock.MockTransport
+	MockedHTTPTransport() *httpmock.MockTransport
 }

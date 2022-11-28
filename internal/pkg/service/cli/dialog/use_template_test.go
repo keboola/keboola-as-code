@@ -121,7 +121,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 	// Run
 	inputs := []input.Input{
 		{
-			Id:          "facebook.username",
+			ID:          "facebook.username",
 			Name:        "Facebook username",
 			Description: "Enter your Facebook username",
 			Type:        "string",
@@ -129,21 +129,21 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 			Rules:       "alphanum",
 		},
 		{
-			Id:          "facebook.password",
+			ID:          "facebook.password",
 			Name:        "Facebook password",
 			Description: "Enter your Facebook password",
 			Type:        "string",
 			Kind:        "hidden",
 		},
 		{
-			Id:          "age",
+			ID:          "age",
 			Name:        "Your age",
 			Description: "Enter your age",
 			Type:        "int",
 			Kind:        "input",
 		},
 		{
-			Id:          "restricted",
+			ID:          "restricted",
 			Name:        "Restricted content",
 			Description: "Do you want to see restricted content?",
 			Type:        "bool",
@@ -151,7 +151,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 			If:          "age>18",
 		},
 		{
-			Id:          "drink",
+			ID:          "drink",
 			Name:        "Favorite drink",
 			Description: "What do you like to drink?",
 			Type:        "string",
@@ -160,7 +160,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 			Options:     input.Options{{Value: "beer", Label: "Beer"}, {Value: "wine", Label: "Wine"}},
 		},
 		{
-			Id:          "drinks",
+			ID:          "drinks",
 			Name:        "Stronger drinks",
 			Description: "Anything stronger?",
 			Type:        "string[]",
@@ -195,14 +195,14 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 	// Assert
 	assert.Equal(t, useTemplate.Options{
 		InstanceName: "My Instance",
-		TargetBranch: model.BranchKey{Id: 123},
+		TargetBranch: model.BranchKey{ID: 123},
 		Inputs: template.InputsValues{
-			{Id: "facebook.username", Value: "username"},
-			{Id: "facebook.password", Value: "password"},
-			{Id: "age", Value: 25},
-			{Id: "restricted", Value: true},
-			{Id: "drink", Value: "wine"},
-			{Id: "drinks", Value: []interface{}{"rum", "whiskey"}},
+			{ID: "facebook.username", Value: "username"},
+			{ID: "facebook.password", Value: "password"},
+			{ID: "age", Value: 25},
+			{ID: "restricted", Value: true},
+			{ID: "drink", Value: "wine"},
+			{ID: "drinks", Value: []interface{}{"rum", "whiskey"}},
 		},
 	}, output)
 }
@@ -252,28 +252,28 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 	// Run
 	inputs := []input.Input{
 		{
-			Id:          "facebook.username",
+			ID:          "facebook.username",
 			Name:        "Facebook username",
 			Description: "Enter your Facebook username",
 			Type:        "string",
 			Kind:        "input",
 		},
 		{
-			Id:          "facebook.password",
+			ID:          "facebook.password",
 			Name:        "Facebook password",
 			Description: "Enter your Facebook password",
 			Type:        "string",
 			Kind:        "hidden",
 		},
 		{
-			Id:          "age",
+			ID:          "age",
 			Name:        "Your age",
 			Description: "Enter your age",
 			Type:        "int",
 			Kind:        "input",
 		},
 		{
-			Id:          "restricted",
+			ID:          "restricted",
 			Name:        "Restricted content",
 			Description: "Do you want to see restricted content?",
 			Type:        "bool",
@@ -281,7 +281,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 			If:          "age>18",
 		},
 		{
-			Id:          "drink",
+			ID:          "drink",
 			Name:        "Favorite drink",
 			Description: "What do you like to drink?",
 			Type:        "string",
@@ -316,13 +316,13 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 	// Assert
 	assert.Equal(t, useTemplate.Options{
 		InstanceName: "My Instance",
-		TargetBranch: model.BranchKey{Id: 123},
+		TargetBranch: model.BranchKey{ID: 123},
 		Inputs: template.InputsValues{
-			{Id: "facebook.username", Value: "username"},
-			{Id: "facebook.password", Value: "password"},
-			{Id: "age", Value: 15},
-			{Id: "restricted", Value: false, Skipped: true},
-			{Id: "drink", Value: "", Skipped: true},
+			{ID: "facebook.username", Value: "username"},
+			{ID: "facebook.password", Value: "password"},
+			{ID: "age", Value: 15},
+			{ID: "restricted", Value: false, Skipped: true},
+			{ID: "drink", Value: "", Skipped: true},
 		},
 	}, output)
 }
@@ -349,7 +349,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 					Description: "Step Description",
 					Inputs: []input.Input{
 						{
-							Id:          "input1",
+							ID:          "input1",
 							Name:        "input1",
 							Description: "skipped + without default value",
 							Type:        "string",
@@ -363,7 +363,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 					Description: "Step Description",
 					Inputs: []input.Input{
 						{
-							Id:          "input2",
+							ID:          "input2",
 							Name:        "input2",
 							Description: "skipped + with default value",
 							Type:        "string",
@@ -378,7 +378,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 					Description: "Step Description",
 					Inputs: []input.Input{
 						{
-							Id:          "input3",
+							ID:          "input3",
 							Name:        "input3",
 							Description: "filled in + without default value",
 							Type:        "string",
@@ -392,7 +392,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 					Description: "Step Description",
 					Inputs: []input.Input{
 						{
-							Id:          "input4",
+							ID:          "input4",
 							Name:        "input4",
 							Description: "filled in + with default value",
 							Type:        "string",
@@ -462,12 +462,12 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 	// Assert
 	assert.Equal(t, useTemplate.Options{
 		InstanceName: "My Instance",
-		TargetBranch: model.BranchKey{Id: 123},
+		TargetBranch: model.BranchKey{ID: 123},
 		Inputs: template.InputsValues{
-			{Id: "input1", Value: "", Skipped: true},
-			{Id: "input2", Value: "", Skipped: true},
-			{Id: "input3", Value: "value for input 3"},
-			{Id: "input4", Value: "value for input 4"},
+			{ID: "input1", Value: "", Skipped: true},
+			{ID: "input2", Value: "", Skipped: true},
+			{ID: "input3", Value: "value for input 3"},
+			{ID: "input4", Value: "value for input 4"},
 		},
 	}, output)
 }
@@ -502,7 +502,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 					Description: "Step Description",
 					Inputs: []input.Input{
 						{
-							Id:          "input1",
+							ID:          "input1",
 							Name:        "input1",
 							Description: "...",
 							Type:        "string",
@@ -516,7 +516,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 					Description: "Step Description",
 					Inputs: []input.Input{
 						{
-							Id:          "input2",
+							ID:          "input2",
 							Name:        "input2",
 							Description: "...",
 							Type:        "string",
@@ -530,7 +530,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 					Description: "Step Description",
 					Inputs: []input.Input{
 						{
-							Id:          "input3",
+							ID:          "input3",
 							Name:        "input3",
 							Description: "...",
 							Type:        "string",
@@ -538,7 +538,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 							Default:     "default value",
 						},
 						{
-							Id:          "input4",
+							ID:          "input4",
 							Name:        "input4",
 							Description: "...",
 							Type:        "string",
@@ -556,12 +556,12 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 	// Assert
 	assert.Equal(t, useTemplate.Options{
 		InstanceName: "My Instance",
-		TargetBranch: model.BranchKey{Id: 123},
+		TargetBranch: model.BranchKey{ID: 123},
 		Inputs: template.InputsValues{
-			{Id: "input1", Value: "A"},
-			{Id: "input2", Value: "B"},
-			{Id: "input3", Value: "default value"},
-			{Id: "input4", Value: "C"},
+			{ID: "input1", Value: "A"},
+			{ID: "input2", Value: "B"},
+			{ID: "input3", Value: "default value"},
+			{ID: "input4", Value: "C"},
 		},
 	}, output)
 }
@@ -596,7 +596,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 					Description: "Step Description",
 					Inputs: []input.Input{
 						{
-							Id:          "input1",
+							ID:          "input1",
 							Name:        "input1",
 							Description: "...",
 							Type:        "string",
@@ -610,7 +610,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 					Description: "Step Description",
 					Inputs: []input.Input{
 						{
-							Id:          "input2",
+							ID:          "input2",
 							Name:        "input2",
 							Description: "...",
 							Type:        "string",
@@ -624,7 +624,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 					Description: "Step Description",
 					Inputs: []input.Input{
 						{
-							Id:          "input3",
+							ID:          "input3",
 							Name:        "input3",
 							Description: "...",
 							Type:        "string",
@@ -632,7 +632,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 							Default:     "default value",
 						},
 						{
-							Id:          "input4",
+							ID:          "input4",
 							Name:        "input4",
 							Description: "...",
 							Type:        "string",

@@ -12,7 +12,7 @@ import (
 type metadataMapper struct {
 	state       *state.State
 	templateRef model.TemplateRef
-	instanceId  string
+	instanceID  string
 	objectIds   ObjectIdsMap
 	inputsUsage *InputsUsage
 }
@@ -43,12 +43,12 @@ type InputsUsageMap map[model.Key][]InputUsage
 // InputUsage describes where the input is used in the output JSON.
 type InputUsage struct {
 	Name       string
-	JsonKey    orderedmap.Path
+	JSONKey    orderedmap.Path
 	Def        *input.Input
 	ObjectKeys []string // list of object keys generated from the input (empty = all)
 }
 
-func (v ObjectIdsMap) IdInTemplate(idInProject interface{}) (interface{}, bool) {
+func (v ObjectIdsMap) IDInTemplate(idInProject interface{}) (interface{}, bool) {
 	id, found := v[idInProject]
 	return id, found
 }
@@ -59,9 +59,9 @@ func NewInputsUsage() *InputsUsage {
 	}
 }
 
-func NewMapper(state *state.State, templateRef model.TemplateRef, instanceId string, objectIds ObjectIdsMap, inputsUsage *InputsUsage) *metadataMapper {
-	if instanceId == "" {
+func NewMapper(state *state.State, templateRef model.TemplateRef, instanceID string, objectIds ObjectIdsMap, inputsUsage *InputsUsage) *metadataMapper {
+	if instanceID == "" {
 		panic(errors.New(`template "instanceId" cannot be empty`))
 	}
-	return &metadataMapper{state: state, templateRef: templateRef, instanceId: instanceId, objectIds: objectIds, inputsUsage: inputsUsage}
+	return &metadataMapper{state: state, templateRef: templateRef, instanceID: instanceID, objectIds: objectIds, inputsUsage: inputsUsage}
 }

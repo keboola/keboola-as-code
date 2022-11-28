@@ -43,7 +43,7 @@ func (m *variablesMapper) saveVariables(config *model.Config, recipe *model.Remo
 	relation := relationRaw.(*model.VariablesFromRelation)
 
 	// Set variables ID
-	config.Content.Set(model.VariablesIdContentKey, relation.VariablesId.String())
+	config.Content.Set(model.VariablesIDContentKey, relation.VariablesID.String())
 
 	// Delete relation
 	config.Relations.RemoveByType(relType)
@@ -62,7 +62,7 @@ func (m *variablesMapper) saveVariablesValues(config *model.Config, recipe *mode
 	relation := relationRaw.(*model.VariablesValuesFromRelation)
 
 	// Set values ID
-	config.Content.Set(model.VariablesValuesIdContentKey, relation.VariablesValuesId.String())
+	config.Content.Set(model.VariablesValuesIDContentKey, relation.VariablesValuesID.String())
 
 	// Delete relation
 	config.Relations.RemoveByType(relType)

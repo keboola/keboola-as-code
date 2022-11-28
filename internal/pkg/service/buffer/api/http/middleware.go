@@ -53,7 +53,7 @@ func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint g
 
 			// Track info
 			span.SetTag("kac.http.request.id", requestId)
-			span.SetTag("kac.storage.host", serverDeps.StorageApiHost())
+			span.SetTag("kac.storage.host", serverDeps.StorageAPIHost())
 			span.SetTag("kac.endpoint.service", serviceName)
 			span.SetTag("kac.endpoint.name", endpointName)
 			if routerData := httptreemux.ContextData(ctx); routerData != nil {
@@ -66,7 +66,7 @@ func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint g
 			// Finis operation and log internal error
 			defer func() {
 				// Is internal error?
-				if err != nil && serviceError.HttpCodeFrom(err) > 499 {
+				if err != nil && serviceError.HTTPCodeFrom(err) > 499 {
 					span.Finish(tracer.WithError(err))
 					return
 				}
@@ -89,7 +89,7 @@ func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint g
 func ContextMiddleware(serverDeps dependencies.ForServer, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Generate unique request ID
-		requestId := idgenerator.RequestId()
+		requestId := idgenerator.RequestID()
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, middleware.RequestIDKey, requestId) // nolint:staticcheck // intentionally used the ctx key from external package
 		ctx = context.WithValue(ctx, httpRequestCtxKey, r)
@@ -104,7 +104,7 @@ func ContextMiddleware(serverDeps dependencies.ForServer, h http.Handler) http.H
 			span.SetTag("http.path", r.URL.Path)
 			span.SetTag("http.query", r.URL.Query().Encode())
 			span.SetTag("kac.http.request.id", requestId)
-			span.SetTag("kac.storage.host", serverDeps.StorageApiHost())
+			span.SetTag("kac.storage.host", serverDeps.StorageAPIHost())
 		}
 
 		// Cancel context after request + set timeout

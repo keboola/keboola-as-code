@@ -70,7 +70,7 @@ func (i Inputs) ValidateDefinitions() error {
 			input := i.GetIndex(cast.ToInt(match[1]))
 			field := match[2]
 			msg = strings.TrimPrefix(msg, match[0])
-			err = errors.Wrapf(err, `input "%s": "%s"%s`, input.Id, field, msg)
+			err = errors.Wrapf(err, `input "%s": "%s"%s`, input.ID, field, msg)
 		}
 		enhancedErrs.Append(err)
 	}
@@ -97,19 +97,19 @@ type Values []Value
 func (v Values) ToMap() map[string]Value {
 	res := map[string]Value{}
 	for _, val := range v {
-		res[val.Id] = val
+		res[val.ID] = val
 	}
 	return res
 }
 
 type Value struct {
-	Id      string
+	ID      string
 	Value   any
 	Skipped bool // the input was skipped, [showIf=false OR step has been skipped], the default value was used
 }
 
 type Input struct {
-	Id           string  `json:"id" validate:"required,template-input-id"`
+	ID           string  `json:"id" validate:"required,template-input-id"`
 	Name         string  `json:"name" validate:"required,min=1,max=25"`
 	Description  string  `json:"description" validate:"max=60"`
 	Type         Type    `json:"type" validate:"required,template-input-type,template-input-type-for-kind"`
@@ -118,8 +118,8 @@ type Input struct {
 	Rules        Rules   `json:"rules,omitempty" validate:"omitempty,template-input-rules"`
 	If           If      `json:"showIf,omitempty" validate:"omitempty,template-input-if"`
 	Options      Options `json:"options,omitempty" validate:"template-input-options"`
-	ComponentId  string  `json:"componentId,omitempty" validate:"required_if=Kind oauth"`
-	OauthInputId string  `json:"oauthInputId,omitempty" validate:"required_if=Kind oauthAccounts"`
+	ComponentID  string  `json:"componentId,omitempty" validate:"required_if=Kind oauth"`
+	OauthInputID string  `json:"oauthInputId,omitempty" validate:"required_if=Kind oauthAccounts"`
 }
 
 // ValidateUserInput validates input from the template user using Input.Rules.
@@ -134,7 +134,7 @@ func (i Input) ValidateUserInput(value any) error {
 func (i Input) Available(params map[string]any) (bool, error) {
 	result, err := i.If.Evaluate(params)
 	if err != nil {
-		return false, errors.PrefixErrorf(err, `invalid input "%s"`, i.Id)
+		return false, errors.PrefixErrorf(err, `invalid input "%s"`, i.ID)
 	}
 	return result, nil
 }

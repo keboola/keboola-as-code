@@ -19,19 +19,19 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 
 	// Check each group
 	for _, group := range groups.ToExtended() {
-		outGroup := &StepGroupValidationResult{ID: group.Id, Valid: true, Steps: make([]*StepValidationResult, 0)}
+		outGroup := &StepGroupValidationResult{ID: group.ID, Valid: true, Steps: make([]*StepValidationResult, 0)}
 		out.StepGroups = append(out.StepGroups, outGroup)
 		configuredSteps := 0
 
 		// Check each step
 		for _, step := range group.Steps {
-			outStep := &StepValidationResult{ID: step.Id, Valid: true, Inputs: make([]*InputValidationResult, 0)}
+			outStep := &StepValidationResult{ID: step.ID, Valid: true, Inputs: make([]*InputValidationResult, 0)}
 			outGroup.Steps = append(outGroup.Steps, outStep)
-			allStepsIds[step.Id] = true
+			allStepsIds[step.ID] = true
 			stepInputsIds := make(map[string]bool)
 
 			// Get values in step
-			values, stepFound := stepInputs[step.Id]
+			values, stepFound := stepInputs[step.ID]
 			if stepFound || len(step.Inputs) == 0 {
 				// Step is configured, if it is part of the payload,
 				// or there are no inputs in the step.
@@ -41,19 +41,19 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 
 			// Check each input
 			for _, input := range step.Inputs {
-				outInput := &InputValidationResult{ID: input.Id}
+				outInput := &InputValidationResult{ID: input.ID}
 				outStep.Inputs = append(outStep.Inputs, outInput)
-				stepInputsIds[input.Id] = true
+				stepInputsIds[input.ID] = true
 
 				// Is input available/visible?
 				if v, err := input.Available(allValuesMap); err != nil {
-					errs.Append(errors.Errorf(`cannot evaluate "showIf" condition for input "%s": %w`, input.Id, err))
+					errs.Append(errors.Errorf(`cannot evaluate "showIf" condition for input "%s": %w`, input.ID, err))
 				} else {
 					outInput.Visible = v
 				}
 
 				// Get value
-				value, found := values[input.Id]
+				value, found := values[input.ID]
 				if !found || !outInput.Visible {
 					value = input.Empty()
 				}
@@ -72,9 +72,9 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 				}
 
 				// Add value to context
-				allValuesMap[input.Id] = value
+				allValuesMap[input.ID] = value
 				allValues = append(allValues, template.InputValue{
-					Id:      input.Id,
+					ID:      input.ID,
 					Value:   value,
 					Skipped: !outInput.Visible || !outStep.Configured,
 				})
@@ -86,9 +86,9 @@ func validateInputs(groups template.StepsGroups, payload []*StepPayload) (out *V
 			}
 
 			// Check unexpected inputs in the step payload
-			for inputId := range stepInputs[step.Id] {
-				if !stepInputsIds[inputId] {
-					errs.Append(errors.Errorf(`found unexpected input "%s" in step "%s"`, inputId, step.Id))
+			for inputID := range stepInputs[step.ID] {
+				if !stepInputsIds[inputID] {
+					errs.Append(errors.Errorf(`found unexpected input "%s" in step "%s"`, inputID, step.ID))
 				}
 			}
 

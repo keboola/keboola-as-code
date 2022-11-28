@@ -19,18 +19,18 @@ type executor struct {
 	ctx                 context.Context
 	projectID           int
 	logger              log.Logger
-	encryptionApiClient client.Sender
+	encryptionAPIClient client.Sender
 	uow                 *local.UnitOfWork
 	errors              errors.MultiError
 }
 
-func newExecutor(ctx context.Context, projectID int, logger log.Logger, encryptionApiClient client.Sender, state *state.State, plan *Plan) *executor {
+func newExecutor(ctx context.Context, projectID int, logger log.Logger, encryptionAPIClient client.Sender, state *state.State, plan *Plan) *executor {
 	return &executor{
 		Plan:                plan,
 		ctx:                 ctx,
 		projectID:           projectID,
 		logger:              logger,
-		encryptionApiClient: encryptionApiClient,
+		encryptionAPIClient: encryptionAPIClient,
 		uow:                 state.LocalManager().NewUnitOfWork(ctx),
 		errors:              errors.NewMultiError(),
 	}
@@ -38,7 +38,7 @@ func newExecutor(ctx context.Context, projectID int, logger log.Logger, encrypti
 
 func (e *executor) invoke() error {
 	// Encrypt values
-	wg := client.NewWaitGroup(e.ctx, e.encryptionApiClient)
+	wg := client.NewWaitGroup(e.ctx, e.encryptionAPIClient)
 	for _, action := range e.actions {
 		wg.Send(e.encryptRequest(action))
 	}
@@ -68,7 +68,7 @@ func (e *executor) encryptRequest(action *action) client.Sendable {
 
 	// Prepare request
 	return encryptionapi.
-		EncryptRequest(e.projectID, object.GetComponentId(), data).
+		EncryptRequest(e.projectID, object.GetComponentID(), data).
 		WithOnSuccess(func(ctx context.Context, sender client.Sender, results *map[string]string) error {
 			for key, encrypted := range *results {
 				path := keyToPath[key]

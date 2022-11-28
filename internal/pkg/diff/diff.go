@@ -156,7 +156,7 @@ func (d *Differ) diffState(state model.ObjectState) (*Result, error) {
 		diffStr := reporter.String()
 		if len(diffStr) > 0 {
 			result.ChangedFields.
-				Add(strhelper.FirstLower(field.JsonName())).
+				Add(strhelper.FirstLower(field.JSONName())).
 				SetDiff(diffStr).
 				AddPath(reporter.Paths()...)
 		}

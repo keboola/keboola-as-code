@@ -31,8 +31,8 @@ func TestRelationsMarshalJSON(t *testing.T) {
 
 func TestRelationsEqual(t *testing.T) {
 	t.Parallel()
-	v1 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `123`}}
-	v2 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `345`}}
+	v1 := &fixtures.MockedAPISideRelation{OtherSide: fixtures.MockedKey{ID: `123`}}
+	v2 := &fixtures.MockedAPISideRelation{OtherSide: fixtures.MockedKey{ID: `345`}}
 	assert.True(t, (Relations{}).Equal(Relations{}))
 	assert.True(t, (Relations{v1}).Equal(Relations{v1}))
 	assert.True(t, (Relations{v1, v2}).Equal(Relations{v1, v2}))
@@ -45,10 +45,10 @@ func TestRelationsEqual(t *testing.T) {
 
 func TestRelationsDiff(t *testing.T) {
 	t.Parallel()
-	v1 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `123`}}
-	v2 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `345`}}
-	v3 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `567`}}
-	v4 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `789`}}
+	v1 := &fixtures.MockedAPISideRelation{OtherSide: fixtures.MockedKey{ID: `123`}}
+	v2 := &fixtures.MockedAPISideRelation{OtherSide: fixtures.MockedKey{ID: `345`}}
+	v3 := &fixtures.MockedAPISideRelation{OtherSide: fixtures.MockedKey{ID: `567`}}
+	v4 := &fixtures.MockedAPISideRelation{OtherSide: fixtures.MockedKey{ID: `789`}}
 	onlyIn1, onlyIn2 := (Relations{v1, v2, v3}).Diff(Relations{v2, v4})
 	assert.Equal(t, Relations{v1, v3}, onlyIn1)
 	assert.Equal(t, Relations{v4}, onlyIn2)
@@ -56,38 +56,38 @@ func TestRelationsDiff(t *testing.T) {
 
 func TestRelationsOnlyStoredInManifest(t *testing.T) {
 	t.Parallel()
-	v1 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `123`}}
-	v2 := &fixtures.MockedManifestSideRelation{OtherSide: fixtures.MockedKey{Id: `345`}}
-	v3 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `567`}}
-	v4 := &fixtures.MockedManifestSideRelation{OtherSide: fixtures.MockedKey{Id: `789`}}
+	v1 := &fixtures.MockedAPISideRelation{OtherSide: fixtures.MockedKey{ID: `123`}}
+	v2 := &fixtures.MockedManifestSideRelation{OtherSide: fixtures.MockedKey{ID: `345`}}
+	v3 := &fixtures.MockedAPISideRelation{OtherSide: fixtures.MockedKey{ID: `567`}}
+	v4 := &fixtures.MockedManifestSideRelation{OtherSide: fixtures.MockedKey{ID: `789`}}
 	r := Relations{v1, v2, v3, v4}
 	assert.Equal(t, Relations{v2, v4}, r.OnlyStoredInManifest())
 }
 
-func TestRelationsOnlyStoredInApi(t *testing.T) {
+func TestRelationsOnlyStoredInAPI(t *testing.T) {
 	t.Parallel()
-	v1 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `123`}}
-	v2 := &fixtures.MockedManifestSideRelation{OtherSide: fixtures.MockedKey{Id: `345`}}
-	v3 := &fixtures.MockedApiSideRelation{OtherSide: fixtures.MockedKey{Id: `567`}}
-	v4 := &fixtures.MockedManifestSideRelation{OtherSide: fixtures.MockedKey{Id: `789`}}
+	v1 := &fixtures.MockedAPISideRelation{OtherSide: fixtures.MockedKey{ID: `123`}}
+	v2 := &fixtures.MockedManifestSideRelation{OtherSide: fixtures.MockedKey{ID: `345`}}
+	v3 := &fixtures.MockedAPISideRelation{OtherSide: fixtures.MockedKey{ID: `567`}}
+	v4 := &fixtures.MockedManifestSideRelation{OtherSide: fixtures.MockedKey{ID: `789`}}
 	r := Relations{v1, v2, v3, v4}
-	assert.Equal(t, Relations{v1, v3}, r.OnlyStoredInApi())
+	assert.Equal(t, Relations{v1, v3}, r.OnlyStoredInAPI())
 }
 
 func TestVariablesForRelation(t *testing.T) {
 	t.Parallel()
 
 	r := &VariablesForRelation{
-		ComponentId: `foo.bar`,
-		ConfigId:    `12345`,
+		ComponentID: `foo.bar`,
+		ConfigID:    `12345`,
 	}
 
 	// The relation is defined on this source side (variables config)
 	definedOn := &Config{
 		ConfigKey: ConfigKey{
-			BranchId:    123,
-			ComponentId: storageapi.VariablesComponentID,
-			Id:          `45678`,
+			BranchID:    123,
+			ComponentID: storageapi.VariablesComponentID,
+			ID:          `45678`,
 		},
 	}
 
@@ -95,20 +95,20 @@ func TestVariablesForRelation(t *testing.T) {
 	otherSideKey, otherSideRel, err := r.NewOtherSideRelation(definedOn, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, ConfigKey{
-		BranchId:    123, // from source key
-		ComponentId: `foo.bar`,
-		Id:          `12345`,
+		BranchID:    123, // from source key
+		ComponentID: `foo.bar`,
+		ID:          `12345`,
 	}, otherSideKey)
 	assert.Equal(t, &VariablesFromRelation{
-		VariablesId: `45678`,
+		VariablesID: `45678`,
 	}, otherSideRel)
 
 	// ParentKey key, same as target, ... variables config is stored within component config
 	parentKey, err := r.ParentKey(definedOn.Key())
 	assert.NoError(t, err)
 	assert.Equal(t, ConfigKey{
-		BranchId:    123, // from source key
-		ComponentId: `foo.bar`,
-		Id:          `12345`,
+		BranchID:    123, // from source key
+		ComponentID: `foo.bar`,
+		ID:          `12345`,
 	}, parentKey)
 }

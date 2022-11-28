@@ -152,9 +152,9 @@ func (l *remoteLoader) parsePhase(phaseRaw interface{}) (*model.Phase, string, [
 
 	phase := &model.Phase{
 		PhaseKey: model.PhaseKey{
-			BranchId:    l.config.BranchId,
-			ComponentId: l.config.ComponentId,
-			ConfigId:    l.config.Id,
+			BranchID:    l.config.BranchID,
+			ComponentID: l.config.ComponentID,
+			ConfigID:    l.config.ID,
 		},
 	}
 	parser := &phaseParser{content: content}
@@ -175,8 +175,8 @@ func (l *remoteLoader) parsePhase(phaseRaw interface{}) (*model.Phase, string, [
 	var dependsOn []string
 	dependsOnIds, err := parser.dependsOnIds()
 	if err == nil {
-		for _, dependsOnId := range dependsOnIds {
-			dependsOn = append(dependsOn, cast.ToString(dependsOnId))
+		for _, dependsOnID := range dependsOnIds {
+			dependsOn = append(dependsOn, cast.ToString(dependsOnID))
 		}
 	} else {
 		errs.Append(err)
@@ -213,21 +213,21 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 	task.Enabled, _ = parser.enabled()
 
 	// Get phase
-	phaseId, err := parser.phaseId()
+	phaseID, err := parser.phaseID()
 	if err != nil {
 		errs.Append(err)
 	}
 
 	// Component ID
-	task.ComponentId, err = parser.componentId()
+	task.ComponentID, err = parser.componentID()
 	if err != nil {
 		errs.Append(err)
 	}
 
-	// ConfigId / ConfigData
-	if len(task.ComponentId) > 0 {
-		if parser.hasConfigId() {
-			task.ConfigId, err = parser.configId()
+	// ConfigID / ConfigData
+	if len(task.ComponentID) > 0 {
+		if parser.hasConfigID() {
+			task.ConfigID, err = parser.configID()
 			if err != nil {
 				errs.Append(err)
 			}
@@ -242,7 +242,7 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 	}
 
 	// Get target config
-	targetConfig, err := l.getTargetConfig(task.ComponentId, task.ConfigId)
+	targetConfig, err := l.getTargetConfig(task.ComponentID, task.ConfigID)
 	if err != nil {
 		errs.Append(err)
 	} else if targetConfig != nil {
@@ -255,25 +255,25 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 
 	// Get phase
 	if errs.Len() == 0 {
-		if phase, found := l.phaseByKey[cast.ToString(phaseId)]; found {
+		if phase, found := l.phaseByKey[cast.ToString(phaseID)]; found {
 			phase.Tasks = append(phase.Tasks, task)
 		} else {
-			errs.Append(errors.Errorf(`phase "%d" not found`, phaseId))
+			errs.Append(errors.Errorf(`phase "%d" not found`, phaseID))
 		}
 	}
 
 	return errs.ErrorOrNil()
 }
 
-func (l *remoteLoader) getTargetConfig(componentId storageapi.ComponentID, configId storageapi.ConfigID) (*model.Config, error) {
-	if len(componentId) == 0 || len(configId) == 0 {
+func (l *remoteLoader) getTargetConfig(componentID storageapi.ComponentID, configID storageapi.ConfigID) (*model.Config, error) {
+	if len(componentID) == 0 || len(configID) == 0 {
 		return nil, nil
 	}
 
 	configKey := model.ConfigKey{
-		BranchId:    l.config.BranchId,
-		ComponentId: componentId,
-		Id:          configId,
+		BranchID:    l.config.BranchID,
+		ComponentID: componentID,
+		ID:          configID,
 	}
 
 	configRaw, found := l.allObjects.Get(configKey)

@@ -22,21 +22,21 @@ type TemplateRepositories struct {
 type TemplateRepository struct {
 	Type TemplateRepositoryType `json:"type" validate:"oneof=dir git"`
 	Name string                 `json:"name" validate:"required,max=40"`
-	Url  string                 `json:"url" validate:"required"`
+	URL  string                 `json:"url" validate:"required"`
 	Ref  string                 `json:"ref,omitempty" validate:"required_if=Type git"`
 }
 
 // String returns human-readable name of the repository.
 func (r TemplateRepository) String() string {
 	if r.Type == RepositoryTypeDir {
-		return fmt.Sprintf("dir:%s", r.Url)
+		return fmt.Sprintf("dir:%s", r.URL)
 	}
-	return fmt.Sprintf("%s:%s", r.Url, r.Ref)
+	return fmt.Sprintf("%s:%s", r.URL, r.Ref)
 }
 
 // Hash returns unique identifier of the repository.
 func (r TemplateRepository) Hash() string {
-	hash := fmt.Sprintf("%s:%s:%s", r.Type, r.Url, r.Ref)
+	hash := fmt.Sprintf("%s:%s:%s", r.Type, r.URL, r.Ref)
 	sha := sha256.Sum256([]byte(hash))
 	return string(sha[:])
 }
@@ -44,7 +44,7 @@ func (r TemplateRepository) Hash() string {
 type TemplateRef interface {
 	Repository() TemplateRepository
 	WithRepository(TemplateRepository) TemplateRef
-	TemplateId() string
+	TemplateID() string
 	Version() string
 	Name() string
 	FullName() string
@@ -52,7 +52,7 @@ type TemplateRef interface {
 
 type templateRef struct {
 	repository TemplateRepository
-	templateId string // for example "my-template"
+	templateID string // for example "my-template"
 	version    string // for example "v1"
 }
 
@@ -74,10 +74,10 @@ func (v *TemplateRepositories) All() []TemplateRepository {
 	return deepcopy.Copy(v.asSlice).([]TemplateRepository)
 }
 
-func NewTemplateRef(repository TemplateRepository, templateId string, version string) TemplateRef {
+func NewTemplateRef(repository TemplateRepository, templateID string, version string) TemplateRef {
 	return templateRef{
 		repository: repository,
-		templateId: templateId,
+		templateID: templateID,
 		version:    version,
 	}
 }
@@ -91,8 +91,8 @@ func (r templateRef) WithRepository(repository TemplateRepository) TemplateRef {
 	return r
 }
 
-func (r templateRef) TemplateId() string {
-	return r.templateId
+func (r templateRef) TemplateID() string {
+	return r.templateID
 }
 
 func (r templateRef) Version() string {
@@ -101,10 +101,10 @@ func (r templateRef) Version() string {
 
 // Name without repository, for example "my-template/v1.
 func (r templateRef) Name() string {
-	return fmt.Sprintf("%s/%s", r.templateId, r.version)
+	return fmt.Sprintf("%s/%s", r.templateID, r.version)
 }
 
 // FullName with repository, for example "keboola/my-template/v1.
 func (r templateRef) FullName() string {
-	return fmt.Sprintf("%s/%s/%s", r.repository.Name, r.templateId, r.version)
+	return fmt.Sprintf("%s/%s/%s", r.repository.Name, r.templateID, r.version)
 }

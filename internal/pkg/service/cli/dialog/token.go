@@ -8,9 +8,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-var ErrMissingStorageApiToken = errors.New(`missing Storage API token`)
+var ErrMissingStorageAPIToken = errors.New(`missing Storage API token`)
 
-func (p *Dialogs) AskStorageApiToken(d hostAndTokenDependencies) (string, error) {
+func (p *Dialogs) AskStorageAPIToken(d hostAndTokenDependencies) (string, error) {
 	opts := d.Options()
 	token := opts.GetString(`storage-api-token`)
 	if len(token) == 0 {
@@ -26,7 +26,7 @@ func (p *Dialogs) AskStorageApiToken(d hostAndTokenDependencies) (string, error)
 
 	token = strings.TrimSpace(token)
 	if len(token) == 0 {
-		return "", ErrMissingStorageApiToken
+		return "", ErrMissingStorageAPIToken
 	}
 
 	opts.Set(`storage-api-token`, token)

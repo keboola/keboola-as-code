@@ -21,7 +21,7 @@ func (m *transformationMapper) isTransformationConfig(object interface{}) (bool,
 		return false, nil
 	}
 
-	component, err := m.state.Components().GetOrErr(v.ComponentId)
+	component, err := m.state.Components().GetOrErr(v.ComponentID)
 	if err != nil {
 		return false, err
 	}
@@ -35,7 +35,7 @@ func (m *transformationMapper) isTransformationConfigState(objectState model.Obj
 		return false, nil
 	}
 
-	component, err := m.state.Components().GetOrErr(v.ComponentId)
+	component, err := m.state.Components().GetOrErr(v.ComponentID)
 	if err != nil {
 		return false, err
 	}

@@ -36,7 +36,7 @@ func NewServiceDeps(
 	tracer trace.Tracer,
 	envs env.Provider,
 	logger log.PrefixLogger,
-	debug, dumpHttp bool,
+	debug, dumpHTTP bool,
 	userAgent string,
 ) (d ForService, err error) {
 	ctx, span := tracer.Start(ctx, "keboola.go.buffer.dependencies.NewServiceDeps")
@@ -53,15 +53,15 @@ func NewServiceDeps(
 			if debug {
 				httpclient.WithDebugOutput(logger.DebugWriter())(c)
 			}
-			if dumpHttp {
+			if dumpHTTP {
 				httpclient.WithDumpOutput(logger.DebugWriter())(c)
 			}
 		},
 	)
 
 	// Get Storage API host
-	storageApiHost := strhelper.NormalizeHost(envs.Get("KBC_STORAGE_API_HOST"))
-	if storageApiHost == "" {
+	storageAPIHost := strhelper.NormalizeHost(envs.Get("KBC_STORAGE_API_HOST"))
+	if storageAPIHost == "" {
 		return nil, errors.New("KBC_STORAGE_API_HOST environment variable is empty or not set")
 	}
 
@@ -71,7 +71,7 @@ func NewServiceDeps(
 	// Create public dependencies - load API index
 	startTime := time.Now()
 	logger.Info("loading Storage API index")
-	publicDeps, err := dependencies.NewPublicDeps(processCtx, baseDeps, storageApiHost)
+	publicDeps, err := dependencies.NewPublicDeps(processCtx, baseDeps, storageAPIHost)
 	if err != nil {
 		return nil, err
 	}

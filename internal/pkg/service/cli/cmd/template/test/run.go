@@ -45,11 +45,11 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 				for _, t := range repo.Templates() {
 					v, err := t.DefaultVersionOrErr()
 					if err != nil {
-						return errors.Errorf(`loading default version for template "%s" failed: %w`, t.Id, err)
+						return errors.Errorf(`loading default version for template "%s" failed: %w`, t.ID, err)
 					}
-					tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Definition(), t.Id, v.Version.String()))
+					tmpl, err := d.Template(d.CommandCtx(), model.NewTemplateRef(repo.Definition(), t.ID, v.Version.String()))
 					if err != nil {
-						return errors.Errorf(`loading test for template "%s" failed: %w`, t.Id, err)
+						return errors.Errorf(`loading test for template "%s" failed: %w`, t.ID, err)
 					}
 					templates = append(templates, tmpl)
 				}

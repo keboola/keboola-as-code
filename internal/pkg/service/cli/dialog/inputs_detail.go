@@ -47,7 +47,7 @@ func (d *inputsDetailDialog) ask() (input.StepsGroupsExt, error) {
 }
 
 func (d *inputsDetailDialog) parse(result string) (input.StepsGroupsExt, error) {
-	result = strhelper.StripHtmlComments(result)
+	result = strhelper.StripHTMLComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
 	errs := errors.NewMultiError()
 	lineNum := 0
@@ -67,7 +67,7 @@ func (d *inputsDetailDialog) parse(result string) (input.StepsGroupsExt, error) 
 
 		// Check that step is defined
 		if inputStep == nil {
-			errs.Append(errors.Errorf(`input "%s": "step" is not defined`, currentInput.Id))
+			errs.Append(errors.Errorf(`input "%s": "step" is not defined`, currentInput.ID))
 			return
 		}
 
@@ -98,17 +98,17 @@ func (d *inputsDetailDialog) parse(result string) (input.StepsGroupsExt, error) 
 				invalidDefinition = true
 				continue
 			}
-			inputId := m[1]
-			i, found := d.inputs.Get(inputId)
+			inputID := m[1]
+			i, found := d.inputs.Get(inputID)
 			if !found {
-				errs.Append(errors.Errorf(`line %d: input "%s" not found`, lineNum, inputId))
+				errs.Append(errors.Errorf(`line %d: input "%s" not found`, lineNum, inputID))
 				invalidDefinition = true
 				continue
 			}
 			currentInput = i
 			inputStep = nil
 			invalidDefinition = false
-			inputsOrder[currentInput.Id] = len(inputsOrder)
+			inputsOrder[currentInput.ID] = len(inputsOrder)
 		case invalidDefinition:
 			// Skip lines after invalid definition
 		case strings.HasPrefix(line, `name:`):
@@ -145,10 +145,10 @@ func (d *inputsDetailDialog) parse(result string) (input.StepsGroupsExt, error) 
 				continue
 			}
 		case strings.HasPrefix(line, `step:`):
-			stepId := strings.TrimSpace(strings.TrimPrefix(line, `step:`))
-			step, ok := stepsMap[stepId]
+			stepID := strings.TrimSpace(strings.TrimPrefix(line, `step:`))
+			step, ok := stepsMap[stepID]
 			if !ok {
-				errs.Append(errors.Errorf(`line %d: step "%s" not found`, lineNum, stepId))
+				errs.Append(errors.Errorf(`line %d: step "%s" not found`, lineNum, stepID))
 				invalidDefinition = true
 				continue
 			}
@@ -227,13 +227,13 @@ Options format:
 
 Preview of steps and groups you created:
 `
-	var defaultStepId string
+	var defaultStepID string
 	for _, group := range d.stepsGroups {
 		fileHeader += fmt.Sprintf("- Group %d: %s\n", group.GroupIndex+1, group.Description)
 		for _, step := range group.Steps {
-			fileHeader += fmt.Sprintf("  - Step \"%s\": %s - %s\n", step.Id, step.Name, step.Description)
+			fileHeader += fmt.Sprintf("  - Step \"%s\": %s - %s\n", step.ID, step.Name, step.Description)
 			if step.GroupIndex == 0 && step.StepIndex == 0 {
-				defaultStepId = step.Id
+				defaultStepID = step.ID
 			}
 		}
 	}
@@ -246,9 +246,9 @@ Preview of steps and groups you created:
 	// Add definitions
 	var lines strings.Builder
 	lines.WriteString(fileHeader)
-	for _, inputId := range d.inputs.Ids() {
-		i, _ := d.inputs.Get(inputId)
-		lines.WriteString(fmt.Sprintf("## Input \"%s\" (%s)\n", i.Id, i.Type))
+	for _, inputID := range d.inputs.Ids() {
+		i, _ := d.inputs.Get(inputID)
+		lines.WriteString(fmt.Sprintf("## Input \"%s\" (%s)\n", i.ID, i.Type))
 		lines.WriteString(fmt.Sprintf("name: %s\n", i.Name))
 		lines.WriteString(fmt.Sprintf("description: %s\n", i.Description))
 		lines.WriteString(fmt.Sprintf("kind: %s\n", i.Kind))
@@ -271,7 +271,7 @@ Preview of steps and groups you created:
 			lines.WriteString(fmt.Sprintf("options: %s\n", json.MustEncode(i.Options.Map(), false)))
 		}
 
-		lines.WriteString(fmt.Sprintf("step: %s\n", defaultStepId))
+		lines.WriteString(fmt.Sprintf("step: %s\n", defaultStepID))
 
 		lines.WriteString("\n")
 	}

@@ -28,7 +28,7 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps()
 	registerMockedBranchesResponse(
-		d.MockedHttpTransport(),
+		d.MockedHTTPTransport(),
 		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
 	d.Options().SetDefault(`branches`, `*`)
@@ -48,7 +48,7 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 	dialog, _ := createDialogs(t, false)
 	d := dependencies.NewMockedDeps()
 	registerMockedBranchesResponse(
-		d.MockedHttpTransport(),
+		d.MockedHTTPTransport(),
 		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
 	d.Options().SetDefault(`branches`, `*`)
@@ -66,7 +66,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps()
 	registerMockedBranchesResponse(
-		d.MockedHttpTransport(),
+		d.MockedHTTPTransport(),
 		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
 
@@ -97,7 +97,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps()
 	registerMockedBranchesResponse(
-		d.MockedHttpTransport(),
+		d.MockedHTTPTransport(),
 		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
 
@@ -128,7 +128,7 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps()
 	registerMockedBranchesResponse(
-		d.MockedHttpTransport(),
+		d.MockedHTTPTransport(),
 		[]*storageapi.Branch{
 			{BranchKey: storageapi.BranchKey{ID: 10}, Name: "Main", IsDefault: true},
 			{BranchKey: storageapi.BranchKey{ID: 20}, Name: "foo", IsDefault: false},
@@ -180,7 +180,7 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps()
 	registerMockedBranchesResponse(
-		d.MockedHttpTransport(),
+		d.MockedHTTPTransport(),
 		[]*storageapi.Branch{
 			{BranchKey: storageapi.BranchKey{ID: 10}, Name: "Main", IsDefault: true},
 			{BranchKey: storageapi.BranchKey{ID: 20}, Name: "foo", IsDefault: false},

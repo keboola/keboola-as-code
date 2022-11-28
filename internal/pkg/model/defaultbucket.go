@@ -18,7 +18,7 @@ func (t *UsedInConfigInputMappingRelation) Desc() string {
 }
 
 func (t *UsedInConfigInputMappingRelation) Key() string {
-	return fmt.Sprintf(`%s_%s`, t.Type(), t.UsedIn.ObjectId())
+	return fmt.Sprintf(`%s_%s`, t.Type(), t.UsedIn.ObjectID())
 }
 
 func (t *UsedInConfigInputMappingRelation) ParentKey(_ Key) (Key, error) {
@@ -33,7 +33,7 @@ func (t *UsedInConfigInputMappingRelation) IsDefinedInManifest() bool {
 	return false
 }
 
-func (t *UsedInConfigInputMappingRelation) IsDefinedInApi() bool {
+func (t *UsedInConfigInputMappingRelation) IsDefinedInAPI() bool {
 	return false
 }
 
@@ -55,7 +55,7 @@ func (t *UsedInRowInputMappingRelation) Desc() string {
 }
 
 func (t *UsedInRowInputMappingRelation) Key() string {
-	return fmt.Sprintf(`%s_%s`, t.Type(), t.UsedIn.ObjectId())
+	return fmt.Sprintf(`%s_%s`, t.Type(), t.UsedIn.ObjectID())
 }
 
 func (t *UsedInRowInputMappingRelation) ParentKey(_ Key) (Key, error) {
@@ -70,7 +70,7 @@ func (t *UsedInRowInputMappingRelation) IsDefinedInManifest() bool {
 	return false
 }
 
-func (t *UsedInRowInputMappingRelation) IsDefinedInApi() bool {
+func (t *UsedInRowInputMappingRelation) IsDefinedInAPI() bool {
 	return false
 }
 

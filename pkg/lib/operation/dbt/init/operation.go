@@ -24,12 +24,12 @@ type DbtInitOptions struct {
 }
 
 type dependencies interface {
-	JobsQueueApiClient() client.Sender
+	JobsQueueAPIClient() client.Sender
 	Logger() log.Logger
 	Tracer() trace.Tracer
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
-	SandboxesApiClient() client.Sender
-	StorageApiClient() client.Sender
+	SandboxesAPIClient() client.Sender
+	StorageAPIClient() client.Sender
 }
 
 func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
@@ -41,7 +41,7 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 		return err
 	}
 
-	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageApiClient())
+	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageAPIClient())
 	if err != nil {
 		return err
 	}
@@ -53,9 +53,9 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 	// Create workspace
 	s, err := sandboxesapi.Create(
 		ctx,
-		d.StorageApiClient(),
-		d.JobsQueueApiClient(),
-		d.SandboxesApiClient(),
+		d.StorageAPIClient(),
+		d.JobsQueueAPIClient(),
+		d.SandboxesAPIClient(),
 		branch.ID,
 		opts.WorkspaceName,
 		sandboxesapi.TypeSnowflake,
