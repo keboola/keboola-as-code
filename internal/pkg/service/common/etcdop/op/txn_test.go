@@ -262,7 +262,7 @@ foo
 	assert.NoError(t, err)
 	r, err = txn.Do(ctx, client)
 	assert.NoError(t, err)
-	assert.False(t, r.Succeeded)
+	assert.True(t, r.Succeeded)
 	r = clearRawValues(r)
 	assert.Equal(t, []any{NoResult{}, NoResult{}, NoResult{}}, r.Responses) // 3x PUT
 	dump, err = etcdhelper.DumpAll(ctx, client)
