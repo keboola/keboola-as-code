@@ -44,7 +44,7 @@ func TestSchema(t *testing.T) {
 			"config/export/123/my-receiver/",
 		},
 		{
-			s.Configs().Exports().ByKey(key.ExportKey{ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}, ExportID: "my-export"}).Key(),
+			s.Configs().Exports().ByKey(key.ExportKey{ExportID: "my-export", ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}}).Key(),
 			"config/export/123/my-receiver/my-export",
 		},
 		{
@@ -52,12 +52,12 @@ func TestSchema(t *testing.T) {
 			"config/mapping/revision/",
 		},
 		{
-			s.Configs().Mappings().InExport(key.ExportKey{ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}}).Prefix(),
+			s.Configs().Mappings().InExport(key.ExportKey{ExportID: "my-export", ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}}).Prefix(),
 			"config/mapping/revision/123/my-receiver/my-export/",
 		},
 		{
-			s.Configs().Mappings().ByKey(key.MappingKey{ExportKey: key.ExportKey{ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}}, RevisionID: 10}).Key(),
-			"config/mapping/revision/123/my-receiver/my-export/00000100",
+			s.Configs().Mappings().ByKey(key.MappingKey{ExportKey: key.ExportKey{ExportID: "my-export", ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}}, RevisionID: 10}).Key(),
+			"config/mapping/revision/123/my-receiver/my-export/00000010",
 		},
 		{
 			s.Records().Prefix(),
@@ -69,7 +69,7 @@ func TestSchema(t *testing.T) {
 				RandomSuffix: "abcdef",
 				SliceKey: key.SliceKey{
 					SliceID: "sliceID",
-					FileID:  "fileId",
+					FileID:  "fileID",
 					ExportKey: key.ExportKey{
 						ExportID: "my-export",
 						ReceiverKey: key.ReceiverKey{
