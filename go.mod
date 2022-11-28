@@ -38,7 +38,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
 	github.com/writeas/go-strip-markdown v2.0.1+incompatible
-	go.etcd.io/etcd/api/v3 v3.5.5
+	go.etcd.io/etcd/api/v3 v3.5.6
 	go.etcd.io/etcd/client/v3 v3.5.5
 	go.nhat.io/aferocopy/v2 v2.0.1
 	go.opentelemetry.io/otel v1.11.1
