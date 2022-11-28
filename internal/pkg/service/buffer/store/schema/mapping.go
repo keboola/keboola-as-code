@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	storeKey "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -34,30 +35,22 @@ func (v ConfigsRoot) Mappings() Mappings {
 	)}
 }
 
-func (v Mappings) InProject(projectID int) MappingsInProject {
-	if projectID == 0 {
+func (v Mappings) InExport(k storeKey.ExportKey) MappingsInExport {
+	if k.ProjectID == 0 {
 		panic(errors.New("mapping projectID cannot be empty"))
 	}
-	return MappingsInProject{mappings: v.mappings.Add(strconv.Itoa(projectID))}
-}
-
-func (v MappingsInProject) InReceiver(receiverID string) MappingsInReceiver {
-	if receiverID == "" {
+	if k.ReceiverID == "" {
 		panic(errors.New("mapping receiverID cannot be empty"))
 	}
-	return MappingsInReceiver{mappings: v.mappings.Add(receiverID)}
-}
-
-func (v MappingsInReceiver) InExport(exportID string) MappingsInExport {
-	if exportID == "" {
+	if k.ExportID == "" {
 		panic(errors.New("mapping exportID cannot be empty"))
 	}
-	return MappingsInExport{mappings: v.mappings.Add(exportID)}
+	return MappingsInExport{mappings: v.mappings.Add(strconv.Itoa(k.ProjectID)).Add(k.ReceiverID).Add(k.ExportID)}
 }
 
-func (v MappingsInExport) Revision(revision int) KeyT[model.Mapping] {
-	if revision == 0 {
+func (v Mappings) ByKey(k storeKey.MappingKey) KeyT[model.Mapping] {
+	if k.RevisionID == 0 {
 		panic(errors.New("mapping revision cannot be empty"))
 	}
-	return v.mappings.Key(fmt.Sprintf("%08d", revision))
+	return v.InExport(k.ExportKey).Key(fmt.Sprintf("%08d", k.RevisionID))
 }

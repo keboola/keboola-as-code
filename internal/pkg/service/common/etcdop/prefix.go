@@ -118,7 +118,7 @@ func (v PrefixT[T]) GetOne(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 				kv := r.Get().Kvs[0]
 				target := new(T)
 				if err := v.serialization.decodeAndValidate(ctx, kv, target); err != nil {
-					return nil, invalidKeyError(string(kv.Key), err)
+					return nil, errors.Errorf("etcd operation \"get one\" failed: %w", invalidValueError(string(kv.Key), err))
 				}
 				return &op.KeyValueT[T]{Value: *target, KV: kv}, nil
 			} else {
@@ -140,7 +140,7 @@ func (v PrefixT[T]) GetAll(opts ...etcd.OpOption) op.ForType[op.KeyValuesT[T]] {
 			for i, kv := range kvs {
 				out[i].KV = kv
 				if err := v.serialization.decodeAndValidate(ctx, kv, &out[i].Value); err != nil {
-					return nil, invalidKeyError(string(kv.Key), err)
+					return nil, errors.Errorf("etcd operation \"get all\" failed: %w", invalidValueError(string(kv.Key), err))
 				}
 			}
 			return out, nil

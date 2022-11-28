@@ -5,6 +5,7 @@ import (
 
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -32,13 +33,14 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 }
 
 func (s *Store) createReceiverOp(_ context.Context, receiver model.Receiver) op.BoolOp {
-	receivers := s.schema.Configs().Receivers().InProject(receiver.ProjectID)
-	return receivers.
-		ID(receiver.ID).
+	return s.schema.
+		Configs().
+		Receivers().
+		ByKey(receiver.ReceiverKey).
 		PutIfNotExists(receiver).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
 			if !ok && err == nil {
-				return false, serviceError.NewResourceAlreadyExistsError("receiver", receiver.ID, "project")
+				return false, serviceError.NewResourceAlreadyExistsError("receiver", receiver.ReceiverKey.String(), "project")
 			}
 			return ok, err
 		})
@@ -47,11 +49,11 @@ func (s *Store) createReceiverOp(_ context.Context, receiver model.Receiver) op.
 // GetReceiver fetches a receiver from the store.
 // Logic errors:
 // - ResourceNotFoundError.
-func (s *Store) GetReceiver(ctx context.Context, projectID int, receiverID string) (r model.Receiver, err error) {
+func (s *Store) GetReceiver(ctx context.Context, receiverKey key.ReceiverKey) (r model.Receiver, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetReceiver")
 	defer telemetry.EndSpan(span, &err)
 
-	kv, err := s.getReceiverOp(ctx, projectID, receiverID).Do(ctx, s.client)
+	kv, err := s.getReceiverOp(ctx, receiverKey).Do(ctx, s.client)
 	if err != nil {
 		return model.Receiver{}, err
 	}
@@ -59,14 +61,15 @@ func (s *Store) GetReceiver(ctx context.Context, projectID int, receiverID strin
 	return kv.Value, nil
 }
 
-func (s *Store) getReceiverOp(_ context.Context, projectID int, receiverID string) op.ForType[*op.KeyValueT[model.Receiver]] {
-	receivers := s.schema.Configs().Receivers().InProject(projectID)
-	return receivers.
-		ID(receiverID).
+func (s *Store) getReceiverOp(_ context.Context, receiverKey key.ReceiverKey) op.ForType[*op.KeyValueT[model.Receiver]] {
+	return s.schema.
+		Configs().
+		Receivers().
+		ByKey(receiverKey).
 		Get().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Receiver], err error) (*op.KeyValueT[model.Receiver], error) {
 			if kv == nil && err == nil {
-				return nil, serviceError.NewResourceNotFoundError("receiver", receiverID)
+				return nil, serviceError.NewResourceNotFoundError("receiver", receiverKey.String())
 			}
 			return kv, err
 		})
@@ -87,27 +90,29 @@ func (s *Store) ListReceivers(ctx context.Context, projectID int) (r []model.Rec
 
 func (s *Store) listReceiversOp(_ context.Context, projectID int) op.ForType[op.KeyValuesT[model.Receiver]] {
 	receivers := s.schema.Configs().Receivers().InProject(projectID)
-	return receivers.GetAll()
+	return receivers.GetAll(etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
 }
 
 // DeleteReceiver deletes a receiver from the store.
 // Logic errors:
 // - ResourceNotFoundError.
-func (s *Store) DeleteReceiver(ctx context.Context, projectID int, receiverID string) (err error) {
+func (s *Store) DeleteReceiver(ctx context.Context, receiverKey key.ReceiverKey) (err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.DeleteReceiver")
 	defer telemetry.EndSpan(span, &err)
 
-	_, err = s.deleteReceiverOp(ctx, projectID, receiverID).Do(ctx, s.client)
+	_, err = s.deleteReceiverOp(ctx, receiverKey).Do(ctx, s.client)
 	return err
 }
 
-func (s *Store) deleteReceiverOp(_ context.Context, projectID int, receiverID string) op.BoolOp {
-	receivers := s.schema.Configs().Receivers().InProject(projectID).ID(receiverID)
-	return receivers.
+func (s *Store) deleteReceiverOp(_ context.Context, receiverKey key.ReceiverKey) op.BoolOp {
+	return s.schema.
+		Configs().
+		Receivers().
+		ByKey(receiverKey).
 		Delete().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
 			if !ok && err == nil {
-				return false, serviceError.NewResourceNotFoundError("receiver", receiverID)
+				return false, serviceError.NewResourceNotFoundError("receiver", receiverKey.String())
 			}
 			return ok, err
 		})
