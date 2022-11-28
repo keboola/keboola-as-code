@@ -110,6 +110,7 @@ func (v PrefixT[T]) GetOne(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 			return etcd.OpGet(v.Prefix(), opts...), nil
 		},
 		func(ctx context.Context, r etcd.OpResponse) (*op.KeyValueT[T], error) {
+			// Not r.Get.Count(), it returns the count of all records, regardless of the limit
 			count := len(r.Get().Kvs)
 			if count == 0 {
 				return nil, nil
