@@ -1,6 +1,6 @@
 {
   "statusCode": 404,
   "error": "buffer.receiverNotFound",
-  "message": "Receiver \"unknown\" not found."
+  "message": "Receiver \"project:%s/receiver:unknown\" not found."
 }
 

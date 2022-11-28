@@ -2,6 +2,8 @@
 /config/export/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1
 -----
 {
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "receiver-1",
   "exportId": "export-1",
   "name": "Export 1",
   "importConditions": {
@@ -16,6 +18,9 @@
 /config/mapping/revision/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/00000001
 -----
 {
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "receiver-1",
+  "exportId": "export-1",
   "revisionId": 1,
   "tableId": {
     "stage": "in",
@@ -47,8 +52,8 @@
 /config/receiver/%%TEST_KBC_PROJECT_ID%%/receiver-1
 -----
 {
-  "receiverId": "receiver-1",
   "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "receiver-1",
   "name": "Receiver 1",
   "secret": "2wsMsoyPA6YsDmnf7GJvqyxlDU6kPX7WWFu1pOMz1O7ybPVI"
 }
