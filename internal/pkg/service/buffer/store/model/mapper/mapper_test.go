@@ -180,3 +180,13 @@ func TestMapperReceiverModelToPayload(t *testing.T) {
 		json.MustEncodeString(payload, true),
 	)
 }
+
+func TestFormatUrl(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(
+		t,
+		"https://buffer.keboola.local/v1/import/1000/asdf/fdsa",
+		formatReceiverURL("buffer.keboola.local", 1000, "asdf", "fdsa"),
+	)
+}
