@@ -4,8 +4,8 @@ package idgenerator
 import gonanoid "github.com/matoous/go-nanoid/v2"
 
 const (
-	RequestIdLength               = 15
-	TemplateInstanceIdLength      = 25
+	RequestIDLength               = 15
+	TemplateInstanceIDLength      = 25
 	EtcdNamespaceForE2ETestLength = 10
 	ReceiverSecretLength          = 48
 )
@@ -13,12 +13,12 @@ const (
 // alphabet used in ID generation.
 var alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-func RequestId() string {
-	return gonanoid.MustGenerate(alphabet, RequestIdLength)
+func RequestID() string {
+	return gonanoid.MustGenerate(alphabet, RequestIDLength)
 }
 
-func TemplateInstanceId() string {
-	return gonanoid.MustGenerate(alphabet, TemplateInstanceIdLength)
+func TemplateInstanceID() string {
+	return gonanoid.MustGenerate(alphabet, TemplateInstanceIDLength)
 }
 
 func EtcdNamespaceForTest() string {

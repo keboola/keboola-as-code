@@ -117,34 +117,34 @@ func TestMatchObjectIdOrName(t *testing.T) {
 	t.Parallel()
 
 	// Match by ID
-	assert.True(t, matchObjectIdOrName(`123`, &model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+	assert.True(t, matchObjectIDOrName(`123`, &model.Branch{
+		BranchKey: model.BranchKey{ID: 123},
 		Name:      "Abc",
 	}))
-	assert.False(t, matchObjectIdOrName(`1234`, &model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+	assert.False(t, matchObjectIDOrName(`1234`, &model.Branch{
+		BranchKey: model.BranchKey{ID: 123},
 		Name:      "Abc",
 	}))
-	assert.False(t, matchObjectIdOrName(`12`, &model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+	assert.False(t, matchObjectIDOrName(`12`, &model.Branch{
+		BranchKey: model.BranchKey{ID: 123},
 		Name:      "Abc",
 	}))
 
 	// Match by name
-	assert.True(t, matchObjectIdOrName(`abc`, &model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+	assert.True(t, matchObjectIDOrName(`abc`, &model.Branch{
+		BranchKey: model.BranchKey{ID: 123},
 		Name:      "Abc Def",
 	}))
-	assert.True(t, matchObjectIdOrName(`def`, &model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+	assert.True(t, matchObjectIDOrName(`def`, &model.Branch{
+		BranchKey: model.BranchKey{ID: 123},
 		Name:      "Abc Def",
 	}))
-	assert.True(t, matchObjectIdOrName(`abc def`, &model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+	assert.True(t, matchObjectIDOrName(`abc def`, &model.Branch{
+		BranchKey: model.BranchKey{ID: 123},
 		Name:      "Abc Def",
 	}))
-	assert.False(t, matchObjectIdOrName(`foo`, &model.Branch{
-		BranchKey: model.BranchKey{Id: 123},
+	assert.False(t, matchObjectIDOrName(`foo`, &model.Branch{
+		BranchKey: model.BranchKey{ID: 123},
 		Name:      "Abc Def",
 	}))
 }

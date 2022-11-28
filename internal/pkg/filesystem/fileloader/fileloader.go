@@ -27,23 +27,23 @@ type loadHandlerWithNext func(def *filesystem.FileDef, fileType filesystem.FileT
 type loader struct {
 	fs             filesystem.Fs
 	handler        loadHandlerWithNext
-	jsonNetContext *jsonnet.Context
+	jsonnetContext *jsonnet.Context
 }
 
 // New creates FileLoader to load files from the filesystem.
 func New(fs filesystem.Fs) filesystem.FileLoader {
-	return &loader{fs: fs, jsonNetContext: jsonnet.NewContext().WithImporter(fsimporter.New(fs))}
+	return &loader{fs: fs, jsonnetContext: jsonnet.NewContext().WithImporter(fsimporter.New(fs))}
 }
 
 // NewWithHandler creates FileLoader to load files from the filesystem.
 // File load process can be modified by the custom handler callback.
 func NewWithHandler(fs filesystem.Fs, handler loadHandlerWithNext) filesystem.FileLoader {
-	return &loader{fs: fs, handler: handler, jsonNetContext: jsonnet.NewContext().WithImporter(fsimporter.New(fs))}
+	return &loader{fs: fs, handler: handler, jsonnetContext: jsonnet.NewContext().WithImporter(fsimporter.New(fs))}
 }
 
-func (l *loader) WithJsonNetContext(ctx *jsonnet.Context) filesystem.FileLoader {
+func (l *loader) WithJsonnetContext(ctx *jsonnet.Context) filesystem.FileLoader {
 	clone := *l
-	clone.jsonNetContext = ctx
+	clone.jsonnetContext = ctx
 	return &clone
 }
 
@@ -75,17 +75,17 @@ func (l *loader) ReadFileContentTo(def *filesystem.FileDef, target interface{}, 
 	return nil, false, nil
 }
 
-// ReadJsonFile as an ordered map.
-func (l *loader) ReadJsonFile(def *filesystem.FileDef) (*filesystem.JsonFile, error) {
-	file, err := l.loadFile(def, filesystem.FileTypeJson)
+// ReadJSONFile as an ordered map.
+func (l *loader) ReadJSONFile(def *filesystem.FileDef) (*filesystem.JSONFile, error) {
+	file, err := l.loadFile(def, filesystem.FileTypeJSON)
 	if err != nil {
 		return nil, err
 	}
-	return file.(*filesystem.JsonFile), nil
+	return file.(*filesystem.JSONFile), nil
 }
 
-// ReadJsonFileTo to the target struct.
-func (l *loader) ReadJsonFileTo(def *filesystem.FileDef, target interface{}) (*filesystem.RawFile, error) {
+// ReadJSONFileTo to the target struct.
+func (l *loader) ReadJSONFileTo(def *filesystem.FileDef, target interface{}) (*filesystem.RawFile, error) {
 	file, err := l.ReadRawFile(def)
 	if err != nil {
 		return nil, err
@@ -98,10 +98,10 @@ func (l *loader) ReadJsonFileTo(def *filesystem.FileDef, target interface{}) (*f
 	return file, nil
 }
 
-// ReadJsonFieldsTo tagged fields in the target struct.
-func (l *loader) ReadJsonFieldsTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.JsonFile, bool, error) {
+// ReadJSONFieldsTo tagged fields in the target struct.
+func (l *loader) ReadJSONFieldsTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
 	if fields := reflecthelper.GetFieldsWithTag(tag, target); len(fields) > 0 {
-		if file, err := l.ReadJsonFile(def); err == nil {
+		if file, err := l.ReadJSONFile(def); err == nil {
 			reflecthelper.SetFields(fields, file.Content, target)
 			return file, true, nil
 		} else {
@@ -112,10 +112,10 @@ func (l *loader) ReadJsonFieldsTo(def *filesystem.FileDef, target interface{}, t
 	return nil, false, nil
 }
 
-// ReadJsonMapTo tagged field in the target struct as ordered map.
-func (l *loader) ReadJsonMapTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.JsonFile, bool, error) {
+// ReadJSONMapTo tagged field in the target struct as ordered map.
+func (l *loader) ReadJSONMapTo(def *filesystem.FileDef, target interface{}, tag string) (*filesystem.JSONFile, bool, error) {
 	if field := reflecthelper.GetOneFieldWithTag(tag, target); field != nil {
-		if file, err := l.ReadJsonFile(def); err == nil {
+		if file, err := l.ReadJSONFile(def); err == nil {
 			reflecthelper.SetField(field, file.Content, target)
 			return file, true, nil
 		} else {
@@ -179,23 +179,23 @@ func (l *loader) ReadYamlMapTo(def *filesystem.FileDef, target interface{}, tag 
 	return nil, false, nil
 }
 
-// ReadJsonNetFile as AST.
-func (l *loader) ReadJsonNetFile(def *filesystem.FileDef) (*filesystem.JsonNetFile, error) {
-	file, err := l.loadFile(def, filesystem.FileTypeJsonNet)
+// ReadJsonnetFile as AST.
+func (l *loader) ReadJsonnetFile(def *filesystem.FileDef) (*filesystem.JsonnetFile, error) {
+	file, err := l.loadFile(def, filesystem.FileTypeJsonnet)
 	if err != nil {
 		return nil, err
 	}
-	return file.(*filesystem.JsonNetFile), nil
+	return file.(*filesystem.JsonnetFile), nil
 }
 
-// ReadJsonNetFileTo the target struct.
-func (l *loader) ReadJsonNetFileTo(def *filesystem.FileDef, target interface{}) (*filesystem.JsonNetFile, error) {
-	jsonNetFile, err := l.ReadJsonNetFile(def)
+// ReadJsonnetFileTo the target struct.
+func (l *loader) ReadJsonnetFileTo(def *filesystem.FileDef, target interface{}) (*filesystem.JsonnetFile, error) {
+	jsonnetFile, err := l.ReadJsonnetFile(def)
 	if err != nil {
 		return nil, formatFileError(def, err)
 	}
 
-	jsonFile, err := jsonNetFile.ToJsonRawFile()
+	jsonFile, err := jsonnetFile.ToJSONRawFile()
 	if err != nil {
 		return nil, formatFileError(def, err)
 	}
@@ -204,7 +204,7 @@ func (l *loader) ReadJsonNetFileTo(def *filesystem.FileDef, target interface{}) 
 		return nil, formatFileError(def, err)
 	}
 
-	return jsonNetFile, nil
+	return jsonnetFile, nil
 }
 
 // ReadSubDirs filter out ignored directories.
@@ -232,9 +232,9 @@ func (l *loader) IsIgnored(path string) (bool, error) {
 		return false, nil
 	}
 	fileDef := filesystem.NewFileDef(filesystem.Join(path, KbcDirFileName))
-	fileDef.AddTag(`json`) // `json` is a constant model.FileTypeJson but cannot be imported due to cyclic imports, it will be refactored
+	fileDef.AddTag(`json`) // `json` is a constant model.FileTypeJSON but cannot be imported due to cyclic imports, it will be refactored
 
-	file, err := l.ReadJsonFile(fileDef)
+	file, err := l.ReadJSONFile(fileDef)
 	if err != nil {
 		if errors.Is(err, filesystem.ErrNotExist) {
 			return false, err
@@ -274,12 +274,12 @@ func (l *loader) defaultHandler(def *filesystem.FileDef, fileType filesystem.Fil
 	switch fileType {
 	case filesystem.FileTypeRaw:
 		return rawFile, nil
-	case filesystem.FileTypeJson:
-		return rawFile.ToJsonFile()
+	case filesystem.FileTypeJSON:
+		return rawFile.ToJSONFile()
 	case filesystem.FileTypeYaml:
 		return rawFile.ToYamlFile()
-	case filesystem.FileTypeJsonNet:
-		return rawFile.ToJsonNetFile(l.jsonNetContext)
+	case filesystem.FileTypeJsonnet:
+		return rawFile.ToJSONNetFile(l.jsonnetContext)
 	default:
 		panic(errors.Errorf(`unexpected filesystem.FileType = %v`, fileType))
 	}

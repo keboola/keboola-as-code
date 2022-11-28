@@ -11,21 +11,21 @@ func TestStepsGroups_ToExtended(t *testing.T) {
 
 	// Fixtures
 	input1 := Input{
-		Id:          "foo",
+		ID:          "foo",
 		Name:        "foo",
 		Description: "description",
 		Type:        "string",
 		Kind:        "input",
 	}
 	input2 := Input{
-		Id:          "bar",
+		ID:          "bar",
 		Name:        "bar",
 		Description: "description",
 		Type:        "string",
 		Kind:        "input",
 	}
 	input3 := Input{
-		Id:          "baz",
+		ID:          "baz",
 		Name:        "baz",
 		Description: "description",
 		Type:        "string",
@@ -64,18 +64,18 @@ func TestStepsGroups_ToExtended(t *testing.T) {
 	// Expected result
 	expected := StepsGroupsExt{
 		{
-			Id:         "g01",
+			ID:         "g01",
 			GroupIndex: 0,
 			StepsGroup: stepGroup1,
 			Steps: []*StepExt{
 				{
-					Id:         "g01-s01",
+					ID:         "g01-s01",
 					GroupIndex: 0,
 					StepIndex:  0,
 					Step:       step1,
 				},
 				{
-					Id:         "g01-s02",
+					ID:         "g01-s02",
 					GroupIndex: 0,
 					StepIndex:  1,
 					Step:       step2,
@@ -83,12 +83,12 @@ func TestStepsGroups_ToExtended(t *testing.T) {
 			},
 		},
 		{
-			Id:         "g02",
+			ID:         "g02",
 			GroupIndex: 1,
 			StepsGroup: stepGroup2,
 			Steps: []*StepExt{
 				{
-					Id:         "g02-s01",
+					ID:         "g02-s01",
 					GroupIndex: 1,
 					StepIndex:  0,
 					Step:       step3,

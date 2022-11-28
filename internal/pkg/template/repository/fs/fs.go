@@ -36,7 +36,7 @@ func For(ctx context.Context, d dependencies, ref model.TemplateRepository, opts
 
 	switch ref.Type {
 	case model.RepositoryTypeDir:
-		return aferofs.NewLocalFs(ref.Url, filesystem.WithLogger(d.Logger()))
+		return aferofs.NewLocalFs(ref.URL, filesystem.WithLogger(d.Logger()))
 	case model.RepositoryTypeGit:
 		return gitFsFor(ctx, d, ref, opts...)
 	default:

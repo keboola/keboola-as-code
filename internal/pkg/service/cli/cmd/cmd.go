@@ -327,10 +327,10 @@ func (root *RootCommand) printError(errRaw error) {
 			root.logger.Infof(`Please change working directory to a template directory, for example "template/v1".`)
 			root.logger.Infof(`Or use the "template create" command.`)
 			modifiedErrs.Append(errors.Wrapf(err, `none of this and parent directories is template dir`))
-		case errors.Is(err, dependencies.ErrMissingStorageApiHost), errors.Is(err, dialog.ErrMissingStorageApiHost):
-			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, options.StorageApiHostOpt, root.options.GetEnvName(options.StorageApiHostOpt)))
-		case errors.Is(err, dependencies.ErrMissingStorageApiToken), errors.Is(err, dialog.ErrMissingStorageApiToken):
-			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api token, please use "--%s" flag or ENV variable "%s"`, options.StorageApiTokenOpt, root.options.GetEnvName(options.StorageApiTokenOpt)))
+		case errors.Is(err, dependencies.ErrMissingStorageAPIHost), errors.Is(err, dialog.ErrMissingStorageAPIHost):
+			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api host, please use "--%s" flag or ENV variable "%s"`, options.StorageAPIHostOpt, root.options.GetEnvName(options.StorageAPIHostOpt)))
+		case errors.Is(err, dependencies.ErrMissingStorageAPIToken), errors.Is(err, dialog.ErrMissingStorageAPIToken):
+			modifiedErrs.Append(errors.Wrapf(err, `missing Storage Api token, please use "--%s" flag or ENV variable "%s"`, options.StorageAPITokenOpt, root.options.GetEnvName(options.StorageAPITokenOpt)))
 		default:
 			modifiedErrs.Append(err)
 		}

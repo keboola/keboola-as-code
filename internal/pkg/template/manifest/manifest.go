@@ -46,9 +46,9 @@ func Load(fs filesystem.Fs) (*File, error) {
 }
 
 // Evaluate Jsonnet content.
-func (f *File) Evaluate(jsonNetCtx *jsonnet.Context) (*Manifest, error) {
+func (f *File) Evaluate(jsonnetCtx *jsonnet.Context) (*Manifest, error) {
 	// Evaluate Jsonnet
-	content, err := evaluateFile(f.file, jsonNetCtx)
+	content, err := evaluateFile(f.file, jsonnetCtx)
 	if err != nil {
 		return nil, err
 	}

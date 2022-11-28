@@ -286,7 +286,7 @@ var ServiceDetail = Type("ServiceDetail", func() {
 	Attribute("api", String, "Name of the API", func() {
 		Example("buffer")
 	})
-	Attribute("documentation", String, "Url of the API documentation.", func() {
+	Attribute("documentation", String, "URL of the API documentation.", func() {
 		Example("https://buffer.keboola.com/v1/documentation")
 	})
 	Required("api", "documentation")

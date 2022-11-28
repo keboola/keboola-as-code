@@ -116,8 +116,8 @@ func TestAskCreateConfig(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, createConfig.Options{
-		BranchId:    123,
-		ComponentId: `ex-generic-v2`,
+		BranchID:    123,
+		ComponentID: `ex-generic-v2`,
 		Name:        `Foo Bar`,
 	}, opts)
 }
@@ -202,9 +202,9 @@ func TestAskCreateRow(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, createRow.Options{
-		BranchId:    123,
-		ComponentId: `keboola.ex-db-mysql`,
-		ConfigId:    `456`,
+		BranchID:    123,
+		ComponentID: `keboola.ex-db-mysql`,
+		ConfigID:    `456`,
 		Name:        `Foo Bar`,
 	}, opts)
 }

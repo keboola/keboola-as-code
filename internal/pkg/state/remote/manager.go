@@ -22,7 +22,7 @@ import (
 type Manager struct {
 	state            model.ObjectStates
 	localManager     *local.Manager
-	storageApiClient client.Sender
+	storageAPIClient client.Sender
 	mapper           *mapper.Mapper
 }
 
@@ -42,11 +42,11 @@ type UnitOfWork struct {
 	branchesSem *semaphore.Weighted
 }
 
-func NewManager(localManager *local.Manager, storageApiClint client.Sender, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
+func NewManager(localManager *local.Manager, storageAPIClient client.Sender, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
 	return &Manager{
 		state:            objects,
 		localManager:     localManager,
-		storageApiClient: storageApiClint,
+		storageAPIClient: storageAPIClient,
 		mapper:           mapper,
 	}
 }
@@ -142,7 +142,7 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 					ListConfigMetadataRequest(apiBranch.ID).
 					WithOnSuccess(func(_ context.Context, _ client.Sender, metadata *storageapi.ConfigsMetadata) error {
 						for _, item := range *metadata {
-							configKey := model.ConfigKey{BranchId: item.BranchID, ComponentId: item.ComponentID, Id: item.ConfigID}
+							configKey := model.ConfigKey{BranchID: item.BranchID, ComponentID: item.ComponentID, ID: item.ConfigID}
 							configsMetadataLock.Lock()
 							configsMetadata[configKey] = item.Metadata.ToMap()
 							configsMetadataLock.Unlock()
@@ -230,7 +230,7 @@ func (u *UnitOfWork) loadObject(object model.Object) error {
 func (u *UnitOfWork) SaveObject(objectState model.ObjectState, object model.Object, changedFields model.ChangedFields) {
 	if v, ok := objectState.(*model.BranchState); ok && v.Remote == nil {
 		// Branch cannot be created from the CLI
-		u.errors.Append(errors.Errorf(`branch "%d" (%s) exists only locally, new branch cannot be created by CLI`, v.Local.Id, v.Local.Name))
+		u.errors.Append(errors.Errorf(`branch "%d" (%s) exists only locally, new branch cannot be created by CLI`, v.Local.ID, v.Local.Name))
 		return
 	}
 
@@ -298,7 +298,7 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 	// Should metadata be set?
 	exists := objectState.HasRemoteState()
 	setMetadata := !exists || changedFields.Has("metadata")
-	if v, ok := recipe.Object.(model.ToApiMetadata); ok && setMetadata {
+	if v, ok := recipe.Object.(model.ToAPIMetadata); ok && setMetadata {
 		// If the object already exists, we can send the metadata request in parallel with the update.
 		metadataRequestLevel := object.Level()
 		if !exists {
@@ -306,7 +306,7 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 			metadataRequestLevel = object.Level() + 1
 		}
 		changedFields.Remove("metadata")
-		u.runGroupFor(metadataRequestLevel).Add(storageapi.AppendMetadataRequest(v.ToApiObjectKey(), v.ToApiMetadata()))
+		u.runGroupFor(metadataRequestLevel).Add(storageapi.AppendMetadataRequest(v.ToAPIObjectKey(), v.ToAPIMetadata()))
 	}
 
 	// Create or update
@@ -320,20 +320,20 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 }
 
 func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe) client.APIRequest[storageapi.Object] {
-	apiObject, _ := recipe.Object.(model.ToApiObject).ToApiObject(u.changeDescription, nil)
+	apiObject, _ := recipe.Object.(model.ToAPIObject).ToAPIObject(u.changeDescription, nil)
 	request := storageapi.
 		CreateRequest(apiObject).
 		WithOnSuccess(func(_ context.Context, _ client.Sender, apiObject storageapi.Object) error {
 			// Update internal state
-			object.SetObjectId(apiObject.ObjectId())
+			object.SetObjectID(apiObject.ObjectId())
 			objectState.SetRemoteState(object)
 			u.changes.AddCreated(objectState)
 			return nil
 		}).
 		WithOnError(func(ctx context.Context, sender client.Sender, err error) error {
-			var storageApiErr *storageapi.Error
-			if errors.As(err, &storageApiErr) {
-				if storageApiErr.ErrCode == "configurationAlreadyExists" || storageApiErr.ErrCode == "configurationRowAlreadyExists" {
+			var storageAPIErr *storageapi.Error
+			if errors.As(err, &storageAPIErr) {
+				if storageAPIErr.ErrCode == "configurationAlreadyExists" || storageAPIErr.ErrCode == "configurationRowAlreadyExists" {
 					// Object exists -> update instead of create
 					// This can happen if there is a disconnected "variables" configuration, and push connects it again.
 					// See TestCliE2E/push/variables-add-relation
@@ -359,7 +359,7 @@ func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.O
 }
 
 func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) client.APIRequest[storageapi.Object] {
-	apiObject, apiChangedFields := recipe.Object.(model.ToApiObject).ToApiObject(u.changeDescription, changedFields)
+	apiObject, apiChangedFields := recipe.Object.(model.ToAPIObject).ToAPIObject(u.changeDescription, changedFields)
 	return storageapi.
 		UpdateRequest(apiObject, apiChangedFields).
 		WithOnSuccess(func(_ context.Context, _ client.Sender, apiObject storageapi.Object) error {
@@ -372,7 +372,7 @@ func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.O
 
 func (u *UnitOfWork) delete(objectState model.ObjectState) {
 	request := storageapi.
-		DeleteRequest(objectState.(model.ToApiObjectKey).ToApiObjectKey()).
+		DeleteRequest(objectState.(model.ToAPIObjectKey).ToAPIObjectKey()).
 		WithOnSuccess(func(_ context.Context, _ client.Sender, _ client.NoResult) error {
 			u.Manifest().Delete(objectState)
 			objectState.SetRemoteState(nil)
@@ -407,7 +407,7 @@ func (u *UnitOfWork) runGroupFor(level int) *client.RunGroup {
 		return value.(*client.RunGroup)
 	}
 
-	grp := client.NewRunGroup(u.ctx, u.storageApiClient)
+	grp := client.NewRunGroup(u.ctx, u.storageAPIClient)
 	u.runGroups.Set(key, grp)
 	return grp
 }

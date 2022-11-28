@@ -18,7 +18,7 @@ func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Create api and internal object
-	key := model.ConfigKey{BranchId: 1, ComponentId: storageapi.SchedulerComponentID, Id: `123`}
+	key := model.ConfigKey{BranchID: 1, ComponentID: storageapi.SchedulerComponentID, ID: `123`}
 	object := &model.Config{ConfigKey: key, Content: orderedmap.New()}
 	contentStr := `{
   "target": {
@@ -39,8 +39,8 @@ func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
 	// Internal object has new relation
 	assert.Equal(t, model.Relations{
 		&model.SchedulerForRelation{
-			ComponentId: `foo.bar`,
-			ConfigId:    `123`,
+			ComponentID: `foo.bar`,
+			ConfigID:    `123`,
 		},
 	}, object.Relations)
 

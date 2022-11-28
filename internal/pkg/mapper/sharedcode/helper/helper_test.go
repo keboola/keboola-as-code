@@ -54,10 +54,10 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: storageapi.SharedCodeComponentID,
-		ConfigId:    `456`,
-		Id:          `1234`,
+		BranchID:    123,
+		ComponentID: storageapi.SharedCodeComponentID,
+		ConfigID:    `456`,
+		ID:          `1234`,
 	}, result.Key())
 
 	// Not found
@@ -77,26 +77,26 @@ func TestGetSharedCodeVariablesId(t *testing.T) {
 	helper := New(mockedState)
 
 	sharedCodeRow1 := mockedState.MustGet(model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: storageapi.SharedCodeComponentID,
-		ConfigId:    `456`,
-		Id:          `1234`,
+		BranchID:    123,
+		ComponentID: storageapi.SharedCodeComponentID,
+		ConfigID:    `456`,
+		ID:          `1234`,
 	}).(*model.ConfigRowState)
 	sharedCodeRow2 := mockedState.MustGet(model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: storageapi.SharedCodeComponentID,
-		ConfigId:    `456`,
-		Id:          `5678`,
+		BranchID:    123,
+		ComponentID: storageapi.SharedCodeComponentID,
+		ConfigID:    `456`,
+		ID:          `5678`,
 	}).(*model.ConfigRowState)
 
-	sharedCodeRow1.Local.Content.Set(model.SharedCodeVariablesIdContentKey, `789`)
+	sharedCodeRow1.Local.Content.Set(model.SharedCodeVariablesIDContentKey, `789`)
 
 	// Found
-	variablesId, found := helper.GetSharedCodeVariablesId(sharedCodeRow1.Local)
+	variablesID, found := helper.GetSharedCodeVariablesID(sharedCodeRow1.Local)
 	assert.True(t, found)
-	assert.Equal(t, `789`, variablesId)
+	assert.Equal(t, `789`, variablesID)
 
 	// Not found
-	_, found = helper.GetSharedCodeVariablesId(sharedCodeRow2.Local)
+	_, found = helper.GetSharedCodeVariablesID(sharedCodeRow2.Local)
 	assert.False(t, found)
 }

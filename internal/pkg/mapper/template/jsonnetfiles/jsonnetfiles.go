@@ -4,10 +4,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 )
 
-type jsonNetMapper struct {
-	jsonNetCtx *jsonnet.Context
+type jsonnetMapper struct {
+	jsonnetCtx *jsonnet.Context
 }
 
-func NewMapper(jsonNetCtx *jsonnet.Context) *jsonNetMapper {
-	return &jsonNetMapper{jsonNetCtx: jsonNetCtx}
+func NewMapper(jsonnetCtx *jsonnet.Context) *jsonnetMapper {
+	return &jsonnetMapper{jsonnetCtx: jsonnetCtx}
 }

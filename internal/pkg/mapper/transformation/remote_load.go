@@ -40,20 +40,20 @@ func (m *transformationMapper) MapAfterRemoteLoad(ctx context.Context, recipe *m
 
 	// Convert map to Block structs
 	config.Transformation = &model.Transformation{}
-	if err := json.ConvertByJson(blocks, &config.Transformation.Blocks); err != nil {
+	if err := json.ConvertByJSON(blocks, &config.Transformation.Blocks); err != nil {
 		return err
 	}
 
 	// Fill in keys
 	for blockIndex, block := range config.Transformation.Blocks {
-		block.BranchId = config.BranchId
-		block.ComponentId = config.ComponentId
-		block.ConfigId = config.Id
+		block.BranchID = config.BranchID
+		block.ComponentID = config.ComponentID
+		block.ConfigID = config.ID
 		block.Index = blockIndex
 		for codeIndex, code := range block.Codes {
-			code.BranchId = config.BranchId
-			code.ComponentId = config.ComponentId
-			code.ConfigId = config.Id
+			code.BranchID = config.BranchID
+			code.ComponentID = config.ComponentID
+			code.ConfigID = config.ID
 			code.BlockIndex = block.Index
 			code.Index = codeIndex
 			for _, script := range code.Scripts {
@@ -79,7 +79,7 @@ func (m *transformationMapper) MapAfterRemoteLoad(ctx context.Context, recipe *m
 				} else {
 					code.AbsPath = m.state.NamingGenerator().CodePath(block.Path(), code)
 				}
-				code.CodeFileName = m.state.NamingGenerator().CodeFileName(config.ComponentId)
+				code.CodeFileName = m.state.NamingGenerator().CodeFileName(config.ComponentID)
 			}
 		}
 	}

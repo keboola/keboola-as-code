@@ -21,7 +21,7 @@ func (m *schedulerMapper) MapBeforePersist(ctx context.Context, recipe *model.Pe
 	}
 
 	// Get component
-	component, err := m.state.Components().GetOrErr(configManifest.ComponentId)
+	component, err := m.state.Components().GetOrErr(configManifest.ComponentID)
 	if err != nil {
 		return err
 	}
@@ -38,8 +38,8 @@ func (m *schedulerMapper) MapBeforePersist(ctx context.Context, recipe *model.Pe
 
 	// Add relation
 	configManifest.Relations.Add(&model.SchedulerForRelation{
-		ComponentId: configKey.ComponentId,
-		ConfigId:    configKey.Id,
+		ComponentID: configKey.ComponentID,
+		ConfigID:    configKey.ID,
 	})
 
 	return nil

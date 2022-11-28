@@ -14,14 +14,14 @@ type StepsExt []*StepExt
 type StepsGroupExt struct {
 	StepsGroup
 	Steps      StepsExt
-	Id         string // eg. "g01"
+	ID         string // eg. "g01"
 	GroupIndex int
 	Announced  bool // true if info about group has been printed in CLI dialog
 }
 
 type StepExt struct {
 	Step
-	Id         string // eg. "g01-s01"
+	ID         string // eg. "g01-s01"
 	GroupIndex int
 	StepIndex  int
 	Show       bool // show in CLI dialog
@@ -30,12 +30,12 @@ type StepExt struct {
 
 func (g StepsGroups) ToExtended() (groupsExt StepsGroupsExt) {
 	for groupIndex, group := range g {
-		groupId := fmt.Sprintf("g%02d", groupIndex+1)
-		groupExt := &StepsGroupExt{StepsGroup: group, Id: groupId, GroupIndex: groupIndex}
+		groupID := fmt.Sprintf("g%02d", groupIndex+1)
+		groupExt := &StepsGroupExt{StepsGroup: group, ID: groupID, GroupIndex: groupIndex}
 		groupsExt = append(groupsExt, groupExt)
 		for stepIndex, step := range group.Steps {
-			stepId := fmt.Sprintf("%s-s%02d", groupId, stepIndex+1)
-			stepExt := &StepExt{Step: step, Id: stepId, GroupIndex: groupIndex, StepIndex: stepIndex}
+			stepID := fmt.Sprintf("%s-s%02d", groupID, stepIndex+1)
+			stepExt := &StepExt{Step: step, ID: stepID, GroupIndex: groupIndex, StepIndex: stepIndex}
 			groupExt.Steps = append(groupExt.Steps, stepExt)
 		}
 	}
@@ -92,7 +92,7 @@ func (g StepsGroupsExt) VisitInputs(fn VisitInputsCallback) error {
 func (g StepsGroupsExt) InputsMap() map[string]*Input {
 	out := make(map[string]*Input)
 	_ = g.VisitInputs(func(_ *StepsGroupExt, _ *StepExt, input *Input) error {
-		out[input.Id] = input
+		out[input.ID] = input
 		return nil
 	})
 	return out
@@ -102,7 +102,7 @@ func (g StepsGroupsExt) InputsMap() map[string]*Input {
 func (g StepsGroupsExt) StepsMap() map[string]*StepExt {
 	out := make(map[string]*StepExt)
 	_ = g.VisitSteps(func(group *StepsGroupExt, step *StepExt) error {
-		out[step.Id] = step
+		out[step.ID] = step
 		return nil
 	})
 	return out
@@ -134,7 +134,7 @@ func (s *StepExt) AddInput(input Input) {
 	s.Inputs = append(s.Inputs, input)
 }
 
-// InputsMap - map of all Inputs by Input.Id.
+// InputsMap - map of all Inputs by Input.ID.
 type InputsMap struct {
 	data *orderedmap.OrderedMap
 }
@@ -144,11 +144,11 @@ func NewInputsMap() InputsMap {
 }
 
 func (v InputsMap) Add(input *Input) {
-	v.data.Set(input.Id, input)
+	v.data.Set(input.ID, input)
 }
 
-func (v InputsMap) Get(inputId string) (*Input, bool) {
-	value, found := v.data.Get(inputId)
+func (v InputsMap) Get(inputID string) (*Input, bool) {
+	value, found := v.data.Get(inputID)
 	if !found {
 		return nil, false
 	}

@@ -13,32 +13,32 @@ func TestTemplateIdsDialog_DefaultValue(t *testing.T) {
 	t.Parallel()
 
 	branch := &model.Branch{
-		BranchKey: model.BranchKey{Id: 1},
+		BranchKey: model.BranchKey{ID: 1},
 		Name:      "Branch",
 	}
 	configs := []*model.ConfigWithRows{
 		{
 			Config: &model.Config{
-				ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: "foo.bar", Id: "123"},
+				ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: "foo.bar", ID: "123"},
 				Name:      "My Config 1",
 			},
 		},
 		{
 			Config: &model.Config{
-				ConfigKey: model.ConfigKey{BranchId: 1, ComponentId: "foo.bar", Id: "456"},
+				ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: "foo.bar", ID: "456"},
 				Name:      "My Config 2",
 			},
 			Rows: []*model.ConfigRow{
 				{
-					ConfigRowKey: model.ConfigRowKey{BranchId: 1, ComponentId: "foo.bar", ConfigId: "456", Id: "1"},
+					ConfigRowKey: model.ConfigRowKey{BranchID: 1, ComponentID: "foo.bar", ConfigID: "456", ID: "1"},
 					Name:         "My Row",
 				},
 				{
-					ConfigRowKey: model.ConfigRowKey{BranchId: 1, ComponentId: "foo.bar", ConfigId: "456", Id: "2"},
+					ConfigRowKey: model.ConfigRowKey{BranchID: 1, ComponentID: "foo.bar", ConfigID: "456", ID: "2"},
 					Name:         "My Row",
 				},
 				{
-					ConfigRowKey: model.ConfigRowKey{BranchId: 1, ComponentId: "foo.bar", ConfigId: "456", Id: "3"},
+					ConfigRowKey: model.ConfigRowKey{BranchID: 1, ComponentID: "foo.bar", ConfigID: "456", ID: "3"},
 					Name:         "#$%^_",
 				},
 			},

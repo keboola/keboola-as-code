@@ -30,14 +30,14 @@ func TestRenameAllPlan(t *testing.T) {
 		"name": "Generic",
 	})
 	assert.NoError(t, err)
-	getMySqlExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
+	getMySQLExResponder, err := httpmock.NewJsonResponder(200, map[string]interface{}{
 		"id":   "keboola.ex-db-mysql",
 		"type": "extractor",
 		"name": "MySQL",
 	})
 	assert.NoError(t, err)
-	d.MockedHttpTransport().RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder.Once())
-	d.MockedHttpTransport().RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySqlExResponder.Once())
+	d.MockedHTTPTransport().RegisterResponder("GET", `=~/storage/components/ex-generic-v2`, getGenericExResponder.Once())
+	d.MockedHTTPTransport().RegisterResponder("GET", `=~/storage/components/keboola.ex-db-mysql`, getMySQLExResponder.Once())
 
 	// Load state
 	projectState, err := d.MockedProject(fs).LoadState(loadState.Options{LoadLocalState: true}, d)

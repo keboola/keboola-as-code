@@ -30,7 +30,7 @@ func ValidateCommand(p dependencies.Provider) *cobra.Command {
 			// Options
 			options := validate.Options{
 				ValidateSecrets:    true,
-				ValidateJsonSchema: true,
+				ValidateJSONSchema: true,
 			}
 
 			// Validate

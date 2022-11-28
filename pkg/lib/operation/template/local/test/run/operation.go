@@ -55,7 +55,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	// Run through all tests
 	tests, err := tmpl.Tests()
 	if err != nil {
-		return errors.Errorf(`error running tests for template "%s": %w`, tmpl.TemplateId(), err)
+		return errors.Errorf(`error running tests for template "%s": %w`, tmpl.TemplateID(), err)
 	}
 
 	errs := errors.NewMultiError()
@@ -71,7 +71,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 			}
 			if err := runLocalTest(ctx, test, tmpl, o.Verbose, d); err != nil {
 				d.Logger().Errorf(`FAIL %s %s local`, tmpl.FullName(), test.Name())
-				errs.AppendWithPrefixf(err, `running local test "%s" for template "%s" failed`, test.Name(), tmpl.TemplateId())
+				errs.AppendWithPrefixf(err, `running local test "%s" for template "%s" failed`, test.Name(), tmpl.TemplateID())
 			} else {
 				d.Logger().Infof(`PASS %s %s local`, tmpl.FullName(), test.Name())
 			}
@@ -83,7 +83,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 			}
 			if err := runRemoteTest(ctx, test, tmpl, o.Verbose, d); err != nil {
 				d.Logger().Errorf(`FAIL %s %s remote`, tmpl.FullName(), test.Name())
-				errs.AppendWithPrefixf(err, `running remote test "%s" for template "%s" failed`, test.Name(), tmpl.TemplateId())
+				errs.AppendWithPrefixf(err, `running remote test "%s" for template "%s" failed`, test.Name(), tmpl.TemplateID())
 			} else {
 				d.Logger().Infof(`PASS %s %s remote`, tmpl.FullName(), test.Name())
 			}
@@ -120,9 +120,9 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 	// Use template
 	tmplOpts := useTemplate.Options{
 		InstanceName: "test",
-		TargetBranch: model.BranchKey{Id: storageapi.BranchID(branchID)},
+		TargetBranch: model.BranchKey{ID: storageapi.BranchID(branchID)},
 		Inputs:       inputValues,
-		InstanceId:   template.InstanceIdForTest,
+		InstanceID:   template.InstanceIDForTest,
 		SkipEncrypt:  true,
 	}
 	_, _, err = useTemplate.Run(ctx, prjState, tmpl, tmplOpts, testDeps)
@@ -201,7 +201,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	replaceEnvs := env.Empty()
 	replaceEnvs.Set("STORAGE_API_HOST", testPrj.StorageAPIHost())
 	replaceEnvs.Set("PROJECT_ID", strconv.Itoa(testPrj.ID()))
-	replaceEnvs.Set("MAIN_BRANCH_ID", prjState.MainBranch().Id.String())
+	replaceEnvs.Set("MAIN_BRANCH_ID", prjState.MainBranch().ID.String())
 	envProvider := storageenvmock.CreateStorageEnvMockTicketProvider(ctx, replaceEnvs)
 	testhelper.MustReplaceEnvsDir(prjState.Fs(), `/`, envProvider)
 	testhelper.MustReplaceEnvsDirWithSeparator(expectedDirFs, `/`, envProvider, "__")
@@ -239,7 +239,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 
 	// Run the mainConfig job
 	queueClient := testPrj.JobsQueueAPIClient()
-	job, err := jobsqueueapi.CreateJobRequest(tmplInst.MainConfig.ComponentId, tmplInst.MainConfig.ConfigId).Send(ctx, queueClient)
+	job, err := jobsqueueapi.CreateJobRequest(tmplInst.MainConfig.ComponentID, tmplInst.MainConfig.ConfigID).Send(ctx, queueClient)
 	if err != nil {
 		return err
 	}
@@ -266,7 +266,7 @@ func reloadPrjState(ctx context.Context, prjState *project.State) error {
 func findTmplInst(prjState *project.State, branchKey model.BranchKey, tmplInstID string) (*model.TemplateInstance, error) {
 	branch, found := prjState.GetOrNil(branchKey).(*model.BranchState)
 	if !found {
-		return nil, errors.Errorf(`branch "%d" not found`, branchKey.Id)
+		return nil, errors.Errorf(`branch "%d" not found`, branchKey.ID)
 	}
 	tmplInst, found, err := branch.Remote.Metadata.TemplateInstance(tmplInstID)
 	if err != nil {
@@ -278,10 +278,10 @@ func findTmplInst(prjState *project.State, branchKey model.BranchKey, tmplInstID
 	if tmplInst.MainConfig == nil {
 		return nil, errors.Errorf(`template instance "%s" is missing mainConfig in metadata`, tmplInstID)
 	}
-	if tmplInst.MainConfig.ComponentId == "" {
+	if tmplInst.MainConfig.ComponentID == "" {
 		return nil, errors.Errorf(`template instance "%s" is missing mainConfig.componentId in metadata`, tmplInstID)
 	}
-	if tmplInst.MainConfig.ConfigId == "" {
+	if tmplInst.MainConfig.ConfigID == "" {
 		return nil, errors.Errorf(`template instance "%s" is missing mainConfig.configId in metadata`, tmplInstID)
 	}
 	return tmplInst, nil

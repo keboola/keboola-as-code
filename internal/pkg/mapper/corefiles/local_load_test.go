@@ -71,14 +71,14 @@ func TestLoadCoreFiles_SkipChildrenLoadIfParentIsInvalid(t *testing.T) {
 
 	// Setup manifest
 	branchManifest := &model.BranchManifest{
-		BranchKey: model.BranchKey{Id: 123},
+		BranchKey: model.BranchKey{ID: 123},
 		Paths: model.Paths{
 			AbsPath: model.NewAbsPath(``, `main`),
 		},
 	}
 	configManifest := &model.ConfigManifestWithRows{
 		ConfigManifest: model.ConfigManifest{
-			ConfigKey: model.ConfigKey{BranchId: 123, ComponentId: `foo.bar`, Id: `456`},
+			ConfigKey: model.ConfigKey{BranchID: 123, ComponentID: `foo.bar`, ID: `456`},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(`main`, `config`),
 			},

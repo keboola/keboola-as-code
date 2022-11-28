@@ -32,9 +32,9 @@ func TestLocalCreateConfigDefaultContent(t *testing.T) {
 	// Create
 	manager := newTestLocalManager(t, []*storageapi.Component{component})
 	key := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `keboola.foo`,
-		Id:          "456",
+		BranchID:    123,
+		ComponentID: `keboola.foo`,
+		ID:          "456",
 	}
 	object, err := manager.createObject(key, "New Config")
 	assert.NoError(t, err)
@@ -68,10 +68,10 @@ func TestLocalCreateConfigRowDefaultContent(t *testing.T) {
 	// Create
 	manager := newTestLocalManager(t, []*storageapi.Component{component})
 	key := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: `keboola.foo`,
-		ConfigId:    "567",
-		Id:          "789",
+		BranchID:    123,
+		ComponentID: `keboola.foo`,
+		ConfigID:    "567",
+		ID:          "789",
 	}
 	object, err := manager.createObject(key, "New Row")
 	assert.NoError(t, err)
@@ -96,9 +96,9 @@ func TestLocalCreateConfigContentFromSchema(t *testing.T) {
 	// Create
 	manager := newTestLocalManager(t, []*storageapi.Component{component})
 	key := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `keboola.foo`,
-		Id:          "456",
+		BranchID:    123,
+		ComponentID: `keboola.foo`,
+		ID:          "456",
 	}
 	object, err := manager.createObject(key, "New Config")
 	assert.NoError(t, err)
@@ -123,10 +123,10 @@ func TestLocalCreateConfigRowContentFromSchema(t *testing.T) {
 	// Create
 	manager := newTestLocalManager(t, []*storageapi.Component{component})
 	key := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: `keboola.foo`,
-		ConfigId:    "567",
-		Id:          "789",
+		BranchID:    123,
+		ComponentID: `keboola.foo`,
+		ConfigID:    "567",
+		ID:          "789",
 	}
 	object, err := manager.createObject(key, "New Row")
 	assert.NoError(t, err)
@@ -147,9 +147,9 @@ func TestLocalCreateConfigEmptyContent(t *testing.T) {
 	// Create
 	manager := newTestLocalManager(t, []*storageapi.Component{component})
 	key := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `keboola.foo`,
-		Id:          "456",
+		BranchID:    123,
+		ComponentID: `keboola.foo`,
+		ID:          "456",
 	}
 	object, err := manager.createObject(key, "New Config")
 	assert.NoError(t, err)
@@ -171,10 +171,10 @@ func TestLocalCreateConfigRowEmptyContent(t *testing.T) {
 	// Create
 	manager := newTestLocalManager(t, []*storageapi.Component{component})
 	key := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: `keboola.foo`,
-		ConfigId:    "567",
-		Id:          "789",
+		BranchID:    123,
+		ComponentID: `keboola.foo`,
+		ConfigID:    "567",
+		ID:          "789",
 	}
 	object, err := manager.createObject(key, "New Row")
 	assert.NoError(t, err)

@@ -70,7 +70,7 @@ func (m *transformationMapper) updateCodePath(g model.PathsGenerator, parent *mo
 
 func (m *transformationMapper) updateCodeFilePath(g model.PathsGenerator, parent *model.ConfigState, code *model.Code, oldPath string) {
 	renameFrom := m.state.NamingGenerator().CodeFilePath(code)
-	code.CodeFileName = m.state.NamingGenerator().CodeFileName(code.ComponentId)
+	code.CodeFileName = m.state.NamingGenerator().CodeFileName(code.ComponentID)
 	newPath := m.state.NamingGenerator().CodeFilePath(code)
 	if renameFrom != newPath {
 		g.AddRenamed(model.RenamedPath{ObjectState: parent, OldPath: oldPath, RenameFrom: renameFrom, NewPath: newPath})

@@ -60,7 +60,7 @@ func (m *ignoreMapper) isIgnored(object model.Object) bool {
 // isIgnoredConfig ignores all variables configs which are not attached to a config.
 func (m *ignoreMapper) isIgnoredConfig(config *model.Config) bool {
 	// Variables config
-	if config.ComponentId == storageapi.VariablesComponentID {
+	if config.ComponentID == storageapi.VariablesComponentID {
 		// Without target config
 		if !config.Relations.Has(model.VariablesForRelType) && !config.Relations.Has(model.SharedCodeVariablesForRelType) {
 			m.logger.Debugf("Ignored unattached variables %s", config.Desc())
@@ -70,7 +70,7 @@ func (m *ignoreMapper) isIgnoredConfig(config *model.Config) bool {
 	}
 
 	// Scheduler config
-	if config.ComponentId == storageapi.SchedulerComponentID {
+	if config.ComponentID == storageapi.SchedulerComponentID {
 		relationRaw, err := config.Relations.GetOneByType(model.SchedulerForRelType)
 		if err != nil || relationRaw == nil {
 			// Relation is missing or invalid, scheduler is ignored
@@ -80,9 +80,9 @@ func (m *ignoreMapper) isIgnoredConfig(config *model.Config) bool {
 		// Target config key
 		relation := relationRaw.(*model.SchedulerForRelation)
 		targetConfigKey := model.ConfigKey{
-			BranchId:    config.BranchId,
-			ComponentId: relation.ComponentId,
-			Id:          relation.ConfigId,
+			BranchID:    config.BranchID,
+			ComponentID: relation.ComponentID,
+			ID:          relation.ConfigID,
 		}
 
 		// Configuration must exists

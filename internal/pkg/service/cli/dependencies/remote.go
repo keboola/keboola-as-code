@@ -21,27 +21,27 @@ type remote struct {
 
 func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand) (*remote, error) {
 	// Get Storage API token
-	token := cmdPublicDeps.Options().GetString(options.StorageApiTokenOpt)
+	token := cmdPublicDeps.Options().GetString(options.StorageAPITokenOpt)
 	if token == "" {
-		return nil, ErrMissingStorageApiToken
+		return nil, ErrMissingStorageAPIToken
 	}
 
 	// Create common remote dependencies (includes API authentication)
 	projectDeps, err := dependencies.NewProjectDeps(ctx, cmdPublicDeps, cmdPublicDeps, token)
 	if err != nil {
-		var storageApiErr *storageapi.Error
-		if errors.As(err, &storageApiErr) && storageApiErr.ErrCode == "storage.tokenInvalid" {
-			return nil, ErrInvalidStorageApiToken
+		var storageAPIErr *storageapi.Error
+		if errors.As(err, &storageAPIErr) && storageAPIErr.ErrCode == "storage.tokenInvalid" {
+			return nil, ErrInvalidStorageAPIToken
 		}
 		return nil, err
 	}
 
 	// Storage Api token remote ID and manifest remote ID must be same
 	if prj, exists, err := cmdPublicDeps.LocalProject(false); exists && err == nil {
-		tokenProjectId := projectDeps.ProjectID()
+		tokenProjectID := projectDeps.ProjectID()
 		manifest := prj.ProjectManifest()
-		if manifest != nil && manifest.ProjectID() != tokenProjectId {
-			return nil, errors.Errorf(`given token is from the remote "%d", but in manifest is defined remote "%d"`, tokenProjectId, manifest.ProjectID())
+		if manifest != nil && manifest.ProjectID() != tokenProjectID {
+			return nil, errors.Errorf(`given token is from the remote "%d", but in manifest is defined remote "%d"`, tokenProjectID, manifest.ProjectID())
 		}
 	}
 
@@ -52,7 +52,7 @@ func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand) (*remote
 	}, nil
 }
 
-func storageApiHost(fs filesystem.Fs, opts *options.Options) (string, error) {
+func storageAPIHost(fs filesystem.Fs, opts *options.Options) (string, error) {
 	var host string
 	if fs.IsFile(projectManifest.Path()) {
 		// Get host from remote manifest
@@ -60,11 +60,11 @@ func storageApiHost(fs filesystem.Fs, opts *options.Options) (string, error) {
 		if err != nil {
 			return "", err
 		} else {
-			host = m.ApiHost()
+			host = m.APIHost()
 		}
 	} else {
 		// Get host from options (ENV/flag)
-		host = opts.GetString(options.StorageApiHostOpt)
+		host = opts.GetString(options.StorageAPIHostOpt)
 	}
 
 	// Fallback
@@ -74,7 +74,7 @@ func storageApiHost(fs filesystem.Fs, opts *options.Options) (string, error) {
 
 	// Validate host
 	if host = strhelper.NormalizeHost(host); host == "" {
-		return "", ErrMissingStorageApiHost
+		return "", ErrMissingStorageAPIHost
 	} else {
 		return host, nil
 	}

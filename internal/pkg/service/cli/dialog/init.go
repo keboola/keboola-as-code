@@ -16,7 +16,7 @@ import (
 
 type initDeps interface {
 	Options() *options.Options
-	StorageApiClient() client.Sender
+	StorageAPIClient() client.Sender
 }
 
 type hostAndTokenDependencies interface {
@@ -27,10 +27,10 @@ type hostAndTokenDependencies interface {
 func (p *Dialogs) AskHostAndToken(d hostAndTokenDependencies) error {
 	// Host and token
 	errs := errors.NewMultiError()
-	if _, err := p.AskStorageApiHost(d); err != nil {
+	if _, err := p.AskStorageAPIHost(d); err != nil {
 		errs.Append(err)
 	}
-	if _, err := p.AskStorageApiToken(d); err != nil {
+	if _, err := p.AskStorageAPIToken(d); err != nil {
 		errs.Append(err)
 	}
 	if errs.Len() > 0 {

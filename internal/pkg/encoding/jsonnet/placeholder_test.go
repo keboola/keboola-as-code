@@ -9,28 +9,28 @@ import (
 
 func TestConfigIdPlaceholder(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, `<<~~func:ConfigId:["my-config-id"]~~>>`, ConfigIdPlaceholder("my-config-id"))
+	assert.Equal(t, `<<~~func:ConfigId:["my-config-id"]~~>>`, ConfigIDPlaceholder("my-config-id"))
 }
 
 func TestStripIdPlaceholder_NotFound(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, "", StripIdPlaceholder(""))
-	assert.Equal(t, "foo bar", StripIdPlaceholder("foo bar"))
+	assert.Equal(t, "", StripIDPlaceholder(""))
+	assert.Equal(t, "foo bar", StripIDPlaceholder("foo bar"))
 }
 
 func TestStripIdPlaceholder_ConfigId(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, "my-config-id", StripIdPlaceholder(ConfigIdPlaceholder("my-config-id")))
+	assert.Equal(t, "my-config-id", StripIDPlaceholder(ConfigIDPlaceholder("my-config-id")))
 }
 
 func TestStripIdPlaceholder_ConfigRowId(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, "my-config-row-id", StripIdPlaceholder(ConfigIdPlaceholder("my-config-row-id")))
+	assert.Equal(t, "my-config-row-id", StripIDPlaceholder(ConfigIDPlaceholder("my-config-row-id")))
 }
 
 func TestConfigRowIdPlaceholder(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, `<<~~func:ConfigRowId:["my-config-row-id"]~~>>`, ConfigRowIdPlaceholder("my-config-row-id"))
+	assert.Equal(t, `<<~~func:ConfigRowId:["my-config-row-id"]~~>>`, ConfigRowIDPlaceholder("my-config-row-id"))
 }
 
 func TestReplaceFuncCallPlaceholders(t *testing.T) {

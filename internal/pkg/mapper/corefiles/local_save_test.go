@@ -42,24 +42,24 @@ func TestSaveCoreFiles(t *testing.T) {
 	expectedFiles := model.NewFilesToSave()
 	expectedFiles.
 		Add(
-			filesystem.NewJsonFile(state.NamingGenerator().MetaFilePath(manifest.Path()),
+			filesystem.NewJSONFile(state.NamingGenerator().MetaFilePath(manifest.Path()),
 				orderedmap.FromPairs([]orderedmap.Pair{
 					{Key: "myKey", Value: "3"},
 					{Key: "Meta2", Value: "4"},
 				}),
 			),
 		).
-		AddTag(model.FileTypeJson).
+		AddTag(model.FileTypeJSON).
 		AddTag(model.FileKindObjectMeta)
 	expectedFiles.
 		Add(
-			filesystem.NewJsonFile(state.NamingGenerator().ConfigFilePath(manifest.Path()),
+			filesystem.NewJSONFile(state.NamingGenerator().ConfigFilePath(manifest.Path()),
 				orderedmap.FromPairs([]orderedmap.Pair{
 					{Key: "foo", Value: "bar"},
 				}),
 			),
 		).
-		AddTag(model.FileTypeJson).
+		AddTag(model.FileTypeJSON).
 		AddTag(model.FileKindObjectConfig)
 	assert.Equal(t, expectedFiles, recipe.Files)
 }

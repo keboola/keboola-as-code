@@ -60,9 +60,9 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 		Blocks: []*model.Block{
 			{
 				BlockKey: model.BlockKey{
-					BranchId:    123,
-					ComponentId: "keboola.snowflake-transformation",
-					ConfigId:    `456`,
+					BranchID:    123,
+					ComponentID: "keboola.snowflake-transformation",
+					ConfigID:    `456`,
 					Index:       0,
 				},
 				AbsPath: model.NewAbsPath(
@@ -73,9 +73,9 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 				Codes: model.Codes{
 					{
 						CodeKey: model.CodeKey{
-							BranchId:    123,
-							ComponentId: "keboola.snowflake-transformation",
-							ConfigId:    `456`,
+							BranchID:    123,
+							ComponentID: "keboola.snowflake-transformation",
+							ConfigID:    `456`,
 							BlockIndex:  0,
 							Index:       0,
 						},
@@ -91,9 +91,9 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 					},
 					{
 						CodeKey: model.CodeKey{
-							BranchId:    123,
-							ComponentId: "keboola.snowflake-transformation",
-							ConfigId:    `456`,
+							BranchID:    123,
+							ComponentID: "keboola.snowflake-transformation",
+							ConfigID:    `456`,
 							BlockIndex:  0,
 							Index:       1,
 						},
@@ -112,9 +112,9 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 			},
 			{
 				BlockKey: model.BlockKey{
-					BranchId:    123,
-					ComponentId: "keboola.snowflake-transformation",
-					ConfigId:    `456`,
+					BranchID:    123,
+					ComponentID: "keboola.snowflake-transformation",
+					ConfigID:    `456`,
 					Index:       1,
 				},
 				AbsPath: model.NewAbsPath(
@@ -125,9 +125,9 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 				Codes: model.Codes{
 					{
 						CodeKey: model.CodeKey{
-							BranchId:    123,
-							ComponentId: "keboola.snowflake-transformation",
-							ConfigId:    `456`,
+							BranchID:    123,
+							ComponentID: "keboola.snowflake-transformation",
+							ConfigID:    `456`,
 							BlockIndex:  1,
 							Index:       0,
 						},
@@ -151,7 +151,7 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 	var files []filesystem.File
 	for _, file := range recipe.Files.All() {
 		var fileRaw *filesystem.RawFile
-		if f, ok := file.(*filesystem.JsonFile); ok {
+		if f, ok := file.(*filesystem.JSONFile); ok {
 			// Minify JSON
 			fileRaw = filesystem.NewRawFile(f.Path(), json.MustEncodeString(f.Content, false))
 			fileRaw.AddTag(f.AllTags()...)
@@ -172,34 +172,34 @@ func TestTransformationMapper_MapBeforeLocalSave(t *testing.T) {
 			AddTag(model.FileTypeOther),
 		filesystem.NewRawFile(blocksDir+`/001-block-1/meta.json`, `{"name":"block1"}`).
 			AddTag(model.FileKindBlockMeta).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.NewRawFile(blocksDir+`/001-block-1/001-code-1/meta.json`, `{"name":"code1"}`).
 			AddTag(model.FileKindCodeMeta).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.NewRawFile(blocksDir+`/001-block-1/001-code-1/code.sql`, "SELECT 1\n").
 			AddTag(model.FileKindNativeCode).
 			AddTag(model.FileTypeOther),
 		filesystem.NewRawFile(blocksDir+`/001-block-1/002-code-2/meta.json`, `{"name":"code2"}`).
 			AddTag(model.FileKindCodeMeta).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.NewRawFile(blocksDir+`/001-block-1/002-code-2/code.sql`, "SELECT 2;\n\nSELECT 3;\n").
 			AddTag(model.FileKindNativeCode).
 			AddTag(model.FileTypeOther),
 		filesystem.NewRawFile(blocksDir+`/002-block-2/meta.json`, `{"name":"block2"}`).
 			AddTag(model.FileKindBlockMeta).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.NewRawFile(blocksDir+`/002-block-2/001-code-3/meta.json`, `{"name":"code3"}`).
 			AddTag(model.FileKindCodeMeta).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.NewRawFile(blocksDir+`/002-block-2/001-code-3/code.sql`, "\n").
 			AddTag(model.FileKindNativeCode).
 			AddTag(model.FileTypeOther),
 		filesystem.NewRawFile(configDir+`/meta.json`, `{"name":"My Config","isDisabled":false}`).
 			AddTag(model.FileKindObjectMeta).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.NewRawFile(configDir+`/config.json`, `{"foo":"bar"}`).
 			AddTag(model.FileKindObjectConfig).
-			AddTag(model.FileTypeJson),
+			AddTag(model.FileTypeJSON),
 		filesystem.NewRawFile(configDir+`/description.md`, "\n").
 			AddTag(model.FileKindObjectDescription).
 			AddTag(model.FileTypeMarkdown),

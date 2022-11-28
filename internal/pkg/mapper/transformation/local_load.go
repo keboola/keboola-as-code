@@ -74,9 +74,9 @@ func (l *localLoader) validate() {
 func (l *localLoader) addBlock(blockIndex int, path string) *model.Block {
 	block := &model.Block{
 		BlockKey: model.BlockKey{
-			BranchId:    l.config.BranchId,
-			ComponentId: l.config.ComponentId,
-			ConfigId:    l.config.Id,
+			BranchID:    l.config.BranchID,
+			ComponentID: l.config.ComponentID,
+			ConfigID:    l.config.ID,
 			Index:       blockIndex,
 		},
 		AbsPath: model.NewAbsPath(
@@ -96,9 +96,9 @@ func (l *localLoader) addBlock(blockIndex int, path string) *model.Block {
 func (l *localLoader) addCode(block *model.Block, codeIndex int, path string) *model.Code {
 	code := &model.Code{
 		CodeKey: model.CodeKey{
-			BranchId:    l.config.BranchId,
-			ComponentId: l.config.ComponentId,
-			ConfigId:    l.config.Id,
+			BranchID:    l.config.BranchID,
+			ComponentID: l.config.ComponentID,
+			ConfigID:    l.config.ID,
 			BlockIndex:  block.Index,
 			Index:       codeIndex,
 		},
@@ -136,7 +136,7 @@ func (l *localLoader) addScripts(code *model.Code) {
 	}
 
 	// Split to scripts
-	code.Scripts = model.ScriptsFromStr(file.Content, l.config.ComponentId)
+	code.Scripts = model.ScriptsFromStr(file.Content, l.config.ComponentID)
 	l.logger.Debugf(`Parsed "%d" scripts from "%s"`, len(code.Scripts), file.Path())
 }
 
@@ -145,9 +145,9 @@ func (l *localLoader) loadBlockMetaFile(block *model.Block) {
 		Load(l.NamingGenerator().MetaFilePath(block.Path())).
 		AddMetadata(filesystem.ObjectKeyMetadata, block.Key()).
 		SetDescription("block metadata").
-		AddTag(model.FileTypeJson).
+		AddTag(model.FileTypeJSON).
 		AddTag(model.FileKindBlockMeta).
-		ReadJsonFieldsTo(block, model.MetaFileFieldsTag)
+		ReadJSONFieldsTo(block, model.MetaFileFieldsTag)
 	if err != nil {
 		l.errors.Append(err)
 	}
@@ -158,9 +158,9 @@ func (l *localLoader) loadCodeMetaFile(code *model.Code) {
 		Load(l.NamingGenerator().MetaFilePath(code.Path())).
 		AddMetadata(filesystem.ObjectKeyMetadata, code.Key()).
 		SetDescription("code metadata").
-		AddTag(model.FileTypeJson).
+		AddTag(model.FileTypeJSON).
 		AddTag(model.FileKindCodeMeta).
-		ReadJsonFieldsTo(code, model.MetaFileFieldsTag)
+		ReadJSONFieldsTo(code, model.MetaFileFieldsTag)
 	if err != nil {
 		l.errors.Append(err)
 	}

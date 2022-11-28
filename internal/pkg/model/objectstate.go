@@ -51,19 +51,19 @@ type ConfigRowState struct {
 	Local  *ConfigRow `validate:"omitempty,dive"`
 }
 
-// ToApiObjectKey ...
-func (b *BranchState) ToApiObjectKey() any {
-	return storageapi.BranchKey{ID: b.Id}
+// ToAPIObjectKey ...
+func (b *BranchState) ToAPIObjectKey() any {
+	return storageapi.BranchKey{ID: b.ID}
 }
 
-// ToApiObjectKey ...
-func (c *ConfigState) ToApiObjectKey() any {
-	return storageapi.ConfigKey{BranchID: c.BranchId, ComponentID: c.ComponentId, ID: c.Id}
+// ToAPIObjectKey ...
+func (c *ConfigState) ToAPIObjectKey() any {
+	return storageapi.ConfigKey{BranchID: c.BranchID, ComponentID: c.ComponentID, ID: c.ID}
 }
 
-// ToApiObjectKey ...
-func (r *ConfigRowState) ToApiObjectKey() any {
-	return storageapi.ConfigRowKey{BranchID: r.BranchId, ComponentID: r.ComponentId, ConfigID: r.ConfigId, ID: r.Id}
+// ToAPIObjectKey ...
+func (r *ConfigRowState) ToAPIObjectKey() any {
+	return storageapi.ConfigRowKey{BranchID: r.BranchID, ComponentID: r.ComponentID, ConfigID: r.ConfigID, ID: r.ID}
 }
 
 func (b *BranchState) HasState(stateType StateType) bool {

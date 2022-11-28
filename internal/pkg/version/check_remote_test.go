@@ -76,10 +76,10 @@ func createMockedChecker(t *testing.T) (*checker, log.DebugLogger) {
   }
 ]
 `
-	bodyJson := make([]interface{}, 0)
-	json.MustDecodeString(body, &bodyJson)
+	bodyJSON := make([]interface{}, 0)
+	json.MustDecodeString(body, &bodyJSON)
 	httpTransport := httpmock.NewMockTransport()
-	httpTransport.RegisterResponder("GET", `https://api.github.com/repos/keboola/keboola-as-code/releases`, httpmock.NewJsonResponderOrPanic(200, bodyJson))
+	httpTransport.RegisterResponder("GET", `https://api.github.com/repos/keboola/keboola-as-code/releases`, httpmock.NewJsonResponderOrPanic(200, bodyJSON))
 
 	// Client with mocked http transport
 	logger := log.NewDebugLogger()

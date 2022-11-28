@@ -16,17 +16,17 @@ func (m *mapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoa
 	object := recipe.Object.(*model.ConfigRow)
 
 	// Variables ID must be string
-	variablesId, ok := m.GetSharedCodeVariablesId(object)
+	variablesID, ok := m.GetSharedCodeVariablesID(object)
 	if !ok {
 		return nil
 	}
 
 	// Create relation
 	object.AddRelation(&model.SharedCodeVariablesFromRelation{
-		VariablesId: storageapi.ConfigID(variablesId),
+		VariablesID: storageapi.ConfigID(variablesID),
 	})
 
 	// Remove variables ID from configuration content
-	object.Content.Delete(model.SharedCodeVariablesIdContentKey)
+	object.Content.Delete(model.SharedCodeVariablesIDContentKey)
 	return nil
 }

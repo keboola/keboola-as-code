@@ -59,7 +59,7 @@ func (v *provider) BaseDependencies() Base {
 			httpclient.WithUserAgent(fmt.Sprintf("keboola-cli/%s", build.BuildVersion)),
 			httpclient.WithDebugOutput(v.logger.DebugWriter()),
 			func(c *httpclient.Config) {
-				if v.options.VerboseApi {
+				if v.options.VerboseAPI {
 					httpclient.WithDumpOutput(v.logger.DebugWriter())(c)
 				}
 			},

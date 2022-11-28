@@ -38,7 +38,7 @@ func main() {
 	httpPortF := flag.String("http-port", "8000", "HTTP port")
 	repositoriesF := flag.String("repositories", "", "Default repositories, <name1>|<repo1>|<branch1>;<name2>|<repo2>|<branch2>;...")
 	debugF := flag.Bool("debug", false, "Enable debug log level.")
-	debugHttpF := flag.Bool("debug-http", false, "Log HTTP client request and response bodies.")
+	debugHTTPF := flag.Bool("debug-http", false, "Log HTTP client request and response bodies.")
 	flag.Parse()
 
 	// Setup logger.
@@ -71,19 +71,19 @@ func main() {
 			{
 				Type: model.RepositoryTypeGit,
 				Name: "keboola",
-				Url:  "https://github.com/keboola/keboola-as-code-templates.git",
+				URL:  "https://github.com/keboola/keboola-as-code-templates.git",
 				Ref:  "main",
 			},
 			{
 				Type: model.RepositoryTypeGit,
 				Name: "keboola-beta",
-				Url:  "https://github.com/keboola/keboola-as-code-templates.git",
+				URL:  "https://github.com/keboola/keboola-as-code-templates.git",
 				Ref:  "beta",
 			},
 			{
 				Type: model.RepositoryTypeGit,
 				Name: "keboola-dev",
-				Url:  "https://github.com/keboola/keboola-as-code-templates.git",
+				URL:  "https://github.com/keboola/keboola-as-code-templates.git",
 				Ref:  "dev",
 			},
 		}
@@ -96,23 +96,23 @@ func main() {
 	}
 
 	// Start server.
-	if err := start(*httpHostF, *httpPortF, repositories, *debugF, *debugHttpF, logger, envs); err != nil {
+	if err := start(*httpHostF, *httpPortF, repositories, *debugF, *debugHTTPF, logger, envs); err != nil {
 		logger.Println(err.Error())
 		os.Exit(1)
 	}
 }
 
-func start(host, port string, repositories []model.TemplateRepository, debug, debugHttp bool, stdLogger *stdLog.Logger, envs *env.Map) error {
+func start(host, port string, repositories []model.TemplateRepository, debug, debugHTTP bool, stdLogger *stdLog.Logger, envs *env.Map) error {
 	// Create context.
 	ctx, cancelFn := context.WithCancel(context.Background())
 	defer cancelFn()
 
 	// Create logger.
-	logger := log.NewApiLogger(stdLogger, "", debug)
-	logger.Infof("starting Templates API HTTP server, host=%s, port=%s, debug=%t, debug-http=%t", host, port, debug, debugHttp)
+	logger := log.NewAPILogger(stdLogger, "", debug)
+	logger.Infof("starting Templates API HTTP server, host=%s, port=%s, debug=%t, debug-http=%t", host, port, debug, debugHTTP)
 
 	// Create dependencies.
-	d, err := dependencies.NewServerDeps(ctx, envs, logger, repositories, debug, debugHttp)
+	d, err := dependencies.NewServerDeps(ctx, envs, logger, repositories, debug, debugHTTP)
 	if err != nil {
 		return err
 	}
@@ -140,10 +140,10 @@ func start(host, port string, repositories []model.TemplateRepository, debug, de
 	}()
 
 	// Create server URL.
-	serverUrl := &url.URL{Scheme: "http", Host: net.JoinHostPort(host, port)}
+	serverURL := &url.URL{Scheme: "http", Host: net.JoinHostPort(host, port)}
 
 	// Start HTTP server.
-	templatesHttp.HandleHTTPServer(ctx, d, serverUrl, endpoints, errCh, debug)
+	templatesHttp.HandleHTTPServer(ctx, d, serverURL, endpoints, errCh, debug)
 
 	// Wait for signal.
 	logger.Infof("exiting (%v)", <-errCh)
@@ -188,7 +188,7 @@ func parseRepositories(paths string) (out []model.TemplateRepository, err error)
 			out = append(out, model.TemplateRepository{
 				Type: model.RepositoryTypeDir,
 				Name: name,
-				Url:  strings.TrimPrefix(path, "file://"),
+				URL:  strings.TrimPrefix(path, "file://"),
 			})
 		case strings.HasPrefix(path, "https://"):
 			if len(parts) != 3 {
@@ -200,7 +200,7 @@ func parseRepositories(paths string) (out []model.TemplateRepository, err error)
 			out = append(out, model.TemplateRepository{
 				Type: model.RepositoryTypeGit,
 				Name: name,
-				Url:  path,
+				URL:  path,
 				Ref:  parts[2],
 			})
 		default:

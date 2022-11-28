@@ -28,7 +28,7 @@ func (l ddLogger) Log(msg string) {
 func main() {
 	// Flags.
 	debugF := flag.Bool("debug", false, "Enable debug log level.")
-	debugHttpF := flag.Bool("debug-http", false, "Log HTTP client request and response bodies.")
+	debugHTTPF := flag.Bool("debug-http", false, "Log HTTP client request and response bodies.")
 	flag.Parse()
 
 	// Setup logger.
@@ -54,24 +54,24 @@ func main() {
 	}
 
 	// Start worker.
-	if err := start(*debugF, *debugHttpF, logger, envs); err != nil {
+	if err := start(*debugF, *debugHTTPF, logger, envs); err != nil {
 		logger.Println(err.Error())
 		os.Exit(1)
 	}
 }
 
 // nolint:unparam
-func start(debug, debugHttp bool, stdLogger *stdLog.Logger, envs *env.Map) error {
+func start(debug, debugHTTP bool, stdLogger *stdLog.Logger, envs *env.Map) error {
 	// Create context.
 	ctx, cancelFn := context.WithCancel(context.Background())
 	defer cancelFn()
 
 	// Create logger
-	logger := log.NewApiLogger(stdLogger, "", debug)
-	logger.Infof("starting Buffer API WORKER, debug=%t, debug-http=%t", debug, debugHttp)
+	logger := log.NewAPILogger(stdLogger, "", debug)
+	logger.Infof("starting Buffer API WORKER, debug=%t, debug-http=%t", debug, debugHTTP)
 
 	// Create dependencies.
-	d, err := dependencies.NewWorkerDeps(ctx, envs, logger, debug, debugHttp)
+	d, err := dependencies.NewWorkerDeps(ctx, envs, logger, debug, debugHTTP)
 	if err != nil {
 		return err
 	}

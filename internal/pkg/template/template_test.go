@@ -26,7 +26,7 @@ func initTemplate(t *testing.T, fs filesystem.Fs) *Template {
 		AbsPath:     model.NewAbsPath("", "v1"),
 	}
 	tmplRec := repository.TemplateRecord{
-		Id:          tmplRef.TemplateId(),
+		ID:          tmplRef.TemplateID(),
 		Name:        "Template 1",
 		Description: "",
 		AbsPath:     model.NewAbsPath("", "tmpl1"),

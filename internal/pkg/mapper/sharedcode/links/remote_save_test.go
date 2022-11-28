@@ -28,10 +28,10 @@ func TestRemoteSaveTranWithSharedCode(t *testing.T) {
 	assert.Empty(t, logger.WarnAndErrorMessages())
 
 	// Config ID and rows ID are set in Content
-	id, found := object.Content.Get(model.SharedCodeIdContentKey)
+	id, found := object.Content.Get(model.SharedCodeIDContentKey)
 	assert.True(t, found)
-	assert.Equal(t, sharedCodeKey.Id.String(), id)
-	rows, found := object.Content.Get(model.SharedCodeRowsIdContentKey)
+	assert.Equal(t, sharedCodeKey.ID.String(), id)
+	rows, found := object.Content.Get(model.SharedCodeRowsIDContentKey)
 	assert.True(t, found)
-	assert.Equal(t, []interface{}{sharedCodeRowsKeys[0].ObjectId(), sharedCodeRowsKeys[1].ObjectId()}, rows)
+	assert.Equal(t, []interface{}{sharedCodeRowsKeys[0].ObjectID(), sharedCodeRowsKeys[1].ObjectID()}, rows)
 }

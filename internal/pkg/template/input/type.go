@@ -21,7 +21,7 @@ const (
 )
 
 // Type of the template user
-// This corresponds to the data type that will be used in the JsonNet template.
+// This corresponds to the data type that will be used in the Jsonnet template.
 type Type string
 
 type Types []Type
@@ -193,7 +193,7 @@ func (t Type) ParseValue(value interface{}) (interface{}, error) {
 		}
 
 		if items, ok := value.([]string); ok {
-			// Convert []string (Go type) -> []interface{} (JSON type, used in JsonNet template)
+			// Convert []string (Go type) -> []interface{} (JSON type, used in Jsonnet template)
 			// And return only unique values.
 			for _, item := range items {
 				if !values[item] {

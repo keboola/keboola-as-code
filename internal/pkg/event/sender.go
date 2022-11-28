@@ -18,11 +18,11 @@ const componentID = storageapi.ComponentID("keboola.keboola-as-code")
 type Sender struct {
 	logger    log.Logger
 	client    client.Sender
-	projectId int
+	projectID int
 }
 
-func NewSender(logger log.Logger, client client.Sender, projectId int) Sender {
-	return Sender{logger: logger, client: client, projectId: projectId}
+func NewSender(logger log.Logger, client client.Sender, projectID int) Sender {
+	return Sender{logger: logger, client: client, projectID: projectID}
 }
 
 // SendCmdEvent sends failed event if an error occurred, otherwise it sends successful event.
@@ -56,7 +56,7 @@ func (s Sender) sendCmdSuccessfulEvent(ctx context.Context, cmdStart time.Time, 
 		"command": cmd,
 	}
 	results := map[string]interface{}{
-		"projectId": s.projectId,
+		"projectId": s.projectID,
 	}
 	event, err := storageapi.CreatEventRequest(&storageapi.Event{
 		ComponentID: componentID,
@@ -80,7 +80,7 @@ func (s Sender) sendCmdFailedEvent(ctx context.Context, cmdStart time.Time, err 
 		"command": cmd,
 	}
 	results := map[string]interface{}{
-		"projectId": s.projectId,
+		"projectId": s.projectID,
 		"error":     fmt.Sprintf("%s", err),
 	}
 	event, err := storageapi.CreatEventRequest(&storageapi.Event{

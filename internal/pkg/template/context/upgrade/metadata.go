@@ -14,27 +14,27 @@ type (
 func iterateTmplMetadata(configs []*model.ConfigWithRows, c configFn, r rowFn) {
 	for _, config := range configs {
 		// Config must exist and corresponding ID in template must be defined
-		if v := config.Metadata.ConfigTemplateId(); v != nil {
-			c(config.Config, v.IdInTemplate, config.Metadata.InputsUsage())
+		if v := config.Metadata.ConfigTemplateID(); v != nil {
+			c(config.Config, v.IDInTemplate, config.Metadata.InputsUsage())
 		} else {
 			continue
 		}
 
 		// Convert slices to maps
-		rowsIdsMap := make(map[storageapi.RowID]model.RowIdMetadata)
+		rowsIdsMap := make(map[storageapi.RowID]model.RowIDMetadata)
 		for _, v := range config.Metadata.RowsTemplateIds() {
-			rowsIdsMap[v.IdInProject] = v
+			rowsIdsMap[v.IDInProject] = v
 		}
 		rowsInputsMap := make(map[storageapi.RowID][]model.RowInputUsage)
 		for _, v := range config.Metadata.RowsInputsUsage() {
-			rowsInputsMap[v.RowId] = append(rowsInputsMap[v.RowId], v)
+			rowsInputsMap[v.RowID] = append(rowsInputsMap[v.RowID], v)
 		}
 
 		// Process existing rows
 		for _, row := range config.Rows {
 			// Row must exist and corresponding ID in template must be defined
-			if v, found := rowsIdsMap[row.Id]; found {
-				r(row, v.IdInTemplate, rowsInputsMap[row.Id])
+			if v, found := rowsIdsMap[row.ID]; found {
+				r(row, v.IDInTemplate, rowsInputsMap[row.ID])
 			}
 		}
 	}

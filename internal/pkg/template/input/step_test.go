@@ -120,14 +120,14 @@ func TestStepsGroups_Validate_DuplicateInputs(t *testing.T) {
 					Description: "Step One",
 					Inputs: Inputs{
 						{
-							Id:          "fb.extractor.username",
+							ID:          "fb.extractor.username",
 							Name:        "Input",
 							Description: "Description",
 							Type:        "string",
 							Kind:        "input",
 						},
 						{
-							Id:          "fb.extractor.username",
+							ID:          "fb.extractor.username",
 							Name:        "Input",
 							Description: "Description",
 							Type:        "string",
@@ -147,7 +147,7 @@ func TestStepsGroups_Validate_DuplicateInputs(t *testing.T) {
 					Description: "Step Two",
 					Inputs: Inputs{
 						{
-							Id:          "fb.extractor.username",
+							ID:          "fb.extractor.username",
 							Name:        "Input",
 							Description: "Description",
 							Type:        "string",
@@ -161,7 +161,7 @@ func TestStepsGroups_Validate_DuplicateInputs(t *testing.T) {
 					Description: "Step Three",
 					Inputs: Inputs{
 						{
-							Id:          "fb.extractor.username",
+							ID:          "fb.extractor.username",
 							Name:        "Input",
 							Description: "Description",
 							Type:        "string",
@@ -201,14 +201,14 @@ func TestStepsGroups_Validate_InputsErrors(t *testing.T) {
 					Description: "Step One",
 					Inputs: Inputs{
 						{
-							Id:          "input1",
+							ID:          "input1",
 							Name:        "Input",
 							Description: "Description",
 							Type:        "foo",
 							Kind:        "input",
 						},
 						{
-							Id:          "input2",
+							ID:          "input2",
 							Name:        "Input",
 							Description: "Description",
 							Type:        "bar",

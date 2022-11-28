@@ -30,7 +30,7 @@ type Options struct {
 	InstanceName          string
 	TargetBranch          model.BranchKey
 	Inputs                template.InputsValues
-	InstanceId            string
+	InstanceID            string
 	SkipEncrypt           bool
 	SkipSecretsValidation bool
 }
@@ -53,12 +53,12 @@ type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
 	ProjectID() int
-	StorageApiHost() string
-	StorageApiTokenID() string
-	StorageApiClient() client.Sender
-	SchedulerApiClient() client.Sender
+	StorageAPIHost() string
+	StorageAPITokenID() string
+	StorageAPIClient() client.Sender
+	SchedulerAPIClient() client.Sender
 	Components() *model.ComponentsMap
-	EncryptionApiClient() client.Sender
+	EncryptionAPIClient() client.Sender
 	ObjectIDGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider
 }
 
@@ -71,29 +71,29 @@ func LoadTemplateOptions() loadState.Options {
 	}
 }
 
-func Run(ctx context.Context, projectState *project.State, tmpl *template.Template, o Options, d dependencies) (instanceId string, warnings []string, err error) {
+func Run(ctx context.Context, projectState *project.State, tmpl *template.Template, o Options, d dependencies) (instanceID string, warnings []string, err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.template.use")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()
 
 	// Get Storage API
-	storageApiHost := d.StorageApiHost()
-	tokenId := d.StorageApiTokenID()
+	storageAPIHost := d.StorageAPIHost()
+	tokenID := d.StorageAPITokenID()
 
 	// Create tickets provider, to generate new IDS
 	tickets := d.ObjectIDGeneratorFactory()(ctx)
 
-	if o.InstanceId != "" {
+	if o.InstanceID != "" {
 		// Get instance ID from Options
-		instanceId = o.InstanceId
+		instanceID = o.InstanceID
 	} else {
 		// Generate ID for the template instance
-		instanceId = idgenerator.TemplateInstanceId()
+		instanceID = idgenerator.TemplateInstanceID()
 	}
 
 	// Load template
-	tmplCtx := use.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), instanceId, o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components())
+	tmplCtx := use.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), instanceID, o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components())
 	templateState, err := tmpl.LoadState(tmplCtx, loadState.LocalOperationOptions(), d)
 	if err != nil {
 		return "", nil, err
@@ -117,7 +117,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 		return "", nil, err
 	}
 
-	if err := branchState.Local.Metadata.UpsertTemplateInstance(time.Now(), instanceId, o.InstanceName, tmpl.TemplateId(), tmpl.Repository().Name, tmpl.Version(), tokenId, mainConfig); err != nil {
+	if err := branchState.Local.Metadata.UpsertTemplateInstance(time.Now(), instanceID, o.InstanceName, tmpl.TemplateID(), tmpl.Repository().Name, tmpl.Version(), tokenID, mainConfig); err != nil {
 		errs.Append(err)
 	}
 	saveOp.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())
@@ -179,7 +179,7 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	}
 
 	// Validate schemas and encryption
-	if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: !o.SkipSecretsValidation, ValidateJsonSchema: true}, d); err != nil {
+	if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: !o.SkipSecretsValidation, ValidateJSONSchema: true}, d); err != nil {
 		logger.Warn(errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
 		logger.Warn()
 		logger.Warnf(`Please correct the problems listed above.`)
@@ -189,12 +189,12 @@ func Run(ctx context.Context, projectState *project.State, tmpl *template.Templa
 	// Return urls to oauth configurations
 	warnings = make([]string, 0)
 	for _, cKey := range tmplCtx.InputsUsage().OAuthConfigsMap() {
-		warnings = append(warnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", storageApiHost, d.ProjectID(), cKey.ComponentId, cKey.Id))
+		warnings = append(warnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", storageAPIHost, d.ProjectID(), cKey.ComponentID, cKey.ID))
 	}
 	if len(warnings) > 0 {
 		warnings = append([]string{"The template generated configurations that need oAuth authorization. Please follow the links and complete the setup:"}, warnings...)
 	}
 
-	logger.Info(fmt.Sprintf(`Template "%s" has been applied, instance ID: %s`, tmpl.FullName(), instanceId))
-	return instanceId, warnings, nil
+	logger.Info(fmt.Sprintf(`Template "%s" has been applied, instance ID: %s`, tmpl.FullName(), instanceID))
+	return instanceID, warnings, nil
 }

@@ -14,20 +14,20 @@ import (
 
 type storageEnvTicketProvider struct {
 	ctx              context.Context
-	storageApiClient client.Sender
+	storageAPIClient client.Sender
 	envs             *env.Map
 }
 
 // CreateStorageEnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test.
-func CreateStorageEnvTicketProvider(ctx context.Context, storageApiClient client.Sender, envs *env.Map) testhelper.EnvProvider {
-	return &storageEnvTicketProvider{ctx: ctx, storageApiClient: storageApiClient, envs: envs}
+func CreateStorageEnvTicketProvider(ctx context.Context, storageAPIClient client.Sender, envs *env.Map) testhelper.EnvProvider {
+	return &storageEnvTicketProvider{ctx: ctx, storageAPIClient: storageAPIClient, envs: envs}
 }
 
 func (p *storageEnvTicketProvider) MustGet(key string) string {
 	key = strings.Trim(key, "%")
 	nameRegexp := regexpcache.MustCompile(`^TEST_NEW_TICKET_\d+$`)
 	if _, found := p.envs.Lookup(key); !found && nameRegexp.MatchString(key) {
-		ticket, err := storageapi.GenerateIDRequest().Send(p.ctx, p.storageApiClient)
+		ticket, err := storageapi.GenerateIDRequest().Send(p.ctx, p.storageAPIClient)
 		if err != nil {
 			panic(err)
 		}

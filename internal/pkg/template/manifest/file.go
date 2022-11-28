@@ -31,9 +31,9 @@ func newFile() *file {
 	}
 }
 
-func evaluateFile(file *filesystem.RawFile, jsonNetCtx *jsonnet.Context) (*file, error) {
+func evaluateFile(file *filesystem.RawFile, jsonnetCtx *jsonnet.Context) (*file, error) {
 	// Evaluate Jsonnet code
-	jsonContent, err := jsonnet.Evaluate(file.Content, jsonNetCtx)
+	jsonContent, err := jsonnet.Evaluate(file.Content, jsonnetCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -63,14 +63,14 @@ func saveFile(fs filesystem.Fs, content *file) error {
 		return err
 	}
 
-	// Convert to JsonNet
-	jsonNet, err := jsonnet.Format(jsonContent)
+	// Convert to Jsonnet
+	jsonnetStr, err := jsonnet.Format(jsonContent)
 	if err != nil {
 		return err
 	}
 
 	// Write file
-	f := filesystem.NewRawFile(Path(), jsonNet)
+	f := filesystem.NewRawFile(Path(), jsonnetStr)
 	if err := fs.WriteFile(f); err != nil {
 		return err
 	}
@@ -91,8 +91,8 @@ func (f *file) records() []model.ObjectManifest {
 	for _, config := range f.Configs {
 		out = append(out, &config.ConfigManifest)
 		for _, row := range config.Rows {
-			row.ComponentId = config.ComponentId
-			row.ConfigId = config.Id
+			row.ComponentID = config.ComponentID
+			row.ConfigID = config.ID
 			out = append(out, row)
 		}
 	}

@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
 
-func TestJsonNetMapper_MapBeforeLocalSave(t *testing.T) {
+func TestJsonnetMapper_MapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
 	state := createStateWithMapper(t, nil)
 
@@ -23,8 +23,8 @@ func TestJsonNetMapper_MapBeforeLocalSave(t *testing.T) {
 	// Some Json and markdown file
 	jsonContent := orderedmap.FromPairs([]orderedmap.Pair{{Key: "key", Value: "value"}})
 	recipe.Files.
-		Add(filesystem.NewJsonFile(`foo.json`, jsonContent)).
-		AddTag(model.FileTypeJson)
+		Add(filesystem.NewJSONFile(`foo.json`, jsonContent)).
+		AddTag(model.FileTypeJSON)
 	recipe.Files.
 		Add(filesystem.NewRawFile(`README.md`, `content`)).
 		AddTag(model.FileTypeMarkdown)
@@ -32,20 +32,20 @@ func TestJsonNetMapper_MapBeforeLocalSave(t *testing.T) {
 	// Run mapper
 	assert.NoError(t, state.Mapper().MapBeforeLocalSave(context.Background(), recipe))
 
-	// Json file is converted to JsonNet
+	// Json file is converted to Jsonnet
 	expectedAst, err := jsonnet.ToAst("{\n  \"key\": \"value\"\n}\n", "foo.jsonnet")
 	assert.NoError(t, err)
 	expected := model.NewFilesToSave()
 	expected.
-		Add(filesystem.NewJsonNetFile(`foo.jsonnet`, expectedAst, nil)). // <<<<<<<
-		AddTag(model.FileTypeJsonNet)
+		Add(filesystem.NewJsonnetFile(`foo.jsonnet`, expectedAst, nil)). // <<<<<<<
+		AddTag(model.FileTypeJsonnet)
 	expected.
 		Add(filesystem.NewRawFile(`README.md`, `content`)).
 		AddTag(model.FileTypeMarkdown)
 	assert.Equal(t, expected, recipe.Files)
 
-	// JsonNet file content
-	f, err := recipe.Files.GetOneByTag(model.FileTypeJsonNet).ToRawFile()
+	// Jsonnet file content
+	f, err := recipe.Files.GetOneByTag(model.FileTypeJsonnet).ToRawFile()
 	assert.NoError(t, err)
 	assert.Equal(t, "{\n  key: \"value\",\n}\n", f.Content)
 }

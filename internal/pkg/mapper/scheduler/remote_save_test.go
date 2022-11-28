@@ -21,8 +21,8 @@ func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 	json.MustDecodeString(`{"target": {"mode": "run"}}`, content)
 	object := &model.Config{Content: content}
 	object.AddRelation(&model.SchedulerForRelation{
-		ComponentId: `foo.bar`,
-		ConfigId:    `12345`,
+		ComponentID: `foo.bar`,
+		ConfigID:    `12345`,
 	})
 	recipe := model.NewRemoteSaveRecipe(&model.ConfigManifest{}, object, model.NewChangedFields())
 
@@ -40,11 +40,11 @@ func TestSchedulerMapBeforeRemoteSave(t *testing.T) {
 	target, ok := targetRaw.(*orderedmap.OrderedMap)
 	assert.True(t, ok)
 
-	// Object contains componentId and configurationId
-	componentId, found := target.Get(model.SchedulerTargetComponentIdKey)
+	// Object contains componentID and configurationID
+	componentID, found := target.Get(model.SchedulerTargetComponentIDKey)
 	assert.True(t, found)
-	assert.Equal(t, `foo.bar`, componentId)
-	configurationId, found := target.Get(model.SchedulerTargetConfigurationIdKey)
+	assert.Equal(t, `foo.bar`, componentID)
+	configurationID, found := target.Get(model.SchedulerTargetConfigurationIDKey)
 	assert.True(t, found)
-	assert.Equal(t, `12345`, configurationId)
+	assert.Equal(t, `12345`, configurationID)
 }

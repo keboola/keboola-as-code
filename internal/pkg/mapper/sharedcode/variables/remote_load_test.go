@@ -16,11 +16,11 @@ func TestSharedCodeMapAfterRemoteLoad(t *testing.T) {
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
 
-	variablesConfigId := `123456`
+	variablesConfigID := `123456`
 	content := orderedmap.New()
-	content.Set(model.SharedCodeVariablesIdContentKey, variablesConfigId)
+	content.Set(model.SharedCodeVariablesIDContentKey, variablesConfigID)
 	object := &model.ConfigRow{
-		ConfigRowKey: model.ConfigRowKey{ComponentId: storageapi.SharedCodeComponentID},
+		ConfigRowKey: model.ConfigRowKey{ComponentID: storageapi.SharedCodeComponentID},
 		Content:      content,
 	}
 	recipe := model.NewRemoteLoadRecipe(&model.ConfigRowManifest{}, object)
@@ -33,9 +33,9 @@ func TestSharedCodeMapAfterRemoteLoad(t *testing.T) {
 	// Object has new relation + content without variables ID
 	assert.Equal(t, model.Relations{
 		&model.SharedCodeVariablesFromRelation{
-			VariablesId: storageapi.ConfigID(variablesConfigId),
+			VariablesID: storageapi.ConfigID(variablesConfigID),
 		},
 	}, object.Relations)
-	_, found := object.Content.Get(model.SharedCodeVariablesIdContentKey)
+	_, found := object.Content.Get(model.SharedCodeVariablesIDContentKey)
 	assert.False(t, found)
 }

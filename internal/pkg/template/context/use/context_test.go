@@ -30,8 +30,8 @@ func TestContext(t *testing.T) {
 	t.Parallel()
 
 	// Mocked ticket provider
-	storageApiClient, httpTransport := client.NewMockedClient()
-	tickets := storageapi.NewTicketProvider(context.Background(), storageApiClient)
+	storageAPIClient, httpTransport := client.NewMockedClient()
+	tickets := storageapi.NewTicketProvider(context.Background(), storageAPIClient)
 
 	// Mocked tickets
 	var ticketResponses []*http.Response
@@ -43,26 +43,26 @@ func TestContext(t *testing.T) {
 	httpTransport.RegisterResponder("POST", `=~/storage/tickets`, httpmock.ResponderFromMultipleResponses(ticketResponses))
 
 	// Inputs
-	targetBranch := model.BranchKey{Id: 123}
+	targetBranch := model.BranchKey{ID: 123}
 	inputsValues := template.InputsValues{
 		{
-			Id:    "input-1",
+			ID:    "input-1",
 			Value: "my-value-1",
 		},
 		{
-			Id:    "input-2",
+			ID:    "input-2",
 			Value: 789,
 		},
 		{
-			Id:    "input-3",
+			ID:    "input-3",
 			Value: 3.50,
 		},
 		{
-			Id:    "input-4",
+			ID:    "input-4",
 			Value: false,
 		},
 		{
-			Id:      "input-5",
+			ID:      "input-5",
 			Value:   "",
 			Skipped: true,
 		},
@@ -70,20 +70,20 @@ func TestContext(t *testing.T) {
 
 	// Create context
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
-	instanceId := "my-instance"
+	instanceID := "my-instance"
 	fs := aferofs.NewMemoryFs()
 
 	// Enable inputUsageNotifier
-	objectKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "456"}
+	objectKey := model.ConfigKey{BranchID: 123, ComponentID: "foo.bar", ID: "456"}
 	fileDef := filesystem.NewFileDef("foo.bar")
 	fileDef.AddMetadata(filesystem.ObjectKeyMetadata, objectKey)
 	fileDef.AddTag(model.FileKindObjectConfig)
 	ctx := context.WithValue(context.Background(), jsonnetfiles.FileDefCtxKey, fileDef)
 
 	// Create template use context
-	useCtx := NewContext(ctx, templateRef, fs, instanceId, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap())
+	useCtx := NewContext(ctx, templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap())
 
-	// Check JsonNet functions
+	// Check Jsonnet functions
 	code := `
 {
 	Input1: Input("input-1"),
@@ -99,7 +99,7 @@ func TestContext(t *testing.T) {
     },
 }
 `
-	expectedJson := `
+	expectedJSON := `
 {
   "Input1": "my-value-1",
   "Input2": 789,
@@ -114,9 +114,9 @@ func TestContext(t *testing.T) {
   }
 }
 `
-	jsonOutput, err := jsonnet.Evaluate(code, useCtx.JsonNetContext())
+	jsonOutput, err := jsonnet.Evaluate(code, useCtx.JsonnetContext())
 	assert.NoError(t, err)
-	assert.Equal(t, strings.TrimLeft(expectedJson, "\n"), jsonOutput)
+	assert.Equal(t, strings.TrimLeft(expectedJSON, "\n"), jsonOutput)
 
 	// Check tickets replacement
 	data := orderedmap.New()
@@ -125,9 +125,9 @@ func TestContext(t *testing.T) {
 	assert.NoError(t, err)
 	modifiedData, err := replacements.Replace(data)
 	assert.NoError(t, err)
-	modifiedJson := json.MustEncodeString(modifiedData, true)
+	modifiedJSON := json.MustEncodeString(modifiedData, true)
 
-	expectedJson = `
+	expectedJSON = `
 {
   "Input1": "my-value-1",
   "Input2": 789,
@@ -142,7 +142,7 @@ func TestContext(t *testing.T) {
   }
 }
 `
-	assert.Equal(t, strings.TrimLeft(expectedJson, "\n"), modifiedJson)
+	assert.Equal(t, strings.TrimLeft(expectedJSON, "\n"), modifiedJSON)
 
 	// Check collected inputs usage
 	assert.Equal(t, &metadata.InputsUsage{
@@ -150,19 +150,19 @@ func TestContext(t *testing.T) {
 			objectKey: []metadata.InputUsage{
 				{
 					Name:    "input-1",
-					JsonKey: orderedmap.PathFromStr("Input1"),
+					JSONKey: orderedmap.PathFromStr("Input1"),
 				},
 				{
 					Name:    "input-2",
-					JsonKey: orderedmap.PathFromStr("Input2"),
+					JSONKey: orderedmap.PathFromStr("Input2"),
 				},
 				{
 					Name:    "input-3",
-					JsonKey: orderedmap.PathFromStr("Input3"),
+					JSONKey: orderedmap.PathFromStr("Input3"),
 				},
 				{
 					Name:    "input-4",
-					JsonKey: orderedmap.PathFromStr("Input4"),
+					JSONKey: orderedmap.PathFromStr("Input4"),
 				},
 				// "input-5" IsSkipped, so it is not present here, it was not filled in by the user.
 			},
@@ -174,20 +174,20 @@ func TestComponentsFunctions(t *testing.T) {
 	t.Parallel()
 
 	// Mocked ticket provider
-	storageApiClient, _ := client.NewMockedClient()
-	tickets := storageapi.NewTicketProvider(context.Background(), storageApiClient)
+	storageAPIClient, _ := client.NewMockedClient()
+	tickets := storageapi.NewTicketProvider(context.Background(), storageAPIClient)
 	components := model.NewComponentsMap(storageapi.Components{})
-	targetBranch := model.BranchKey{Id: 123}
+	targetBranch := model.BranchKey{ID: 123}
 	inputsValues := template.InputsValues{}
 	inputs := map[string]*template.Input{}
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
-	instanceId := "my-instance"
+	instanceID := "my-instance"
 	fs := aferofs.NewMemoryFs()
 	ctx := context.Background()
 
 	// Context factory for template use operation
 	newUseCtx := func() *Context {
-		return NewContext(ctx, templateRef, fs, instanceId, targetBranch, inputsValues, inputs, tickets, components)
+		return NewContext(ctx, templateRef, fs, instanceID, targetBranch, inputsValues, inputs, tickets, components)
 	}
 
 	// Jsonnet template
@@ -200,7 +200,7 @@ func TestComponentsFunctions(t *testing.T) {
 `
 
 	// Case 1: No component is defined
-	output, err := jsonnet.Evaluate(code, newUseCtx().JsonNetContext())
+	output, err := jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
 	expected := ""
 	assert.Error(t, err)
 	assert.Equal(t, "jsonnet error: RUNTIME ERROR: no Snowflake Writer component found", err.Error())
@@ -217,7 +217,7 @@ func TestComponentsFunctions(t *testing.T) {
   "wr-snowflake": "keboola.wr-db-snowflake"
 }
 `
-	output, err = jsonnet.Evaluate(code, newUseCtx().JsonNetContext())
+	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
@@ -232,7 +232,7 @@ func TestComponentsFunctions(t *testing.T) {
   "wr-snowflake": "keboola.wr-snowflake-blob-storage"
 }
 `
-	output, err = jsonnet.Evaluate(code, newUseCtx().JsonNetContext())
+	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
@@ -248,7 +248,7 @@ func TestComponentsFunctions(t *testing.T) {
   "wr-snowflake": "keboola.wr-db-snowflake"
 }
 `
-	output, err = jsonnet.Evaluate(code, newUseCtx().JsonNetContext())
+	output, err = jsonnet.Evaluate(code, newUseCtx().JsonnetContext())
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 }

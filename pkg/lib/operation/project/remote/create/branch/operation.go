@@ -21,7 +21,7 @@ type Options struct {
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageApiClient() client.Sender
+	StorageAPIClient() client.Sender
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (branch *storageapi.Branch, err error) {
@@ -32,7 +32,7 @@ func Run(ctx context.Context, o Options, d dependencies) (branch *storageapi.Bra
 
 	// Create branch by API
 	branch = &storageapi.Branch{Name: o.Name}
-	if _, err := storageapi.CreateBranchRequest(branch).Send(ctx, d.StorageApiClient()); err != nil {
+	if _, err := storageapi.CreateBranchRequest(branch).Send(ctx, d.StorageAPIClient()); err != nil {
 		return nil, errors.Errorf(`cannot create branch: %w`, err)
 	}
 

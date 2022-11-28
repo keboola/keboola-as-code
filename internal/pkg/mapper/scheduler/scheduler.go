@@ -7,7 +7,7 @@ import (
 )
 
 type dependencies interface {
-	SchedulerApiClient() client.Sender
+	SchedulerAPIClient() client.Sender
 }
 
 type schedulerMapper struct {

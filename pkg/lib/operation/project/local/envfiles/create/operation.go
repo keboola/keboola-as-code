@@ -25,7 +25,7 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (err error) {
 	logger := d.Logger()
 
 	// Get Storage API token
-	token := d.Options().GetString(options.StorageApiTokenOpt)
+	token := d.Options().GetString(options.StorageAPITokenOpt)
 
 	// .env.local - with token value
 	envLocalMsg := " - it contains the API token, keep it local and secret"

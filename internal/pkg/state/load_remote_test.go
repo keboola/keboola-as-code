@@ -53,7 +53,7 @@ func TestLoadRemoteStateAllowedBranches(t *testing.T) {
 		{
 			Remote: &model.Branch{
 				BranchKey: model.BranchKey{
-					Id: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
+					ID: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
 				},
 				Name:        "Foo",
 				Description: "Foo branch",
@@ -62,7 +62,7 @@ func TestLoadRemoteStateAllowedBranches(t *testing.T) {
 			},
 			BranchManifest: &model.BranchManifest{
 				BranchKey: model.BranchKey{
-					Id: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
+					ID: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -80,7 +80,7 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 		{
 			Remote: &model.Branch{
 				BranchKey: model.BranchKey{
-					Id: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_BAR_ID`))),
+					ID: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_BAR_ID`))),
 				},
 				Name:        "Bar",
 				Description: "Bar branch",
@@ -90,7 +90,7 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 			// Generated manifest
 			BranchManifest: &model.BranchManifest{
 				BranchKey: model.BranchKey{
-					Id: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_BAR_ID`))),
+					ID: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_BAR_ID`))),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -103,7 +103,7 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 		{
 			Remote: &model.Branch{
 				BranchKey: model.BranchKey{
-					Id: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
+					ID: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
 				},
 				Name:        "Foo",
 				Description: "Foo branch",
@@ -113,7 +113,7 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 			// Generated manifest
 			BranchManifest: &model.BranchManifest{
 				BranchKey: model.BranchKey{
-					Id: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
+					ID: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -126,7 +126,7 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 		{
 			Remote: &model.Branch{
 				BranchKey: model.BranchKey{
-					Id: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					ID: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 				},
 				Name:        "Main",
 				Description: "Main branch",
@@ -136,7 +136,7 @@ func complexRemoteExpectedBranches(envs *env.Map) []*model.BranchState {
 			// Generated manifest
 			BranchManifest: &model.BranchManifest{
 				BranchKey: model.BranchKey{
-					Id: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					ID: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -154,9 +154,9 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 		{
 			Remote: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_BAR_ID`))),
-					ComponentId: "ex-generic-v2",
-					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_BAR_ID`))),
+					ComponentID: "ex-generic-v2",
+					ID:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Name:        "empty",
 				Description: "test fixture",
@@ -166,9 +166,9 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
 				ConfigKey: model.ConfigKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_BAR_ID`))),
-					ComponentId: "ex-generic-v2",
-					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_BAR_ID`))),
+					ComponentID: "ex-generic-v2",
+					ID:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -181,9 +181,9 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 		{
 			Remote: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_BAR_ID`))),
-					ComponentId: "ex-generic-v2",
-					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_BAR_CONFIG_WITHOUT_ROWS_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_BAR_ID`))),
+					ComponentID: "ex-generic-v2",
+					ID:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_BAR_CONFIG_WITHOUT_ROWS_ID`)),
 				},
 				Name:        "without-rows",
 				Description: "test fixture",
@@ -208,9 +208,9 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
 				ConfigKey: model.ConfigKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_BAR_ID`))),
-					ComponentId: "ex-generic-v2",
-					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_BAR_CONFIG_WITHOUT_ROWS_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_BAR_ID`))),
+					ComponentID: "ex-generic-v2",
+					ID:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_BAR_CONFIG_WITHOUT_ROWS_ID`)),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -223,9 +223,9 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 		{
 			Remote: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
-					ComponentId: "ex-generic-v2",
-					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
+					ComponentID: "ex-generic-v2",
+					ID:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Name:        "empty",
 				Description: "test fixture",
@@ -235,9 +235,9 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
 				ConfigKey: model.ConfigKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
-					ComponentId: "ex-generic-v2",
-					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
+					ComponentID: "ex-generic-v2",
+					ID:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -250,9 +250,9 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 		{
 			Remote: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
-					ComponentId: "keboola.ex-db-mysql",
-					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
+					ComponentID: "keboola.ex-db-mysql",
+					ID:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
 				},
 				Name:        "with-rows",
 				Description: "test fixture",
@@ -277,9 +277,9 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
 				ConfigKey: model.ConfigKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
-					ComponentId: "keboola.ex-db-mysql",
-					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
+					ComponentID: "keboola.ex-db-mysql",
+					ID:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -292,9 +292,9 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 		{
 			Remote: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
-					ComponentId: "ex-generic-v2",
-					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					ComponentID: "ex-generic-v2",
+					ID:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Name:        "empty",
 				Description: "test fixture",
@@ -304,9 +304,9 @@ func complexRemoteExpectedConfigs(envs *env.Map) []*model.ConfigState {
 			// Generated manifest
 			ConfigManifest: &model.ConfigManifest{
 				ConfigKey: model.ConfigKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
-					ComponentId: "ex-generic-v2",
-					Id:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					ComponentID: "ex-generic-v2",
+					ID:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -324,10 +324,10 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 		{
 			Remote: &model.ConfigRow{
 				ConfigRowKey: model.ConfigRowKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
-					ComponentId: "keboola.ex-db-mysql",
-					ConfigId:    storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
-					Id:          storageapi.RowID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_DISABLED_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
+					ComponentID: "keboola.ex-db-mysql",
+					ConfigID:    storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
+					ID:          storageapi.RowID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_DISABLED_ID`)),
 				},
 				Name:        "disabled",
 				Description: "test fixture",
@@ -343,10 +343,10 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 			},
 			ConfigRowManifest: &model.ConfigRowManifest{
 				ConfigRowKey: model.ConfigRowKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
-					ComponentId: "keboola.ex-db-mysql",
-					ConfigId:    storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
-					Id:          storageapi.RowID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_DISABLED_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
+					ComponentID: "keboola.ex-db-mysql",
+					ConfigID:    storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
+					ID:          storageapi.RowID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_DISABLED_ID`)),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -359,10 +359,10 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 		{
 			Remote: &model.ConfigRow{
 				ConfigRowKey: model.ConfigRowKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
-					ComponentId: "keboola.ex-db-mysql",
-					ConfigId:    storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
-					Id:          storageapi.RowID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
+					ComponentID: "keboola.ex-db-mysql",
+					ConfigID:    storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
+					ID:          storageapi.RowID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID`)),
 				},
 				Name:        "test_view",
 				Description: "test fixture",
@@ -378,10 +378,10 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 			},
 			ConfigRowManifest: &model.ConfigRowManifest{
 				ConfigRowKey: model.ConfigRowKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
-					ComponentId: "keboola.ex-db-mysql",
-					ConfigId:    storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
-					Id:          storageapi.RowID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
+					ComponentID: "keboola.ex-db-mysql",
+					ConfigID:    storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
+					ID:          storageapi.RowID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_TEST_VIEW_ID`)),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -394,10 +394,10 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 		{
 			Remote: &model.ConfigRow{
 				ConfigRowKey: model.ConfigRowKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
-					ComponentId: "keboola.ex-db-mysql",
-					ConfigId:    storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
-					Id:          storageapi.RowID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_USERS_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
+					ComponentID: "keboola.ex-db-mysql",
+					ConfigID:    storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
+					ID:          storageapi.RowID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_USERS_ID`)),
 				},
 				Name:        "users",
 				Description: "test fixture",
@@ -413,10 +413,10 @@ func complexRemoteExpectedConfigsRows(envs *env.Map) []*model.ConfigRowState {
 			},
 			ConfigRowManifest: &model.ConfigRowManifest{
 				ConfigRowKey: model.ConfigRowKey{
-					BranchId:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
-					ComponentId: "keboola.ex-db-mysql",
-					ConfigId:    storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
-					Id:          storageapi.RowID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_USERS_ID`)),
+					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_FOO_ID`))),
+					ComponentID: "keboola.ex-db-mysql",
+					ConfigID:    storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ID`)),
+					ID:          storageapi.RowID(envs.MustGet(`TEST_BRANCH_FOO_CONFIG_WITH_ROWS_ROW_USERS_ID`)),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(

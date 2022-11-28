@@ -85,24 +85,24 @@ func (f ObjectsFilter) AssertObjectAllowed(object Object) *ObjectIsIgnoredError 
 			return objectIsIgnoredErrorf(IgnoredByAllowedBranches, `%s is ignored`, object.Desc())
 		}
 	case *Config:
-		if f.ignoredComponents.Contains(o.ComponentId) {
+		if f.ignoredComponents.Contains(o.ComponentID) {
 			return objectIsIgnoredErrorf(IgnoredByIgnoredComponents, `%s is ignored`, object.Desc())
 		}
-		if alwaysIgnoredComponents[o.ComponentId.String()] {
+		if alwaysIgnoredComponents[o.ComponentID.String()] {
 			return objectIsIgnoredErrorf(IgnoredByAlwaysIgnoredComponents, `%s is ignored, the component cannot be configured using a definition`, object.Desc())
 		}
 	case *ConfigWithRows:
-		if f.ignoredComponents.Contains(o.ComponentId) {
+		if f.ignoredComponents.Contains(o.ComponentID) {
 			return objectIsIgnoredErrorf(IgnoredByIgnoredComponents, `%s is ignored`, object.Desc())
 		}
-		if alwaysIgnoredComponents[o.ComponentId.String()] {
+		if alwaysIgnoredComponents[o.ComponentID.String()] {
 			return objectIsIgnoredErrorf(IgnoredByAlwaysIgnoredComponents, `%s is ignored, the component cannot be configured using a definition`, object.Desc())
 		}
 	case *ConfigRow:
-		if f.ignoredComponents.Contains(o.ComponentId) {
+		if f.ignoredComponents.Contains(o.ComponentID) {
 			return objectIsIgnoredErrorf(IgnoredByIgnoredComponents, `%s is ignored`, object.Desc())
 		}
-		if alwaysIgnoredComponents[o.ComponentId.String()] {
+		if alwaysIgnoredComponents[o.ComponentID.String()] {
 			return objectIsIgnoredErrorf(IgnoredByAlwaysIgnoredComponents, `%s is ignored, the component cannot be configured using a definition`, object.Desc())
 		}
 	}
@@ -167,7 +167,7 @@ func (v AllowedBranch) IsBranchAllowed(branch *Branch) bool {
 	}
 
 	// Defined by ID
-	if cast.ToInt(pattern) == int(branch.Id) {
+	if cast.ToInt(pattern) == int(branch.ID) {
 		return true
 	}
 
@@ -196,9 +196,9 @@ func (v ComponentIDs) String() string {
 	return `"` + strings.Join(items, `", "`) + `"`
 }
 
-func (v ComponentIDs) Contains(componentId storageapi.ComponentID) bool {
+func (v ComponentIDs) Contains(componentID storageapi.ComponentID) bool {
 	for _, id := range v {
-		if id == componentId {
+		if id == componentID {
 			return true
 		}
 	}

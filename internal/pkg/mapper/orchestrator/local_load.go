@@ -95,9 +95,9 @@ func (l *localLoader) addPhase(phaseIndex int, path string) (*model.Phase, []str
 	// Create struct
 	phase := &model.Phase{
 		PhaseKey: model.PhaseKey{
-			BranchId:    l.config.BranchId,
-			ComponentId: l.config.ComponentId,
-			ConfigId:    l.config.Id,
+			BranchID:    l.config.BranchID,
+			ComponentID: l.config.ComponentID,
+			ConfigID:    l.config.ID,
 			Index:       phaseIndex,
 		},
 		AbsPath: model.NewAbsPath(
@@ -134,9 +134,9 @@ func (l *localLoader) parsePhaseConfig(phase *model.Phase) ([]string, error) {
 		Load(l.NamingGenerator().PhaseFilePath(phase)).
 		AddMetadata(filesystem.ObjectKeyMetadata, phase.Key()).
 		SetDescription("phase config").
-		AddTag(model.FileTypeJson).
+		AddTag(model.FileTypeJSON).
 		AddTag(model.FileKindPhaseConfig).
-		ReadJsonFile()
+		ReadJSONFile()
 	if err != nil {
 		return nil, l.formatError(err)
 	}
@@ -180,9 +180,9 @@ func (l *localLoader) parseTaskConfig(task *model.Task) error {
 		Load(l.NamingGenerator().TaskFilePath(task)).
 		AddMetadata(filesystem.ObjectKeyMetadata, task.Key()).
 		SetDescription("task config").
-		AddTag(model.FileTypeJson).
+		AddTag(model.FileTypeJSON).
 		AddTag(model.FileKindTaskConfig).
-		ReadJsonFile()
+		ReadJSONFile()
 	if err != nil {
 		return l.formatError(err)
 	}
@@ -214,8 +214,8 @@ func (l *localLoader) parseTaskConfig(task *model.Task) error {
 			if err != nil {
 				errs.Append(err)
 			} else if targetConfig != nil {
-				task.ComponentId = targetConfig.ComponentId
-				task.ConfigId = targetConfig.Id
+				task.ComponentID = targetConfig.ComponentID
+				task.ConfigID = targetConfig.ID
 				task.ConfigPath = l.MustGet(targetConfig.Key()).Path()
 				markConfigUsedInOrchestrator(targetConfig, l.config)
 			}
@@ -225,14 +225,14 @@ func (l *localLoader) parseTaskConfig(task *model.Task) error {
 		if task.ConfigData, err = parser.configData(); err != nil {
 			errs.Append(err)
 		}
-		if task.ComponentId, err = parser.componentId(); err != nil {
+		if task.ComponentID, err = parser.componentID(); err != nil {
 			errs.Append(err)
 		}
 	} else {
 		if task.Enabled {
 			errs.Append(errors.New("task.configPath, or task.configData and task.componentId must be specified"))
-		} else if task.ComponentId, err = parser.componentId(); err != nil {
-			// ComponentId is required even when the task is disabled (for UI)
+		} else if task.ComponentID, err = parser.componentID(); err != nil {
+			// ComponentID is required even when the task is disabled (for UI)
 			errs.Append(err)
 		}
 	}

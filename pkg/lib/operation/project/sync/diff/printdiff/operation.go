@@ -1,4 +1,4 @@
-package printDiff
+package printdiff
 
 import (
 	"context"

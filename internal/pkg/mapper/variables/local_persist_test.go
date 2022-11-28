@@ -16,15 +16,15 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 	logger := d.DebugLogger()
 
 	parentKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `foo.bar`,
-		Id:          `345`,
+		BranchID:    123,
+		ComponentID: `foo.bar`,
+		ID:          `345`,
 	}
 	configManifest := &model.ConfigManifest{
 		ConfigKey: model.ConfigKey{
-			BranchId:    123,
-			ComponentId: storageapi.VariablesComponentID,
-			Id:          `678`,
+			BranchID:    123,
+			ComponentID: storageapi.VariablesComponentID,
+			ID:          `678`,
 		},
 	}
 	recipe := &model.PersistRecipe{
@@ -40,8 +40,8 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 	// Relation has been created
 	assert.Equal(t, model.Relations{
 		&model.VariablesForRelation{
-			ComponentId: `foo.bar`,
-			ConfigId:    `345`,
+			ComponentID: `foo.bar`,
+			ConfigID:    `345`,
 		},
 	}, configManifest.Relations)
 }
@@ -55,16 +55,16 @@ func TestVariablesValuesPersistDefaultInName(t *testing.T) {
 
 	// Get objects
 	rowKey := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: storageapi.VariablesComponentID,
-		ConfigId:    `456`,
+		BranchID:    123,
+		ComponentID: storageapi.VariablesComponentID,
+		ConfigID:    `456`,
 	}
 	row1Key := rowKey
-	row1Key.Id = `1`
+	row1Key.ID = `1`
 	row2Key := rowKey
-	row2Key.Id = `2`
+	row2Key.ID = `2`
 	row3Key := rowKey
-	row3Key.Id = `3`
+	row3Key.ID = `3`
 	row1 := state.MustGet(row1Key).(*model.ConfigRowState)
 	row2 := state.MustGet(row2Key).(*model.ConfigRowState)
 	row3 := state.MustGet(row3Key).(*model.ConfigRowState)
@@ -106,16 +106,16 @@ func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 
 	// Get objects
 	rowKey := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: storageapi.VariablesComponentID,
-		ConfigId:    `456`,
+		BranchID:    123,
+		ComponentID: storageapi.VariablesComponentID,
+		ConfigID:    `456`,
 	}
 	row1Key := rowKey
-	row1Key.Id = `1`
+	row1Key.ID = `1`
 	row2Key := rowKey
-	row2Key.Id = `2`
+	row2Key.ID = `2`
 	row3Key := rowKey
-	row3Key.Id = `3`
+	row3Key.ID = `3`
 	row1 := state.MustGet(row1Key).(*model.ConfigRowState)
 	row2 := state.MustGet(row2Key).(*model.ConfigRowState)
 	row3 := state.MustGet(row3Key).(*model.ConfigRowState)

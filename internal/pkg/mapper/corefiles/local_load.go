@@ -29,9 +29,9 @@ func (m *coreFilesMapper) loadMetaFile(recipe *model.LocalLoadRecipe) error {
 		Load(m.state.NamingGenerator().MetaFilePath(recipe.ObjectManifest.Path())).
 		AddMetadata(filesystem.ObjectKeyMetadata, recipe.Key()).
 		SetDescription(recipe.ObjectManifest.Kind().Name+" metadata").
-		AddTag(model.FileTypeJson).
+		AddTag(model.FileTypeJSON).
 		AddTag(model.FileKindObjectMeta).
-		ReadJsonFieldsTo(recipe.Object, model.MetaFileFieldsTag)
+		ReadJSONFieldsTo(recipe.Object, model.MetaFileFieldsTag)
 	return err
 }
 
@@ -41,9 +41,9 @@ func (m *coreFilesMapper) loadConfigFile(recipe *model.LocalLoadRecipe) error {
 		Load(m.state.NamingGenerator().ConfigFilePath(recipe.ObjectManifest.Path())).
 		AddMetadata(filesystem.ObjectKeyMetadata, recipe.Key()).
 		SetDescription(recipe.ObjectManifest.Kind().Name).
-		AddTag(model.FileTypeJson).
+		AddTag(model.FileTypeJSON).
 		AddTag(model.FileKindObjectConfig).
-		ReadJsonMapTo(recipe.Object, model.ConfigFileFieldTag)
+		ReadJSONMapTo(recipe.Object, model.ConfigFileFieldTag)
 	return err
 }
 

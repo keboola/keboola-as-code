@@ -121,7 +121,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 				return nil
 			})
-		return request.SendOrErr(ctx, p.storageApiClient)
+		return request.SendOrErr(ctx, p.storageAPIClient)
 	})
 
 	// Schedules for main branch
@@ -146,7 +146,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 				}
 				return nil
 			})
-		return request.SendOrErr(ctx, p.sandboxesApiClient)
+		return request.SendOrErr(ctx, p.sandboxesAPIClient)
 	})
 
 	// Storage Buckets
@@ -168,7 +168,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 				}
 				return nil
 			})
-		return request.SendOrErr(ctx, p.storageApiClient)
+		return request.SendOrErr(ctx, p.storageAPIClient)
 	})
 
 	// Storage Tables
@@ -180,7 +180,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 				tables = append(tables, *apiTables...)
 				return nil
 			})
-		return request.SendOrErr(ctx, p.storageApiClient)
+		return request.SendOrErr(ctx, p.storageAPIClient)
 	})
 
 	// Wait for requests
@@ -224,13 +224,13 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	// Join sandbox instances with config name
 	for _, config := range configsMap {
 		if config.ComponentID == sandboxesapi.Component {
-			sandboxId, err := sandboxesapi.GetSandboxID(config.ToApi().Config)
+			sandboxID, err := sandboxesapi.GetSandboxID(config.ToAPI().Config)
 			if err != nil {
 				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: "SANDBOX INSTANCE ID NOT SET"})
 				continue
 			}
 
-			if sandbox, found := sandboxesMap[sandboxId.String()]; found {
+			if sandbox, found := sandboxesMap[sandboxID.String()]; found {
 				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: config.Name, Type: sandbox.Type, Size: sandbox.Size})
 			} else {
 				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: "SANDBOX INSTANCE NOT FOUND"})

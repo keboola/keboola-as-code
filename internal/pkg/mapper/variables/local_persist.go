@@ -23,7 +23,7 @@ func (m *variablesMapper) MapBeforePersist(ctx context.Context, recipe *model.Pe
 	}
 
 	// Get component
-	component, err := m.state.Components().GetOrErr(configManifest.ComponentId)
+	component, err := m.state.Components().GetOrErr(configManifest.ComponentID)
 	if err != nil {
 		return err
 	}
@@ -40,8 +40,8 @@ func (m *variablesMapper) MapBeforePersist(ctx context.Context, recipe *model.Pe
 
 	// Add relation
 	configManifest.Relations.Add(&model.VariablesForRelation{
-		ComponentId: configKey.ComponentId,
-		ConfigId:    configKey.Id,
+		ComponentID: configKey.ComponentID,
+		ConfigID:    configKey.ID,
 	})
 
 	return nil
@@ -56,7 +56,7 @@ func (m *variablesMapper) AfterLocalOperation(_ context.Context, changes *model.
 		object := objectState.LocalState()
 		if config, ok := object.(*model.Config); ok {
 			// Variables config?
-			component, err := m.state.Components().GetOrErr(config.ComponentId)
+			component, err := m.state.Components().GetOrErr(config.ComponentID)
 			if err != nil {
 				errs.Append(err)
 				continue
@@ -66,7 +66,7 @@ func (m *variablesMapper) AfterLocalOperation(_ context.Context, changes *model.
 			}
 		} else if row, ok := object.(*model.ConfigRow); ok {
 			// Variables values row?
-			component, err := m.state.Components().GetOrErr(row.ComponentId)
+			component, err := m.state.Components().GetOrErr(row.ComponentID)
 			if err != nil {
 				errs.Append(err)
 				continue

@@ -10,12 +10,12 @@ import (
 
 func TestManifestRecordGetParent(t *testing.T) {
 	t.Parallel()
-	r := NewRecords(model.SortById)
-	branchManifest := &model.BranchManifest{BranchKey: model.BranchKey{Id: 123}}
+	r := NewRecords(model.SortByID)
+	branchManifest := &model.BranchManifest{BranchKey: model.BranchKey{ID: 123}}
 	configManifest := &model.ConfigManifest{ConfigKey: model.ConfigKey{
-		BranchId:    123,
-		ComponentId: "keboola.foo",
-		Id:          "456",
+		BranchID:    123,
+		ComponentID: "keboola.foo",
+		ID:          "456",
 	}}
 	assert.NoError(t, r.trackRecord(branchManifest))
 	parent, err := r.GetParent(configManifest)
@@ -25,11 +25,11 @@ func TestManifestRecordGetParent(t *testing.T) {
 
 func TestManifestRecordGetParentNotFound(t *testing.T) {
 	t.Parallel()
-	r := NewRecords(model.SortById)
+	r := NewRecords(model.SortByID)
 	configManifest := &model.ConfigManifest{ConfigKey: model.ConfigKey{
-		BranchId:    123,
-		ComponentId: "keboola.foo",
-		Id:          "456",
+		BranchID:    123,
+		ComponentID: "keboola.foo",
+		ID:          "456",
 	}}
 	parent, err := r.GetParent(configManifest)
 	assert.Nil(t, parent)
@@ -39,7 +39,7 @@ func TestManifestRecordGetParentNotFound(t *testing.T) {
 
 func TestManifestRecordGetParentNil(t *testing.T) {
 	t.Parallel()
-	r := NewRecords(model.SortById)
+	r := NewRecords(model.SortByID)
 	parent, err := r.GetParent(&model.BranchManifest{})
 	assert.Nil(t, parent)
 	assert.NoError(t, err)

@@ -58,7 +58,7 @@ type inputFields map[string]input.ObjectField
 
 func (f inputFields) Write(out *strings.Builder) {
 	var table []inputFieldLine
-	var inputIdMaxLength int
+	var inputIDMaxLength int
 	var fieldPathMaxLength int
 
 	// Convert and get max lengths for padding
@@ -66,8 +66,8 @@ func (f inputFields) Write(out *strings.Builder) {
 		line := createInputFieldLine(field)
 		table = append(table, line)
 
-		if len(line.inputId) > inputIdMaxLength {
-			inputIdMaxLength = len(line.inputId)
+		if len(line.inputID) > inputIDMaxLength {
+			inputIDMaxLength = len(line.inputID)
 		}
 
 		fieldPathLength := len(line.fieldPath) + 2
@@ -82,7 +82,7 @@ func (f inputFields) Write(out *strings.Builder) {
 	})
 
 	// Format with padding
-	format := fmt.Sprintf("%%s %%-%ds  %%-%ds %%s", inputIdMaxLength, fieldPathMaxLength)
+	format := fmt.Sprintf("%%s %%-%ds  %%-%ds %%s", inputIDMaxLength, fieldPathMaxLength)
 
 	// Write
 	for _, line := range table {
@@ -91,7 +91,7 @@ func (f inputFields) Write(out *strings.Builder) {
 			example = "<!-- " + line.example + " -->"
 		}
 		// Field path is escaped, it can contain MarkDown special chars, eg. _ []
-		out.WriteString(strings.TrimSpace(fmt.Sprintf(format, line.mark, line.inputId, "`"+line.fieldPath+"`", example)))
+		out.WriteString(strings.TrimSpace(fmt.Sprintf(format, line.mark, line.inputID, "`"+line.fieldPath+"`", example)))
 		out.WriteString("\n")
 	}
 }
@@ -103,7 +103,7 @@ func createInputFieldLine(field input.ObjectField) inputFieldLine {
 	}
 	return inputFieldLine{
 		mark:      mark,
-		inputId:   field.Input.Id,
+		inputID:   field.Input.ID,
 		fieldPath: field.Path.String(),
 		example:   field.Example,
 	}
@@ -111,7 +111,7 @@ func createInputFieldLine(field input.ObjectField) inputFieldLine {
 
 type inputFieldLine struct {
 	mark      string
-	inputId   string
+	inputID   string
 	fieldPath string
 	example   string
 }

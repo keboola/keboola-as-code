@@ -116,7 +116,7 @@ func (tc *testCases) runTests(t *testing.T) {
 }
 
 func (*testCases) TestApiName(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
-	assert.NotEmpty(t, fs.ApiName())
+	assert.NotEmpty(t, fs.APIName())
 }
 
 func (*testCases) TestBasePath(t *testing.T, fs filesystem.Fs, _ log.DebugLogger) {
@@ -561,7 +561,7 @@ func (*testCases) TestWriteFile_JsonFile(t *testing.T, fs filesystem.Fs, logger 
 	// Write
 	data := orderedmap.New()
 	data.Set(`foo`, `bar`)
-	assert.NoError(t, fs.WriteFile(filesystem.NewJsonFile(filePath, data)))
+	assert.NoError(t, fs.WriteFile(filesystem.NewJSONFile(filePath, data)))
 	assert.Equal(t, `DEBUG  Saved "file.json"`, strings.TrimSpace(logger.AllMessages()))
 
 	// Read

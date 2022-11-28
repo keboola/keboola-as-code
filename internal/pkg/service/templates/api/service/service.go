@@ -211,7 +211,7 @@ func (s *service) InstancesIndex(d dependencies.ForProjectRequest, payload *Inst
 	m := project.NewManifest(123, "foo")
 
 	// Only one branch
-	m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.Id))})
+	m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.ID))})
 	prj := project.NewWithManifest(d.RequestCtx(), fs, m)
 
 	// Load project state
@@ -239,7 +239,7 @@ func (s *service) InstanceIndex(d dependencies.ForProjectRequest, payload *Insta
 	m := project.NewManifest(123, "foo")
 
 	// Only one branch
-	m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.Id))})
+	m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.ID))})
 	prj := project.NewWithManifest(d.RequestCtx(), fs, m)
 
 	// Load project state
@@ -333,7 +333,7 @@ func (s *service) UpgradeInstance(d dependencies.ForProjectRequest, payload *Upg
 	}
 
 	// Get template
-	_, tmpl, err := getTemplateVersion(d, instance.RepositoryName, instance.TemplateId, payload.Version)
+	_, tmpl, err := getTemplateVersion(d, instance.RepositoryName, instance.TemplateID, payload.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -368,7 +368,7 @@ func (s *service) UpgradeInstance(d dependencies.ForProjectRequest, payload *Upg
 		return nil, err
 	}
 
-	return &UpgradeInstanceResult{InstanceID: instance.InstanceId}, nil
+	return &UpgradeInstanceResult{InstanceID: instance.InstanceID}, nil
 }
 
 func (s *service) UpgradeInstanceInputsIndex(d dependencies.ForProjectRequest, payload *UpgradeInstanceInputsIndexPayload) (res *Inputs, err error) {
@@ -379,7 +379,7 @@ func (s *service) UpgradeInstanceInputsIndex(d dependencies.ForProjectRequest, p
 	}
 
 	// Get template
-	_, tmpl, err := getTemplateVersion(d, instance.RepositoryName, instance.TemplateId, payload.Version)
+	_, tmpl, err := getTemplateVersion(d, instance.RepositoryName, instance.TemplateID, payload.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -398,7 +398,7 @@ func (s *service) UpgradeInstanceValidateInputs(d dependencies.ForProjectRequest
 	// Validate the inputs as in the use operation
 	return s.ValidateInputs(d, &ValidateInputsPayload{
 		Repository:      instance.RepositoryName,
-		Template:        instance.TemplateId,
+		Template:        instance.TemplateID,
 		Version:         payload.Version,
 		Steps:           payload.Steps,
 		StorageAPIToken: payload.StorageAPIToken,
@@ -431,7 +431,7 @@ func repositoryInst(d dependencies.ForProjectRequest, repoName string) (*reposit
 	return repo, nil
 }
 
-func templateRecord(d dependencies.ForProjectRequest, repoName, templateId string) (*repository.Repository, *repository.TemplateRecord, error) {
+func templateRecord(d dependencies.ForProjectRequest, repoName, templateID string) (*repository.Repository, *repository.TemplateRecord, error) {
 	// Get repository
 	repo, err := repositoryInst(d, repoName)
 	if err != nil {
@@ -439,17 +439,17 @@ func templateRecord(d dependencies.ForProjectRequest, repoName, templateId strin
 	}
 
 	// Get template record
-	tmpl, found := repo.RecordById(templateId)
+	tmpl, found := repo.RecordByID(templateID)
 	if !found {
 		return nil, nil, &GenericError{
 			Name:    "templates.templateNotFound",
-			Message: fmt.Sprintf(`Template "%s" not found.`, templateId),
+			Message: fmt.Sprintf(`Template "%s" not found.`, templateID),
 		}
 	}
 	return repo, &tmpl, nil
 }
 
-func getTemplateVersion(d dependencies.ForProjectRequest, repoName, templateId, versionStr string) (*repository.Repository, *template.Template, error) {
+func getTemplateVersion(d dependencies.ForProjectRequest, repoName, templateID, versionStr string) (*repository.Repository, *template.Template, error) {
 	// Get repo
 	repo, err := repositoryInst(d, repoName)
 	if err != nil {
@@ -460,11 +460,11 @@ func getTemplateVersion(d dependencies.ForProjectRequest, repoName, templateId, 
 	var semVersion model.SemVersion
 	if versionStr == "default" {
 		// Default version
-		tmplRecord, found := repo.RecordById(templateId)
+		tmplRecord, found := repo.RecordByID(templateID)
 		if !found {
 			return nil, nil, &GenericError{
 				Name:    "templates.templateNotFound",
-				Message: fmt.Sprintf(`Template "%s" not found.`, templateId),
+				Message: fmt.Sprintf(`Template "%s" not found.`, templateID),
 			}
 		}
 		if versionRecord, err := tmplRecord.DefaultVersionOrErr(); err != nil {
@@ -484,12 +484,12 @@ func getTemplateVersion(d dependencies.ForProjectRequest, repoName, templateId, 
 	}
 
 	// Get template version
-	tmpl, err := d.Template(d.RequestCtx(), model.NewTemplateRef(repo.Definition(), templateId, semVersion.Original()))
+	tmpl, err := d.Template(d.RequestCtx(), model.NewTemplateRef(repo.Definition(), templateID, semVersion.Original()))
 	if err != nil {
 		if errors.As(err, &manifest.TemplateNotFoundError{}) {
 			return nil, nil, &GenericError{
 				Name:    "templates.templateNotFound",
-				Message: fmt.Sprintf(`Template "%s" not found.`, templateId),
+				Message: fmt.Sprintf(`Template "%s" not found.`, templateID),
 			}
 		}
 		if errors.As(err, &manifest.VersionNotFoundError{}) {
@@ -506,26 +506,26 @@ func getTemplateVersion(d dependencies.ForProjectRequest, repoName, templateId, 
 
 func getBranch(d dependencies.ForProjectRequest, branchDef string) (model.BranchKey, error) {
 	// Get Storage API
-	storageApiClient := d.StorageApiClient()
+	storageAPIClient := d.StorageAPIClient()
 
 	// Parse branch ID
 	var targetBranch model.BranchKey
 	if branchDef == "default" {
 		// Use main branch
-		if v, err := storageapi.GetDefaultBranchRequest().Send(d.RequestCtx(), storageApiClient); err != nil {
+		if v, err := storageapi.GetDefaultBranchRequest().Send(d.RequestCtx(), storageAPIClient); err != nil {
 			return targetBranch, err
 		} else {
-			targetBranch.Id = v.ID
+			targetBranch.ID = v.ID
 		}
 	} else if branchId, err := strconv.Atoi(branchDef); err != nil {
 		// Branch ID must be numeric
 		return targetBranch, NewBadRequestError(errors.Errorf(`branch ID "%s" is not numeric`, branchDef))
-	} else if _, err := storageapi.GetBranchRequest(storageapi.BranchKey{ID: storageapi.BranchID(branchId)}).Send(d.RequestCtx(), storageApiClient); err != nil {
+	} else if _, err := storageapi.GetBranchRequest(storageapi.BranchKey{ID: storageapi.BranchID(branchId)}).Send(d.RequestCtx(), storageAPIClient); err != nil {
 		// Branch not found
 		return targetBranch, NewResourceNotFoundError("branch", strconv.Itoa(branchId))
 	} else {
 		// Branch found
-		targetBranch.Id = storageapi.BranchID(branchId)
+		targetBranch.ID = storageapi.BranchID(branchId)
 	}
 
 	return targetBranch, nil
@@ -549,7 +549,7 @@ func getTemplateInstance(d dependencies.ForProjectRequest, branchDef, instanceId
 
 	// Load only target branch
 	if loadConfigs {
-		m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.Id))})
+		m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.ID))})
 	} else {
 		m.Filter().SetAllowedKeys([]model.Key{branchKey})
 	}
@@ -572,7 +572,7 @@ func getTemplateInstance(d dependencies.ForProjectRequest, branchDef, instanceId
 	if !found {
 		return nil, branchKey, nil, &GenericError{
 			Name:    "templates.instanceNotFound",
-			Message: fmt.Sprintf(`Instance "%s" not found in branch "%d".`, instanceId, branchKey.Id),
+			Message: fmt.Sprintf(`Instance "%s" not found in branch "%d".`, instanceId, branchKey.ID),
 		}
 	}
 

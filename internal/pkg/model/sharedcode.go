@@ -23,7 +23,7 @@ type LinkScript struct {
 }
 
 func (v LinkScript) Content() string {
-	return fmt.Sprintf(`shared code "%s"`, v.Target.Id.String())
+	return fmt.Sprintf(`shared code "%s"`, v.Target.ID.String())
 }
 
 func (v SharedCodeConfig) String() string {
@@ -36,13 +36,13 @@ func (v SharedCodeRow) String() string {
 
 // SharedCodeVariablesForRelation - variables for shared code.
 type SharedCodeVariablesForRelation struct {
-	ConfigId storageapi.ConfigID `json:"configId" validate:"required"`
-	RowId    storageapi.RowID    `json:"rowId" validate:"required"`
+	ConfigID storageapi.ConfigID `json:"configId" validate:"required"`
+	RowID    storageapi.RowID    `json:"rowId" validate:"required"`
 }
 
 // SharedCodeVariablesFromRelation - variables from source configuration.
 type SharedCodeVariablesFromRelation struct {
-	VariablesId storageapi.ConfigID `json:"variablesId" validate:"required"`
+	VariablesID storageapi.ConfigID `json:"variablesId" validate:"required"`
 }
 
 func (t *SharedCodeVariablesForRelation) Type() RelationType {
@@ -54,7 +54,7 @@ func (t *SharedCodeVariablesForRelation) Desc() string {
 }
 
 func (t *SharedCodeVariablesForRelation) Key() string {
-	return fmt.Sprintf(`%s_%s`, t.Type(), t.ConfigId)
+	return fmt.Sprintf(`%s_%s`, t.Type(), t.ConfigID)
 }
 
 func (t *SharedCodeVariablesForRelation) ParentKey(relationDefinedOn Key) (Key, error) {
@@ -63,10 +63,10 @@ func (t *SharedCodeVariablesForRelation) ParentKey(relationDefinedOn Key) (Key, 
 		return nil, err
 	}
 	return ConfigRowKey{
-		BranchId:    variables.BranchId,
-		ComponentId: storageapi.SharedCodeComponentID,
-		ConfigId:    t.ConfigId,
-		Id:          t.RowId,
+		BranchID:    variables.BranchID,
+		ComponentID: storageapi.SharedCodeComponentID,
+		ConfigID:    t.ConfigID,
+		ID:          t.RowID,
 	}, nil
 }
 
@@ -74,7 +74,7 @@ func (t *SharedCodeVariablesForRelation) IsDefinedInManifest() bool {
 	return true
 }
 
-func (t *SharedCodeVariablesForRelation) IsDefinedInApi() bool {
+func (t *SharedCodeVariablesForRelation) IsDefinedInAPI() bool {
 	return false
 }
 
@@ -84,13 +84,13 @@ func (t *SharedCodeVariablesForRelation) NewOtherSideRelation(relationDefinedOn 
 		return nil, nil, err
 	}
 	otherSide := ConfigRowKey{
-		BranchId:    variables.BranchId,
-		ComponentId: storageapi.SharedCodeComponentID,
-		ConfigId:    t.ConfigId,
-		Id:          t.RowId,
+		BranchID:    variables.BranchID,
+		ComponentID: storageapi.SharedCodeComponentID,
+		ConfigID:    t.ConfigID,
+		ID:          t.RowID,
 	}
 	otherSideRelation := &SharedCodeVariablesFromRelation{
-		VariablesId: variables.Id,
+		VariablesID: variables.ID,
 	}
 	return otherSide, otherSideRelation, nil
 }
@@ -100,7 +100,7 @@ func (t *SharedCodeVariablesForRelation) checkDefinedOn(relationDefinedOn Key) (
 	if !ok {
 		return variables, errors.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
-	if variables.ComponentId != storageapi.VariablesComponentID {
+	if variables.ComponentID != storageapi.VariablesComponentID {
 		return variables, errors.Errorf(`relation "%s" must be defined on config from "%s" component, found %s`, t.Type(), storageapi.VariablesComponentID, relationDefinedOn.Desc())
 	}
 	return variables, nil
@@ -115,7 +115,7 @@ func (t *SharedCodeVariablesFromRelation) Desc() string {
 }
 
 func (t *SharedCodeVariablesFromRelation) Key() string {
-	return fmt.Sprintf(`%s_%s`, t.Type(), t.VariablesId)
+	return fmt.Sprintf(`%s_%s`, t.Type(), t.VariablesID)
 }
 
 func (t *SharedCodeVariablesFromRelation) ParentKey(_ Key) (Key, error) {
@@ -126,7 +126,7 @@ func (t *SharedCodeVariablesFromRelation) IsDefinedInManifest() bool {
 	return false
 }
 
-func (t *SharedCodeVariablesFromRelation) IsDefinedInApi() bool {
+func (t *SharedCodeVariablesFromRelation) IsDefinedInAPI() bool {
 	return true
 }
 
@@ -136,13 +136,13 @@ func (t *SharedCodeVariablesFromRelation) NewOtherSideRelation(relationDefinedOn
 		return nil, nil, err
 	}
 	otherSide := ConfigKey{
-		BranchId:    row.BranchId,
-		ComponentId: storageapi.VariablesComponentID,
-		Id:          t.VariablesId,
+		BranchID:    row.BranchID,
+		ComponentID: storageapi.VariablesComponentID,
+		ID:          t.VariablesID,
 	}
 	otherSideRelation := &SharedCodeVariablesForRelation{
-		ConfigId: row.ConfigId,
-		RowId:    row.Id,
+		ConfigID: row.ConfigID,
+		RowID:    row.ID,
 	}
 	return otherSide, otherSideRelation, nil
 }
@@ -152,7 +152,7 @@ func (t *SharedCodeVariablesFromRelation) checkDefinedOn(relationDefinedOn Key) 
 	if !ok {
 		return row, errors.Errorf(`relation "%s" must be defined on config row, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
-	if row.ComponentId != storageapi.SharedCodeComponentID {
+	if row.ComponentID != storageapi.SharedCodeComponentID {
 		return row, errors.Errorf(`relation "%s" must be defined on config row from "%s" component, found %s`, t.Type(), storageapi.SharedCodeComponentID, relationDefinedOn.Desc())
 	}
 	return row, nil

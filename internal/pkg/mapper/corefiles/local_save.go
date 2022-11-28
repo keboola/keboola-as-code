@@ -25,7 +25,7 @@ func (m *coreFilesMapper) MapBeforeLocalSave(ctx context.Context, recipe *model.
 func (m *coreFilesMapper) createMetaFile(recipe *model.LocalSaveRecipe) {
 	if metadata := reflecthelper.MapFromTaggedFields(model.MetaFileFieldsTag, recipe.Object); metadata != nil {
 		path := m.state.NamingGenerator().MetaFilePath(recipe.Path())
-		jsonFile := filesystem.NewJsonFile(path, metadata)
+		jsonFile := filesystem.NewJSONFile(path, metadata)
 
 		// Remove hidden fields, the annotation can be set by some other mapper.
 		if hiddenFields, ok := recipe.Annotations[HideMetaFileFieldsAnnotation].([]string); ok {
@@ -36,7 +36,7 @@ func (m *coreFilesMapper) createMetaFile(recipe *model.LocalSaveRecipe) {
 
 		recipe.Files.
 			Add(jsonFile).
-			AddTag(model.FileTypeJson).
+			AddTag(model.FileTypeJSON).
 			AddTag(model.FileKindObjectMeta)
 	}
 }
@@ -45,10 +45,10 @@ func (m *coreFilesMapper) createMetaFile(recipe *model.LocalSaveRecipe) {
 func (m *coreFilesMapper) createConfigFile(recipe *model.LocalSaveRecipe) {
 	if configuration := reflecthelper.MapFromOneTaggedField(model.ConfigFileFieldTag, recipe.Object); configuration != nil {
 		path := m.state.NamingGenerator().ConfigFilePath(recipe.Path())
-		jsonFile := filesystem.NewJsonFile(path, configuration)
+		jsonFile := filesystem.NewJSONFile(path, configuration)
 		recipe.Files.
 			Add(jsonFile).
-			AddTag(model.FileTypeJson).
+			AddTag(model.FileTypeJSON).
 			AddTag(model.FileKindObjectConfig)
 	}
 }

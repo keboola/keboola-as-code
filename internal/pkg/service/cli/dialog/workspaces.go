@@ -38,7 +38,7 @@ func (p *Dialogs) AskWorkspace(
 	return nil, errors.New(`please specify workspace`)
 }
 
-func (p *Dialogs) AskWorkspaceId(opts *options.Options) (string, error) {
+func (p *Dialogs) AskWorkspaceID(opts *options.Options) (string, error) {
 	if !opts.IsSet(`workspace-id`) {
 		token, ok := p.Ask(&prompt.Question{
 			Label:       "Workspace ID",

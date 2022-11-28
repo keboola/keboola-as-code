@@ -22,20 +22,20 @@ type Context struct {
 	*use.Context
 }
 
-func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceId string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefs map[string]*template.Input, tickets *storageapi.TicketProvider, components *model.ComponentsMap, projectState *state.State) *Context {
+func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceID string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefs map[string]*template.Input, tickets *storageapi.TicketProvider, components *model.ComponentsMap, projectState *state.State) *Context {
 	c := &Context{
-		Context: use.NewContext(ctx, templateRef, objectsRoot, instanceId, targetBranch, inputsValues, inputsDefs, tickets, components),
+		Context: use.NewContext(ctx, templateRef, objectsRoot, instanceID, targetBranch, inputsValues, inputsDefs, tickets, components),
 	}
 
 	// Register existing IDs, so they will be reused
-	configs := search.ConfigsForTemplateInstance(projectState.LocalObjects().ConfigsWithRowsFrom(targetBranch), instanceId)
+	configs := search.ConfigsForTemplateInstance(projectState.LocalObjects().ConfigsWithRowsFrom(targetBranch), instanceID)
 	iterateTmplMetadata(
 		configs,
 		func(config *model.Config, idInTemplate storageapi.ConfigID, _ []model.ConfigInputUsage) {
-			c.RegisterPlaceholder(idInTemplate, func(_ use.Placeholder, cb use.ResolveCallback) { cb(config.Id) })
+			c.RegisterPlaceholder(idInTemplate, func(_ use.Placeholder, cb use.ResolveCallback) { cb(config.ID) })
 		},
 		func(row *model.ConfigRow, idInTemplate storageapi.RowID, _ []model.RowInputUsage) {
-			c.RegisterPlaceholder(idInTemplate, func(_ use.Placeholder, cb use.ResolveCallback) { cb(row.Id) })
+			c.RegisterPlaceholder(idInTemplate, func(_ use.Placeholder, cb use.ResolveCallback) { cb(row.ID) })
 		},
 	)
 

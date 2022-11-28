@@ -56,8 +56,8 @@ func TestDialogs_AskHostAndToken(t *testing.T) {
 	assert.NoError(t, console.Close())
 
 	// Assert
-	assert.Equal(t, `foo.bar.com`, opts.Get(options.StorageApiHostOpt))
-	assert.Equal(t, `my-secret-token`, opts.Get(options.StorageApiTokenOpt))
+	assert.Equal(t, `foo.bar.com`, opts.Get(options.StorageAPIHostOpt))
+	assert.Equal(t, `my-secret-token`, opts.Get(options.StorageAPITokenOpt))
 }
 
 func TestDialogs_AskInitOptions(t *testing.T) {
@@ -67,8 +67,8 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 	dialog, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps()
 
-	branches := []*model.Branch{{BranchKey: model.BranchKey{Id: 123}, Name: "Main", IsDefault: true}}
-	d.MockedHttpTransport().RegisterResponder(
+	branches := []*model.Branch{{BranchKey: model.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}
+	d.MockedHTTPTransport().RegisterResponder(
 		"GET", `=~/storage/dev-branches`,
 		httpmock.NewJsonResponderOrPanic(200, branches),
 	)

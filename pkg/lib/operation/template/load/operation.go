@@ -22,7 +22,7 @@ func Run(ctx context.Context, d dependencies, repository *repository.Repository,
 	defer telemetry.EndSpan(span, &err)
 
 	// Get template
-	templateRecord, err := repository.RecordByIdOrErr(reference.TemplateId())
+	templateRecord, err := repository.RecordByIDOrErr(reference.TemplateID())
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func Run(ctx context.Context, d dependencies, repository *repository.Repository,
 	}
 
 	// Update sem version in reference
-	reference = model.NewTemplateRef(reference.Repository(), reference.TemplateId(), versionRecord.Version.String())
+	reference = model.NewTemplateRef(reference.Repository(), reference.TemplateID(), versionRecord.Version.String())
 
 	// Load template
 	return template.New(ctx, reference, templateRecord, versionRecord, templateDir, repository.CommonDir(), d.Components())

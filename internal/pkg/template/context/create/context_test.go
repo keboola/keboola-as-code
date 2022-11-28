@@ -14,32 +14,32 @@ import (
 func TestCreateContext(t *testing.T) {
 	t.Parallel()
 
-	sourceBranch := model.BranchKey{Id: 123}
+	sourceBranch := model.BranchKey{ID: 123}
 	configs := []ConfigDef{
 		{
 			Key: model.ConfigKey{
-				BranchId:    sourceBranch.Id,
-				ComponentId: "foo.bar",
-				Id:          "123",
+				BranchID:    sourceBranch.ID,
+				ComponentID: "foo.bar",
+				ID:          "123",
 			},
-			TemplateId: "my-first-config",
+			TemplateID: "my-first-config",
 		},
 		{
 			Key: model.ConfigKey{
-				BranchId:    sourceBranch.Id,
-				ComponentId: "foo.bar",
-				Id:          "345",
+				BranchID:    sourceBranch.ID,
+				ComponentID: "foo.bar",
+				ID:          "345",
 			},
-			TemplateId: "my-second-config",
+			TemplateID: "my-second-config",
 			Rows: []ConfigRowDef{
 				{
 					Key: model.ConfigRowKey{
-						BranchId:    sourceBranch.Id,
-						ComponentId: "foo.bar",
-						ConfigId:    "345",
-						Id:          "789",
+						BranchID:    sourceBranch.ID,
+						ComponentID: "foo.bar",
+						ConfigID:    "345",
+						ID:          "789",
 					},
-					TemplateId: "my-row",
+					TemplateID: "my-row",
 				},
 			},
 		},
@@ -49,22 +49,22 @@ func TestCreateContext(t *testing.T) {
 	// Check remote filter
 	expectedFilter := model.NoFilter()
 	expectedFilter.SetAllowedKeys([]model.Key{
-		model.BranchKey{Id: 123},
+		model.BranchKey{ID: 123},
 		model.ConfigKey{
-			BranchId:    sourceBranch.Id,
-			ComponentId: "foo.bar",
-			Id:          "123",
+			BranchID:    sourceBranch.ID,
+			ComponentID: "foo.bar",
+			ID:          "123",
 		},
 		model.ConfigKey{
-			BranchId:    sourceBranch.Id,
-			ComponentId: "foo.bar",
-			Id:          "345",
+			BranchID:    sourceBranch.ID,
+			ComponentID: "foo.bar",
+			ID:          "345",
 		},
 		model.ConfigRowKey{
-			BranchId:    sourceBranch.Id,
-			ComponentId: "foo.bar",
-			ConfigId:    "345",
-			Id:          "789",
+			BranchID:    sourceBranch.ID,
+			ComponentID: "foo.bar",
+			ConfigID:    "345",
+			ID:          "789",
 		},
 	})
 	assert.Equal(t, expectedFilter, ctx.RemoteObjectsFilter())
@@ -72,8 +72,8 @@ func TestCreateContext(t *testing.T) {
 	// Check replacements
 	expectedReplacements := []replacevalues.Value{
 		{
-			Search:  model.BranchKey{Id: 123},
-			Replace: model.BranchKey{Id: 0},
+			Search:  model.BranchKey{ID: 123},
+			Replace: model.BranchKey{ID: 0},
 		},
 		{
 			Search:  storageapi.BranchID(123),
@@ -81,14 +81,14 @@ func TestCreateContext(t *testing.T) {
 		},
 		{
 			Search: model.ConfigKey{
-				BranchId:    sourceBranch.Id,
-				ComponentId: "foo.bar",
-				Id:          "123",
+				BranchID:    sourceBranch.ID,
+				ComponentID: "foo.bar",
+				ID:          "123",
 			},
 			Replace: model.ConfigKey{
-				BranchId:    0,
-				ComponentId: "foo.bar",
-				Id:          `<<~~func:ConfigId:["my-first-config"]~~>>`,
+				BranchID:    0,
+				ComponentID: "foo.bar",
+				ID:          `<<~~func:ConfigId:["my-first-config"]~~>>`,
 			},
 		},
 		{
@@ -101,14 +101,14 @@ func TestCreateContext(t *testing.T) {
 		},
 		{
 			Search: model.ConfigKey{
-				BranchId:    sourceBranch.Id,
-				ComponentId: "foo.bar",
-				Id:          "345",
+				BranchID:    sourceBranch.ID,
+				ComponentID: "foo.bar",
+				ID:          "345",
 			},
 			Replace: model.ConfigKey{
-				BranchId:    0,
-				ComponentId: "foo.bar",
-				Id:          `<<~~func:ConfigId:["my-second-config"]~~>>`,
+				BranchID:    0,
+				ComponentID: "foo.bar",
+				ID:          `<<~~func:ConfigId:["my-second-config"]~~>>`,
 			},
 		},
 		{
@@ -121,16 +121,16 @@ func TestCreateContext(t *testing.T) {
 		},
 		{
 			Search: model.ConfigRowKey{
-				BranchId:    sourceBranch.Id,
-				ComponentId: "foo.bar",
-				ConfigId:    "345",
-				Id:          "789",
+				BranchID:    sourceBranch.ID,
+				ComponentID: "foo.bar",
+				ConfigID:    "345",
+				ID:          "789",
 			},
 			Replace: model.ConfigRowKey{
-				BranchId:    0,
-				ComponentId: "foo.bar",
-				ConfigId:    `<<~~func:ConfigId:["my-second-config"]~~>>`,
-				Id:          `<<~~func:ConfigRowId:["my-row"]~~>>`,
+				BranchID:    0,
+				ComponentID: "foo.bar",
+				ConfigID:    `<<~~func:ConfigId:["my-second-config"]~~>>`,
+				ID:          `<<~~func:ConfigRowId:["my-row"]~~>>`,
 			},
 		},
 		{

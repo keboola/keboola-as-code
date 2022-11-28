@@ -29,7 +29,7 @@ type ErrorWriter struct {
 
 // FormatError sets HTTP status code to error.
 func FormatError(_ context.Context, err error) goaHTTP.Statuser {
-	return WrapWithStatusCode(err, HttpCodeFrom(err))
+	return WrapWithStatusCode(err, HTTPCodeFrom(err))
 }
 
 func NewErrorWriter(logger log.Logger, errorNamePrefix, exceptionIDPrefix string) ErrorWriter {
@@ -108,20 +108,20 @@ func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, er
 
 func errorLogMessage(err error, response *UnexpectedError) string {
 	// Log exception ID if it is present
-	exceptionIdValue := ""
+	exceptionIDValue := ""
 	if response.ExceptionID != nil {
-		exceptionIdValue = "exceptionId=" + *response.ExceptionID + " "
+		exceptionIDValue = "exceptionId=" + *response.ExceptionID + " "
 	}
 
 	// Custom log message
 	var errWithLogMessage WithLogMessage
 	if errors.As(err, &errWithLogMessage) {
-		return exceptionIdValue + errWithLogMessage.ErrorLogMessage()
+		return exceptionIDValue + errWithLogMessage.ErrorLogMessage()
 	}
 
 	// Format message
 	return fmt.Sprintf(
 		"%s | %serrorName=%s errorType=%T response=%s",
-		errors.Format(err, errors.FormatWithStack()), exceptionIdValue, response.Name, err, json.MustEncodeString(response, false),
+		errors.Format(err, errors.FormatWithStack()), exceptionIDValue, response.Name, err, json.MustEncodeString(response, false),
 	)
 }

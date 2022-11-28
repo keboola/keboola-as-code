@@ -5,7 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/printDiff"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/diff/printdiff"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
@@ -28,13 +28,13 @@ func DiffCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			options := printDiff.Options{
+			options := printdiff.Options{
 				PrintDetails:      d.Options().GetBool(`details`),
 				LogUntrackedPaths: true,
 			}
 
 			// Print diff
-			results, err := printDiff.Run(d.CommandCtx(), projectState, options, d)
+			results, err := printdiff.Run(d.CommandCtx(), projectState, options, d)
 			if err != nil {
 				return err
 			}

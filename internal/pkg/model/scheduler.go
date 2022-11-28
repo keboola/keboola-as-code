@@ -10,8 +10,8 @@ import (
 
 // SchedulerForRelation - scheduler for a configuration.
 type SchedulerForRelation struct {
-	ComponentId storageapi.ComponentID `json:"componentId" validate:"required"`
-	ConfigId    storageapi.ConfigID    `json:"configId" validate:"required"`
+	ComponentID storageapi.ComponentID `json:"componentId" validate:"required"`
+	ConfigID    storageapi.ConfigID    `json:"configId" validate:"required"`
 }
 
 func (t *SchedulerForRelation) Type() RelationType {
@@ -23,7 +23,7 @@ func (t *SchedulerForRelation) Desc() string {
 }
 
 func (t *SchedulerForRelation) Key() string {
-	return fmt.Sprintf(`%s_%s_%s`, t.Type(), t.ComponentId, t.ConfigId)
+	return fmt.Sprintf(`%s_%s_%s`, t.Type(), t.ComponentID, t.ConfigID)
 }
 
 func (t *SchedulerForRelation) ParentKey(relationDefinedOn Key) (Key, error) {
@@ -32,9 +32,9 @@ func (t *SchedulerForRelation) ParentKey(relationDefinedOn Key) (Key, error) {
 		return nil, err
 	}
 	return ConfigKey{
-		BranchId:    config.BranchId,
-		ComponentId: t.ComponentId,
-		Id:          t.ConfigId,
+		BranchID:    config.BranchID,
+		ComponentID: t.ComponentID,
+		ID:          t.ConfigID,
 	}, nil
 }
 
@@ -46,7 +46,7 @@ func (t *SchedulerForRelation) IsDefinedInManifest() bool {
 	return true
 }
 
-func (t *SchedulerForRelation) IsDefinedInApi() bool {
+func (t *SchedulerForRelation) IsDefinedInAPI() bool {
 	return true
 }
 

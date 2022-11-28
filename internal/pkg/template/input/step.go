@@ -40,7 +40,7 @@ func (g StepsGroups) Path() string {
 func (g StepsGroups) InputsMap() map[string]*Input {
 	res := make(map[string]*Input)
 	_ = g.ToExtended().VisitInputs(func(group *StepsGroupExt, step *StepExt, input *Input) error {
-		res[input.Id] = input
+		res[input.ID] = input
 		return nil
 	})
 	return res
@@ -57,20 +57,20 @@ func (g StepsGroups) ValidateDefinitions() error {
 	inputsOccurrences := orderedmap.New() // inputId -> []string{occurrence1, ...}
 	inputsReferences := orderedmap.New()  // inputId -> []string{referencedFromInputId1, ...}
 	_ = g.ToExtended().VisitInputs(func(group *StepsGroupExt, step *StepExt, input *Input) error {
-		inputsMap[input.Id] = input
+		inputsMap[input.ID] = input
 
 		// Collect inputs occurrences
 		{
-			v, _ := inputsOccurrences.GetOrNil(input.Id).([]string)
+			v, _ := inputsOccurrences.GetOrNil(input.ID).([]string)
 			v = append(v, fmt.Sprintf(`group %d, step %d "%s"`, step.GroupIndex+1, step.StepIndex+1, step.Name))
-			inputsOccurrences.Set(input.Id, v)
+			inputsOccurrences.Set(input.ID, v)
 		}
 
 		// Collect inputs references
-		if input.Kind == KindOAuthAccounts && len(input.OauthInputId) > 0 {
-			v, _ := inputsReferences.GetOrNil(input.OauthInputId).([]string)
-			v = append(v, input.Id)
-			inputsReferences.Set(input.OauthInputId, v)
+		if input.Kind == KindOAuthAccounts && len(input.OauthInputID) > 0 {
+			v, _ := inputsReferences.GetOrNil(input.OauthInputID).([]string)
+			v = append(v, input.ID)
+			inputsReferences.Set(input.OauthInputID, v)
 		}
 
 		return nil
@@ -80,14 +80,14 @@ func (g StepsGroups) ValidateDefinitions() error {
 	inputsOccurrences.SortKeys(func(keys []string) {
 		sort.Strings(keys)
 	})
-	for _, inputId := range inputsOccurrences.Keys() {
-		occurrences, _ := inputsOccurrences.GetOrNil(inputId).([]string)
+	for _, inputID := range inputsOccurrences.Keys() {
+		occurrences, _ := inputsOccurrences.GetOrNil(inputID).([]string)
 		if len(occurrences) > 1 {
 			inputsErr := errors.NewMultiError()
 			for _, occurrence := range occurrences {
 				inputsErr.Append(errors.New(occurrence))
 			}
-			errs.AppendWithPrefixf(inputsErr, `input "%s" is defined %d times in`, inputId, len(occurrences))
+			errs.AppendWithPrefixf(inputsErr, `input "%s" is defined %d times in`, inputID, len(occurrences))
 		}
 	}
 
@@ -95,15 +95,15 @@ func (g StepsGroups) ValidateDefinitions() error {
 	inputsReferences.SortKeys(func(keys []string) {
 		sort.Strings(keys)
 	})
-	for _, inputId := range inputsReferences.Keys() {
-		if _, found := inputsOccurrences.Get(inputId); !found {
+	for _, inputID := range inputsReferences.Keys() {
+		if _, found := inputsOccurrences.Get(inputID); !found {
 			// Referenced input is missing
 			inputsErr := errors.NewMultiError()
-			references, _ := inputsReferences.GetOrNil(inputId).([]string)
+			references, _ := inputsReferences.GetOrNil(inputID).([]string)
 			for _, referencedFrom := range references {
 				inputsErr.Append(errors.New(referencedFrom))
 			}
-			errs.AppendWithPrefixf(inputsErr, `input "%s" not found, referenced from`, inputId)
+			errs.AppendWithPrefixf(inputsErr, `input "%s" not found, referenced from`, inputID)
 		}
 	}
 
@@ -111,9 +111,9 @@ func (g StepsGroups) ValidateDefinitions() error {
 	for _, input := range inputsMap {
 		// Check that input kind=KindOAuthAccounts is defined for a supported component
 		if input.Kind == KindOAuthAccounts {
-			if oauthInput, found := inputsMap[input.OauthInputId]; found {
-				if !OauthAccountsSupportedComponents[oauthInput.ComponentId] {
-					errs.Append(errors.Errorf(`input "%s" (kind=%s) is defined for "%s" component, but it is not supported`, input.Id, input.Kind, oauthInput.ComponentId))
+			if oauthInput, found := inputsMap[input.OauthInputID]; found {
+				if !OauthAccountsSupportedComponents[oauthInput.ComponentID] {
+					errs.Append(errors.Errorf(`input "%s" (kind=%s) is defined for "%s" component, but it is not supported`, input.ID, input.Kind, oauthInput.ComponentID))
 				}
 			}
 		}
@@ -159,7 +159,7 @@ func (g StepsGroups) ValidateDefinitions() error {
 			if match[3] != "" {
 				inputIndex := cast.ToInt(strings.Trim(match[3], "[]."))
 				out.WriteString(`, input "`)
-				out.WriteString(g[groupIndex].Steps[stepIndex].Inputs.GetIndex(inputIndex).Id)
+				out.WriteString(g[groupIndex].Steps[stepIndex].Inputs.GetIndex(inputIndex).ID)
 				out.WriteString(`"`)
 			}
 

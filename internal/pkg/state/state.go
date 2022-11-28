@@ -63,7 +63,7 @@ type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
 	Components() *model.ComponentsMap
-	StorageApiClient() client.Sender
+	StorageAPIClient() client.Sender
 }
 
 func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *State, err error) {
@@ -73,7 +73,7 @@ func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *St
 	// Get dependencies
 	logger := d.Logger()
 	m := container.Manifest()
-	storageApi := d.StorageApiClient()
+	storageAPI := d.StorageAPIClient()
 	components := d.Components()
 
 	// Create mapper
@@ -109,7 +109,7 @@ func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *St
 	s.localManager = local.NewManager(s.logger, s.validator, container.ObjectsRoot(), s.fileLoader, m, s.namingGenerator, s.Registry, s.mapper)
 
 	// Remote manager for API operations
-	s.remoteManager = remote.NewManager(s.localManager, storageApi, s.Registry, s.mapper)
+	s.remoteManager = remote.NewManager(s.localManager, storageAPI, s.Registry, s.mapper)
 
 	// Create mappers
 	mappers, err := container.MappersFor(s)

@@ -16,15 +16,15 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 	logger := d.DebugLogger()
 
 	parentKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: `foo.bar`,
-		Id:          `345`,
+		BranchID:    123,
+		ComponentID: `foo.bar`,
+		ID:          `345`,
 	}
 	configManifest := &model.ConfigManifest{
 		ConfigKey: model.ConfigKey{
-			BranchId:    123,
-			ComponentId: storageapi.SchedulerComponentID,
-			Id:          `678`,
+			BranchID:    123,
+			ComponentID: storageapi.SchedulerComponentID,
+			ID:          `678`,
 		},
 	}
 	recipe := &model.PersistRecipe{
@@ -40,8 +40,8 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 	// Relation has been created
 	assert.Equal(t, model.Relations{
 		&model.SchedulerForRelation{
-			ComponentId: `foo.bar`,
-			ConfigId:    `345`,
+			ComponentID: `foo.bar`,
+			ConfigID:    `345`,
 		},
 	}, configManifest.Relations)
 }

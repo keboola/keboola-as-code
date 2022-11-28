@@ -35,7 +35,7 @@ func loadFile(fs filesystem.Fs, ctx *jsonnet.Context) (*file, error) {
 	// Read file
 	fileDef := filesystem.NewFileDef(path).SetDescription("inputs")
 	content := newFile()
-	if _, err := fs.FileLoader().WithJsonNetContext(ctx).ReadJsonNetFileTo(fileDef, content); err != nil {
+	if _, err := fs.FileLoader().WithJsonnetContext(ctx).ReadJsonnetFileTo(fileDef, content); err != nil {
 		return nil, err
 	}
 
@@ -59,14 +59,14 @@ func saveFile(fs filesystem.Fs, content *file) error {
 		return err
 	}
 
-	// Convert to JsonNet
-	jsonNet, err := jsonnet.Format(jsonContent)
+	// Convert to Jsonnet
+	jsonnetStr, err := jsonnet.Format(jsonContent)
 	if err != nil {
 		return err
 	}
 
 	// Write file
-	f := filesystem.NewRawFile(Path(), jsonNet)
+	f := filesystem.NewRawFile(Path(), jsonnetStr)
 	if err := fs.WriteFile(f); err != nil {
 		return err
 	}

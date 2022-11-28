@@ -20,7 +20,7 @@ func TestValidationRules(t *testing.T) {
 			description: "id with a #",
 			inputs: Inputs{
 				{
-					Id:          "input#id",
+					ID:          "input#id",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "string",
@@ -34,7 +34,7 @@ func TestValidationRules(t *testing.T) {
 			description: "invalid type for kind",
 			inputs: Inputs{
 				{
-					Id:          "input.id",
+					ID:          "input.id",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "int",
@@ -48,7 +48,7 @@ func TestValidationRules(t *testing.T) {
 			description: "missing type",
 			inputs: Inputs{
 				{
-					Id:          "input.id",
+					ID:          "input.id",
 					Name:        "input",
 					Description: "input desc",
 					Default:     "def",
@@ -61,7 +61,7 @@ func TestValidationRules(t *testing.T) {
 			description: "invalid rules",
 			inputs: Inputs{
 				{
-					Id:          "input.id",
+					ID:          "input.id",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "int",
@@ -76,7 +76,7 @@ func TestValidationRules(t *testing.T) {
 			description: "invalid if",
 			inputs: Inputs{
 				{
-					Id:          "input.id2",
+					ID:          "input.id2",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "string",
@@ -90,7 +90,7 @@ func TestValidationRules(t *testing.T) {
 			description: "int default, empty options",
 			inputs: Inputs{
 				{
-					Id:          "input.id",
+					ID:          "input.id",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "int",
@@ -107,7 +107,7 @@ func TestValidationRules(t *testing.T) {
 			description: "no default",
 			inputs: Inputs{
 				{
-					Id:          "input.id2",
+					ID:          "input.id2",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "string",
@@ -120,7 +120,7 @@ func TestValidationRules(t *testing.T) {
 			description: "unexpected options",
 			inputs: Inputs{
 				{
-					Id:          "input.id",
+					ID:          "input.id",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "string",
@@ -138,7 +138,7 @@ func TestValidationRules(t *testing.T) {
 			description: "empty options",
 			inputs: Inputs{
 				{
-					Id:          "input.id",
+					ID:          "input.id",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "string",
@@ -152,7 +152,7 @@ func TestValidationRules(t *testing.T) {
 			description: "invalid default value for Select",
 			inputs: Inputs{
 				{
-					Id:          "input.id",
+					ID:          "input.id",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "string",
@@ -170,7 +170,7 @@ func TestValidationRules(t *testing.T) {
 			description: "valid options for Select",
 			inputs: Inputs{
 				{
-					Id:          "input.id",
+					ID:          "input.id",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "string",
@@ -188,7 +188,7 @@ func TestValidationRules(t *testing.T) {
 			description: "invalid default value for MultiSelect",
 			inputs: Inputs{
 				{
-					Id:          "input.id",
+					ID:          "input.id",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "string[]",
@@ -207,7 +207,7 @@ func TestValidationRules(t *testing.T) {
 			description: "valid options for MultiSelect",
 			inputs: Inputs{
 				{
-					Id:          "input.id",
+					ID:          "input.id",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "string[]",
@@ -226,12 +226,12 @@ func TestValidationRules(t *testing.T) {
 			description: "valid oauth",
 			inputs: Inputs{
 				{
-					Id:          "input.id",
+					ID:          "input.id",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "object",
 					Kind:        "oauth",
-					ComponentId: "foo.bar",
+					ComponentID: "foo.bar",
 				},
 			},
 			error: "",
@@ -240,7 +240,7 @@ func TestValidationRules(t *testing.T) {
 			description: "missing componentId for oauth kind",
 			inputs: Inputs{
 				{
-					Id:          "input.id",
+					ID:          "input.id",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "object",
@@ -253,20 +253,20 @@ func TestValidationRules(t *testing.T) {
 			description: "valid oauthAccounts",
 			inputs: Inputs{
 				{
-					Id:           "input.id",
+					ID:           "input.id",
 					Name:         "input",
 					Description:  "input desc",
 					Type:         "object",
 					Kind:         "oauthAccounts",
-					OauthInputId: "input.other",
+					OauthInputID: "input.other",
 				},
 				{
-					Id:          "input.other",
+					ID:          "input.other",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "object",
 					Kind:        "oauth",
-					ComponentId: "keboola.ex-instagram",
+					ComponentID: "keboola.ex-instagram",
 				},
 			},
 			error: "",
@@ -275,20 +275,20 @@ func TestValidationRules(t *testing.T) {
 			description: "invalid \"oauthAccounts\", unsupported component",
 			inputs: Inputs{
 				{
-					Id:           "input.id",
+					ID:           "input.id",
 					Name:         "input",
 					Description:  "input desc",
 					Type:         "object",
 					Kind:         "oauthAccounts",
-					OauthInputId: "input.other",
+					OauthInputID: "input.other",
 				},
 				{
-					Id:          "input.other",
+					ID:          "input.other",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "object",
 					Kind:        "oauth",
-					ComponentId: "foo.bar",
+					ComponentID: "foo.bar",
 				},
 			},
 			error: "input \"input.id\" (kind=oauthAccounts) is defined for \"foo.bar\" component, but it is not supported",
@@ -297,7 +297,7 @@ func TestValidationRules(t *testing.T) {
 			description: "missing \"oauthInputId\" for oauthAccounts kind",
 			inputs: Inputs{
 				{
-					Id:          "input.id",
+					ID:          "input.id",
 					Name:        "input",
 					Description: "input desc",
 					Type:        "object",
@@ -310,12 +310,12 @@ func TestValidationRules(t *testing.T) {
 			description: "missing referenced input from kind oauthAccounts",
 			inputs: Inputs{
 				{
-					Id:           "input.id",
+					ID:           "input.id",
 					Name:         "input",
 					Description:  "input desc",
 					Type:         "object",
 					Kind:         "oauthAccounts",
-					OauthInputId: "input.other",
+					OauthInputID: "input.other",
 				},
 			},
 			error: "input \"input.other\" not found, referenced from: input.id",

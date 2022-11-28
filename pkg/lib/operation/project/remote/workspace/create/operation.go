@@ -23,9 +23,9 @@ type CreateOptions struct {
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageApiClient() client.Sender
-	JobsQueueApiClient() client.Sender
-	SandboxesApiClient() client.Sender
+	StorageAPIClient() client.Sender
+	JobsQueueAPIClient() client.Sender
+	SandboxesAPIClient() client.Sender
 }
 
 func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
@@ -34,7 +34,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 
 	logger := d.Logger()
 
-	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageApiClient())
+	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageAPIClient())
 	if err != nil {
 		return err
 	}
@@ -51,9 +51,9 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 	// Create workspace by API
 	s, err := sandboxesapi.Create(
 		ctx,
-		d.StorageApiClient(),
-		d.JobsQueueApiClient(),
-		d.SandboxesApiClient(),
+		d.StorageAPIClient(),
+		d.JobsQueueAPIClient(),
+		d.SandboxesAPIClient(),
 		branch.ID,
 		o.Name,
 		o.Type,

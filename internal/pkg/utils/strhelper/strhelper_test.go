@@ -117,7 +117,7 @@ func TestStripHtmlComments(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		assert.Equal(t, c.expected, StripHtmlComments(c.in), "case "+cast.ToString(i))
+		assert.Equal(t, c.expected, StripHTMLComments(c.in), "case "+cast.ToString(i))
 	}
 }
 

@@ -21,9 +21,9 @@ const (
 	SnowflakeWriterIDAzure = storageapi.ComponentID("keboola.wr-snowflake-blob-storage")
 )
 
-// ConfigId Jsonnet function maps configuration ID used in the template
+// ConfigID Jsonnet function maps configuration ID used in the template
 // to configuration ID used in the project.
-func ConfigId(idMapper func(id interface{}) string) *jsonnet.NativeFunction {
+func ConfigID(idMapper func(id interface{}) string) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   `ConfigId`,
 		Params: ast.Identifiers{"id"},
@@ -39,9 +39,9 @@ func ConfigId(idMapper func(id interface{}) string) *jsonnet.NativeFunction {
 	}
 }
 
-// ConfigRowId Jsonnet function maps configuration row ID used in the template
+// ConfigRowID Jsonnet function maps configuration row ID used in the template
 // to configuration ID used in the project.
-func ConfigRowId(idMapper func(id interface{}) string) *jsonnet.NativeFunction {
+func ConfigRowID(idMapper func(id interface{}) string) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   `ConfigRowId`,
 		Params: ast.Identifiers{"id"},
@@ -58,7 +58,7 @@ func ConfigRowId(idMapper func(id interface{}) string) *jsonnet.NativeFunction {
 }
 
 // Input Jsonnet function returns input value.
-func Input(inputValueProvider func(inputId string) (input.Value, bool)) *jsonnet.NativeFunction {
+func Input(inputValueProvider func(inputID string) (input.Value, bool)) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   `Input`,
 		Params: ast.Identifiers{"id"},
@@ -82,7 +82,7 @@ func Input(inputValueProvider func(inputId string) (input.Value, bool)) *jsonnet
 }
 
 // InputIsAvailable Jsonnet function returns true if the input exists.
-func InputIsAvailable(inputValueProvider func(inputId string) (input.Value, bool)) *jsonnet.NativeFunction {
+func InputIsAvailable(inputValueProvider func(inputID string) (input.Value, bool)) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   `InputIsAvailable`,
 		Params: ast.Identifiers{"id"},
@@ -100,24 +100,24 @@ func InputIsAvailable(inputValueProvider func(inputId string) (input.Value, bool
 	}
 }
 
-// InstanceId Jsonnet function returns full id of the template instance.
-func InstanceId(instanceId string) *jsonnet.NativeFunction {
+// InstanceID Jsonnet function returns full id of the template instance.
+func InstanceID(instanceID string) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   `InstanceId`,
 		Params: ast.Identifiers{},
 		Func: func(params []interface{}) (interface{}, error) {
-			return instanceId, nil
+			return instanceID, nil
 		},
 	}
 }
 
-// InstanceIdShort Jsonnet function returns shortened id of the template instance.
-func InstanceIdShort(instanceIdShort string) *jsonnet.NativeFunction {
+// InstanceIDShort Jsonnet function returns shortened id of the template instance.
+func InstanceIDShort(instanceIDShort string) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   `InstanceIdShort`,
 		Params: ast.Identifiers{},
 		Func: func(params []interface{}) (interface{}, error) {
-			return instanceIdShort, nil
+			return instanceIDShort, nil
 		},
 	}
 }
@@ -130,18 +130,18 @@ func ComponentIsAvailable(components *model.ComponentsMap) *jsonnet.NativeFuncti
 		Func: func(params []interface{}) (interface{}, error) {
 			if len(params) != 1 {
 				return nil, errors.Errorf("one parameter expected, found %d", len(params))
-			} else if componentId, ok := params[0].(string); !ok {
+			} else if componentID, ok := params[0].(string); !ok {
 				return nil, errors.New("parameter must be a string")
 			} else {
-				_, found := components.Get(storageapi.ComponentID(componentId))
+				_, found := components.Get(storageapi.ComponentID(componentID))
 				return found, nil
 			}
 		},
 	}
 }
 
-// SnowflakeWriterComponentId Jsonnet function returns component ID of the Snowflake Writer it the stack.
-func SnowflakeWriterComponentId(components *model.ComponentsMap) *jsonnet.NativeFunction {
+// SnowflakeWriterComponentID Jsonnet function returns component ID of the Snowflake Writer it the stack.
+func SnowflakeWriterComponentID(components *model.ComponentsMap) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   `SnowflakeWriterComponentId`,
 		Params: ast.Identifiers{},

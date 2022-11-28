@@ -71,9 +71,9 @@ func (r *CachedRepository) String() string {
 	}
 }
 
-func (r *CachedRepository) UrlAndRef() string {
+func (r *CachedRepository) URLAndRef() string {
 	def := r.repo.Definition()
-	return fmt.Sprintf("%s:%s", def.Url, def.Ref)
+	return fmt.Sprintf("%s:%s", def.URL, def.Ref)
 }
 
 // Hash returns unique identifier of the repository.
@@ -136,20 +136,20 @@ func (r *CachedRepository) update(ctx context.Context) (*CachedRepository, bool,
 	if repo, ok := r.git.(*git.RemoteRepository); ok {
 		// Log start
 		startTime := time.Now()
-		r.d.Logger().Infof(`repository "%s" update started`, r.UrlAndRef())
+		r.d.Logger().Infof(`repository "%s" update started`, r.URLAndRef())
 
 		// Pull
 		result, err := pullOp.Run(ctx, repo, r.d)
 		if err != nil {
-			r.d.Logger().Errorf(`error while updating repository "%s": %w`, r.UrlAndRef(), err)
+			r.d.Logger().Errorf(`error while updating repository "%s": %w`, r.URLAndRef(), err)
 			return nil, false, err
 		}
 
 		// Done
 		if result.Changed {
-			r.d.Logger().Infof(`repository "%s" updated from %s to %s | %s`, r.UrlAndRef(), result.OldHash, result.NewHash, time.Since(startTime))
+			r.d.Logger().Infof(`repository "%s" updated from %s to %s | %s`, r.URLAndRef(), result.OldHash, result.NewHash, time.Since(startTime))
 		} else {
-			r.d.Logger().Infof(`repository "%s" update finished, no change found (%s) | %s`, r.UrlAndRef(), result.NewHash, time.Since(startTime))
+			r.d.Logger().Infof(`repository "%s" update finished, no change found (%s) | %s`, r.URLAndRef(), result.NewHash, time.Since(startTime))
 		}
 
 		// No change
@@ -191,7 +191,7 @@ func (r *CachedRepository) loadAllTemplates(ctx context.Context) error {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				ref := model.NewTemplateRef(r.repo.Definition(), t.Id, v.Version.String())
+				ref := model.NewTemplateRef(r.repo.Definition(), t.ID, v.Version.String())
 				if _, err := r.Template(ctx, ref); err != nil {
 					r.d.Logger().Errorf(`cannot load template "%s" from repository "%s": %s`, ref.FullName(), r.String(), err)
 					errs.Append(errors.Errorf(`cannot load template "%s": %w`, ref.Name(), err))

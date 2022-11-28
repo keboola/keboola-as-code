@@ -12,7 +12,7 @@ import (
 func TestGenerateDocument(t *testing.T) {
 	t.Parallel()
 	document, err := GenerateDocument(getSampleSchema())
-	documentJson := json.MustEncodeString(document, true)
+	documentJSON := json.MustEncodeString(document, true)
 	assert.NoError(t, err)
 
 	expected := `
@@ -43,15 +43,15 @@ func TestGenerateDocument(t *testing.T) {
   }
 }
 `
-	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(documentJson))
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(documentJSON))
 }
 
 func TestGenerateDocumentEmptySchema(t *testing.T) {
 	t.Parallel()
 	document, err := GenerateDocument([]byte(`{}`))
-	documentJson := json.MustEncodeString(document, true)
+	documentJSON := json.MustEncodeString(document, true)
 	assert.NoError(t, err)
-	assert.Equal(t, "{}\n", documentJson)
+	assert.Equal(t, "{}\n", documentJSON)
 }
 
 func getSampleSchema() []byte {

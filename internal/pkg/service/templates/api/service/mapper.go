@@ -44,11 +44,11 @@ func RepositoryResponse(ctx context.Context, d dependencies.ForProjectRequest, v
 	author := v.Manifest().Author()
 	return &Repository{
 		Name: repo.Name,
-		URL:  repo.Url,
+		URL:  repo.URL,
 		Ref:  repo.Ref,
 		Author: &Author{
 			Name: author.Name,
-			URL:  author.Url,
+			URL:  author.URL,
 		},
 	}
 }
@@ -80,7 +80,7 @@ func TemplateResponse(ctx context.Context, d dependencies.ForProjectRequest, tmp
 	}
 
 	out = &Template{
-		ID:             tmpl.Id,
+		ID:             tmpl.ID,
 		Name:           tmpl.Name,
 		Components:     ComponentsResponse(d, defaultVersion.Components),
 		Description:    tmpl.Description,
@@ -108,7 +108,7 @@ func TemplateDetailResponse(ctx context.Context, d dependencies.ForProjectReques
 	repoResponse := RepositoryResponse(ctx, d, repo)
 	out = &TemplateDetail{
 		Repository:     repoResponse,
-		ID:             tmpl.Id,
+		ID:             tmpl.ID,
 		Name:           tmpl.Name,
 		Components:     ComponentsResponse(d, defaultVersion.Components),
 		Description:    tmpl.Description,
@@ -173,7 +173,7 @@ func ComponentsResponse(d dependencies.ForProjectRequest, in []string) (out []st
 	out = make([]string, 0)
 	for _, componentId := range in {
 		// Map placeholder "<keboola.wr-snowflake>" to real componentId.
-		if componentId == manifest.SnowflakeWriterComponentIdPlaceholder {
+		if componentId == manifest.SnowflakeWriterComponentIDPlaceholder {
 			if _, found := d.Components().Get(function.SnowflakeWriterIDAws); found {
 				componentId = function.SnowflakeWriterIDAws.String()
 			} else if _, found := d.Components().Get(function.SnowflakeWriterIDAzure); found {
@@ -191,7 +191,7 @@ func UpgradeInstanceInputsResponse(ctx context.Context, d dependencies.ForProjec
 	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.UpgradeInstanceInputsResponse")
 	defer telemetry.EndSpan(span, nil)
 
-	stepsGroupsExt := upgrade.ExportInputsValues(d.Logger().InfoWriter(), prjState.State(), branchKey, instance.InstanceId, tmpl.Inputs())
+	stepsGroupsExt := upgrade.ExportInputsValues(d.Logger().InfoWriter(), prjState.State(), branchKey, instance.InstanceID, tmpl.Inputs())
 	return InputsResponse(ctx, d, stepsGroupsExt)
 }
 
@@ -206,7 +206,7 @@ func InputsResponse(ctx context.Context, d dependencies.ForProjectRequest, steps
 	for _, group := range stepsGroups {
 		// Group
 		groupResponse := &StepGroup{
-			ID:          group.Id,
+			ID:          group.ID,
 			Description: group.Description,
 			Required:    string(group.Required),
 			Steps:       make([]*Step, 0),
@@ -218,13 +218,13 @@ func InputsResponse(ctx context.Context, d dependencies.ForProjectRequest, steps
 			// If the step is pre-configured -> validate default values.
 			var stepValues *StepPayload
 			if step.Show {
-				stepValues = &StepPayload{ID: step.Id}
+				stepValues = &StepPayload{ID: step.ID}
 				initialValues = append(initialValues, stepValues)
 			}
 
 			// Step
 			stepResponse := &Step{
-				ID:                step.Id,
+				ID:                step.ID,
 				Icon:              step.Icon,
 				Name:              step.Name,
 				Description:       step.Description,
@@ -237,7 +237,7 @@ func InputsResponse(ctx context.Context, d dependencies.ForProjectRequest, steps
 			// Inputs
 			for _, in := range step.Inputs {
 				inputResponse := &Input{
-					ID:          in.Id,
+					ID:          in.ID,
 					Name:        in.Name,
 					Description: in.Description,
 					Type:        string(in.Type),
@@ -245,12 +245,12 @@ func InputsResponse(ctx context.Context, d dependencies.ForProjectRequest, steps
 					Default:     in.DefaultOrEmpty(),
 					Options:     OptionsResponse(in.Options),
 				}
-				if in.ComponentId != "" {
-					v := in.ComponentId
+				if in.ComponentID != "" {
+					v := in.ComponentID
 					inputResponse.ComponentID = &v
 				}
-				if in.OauthInputId != "" {
-					v := in.OauthInputId
+				if in.OauthInputID != "" {
+					v := in.OauthInputID
 					inputResponse.OauthInputID = &v
 				}
 				stepResponse.Inputs = append(stepResponse.Inputs, inputResponse)
@@ -287,7 +287,7 @@ func InstancesResponse(ctx context.Context, d dependencies.ForProjectRequest, pr
 	if !found {
 		return nil, &GenericError{
 			Name:    "templates.branchNotFound",
-			Message: fmt.Sprintf(`Branch "%d" not found.`, branchKey.Id),
+			Message: fmt.Sprintf(`Branch "%d" not found.`, branchKey.ID),
 		}
 	}
 
@@ -306,28 +306,28 @@ func InstancesResponse(ctx context.Context, d dependencies.ForProjectRequest, pr
 		}
 
 		outInstance := &Instance{
-			TemplateID:     instance.TemplateId,
-			InstanceID:     instance.InstanceId,
-			Branch:         cast.ToString(branch.Id),
+			TemplateID:     instance.TemplateID,
+			InstanceID:     instance.InstanceID,
+			Branch:         cast.ToString(branch.ID),
 			RepositoryName: instance.RepositoryName,
 			Version:        instance.Version,
 			Name:           instance.InstanceName,
 			Created: &ChangeInfo{
 				Date:    instance.Created.Date.Format(time.RFC3339),
-				TokenID: instance.Created.TokenId,
+				TokenID: instance.Created.TokenID,
 			},
 			Updated: &ChangeInfo{
 				Date:    instance.Updated.Date.Format(time.RFC3339),
-				TokenID: instance.Updated.TokenId,
+				TokenID: instance.Updated.TokenID,
 			},
 		}
 
 		if instance.MainConfig != nil {
-			configKey := model.ConfigKey{BranchId: branchKey.Id, ComponentId: instance.MainConfig.ComponentId, Id: instance.MainConfig.ConfigId}
+			configKey := model.ConfigKey{BranchID: branchKey.ID, ComponentID: instance.MainConfig.ComponentID, ID: instance.MainConfig.ConfigID}
 			if _, found := prjState.Get(configKey); found {
 				outInstance.MainConfig = &MainConfig{
-					ComponentID: string(instance.MainConfig.ComponentId),
-					ConfigID:    string(instance.MainConfig.ConfigId),
+					ComponentID: string(instance.MainConfig.ComponentID),
+					ConfigID:    string(instance.MainConfig.ConfigID),
 				}
 			}
 		}
@@ -347,7 +347,7 @@ func InstanceResponse(ctx context.Context, d dependencies.ForProjectRequest, prj
 	if !found {
 		return nil, &GenericError{
 			Name:    "templates.branchNotFound",
-			Message: fmt.Sprintf(`Branch "%d" not found.`, branchKey.Id),
+			Message: fmt.Sprintf(`Branch "%d" not found.`, branchKey.ID),
 		}
 	}
 
@@ -358,7 +358,7 @@ func InstanceResponse(ctx context.Context, d dependencies.ForProjectRequest, prj
 	} else if !found {
 		return nil, &GenericError{
 			Name:    "templates.instanceNotFound",
-			Message: fmt.Sprintf(`Instance "%s" not found in branch "%d".`, instanceId, branchKey.Id),
+			Message: fmt.Sprintf(`Instance "%s" not found in branch "%d".`, instanceId, branchKey.ID),
 		}
 	}
 
@@ -376,38 +376,38 @@ func InstanceResponse(ctx context.Context, d dependencies.ForProjectRequest, prj
 	for _, config := range search.ConfigsForTemplateInstance(branchConfigs, instanceId) {
 		outConfigs = append(outConfigs, &Config{
 			Name:        config.Name,
-			ConfigID:    string(config.Id),
-			ComponentID: string(config.ComponentId),
+			ConfigID:    string(config.ID),
+			ComponentID: string(config.ComponentID),
 		})
 	}
 
 	// Map response
 	out = &InstanceDetail{
 		VersionDetail:  instanceVersionDetail(ctx, d, instance),
-		TemplateID:     instance.TemplateId,
-		InstanceID:     instance.InstanceId,
-		Branch:         cast.ToString(branch.Id),
+		TemplateID:     instance.TemplateID,
+		InstanceID:     instance.InstanceID,
+		Branch:         cast.ToString(branch.ID),
 		RepositoryName: instance.RepositoryName,
 		Version:        instance.Version,
 		Name:           instance.InstanceName,
 		Created: &ChangeInfo{
 			Date:    instance.Created.Date.Format(time.RFC3339),
-			TokenID: instance.Created.TokenId,
+			TokenID: instance.Created.TokenID,
 		},
 		Updated: &ChangeInfo{
 			Date:    instance.Updated.Date.Format(time.RFC3339),
-			TokenID: instance.Updated.TokenId,
+			TokenID: instance.Updated.TokenID,
 		},
 		Configurations: outConfigs,
 	}
 
 	// Main config
 	if instance.MainConfig != nil {
-		configKey := model.ConfigKey{BranchId: branchKey.Id, ComponentId: instance.MainConfig.ComponentId, Id: instance.MainConfig.ConfigId}
+		configKey := model.ConfigKey{BranchID: branchKey.ID, ComponentID: instance.MainConfig.ComponentID, ID: instance.MainConfig.ConfigID}
 		if _, found := prjState.Get(configKey); found {
 			out.MainConfig = &MainConfig{
-				ComponentID: string(instance.MainConfig.ComponentId),
-				ConfigID:    string(instance.MainConfig.ConfigId),
+				ComponentID: string(instance.MainConfig.ComponentID),
+				ConfigID:    string(instance.MainConfig.ConfigID),
 			}
 		}
 	}
@@ -416,7 +416,7 @@ func InstanceResponse(ctx context.Context, d dependencies.ForProjectRequest, prj
 }
 
 func instanceVersionDetail(ctx context.Context, d dependencies.ForProjectRequest, instance *model.TemplateInstance) *VersionDetail {
-	repo, tmplRecord, err := templateRecord(d, instance.RepositoryName, instance.TemplateId)
+	repo, tmplRecord, err := templateRecord(d, instance.RepositoryName, instance.TemplateID)
 	if err != nil {
 		return nil
 	}
@@ -428,7 +428,7 @@ func instanceVersionDetail(ctx context.Context, d dependencies.ForProjectRequest
 	if !found {
 		return nil
 	}
-	tmpl, err := d.Template(ctx, model.NewTemplateRef(repo.Definition(), instance.TemplateId, versionRecord.Version.String()))
+	tmpl, err := d.Template(ctx, model.NewTemplateRef(repo.Definition(), instance.TemplateID, versionRecord.Version.String()))
 	if err != nil {
 		return nil
 	}

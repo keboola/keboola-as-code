@@ -19,7 +19,7 @@ func TestConfigMetadataMapper_MapBeforeLocalSave(t *testing.T) {
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(branchmetadata.NewMapper(mockedState, d))
 
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{ID: 123}
 	state := &model.BranchState{
 		BranchManifest: &model.BranchManifest{
 			BranchKey: branchKey,

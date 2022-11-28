@@ -29,7 +29,7 @@ func (m *schedulerMapper) AfterRemoteOperation(ctx context.Context, changes *mod
 
 	if len(saved) > 0 || len(deleted) > 0 {
 		// Get Scheduler API - only if it is needed
-		apiClient := m.SchedulerApiClient()
+		apiClient := m.SchedulerAPIClient()
 
 		// Create requests pool
 		grp := client.NewRunGroup(ctx, apiClient)
@@ -57,7 +57,7 @@ func (m *schedulerMapper) isSchedulerConfigFromMainBranch(objectState model.Obje
 		return false
 	}
 
-	if configState.ComponentId != storageapi.SchedulerComponentID {
+	if configState.ComponentID != storageapi.SchedulerComponentID {
 		return false
 	}
 

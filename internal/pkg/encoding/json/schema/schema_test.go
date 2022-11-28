@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestValidateJsonSchemaOk(t *testing.T) {
+func TestValidateJSONSchemaOk(t *testing.T) {
 	t.Parallel()
 	schema := getTestSchema()
 	parameters := orderedmap.FromPairs([]orderedmap.Pair{
@@ -21,7 +21,7 @@ func TestValidateJsonSchemaOk(t *testing.T) {
 	assert.NoError(t, validateContent(schema, content))
 }
 
-func TestValidateJsonSchemaErr(t *testing.T) {
+func TestValidateJSONSchemaErr(t *testing.T) {
 	t.Parallel()
 	schema := getTestSchema()
 	parameters := orderedmap.FromPairs([]orderedmap.Pair{
@@ -47,14 +47,14 @@ func TestValidateJsonSchemaErr(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
 }
 
-func TestValidateJsonSchemaSkipEmpty(t *testing.T) {
+func TestValidateJSONSchemaSkipEmpty(t *testing.T) {
 	t.Parallel()
 	schema := getTestSchema()
 	content := orderedmap.New()
 	assert.NoError(t, validateContent(schema, content))
 }
 
-func TestValidateJsonSchemaSkipEmptyParameters(t *testing.T) {
+func TestValidateJSONSchemaSkipEmptyParameters(t *testing.T) {
 	t.Parallel()
 	schema := getTestSchema()
 	content := orderedmap.New()

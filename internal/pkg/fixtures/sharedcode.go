@@ -14,7 +14,7 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, 
 	t.Helper()
 
 	// Branch
-	branchKey := model.BranchKey{Id: 123}
+	branchKey := model.BranchKey{ID: 123}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{
 			BranchKey: branchKey,
@@ -27,9 +27,9 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, 
 
 	// Shared code
 	sharedCodeKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: storageapi.SharedCodeComponentID,
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: storageapi.SharedCodeComponentID,
+		ID:          `456`,
 	}
 	sharedCodeState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -57,10 +57,10 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, 
 
 	// Shared code row 1
 	row1Key := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: storageapi.SharedCodeComponentID,
-		ConfigId:    `456`,
-		Id:          `1234`,
+		BranchID:    123,
+		ComponentID: storageapi.SharedCodeComponentID,
+		ConfigID:    `456`,
+		ID:          `1234`,
 	}
 	row1State := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{
@@ -76,10 +76,10 @@ func CreateSharedCode(t *testing.T, state model.ObjectStates) (model.ConfigKey, 
 
 	// Shared code row 2
 	row2Key := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: storageapi.SharedCodeComponentID,
-		ConfigId:    `456`,
-		Id:          `5678`,
+		BranchID:    123,
+		ComponentID: storageapi.SharedCodeComponentID,
+		ConfigID:    `456`,
+		ID:          `5678`,
 	}
 	row2State := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{

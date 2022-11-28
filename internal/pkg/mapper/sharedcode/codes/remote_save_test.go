@@ -12,11 +12,11 @@ import (
 
 func TestSharedCodeRemoteSave(t *testing.T) {
 	t.Parallel()
-	targetComponentId := storageapi.ComponentID(`keboola.python-transformation-v2`)
+	targetComponentID := storageapi.ComponentID(`keboola.python-transformation-v2`)
 
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()
-	configState, rowState := createInternalSharedCode(t, targetComponentId, state)
+	configState, rowState := createInternalSharedCode(t, targetComponentID, state)
 
 	// Map config
 	configRecipe := model.NewRemoteSaveRecipe(configState.Manifest(), configState.Remote, model.NewChangedFields(`configuration`))

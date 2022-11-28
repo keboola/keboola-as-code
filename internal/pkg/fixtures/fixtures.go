@@ -96,8 +96,8 @@ type StateFile struct {
 	Envs               map[string]string `json:"envs,omitempty"` // additional ENVs
 }
 
-// ToApi maps fixture to model.Branch.
-func (b *Branch) ToApi() *storageapi.Branch {
+// ToAPI maps fixture to model.Branch.
+func (b *Branch) ToAPI() *storageapi.Branch {
 	branch := &storageapi.Branch{}
 	branch.Name = b.Name
 	branch.Description = b.Description
@@ -105,8 +105,8 @@ func (b *Branch) ToApi() *storageapi.Branch {
 	return branch
 }
 
-// ToApi maps fixture to model.Config.
-func (c *Config) ToApi() *storageapi.ConfigWithRows {
+// ToAPI maps fixture to model.Config.
+func (c *Config) ToAPI() *storageapi.ConfigWithRows {
 	config := &storageapi.ConfigWithRows{Config: &storageapi.Config{}}
 	config.ComponentID = c.ComponentID
 	config.Name = c.Name
@@ -116,14 +116,14 @@ func (c *Config) ToApi() *storageapi.ConfigWithRows {
 	config.IsDisabled = c.IsDisabled
 
 	for _, r := range c.Rows {
-		config.Rows = append(config.Rows, r.ToApi())
+		config.Rows = append(config.Rows, r.ToAPI())
 	}
 
 	return config
 }
 
-// ToApi maps fixture to model.Config.
-func (r *ConfigRow) ToApi() *storageapi.ConfigRow {
+// ToAPI maps fixture to model.Config.
+func (r *ConfigRow) ToAPI() *storageapi.ConfigRow {
 	row := &storageapi.ConfigRow{}
 	row.Name = r.Name
 	row.Description = "test fixture"

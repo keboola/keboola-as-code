@@ -9,12 +9,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-// SnowflakeWriterComponentIdPlaceholder can be used in "repository.json"
+// SnowflakeWriterComponentIDPlaceholder can be used in "repository.json"
 // to define Snowflake Writer used in the stack.
 // In Jsonnet files is used function "SnowflakeWriterComponentId",
 // but repository definition is Json, not Jsonnet.
 // Placeholder is replaced when generating API response.
-const SnowflakeWriterComponentIdPlaceholder = "<keboola.wr-snowflake>"
+const SnowflakeWriterComponentIDPlaceholder = "<keboola.wr-snowflake>"
 
 type TemplateNotFoundError struct {
 	error
@@ -34,7 +34,7 @@ func New() *Manifest {
 	return &Manifest{
 		author: Author{
 			Name: "Example Author",
-			Url:  "https://example.com",
+			URL:  "https://example.com",
 		},
 		records: make(map[string]TemplateRecord),
 	}
@@ -88,7 +88,7 @@ func (m *Manifest) IsChanged() bool {
 
 func (m *Manifest) Persist(records ...TemplateRecord) {
 	for _, record := range records {
-		m.records[record.Id] = record
+		m.records[record.ID] = record
 		m.changed = true
 	}
 }
@@ -101,14 +101,14 @@ func (m *Manifest) AllTemplates() []TemplateRecord {
 		out = append(out, template)
 	}
 	sort.SliceStable(out, func(i, j int) bool {
-		return out[i].Id < out[j].Id
+		return out[i].ID < out[j].ID
 	})
 	return out
 }
 
-func (m *Manifest) GetVersion(templateId, version string) (TemplateRecord, VersionRecord, error) {
+func (m *Manifest) GetVersion(templateID, version string) (TemplateRecord, VersionRecord, error) {
 	// Get template
-	templateRecord, err := m.GetByIdOrErr(templateId)
+	templateRecord, err := m.GetByIDOrErr(templateID)
 	if err != nil {
 		return templateRecord, VersionRecord{}, err
 	}
@@ -122,13 +122,13 @@ func (m *Manifest) GetVersion(templateId, version string) (TemplateRecord, Versi
 	return templateRecord, versionRecord, nil
 }
 
-func (m *Manifest) GetById(id string) (TemplateRecord, bool) {
+func (m *Manifest) GetByID(id string) (TemplateRecord, bool) {
 	v, ok := m.records[id]
 	return v, ok
 }
 
-func (m *Manifest) GetByIdOrErr(id string) (TemplateRecord, error) {
-	v, found := m.GetById(id)
+func (m *Manifest) GetByIDOrErr(id string) (TemplateRecord, error) {
+	v, found := m.GetByID(id)
 	if !found {
 		return v, TemplateNotFoundError{errors.Errorf(`template "%s" not found`, id)}
 	}
@@ -144,16 +144,16 @@ func (m *Manifest) GetByPath(path string) (TemplateRecord, bool) {
 	return TemplateRecord{}, false
 }
 
-func (m *Manifest) GetOrCreate(templateId string) TemplateRecord {
-	record, found := m.GetById(templateId)
+func (m *Manifest) GetOrCreate(templateID string) TemplateRecord {
+	record, found := m.GetByID(templateID)
 	if found {
 		return record
 	}
-	return newRecord(templateId)
+	return newRecord(templateID)
 }
 
-func newRecord(templateId string) TemplateRecord {
-	record := TemplateRecord{Id: templateId}
-	record.AbsPath = model.NewAbsPath("", strhelper.NormalizeName(templateId))
+func newRecord(templateID string) TemplateRecord {
+	record := TemplateRecord{ID: templateID}
+	record.AbsPath = model.NewAbsPath("", strhelper.NormalizeName(templateID))
 	return record
 }

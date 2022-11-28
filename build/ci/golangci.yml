@@ -56,6 +56,10 @@ linters-settings:
       - "errors": 'please use the package "github.com/keboola/keboola-as-code/internal/pkg/utils/errors"'
       - "go.uber.org/zap": 'please use "github.com/keboola/keboola-as-code/internal/pkg/log" package'
       - "go.nhat.io/aferocopy/*": 'please use "aferofs.CopyFs2Fs" function'
+  stylecheck:
+    checks:
+      - all
+      - '-ST1001' # Disable dot imports style check
 
 # https://golangci-lint.run/usage/linters
 linters:
@@ -100,6 +104,7 @@ linters:
     #- rowserrcheck # Not compatible with go 1.18, temporary disable
     #- sqlclosecheck # Not compatible with go 1.18, temporary disable
     - staticcheck
+    - stylecheck
     - tagliatelle
     - thelper
     - tparallel
@@ -133,6 +138,7 @@ issues:
     - 'string `true` has .* occurrences, make it a constant'
     - 'string `false` has .* occurrences, make it a constant'
     - 'ineffectual assignment to ctx'
+    - 'should not use underscores in package names'
     - 'this value of `ctx` is never use'
 
   # Excluding configuration per-path, per-linter, per-text and per-source
@@ -172,4 +178,6 @@ issues:
       text: "go.nhat.io/aferocopy"
       linters:
         - depguard
-
+    - path: api/.*
+      linters:
+        - stylecheck

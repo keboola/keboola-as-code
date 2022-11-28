@@ -24,7 +24,7 @@ import (
 )
 
 type Options struct {
-	Id           string
+	ID           string
 	Name         string
 	Description  string
 	SourceBranch model.BranchKey
@@ -37,8 +37,8 @@ type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
 	Components() *model.ComponentsMap
-	StorageApiClient() client.Sender
-	SchedulerApiClient() client.Sender
+	StorageAPIClient() client.Sender
+	SchedulerAPIClient() client.Sender
 	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
 	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)
 }
@@ -55,7 +55,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	manifest := repo.Manifest()
 
 	// Get or create manifest record
-	templateRecord := manifest.GetOrCreate(o.Id)
+	templateRecord := manifest.GetOrCreate(o.ID)
 
 	// Set name and description
 	templateRecord.Name = o.Name
@@ -83,7 +83,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	templateCtx := create.NewContext(ctx, o.SourceBranch, o.Configs)
 
 	// Template definition
-	templateDef := model.NewTemplateRef(repo.Definition(), o.Id, versionRecord.Version.String())
+	templateDef := model.NewTemplateRef(repo.Definition(), o.ID, versionRecord.Version.String())
 
 	// Get template instance
 	tmpl, err := d.Template(ctx, templateDef)

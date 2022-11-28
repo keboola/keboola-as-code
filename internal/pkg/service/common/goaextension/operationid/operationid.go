@@ -22,45 +22,45 @@ func generate(_ string, _ []eval.Root, files []*codegen.File) ([]*codegen.File, 
 		// Modify OpenApi2 files
 		for _, s := range f.Section("openapi") {
 			if source, ok := s.Data.(*openapiv2.V2); ok {
-				modifyOpenApiV2(source)
+				modifyOpenAPIV2(source)
 			}
 		}
 		// Modify OpenApi3 files
 		for _, s := range f.Section("openapi_v3") {
 			if source, ok := s.Data.(*openapiv3.OpenAPI); ok {
-				modifyOpenApiV3(source)
+				modifyOpenAPIV3(source)
 			}
 		}
 	}
 	return files, nil
 }
 
-func modifyOpenApiV2(data *openapiv2.V2) {
+func modifyOpenAPIV2(data *openapiv2.V2) {
 	for _, path := range data.Paths {
 		if path, ok := path.(*openapiv2.Path); ok {
 			operations := []*openapiv2.Operation{path.Get, path.Put, path.Post, path.Delete, path.Options, path.Head, path.Patch}
 			for _, operation := range operations {
 				if operation != nil {
-					operation.OperationID = mapOperationId(operation.OperationID)
+					operation.OperationID = mapOperationID(operation.OperationID)
 				}
 			}
 		}
 	}
 }
 
-func modifyOpenApiV3(data *openapiv3.OpenAPI) {
+func modifyOpenAPIV3(data *openapiv3.OpenAPI) {
 	for _, path := range data.Paths {
 		operations := []*openapiv3.Operation{path.Get, path.Put, path.Post, path.Delete, path.Options, path.Head, path.Patch}
 		for _, operation := range operations {
 			if operation != nil {
-				operation.OperationID = mapOperationId(operation.OperationID)
+				operation.OperationID = mapOperationID(operation.OperationID)
 			}
 		}
 	}
 }
 
-// mapOperationId for example, "templates#instance-delete" is mapped to "InstanceDelete".
-func mapOperationId(v string) string {
+// mapOperationID for example, "templates#instance-delete" is mapped to "InstanceDelete".
+func mapOperationID(v string) string {
 	// Endpoint is string part after # delimiter
 	endpointName := v[strings.LastIndex(v, "#")+1:]
 

@@ -24,14 +24,14 @@ func cases() []test {
 	return []test{
 		{
 			name:    `minimal`,
-			json:    minimalJson(),
+			json:    minimalJSON(),
 			naming:  naming.TemplateWithIds(),
 			filter:  model.NoFilter(),
 			records: minimalRecords(),
 		},
 		{
 			name:   `full`,
-			json:   fullJson(),
+			json:   fullJSON(),
 			naming: naming.TemplateWithoutIds(),
 			filter: model.NewFilter(
 				model.AllowedBranches{"foo", "bar"},
@@ -46,8 +46,8 @@ func TestNewManifest(t *testing.T) {
 	t.Parallel()
 	m := New(123, `foo.bar`)
 	assert.NotNil(t, m)
-	assert.Equal(t, 123, m.project.Id)
-	assert.Equal(t, `foo.bar`, m.project.ApiHost)
+	assert.Equal(t, 123, m.project.ID)
+	assert.Equal(t, `foo.bar`, m.project.APIHost)
 }
 
 func TestManifestLoadNotFound(t *testing.T) {
@@ -155,7 +155,7 @@ func TestManifestValidateNestedField(t *testing.T) {
 	content := newFile(12345, "foo.bar")
 	content.setRecords(minimalRecords())
 	content.Branches = append(content.Branches, &model.BranchManifest{
-		BranchKey: model.BranchKey{Id: 0},
+		BranchKey: model.BranchKey{ID: 0},
 		Paths: model.Paths{
 			AbsPath: model.NewAbsPath(
 				"bar",
@@ -175,7 +175,7 @@ func TestManifestCyclicDependency(t *testing.T) {
 
 	// Write file
 	path := filesystem.Join(filesystem.MetadataDir, FileName)
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, cyclicDependencyJson())))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(path, cyclicDependencyJSON())))
 
 	// Load
 	manifest, err := Load(fs, false)
@@ -184,7 +184,7 @@ func TestManifestCyclicDependency(t *testing.T) {
 	assert.Equal(t, "invalid manifest:\n- a cyclic relation was found when resolving path to config \"branch:123/component:keboola.variables/config:111\"", err.Error())
 }
 
-func minimalJson() string {
+func minimalJSON() string {
 	return `{
   "version": 2,
   "project": {
@@ -226,7 +226,7 @@ func minimalRecords() []model.ObjectManifest {
 	return []model.ObjectManifest{}
 }
 
-func fullJson() string {
+func fullJSON() string {
 	return `{
   "version": 2,
   "project": {
@@ -339,7 +339,7 @@ func fullRecords() []model.ObjectManifest {
 				Persisted: true,
 			},
 			BranchKey: model.BranchKey{
-				Id: 10,
+				ID: 10,
 			},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(
@@ -353,7 +353,7 @@ func fullRecords() []model.ObjectManifest {
 				Persisted: true,
 			},
 			BranchKey: model.BranchKey{
-				Id: 11,
+				ID: 11,
 			},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(
@@ -368,9 +368,9 @@ func fullRecords() []model.ObjectManifest {
 				Persisted: true,
 			},
 			ConfigKey: model.ConfigKey{
-				BranchId:    10,
-				ComponentId: "keboola.ex-db-oracle",
-				Id:          "11",
+				BranchID:    10,
+				ComponentID: "keboola.ex-db-oracle",
+				ID:          "11",
 			},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(
@@ -384,9 +384,9 @@ func fullRecords() []model.ObjectManifest {
 				Persisted: true,
 			},
 			ConfigKey: model.ConfigKey{
-				BranchId:    11,
-				ComponentId: "keboola.variables",
-				Id:          "13",
+				BranchID:    11,
+				ComponentID: "keboola.variables",
+				ID:          "13",
 			},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(
@@ -396,8 +396,8 @@ func fullRecords() []model.ObjectManifest {
 			},
 			Relations: model.Relations{
 				&model.VariablesForRelation{
-					ComponentId: "keboola.wr-db-mysql",
-					ConfigId:    "12",
+					ComponentID: "keboola.wr-db-mysql",
+					ConfigID:    "12",
 				},
 			},
 		},
@@ -406,9 +406,9 @@ func fullRecords() []model.ObjectManifest {
 				Persisted: true,
 			},
 			ConfigKey: model.ConfigKey{
-				BranchId:    11,
-				ComponentId: "keboola.wr-db-mysql",
-				Id:          "12",
+				BranchID:    11,
+				ComponentID: "keboola.wr-db-mysql",
+				ID:          "12",
 			},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(
@@ -422,10 +422,10 @@ func fullRecords() []model.ObjectManifest {
 				Persisted: true,
 			},
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "101",
-				BranchId:    10,
-				ComponentId: "keboola.ex-db-oracle",
-				ConfigId:    "11",
+				ID:          "101",
+				BranchID:    10,
+				ComponentID: "keboola.ex-db-oracle",
+				ConfigID:    "11",
 			},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(
@@ -439,10 +439,10 @@ func fullRecords() []model.ObjectManifest {
 				Persisted: true,
 			},
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "102",
-				BranchId:    10,
-				ComponentId: "keboola.ex-db-oracle",
-				ConfigId:    "11",
+				ID:          "102",
+				BranchID:    10,
+				ComponentID: "keboola.ex-db-oracle",
+				ConfigID:    "11",
 			},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(
@@ -456,10 +456,10 @@ func fullRecords() []model.ObjectManifest {
 				Persisted: true,
 			},
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "105",
-				BranchId:    11,
-				ComponentId: "keboola.variables",
-				ConfigId:    "13",
+				ID:          "105",
+				BranchID:    11,
+				ComponentID: "keboola.variables",
+				ConfigID:    "13",
 			},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(
@@ -473,10 +473,10 @@ func fullRecords() []model.ObjectManifest {
 				Persisted: true,
 			},
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "106",
-				BranchId:    11,
-				ComponentId: "keboola.variables",
-				ConfigId:    "13",
+				ID:          "106",
+				BranchID:    11,
+				ComponentID: "keboola.variables",
+				ConfigID:    "13",
 			},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(
@@ -490,10 +490,10 @@ func fullRecords() []model.ObjectManifest {
 				Persisted: true,
 			},
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "103",
-				BranchId:    11,
-				ComponentId: "keboola.wr-db-mysql",
-				ConfigId:    "12",
+				ID:          "103",
+				BranchID:    11,
+				ComponentID: "keboola.wr-db-mysql",
+				ConfigID:    "12",
 			},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(
@@ -507,10 +507,10 @@ func fullRecords() []model.ObjectManifest {
 				Persisted: true,
 			},
 			ConfigRowKey: model.ConfigRowKey{
-				Id:          "104",
-				BranchId:    11,
-				ComponentId: "keboola.wr-db-mysql",
-				ConfigId:    "12",
+				ID:          "104",
+				BranchID:    11,
+				ComponentID: "keboola.wr-db-mysql",
+				ConfigID:    "12",
 			},
 			Paths: model.Paths{
 				AbsPath: model.NewAbsPath(
@@ -522,7 +522,7 @@ func fullRecords() []model.ObjectManifest {
 	}
 }
 
-func cyclicDependencyJson() string {
+func cyclicDependencyJSON() string {
 	return `{
   "version": 2,
   "project": {

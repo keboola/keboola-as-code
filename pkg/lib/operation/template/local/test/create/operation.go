@@ -46,9 +46,9 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	// Run use template operation
 	tmplOpts := useTemplate.Options{
 		InstanceName:          "test",
-		TargetBranch:          model.BranchKey{Id: storageapi.BranchID(branchID)},
+		TargetBranch:          model.BranchKey{ID: storageapi.BranchID(branchID)},
 		Inputs:                o.Inputs,
-		InstanceId:            template.InstanceIdForTest,
+		InstanceID:            template.InstanceIDForTest,
 		SkipEncrypt:           true,
 		SkipSecretsValidation: true,
 	}

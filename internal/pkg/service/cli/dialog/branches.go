@@ -20,7 +20,7 @@ func (p *Dialogs) SelectBranch(options *options.Options, all []*model.Branch, la
 
 	selectOpts := make([]string, 0)
 	for _, b := range all {
-		selectOpts = append(selectOpts, fmt.Sprintf(`%s (%s)`, b.ObjectName(), b.ObjectId()))
+		selectOpts = append(selectOpts, fmt.Sprintf(`%s (%s)`, b.ObjectName(), b.ObjectID()))
 	}
 	if index, ok := p.SelectIndex(&prompt.SelectIndex{
 		Label:   label,
@@ -56,8 +56,8 @@ func (p *Dialogs) SelectBranches(options *options.Options, all []*model.Branch, 
 
 	selectOpts := orderedmap.New()
 	for _, branch := range all {
-		msg := fmt.Sprintf(`%s (%d)`, branch.Name, branch.Id)
-		selectOpts.Set(msg, branch.Id)
+		msg := fmt.Sprintf(`%s (%d)`, branch.Name, branch.ID)
+		selectOpts.Set(msg, branch.ID)
 	}
 	indexes, _ := p.MultiSelectIndex(&prompt.MultiSelectIndex{
 		Label:       label,

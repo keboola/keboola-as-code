@@ -19,15 +19,15 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 	logger := d.DebugLogger()
 
 	phase1Key := model.PhaseKey{
-		BranchId:    123,
-		ComponentId: storageapi.OrchestratorComponentID,
-		ConfigId:    `456`,
+		BranchID:    123,
+		ComponentID: storageapi.OrchestratorComponentID,
+		ConfigID:    `456`,
 		Index:       0,
 	}
 	phase2Key := model.PhaseKey{
-		BranchId:    123,
-		ComponentId: storageapi.OrchestratorComponentID,
-		ConfigId:    `456`,
+		BranchID:    123,
+		ComponentID: storageapi.OrchestratorComponentID,
+		ConfigID:    `456`,
 		Index:       1,
 	}
 	orchestration := &model.Orchestration{
@@ -44,8 +44,8 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 						TaskKey:     model.TaskKey{PhaseKey: phase1Key, Index: 0},
 						Name:        `Task 1`,
 						Enabled:     true,
-						ComponentId: `foo.bar1`,
-						ConfigId:    `123`,
+						ComponentID: `foo.bar1`,
+						ConfigID:    `123`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -60,8 +60,8 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 						TaskKey:     model.TaskKey{PhaseKey: phase1Key, Index: 1},
 						Name:        `Task 3`,
 						Enabled:     false,
-						ComponentId: `foo.bar2`,
-						ConfigId:    `789`,
+						ComponentID: `foo.bar2`,
+						ConfigID:    `789`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -84,8 +84,8 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 						TaskKey:     model.TaskKey{PhaseKey: phase2Key, Index: 0},
 						Name:        `Task 2`,
 						Enabled:     true,
-						ComponentId: `foo.bar2`,
-						ConfigId:    `456`,
+						ComponentID: `foo.bar2`,
+						ConfigID:    `456`,
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
 								Key: `task`,
@@ -101,7 +101,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 						AbsPath:     model.NewAbsPath(`branch/config/phases/002-phase-with-deps`, `002-task-4-config-data`),
 						Name:        `Task 4 - ConfigData`,
 						Enabled:     true,
-						ComponentId: `foo.bar3`,
+						ComponentID: `foo.bar3`,
 						ConfigData:  orderedmap.FromPairs([]orderedmap.Pair{{Key: "params", Value: "value"}}),
 						Content: orderedmap.FromPairs([]orderedmap.Pair{
 							{
@@ -119,9 +119,9 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 	}
 
 	key := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: storageapi.OrchestratorComponentID,
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: storageapi.OrchestratorComponentID,
+		ID:          `456`,
 	}
 	manifest := &model.ConfigManifest{ConfigKey: key}
 	object := &model.Config{ConfigKey: key, Content: orderedmap.New()}

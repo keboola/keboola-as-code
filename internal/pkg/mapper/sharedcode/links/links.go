@@ -23,15 +23,15 @@ func NewMapper(s *state.State) *mapper {
 		state:  s,
 		logger: s.Logger(),
 		helper: helper.New(s),
-		id:     newIdUtils(),
+		id:     newIDUtils(),
 		path:   newPathUtils(),
 	}
 }
 
-func (m *mapper) linkToIdPlaceholder(code *model.Code, link model.Script) (model.Script, error) {
+func (m *mapper) linkToIDPlaceholder(code *model.Code, link model.Script) (model.Script, error) {
 	if link, ok := link.(model.LinkScript); ok {
 		row, ok := m.state.GetOrNil(link.Target).(*model.ConfigRowState)
-		script := model.StaticScript{Value: m.id.format(row.Id)}
+		script := model.StaticScript{Value: m.id.format(row.ID)}
 		if !ok {
 			return script, errors.NewNestedError(
 				errors.Errorf(`missing shared code "%s"`, link.Target.Desc()),
@@ -48,7 +48,7 @@ func (m *mapper) linkToPathPlaceholder(code *model.Code, link model.Script, shar
 		row, ok := m.state.GetOrNil(link.Target).(*model.ConfigRowState)
 		if !ok || sharedCode == nil {
 			// Return ID placeholder, if row is not found
-			return model.StaticScript{Value: m.id.format(link.Target.Id)}, errors.NewNestedError(
+			return model.StaticScript{Value: m.id.format(link.Target.ID)}, errors.NewNestedError(
 				errors.Errorf(`missing shared code %s`, link.Target.Desc()),
 				errors.Errorf(`referenced from %s`, code.Path()),
 			)
@@ -58,13 +58,13 @@ func (m *mapper) linkToPathPlaceholder(code *model.Code, link model.Script, shar
 		if err != nil {
 			return nil, err
 		}
-		return model.StaticScript{Value: m.path.format(path, code.ComponentId)}, nil
+		return model.StaticScript{Value: m.path.format(path, code.ComponentID)}, nil
 	}
 	return nil, nil
 }
 
-// parseIdPlaceholder in transformation script.
-func (m *mapper) parseIdPlaceholder(code *model.Code, script model.Script, sharedCode *model.ConfigState) (*model.ConfigRowState, model.Script, error) {
+// parseIDPlaceholder in transformation script.
+func (m *mapper) parseIDPlaceholder(code *model.Code, script model.Script, sharedCode *model.ConfigState) (*model.ConfigRowState, model.Script, error) {
 	id := m.id.match(script.Content())
 	if id == "" {
 		// Not found
@@ -73,10 +73,10 @@ func (m *mapper) parseIdPlaceholder(code *model.Code, script model.Script, share
 
 	// Get shared code config row
 	rowKey := model.ConfigRowKey{
-		BranchId:    sharedCode.BranchId,
-		ComponentId: sharedCode.ComponentId,
-		ConfigId:    sharedCode.Id,
-		Id:          id,
+		BranchID:    sharedCode.BranchID,
+		ComponentID: sharedCode.ComponentID,
+		ConfigID:    sharedCode.ID,
+		ID:          id,
 	}
 	row, found := m.state.GetOrNil(rowKey).(*model.ConfigRowState)
 	if !found {
@@ -92,7 +92,7 @@ func (m *mapper) parseIdPlaceholder(code *model.Code, script model.Script, share
 
 // parsePathPlaceholder in transformation script.
 func (m *mapper) parsePathPlaceholder(code *model.Code, script model.Script, sharedCode *model.ConfigState) (*model.ConfigRowState, model.Script, error) {
-	path := m.path.match(script.Content(), code.ComponentId)
+	path := m.path.match(script.Content(), code.ComponentID)
 	if path == "" {
 		// Not found
 		return nil, nil, nil

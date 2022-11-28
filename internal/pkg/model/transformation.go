@@ -57,7 +57,7 @@ type StaticScript struct {
 func (v UsedSharedCodeRows) IdsSlice() []interface{} {
 	var ids []interface{}
 	for _, rowKey := range v {
-		ids = append(ids, rowKey.Id.String())
+		ids = append(ids, rowKey.ID.String())
 	}
 	return ids
 }
@@ -108,7 +108,7 @@ func (b Block) String() string {
 }
 
 func (c Code) String() string {
-	return fmt.Sprintf("## %s\n%s", c.Name, c.Scripts.String(c.ComponentId))
+	return fmt.Sprintf("## %s\n%s", c.Name, c.Scripts.String(c.ComponentID))
 }
 
 func (v Scripts) Slice() []interface{} {
@@ -119,13 +119,13 @@ func (v Scripts) Slice() []interface{} {
 	return out
 }
 
-func (v Scripts) String(componentId storageapi.ComponentID) string {
+func (v Scripts) String(componentID storageapi.ComponentID) string {
 	var items []string
 	for _, script := range v {
 		items = append(items, script.Content())
 	}
 
-	switch componentId.String() {
+	switch componentID.String() {
 	case `keboola.snowflake-transformation`:
 		fallthrough
 	case `keboola.synapse-transformation`:
@@ -171,10 +171,10 @@ func NormalizeScript(script string) string {
 	return strings.TrimRight(script, "\n\r\t ")
 }
 
-func ScriptsFromStr(content string, componentId storageapi.ComponentID) Scripts {
+func ScriptsFromStr(content string, componentID storageapi.ComponentID) Scripts {
 	content = NormalizeScript(content)
 	var items []string
-	switch componentId.String() {
+	switch componentID.String() {
 	case `keboola.snowflake-transformation`:
 		fallthrough
 	case `keboola.synapse-transformation`:

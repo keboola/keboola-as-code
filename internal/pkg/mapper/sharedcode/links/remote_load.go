@@ -18,28 +18,28 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 
 	// Always remove shared code config/rows IDs from Content
 	defer func() {
-		transformation.Content.Delete(model.SharedCodeIdContentKey)
-		transformation.Content.Delete(model.SharedCodeRowsIdContentKey)
+		transformation.Content.Delete(model.SharedCodeIDContentKey)
+		transformation.Content.Delete(model.SharedCodeRowsIDContentKey)
 	}()
 
 	// Get shared code ID
-	sharedCodeIdRaw, found := transformation.Content.Get(model.SharedCodeIdContentKey)
-	sharedCodeId, ok := sharedCodeIdRaw.(string)
+	sharedCodeIDRaw, found := transformation.Content.Get(model.SharedCodeIDContentKey)
+	sharedCodeID, ok := sharedCodeIDRaw.(string)
 	if !found {
 		return nil
 	} else if !ok {
 		return errors.NewNestedError(
 			errors.Errorf(`invalid transformation %s`, transformation.Desc()),
-			errors.Errorf(`key "%s" should be string, found %T`, model.SharedCodeIdContentKey, sharedCodeIdRaw),
+			errors.Errorf(`key "%s" should be string, found %T`, model.SharedCodeIDContentKey, sharedCodeIDRaw),
 		)
 	}
 
 	// Get shared code
 	linkToSharedCode := &model.LinkToSharedCode{
 		Config: model.ConfigKey{
-			BranchId:    transformation.BranchId,
-			ComponentId: storageapi.SharedCodeComponentID,
-			Id:          storageapi.ConfigID(sharedCodeId),
+			BranchID:    transformation.BranchID,
+			ComponentID: storageapi.SharedCodeComponentID,
+			ID:          storageapi.ConfigID(sharedCodeID),
 		},
 	}
 	sharedCodeState, found := m.state.GetOrNil(linkToSharedCode.Config).(*model.ConfigState)
@@ -59,21 +59,21 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 	transformation.Transformation.LinkToSharedCode = linkToSharedCode
 
 	// Get shared code config rows IDs
-	sharedCodeRowsIdsRaw, found := transformation.Content.Get(model.SharedCodeRowsIdContentKey)
+	sharedCodeRowsIdsRaw, found := transformation.Content.Get(model.SharedCodeRowsIDContentKey)
 	v, ok := sharedCodeRowsIdsRaw.([]interface{})
 	if !found {
 		return nil
 	} else if !ok {
 		return errors.NewNestedError(
 			errors.Errorf(`invalid transformation %s`, transformation.Desc()),
-			errors.Errorf(`key "%s" should be array, found %T`, model.SharedCodeRowsIdContentKey, sharedCodeRowsIdsRaw),
+			errors.Errorf(`key "%s" should be array, found %T`, model.SharedCodeRowsIDContentKey, sharedCodeRowsIdsRaw),
 		)
 	}
 
 	// Replace ID placeholder with LinkScript struct
 	errs := errors.NewMultiError()
 	transformation.Transformation.MapScripts(func(code *model.Code, script model.Script) model.Script {
-		if _, v, err := m.parseIdPlaceholder(code, script, sharedCodeState); err != nil {
+		if _, v, err := m.parseIDPlaceholder(code, script, sharedCodeState); err != nil {
 			errs.Append(err)
 		} else if v != nil {
 			return v
@@ -82,12 +82,12 @@ func (m *mapper) onRemoteLoad(objectState model.ObjectState) error {
 	})
 
 	// Check rows IDs
-	for _, rowId := range v {
+	for _, rowID := range v {
 		rowKey := model.ConfigRowKey{
-			BranchId:    linkToSharedCode.Config.BranchId,
-			ComponentId: linkToSharedCode.Config.ComponentId,
-			ConfigId:    linkToSharedCode.Config.Id,
-			Id:          storageapi.RowID(cast.ToString(rowId)),
+			BranchID:    linkToSharedCode.Config.BranchID,
+			ComponentID: linkToSharedCode.Config.ComponentID,
+			ConfigID:    linkToSharedCode.Config.ID,
+			ID:          storageapi.RowID(cast.ToString(rowID)),
 		}
 		if _, found := m.state.Get(rowKey); found {
 			linkToSharedCode.Rows = append(linkToSharedCode.Rows, rowKey)

@@ -26,10 +26,10 @@ func (m *defaultBucketMapper) MapBeforeLocalSave(ctx context.Context, recipe *mo
 
 func (m *defaultBucketMapper) replaceDefaultBucketWithPlaceholder(
 	config configOrRow,
-	sourceTableId string,
+	sourceTableID string,
 	inputTable *orderedmap.OrderedMap,
 ) error {
-	sourceConfigState, found, err := m.getDefaultBucketSourceConfig(config, sourceTableId)
+	sourceConfigState, found, err := m.getDefaultBucketSourceConfig(config, sourceTableID)
 	if err != nil {
 		return err
 	}
@@ -37,29 +37,29 @@ func (m *defaultBucketMapper) replaceDefaultBucketWithPlaceholder(
 		return nil
 	}
 
-	tableName := strings.SplitN(sourceTableId, ".", 3)[2]
+	tableName := strings.SplitN(sourceTableID, ".", 3)[2]
 	inputTable.Set(`source`, fmt.Sprintf(`{{:default-bucket:%s}}.%s`, sourceConfigState.GetRelativePath(), tableName))
 
 	return nil
 }
 
-func (m *defaultBucketMapper) getDefaultBucketSourceConfig(config configOrRow, tableId string) (model.ObjectState, bool, error) {
-	componentId, configId, match := m.state.Components().GetDefaultBucketByTableId(tableId)
+func (m *defaultBucketMapper) getDefaultBucketSourceConfig(config configOrRow, tableID string) (model.ObjectState, bool, error) {
+	componentID, configID, match := m.state.Components().GetDefaultBucketByTableID(tableID)
 	if !match {
 		return nil, false, nil
 	}
 
 	sourceConfigKey := model.ConfigKey{
-		BranchId:    config.BranchKey().Id,
-		ComponentId: componentId,
-		Id:          configId,
+		BranchID:    config.BranchKey().ID,
+		ComponentID: componentID,
+		ID:          configID,
 	}
 	sourceConfigState, found := m.state.Get(sourceConfigKey)
 	if !found {
 		return nil, false, errors.NewNestedError(
 			errors.Errorf(`%s not found`, sourceConfigKey.Desc()),
 			errors.Errorf(`referenced from %s`, config.Desc()),
-			errors.Errorf(`input mapping "%s"`, tableId),
+			errors.Errorf(`input mapping "%s"`, tableID),
 		)
 	}
 	return sourceConfigState, true, nil

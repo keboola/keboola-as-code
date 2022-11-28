@@ -51,7 +51,7 @@ func (d *inputsSelectDialog) ask() (objectInputsMap, error) {
 func (d *inputsSelectDialog) parse(result string) error {
 	d.objectInputs = make(objectInputsMap)
 
-	result = strhelper.StripHtmlComments(result)
+	result = strhelper.StripHTMLComments(result)
 	scanner := bufio.NewScanner(strings.NewReader(result))
 	errs := errors.NewMultiError()
 	lineNum := 0
@@ -78,7 +78,7 @@ func (d *inputsSelectDialog) parse(result string) error {
 				invalidObject = true
 				continue
 			}
-			key := model.ConfigKey{BranchId: d.branch.Id, ComponentId: storageapi.ComponentID(m[1]), Id: storageapi.ConfigID(m[2])}
+			key := model.ConfigKey{BranchID: d.branch.ID, ComponentID: storageapi.ComponentID(m[1]), ID: storageapi.ConfigID(m[2])}
 			if _, found := d.objectFields[key]; !found {
 				errs.Append(errors.Errorf(`line %d: config "%s:%s" not found`, lineNum, m[1], m[2]))
 				invalidObject = true
@@ -94,7 +94,7 @@ func (d *inputsSelectDialog) parse(result string) error {
 				invalidObject = true
 				continue
 			}
-			key := model.ConfigRowKey{BranchId: d.branch.Id, ComponentId: storageapi.ComponentID(m[1]), ConfigId: storageapi.ConfigID(m[2]), Id: storageapi.RowID(m[3])}
+			key := model.ConfigRowKey{BranchID: d.branch.ID, ComponentID: storageapi.ComponentID(m[1]), ConfigID: storageapi.ConfigID(m[2]), ID: storageapi.RowID(m[3])}
 			if _, found := d.objectFields[key]; !found {
 				errs.Append(errors.Errorf(`line %d: config row "%s:%s:%s" not found`, lineNum, m[1], m[2], m[3]))
 				invalidObject = true
@@ -132,7 +132,7 @@ func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, li
 	if len(parts) != 2 {
 		return errors.Errorf(`line %d: expected "<mark> <input-id> <field.path>", found  "%s"`, lineNum, line)
 	}
-	inputId := strings.TrimSpace(parts[0])
+	inputID := strings.TrimSpace(parts[0])
 	fieldPath := strings.Trim(parts[1], " `")
 
 	// Process
@@ -151,18 +151,18 @@ func (d *inputsSelectDialog) parseInputLine(objectKey model.Key, line string, li
 		}
 
 		// Modify input ID, if it has been changed by use.
-		field.Input.Id = inputId
+		field.Input.ID = inputID
 
 		// One input can be used multiple times, but type must match.
-		if i, found := d.inputs.Get(field.Input.Id); found {
+		if i, found := d.inputs.Get(field.Input.ID); found {
 			if i.Type != field.Input.Type {
-				return errors.Errorf(`line %d: input "%s" is already defined with "%s" type, but "%s" has type "%s"`, lineNum, i.Id, i.Type, fieldPath, field.Input.Type)
+				return errors.Errorf(`line %d: input "%s" is already defined with "%s" type, but "%s" has type "%s"`, lineNum, i.ID, i.Type, fieldPath, field.Input.Type)
 			}
 		}
 
 		// Save definitions
-		d.objectInputs.add(objectKey, create.InputDef{Path: field.Path, InputId: field.Input.Id})
-		if _, found := d.inputs.Get(field.Input.Id); !found {
+		d.objectInputs.add(objectKey, create.InputDef{Path: field.Path, InputID: field.Input.ID})
+		if _, found := d.inputs.Get(field.Input.ID); !found {
 			value := field.Input
 			d.inputs.Add(&value)
 		}
@@ -203,7 +203,7 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 		// Config
 		fields := d.objectFields[c.ConfigKey]
 		if len(fields) > 0 {
-			lines.WriteString(fmt.Sprintf("## Config \"%s\" %s:%s\n", c.Name, c.ComponentId, c.Id))
+			lines.WriteString(fmt.Sprintf("## Config \"%s\" %s:%s\n", c.Name, c.ComponentID, c.ID))
 			fields.Write(&lines)
 			lines.WriteString("\n")
 		}
@@ -212,7 +212,7 @@ Allowed characters: a-z, A-Z, 0-9, "-".
 		for _, r := range c.Rows {
 			fields := d.objectFields[r.ConfigRowKey]
 			if len(fields) > 0 {
-				lines.WriteString(fmt.Sprintf("### Row \"%s\" %s:%s:%s\n", r.Name, r.ComponentId, r.ConfigId, r.Id))
+				lines.WriteString(fmt.Sprintf("### Row \"%s\" %s:%s:%s\n", r.Name, r.ComponentID, r.ConfigID, r.ID))
 				fields.Write(&lines)
 				lines.WriteString("\n")
 			}
@@ -227,7 +227,7 @@ func (d *inputsSelectDialog) detectInputs() error {
 	d.objectFields = make(map[model.Key]inputFields)
 	for _, c := range d.configs {
 		// Get component
-		component, err := d.components.GetOrErr(c.ComponentId)
+		component, err := d.components.GetOrErr(c.ComponentID)
 		if err != nil {
 			return err
 		}

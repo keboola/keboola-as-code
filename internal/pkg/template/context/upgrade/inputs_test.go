@@ -61,7 +61,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeString,
 						Kind:    input.KindInput,
 						Default: "default",
@@ -72,7 +72,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeString,
 						Kind:    input.KindInput,
 						Default: "default",
@@ -95,7 +95,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeString,
 						Kind:    input.KindInput,
 						Default: "default",
@@ -106,7 +106,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeString,
 						Kind:    input.KindInput,
 						Default: "default",
@@ -129,7 +129,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeString,
 						Kind:    input.KindInput,
 						Default: "default",
@@ -140,7 +140,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeString,
 						Kind:    input.KindInput,
 						Default: "my value", // <<<<<<<<<
@@ -164,7 +164,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeString,
 						Kind:    input.KindInput,
 						Default: "default",
@@ -175,7 +175,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeString,
 						Kind:    input.KindInput,
 						Default: "default",
@@ -198,7 +198,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeInt,
 						Kind:    input.KindInput,
 						Default: 123,
@@ -209,7 +209,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeInt,
 						Kind:    input.KindInput,
 						Default: 123,
@@ -232,7 +232,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeString,
 						Kind:    input.KindInput,
 						Default: "default",
@@ -243,7 +243,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeString,
 						Kind:    input.KindInput,
 						Default: "my value",
@@ -267,7 +267,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeString,
 						Kind:    input.KindInput,
 						Default: "default",
@@ -278,7 +278,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeString,
 						Kind:    input.KindInput,
 						Default: "default",
@@ -326,7 +326,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeString,
 						Kind:    input.KindInput,
 						Default: "default",
@@ -337,7 +337,7 @@ func TestExportInputsValues(t *testing.T) {
 				Required: input.RequiredOptional,
 				Steps: input.Steps{{Inputs: input.Inputs{
 					{
-						Id:      "input1",
+						ID:      "input1",
 						Type:    input.TypeString,
 						Kind:    input.KindInput,
 						Default: "value 4",
@@ -364,18 +364,18 @@ func (tc testCase) run(t *testing.T) {
 	// Create objects
 	d := dependencies.NewMockedDeps()
 	state := d.MockedState()
-	branchKey := model.BranchKey{Id: 123}
-	configKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "111"}
-	configRowKey := model.ConfigRowKey{BranchId: 123, ComponentId: "foo.bar", ConfigId: "111", Id: "222"}
+	branchKey := model.BranchKey{ID: 123}
+	configKey := model.ConfigKey{BranchID: 123, ComponentID: "foo.bar", ID: "111"}
+	configRowKey := model.ConfigRowKey{BranchID: 123, ComponentID: "foo.bar", ConfigID: "111", ID: "222"}
 	configMetadata := model.ConfigMetadata{}
 	configContent := orderedmap.New()
 	rowContent := orderedmap.New()
 
 	// Set instance ID
-	instanceId := "12345"
-	configMetadata.SetTemplateInstance("repo", "template", instanceId)
-	configMetadata.SetConfigTemplateId("configInTemplate")
-	configMetadata.AddRowTemplateId(configRowKey.Id, "rowInTemplate")
+	instanceID := "12345"
+	configMetadata.SetTemplateInstance("repo", "template", instanceID)
+	configMetadata.SetConfigTemplateID("configInTemplate")
+	configMetadata.AddRowTemplateID(configRowKey.ID, "rowInTemplate")
 
 	// Add config inputs
 	for index, inputDef := range tc.configInputs {
@@ -392,7 +392,7 @@ func (tc testCase) run(t *testing.T) {
 	for index, inputDef := range tc.rowInputs {
 		contentKey := fmt.Sprintf("foo.bar.item%d", index)
 		if inputDef.inMetadata {
-			configMetadata.AddRowInputUsage(configRowKey.Id, inputDef.id, orderedmap.PathFromStr(contentKey), nil)
+			configMetadata.AddRowInputUsage(configRowKey.ID, inputDef.id, orderedmap.PathFromStr(contentKey), nil)
 		}
 		if inputDef.inContent {
 			assert.NoError(t, rowContent.SetNested(contentKey, inputDef.value))
@@ -410,14 +410,14 @@ func (tc testCase) run(t *testing.T) {
 	}))
 
 	// Assert inputs
-	actual := ExportInputsValues(log.NewNopLogger().DebugWriter(), state, branchKey, instanceId, tc.templateInputs)
+	actual := ExportInputsValues(log.NewNopLogger().DebugWriter(), state, branchKey, instanceID, tc.templateInputs)
 	assert.Equal(t, tc.expected, actual.ToValue())
 
 	// Assert steps state
 	var configuredSteps []string
 	_ = actual.VisitSteps(func(group *input.StepsGroupExt, step *input.StepExt) error {
 		if step.Show {
-			configuredSteps = append(configuredSteps, step.Id)
+			configuredSteps = append(configuredSteps, step.ID)
 		}
 		return nil
 	})

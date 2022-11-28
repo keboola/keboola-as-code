@@ -16,50 +16,50 @@ func TestValues_AddKey(t *testing.T) {
 	replacements := NewValues()
 	replacements.AddKey(
 		model.BranchKey{
-			Id: 123,
+			ID: 123,
 		},
 		model.BranchKey{
-			Id: 0,
+			ID: 0,
 		},
 	)
 	replacements.AddKey(
 		model.ConfigKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			Id:          `12`,
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ID:          `12`,
 		},
 		model.ConfigKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			Id:          `23`,
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ID:          `23`,
 		},
 	)
 	replacements.AddKey(
 		model.ConfigRowKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			ConfigId:    `12`,
-			Id:          `45`,
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ConfigID:    `12`,
+			ID:          `45`,
 		},
 		model.ConfigRowKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			ConfigId:    `23`,
-			Id:          `67`,
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ConfigID:    `23`,
+			ID:          `67`,
 		},
 	)
 	assert.Equal(t, []Value{
 		{
-			Search:  model.BranchKey{Id: 123},
-			Replace: model.BranchKey{Id: 0},
+			Search:  model.BranchKey{ID: 123},
+			Replace: model.BranchKey{ID: 0},
 		},
 		{
 			Search:  storageapi.BranchID(123),
 			Replace: storageapi.BranchID(0),
 		},
 		{
-			Search:  model.ConfigKey{BranchId: 1, ComponentId: "foo.bar", Id: "12"},
-			Replace: model.ConfigKey{BranchId: 1, ComponentId: "foo.bar", Id: "23"},
+			Search:  model.ConfigKey{BranchID: 1, ComponentID: "foo.bar", ID: "12"},
+			Replace: model.ConfigKey{BranchID: 1, ComponentID: "foo.bar", ID: "23"},
 		},
 		{
 			Search:  storageapi.ConfigID("12"),
@@ -70,8 +70,8 @@ func TestValues_AddKey(t *testing.T) {
 			Replace: "23",
 		},
 		{
-			Search:  model.ConfigRowKey{BranchId: 1, ComponentId: "foo.bar", ConfigId: "12", Id: "45"},
-			Replace: model.ConfigRowKey{BranchId: 1, ComponentId: "foo.bar", ConfigId: "23", Id: "67"},
+			Search:  model.ConfigRowKey{BranchID: 1, ComponentID: "foo.bar", ConfigID: "12", ID: "45"},
+			Replace: model.ConfigRowKey{BranchID: 1, ComponentID: "foo.bar", ConfigID: "23", ID: "67"},
 		},
 		{
 			Search:  storageapi.RowID("45"),
@@ -84,12 +84,12 @@ func TestValues_AddKey(t *testing.T) {
 	}, replacements.values)
 }
 
-func TestValues_AddId(t *testing.T) {
+func TestValues_AddID(t *testing.T) {
 	t.Parallel()
 
 	replacements := NewValues()
-	replacements.AddId(storageapi.ConfigID("old1"), storageapi.ConfigID("new1"))
-	replacements.AddId(storageapi.RowID("old2"), storageapi.RowID("new2"))
+	replacements.AddID(storageapi.ConfigID("old1"), storageapi.ConfigID("new1"))
+	replacements.AddID(storageapi.RowID("old2"), storageapi.RowID("new2"))
 
 	assert.Equal(t, []Value{
 		{
@@ -117,28 +117,28 @@ func TestValues_Validate_DuplicateOld(t *testing.T) {
 	replacements := NewValues()
 	replacements.AddKey(
 		model.ConfigKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			Id:          `12`, // <<<<<<<<<<<<<
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ID:          `12`, // <<<<<<<<<<<<<
 		},
 		model.ConfigKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			Id:          `23`,
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ID:          `23`,
 		},
 	)
 	replacements.AddKey(
 		model.ConfigRowKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			ConfigId:    `12`,
-			Id:          `12`, // <<<<<<<<<<<<<
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ConfigID:    `12`,
+			ID:          `12`, // <<<<<<<<<<<<<
 		},
 		model.ConfigRowKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			ConfigId:    `23`,
-			Id:          `67`,
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ConfigID:    `23`,
+			ID:          `67`,
 		},
 	)
 
@@ -153,28 +153,28 @@ func TestValues_Validate_DuplicateNew(t *testing.T) {
 	replacements := NewValues()
 	replacements.AddKey(
 		model.ConfigKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			Id:          `12`,
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ID:          `12`,
 		},
 		model.ConfigKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			Id:          `23`, // <<<<<<<<<<<<<
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ID:          `23`, // <<<<<<<<<<<<<
 		},
 	)
 	replacements.AddKey(
 		model.ConfigRowKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			ConfigId:    `12`,
-			Id:          `45`,
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ConfigID:    `12`,
+			ID:          `45`,
 		},
 		model.ConfigRowKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			ConfigId:    `23`,
-			Id:          `23`, // <<<<<<<<<<<<<
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ConfigID:    `23`,
+			ID:          `23`, // <<<<<<<<<<<<<
 		},
 	)
 
@@ -189,37 +189,37 @@ func TestValues_Replace(t *testing.T) {
 	replacements := NewValues()
 	replacements.AddKey(
 		model.ConfigKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			Id:          `12`,
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ID:          `12`,
 		},
 		model.ConfigKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			Id:          `config-in-template`,
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ID:          `config-in-template`,
 		},
 	)
 	replacements.AddKey(
 		model.ConfigRowKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			ConfigId:    `12`,
-			Id:          `34`,
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ConfigID:    `12`,
+			ID:          `34`,
 		},
 		model.ConfigRowKey{
-			BranchId:    1,
-			ComponentId: `foo.bar`,
-			ConfigId:    `config-in-template`,
-			Id:          `row-in-template`,
+			BranchID:    1,
+			ComponentID: `foo.bar`,
+			ConfigID:    `config-in-template`,
+			ID:          `row-in-template`,
 		},
 	)
 	replacements.AddContentField(
-		model.ConfigKey{BranchId: 1, ComponentId: `foo.bar`, Id: `12`},
+		model.ConfigKey{BranchID: 1, ComponentID: `foo.bar`, ID: `12`},
 		orderedmap.Path{orderedmap.MapStep("key1"), orderedmap.MapStep("key2")},
 		"new value in config",
 	)
 	replacements.AddContentField(
-		model.ConfigRowKey{BranchId: 1, ComponentId: `foo.bar`, ConfigId: `12`, Id: `56`},
+		model.ConfigRowKey{BranchID: 1, ComponentID: `foo.bar`, ConfigID: `12`, ID: `56`},
 		orderedmap.Path{orderedmap.MapStep("key3"), orderedmap.MapStep("key4")},
 		"new value in row 56",
 	)
@@ -229,9 +229,9 @@ func TestValues_Replace(t *testing.T) {
 		&model.ConfigWithRows{
 			Config: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    1,
-					ComponentId: `foo.bar`,
-					Id:          `12`,
+					BranchID:    1,
+					ComponentID: `foo.bar`,
+					ID:          `12`,
 				},
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{Key: `some-row-id`, Value: storageapi.RowID(`34`)},
@@ -243,10 +243,10 @@ func TestValues_Replace(t *testing.T) {
 			Rows: []*model.ConfigRow{
 				{
 					ConfigRowKey: model.ConfigRowKey{
-						BranchId:    1,
-						ComponentId: `foo.bar`,
-						ConfigId:    `12`,
-						Id:          `34`,
+						BranchID:    1,
+						ComponentID: `foo.bar`,
+						ConfigID:    `12`,
+						ID:          `34`,
 					},
 					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "key3", Value: orderedmap.FromPairs([]orderedmap.Pair{
@@ -256,10 +256,10 @@ func TestValues_Replace(t *testing.T) {
 				},
 				{
 					ConfigRowKey: model.ConfigRowKey{
-						BranchId:    1,
-						ComponentId: `foo.bar`,
-						ConfigId:    `12`,
-						Id:          `56`,
+						BranchID:    1,
+						ComponentID: `foo.bar`,
+						ConfigID:    `12`,
+						ID:          `56`,
 					},
 					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "key3", Value: orderedmap.FromPairs([]orderedmap.Pair{
@@ -276,9 +276,9 @@ func TestValues_Replace(t *testing.T) {
 		&model.ConfigWithRows{
 			Config: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchId:    1,
-					ComponentId: `foo.bar`,
-					Id:          `config-in-template`,
+					BranchID:    1,
+					ComponentID: `foo.bar`,
+					ID:          `config-in-template`,
 				},
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
 					{Key: `some-row-id`, Value: storageapi.RowID(`row-in-template`)},
@@ -290,10 +290,10 @@ func TestValues_Replace(t *testing.T) {
 			Rows: []*model.ConfigRow{
 				{
 					ConfigRowKey: model.ConfigRowKey{
-						BranchId:    1,
-						ComponentId: `foo.bar`,
-						ConfigId:    `config-in-template`,
-						Id:          `row-in-template`,
+						BranchID:    1,
+						ComponentID: `foo.bar`,
+						ConfigID:    `config-in-template`,
+						ID:          `row-in-template`,
 					},
 					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "key3", Value: orderedmap.FromPairs([]orderedmap.Pair{
@@ -303,10 +303,10 @@ func TestValues_Replace(t *testing.T) {
 				},
 				{
 					ConfigRowKey: model.ConfigRowKey{
-						BranchId:    1,
-						ComponentId: `foo.bar`,
-						ConfigId:    `config-in-template`,
-						Id:          `56`,
+						BranchID:    1,
+						ComponentID: `foo.bar`,
+						ConfigID:    `config-in-template`,
+						ID:          `56`,
 					},
 					Content: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "key3", Value: orderedmap.FromPairs([]orderedmap.Pair{
@@ -360,7 +360,7 @@ func TestSubString_Replace(t *testing.T) {
 func TestValues_AddContentField(t *testing.T) {
 	t.Parallel()
 
-	objectKey := model.ConfigKey{BranchId: 123, ComponentId: "foo.bar", Id: "123"}
+	objectKey := model.ConfigKey{BranchID: 123, ComponentID: "foo.bar", ID: "123"}
 	fieldPath := orderedmap.Path{orderedmap.MapStep("foo"), orderedmap.SliceStep(123)}
 
 	replacements := NewValues()

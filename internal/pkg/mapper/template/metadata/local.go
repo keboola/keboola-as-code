@@ -18,28 +18,28 @@ func (m *metadataMapper) AfterLocalOperation(_ context.Context, changes *model.L
 		case *model.ConfigState:
 			config := v.Local
 			// Store instance metadata
-			config.Metadata.SetTemplateInstance(m.templateRef.Repository().Name, m.templateRef.TemplateId(), m.instanceId)
+			config.Metadata.SetTemplateInstance(m.templateRef.Repository().Name, m.templateRef.TemplateID(), m.instanceID)
 			// Store original object ID
-			if idInTemplate, found := m.objectIds.IdInTemplate(v.Id); found {
-				config.Metadata.SetConfigTemplateId(idInTemplate.(storageapi.ConfigID))
+			if idInTemplate, found := m.objectIds.IDInTemplate(v.ID); found {
+				config.Metadata.SetConfigTemplateID(idInTemplate.(storageapi.ConfigID))
 			}
 			// Store inputs usage
 			if inputsUsage, ok := m.inputsUsage.Values[config.Key()]; ok {
 				for _, item := range inputsUsage {
-					config.Metadata.AddInputUsage(item.Name, item.JsonKey, item.ObjectKeys)
+					config.Metadata.AddInputUsage(item.Name, item.JSONKey, item.ObjectKeys)
 				}
 			}
 		case *model.ConfigRowState:
 			// Config row has no metadata support, so row templateId -> projectId pairs are stored in config metadata.
 			config := m.state.MustGet(v.ConfigKey()).(*model.ConfigState).Local
 			// Store original object ID
-			if idInTemplate, found := m.objectIds.IdInTemplate(v.Id); found {
-				config.Metadata.AddRowTemplateId(v.Id, idInTemplate.(storageapi.RowID))
+			if idInTemplate, found := m.objectIds.IDInTemplate(v.ID); found {
+				config.Metadata.AddRowTemplateID(v.ID, idInTemplate.(storageapi.RowID))
 			}
 			// Store inputs usage
 			if inputsUsage, ok := m.inputsUsage.Values[v.Key()]; ok {
 				for _, item := range inputsUsage {
-					config.Metadata.AddRowInputUsage(v.Id, item.Name, item.JsonKey, item.ObjectKeys)
+					config.Metadata.AddRowInputUsage(v.ID, item.Name, item.JSONKey, item.ObjectKeys)
 				}
 			}
 		}

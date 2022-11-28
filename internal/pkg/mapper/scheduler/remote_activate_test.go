@@ -21,7 +21,7 @@ func TestSchedulerMapperRemoteActivate(t *testing.T) {
 
 	// Branch
 	branchKey := model.BranchKey{
-		Id: 123,
+		ID: 123,
 	}
 	branchState := &model.BranchState{
 		BranchManifest: &model.BranchManifest{
@@ -36,9 +36,9 @@ func TestSchedulerMapperRemoteActivate(t *testing.T) {
 
 	// Scheduler config
 	schedulerKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: storageapi.SchedulerComponentID,
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: storageapi.SchedulerComponentID,
+		ID:          `456`,
 	}
 	schedulerConfigState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -52,7 +52,7 @@ func TestSchedulerMapperRemoteActivate(t *testing.T) {
 
 	// Expected HTTP call
 	var httpRequest *http.Request
-	d.MockedHttpTransport().RegisterResponder(resty.MethodPost, `=~schedules`,
+	d.MockedHTTPTransport().RegisterResponder(resty.MethodPost, `=~schedules`,
 		func(req *http.Request) (*http.Response, error) {
 			httpRequest = req
 			return httpmock.NewStringResponse(200, `{"id": "789"}`), nil

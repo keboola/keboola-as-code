@@ -96,11 +96,11 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) b
 	case *newObjectAction:
 		if parentKey, ok := parent.Key.(model.ConfigKey); ok {
 			if action := b.tryAddConfigRow(path, parentKey); action != nil {
-				// Set ConfigId on config persist, now it is unknown
+				// Set ConfigID on config persist, now it is unknown
 				parent.OnPersist = append(parent.OnPersist, func(parentKey model.Key) {
 					parentConfigKey := parentKey.(model.ConfigKey)
 					key := action.Key.(model.ConfigRowKey)
-					key.ConfigId = parentConfigKey.Id
+					key.ConfigID = parentConfigKey.ID
 					action.ParentKey = parentConfigKey
 					action.Key = key
 				})
@@ -108,7 +108,7 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) b
 			}
 		}
 		if action := b.tryAddConfig(path, parent.Key); action != nil {
-			// Set ConfigId on config persist, now it is unknown
+			// Set ConfigID on config persist, now it is unknown
 			parent.OnPersist = append(parent.OnPersist, func(parentKey model.Key) {
 				action.ParentKey = parentKey
 			})
@@ -121,11 +121,11 @@ func (b *persistPlanBuilder) tryAdd(fullPath string, parent model.RecordPaths) b
 
 func (b *persistPlanBuilder) tryAddConfig(path model.AbsPath, parentKey model.Key) *newObjectAction {
 	// Is config path matching naming template?
-	componentId, err := b.PathMatcher().MatchConfigPath(parentKey, path)
+	componentID, err := b.PathMatcher().MatchConfigPath(parentKey, path)
 	if err != nil {
 		b.errors.Append(err)
 		return nil
-	} else if componentId == "" {
+	} else if componentID == "" {
 		return nil
 	}
 
@@ -133,11 +133,11 @@ func (b *persistPlanBuilder) tryAddConfig(path model.AbsPath, parentKey model.Ke
 	var configKey model.ConfigKey
 	switch k := parentKey.(type) {
 	case model.BranchKey:
-		configKey = model.ConfigKey{BranchId: k.Id, ComponentId: componentId}
+		configKey = model.ConfigKey{BranchID: k.ID, ComponentID: componentID}
 	case model.ConfigKey:
-		configKey = model.ConfigKey{BranchId: k.BranchId, ComponentId: componentId}
+		configKey = model.ConfigKey{BranchID: k.BranchID, ComponentID: componentID}
 	case model.ConfigRowKey:
-		configKey = model.ConfigKey{BranchId: k.BranchId, ComponentId: componentId}
+		configKey = model.ConfigKey{BranchID: k.BranchID, ComponentID: componentID}
 	default:
 		panic(errors.Errorf(`unexpected parent key type "%T"`, parentKey))
 	}
@@ -150,7 +150,7 @@ func (b *persistPlanBuilder) tryAddConfig(path model.AbsPath, parentKey model.Ke
 }
 
 func (b *persistPlanBuilder) tryAddConfigRow(path model.AbsPath, parentKey model.ConfigKey) *newObjectAction {
-	component, err := b.State.Components().GetOrErr(parentKey.ComponentId)
+	component, err := b.State.Components().GetOrErr(parentKey.ComponentID)
 	if err != nil {
 		b.errors.Append(err)
 		return nil
@@ -161,7 +161,7 @@ func (b *persistPlanBuilder) tryAddConfigRow(path model.AbsPath, parentKey model
 	}
 
 	// Create action
-	rowKey := model.ConfigRowKey{BranchId: parentKey.BranchId, ComponentId: parentKey.ComponentId, ConfigId: parentKey.Id}
+	rowKey := model.ConfigRowKey{BranchID: parentKey.BranchID, ComponentID: parentKey.ComponentID, ConfigID: parentKey.ID}
 	action := &newObjectAction{AbsPath: path, Key: rowKey, ParentKey: parentKey}
 	b.addAction(action)
 	return action

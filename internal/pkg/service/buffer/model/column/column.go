@@ -61,22 +61,22 @@ func (v Columns) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 
-		typeJson, err := json.Marshal(typ)
+		typeJSON, err := json.Marshal(typ)
 		if err != nil {
 			return nil, err
 		}
 
-		columnJson, err := json.Marshal(&column)
+		columnJSON, err := json.Marshal(&column)
 		if err != nil {
 			return nil, err
 		}
-		columnJson = columnJson[1 : len(columnJson)-1]
+		columnJSON = columnJSON[1 : len(columnJSON)-1]
 
 		item := json.RawMessage(`{"type":`)
-		item = append(item, typeJson...)
-		if len(columnJson) > 0 {
+		item = append(item, typeJSON...)
+		if len(columnJSON) > 0 {
 			item = append(item, byte(','))
-			item = append(item, columnJson...)
+			item = append(item, columnJSON...)
 		}
 		item = append(item, byte('}'))
 

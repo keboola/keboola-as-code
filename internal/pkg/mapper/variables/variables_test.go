@@ -25,14 +25,14 @@ func createTestObjectForPersist(t *testing.T, state model.ObjectStates) {
 
 	// Config
 	configKey := model.ConfigKey{
-		BranchId:    123,
-		ComponentId: storageapi.VariablesComponentID,
-		Id:          `456`,
+		BranchID:    123,
+		ComponentID: storageapi.VariablesComponentID,
+		ID:          `456`,
 	}
 	configRelations := model.Relations{
 		&model.VariablesForRelation{
-			ComponentId: `foo.bar`,
-			ConfigId:    `789`,
+			ComponentID: `foo.bar`,
+			ConfigID:    `789`,
 		},
 	}
 	configState := &model.ConfigState{
@@ -49,10 +49,10 @@ func createTestObjectForPersist(t *testing.T, state model.ObjectStates) {
 
 	// Row 1
 	row1Key := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: storageapi.VariablesComponentID,
-		ConfigId:    `456`,
-		Id:          `1`,
+		BranchID:    123,
+		ComponentID: storageapi.VariablesComponentID,
+		ConfigID:    `456`,
+		ID:          `1`,
 	}
 	row1State := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{
@@ -67,10 +67,10 @@ func createTestObjectForPersist(t *testing.T, state model.ObjectStates) {
 
 	// Row 2
 	row2Key := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: storageapi.VariablesComponentID,
-		ConfigId:    `456`,
-		Id:          `2`,
+		BranchID:    123,
+		ComponentID: storageapi.VariablesComponentID,
+		ConfigID:    `456`,
+		ID:          `2`,
 	}
 	row2State := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{
@@ -85,10 +85,10 @@ func createTestObjectForPersist(t *testing.T, state model.ObjectStates) {
 
 	// Row 3
 	row3Key := model.ConfigRowKey{
-		BranchId:    123,
-		ComponentId: storageapi.VariablesComponentID,
-		ConfigId:    `456`,
-		Id:          `3`,
+		BranchID:    123,
+		ComponentID: storageapi.VariablesComponentID,
+		ConfigID:    `456`,
+		ID:          `3`,
 	}
 	row3State := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{

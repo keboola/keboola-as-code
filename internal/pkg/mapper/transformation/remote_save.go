@@ -32,7 +32,7 @@ func (m *transformationMapper) MapBeforeRemoteSave(ctx context.Context, recipe *
 	blocks := make([]interface{}, 0)
 	for _, block := range apiObject.Transformation.Blocks {
 		blockRaw := orderedmap.New()
-		if err := json.ConvertByJson(block, &blockRaw); err != nil {
+		if err := json.ConvertByJSON(block, &blockRaw); err != nil {
 			return errors.Errorf(`cannot convert block to JSON: %w`, err)
 		}
 		blocks = append(blocks, blockRaw)
