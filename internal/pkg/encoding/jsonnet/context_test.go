@@ -120,33 +120,43 @@ func TestVmContext_VariablesTypes(t *testing.T) {
 func TestVmContext_ValueToLiteral_MapArray(t *testing.T) {
 	t.Parallel()
 
-	result := ValueToLiteral(map[string]any{"one": map[string]any{"two": 2, "three": "four"}, "five": []any{"six", 7, true}})
+	goObject := map[string]any{
+		"one":  map[string]any{"two": 2, "three": "four"},
+		"five": []any{"six", 7, true},
+	}
 
-	vm := jsonnet.MakeVM()
-	vm.Importer(NewNopImporter())
+	jsonnetObject := ValueToLiteral(goObject)
+
+	// Register global variable
 	ctx := NewContext()
-	ctx.registerTo(vm)
+	ctx.GlobalBinding("myObject", jsonnetObject)
 
-	jsonContent, err := vm.Evaluate(result)
+	// Evaluate
+	jsonContent, err := Evaluate("{ object: myObject }", ctx)
 	assert.NoError(t, err)
 
+	// Format JSON
 	var evaluatedResult bytes.Buffer
 	err = json.Indent(&evaluatedResult, []byte(jsonContent), "", "  ")
 	assert.NoError(t, err)
 
-	expected := `{
-  "five": [
-    "six",
-    7,
-    true
-  ],
-  "one": {
-    "three": "four",
-    "two": 2
+	// Check
+	expected := `
+{
+  "object": {
+    "five": [
+      "six",
+      7,
+      true
+    ],
+    "one": {
+      "three": "four",
+      "two": 2
+    }
   }
 }
 `
-	assert.Equal(t, expected, evaluatedResult.String())
+	assert.Equal(t, strings.TrimLeft(expected, "\n"), evaluatedResult.String())
 }
 
 func TestVmContext_Notifier(t *testing.T) {
