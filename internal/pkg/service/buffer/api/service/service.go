@@ -128,7 +128,6 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 		}
 
 		mapping := model.Mapping{
-			RevisionID:  1,
 			TableID:     tableID,
 			Incremental: exportData.Mapping.Incremental == nil || *exportData.Mapping.Incremental, // default true
 			Columns:     columns,
@@ -174,7 +173,7 @@ func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *GetRece
 
 	exports := make([]*Export, 0, len(exportList))
 	for _, export := range exportList {
-		mapping, err := store.GetCurrentMapping(ctx, projectID, string(receiverID), export.ID)
+		mapping, err := store.GetMapping(ctx, projectID, string(receiverID), export.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -250,7 +249,7 @@ func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.List
 
 		exports := make([]*Export, 0, len(exportList))
 		for _, export := range exportList {
-			mapping, err := store.GetCurrentMapping(ctx, projectID, receiverData.ID, export.ID)
+			mapping, err := store.GetMapping(ctx, projectID, receiverData.ID, export.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -370,7 +369,7 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 
 	errs := errors.NewMultiError()
 	for _, e := range exports {
-		mapping, err := config.GetCurrentMapping(ctx, payload.ProjectID, string(payload.ReceiverID), e.ID)
+		mapping, err := config.GetMapping(ctx, payload.ProjectID, string(payload.ReceiverID), e.ID)
 		if err != nil {
 			return err
 		}

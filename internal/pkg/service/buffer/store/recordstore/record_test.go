@@ -38,7 +38,7 @@ func TestStore_CreateRecord(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.etcdClient, `
+	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
 record/1000/receiver1/export1/file1/slice1/2006-01-02T08:04:05.000Z_%c%c%c%c%c
 -----

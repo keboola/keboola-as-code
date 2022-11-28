@@ -2,88 +2,114 @@ package configstore
 
 import (
 	"context"
+	"fmt"
 
 	etcd "go.etcd.io/etcd/client/v3"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 // CreateExport puts an export into the store.
-//
-// This method guarantees that no two receivers in the store will have the same (projectID, receiverID, exportID) tuple.
-//
-// May fail if
-// - limit is reached (`LimitReachedError`)
-// - already exists (`AlreadyExistsError`)
-// - validation of the model fails
-// - JSON marshalling fails
-// - any of the underlying ETCD calls fail.
-func (c *Store) CreateExport(ctx context.Context, projectID int, receiverID string, export model.Export) (err error) {
-	tracer, client := c.tracer, c.etcdClient
-
-	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.CreateExport")
+// Logic errors:
+// - CountLimitReachedError
+// - ResourceAlreadyExistsError.
+func (s *Store) CreateExport(ctx context.Context, projectID int, receiverID string, export model.Export) (err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.CreateExport")
 	defer telemetry.EndSpan(span, &err)
 
-	if err := c.validator.Validate(ctx, export); err != nil {
-		return err
-	}
+	exports := s.schema.Configs().Exports().InProject(projectID).InReceiver(receiverID)
 
-	prefix := c.schema.Configs().Exports().InProject(projectID).InReceiver(receiverID)
-	receiverExports, err := client.KV.Get(ctx, prefix.Prefix(), etcd.WithPrefix(), etcd.WithCountOnly())
+	count, err := exports.Count().Do(ctx, s.client)
 	if err != nil {
 		return err
-	}
-	if receiverExports.Count >= MaxExportsPerReceiver {
+	} else if count >= MaxExportsPerReceiver {
 		return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
 	}
 
-	key := prefix.ID(export.ID)
-
-	exports, err := client.KV.Get(ctx, key.Key(), etcd.WithCountOnly())
-	if err != nil {
-		return err
-	}
-	if exports.Count > 0 {
-		return serviceError.NewResourceAlreadyExistsError("export", export.ID, "receiver")
-	}
-
-	value, err := json.EncodeString(export, false)
-	if err != nil {
-		return err
-	}
-
-	_, err = client.KV.Put(ctx, key.Key(), value)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err = s.createExportOp(ctx, projectID, receiverID, export).Do(ctx, s.client)
+	return err
 }
 
-func (c *Store) ListExports(ctx context.Context, projectID int, receiverID string) (r []*model.Export, err error) {
-	tracer, client := c.tracer, c.etcdClient
+func (s *Store) createExportOp(_ context.Context, projectID int, receiverID string, export model.Export) op.BoolOp {
+	exports := s.schema.Configs().Exports().InProject(projectID).InReceiver(receiverID)
+	return exports.
+		ID(export.ID).
+		PutIfNotExists(export).
+		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
+			if !ok && err == nil {
+				return false, serviceError.NewResourceAlreadyExistsError("export", export.ID, "receiver")
+			}
+			return ok, err
+		})
+}
 
-	_, span := tracer.Start(ctx, "keboola.go.buffer.configstore.ListExports")
+// GetExport fetches an export from the store.
+// Logic errors:
+// - ResourceNotFoundError.
+func (s *Store) GetExport(ctx context.Context, projectID int, receiverID, exportID string) (r model.Export, err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetExport")
 	defer telemetry.EndSpan(span, &err)
 
-	prefix := c.schema.Configs().Exports().InProject(projectID).InReceiver(receiverID)
+	kv, err := s.getExportOp(ctx, projectID, receiverID, exportID).Do(ctx, s.client)
+	if err != nil {
+		return model.Export{}, err
+	}
+	return kv.Value, nil
+}
 
-	resp, err := client.KV.Get(ctx, prefix.Prefix(), etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
+func (s *Store) getExportOp(_ context.Context, projectID int, receiverID, exportID string) op.ForType[*op.KeyValueT[model.Export]] {
+	exports := s.schema.Configs().Exports().InProject(projectID).InReceiver(receiverID)
+	return exports.
+		ID(exportID).
+		Get().
+		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Export], err error) (*op.KeyValueT[model.Export], error) {
+			if kv == nil && err == nil {
+				return nil, serviceError.NewResourceNotFoundError("export", fmt.Sprintf("%s/%s", receiverID, exportID))
+			}
+			return kv, err
+		})
+}
+
+// ListExports from the store.
+func (s *Store) ListExports(ctx context.Context, projectID int, receiverID string) (out []model.Export, err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.ListExports")
+	defer telemetry.EndSpan(span, &err)
+
+	kvs, err := s.listExportsOp(ctx, projectID, receiverID).Do(ctx, s.client)
 	if err != nil {
 		return nil, err
 	}
 
-	exports := make([]*model.Export, 0, len(resp.Kvs))
-	for _, kv := range resp.Kvs {
-		export := &model.Export{}
-		if err = json.DecodeString(string(kv.Value), export); err != nil {
-			return nil, err
-		}
-		exports = append(exports, export)
-	}
+	return kvs.Values(), nil
+}
 
-	return exports, nil
+func (s *Store) listExportsOp(_ context.Context, projectID int, receiverID string) op.ForType[op.KeyValuesT[model.Export]] {
+	exports := s.schema.Configs().Exports().InProject(projectID).InReceiver(receiverID)
+	return exports.GetAll()
+}
+
+// DeleteExport deletes an export from the store.
+// Logic errors:
+// - ResourceNotFoundError.
+func (s *Store) DeleteExport(ctx context.Context, projectID int, receiverID, exportID string) (err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.DeleteReceiver")
+	defer telemetry.EndSpan(span, &err)
+
+	_, err = s.deleteExportOp(ctx, projectID, receiverID, exportID).Do(ctx, s.client)
+	return err
+}
+
+func (s *Store) deleteExportOp(_ context.Context, projectID int, receiverID string, exportID string) op.BoolOp {
+	receivers := s.schema.Configs().Receivers().InProject(projectID).ID(receiverID)
+	return receivers.
+		Delete().
+		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
+			if !ok && err == nil {
+				return false, serviceError.NewResourceNotFoundError("export", fmt.Sprintf("%s/%s", receiverID, exportID))
+			}
+			return ok, err
+		})
 }
