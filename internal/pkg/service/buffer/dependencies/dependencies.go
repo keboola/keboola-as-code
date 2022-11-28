@@ -10,9 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/configstore"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/recordstore"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/runtimestore"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
@@ -25,9 +23,7 @@ import (
 type ForService interface {
 	dependencies.Base
 	dependencies.Public
-	ConfigStore() *configstore.Store
-	RecordStore() *recordstore.Store
-	RuntimeStore() *runtimestore.Store
+	Store() *store.Store
 }
 
 func NewServiceDeps(
@@ -96,11 +92,9 @@ func NewServiceDeps(
 	}
 
 	return &forService{
-		Base:         baseDeps,
-		Public:       publicDeps,
-		configStore:  configstore.New(logger, etcdClient, validatorInst, tracer),
-		recordStore:  recordstore.New(logger, etcdClient, validatorInst, tracer),
-		runtimeStore: runtimestore.New(logger, etcdClient, validatorInst, tracer),
+		Base:   baseDeps,
+		Public: publicDeps,
+		store:  store.New(logger, etcdClient, validatorInst, tracer),
 	}, nil
 }
 
@@ -108,19 +102,9 @@ func NewServiceDeps(
 type forService struct {
 	dependencies.Base
 	dependencies.Public
-	configStore  *configstore.Store
-	recordStore  *recordstore.Store
-	runtimeStore *runtimestore.Store
+	store *store.Store
 }
 
-func (v *forService) ConfigStore() *configstore.Store {
-	return v.configStore
-}
-
-func (v *forService) RecordStore() *recordstore.Store {
-	return v.recordStore
-}
-
-func (v *forService) RuntimeStore() *runtimestore.Store {
-	return v.runtimeStore
+func (v *forService) Store() *store.Store {
+	return v.store
 }

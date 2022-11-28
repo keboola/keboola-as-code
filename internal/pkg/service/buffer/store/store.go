@@ -1,19 +1,14 @@
-// Package configstore provides database operations for configuring receivers and exports.
-package configstore
+// Package store provides database operations for configuring receivers and exports
+// and other backend operations.
+package store
 
 import (
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
-)
-
-const (
-	MaxReceiversPerProject       = 100
-	MaxExportsPerReceiver        = 20
-	MaxMappingRevisionsPerExport = 100
 )
 
 type Store struct {

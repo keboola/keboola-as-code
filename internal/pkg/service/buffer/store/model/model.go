@@ -7,7 +7,7 @@ import (
 
 	"github.com/c2h5oh/datasize"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 

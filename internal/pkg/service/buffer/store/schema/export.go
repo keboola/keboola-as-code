@@ -3,7 +3,7 @@ package schema
 import (
 	"strconv"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )

@@ -16,10 +16,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/schema"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/recordstore"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -53,7 +53,7 @@ func (s *service) HealthCheck(dependencies.ForPublicRequest) (res string, err er
 // TODO: collect errors instead of bailing on the first one
 
 func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.Receiver, err error) {
-	ctx, store := d.RequestCtx(), d.ConfigStore()
+	ctx, str := d.RequestCtx(), d.Store()
 
 	receiver := model.Receiver{
 		ProjectID: d.ProjectID(),
@@ -134,19 +134,19 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 		}
 
 		// Persist mapping
-		err = store.CreateMapping(ctx, receiver.ProjectID, receiver.ID, export.ID, mapping)
+		err = str.CreateMapping(ctx, receiver.ProjectID, receiver.ID, export.ID, mapping)
 		if err != nil {
 			return nil, err
 		}
 
 		// Persist export
-		if err := store.CreateExport(ctx, receiver.ProjectID, receiver.ID, export); err != nil {
+		if err := str.CreateExport(ctx, receiver.ProjectID, receiver.ID, export); err != nil {
 			return nil, err
 		}
 	}
 
 	// Persist receiver
-	if err := store.CreateReceiver(ctx, receiver); err != nil {
+	if err := str.CreateReceiver(ctx, receiver); err != nil {
 		return nil, err
 	}
 	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: ReceiverID(receiver.ID)})
@@ -157,23 +157,23 @@ func (s *service) UpdateReceiver(dependencies.ForProjectRequest, *UpdateReceiver
 }
 
 func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *GetReceiverPayload) (res *Receiver, err error) {
-	ctx, store := d.RequestCtx(), d.ConfigStore()
+	ctx, str := d.RequestCtx(), d.Store()
 
 	projectID, receiverID := d.ProjectID(), payload.ReceiverID
 
-	receiver, err := store.GetReceiver(ctx, projectID, string(receiverID))
+	receiver, err := str.GetReceiver(ctx, projectID, string(receiverID))
 	if err != nil {
 		return nil, err
 	}
 
-	exportList, err := store.ListExports(ctx, projectID, string(receiverID))
+	exportList, err := str.ListExports(ctx, projectID, string(receiverID))
 	if err != nil {
 		return nil, err
 	}
 
 	exports := make([]*Export, 0, len(exportList))
 	for _, export := range exportList {
-		mapping, err := store.GetMapping(ctx, projectID, string(receiverID), export.ID)
+		mapping, err := str.GetMapping(ctx, projectID, string(receiverID), export.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -229,7 +229,7 @@ func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *GetRece
 }
 
 func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListReceiversPayload) (res *buffer.ReceiversList, err error) {
-	ctx, store := d.RequestCtx(), d.ConfigStore()
+	ctx, store := d.RequestCtx(), d.Store()
 
 	projectID := d.ProjectID()
 
@@ -309,7 +309,7 @@ func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.List
 }
 
 func (s *service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer.DeleteReceiverPayload) (err error) {
-	ctx, store := d.RequestCtx(), d.ConfigStore()
+	ctx, store := d.RequestCtx(), d.Store()
 
 	projectID, receiverID := d.ProjectID(), payload.ReceiverID
 
@@ -340,9 +340,9 @@ func (s *service) DeleteExport(dependencies.ForProjectRequest, *buffer.DeleteExp
 }
 
 func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPayload, reader io.ReadCloser) (err error) {
-	ctx, config, records, header, ip := d.RequestCtx(), d.ConfigStore(), d.RecordStore(), d.RequestHeader(), d.RequestClientIP()
+	ctx, str, header, ip := d.RequestCtx(), d.Store(), d.RequestHeader(), d.RequestClientIP()
 
-	receiver, err := config.GetReceiver(ctx, payload.ProjectID, string(payload.ReceiverID))
+	receiver, err := str.GetReceiver(ctx, payload.ProjectID, string(payload.ReceiverID))
 	if err != nil {
 		return err
 	}
@@ -359,7 +359,7 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 		return err
 	}
 
-	exports, err := config.ListExports(d.RequestCtx(), payload.ProjectID, string(payload.ReceiverID))
+	exports, err := str.ListExports(d.RequestCtx(), payload.ProjectID, string(payload.ReceiverID))
 	if err != nil {
 		return err
 	}
@@ -369,7 +369,7 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 
 	errs := errors.NewMultiError()
 	for _, e := range exports {
-		mapping, err := config.GetMapping(ctx, payload.ProjectID, string(payload.ReceiverID), e.ID)
+		mapping, err := str.GetMapping(ctx, payload.ProjectID, string(payload.ReceiverID), e.ID)
 		if err != nil {
 			return err
 		}
@@ -393,7 +393,7 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 			SliceID:    "slice",
 			ReceivedAt: receivedAt,
 		}
-		err = records.CreateRecord(ctx, record, csv)
+		err = str.CreateRecord(ctx, record, csv)
 		if err != nil {
 			errs.AppendWithPrefixf(err, `failed to create record for export "%s"`, e.ID)
 		}
@@ -409,7 +409,7 @@ func parseRequestBody(contentType string, reader io.ReadCloser) (res *orderedmap
 		))
 	}
 	// Limit read csv to 1 MB plus 1 B. If the reader fills the limit then the request is bigger than allowed.
-	limit := recordstore.MaxImportRequestSizeInBytes
+	limit := store.MaxImportRequestSizeInBytes
 	limitedReader := io.LimitReader(reader, int64(limit)+1)
 	defer func() {
 		if closeErr := reader.Close(); closeErr != nil && err == nil {

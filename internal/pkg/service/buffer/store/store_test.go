@@ -1,4 +1,4 @@
-package configstore
+package store
 
 import (
 	"testing"

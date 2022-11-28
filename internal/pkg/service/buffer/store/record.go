@@ -1,4 +1,4 @@
-package recordstore
+package store
 
 import (
 	"bytes"
@@ -7,19 +7,19 @@ import (
 
 	"github.com/c2h5oh/datasize"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (c *Store) CreateRecord(ctx context.Context, recordKey schema.RecordKey, csvData []string) (err error) {
-	tracer, client := c.tracer, c.client
+func (s *Store) CreateRecord(ctx context.Context, recordKey schema.RecordKey, csvData []string) (err error) {
+	tracer, client := s.tracer, s.client
 
 	_, span := tracer.Start(ctx, "keboola.go.buffer.recordstore.CreateRecord")
 	defer telemetry.EndSpan(span, &err)
 
-	key := recordKey.In(c.schema)
+	key := recordKey.In(s.schema)
 	csvBuffer := new(bytes.Buffer)
 	w := csv.NewWriter(csvBuffer)
 

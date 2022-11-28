@@ -8,7 +8,7 @@ import (
 	"goa.design/goa/v3/expr"
 	cors "goa.design/plugins/v3/cors/dsl"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/anytype"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/dependencies"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/genericerror"
