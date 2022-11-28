@@ -1,15 +1,15 @@
 package mapper
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMapperReceiverPayloadToModel(t *testing.T) {
@@ -93,7 +93,6 @@ func TestMapperReceiverPayloadToModel(t *testing.T) {
 `,
 		json.MustEncodeString(model, true),
 	)
-
 }
 
 func TestMapperReceiverModelToPayload(t *testing.T) {
@@ -140,7 +139,6 @@ func TestMapperReceiverModelToPayload(t *testing.T) {
 	}
 
 	payload := ReceiverPayloadFromModel("buffer.keboola.local", model)
-	fmt.Println("data", json.MustEncodeString(payload, false))
 	assert.Equal(t,
 		`{
   "ID": "receiver",

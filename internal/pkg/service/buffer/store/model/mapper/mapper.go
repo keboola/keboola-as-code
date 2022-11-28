@@ -15,9 +15,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-func ReceiverPayloadFromModel(bufferApiHost string, model *model.Receiver) *buffer.Receiver {
+func ReceiverPayloadFromModel(bufferAPIHost string, model *model.Receiver) *buffer.Receiver {
 	id := buffer.ReceiverID(model.ID)
-	url := formatReceiverUrl(bufferApiHost, model.ProjectID, model.ID, model.Secret)
+	url := formatReceiverURL(bufferAPIHost, model.ProjectID, model.ID, model.Secret)
 	exports := make([]*buffer.Export, 0, len(model.Exports))
 	for _, export := range model.Exports {
 		exports = append(exports, ExportPayloadFromModel(id, export))
@@ -192,6 +192,6 @@ func MappingFromPayload(payload *buffer.Mapping) (*model.Mapping, error) {
 	}, nil
 }
 
-func formatReceiverUrl(bufferApiHost string, projectID int, receiverID string, secret string) string {
-	return fmt.Sprintf("https://%s/v1/import/%d/%s/%s", bufferApiHost, projectID, receiverID, secret)
+func formatReceiverURL(bufferAPIHost string, projectID int, receiverID string, secret string) string {
+	return fmt.Sprintf("https://%s/v1/import/%d/%s/%s", bufferAPIHost, projectID, receiverID, secret)
 }
