@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 )
 
@@ -15,6 +17,7 @@ type keyTestCase struct{ actual, expected string }
 func TestSchema(t *testing.T) {
 	t.Parallel()
 	s := schema.New(noValidation)
+	now, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
 	cases := []keyTestCase{
 		{
 			s.Configs().Prefix(),
@@ -29,7 +32,7 @@ func TestSchema(t *testing.T) {
 			"config/receiver/123/",
 		},
 		{
-			s.Configs().Receivers().InProject(123).ID("my-receiver").Key(),
+			s.Configs().Receivers().ByKey(key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}).Key(),
 			"config/receiver/123/my-receiver",
 		},
 		{
@@ -37,15 +40,11 @@ func TestSchema(t *testing.T) {
 			"config/export/",
 		},
 		{
-			s.Configs().Exports().InProject(123).Prefix(),
-			"config/export/123/",
-		},
-		{
-			s.Configs().Exports().InProject(123).InReceiver("my-receiver").Prefix(),
+			s.Configs().Exports().InReceiver(key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}).Prefix(),
 			"config/export/123/my-receiver/",
 		},
 		{
-			s.Configs().Exports().InProject(123).InReceiver("my-receiver").ID("my-export").Key(),
+			s.Configs().Exports().ByKey(key.ExportKey{ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}, ExportID: "my-export"}).Key(),
 			"config/export/123/my-receiver/my-export",
 		},
 		{
@@ -53,19 +52,11 @@ func TestSchema(t *testing.T) {
 			"config/mapping/revision/",
 		},
 		{
-			s.Configs().Mappings().InProject(123).Prefix(),
-			"config/mapping/revision/123/",
-		},
-		{
-			s.Configs().Mappings().InProject(123).InReceiver("my-receiver").Prefix(),
-			"config/mapping/revision/123/my-receiver/",
-		},
-		{
-			s.Configs().Mappings().InProject(123).InReceiver("my-receiver").InExport("my-export").Prefix(),
+			s.Configs().Mappings().InExport(key.ExportKey{ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}}).Prefix(),
 			"config/mapping/revision/123/my-receiver/my-export/",
 		},
 		{
-			s.Configs().Mappings().InProject(123).InReceiver("my-receiver").InExport("my-export").Revision(100).Key(),
+			s.Configs().Mappings().ByKey(key.MappingKey{ExportKey: key.ExportKey{ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}}, RevisionID: 10}).Key(),
 			"config/mapping/revision/123/my-receiver/my-export/00000100",
 		},
 		{
@@ -73,28 +64,22 @@ func TestSchema(t *testing.T) {
 			"record/",
 		},
 		{
-			s.Records().InProject(123).Prefix(),
-			"record/123/",
-		},
-		{
-			s.Records().InProject(123).InReceiver("my-receiver").Prefix(),
-			"record/123/my-receiver/",
-		},
-		{
-			s.Records().InProject(123).InReceiver("my-receiver").InExport("my-export").Prefix(),
-			"record/123/my-receiver/my-export/",
-		},
-		{
-			s.Records().InProject(123).InReceiver("my-receiver").InExport("my-export").InFile("fileID").Prefix(),
-			"record/123/my-receiver/my-export/fileID/",
-		},
-		{
-			s.Records().InProject(123).InReceiver("my-receiver").InExport("my-export").InFile("fileID").InSlice("sliceID").Prefix(),
-			"record/123/my-receiver/my-export/fileID/sliceID/",
-		},
-		{
-			s.Records().InProject(123).InReceiver("my-receiver").InExport("my-export").InFile("fileID").InSlice("sliceID").ID("2022-...").Key(),
-			"record/123/my-receiver/my-export/fileID/sliceID/2022-...",
+			s.Records().ByKey(key.RecordKey{
+				ReceivedAt:   now,
+				RandomSuffix: "abcdef",
+				SliceKey: key.SliceKey{
+					SliceID: "sliceID",
+					FileID:  "fileId",
+					ExportKey: key.ExportKey{
+						ExportID: "my-export",
+						ReceiverKey: key.ReceiverKey{
+							ProjectID:  123,
+							ReceiverID: "my-receiver",
+						},
+					},
+				},
+			}).Key(),
+			"record/123/my-receiver/my-export/fileID/sliceID/" + key.FormatTime(now) + "_abcdef",
 		},
 	}
 

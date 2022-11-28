@@ -25,12 +25,12 @@ func TestSerialization_ValidationError(t *testing.T) {
 	// Test Put
 	err := pfxFailingValidation.Key("my-key").Put("value").Do(ctx, client)
 	assert.Error(t, err)
-	assert.Equal(t, `invalid etcd key "my-prefix/my-key": validation error`, err.Error())
+	assert.Equal(t, `etcd operation "put" failed: invalid value for "my-prefix/my-key": validation error`, err.Error())
 
 	// Test PutIfNotExists
 	_, err = pfxFailingValidation.Key("my-key").PutIfNotExists("value").Do(ctx, client)
 	assert.Error(t, err)
-	assert.Equal(t, `invalid etcd key "my-prefix/my-key": validation error`, err.Error())
+	assert.Equal(t, `etcd operation "put if not exists" failed: invalid value for "my-prefix/my-key": validation error`, err.Error())
 
 	// Create key
 	assert.NoError(t, pfxNoValidation.Key("my-key").Put(`"foo"`).Do(ctx, client))
@@ -38,12 +38,12 @@ func TestSerialization_ValidationError(t *testing.T) {
 	// Test Get
 	_, err = pfxFailingValidation.Key("my-key").Get().Do(ctx, client)
 	assert.Error(t, err)
-	assert.Equal(t, `invalid etcd key "my-prefix/my-key": validation error`, err.Error())
+	assert.Equal(t, `etcd operation "get one" failed: invalid value for "my-prefix/my-key": validation error`, err.Error())
 
 	// Test GetAll
 	_, err = pfxFailingValidation.GetAll().Do(ctx, client)
 	assert.Error(t, err)
-	assert.Equal(t, `invalid etcd key "my-prefix/my-key": validation error`, err.Error())
+	assert.Equal(t, `etcd operation "get all" failed: invalid value for "my-prefix/my-key": validation error`, err.Error())
 }
 
 func TestSerialization_EncodeDecodeError(t *testing.T) {
@@ -67,12 +67,12 @@ func TestSerialization_EncodeDecodeError(t *testing.T) {
 	// Test Put
 	err := pfxFailingEncode.Key("my-key").Put("value").Do(ctx, client)
 	assert.Error(t, err)
-	assert.Equal(t, `invalid etcd key "my-prefix/my-key": encode error`, err.Error())
+	assert.Equal(t, `etcd operation "put" failed: invalid value for "my-prefix/my-key": encode error`, err.Error())
 
 	// Test PutIfNotExists
 	_, err = pfxFailingEncode.Key("my-key").PutIfNotExists("value").Do(ctx, client)
 	assert.Error(t, err)
-	assert.Equal(t, `invalid etcd key "my-prefix/my-key": encode error`, err.Error())
+	assert.Equal(t, `etcd operation "put if not exists" failed: invalid value for "my-prefix/my-key": encode error`, err.Error())
 
 	// Create key
 	assert.NoError(t, pfxNoValidation.Key("my-key").Put(`"foo"`).Do(ctx, client))
@@ -80,10 +80,10 @@ func TestSerialization_EncodeDecodeError(t *testing.T) {
 	// Test Get
 	_, err = pfxFailingEncode.Key("my-key").Get().Do(ctx, client)
 	assert.Error(t, err)
-	assert.Equal(t, `invalid etcd key "my-prefix/my-key": decode error`, err.Error())
+	assert.Equal(t, `etcd operation "get one" failed: invalid value for "my-prefix/my-key": decode error`, err.Error())
 
 	// Test GetAll
 	_, err = pfxFailingEncode.GetAll().Do(ctx, client)
 	assert.Error(t, err)
-	assert.Equal(t, `invalid etcd key "my-prefix/my-key": decode error`, err.Error())
+	assert.Equal(t, `etcd operation "get all" failed: invalid value for "my-prefix/my-key": decode error`, err.Error())
 }

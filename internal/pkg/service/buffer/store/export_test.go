@@ -8,6 +8,7 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -17,19 +18,19 @@ func TestStore_CreateExport(t *testing.T) {
 
 	ctx := context.Background()
 	store := newStoreForTest(t)
-	projectID := 1000
-	receiverID := "github"
 
-	config := model.Export{
-		ID:   "github-issues",
-		Name: "Github Issues",
+	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "github"}
+	exportKey := key.ExportKey{ExportID: "github-issues", ReceiverKey: receiverKey}
+	export := model.Export{
+		ExportKey: exportKey,
+		Name:      "Github Issues",
 		ImportConditions: model.ImportConditions{
 			Count: 5,
 			Size:  datasize.MustParseString("50kB"),
 			Time:  30 * time.Minute,
 		},
 	}
-	err := store.CreateExport(ctx, projectID, receiverID, config)
+	err := store.CreateExport(ctx, export)
 	assert.NoError(t, err)
 
 	// Check keys
@@ -38,6 +39,8 @@ func TestStore_CreateExport(t *testing.T) {
 config/export/1000/github/github-issues
 -----
 {
+  "projectId": 1000,
+  "receiverId": "github",
   "exportId": "github-issues",
   "name": "Github Issues",
   "importConditions": {
@@ -55,14 +58,14 @@ func TestStore_ListExports(t *testing.T) {
 
 	ctx := context.Background()
 	store := newStoreForTest(t)
-	projectID := 1000
-	receiverID := "receiver1"
+
+	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "receiver1"}
 
 	// Create exports
 	input := []model.Export{
 		{
-			ID:   "export-1",
-			Name: "Export 1",
+			ExportKey: key.ExportKey{ExportID: "export-1", ReceiverKey: receiverKey},
+			Name:      "Export 1",
 			ImportConditions: model.ImportConditions{
 				Count: 5,
 				Size:  datasize.MustParseString("50kB"),
@@ -70,8 +73,8 @@ func TestStore_ListExports(t *testing.T) {
 			},
 		},
 		{
-			ID:   "export-2",
-			Name: "Export 2",
+			ExportKey: key.ExportKey{ExportID: "export-2", ReceiverKey: receiverKey},
+			Name:      "Export 2",
 			ImportConditions: model.ImportConditions{
 				Count: 5,
 				Size:  datasize.MustParseString("50kB"),
@@ -81,12 +84,12 @@ func TestStore_ListExports(t *testing.T) {
 	}
 
 	for _, e := range input {
-		err := store.CreateExport(ctx, projectID, receiverID, e)
+		err := store.CreateExport(ctx, e)
 		assert.NoError(t, err)
 	}
 
 	// List
-	output, err := store.ListExports(ctx, projectID, receiverID)
+	output, err := store.ListExports(ctx, receiverKey)
 	assert.NoError(t, err)
 	assert.Equal(t, input, output)
 
@@ -96,6 +99,8 @@ func TestStore_ListExports(t *testing.T) {
 config/export/1000/receiver1/export-1
 -----
 {
+  "projectId": 1000,
+  "receiverId": "receiver1",
   "exportId": "export-1",
   "name": "Export 1",
   "importConditions": {
@@ -110,6 +115,8 @@ config/export/1000/receiver1/export-1
 config/export/1000/receiver1/export-2
 -----
 {
+  "projectId": 1000,
+  "receiverId": "receiver1",
   "exportId": "export-2",
   "name": "Export 2",
   "importConditions": {
