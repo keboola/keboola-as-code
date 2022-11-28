@@ -49,6 +49,22 @@ func ValueToLiteral(v interface{}) ast.Node {
 		return &ast.LiteralNumber{OriginalString: cast.ToString(v)}
 	case float64:
 		return &ast.LiteralNumber{OriginalString: cast.ToString(v)}
+	case []any:
+		elements := make([]ast.CommaSeparatedExpr, 0)
+		for _, aVal := range v {
+			elements = append(elements, ast.CommaSeparatedExpr{Expr: ValueToLiteral(aVal)})
+		}
+		return &ast.Array{Elements: elements}
+	case map[string]any:
+		fields := make(ast.DesugaredObjectFields, 0)
+		for mKey, mVal := range v {
+			fields = append(fields, ast.DesugaredObjectField{
+				Hide: ast.ObjectFieldInherit,
+				Name: ValueToLiteral(mKey),
+				Body: ValueToLiteral(mVal),
+			})
+		}
+		return &ast.DesugaredObject{Fields: fields}
 	default:
 		return &ast.LiteralString{Value: cast.ToString(v), Kind: ast.StringDouble}
 	}
