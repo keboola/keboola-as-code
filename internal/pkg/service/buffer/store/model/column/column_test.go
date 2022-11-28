@@ -144,3 +144,32 @@ func TestColumn_Template_Headers(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "\"gzip\"\n", val)
 }
+
+func TestColumn_Template_UndefinedKeyErr(t *testing.T) {
+	t.Parallel()
+
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `headers['Invalid-Key']`}
+
+	body := orderedmap.New()
+	header := http.Header{}
+
+	_, err := c.CsvValue(column.ImportCtx{Body: body, Header: header})
+	assert.Error(t, err, "Field does not exist: Invalid-Key")
+}
+
+func TestColumn_Template_UndefinedKeyNil(t *testing.T) {
+	t.Parallel()
+
+	c := column.Template{
+		Language:               column.TemplateLanguageJsonnet,
+		Content:                `headers['Invalid-Key']`,
+		UndefinedValueStrategy: column.UndefinedValueStrategyNull,
+	}
+
+	body := orderedmap.New()
+	header := http.Header{}
+
+	val, err := c.CsvValue(column.ImportCtx{Body: body, Header: header})
+	assert.NoError(t, err)
+	assert.Equal(t, "", val)
+}

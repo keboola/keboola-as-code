@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -228,11 +229,14 @@ func (t Template) CsvValue(importCtx ImportCtx) (string, error) {
 		ctx.GlobalBinding("currentDatetime", jsonnet.ValueToLiteral(importCtx.DateTime.Format(time.RFC3339)))
 		jsonStr, err := jsonnet.Evaluate(t.Content, ctx)
 		if err != nil {
+			if strings.HasPrefix(err.Error(), "jsonnet error: RUNTIME ERROR: Field does not exist") {
+				if t.UndefinedValueStrategy == UndefinedValueStrategyNull {
+					return "", nil
+				}
+				return "", errors.Errorf(strings.TrimLeft(err.Error(), "jsonnet error: RUNTIME ERROR: "))
+			}
 			return "", err
 		}
-
-		// nolint:godox
-		// TODO t.UndefinedValueStrategy
 
 		return jsonStr, nil
 	}
