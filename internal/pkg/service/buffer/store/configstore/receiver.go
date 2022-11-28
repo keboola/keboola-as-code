@@ -23,8 +23,8 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 	count, err := receivers.Count().Do(ctx, s.client)
 	if err != nil {
 		return err
-	} else if count >= MaxExportsPerReceiver {
-		return serviceError.NewCountLimitReachedError("receiver", MaxExportsPerReceiver, "project")
+	} else if count >= MaxReceiversPerProject {
+		return serviceError.NewCountLimitReachedError("receiver", MaxReceiversPerProject, "project")
 	}
 
 	_, err = op.MergeToTxn(s.createReceiverOp(ctx, receiver)).Do(ctx, s.client)
