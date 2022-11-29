@@ -81,6 +81,16 @@ func TestSchema(t *testing.T) {
 			}).Key(),
 			"record/123/my-receiver/my-export/fileID/sliceID/" + key.FormatTime(now) + "_abcdef",
 		},
+		{
+			s.Secrets().Tokens().InExport(key.ExportKey{
+				ReceiverKey: key.ReceiverKey{
+					ProjectID:  123,
+					ReceiverID: "my-receiver",
+				},
+				ExportID: "my-export",
+			}).Key(),
+			"secret/export/token/123/my-receiver/my-export",
+		},
 	}
 
 	for i, c := range cases {

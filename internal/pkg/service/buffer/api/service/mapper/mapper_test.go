@@ -19,6 +19,7 @@ func TestReceiverModelFromPayload(t *testing.T) {
 
 	projectID := 1000
 	secret := idgenerator.ReceiverSecret()
+	token := "test"
 
 	payload := buffer.CreateReceiverPayload{
 		StorageAPIToken: "",
@@ -103,11 +104,12 @@ func TestReceiverModelFromPayload(t *testing.T) {
 						},
 					},
 				},
+				Token: model.Token("test"),
 			},
 		},
 	}
 
-	model, err := mapper.ReceiverModelFromPayload(projectID, secret, payload)
+	model, err := mapper.ReceiverModelFromPayload(projectID, token, secret, payload)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, model)
 }
@@ -164,6 +166,7 @@ func TestReceiverPayloadFromModel(t *testing.T) {
 						},
 					},
 				},
+				Token: model.Token("test"),
 			},
 		},
 	}

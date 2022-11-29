@@ -26,6 +26,7 @@ type Receiver struct {
 type Export struct {
 	ExportBase
 	Mapping
+	Token
 }
 
 type ReceiverBase struct {
@@ -39,6 +40,8 @@ type ExportBase struct {
 	Name             string           `json:"name" validate:"required,min=1,max=40"`
 	ImportConditions ImportConditions `json:"importConditions" validate:"required"`
 }
+
+type Token string
 
 type Mapping struct {
 	key.MappingKey

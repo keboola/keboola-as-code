@@ -81,7 +81,7 @@ func (m Mapper) MappingPayloadFromModel(model model.Mapping) buffer.Mapping {
 	}
 }
 
-func (m Mapper) ReceiverModelFromPayload(projectID int, secret string, payload buffer.CreateReceiverPayload) (r model.Receiver, err error) {
+func (m Mapper) ReceiverModelFromPayload(projectID int, sapiToken string, secret string, payload buffer.CreateReceiverPayload) (r model.Receiver, err error) {
 	receiverBase := m.ReceiverBaseFromPayload(projectID, secret, payload)
 
 	exports := make([]model.Export, 0, len(payload.Exports))
@@ -100,6 +100,7 @@ func (m Mapper) ReceiverModelFromPayload(projectID int, secret string, payload b
 		exports = append(exports, model.Export{
 			ExportBase: export,
 			Mapping:    mapping,
+			Token:      model.Token(sapiToken),
 		})
 	}
 
