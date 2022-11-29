@@ -164,22 +164,13 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 		return err
 	}
 
-	exports, err := str.ListExports(d.RequestCtx(), receiver.ReceiverKey)
-	if err != nil {
-		return err
-	}
-
 	importCtx := column.NewImportCtx(data, header, ip)
 	receivedAt := time.Now()
 
 	errs := errors.NewMultiError()
-	for _, e := range exports {
-		mapping, err := str.GetLatestMapping(ctx, e.ExportKey)
-		if err != nil {
-			return err
-		}
+	for _, e := range receiver.Exports {
 		csv := make([]string, 0)
-		for _, c := range mapping.Columns {
+		for _, c := range e.Mapping.Columns {
 			csvValue, err := c.CsvValue(importCtx)
 			if err != nil {
 				return err
