@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
@@ -26,6 +27,7 @@ type Receiver struct {
 type Export struct {
 	ExportBase
 	Mapping
+	Token
 }
 
 type ReceiverBase struct {
@@ -39,6 +41,8 @@ type ExportBase struct {
 	Name             string           `json:"name" validate:"required,min=1,max=40"`
 	ImportConditions ImportConditions `json:"importConditions" validate:"required"`
 }
+
+type Token = storageapi.Token
 
 type Mapping struct {
 	key.MappingKey
