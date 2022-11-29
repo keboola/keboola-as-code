@@ -13,8 +13,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 )
 
-func TestMapperReceiverPayloadToModel(t *testing.T) {
+func TestReceiverModelFromPayload(t *testing.T) {
 	t.Parallel()
+
+	mapper := NewMapper("buffer.keboola.local")
 
 	payload := buffer.CreateReceiverPayload{
 		StorageAPIToken: "",
@@ -52,7 +54,7 @@ func TestMapperReceiverPayloadToModel(t *testing.T) {
 		},
 	}
 
-	model, err := ReceiverModelFromPayload(1000, payload)
+	model, err := mapper.ReceiverModelFromPayload(1000, payload)
 	assert.NoError(t, err)
 	wildcards.Assert(t,
 		`{
@@ -98,8 +100,10 @@ func TestMapperReceiverPayloadToModel(t *testing.T) {
 	)
 }
 
-func TestMapperReceiverModelToPayload(t *testing.T) {
+func TestReceiverPayloadFromModel(t *testing.T) {
 	t.Parallel()
+
+	mapper := NewMapper("buffer.keboola.local")
 
 	receiverKey := key.ReceiverKey{
 		ProjectID:  1000,
@@ -153,7 +157,7 @@ func TestMapperReceiverModelToPayload(t *testing.T) {
 		},
 	}
 
-	payload := ReceiverPayloadFromModel("buffer.keboola.local", model)
+	payload := mapper.ReceiverPayloadFromModel(model)
 	assert.Equal(t,
 		`{
   "ID": "receiver",
