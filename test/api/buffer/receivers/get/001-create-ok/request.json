@@ -22,8 +22,7 @@
               "template": {
                 "language": "jsonnet",
                 "undefinedValueStrategy": "error",
-                "content": "body.key+\":\"+body.value",
-                "dataType": "STRING"
+                "content": "body.key+\":\"+body.value"
               }
             }
           ]

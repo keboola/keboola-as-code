@@ -66,7 +66,6 @@ func (m Mapper) MappingPayloadFromModel(model model.Mapping) buffer.Mapping {
 				Language:               v.Language,
 				UndefinedValueStrategy: v.UndefinedValueStrategy,
 				Content:                v.Content,
-				DataType:               v.DataType,
 			}
 		}
 		typ, _ := column.ColumnToType(c)
@@ -191,7 +190,6 @@ func (m Mapper) MappingFromPayload(exportKey key.ExportKey, revisionID int, payl
 			}
 			template.Language = columnData.Template.Language
 			template.UndefinedValueStrategy = columnData.Template.UndefinedValueStrategy
-			template.DataType = columnData.Template.DataType
 			template.Content = columnData.Template.Content
 			c = template
 		}

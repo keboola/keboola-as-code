@@ -446,10 +446,6 @@ var Template = Type("Template", func() {
 		MinLength(1)
 		MaxLength(4096)
 	})
-	Attribute("dataType", String, func() {
-		Enum("STRING", "INTEGER", "NUMERIC", "FLOAT", "BOOLEAN", "DATE", "TIMESTAMP")
-		Default("STRING")
-	})
 	Required("language", "undefinedValueStrategy", "content")
 })
 
@@ -585,7 +581,6 @@ func exampleTemplateMapping() map[string]interface{} {
 		"language":               "jsonnet",
 		"undefinedValueStrategy": "error",
 		"content":                `body.foo + "-" + body.bar`,
-		"dataType":               "STRING",
 	}
 }
 

@@ -5,10 +5,13 @@ import (
 	"net"
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
+	"github.com/google/go-jsonnet/ast"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -30,6 +33,7 @@ type (
 
 const (
 	IDPlaceholder               = "<<~~id~~>>"
+	TemplateLanguageJsonnet     = "jsonnet"
 	UndefinedValueStrategyNull  = "null"
 	UndefinedValueStrategyError = "error"
 )
@@ -38,7 +42,6 @@ type Template struct {
 	Language               string `json:"language" validate:"required,oneof=jsonnet"`
 	UndefinedValueStrategy string `json:"undefinedValueStrategy" validate:"required,oneof=null error"`
 	Content                string `json:"content" validate:"required,min=1,max=4096"`
-	DataType               string `json:"dataType" validate:"required,oneof=STRING INTEGER NUMERIC FLOAT BOOLEAN DATE TIMESTAMP"`
 }
 
 const (
@@ -213,8 +216,117 @@ func (Header) CsvValue(importCtx ImportCtx) (string, error) {
 	return string(header), nil
 }
 
-func (Template) CsvValue(_ ImportCtx) (string, error) {
-	return "", nil
+func (t Template) CsvValue(importCtx ImportCtx) (string, error) {
+	if t.Language == TemplateLanguageJsonnet {
+		ctx := jsonnet.NewContext()
+		ctx.NativeFunctionWithAlias(getBodyPath(t, importCtx.Body))
+		ctx.NativeFunctionWithAlias(getBody(importCtx.Body))
+
+		headers := orderedmap.New()
+		for k := range importCtx.Header {
+			headers.Set(k, importCtx.Header.Get(k))
+		}
+		ctx.NativeFunctionWithAlias(getHeader(t, headers))
+		ctx.NativeFunctionWithAlias(getHeaders(headers))
+
+		ctx.GlobalBinding("currentDatetime", jsonnet.ValueToLiteral(importCtx.DateTime.Format(time.RFC3339)))
+
+		res, err := jsonnet.Evaluate(t.Content, ctx)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimRight(res, "\n"), nil
+	}
+	return "", errors.Errorf(`unsupported language "%s", use jsonnet instead`, t.Language)
+}
+
+func getBodyPath(t Template, om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
+	return &jsonnet.NativeFunction{
+		Name:   "BodyPath",
+		Params: ast.Identifiers{"path"},
+		Func: func(params []interface{}) (any, error) {
+			if len(params) > 1 {
+				return nil, errors.Errorf("one parameter expected, found %d", len(params))
+			} else if path, ok := params[0].(string); !ok {
+				return nil, errors.New("parameter must be a string")
+			} else {
+				val, found, err := om.GetNested(path)
+				if !found {
+					if t.UndefinedValueStrategy == UndefinedValueStrategyNull {
+						return nil, nil
+					} else {
+						return nil, errors.Errorf(`path "%s" not found in the body'`, path)
+					}
+				}
+				if err != nil {
+					return nil, err
+				}
+
+				return valueToJSONType(val), nil
+			}
+		},
+	}
+}
+
+func getBody(om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
+	return &jsonnet.NativeFunction{
+		Name: "Body",
+		Func: func(params []interface{}) (any, error) {
+			return valueToJSONType(om), nil
+		},
+	}
+}
+
+func valueToJSONType(in any) any {
+	if v, ok := in.(*orderedmap.OrderedMap); ok {
+		m := make(map[string]any)
+		for _, k := range v.Keys() {
+			m[k], _ = v.Get(k)
+			m[k] = valueToJSONType(m[k])
+		}
+		return m
+	}
+	if v, ok := in.([]any); ok {
+		for i, arrVal := range v {
+			v[i] = valueToJSONType(arrVal)
+		}
+		return v
+	}
+
+	return in
+}
+
+func getHeader(t Template, om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
+	return &jsonnet.NativeFunction{
+		Name:   "Header",
+		Params: ast.Identifiers{"path"},
+		Func: func(params []interface{}) (any, error) {
+			if len(params) != 1 {
+				return nil, errors.Errorf("one parameter expected, found %d", len(params))
+			} else if key, ok := params[0].(string); !ok {
+				return nil, errors.New("parameter must be a string")
+			} else {
+				val, found := om.Get(http.CanonicalHeaderKey(key))
+				if !found {
+					if t.UndefinedValueStrategy == UndefinedValueStrategyNull {
+						return nil, nil
+					} else {
+						return nil, errors.Errorf(`header "%s" not found'`, http.CanonicalHeaderKey(key))
+					}
+				}
+				return val, nil
+			}
+		},
+	}
+}
+
+func getHeaders(om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
+	return &jsonnet.NativeFunction{
+		Name: "Headers",
+		Func: func(params []interface{}) (any, error) {
+			return valueToJSONType(om), nil
+		},
+	}
 }
 
 type dummyColumn struct{}

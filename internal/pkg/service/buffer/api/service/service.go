@@ -124,7 +124,6 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 				}
 				template.Language = columnData.Template.Language
 				template.UndefinedValueStrategy = columnData.Template.UndefinedValueStrategy
-				template.DataType = columnData.Template.DataType
 				template.Content = columnData.Template.Content
 				c = template
 			}
@@ -385,7 +384,6 @@ func mapExportsToPayload(ctx context.Context, str *store.Store, exportList []mod
 					Language:               v.Language,
 					UndefinedValueStrategy: v.UndefinedValueStrategy,
 					Content:                v.Content,
-					DataType:               v.DataType,
 				}
 			}
 			typ, _ := column.ColumnToType(c)
