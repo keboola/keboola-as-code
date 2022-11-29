@@ -234,12 +234,9 @@ func (t Template) CsvValue(importCtx ImportCtx) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if res == "null\n" {
-			return "", nil
-		}
 		return strings.TrimRight(res, "\n"), nil
 	}
-	return "", nil
+	return "", errors.Errorf(`unsupported language "%s", use jsonnet instead`, t.Language)
 }
 
 func getNestedBody(name string, t Template, om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
@@ -247,29 +244,50 @@ func getNestedBody(name string, t Template, om *orderedmap.OrderedMap) *jsonnet.
 		Name:   name,
 		Params: ast.Identifiers{"path"},
 		Func: func(params []interface{}) (any, error) {
-			if len(params) != 1 {
+			if len(params) > 1 {
 				return nil, errors.Errorf("one parameter expected, found %d", len(params))
 			} else if path, ok := params[0].(string); !ok {
 				return nil, errors.New("parameter must be a string")
 			} else {
+				if len(path) == 0 {
+					// Return full body
+					return valueToJSONType(om), nil
+				}
 				val, found, err := om.GetNested(path)
 				if !found {
 					if t.UndefinedValueStrategy == UndefinedValueStrategyNull {
 						return nil, nil
 					} else {
-						return nil, errors.Errorf(`Path "%s" not found in the body'`, path)
+						return nil, errors.Errorf(`path "%s" not found in the body'`, path)
 					}
 				}
 				if err != nil {
 					return nil, err
 				}
-				if v, ok := val.(*orderedmap.OrderedMap); ok {
-					return v.ToMap(), nil
-				}
-				return val, nil
+
+				return valueToJSONType(val), nil
 			}
 		},
 	}
+}
+
+func valueToJSONType(in any) any {
+	if v, ok := in.(*orderedmap.OrderedMap); ok {
+		m := make(map[string]any)
+		for _, k := range v.Keys() {
+			m[k], _ = v.Get(k)
+			m[k] = valueToJSONType(m[k])
+		}
+		return m
+	}
+	if v, ok := in.([]any); ok {
+		for i, arrVal := range v {
+			v[i] = valueToJSONType(arrVal)
+		}
+		return v
+	}
+
+	return in
 }
 
 func getHeader(name string, t Template, om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
@@ -282,12 +300,16 @@ func getHeader(name string, t Template, om *orderedmap.OrderedMap) *jsonnet.Nati
 			} else if key, ok := params[0].(string); !ok {
 				return nil, errors.New("parameter must be a string")
 			} else {
+				if len(key) == 0 {
+					// Return all headers
+					return valueToJSONType(om), nil
+				}
 				val, found := om.Get(http.CanonicalHeaderKey(key))
 				if !found {
 					if t.UndefinedValueStrategy == UndefinedValueStrategyNull {
 						return nil, nil
 					} else {
-						return nil, errors.Errorf(`Header "%s" not found'`, http.CanonicalHeaderKey(key))
+						return nil, errors.Errorf(`header "%s" not found'`, http.CanonicalHeaderKey(key))
 					}
 				}
 				return val, nil
