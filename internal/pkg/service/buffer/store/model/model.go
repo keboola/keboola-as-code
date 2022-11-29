@@ -7,6 +7,7 @@ import (
 
 	"github.com/c2h5oh/datasize"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -41,7 +42,7 @@ type ExportBase struct {
 	ImportConditions ImportConditions `json:"importConditions" validate:"required"`
 }
 
-type Token string
+type Token storageapi.Token
 
 type Mapping struct {
 	key.MappingKey
