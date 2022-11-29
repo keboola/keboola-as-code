@@ -141,4 +141,9 @@ config/mapping/revision/1000/receiver1/export1/00000010
 }
 >>>>>
 `)
+
+	_, err = store.deleteAllMappingsOp(ctx, exportKey).Do(ctx, store.client)
+	assert.NoError(t, err)
+
+	etcdhelper.AssertKVs(t, store.client, ``)
 }
