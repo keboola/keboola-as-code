@@ -219,22 +219,28 @@ func (Header) CsvValue(importCtx ImportCtx) (string, error) {
 func (t Template) CsvValue(importCtx ImportCtx) (string, error) {
 	if t.Language == TemplateLanguageJsonnet {
 		ctx := jsonnet.NewContext()
-		ctx.NativeFunctionWithAlias(getNestedMap("Body", t, importCtx.Body))
+		ctx.NativeFunctionWithAlias(getNestedBody("Body", t, importCtx.Body))
 
 		headers := orderedmap.New()
 		for k := range importCtx.Header {
 			headers.Set(k, importCtx.Header.Get(k))
 		}
-		ctx.NativeFunctionWithAlias(getNestedMap("Headers", t, headers))
+		ctx.NativeFunctionWithAlias(getHeader("Headers", t, headers))
 
 		ctx.GlobalBinding("currentDatetime", jsonnet.ValueToLiteral(importCtx.DateTime.Format(time.RFC3339)))
 
-		return jsonnet.Evaluate(t.Content, ctx)
+		res, err := jsonnet.Evaluate(t.Content, ctx)
+		if err != nil {
+			return "", err
+		}
+		if res == "null\n" {
+			return "\n", nil
+		}
 	}
 	return "", nil
 }
 
-func getNestedMap(name string, t Template, om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
+func getNestedBody(name string, t Template, om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   name,
 		Params: ast.Identifiers{"path"},
@@ -245,11 +251,42 @@ func getNestedMap(name string, t Template, om *orderedmap.OrderedMap) *jsonnet.N
 				return nil, errors.New("parameter must be a string")
 			} else {
 				val, found, err := om.GetNested(path)
-				if !found && t.UndefinedValueStrategy == UndefinedValueStrategyNull {
-					return nil, nil
+				if !found {
+					if t.UndefinedValueStrategy == UndefinedValueStrategyNull {
+						return nil, nil
+					} else {
+						return nil, errors.Errorf(`Path "%s" not found in the body'`, path)
+					}
 				}
 				if err != nil {
 					return nil, err
+				}
+				if v, ok := val.(*orderedmap.OrderedMap); ok {
+					return v.ToMap(), nil
+				}
+				return val, nil
+			}
+		},
+	}
+}
+
+func getHeader(name string, t Template, om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
+	return &jsonnet.NativeFunction{
+		Name:   name,
+		Params: ast.Identifiers{"path"},
+		Func: func(params []interface{}) (any, error) {
+			if len(params) != 1 {
+				return nil, errors.Errorf("one parameter expected, found %d", len(params))
+			} else if key, ok := params[0].(string); !ok {
+				return nil, errors.New("parameter must be a string")
+			} else {
+				val, found := om.Get(http.CanonicalHeaderKey(key))
+				if !found {
+					if t.UndefinedValueStrategy == UndefinedValueStrategyNull {
+						return nil, nil
+					} else {
+						return nil, errors.Errorf(`Header "%s" not found'`, http.CanonicalHeaderKey(key))
+					}
 				}
 				return val, nil
 			}

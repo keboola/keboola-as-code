@@ -111,7 +111,7 @@ func TestColumn_Header(t *testing.T) {
 	assert.Equal(t, string(headerMarshalled), val)
 }
 
-func TestColumn_Template_Body(t *testing.T) {
+func TestColumn_Template_Body_Scalar(t *testing.T) {
 	t.Parallel()
 
 	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1.key2')"}
@@ -131,6 +131,42 @@ func TestColumn_Template_Body(t *testing.T) {
 	assert.Equal(t, "\"val2\"\n", val)
 }
 
+func TestColumn_Template_Body_Object(t *testing.T) {
+	t.Parallel()
+
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1')"}
+
+	val1 := orderedmap.New()
+	val1.Set("key2", "val2")
+	body := orderedmap.New()
+	body.Set("key1", val1)
+	body.Set("key3", "val3")
+
+	header := http.Header{}
+	header.Set("Content-Type", "application/json")
+	header.Set("Content-Encoding", "gzip")
+
+	val, err := c.CsvValue(column.ImportCtx{Body: body, Header: header})
+	assert.NoError(t, err)
+	assert.Equal(t, "{\n  \"key2\": \"val2\"\n}\n", val)
+}
+
+func TestColumn_Template_Body_UndefinedKeyErr(t *testing.T) {
+	t.Parallel()
+
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Body('key1.invalid')`}
+
+	val1 := orderedmap.New()
+	val1.Set("key2", "val2")
+	body := orderedmap.New()
+	body.Set("key1", val1)
+	body.Set("key3", "val3")
+	header := http.Header{}
+
+	_, err := c.CsvValue(column.ImportCtx{Body: body, Header: header})
+	assert.ErrorContains(t, err, `Path "key1.invalid" not found in the body`)
+}
+
 func TestColumn_Template_Headers(t *testing.T) {
 	t.Parallel()
 
@@ -147,16 +183,32 @@ func TestColumn_Template_Headers(t *testing.T) {
 	assert.Equal(t, "\"gzip\"\n", val)
 }
 
-func TestColumn_Template_UndefinedKeyErr(t *testing.T) {
+func TestColumn_Template_Headers_Case(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Headers('Invalid-Key')`}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Headers('CONTENT-ENCODING')`}
+
+	body := orderedmap.New()
+
+	header := http.Header{}
+	header.Set("Content-Type", "application/json")
+	header.Set("Content-Encoding", "gzip")
+
+	val, err := c.CsvValue(column.ImportCtx{Body: body, Header: header})
+	assert.NoError(t, err)
+	assert.Equal(t, "\"gzip\"\n", val)
+}
+
+func TestColumn_Template_Headers_UndefinedKeyErr(t *testing.T) {
+	t.Parallel()
+
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Headers('Invalid-KEY')`}
 
 	body := orderedmap.New()
 	header := http.Header{}
 
 	_, err := c.CsvValue(column.ImportCtx{Body: body, Header: header})
-	assert.Error(t, err, "Field does not exist: Invalid-Key")
+	assert.ErrorContains(t, err, `Header "Invalid-Key" not found`)
 }
 
 func TestColumn_Template_UndefinedKeyNil(t *testing.T) {
