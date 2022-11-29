@@ -3,11 +3,12 @@ package store
 import (
 	"context"
 
+	etcd "go.etcd.io/etcd/client/v3"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	etcd "go.etcd.io/etcd/client/v3"
 )
 
 func (s *Store) createTokenOp(_ context.Context, exportKey key.ExportKey, token model.Token) op.BoolOp {
@@ -45,7 +46,7 @@ func (s *Store) deleteTokenOp(_ context.Context, exportKey key.ExportKey) op.Boo
 		InExport(exportKey).
 		Delete().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, result bool, err error) (bool, error) {
-			if result == false && err == nil {
+			if !result && err == nil {
 				return false, serviceError.NewResourceNotFoundError("token", exportKey.String())
 			}
 			return result, err
