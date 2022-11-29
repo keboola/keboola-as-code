@@ -30,7 +30,11 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 
 	ops := []op.Op{s.createReceiverBaseOp(ctx, receiver.ReceiverBase)}
 	for _, export := range receiver.Exports {
-		ops = append(ops, s.createExportBaseOp(ctx, export.ExportBase))
+		ops = append(ops,
+			s.createExportBaseOp(ctx, export.ExportBase),
+			s.createMappingOp(ctx, export.Mapping),
+			s.createTokenOp(ctx, export.ExportKey, export.Token),
+		)
 	}
 
 	_, err = op.MergeToTxn(ops...).Do(ctx, s.client)
