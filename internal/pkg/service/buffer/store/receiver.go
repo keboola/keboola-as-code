@@ -16,7 +16,7 @@ import (
 // Logic errors:
 // - CountLimitReachedError
 // - ResourceAlreadyExistsError.
-func (s *Store) CreateReceiver(ctx context.Context, receiver model.ReceiverBase) (err error) {
+func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.CreateReceiver")
 	defer telemetry.EndSpan(span, &err)
 
@@ -28,11 +28,16 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.ReceiverBase)
 		return serviceError.NewCountLimitReachedError("receiver", MaxReceiversPerProject, "project")
 	}
 
-	_, err = op.MergeToTxn(s.createReceiverOp(ctx, receiver)).Do(ctx, s.client)
+	ops := []op.Op{s.createReceiverBaseOp(ctx, receiver.ReceiverBase)}
+	for _, export := range receiver.Exports {
+		ops = append(ops, s.createExportBaseOp(ctx, export.ExportBase))
+	}
+
+	_, err = op.MergeToTxn(ops...).Do(ctx, s.client)
 	return err
 }
 
-func (s *Store) createReceiverOp(_ context.Context, receiver model.ReceiverBase) op.BoolOp {
+func (s *Store) createReceiverBaseOp(_ context.Context, receiver model.ReceiverBase) op.BoolOp {
 	return s.schema.
 		Configs().
 		Receivers().
@@ -49,19 +54,26 @@ func (s *Store) createReceiverOp(_ context.Context, receiver model.ReceiverBase)
 // GetReceiver fetches a receiver from the store.
 // Logic errors:
 // - ResourceNotFoundError.
-func (s *Store) GetReceiver(ctx context.Context, receiverKey key.ReceiverKey) (r model.ReceiverBase, err error) {
+func (s *Store) GetReceiver(ctx context.Context, receiverKey key.ReceiverKey) (r model.Receiver, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetReceiver")
 	defer telemetry.EndSpan(span, &err)
 
-	kv, err := s.getReceiverOp(ctx, receiverKey).Do(ctx, s.client)
+	receiverBase, err := s.getReceiverBaseOp(ctx, receiverKey).Do(ctx, s.client)
 	if err != nil {
-		return model.ReceiverBase{}, err
+		return model.Receiver{}, err
+	}
+	exports, err := s.ListExports(ctx, receiverKey)
+	if err != nil {
+		return model.Receiver{}, err
 	}
 
-	return kv.Value, nil
+	return model.Receiver{
+		ReceiverBase: receiverBase.Value,
+		Exports:      exports,
+	}, nil
 }
 
-func (s *Store) getReceiverOp(_ context.Context, receiverKey key.ReceiverKey) op.ForType[*op.KeyValueT[model.ReceiverBase]] {
+func (s *Store) getReceiverBaseOp(_ context.Context, receiverKey key.ReceiverKey) op.ForType[*op.KeyValueT[model.ReceiverBase]] {
 	return s.schema.
 		Configs().
 		Receivers().
@@ -76,19 +88,33 @@ func (s *Store) getReceiverOp(_ context.Context, receiverKey key.ReceiverKey) op
 }
 
 // ListReceivers from the store.
-func (s *Store) ListReceivers(ctx context.Context, projectID int) (r []model.ReceiverBase, err error) {
+// Logic errors:
+// - ResourceNotFoundError.
+func (s *Store) ListReceivers(ctx context.Context, projectID int) (r []model.Receiver, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.ListReceivers")
 	defer telemetry.EndSpan(span, &err)
 
-	kvs, err := s.listReceiversOp(ctx, projectID).Do(ctx, s.client)
+	receiverKvs, err := s.listReceiversBaseOp(ctx, projectID).Do(ctx, s.client)
 	if err != nil {
 		return nil, err
 	}
 
-	return kvs.Values(), nil
+	receivers := make([]model.Receiver, 0, len(receiverKvs))
+	for _, receiver := range receiverKvs {
+		exports, err := s.ListExports(ctx, receiver.Value.ReceiverKey)
+		if err != nil {
+			return nil, err
+		}
+		receivers = append(receivers, model.Receiver{
+			ReceiverBase: receiver.Value,
+			Exports:      exports,
+		})
+	}
+
+	return receivers, nil
 }
 
-func (s *Store) listReceiversOp(_ context.Context, projectID int) op.ForType[op.KeyValuesT[model.ReceiverBase]] {
+func (s *Store) listReceiversBaseOp(_ context.Context, projectID int) op.ForType[op.KeyValuesT[model.ReceiverBase]] {
 	receivers := s.schema.Configs().Receivers().InProject(projectID)
 	return receivers.GetAll(etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
 }
@@ -100,11 +126,14 @@ func (s *Store) DeleteReceiver(ctx context.Context, receiverKey key.ReceiverKey)
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.DeleteReceiver")
 	defer telemetry.EndSpan(span, &err)
 
-	_, err = s.deleteReceiverOp(ctx, receiverKey).Do(ctx, s.client)
+	_, err = op.MergeToTxn(
+		s.deleteReceiverBaseOp(ctx, receiverKey),
+		s.deleteExportBaseListOp(ctx, receiverKey),
+	).Do(ctx, s.client)
 	return err
 }
 
-func (s *Store) deleteReceiverOp(_ context.Context, receiverKey key.ReceiverKey) op.BoolOp {
+func (s *Store) deleteReceiverBaseOp(_ context.Context, receiverKey key.ReceiverKey) op.BoolOp {
 	return s.schema.
 		Configs().
 		Receivers().
