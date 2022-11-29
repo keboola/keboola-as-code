@@ -96,3 +96,9 @@
   "secret": "%s"
 }
 >>>>>
+
+<<<<<
+/secret/export/token/9361/my-receiver-with-exports/my-export-1
+-----
+%A
+>>>>>
