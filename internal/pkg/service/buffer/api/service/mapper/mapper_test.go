@@ -3,10 +3,9 @@ package mapper
 import (
 	"testing"
 
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -17,6 +16,9 @@ func TestReceiverModelFromPayload(t *testing.T) {
 	t.Parallel()
 
 	mapper := NewMapper("buffer.keboola.local")
+
+	projectID := 1000
+	secret := idgenerator.ReceiverSecret()
 
 	payload := buffer.CreateReceiverPayload{
 		StorageAPIToken: "",
@@ -54,50 +56,60 @@ func TestReceiverModelFromPayload(t *testing.T) {
 		},
 	}
 
-	model, err := mapper.ReceiverModelFromPayload(1000, payload)
+	receiverKey := key.ReceiverKey{
+		ProjectID:  projectID,
+		ReceiverID: "receiver",
+	}
+	exportKey := key.ExportKey{
+		ReceiverKey: receiverKey,
+		ExportID:    "export",
+	}
+	mappingKey := key.MappingKey{
+		ExportKey:  exportKey,
+		RevisionID: 1,
+	}
+	expected := model.Receiver{
+		ReceiverBase: model.ReceiverBase{
+			ReceiverKey: receiverKey,
+			Name:        "Receiver",
+			Secret:      secret,
+		},
+		Exports: []model.Export{
+			{
+				ExportBase: model.ExportBase{
+					ExportKey: exportKey,
+					Name:      "Export",
+					ImportConditions: model.ImportConditions{
+						Count: 1000,
+						Size:  104857600,
+						Time:  180_000_000_000,
+					},
+				},
+				Mapping: model.Mapping{
+					MappingKey: mappingKey,
+					TableID: model.TableID{
+						Stage:  model.TableStageIn,
+						Bucket: "bucket",
+						Table:  "table",
+					},
+					Incremental: false,
+					Columns: column.Columns{
+						column.Body{},
+						column.Template{
+							Language:               "jsonnet",
+							UndefinedValueStrategy: "null",
+							Content:                `a+":"+b`,
+							DataType:               "STRING",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	model, err := mapper.ReceiverModelFromPayload(projectID, secret, payload)
 	assert.NoError(t, err)
-	wildcards.Assert(t,
-		`{
-  "projectId": 1000,
-  "receiverId": "receiver",
-  "name": "Receiver",
-  "secret": "%s",
-  "Exports": [
-    {
-      "projectId": 1000,
-      "receiverId": "receiver",
-      "exportId": "export",
-      "name": "Export",
-      "importConditions": {
-        "count": 1000,
-        "size": "100MB",
-        "time": 180000000000
-      },
-      "revisionId": 0,
-      "tableId": {
-        "stage": "in",
-        "bucketName": "bucket",
-        "tableName": "table"
-      },
-      "incremental": false,
-      "columns": [
-        {
-          "type": "body"
-        },
-        {
-          "type": "template",
-          "language": "jsonnet",
-          "undefinedValueStrategy": "null",
-          "content": "a+\":\"+b",
-          "dataType": "STRING"
-        }
-      ]
-    }
-  ]
-}
-`,
-		json.MustEncodeString(model, true),
-	)
+	assert.Equal(t, expected, model)
 }
 
 func TestReceiverPayloadFromModel(t *testing.T) {
@@ -117,7 +129,6 @@ func TestReceiverPayloadFromModel(t *testing.T) {
 		ExportKey:  exportKey,
 		RevisionID: 1,
 	}
-
 	model := model.Receiver{
 		ReceiverBase: model.ReceiverBase{
 			ReceiverKey: receiverKey,
@@ -157,47 +168,42 @@ func TestReceiverPayloadFromModel(t *testing.T) {
 		},
 	}
 
+	expected := buffer.Receiver{
+		ID:   "receiver",
+		URL:  "https://buffer.keboola.local/v1/import/1000/receiver/test",
+		Name: "Receiver",
+		Exports: []*buffer.Export{
+			{
+				ID:         "export",
+				ReceiverID: "receiver",
+				Name:       "Export",
+				Mapping: &buffer.Mapping{
+					TableID:     "in.c-bucket.table",
+					Incremental: new(bool),
+					Columns: []*buffer.Column{
+						{Type: "body"},
+						{
+							Type: "template",
+							Template: &buffer.Template{
+								Language:               "jsonnet",
+								UndefinedValueStrategy: "null",
+								Content:                "a+\":\"+b",
+								DataType:               "STRING",
+							},
+						},
+					},
+				},
+				Conditions: &buffer.Conditions{
+					Count: 1000,
+					Size:  "100B",
+					Time:  "1m40s",
+				},
+			},
+		},
+	}
+
 	payload := mapper.ReceiverPayloadFromModel(model)
-	assert.Equal(t,
-		`{
-  "ID": "receiver",
-  "URL": "https://buffer.keboola.local/v1/import/1000/receiver/test",
-  "Name": "Receiver",
-  "Exports": [
-    {
-      "ID": "export",
-      "ReceiverID": "receiver",
-      "Name": "Export",
-      "Mapping": {
-        "TableID": "in.c-bucket.table",
-        "Incremental": false,
-        "Columns": [
-          {
-            "Type": "body",
-            "Template": null
-          },
-          {
-            "Type": "template",
-            "Template": {
-              "Language": "jsonnet",
-              "UndefinedValueStrategy": "null",
-              "Content": "a+\":\"+b",
-              "DataType": "STRING"
-            }
-          }
-        ]
-      },
-      "Conditions": {
-        "Count": 1000,
-        "Size": "100B",
-        "Time": "1m40s"
-      }
-    }
-  ]
-}
-`,
-		json.MustEncodeString(payload, true),
-	)
+	assert.Equal(t, expected, payload)
 }
 
 func TestFormatUrl(t *testing.T) {
