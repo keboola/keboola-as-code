@@ -129,7 +129,7 @@ func (s *Store) getMappingOp(_ context.Context, mappingKey key.MappingKey) op.Fo
 		})
 }
 
-func (s *Store) deleteAllMappingsOp(_ context.Context, exportKey key.ExportKey) op.ForType[int64] {
+func (s *Store) deleteAllMappingsOp(_ context.Context, exportKey key.ExportKey) op.CountOp {
 	return s.schema.
 		Configs().
 		Mappings().
