@@ -6,7 +6,6 @@ import (
 
 	"github.com/c2h5oh/datasize"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -82,17 +81,17 @@ func (m Mapper) MappingPayloadFromModel(model model.Mapping) buffer.Mapping {
 	}
 }
 
-func (m Mapper) ReceiverModelFromPayload(projectID int, payload buffer.CreateReceiverPayload) (r model.Receiver, err error) {
-	receiverBase := m.ReceiverBaseFromPayload(projectID, payload)
+func (m Mapper) ReceiverModelFromPayload(projectID int, secret string, payload buffer.CreateReceiverPayload) (r model.Receiver, err error) {
+	receiverBase := m.ReceiverBaseFromPayload(projectID, secret, payload)
 
 	exports := make([]model.Export, 0, len(payload.Exports))
 	for _, exportData := range payload.Exports {
-		mapping, err := m.MappingFromPayload(*exportData.Mapping)
+		export, err := m.ExportBaseFromPayload(receiverBase.ReceiverKey, *exportData)
 		if err != nil {
 			return model.Receiver{}, err
 		}
 
-		export, err := m.ExportBaseFromPayload(receiverBase.ReceiverKey, *exportData)
+		mapping, err := m.MappingFromPayload(export.ExportKey, 1, *exportData.Mapping)
 		if err != nil {
 			return model.Receiver{}, err
 		}
@@ -110,7 +109,7 @@ func (m Mapper) ReceiverModelFromPayload(projectID int, payload buffer.CreateRec
 	}, nil
 }
 
-func (m Mapper) ReceiverBaseFromPayload(projectID int, payload buffer.CreateReceiverPayload) model.ReceiverBase {
+func (m Mapper) ReceiverBaseFromPayload(projectID int, secret string, payload buffer.CreateReceiverPayload) model.ReceiverBase {
 	name := payload.Name
 
 	// Generate receiver ID from Name if needed
@@ -120,9 +119,6 @@ func (m Mapper) ReceiverBaseFromPayload(projectID int, payload buffer.CreateRece
 	} else {
 		id = strhelper.NormalizeName(name)
 	}
-
-	// Generate Secret
-	secret := idgenerator.ReceiverSecret()
 
 	return model.ReceiverBase{
 		ReceiverKey: key.ReceiverKey{
@@ -175,7 +171,7 @@ func (m Mapper) ExportBaseFromPayload(receiverKey key.ReceiverKey, payload buffe
 	}, nil
 }
 
-func (m Mapper) MappingFromPayload(payload buffer.Mapping) (model.Mapping, error) {
+func (m Mapper) MappingFromPayload(exportKey key.ExportKey, revisionID int, payload buffer.Mapping) (model.Mapping, error) {
 	// mapping
 	tableID, err := model.ParseTableID(payload.TableID)
 	if err != nil {
@@ -201,6 +197,10 @@ func (m Mapper) MappingFromPayload(payload buffer.Mapping) (model.Mapping, error
 	}
 
 	return model.Mapping{
+		MappingKey: key.MappingKey{
+			ExportKey:  exportKey,
+			RevisionID: revisionID,
+		},
 		TableID:     tableID,
 		Incremental: payload.Incremental == nil || *payload.Incremental, // default true
 		Columns:     columns,
