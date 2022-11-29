@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
@@ -16,8 +17,8 @@ import (
 )
 
 func ReceiverPayloadFromModel(bufferAPIHost string, model model.Receiver) buffer.Receiver {
-	id := buffer.ReceiverID(model.ID)
-	url := formatReceiverURL(bufferAPIHost, model.ProjectID, model.ID, model.Secret)
+	id := buffer.ReceiverID(model.ReceiverID)
+	url := formatReceiverURL(bufferAPIHost, model.ProjectID, model.ReceiverID, model.Secret)
 	exports := make([]*buffer.Export, 0, len(model.Exports))
 	for _, exportData := range model.Exports {
 		export := ExportPayloadFromModel(id, exportData)
@@ -40,7 +41,7 @@ func ExportPayloadFromModel(receiverID buffer.ReceiverID, model model.Export) bu
 		Time:  model.ImportConditions.Time.String(),
 	}
 	return buffer.Export{
-		ID:         buffer.ExportID(model.ID),
+		ID:         buffer.ExportID(model.ExportID),
 		ReceiverID: receiverID,
 		Name:       model.Name,
 		Mapping:    &mapping,
@@ -74,6 +75,8 @@ func MappingPayloadFromModel(model model.Mapping) buffer.Mapping {
 }
 
 func ReceiverModelFromPayload(projectID int, payload buffer.CreateReceiverPayload) (r model.Receiver, err error) {
+	receiverBase := ReceiverBaseFromPayload(projectID, payload)
+
 	exports := make([]model.Export, 0, len(payload.Exports))
 	for _, exportData := range payload.Exports {
 		mapping, err := MappingFromPayload(*exportData.Mapping)
@@ -81,7 +84,7 @@ func ReceiverModelFromPayload(projectID int, payload buffer.CreateReceiverPayloa
 			return model.Receiver{}, err
 		}
 
-		export, err := ExportBaseFromPayload(*exportData)
+		export, err := ExportBaseFromPayload(receiverBase.ReceiverKey, *exportData)
 		if err != nil {
 			return model.Receiver{}, err
 		}
@@ -92,8 +95,6 @@ func ReceiverModelFromPayload(projectID int, payload buffer.CreateReceiverPayloa
 			Mapping:    mapping,
 		})
 	}
-
-	receiverBase := ReceiverBaseFromPayload(projectID, payload)
 
 	return model.Receiver{
 		ReceiverBase: receiverBase,
@@ -116,14 +117,16 @@ func ReceiverBaseFromPayload(projectID int, payload buffer.CreateReceiverPayload
 	secret := idgenerator.ReceiverSecret()
 
 	return model.ReceiverBase{
-		ID:        id,
-		ProjectID: projectID,
-		Name:      name,
-		Secret:    secret,
+		ReceiverKey: key.ReceiverKey{
+			ProjectID:  projectID,
+			ReceiverID: id,
+		},
+		Name:   name,
+		Secret: secret,
 	}
 }
 
-func ExportBaseFromPayload(payload buffer.CreateExportData) (r model.ExportBase, err error) {
+func ExportBaseFromPayload(receiverKey key.ReceiverKey, payload buffer.CreateExportData) (r model.ExportBase, err error) {
 	name := payload.Name
 
 	// Generate export ID from Name if needed
@@ -155,7 +158,10 @@ func ExportBaseFromPayload(payload buffer.CreateExportData) (r model.ExportBase,
 	}
 
 	return model.ExportBase{
-		ID:               id,
+		ExportKey: key.ExportKey{
+			ReceiverKey: receiverKey,
+			ExportID:    id,
+		},
 		Name:             name,
 		ImportConditions: conditions,
 	}, nil

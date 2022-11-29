@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 )
@@ -55,12 +56,14 @@ func TestMapperReceiverPayloadToModel(t *testing.T) {
 	assert.NoError(t, err)
 	wildcards.Assert(t,
 		`{
-  "receiverId": "receiver",
   "projectId": 1000,
+  "receiverId": "receiver",
   "name": "Receiver",
   "secret": "%s",
   "Exports": [
     {
+      "projectId": 1000,
+      "receiverId": "receiver",
       "exportId": "export",
       "name": "Export",
       "importConditions": {
@@ -98,18 +101,30 @@ func TestMapperReceiverPayloadToModel(t *testing.T) {
 func TestMapperReceiverModelToPayload(t *testing.T) {
 	t.Parallel()
 
+	receiverKey := key.ReceiverKey{
+		ProjectID:  1000,
+		ReceiverID: "receiver",
+	}
+	exportKey := key.ExportKey{
+		ReceiverKey: receiverKey,
+		ExportID:    "export",
+	}
+	mappingKey := key.MappingKey{
+		ExportKey:  exportKey,
+		RevisionID: 1,
+	}
+
 	model := model.Receiver{
 		ReceiverBase: model.ReceiverBase{
-			ID:        "receiver",
-			ProjectID: 1000,
-			Name:      "Receiver",
-			Secret:    "test",
+			ReceiverKey: receiverKey,
+			Name:        "Receiver",
+			Secret:      "test",
 		},
 		Exports: []model.Export{
 			{
 				ExportBase: model.ExportBase{
-					ID:   "export",
-					Name: "Export",
+					ExportKey: exportKey,
+					Name:      "Export",
 					ImportConditions: model.ImportConditions{
 						Count: 1000,
 						Size:  100,
@@ -117,7 +132,7 @@ func TestMapperReceiverModelToPayload(t *testing.T) {
 					},
 				},
 				Mapping: model.Mapping{
-					RevisionID: 1,
+					MappingKey: mappingKey,
 					TableID: model.TableID{
 						Stage:  model.TableStageIn,
 						Bucket: "bucket",
