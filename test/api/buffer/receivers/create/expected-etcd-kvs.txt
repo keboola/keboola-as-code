@@ -98,7 +98,7 @@
 >>>>>
 
 <<<<<
-/secret/export/token/9361/my-receiver-with-exports/my-export-1
+/secret/export/token/%%TEST_KBC_PROJECT_ID%%/my-receiver-with-exports/my-export-1
 -----
 %A
 >>>>>

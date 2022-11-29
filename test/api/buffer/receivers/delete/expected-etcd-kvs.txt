@@ -51,7 +51,7 @@
 >>>>>
 
 <<<<<
-/secret/export/token/9361/receiver-b/export-1
+/secret/export/token/%%TEST_KBC_PROJECT_ID%%/receiver-b/export-1
 -----
 %A
 >>>>>

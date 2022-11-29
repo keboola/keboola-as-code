@@ -70,3 +70,11 @@
 -----
 <<~~id~~>>,"{""col1"":""val3"",""col2"":""val4""}","%s""User-Agent""%s",%s,%s
 >>>>>
+
+<<<<<
+/secret/export/token/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1
+-----
+{
+  "token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+}
+>>>>>

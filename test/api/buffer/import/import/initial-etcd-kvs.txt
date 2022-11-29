@@ -58,3 +58,11 @@
   "secret": "2wsMsoyPA6YsDmnf7GJvqyxlDU6kPX7WWFu1pOMz1O7ybPVI"
 }
 >>>>>
+
+<<<<<
+/secret/export/token/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1
+-----
+{
+  "token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+}
+>>>>>
