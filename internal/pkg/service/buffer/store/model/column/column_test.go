@@ -114,11 +114,13 @@ func TestColumn_Header(t *testing.T) {
 func TestColumn_Template_Body(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "body.key1"}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1.key2')"}
 
+	val1 := orderedmap.New()
+	val1.Set("key2", "val2")
 	body := orderedmap.New()
-	body.Set("key1", "val1")
-	body.Set("key2", "val2")
+	body.Set("key1", val1)
+	body.Set("key3", "val3")
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
@@ -126,13 +128,13 @@ func TestColumn_Template_Body(t *testing.T) {
 
 	val, err := c.CsvValue(column.ImportCtx{Body: body, Header: header})
 	assert.NoError(t, err)
-	assert.Equal(t, "\"val1\"\n", val)
+	assert.Equal(t, "\"val2\"\n", val)
 }
 
 func TestColumn_Template_Headers(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `headers['Content-Encoding']`}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Headers('Content-Encoding')`}
 
 	body := orderedmap.New()
 
@@ -148,7 +150,7 @@ func TestColumn_Template_Headers(t *testing.T) {
 func TestColumn_Template_UndefinedKeyErr(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `headers['Invalid-Key']`}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Headers('Invalid-Key')`}
 
 	body := orderedmap.New()
 	header := http.Header{}
@@ -162,7 +164,7 @@ func TestColumn_Template_UndefinedKeyNil(t *testing.T) {
 
 	c := column.Template{
 		Language:               column.TemplateLanguageJsonnet,
-		Content:                `headers['Invalid-Key']`,
+		Content:                `Headers('Invalid-Key')`,
 		UndefinedValueStrategy: column.UndefinedValueStrategyNull,
 	}
 
@@ -171,5 +173,5 @@ func TestColumn_Template_UndefinedKeyNil(t *testing.T) {
 
 	val, err := c.CsvValue(column.ImportCtx{Body: body, Header: header})
 	assert.NoError(t, err)
-	assert.Equal(t, "", val)
+	assert.Equal(t, "null\n", val)
 }

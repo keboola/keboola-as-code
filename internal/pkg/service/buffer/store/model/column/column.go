@@ -5,9 +5,9 @@ import (
 	"net"
 	"net/http"
 	"reflect"
-	"strings"
 	"time"
 
+	"github.com/google/go-jsonnet/ast"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
@@ -219,28 +219,42 @@ func (Header) CsvValue(importCtx ImportCtx) (string, error) {
 func (t Template) CsvValue(importCtx ImportCtx) (string, error) {
 	if t.Language == TemplateLanguageJsonnet {
 		ctx := jsonnet.NewContext()
-		ctx.GlobalBinding("body", jsonnet.ValueToLiteral(importCtx.Body.ToMap()))
-		headers := make(map[string]any)
+		ctx.NativeFunctionWithAlias(getNestedMap("Body", t, importCtx.Body))
+
+		headers := orderedmap.New()
 		for k := range importCtx.Header {
-			headers[k] = importCtx.Header.Get(k)
+			headers.Set(k, importCtx.Header.Get(k))
 		}
-		ctx.GlobalBinding("headers", jsonnet.ValueToLiteral(headers))
+		ctx.NativeFunctionWithAlias(getNestedMap("Headers", t, headers))
 
 		ctx.GlobalBinding("currentDatetime", jsonnet.ValueToLiteral(importCtx.DateTime.Format(time.RFC3339)))
-		jsonStr, err := jsonnet.Evaluate(t.Content, ctx)
-		if err != nil {
-			if strings.HasPrefix(err.Error(), "jsonnet error: RUNTIME ERROR: Field does not exist") {
-				if t.UndefinedValueStrategy == UndefinedValueStrategyNull {
-					return "", nil
-				}
-				return "", errors.Errorf(strings.TrimLeft(err.Error(), "jsonnet error: RUNTIME ERROR: "))
-			}
-			return "", err
-		}
 
-		return jsonStr, nil
+		return jsonnet.Evaluate(t.Content, ctx)
 	}
 	return "", nil
+}
+
+func getNestedMap(name string, t Template, om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
+	return &jsonnet.NativeFunction{
+		Name:   name,
+		Params: ast.Identifiers{"path"},
+		Func: func(params []interface{}) (any, error) {
+			if len(params) != 1 {
+				return nil, errors.Errorf("one parameter expected, found %d", len(params))
+			} else if path, ok := params[0].(string); !ok {
+				return nil, errors.New("parameter must be a string")
+			} else {
+				val, found, err := om.GetNested(path)
+				if !found && t.UndefinedValueStrategy == UndefinedValueStrategyNull {
+					return nil, nil
+				}
+				if err != nil {
+					return nil, err
+				}
+				return val, nil
+			}
+		},
+	}
 }
 
 type dummyColumn struct{}
