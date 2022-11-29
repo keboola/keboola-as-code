@@ -134,11 +134,5 @@ func (s *Store) deleteAllMappingsOp(_ context.Context, exportKey key.ExportKey) 
 		Configs().
 		Mappings().
 		InExport(exportKey).
-		DeleteAll().
-		WithProcessor(func(ctx context.Context, response etcd.OpResponse, result int64, err error) (int64, error) {
-			if result == 0 && err == nil {
-				return 0, serviceError.NewResourceNotFoundError("mapping", exportKey.String())
-			}
-			return result, err
-		})
+		DeleteAll()
 }

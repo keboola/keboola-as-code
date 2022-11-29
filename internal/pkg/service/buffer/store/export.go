@@ -160,11 +160,5 @@ func (s *Store) deleteExportBaseListOp(_ context.Context, receiverKey key.Receiv
 		Configs().
 		Exports().
 		InReceiver(receiverKey).
-		DeleteAll().
-		WithProcessor(func(ctx context.Context, response etcd.OpResponse, result int64, err error) (int64, error) {
-			if result == 0 && err == nil {
-				return 0, serviceError.NewResourceNotFoundError("export", receiverKey.String())
-			}
-			return result, err
-		})
+		DeleteAll()
 }
