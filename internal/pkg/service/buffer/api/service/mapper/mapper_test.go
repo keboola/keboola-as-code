@@ -105,7 +105,7 @@ func TestReceiverModelFromPayload(t *testing.T) {
 						},
 					},
 				},
-				Token: model.Token(token),
+				Token: token,
 			},
 		},
 	}

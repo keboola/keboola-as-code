@@ -101,7 +101,7 @@ func (m Mapper) ReceiverModelFromPayload(projectID int, token storageapi.Token, 
 		exports = append(exports, model.Export{
 			ExportBase: export,
 			Mapping:    mapping,
-			Token:      model.Token(token),
+			Token:      token,
 		})
 	}
 

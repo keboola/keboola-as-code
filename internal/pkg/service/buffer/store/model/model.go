@@ -42,7 +42,7 @@ type ExportBase struct {
 	ImportConditions ImportConditions `json:"importConditions" validate:"required"`
 }
 
-type Token storageapi.Token
+type Token = storageapi.Token
 
 type Mapping struct {
 	key.MappingKey
