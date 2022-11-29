@@ -12,7 +12,7 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
-	github.com/cenkalti/backoff/v4 v4.1.3
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/fatih/color v1.13.0
 	github.com/go-playground/locales v0.14.0
 	github.com/go-playground/universal-translator v0.18.0
@@ -29,8 +29,8 @@ require (
 	github.com/kylelemons/godebug v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/relvacode/iso8601 v1.1.0
-	github.com/santhosh-tekuri/jsonschema/v5 v5.0.2
-	github.com/spf13/afero v1.9.2
+	github.com/santhosh-tekuri/jsonschema/v5 v5.1.1
+	github.com/spf13/afero v1.9.3
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
@@ -38,8 +38,8 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
 	github.com/writeas/go-strip-markdown v2.0.1+incompatible
-	go.etcd.io/etcd/api/v3 v3.5.5
-	go.etcd.io/etcd/client/v3 v3.5.5
+	go.etcd.io/etcd/api/v3 v3.5.6
+	go.etcd.io/etcd/client/v3 v3.5.6
 	go.nhat.io/aferocopy/v2 v2.0.1
 	go.opentelemetry.io/otel v1.11.1
 	go.opentelemetry.io/otel/trace v1.11.1
@@ -47,7 +47,7 @@ require (
 	goa.design/goa/v3 v3.10.2
 	goa.design/plugins/v3 v3.10.2
 	golang.org/x/sync v0.1.0
-	google.golang.org/grpc v1.50.1
+	google.golang.org/grpc v1.51.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.43.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	v.io/x/lib v0.1.10
@@ -169,7 +169,7 @@ require (
 	github.com/pkg/browser v0.0.0-20210115035449-ce105d075bb4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.2 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.5 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.6 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go4.org/intern v0.0.0-20220617035311-6925f38cc365 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20220617031537-928513b29760 // indirect
