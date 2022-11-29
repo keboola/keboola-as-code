@@ -14,10 +14,6 @@ type Tokens struct {
 	tokens
 }
 
-type TokensInExport struct {
-	tokens
-}
-
 func (v SecretsRoot) Tokens() Tokens {
 	return Tokens{tokens: NewTypedPrefix[model.Token](
 		v.prefix.Add("export/token"),
