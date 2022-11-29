@@ -42,7 +42,6 @@ type Template struct {
 	Language               string `json:"language" validate:"required,oneof=jsonnet"`
 	UndefinedValueStrategy string `json:"undefinedValueStrategy" validate:"required,oneof=null error"`
 	Content                string `json:"content" validate:"required,min=1,max=4096"`
-	DataType               string `json:"dataType" validate:"required,oneof=STRING INTEGER NUMERIC FLOAT BOOLEAN DATE TIMESTAMP"`
 }
 
 const (
@@ -220,13 +219,15 @@ func (Header) CsvValue(importCtx ImportCtx) (string, error) {
 func (t Template) CsvValue(importCtx ImportCtx) (string, error) {
 	if t.Language == TemplateLanguageJsonnet {
 		ctx := jsonnet.NewContext()
-		ctx.NativeFunctionWithAlias(getNestedBody("Body", t, importCtx.Body))
+		ctx.NativeFunctionWithAlias(getBodyPath(t, importCtx.Body))
+		ctx.NativeFunctionWithAlias(getBody(importCtx.Body))
 
 		headers := orderedmap.New()
 		for k := range importCtx.Header {
 			headers.Set(k, importCtx.Header.Get(k))
 		}
-		ctx.NativeFunctionWithAlias(getHeader("Headers", t, headers))
+		ctx.NativeFunctionWithAlias(getHeader(t, headers))
+		ctx.NativeFunctionWithAlias(getHeaders(headers))
 
 		ctx.GlobalBinding("currentDatetime", jsonnet.ValueToLiteral(importCtx.DateTime.Format(time.RFC3339)))
 
@@ -239,9 +240,9 @@ func (t Template) CsvValue(importCtx ImportCtx) (string, error) {
 	return "", errors.Errorf(`unsupported language "%s", use jsonnet instead`, t.Language)
 }
 
-func getNestedBody(name string, t Template, om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
+func getBodyPath(t Template, om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
-		Name:   name,
+		Name:   "BodyPath",
 		Params: ast.Identifiers{"path"},
 		Func: func(params []interface{}) (any, error) {
 			if len(params) > 1 {
@@ -249,10 +250,6 @@ func getNestedBody(name string, t Template, om *orderedmap.OrderedMap) *jsonnet.
 			} else if path, ok := params[0].(string); !ok {
 				return nil, errors.New("parameter must be a string")
 			} else {
-				if len(path) == 0 {
-					// Return full body
-					return valueToJSONType(om), nil
-				}
 				val, found, err := om.GetNested(path)
 				if !found {
 					if t.UndefinedValueStrategy == UndefinedValueStrategyNull {
@@ -267,6 +264,15 @@ func getNestedBody(name string, t Template, om *orderedmap.OrderedMap) *jsonnet.
 
 				return valueToJSONType(val), nil
 			}
+		},
+	}
+}
+
+func getBody(om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
+	return &jsonnet.NativeFunction{
+		Name: "Body",
+		Func: func(params []interface{}) (any, error) {
+			return valueToJSONType(om), nil
 		},
 	}
 }
@@ -290,9 +296,9 @@ func valueToJSONType(in any) any {
 	return in
 }
 
-func getHeader(name string, t Template, om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
+func getHeader(t Template, om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
-		Name:   name,
+		Name:   "Header",
 		Params: ast.Identifiers{"path"},
 		Func: func(params []interface{}) (any, error) {
 			if len(params) != 1 {
@@ -300,10 +306,6 @@ func getHeader(name string, t Template, om *orderedmap.OrderedMap) *jsonnet.Nati
 			} else if key, ok := params[0].(string); !ok {
 				return nil, errors.New("parameter must be a string")
 			} else {
-				if len(key) == 0 {
-					// Return all headers
-					return valueToJSONType(om), nil
-				}
 				val, found := om.Get(http.CanonicalHeaderKey(key))
 				if !found {
 					if t.UndefinedValueStrategy == UndefinedValueStrategyNull {
@@ -314,6 +316,15 @@ func getHeader(name string, t Template, om *orderedmap.OrderedMap) *jsonnet.Nati
 				}
 				return val, nil
 			}
+		},
+	}
+}
+
+func getHeaders(om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
+	return &jsonnet.NativeFunction{
+		Name: "Headers",
+		Func: func(params []interface{}) (any, error) {
+			return valueToJSONType(om), nil
 		},
 	}
 }

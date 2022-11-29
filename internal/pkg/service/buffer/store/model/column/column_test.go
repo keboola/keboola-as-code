@@ -26,10 +26,9 @@ func TestMappedColumns(t *testing.T) {
 			Language:               "jsonnet",
 			UndefinedValueStrategy: "null",
 			Content:                `body.my.key+":"+body.my.value`,
-			DataType:               "STRING",
 		},
 	}
-	untyped := `[{"type":"id"},{"type":"datetime"},{"type":"ip"},{"type":"body"},{"type":"headers"},{"type":"template","language":"jsonnet","undefinedValueStrategy":"null","content":"body.my.key+\":\"+body.my.value","dataType":"STRING"}]`
+	untyped := `[{"type":"id"},{"type":"datetime"},{"type":"ip"},{"type":"body"},{"type":"headers"},{"type":"template","language":"jsonnet","undefinedValueStrategy":"null","content":"body.my.key+\":\"+body.my.value"}]`
 
 	bytes, err := json.Marshal(&typed)
 	assert.NoError(t, err)
@@ -114,7 +113,7 @@ func TestColumn_Header(t *testing.T) {
 func TestColumn_Template_Body_Scalar(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1.key2')"}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "BodyPath('key1.key2')"}
 
 	val1 := orderedmap.New()
 	val1.Set("key2", "val2")
@@ -134,7 +133,7 @@ func TestColumn_Template_Body_Scalar(t *testing.T) {
 func TestColumn_Template_Body_Object(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1')"}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "BodyPath('key1')"}
 
 	val1 := orderedmap.New()
 	val1.Set("key2", "val2")
@@ -154,7 +153,7 @@ func TestColumn_Template_Body_Object(t *testing.T) {
 func TestColumn_Template_Body_ArrayOfObjects(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1')"}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "BodyPath('key1')"}
 
 	val2 := orderedmap.New()
 	val2.Set("key2", "val2")
@@ -173,7 +172,7 @@ func TestColumn_Template_Body_ArrayOfObjects(t *testing.T) {
 func TestColumn_Template_Body_ArrayIndex(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1')[1]"}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "BodyPath('key1')[1]"}
 
 	body := orderedmap.New()
 	body.Set("key1", []any{"val2", "val3"})
@@ -188,7 +187,7 @@ func TestColumn_Template_Body_ArrayIndex(t *testing.T) {
 func TestColumn_Template_Body_Full(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Body("")`}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Body()`}
 
 	body := orderedmap.New()
 	body.Set("key1", []any{"val2", "val3"})
@@ -203,7 +202,7 @@ func TestColumn_Template_Body_Full(t *testing.T) {
 func TestColumn_Template_Body_UndefinedKeyErr(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Body('key1.invalid')`}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `BodyPath('key1.invalid')`}
 
 	val1 := orderedmap.New()
 	val1.Set("key2", "val2")
@@ -219,7 +218,7 @@ func TestColumn_Template_Body_UndefinedKeyErr(t *testing.T) {
 func TestColumn_Template_Headers(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Headers('Content-Encoding')`}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Header('Content-Encoding')`}
 
 	body := orderedmap.New()
 
@@ -235,7 +234,7 @@ func TestColumn_Template_Headers(t *testing.T) {
 func TestColumn_Template_Headers_Case(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Headers('CONTENT-ENCODING')`}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Header('CONTENT-ENCODING')`}
 
 	body := orderedmap.New()
 
@@ -251,7 +250,7 @@ func TestColumn_Template_Headers_Case(t *testing.T) {
 func TestColumn_Template_Headers_All(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Headers('')`}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Headers()`}
 
 	body := orderedmap.New()
 
@@ -267,7 +266,7 @@ func TestColumn_Template_Headers_All(t *testing.T) {
 func TestColumn_Template_Headers_UndefinedKeyErr(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Headers('Invalid-KEY')`}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Header('Invalid-KEY')`}
 
 	body := orderedmap.New()
 	header := http.Header{}
@@ -281,7 +280,7 @@ func TestColumn_Template_UndefinedKeyNil(t *testing.T) {
 
 	c := column.Template{
 		Language:               column.TemplateLanguageJsonnet,
-		Content:                `Headers('Invalid-Key')`,
+		Content:                `Header('Invalid-Key')`,
 		UndefinedValueStrategy: column.UndefinedValueStrategyNull,
 	}
 
