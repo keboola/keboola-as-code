@@ -28,14 +28,14 @@ func (s *Store) CreateExport(ctx context.Context, export model.Export) (err erro
 	}
 
 	_, err = op.MergeToTxn(
-		s.createExportOp(ctx, export.ExportBase),
+		s.createExportBaseOp(ctx, export.ExportBase),
 		s.createMappingOp(ctx, export.Mapping),
 		s.createTokenOp(ctx, export.ExportKey, export.Token),
 	).Do(ctx, s.client)
 	return err
 }
 
-func (s *Store) createExportOp(_ context.Context, export model.ExportBase) op.BoolOp {
+func (s *Store) createExportBaseOp(_ context.Context, export model.ExportBase) op.BoolOp {
 	return s.schema.
 		Configs().
 		Exports().
@@ -94,7 +94,7 @@ func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey) (o
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.ListExports")
 	defer telemetry.EndSpan(span, &err)
 
-	exportKvs, err := s.listExportsOp(ctx, receiverKey).Do(ctx, s.client)
+	exportKvs, err := s.listExportsBaseOp(ctx, receiverKey).Do(ctx, s.client)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey) (o
 	return exports, nil
 }
 
-func (s *Store) listExportsOp(_ context.Context, receiverKey key.ReceiverKey) op.ForType[op.KeyValuesT[model.ExportBase]] {
+func (s *Store) listExportsBaseOp(_ context.Context, receiverKey key.ReceiverKey) op.ForType[op.KeyValuesT[model.ExportBase]] {
 	return s.schema.
 		Configs().
 		Exports().
@@ -152,5 +152,19 @@ func (s *Store) deleteExportBaseOp(_ context.Context, exportKey key.ExportKey) o
 				return false, serviceError.NewResourceNotFoundError("export", exportKey.String())
 			}
 			return ok, err
+		})
+}
+
+func (s *Store) deleteExportBaseListOp(_ context.Context, receiverKey key.ReceiverKey) op.CountOp {
+	return s.schema.
+		Configs().
+		Exports().
+		InReceiver(receiverKey).
+		DeleteAll().
+		WithProcessor(func(ctx context.Context, response etcd.OpResponse, result int64, err error) (int64, error) {
+			if result == 0 && err == nil {
+				return 0, serviceError.NewResourceNotFoundError("export", receiverKey.String())
+			}
+			return result, err
 		})
 }
