@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/google/go-jsonnet/ast"
@@ -234,8 +235,9 @@ func (t Template) CsvValue(importCtx ImportCtx) (string, error) {
 			return "", err
 		}
 		if res == "null\n" {
-			return "\n", nil
+			return "", nil
 		}
+		return strings.TrimRight(res, "\n"), nil
 	}
 	return "", nil
 }

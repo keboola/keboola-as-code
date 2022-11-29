@@ -128,7 +128,7 @@ func TestColumn_Template_Body_Scalar(t *testing.T) {
 
 	val, err := c.CsvValue(column.ImportCtx{Body: body, Header: header})
 	assert.NoError(t, err)
-	assert.Equal(t, "\"val2\"\n", val)
+	assert.Equal(t, "\"val2\"", val)
 }
 
 func TestColumn_Template_Body_Object(t *testing.T) {
@@ -148,7 +148,7 @@ func TestColumn_Template_Body_Object(t *testing.T) {
 
 	val, err := c.CsvValue(column.ImportCtx{Body: body, Header: header})
 	assert.NoError(t, err)
-	assert.Equal(t, "{\n  \"key2\": \"val2\"\n}\n", val)
+	assert.Equal(t, "{\n  \"key2\": \"val2\"\n}", val)
 }
 
 func TestColumn_Template_Body_UndefinedKeyErr(t *testing.T) {
@@ -180,7 +180,7 @@ func TestColumn_Template_Headers(t *testing.T) {
 
 	val, err := c.CsvValue(column.ImportCtx{Body: body, Header: header})
 	assert.NoError(t, err)
-	assert.Equal(t, "\"gzip\"\n", val)
+	assert.Equal(t, "\"gzip\"", val)
 }
 
 func TestColumn_Template_Headers_Case(t *testing.T) {
@@ -196,7 +196,7 @@ func TestColumn_Template_Headers_Case(t *testing.T) {
 
 	val, err := c.CsvValue(column.ImportCtx{Body: body, Header: header})
 	assert.NoError(t, err)
-	assert.Equal(t, "\"gzip\"\n", val)
+	assert.Equal(t, "\"gzip\"", val)
 }
 
 func TestColumn_Template_Headers_UndefinedKeyErr(t *testing.T) {
@@ -225,5 +225,5 @@ func TestColumn_Template_UndefinedKeyNil(t *testing.T) {
 
 	val, err := c.CsvValue(column.ImportCtx{Body: body, Header: header})
 	assert.NoError(t, err)
-	assert.Equal(t, "null\n", val)
+	assert.Equal(t, "", val)
 }
