@@ -319,7 +319,7 @@ var CreateReceiverRequest = Type("CreateReceiverRequest", func() {
 		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
 	})
 	receiverFields()
-	Attribute("exports", ArrayOf(CreateExportPayload), func() {
+	Attribute("exports", ArrayOf(CreateExportData), func() {
 		Description("List of exports, max 20 exports per a receiver.")
 	})
 	Required("name")
@@ -367,7 +367,7 @@ var Export = Type("Export", func() {
 	Required("id", "receiverId", "name", "mapping", "conditions")
 })
 
-var CreateExportPayload = Type("CreateExportPyload", func() {
+var CreateExportData = Type("CreateExportData", func() {
 	Attribute("id", ExportID, func() {
 		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
 	})
@@ -378,7 +378,7 @@ var CreateExportPayload = Type("CreateExportPyload", func() {
 
 var CreateExportRequest = Type("CreateExportRequest", func() {
 	Extend(GetReceiverRequest)
-	Extend(CreateExportPayload)
+	Extend(CreateExportData)
 })
 
 var GetExportRequest = Type("GetExportRequest", func() {

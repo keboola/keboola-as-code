@@ -56,9 +56,11 @@ func (s *service) HealthCheck(dependencies.ForPublicRequest) (res string, err er
 func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.Receiver, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
-	receiver := model.Receiver{
-		ReceiverKey: key.ReceiverKey{ProjectID: d.ProjectID()},
-		Name:        payload.Name,
+	receiver := model.ReceiverBase{
+		ReceiverKey: key.ReceiverKey{
+			ProjectID: d.ProjectID(),
+		},
+		Name: payload.Name,
 	}
 
 	// Generate receiver ID from Name if needed
@@ -72,7 +74,7 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	receiver.Secret = idgenerator.ReceiverSecret()
 
 	for _, exportData := range payload.Exports {
-		export := model.Export{
+		export := model.ExportBase{
 			Name:             exportData.Name,
 			ImportConditions: model.DefaultConditions(),
 		}
@@ -367,7 +369,7 @@ func formatUrl(bufferApiHost string, projectID int, receiverID string, secret st
 	return fmt.Sprintf("https://%s/v1/import/%d/%s/%s", bufferApiHost, projectID, receiverID, secret)
 }
 
-func mapExportsToPayload(ctx context.Context, str *store.Store, exportList []model.Export) ([]*Export, error) {
+func mapExportsToPayload(ctx context.Context, str *store.Store, exportList []model.ExportBase) ([]*Export, error) {
 	exports := make([]*Export, 0, len(exportList))
 	for _, export := range exportList {
 		mapping, err := str.GetLatestMapping(ctx, export.ExportKey)
