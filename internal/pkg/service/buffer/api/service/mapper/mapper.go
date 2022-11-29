@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -81,7 +82,7 @@ func (m Mapper) MappingPayloadFromModel(model model.Mapping) buffer.Mapping {
 	}
 }
 
-func (m Mapper) ReceiverModelFromPayload(projectID int, sapiToken string, secret string, payload buffer.CreateReceiverPayload) (r model.Receiver, err error) {
+func (m Mapper) ReceiverModelFromPayload(projectID int, token storageapi.Token, secret string, payload buffer.CreateReceiverPayload) (r model.Receiver, err error) {
 	receiverBase := m.ReceiverBaseFromPayload(projectID, secret, payload)
 
 	exports := make([]model.Export, 0, len(payload.Exports))
@@ -100,7 +101,7 @@ func (m Mapper) ReceiverModelFromPayload(projectID int, sapiToken string, secret
 		exports = append(exports, model.Export{
 			ExportBase: export,
 			Mapping:    mapping,
-			Token:      model.Token(sapiToken),
+			Token:      model.Token(token),
 		})
 	}
 

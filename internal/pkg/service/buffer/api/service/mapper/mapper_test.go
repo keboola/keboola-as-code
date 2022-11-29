@@ -3,6 +3,7 @@ package mapper
 import (
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
@@ -19,7 +20,7 @@ func TestReceiverModelFromPayload(t *testing.T) {
 
 	projectID := 1000
 	secret := idgenerator.ReceiverSecret()
-	token := "test"
+	token := storageapi.Token{Token: "test"}
 
 	payload := buffer.CreateReceiverPayload{
 		StorageAPIToken: "",
@@ -166,7 +167,6 @@ func TestReceiverPayloadFromModel(t *testing.T) {
 						},
 					},
 				},
-				Token: model.Token("test"),
 			},
 		},
 	}
