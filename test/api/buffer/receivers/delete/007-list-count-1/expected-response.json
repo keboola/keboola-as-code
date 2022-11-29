@@ -2,7 +2,7 @@
   "receivers": [
     {
       "id": "receiver-b",
-      "url": "https://buffer.keboola.local/v1/import/%d/receiver-b/%s",
+      "url": "https://buffer.keboola.local/v1/import/%%TEST_KBC_PROJECT_ID%%/receiver-b/%s",
       "name": "Receiver B",
       "exports": [
         {

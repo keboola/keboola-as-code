@@ -1,6 +1,6 @@
 {
   "id": "my-receiver-with-exports",
-  "url": "https://buffer.keboola.local/v1/import/%d/my-receiver-with-exports/%s",
+  "url": "https://buffer.keboola.local/v1/import/%%TEST_KBC_PROJECT_ID%%/my-receiver-with-exports/%s",
   "name": "My Receiver With Exports",
   "exports": [
     {

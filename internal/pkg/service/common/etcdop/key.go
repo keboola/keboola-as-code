@@ -119,7 +119,7 @@ func (v KeyT[T]) Get(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 				kv := r.Get().Kvs[0]
 				target := new(T)
 				if err := v.serialization.decodeAndValidate(ctx, kv, target); err != nil {
-					return nil, invalidKeyError(string(kv.Key), err)
+					return nil, errors.Errorf("etcd operation \"get one\" failed: %w", invalidValueError(v.Key(), err))
 				}
 				return &op.KeyValueT[T]{Value: *target, KV: kv}, nil
 			} else {
@@ -134,7 +134,7 @@ func (v KeyT[T]) Put(val T, opts ...etcd.OpOption) op.NoResultOp {
 		func(ctx context.Context) (etcd.Op, error) {
 			encoded, err := v.serialization.validateAndEncode(ctx, &val)
 			if err != nil {
-				return etcd.Op{}, invalidKeyError(v.Key(), err)
+				return etcd.Op{}, errors.Errorf("etcd operation \"put\" failed: %w", invalidValueError(v.Key(), err))
 			}
 			return etcd.OpPut(v.Key(), encoded, opts...), nil
 		},
@@ -150,7 +150,7 @@ func (v KeyT[T]) PutIfNotExists(val T, opts ...etcd.OpOption) op.BoolOp {
 		func(ctx context.Context) (etcd.Op, error) {
 			encoded, err := v.serialization.validateAndEncode(ctx, &val)
 			if err != nil {
-				return etcd.Op{}, invalidKeyError(v.Key(), err)
+				return etcd.Op{}, errors.Errorf("etcd operation \"put if not exists\" failed: %w", invalidValueError(v.Key(), err))
 			}
 			return etcd.OpTxn(
 				[]etcd.Cmp{etcd.Compare(etcd.Version(v.Key()), "=", 0)},
@@ -164,6 +164,6 @@ func (v KeyT[T]) PutIfNotExists(val T, opts ...etcd.OpOption) op.BoolOp {
 	)
 }
 
-func invalidKeyError(key string, err error) error {
-	return errors.Errorf(`invalid etcd key "%s": %w`, key, err)
+func invalidValueError(key string, err error) error {
+	return errors.Errorf(`invalid value for "%s": %w`, key, err)
 }

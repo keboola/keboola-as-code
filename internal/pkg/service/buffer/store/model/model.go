@@ -7,6 +7,7 @@ import (
 
 	"github.com/c2h5oh/datasize"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -18,20 +19,19 @@ const (
 )
 
 type Receiver struct {
-	ID        string `json:"receiverId" validate:"required,min=1,max=48"`
-	ProjectID int    `json:"projectId"`
-	Name      string `json:"name" validate:"required,min=1,max=40"`
-	Secret    string `json:"secret" validate:"required,len=48"`
+	key.ReceiverKey
+	Name   string `json:"name" validate:"required,min=1,max=40"`
+	Secret string `json:"secret" validate:"required,len=48"`
 }
 
 type Export struct {
-	ID               string           `json:"exportId" validate:"required,min=1,max=48"`
+	key.ExportKey
 	Name             string           `json:"name" validate:"required,min=1,max=40"`
 	ImportConditions ImportConditions `json:"importConditions" validate:"required"`
 }
 
 type Mapping struct {
-	RevisionID  int            `json:"revisionId" validate:"min=1,max=100"`
+	key.MappingKey
 	TableID     TableID        `json:"tableId" validate:"required"`
 	Incremental bool           `json:"incremental"`
 	Columns     column.Columns `json:"columns" validate:"required,min=1,max=50"`

@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -25,15 +25,7 @@ func TestStore_CreateRecord(t *testing.T) {
 	assert.NoError(t, err)
 
 	csv := []string{"one", "two", `th"ree`}
-	record := schema.RecordKey{
-		ProjectID:  projectID,
-		ReceiverID: receiverID,
-		ExportID:   exportID,
-		FileID:     "file1",
-		SliceID:    "slice1",
-		ReceivedAt: now,
-	}
-
+	record := key.NewRecordKey(projectID, receiverID, exportID, "file1", "slice1", now)
 	err = store.CreateRecord(ctx, record, csv)
 	assert.NoError(t, err)
 

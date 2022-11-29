@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,9 +18,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -56,15 +57,15 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	ctx, str := d.RequestCtx(), d.Store()
 
 	receiver := model.Receiver{
-		ProjectID: d.ProjectID(),
-		Name:      payload.Name,
+		ReceiverKey: key.ReceiverKey{ProjectID: d.ProjectID()},
+		Name:        payload.Name,
 	}
 
 	// Generate receiver ID from Name if needed
 	if payload.ID != nil && len(*payload.ID) != 0 {
-		receiver.ID = strhelper.NormalizeName(string(*payload.ID))
+		receiver.ReceiverID = strhelper.NormalizeName(string(*payload.ID))
 	} else {
-		receiver.ID = strhelper.NormalizeName(receiver.Name)
+		receiver.ReceiverID = strhelper.NormalizeName(receiver.Name)
 	}
 
 	// Generate Secret
@@ -75,6 +76,7 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 			Name:             exportData.Name,
 			ImportConditions: model.DefaultConditions(),
 		}
+		export.ReceiverKey = receiver.ReceiverKey
 
 		if exportData.Conditions != nil {
 			export.ImportConditions.Count = exportData.Conditions.Count
@@ -96,9 +98,9 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 
 		// Generate export ID from Name if needed
 		if exportData.ID != nil && len(*exportData.ID) != 0 {
-			export.ID = string(*exportData.ID)
+			export.ExportID = string(*exportData.ID)
 		} else {
-			export.ID = strhelper.NormalizeName(export.Name)
+			export.ExportID = strhelper.NormalizeName(export.Name)
 		}
 
 		// nolint:godox
@@ -132,15 +134,16 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 			Incremental: exportData.Mapping.Incremental == nil || *exportData.Mapping.Incremental, // default true
 			Columns:     columns,
 		}
+		mapping.ExportKey = export.ExportKey
 
 		// Persist mapping
-		err = str.CreateMapping(ctx, receiver.ProjectID, receiver.ID, export.ID, mapping)
+		err = str.CreateMapping(ctx, mapping)
 		if err != nil {
 			return nil, err
 		}
 
 		// Persist export
-		if err := str.CreateExport(ctx, receiver.ProjectID, receiver.ID, export); err != nil {
+		if err := str.CreateExport(ctx, export); err != nil {
 			return nil, err
 		}
 	}
@@ -149,7 +152,7 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	if err := str.CreateReceiver(ctx, receiver); err != nil {
 		return nil, err
 	}
-	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: ReceiverID(receiver.ID)})
+	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: ReceiverID(receiver.ReceiverID)})
 }
 
 func (s *service) UpdateReceiver(dependencies.ForProjectRequest, *UpdateReceiverPayload) (res *Receiver, err error) {
@@ -159,67 +162,25 @@ func (s *service) UpdateReceiver(dependencies.ForProjectRequest, *UpdateReceiver
 func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *GetReceiverPayload) (res *Receiver, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
-	projectID, receiverID := d.ProjectID(), payload.ReceiverID
-
-	receiver, err := str.GetReceiver(ctx, projectID, string(receiverID))
+	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
+	receiver, err := str.GetReceiver(ctx, receiverKey)
 	if err != nil {
 		return nil, err
 	}
 
-	exportList, err := str.ListExports(ctx, projectID, string(receiverID))
+	exportList, err := str.ListExports(ctx, receiverKey)
 	if err != nil {
 		return nil, err
 	}
 
-	exports := make([]*Export, 0, len(exportList))
-	for _, export := range exportList {
-		mapping, err := str.GetMapping(ctx, projectID, string(receiverID), export.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		columns := make([]*Column, 0, len(mapping.Columns))
-		for _, c := range mapping.Columns {
-			var template *Template
-			if v, ok := c.(column.Template); ok {
-				template = &Template{
-					Language:               v.Language,
-					UndefinedValueStrategy: v.UndefinedValueStrategy,
-					Content:                v.Content,
-					DataType:               v.DataType,
-				}
-			}
-			typ, _ := column.ColumnToType(c)
-			columns = append(columns, &Column{
-				Type:     typ,
-				Template: template,
-			})
-		}
-
-		exports = append(exports, &Export{
-			ID:         ExportID(export.ID),
-			ReceiverID: ReceiverID(receiver.ID),
-			Name:       export.Name,
-			Mapping: &Mapping{
-				TableID:     mapping.TableID.String(),
-				Incremental: &mapping.Incremental,
-				Columns:     columns,
-			},
-			Conditions: &Conditions{
-				Count: export.ImportConditions.Count,
-				Size:  export.ImportConditions.Size.String(),
-				Time:  export.ImportConditions.Time.String(),
-			},
-		})
+	exports, err := mapExportsToPayload(ctx, str, exportList)
+	if err != nil {
+		return nil, err
 	}
 
-	sort.SliceStable(exports, func(i, j int) bool {
-		return exports[i].ID < exports[j].ID
-	})
-
-	url := formatUrl(d.BufferApiHost(), receiver.ProjectID, receiver.ID, receiver.Secret)
+	url := formatUrl(d.BufferApiHost(), receiver.ProjectID, receiver.ReceiverID, receiver.Secret)
 	resp := &buffer.Receiver{
-		ID:      ReceiverID(receiver.ID),
+		ID:      ReceiverID(receiver.ReceiverID),
 		Name:    receiver.Name,
 		URL:     url,
 		Exports: exports,
@@ -229,11 +190,11 @@ func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *GetRece
 }
 
 func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListReceiversPayload) (res *buffer.ReceiversList, err error) {
-	ctx, store := d.RequestCtx(), d.Store()
+	ctx, str := d.RequestCtx(), d.Store()
 
 	projectID := d.ProjectID()
 
-	receiverList, err := store.ListReceivers(ctx, projectID)
+	receiverList, err := str.ListReceivers(ctx, projectID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list receivers in project \"%d\"", projectID)
 	}
@@ -242,61 +203,20 @@ func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.List
 
 	receivers := make([]*buffer.Receiver, 0, len(receiverList))
 	for _, receiverData := range receiverList {
-		exportList, err := store.ListExports(ctx, projectID, receiverData.ID)
+		exportList, err := str.ListExports(ctx, receiverData.ReceiverKey)
 		if err != nil {
-			return nil, errors.Wrapf(err, `failed to list exports for receiver "%s"`, receiverData.ID)
+			return nil, errors.Wrapf(err, `failed to list exports for receiver "%s"`, receiverData.ReceiverID)
 		}
 
-		exports := make([]*Export, 0, len(exportList))
-		for _, export := range exportList {
-			mapping, err := store.GetMapping(ctx, projectID, receiverData.ID, export.ID)
-			if err != nil {
-				return nil, err
-			}
-
-			columns := make([]*Column, 0, len(mapping.Columns))
-			for _, c := range mapping.Columns {
-				var template *Template
-				if v, ok := c.(column.Template); ok {
-					template = &Template{
-						Language:               v.Language,
-						UndefinedValueStrategy: v.UndefinedValueStrategy,
-						Content:                v.Content,
-						DataType:               v.DataType,
-					}
-				}
-				typ, _ := column.ColumnToType(c)
-				columns = append(columns, &Column{
-					Type:     typ,
-					Template: template,
-				})
-			}
-
-			exports = append(exports, &Export{
-				ID:         ExportID(export.ID),
-				ReceiverID: ReceiverID(receiverData.ID),
-				Name:       export.Name,
-				Mapping: &Mapping{
-					TableID:     mapping.TableID.String(),
-					Incremental: &mapping.Incremental,
-					Columns:     columns,
-				},
-				Conditions: &Conditions{
-					Count: export.ImportConditions.Count,
-					Size:  export.ImportConditions.Size.String(),
-					Time:  export.ImportConditions.Time.String(),
-				},
-			})
+		exports, err := mapExportsToPayload(ctx, str, exportList)
+		if err != nil {
+			return nil, err
 		}
-
-		sort.SliceStable(exports, func(i, j int) bool {
-			return exports[i].ID < exports[j].ID
-		})
 
 		receivers = append(receivers, &buffer.Receiver{
-			ID:      ReceiverID(receiverData.ID),
+			ID:      ReceiverID(receiverData.ReceiverID),
 			Name:    receiverData.Name,
-			URL:     formatUrl(bufferApiHost, receiverData.ProjectID, receiverData.ID, receiverData.Secret),
+			URL:     formatUrl(bufferApiHost, receiverData.ProjectID, receiverData.ReceiverID, receiverData.Secret),
 			Exports: exports,
 		})
 	}
@@ -309,14 +229,13 @@ func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.List
 }
 
 func (s *service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer.DeleteReceiverPayload) (err error) {
-	ctx, store := d.RequestCtx(), d.Store()
-
-	projectID, receiverID := d.ProjectID(), payload.ReceiverID
+	ctx, str := d.RequestCtx(), d.Store()
 
 	// nolint:godox
 	// TODO: delete export/mapping
 
-	if err := store.DeleteReceiver(ctx, projectID, string(receiverID)); err != nil {
+	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
+	if err := str.DeleteReceiver(ctx, receiverKey); err != nil {
 		return err
 	}
 
@@ -342,7 +261,8 @@ func (s *service) DeleteExport(dependencies.ForProjectRequest, *buffer.DeleteExp
 func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPayload, reader io.ReadCloser) (err error) {
 	ctx, str, header, ip := d.RequestCtx(), d.Store(), d.RequestHeader(), d.RequestClientIP()
 
-	receiver, err := str.GetReceiver(ctx, payload.ProjectID, string(payload.ReceiverID))
+	receiverKey := key.ReceiverKey{ProjectID: payload.ProjectID, ReceiverID: string(payload.ReceiverID)}
+	receiver, err := str.GetReceiver(ctx, receiverKey)
 	if err != nil {
 		return err
 	}
@@ -359,7 +279,7 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 		return err
 	}
 
-	exports, err := str.ListExports(d.RequestCtx(), payload.ProjectID, string(payload.ReceiverID))
+	exports, err := str.ListExports(d.RequestCtx(), receiver.ReceiverKey)
 	if err != nil {
 		return err
 	}
@@ -369,7 +289,7 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 
 	errs := errors.NewMultiError()
 	for _, e := range exports {
-		mapping, err := str.GetMapping(ctx, payload.ProjectID, string(payload.ReceiverID), e.ID)
+		mapping, err := str.GetLatestMapping(ctx, e.ExportKey)
 		if err != nil {
 			return err
 		}
@@ -385,17 +305,10 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 		// nolint:godox
 		// TODO get fileID and sliceID
 
-		record := schema.RecordKey{
-			ProjectID:  payload.ProjectID,
-			ReceiverID: string(payload.ReceiverID),
-			ExportID:   e.ID,
-			FileID:     "file",
-			SliceID:    "slice",
-			ReceivedAt: receivedAt,
-		}
+		record := key.NewRecordKey(e.ProjectID, e.ReceiverID, e.ExportID, "file", "slice", receivedAt)
 		err = str.CreateRecord(ctx, record, csv)
 		if err != nil {
-			errs.AppendWithPrefixf(err, `failed to create record for export "%s"`, e.ID)
+			errs.AppendWithPrefixf(err, `failed to create record for export "%s"`, e.ExportID)
 		}
 	}
 
@@ -452,4 +365,49 @@ func isContentTypeForm(t string) bool {
 
 func formatUrl(bufferApiHost string, projectID int, receiverID string, secret string) string {
 	return fmt.Sprintf("https://%s/v1/import/%d/%s/%s", bufferApiHost, projectID, receiverID, secret)
+}
+
+func mapExportsToPayload(ctx context.Context, str *store.Store, exportList []model.Export) ([]*Export, error) {
+	exports := make([]*Export, 0, len(exportList))
+	for _, export := range exportList {
+		mapping, err := str.GetLatestMapping(ctx, export.ExportKey)
+		if err != nil {
+			return nil, err
+		}
+
+		columns := make([]*Column, 0, len(mapping.Columns))
+		for _, c := range mapping.Columns {
+			var template *Template
+			if v, ok := c.(column.Template); ok {
+				template = &Template{
+					Language:               v.Language,
+					UndefinedValueStrategy: v.UndefinedValueStrategy,
+					Content:                v.Content,
+					DataType:               v.DataType,
+				}
+			}
+			typ, _ := column.ColumnToType(c)
+			columns = append(columns, &Column{
+				Type:     typ,
+				Template: template,
+			})
+		}
+
+		exports = append(exports, &Export{
+			ID:         ExportID(export.ExportID),
+			ReceiverID: ReceiverID(export.ReceiverID),
+			Name:       export.Name,
+			Mapping: &Mapping{
+				TableID:     mapping.TableID.String(),
+				Incremental: &mapping.Incremental,
+				Columns:     columns,
+			},
+			Conditions: &Conditions{
+				Count: export.ImportConditions.Count,
+				Size:  export.ImportConditions.Size.String(),
+				Time:  export.ImportConditions.Time.String(),
+			},
+		})
+	}
+	return exports, nil
 }

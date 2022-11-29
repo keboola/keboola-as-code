@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
+	storeKey "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -35,68 +35,37 @@ type RecordsInSlice struct {
 	records
 }
 
-type RecordKey struct {
-	ProjectID  int
-	ReceiverID string
-	ExportID   string
-	FileID     string
-	SliceID    string
-	ReceivedAt time.Time
-}
-
 func (v *Schema) Records() RecordsRoot {
 	return RecordsRoot{records: NewPrefix("record")}
 }
 
-func (k RecordKey) In(schema *Schema) Key {
-	return schema.
-		Records().
-		InProject(k.ProjectID).
-		InReceiver(k.ReceiverID).
-		InExport(k.ExportID).
-		InFile(k.FileID).
-		InSlice(k.SliceID).
-		ID(FormatTimeForKey(k.ReceivedAt) + "_" + idgenerator.Random(5))
-}
-
-func (v RecordsRoot) InProject(projectID int) RecordsInProject {
-	if projectID == 0 {
+func (v RecordsRoot) ByKey(k storeKey.RecordKey) Key {
+	if k.ProjectID == 0 {
 		panic(errors.New("record projectID cannot be empty"))
 	}
-	return RecordsInProject{records: v.records.Add(strconv.Itoa(projectID))}
-}
-
-func (v RecordsInProject) InReceiver(receiverID string) RecordsInReceiver {
-	if receiverID == "" {
+	if k.ReceiverID == "" {
 		panic(errors.New("record receiverID cannot be empty"))
 	}
-	return RecordsInReceiver{records: v.records.Add(receiverID)}
-}
-
-func (v RecordsInReceiver) InExport(exportID string) RecordsInExport {
-	if exportID == "" {
+	if k.ExportID == "" {
 		panic(errors.New("record exportID cannot be empty"))
 	}
-	return RecordsInExport{records: v.records.Add(exportID)}
-}
-
-func (v RecordsInExport) InFile(fileID string) RecordsInFile {
-	if fileID == "" {
+	if k.FileID == "" {
 		panic(errors.New("record fileID cannot be empty"))
 	}
-	return RecordsInFile{records: v.records.Add(fileID)}
-}
-
-func (v RecordsInFile) InSlice(sliceID string) RecordsInSlice {
-	if sliceID == "" {
+	if k.SliceID == "" {
 		panic(errors.New("record sliceID cannot be empty"))
 	}
-	return RecordsInSlice{records: v.records.Add(sliceID)}
-}
-
-func (v RecordsInSlice) ID(recordID string) Key {
-	if recordID == "" {
-		panic(errors.New("record recordID cannot be empty"))
+	if k.ReceivedAt == (time.Time{}) {
+		panic(errors.New("record receivedAt cannot be empty"))
 	}
-	return v.records.Key(recordID)
+	if k.RandomSuffix == "" {
+		panic(errors.New("record randomSuffix cannot be empty"))
+	}
+	return v.records.
+		Add(strconv.Itoa(k.ProjectID)).
+		Add(k.ReceiverID).
+		Add(k.ExportID).
+		Add(k.FileID).
+		Add(k.SliceID).
+		Key(k.Key())
 }

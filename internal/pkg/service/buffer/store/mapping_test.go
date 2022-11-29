@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -16,9 +17,9 @@ func TestStore_GetMapping_GetMappingByRevisionID(t *testing.T) {
 
 	ctx := context.Background()
 	store := newStoreForTest(t)
-	projectID := 1000
-	receiverID := "receiver1"
-	exportID := "export1"
+
+	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "receiver1"}
+	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "export1"}
 	tableID := model.TableID{
 		Stage:  model.TableStageIn,
 		Bucket: "main",
@@ -28,19 +29,19 @@ func TestStore_GetMapping_GetMappingByRevisionID(t *testing.T) {
 	// Create mapppings
 	input := []model.Mapping{
 		{
-			RevisionID:  1,
+			MappingKey:  key.MappingKey{RevisionID: 1, ExportKey: exportKey},
 			TableID:     tableID,
 			Incremental: false,
 			Columns:     column.Columns{column.ID{}},
 		},
 		{
-			RevisionID:  2,
+			MappingKey:  key.MappingKey{RevisionID: 2, ExportKey: exportKey},
 			TableID:     tableID,
 			Incremental: false,
 			Columns:     column.Columns{column.ID{}},
 		},
 		{
-			RevisionID:  10,
+			MappingKey:  key.MappingKey{RevisionID: 10, ExportKey: exportKey},
 			TableID:     tableID,
 			Incremental: true,
 			Columns:     column.Columns{column.ID{}},
@@ -48,27 +49,27 @@ func TestStore_GetMapping_GetMappingByRevisionID(t *testing.T) {
 	}
 
 	for _, m := range input {
-		_, err := store.createMappingOp(ctx, projectID, receiverID, exportID, m).Do(ctx, store.client)
+		_, err := store.createMappingOp(ctx, m).Do(ctx, store.client)
 		assert.NoError(t, err)
 	}
 
 	// Get current mapping
-	mapping, err := store.GetMapping(ctx, projectID, receiverID, exportID)
+	mapping, err := store.GetLatestMapping(ctx, exportKey)
 	assert.NoError(t, err)
 	assert.Equal(t, input[2], mapping)
 
 	// Get mapping 1 by RevisionID
-	mapping, err = store.GetMappingByRevisionID(ctx, projectID, receiverID, exportID, input[0].RevisionID)
+	mapping, err = store.GetMapping(ctx, input[0].MappingKey)
 	assert.NoError(t, err)
 	assert.Equal(t, input[0], mapping)
 
 	// Get mapping 2 by RevisionID
-	mapping, err = store.GetMappingByRevisionID(ctx, projectID, receiverID, exportID, input[1].RevisionID)
+	mapping, err = store.GetMapping(ctx, input[1].MappingKey)
 	assert.NoError(t, err)
 	assert.Equal(t, input[1], mapping)
 
 	// Get mapping 10 by RevisionID
-	mapping, err = store.GetMappingByRevisionID(ctx, projectID, receiverID, exportID, input[2].RevisionID)
+	mapping, err = store.GetMapping(ctx, input[2].MappingKey)
 	assert.NoError(t, err)
 	assert.Equal(t, input[2], mapping)
 
@@ -78,6 +79,9 @@ func TestStore_GetMapping_GetMappingByRevisionID(t *testing.T) {
 config/mapping/revision/1000/receiver1/export1/00000001
 -----
 {
+  "projectId": 1000,
+  "receiverId": "receiver1",
+  "exportId": "export1",
   "revisionId": 1,
   "tableId": {
     "stage": "in",
@@ -97,6 +101,9 @@ config/mapping/revision/1000/receiver1/export1/00000001
 config/mapping/revision/1000/receiver1/export1/00000002
 -----
 {
+  "projectId": 1000,
+  "receiverId": "receiver1",
+  "exportId": "export1",
   "revisionId": 2,
   "tableId": {
     "stage": "in",
@@ -116,6 +123,9 @@ config/mapping/revision/1000/receiver1/export1/00000002
 config/mapping/revision/1000/receiver1/export1/00000010
 -----
 {
+  "projectId": 1000,
+  "receiverId": "receiver1",
+  "exportId": "export1",
   "revisionId": 10,
   "tableId": {
     "stage": "in",
