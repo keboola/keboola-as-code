@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func TestStore_GetMapping_GetMappingByRevisionID(t *testing.T) {
+func TestStore_Mapping_Ops(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()

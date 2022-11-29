@@ -13,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func TestStore_CreateReceiver(t *testing.T) {
+func TestStore_CreateReceiverBaseOp(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -28,7 +28,7 @@ func TestStore_CreateReceiver(t *testing.T) {
 		Name:   "Github Pull Requests",
 		Secret: idgenerator.ReceiverSecret(),
 	}
-	err := store.CreateReceiver(ctx, config)
+	_, err := store.createReceiverBaseOp(ctx, config).Do(ctx, store.client)
 	assert.NoError(t, err)
 
 	// Check keys
@@ -46,7 +46,7 @@ config/receiver/1000/github-pull-requests
 `)
 }
 
-func TestStore_GetReceiver(t *testing.T) {
+func TestStore_GetReceiverBaseOp(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -58,13 +58,13 @@ func TestStore_GetReceiver(t *testing.T) {
 		Name:        "Github Pull Requests",
 		Secret:      idgenerator.ReceiverSecret(),
 	}
-	err := store.CreateReceiver(ctx, input)
+	_, err := store.createReceiverBaseOp(ctx, input).Do(ctx, store.client)
 	assert.NoError(t, err)
 
 	// Get receiver
-	receiver, err := store.GetReceiver(ctx, input.ReceiverKey)
+	receiver, err := store.getReceiverBaseOp(ctx, input.ReceiverKey).Do(ctx, store.client)
 	assert.NoError(t, err)
-	assert.Equal(t, input, receiver)
+	assert.Equal(t, input, receiver.Value)
 
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
@@ -81,7 +81,7 @@ config/receiver/1000/github-pull-requests
 `)
 }
 
-func TestStore_ListReceivers(t *testing.T) {
+func TestStore_ListReceiversBaseOp(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -108,15 +108,15 @@ func TestStore_ListReceivers(t *testing.T) {
 	})
 
 	for _, r := range input {
-		err := store.CreateReceiver(ctx, r)
+		_, err := store.createReceiverBaseOp(ctx, r).Do(ctx, store.client)
 		assert.NoError(t, err)
 	}
 
 	// List receivers
-	receivers, err := store.ListReceivers(ctx, projectID)
+	receivers, err := store.listReceiversBaseOp(ctx, projectID).Do(ctx, store.client)
 	assert.NoError(t, err)
 
-	assert.Equal(t, input, receivers)
+	assert.Equal(t, input, receivers.Values())
 
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
@@ -131,6 +131,41 @@ config/receiver/1000/github-issues
 }
 >>>>>
 
+<<<<<
+config/receiver/1000/github-pull-requests
+-----
+{
+  "projectId": 1000,
+  "receiverId": "github-pull-requests",
+  "name": "Github Pull Requests",
+  "secret": "%s"
+}
+>>>>>
+`)
+}
+
+func TestStore_DeleteReceiverBaseOp(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := newStoreForTest(t)
+
+	// Create receiver
+	input := model.ReceiverBase{
+		ReceiverKey: key.ReceiverKey{ProjectID: 1000, ReceiverID: "github-pull-requests"},
+		Name:        "Github Pull Requests",
+		Secret:      idgenerator.ReceiverSecret(),
+	}
+	_, err := store.createReceiverBaseOp(ctx, input).Do(ctx, store.client)
+	assert.NoError(t, err)
+
+	// Get receiver
+	receiver, err := store.getReceiverBaseOp(ctx, input.ReceiverKey).Do(ctx, store.client)
+	assert.NoError(t, err)
+	assert.Equal(t, input, receiver.Value)
+
+	// Check keys
+	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
 config/receiver/1000/github-pull-requests
 -----
