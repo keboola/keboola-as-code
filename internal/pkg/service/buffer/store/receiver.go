@@ -133,6 +133,8 @@ func (s *Store) DeleteReceiver(ctx context.Context, receiverKey key.ReceiverKey)
 	_, err = op.MergeToTxn(
 		s.deleteReceiverBaseOp(ctx, receiverKey),
 		s.deleteExportBaseListOp(ctx, receiverKey),
+		s.schema.Configs().Mappings().InReceiver(receiverKey).DeleteAll(),
+		s.schema.Secrets().Tokens().InReceiver(receiverKey).DeleteAll(),
 	).Do(ctx, s.client)
 	return err
 }

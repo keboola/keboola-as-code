@@ -22,18 +22,19 @@ func (v SecretsRoot) Tokens() Tokens {
 	)}
 }
 
-func (v Tokens) InExport(k storeKey.ExportKey) KeyT[model.Token] {
+func (v Tokens) InReceiver(k storeKey.ReceiverKey) PrefixT[model.Token] {
 	if k.ProjectID == 0 {
 		panic(errors.New("export token projectID cannot be empty"))
 	}
 	if k.ReceiverID == "" {
 		panic(errors.New("export token receiverID cannot be empty"))
 	}
+	return v.tokens.Add(strconv.Itoa(k.ProjectID)).Add(k.ReceiverID)
+}
+
+func (v Tokens) InExport(k storeKey.ExportKey) KeyT[model.Token] {
 	if k.ExportID == "" {
 		panic(errors.New("export token exportID cannot be empty"))
 	}
-	return v.tokens.
-		Add(strconv.Itoa(k.ProjectID)).
-		Add(k.ReceiverID).
-		Key(k.ExportID)
+	return v.InReceiver(k.ReceiverKey).Key(k.ExportID)
 }

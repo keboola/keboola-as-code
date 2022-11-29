@@ -16,10 +16,6 @@ type Mappings struct {
 	mappings
 }
 
-type MappingsInProject struct {
-	mappings
-}
-
 type MappingsInReceiver struct {
 	mappings
 }
@@ -35,17 +31,21 @@ func (v ConfigsRoot) Mappings() Mappings {
 	)}
 }
 
-func (v Mappings) InExport(k storeKey.ExportKey) MappingsInExport {
+func (v Mappings) InReceiver(k storeKey.ReceiverKey) MappingsInReceiver {
 	if k.ProjectID == 0 {
 		panic(errors.New("mapping projectID cannot be empty"))
 	}
 	if k.ReceiverID == "" {
 		panic(errors.New("mapping receiverID cannot be empty"))
 	}
+	return MappingsInReceiver{mappings: v.mappings.Add(strconv.Itoa(k.ProjectID)).Add(k.ReceiverID)}
+}
+
+func (v Mappings) InExport(k storeKey.ExportKey) MappingsInExport {
 	if k.ExportID == "" {
 		panic(errors.New("mapping exportID cannot be empty"))
 	}
-	return MappingsInExport{mappings: v.mappings.Add(strconv.Itoa(k.ProjectID)).Add(k.ReceiverID).Add(k.ExportID)}
+	return MappingsInExport{mappings: v.InReceiver(k.ReceiverKey).Add(k.ExportID)}
 }
 
 func (v Mappings) ByKey(k storeKey.MappingKey) KeyT[model.Mapping] {
