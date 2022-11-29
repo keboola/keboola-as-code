@@ -26,8 +26,8 @@ type Receiver struct {
 
 type Export struct {
 	ExportBase
-	Mapping
-	Token
+	Mapping Mapping
+	Token   Token
 }
 
 type ReceiverBase struct {
