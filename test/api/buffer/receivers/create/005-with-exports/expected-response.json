@@ -6,7 +6,7 @@
     {
       "id": "my-export-1",
       "receiverId": "my-receiver-with-exports",
-      "name": "my-export-1",
+      "name": "My Export 1",
       "mapping": {
         "tableId": "in.c-bucket.table",
         "incremental": true,
@@ -32,3 +32,4 @@
     }
   ]
 }
+

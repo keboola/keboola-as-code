@@ -6,7 +6,8 @@
     "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
   },
   "body": {
-    "name": "my-export-1",
+    "exportId": "my-export-1",
+    "name": "My Export 1",
     "mapping": {
       "tableId": "in.c-bucket.table",
       "columns": [

@@ -1,7 +1,7 @@
 {
   "id": "receiver-with-empty-exports",
   "url": "https://buffer.keboola.local/v1/import/%%TEST_KBC_PROJECT_ID%%/receiver-with-empty-exports/%s",
-  "name": "My Receiver",
+  "name": "Receiver With Empty Exports",
   "exports": []
 }
 

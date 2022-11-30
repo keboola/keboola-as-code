@@ -7,7 +7,7 @@
   },
   "body": {
     "id": "123456789-123456789-123456789-123456789-123456789",
-    "name": "my-export-2",
+    "name": "My Export 2",
     "mapping": {
       "tableId": "in.c-bucket.table",
       "columns": [

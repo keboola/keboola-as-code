@@ -5,7 +5,7 @@
     "Content-Type": "application/json"
   },
   "body": {
-    "name": "my-export-2",
+    "name": "My Export 2",
     "mapping": {
       "tableId": "in.c-bucket.table",
       "columns": [

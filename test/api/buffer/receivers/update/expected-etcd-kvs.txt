@@ -5,7 +5,7 @@
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "receiverId": "my-receiver",
   "exportId": "my-export-1",
-  "name": "my-export-1",
+  "name": "My Export 1",
   "importConditions": {
     "count": 500,
     "size": "100KB",

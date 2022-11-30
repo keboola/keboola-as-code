@@ -1,7 +1,7 @@
 {
   "id": "my-export-2",
   "receiverId": "my-receiver",
-  "name": "my-export-2",
+  "name": "My Export 2",
   "mapping": {
     "tableId": "in.c-bucket.table",
     "incremental": true,
