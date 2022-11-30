@@ -7,7 +7,28 @@
   },
   "body": {
     "name": "Receiver C",
-    "exports": []
+    "exports": [
+      {
+        "name": "Export 2",
+        "mapping": {
+          "tableId": "in.c-bucket.table",
+          "incremental": false,
+          "columns": [
+            {
+              "type": "id"
+            },
+            {
+              "type": "body"
+            }
+          ]
+        },
+        "conditions": {
+          "count": 123,
+          "size": "456B",
+          "time": "30s"
+        }
+      }
+    ]
   }
 }
 

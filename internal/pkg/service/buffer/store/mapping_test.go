@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func TestStore_GetMapping_GetMappingByRevisionID(t *testing.T) {
+func TestStore_Mapping_Ops(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -141,4 +141,123 @@ config/mapping/revision/1000/receiver1/export1/00000010
 }
 >>>>>
 `)
+
+	_, err = store.deleteExportMappingsOp(ctx, exportKey).Do(ctx, store.client)
+	assert.NoError(t, err)
+
+	etcdhelper.AssertKVs(t, store.client, ``)
+}
+
+func TestStore_DeleteReceiverMappingsOp(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := newStoreForTest(t)
+
+	export1 := key.ExportKey{ReceiverKey: key.ReceiverKey{ProjectID: 1000, ReceiverID: "receiver1"}, ExportID: "export1"}
+	export0 := key.ExportKey{ReceiverKey: key.ReceiverKey{ProjectID: 1000, ReceiverID: "receiver0"}, ExportID: "export0"}
+	tableID := model.TableID{
+		Stage:  model.TableStageIn,
+		Bucket: "main",
+		Table:  "table1",
+	}
+
+	// Create mapppings
+	input := []model.Mapping{
+		{
+			MappingKey:  key.MappingKey{RevisionID: 1, ExportKey: export0},
+			TableID:     tableID,
+			Incremental: false,
+			Columns:     column.Columns{column.ID{}},
+		},
+		{
+			MappingKey:  key.MappingKey{RevisionID: 2, ExportKey: export1},
+			TableID:     tableID,
+			Incremental: false,
+			Columns:     column.Columns{column.ID{}},
+		},
+	}
+
+	for _, m := range input {
+		_, err := store.createMappingOp(ctx, m).Do(ctx, store.client)
+		assert.NoError(t, err)
+	}
+
+	etcdhelper.AssertKVs(t, store.client, `
+<<<<<
+config/mapping/revision/1000/receiver0/export0/00000001
+-----
+{
+  "projectId": 1000,
+  "receiverId": "receiver0",
+  "exportId": "export0",
+  "revisionId": 1,
+  "tableId": {
+    "stage": "in",
+    "bucketName": "main",
+    "tableName": "table1"
+  },
+  "incremental": false,
+  "columns": [
+    {
+      "type": "id"
+    }
+  ]
+}
+>>>>>
+
+<<<<<
+config/mapping/revision/1000/receiver1/export1/00000002
+-----
+{
+  "projectId": 1000,
+  "receiverId": "receiver1",
+  "exportId": "export1",
+  "revisionId": 2,
+  "tableId": {
+    "stage": "in",
+    "bucketName": "main",
+    "tableName": "table1"
+  },
+  "incremental": false,
+  "columns": [
+    {
+      "type": "id"
+    }
+  ]
+}
+>>>>>
+`)
+
+	_, err := store.deleteReceiverMappingsOp(ctx, export0.ReceiverKey).Do(ctx, store.client)
+	assert.NoError(t, err)
+
+	etcdhelper.AssertKVs(t, store.client, `
+<<<<<
+config/mapping/revision/1000/receiver1/export1/00000002
+-----
+{
+  "projectId": 1000,
+  "receiverId": "receiver1",
+  "exportId": "export1",
+  "revisionId": 2,
+  "tableId": {
+    "stage": "in",
+    "bucketName": "main",
+    "tableName": "table1"
+  },
+  "incremental": false,
+  "columns": [
+    {
+      "type": "id"
+    }
+  ]
+}
+>>>>>
+`)
+
+	_, err = store.deleteReceiverMappingsOp(ctx, export1.ReceiverKey).Do(ctx, store.client)
+	assert.NoError(t, err)
+
+	etcdhelper.AssertKVs(t, store.client, ``)
 }

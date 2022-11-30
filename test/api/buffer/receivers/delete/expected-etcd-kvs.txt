@@ -49,3 +49,9 @@
   "secret": "%s"
 }
 >>>>>
+
+<<<<<
+/secret/export/token/%%TEST_KBC_PROJECT_ID%%/receiver-b/export-1
+-----
+%A
+>>>>>

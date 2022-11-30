@@ -52,12 +52,24 @@ func TestSchema(t *testing.T) {
 			"config/mapping/revision/",
 		},
 		{
+			s.Configs().Mappings().InReceiver(key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}).Prefix(),
+			"config/mapping/revision/123/my-receiver/",
+		},
+		{
 			s.Configs().Mappings().InExport(key.ExportKey{ExportID: "my-export", ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}}).Prefix(),
 			"config/mapping/revision/123/my-receiver/my-export/",
 		},
 		{
 			s.Configs().Mappings().ByKey(key.MappingKey{ExportKey: key.ExportKey{ExportID: "my-export", ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}}, RevisionID: 10}).Key(),
 			"config/mapping/revision/123/my-receiver/my-export/00000010",
+		},
+		{
+			s.Secrets().Tokens().InReceiver(key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}).Prefix(),
+			"secret/export/token/123/my-receiver/",
+		},
+		{
+			s.Secrets().Tokens().InExport(key.ExportKey{ExportID: "my-export", ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}}).Key(),
+			"secret/export/token/123/my-receiver/my-export",
 		},
 		{
 			s.Records().Prefix(),

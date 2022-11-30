@@ -93,6 +93,10 @@ func (v project) ProjectFeatures() storageapi.FeaturesMap {
 	return v.projectFeatures
 }
 
+func (v project) StorageAPIToken() storageapi.Token {
+	return v.token
+}
+
 func (v project) StorageAPITokenID() string {
 	return v.token.ID
 }

@@ -81,7 +81,7 @@ func start(host, port string, debug, debugHTTP bool, stdLogger *stdLog.Logger, e
 		return err
 	}
 
-	svc := service.New()
+	svc := service.New(d)
 
 	// Wrap the services in endpoints that can be invoked from other services
 	// potentially running in different processes.

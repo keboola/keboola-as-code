@@ -16,7 +16,7 @@ import (
 // Logic errors:
 // - CountLimitReachedError
 // - ResourceAlreadyExistsError.
-func (s *Store) CreateExport(ctx context.Context, export model.ExportBase) (err error) {
+func (s *Store) CreateExport(ctx context.Context, export model.Export) (err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.CreateExport")
 	defer telemetry.EndSpan(span, &err)
 
@@ -27,11 +27,15 @@ func (s *Store) CreateExport(ctx context.Context, export model.ExportBase) (err 
 		return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
 	}
 
-	_, err = s.createExportOp(ctx, export).Do(ctx, s.client)
+	_, err = op.MergeToTxn(
+		s.createExportBaseOp(ctx, export.ExportBase),
+		s.createMappingOp(ctx, export.Mapping),
+		s.createTokenOp(ctx, model.TokenForExport{ExportKey: export.ExportKey, Token: export.Token}),
+	).Do(ctx, s.client)
 	return err
 }
 
-func (s *Store) createExportOp(_ context.Context, export model.ExportBase) op.BoolOp {
+func (s *Store) createExportBaseOp(_ context.Context, export model.ExportBase) op.BoolOp {
 	return s.schema.
 		Configs().
 		Exports().
@@ -48,18 +52,30 @@ func (s *Store) createExportOp(_ context.Context, export model.ExportBase) op.Bo
 // GetExport fetches an export from the store.
 // Logic errors:
 // - ResourceNotFoundError.
-func (s *Store) GetExport(ctx context.Context, exportKey key.ExportKey) (r model.ExportBase, err error) {
+func (s *Store) GetExport(ctx context.Context, exportKey key.ExportKey) (r model.Export, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetExport")
 	defer telemetry.EndSpan(span, &err)
 
-	kv, err := s.getExportOp(ctx, exportKey).Do(ctx, s.client)
+	export, err := s.getExportBaseOp(ctx, exportKey).Do(ctx, s.client)
 	if err != nil {
-		return model.ExportBase{}, err
+		return model.Export{}, err
 	}
-	return kv.Value, nil
+	mapping, err := s.getLatestMappingOp(ctx, exportKey).Do(ctx, s.client)
+	if err != nil {
+		return model.Export{}, err
+	}
+	token, err := s.getTokenOp(ctx, exportKey).Do(ctx, s.client)
+	if err != nil {
+		return model.Export{}, err
+	}
+	return model.Export{
+		ExportBase: export.Value,
+		Mapping:    mapping.Value,
+		Token:      token.Value.Token,
+	}, nil
 }
 
-func (s *Store) getExportOp(_ context.Context, exportKey key.ExportKey) op.ForType[*op.KeyValueT[model.ExportBase]] {
+func (s *Store) getExportBaseOp(_ context.Context, exportKey key.ExportKey) op.ForType[*op.KeyValueT[model.ExportBase]] {
 	return s.schema.
 		Configs().
 		Exports().
@@ -74,20 +90,40 @@ func (s *Store) getExportOp(_ context.Context, exportKey key.ExportKey) op.ForTy
 }
 
 // ListExports from the store.
-func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey) (out []model.ExportBase, err error) {
+func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey) (out []model.Export, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.ListExports")
 	defer telemetry.EndSpan(span, &err)
 
-	kvs, err := s.listExportsOp(ctx, receiverKey).Do(ctx, s.client)
+	exportKvs, err := s.listExportsBaseOp(ctx, receiverKey).Do(ctx, s.client)
 	if err != nil {
 		return nil, err
 	}
+	exports := make([]model.Export, 0, len(exportKvs))
+	for _, export := range exportKvs {
+		mapping, err := s.getLatestMappingOp(ctx, export.Value.ExportKey).Do(ctx, s.client)
+		if err != nil {
+			return nil, err
+		}
+		token, err := s.getTokenOp(ctx, export.Value.ExportKey).Do(ctx, s.client)
+		if err != nil {
+			return nil, err
+		}
+		exports = append(exports, model.Export{
+			ExportBase: export.Value,
+			Mapping:    mapping.Value,
+			Token:      token.Value.Token,
+		})
+	}
 
-	return kvs.Values(), nil
+	return exports, nil
 }
 
-func (s *Store) listExportsOp(_ context.Context, receiverKey key.ReceiverKey) op.ForType[op.KeyValuesT[model.ExportBase]] {
-	return s.schema.Configs().Exports().InReceiver(receiverKey).GetAll(etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
+func (s *Store) listExportsBaseOp(_ context.Context, receiverKey key.ReceiverKey) op.ForType[op.KeyValuesT[model.ExportBase]] {
+	return s.schema.
+		Configs().
+		Exports().
+		InReceiver(receiverKey).
+		GetAll(etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
 }
 
 // DeleteExport deletes an export from the store.
@@ -97,11 +133,15 @@ func (s *Store) DeleteExport(ctx context.Context, exportKey key.ExportKey) (err 
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.DeleteReceiver")
 	defer telemetry.EndSpan(span, &err)
 
-	_, err = s.deleteExportOp(ctx, exportKey).Do(ctx, s.client)
+	_, err = op.MergeToTxn(
+		s.deleteExportBaseOp(ctx, exportKey),
+		s.deleteExportMappingsOp(ctx, exportKey),
+		s.deleteExportTokenOp(ctx, exportKey),
+	).Do(ctx, s.client)
 	return err
 }
 
-func (s *Store) deleteExportOp(_ context.Context, exportKey key.ExportKey) op.BoolOp {
+func (s *Store) deleteExportBaseOp(_ context.Context, exportKey key.ExportKey) op.BoolOp {
 	return s.schema.
 		Configs().
 		Exports().
@@ -113,4 +153,12 @@ func (s *Store) deleteExportOp(_ context.Context, exportKey key.ExportKey) op.Bo
 			}
 			return ok, err
 		})
+}
+
+func (s *Store) deleteReceiverExportsOp(_ context.Context, receiverKey key.ReceiverKey) op.CountOp {
+	return s.schema.
+		Configs().
+		Exports().
+		InReceiver(receiverKey).
+		DeleteAll()
 }

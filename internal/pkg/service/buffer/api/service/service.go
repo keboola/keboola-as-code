@@ -1,12 +1,10 @@
 package service
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -17,20 +15,25 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	utilsUrl "github.com/keboola/keboola-as-code/internal/pkg/utils/url"
 )
 
-type service struct{}
+type service struct {
+	mapper mapper.Mapper
+}
 
-func New() Service {
-	return &service{}
+type serviceDeps interface {
+	BufferApiHost() string
+}
+
+func New(d serviceDeps) Service {
+	return &service{mapper: mapper.NewMapper(d.BufferApiHost())}
 }
 
 func (s *service) APIRootIndex(dependencies.ForPublicRequest) (err error) {
@@ -54,105 +57,24 @@ func (s *service) HealthCheck(dependencies.ForPublicRequest) (res string, err er
 // TODO: collect errors instead of bailing on the first one
 
 func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.Receiver, err error) {
-	ctx, str := d.RequestCtx(), d.Store()
+	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
 
-	receiver := model.ReceiverBase{
-		ReceiverKey: key.ReceiverKey{
-			ProjectID: d.ProjectID(),
-		},
-		Name: payload.Name,
-	}
-
-	// Generate receiver ID from Name if needed
-	if payload.ID != nil && len(*payload.ID) != 0 {
-		receiver.ReceiverID = strhelper.NormalizeName(string(*payload.ID))
-	} else {
-		receiver.ReceiverID = strhelper.NormalizeName(receiver.Name)
-	}
+	token := d.StorageAPIToken()
 
 	// Generate Secret
-	receiver.Secret = idgenerator.ReceiverSecret()
+	secret := idgenerator.ReceiverSecret()
 
-	for _, exportData := range payload.Exports {
-		export := model.ExportBase{
-			Name:             exportData.Name,
-			ImportConditions: model.DefaultConditions(),
-		}
-		export.ReceiverKey = receiver.ReceiverKey
-
-		if exportData.Conditions != nil {
-			export.ImportConditions.Count = exportData.Conditions.Count
-			export.ImportConditions.Size, err = datasize.ParseString(exportData.Conditions.Size)
-			if err != nil {
-				return nil, NewBadRequestError(errors.Errorf(
-					`value "%s" is not valid buffer size in bytes. Allowed units: B, kB, MB. For example: "5MB"`,
-					exportData.Conditions.Size,
-				))
-			}
-			export.ImportConditions.Time, err = time.ParseDuration(exportData.Conditions.Time)
-			if err != nil {
-				return nil, NewBadRequestError(errors.Errorf(
-					`value "%s" is not valid time duration. Allowed units: s, m, h. For example: "30s"`,
-					exportData.Conditions.Size,
-				))
-			}
-		}
-
-		// Generate export ID from Name if needed
-		if exportData.ID != nil && len(*exportData.ID) != 0 {
-			export.ExportID = string(*exportData.ID)
-		} else {
-			export.ExportID = strhelper.NormalizeName(export.Name)
-		}
-
-		// nolint:godox
-		// TODO: create mappings
-
-		tableID, err := model.ParseTableID(exportData.Mapping.TableID)
-		if err != nil {
-			return nil, err
-		}
-		columns := make([]column.Column, 0, len(exportData.Mapping.Columns))
-		for _, columnData := range exportData.Mapping.Columns {
-			c, err := column.TypeToColumn(columnData.Type)
-			if err != nil {
-				return nil, err
-			}
-			if template, ok := c.(column.Template); ok {
-				if columnData.Template == nil {
-					return nil, errors.Errorf("missing template column data")
-				}
-				template.Language = columnData.Template.Language
-				template.UndefinedValueStrategy = columnData.Template.UndefinedValueStrategy
-				template.Content = columnData.Template.Content
-				c = template
-			}
-			columns = append(columns, c)
-		}
-
-		mapping := model.Mapping{
-			TableID:     tableID,
-			Incremental: exportData.Mapping.Incremental == nil || *exportData.Mapping.Incremental, // default true
-			Columns:     columns,
-		}
-		mapping.ExportKey = export.ExportKey
-
-		// Persist mapping
-		err = str.CreateMapping(ctx, mapping)
-		if err != nil {
-			return nil, err
-		}
-
-		// Persist export
-		if err := str.CreateExport(ctx, export); err != nil {
-			return nil, err
-		}
+	// Map payload to receiver
+	receiver, err := mpr.ReceiverModelFromPayload(d.ProjectID(), token, secret, *payload)
+	if err != nil {
+		return nil, err
 	}
 
 	// Persist receiver
 	if err := str.CreateReceiver(ctx, receiver); err != nil {
 		return nil, err
 	}
+
 	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: ReceiverID(receiver.ReceiverID)})
 }
 
@@ -161,79 +83,41 @@ func (s *service) UpdateReceiver(dependencies.ForProjectRequest, *UpdateReceiver
 }
 
 func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *GetReceiverPayload) (res *Receiver, err error) {
-	ctx, str := d.RequestCtx(), d.Store()
+	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
 
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
+
 	receiver, err := str.GetReceiver(ctx, receiverKey)
 	if err != nil {
 		return nil, err
 	}
 
-	exportList, err := str.ListExports(ctx, receiverKey)
-	if err != nil {
-		return nil, err
-	}
+	resp := mpr.ReceiverPayloadFromModel(receiver)
 
-	exports, err := mapExportsToPayload(ctx, str, exportList)
-	if err != nil {
-		return nil, err
-	}
-
-	url := formatUrl(d.BufferApiHost(), receiver.ProjectID, receiver.ReceiverID, receiver.Secret)
-	resp := &buffer.Receiver{
-		ID:      ReceiverID(receiver.ReceiverID),
-		Name:    receiver.Name,
-		URL:     url,
-		Exports: exports,
-	}
-
-	return resp, nil
+	return &resp, nil
 }
 
 func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListReceiversPayload) (res *buffer.ReceiversList, err error) {
-	ctx, str := d.RequestCtx(), d.Store()
+	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
 
 	projectID := d.ProjectID()
 
-	receiverList, err := str.ListReceivers(ctx, projectID)
+	model, err := str.ListReceivers(ctx, projectID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list receivers in project \"%d\"", projectID)
 	}
 
-	bufferApiHost := d.BufferApiHost()
-
-	receivers := make([]*buffer.Receiver, 0, len(receiverList))
-	for _, receiverData := range receiverList {
-		exportList, err := str.ListExports(ctx, receiverData.ReceiverKey)
-		if err != nil {
-			return nil, errors.Wrapf(err, `failed to list exports for receiver "%s"`, receiverData.ReceiverID)
-		}
-
-		exports, err := mapExportsToPayload(ctx, str, exportList)
-		if err != nil {
-			return nil, err
-		}
-
-		receivers = append(receivers, &buffer.Receiver{
-			ID:      ReceiverID(receiverData.ReceiverID),
-			Name:    receiverData.Name,
-			URL:     formatUrl(bufferApiHost, receiverData.ProjectID, receiverData.ReceiverID, receiverData.Secret),
-			Exports: exports,
-		})
+	receivers := make([]*Receiver, 0, len(model))
+	for _, data := range model {
+		receiver := mpr.ReceiverPayloadFromModel(data)
+		receivers = append(receivers, &receiver)
 	}
-
-	sort.SliceStable(receivers, func(i, j int) bool {
-		return receivers[i].ID < receivers[j].ID
-	})
 
 	return &buffer.ReceiversList{Receivers: receivers}, nil
 }
 
 func (s *service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer.DeleteReceiverPayload) (err error) {
 	ctx, str := d.RequestCtx(), d.Store()
-
-	// nolint:godox
-	// TODO: delete export/mapping
 
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
 	if err := str.DeleteReceiver(ctx, receiverKey); err != nil {
@@ -280,22 +164,13 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 		return err
 	}
 
-	exports, err := str.ListExports(d.RequestCtx(), receiver.ReceiverKey)
-	if err != nil {
-		return err
-	}
-
 	importCtx := column.NewImportCtx(data, header, ip)
 	receivedAt := time.Now()
 
 	errs := errors.NewMultiError()
-	for _, e := range exports {
-		mapping, err := str.GetLatestMapping(ctx, e.ExportKey)
-		if err != nil {
-			return err
-		}
+	for _, e := range receiver.Exports {
 		csv := make([]string, 0)
-		for _, c := range mapping.Columns {
+		for _, c := range e.Mapping.Columns {
 			csvValue, err := c.CsvValue(importCtx)
 			if err != nil {
 				return err
@@ -362,52 +237,4 @@ func parseRequestBody(contentType string, reader io.ReadCloser) (res *orderedmap
 
 func isContentTypeForm(t string) bool {
 	return strings.HasPrefix(t, "application/x-www-form-urlencoded")
-}
-
-func formatUrl(bufferApiHost string, projectID int, receiverID string, secret string) string {
-	return fmt.Sprintf("https://%s/v1/import/%d/%s/%s", bufferApiHost, projectID, receiverID, secret)
-}
-
-func mapExportsToPayload(ctx context.Context, str *store.Store, exportList []model.ExportBase) ([]*Export, error) {
-	exports := make([]*Export, 0, len(exportList))
-	for _, export := range exportList {
-		mapping, err := str.GetLatestMapping(ctx, export.ExportKey)
-		if err != nil {
-			return nil, err
-		}
-
-		columns := make([]*Column, 0, len(mapping.Columns))
-		for _, c := range mapping.Columns {
-			var template *Template
-			if v, ok := c.(column.Template); ok {
-				template = &Template{
-					Language:               v.Language,
-					UndefinedValueStrategy: v.UndefinedValueStrategy,
-					Content:                v.Content,
-				}
-			}
-			typ, _ := column.ColumnToType(c)
-			columns = append(columns, &Column{
-				Type:     typ,
-				Template: template,
-			})
-		}
-
-		exports = append(exports, &Export{
-			ID:         ExportID(export.ExportID),
-			ReceiverID: ReceiverID(export.ReceiverID),
-			Name:       export.Name,
-			Mapping: &Mapping{
-				TableID:     mapping.TableID.String(),
-				Incremental: &mapping.Incremental,
-				Columns:     columns,
-			},
-			Conditions: &Conditions{
-				Count: export.ImportConditions.Count,
-				Size:  export.ImportConditions.Size.String(),
-				Time:  export.ImportConditions.Time.String(),
-			},
-		})
-	}
-	return exports, nil
 }

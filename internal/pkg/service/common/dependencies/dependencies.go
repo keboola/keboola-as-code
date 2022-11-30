@@ -92,6 +92,7 @@ type Project interface {
 	ProjectID() int
 	ProjectName() string
 	ProjectFeatures() storageapi.FeaturesMap
+	StorageAPIToken() storageapi.Token
 	StorageAPITokenID() string
 	StorageAPIClient() client.Sender
 	SchedulerAPIClient() client.Sender
