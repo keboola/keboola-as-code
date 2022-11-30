@@ -30,7 +30,7 @@ func (s *Store) CreateExport(ctx context.Context, export model.Export) (err erro
 	_, err = op.MergeToTxn(
 		s.createExportBaseOp(ctx, export.ExportBase),
 		s.createMappingOp(ctx, export.Mapping),
-		s.createTokenOp(ctx, export.ExportKey, export.Token),
+		s.createTokenOp(ctx, model.TokenForExport{ExportKey: export.ExportKey, Token: export.Token}),
 	).Do(ctx, s.client)
 	return err
 }
@@ -71,7 +71,7 @@ func (s *Store) GetExport(ctx context.Context, exportKey key.ExportKey) (r model
 	return model.Export{
 		ExportBase: export.Value,
 		Mapping:    mapping.Value,
-		Token:      token.Value,
+		Token:      token.Value.Token,
 	}, nil
 }
 
@@ -111,7 +111,7 @@ func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey) (o
 		exports = append(exports, model.Export{
 			ExportBase: export.Value,
 			Mapping:    mapping.Value,
-			Token:      token.Value,
+			Token:      token.Value.Token,
 		})
 	}
 

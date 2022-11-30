@@ -9,20 +9,20 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type tokens = PrefixT[model.Token]
+type tokens = PrefixT[model.TokenForExport]
 
 type Tokens struct {
 	tokens
 }
 
 func (v SecretsRoot) Tokens() Tokens {
-	return Tokens{tokens: NewTypedPrefix[model.Token](
+	return Tokens{tokens: NewTypedPrefix[model.TokenForExport](
 		v.prefix.Add("export/token"),
 		v.schema.serialization,
 	)}
 }
 
-func (v Tokens) InReceiver(k storeKey.ReceiverKey) PrefixT[model.Token] {
+func (v Tokens) InReceiver(k storeKey.ReceiverKey) PrefixT[model.TokenForExport] {
 	if k.ProjectID == 0 {
 		panic(errors.New("export token projectID cannot be empty"))
 	}
@@ -32,7 +32,7 @@ func (v Tokens) InReceiver(k storeKey.ReceiverKey) PrefixT[model.Token] {
 	return v.tokens.Add(strconv.Itoa(k.ProjectID)).Add(k.ReceiverID)
 }
 
-func (v Tokens) InExport(k storeKey.ExportKey) KeyT[model.Token] {
+func (v Tokens) InExport(k storeKey.ExportKey) KeyT[model.TokenForExport] {
 	if k.ExportID == "" {
 		panic(errors.New("export token exportID cannot be empty"))
 	}

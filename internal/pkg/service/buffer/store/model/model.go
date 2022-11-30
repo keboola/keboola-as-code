@@ -21,13 +21,13 @@ const (
 
 type Receiver struct {
 	ReceiverBase
-	Exports []Export
+	Exports []Export `validate:"dive"`
 }
 
 type Export struct {
 	ExportBase
-	Mapping Mapping
-	Token   Token
+	Mapping Mapping `validate:"dive"`
+	Token   Token   `validate:"dive"`
 }
 
 type ReceiverBase struct {
@@ -43,6 +43,11 @@ type ExportBase struct {
 }
 
 type Token = storageapi.Token
+
+type TokenForExport struct {
+	key.ExportKey
+	Token `validate:"dive"`
+}
 
 type Mapping struct {
 	key.MappingKey

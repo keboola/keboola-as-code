@@ -33,7 +33,7 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 		ops = append(ops,
 			s.createExportBaseOp(ctx, export.ExportBase),
 			s.createMappingOp(ctx, export.Mapping),
-			s.createTokenOp(ctx, export.ExportKey, export.Token),
+			s.createTokenOp(ctx, model.TokenForExport{ExportKey: export.ExportKey, Token: export.Token}),
 		)
 	}
 

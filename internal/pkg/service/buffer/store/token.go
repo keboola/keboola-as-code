@@ -11,27 +11,27 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 )
 
-func (s *Store) createTokenOp(_ context.Context, exportKey key.ExportKey, token model.Token) op.BoolOp {
+func (s *Store) createTokenOp(_ context.Context, token model.TokenForExport) op.BoolOp {
 	return s.schema.
 		Secrets().
 		Tokens().
-		InExport(exportKey).
+		InExport(token.ExportKey).
 		PutIfNotExists(token).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
 			if !ok && err == nil {
-				return false, serviceError.NewResourceAlreadyExistsError("token", exportKey.String(), "export")
+				return false, serviceError.NewResourceAlreadyExistsError("token", token.ExportKey.String(), "export")
 			}
 			return ok, err
 		})
 }
 
-func (s *Store) getTokenOp(_ context.Context, exportKey key.ExportKey) op.ForType[*op.KeyValueT[model.Token]] {
+func (s *Store) getTokenOp(_ context.Context, exportKey key.ExportKey) op.ForType[*op.KeyValueT[model.TokenForExport]] {
 	return s.schema.
 		Secrets().
 		Tokens().
 		InExport(exportKey).
 		Get().
-		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Token], err error) (*op.KeyValueT[model.Token], error) {
+		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.TokenForExport], err error) (*op.KeyValueT[model.TokenForExport], error) {
 			if kv == nil && err == nil {
 				return nil, serviceError.NewResourceNotFoundError("token", exportKey.String())
 			}

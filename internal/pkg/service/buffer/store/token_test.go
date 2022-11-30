@@ -20,9 +20,9 @@ func TestStore_GetTokenOp(t *testing.T) {
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "receiver1"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "export1"}
 
-	input := model.Token{Token: "test"}
+	input := model.TokenForExport{ExportKey: exportKey, Token: model.Token{Token: "test"}}
 
-	_, err := store.createTokenOp(ctx, exportKey, input).Do(ctx, store.client)
+	_, err := store.createTokenOp(ctx, input).Do(ctx, store.client)
 	assert.NoError(t, err)
 
 	token, err := store.getTokenOp(ctx, exportKey).Do(ctx, store.client)
@@ -34,6 +34,9 @@ func TestStore_GetTokenOp(t *testing.T) {
 secret/export/token/1000/receiver1/export1
 -----
 {
+  "projectId": 1000,
+  "receiverId": "receiver1",
+  "exportId": "export1",
   "token": "test",
   "id": "",
   "description": "",
@@ -66,9 +69,9 @@ func TestStore_DeleteTokenOp(t *testing.T) {
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "receiver1"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "export1"}
 
-	input := model.Token{Token: "test"}
+	input := model.TokenForExport{ExportKey: exportKey, Token: model.Token{Token: "test"}}
 
-	_, err := store.createTokenOp(ctx, exportKey, input).Do(ctx, store.client)
+	_, err := store.createTokenOp(ctx, input).Do(ctx, store.client)
 	assert.NoError(t, err)
 
 	token, err := store.getTokenOp(ctx, exportKey).Do(ctx, store.client)
@@ -80,6 +83,9 @@ func TestStore_DeleteTokenOp(t *testing.T) {
 secret/export/token/1000/receiver1/export1
 -----
 {
+  "projectId": 1000,
+  "receiverId": "receiver1",
+  "exportId": "export1",
   "token": "test",
   "id": "",
   "description": "",
