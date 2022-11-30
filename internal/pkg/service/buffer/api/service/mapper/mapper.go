@@ -56,6 +56,30 @@ func (m Mapper) ExportPayloadFromModel(model model.Export) buffer.Export {
 	}
 }
 
+func (m Mapper) UpdateExportFromPayload(export model.Export, payload buffer.UpdateExportPayload) (r model.Export, err error) {
+	if payload.Name != nil {
+		export.Name = *payload.Name
+	}
+
+	if payload.Mapping != nil {
+		newMapping, err := m.MappingFromPayload(export.ExportKey, export.Mapping.RevisionID+1, *payload.Mapping)
+		if err != nil {
+			return model.Export{}, err
+		}
+		export.Mapping = newMapping
+	}
+
+	if payload.Conditions != nil {
+		newConditions, err := m.ConditionsFromPayload(payload.Conditions)
+		if err != nil {
+			return model.Export{}, err
+		}
+		export.ImportConditions = newConditions
+	}
+
+	return export, nil
+}
+
 func (m Mapper) MappingPayloadFromModel(model model.Mapping) buffer.Mapping {
 	columns := make([]*buffer.Column, 0, len(model.Columns))
 	for _, c := range model.Columns {
@@ -159,23 +183,9 @@ func (m Mapper) ExportBaseFromPayload(receiverKey key.ReceiverKey, payload buffe
 	}
 
 	// Handle conditions with defaults
-	conditions := model.DefaultConditions()
-	if payload.Conditions != nil {
-		conditions.Count = payload.Conditions.Count
-		conditions.Size, err = datasize.ParseString(payload.Conditions.Size)
-		if err != nil {
-			return model.ExportBase{}, serviceError.NewBadRequestError(errors.Errorf(
-				`value "%s" is not valid buffer size in bytes. Allowed units: B, kB, MB. For example: "5MB"`,
-				payload.Conditions.Size,
-			))
-		}
-		conditions.Time, err = time.ParseDuration(payload.Conditions.Time)
-		if err != nil {
-			return model.ExportBase{}, serviceError.NewBadRequestError(errors.Errorf(
-				`value "%s" is not valid time duration. Allowed units: s, m, h. For example: "30s"`,
-				payload.Conditions.Size,
-			))
-		}
+	conditions, err := m.ConditionsFromPayload(payload.Conditions)
+	if err != nil {
+		return model.ExportBase{}, err
 	}
 
 	return model.ExportBase{
@@ -221,6 +231,28 @@ func (m Mapper) MappingFromPayload(exportKey key.ExportKey, revisionID int, payl
 		Incremental: payload.Incremental == nil || *payload.Incremental, // default true
 		Columns:     columns,
 	}, nil
+}
+
+func (m Mapper) ConditionsFromPayload(payload *buffer.Conditions) (r model.ImportConditions, err error) {
+	conditions := model.DefaultConditions()
+	if payload != nil {
+		conditions.Count = payload.Count
+		conditions.Size, err = datasize.ParseString(payload.Size)
+		if err != nil {
+			return model.ImportConditions{}, serviceError.NewBadRequestError(errors.Errorf(
+				`value "%s" is not valid buffer size in bytes. Allowed units: B, kB, MB. For example: "5MB"`,
+				payload.Size,
+			))
+		}
+		conditions.Time, err = time.ParseDuration(payload.Time)
+		if err != nil {
+			return model.ImportConditions{}, serviceError.NewBadRequestError(errors.Errorf(
+				`value "%s" is not valid time duration. Allowed units: s, m, h. For example: "30s"`,
+				payload.Size,
+			))
+		}
+	}
+	return conditions, nil
 }
 
 func formatReceiverURL(bufferAPIHost string, projectID int, receiverID string, secret string) string {
