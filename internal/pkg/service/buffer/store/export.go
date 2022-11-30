@@ -61,7 +61,7 @@ func (s *Store) UpdateExport(ctx context.Context, export model.Export) (err erro
 	return nil
 }
 
-func (s *Store) updateExportBaseOp(ctx context.Context, export model.ExportBase) op.NoResultOp {
+func (s *Store) updateExportBaseOp(_ context.Context, export model.ExportBase) op.NoResultOp {
 	return s.schema.
 		Configs().
 		Exports().

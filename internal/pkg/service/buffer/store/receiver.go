@@ -100,7 +100,7 @@ func (s *Store) UpdateReceiver(ctx context.Context, receiver model.Receiver) (er
 	return err
 }
 
-func (s *Store) updateReceiverBaseOp(ctx context.Context, receiver model.ReceiverBase) op.NoResultOp {
+func (s *Store) updateReceiverBaseOp(_ context.Context, receiver model.ReceiverBase) op.NoResultOp {
 	return s.schema.
 		Configs().
 		Receivers().
