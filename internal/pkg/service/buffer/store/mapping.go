@@ -59,7 +59,7 @@ func (s *Store) CreateMapping(ctx context.Context, mapping model.Mapping) (err e
 
 func (s *Store) createMappingOp(_ context.Context, mapping model.Mapping) op.BoolOp {
 	if mapping.RevisionID == 0 {
-		panic(errors.New("unexpected state: mapping revision ID should be set by code one level higher"))
+		panic(errors.New("unexpected state: mapping revision ID is 0, it should be set by code one level higher"))
 	}
 
 	return s.schema.
@@ -73,6 +73,18 @@ func (s *Store) createMappingOp(_ context.Context, mapping model.Mapping) op.Boo
 			}
 			return ok, err
 		})
+}
+
+func (s *Store) updateMappingOp(_ context.Context, mapping model.Mapping) op.NoResultOp {
+	if mapping.RevisionID == 0 {
+		panic(errors.New("unexpected state: mapping revision ID is 0, it should be set by code one level higher"))
+	}
+
+	return s.schema.
+		Configs().
+		Mappings().
+		ByKey(mapping.MappingKey).
+		Put(mapping)
 }
 
 // GetLatestMapping fetches the current mapping from the store.

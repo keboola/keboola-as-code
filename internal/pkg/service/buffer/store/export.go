@@ -53,16 +53,20 @@ func (s *Store) UpdateExport(ctx context.Context, export model.Export) (err erro
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.UpdateExport")
 	defer telemetry.EndSpan(span, &err)
 
-	err = s.DeleteExport(ctx, export.ExportKey)
-	if err != nil {
-		return err
-	}
-	err = s.CreateExport(ctx, export)
-	if err != nil {
-		return err
-	}
+	_, err = op.MergeToTxn(
+		s.updateExportBaseOp(ctx, export.ExportBase),
+		s.updateMappingOp(ctx, export.Mapping),
+	).Do(ctx, s.client)
 
 	return nil
+}
+
+func (s *Store) updateExportBaseOp(ctx context.Context, export model.ExportBase) op.NoResultOp {
+	return s.schema.
+		Configs().
+		Exports().
+		ByKey(export.ExportKey).
+		Put(export)
 }
 
 // GetExport fetches an export from the store.
