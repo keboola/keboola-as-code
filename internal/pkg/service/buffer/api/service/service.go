@@ -79,7 +79,39 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 }
 
 func (s *service) UpdateReceiver(d dependencies.ForProjectRequest, payload *UpdateReceiverPayload) (res *Receiver, err error) {
-	return nil, NewNotImplementedError()
+	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
+
+	// Get export
+	receiverKey := key.ReceiverKey{
+		ProjectID:  d.ProjectID(),
+		ReceiverID: string(payload.ReceiverID),
+	}
+
+	old, err := str.GetReceiver(ctx, receiverKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update
+	receiver, err := mpr.UpdateReceiverFromPayload(old, *payload)
+	if err != nil {
+		return nil, err
+	}
+
+	// Persist
+	err = str.UpdateReceiver(ctx, receiver)
+	if err != nil {
+		return nil, err
+	}
+
+	receiverData, err := str.GetReceiver(ctx, receiver.ReceiverKey)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := mpr.ReceiverPayloadFromModel(receiverData)
+
+	return &resp, nil
 }
 
 func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *GetReceiverPayload) (res *Receiver, err error) {

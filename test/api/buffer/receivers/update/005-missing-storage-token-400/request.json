@@ -1,0 +1,11 @@
+{
+  "path": "/v1/receivers/my-receiver",
+  "method": "PATCH",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "name": "My Receiver Updated"
+  }
+}
+
