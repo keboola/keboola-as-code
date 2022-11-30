@@ -238,6 +238,14 @@ func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer
 	return &resp, nil
 }
 
+func (s *service) GetExport(d dependencies.ForProjectRequest, payload *buffer.GetExportPayload) (r *buffer.Export, err error) {
+	return nil, NewNotImplementedError()
+}
+
+func (s *service) ListExports(d dependencies.ForProjectRequest, payload *buffer.ListExportsPayload) (r *buffer.ExportsList, err error) {
+	return nil, NewNotImplementedError()
+}
+
 func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer.DeleteExportPayload) (err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 

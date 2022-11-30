@@ -216,6 +216,33 @@ var _ = Service("buffer", func() {
 		})
 	})
 
+	Method("GetExport", func() {
+		Meta("openapi:summary", "Get export")
+		Description("Get the configuration of an export.")
+		Result(Export)
+		Payload(GetExportRequest)
+		HTTP(func() {
+			GET("/receivers/{receiverId}/exports/{exportId}")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			ReceiverNotFoundError()
+			ExportNotFoundError()
+		})
+	})
+
+	Method("ListExports", func() {
+		Meta("openapi:summary", "List exports")
+		Description("List all exports for a given receiver.")
+		Result(ExportsList)
+		Payload(ListExportsRequest)
+		HTTP(func() {
+			GET("/receivers/{receiverId}/exports")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			ReceiverNotFoundError()
+		})
+	})
+
 	Method("UpdateExport", func() {
 		Meta("openapi:summary", "Update export")
 		Description("Update a receiver export.")
@@ -367,6 +394,11 @@ var Export = Type("Export", func() {
 	Required("id", "receiverId", "name", "mapping", "conditions")
 })
 
+var ExportsList = Type("ExportsList", func() {
+	Attribute("exports", ArrayOf(Export))
+	Required("exports")
+})
+
 var CreateExportData = Type("CreateExportData", func() {
 	Attribute("id", ExportID, func() {
 		Description("Optional ID, if not filled in, it will be generated from name. Cannot be changed later.")
@@ -385,6 +417,11 @@ var GetExportRequest = Type("GetExportRequest", func() {
 	Attribute("receiverId", ReceiverID)
 	Attribute("exportId", ExportID)
 	Required("receiverId", "exportId")
+})
+
+var ListExportsRequest = Type("ListExportsRequest", func() {
+	Attribute("receiverId", ReceiverID)
+	Required("receiverId")
 })
 
 var UpdateExportRequest = Type("UpdateExportRequest", func() {
