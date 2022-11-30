@@ -39,7 +39,7 @@ func (s *Store) getTokenOp(_ context.Context, exportKey key.ExportKey) op.ForTyp
 		})
 }
 
-func (s *Store) deleteTokenOp(_ context.Context, exportKey key.ExportKey) op.BoolOp {
+func (s *Store) deleteExportTokenOp(_ context.Context, exportKey key.ExportKey) op.BoolOp {
 	return s.schema.
 		Secrets().
 		Tokens().
@@ -51,4 +51,12 @@ func (s *Store) deleteTokenOp(_ context.Context, exportKey key.ExportKey) op.Boo
 			}
 			return result, err
 		})
+}
+
+func (s *Store) deleteReceiverTokensOp(_ context.Context, receiverKey key.ReceiverKey) op.CountOp {
+	return s.schema.
+		Secrets().
+		Tokens().
+		InReceiver(receiverKey).
+		DeleteAll()
 }

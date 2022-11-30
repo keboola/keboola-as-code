@@ -129,10 +129,18 @@ func (s *Store) getMappingOp(_ context.Context, mappingKey key.MappingKey) op.Fo
 		})
 }
 
-func (s *Store) deleteAllMappingsOp(_ context.Context, exportKey key.ExportKey) op.CountOp {
+func (s *Store) deleteExportMappingsOp(_ context.Context, exportKey key.ExportKey) op.CountOp {
 	return s.schema.
 		Configs().
 		Mappings().
 		InExport(exportKey).
+		DeleteAll()
+}
+
+func (s *Store) deleteReceiverMappingsOp(_ context.Context, receiverKey key.ReceiverKey) op.CountOp {
+	return s.schema.
+		Configs().
+		Mappings().
+		InReceiver(receiverKey).
 		DeleteAll()
 }

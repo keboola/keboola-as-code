@@ -135,8 +135,8 @@ func (s *Store) DeleteExport(ctx context.Context, exportKey key.ExportKey) (err 
 
 	_, err = op.MergeToTxn(
 		s.deleteExportBaseOp(ctx, exportKey),
-		s.deleteAllMappingsOp(ctx, exportKey),
-		s.deleteTokenOp(ctx, exportKey),
+		s.deleteExportMappingsOp(ctx, exportKey),
+		s.deleteExportTokenOp(ctx, exportKey),
 	).Do(ctx, s.client)
 	return err
 }
