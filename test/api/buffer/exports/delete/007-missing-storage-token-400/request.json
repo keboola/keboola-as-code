@@ -1,0 +1,6 @@
+{
+  "path": "/v1/receivers/delete-receiver-a/exports/my-export-2",
+  "method": "DELETE",
+  "headers": {}
+}
+

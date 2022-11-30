@@ -172,7 +172,20 @@ func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer
 }
 
 func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer.DeleteExportPayload) (err error) {
-	return NewNotImplementedError()
+	ctx, str := d.RequestCtx(), d.Store()
+
+	exportKey := key.ExportKey{
+		ReceiverKey: key.ReceiverKey{
+			ProjectID:  d.ProjectID(),
+			ReceiverID: string(payload.ReceiverID),
+		},
+		ExportID: string(payload.ExportID),
+	}
+	if err := str.DeleteExport(ctx, exportKey); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPayload, reader io.ReadCloser) (err error) {
