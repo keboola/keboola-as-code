@@ -155,7 +155,7 @@ func (s *Store) deleteExportBaseOp(_ context.Context, exportKey key.ExportKey) o
 		})
 }
 
-func (s *Store) deleteExportBaseListOp(_ context.Context, receiverKey key.ReceiverKey) op.CountOp {
+func (s *Store) deleteReceiverExportsOp(_ context.Context, receiverKey key.ReceiverKey) op.CountOp {
 	return s.schema.
 		Configs().
 		Exports().

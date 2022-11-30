@@ -294,7 +294,7 @@ config/export/1000/receiver1/export-2
 >>>>>
 `)
 
-	_, err = store.deleteExportBaseListOp(ctx, receiverKey).Do(ctx, store.client)
+	_, err = store.deleteReceiverExportsOp(ctx, receiverKey).Do(ctx, store.client)
 	assert.NoError(t, err)
 
 	// Check keys
