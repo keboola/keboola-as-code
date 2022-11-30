@@ -25,23 +25,22 @@ func NewMapper(bufferAPIHost string) Mapper {
 }
 
 func (m Mapper) ReceiverPayloadFromModel(model model.Receiver) buffer.Receiver {
-	id := buffer.ReceiverID(model.ReceiverID)
 	url := formatReceiverURL(m.bufferAPIHost, model.ProjectID, model.ReceiverID, model.Secret)
 	exports := make([]*buffer.Export, 0, len(model.Exports))
 	for _, exportData := range model.Exports {
-		export := m.ExportPayloadFromModel(id, exportData)
+		export := m.ExportPayloadFromModel(exportData)
 		exports = append(exports, &export)
 	}
 
 	return buffer.Receiver{
-		ID:      id,
+		ID:      buffer.ReceiverID(model.ReceiverID),
 		URL:     url,
 		Name:    model.Name,
 		Exports: exports,
 	}
 }
 
-func (m Mapper) ExportPayloadFromModel(receiverID buffer.ReceiverID, model model.Export) buffer.Export {
+func (m Mapper) ExportPayloadFromModel(model model.Export) buffer.Export {
 	mapping := m.MappingPayloadFromModel(model.Mapping)
 	conditions := &buffer.Conditions{
 		Count: model.ImportConditions.Count,
@@ -50,7 +49,7 @@ func (m Mapper) ExportPayloadFromModel(receiverID buffer.ReceiverID, model model
 	}
 	return buffer.Export{
 		ID:         buffer.ExportID(model.ExportID),
-		ReceiverID: receiverID,
+		ReceiverID: buffer.ReceiverID(model.ReceiverID),
 		Name:       model.Name,
 		Mapping:    &mapping,
 		Conditions: conditions,
@@ -129,6 +128,23 @@ func (m Mapper) ReceiverBaseFromPayload(projectID int, secret string, payload bu
 		Name:   name,
 		Secret: secret,
 	}
+}
+
+func (m Mapper) ExportModelFromPayload(receiverKey key.ReceiverKey, token storageapi.Token, payload buffer.CreateExportData) (r model.Export, err error) {
+	export, err := m.ExportBaseFromPayload(receiverKey, payload)
+	if err != nil {
+		return model.Export{}, err
+	}
+	mapping, err := m.MappingFromPayload(export.ExportKey, 1, *payload.Mapping)
+	if err != nil {
+		return model.Export{}, err
+	}
+
+	return model.Export{
+		ExportBase: export,
+		Mapping:    mapping,
+		Token:      token,
+	}, nil
 }
 
 func (m Mapper) ExportBaseFromPayload(receiverKey key.ReceiverKey, payload buffer.CreateExportData) (r model.ExportBase, err error) {
