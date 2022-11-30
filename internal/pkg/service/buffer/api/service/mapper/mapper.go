@@ -40,6 +40,14 @@ func (m Mapper) ReceiverPayloadFromModel(model model.Receiver) buffer.Receiver {
 	}
 }
 
+func (m Mapper) UpdateReceiverFromPayload(receiver model.Receiver, payload buffer.UpdateReceiverPayload) (r model.Receiver, err error) {
+	if payload.Name != nil {
+		receiver.Name = *payload.Name
+	}
+
+	return receiver, nil
+}
+
 func (m Mapper) ExportPayloadFromModel(model model.Export) buffer.Export {
 	mapping := m.MappingPayloadFromModel(model.Mapping)
 	conditions := &buffer.Conditions{
