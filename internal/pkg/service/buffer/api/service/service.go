@@ -78,7 +78,7 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: ReceiverID(receiver.ReceiverID)})
 }
 
-func (s *service) UpdateReceiver(dependencies.ForProjectRequest, *UpdateReceiverPayload) (res *Receiver, err error) {
+func (s *service) UpdateReceiver(d dependencies.ForProjectRequest, payload *UpdateReceiverPayload) (res *Receiver, err error) {
 	return nil, NewNotImplementedError()
 }
 
@@ -131,15 +131,47 @@ func (s *service) RefreshReceiverTokens(dependencies.ForProjectRequest, *buffer.
 	return nil, NewNotImplementedError()
 }
 
-func (s *service) CreateExport(dependencies.ForProjectRequest, *buffer.CreateExportPayload) (res *buffer.Export, err error) {
+func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer.CreateExportPayload) (res *buffer.Export, err error) {
+	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
+
+	token := d.StorageAPIToken()
+
+	// Map payload to export
+	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
+	export, err := mpr.ExportModelFromPayload(
+		receiverKey,
+		token,
+		buffer.CreateExportData{
+			ID:         payload.ID,
+			Name:       payload.Name,
+			Mapping:    payload.Mapping,
+			Conditions: payload.Conditions,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Persist export
+	if err := str.CreateExport(ctx, export); err != nil {
+		return nil, err
+	}
+
+	exportData, err := str.GetExport(ctx, export.ExportKey)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := mpr.ExportPayloadFromModel(exportData)
+
+	return &resp, nil
+}
+
+func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer.UpdateExportPayload) (res *buffer.Export, err error) {
 	return nil, NewNotImplementedError()
 }
 
-func (s *service) UpdateExport(dependencies.ForProjectRequest, *buffer.UpdateExportPayload) (res *buffer.Export, err error) {
-	return nil, NewNotImplementedError()
-}
-
-func (s *service) DeleteExport(dependencies.ForProjectRequest, *buffer.DeleteExportPayload) (err error) {
+func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer.DeleteExportPayload) (err error) {
 	return NewNotImplementedError()
 }
 

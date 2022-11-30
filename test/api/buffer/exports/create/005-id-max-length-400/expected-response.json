@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "buffer.invalidLength",
+  "message": "Length of body.id must be lesser or equal than 48 but got value \"123456789-123456789-123456789-123456789-123456789\" (len=49)"
+}

@@ -1,0 +1,19 @@
+{
+  "path": "/v1/receivers/my-receiver/exports",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "name": "my-export-2",
+    "mapping": {
+      "tableId": "in.c-bucket.table",
+      "columns": [
+        {
+          "type": "id"
+        }
+      ]
+    }
+  }
+}
+
