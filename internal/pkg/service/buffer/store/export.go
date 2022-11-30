@@ -49,6 +49,22 @@ func (s *Store) createExportBaseOp(_ context.Context, export model.ExportBase) o
 		})
 }
 
+func (s *Store) UpdateExport(ctx context.Context, export model.Export) (err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.UpdateExport")
+	defer telemetry.EndSpan(span, &err)
+
+	err = s.DeleteExport(ctx, export.ExportKey)
+	if err != nil {
+		return err
+	}
+	err = s.CreateExport(ctx, export)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // GetExport fetches an export from the store.
 // Logic errors:
 // - ResourceNotFoundError.
