@@ -2,6 +2,29 @@
   "id": "receiver-c",
   "url": "https://buffer.keboola.local/v1/import/%%TEST_KBC_PROJECT_ID%%/receiver-c/%s",
   "name": "Receiver C",
-  "exports": []
+  "exports": [
+    {
+      "id": "export-2",
+      "receiverId": "receiver-c",
+      "name": "Export 2",
+      "mapping": {
+        "tableId": "in.c-bucket.table",
+        "incremental": false,
+        "columns": [
+          {
+            "type": "id"
+          },
+          {
+            "type": "body"
+          }
+        ]
+      },
+      "conditions": {
+        "count": 123,
+        "size": "456B",
+        "time": "30s"
+      }
+    }
+  ]
 }
 
