@@ -168,7 +168,42 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 }
 
 func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer.UpdateExportPayload) (res *buffer.Export, err error) {
-	return nil, NewNotImplementedError()
+	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
+
+	// Get export
+	exportKey := key.ExportKey{
+		ReceiverKey: key.ReceiverKey{
+			ProjectID:  d.ProjectID(),
+			ReceiverID: string(payload.ReceiverID),
+		},
+		ExportID: string(payload.ExportID),
+	}
+
+	old, err := str.GetExport(ctx, exportKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update
+	export, err := mpr.UpdateExportFromPayload(old, *payload)
+	if err != nil {
+		return nil, err
+	}
+
+	// Persist
+	err = str.UpdateExport(ctx, export)
+	if err != nil {
+		return nil, err
+	}
+
+	exportData, err := str.GetExport(ctx, export.ExportKey)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := mpr.ExportPayloadFromModel(exportData)
+
+	return &resp, nil
 }
 
 func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer.DeleteExportPayload) (err error) {

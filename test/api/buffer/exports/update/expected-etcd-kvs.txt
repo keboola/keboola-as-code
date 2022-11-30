@@ -1,0 +1,57 @@
+<<<<<
+/config/export/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "name": "My Export 1 Updated",
+  "importConditions": {
+    "count": 1000,
+    "size": "1000KB",
+    "time": 600000000000
+  }
+}
+>>>>>
+
+<<<<<
+/config/mapping/revision/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/00000002
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "revisionId": 2,
+  "tableId": {
+    "stage": "in",
+    "bucketName": "bucket-changed",
+    "tableName": "table-changed"
+  },
+  "incremental": true,
+  "columns": [
+    {
+      "type": "body"
+    },
+    {
+      "type": "headers"
+    }
+  ]
+}
+>>>>>
+
+<<<<<
+/config/receiver/%%TEST_KBC_PROJECT_ID%%/my-receiver
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "name": "My Receiver",
+  "secret": "%s"
+}
+>>>>>
+
+<<<<<
+/secret/export/token/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1
+-----
+%A
+>>>>>
