@@ -5,7 +5,7 @@
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "receiverId": "my-receiver-with-exports",
   "exportId": "my-export-1",
-  "name": "my-export-1",
+  "name": "My Export 1",
   "importConditions": {
     "count": 500,
     "size": "100KB",
@@ -81,7 +81,7 @@
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "receiverId": "receiver-with-empty-exports",
-  "name": "My Receiver",
+  "name": "Receiver With Empty Exports",
   "secret": "%s"
 }
 >>>>>

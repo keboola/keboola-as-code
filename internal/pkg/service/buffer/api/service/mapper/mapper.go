@@ -25,23 +25,30 @@ func NewMapper(bufferAPIHost string) Mapper {
 }
 
 func (m Mapper) ReceiverPayloadFromModel(model model.Receiver) buffer.Receiver {
-	id := buffer.ReceiverID(model.ReceiverID)
 	url := formatReceiverURL(m.bufferAPIHost, model.ProjectID, model.ReceiverID, model.Secret)
 	exports := make([]*buffer.Export, 0, len(model.Exports))
 	for _, exportData := range model.Exports {
-		export := m.ExportPayloadFromModel(id, exportData)
+		export := m.ExportPayloadFromModel(exportData)
 		exports = append(exports, &export)
 	}
 
 	return buffer.Receiver{
-		ID:      id,
+		ID:      buffer.ReceiverID(model.ReceiverID),
 		URL:     url,
 		Name:    model.Name,
 		Exports: exports,
 	}
 }
 
-func (m Mapper) ExportPayloadFromModel(receiverID buffer.ReceiverID, model model.Export) buffer.Export {
+func (m Mapper) UpdateReceiverFromPayload(receiver model.Receiver, payload buffer.UpdateReceiverPayload) (r model.Receiver, err error) {
+	if payload.Name != nil {
+		receiver.Name = *payload.Name
+	}
+
+	return receiver, nil
+}
+
+func (m Mapper) ExportPayloadFromModel(model model.Export) buffer.Export {
 	mapping := m.MappingPayloadFromModel(model.Mapping)
 	conditions := &buffer.Conditions{
 		Count: model.ImportConditions.Count,
@@ -50,11 +57,35 @@ func (m Mapper) ExportPayloadFromModel(receiverID buffer.ReceiverID, model model
 	}
 	return buffer.Export{
 		ID:         buffer.ExportID(model.ExportID),
-		ReceiverID: receiverID,
+		ReceiverID: buffer.ReceiverID(model.ReceiverID),
 		Name:       model.Name,
 		Mapping:    &mapping,
 		Conditions: conditions,
 	}
+}
+
+func (m Mapper) UpdateExportFromPayload(export model.Export, payload buffer.UpdateExportPayload) (r model.Export, err error) {
+	if payload.Name != nil {
+		export.Name = *payload.Name
+	}
+
+	if payload.Mapping != nil {
+		newMapping, err := m.MappingFromPayload(export.ExportKey, export.Mapping.RevisionID+1, *payload.Mapping)
+		if err != nil {
+			return model.Export{}, err
+		}
+		export.Mapping = newMapping
+	}
+
+	if payload.Conditions != nil {
+		newConditions, err := m.ConditionsFromPayload(payload.Conditions)
+		if err != nil {
+			return model.Export{}, err
+		}
+		export.ImportConditions = newConditions
+	}
+
+	return export, nil
 }
 
 func (m Mapper) MappingPayloadFromModel(model model.Mapping) buffer.Mapping {
@@ -131,6 +162,23 @@ func (m Mapper) ReceiverBaseFromPayload(projectID int, secret string, payload bu
 	}
 }
 
+func (m Mapper) ExportModelFromPayload(receiverKey key.ReceiverKey, token storageapi.Token, payload buffer.CreateExportData) (r model.Export, err error) {
+	export, err := m.ExportBaseFromPayload(receiverKey, payload)
+	if err != nil {
+		return model.Export{}, err
+	}
+	mapping, err := m.MappingFromPayload(export.ExportKey, 1, *payload.Mapping)
+	if err != nil {
+		return model.Export{}, err
+	}
+
+	return model.Export{
+		ExportBase: export,
+		Mapping:    mapping,
+		Token:      token,
+	}, nil
+}
+
 func (m Mapper) ExportBaseFromPayload(receiverKey key.ReceiverKey, payload buffer.CreateExportData) (r model.ExportBase, err error) {
 	name := payload.Name
 
@@ -143,23 +191,9 @@ func (m Mapper) ExportBaseFromPayload(receiverKey key.ReceiverKey, payload buffe
 	}
 
 	// Handle conditions with defaults
-	conditions := model.DefaultConditions()
-	if payload.Conditions != nil {
-		conditions.Count = payload.Conditions.Count
-		conditions.Size, err = datasize.ParseString(payload.Conditions.Size)
-		if err != nil {
-			return model.ExportBase{}, serviceError.NewBadRequestError(errors.Errorf(
-				`value "%s" is not valid buffer size in bytes. Allowed units: B, kB, MB. For example: "5MB"`,
-				payload.Conditions.Size,
-			))
-		}
-		conditions.Time, err = time.ParseDuration(payload.Conditions.Time)
-		if err != nil {
-			return model.ExportBase{}, serviceError.NewBadRequestError(errors.Errorf(
-				`value "%s" is not valid time duration. Allowed units: s, m, h. For example: "30s"`,
-				payload.Conditions.Size,
-			))
-		}
+	conditions, err := m.ConditionsFromPayload(payload.Conditions)
+	if err != nil {
+		return model.ExportBase{}, err
 	}
 
 	return model.ExportBase{
@@ -205,6 +239,28 @@ func (m Mapper) MappingFromPayload(exportKey key.ExportKey, revisionID int, payl
 		Incremental: payload.Incremental == nil || *payload.Incremental, // default true
 		Columns:     columns,
 	}, nil
+}
+
+func (m Mapper) ConditionsFromPayload(payload *buffer.Conditions) (r model.ImportConditions, err error) {
+	conditions := model.DefaultConditions()
+	if payload != nil {
+		conditions.Count = payload.Count
+		conditions.Size, err = datasize.ParseString(payload.Size)
+		if err != nil {
+			return model.ImportConditions{}, serviceError.NewBadRequestError(errors.Errorf(
+				`value "%s" is not valid buffer size in bytes. Allowed units: B, kB, MB. For example: "5MB"`,
+				payload.Size,
+			))
+		}
+		conditions.Time, err = time.ParseDuration(payload.Time)
+		if err != nil {
+			return model.ImportConditions{}, serviceError.NewBadRequestError(errors.Errorf(
+				`value "%s" is not valid time duration. Allowed units: s, m, h. For example: "30s"`,
+				payload.Size,
+			))
+		}
+	}
+	return conditions, nil
 }
 
 func formatReceiverURL(bufferAPIHost string, projectID int, receiverID string, secret string) string {

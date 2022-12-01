@@ -91,6 +91,23 @@ func (s *Store) getReceiverBaseOp(_ context.Context, receiverKey key.ReceiverKey
 		})
 }
 
+func (s *Store) UpdateReceiver(ctx context.Context, receiver model.Receiver) (err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.UpdateReceiver")
+	defer telemetry.EndSpan(span, &err)
+
+	_, err = op.MergeToTxn(s.updateReceiverBaseOp(ctx, receiver.ReceiverBase)).Do(ctx, s.client)
+
+	return err
+}
+
+func (s *Store) updateReceiverBaseOp(_ context.Context, receiver model.ReceiverBase) op.NoResultOp {
+	return s.schema.
+		Configs().
+		Receivers().
+		ByKey(receiver.ReceiverKey).
+		Put(receiver)
+}
+
 // ListReceivers from the store.
 // Logic errors:
 // - ResourceNotFoundError.

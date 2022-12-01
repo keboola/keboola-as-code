@@ -6,8 +6,8 @@
     "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
   },
   "body": {
-    "id": "receiver-with-empty-exports",
-    "name": "My Receiver",
+    "name": "Receiver With Empty Exports",
     "exports": []
   }
 }
+

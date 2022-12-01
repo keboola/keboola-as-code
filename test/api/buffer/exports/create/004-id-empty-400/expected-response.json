@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "buffer.invalidLength",
+  "message": "Length of body.id must be greater or equal than 1 but got value \"\" (len=0)"
+}

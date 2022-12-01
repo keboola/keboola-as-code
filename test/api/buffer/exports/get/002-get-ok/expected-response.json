@@ -1,0 +1,28 @@
+{
+  "id": "export-1",
+  "receiverId": "my-receiver",
+  "name": "Export 1",
+  "mapping": {
+    "tableId": "in.c-bucket.table1",
+    "incremental": true,
+    "columns": [
+      {
+        "type": "id"
+      },
+      {
+        "type": "template",
+        "template": {
+          "language": "jsonnet",
+          "undefinedValueStrategy": "error",
+          "content": "body.key+\":\"+body.value"
+        }
+      }
+    ]
+  },
+  "conditions": {
+    "count": 1000,
+    "size": "1MB",
+    "time": "5m0s"
+  }
+}
+

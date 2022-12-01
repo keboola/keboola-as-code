@@ -1,0 +1,11 @@
+{
+  "path": "/v1/receivers/my-receiver/exports/my-export-1",
+  "method": "PATCH",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "name": "My Export 1 Updated"
+  }
+}
+

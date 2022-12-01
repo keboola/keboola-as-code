@@ -78,8 +78,40 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: ReceiverID(receiver.ReceiverID)})
 }
 
-func (s *service) UpdateReceiver(dependencies.ForProjectRequest, *UpdateReceiverPayload) (res *Receiver, err error) {
-	return nil, NewNotImplementedError()
+func (s *service) UpdateReceiver(d dependencies.ForProjectRequest, payload *UpdateReceiverPayload) (res *Receiver, err error) {
+	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
+
+	// Get export
+	receiverKey := key.ReceiverKey{
+		ProjectID:  d.ProjectID(),
+		ReceiverID: string(payload.ReceiverID),
+	}
+
+	old, err := str.GetReceiver(ctx, receiverKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update
+	receiver, err := mpr.UpdateReceiverFromPayload(old, *payload)
+	if err != nil {
+		return nil, err
+	}
+
+	// Persist
+	err = str.UpdateReceiver(ctx, receiver)
+	if err != nil {
+		return nil, err
+	}
+
+	receiverData, err := str.GetReceiver(ctx, receiver.ReceiverKey)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := mpr.ReceiverPayloadFromModel(receiverData)
+
+	return &resp, nil
 }
 
 func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *GetReceiverPayload) (res *Receiver, err error) {
@@ -131,16 +163,131 @@ func (s *service) RefreshReceiverTokens(dependencies.ForProjectRequest, *buffer.
 	return nil, NewNotImplementedError()
 }
 
-func (s *service) CreateExport(dependencies.ForProjectRequest, *buffer.CreateExportPayload) (res *buffer.Export, err error) {
-	return nil, NewNotImplementedError()
+func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer.CreateExportPayload) (res *buffer.Export, err error) {
+	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
+
+	token := d.StorageAPIToken()
+
+	// Map payload to export
+	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
+	export, err := mpr.ExportModelFromPayload(
+		receiverKey,
+		token,
+		buffer.CreateExportData{
+			ID:         payload.ID,
+			Name:       payload.Name,
+			Mapping:    payload.Mapping,
+			Conditions: payload.Conditions,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Persist export
+	if err := str.CreateExport(ctx, export); err != nil {
+		return nil, err
+	}
+
+	return s.GetExport(d, &buffer.GetExportPayload{
+		ReceiverID: ReceiverID(export.ReceiverID),
+		ExportID:   ExportID(export.ExportID),
+	})
 }
 
-func (s *service) UpdateExport(dependencies.ForProjectRequest, *buffer.UpdateExportPayload) (res *buffer.Export, err error) {
-	return nil, NewNotImplementedError()
+func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer.UpdateExportPayload) (res *buffer.Export, err error) {
+	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
+
+	// Get export
+	exportKey := key.ExportKey{
+		ReceiverKey: key.ReceiverKey{
+			ProjectID:  d.ProjectID(),
+			ReceiverID: string(payload.ReceiverID),
+		},
+		ExportID: string(payload.ExportID),
+	}
+
+	old, err := str.GetExport(ctx, exportKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update
+	export, err := mpr.UpdateExportFromPayload(old, *payload)
+	if err != nil {
+		return nil, err
+	}
+
+	// Persist
+	err = str.UpdateExport(ctx, export)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.GetExport(d, &buffer.GetExportPayload{
+		ReceiverID: ReceiverID(export.ReceiverID),
+		ExportID:   ExportID(export.ExportID),
+	})
 }
 
-func (s *service) DeleteExport(dependencies.ForProjectRequest, *buffer.DeleteExportPayload) (err error) {
-	return NewNotImplementedError()
+func (s *service) GetExport(d dependencies.ForProjectRequest, payload *buffer.GetExportPayload) (r *buffer.Export, err error) {
+	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
+
+	exportKey := key.ExportKey{
+		ReceiverKey: key.ReceiverKey{
+			ProjectID:  d.ProjectID(),
+			ReceiverID: string(payload.ReceiverID),
+		},
+		ExportID: string(payload.ExportID),
+	}
+
+	export, err := str.GetExport(ctx, exportKey)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := mpr.ExportPayloadFromModel(export)
+
+	return &resp, nil
+}
+
+func (s *service) ListExports(d dependencies.ForProjectRequest, payload *buffer.ListExportsPayload) (r *buffer.ExportsList, err error) {
+	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
+
+	receiverKey := key.ReceiverKey{
+		ProjectID:  d.ProjectID(),
+		ReceiverID: string(payload.ReceiverID),
+	}
+
+	model, err := str.ListExports(ctx, receiverKey)
+	if err != nil {
+		return nil, err
+	}
+
+	exports := make([]*Export, 0, len(model))
+	for _, data := range model {
+		export := mpr.ExportPayloadFromModel(data)
+		exports = append(exports, &export)
+	}
+
+	return &buffer.ExportsList{Exports: exports}, nil
+}
+
+func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer.DeleteExportPayload) (err error) {
+	ctx, str := d.RequestCtx(), d.Store()
+
+	exportKey := key.ExportKey{
+		ReceiverKey: key.ReceiverKey{
+			ProjectID:  d.ProjectID(),
+			ReceiverID: string(payload.ReceiverID),
+		},
+		ExportID: string(payload.ExportID),
+	}
+	if err := str.DeleteExport(ctx, exportKey); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPayload, reader io.ReadCloser) (err error) {
