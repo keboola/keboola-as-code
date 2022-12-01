@@ -193,13 +193,23 @@ func (s *service) RefreshReceiverTokens(d dependencies.ForProjectRequest, payloa
 func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer.CreateExportPayload) (res *buffer.Export, err error) {
 	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
 
-	token := d.StorageAPIToken()
+	tableID, err := model.ParseTableID(payload.Mapping.TableID)
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := storageapi.CreateTokenRequest(
+		storageapi.WithBucketPermission(
+			storageapi.BucketID(tableID.Bucket),
+			storageapi.BucketPermissionWrite,
+		),
+	).Send(ctx, d.StorageAPIClient())
 
 	// Map payload to export
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
 	export, err := mpr.ExportModelFromPayload(
 		receiverKey,
-		token,
+		*token,
 		buffer.CreateExportData{
 			ID:         payload.ID,
 			Name:       payload.Name,
