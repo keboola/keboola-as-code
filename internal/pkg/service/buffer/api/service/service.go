@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
@@ -18,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -159,8 +161,33 @@ func (s *service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buff
 	return nil
 }
 
-func (s *service) RefreshReceiverTokens(dependencies.ForProjectRequest, *buffer.RefreshReceiverTokensPayload) (res *buffer.Receiver, err error) {
-	return nil, NewNotImplementedError()
+func (s *service) RefreshReceiverTokens(d dependencies.ForProjectRequest, payload *buffer.RefreshReceiverTokensPayload) (res *buffer.Receiver, err error) {
+	ctx, str := d.RequestCtx(), d.Store()
+
+	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
+	tokens, err := str.ListTokens(ctx, receiverKey)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshedTokens := make([]model.TokenForExport, 0, len(tokens))
+	for _, token := range tokens {
+		refreshed, err := storageapi.RefreshTokenRequest(token.Token.ID).Send(ctx, d.StorageAPIClient())
+		if err != nil {
+			return nil, err
+		}
+		refreshedTokens = append(refreshedTokens, model.TokenForExport{
+			ExportKey: token.ExportKey,
+			Token:     *refreshed,
+		})
+	}
+
+	err = str.UpdateTokens(ctx, refreshedTokens)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.GetReceiver(d, &GetReceiverPayload{ReceiverID: payload.ReceiverID})
 }
 
 func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer.CreateExportPayload) (res *buffer.Export, err error) {
