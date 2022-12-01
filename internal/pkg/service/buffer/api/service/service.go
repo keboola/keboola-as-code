@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
@@ -69,6 +71,26 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	// Map payload to receiver
 	receiver, err := mpr.ReceiverModelFromPayload(d.ProjectID(), token, secret, *payload)
 	if err != nil {
+		return nil, err
+	}
+
+	// Create tokens for export mappings
+	wg := client.NewWaitGroup(ctx, d.StorageAPIClient())
+	for i, export := range receiver.Exports {
+		i := i
+		wg.Send(
+			storageapi.CreateTokenRequest(
+				storageapi.WithBucketPermission(
+					storageapi.BucketID(export.Mapping.TableID.Bucket),
+					storageapi.BucketPermissionWrite,
+				),
+			).WithOnSuccess(func(ctx context.Context, sender client.Sender, result *storageapi.Token) error {
+				receiver.Exports[i].Token = *result
+				return nil
+			}),
+		)
+	}
+	if err = wg.Wait(); err != nil {
 		return nil, err
 	}
 
