@@ -59,7 +59,7 @@ func (s *Store) UpdateExport(ctx context.Context, export model.Export) (err erro
 		s.updateMappingOp(ctx, export.Mapping),
 	).Do(ctx, s.client)
 
-	return nil
+	return err
 }
 
 func (s *Store) updateExportBaseOp(_ context.Context, export model.ExportBase) op.NoResultOp {
