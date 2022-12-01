@@ -22,7 +22,7 @@ type ExportsInReceiver struct {
 func (v ConfigsRoot) Exports() Exports {
 	return Exports{exports: NewTypedPrefix[model.ExportBase](
 		v.prefix.Add("export"),
-		v.schema.serialization,
+		v.schema.serde,
 	)}
 }
 

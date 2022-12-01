@@ -7,6 +7,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -18,7 +19,7 @@ type Prefix string
 // PrefixT extends Prefix with generic functionality, contains type of the serialized value.
 type PrefixT[T any] struct {
 	prefix
-	serialization Serialization
+	serde serde.Serde
 }
 
 func (v Prefix) Prefix() string {
@@ -38,13 +39,13 @@ func (v PrefixT[T]) Prefix() string {
 }
 
 func (v PrefixT[T]) Add(str string) PrefixT[T] {
-	return PrefixT[T]{prefix: v.prefix.Add(str), serialization: v.serialization}
+	return PrefixT[T]{prefix: v.prefix.Add(str), serde: v.serde}
 }
 
 func (v PrefixT[T]) Key(key string) KeyT[T] {
 	return KeyT[T]{
-		key:           v.prefix.Key(key),
-		serialization: v.serialization,
+		key:   v.prefix.Key(key),
+		serde: v.serde,
 	}
 }
 
@@ -52,8 +53,8 @@ func NewPrefix(v string) Prefix {
 	return Prefix(strings.Trim(v, "/"))
 }
 
-func NewTypedPrefix[T any](v Prefix, s Serialization) PrefixT[T] {
-	return PrefixT[T]{prefix: v, serialization: s}
+func NewTypedPrefix[T any](v Prefix, s serde.Serde) PrefixT[T] {
+	return PrefixT[T]{prefix: v, serde: s}
 }
 
 func (v Prefix) AtLeastOneExists(opts ...etcd.OpOption) op.BoolOp {
@@ -117,7 +118,7 @@ func (v PrefixT[T]) GetOne(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 			} else if count == 1 {
 				kv := r.Get().Kvs[0]
 				target := new(T)
-				if err := v.serialization.decodeAndValidate(ctx, kv, target); err != nil {
+				if err := v.serde.Decode(ctx, kv, target); err != nil {
 					return nil, errors.Errorf("etcd operation \"get one\" failed: %w", invalidValueError(string(kv.Key), err))
 				}
 				return &op.KeyValueT[T]{Value: *target, KV: kv}, nil
@@ -139,7 +140,7 @@ func (v PrefixT[T]) GetAll(opts ...etcd.OpOption) op.ForType[op.KeyValuesT[T]] {
 			out := make(op.KeyValuesT[T], len(kvs))
 			for i, kv := range kvs {
 				out[i].KV = kv
-				if err := v.serialization.decodeAndValidate(ctx, kv, &out[i].Value); err != nil {
+				if err := v.serde.Decode(ctx, kv, &out[i].Value); err != nil {
 					return nil, errors.Errorf("etcd operation \"get all\" failed: %w", invalidValueError(string(kv.Key), err))
 				}
 			}

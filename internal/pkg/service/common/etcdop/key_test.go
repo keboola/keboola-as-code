@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -350,24 +350,7 @@ func BenchmarkKeyT_PutIfNotExists(b *testing.B) {
 
 func typedKeyForTest() KeyT[fooType] {
 	return KeyT[fooType]{
-		key:           Key("foo"),
-		serialization: JSONSerialization(nil),
-	}
-}
-
-func JSONSerialization(validate validateFn) Serialization {
-	if validate == nil {
-		validate = func(_ context.Context, _ any) error {
-			return nil
-		}
-	}
-	return Serialization{
-		encode: func(_ context.Context, value any) (string, error) {
-			return json.EncodeString(value, false)
-		},
-		decode: func(_ context.Context, data []byte, target any) error {
-			return json.Decode(data, target)
-		},
-		validate: validate,
+		key:   Key("foo"),
+		serde: serde.NewJSON(serde.NoValidation),
 	}
 }

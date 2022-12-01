@@ -6,17 +6,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func TestSerialization_ValidationError(t *testing.T) {
+func TestValidationError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t)
 
-	pfxNoValidation := NewTypedPrefix[fooType]("my-prefix", JSONSerialization(nil))
-	pfxFailingValidation := NewTypedPrefix[fooType]("my-prefix", JSONSerialization(
+	pfxNoValidation := NewTypedPrefix[fooType]("my-prefix", serde.NewJSON(serde.NoValidation))
+	pfxFailingValidation := NewTypedPrefix[fooType]("my-prefix", serde.NewJSON(
 		func(ctx context.Context, value any) error {
 			return errors.New("validation error")
 		},
@@ -46,23 +47,23 @@ func TestSerialization_ValidationError(t *testing.T) {
 	assert.Equal(t, `etcd operation "get all" failed: invalid value for "my-prefix/my-key": validation error`, err.Error())
 }
 
-func TestSerialization_EncodeDecodeError(t *testing.T) {
+func TestEncodeDecodeError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t)
 
-	pfxNoValidation := NewTypedPrefix[fooType]("my-prefix", JSONSerialization(nil))
-	pfxFailingEncode := NewTypedPrefix[fooType]("my-prefix", Serialization{
-		encode: func(_ context.Context, value any) (string, error) {
+	pfxNoValidation := NewTypedPrefix[fooType]("my-prefix", serde.NewJSON(serde.NoValidation))
+	pfxFailingEncode := NewTypedPrefix[fooType]("my-prefix", serde.New(
+		func(_ context.Context, value any) (string, error) {
 			return "", errors.New("encode error")
 		},
-		decode: func(_ context.Context, data []byte, target any) error {
+		func(_ context.Context, data []byte, target any) error {
 			return errors.New("decode error")
 		},
-		validate: func(ctx context.Context, value any) error {
+		func(ctx context.Context, value any) error {
 			return nil
 		},
-	})
+	))
 
 	// Test Put
 	err := pfxFailingEncode.Key("my-key").Put("value").Do(ctx, client)

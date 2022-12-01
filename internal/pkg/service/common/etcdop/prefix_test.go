@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -392,10 +393,8 @@ func BenchmarkPrefixT_DeleteAll(b *testing.B) {
 }
 
 func typedPrefixForTest() PrefixT[fooType] {
-	root := Prefix("my")
-	pfx := root.Add("prefix")
 	return PrefixT[fooType]{
-		prefix:        pfx,
-		serialization: JSONSerialization(nil),
+		prefix: Prefix("my").Add("prefix"),
+		serde:  serde.NewJSON(serde.NoValidation),
 	}
 }
