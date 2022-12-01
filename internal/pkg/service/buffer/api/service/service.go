@@ -189,14 +189,10 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 		return nil, err
 	}
 
-	exportData, err := str.GetExport(ctx, export.ExportKey)
-	if err != nil {
-		return nil, err
-	}
-
-	resp := mpr.ExportPayloadFromModel(exportData)
-
-	return &resp, nil
+	return s.GetExport(d, &buffer.GetExportPayload{
+		ReceiverID: ReceiverID(export.ReceiverID),
+		ExportID:   ExportID(export.ExportID),
+	})
 }
 
 func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer.UpdateExportPayload) (res *buffer.Export, err error) {
@@ -228,14 +224,10 @@ func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer
 		return nil, err
 	}
 
-	exportData, err := str.GetExport(ctx, export.ExportKey)
-	if err != nil {
-		return nil, err
-	}
-
-	resp := mpr.ExportPayloadFromModel(exportData)
-
-	return &resp, nil
+	return s.GetExport(d, &buffer.GetExportPayload{
+		ReceiverID: ReceiverID(export.ReceiverID),
+		ExportID:   ExportID(export.ExportID),
+	})
 }
 
 func (s *service) GetExport(d dependencies.ForProjectRequest, payload *buffer.GetExportPayload) (r *buffer.Export, err error) {
