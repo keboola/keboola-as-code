@@ -1,0 +1,6 @@
+{
+  "path": "/v1/receivers/my-receiver/exports/export-1",
+  "method": "GET",
+  "headers": {}
+}
+

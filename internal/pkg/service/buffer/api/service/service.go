@@ -239,11 +239,46 @@ func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer
 }
 
 func (s *service) GetExport(d dependencies.ForProjectRequest, payload *buffer.GetExportPayload) (r *buffer.Export, err error) {
-	return nil, NewNotImplementedError()
+	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
+
+	exportKey := key.ExportKey{
+		ReceiverKey: key.ReceiverKey{
+			ProjectID:  d.ProjectID(),
+			ReceiverID: string(payload.ReceiverID),
+		},
+		ExportID: string(payload.ExportID),
+	}
+
+	export, err := str.GetExport(ctx, exportKey)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := mpr.ExportPayloadFromModel(export)
+
+	return &resp, nil
 }
 
 func (s *service) ListExports(d dependencies.ForProjectRequest, payload *buffer.ListExportsPayload) (r *buffer.ExportsList, err error) {
-	return nil, NewNotImplementedError()
+	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
+
+	receiverKey := key.ReceiverKey{
+		ProjectID:  d.ProjectID(),
+		ReceiverID: string(payload.ReceiverID),
+	}
+
+	model, err := str.ListExports(ctx, receiverKey)
+	if err != nil {
+		return nil, err
+	}
+
+	exports := make([]*Export, 0, len(model))
+	for _, data := range model {
+		export := mpr.ExportPayloadFromModel(data)
+		exports = append(exports, &export)
+	}
+
+	return &buffer.ExportsList{Exports: exports}, nil
 }
 
 func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer.DeleteExportPayload) (err error) {
