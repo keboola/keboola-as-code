@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -189,6 +190,25 @@ func TestTypedPrefix(t *testing.T) {
 	deleted, err = pfx.DeleteAll().Do(ctx, etcd)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), deleted)
+}
+
+func TestPrefix_GetAllPaginated(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	etcd := etcdhelper.ClientForTest(t)
+	kvc := clientv3.NewKV(etcd)
+
+	for i := 0; i < 100; i++ {
+		key := fmt.Sprintf("key/%04d", i)
+		if _, err := kvc.Put(ctx, key, "bar"); err != nil {
+			t.Fatalf(`cannot create etcd key "%s": %s`, key, err)
+		}
+	}
+
+	kvs, err := GetAllPaginated(ctx, kvc, "key")
+	assert.NoError(t, err)
+	assert.Equal(t, 100, len(kvs))
 }
 
 func BenchmarkPrefix_AtLestOneExists(b *testing.B) {

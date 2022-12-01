@@ -80,6 +80,39 @@ func (v Prefix) Count(opts ...etcd.OpOption) op.CountOp {
 	)
 }
 
+func GetAllPaginated(ctx context.Context, kv etcd.KV, prefix string, opts ...etcd.OpOption) ([]*op.KeyValue, error) {
+	opts = append(opts, etcd.WithSort(etcd.SortByKey, etcd.SortAscend), etcd.WithLimit(10))
+	res := make([]*op.KeyValue, 0)
+	var kvs []*op.KeyValue
+	for ok := true; ok; ok = len(kvs) > 1 {
+		firstRun := len(kvs) == 0
+		var curOpts []etcd.OpOption
+		var key string
+		if firstRun {
+			curOpts = append(opts, etcd.WithPrefix())
+			key = prefix
+		} else {
+			// Continue from the last key
+			curOpts = append(opts, etcd.WithFromKey())
+			key = string(kvs[len(kvs)-1].Key)
+		}
+		gr, err := kv.Get(ctx, key, curOpts...)
+		if err != nil {
+			return nil, err
+		}
+		kvs = gr.Kvs
+
+		if firstRun {
+			res = append(res, kvs...)
+		} else {
+			// Skip the first item which is the last item from the previous Get.
+			res = append(res, kvs[1:]...)
+		}
+	}
+
+	return res, nil
+}
+
 func (v Prefix) GetAll(opts ...etcd.OpOption) op.ForType[[]*op.KeyValue] {
 	return op.NewGetManyOp(
 		func(_ context.Context) (etcd.Op, error) {
