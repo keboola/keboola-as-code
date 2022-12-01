@@ -204,6 +204,9 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 			storageapi.BucketPermissionWrite,
 		),
 	).Send(ctx, d.StorageAPIClient())
+	if err != nil {
+		return nil, err
+	}
 
 	// Map payload to export
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
