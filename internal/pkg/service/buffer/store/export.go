@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -110,40 +111,42 @@ func (s *Store) getExportBaseOp(_ context.Context, exportKey key.ExportKey) op.F
 }
 
 // ListExports from the store.
-func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey) (out []model.Export, err error) {
+func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey) (exports []model.Export, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.ListExports")
 	defer telemetry.EndSpan(span, &err)
 
-	exportKvs, err := s.listExportsBaseOp(ctx, receiverKey).Do(ctx, s.client)
+	err = s.
+		exportsIterator(ctx, receiverKey).Do(ctx, s.client).
+		ForEachValue(func(exportBase model.ExportBase) error {
+			mapping, err := s.getLatestMappingOp(ctx, exportBase.ExportKey).Do(ctx, s.client)
+			if err != nil {
+				return err
+			}
+			token, err := s.getTokenOp(ctx, exportBase.ExportKey).Do(ctx, s.client)
+			if err != nil {
+				return err
+			}
+			exports = append(exports, model.Export{
+				ExportBase: exportBase,
+				Mapping:    mapping.Value,
+				Token:      token.Value.Token,
+			})
+			return nil
+		})
+
 	if err != nil {
 		return nil, err
-	}
-	exports := make([]model.Export, 0, len(exportKvs))
-	for _, export := range exportKvs {
-		mapping, err := s.getLatestMappingOp(ctx, export.Value.ExportKey).Do(ctx, s.client)
-		if err != nil {
-			return nil, err
-		}
-		token, err := s.getTokenOp(ctx, export.Value.ExportKey).Do(ctx, s.client)
-		if err != nil {
-			return nil, err
-		}
-		exports = append(exports, model.Export{
-			ExportBase: export.Value,
-			Mapping:    mapping.Value,
-			Token:      token.Value.Token,
-		})
 	}
 
 	return exports, nil
 }
 
-func (s *Store) listExportsBaseOp(_ context.Context, receiverKey key.ReceiverKey) op.ForType[op.KeyValuesT[model.ExportBase]] {
+func (s *Store) exportsIterator(_ context.Context, receiverKey key.ReceiverKey) iterator.Definition[model.ExportBase] {
 	return s.schema.
 		Configs().
 		Exports().
 		InReceiver(receiverKey).
-		GetAll(etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
+		GetAll()
 }
 
 // DeleteExport deletes an export from the store.

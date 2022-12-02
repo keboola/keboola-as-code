@@ -131,25 +131,5 @@ func (v PrefixT[T]) GetOne(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 }
 
 func (v PrefixT[T]) GetAll(opts ...iterator.Option) iterator.Definition[T] {
-	return iterator.New[T](v.Prefix(), opts...)
-}
-
-func (v PrefixT[T]) getAll(opts ...etcd.OpOption) op.ForType[op.KeyValuesT[T]] {
-	return op.NewGetManyTOp(
-		func(_ context.Context) (etcd.Op, error) {
-			opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
-			return etcd.OpGet(v.Prefix(), opts...), nil
-		},
-		func(ctx context.Context, r etcd.OpResponse) (op.KeyValuesT[T], error) {
-			kvs := r.Get().Kvs
-			out := make(op.KeyValuesT[T], len(kvs))
-			for i, kv := range kvs {
-				out[i].KV = kv
-				if err := v.serde.Decode(ctx, kv, &out[i].Value); err != nil {
-					return nil, errors.Errorf("etcd operation \"get all\" failed: %w", invalidValueError(string(kv.Key), err))
-				}
-			}
-			return out, nil
-		},
-	)
+	return iterator.New[T](v.Prefix(), v.serde, opts...)
 }
