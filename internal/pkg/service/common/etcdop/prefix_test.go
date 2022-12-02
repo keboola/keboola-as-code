@@ -127,7 +127,7 @@ func TestTypedPrefix(t *testing.T) {
 	assert.Equal(t, int64(0), count)
 
 	// GetAll - empty
-	kvs, err := pfx.GetAll().Do(ctx, etcd)
+	kvs, err := pfx.GetAll().Do(ctx, etcd).All()
 	assert.NoError(t, err)
 	assert.Empty(t, kvs)
 
@@ -151,7 +151,7 @@ func TestTypedPrefix(t *testing.T) {
 	assert.Equal(t, int64(1), count)
 
 	// GetAll - found 1
-	kvs, err = pfx.GetAll().Do(ctx, etcd)
+	kvs, err = pfx.GetAll().Do(ctx, etcd).All()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, kvs)
 	assert.Len(t, kvs, 1)
@@ -179,7 +179,7 @@ func TestTypedPrefix(t *testing.T) {
 	assert.Equal(t, int64(2), count)
 
 	// GetAll - found 2
-	kvs, err = pfx.GetAll().Do(ctx, etcd)
+	kvs, err = pfx.GetAll().Do(ctx, etcd).All()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, kvs)
 	assert.Len(t, kvs, 2)
@@ -360,7 +360,7 @@ func BenchmarkPrefixT_GetAll(b *testing.B) {
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		kvs, err := pfx.GetAll().Do(ctx, etcd)
+		kvs, err := pfx.GetAll().Do(ctx, etcd).All()
 		if err != nil || len(kvs) != 100 {
 			b.Fatalf("unexpected result")
 		}
