@@ -113,7 +113,7 @@ func TestStore_ListReceiversBaseOp(t *testing.T) {
 	}
 
 	// List receivers
-	receivers, err := store.listReceiversBaseOp(ctx, projectID).Do(ctx, store.client)
+	receivers, err := store.receiversIterator(ctx, projectID).Do(ctx, store.client).All()
 	assert.NoError(t, err)
 
 	assert.Equal(t, input, receivers.Values())

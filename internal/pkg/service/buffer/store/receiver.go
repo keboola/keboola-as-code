@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -111,33 +112,33 @@ func (s *Store) updateReceiverBaseOp(_ context.Context, receiver model.ReceiverB
 // ListReceivers from the store.
 // Logic errors:
 // - ResourceNotFoundError.
-func (s *Store) ListReceivers(ctx context.Context, projectID int) (r []model.Receiver, err error) {
+func (s *Store) ListReceivers(ctx context.Context, projectID int) (receivers []model.Receiver, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.ListReceivers")
 	defer telemetry.EndSpan(span, &err)
 
-	receiverKvs, err := s.listReceiversBaseOp(ctx, projectID).Do(ctx, s.client)
+	err = s.
+		receiversIterator(ctx, projectID).Do(ctx, s.client).
+		ForEachValue(func(receiverBase model.ReceiverBase, header *iterator.Header) error {
+			exports, err := s.ListExports(ctx, receiverBase.ReceiverKey, iterator.WithRev(header.Revision))
+			if err != nil {
+				return err
+			}
+			receivers = append(receivers, model.Receiver{
+				ReceiverBase: receiverBase,
+				Exports:      exports,
+			})
+			return nil
+		})
+
 	if err != nil {
 		return nil, err
-	}
-
-	receivers := make([]model.Receiver, 0, len(receiverKvs))
-	for _, receiver := range receiverKvs {
-		exports, err := s.ListExports(ctx, receiver.Value.ReceiverKey)
-		if err != nil {
-			return nil, err
-		}
-		receivers = append(receivers, model.Receiver{
-			ReceiverBase: receiver.Value,
-			Exports:      exports,
-		})
 	}
 
 	return receivers, nil
 }
 
-func (s *Store) listReceiversBaseOp(_ context.Context, projectID int) op.ForType[op.KeyValuesT[model.ReceiverBase]] {
-	receivers := s.schema.Configs().Receivers().InProject(projectID)
-	return receivers.GetAll(etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
+func (s *Store) receiversIterator(_ context.Context, projectID int) iterator.Definition[model.ReceiverBase] {
+	return s.schema.Configs().Receivers().InProject(projectID).GetAll()
 }
 
 // DeleteReceiver deletes a receiver from the store.

@@ -42,9 +42,9 @@ func TestValidationError(t *testing.T) {
 	assert.Equal(t, `etcd operation "get one" failed: invalid value for "my-prefix/my-key": validation error`, err.Error())
 
 	// Test GetAll
-	_, err = pfxFailingValidation.GetAll().Do(ctx, client)
+	_, err = pfxFailingValidation.GetAll().Do(ctx, client).All()
 	assert.Error(t, err)
-	assert.Equal(t, `etcd operation "get all" failed: invalid value for "my-prefix/my-key": validation error`, err.Error())
+	assert.Equal(t, `etcd iterator failed: cannot decode key "my-prefix/my-key", page=1, index=0: validation error`, err.Error())
 }
 
 func TestEncodeDecodeError(t *testing.T) {
@@ -84,7 +84,7 @@ func TestEncodeDecodeError(t *testing.T) {
 	assert.Equal(t, `etcd operation "get one" failed: invalid value for "my-prefix/my-key": decode error`, err.Error())
 
 	// Test GetAll
-	_, err = pfxFailingEncode.GetAll().Do(ctx, client)
+	_, err = pfxFailingEncode.GetAll().Do(ctx, client).All()
 	assert.Error(t, err)
-	assert.Equal(t, `etcd operation "get all" failed: invalid value for "my-prefix/my-key": decode error`, err.Error())
+	assert.Equal(t, `etcd iterator failed: cannot decode key "my-prefix/my-key", page=1, index=0: decode error`, err.Error())
 }

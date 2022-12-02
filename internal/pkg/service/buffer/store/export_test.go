@@ -133,7 +133,7 @@ func TestStore_ListExportsBaseOp(t *testing.T) {
 	}
 
 	// List
-	kvs, err := store.listExportsBaseOp(ctx, receiverKey).Do(ctx, store.client)
+	kvs, err := store.exportsIterator(ctx, receiverKey).Do(ctx, store.client).All()
 	assert.NoError(t, err)
 	assert.Equal(t, input, kvs.Values())
 
@@ -255,7 +255,7 @@ func TestStore_DeleteExportBaseListOp(t *testing.T) {
 	}
 
 	// List
-	kvs, err := store.listExportsBaseOp(ctx, receiverKey).Do(ctx, store.client)
+	kvs, err := store.exportsIterator(ctx, receiverKey).Do(ctx, store.client).All()
 	assert.NoError(t, err)
 	assert.Equal(t, input, kvs.Values())
 
