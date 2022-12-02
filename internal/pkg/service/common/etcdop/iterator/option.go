@@ -13,6 +13,7 @@ type config struct {
 	prefix   string
 	serde    serde.Serde
 	pageSize int
+	revision int64 // revision of the all values, set by "WithRev" or by the first page
 }
 
 func newConfig(prefix string, s serde.Serde, opts []Option) config {
@@ -36,5 +37,14 @@ func WithPageSize(v int) Option {
 	}
 	return func(c *config) {
 		c.pageSize = v
+	}
+}
+
+func WithRev(v int64) Option {
+	if v <= 0 {
+		panic(errors.New("revision must be greater than 0"))
+	}
+	return func(c *config) {
+		c.revision = v
 	}
 }

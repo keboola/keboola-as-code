@@ -4,6 +4,7 @@ package iterator
 import (
 	"context"
 
+	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -14,6 +15,8 @@ import (
 const (
 	end = ""
 )
+
+type Header = etcdserverpb.ResponseHeader
 
 type Definition[T any] struct {
 	config
@@ -28,8 +31,8 @@ type Iterator[T any] struct {
 	page         int             // page number, start from 1
 	lastIndex    int             // lastIndex in the page, 0 means empty
 	currentIndex int             // currentIndex in the page, start from 0
-	revision     int64           // revision of the all values, set on the first page
 	values       []*op.KeyValue  // values in the page
+	header       *Header         // page response header
 	currentValue op.KeyValueT[T] // currentValue in the page, match currentIndex
 }
 
@@ -77,6 +80,11 @@ func (v *Iterator[T]) Value() op.KeyValueT[T] {
 	return v.currentValue
 }
 
+// Header returns header of the page etcd response.
+func (v *Iterator[T]) Header() *Header {
+	return v.header
+}
+
 // Err returns error. It must be checked after iterations (Next() == false).
 func (v *Iterator[T]) Err() error {
 	return v.err
@@ -103,9 +111,9 @@ func (v *Iterator[T]) AllTo(out *op.KeyValuesT[T]) (err error) {
 }
 
 // ForEachKV iterates the KVs using a callback.
-func (v *Iterator[T]) ForEachKV(fn func(value op.KeyValueT[T]) error) (err error) {
+func (v *Iterator[T]) ForEachKV(fn func(value op.KeyValueT[T], header *Header) error) (err error) {
 	for v.Next() {
-		if err = fn(v.Value()); err != nil {
+		if err = fn(v.Value(), v.Header()); err != nil {
 			return err
 		}
 	}
@@ -116,9 +124,9 @@ func (v *Iterator[T]) ForEachKV(fn func(value op.KeyValueT[T]) error) (err error
 }
 
 // ForEachValue iterates the typed values using a callback.
-func (v *Iterator[T]) ForEachValue(fn func(value T) error) (err error) {
+func (v *Iterator[T]) ForEachValue(fn func(value T, header *Header) error) (err error) {
 	for v.Next() {
-		if err = fn(v.Value().Value); err != nil {
+		if err = fn(v.Value().Value, v.Header()); err != nil {
 			return err
 		}
 	}
@@ -165,6 +173,7 @@ func (v *Iterator[T]) nextPage() bool {
 
 	// Handle empty result
 	v.values = r.Kvs
+	v.header = r.Header
 	v.lastIndex = len(v.values) - 1
 	if v.lastIndex == -1 {
 		return false

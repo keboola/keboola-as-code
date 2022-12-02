@@ -188,7 +188,8 @@ ETCD_REQUEST[%d] GET "some/prefix/foo005" | done | count: 1 | %s
 		logs.Reset()
 		itr := prefix.GetAll(iterator.WithPageSize(tc.pageSize)).Do(ctx, client)
 		actual = make([]result, 0)
-		assert.NoError(t, itr.ForEachKV(func(kv op.KeyValueT[obj]) error {
+		assert.NoError(t, itr.ForEachKV(func(kv op.KeyValueT[obj], header *iterator.Header) error {
+			assert.NotNil(t, header)
 			actual = append(actual, result{key: string(kv.KV.Key), value: kv.Value})
 			return nil
 		}))
@@ -199,13 +200,56 @@ ETCD_REQUEST[%d] GET "some/prefix/foo005" | done | count: 1 | %s
 		logs.Reset()
 		itr = prefix.GetAll(iterator.WithPageSize(tc.pageSize)).Do(ctx, client)
 		values := make([]obj, 0)
-		assert.NoError(t, itr.ForEachValue(func(value obj) error {
+		assert.NoError(t, itr.ForEachValue(func(value obj, header *iterator.Header) error {
+			assert.NotNil(t, header)
 			values = append(values, value)
 			return nil
 		}))
 		assert.Len(t, values, len(tc.expected))
 		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
 	}
+}
+
+func TestIterator_Revision(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t)
+
+	serialization := serde.NewJSON(serde.NoValidation)
+	prefix := etcdop.NewTypedPrefix[obj]("some/prefix", serialization)
+
+	// There are 3 keys
+	assert.NoError(t, prefix.Key("foo001").Put(obj{Value: "bar001"}).Do(ctx, client))
+	assert.NoError(t, prefix.Key("foo002").Put(obj{Value: "bar002"}).Do(ctx, client))
+	assert.NoError(t, prefix.Key("foo003").Put(obj{Value: "bar003"}).Do(ctx, client))
+
+	// Get current revision
+	r, err := prefix.Key("foo003").Get().Do(ctx, client)
+	assert.NoError(t, err)
+	revision := r.KV.ModRevision
+
+	// Add more keys
+	assert.NoError(t, prefix.Key("foo004").Put(obj{Value: "bar004"}).Do(ctx, client))
+	assert.NoError(t, prefix.Key("foo005").Put(obj{Value: "bar005"}).Do(ctx, client))
+
+	// Get all WithRev
+	var actual []result
+	assert.NoError(
+		t,
+		prefix.
+			GetAll(iterator.WithRev(revision)).Do(ctx, client).
+			ForEachKV(func(kv op.KeyValueT[obj], _ *iterator.Header) error {
+				actual = append(actual, result{key: string(kv.KV.Key), value: kv.Value})
+				return nil
+			}),
+	)
+
+	// The iterator only sees the values in the revision
+	assert.Equal(t, []result{
+		{key: "some/prefix/foo001", value: obj{"bar001"}},
+		{key: "some/prefix/foo002", value: obj{"bar002"}},
+		{key: "some/prefix/foo003", value: obj{"bar003"}},
+	}, actual)
 }
 
 func TestIterator_Value_UsedIncorrectly(t *testing.T) {

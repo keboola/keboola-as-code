@@ -118,8 +118,8 @@ func (s *Store) ListReceivers(ctx context.Context, projectID int) (receivers []m
 
 	err = s.
 		receiversIterator(ctx, projectID).Do(ctx, s.client).
-		ForEachValue(func(receiverBase model.ReceiverBase) error {
-			exports, err := s.ListExports(ctx, receiverBase.ReceiverKey)
+		ForEachValue(func(receiverBase model.ReceiverBase, header *iterator.Header) error {
+			exports, err := s.ListExports(ctx, receiverBase.ReceiverKey, iterator.WithRev(header.Revision))
 			if err != nil {
 				return err
 			}

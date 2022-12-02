@@ -111,13 +111,13 @@ func (s *Store) getExportBaseOp(_ context.Context, exportKey key.ExportKey) op.F
 }
 
 // ListExports from the store.
-func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey) (exports []model.Export, err error) {
+func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey, ops ...iterator.Option) (exports []model.Export, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.ListExports")
 	defer telemetry.EndSpan(span, &err)
 
 	err = s.
 		exportsIterator(ctx, receiverKey).Do(ctx, s.client).
-		ForEachValue(func(exportBase model.ExportBase) error {
+		ForEachValue(func(exportBase model.ExportBase, _ *iterator.Header) error {
 			mapping, err := s.getLatestMappingOp(ctx, exportBase.ExportKey).Do(ctx, s.client)
 			if err != nil {
 				return err
@@ -141,12 +141,12 @@ func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey) (e
 	return exports, nil
 }
 
-func (s *Store) exportsIterator(_ context.Context, receiverKey key.ReceiverKey) iterator.Definition[model.ExportBase] {
+func (s *Store) exportsIterator(_ context.Context, receiverKey key.ReceiverKey, ops ...iterator.Option) iterator.Definition[model.ExportBase] {
 	return s.schema.
 		Configs().
 		Exports().
 		InReceiver(receiverKey).
-		GetAll()
+		GetAll(ops...)
 }
 
 // DeleteExport deletes an export from the store.
