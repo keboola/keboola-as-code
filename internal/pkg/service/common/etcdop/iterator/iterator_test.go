@@ -3,9 +3,12 @@ package iterator_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
@@ -14,53 +17,238 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-type testStruct struct {
-	Value string
+type obj struct {
+	Value string `json:"val"`
+}
+
+type result struct {
+	key   string
+	value obj
+}
+
+type testCase struct {
+	name         string
+	kvCount      int
+	pageSize     int
+	expected     []result
+	expectedLogs string
 }
 
 func TestIterator(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
 
-	// Create KVs
-	serialization := serde.NewJSON(serde.NoValidation)
-	prefix := etcdop.NewTypedPrefix[testStruct]("some/prefix", serialization)
-	expected := make([]op.KeyValueT[testStruct], 0)
-	for i := 0; i < 20; i++ {
-		key := fmt.Sprintf("foo%03d", i)
-		val := testStruct{fmt.Sprintf("bar%03d", i)}
-		expected = append(expected, op.KeyValueT[testStruct]{
-			KV: &op.KeyValue{
-				Key:   []byte(key),
-				Value: []byte(val.Value),
+	cases := []testCase{
+		{
+			name:     "empty",
+			kvCount:  0,
+			pageSize: 3,
+			expected: []result{},
+			expectedLogs: `
+ETCD_REQUEST[%d] GET "some/prefix/" | start
+ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 0 | %s
+`,
+		},
+		{
+			name:     "count 1, under page size",
+			kvCount:  1,
+			pageSize: 3,
+			expected: []result{
+				{key: "some/prefix/foo001", value: obj{"bar001"}},
 			},
-			Value: val,
-		})
-		assert.NoError(t, prefix.Key(key).Put(val).Do(ctx, client))
+			expectedLogs: `
+ETCD_REQUEST[%d] GET "some/prefix/" | start
+ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 1 | %s
+`,
+		},
+		{
+			name:     "count 1, equal to page size",
+			kvCount:  1,
+			pageSize: 1,
+			expected: []result{
+				{key: "some/prefix/foo001", value: obj{"bar001"}},
+			},
+			expectedLogs: `
+ETCD_REQUEST[%d] GET "some/prefix/" | start
+ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 1 | %s
+`,
+		},
+		{
+			name:     "count 2, under page size",
+			kvCount:  2,
+			pageSize: 3,
+			expected: []result{
+				{key: "some/prefix/foo001", value: obj{"bar001"}},
+				{key: "some/prefix/foo002", value: obj{"bar002"}},
+			},
+			expectedLogs: `
+ETCD_REQUEST[%d] GET "some/prefix/" | start
+ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 2 | %s
+`,
+		},
+		{
+			name:     "count 3, equal to page size",
+			kvCount:  3,
+			pageSize: 3,
+			expected: []result{
+				{key: "some/prefix/foo001", value: obj{"bar001"}},
+				{key: "some/prefix/foo002", value: obj{"bar002"}},
+				{key: "some/prefix/foo003", value: obj{"bar003"}},
+			},
+			expectedLogs: `
+ETCD_REQUEST[%d] GET "some/prefix/" | start
+ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 3 | %s
+`,
+		},
+		{
+			name:     "one on the second page",
+			kvCount:  4,
+			pageSize: 3,
+			expected: []result{
+				{key: "some/prefix/foo001", value: obj{"bar001"}},
+				{key: "some/prefix/foo002", value: obj{"bar002"}},
+				{key: "some/prefix/foo003", value: obj{"bar003"}},
+				{key: "some/prefix/foo004", value: obj{"bar004"}},
+			},
+			expectedLogs: `
+ETCD_REQUEST[%d] GET "some/prefix/" | start
+ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 4 | %s
+ETCD_REQUEST[%d] GET "some/prefix/foo004" | start
+ETCD_REQUEST[%d] GET "some/prefix/foo004" | done | count: 1 | %s
+`,
+		},
+		{
+			name:     "two on the second page",
+			kvCount:  5,
+			pageSize: 3,
+			expected: []result{
+				{key: "some/prefix/foo001", value: obj{"bar001"}},
+				{key: "some/prefix/foo002", value: obj{"bar002"}},
+				{key: "some/prefix/foo003", value: obj{"bar003"}},
+				{key: "some/prefix/foo004", value: obj{"bar004"}},
+				{key: "some/prefix/foo005", value: obj{"bar005"}},
+			},
+			expectedLogs: `
+ETCD_REQUEST[%d] GET "some/prefix/" | start
+ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 5 | %s
+ETCD_REQUEST[%d] GET "some/prefix/foo004" | start
+ETCD_REQUEST[%d] GET "some/prefix/foo004" | done | count: 2 | %s
+`,
+		},
+		{
+			name:     "page size = 1",
+			kvCount:  5,
+			pageSize: 1,
+			expected: []result{
+				{key: "some/prefix/foo001", value: obj{"bar001"}},
+				{key: "some/prefix/foo002", value: obj{"bar002"}},
+				{key: "some/prefix/foo003", value: obj{"bar003"}},
+				{key: "some/prefix/foo004", value: obj{"bar004"}},
+				{key: "some/prefix/foo005", value: obj{"bar005"}},
+			},
+			expectedLogs: `
+ETCD_REQUEST[%d] GET "some/prefix/" | start
+ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 5 | %s
+ETCD_REQUEST[%d] GET "some/prefix/foo002" | start
+ETCD_REQUEST[%d] GET "some/prefix/foo002" | done | count: 4 | %s
+ETCD_REQUEST[%d] GET "some/prefix/foo003" | start
+ETCD_REQUEST[%d] GET "some/prefix/foo003" | done | count: 3 | %s
+ETCD_REQUEST[%d] GET "some/prefix/foo004" | start
+ETCD_REQUEST[%d] GET "some/prefix/foo004" | done | count: 2 | %s
+ETCD_REQUEST[%d] GET "some/prefix/foo005" | start
+ETCD_REQUEST[%d] GET "some/prefix/foo005" | done | count: 1 | %s
+`,
+		},
 	}
 
-	// Iterate KVs
-	actual := make([]testStruct, 0)
-	it := iterator.New[testStruct](prefix.Prefix(), serialization).Do(ctx, client)
-	for it.Next() {
-		actual = append(actual, it.Value().Value)
-	}
-	assert.NoError(t, it.Err())
+	for _, tc := range cases {
+		var logs strings.Builder
+		ctx := context.Background()
+		client := etcdhelper.ClientForTest(t)
+		client.KV = etcdhelper.KVLogWrapper(client.KV, &logs)
+		prefix := generateKVs(t, tc.kvCount, ctx, client)
 
-	// Check results
-	assert.Equal(t, expected, actual)
+		// Test iteration methods
+		logs.Reset()
+		actual := iterateAll(t, prefix.GetAll(iterator.WithPageSize(tc.pageSize)), ctx, client)
+		assert.Equal(t, tc.expected, actual, tc.name)
+		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
+
+		// Test All method
+		logs.Reset()
+		actualKvs, err := prefix.GetAll(iterator.WithPageSize(tc.pageSize)).Do(ctx, client).All()
+		assert.NoError(t, err)
+		actual = make([]result, 0)
+		for _, kv := range actualKvs {
+			actual = append(actual, result{key: string(kv.KV.Key), value: kv.Value})
+		}
+		assert.Equal(t, tc.expected, actual, tc.name)
+		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
+
+		// Test ForEachKV method
+		logs.Reset()
+		itr := prefix.GetAll(iterator.WithPageSize(tc.pageSize)).Do(ctx, client)
+		actual = make([]result, 0)
+		assert.NoError(t, itr.ForEachKV(func(kv op.KeyValueT[obj]) error {
+			actual = append(actual, result{key: string(kv.KV.Key), value: kv.Value})
+			return nil
+		}))
+		assert.Equal(t, tc.expected, actual, tc.name)
+		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
+
+		// Test ForEachValue method
+		logs.Reset()
+		itr = prefix.GetAll(iterator.WithPageSize(tc.pageSize)).Do(ctx, client)
+		values := make([]obj, 0)
+		assert.NoError(t, itr.ForEachValue(func(value obj) error {
+			values = append(values, value)
+			return nil
+		}))
+		assert.Len(t, values, len(tc.expected))
+		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
+	}
 }
 
 func TestIterator_Value_UsedIncorrectly(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t)
-	serialization := serde.NewJSON(serde.NoValidation)
-	prefix := etcdop.NewTypedPrefix[testStruct]("some/prefix", serialization)
+	prefix := generateKVs(t, 3, ctx, client)
 
-	it := iterator.New[testStruct](prefix.Prefix(), serialization).Do(ctx, client)
+	it := prefix.GetAll().Do(ctx, client)
 	assert.PanicsWithError(t, "unexpected Value() call: Next() must be called first", func() {
 		it.Value()
 	})
+}
+
+func iterateAll(t *testing.T, def iterator.Definition[obj], ctx context.Context, client *etcd.Client) []result {
+	t.Helper()
+	it := def.Do(ctx, client)
+	actual := make([]result, 0)
+	for it.Next() {
+		kv := it.Value()
+		actual = append(actual, result{key: string(kv.KV.Key), value: kv.Value})
+	}
+	assert.NoError(t, it.Err())
+	return actual
+}
+
+func generateKVs(t *testing.T, count int, ctx context.Context, client *etcd.Client) etcdop.PrefixT[obj] {
+	t.Helper()
+
+	// There are some keys before the prefix
+	assert.NoError(t, etcdop.Key("some/abc").Put("foo").Do(ctx, client))
+
+	// Create keys in the iterated prefix
+	serialization := serde.NewJSON(serde.NoValidation)
+	prefix := etcdop.NewTypedPrefix[obj]("some/prefix", serialization)
+	for i := 1; i <= count; i++ {
+		key := prefix.Key(fmt.Sprintf("foo%03d", i))
+		val := obj{fmt.Sprintf("bar%03d", i)}
+		assert.NoError(t, key.Put(val).Do(ctx, client))
+	}
+
+	// There are some keys after the prefix
+	assert.NoError(t, etcdop.Key("some/xyz").Put("foo").Do(ctx, client))
+
+	return prefix
 }
