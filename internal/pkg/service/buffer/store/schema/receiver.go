@@ -22,7 +22,7 @@ type ReceiversInProject struct {
 func (v ConfigsRoot) Receivers() Receivers {
 	return Receivers{receivers: NewTypedPrefix[model.ReceiverBase](
 		v.prefix.Add("receiver"),
-		v.schema.serialization,
+		v.schema.serde,
 	)}
 }
 

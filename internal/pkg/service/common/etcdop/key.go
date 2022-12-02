@@ -6,6 +6,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -17,7 +18,7 @@ type key = Key
 // KeyT extends Key with generic functionality, contains type of the serialized value.
 type KeyT[T any] struct {
 	key
-	serialization Serialization
+	serde serde.Serde
 }
 
 func (v Key) Key() string {
@@ -118,7 +119,7 @@ func (v KeyT[T]) Get(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 			} else if count == 1 {
 				kv := r.Get().Kvs[0]
 				target := new(T)
-				if err := v.serialization.decodeAndValidate(ctx, kv, target); err != nil {
+				if err := v.serde.Decode(ctx, kv, target); err != nil {
 					return nil, errors.Errorf("etcd operation \"get one\" failed: %w", invalidValueError(v.Key(), err))
 				}
 				return &op.KeyValueT[T]{Value: *target, KV: kv}, nil
@@ -132,7 +133,7 @@ func (v KeyT[T]) Get(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 func (v KeyT[T]) Put(val T, opts ...etcd.OpOption) op.NoResultOp {
 	return op.NewNoResultOp(
 		func(ctx context.Context) (etcd.Op, error) {
-			encoded, err := v.serialization.validateAndEncode(ctx, &val)
+			encoded, err := v.serde.Encode(ctx, &val)
 			if err != nil {
 				return etcd.Op{}, errors.Errorf("etcd operation \"put\" failed: %w", invalidValueError(v.Key(), err))
 			}
@@ -148,7 +149,7 @@ func (v KeyT[T]) Put(val T, opts ...etcd.OpOption) op.NoResultOp {
 func (v KeyT[T]) PutIfNotExists(val T, opts ...etcd.OpOption) op.BoolOp {
 	return op.NewBoolOp(
 		func(ctx context.Context) (etcd.Op, error) {
-			encoded, err := v.serialization.validateAndEncode(ctx, &val)
+			encoded, err := v.serde.Encode(ctx, &val)
 			if err != nil {
 				return etcd.Op{}, errors.Errorf("etcd operation \"put if not exists\" failed: %w", invalidValueError(v.Key(), err))
 			}

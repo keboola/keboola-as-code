@@ -27,7 +27,7 @@ type MappingsInExport struct {
 func (v ConfigsRoot) Mappings() Mappings {
 	return Mappings{mappings: NewTypedPrefix[model.Mapping](
 		v.prefix.Add("mapping/revision"),
-		v.schema.serialization,
+		v.schema.serde,
 	)}
 }
 
