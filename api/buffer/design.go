@@ -466,10 +466,11 @@ var Column = Type("Column", func() {
 		Description("Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).")
 		Enum("id", "datetime", "body", "headers", "template")
 	})
+	Attribute("name", String, "Column name.")
 	Attribute("template", Template, func() {
 		Description("Template mapping details.")
 	})
-	Required("type")
+	Required("type", "name")
 })
 
 var Template = Type("Template", func() {
