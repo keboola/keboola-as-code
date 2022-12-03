@@ -70,7 +70,7 @@ func (m Mapper) UpdateExportFromPayload(export model.Export, payload buffer.Upda
 	}
 
 	if payload.Mapping != nil {
-		newMapping, err := m.MappingFromPayload(export.ExportKey, export.Mapping.RevisionID+1, *payload.Mapping)
+		newMapping, err := m.MappingModelFromPayload(export.ExportKey, export.Mapping.RevisionID+1, *payload.Mapping)
 		if err != nil {
 			return model.Export{}, err
 		}
@@ -91,6 +91,9 @@ func (m Mapper) UpdateExportFromPayload(export model.Export, payload buffer.Upda
 func (m Mapper) MappingPayloadFromModel(model model.Mapping) buffer.Mapping {
 	columns := make([]*buffer.Column, 0, len(model.Columns))
 	for _, c := range model.Columns {
+		typ := c.ColumnType()
+		name := c.ColumnName()
+
 		var template *buffer.Template
 		if v, ok := c.(column.Template); ok {
 			template = &buffer.Template{
@@ -99,9 +102,10 @@ func (m Mapper) MappingPayloadFromModel(model model.Mapping) buffer.Mapping {
 				Content:                v.Content,
 			}
 		}
-		typ, _ := column.ColumnToType(c)
+
 		columns = append(columns, &buffer.Column{
 			Type:     typ,
+			Name:     name,
 			Template: template,
 		})
 	}
@@ -122,7 +126,7 @@ func (m Mapper) ReceiverModelFromPayload(projectID int, token storageapi.Token, 
 			return model.Receiver{}, err
 		}
 
-		mapping, err := m.MappingFromPayload(export.ExportKey, 1, *exportData.Mapping)
+		mapping, err := m.MappingModelFromPayload(export.ExportKey, 1, *exportData.Mapping)
 		if err != nil {
 			return model.Receiver{}, err
 		}
@@ -167,7 +171,7 @@ func (m Mapper) ExportModelFromPayload(receiverKey key.ReceiverKey, token storag
 	if err != nil {
 		return model.Export{}, err
 	}
-	mapping, err := m.MappingFromPayload(export.ExportKey, 1, *payload.Mapping)
+	mapping, err := m.MappingModelFromPayload(export.ExportKey, 1, *payload.Mapping)
 	if err != nil {
 		return model.Export{}, err
 	}
@@ -206,26 +210,27 @@ func (m Mapper) ExportBaseFromPayload(receiverKey key.ReceiverKey, payload buffe
 	}, nil
 }
 
-func (m Mapper) MappingFromPayload(exportKey key.ExportKey, revisionID int, payload buffer.Mapping) (model.Mapping, error) {
+func (m Mapper) MappingModelFromPayload(exportKey key.ExportKey, revisionID int, payload buffer.Mapping) (model.Mapping, error) {
 	// mapping
 	tableID, err := model.ParseTableID(payload.TableID)
 	if err != nil {
 		return model.Mapping{}, err
 	}
 	columns := make([]column.Column, 0, len(payload.Columns))
-	for _, columnData := range payload.Columns {
-		c, err := column.TypeToColumn(columnData.Type)
+	for _, data := range payload.Columns {
+		c, err := column.MakeColumn(data.Type, data.Name)
 		if err != nil {
 			return model.Mapping{}, err
 		}
-		if template, ok := c.(column.Template); ok {
-			if columnData.Template == nil {
-				return model.Mapping{}, serviceError.NewBadRequestError(errors.Errorf("missing template column data"))
+		if v, ok := c.(column.Template); ok {
+			if data.Template == nil {
+				return model.Mapping{}, serviceError.NewBadRequestError(errors.Errorf(`column "%s" is missing template`, data.Name))
 			}
-			template.Language = columnData.Template.Language
-			template.UndefinedValueStrategy = columnData.Template.UndefinedValueStrategy
-			template.Content = columnData.Template.Content
-			c = template
+			v.Name = c.ColumnName()
+			v.Language = data.Template.Language
+			v.UndefinedValueStrategy = data.Template.UndefinedValueStrategy
+			v.Content = data.Template.Content
+			c = v
 		}
 		columns = append(columns, c)
 	}

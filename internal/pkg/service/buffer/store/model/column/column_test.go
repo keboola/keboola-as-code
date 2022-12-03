@@ -17,18 +17,19 @@ func TestMappedColumns(t *testing.T) {
 	t.Parallel()
 
 	typed := column.Columns{
-		column.ID{},
-		column.Datetime{},
-		column.IP{},
-		column.Body{},
-		column.Header{},
+		column.ID{Name: "id"},
+		column.Datetime{Name: "datetime"},
+		column.IP{Name: "ip"},
+		column.Body{Name: "body"},
+		column.Headers{Name: "headers"},
 		column.Template{
+			Name:                   "template",
 			Language:               "jsonnet",
 			UndefinedValueStrategy: "null",
 			Content:                `body.my.key+":"+body.my.value`,
 		},
 	}
-	untyped := `[{"type":"id"},{"type":"datetime"},{"type":"ip"},{"type":"body"},{"type":"headers"},{"type":"template","language":"jsonnet","undefinedValueStrategy":"null","content":"body.my.key+\":\"+body.my.value"}]`
+	untyped := `[{"type":"id","name":"id"},{"type":"datetime","name":"datetime"},{"type":"ip","name":"ip"},{"type":"body","name":"body"},{"type":"headers","name":"headers"},{"type":"template","name":"template","language":"jsonnet","undefinedValueStrategy":"null","content":"body.my.key+\":\"+body.my.value"}]`
 
 	bytes, err := json.Marshal(&typed)
 	assert.NoError(t, err)
@@ -98,7 +99,7 @@ func TestColumn_Body(t *testing.T) {
 func TestColumn_Header(t *testing.T) {
 	t.Parallel()
 
-	c := column.Header{}
+	c := column.Headers{}
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")

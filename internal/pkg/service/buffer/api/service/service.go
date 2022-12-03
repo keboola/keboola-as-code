@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,7 +9,6 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
@@ -75,7 +73,7 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	}
 
 	// Create tokens for export mappings
-	wg := client.NewWaitGroup(ctx, d.StorageAPIClient())
+	/* wg := client.NewWaitGroup(ctx, d.StorageAPIClient())
 	for i, export := range receiver.Exports {
 		i := i
 		wg.Send(
@@ -92,7 +90,7 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	}
 	if err = wg.Wait(); err != nil {
 		return nil, err
-	}
+	} */
 
 	// Persist receiver
 	if err := str.CreateReceiver(ctx, receiver); err != nil {
@@ -215,7 +213,7 @@ func (s *service) RefreshReceiverTokens(d dependencies.ForProjectRequest, payloa
 func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer.CreateExportPayload) (res *buffer.Export, err error) {
 	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
 
-	tableID, err := model.ParseTableID(payload.Mapping.TableID)
+	/* tableID, err := model.ParseTableID(payload.Mapping.TableID)
 	if err != nil {
 		return nil, err
 	}
@@ -228,13 +226,14 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 	).Send(ctx, d.StorageAPIClient())
 	if err != nil {
 		return nil, err
-	}
+	} */
+	token := d.StorageAPIToken()
 
 	// Map payload to export
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
 	export, err := mpr.ExportModelFromPayload(
 		receiverKey,
-		*token,
+		token,
 		buffer.CreateExportData{
 			ID:         payload.ID,
 			Name:       payload.Name,
