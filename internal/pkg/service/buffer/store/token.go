@@ -2,12 +2,14 @@ package store
 
 import (
 	"context"
+	"sort"
 
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -16,10 +18,13 @@ func (s *Store) ListTokens(ctx context.Context, receiverKey key.ReceiverKey) (ou
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.ListTokens")
 	defer telemetry.EndSpan(span, &err)
 
-	tokens, err := s.getReceiverTokensOp(ctx, receiverKey).Do(ctx, s.client)
+	tokens, err := s.getReceiverTokensOp(ctx, receiverKey).Do(ctx, s.client).All()
 	if err != nil {
 		return nil, err
 	}
+	sort.SliceStable(tokens, func(i, j int) bool {
+		return string(tokens[i].KV.Key) < string(tokens[j].KV.Key)
+	})
 
 	return tokens.Values(), nil
 }
@@ -38,12 +43,12 @@ func (s *Store) UpdateTokens(ctx context.Context, tokens []model.TokenForExport)
 	return err
 }
 
-func (s *Store) getReceiverTokensOp(_ context.Context, receiverKey key.ReceiverKey) op.ForType[op.KeyValuesT[model.TokenForExport]] {
+func (s *Store) getReceiverTokensOp(_ context.Context, receiverKey key.ReceiverKey) iterator.Definition[model.TokenForExport] {
 	return s.schema.
 		Secrets().
 		Tokens().
 		InReceiver(receiverKey).
-		GetAll(etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
+		GetAll()
 }
 
 func (s *Store) updateTokenOp(_ context.Context, token model.TokenForExport) op.NoResultOp {
