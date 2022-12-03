@@ -12,7 +12,8 @@
         "incremental": true,
         "columns": [
           {
-            "type": "id"
+            "type": "id",
+            "name": "id"
           }
         ]
       },

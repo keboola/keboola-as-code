@@ -7,10 +7,12 @@
     "incremental": true,
     "columns": [
       {
-        "type": "body"
+        "type": "body",
+        "name": "body"
       },
       {
-        "type": "headers"
+        "type": "headers",
+        "name": "headers"
       }
     ]
   },

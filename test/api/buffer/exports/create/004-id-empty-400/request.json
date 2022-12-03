@@ -12,7 +12,8 @@
       "tableId": "in.c-bucket.table",
       "columns": [
         {
-          "type": "id"
+          "type": "id",
+          "name": "id"
         }
       ]
     }

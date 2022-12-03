@@ -12,7 +12,8 @@
       "incremental": true,
       "columns": [
         {
-          "type": "body"
+          "type": "body",
+          "name": "body"
         }
       ]
     },

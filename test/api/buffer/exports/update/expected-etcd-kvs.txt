@@ -30,7 +30,8 @@
   "incremental": true,
   "columns": [
     {
-      "type": "id"
+      "type": "id",
+      "name": "id"
     }
   ]
 }
@@ -52,10 +53,12 @@
   "incremental": true,
   "columns": [
     {
-      "type": "body"
+      "type": "body",
+      "name": "body"
     },
     {
-      "type": "headers"
+      "type": "headers",
+      "name": "headers"
     }
   ]
 }

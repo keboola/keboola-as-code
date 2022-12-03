@@ -12,10 +12,12 @@
         "incremental": true,
         "columns": [
           {
-            "type": "id"
+            "type": "id",
+            "name": "id"
           },
           {
             "type": "template",
+            "name": "template",
             "template": {
               "language": "jsonnet",
               "undefinedValueStrategy": "error",
@@ -39,13 +41,16 @@
         "incremental": false,
         "columns": [
           {
-            "type": "id"
+            "type": "id",
+            "name": "id"
           },
           {
-            "type": "body"
+            "type": "body",
+            "name": "body"
           },
           {
-            "type": "headers"
+            "type": "headers",
+            "name": "headers"
           }
         ]
       },
@@ -57,3 +62,4 @@
     }
   ]
 }
+

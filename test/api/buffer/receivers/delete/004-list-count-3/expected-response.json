@@ -20,10 +20,12 @@
             "incremental": false,
             "columns": [
               {
-                "type": "id"
+                "type": "id",
+                "name": "id"
               },
               {
-                "type": "body"
+                "type": "body",
+                "name": "body"
               }
             ]
           },
@@ -49,10 +51,12 @@
             "incremental": false,
             "columns": [
               {
-                "type": "id"
+                "type": "id",
+                "name": "id"
               },
               {
-                "type": "body"
+                "type": "body",
+                "name": "body"
               }
             ]
           },
