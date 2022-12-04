@@ -115,6 +115,10 @@ func (t TableID) String() string {
 	return fmt.Sprintf("%s.c-%s.%s", t.Stage, t.Bucket, t.Table)
 }
 
+func (t TableID) BucketID() string {
+	return fmt.Sprintf("%s.c-%s", t.Stage, t.Bucket)
+}
+
 func DefaultConditions() ImportConditions {
 	return ImportConditions{
 		Count: 1000,
