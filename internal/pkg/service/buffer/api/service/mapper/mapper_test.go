@@ -3,7 +3,6 @@ package mapper
 import (
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
@@ -20,12 +19,10 @@ func TestReceiverModelFromPayload(t *testing.T) {
 
 	projectID := 1000
 	secret := idgenerator.ReceiverSecret()
-	token := storageapi.Token{Token: "test"}
 
 	payload := buffer.CreateReceiverPayload{
-		StorageAPIToken: "",
-		ID:              nil,
-		Name:            "Receiver",
+		ID:   nil,
+		Name: "Receiver",
 		Exports: []*buffer.CreateExportData{
 			{
 				ID:   nil,
@@ -105,12 +102,11 @@ func TestReceiverModelFromPayload(t *testing.T) {
 						},
 					},
 				},
-				Token: token,
 			},
 		},
 	}
 
-	model, err := mapper.ReceiverModelFromPayload(projectID, token, secret, payload)
+	model, err := mapper.ReceiverModelFromPayload(projectID, secret, payload)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, model)
 }
