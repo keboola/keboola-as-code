@@ -1,14 +1,17 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
@@ -61,36 +64,35 @@ func (s *service) HealthCheck(dependencies.ForPublicRequest) (res string, err er
 func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.Receiver, err error) {
 	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
 
-	token := d.StorageAPIToken()
-
 	// Generate Secret
 	secret := idgenerator.ReceiverSecret()
 
 	// Map payload to receiver
-	receiver, err := mpr.ReceiverModelFromPayload(d.ProjectID(), token, secret, *payload)
+	receiver, err := mpr.ReceiverModelFromPayload(d.ProjectID(), secret, *payload)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create tokens for export mappings
-	/* wg := client.NewWaitGroup(ctx, d.StorageAPIClient())
-	for i, export := range receiver.Exports {
-		i := i
-		wg.Send(
-			storageapi.CreateTokenRequest(
-				storageapi.WithBucketPermission(
-					storageapi.BucketID(export.Mapping.TableID.Bucket),
-					storageapi.BucketPermissionWrite,
-				),
-			).WithOnSuccess(func(ctx context.Context, sender client.Sender, result *storageapi.Token) error {
-				receiver.Exports[i].Token = *result
-				return nil
-			}),
-		)
+	// Create export tables as necessary and generate tokens
+	wg := &sync.WaitGroup{}
+	errors := errors.NewMultiError()
+	for i := range receiver.Exports {
+		export := &receiver.Exports[i]
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			err := setupExport(ctx, d.StorageAPIClient(), export)
+			if err != nil {
+				errors.Append(err)
+			}
+		}()
 	}
-	if err = wg.Wait(); err != nil {
+	wg.Wait()
+	if err = errors.ErrorOrNil(); err != nil {
 		return nil, err
-	} */
+	}
 
 	// Persist receiver
 	if err := str.CreateReceiver(ctx, receiver); err != nil {
@@ -213,27 +215,10 @@ func (s *service) RefreshReceiverTokens(d dependencies.ForProjectRequest, payloa
 func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer.CreateExportPayload) (res *buffer.Export, err error) {
 	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
 
-	/* tableID, err := model.ParseTableID(payload.Mapping.TableID)
-	if err != nil {
-		return nil, err
-	}
-
-	token, err := storageapi.CreateTokenRequest(
-		storageapi.WithBucketPermission(
-			storageapi.BucketID(tableID.Bucket),
-			storageapi.BucketPermissionWrite,
-		),
-	).Send(ctx, d.StorageAPIClient())
-	if err != nil {
-		return nil, err
-	} */
-	token := d.StorageAPIToken()
-
 	// Map payload to export
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
 	export, err := mpr.ExportModelFromPayload(
 		receiverKey,
-		token,
 		buffer.CreateExportData{
 			ID:         payload.ID,
 			Name:       payload.Name,
@@ -241,6 +226,12 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 			Conditions: payload.Conditions,
 		},
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create export table as necessary and generate token
+	err = setupExport(ctx, d.StorageAPIClient(), &export)
 	if err != nil {
 		return nil, err
 	}
@@ -445,4 +436,73 @@ func parseRequestBody(contentType string, reader io.ReadCloser) (res *orderedmap
 
 func isContentTypeForm(t string) bool {
 	return strings.HasPrefix(t, "application/x-www-form-urlencoded")
+}
+
+// setupExport handles creating table and token for an export
+func setupExport(ctx context.Context, client client.Sender, export *model.Export) (err error) {
+	// Create table if it doesn't exist, and check schema if it does
+	err = setupMappingTable(ctx, client, export.Mapping)
+	if err != nil {
+		return err
+	}
+
+	// Generate token
+	token, err := storageapi.CreateTokenRequest(
+		storageapi.WithBucketPermission(
+			storageapi.BucketID(export.Mapping.TableID.BucketID()),
+			storageapi.BucketPermissionWrite,
+		),
+	).Send(ctx, client)
+	if err != nil {
+		return err
+	}
+	export.Token = *token
+
+	return nil
+}
+
+// setupMappingTable checks if the mapping output table exists.
+//
+// If it exists, it checks if the schema is correct.
+// If it does not exist, it creates the table.
+func setupMappingTable(ctx context.Context, client client.Sender, mapping model.Mapping) (err error) {
+	columnNames := make([]string, 0, len(mapping.Columns))
+	for _, column := range mapping.Columns {
+		columnNames = append(columnNames, column.ColumnName())
+	}
+
+	bucketID := storageapi.BucketID(mapping.TableID.BucketID())
+	tableID := storageapi.TableID(mapping.TableID.String())
+
+	// check if table exists
+	table, err := storageapi.GetTableRequest(tableID).Send(ctx, client)
+	if err == nil && table != nil {
+		// table exists, check if columns match
+		for i, name := range columnNames {
+			if table.Columns[i] != name {
+				return NewBadRequestError(errors.Errorf("export mapping does not match existing table schema"))
+			}
+		}
+		// columns match, we can exit
+		return nil
+	}
+
+	// table does not exist
+	// create bucket if it does not exist
+	err = storageapi.GetBucketRequest(bucketID).SendOrErr(ctx, client)
+	if err != nil {
+		bucket := &storageapi.Bucket{
+			ID:    bucketID,
+			Stage: mapping.TableID.Stage,
+		}
+		err = storageapi.CreateBucketRequest(bucket).SendOrErr(ctx, client)
+	}
+
+	// create table
+	err = storageapi.CreateTable(ctx, client, string(bucketID), mapping.TableID.Table, columnNames)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
