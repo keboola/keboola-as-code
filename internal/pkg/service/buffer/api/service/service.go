@@ -29,11 +29,11 @@ type service struct {
 }
 
 type serviceDeps interface {
-	BufferApiHost() string
+	BufferAPIHost() string
 }
 
 func New(d serviceDeps) Service {
-	return &service{mapper: mapper.NewMapper(d.BufferApiHost())}
+	return &service{mapper: mapper.NewMapper(d.BufferAPIHost())}
 }
 
 func (s *service) APIRootIndex(dependencies.ForPublicRequest) (err error) {

@@ -264,7 +264,7 @@ func (v *mocked) RequestClientIP() net.IP {
 	return net.ParseIP("1.2.3.4")
 }
 
-func (v *mocked) BufferApiHost() string {
+func (v *mocked) BufferAPIHost() string {
 	return "buffer.keboola.local"
 }
 

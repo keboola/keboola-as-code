@@ -55,7 +55,7 @@ type ForServer interface {
 	serviceDependencies.ForService
 	ServerCtx() context.Context
 	ServerWaitGroup() *sync.WaitGroup
-	BufferApiHost() string
+	BufferAPIHost() string
 }
 
 // ForPublicRequest interface provides dependencies for a public request that does not contain the Storage API token.
@@ -180,7 +180,7 @@ func (v *forServer) ServerWaitGroup() *sync.WaitGroup {
 	return v.serverWg
 }
 
-func (v *forServer) BufferApiHost() string {
+func (v *forServer) BufferAPIHost() string {
 	return v.bufferApiHost
 }
 

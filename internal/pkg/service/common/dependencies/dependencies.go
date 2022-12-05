@@ -128,7 +128,7 @@ type Mocked interface {
 	RequestHeaderMutable() http.Header
 	RequestClientIP() net.IP
 
-	BufferApiHost() string
+	BufferAPIHost() string
 	EtcdClient() *etcd.Client
 	Store() *bufferStore.Store
 }
