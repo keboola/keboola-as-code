@@ -43,7 +43,7 @@ require (
 	go.nhat.io/aferocopy/v2 v2.0.1
 	go.opentelemetry.io/otel v1.11.1
 	go.opentelemetry.io/otel/trace v1.11.1
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.24.0
 	goa.design/goa/v3 v3.10.2
 	goa.design/plugins/v3 v3.10.2
 	golang.org/x/sync v0.1.0
