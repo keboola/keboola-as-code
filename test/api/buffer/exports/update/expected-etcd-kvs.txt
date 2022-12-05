@@ -24,7 +24,7 @@
   "revisionId": 1,
   "tableId": {
     "stage": "in",
-    "bucketName": "bucket",
+    "bucketName": "update-export",
     "tableName": "table"
   },
   "incremental": true,
@@ -32,6 +32,13 @@
     {
       "type": "id",
       "name": "id"
+    },
+    {
+      "type": "template",
+      "name": "template",
+      "language": "jsonnet",
+      "undefinedValueStrategy": "error",
+      "content": "body.key+\":\"+body.value"
     }
   ]
 }
@@ -47,18 +54,48 @@
   "revisionId": 2,
   "tableId": {
     "stage": "in",
-    "bucketName": "bucket-changed",
-    "tableName": "table-changed"
+    "bucketName": "update-export",
+    "tableName": "table"
+  },
+  "incremental": false,
+  "columns": [
+    {
+      "type": "id",
+      "name": "id"
+    },
+    {
+      "type": "template",
+      "name": "template",
+      "language": "jsonnet",
+      "undefinedValueStrategy": "error",
+      "content": "body.key+\":\"+body.value"
+    }
+  ]
+}
+>>>>>
+
+<<<<<
+/config/mapping/revision/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/00000003
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "revisionId": 3,
+  "tableId": {
+    "stage": "in",
+    "bucketName": "update-export",
+    "tableName": "table2"
   },
   "incremental": true,
   "columns": [
     {
-      "type": "body",
-      "name": "body"
+      "type": "id",
+      "name": "id"
     },
     {
-      "type": "headers",
-      "name": "headers"
+      "type": "body",
+      "name": "body"
     }
   ]
 }

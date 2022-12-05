@@ -1,0 +1,6 @@
+{
+  "statusCode": 400,
+  "error": "buffer.badRequest",
+  "message": "Export mapping does not match existing table schema."
+}
+

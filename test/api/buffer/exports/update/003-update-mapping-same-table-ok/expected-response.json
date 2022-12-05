@@ -4,7 +4,7 @@
   "name": "My Export 1 Updated",
   "mapping": {
     "tableId": "in.c-update-export.table",
-    "incremental": true,
+    "incremental": false,
     "columns": [
       {
         "type": "id",

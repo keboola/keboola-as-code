@@ -3,7 +3,7 @@
   "receiverId": "my-receiver",
   "name": "My Export 2",
   "mapping": {
-    "tableId": "in.c-bucket.table",
+    "tableId": "in.c-delete-export.table",
     "incremental": true,
     "columns": [
       {

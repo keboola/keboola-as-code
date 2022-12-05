@@ -24,7 +24,7 @@
   "revisionId": 1,
   "tableId": {
     "stage": "in",
-    "bucketName": "bucket",
+    "bucketName": "delete-export",
     "tableName": "table"
   },
   "incremental": true,

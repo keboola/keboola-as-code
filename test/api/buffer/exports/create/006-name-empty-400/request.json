@@ -8,11 +8,20 @@
   "body": {
     "name": "",
     "mapping": {
-      "tableId": "in.c-bucket.table",
+      "tableId": "in.c-create-export.table",
       "columns": [
         {
           "type": "id",
           "name": "id"
+        },
+        {
+          "type": "template",
+          "name": "template",
+          "template": {
+            "language": "jsonnet",
+            "undefinedValueStrategy": "error",
+            "content": "body.key+\":\"+body.value"
+          }
         }
       ]
     }

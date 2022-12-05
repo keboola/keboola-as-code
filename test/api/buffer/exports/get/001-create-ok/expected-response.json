@@ -8,7 +8,7 @@
       "receiverId": "my-receiver",
       "name": "Export 1",
       "mapping": {
-        "tableId": "in.c-bucket.table1",
+        "tableId": "in.c-get-export.table1",
         "incremental": true,
         "columns": [
           {
@@ -37,20 +37,21 @@
       "receiverId": "my-receiver",
       "name": "Export 2",
       "mapping": {
-        "tableId": "in.c-bucket.table2",
-        "incremental": false,
+        "tableId": "in.c-get-export.table2",
+        "incremental": true,
         "columns": [
           {
             "type": "id",
             "name": "id"
           },
           {
-            "type": "body",
-            "name": "body"
-          },
-          {
-            "type": "headers",
-            "name": "headers"
+            "type": "template",
+            "name": "template",
+            "template": {
+              "language": "jsonnet",
+              "undefinedValueStrategy": "error",
+              "content": "body.key+\":\"+body.value"
+            }
           }
         ]
       },

@@ -16,7 +16,7 @@
           "receiverId": "receiver-b-my-id",
           "name": "Export 1",
           "mapping": {
-            "tableId": "in.c-bucket.table1",
+            "tableId": "in.c-list-receivers.table1",
             "incremental": true,
             "columns": [
               {
@@ -45,7 +45,7 @@
           "receiverId": "receiver-b-my-id",
           "name": "Export 2",
           "mapping": {
-            "tableId": "in.c-bucket.table2",
+            "tableId": "in.c-list-receivers.table2",
             "incremental": false,
             "columns": [
               {

@@ -3,23 +3,23 @@
   "receiverId": "my-receiver",
   "name": "My Export 1 Updated",
   "mapping": {
-    "tableId": "in.c-bucket-changed.table-changed",
+    "tableId": "in.c-update-export.table2",
     "incremental": true,
     "columns": [
       {
-        "type": "body",
-        "name": "body"
+        "type": "id",
+        "name": "id"
       },
       {
-        "type": "headers",
-        "name": "headers"
+        "type": "body",
+        "name": "body"
       }
     ]
   },
   "conditions": {
-    "count": 500,
-    "size": "100KB",
-    "time": "1m0s"
+    "count": 1000,
+    "size": "1000KB",
+    "time": "10m0s"
   }
 }
 
