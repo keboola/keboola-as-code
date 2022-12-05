@@ -150,7 +150,7 @@ func MakeColumn(typ string, name string) (Column, error) {
 	case columnTemplateType:
 		return Template{Name: name}, nil
 	default:
-		return dummyColumn{}, errors.Errorf(`invalid column type name "%s"`, typ)
+		return nil, errors.Errorf(`invalid column type name "%s"`, typ)
 	}
 }
 
@@ -177,21 +177,19 @@ type Column interface {
 	CsvValue(importCtx ImportCtx) (string, error)
 }
 
-func (c ID) ColumnName() string        { return c.Name }
-func (c Datetime) ColumnName() string  { return c.Name }
-func (c IP) ColumnName() string        { return c.Name }
-func (c Body) ColumnName() string      { return c.Name }
-func (c Headers) ColumnName() string   { return c.Name }
-func (c Template) ColumnName() string  { return c.Name }
-func (dummyColumn) ColumnName() string { return "unknown" }
+func (c ID) ColumnName() string       { return c.Name }
+func (c Datetime) ColumnName() string { return c.Name }
+func (c IP) ColumnName() string       { return c.Name }
+func (c Body) ColumnName() string     { return c.Name }
+func (c Headers) ColumnName() string  { return c.Name }
+func (c Template) ColumnName() string { return c.Name }
 
-func (c ID) ColumnType() string        { return columnIDType }
-func (c Datetime) ColumnType() string  { return columnDatetimeType }
-func (c IP) ColumnType() string        { return columnIPType }
-func (c Body) ColumnType() string      { return columnBodyType }
-func (c Headers) ColumnType() string   { return columnHeadersType }
-func (c Template) ColumnType() string  { return columnTemplateType }
-func (dummyColumn) ColumnType() string { return "unknown" }
+func (c ID) ColumnType() string       { return columnIDType }
+func (c Datetime) ColumnType() string { return columnDatetimeType }
+func (c IP) ColumnType() string       { return columnIPType }
+func (c Body) ColumnType() string     { return columnBodyType }
+func (c Headers) ColumnType() string  { return columnHeadersType }
+func (c Template) ColumnType() string { return columnTemplateType }
 
 func (ID) CsvValue(_ ImportCtx) (string, error) {
 	return IDPlaceholder, nil
@@ -332,10 +330,4 @@ func getHeaders(om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
 			return valueToJSONType(om), nil
 		},
 	}
-}
-
-type dummyColumn struct{}
-
-func (dummyColumn) CsvValue(_ ImportCtx) (string, error) {
-	return "", nil
 }
