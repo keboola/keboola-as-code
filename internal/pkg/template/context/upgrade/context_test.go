@@ -65,7 +65,7 @@ func TestContext(t *testing.T) {
 	instanceID := "my-instance"
 
 	// Current project state
-	d := dependenciesPkg.NewMockedDeps()
+	d := dependenciesPkg.NewMockedDeps(t)
 	projectState := d.MockedState()
 	configKey := model.ConfigKey{BranchID: targetBranch.ID, ComponentID: "foo.bar", ID: "12345"}
 	rowKey := model.ConfigRowKey{BranchID: targetBranch.ID, ComponentID: "foo.bar", ConfigID: "12345", ID: "67890"}

@@ -14,7 +14,7 @@ func TestAskStorageAPIHostInteractive(t *testing.T) {
 	t.Parallel()
 
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -44,7 +44,7 @@ func TestAskStorageAPIHostByFlag(t *testing.T) {
 	t.Parallel()
 
 	dialog, _ := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	opts := d.Options()
 	opts.Set(`storage-api-host`, `foo.bar.com`)
 
@@ -58,7 +58,7 @@ func TestAskStorageAPIHostMissing(t *testing.T) {
 	t.Parallel()
 
 	dialog, _ := createDialogs(t, false)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 
 	// Run
 	out, err := dialog.AskStorageAPIHost(d)

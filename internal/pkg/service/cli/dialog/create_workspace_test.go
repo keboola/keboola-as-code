@@ -13,7 +13,7 @@ import (
 func TestAskCreateWorkspace(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 
 	// Interaction
 	wg := sync.WaitGroup{}

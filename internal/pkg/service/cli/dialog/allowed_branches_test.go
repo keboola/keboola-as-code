@@ -26,7 +26,7 @@ const (
 func TestAskAllowedBranchesByFlag(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
 		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
@@ -46,7 +46,7 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 	t.Parallel()
 	dialog, _ := createDialogs(t, false)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
 		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
@@ -64,7 +64,7 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
 		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
@@ -95,7 +95,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
 		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
@@ -126,7 +126,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
 		[]*storageapi.Branch{
@@ -178,7 +178,7 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 func TestAskAllowedBranchesTypeList(t *testing.T) {
 	t.Parallel()
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
 		[]*storageapi.Branch{

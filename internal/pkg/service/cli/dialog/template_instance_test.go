@@ -18,7 +18,7 @@ func TestAskTemplateInstance_Interactive(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 	branch, _ := projectState.LocalObjects().Get(model.BranchKey{ID: 123})
@@ -64,7 +64,7 @@ func TestAskTemplateInstance_Noninteractive_InvalidInstance(t *testing.T) {
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 	branch, _ := projectState.LocalObjects().Get(model.BranchKey{ID: 123})
@@ -90,7 +90,7 @@ func TestAskTemplateInstance_Noninteractive(t *testing.T) {
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 	branch, _ := projectState.LocalObjects().Get(model.BranchKey{ID: 123})

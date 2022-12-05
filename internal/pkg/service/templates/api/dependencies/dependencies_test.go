@@ -43,8 +43,8 @@ func TestForPublicRequest_Components_Cached(t *testing.T) {
 	assert.NotEqual(t, components1, components2)
 
 	// Create mocked dependencies for server with "components1"
-	nopApiLogger := log.NewAPILogger(stdLog.New(io.Discard, "", 0), "", false)
-	mockedDeps := dependencies.NewMockedDeps(dependencies.WithMockedComponents(components1))
+	nopApiLogger := log.NewAPILogger(stdLog.New(io.Discard, "", 0), false)
+	mockedDeps := dependencies.NewMockedDeps(t, dependencies.WithMockedComponents(components1))
 	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, serverCtx: context.Background(), logger: nopApiLogger}
 
 	// Request 1 gets "components1"
@@ -86,8 +86,8 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 
 	// Create mocked dependencies for server
 	ctx := context.Background()
-	nopApiLogger := log.NewAPILogger(stdLog.New(io.Discard, "", 0), "", false)
-	mockedDeps := dependencies.NewMockedDeps(dependencies.WithMockedTokenResponse(3))
+	nopApiLogger := log.NewAPILogger(stdLog.New(io.Discard, "", 0), false)
+	mockedDeps := dependencies.NewMockedDeps(t, dependencies.WithMockedTokenResponse(3))
 	manager, err := repositoryManager.New(ctx, nil, mockedDeps)
 	assert.NoError(t, err)
 	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, serverCtx: ctx, logger: nopApiLogger, repositoryManager: manager}
@@ -212,8 +212,8 @@ func TestForProjectRequest_Template_Cached(t *testing.T) {
 
 	// Create mocked dependencies for server
 	ctx := context.Background()
-	nopApiLogger := log.NewAPILogger(stdLog.New(io.Discard, "", 0), "", false)
-	mockedDeps := dependencies.NewMockedDeps(dependencies.WithMockedTokenResponse(4))
+	nopApiLogger := log.NewAPILogger(stdLog.New(io.Discard, "", 0), false)
+	mockedDeps := dependencies.NewMockedDeps(t, dependencies.WithMockedTokenResponse(4))
 	manager, err := repositoryManager.New(ctx, nil, mockedDeps)
 	assert.NoError(t, err)
 	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, serverCtx: ctx, logger: nopApiLogger, repositoryManager: manager}

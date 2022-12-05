@@ -29,6 +29,7 @@ type mocked struct {
 	*base
 	*public
 	*project
+	t                   *testing.T
 	envs                *env.Map
 	options             *options.Options
 	serverWg            *sync.WaitGroup
@@ -83,7 +84,8 @@ func WithMockedTokenResponse(times int) MockedOption {
 	}
 }
 
-func NewMockedDeps(opts ...MockedOption) Mocked {
+func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
+	t.Helper()
 	ctx := context.Background()
 	envs := env.Empty()
 	logger := log.NewDebugLogger()
@@ -149,6 +151,7 @@ func NewMockedDeps(opts ...MockedOption) Mocked {
 	logger.Truncate()
 
 	return &mocked{
+		t:                   t,
 		base:                baseDeps,
 		public:              publicDeps,
 		project:             projectDeps,

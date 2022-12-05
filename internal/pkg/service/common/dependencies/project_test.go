@@ -11,7 +11,7 @@ import (
 
 func TestNewProjectDeps_MasterTokenRequiredError(t *testing.T) {
 	t.Parallel()
-	d := NewMockedDeps()
+	d := NewMockedDeps(t)
 	token := storageapi.Token{IsMaster: false}
 	_, err := newProjectDeps(d, d, token)
 	assert.Error(t, err)

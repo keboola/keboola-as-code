@@ -37,7 +37,7 @@ func TestNew(t *testing.T) {
 
 	// Create manager
 	ctx := context.Background()
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	m, err := manager.New(ctx, nil, d)
 	assert.NoError(t, err)
 	defer m.Free()
@@ -68,7 +68,7 @@ func TestRepository(t *testing.T) {
 
 	// Create manager
 	ctx := context.Background()
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	m, err := manager.New(ctx, nil, d)
 	assert.NoError(t, err)
 	defer m.Free()
@@ -113,7 +113,7 @@ func TestDefaultRepositories(t *testing.T) {
 	}
 
 	// Create manager
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	m, err := manager.New(context.Background(), defaultRepositories, d)
 	assert.NoError(t, err)
 	defer m.Free()

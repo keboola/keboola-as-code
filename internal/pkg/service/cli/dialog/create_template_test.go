@@ -24,7 +24,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	addMockedObjectsResponses(d.MockedHTTPTransport())
 
 	// Set fake file editor
@@ -187,7 +187,7 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	addMockedObjectsResponses(d.MockedHTTPTransport())
 
 	// Flags
@@ -296,7 +296,7 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	addMockedObjectsResponses(d.MockedHTTPTransport())
 
 	// Flags

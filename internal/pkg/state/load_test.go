@@ -39,7 +39,7 @@ func TestLoadState(t *testing.T) {
 
 	// Container
 	m, fs := loadTestManifest(t, envs, "minimal")
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	d.SetFromTestProject(testProject)
 
 	// Load
