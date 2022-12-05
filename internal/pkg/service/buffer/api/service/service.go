@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
@@ -74,25 +75,11 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	}
 
 	// Create export tables as necessary and generate tokens
-	wg := &sync.WaitGroup{}
-	errors := errors.NewMultiError()
-	for i := range receiver.Exports {
-		export := &receiver.Exports[i]
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			err := setupExport(ctx, d.StorageAPIClient(), export)
-			if err != nil {
-				errors.Append(err)
-			}
-		}()
-	}
-	wg.Wait()
-	if err = errors.ErrorOrNil(); err != nil {
+	exports, err := setupExports(ctx, d.StorageAPIClient(), receiver.Exports)
+	if err != nil {
 		return nil, err
 	}
+	receiver.Exports = exports
 
 	// Persist receiver
 	if err := str.CreateReceiver(ctx, receiver); err != nil {
@@ -240,7 +227,7 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 	}
 
 	// Create export table as necessary and generate token
-	err = setupExport(ctx, d.StorageAPIClient(), &export)
+	export, err = setupSingleExport(ctx, d.StorageAPIClient(), export)
 	if err != nil {
 		return nil, err
 	}
@@ -277,6 +264,15 @@ func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer
 	export, err := mpr.UpdateExportFromPayload(old, *payload)
 	if err != nil {
 		return nil, err
+	}
+
+	// If mapping changed, re-do export setup
+	if !reflect.DeepEqual(old.Mapping, export.Mapping) {
+		// Create export table as necessary and generate token
+		export, err = setupSingleExport(ctx, d.StorageAPIClient(), export)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Persist
@@ -447,27 +443,84 @@ func isContentTypeForm(t string) bool {
 	return strings.HasPrefix(t, "application/x-www-form-urlencoded")
 }
 
-// setupExport handles creating table and token for an export.
-func setupExport(ctx context.Context, client client.Sender, export *model.Export) (err error) {
-	// Create table if it doesn't exist, and check schema if it does
-	err = setupMappingTable(ctx, client, export.Mapping)
+func setupSingleExport(ctx context.Context, client client.Sender, export model.Export) (model.Export, error) {
+	temp := []model.Export{export}
+	temp, err := setupExports(ctx, client, temp)
 	if err != nil {
-		return err
+		return model.Export{}, err
+	}
+	return temp[0], nil
+}
+
+// setupExports handles creating table and token for exports.
+func setupExports(ctx context.Context, client client.Sender, exports []model.Export) ([]model.Export, error) {
+	wg := &sync.WaitGroup{}
+	errors := errors.NewMultiError()
+
+	// filter for unique buckets
+	buckets := make(map[string]model.TableID, 0)
+	for _, export := range exports {
+		buckets[export.Mapping.TableID.BucketID()] = export.Mapping.TableID
+	}
+	// create all unique buckets in parallel
+	// this step is separate because interleaving it with creating tables would cause race conditions
+	for _, tableID := range buckets {
+		tableID := tableID
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			// create bucket if it does not exist
+			bucketID := storageapi.BucketID(tableID.BucketID())
+			err := storageapi.GetBucketRequest(bucketID).SendOrErr(ctx, client)
+			if err != nil {
+				bucket := &storageapi.Bucket{
+					Stage: tableID.Stage,
+					Name:  tableID.Bucket,
+				}
+				err := storageapi.CreateBucketRequest(bucket).SendOrErr(ctx, client)
+				if err != nil {
+					errors.Append(err)
+				}
+			}
+		}()
 	}
 
-	// Generate token
-	token, err := storageapi.CreateTokenRequest(
-		storageapi.WithBucketPermission(
-			storageapi.BucketID(export.Mapping.TableID.BucketID()),
-			storageapi.BucketPermissionWrite,
-		),
-	).Send(ctx, client)
-	if err != nil {
-		return err
+	wg.Wait()
+	if err := errors.ErrorOrNil(); err != nil {
+		return nil, err
 	}
-	export.Token = *token
 
-	return nil
+	// Setup exports in parallel
+	// This will create tables and generate tokens as necessary
+	for i := range exports {
+		export := &exports[i]
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			// Create table if it doesn't exist, and check schema if it does
+			err := setupMappingTable(ctx, client, export.Mapping)
+			if err != nil {
+				errors.Append(err)
+				return
+			}
+
+			err = generateExportToken(ctx, client, export)
+			if err != nil {
+				errors.Append(err)
+				return
+			}
+		}()
+
+	}
+	wg.Wait()
+	if err := errors.ErrorOrNil(); err != nil {
+		return nil, err
+	}
+
+	return exports, nil
 }
 
 // setupMappingTable checks if the mapping output table exists.
@@ -489,25 +542,11 @@ func setupMappingTable(ctx context.Context, client client.Sender, mapping model.
 		// table exists, check if columns match
 		for i, name := range columnNames {
 			if table.Columns[i] != name {
-				return NewBadRequestError(errors.Errorf("export mapping does not match existing table schema"))
+				return NewBadRequestError(errors.New("Export mapping does not match existing table schema."))
 			}
 		}
 		// columns match, we can exit
 		return nil
-	}
-
-	// table does not exist
-	// create bucket if it does not exist
-	err = storageapi.GetBucketRequest(bucketID).SendOrErr(ctx, client)
-	if err != nil {
-		bucket := &storageapi.Bucket{
-			Stage: mapping.TableID.Stage,
-			Name:  mapping.TableID.Bucket,
-		}
-		err = storageapi.CreateBucketRequest(bucket).SendOrErr(ctx, client)
-		if err != nil {
-			return err
-		}
 	}
 
 	// create table
@@ -515,6 +554,22 @@ func setupMappingTable(ctx context.Context, client client.Sender, mapping model.
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func generateExportToken(ctx context.Context, client client.Sender, export *model.Export) (err error) {
+	token, err := storageapi.CreateTokenRequest(
+		storageapi.WithBucketPermission(
+			storageapi.BucketID(export.Mapping.TableID.BucketID()),
+			storageapi.BucketPermissionWrite,
+		),
+	).Send(ctx, client)
+	if err != nil {
+		return err
+	}
+
+	export.Token = *token
 
 	return nil
 }
