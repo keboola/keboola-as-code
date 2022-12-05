@@ -440,8 +440,7 @@ func createManifest(t *testing.T) *manifest.Manifest {
 func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string) (*State, *env.Map, error) {
 	t.Helper()
 
-	envs := env.Empty()
-	testProject := testproject.GetTestProjectForTest(t, envs)
+	testProject := testproject.GetTestProjectForTest(t)
 	err := testProject.SetState(projectStateFile)
 	assert.NoError(t, err)
 

@@ -26,7 +26,7 @@ import (
 
 func TestLoadState(t *testing.T) {
 	t.Parallel()
-	testProject := testproject.GetTestProjectForTest(t, env.Empty())
+	testProject := testproject.GetTestProjectForTest(t)
 	err := testProject.SetState("minimal.json")
 	assert.NoError(t, err)
 	envs := testProject.Env()
