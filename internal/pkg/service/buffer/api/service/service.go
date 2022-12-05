@@ -513,7 +513,6 @@ func setupExports(ctx context.Context, client client.Sender, exports []model.Exp
 				return
 			}
 		}()
-
 	}
 	wg.Wait()
 	if err := errors.ErrorOrNil(); err != nil {
