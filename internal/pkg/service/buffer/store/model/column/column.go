@@ -221,28 +221,28 @@ func (Headers) CsvValue(importCtx ImportCtx) (string, error) {
 	return string(header), nil
 }
 
-func (t Template) CsvValue(importCtx ImportCtx) (string, error) {
-	if t.Language == TemplateLanguageJsonnet {
+func (c Template) CsvValue(importCtx ImportCtx) (string, error) {
+	if c.Language == TemplateLanguageJsonnet {
 		ctx := jsonnet.NewContext()
-		ctx.NativeFunctionWithAlias(getBodyPath(t, importCtx.Body))
+		ctx.NativeFunctionWithAlias(getBodyPath(c, importCtx.Body))
 		ctx.NativeFunctionWithAlias(getBody(importCtx.Body))
 
 		headers := orderedmap.New()
 		for k := range importCtx.Header {
 			headers.Set(k, importCtx.Header.Get(k))
 		}
-		ctx.NativeFunctionWithAlias(getHeader(t, headers))
+		ctx.NativeFunctionWithAlias(getHeader(c, headers))
 		ctx.NativeFunctionWithAlias(getHeaders(headers))
 
 		ctx.GlobalBinding("currentDatetime", jsonnet.ValueToLiteral(importCtx.DateTime.Format(time.RFC3339)))
 
-		res, err := jsonnet.Evaluate(t.Content, ctx)
+		res, err := jsonnet.Evaluate(c.Content, ctx)
 		if err != nil {
 			return "", err
 		}
 		return strings.TrimRight(res, "\n"), nil
 	}
-	return "", errors.Errorf(`unsupported language "%s", use jsonnet instead`, t.Language)
+	return "", errors.Errorf(`unsupported language "%s", use jsonnet instead`, c.Language)
 }
 
 func getBodyPath(t Template, om *orderedmap.OrderedMap) *jsonnet.NativeFunction {

@@ -438,7 +438,7 @@ func isContentTypeForm(t string) bool {
 	return strings.HasPrefix(t, "application/x-www-form-urlencoded")
 }
 
-// setupExport handles creating table and token for an export
+// setupExport handles creating table and token for an export.
 func setupExport(ctx context.Context, client client.Sender, export *model.Export) (err error) {
 	// Create table if it doesn't exist, and check schema if it does
 	err = setupMappingTable(ctx, client, export.Mapping)
@@ -496,6 +496,9 @@ func setupMappingTable(ctx context.Context, client client.Sender, mapping model.
 			Stage: mapping.TableID.Stage,
 		}
 		err = storageapi.CreateBucketRequest(bucket).SendOrErr(ctx, client)
+		if err != nil {
+			return err
+		}
 	}
 
 	// create table
