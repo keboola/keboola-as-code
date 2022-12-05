@@ -485,7 +485,7 @@ func setupMappingTable(ctx context.Context, client client.Sender, mapping model.
 
 	// check if table exists
 	table, err := storageapi.GetTableRequest(tableID).Send(ctx, client)
-	if err == nil && table != nil {
+	if err == nil {
 		// table exists, check if columns match
 		for i, name := range columnNames {
 			if table.Columns[i] != name {
@@ -501,8 +501,8 @@ func setupMappingTable(ctx context.Context, client client.Sender, mapping model.
 	err = storageapi.GetBucketRequest(bucketID).SendOrErr(ctx, client)
 	if err != nil {
 		bucket := &storageapi.Bucket{
-			ID:    bucketID,
 			Stage: mapping.TableID.Stage,
+			Name:  mapping.TableID.Bucket,
 		}
 		err = storageapi.CreateBucketRequest(bucket).SendOrErr(ctx, client)
 		if err != nil {
