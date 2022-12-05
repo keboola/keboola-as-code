@@ -10,7 +10,8 @@ import (
 // It is wrapped zap.SugaredLogger.
 type zapLogger struct {
 	*zap.SugaredLogger
-	core zapcore.Core
+	core   zapcore.Core
+	prefix string
 }
 
 func loggerFromZapCore(core zapcore.Core, with ...interface{}) *zapLogger {
@@ -20,6 +21,14 @@ func loggerFromZapCore(core zapcore.Core, with ...interface{}) *zapLogger {
 // With creates a child logger and adds structured context to it.
 func (l *zapLogger) With(args ...interface{}) Logger {
 	return loggerFromZapCore(l.core, args...)
+}
+
+// AddPrefix creates a child logger with added prefix.
+func (l *zapLogger) AddPrefix(prefix string) Logger {
+	prefix = l.prefix + prefix
+	clone := l.With(PrefixKey, prefix).(*zapLogger)
+	clone.prefix = prefix
+	return clone
 }
 
 func (l *zapLogger) Log(level string, args ...any) {

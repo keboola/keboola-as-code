@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	stdLog "log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,15 +14,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
-
-type ddLogger struct {
-	*stdLog.Logger
-}
-
-func (l ddLogger) Log(msg string) {
-	l.Logger.Print(msg)
-}
 
 func main() {
 	// Flags.
@@ -31,13 +23,13 @@ func main() {
 	debugHTTPF := flag.Bool("debug-http", false, "Log HTTP client request and response bodies.")
 	flag.Parse()
 
-	// Setup logger.
-	logger := stdLog.New(os.Stderr, "[bufferWorker]", 0)
+	// Create logger.
+	logger := log.NewServiceLogger(os.Stderr, *debugF).AddPrefix("[bufferWorker]")
 
 	// Envs.
 	envs, err := env.FromOs()
 	if err != nil {
-		logger.Println("cannot load envs: " + err.Error())
+		logger.Errorf("cannot load envs: %s", err.Error())
 		os.Exit(1)
 	}
 
@@ -45,7 +37,7 @@ func main() {
 	if envs.Get("DATADOG_ENABLED") != "false" {
 		tracer.Start(
 			tracer.WithServiceName("buffer-service"),
-			tracer.WithLogger(ddLogger{logger}),
+			tracer.WithLogger(telemetry.NewDDLogger(logger)),
 			tracer.WithRuntimeMetrics(),
 			tracer.WithAnalytics(true),
 			tracer.WithDebugMode(envs.Get("DATADOG_DEBUG") == "true"),
@@ -55,19 +47,16 @@ func main() {
 
 	// Start worker.
 	if err := start(*debugF, *debugHTTPF, logger, envs); err != nil {
-		logger.Println(err.Error())
+		logger.Error(err.Error())
 		os.Exit(1)
 	}
 }
 
-// nolint:unparam
-func start(debug, debugHTTP bool, stdLogger *stdLog.Logger, envs *env.Map) error {
+func start(debug, debugHTTP bool, logger log.Logger, envs *env.Map) error {
 	// Create context.
 	ctx, cancelFn := context.WithCancel(context.Background())
 	defer cancelFn()
 
-	// Create logger
-	logger := log.NewAPILogger(stdLogger, "", debug)
 	logger.Infof("starting Buffer API WORKER, debug=%t, debug-http=%t", debug, debugHTTP)
 
 	// Create dependencies.

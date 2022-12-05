@@ -61,7 +61,6 @@ type ForServer interface {
 	dependencies.Public
 	ServerCtx() context.Context
 	ServerWaitGroup() *sync.WaitGroup
-	PrefixLogger() log.PrefixLogger
 	RepositoryManager() *repositoryManager.Manager
 	EtcdClient(ctx context.Context) (*etcd.Client, error)
 	ProjectLocker() *Locker
@@ -92,7 +91,7 @@ type forServer struct {
 	serverCtx         context.Context
 	serverWg          *sync.WaitGroup
 	debug             bool
-	logger            log.PrefixLogger
+	logger            log.Logger
 	repositoryManager *repositoryManager.Manager
 	etcdClient        dependencies.Lazy[*etcd.Client]
 	projectLocker     dependencies.Lazy[*Locker]
@@ -101,7 +100,7 @@ type forServer struct {
 // forPublicRequest implements ForPublicRequest interface.
 type forPublicRequest struct {
 	ForServer
-	logger     log.PrefixLogger
+	logger     log.Logger
 	requestCtx context.Context
 	requestID  string
 	components dependencies.Lazy[*model.ComponentsMap]
@@ -111,12 +110,12 @@ type forPublicRequest struct {
 type forProjectRequest struct {
 	dependencies.Project
 	ForPublicRequest
-	logger              log.PrefixLogger
+	logger              log.Logger
 	repositories        map[string]*repositoryManager.CachedRepository
 	projectRepositories dependencies.Lazy[*model.TemplateRepositories]
 }
 
-func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, defaultRepositories []model.TemplateRepository, debug, dumpHTTP bool) (v ForServer, err error) {
+func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Logger, defaultRepositories []model.TemplateRepository, debug, dumpHTTP bool) (v ForServer, err error) {
 	// Create tracer
 	var tracer trace.Tracer = nil
 	if telemetry.IsDataDogEnabled(envs) {
@@ -192,7 +191,7 @@ func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, r
 
 	return &forPublicRequest{
 		ForServer:  serverDeps,
-		logger:     serverDeps.PrefixLogger().WithAdditionalPrefix(fmt.Sprintf("[requestId=%s]", requestId)),
+		logger:     serverDeps.Logger().AddPrefix(fmt.Sprintf("[requestId=%s]", requestId)),
 		requestCtx: requestCtx,
 		requestID:  requestId,
 	}
@@ -207,7 +206,7 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 		return nil, err
 	}
 
-	logger := publicDeps.PrefixLogger().WithAdditionalPrefix(
+	logger := publicDeps.Logger().AddPrefix(
 		fmt.Sprintf("[project=%d][token=%s]", projectDeps.ProjectID(), projectDeps.StorageAPITokenID()),
 	)
 
@@ -225,10 +224,6 @@ func (v *forServer) ServerCtx() context.Context {
 
 func (v *forServer) ServerWaitGroup() *sync.WaitGroup {
 	return v.serverWg
-}
-
-func (v *forServer) PrefixLogger() log.PrefixLogger {
-	return v.logger
 }
 
 func (v *forServer) RepositoryManager() *repositoryManager.Manager {
@@ -279,10 +274,6 @@ func (v *forPublicRequest) Logger() log.Logger {
 	return v.logger
 }
 
-func (v *forPublicRequest) PrefixLogger() log.PrefixLogger {
-	return v.logger
-}
-
 func (v *forPublicRequest) RequestCtx() context.Context {
 	return v.requestCtx
 }
@@ -299,10 +290,6 @@ func (v *forPublicRequest) Components() *model.ComponentsMap {
 }
 
 func (v *forProjectRequest) Logger() log.Logger {
-	return v.logger
-}
-
-func (v *forProjectRequest) PrefixLogger() log.PrefixLogger {
 	return v.logger
 }
 

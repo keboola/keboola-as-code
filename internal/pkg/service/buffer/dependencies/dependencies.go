@@ -30,7 +30,7 @@ func NewServiceDeps(
 	processWg *sync.WaitGroup,
 	tracer trace.Tracer,
 	envs env.Provider,
-	logger log.PrefixLogger,
+	logger log.Logger,
 	debug, dumpHTTP bool,
 	userAgent string,
 ) (d ForService, err error) {

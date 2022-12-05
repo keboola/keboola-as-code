@@ -17,13 +17,7 @@ type Logger interface {
 	baseLogger
 	sugaredLogger
 	toWriter
-}
-
-type PrefixLogger interface {
-	Logger
-	Prefix() string
-	WithPrefix(prefix string) PrefixLogger
-	WithAdditionalPrefix(prefix string) PrefixLogger
+	withPrefix
 }
 
 type loggerWithZapCore interface {
@@ -66,4 +60,8 @@ type toWriter interface {
 	InfoWriter() *LevelWriter
 	WarnWriter() *LevelWriter
 	ErrorWriter() *LevelWriter
+}
+
+type withPrefix interface {
+	AddPrefix(prefix string) Logger
 }

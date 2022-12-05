@@ -55,7 +55,6 @@ type ForServer interface {
 	serviceDependencies.ForService
 	ServerCtx() context.Context
 	ServerWaitGroup() *sync.WaitGroup
-	PrefixLogger() log.PrefixLogger
 	BufferApiHost() string
 }
 
@@ -81,14 +80,13 @@ type forServer struct {
 	serviceDependencies.ForService
 	serverCtx     context.Context
 	serverWg      *sync.WaitGroup
-	logger        log.PrefixLogger
 	bufferApiHost string
 }
 
 // forPublicRequest implements ForPublicRequest interface.
 type forPublicRequest struct {
 	ForServer
-	logger     log.PrefixLogger
+	logger     log.Logger
 	request    *http.Request
 	requestCtx context.Context
 	requestID  string
@@ -98,10 +96,10 @@ type forPublicRequest struct {
 type forProjectRequest struct {
 	dependencies.Project
 	ForPublicRequest
-	logger log.PrefixLogger
+	logger log.Logger
 }
 
-func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.PrefixLogger, debug, dumpHTTP bool) (v ForServer, err error) {
+func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Logger, debug, dumpHTTP bool) (v ForServer, err error) {
 	// Create tracer
 	ctx := serverCtx
 	var tracer trace.Tracer = nil
@@ -135,7 +133,6 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Pref
 		ForService:    serviceDeps,
 		serverCtx:     serverCtx,
 		serverWg:      serverWg,
-		logger:        logger,
 		bufferApiHost: bufferApiHost,
 	}
 
@@ -148,7 +145,7 @@ func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, r
 
 	return &forPublicRequest{
 		ForServer:  serverDeps,
-		logger:     serverDeps.PrefixLogger().WithAdditionalPrefix(fmt.Sprintf("[requestId=%s]", requestId)),
+		logger:     serverDeps.Logger().AddPrefix(fmt.Sprintf("[requestId=%s]", requestId)),
 		request:    request,
 		requestCtx: requestCtx,
 		requestID:  requestId,
@@ -164,7 +161,7 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 		return nil, err
 	}
 
-	logger := publicDeps.PrefixLogger().WithAdditionalPrefix(
+	logger := publicDeps.Logger().AddPrefix(
 		fmt.Sprintf("[project=%d][token=%s]", projectDeps.ProjectID(), projectDeps.StorageAPITokenID()),
 	)
 
@@ -183,19 +180,11 @@ func (v *forServer) ServerWaitGroup() *sync.WaitGroup {
 	return v.serverWg
 }
 
-func (v *forServer) PrefixLogger() log.PrefixLogger {
-	return v.logger
-}
-
 func (v *forServer) BufferApiHost() string {
 	return v.bufferApiHost
 }
 
 func (v *forPublicRequest) Logger() log.Logger {
-	return v.logger
-}
-
-func (v *forPublicRequest) PrefixLogger() log.PrefixLogger {
 	return v.logger
 }
 
@@ -216,9 +205,5 @@ func (v *forPublicRequest) RequestClientIP() net.IP {
 }
 
 func (v *forProjectRequest) Logger() log.Logger {
-	return v.logger
-}
-
-func (v *forProjectRequest) PrefixLogger() log.PrefixLogger {
 	return v.logger
 }
