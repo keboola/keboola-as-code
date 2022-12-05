@@ -18,11 +18,11 @@ type Store struct {
 	schema *schema.Schema
 }
 
-func New(logger log.Logger, etcdClient *etcd.Client, validator validator.Validator, tracer trace.Tracer) *Store {
+func New(logger log.Logger, etcdClient *etcd.Client, tracer trace.Tracer) *Store {
 	return &Store{
 		logger: logger,
 		client: etcdClient,
 		tracer: tracer,
-		schema: schema.New(validator.Validate),
+		schema: schema.New(validator.New().Validate),
 	}
 }

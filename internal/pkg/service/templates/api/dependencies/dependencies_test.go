@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
-	stdLog "log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -43,9 +41,8 @@ func TestForPublicRequest_Components_Cached(t *testing.T) {
 	assert.NotEqual(t, components1, components2)
 
 	// Create mocked dependencies for server with "components1"
-	nopApiLogger := log.NewAPILogger(stdLog.New(io.Discard, "", 0), "", false)
-	mockedDeps := dependencies.NewMockedDeps(dependencies.WithMockedComponents(components1))
-	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, serverCtx: context.Background(), logger: nopApiLogger}
+	mockedDeps := dependencies.NewMockedDeps(t, dependencies.WithMockedComponents(components1))
+	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, serverCtx: context.Background(), logger: log.NewNopLogger()}
 
 	// Request 1 gets "components1"
 	req1Deps := NewDepsForPublicRequest(serverDeps, context.Background(), "req1")
@@ -86,11 +83,10 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 
 	// Create mocked dependencies for server
 	ctx := context.Background()
-	nopApiLogger := log.NewAPILogger(stdLog.New(io.Discard, "", 0), "", false)
-	mockedDeps := dependencies.NewMockedDeps(dependencies.WithMockedTokenResponse(3))
+	mockedDeps := dependencies.NewMockedDeps(t, dependencies.WithMockedTokenResponse(3))
 	manager, err := repositoryManager.New(ctx, nil, mockedDeps)
 	assert.NoError(t, err)
-	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, serverCtx: ctx, logger: nopApiLogger, repositoryManager: manager}
+	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, serverCtx: ctx, logger: log.NewNopLogger(), repositoryManager: manager}
 	requestDepsFactory := func(ctx context.Context) (ForProjectRequest, error) {
 		requestId := gonanoid.Must(8)
 		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, ctx, requestId), ctx, mockedDeps.StorageAPITokenID())
@@ -212,11 +208,10 @@ func TestForProjectRequest_Template_Cached(t *testing.T) {
 
 	// Create mocked dependencies for server
 	ctx := context.Background()
-	nopApiLogger := log.NewAPILogger(stdLog.New(io.Discard, "", 0), "", false)
-	mockedDeps := dependencies.NewMockedDeps(dependencies.WithMockedTokenResponse(4))
+	mockedDeps := dependencies.NewMockedDeps(t, dependencies.WithMockedTokenResponse(4))
 	manager, err := repositoryManager.New(ctx, nil, mockedDeps)
 	assert.NoError(t, err)
-	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, serverCtx: ctx, logger: nopApiLogger, repositoryManager: manager}
+	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, serverCtx: ctx, logger: log.NewNopLogger(), repositoryManager: manager}
 	requestDepsFactory := func(ctx context.Context) (ForProjectRequest, error) {
 		requestId := gonanoid.Must(8)
 		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, ctx, requestId), ctx, mockedDeps.StorageAPITokenID())

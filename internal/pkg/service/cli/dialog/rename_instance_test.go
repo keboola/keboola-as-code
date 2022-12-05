@@ -19,7 +19,7 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 	branchKey := model.BranchKey{ID: 123}
@@ -78,7 +78,7 @@ func TestAskRenameInstance_Noninteractive(t *testing.T) {
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 	branchKey := model.BranchKey{ID: 123}

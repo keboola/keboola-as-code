@@ -3,12 +3,15 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"sync"
+	"testing"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
+	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -17,9 +20,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
+	bufferStore "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
@@ -29,78 +36,100 @@ type mocked struct {
 	*base
 	*public
 	*project
+	t                   *testing.T
 	envs                *env.Map
 	options             *options.Options
 	serverWg            *sync.WaitGroup
 	debugLogger         log.DebugLogger
 	mockedHTTPTransport *httpmock.MockTransport
+	requestHeader       http.Header
+	etcdClient          *etcd.Client
+	bufferStore         *bufferStore.Store
 }
 
 type MockedValues struct {
-	Services                           storageapi.Services
-	Features                           storageapi.Features
-	Components                         storageapi.Components
-	StorageAPIHost                     string
-	StorageAPIToken                    storageapi.Token
-	StorageAPITokenMockedResponseTimes int
+	services                           storageapi.Services
+	features                           storageapi.Features
+	components                         storageapi.Components
+	storageAPIHost                     string
+	storageAPIToken                    storageapi.Token
+	storageAPITokenMockedResponseTimes int
+
+	useRealAPIs         bool
+	storageAPIClient    client.Client
+	encryptionAPIClient client.Client
+	schedulerAPIClient  client.Client
 }
 
 type MockedOption func(values *MockedValues)
 
+func WithTestProject(project *testproject.Project) MockedOption {
+	return func(values *MockedValues) {
+		values.storageAPIHost = project.StorageAPIHost()
+		values.storageAPIToken = *project.StorageAPIToken()
+
+		values.useRealAPIs = true
+		values.storageAPIClient = project.StorageAPIClient()
+		values.encryptionAPIClient = project.EncryptionAPIClient()
+		values.schedulerAPIClient = project.SchedulerAPIClient()
+	}
+}
+
 func WithMockedServices(services storageapi.Services) MockedOption {
 	return func(values *MockedValues) {
-		values.Services = services
+		values.services = services
 	}
 }
 
 func WithMockedFeatures(features storageapi.Features) MockedOption {
 	return func(values *MockedValues) {
-		values.Features = features
+		values.features = features
 	}
 }
 
 func WithMockedComponents(components storageapi.Components) MockedOption {
 	return func(values *MockedValues) {
-		values.Components = components
+		values.components = components
 	}
 }
 
 func WithMockedStorageAPIHost(host string) MockedOption {
 	return func(values *MockedValues) {
-		values.StorageAPIHost = host
+		values.storageAPIHost = host
 	}
 }
 
 func WithMockedStorageAPIToken(token storageapi.Token) MockedOption {
 	return func(values *MockedValues) {
-		values.StorageAPIToken = token
+		values.storageAPIToken = token
 	}
 }
 
 func WithMockedTokenResponse(times int) MockedOption {
 	return func(values *MockedValues) {
-		values.StorageAPITokenMockedResponseTimes = times
+		values.storageAPITokenMockedResponseTimes = times
 	}
 }
 
-func NewMockedDeps(opts ...MockedOption) Mocked {
+func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
+	t.Helper()
 	ctx := context.Background()
 	envs := env.Empty()
 	logger := log.NewDebugLogger()
-	httpClient, mockedHTTPTransport := client.NewMockedClient()
 
 	// Default values
 	values := MockedValues{
-		Services: storageapi.Services{
+		useRealAPIs: false,
+		services: storageapi.Services{
 			{ID: "encryption", URL: "https://encryption.mocked.transport.http"},
 			{ID: "scheduler", URL: "https://scheduler.mocked.transport.http"},
 			{ID: "queue", URL: "https://queue.mocked.transport.http"},
 			{ID: "sandboxes", URL: "https://sandboxes.mocked.transport.http"},
 		},
-		Features:       storageapi.Features{"FeatureA", "FeatureB"},
-		Components:     testapi.MockedComponents(),
-		StorageAPIHost: "mocked.transport.http",
-		StorageAPIToken: storageapi.Token{
+		features:       storageapi.Features{"FeatureA", "FeatureB"},
+		components:     testapi.MockedComponents(),
+		storageAPIHost: "mocked.transport.http",
+		storageAPIToken: storageapi.Token{
 			ID:       "token-12345-id",
 			Token:    "my-secret",
 			IsMaster: true,
@@ -110,7 +139,7 @@ func NewMockedDeps(opts ...MockedOption) Mocked {
 				Features: storageapi.Features{"my-feature"},
 			},
 		},
-		StorageAPITokenMockedResponseTimes: 1,
+		storageAPITokenMockedResponseTimes: 1,
 	}
 
 	// Apply options
@@ -118,37 +147,48 @@ func NewMockedDeps(opts ...MockedOption) Mocked {
 		opt(&values)
 	}
 
-	// Mock API index
+	// Mock APIs
+	httpClient, mockedHTTPTransport := client.NewMockedClient()
 	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/v2/storage/", values.StorageAPIHost),
+		fmt.Sprintf("https://%s/v2/storage/", values.storageAPIHost),
 		httpmock.NewJsonResponderOrPanic(200, &storageapi.IndexComponents{
-			Index: storageapi.Index{Services: values.Services, Features: values.Features}, Components: values.Components,
+			Index: storageapi.Index{Services: values.services, Features: values.features}, Components: values.components,
 		}).Once(),
 	)
 
 	// Mocked token verification
 	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/v2/storage/tokens/verify", values.StorageAPIHost),
-		httpmock.NewJsonResponderOrPanic(200, values.StorageAPIToken).Times(values.StorageAPITokenMockedResponseTimes),
+		fmt.Sprintf("https://%s/v2/storage/tokens/verify", values.storageAPIHost),
+		httpmock.NewJsonResponderOrPanic(200, values.storageAPIToken).Times(values.storageAPITokenMockedResponseTimes),
 	)
 
 	// Create base, public and project dependencies
 	baseDeps := newBaseDeps(envs, nil, logger, httpClient)
-	publicDeps, err := newPublicDeps(ctx, baseDeps, values.StorageAPIHost)
+	publicDeps, err := newPublicDeps(ctx, baseDeps, values.storageAPIHost)
 	if err != nil {
 		panic(err)
 	}
-	projectDeps, err := newProjectDeps(baseDeps, publicDeps, values.StorageAPIToken)
+	projectDeps, err := newProjectDeps(baseDeps, publicDeps, values.storageAPIToken)
 	if err != nil {
 		panic(err)
+	}
+
+	// Use real APIs
+	if values.useRealAPIs {
+		publicDeps.storageAPIClient = values.storageAPIClient
+		projectDeps.storageAPIClient = values.storageAPIClient
+		publicDeps.encryptionAPIClient = values.encryptionAPIClient
+		projectDeps.schedulerAPIClient = values.schedulerAPIClient
+		mockedHTTPTransport = nil
 	}
 
 	// Clear logs
 	logger.Truncate()
 
 	return &mocked{
+		t:                   t,
 		base:                baseDeps,
 		public:              publicDeps,
 		project:             projectDeps,
@@ -157,18 +197,8 @@ func NewMockedDeps(opts ...MockedOption) Mocked {
 		serverWg:            &sync.WaitGroup{},
 		debugLogger:         logger,
 		mockedHTTPTransport: mockedHTTPTransport,
+		requestHeader:       make(http.Header),
 	}
-}
-
-// SetFromTestProject set test dependencies from a testing project.
-func (v *mocked) SetFromTestProject(project *testproject.Project) {
-	v.storageAPIHost = project.StorageAPIHost()
-	v.public.storageAPIClient = project.StorageAPIClient()
-	v.project.storageAPIClient = project.StorageAPIClient()
-	v.project.token = *project.StorageAPIToken()
-	v.encryptionAPIClient = project.EncryptionAPIClient()
-	v.schedulerAPIClient = project.SchedulerAPIClient()
-	v.mockedHTTPTransport = nil
 }
 
 func (v *mocked) EnvsMutable() *env.Map {
@@ -183,11 +213,10 @@ func (v *mocked) DebugLogger() log.DebugLogger {
 	return v.debugLogger
 }
 
-func (v *mocked) ServerWaitGroup() *sync.WaitGroup {
-	return v.serverWg
-}
-
 func (v *mocked) MockedHTTPTransport() *httpmock.MockTransport {
+	if v.mockedHTTPTransport == nil {
+		panic(errors.Errorf(`mocked dependencies have been created WithTestProject(...), there is no mocked HTTP transport`))
+	}
 	return v.mockedHTTPTransport
 }
 
@@ -205,6 +234,52 @@ func (v *mocked) MockedState() *state.State {
 		panic(err)
 	}
 	return s
+}
+
+func (v *mocked) ServerCtx() context.Context {
+	return context.Background()
+}
+
+func (v *mocked) ServerWaitGroup() *sync.WaitGroup {
+	return v.serverWg
+}
+
+func (v *mocked) RequestCtx() context.Context {
+	return context.Background()
+}
+
+func (v *mocked) RequestID() string {
+	return "my-request-id"
+}
+
+func (v *mocked) RequestHeader() http.Header {
+	return v.requestHeader.Clone()
+}
+
+func (v *mocked) RequestHeaderMutable() http.Header {
+	return v.requestHeader
+}
+
+func (v *mocked) RequestClientIP() net.IP {
+	return net.ParseIP("1.2.3.4")
+}
+
+func (v *mocked) BufferAPIHost() string {
+	return "buffer.keboola.local"
+}
+
+func (v *mocked) EtcdClient() *etcd.Client {
+	if v.etcdClient == nil {
+		v.etcdClient = etcdhelper.ClientForTest(v.t)
+	}
+	return v.etcdClient
+}
+
+func (v *mocked) Store() *bufferStore.Store {
+	if v.bufferStore == nil {
+		bufferStore.New(v.logger, v.EtcdClient(), telemetry.NewNopTracer())
+	}
+	return v.bufferStore
 }
 
 // ObjectsContainer implementation for tests.

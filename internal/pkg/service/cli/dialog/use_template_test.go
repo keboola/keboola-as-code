@@ -25,7 +25,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
@@ -213,7 +213,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
@@ -333,7 +333,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
@@ -483,7 +483,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	d.Options().Set("branch", "123") // see MinimalProjectFs
 	d.Options().Set("instance-name", "My Instance")
 	d.Options().Set("inputs-file", inputsFilePath)
@@ -577,7 +577,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 
 	// Test dependencies
 	dialog, _ := createDialogs(t, false)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	d.Options().Set("branch", "123") // see MinimalProjectFs
 	d.Options().Set("instance-name", "My Instance")
 	d.Options().Set("inputs-file", inputsFilePath)

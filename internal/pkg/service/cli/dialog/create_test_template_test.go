@@ -24,7 +24,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 
 	// Test dependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	addMockedObjectsResponses(d.MockedHTTPTransport())
 
 	// Set fake file editor

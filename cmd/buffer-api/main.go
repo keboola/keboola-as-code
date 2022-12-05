@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	stdLog "log"
 	"net"
 	"net/url"
 	"os"
@@ -19,15 +18,8 @@ import (
 	bufferGen "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	bufferHttp "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
-
-type ddLogger struct {
-	*stdLog.Logger
-}
-
-func (l ddLogger) Log(msg string) {
-	l.Logger.Print(msg)
-}
 
 func main() {
 	// Flags.
@@ -37,13 +29,13 @@ func main() {
 	debugHTTPF := flag.Bool("debug-http", false, "Log HTTP client request and response bodies.")
 	flag.Parse()
 
-	// Setup logger.
-	logger := stdLog.New(os.Stderr, "[bufferApi]", 0)
+	// Create logger.
+	logger := log.NewServiceLogger(os.Stderr, *debugF).AddPrefix("[bufferApi]")
 
 	// Envs.
 	envs, err := env.FromOs()
 	if err != nil {
-		logger.Println("cannot load envs: " + err.Error())
+		logger.Errorf("cannot load envs: %s", err.Error())
 		os.Exit(1)
 	}
 
@@ -51,7 +43,7 @@ func main() {
 	if envs.Get("DATADOG_ENABLED") != "false" {
 		tracer.Start(
 			tracer.WithServiceName("buffer-api"),
-			tracer.WithLogger(ddLogger{logger}),
+			tracer.WithLogger(telemetry.NewDDLogger(logger)),
 			tracer.WithRuntimeMetrics(),
 			tracer.WithAnalytics(true),
 			tracer.WithDebugMode(envs.Get("DATADOG_DEBUG") == "true"),
@@ -61,18 +53,16 @@ func main() {
 
 	// Start server.
 	if err := start(*httpHostF, *httpPortF, *debugF, *debugHTTPF, logger, envs); err != nil {
-		logger.Println(err.Error())
+		logger.Error(err.Error())
 		os.Exit(1)
 	}
 }
 
-func start(host, port string, debug, debugHTTP bool, stdLogger *stdLog.Logger, envs *env.Map) error {
+func start(host, port string, debug, debugHTTP bool, logger log.Logger, envs *env.Map) error {
 	// Create context.
 	ctx, cancelFn := context.WithCancel(context.Background())
 	defer cancelFn()
 
-	// Create logger.
-	logger := log.NewAPILogger(stdLogger, "", debug)
 	logger.Infof("starting Buffer API HTTP server, host=%s, port=%s, debug=%t, debug-http=%t", host, port, debug, debugHTTP)
 
 	// Create dependencies.

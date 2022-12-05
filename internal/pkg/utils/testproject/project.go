@@ -52,10 +52,10 @@ type Project struct {
 
 type UnlockFn func()
 
-func GetTestProjectForTest(t *testing.T, envs *env.Map) *Project {
+func GetTestProjectForTest(t *testing.T) *Project {
 	t.Helper()
 
-	p, unlockFn, err := GetTestProject(envs)
+	p, unlockFn, err := GetTestProject(env.Empty())
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {

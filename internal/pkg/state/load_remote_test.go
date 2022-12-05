@@ -440,13 +440,11 @@ func createManifest(t *testing.T) *manifest.Manifest {
 func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string) (*State, *env.Map, error) {
 	t.Helper()
 
-	envs := env.Empty()
-	testProject := testproject.GetTestProjectForTest(t, envs)
+	testProject := testproject.GetTestProjectForTest(t)
 	err := testProject.SetState(projectStateFile)
 	assert.NoError(t, err)
 
-	d := dependencies.NewMockedDeps()
-	d.SetFromTestProject(testProject)
+	d := dependencies.NewMockedDeps(t, dependencies.WithTestProject(testProject))
 	state, err := New(context.Background(), project.NewWithManifest(context.Background(), aferofs.NewMemoryFs(), m), d)
 	assert.NoError(t, err)
 	filter := m.Filter()

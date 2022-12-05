@@ -17,7 +17,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 type ForService interface {
@@ -31,15 +30,12 @@ func NewServiceDeps(
 	processWg *sync.WaitGroup,
 	tracer trace.Tracer,
 	envs env.Provider,
-	logger log.PrefixLogger,
+	logger log.Logger,
 	debug, dumpHTTP bool,
 	userAgent string,
 ) (d ForService, err error) {
 	ctx, span := tracer.Start(ctx, "keboola.go.buffer.dependencies.NewServiceDeps")
 	defer telemetry.EndSpan(span, &err)
-
-	// Create validator
-	validatorInst := validator.New()
 
 	// Create base HTTP client for all API requests to other APIs
 	httpClient := httpclient.New(
@@ -94,7 +90,7 @@ func NewServiceDeps(
 	return &forService{
 		Base:   baseDeps,
 		Public: publicDeps,
-		store:  store.New(logger, etcdClient, validatorInst, tracer),
+		store:  store.New(logger, etcdClient, tracer),
 	}, nil
 }
 

@@ -14,7 +14,7 @@ import (
 
 func TestConfigMetadataMapper_MapBeforeLocalSave(t *testing.T) {
 	t.Parallel()
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	logger := d.DebugLogger()
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(branchmetadata.NewMapper(mockedState, d))

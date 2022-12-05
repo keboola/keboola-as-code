@@ -24,7 +24,7 @@ func TestDialogs_AskHostAndToken(t *testing.T) {
 
 	// testDependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 	opts := d.Options()
 
 	// Interaction
@@ -65,7 +65,7 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 
 	// testDependencies
 	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps()
+	d := dependencies.NewMockedDeps(t)
 
 	branches := []*model.Branch{{BranchKey: model.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}
 	d.MockedHTTPTransport().RegisterResponder(

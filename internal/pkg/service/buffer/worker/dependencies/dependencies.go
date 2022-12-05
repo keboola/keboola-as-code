@@ -34,7 +34,7 @@ type forWorker struct {
 	workerWg  *sync.WaitGroup
 }
 
-func NewWorkerDeps(workerCtx context.Context, envs env.Provider, logger log.PrefixLogger, debug, dumpHTTP bool) (v ForWorker, err error) {
+func NewWorkerDeps(workerCtx context.Context, envs env.Provider, logger log.Logger, debug, dumpHTTP bool) (v ForWorker, err error) {
 	// Create tracer
 	ctx := workerCtx
 	var tracer trace.Tracer = nil
