@@ -91,6 +91,8 @@ func (v *Iterator[T]) Err() error {
 }
 
 // All returns all values as a slice.
+//
+// The values are sorted by key in ascending order.
 func (v *Iterator[T]) All() (out op.KeyValuesT[T], err error) {
 	if err = v.AllTo(&out); err != nil {
 		return nil, err
@@ -99,6 +101,8 @@ func (v *Iterator[T]) All() (out op.KeyValuesT[T], err error) {
 }
 
 // AllTo resets the slice and add all values to the slice.
+//
+// The values are sorted by key in ascending order.
 func (v *Iterator[T]) AllTo(out *op.KeyValuesT[T]) (err error) {
 	*out = (*out)[:0]
 	for v.Next() {
