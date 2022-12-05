@@ -3,12 +3,15 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"sync"
+	"testing"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
+	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -17,9 +20,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
+	bufferStore "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
@@ -35,6 +42,9 @@ type mocked struct {
 	serverWg            *sync.WaitGroup
 	debugLogger         log.DebugLogger
 	mockedHTTPTransport *httpmock.MockTransport
+	requestHeader       http.Header
+	etcdClient          *etcd.Client
+	bufferStore         *bufferStore.Store
 }
 
 type MockedValues struct {
@@ -187,6 +197,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 		serverWg:            &sync.WaitGroup{},
 		debugLogger:         logger,
 		mockedHTTPTransport: mockedHTTPTransport,
+		requestHeader:       make(http.Header),
 	}
 }
 
@@ -200,10 +211,6 @@ func (v *mocked) Options() *options.Options {
 
 func (v *mocked) DebugLogger() log.DebugLogger {
 	return v.debugLogger
-}
-
-func (v *mocked) ServerWaitGroup() *sync.WaitGroup {
-	return v.serverWg
 }
 
 func (v *mocked) MockedHTTPTransport() *httpmock.MockTransport {
@@ -227,6 +234,52 @@ func (v *mocked) MockedState() *state.State {
 		panic(err)
 	}
 	return s
+}
+
+func (v *mocked) ServerCtx() context.Context {
+	return context.Background()
+}
+
+func (v *mocked) ServerWaitGroup() *sync.WaitGroup {
+	return v.serverWg
+}
+
+func (v *mocked) RequestCtx() context.Context {
+	return context.Background()
+}
+
+func (v *mocked) RequestID() string {
+	return "my-request-id"
+}
+
+func (v *mocked) RequestHeader() http.Header {
+	return v.requestHeader.Clone()
+}
+
+func (v *mocked) RequestHeaderMutable() http.Header {
+	return v.requestHeader
+}
+
+func (v *mocked) RequestClientIP() net.IP {
+	return net.ParseIP("1.2.3.4")
+}
+
+func (v *mocked) BufferApiHost() string {
+	return "buffer.keboola.local"
+}
+
+func (v *mocked) EtcdClient() *etcd.Client {
+	if v.etcdClient == nil {
+		v.etcdClient = etcdhelper.ClientForTest(v.t)
+	}
+	return v.etcdClient
+}
+
+func (v *mocked) Store() *bufferStore.Store {
+	if v.bufferStore == nil {
+		bufferStore.New(v.logger, v.EtcdClient(), telemetry.NewNopTracer())
+	}
+	return v.bufferStore
 }
 
 // ObjectsContainer implementation for tests.

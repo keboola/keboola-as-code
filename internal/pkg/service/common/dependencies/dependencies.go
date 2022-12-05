@@ -50,11 +50,14 @@ package dependencies
 
 import (
 	"context"
+	"net"
+	"net/http"
 	"sync"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
+	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -63,9 +66,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
+	bufferStore "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
 // Base contains basic dependencies.
@@ -109,12 +112,23 @@ type Mocked interface {
 	Base
 	Public
 	Project
-	ServerWaitGroup() *sync.WaitGroup
-	SetFromTestProject(project *testproject.Project)
+
 	EnvsMutable() *env.Map
 	Options() *options.Options
 	DebugLogger() log.DebugLogger
 	MockedState() *state.State
 	MockedProject(fs filesystem.Fs) *projectPkg.Project
 	MockedHTTPTransport() *httpmock.MockTransport
+
+	ServerCtx() context.Context
+	ServerWaitGroup() *sync.WaitGroup
+	RequestCtx() context.Context
+	RequestID() string
+	RequestHeader() http.Header
+	RequestHeaderMutable() http.Header
+	RequestClientIP() net.IP
+
+	BufferApiHost() string
+	EtcdClient() *etcd.Client
+	Store() *bufferStore.Store
 }
