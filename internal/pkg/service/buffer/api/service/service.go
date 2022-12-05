@@ -192,16 +192,25 @@ func (s *service) RefreshReceiverTokens(d dependencies.ForProjectRequest, payloa
 		return nil, err
 	}
 
-	refreshedTokens := make([]model.TokenForExport, 0, len(tokens))
-	for _, token := range tokens {
-		refreshed, err := storageapi.RefreshTokenRequest(token.Token.ID).Send(ctx, d.StorageAPIClient())
-		if err != nil {
-			return nil, err
-		}
-		refreshedTokens = append(refreshedTokens, model.TokenForExport{
-			ExportKey: token.ExportKey,
-			Token:     *refreshed,
-		})
+	// Refresh tokens in parallel
+	refreshedTokens := make([]model.TokenForExport, len(tokens))
+	wg := client.NewWaitGroup(ctx, d.StorageAPIClient())
+	for i, token := range tokens {
+		i := i
+		key := token.ExportKey
+		wg.Send(
+			storageapi.RefreshTokenRequest(token.Token.ID).
+				WithOnSuccess(func(ctx context.Context, sender client.Sender, result *storageapi.Token) error {
+					refreshedTokens[i] = model.TokenForExport{
+						ExportKey: key,
+						Token:     *result,
+					}
+					return nil
+				}),
+		)
+	}
+	if err = wg.Wait(); err != nil {
+		return nil, err
 	}
 
 	err = str.UpdateTokens(ctx, refreshedTokens)
