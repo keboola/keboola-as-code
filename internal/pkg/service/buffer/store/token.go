@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"sort"
 
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -22,9 +21,6 @@ func (s *Store) ListTokens(ctx context.Context, receiverKey key.ReceiverKey) (ou
 	if err != nil {
 		return nil, err
 	}
-	sort.SliceStable(tokens, func(i, j int) bool {
-		return string(tokens[i].KV.Key) < string(tokens[j].KV.Key)
-	})
 
 	return tokens.Values(), nil
 }
