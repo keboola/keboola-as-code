@@ -444,8 +444,7 @@ func loadRemoteState(t *testing.T, m *manifest.Manifest, projectStateFile string
 	err := testProject.SetState(projectStateFile)
 	assert.NoError(t, err)
 
-	d := dependencies.NewMockedDeps(t)
-	d.SetFromTestProject(testProject)
+	d := dependencies.NewMockedDeps(t, dependencies.WithTestProject(testProject))
 	state, err := New(context.Background(), project.NewWithManifest(context.Background(), aferofs.NewMemoryFs(), m), d)
 	assert.NoError(t, err)
 	filter := m.Filter()
