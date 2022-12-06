@@ -87,7 +87,7 @@
         "content": "body.key+\":\"+body.value"
       }
     ]
- },
+  },
   "storageResource": {
     %A
   }
