@@ -49,10 +49,7 @@ func (v RecordsRoot) ByKey(k storeKey.RecordKey) Key {
 	if k.ExportID == "" {
 		panic(errors.New("record exportID cannot be empty"))
 	}
-	if k.FileID == "" {
-		panic(errors.New("record fileID cannot be empty"))
-	}
-	if k.SliceID == "" {
+	if k.SliceID.IsZero() {
 		panic(errors.New("record sliceID cannot be empty"))
 	}
 	if k.ReceivedAt == (time.Time{}) {
@@ -65,7 +62,6 @@ func (v RecordsRoot) ByKey(k storeKey.RecordKey) Key {
 		Add(strconv.Itoa(k.ProjectID)).
 		Add(k.ReceiverID).
 		Add(k.ExportID).
-		Add(k.FileID).
-		Add(k.SliceID).
+		Add(storeKey.FormatTime(k.SliceID)).
 		Key(k.Key())
 }

@@ -56,7 +56,111 @@
 >>>>>
 
 <<<<<
+/file/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "fileId": "%s",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "my-receiver",
+    "exportId": "my-export-1",
+    "revisionId": 1,
+    "tableId": {
+      "stage": "in",
+      "bucketName": "delete-export",
+      "tableName": "table"
+    },
+    "incremental": true,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "template",
+        "name": "template",
+        "language": "jsonnet",
+        "undefinedValueStrategy": "error",
+        "content": "body.key+\":\"+body.value"
+      }
+    ]
+ },
+  "storageResource": {
+    %A
+  }
+}
+>>>>>
+
+<<<<<
+/file/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-2",
+  "fileId": "%s",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "my-receiver",
+    "exportId": "my-export-2",
+    "revisionId": 1,
+    "tableId": {
+      "stage": "in",
+      "bucketName": "delete-export",
+      "tableName": "table"
+    },
+    "incremental": true,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "template",
+        "name": "template",
+        "language": "jsonnet",
+        "undefinedValueStrategy": "error",
+        "content": "body.key+\":\"+body.value"
+      }
+    ]
+  },
+  "storageResource": {
+    %A
+  }
+}
+>>>>>
+
+<<<<<
 /secret/export/token/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2
 -----
 %A
+>>>>>
+
+<<<<<
+/slice/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "sliceNumber": 1
+}
+>>>>>
+
+<<<<<
+/slice/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-2",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "sliceNumber": 1
+}
 >>>>>

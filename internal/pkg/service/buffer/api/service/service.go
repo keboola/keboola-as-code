@@ -81,8 +81,27 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	}
 	receiver.Exports = exports
 
+	// Create Storage files for exports
+	files := make(map[key.ExportKey]*storageapi.File)
+	wg := client.NewWaitGroup(ctx, d.StorageAPIClient())
+	for _, export := range receiver.Exports {
+		expKey := export.ExportKey
+		wg.Send(
+			storageapi.CreateFileResourceRequest(&storageapi.File{
+				Name:     export.Name,
+				IsSliced: true,
+			}).WithOnSuccess(func(ctx context.Context, sender client.Sender, result *storageapi.File) error {
+				files[expKey] = result
+				return nil
+			}),
+		)
+	}
+	if err = wg.Wait(); err != nil {
+		return nil, err
+	}
+
 	// Persist receiver
-	if err := str.CreateReceiver(ctx, receiver); err != nil {
+	if err := str.CreateReceiver(ctx, receiver, files); err != nil {
 		return nil, err
 	}
 
@@ -211,6 +230,16 @@ func (s *service) RefreshReceiverTokens(d dependencies.ForProjectRequest, payloa
 func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer.CreateExportPayload) (res *buffer.Export, err error) {
 	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
 
+	// Create Storage file
+	storageClient := d.StorageAPIClient()
+	fileRes, err := storageapi.CreateFileResourceRequest(&storageapi.File{
+		Name:     payload.Name,
+		IsSliced: true,
+	}).Send(ctx, storageClient)
+	if err != nil {
+		return nil, errors.Errorf("creating Storage file failed: %w", err)
+	}
+
 	// Map payload to export
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
 	export, err := mpr.ExportModelFromPayload(
@@ -233,7 +262,7 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 	}
 
 	// Persist export
-	if err := str.CreateExport(ctx, export); err != nil {
+	if err := str.CreateExport(ctx, export, fileRes); err != nil {
 		return nil, err
 	}
 
@@ -383,9 +412,9 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 		}
 
 		// nolint:godox
-		// TODO get fileID and sliceID
+		// TODO get sliceID
 
-		record := key.NewRecordKey(e.ProjectID, e.ReceiverID, e.ExportID, "file", "slice", receivedAt)
+		record := key.NewRecordKey(e.ProjectID, e.ReceiverID, e.ExportID, receivedAt, receivedAt)
 		err = str.CreateRecord(ctx, record, csv)
 		if err != nil {
 			errs.AppendWithPrefixf(err, `failed to create record for export "%s"`, e.ExportID)

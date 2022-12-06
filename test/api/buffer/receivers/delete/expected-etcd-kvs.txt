@@ -53,7 +53,113 @@
 >>>>>
 
 <<<<<
+/file/%%TEST_KBC_PROJECT_ID%%/receiver-b/export-1/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "receiver-b",
+  "exportId": "export-1",
+  "fileId": "%s",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "receiver-b",
+    "exportId": "export-1",
+    "revisionId": 1,
+    "tableId": {
+      "stage": "in",
+      "bucketName": "delete-receiver",
+      "tableName": "table"
+    },
+    "incremental": false,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
+  "storageResource": {
+    "id": %d,
+    "created": "%s",
+    "isSliced": true,
+    %A
+    "federationToken": true
+  }
+}
+>>>>>
+
+<<<<<
+/file/%%TEST_KBC_PROJECT_ID%%/receiver-c/export-2/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "receiver-c",
+  "exportId": "export-2",
+  "fileId": "%s",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "receiver-c",
+    "exportId": "export-2",
+    "revisionId": 1,
+    "tableId": {
+      "stage": "in",
+      "bucketName": "delete-receiver",
+      "tableName": "table"
+    },
+    "incremental": false,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
+  "storageResource": {
+    "id": %d,
+    "created": "%s",
+    "isSliced": true,
+    %A
+    "federationToken": true
+  }
+}
+>>>>>
+
+<<<<<
 /secret/export/token/%%TEST_KBC_PROJECT_ID%%/receiver-b/export-1
 -----
 %A
+>>>>>
+
+<<<<<
+/slice/%%TEST_KBC_PROJECT_ID%%/receiver-b/export-1/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "receiver-b",
+  "exportId": "export-1",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "sliceNumber": 1
+}
+>>>>>
+
+<<<<<
+/slice/%%TEST_KBC_PROJECT_ID%%/receiver-c/export-2/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "receiver-c",
+  "exportId": "export-2",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "sliceNumber": 1
+}
 >>>>>
