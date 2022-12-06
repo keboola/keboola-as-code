@@ -126,7 +126,7 @@ func RunE2ETest(t *testing.T, testDir, workingDir string, binary string) {
 		err = etcdhelper.PutAllFromSnapshot(context.Background(), etcdClient, etcdStateFileContentStr)
 		assert.NoError(t, err)
 	}
-	
+
 	// Assert
 	RunRequests(t, envProvider, testDirFs, apiUrl)
 
