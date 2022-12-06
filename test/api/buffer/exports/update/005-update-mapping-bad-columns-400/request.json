@@ -7,7 +7,7 @@
   },
   "body": {
     "mapping": {
-      "tableId": "in.c-update-export.table2",
+      "tableId": "in.c-bucket.table2",
       "incremental": true,
       "columns": [
         {

@@ -24,7 +24,7 @@
   "revisionId": 1,
   "tableId": {
     "stage": "in",
-    "bucketName": "create-receiver",
+    "bucketName": "bucket",
     "tableName": "table"
   },
   "incremental": true,

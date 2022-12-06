@@ -12,7 +12,7 @@
         "exportId": "my-export-1",
         "name": "My Export 1",
         "mapping": {
-          "tableId": "in.c-create-receiver.table",
+          "tableId": "in.c-bucket.table",
           "incremental": true,
           "columns": [
             {

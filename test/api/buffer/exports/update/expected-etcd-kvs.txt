@@ -24,7 +24,7 @@
   "revisionId": 1,
   "tableId": {
     "stage": "in",
-    "bucketName": "update-export",
+    "bucketName": "bucket",
     "tableName": "table"
   },
   "incremental": true,
@@ -54,7 +54,7 @@
   "revisionId": 2,
   "tableId": {
     "stage": "in",
-    "bucketName": "update-export",
+    "bucketName": "bucket",
     "tableName": "table"
   },
   "incremental": false,
@@ -84,7 +84,7 @@
   "revisionId": 3,
   "tableId": {
     "stage": "in",
-    "bucketName": "update-export",
+    "bucketName": "bucket",
     "tableName": "table2"
   },
   "incremental": true,

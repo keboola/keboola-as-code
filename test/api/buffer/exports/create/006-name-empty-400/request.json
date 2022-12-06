@@ -8,7 +8,7 @@
   "body": {
     "name": "",
     "mapping": {
-      "tableId": "in.c-create-export.table",
+      "tableId": "in.c-bucket.table",
       "columns": [
         {
           "type": "id",
