@@ -559,6 +559,9 @@ func setupMappingTable(ctx context.Context, client client.Sender, mapping model.
 
 func generateExportToken(ctx context.Context, client client.Sender, export *model.Export) (err error) {
 	token, err := storageapi.CreateTokenRequest(
+		storageapi.WithDescription(
+			fmt.Sprintf("[_internal] Buffer Export %s for Receiver %s", export.ReceiverKey.ReceiverID, export.ExportID),
+		),
 		storageapi.WithBucketPermission(
 			storageapi.BucketID(export.Mapping.TableID.BucketID()),
 			storageapi.BucketPermissionWrite,
