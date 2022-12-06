@@ -88,7 +88,7 @@ func TestSchema(t *testing.T) {
 				},
 				SliceID: now,
 			}).Key(),
-			"record/123/my-receiver/my-export/" + key.FormatTime(now) + "/" + key.FormatTime(now.Add(time.Hour)) + "_abcdef",
+			"record/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z_abcdef",
 		},
 		{
 			s.Secrets().Tokens().InExport(key.ExportKey{
