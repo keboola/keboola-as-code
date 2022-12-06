@@ -19,7 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
-	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -38,7 +37,7 @@ type serviceDeps interface {
 	BufferAPIHost() string
 }
 
-func New(d serviceDeps) Service {
+func New(d serviceDeps) buffer.Service {
 	return &service{mapper: mapper.NewMapper(d.BufferAPIHost())}
 }
 
@@ -48,7 +47,7 @@ func (s *service) APIRootIndex(dependencies.ForPublicRequest) (err error) {
 }
 
 func (s *service) APIVersionIndex(dependencies.ForPublicRequest) (res *buffer.ServiceDetail, err error) {
-	res = &ServiceDetail{
+	res = &buffer.ServiceDetail{
 		API:           "buffer",
 		Documentation: "https://buffer.keboola.com/v1/documentation",
 	}
@@ -108,10 +107,10 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 		return nil, err
 	}
 
-	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: ReceiverID(receiver.ReceiverID)})
+	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: buffer.ReceiverID(receiver.ReceiverID)})
 }
 
-func (s *service) UpdateReceiver(d dependencies.ForProjectRequest, payload *UpdateReceiverPayload) (res *Receiver, err error) {
+func (s *service) UpdateReceiver(d dependencies.ForProjectRequest, payload *buffer.UpdateReceiverPayload) (res *buffer.Receiver, err error) {
 	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
 
 	// Get export
@@ -147,7 +146,7 @@ func (s *service) UpdateReceiver(d dependencies.ForProjectRequest, payload *Upda
 	return &resp, nil
 }
 
-func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *GetReceiverPayload) (res *Receiver, err error) {
+func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.GetReceiverPayload) (res *buffer.Receiver, err error) {
 	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
 
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
@@ -172,7 +171,7 @@ func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.List
 		return nil, errors.Wrapf(err, "failed to list receivers in project \"%d\"", projectID)
 	}
 
-	receivers := make([]*Receiver, 0, len(model))
+	receivers := make([]*buffer.Receiver, 0, len(model))
 	for _, data := range model {
 		receiver := mpr.ReceiverPayloadFromModel(data)
 		receivers = append(receivers, &receiver)
@@ -227,7 +226,7 @@ func (s *service) RefreshReceiverTokens(d dependencies.ForProjectRequest, payloa
 		return nil, err
 	}
 
-	return s.GetReceiver(d, &GetReceiverPayload{ReceiverID: payload.ReceiverID})
+	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: payload.ReceiverID})
 }
 
 func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer.CreateExportPayload) (res *buffer.Export, err error) {
@@ -270,8 +269,8 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 	}
 
 	return s.GetExport(d, &buffer.GetExportPayload{
-		ReceiverID: ReceiverID(export.ReceiverID),
-		ExportID:   ExportID(export.ExportID),
+		ReceiverID: buffer.ReceiverID(export.ReceiverID),
+		ExportID:   buffer.ExportID(export.ExportID),
 	})
 }
 
@@ -314,8 +313,8 @@ func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer
 	}
 
 	return s.GetExport(d, &buffer.GetExportPayload{
-		ReceiverID: ReceiverID(export.ReceiverID),
-		ExportID:   ExportID(export.ExportID),
+		ReceiverID: buffer.ReceiverID(export.ReceiverID),
+		ExportID:   buffer.ExportID(export.ExportID),
 	})
 }
 
@@ -353,7 +352,7 @@ func (s *service) ListExports(d dependencies.ForProjectRequest, payload *buffer.
 		return nil, err
 	}
 
-	exports := make([]*Export, 0, len(model))
+	exports := make([]*buffer.Export, 0, len(model))
 	for _, data := range model {
 		export := mpr.ExportPayloadFromModel(data)
 		exports = append(exports, &export)
@@ -388,7 +387,7 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 		return err
 	}
 	if receiver.Secret != payload.Secret {
-		return &GenericError{
+		return &buffer.GenericError{
 			StatusCode: 404,
 			Name:       "buffer.receiverNotFound",
 			Message:    fmt.Sprintf(`Receiver "%s" with given secret not found.`, payload.ReceiverID),
