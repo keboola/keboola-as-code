@@ -1,0 +1,25 @@
+{
+  "path": "/v1/receivers/my-receiver/exports/my-export-1",
+  "method": "PATCH",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {
+    "mapping": {
+      "tableId": "in.c-bucket2.table1",
+      "incremental": true,
+      "columns": [
+        {
+          "type": "id",
+          "name": "id"
+        },
+        {
+          "type": "body",
+          "name": "body"
+        }
+      ]
+    }
+  }
+}
+

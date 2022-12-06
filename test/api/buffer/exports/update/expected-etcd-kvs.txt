@@ -102,6 +102,33 @@
 >>>>>
 
 <<<<<
+/config/mapping/revision/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/00000004
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "revisionId": 4,
+  "tableId": {
+    "stage": "in",
+    "bucketName": "bucket2",
+    "tableName": "table1"
+  },
+  "incremental": true,
+  "columns": [
+    {
+      "type": "id",
+      "name": "id"
+    },
+    {
+      "type": "body",
+      "name": "body"
+    }
+  ]
+}
+>>>>>
+
+<<<<<
 /config/receiver/%%TEST_KBC_PROJECT_ID%%/my-receiver
 -----
 {
