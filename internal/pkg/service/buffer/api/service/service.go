@@ -82,6 +82,7 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	receiver.Exports = exports
 
 	// Create Storage files for exports
+	mutex := &sync.RWMutex{}
 	files := make(map[key.ExportKey]*storageapi.File)
 	wg := client.NewWaitGroup(ctx, d.StorageAPIClient())
 	for _, export := range receiver.Exports {
@@ -91,7 +92,9 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 				Name:     export.Name,
 				IsSliced: true,
 			}).WithOnSuccess(func(ctx context.Context, sender client.Sender, result *storageapi.File) error {
+				mutex.Lock()
 				files[expKey] = result
+				mutex.Unlock()
 				return nil
 			}),
 		)
