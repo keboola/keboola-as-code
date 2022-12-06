@@ -559,6 +559,11 @@ func setupMappingTable(ctx context.Context, client client.Sender, mapping model.
 
 func generateExportToken(ctx context.Context, client client.Sender, export *model.Export) (err error) {
 	token, err := storageapi.CreateTokenRequest(
+		storageapi.WithDescription(
+			// Max length of description is 255 characters,
+			// this will be at most receiverId (48) + exportId (48) + extra chars (40) = 136 characters.
+			fmt.Sprintf("[_internal] Buffer Export %s for Receiver %s", export.ReceiverKey.ReceiverID, export.ExportID),
+		),
 		storageapi.WithBucketPermission(
 			storageapi.BucketID(export.Mapping.TableID.BucketID()),
 			storageapi.BucketPermissionWrite,
