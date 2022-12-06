@@ -89,24 +89,21 @@ func (m Mapper) UpdateExportFromPayload(export model.Export, payload buffer.Upda
 
 func (m Mapper) MappingPayloadFromModel(model model.Mapping) buffer.Mapping {
 	columns := make([]*buffer.Column, 0, len(model.Columns))
-	for _, c := range model.Columns {
-		typ := c.ColumnType()
-		name := c.ColumnName()
+	for _, input := range model.Columns {
+		output := &buffer.Column{
+			Type: input.ColumnType(),
+			Name: input.ColumnName(),
+		}
 
-		var template *buffer.Template
-		if v, ok := c.(column.Template); ok {
-			template = &buffer.Template{
+		if v, ok := input.(column.Template); ok {
+			output.Template = &buffer.Template{
 				Language:               v.Language,
 				UndefinedValueStrategy: v.UndefinedValueStrategy,
 				Content:                v.Content,
 			}
 		}
 
-		columns = append(columns, &buffer.Column{
-			Type:     typ,
-			Name:     name,
-			Template: template,
-		})
+		columns = append(columns, output)
 	}
 	return buffer.Mapping{
 		TableID:     model.TableID.String(),
