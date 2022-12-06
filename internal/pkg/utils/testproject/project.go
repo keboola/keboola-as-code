@@ -45,6 +45,7 @@ type Project struct {
 	defaultBranch       *storageapi.Branch
 	envs                *env.Map
 	mapsLock            *sync.Mutex
+	stateFilePath       string
 	branchesByID        map[storageapi.BranchID]*storageapi.Branch
 	branchesByName      map[string]*storageapi.Branch
 	logFn               func(format string, a ...interface{})
@@ -164,6 +165,13 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	p.setEnv(`TEST_KBC_STORAGE_API_HOST`, p.Project.StorageAPIHost())
 	p.setEnv(`TEST_KBC_STORAGE_API_TOKEN`, p.Project.StorageAPIToken())
 	p.logf(`■ ️Initialization done.`)
+
+	// Remove all objects
+	if err := p.Clean(); err != nil {
+		cleanupFn()
+		return nil, nil, err
+	}
+
 	return p, cleanupFn, nil
 }
 
@@ -223,20 +231,21 @@ func (p *Project) Clean() error {
 	if err != nil {
 		return errors.Errorf(`cannot fetch default branch in project "%d": %w`, p.ID(), err)
 	}
+
+	p.stateFilePath = ""
 	p.defaultBranch = defaultBranch
+	p.branchesByID = make(map[storageapi.BranchID]*storageapi.Branch)
+	p.branchesByName = make(map[string]*storageapi.Branch)
 
 	p.logf("■ Cleanup done.")
 	return nil
 }
 
 func (p *Project) SetState(stateFilePath string) error {
-	// Remove all objects
-	err := p.Clean()
-	if err != nil {
-		return err
+	if p.stateFilePath != "" {
+		return errors.New("SetState method can be called only once after the Clean method")
 	}
-	p.branchesByID = make(map[storageapi.BranchID]*storageapi.Branch)
-	p.branchesByName = make(map[string]*storageapi.Branch)
+	p.stateFilePath = stateFilePath
 
 	// Set new state
 	p.logf("□ Setting project state ...")
