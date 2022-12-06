@@ -67,13 +67,13 @@ func TestBufferApiE2E(t *testing.T) {
 		workingDir := filepath.Join(testOutputDir, testDirRel)
 		t.Run(testDirRel, func(t *testing.T) {
 			t.Parallel()
-			RunFunctionalTest(t, testDir, workingDir, binary)
+			RunE2ETest(t, testDir, workingDir, binary)
 		})
 	}
 }
 
-// RunFunctionalTest runs one functional test.
-func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) {
+// RunE2ETest runs one E2E test defined by a testDir.
+func RunE2ETest(t *testing.T, testDir, workingDir string, binary string) {
 	t.Helper()
 
 	// Clean working dir
@@ -105,8 +105,107 @@ func RunFunctionalTest(t *testing.T, testDir, workingDir string, binary string) 
 	// Replace all %%ENV_VAR%% in all files in the working directory
 	testhelper.MustReplaceEnvsDir(workingDirFs, `/`, envProvider)
 
+	// Run API server
+	apiUrl, apiEnvs, stdout, stderr := RunApiServer(t, binary, project.StorageAPIHost())
+
+	// Connect to the etcd
+	etcdClient := etcdhelper.ClientForTestFrom(
+		t,
+		apiEnvs.Get("BUFFER_ETCD_ENDPOINT"),
+		apiEnvs.Get("BUFFER_ETCD_USERNAME"),
+		apiEnvs.Get("BUFFER_ETCD_PASSWORD"),
+		apiEnvs.Get("BUFFER_ETCD_NAMESPACE"),
+	)
+
+	// Setup etcd state
+	etcdStateFile := "initial-etcd-kvs.txt"
+	if testDirFs.IsFile(etcdStateFile) {
+		etcdStateFileContent, err := testDirFs.ReadFile(filesystem.NewFileDef(etcdStateFile))
+		etcdStateFileContentStr := testhelper.MustReplaceEnvsString(etcdStateFileContent.Content, envProvider)
+		assert.NoError(t, err)
+		err = etcdhelper.PutAllFromSnapshot(context.Background(), etcdClient, etcdStateFileContentStr)
+		assert.NoError(t, err)
+	}
+	
 	// Assert
-	RunRequests(t, envProvider, testDirFs, workingDirFs, binary, project)
+	RunRequests(t, envProvider, testDirFs, apiUrl)
+
+	// Optionally check project state
+	expectedStatePath := "expected-state.json"
+	if testDirFs.IsFile(expectedStatePath) {
+		// Read expected state
+		expectedSnapshot, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStatePath))
+		if err != nil {
+			assert.FailNow(t, err.Error())
+		}
+
+		// Load actual state
+		actualSnapshot, err := project.NewSnapshot()
+		if err != nil {
+			assert.FailNow(t, err.Error())
+		}
+
+		// Write actual state
+		err = workingDirFs.WriteFile(filesystem.NewRawFile("actual-state.json", json.MustEncodeString(actualSnapshot, true)))
+		if err != nil {
+			assert.FailNow(t, err.Error())
+		}
+
+		// Compare expected and actual state
+		wildcards.Assert(
+			t,
+			testhelper.MustReplaceEnvsString(expectedSnapshot.Content, envProvider),
+			json.MustEncodeString(actualSnapshot, true),
+			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir.`,
+		)
+	}
+
+	// Write actual etcd KVs
+	etcdDump, err := etcdhelper.DumpAll(context.Background(), etcdClient)
+	assert.NoError(t, err)
+	assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile("actual-etcd-kvs.txt", etcdDump)))
+
+	// Optionally check etcd KVs
+	expectedEtcdKVsPath := "expected-etcd-kvs.txt"
+	if testDirFs.IsFile(expectedEtcdKVsPath) {
+		// Read expected state
+		expected, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedEtcdKVsPath))
+		if err != nil {
+			assert.FailNow(t, err.Error())
+		}
+
+		// Compare expected and actual kvs
+		wildcards.Assert(
+			t,
+			testhelper.MustReplaceEnvsString(expected.Content, envProvider),
+			etcdDump,
+			`unexpected etcd state, compare "expected-etcd-kvs.txt" from test and "actual-etcd-kvs.txt" from ".out" dir.`,
+		)
+	}
+
+	// Dump process stdout/stderr
+	assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile("process-stdout.txt", stdout.String())))
+	assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile("process-stderr.txt", stderr.String())))
+
+	// Optionally check API server stdout/stderr
+	expectedStdoutPath := "expected-server-stdout"
+	expectedStderrPath := "expected-server-stderr"
+	if testDirFs.IsFile(expectedStdoutPath) || testDirFs.IsFile(expectedStderrPath) {
+		// Wait a while the server logs everything for previous requests.
+		time.Sleep(100 * time.Millisecond)
+	}
+	if testDirFs.IsFile(expectedStdoutPath) {
+		file, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStdoutPath))
+		assert.NoError(t, err)
+		expected := testhelper.MustReplaceEnvsString(file.Content, envProvider)
+		wildcards.Assert(t, expected, stdout.String(), "Unexpected STDOUT.")
+	}
+	if testDirFs.IsFile(expectedStderrPath) {
+		file, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStderrPath))
+		assert.NoError(t, err)
+		expected := testhelper.MustReplaceEnvsString(file.Content, envProvider)
+		wildcards.Assert(t, expected, stderr.String(), "Unexpected STDERR.")
+	}
 }
 
 // CompileBinary compiles api binary used in this test.
@@ -273,37 +372,13 @@ func RunRequests(
 	t *testing.T,
 	envProvider testhelper.EnvProvider,
 	testDirFs filesystem.Fs,
-	workingDirFs filesystem.Fs,
-	binary string,
-	project *testproject.Project,
+	apiUrl string,
 ) {
 	t.Helper()
-
-	// Run API server
-	apiUrl, apiEnvs, stdout, stderr := RunApiServer(t, binary, project.StorageAPIHost())
 	client := resty.New()
 	client.SetBaseURL(apiUrl)
 
-	// Connect to the etcd
-	etcdClient := etcdhelper.ClientForTestFrom(
-		t,
-		apiEnvs.Get("BUFFER_ETCD_ENDPOINT"),
-		apiEnvs.Get("BUFFER_ETCD_USERNAME"),
-		apiEnvs.Get("BUFFER_ETCD_PASSWORD"),
-		apiEnvs.Get("BUFFER_ETCD_NAMESPACE"),
-	)
-
-	// Setup etcd state
-	etcdStateFile := "initial-etcd-kvs.txt"
-	if testDirFs.IsFile(etcdStateFile) {
-		etcdStateFileContent, err := testDirFs.ReadFile(filesystem.NewFileDef(etcdStateFile))
-		etcdStateFileContentStr := testhelper.MustReplaceEnvsString(etcdStateFileContent.Content, envProvider)
-		assert.NoError(t, err)
-		err = etcdhelper.PutAllFromSnapshot(context.Background(), etcdClient, etcdStateFileContentStr)
-		assert.NoError(t, err)
-	}
-
-	// request folders should be named e.g. 001-request1, 002-request2
+	// Request folders should be named e.g. 001-request1, 002-request2
 	dirs, err := testDirFs.Glob("[0-9][0-9][0-9]-*")
 	assert.NoError(t, err)
 	for _, dir := range dirs {
@@ -376,83 +451,6 @@ func RunRequests(
 
 		// Assert response body
 		wildcards.Assert(t, expectedRespBody, respBody, fmt.Sprintf("Unexpected response for request %s.", dir))
-	}
-
-	// Optionally check project state
-	expectedStatePath := "expected-state.json"
-	if testDirFs.IsFile(expectedStatePath) {
-		// Read expected state
-		expectedSnapshot, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStatePath))
-		if err != nil {
-			assert.FailNow(t, err.Error())
-		}
-
-		// Load actual state
-		actualSnapshot, err := project.NewSnapshot()
-		if err != nil {
-			assert.FailNow(t, err.Error())
-		}
-
-		// Write actual state
-		err = workingDirFs.WriteFile(filesystem.NewRawFile("actual-state.json", json.MustEncodeString(actualSnapshot, true)))
-		if err != nil {
-			assert.FailNow(t, err.Error())
-		}
-
-		// Compare expected and actual state
-		wildcards.Assert(
-			t,
-			testhelper.MustReplaceEnvsString(expectedSnapshot.Content, envProvider),
-			json.MustEncodeString(actualSnapshot, true),
-			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir.`,
-		)
-	}
-
-	// Write actual etcd KVs
-	etcdDump, err := etcdhelper.DumpAll(context.Background(), etcdClient)
-	assert.NoError(t, err)
-	assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile("actual-etcd-kvs.txt", etcdDump)))
-
-	// Optionally check etcd KVs
-	expectedEtcdKVsPath := "expected-etcd-kvs.txt"
-	if testDirFs.IsFile(expectedEtcdKVsPath) {
-		// Read expected state
-		expected, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedEtcdKVsPath))
-		if err != nil {
-			assert.FailNow(t, err.Error())
-		}
-
-		// Compare expected and actual kvs
-		wildcards.Assert(
-			t,
-			testhelper.MustReplaceEnvsString(expected.Content, envProvider),
-			etcdDump,
-			`unexpected etcd state, compare "expected-etcd-kvs.txt" from test and "actual-etcd-kvs.txt" from ".out" dir.`,
-		)
-	}
-
-	// Dump process stdout/stderr
-	assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile("process-stdout.txt", stdout.String())))
-	assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile("process-stderr.txt", stderr.String())))
-
-	// Optionally check API server stdout/stderr
-	expectedStdoutPath := "expected-server-stdout"
-	expectedStderrPath := "expected-server-stderr"
-	if testDirFs.IsFile(expectedStdoutPath) || testDirFs.IsFile(expectedStderrPath) {
-		// Wait a while the server logs everything for previous requests.
-		time.Sleep(100 * time.Millisecond)
-	}
-	if testDirFs.IsFile(expectedStdoutPath) {
-		file, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStdoutPath))
-		assert.NoError(t, err)
-		expected := testhelper.MustReplaceEnvsString(file.Content, envProvider)
-		wildcards.Assert(t, expected, stdout.String(), "Unexpected STDOUT.")
-	}
-	if testDirFs.IsFile(expectedStderrPath) {
-		file, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStderrPath))
-		assert.NoError(t, err)
-		expected := testhelper.MustReplaceEnvsString(file.Content, envProvider)
-		wildcards.Assert(t, expected, stderr.String(), "Unexpected STDERR.")
 	}
 }
 
