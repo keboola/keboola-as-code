@@ -1,16 +1,14 @@
 {
-  "path": "/v1/receivers/my-receiver/exports",
-  "method": "POST",
+  "path": "/v1/receivers/my-receiver/exports/my-export-1",
+  "method": "PATCH",
   "headers": {
     "Content-Type": "application/json",
     "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
   },
   "body": {
-    "exportId": "my-export-2",
-    "name": "My Export 2",
     "mapping": {
-      "tableId": "in.c-delete-export.table",
-      "incremental": true,
+      "tableId": "in.c-update-export.table",
+      "incremental": false,
       "columns": [
         {
           "type": "id",
@@ -26,11 +24,6 @@
           }
         }
       ]
-    },
-    "conditions": {
-      "count": 500,
-      "size": "100kB",
-      "time": "1m"
     }
   }
 }

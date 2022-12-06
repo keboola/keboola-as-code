@@ -32,19 +32,19 @@ func TestStore_Mapping_Ops(t *testing.T) {
 			MappingKey:  key.MappingKey{RevisionID: 1, ExportKey: exportKey},
 			TableID:     tableID,
 			Incremental: false,
-			Columns:     column.Columns{column.ID{}},
+			Columns:     column.Columns{column.ID{Name: "id"}},
 		},
 		{
 			MappingKey:  key.MappingKey{RevisionID: 2, ExportKey: exportKey},
 			TableID:     tableID,
 			Incremental: false,
-			Columns:     column.Columns{column.ID{}},
+			Columns:     column.Columns{column.ID{Name: "id"}},
 		},
 		{
 			MappingKey:  key.MappingKey{RevisionID: 10, ExportKey: exportKey},
 			TableID:     tableID,
 			Incremental: true,
-			Columns:     column.Columns{column.ID{}},
+			Columns:     column.Columns{column.ID{Name: "id"}},
 		},
 	}
 
@@ -91,7 +91,8 @@ config/mapping/revision/1000/receiver1/export1/00000001
   "incremental": false,
   "columns": [
     {
-      "type": "id"
+      "type": "id",
+      "name": "id"
     }
   ]
 }
@@ -113,7 +114,8 @@ config/mapping/revision/1000/receiver1/export1/00000002
   "incremental": false,
   "columns": [
     {
-      "type": "id"
+      "type": "id",
+      "name": "id"
     }
   ]
 }
@@ -135,7 +137,8 @@ config/mapping/revision/1000/receiver1/export1/00000010
   "incremental": true,
   "columns": [
     {
-      "type": "id"
+      "type": "id",
+      "name": "id"
     }
   ]
 }
@@ -168,13 +171,13 @@ func TestStore_DeleteReceiverMappingsOp(t *testing.T) {
 			MappingKey:  key.MappingKey{RevisionID: 1, ExportKey: export0},
 			TableID:     tableID,
 			Incremental: false,
-			Columns:     column.Columns{column.ID{}},
+			Columns:     column.Columns{column.ID{Name: "id"}},
 		},
 		{
 			MappingKey:  key.MappingKey{RevisionID: 2, ExportKey: export1},
 			TableID:     tableID,
 			Incremental: false,
-			Columns:     column.Columns{column.ID{}},
+			Columns:     column.Columns{column.ID{Name: "id"}},
 		},
 	}
 
@@ -200,7 +203,8 @@ config/mapping/revision/1000/receiver0/export0/00000001
   "incremental": false,
   "columns": [
     {
-      "type": "id"
+      "type": "id",
+      "name": "id"
     }
   ]
 }
@@ -222,7 +226,8 @@ config/mapping/revision/1000/receiver1/export1/00000002
   "incremental": false,
   "columns": [
     {
-      "type": "id"
+      "type": "id",
+      "name": "id"
     }
   ]
 }
@@ -249,7 +254,8 @@ config/mapping/revision/1000/receiver1/export1/00000002
   "incremental": false,
   "columns": [
     {
-      "type": "id"
+      "type": "id",
+      "name": "id"
     }
   ]
 }

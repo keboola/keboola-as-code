@@ -3,14 +3,16 @@
   "receiverId": "my-receiver",
   "name": "My Export 1 Updated",
   "mapping": {
-    "tableId": "in.c-bucket-changed.table-changed",
+    "tableId": "in.c-update-export.table2",
     "incremental": true,
     "columns": [
       {
-        "type": "body"
+        "type": "id",
+        "name": "id"
       },
       {
-        "type": "headers"
+        "type": "body",
+        "name": "body"
       }
     ]
   },

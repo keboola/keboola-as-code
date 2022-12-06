@@ -12,11 +12,12 @@
         "exportId": "my-export-1",
         "name": "My Export 1",
         "mapping": {
-          "tableId": "in.c-bucket.table",
+          "tableId": "in.c-update-receiver.table",
           "incremental": true,
           "columns": [
             {
-              "type": "body"
+              "type": "body",
+              "name": "body"
             }
           ]
         },

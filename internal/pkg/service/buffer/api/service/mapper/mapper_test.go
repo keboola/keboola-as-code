@@ -3,7 +3,6 @@ package mapper
 import (
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
@@ -20,12 +19,10 @@ func TestReceiverModelFromPayload(t *testing.T) {
 
 	projectID := 1000
 	secret := idgenerator.ReceiverSecret()
-	token := storageapi.Token{Token: "test"}
 
 	payload := buffer.CreateReceiverPayload{
-		StorageAPIToken: "",
-		ID:              nil,
-		Name:            "Receiver",
+		ID:   nil,
+		Name: "Receiver",
 		Exports: []*buffer.CreateExportData{
 			{
 				ID:   nil,
@@ -35,11 +32,12 @@ func TestReceiverModelFromPayload(t *testing.T) {
 					Incremental: new(bool),
 					Columns: []*buffer.Column{
 						{
-							Type:     "body",
-							Template: nil,
+							Type: "body",
+							Name: "body",
 						},
 						{
 							Type: "template",
+							Name: "template",
 							Template: &buffer.Template{
 								Language:               "jsonnet",
 								UndefinedValueStrategy: "null",
@@ -95,20 +93,20 @@ func TestReceiverModelFromPayload(t *testing.T) {
 					},
 					Incremental: false,
 					Columns: column.Columns{
-						column.Body{},
+						column.Body{Name: "body"},
 						column.Template{
+							Name:                   "template",
 							Language:               "jsonnet",
 							UndefinedValueStrategy: "null",
 							Content:                `a+":"+b`,
 						},
 					},
 				},
-				Token: token,
 			},
 		},
 	}
 
-	model, err := mapper.ReceiverModelFromPayload(projectID, token, secret, payload)
+	model, err := mapper.ReceiverModelFromPayload(projectID, secret, payload)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, model)
 }
@@ -156,8 +154,9 @@ func TestReceiverPayloadFromModel(t *testing.T) {
 					},
 					Incremental: false,
 					Columns: column.Columns{
-						column.Body{},
+						column.Body{Name: "body"},
 						column.Template{
+							Name:                   "template",
 							Language:               "jsonnet",
 							UndefinedValueStrategy: "null",
 							Content:                `a+":"+b`,
@@ -181,9 +180,13 @@ func TestReceiverPayloadFromModel(t *testing.T) {
 					TableID:     "in.c-bucket.table",
 					Incremental: new(bool),
 					Columns: []*buffer.Column{
-						{Type: "body"},
+						{
+							Type: "body",
+							Name: "body",
+						},
 						{
 							Type: "template",
+							Name: "template",
 							Template: &buffer.Template{
 								Language:               "jsonnet",
 								UndefinedValueStrategy: "null",

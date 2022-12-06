@@ -24,11 +24,21 @@ import (
 type Columns []Column
 
 type (
-	ID       struct{}
-	Datetime struct{}
-	IP       struct{}
-	Body     struct{}
-	Header   struct{}
+	ID struct {
+		Name string `json:"name" validate:"required"`
+	}
+	Datetime struct {
+		Name string `json:"name" validate:"required"`
+	}
+	IP struct {
+		Name string `json:"name" validate:"required"`
+	}
+	Body struct {
+		Name string `json:"name" validate:"required"`
+	}
+	Headers struct {
+		Name string `json:"name" validate:"required"`
+	}
 )
 
 const (
@@ -39,6 +49,7 @@ const (
 )
 
 type Template struct {
+	Name                   string `json:"name" validate:"required"`
 	Language               string `json:"language" validate:"required,oneof=jsonnet"`
 	UndefinedValueStrategy string `json:"undefinedValueStrategy" validate:"required,oneof=null error"`
 	Content                string `json:"content" validate:"required,min=1,max=4096"`
@@ -59,10 +70,7 @@ func (v Columns) MarshalJSON() ([]byte, error) {
 	for _, column := range v {
 		column := column
 
-		typ, err := ColumnToType(column)
-		if err != nil {
-			return nil, err
-		}
+		typ := column.ColumnType()
 
 		typeJSON, err := json.Marshal(typ)
 		if err != nil {
@@ -99,13 +107,14 @@ func (v *Columns) UnmarshalJSON(b []byte) error {
 
 	for _, item := range items {
 		t := struct {
+			Name string `json:"name"`
 			Type string `json:"type"`
 		}{}
 		if err := json.Unmarshal(item, &t); err != nil {
 			return err
 		}
 
-		data, err := TypeToColumn(t.Type)
+		data, err := MakeColumn(t.Type, t.Name)
 		if err != nil {
 			return err
 		}
@@ -125,45 +134,23 @@ func (v *Columns) UnmarshalJSON(b []byte) error {
 
 // ColumnToType returns the stringified type of the column.
 //
-// This function expects `column` to be passed by value.
-func ColumnToType(column any) (string, error) {
-	switch column.(type) {
-	case ID:
-		return columnIDType, nil
-	case Datetime:
-		return columnDatetimeType, nil
-	case IP:
-		return columnIPType, nil
-	case Body:
-		return columnBodyType, nil
-	case Header:
-		return columnHeadersType, nil
-	case Template:
-		return columnTemplateType, nil
-	default:
-		return "", errors.Errorf(`invalid column type "%T"`, column)
-	}
-}
-
-// ColumnToType returns the stringified type of the column.
-//
 // This function returns `column` as a value.
-func TypeToColumn(typ string) (Column, error) {
+func MakeColumn(typ string, name string) (Column, error) {
 	switch typ {
 	case columnIDType:
-		return ID{}, nil
+		return ID{Name: name}, nil
 	case columnDatetimeType:
-		return Datetime{}, nil
+		return Datetime{Name: name}, nil
 	case columnIPType:
-		return IP{}, nil
+		return IP{Name: name}, nil
 	case columnBodyType:
-		return Body{}, nil
+		return Body{Name: name}, nil
 	case columnHeadersType:
-		return Header{}, nil
+		return Headers{Name: name}, nil
 	case columnTemplateType:
-		return Template{}, nil
+		return Template{Name: name}, nil
 	default:
-		return dummyColumn{}, errors.Errorf(`invalid column type name "%s"`, typ)
+		return nil, errors.Errorf(`invalid column type name "%s"`, typ)
 	}
 }
 
@@ -185,8 +172,24 @@ func NewImportCtx(body *orderedmap.OrderedMap, header http.Header, ip net.IP) Im
 
 // Column is an interface used to restrict valid column types.
 type Column interface {
+	ColumnName() string
+	ColumnType() string
 	CsvValue(importCtx ImportCtx) (string, error)
 }
+
+func (c ID) ColumnName() string       { return c.Name }
+func (c Datetime) ColumnName() string { return c.Name }
+func (c IP) ColumnName() string       { return c.Name }
+func (c Body) ColumnName() string     { return c.Name }
+func (c Headers) ColumnName() string  { return c.Name }
+func (c Template) ColumnName() string { return c.Name }
+
+func (c ID) ColumnType() string       { return columnIDType }
+func (c Datetime) ColumnType() string { return columnDatetimeType }
+func (c IP) ColumnType() string       { return columnIPType }
+func (c Body) ColumnType() string     { return columnBodyType }
+func (c Headers) ColumnType() string  { return columnHeadersType }
+func (c Template) ColumnType() string { return columnTemplateType }
 
 func (ID) CsvValue(_ ImportCtx) (string, error) {
 	return IDPlaceholder, nil
@@ -208,7 +211,7 @@ func (Body) CsvValue(importCtx ImportCtx) (string, error) {
 	return string(body), nil
 }
 
-func (Header) CsvValue(importCtx ImportCtx) (string, error) {
+func (Headers) CsvValue(importCtx ImportCtx) (string, error) {
 	header, err := json.Marshal(importCtx.Header)
 	if err != nil {
 		return "", err
@@ -216,28 +219,28 @@ func (Header) CsvValue(importCtx ImportCtx) (string, error) {
 	return string(header), nil
 }
 
-func (t Template) CsvValue(importCtx ImportCtx) (string, error) {
-	if t.Language == TemplateLanguageJsonnet {
+func (c Template) CsvValue(importCtx ImportCtx) (string, error) {
+	if c.Language == TemplateLanguageJsonnet {
 		ctx := jsonnet.NewContext()
-		ctx.NativeFunctionWithAlias(getBodyPath(t, importCtx.Body))
+		ctx.NativeFunctionWithAlias(getBodyPath(c, importCtx.Body))
 		ctx.NativeFunctionWithAlias(getBody(importCtx.Body))
 
 		headers := orderedmap.New()
 		for k := range importCtx.Header {
 			headers.Set(k, importCtx.Header.Get(k))
 		}
-		ctx.NativeFunctionWithAlias(getHeader(t, headers))
+		ctx.NativeFunctionWithAlias(getHeader(c, headers))
 		ctx.NativeFunctionWithAlias(getHeaders(headers))
 
 		ctx.GlobalBinding("currentDatetime", jsonnet.ValueToLiteral(importCtx.DateTime.Format(time.RFC3339)))
 
-		res, err := jsonnet.Evaluate(t.Content, ctx)
+		res, err := jsonnet.Evaluate(c.Content, ctx)
 		if err != nil {
 			return "", err
 		}
 		return strings.TrimRight(res, "\n"), nil
 	}
-	return "", errors.Errorf(`unsupported language "%s", use jsonnet instead`, t.Language)
+	return "", errors.Errorf(`unsupported language "%s", use jsonnet instead`, c.Language)
 }
 
 func getBodyPath(t Template, om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
@@ -327,10 +330,4 @@ func getHeaders(om *orderedmap.OrderedMap) *jsonnet.NativeFunction {
 			return valueToJSONType(om), nil
 		},
 	}
-}
-
-type dummyColumn struct{}
-
-func (dummyColumn) CsvValue(_ ImportCtx) (string, error) {
-	return "", nil
 }

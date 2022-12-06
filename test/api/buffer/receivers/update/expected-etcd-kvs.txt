@@ -24,13 +24,14 @@
   "revisionId": 1,
   "tableId": {
     "stage": "in",
-    "bucketName": "bucket",
+    "bucketName": "update-receiver",
     "tableName": "table"
   },
   "incremental": true,
   "columns": [
     {
-      "type": "body"
+      "type": "body",
+      "name": "body"
     }
   ]
 }

@@ -30,19 +30,24 @@
   "incremental": true,
   "columns": [
     {
-      "type": "id"
+      "type": "id",
+      "name": "id"
     },
     {
-      "type": "body"
+      "type": "body",
+      "name": "body"
     },
     {
-      "type": "headers"
+      "type": "headers",
+      "name": "headers"
     },
     {
-      "type": "ip"
+      "type": "ip",
+      "name": "ip"
     },
     {
-      "type": "datetime"
+      "type": "datetime",
+      "name": "datetime"
     }
   ]
 }

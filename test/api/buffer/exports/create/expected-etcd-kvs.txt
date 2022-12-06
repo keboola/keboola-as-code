@@ -24,16 +24,18 @@
   "revisionId": 1,
   "tableId": {
     "stage": "in",
-    "bucketName": "bucket",
+    "bucketName": "create-export",
     "tableName": "table"
   },
   "incremental": true,
   "columns": [
     {
-      "type": "id"
+      "type": "id",
+      "name": "id"
     },
     {
       "type": "template",
+      "name": "template",
       "language": "jsonnet",
       "undefinedValueStrategy": "error",
       "content": "body.key+\":\"+body.value"

@@ -24,16 +24,18 @@
   "revisionId": 1,
   "tableId": {
     "stage": "in",
-    "bucketName": "bucket",
+    "bucketName": "delete-receiver",
     "tableName": "table"
   },
   "incremental": false,
   "columns": [
     {
-      "type": "id"
+      "type": "id",
+      "name": "id"
     },
     {
-      "type": "body"
+      "type": "body",
+      "name": "body"
     }
   ]
 }
