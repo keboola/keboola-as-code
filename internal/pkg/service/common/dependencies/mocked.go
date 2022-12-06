@@ -277,7 +277,7 @@ func (v *mocked) EtcdClient() *etcd.Client {
 
 func (v *mocked) Store() *bufferStore.Store {
 	if v.bufferStore == nil {
-		bufferStore.New(v.logger, v.EtcdClient(), telemetry.NewNopTracer())
+		v.bufferStore = bufferStore.New(v.logger, v.EtcdClient(), telemetry.NewNopTracer())
 	}
 	return v.bufferStore
 }
