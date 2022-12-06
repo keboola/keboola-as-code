@@ -452,17 +452,23 @@ func RunRequests(
 		expectedCodeFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(requestDir, "expected-http-code")))
 		assert.NoError(t, err)
 		expectedCode := cast.ToInt(strings.TrimSpace(expectedCodeFile.Content))
-		assert.Equal(
+		ok1 := assert.Equal(
 			t,
 			expectedCode,
 			resp.StatusCode(),
-			"Unexpected status code for request %s.\nRESPONSE:\n%s\n\n",
+			"Unexpected status code for request \"%s\".\nRESPONSE:\n%s\n\n",
 			requestDir,
 			resp.String(),
 		)
 
 		// Assert response body
-		wildcards.Assert(t, expectedRespBody, respBody, fmt.Sprintf("Unexpected response for request %s.", requestDir))
+		ok2 := wildcards.Assert(t, expectedRespBody, respBody, fmt.Sprintf("Unexpected response for request %s.", requestDir))
+
+		// If the request failed, skip other requests
+		if !ok1 || !ok2 {
+			t.Errorf(`request "%s" failed, skipping the other requests`, requestDir)
+			break
+		}
 	}
 }
 
