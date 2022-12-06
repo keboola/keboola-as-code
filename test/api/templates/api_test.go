@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
+	"net/http/httputil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -33,6 +35,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
+
+const dumpDirCtxKey = ctxKey("dumpDir")
+
+type ctxKey string
 
 // TestTemplatesApiE2E runs one functional test per each subdirectory.
 func TestTemplatesApiE2E(t *testing.T) {
@@ -113,7 +119,7 @@ func RunE2ETest(t *testing.T, testDir, workingDir string, binary string) {
 	apiUrl, stdout, stderr := RunApiServer(t, binary, project.StorageAPIHost(), repositories)
 
 	// Assert
-	RunRequests(t, envProvider, testDirFs, apiUrl)
+	RunRequests(t, envProvider, testDirFs, workingDirFs, apiUrl)
 
 	// Optionally check project state
 	expectedStatePath := "expected-state.json"
@@ -315,18 +321,29 @@ func RunRequests(
 	t *testing.T,
 	envProvider testhelper.EnvProvider,
 	testDirFs filesystem.Fs,
+	workingDirFs filesystem.Fs,
 	apiUrl string,
 ) {
 	t.Helper()
 	client := resty.New()
 	client.SetBaseURL(apiUrl)
 
+	// Dump raw HTTP request
+	client.SetPreRequestHook(func(client *resty.Client, request *http.Request) error {
+		if dumpDir, ok := request.Context().Value(dumpDirCtxKey).(string); ok {
+			reqDump, err := httputil.DumpRequest(request, true)
+			assert.NoError(t, err)
+			assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile(filesystem.Join(dumpDir, "request.txt"), string(reqDump))))
+		}
+		return nil
+	})
+
 	// rRquest folders should be named e.g. 001-request1, 002-request2
 	dirs, err := testDirFs.Glob("[0-9][0-9][0-9]-*")
 	assert.NoError(t, err)
-	for _, dir := range dirs {
+	for _, requestDir := range dirs {
 		// Read the request file
-		requestFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(dir, "request.json")))
+		requestFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(requestDir, "request.json")))
 		assert.NoError(t, err)
 		requestFileStr := testhelper.MustReplaceEnvsString(requestFile.Content, envProvider)
 
@@ -342,23 +359,19 @@ func RunRequests(
 			r.SetBody(request.Body)
 		}
 		r.SetHeader("X-StorageApi-Token", envProvider.MustGet("TEST_KBC_STORAGE_API_TOKEN"))
-		var resp *resty.Response
-		switch request.Method {
-		case "DELETE":
-			resp, err = r.Delete(request.Path)
-		case "GET":
-			resp, err = r.Get(request.Path)
-		case "PATCH":
-			resp, err = r.Patch(request.Path)
-		case "POST":
-			resp, err = r.Post(request.Path)
-		case "PUT":
-			resp, err = r.Put(request.Path)
-		}
+
+		// Send request
+		r.SetContext(context.WithValue(r.Context(), dumpDirCtxKey, requestDir))
+		resp, err := r.Execute(request.Method, request.Path)
 		assert.NoError(t, err)
 
+		// Dump raw HTTP response
+		respDump, err := httputil.DumpResponse(resp.RawResponse, false)
+		assert.NoError(t, err)
+		assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile(filesystem.Join(requestDir, "response.txt"), string(respDump)+string(resp.Body()))))
+
 		// Compare response body
-		expectedRespFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(dir, "expected-response.json")))
+		expectedRespFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(requestDir, "expected-response.json")))
 		assert.NoError(t, err)
 		expectedRespBody := testhelper.MustReplaceEnvsString(expectedRespFile.Content, envProvider)
 
@@ -372,7 +385,7 @@ func RunRequests(
 		assert.NoError(t, err)
 
 		// Compare response status code
-		expectedCodeFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(dir, "expected-http-code")))
+		expectedCodeFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(requestDir, "expected-http-code")))
 		assert.NoError(t, err)
 		expectedCode := cast.ToInt(strings.TrimSpace(expectedCodeFile.Content))
 		assert.Equal(
@@ -380,12 +393,12 @@ func RunRequests(
 			expectedCode,
 			resp.StatusCode(),
 			"Unexpected status code for request %s.\nRESPONSE:\n%s\n\n",
-			dir,
+			requestDir,
 			resp.String(),
 		)
 
 		// Assert response body
-		wildcards.Assert(t, expectedRespBody, respBody, fmt.Sprintf("Unexpected response for request %s.", dir))
+		wildcards.Assert(t, expectedRespBody, respBody, fmt.Sprintf("Unexpected response for request %s.", requestDir))
 	}
 }
 
