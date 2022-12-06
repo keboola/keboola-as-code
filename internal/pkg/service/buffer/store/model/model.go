@@ -150,3 +150,22 @@ func ParseTableID(v string) (TableID, error) {
 		Table:  table,
 	}, nil
 }
+
+type File struct {
+	key.FileKey
+	Mapping             Mapping          `json:"mapping" validate:"required,dive"`
+	StorageResource     *storageapi.File `json:"storageResource" validate:"required"`
+	ClosedAt            string           `json:"closedAt,omitempty"`
+	AllSlicesUploadedAt string           `json:"allSlicesUploadedAt,omitempty"`
+	ManifestUploadedAt  string           `json:"manifestUploadedAt,omitempty"`
+	ImportStartedAt     string           `json:"importStartedAt,omitempty"`
+	ImportFinishedAt    string           `json:"importFinishedAt,omitempty"`
+}
+
+type Slice struct {
+	key.SliceKey
+	SliceNumber      int    `json:"sliceNumber" validate:"required"`
+	ClosedAt         string `json:"closedAt,omitempty"`
+	UploadStartedAt  string `json:"importStartedAt,omitempty"`
+	UploadFinishedAt string `json:"importFinishedAt,omitempty"`
+}

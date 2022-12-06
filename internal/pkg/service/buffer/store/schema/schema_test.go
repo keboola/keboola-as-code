@@ -77,21 +77,18 @@ func TestSchema(t *testing.T) {
 		},
 		{
 			s.Records().ByKey(key.RecordKey{
-				ReceivedAt:   now,
+				ReceivedAt:   now.Add(time.Hour),
 				RandomSuffix: "abcdef",
-				SliceKey: key.SliceKey{
-					SliceID: "sliceID",
-					FileID:  "fileID",
-					ExportKey: key.ExportKey{
-						ExportID: "my-export",
-						ReceiverKey: key.ReceiverKey{
-							ProjectID:  123,
-							ReceiverID: "my-receiver",
-						},
+				ExportKey: key.ExportKey{
+					ExportID: "my-export",
+					ReceiverKey: key.ReceiverKey{
+						ProjectID:  123,
+						ReceiverID: "my-receiver",
 					},
 				},
+				SliceID: now,
 			}).Key(),
-			"record/123/my-receiver/my-export/fileID/sliceID/" + key.FormatTime(now) + "_abcdef",
+			"record/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z_abcdef",
 		},
 		{
 			s.Secrets().Tokens().InExport(key.ExportKey{

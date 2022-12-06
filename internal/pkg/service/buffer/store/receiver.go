@@ -2,7 +2,10 @@ package store
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -17,7 +20,7 @@ import (
 // Logic errors:
 // - CountLimitReachedError
 // - ResourceAlreadyExistsError.
-func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (err error) {
+func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver, files map[key.ExportKey]*storageapi.File) (err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.CreateReceiver")
 	defer telemetry.EndSpan(span, &err)
 
@@ -31,10 +34,27 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 
 	ops := []op.Op{s.createReceiverBaseOp(ctx, receiver.ReceiverBase)}
 	for _, export := range receiver.Exports {
+		now := time.Now()
+		fileKey := key.FileKey{FileID: now, ExportKey: export.ExportKey}
+		slice := model.Slice{
+			SliceKey:    key.SliceKey{SliceID: now, FileKey: fileKey},
+			SliceNumber: 1,
+		}
+		fileRes, found := files[export.ExportKey]
+		if !found {
+			panic(fmt.Sprintf("file resource for export %s not found", export.ExportKey.String()))
+		}
+		file := model.File{
+			FileKey:         fileKey,
+			Mapping:         export.Mapping,
+			StorageResource: fileRes,
+		}
 		ops = append(ops,
 			s.createExportBaseOp(ctx, export.ExportBase),
 			s.createMappingOp(ctx, export.Mapping),
 			s.createTokenOp(ctx, model.TokenForExport{ExportKey: export.ExportKey, Token: export.Token}),
+			s.createFileOp(ctx, file),
+			s.createSliceOp(ctx, slice),
 		)
 	}
 

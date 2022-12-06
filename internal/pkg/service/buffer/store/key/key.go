@@ -20,14 +20,19 @@ type MappingKey struct {
 	RevisionID int `json:"revisionId" validate:"min=1,max=100"`
 }
 
-type SliceKey struct {
+type FileKey struct {
 	ExportKey
-	FileID  string
-	SliceID string
+	FileID time.Time `json:"fileId" validate:"required"`
+}
+
+type SliceKey struct {
+	FileKey
+	SliceID time.Time `json:"sliceId" validate:"required"`
 }
 
 type RecordKey struct {
-	SliceKey
+	ExportKey
+	SliceID      time.Time `json:"sliceId" validate:"required"`
 	ReceivedAt   time.Time
 	RandomSuffix string
 }
@@ -36,12 +41,11 @@ func FormatTime(t time.Time) string {
 	return t.UTC().Format("2006-01-02T15:04:05.000Z")
 }
 
-func NewRecordKey(projectID int, receiverID, exportID, fileID, sliceID string, now time.Time) RecordKey {
+func NewRecordKey(projectID int, receiverID string, exportID string, sliceID time.Time, now time.Time) RecordKey {
 	k := RecordKey{}
 	k.ProjectID = projectID
 	k.ReceiverID = receiverID
 	k.ExportID = exportID
-	k.FileID = fileID
 	k.SliceID = sliceID
 	k.ReceivedAt = now
 	return k
@@ -59,8 +63,12 @@ func (v MappingKey) String() string {
 	return fmt.Sprintf("%s/mapping:%08d", v.ExportKey.String(), v.RevisionID)
 }
 
+func (v FileKey) String() string {
+	return fmt.Sprintf("%s/file:%s", v.ExportKey.String(), FormatTime(v.FileID))
+}
+
 func (v SliceKey) String() string {
-	return fmt.Sprintf("%s/file:%s/slice:%s", v.ExportKey.String(), v.FileID, v.SliceID)
+	return fmt.Sprintf("%s/slice:%s", v.FileKey.String(), FormatTime(v.SliceID))
 }
 
 func (v RecordKey) Key() string {
@@ -68,5 +76,5 @@ func (v RecordKey) Key() string {
 }
 
 func (v RecordKey) String() string {
-	return fmt.Sprintf("%s/record:%s", v.SliceKey.String(), v.Key())
+	return fmt.Sprintf("%s/record:%s", v.ExportKey.String(), v.Key())
 }

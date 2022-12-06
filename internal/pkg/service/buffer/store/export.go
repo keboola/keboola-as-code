@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"time"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -17,7 +19,7 @@ import (
 // Logic errors:
 // - CountLimitReachedError
 // - ResourceAlreadyExistsError.
-func (s *Store) CreateExport(ctx context.Context, export model.Export) (err error) {
+func (s *Store) CreateExport(ctx context.Context, export model.Export, fileRes *storageapi.File) (err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.CreateExport")
 	defer telemetry.EndSpan(span, &err)
 
@@ -28,10 +30,25 @@ func (s *Store) CreateExport(ctx context.Context, export model.Export) (err erro
 		return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
 	}
 
+	now := time.Now()
+	fileKey := key.FileKey{FileID: now, ExportKey: export.ExportKey}
+	slice := model.Slice{
+		SliceKey:    key.SliceKey{SliceID: now, FileKey: fileKey},
+		SliceNumber: 1,
+	}
+	// We store a copy of the mapping for retrieval optimization.
+	// A change in the mapping causes a new file to be created so that here it is immutable.
+	file := model.File{
+		FileKey:         fileKey,
+		Mapping:         export.Mapping,
+		StorageResource: fileRes,
+	}
 	_, err = op.MergeToTxn(
 		s.createExportBaseOp(ctx, export.ExportBase),
 		s.createMappingOp(ctx, export.Mapping),
 		s.createTokenOp(ctx, model.TokenForExport{ExportKey: export.ExportKey, Token: export.Token}),
+		s.createFileOp(ctx, file),
+		s.createSliceOp(ctx, slice),
 	).Do(ctx, s.client)
 	return err
 }
