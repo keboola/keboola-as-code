@@ -4,11 +4,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestTokenRefresh(t *testing.T) {
@@ -46,6 +47,7 @@ func TestTokenRefresh(t *testing.T) {
 	assert.NoError(t, err)
 
 	oldTokens, err := str.ListTokens(deps.RequestCtx(), key.ReceiverKey{ProjectID: deps.ProjectID(), ReceiverID: string(receiver.ID)})
+	assert.NoError(t, err)
 
 	time.Sleep(time.Second)
 
@@ -54,6 +56,7 @@ func TestTokenRefresh(t *testing.T) {
 	assert.NoError(t, err)
 
 	newTokens, err := str.ListTokens(deps.RequestCtx(), key.ReceiverKey{ProjectID: deps.ProjectID(), ReceiverID: string(receiver.ID)})
+	assert.NoError(t, err)
 
 	// Assert that tokens were refreshed
 	for i, oldToken := range oldTokens {
