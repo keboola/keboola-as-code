@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"sync"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -22,6 +21,7 @@ import (
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
 	bufferStore "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -39,21 +39,21 @@ type mocked struct {
 	t                   *testing.T
 	envs                *env.Map
 	options             *options.Options
-	serverWg            *sync.WaitGroup
 	debugLogger         log.DebugLogger
 	mockedHTTPTransport *httpmock.MockTransport
+	proc                *servicectx.Process
 	requestHeader       http.Header
 	etcdClient          *etcd.Client
 	bufferStore         *bufferStore.Store
 }
 
 type MockedValues struct {
-	services                           storageapi.Services
-	features                           storageapi.Features
-	components                         storageapi.Components
-	storageAPIHost                     string
-	storageAPIToken                    storageapi.Token
-	storageAPITokenMockedResponseTimes int
+	services                  storageapi.Services
+	features                  storageapi.Features
+	components                storageapi.Components
+	storageAPIHost            string
+	storageAPIToken           storageapi.Token
+	multipleTokenVerification bool
 
 	useRealAPIs         bool
 	storageAPIClient    client.Client
@@ -105,9 +105,10 @@ func WithMockedStorageAPIToken(token storageapi.Token) MockedOption {
 	}
 }
 
-func WithMockedTokenResponse(times int) MockedOption {
+// WithMultipleTokenVerification allows the mocked token verification to be called multiple times.
+func WithMultipleTokenVerification(v bool) MockedOption {
 	return func(values *MockedValues) {
-		values.storageAPITokenMockedResponseTimes = times
+		values.multipleTokenVerification = v
 	}
 }
 
@@ -139,7 +140,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 				Features: storageapi.Features{"my-feature"},
 			},
 		},
-		storageAPITokenMockedResponseTimes: 1,
+		multipleTokenVerification: false,
 	}
 
 	// Apply options
@@ -158,10 +159,14 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 	)
 
 	// Mocked token verification
+	verificationResponder := httpmock.NewJsonResponderOrPanic(200, values.storageAPIToken)
+	if !values.multipleTokenVerification {
+		verificationResponder = verificationResponder.Times(1)
+	}
 	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
 		fmt.Sprintf("https://%s/v2/storage/tokens/verify", values.storageAPIHost),
-		httpmock.NewJsonResponderOrPanic(200, values.storageAPIToken).Times(values.storageAPITokenMockedResponseTimes),
+		verificationResponder,
 	)
 
 	// Create base, public and project dependencies
@@ -194,9 +199,9 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 		project:             projectDeps,
 		envs:                envs,
 		options:             options.New(),
-		serverWg:            &sync.WaitGroup{},
 		debugLogger:         logger,
 		mockedHTTPTransport: mockedHTTPTransport,
+		proc:                servicectx.NewForTest(t),
 		requestHeader:       make(http.Header),
 	}
 }
@@ -220,6 +225,10 @@ func (v *mocked) MockedHTTPTransport() *httpmock.MockTransport {
 	return v.mockedHTTPTransport
 }
 
+func (v *mocked) Process() *servicectx.Process {
+	return v.proc
+}
+
 func (v *mocked) MockedProject(fs filesystem.Fs) *projectPkg.Project {
 	prj, err := projectPkg.New(context.Background(), fs, false)
 	if err != nil {
@@ -234,14 +243,6 @@ func (v *mocked) MockedState() *state.State {
 		panic(err)
 	}
 	return s
-}
-
-func (v *mocked) ServerCtx() context.Context {
-	return context.Background()
-}
-
-func (v *mocked) ServerWaitGroup() *sync.WaitGroup {
-	return v.serverWg
 }
 
 func (v *mocked) RequestCtx() context.Context {
