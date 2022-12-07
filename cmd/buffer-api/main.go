@@ -6,10 +6,7 @@ import (
 	"net"
 	"net/url"
 	"os"
-	"os/signal"
-	"syscall"
 
-	"github.com/pkg/errors"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -18,6 +15,7 @@ import (
 	bufferGen "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	bufferHttp "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -59,50 +57,32 @@ func main() {
 }
 
 func start(host, port string, debug, debugHTTP bool, logger log.Logger, envs *env.Map) error {
-	// Create context.
-	ctx, cancelFn := context.WithCancel(context.Background())
-	defer cancelFn()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	logger.Infof("starting Buffer API HTTP server, host=%s, port=%s, debug=%t, debug-http=%t", host, port, debug, debugHTTP)
-
-	// Create dependencies.
-	d, err := dependencies.NewServerDeps(ctx, envs, logger, debug, debugHTTP)
+	proc, err := servicectx.New(ctx, cancel, logger)
 	if err != nil {
 		return err
 	}
 
-	svc := service.New(d)
+	logger.Infof("starting Buffer API HTTP server, host=%s, port=%s, debug=%t, debug-http=%t", host, port, debug, debugHTTP)
+
+	// Create dependencies.
+	d, err := dependencies.NewServerDeps(ctx, proc, envs, logger, debug, debugHTTP)
+	if err != nil {
+		return err
+	}
 
 	// Wrap the services in endpoints that can be invoked from other services
 	// potentially running in different processes.
-	endpoints := bufferGen.NewEndpoints(svc)
-
-	// Create channel used by both the signal handler and server goroutines
-	// to notify the main goroutine when to stop the server.
-	errCh := make(chan error)
-
-	// Setup interrupt handler. This optional step configures the process so
-	// that SIGINT and SIGTERM signals cause the services to stop gracefully.
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-		errCh <- errors.Errorf("%s", <-c)
-	}()
+	endpoints := bufferGen.NewEndpoints(service.New(d))
 
 	// Create server URL.
 	serverURL := &url.URL{Scheme: "http", Host: net.JoinHostPort(host, port)}
 
 	// Start HTTP server.
-	bufferHttp.HandleHTTPServer(ctx, d, serverURL, endpoints, errCh, debug)
+	bufferHttp.HandleHTTPServer(proc, d, serverURL, endpoints, debug)
 
-	// Wait for signal.
-	logger.Infof("exiting (%v)", <-errCh)
-
-	// Send cancellation signal to the goroutines.
-	cancelFn()
-
-	// Wait for goroutines - graceful shutdown.
-	d.ServerWaitGroup().Wait()
-	logger.Info("exited")
+	proc.WaitForShutdown()
 	return nil
 }

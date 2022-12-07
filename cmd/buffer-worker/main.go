@@ -4,16 +4,14 @@ import (
 	"context"
 	"flag"
 	"os"
-	"os/signal"
-	"syscall"
 
-	"github.com/pkg/errors"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -53,41 +51,25 @@ func main() {
 }
 
 func start(debug, debugHTTP bool, logger log.Logger, envs *env.Map) error {
-	// Create context.
-	ctx, cancelFn := context.WithCancel(context.Background())
-	defer cancelFn()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	logger.Infof("starting Buffer API WORKER, debug=%t, debug-http=%t", debug, debugHTTP)
-
-	// Create dependencies.
-	d, err := dependencies.NewWorkerDeps(ctx, envs, logger, debug, debugHTTP)
+	proc, err := servicectx.New(ctx, cancel, logger)
 	if err != nil {
 		return err
 	}
 
-	// Create channel used by both the signal handler and server goroutines
-	// to notify the main goroutine when to stop the worker.
-	errCh := make(chan error)
+	logger.Infof("starting Buffer API WORKER, debug=%t, debug-http=%t", debug, debugHTTP)
 
-	// Setup interrupt handler. This optional step configures the process so
-	// that SIGINT and SIGTERM signals cause the services to stop gracefully.
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-		errCh <- errors.Errorf("%s", <-c)
-	}()
+	// Create dependencies.
+	d, err := dependencies.NewWorkerDeps(ctx, proc, envs, logger, debug, debugHTTP)
+	if err != nil {
+		return err
+	}
 
 	// Start worker code
 	service.New(d).Start()
 
-	// Wait for signal.
-	logger.Infof("exiting (%v)", <-errCh)
-
-	// Send cancellation signal to the goroutines.
-	cancelFn()
-
-	// Wait for goroutines - graceful shutdown.
-	d.WorkerWaitGroup().Wait()
-	logger.Info("exited")
+	proc.WaitForShutdown()
 	return nil
 }

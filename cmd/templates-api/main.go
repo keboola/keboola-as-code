@@ -7,15 +7,14 @@ import (
 	"net"
 	"net/url"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	templatesGen "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	templatesHttp "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/http"
@@ -95,14 +94,18 @@ func main() {
 }
 
 func start(host, port string, repositories []model.TemplateRepository, debug, debugHTTP bool, logger log.Logger, envs *env.Map) error {
-	// Create context.
-	ctx, cancelFn := context.WithCancel(context.Background())
-	defer cancelFn()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	proc, err := servicectx.New(ctx, cancel, logger)
+	if err != nil {
+		return err
+	}
 
 	logger.Infof("starting Templates API HTTP server, host=%s, port=%s, debug=%t, debug-http=%t", host, port, debug, debugHTTP)
 
 	// Create dependencies.
-	d, err := dependencies.NewServerDeps(ctx, envs, logger, repositories, debug, debugHTTP)
+	d, err := dependencies.NewServerDeps(ctx, proc, envs, logger, repositories, debug, debugHTTP)
 	if err != nil {
 		return err
 	}
@@ -117,33 +120,13 @@ func start(host, port string, repositories []model.TemplateRepository, debug, de
 	// potentially running in different processes.
 	endpoints := templatesGen.NewEndpoints(svc)
 
-	// Create channel used by both the signal handler and server goroutines
-	// to notify the main goroutine when to stop the server.
-	errCh := make(chan error)
-
-	// Setup interrupt handler. This optional step configures the process so
-	// that SIGINT and SIGTERM signals cause the services to stop gracefully.
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-		errCh <- errors.Errorf("%s", <-c)
-	}()
-
 	// Create server URL.
 	serverURL := &url.URL{Scheme: "http", Host: net.JoinHostPort(host, port)}
 
 	// Start HTTP server.
-	templatesHttp.HandleHTTPServer(ctx, d, serverURL, endpoints, errCh, debug)
+	templatesHttp.HandleHTTPServer(proc, d, serverURL, endpoints, debug)
 
-	// Wait for signal.
-	logger.Infof("exiting (%v)", <-errCh)
-
-	// Send cancellation signal to the goroutines.
-	cancelFn()
-
-	// Wait for goroutines - graceful shutdown.
-	d.ServerWaitGroup().Wait()
-	logger.Info("exited")
+	proc.WaitForShutdown()
 	return nil
 }
 
