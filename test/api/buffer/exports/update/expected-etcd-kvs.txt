@@ -154,7 +154,7 @@
     "revisionId": 1,
     "tableId": {
       "stage": "in",
-      "bucketName": "update-export",
+      "bucketName": "bucket",
       "tableName": "table"
     },
     "incremental": true,

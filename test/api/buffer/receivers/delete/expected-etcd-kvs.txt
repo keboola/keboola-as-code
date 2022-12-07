@@ -67,7 +67,7 @@
     "revisionId": 1,
     "tableId": {
       "stage": "in",
-      "bucketName": "delete-receiver",
+      "bucketName": "bucket",
       "tableName": "table"
     },
     "incremental": false,
@@ -107,7 +107,7 @@
     "revisionId": 1,
     "tableId": {
       "stage": "in",
-      "bucketName": "delete-receiver",
+      "bucketName": "bucket",
       "tableName": "table"
     },
     "incremental": false,

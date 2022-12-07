@@ -70,7 +70,7 @@
     "revisionId": 1,
     "tableId": {
       "stage": "in",
-      "bucketName": "delete-export",
+      "bucketName": "bucket",
       "tableName": "table"
     },
     "incremental": true,
@@ -109,7 +109,7 @@
     "revisionId": 1,
     "tableId": {
       "stage": "in",
-      "bucketName": "delete-export",
+      "bucketName": "bucket",
       "tableName": "table"
     },
     "incremental": true,
