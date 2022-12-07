@@ -52,7 +52,6 @@ import (
 	"context"
 	"net"
 	"net/http"
-	"sync"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
@@ -68,6 +67,7 @@ import (
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
 	bufferStore "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
@@ -120,8 +120,8 @@ type Mocked interface {
 	MockedProject(fs filesystem.Fs) *projectPkg.Project
 	MockedHTTPTransport() *httpmock.MockTransport
 
-	ServerCtx() context.Context
-	ServerWaitGroup() *sync.WaitGroup
+	Process() *servicectx.Process
+
 	RequestCtx() context.Context
 	RequestID() string
 	RequestHeader() http.Header

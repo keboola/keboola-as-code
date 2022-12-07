@@ -24,7 +24,6 @@ package dependencies
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
@@ -36,6 +35,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
@@ -59,8 +59,7 @@ const (
 type ForServer interface {
 	dependencies.Base
 	dependencies.Public
-	ServerCtx() context.Context
-	ServerWaitGroup() *sync.WaitGroup
+	Process() *servicectx.Process
 	RepositoryManager() *repositoryManager.Manager
 	EtcdClient(ctx context.Context) (*etcd.Client, error)
 	ProjectLocker() *Locker
@@ -88,8 +87,7 @@ type ForProjectRequest interface {
 type forServer struct {
 	dependencies.Base
 	dependencies.Public
-	serverCtx         context.Context
-	serverWg          *sync.WaitGroup
+	proc              *servicectx.Process
 	debug             bool
 	logger            log.Logger
 	repositoryManager *repositoryManager.Manager
@@ -115,17 +113,14 @@ type forProjectRequest struct {
 	projectRepositories dependencies.Lazy[*model.TemplateRepositories]
 }
 
-func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Logger, defaultRepositories []model.TemplateRepository, debug, dumpHTTP bool) (v ForServer, err error) {
+func NewServerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provider, logger log.Logger, defaultRepositories []model.TemplateRepository, debug, dumpHTTP bool) (v ForServer, err error) {
 	// Create tracer
 	var tracer trace.Tracer = nil
 	if telemetry.IsDataDogEnabled(envs) {
 		tracer = telemetry.NewDataDogTracer()
-		_, span := tracer.Start(serverCtx, "kac.lib.api.server.templates.dependencies.NewServerDeps")
+		_, span := tracer.Start(ctx, "kac.lib.api.server.templates.dependencies.NewServerDeps")
 		defer telemetry.EndSpan(span, &err)
 	}
-
-	// Create wait group - for graceful shutdown
-	serverWg := &sync.WaitGroup{}
 
 	// Get Storage API host
 	storageAPIHost := strhelper.NormalizeHost(envs.MustGet("KBC_STORAGE_API_HOST"))
@@ -152,7 +147,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Logg
 	// Create public dependencies - load API index
 	startTime := time.Now()
 	logger.Info("loading Storage API index")
-	publicDeps, err := dependencies.NewPublicDeps(serverCtx, baseDeps, storageAPIHost)
+	publicDeps, err := dependencies.NewPublicDeps(ctx, baseDeps, storageAPIHost)
 	if err != nil {
 		return nil, err
 	}
@@ -160,16 +155,15 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Logg
 
 	// Create server dependencies
 	d := &forServer{
-		Base:      baseDeps,
-		Public:    publicDeps,
-		serverCtx: serverCtx,
-		serverWg:  serverWg,
-		debug:     debug,
-		logger:    logger,
+		Base:   baseDeps,
+		Public: publicDeps,
+		proc:   proc,
+		debug:  debug,
+		logger: logger,
 	}
 
 	// Create repository manager
-	if v, err := repositoryManager.New(serverCtx, defaultRepositories, d); err != nil {
+	if v, err := repositoryManager.New(ctx, d, defaultRepositories); err != nil {
 		return nil, err
 	} else {
 		d.repositoryManager = v
@@ -177,7 +171,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Logg
 
 	// Test connection to etcd at server startup
 	// We use a longer timeout when starting the server, because ETCD could be restarted at the same time as the API.
-	etcdCtx := context.WithValue(serverCtx, EtcdConnectionTimeoutCtxKey, 30*time.Second)
+	etcdCtx := context.WithValue(ctx, EtcdConnectionTimeoutCtxKey, 30*time.Second)
 	if _, err := d.EtcdClient(etcdCtx); err != nil {
 		d.Logger().Warnf(err.Error())
 	}
@@ -218,12 +212,8 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 	}, nil
 }
 
-func (v *forServer) ServerCtx() context.Context {
-	return v.serverCtx
-}
-
-func (v *forServer) ServerWaitGroup() *sync.WaitGroup {
-	return v.serverWg
+func (v *forServer) Process() *servicectx.Process {
+	return v.proc
 }
 
 func (v *forServer) RepositoryManager() *repositoryManager.Manager {
@@ -248,8 +238,8 @@ func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 			return nil, errors.New("etcd integration is disabled")
 		}
 
-		return etcdclient.New(
-			v.serverCtx,
+		etcdClient, err := etcdclient.New(
+			v.proc.Ctx(),
 			v.Tracer(),
 			envs.Get("TEMPLATES_API_ETCD_ENDPOINT"),
 			envs.Get("TEMPLATES_API_ETCD_NAMESPACE"),
@@ -259,8 +249,21 @@ func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 			etcdclient.WithConnectTimeout(connectTimeout),
 			etcdclient.WithLogger(v.logger),
 			etcdclient.WithDebugOpLogs(v.debug),
-			etcdclient.WithWaitGroup(v.serverWg),
 		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Close client when shutting down the server
+		v.proc.OnShutdown(func() {
+			if err := etcdClient.Close(); err != nil {
+				v.logger.Warnf("cannot close connection etcd: %s", err)
+			} else {
+				v.logger.Info("closed connection to etcd")
+			}
+		})
+
+		return etcdClient, nil
 	})
 }
 

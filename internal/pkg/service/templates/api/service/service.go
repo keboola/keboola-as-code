@@ -35,11 +35,11 @@ const ProjectLockedRetryAfter = 5 * time.Second
 type service struct{}
 
 func New(d dependencies.ForServer) (Service, error) {
-	if err := StartComponentsCron(d.ServerCtx(), d); err != nil {
+	if err := StartComponentsCron(d.Process().Ctx(), d); err != nil {
 		return nil, err
 	}
 
-	if err := StartRepositoriesPullCron(d.ServerCtx(), d); err != nil {
+	if err := StartRepositoriesPullCron(d.Process().Ctx(), d); err != nil {
 		return nil, err
 	}
 

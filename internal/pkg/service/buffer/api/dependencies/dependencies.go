@@ -28,7 +28,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"sync"
 
 	"go.opentelemetry.io/otel/trace"
 
@@ -36,6 +35,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	serviceDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ip"
@@ -53,8 +53,6 @@ const (
 // The container exists during the entire run of the API server.
 type ForServer interface {
 	serviceDependencies.ForService
-	ServerCtx() context.Context
-	ServerWaitGroup() *sync.WaitGroup
 	BufferAPIHost() string
 }
 
@@ -78,8 +76,6 @@ type ForProjectRequest interface {
 // forServer implements ForServer interface.
 type forServer struct {
 	serviceDependencies.ForService
-	serverCtx     context.Context
-	serverWg      *sync.WaitGroup
 	bufferApiHost string
 }
 
@@ -99,9 +95,8 @@ type forProjectRequest struct {
 	logger log.Logger
 }
 
-func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Logger, debug, dumpHTTP bool) (v ForServer, err error) {
+func NewServerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provider, logger log.Logger, debug, dumpHTTP bool) (v ForServer, err error) {
 	// Create tracer
-	ctx := serverCtx
 	var tracer trace.Tracer = nil
 	if telemetry.IsDataDogEnabled(envs) {
 		var span trace.Span
@@ -112,9 +107,6 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Logg
 		tracer = telemetry.NewNopTracer()
 	}
 
-	// Create wait group - for graceful shutdown
-	serverWg := &sync.WaitGroup{}
-
 	// Get Buffer API host
 	bufferApiHost := strhelper.NormalizeHost(envs.Get("KBC_BUFFER_API_HOST"))
 	if bufferApiHost == "" {
@@ -123,7 +115,7 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Logg
 
 	// Create service dependencies
 	userAgent := "keboola-buffer-api"
-	serviceDeps, err := serviceDependencies.NewServiceDeps(serverCtx, ctx, serverWg, tracer, envs, logger, debug, dumpHTTP, userAgent)
+	serviceDeps, err := serviceDependencies.NewServiceDeps(ctx, proc, tracer, envs, logger, debug, dumpHTTP, userAgent)
 	if err != nil {
 		return nil, err
 	}
@@ -131,8 +123,6 @@ func NewServerDeps(serverCtx context.Context, envs env.Provider, logger log.Logg
 	// Create server dependencies
 	d := &forServer{
 		ForService:    serviceDeps,
-		serverCtx:     serverCtx,
-		serverWg:      serverWg,
 		bufferApiHost: bufferApiHost,
 	}
 
@@ -170,14 +160,6 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 		Project:          projectDeps,
 		ForPublicRequest: publicDeps,
 	}, nil
-}
-
-func (v *forServer) ServerCtx() context.Context {
-	return v.serverCtx
-}
-
-func (v *forServer) ServerWaitGroup() *sync.WaitGroup {
-	return v.serverWg
 }
 
 func (v *forServer) BufferAPIHost() string {

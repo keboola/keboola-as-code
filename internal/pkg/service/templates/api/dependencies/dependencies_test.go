@@ -42,7 +42,7 @@ func TestForPublicRequest_Components_Cached(t *testing.T) {
 
 	// Create mocked dependencies for server with "components1"
 	mockedDeps := dependencies.NewMockedDeps(t, dependencies.WithMockedComponents(components1))
-	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, serverCtx: context.Background(), logger: log.NewNopLogger()}
+	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, logger: log.NewNopLogger()}
 
 	// Request 1 gets "components1"
 	req1Deps := NewDepsForPublicRequest(serverDeps, context.Background(), "req1")
@@ -83,10 +83,10 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 
 	// Create mocked dependencies for server
 	ctx := context.Background()
-	mockedDeps := dependencies.NewMockedDeps(t, dependencies.WithMockedTokenResponse(3))
-	manager, err := repositoryManager.New(ctx, nil, mockedDeps)
+	mockedDeps := dependencies.NewMockedDeps(t, dependencies.WithMultipleTokenVerification(true))
+	manager, err := repositoryManager.New(ctx, mockedDeps, nil)
 	assert.NoError(t, err)
-	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, serverCtx: ctx, logger: log.NewNopLogger(), repositoryManager: manager}
+	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, logger: log.NewNopLogger(), repositoryManager: manager}
 	requestDepsFactory := func(ctx context.Context) (ForProjectRequest, error) {
 		requestId := gonanoid.Must(8)
 		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, ctx, requestId), ctx, mockedDeps.StorageAPITokenID())
@@ -208,10 +208,10 @@ func TestForProjectRequest_Template_Cached(t *testing.T) {
 
 	// Create mocked dependencies for server
 	ctx := context.Background()
-	mockedDeps := dependencies.NewMockedDeps(t, dependencies.WithMockedTokenResponse(4))
-	manager, err := repositoryManager.New(ctx, nil, mockedDeps)
+	mockedDeps := dependencies.NewMockedDeps(t, dependencies.WithMultipleTokenVerification(true))
+	manager, err := repositoryManager.New(ctx, mockedDeps, nil)
 	assert.NoError(t, err)
-	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, serverCtx: ctx, logger: log.NewNopLogger(), repositoryManager: manager}
+	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, logger: log.NewNopLogger(), repositoryManager: manager}
 	requestDepsFactory := func(ctx context.Context) (ForProjectRequest, error) {
 		requestId := gonanoid.Must(8)
 		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, ctx, requestId), ctx, mockedDeps.StorageAPITokenID())

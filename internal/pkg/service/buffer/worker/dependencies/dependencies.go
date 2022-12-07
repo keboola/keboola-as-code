@@ -9,13 +9,13 @@ package dependencies
 
 import (
 	"context"
-	"sync"
 
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	serviceDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -23,20 +23,17 @@ import (
 // The container exists during the entire run of the Worker.
 type ForWorker interface {
 	serviceDependencies.ForService
-	WorkerCtx() context.Context
-	WorkerWaitGroup() *sync.WaitGroup
+	Process() *servicectx.Process
 }
 
 // forWorker implements ForWorker interface.
 type forWorker struct {
 	serviceDependencies.ForService
-	workerCtx context.Context
-	workerWg  *sync.WaitGroup
+	proc *servicectx.Process
 }
 
-func NewWorkerDeps(workerCtx context.Context, envs env.Provider, logger log.Logger, debug, dumpHTTP bool) (v ForWorker, err error) {
+func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provider, logger log.Logger, debug, dumpHTTP bool) (v ForWorker, err error) {
 	// Create tracer
-	ctx := workerCtx
 	var tracer trace.Tracer = nil
 	if telemetry.IsDataDogEnabled(envs) {
 		var span trace.Span
@@ -47,12 +44,9 @@ func NewWorkerDeps(workerCtx context.Context, envs env.Provider, logger log.Logg
 		tracer = telemetry.NewNopTracer()
 	}
 
-	// Create wait group - for graceful shutdown
-	workerWg := &sync.WaitGroup{}
-
 	// Create service dependencies
 	userAgent := "keboola-buffer-worker"
-	serviceDeps, err := serviceDependencies.NewServiceDeps(workerCtx, ctx, workerWg, tracer, envs, logger, debug, dumpHTTP, userAgent)
+	serviceDeps, err := serviceDependencies.NewServiceDeps(ctx, proc, tracer, envs, logger, debug, dumpHTTP, userAgent)
 	if err != nil {
 		return nil, err
 	}
@@ -60,17 +54,12 @@ func NewWorkerDeps(workerCtx context.Context, envs env.Provider, logger log.Logg
 	// Create server dependencies
 	d := &forWorker{
 		ForService: serviceDeps,
-		workerCtx:  workerCtx,
-		workerWg:   workerWg,
+		proc:       proc,
 	}
 
 	return d, nil
 }
 
-func (v *forWorker) WorkerCtx() context.Context {
-	return v.workerCtx
-}
-
-func (v *forWorker) WorkerWaitGroup() *sync.WaitGroup {
-	return v.workerWg
+func (v *forWorker) Process() *servicectx.Process {
+	return v.proc
 }
