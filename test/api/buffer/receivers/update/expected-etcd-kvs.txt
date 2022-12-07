@@ -24,7 +24,7 @@
   "revisionId": 1,
   "tableId": {
     "stage": "in",
-    "bucketName": "update-receiver",
+    "bucketName": "bucket",
     "tableName": "table"
   },
   "incremental": true,
@@ -63,7 +63,7 @@
     "revisionId": 1,
     "tableId": {
       "stage": "in",
-      "bucketName": "update-receiver",
+      "bucketName": "bucket",
       "tableName": "table"
     },
     "incremental": true,

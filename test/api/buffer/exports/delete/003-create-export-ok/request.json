@@ -9,7 +9,7 @@
     "exportId": "my-export-2",
     "name": "My Export 2",
     "mapping": {
-      "tableId": "in.c-delete-export.table",
+      "tableId": "in.c-bucket.table",
       "incremental": true,
       "columns": [
         {

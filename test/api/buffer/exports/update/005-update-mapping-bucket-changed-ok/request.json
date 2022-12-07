@@ -7,7 +7,7 @@
   },
   "body": {
     "mapping": {
-      "tableId": "in.c-update-export.table2",
+      "tableId": "in.c-bucket2.table1",
       "incremental": true,
       "columns": [
         {
@@ -15,8 +15,8 @@
           "name": "id"
         },
         {
-          "type": "ip",
-          "name": "ip"
+          "type": "body",
+          "name": "body"
         }
       ]
     }

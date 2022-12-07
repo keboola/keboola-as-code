@@ -11,7 +11,7 @@
       {
         "name": "Export 1",
         "mapping": {
-          "tableId": "in.c-get-receiver.table1",
+          "tableId": "in.c-bucket.table1",
           "incremental": true,
           "columns": [
             {
@@ -33,7 +33,7 @@
       {
         "name": "Export 2",
         "mapping": {
-          "tableId": "in.c-get-receiver.table2",
+          "tableId": "in.c-bucket.table2",
           "incremental": false,
           "columns": [
             {

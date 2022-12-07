@@ -3,7 +3,7 @@
   "receiverId": "my-receiver",
   "name": "Export 2",
   "mapping": {
-    "tableId": "in.c-list-exports.table2",
+    "tableId": "in.c-bucket.table2",
     "incremental": true,
     "columns": [
       {

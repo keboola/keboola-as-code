@@ -15,8 +15,8 @@
           "name": "id"
         },
         {
-          "type": "body",
-          "name": "body"
+          "type": "ip",
+          "name": "ip"
         }
       ]
     }

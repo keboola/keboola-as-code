@@ -11,7 +11,7 @@
       {
         "name": "Export 2",
         "mapping": {
-          "tableId": "in.c-delete-receiver.table",
+          "tableId": "in.c-bucket.table",
           "incremental": false,
           "columns": [
             {

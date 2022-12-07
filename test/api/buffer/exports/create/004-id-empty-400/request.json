@@ -9,7 +9,7 @@
     "id": "",
     "name": "My Export 2",
     "mapping": {
-      "tableId": "in.c-create-export.table",
+      "tableId": "in.c-bucket.table",
       "columns": [
         {
           "type": "id",
