@@ -20,7 +20,7 @@ func TestProcess_Add(t *testing.T) {
 	proc, err := New(ctx, cancel, logger, WithUniqueID("<id>"))
 	assert.NoError(t, err)
 
-	// Do some work
+	// Do some work, operations run in parallel, sleep determines the completion order to make it testable
 	proc.Add(func(ctx context.Context, errCh chan<- error) {
 		<-ctx.Done()
 		time.Sleep(100 * time.Millisecond)
@@ -39,12 +39,24 @@ func TestProcess_Add(t *testing.T) {
 	proc.Add(func(ctx context.Context, errCh chan<- error) {
 		errCh <- errors.New("operation failed")
 	})
+	proc.OnShutdown(func() {
+		logger.Info("onShutdown1")
+	})
+	proc.OnShutdown(func() {
+		logger.Info("onShutdown2")
+	})
+	proc.OnShutdown(func() {
+		logger.Info("onShutdown3")
+	})
 	proc.WaitForShutdown()
 
 	// Check logs
 	expected := `
 INFO  process unique id "<id>"
 INFO  exiting (operation failed)
+INFO  onShutdown3
+INFO  onShutdown2
+INFO  onShutdown1
 INFO  end1
 INFO  end2
 INFO  end3
@@ -61,7 +73,7 @@ func TestProcess_Shutdown(t *testing.T) {
 	proc, err := New(ctx, cancel, logger, WithUniqueID("<id>"))
 	assert.NoError(t, err)
 
-	// Do some work
+	// Do some work, operations run in parallel, sleep determines the completion order to make it testable
 	proc.Add(func(ctx context.Context, errCh chan<- error) {
 		<-ctx.Done()
 		time.Sleep(100 * time.Millisecond)
@@ -77,6 +89,15 @@ func TestProcess_Shutdown(t *testing.T) {
 		time.Sleep(300 * time.Millisecond)
 		logger.Info("end3")
 	})
+	proc.OnShutdown(func() {
+		logger.Info("onShutdown1")
+	})
+	proc.OnShutdown(func() {
+		logger.Info("onShutdown2")
+	})
+	proc.OnShutdown(func() {
+		logger.Info("onShutdown3")
+	})
 	proc.Shutdown(errors.New("some error"))
 	proc.WaitForShutdown()
 
@@ -84,6 +105,9 @@ func TestProcess_Shutdown(t *testing.T) {
 	expected := `
 INFO  process unique id "<id>"
 INFO  exiting (some error)
+INFO  onShutdown3
+INFO  onShutdown2
+INFO  onShutdown1
 INFO  end1
 INFO  end2
 INFO  end3

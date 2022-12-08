@@ -22,9 +22,15 @@ type Process struct {
 	wg       *sync.WaitGroup
 	errCh    chan error
 	uniqueID string
+
+	lock        *sync.Mutex
+	terminating bool
+	onShutdown  []OnShutdownFn
 }
 
 type Option func(c *config)
+
+type OnShutdownFn func()
 
 type config struct {
 	uniqueID string
@@ -79,7 +85,21 @@ func New(ctx context.Context, cancel context.CancelFunc, logger log.Logger, opts
 		wg:       &sync.WaitGroup{},
 		errCh:    errCh,
 		uniqueID: c.uniqueID,
+		lock:     &sync.Mutex{},
 	}
+
+	// Register onShutdown operation
+	proc.Add(func(ctx context.Context, errCh chan<- error) {
+		<-ctx.Done()
+		proc.lock.Lock()
+		proc.terminating = true
+		proc.lock.Unlock()
+
+		// Iterate callbacks in reverse order, LIFO
+		for i := len(proc.onShutdown) - 1; i >= 0; i-- {
+			proc.onShutdown[i]()
+		}
+	})
 
 	logger.Infof(`process unique id "%s"`, proc.UniqueID())
 	return proc, nil
@@ -145,11 +165,14 @@ func (v *Process) Add(operation func(ctx context.Context, errCh chan<- error)) {
 	}()
 }
 
-// OnShutdown registers an operation that is invoked when the server is terminating.
-// Graceful shutdown waits until the operation has finished.
-func (v *Process) OnShutdown(operation func()) {
-	v.Add(func(ctx context.Context, errCh chan<- error) {
-		<-v.ctx.Done()
-		operation()
-	})
+// OnShutdown registers a callback that is invoked when the process is terminating.
+// Graceful shutdown waits until the callback has finished.
+// Callback are invoked sequentially in LIFO order.
+func (v *Process) OnShutdown(fn OnShutdownFn) {
+	v.lock.Lock()
+	if v.terminating == true {
+		v.logger.Errorf(`cannot register OnShutdown callback: the process is terminating`)
+	}
+	v.onShutdown = append(v.onShutdown, fn)
+	v.lock.Unlock()
 }
