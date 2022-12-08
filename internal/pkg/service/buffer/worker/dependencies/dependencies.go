@@ -23,13 +23,11 @@ import (
 // The container exists during the entire run of the Worker.
 type ForWorker interface {
 	serviceDependencies.ForService
-	Process() *servicectx.Process
 }
 
 // forWorker implements ForWorker interface.
 type forWorker struct {
 	serviceDependencies.ForService
-	proc *servicectx.Process
 }
 
 func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provider, logger log.Logger, debug, dumpHTTP bool) (v ForWorker, err error) {
@@ -54,12 +52,7 @@ func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 	// Create server dependencies
 	d := &forWorker{
 		ForService: serviceDeps,
-		proc:       proc,
 	}
 
 	return d, nil
-}
-
-func (v *forWorker) Process() *servicectx.Process {
-	return v.proc
 }
