@@ -3,8 +3,8 @@ package servicectx
 import (
 	"context"
 	"strings"
+	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -20,21 +20,30 @@ func TestProcess_Add(t *testing.T) {
 	proc, err := New(ctx, cancel, logger, WithUniqueID("<id>"))
 	assert.NoError(t, err)
 
-	// Do some work, operations run in parallel, sleep determines the completion order to make it testable
+	op1 := &sync.WaitGroup{}
+	op1.Add(1)
+	op2 := &sync.WaitGroup{}
+	op2.Add(1)
+	op3 := &sync.WaitGroup{}
+	op3.Add(1)
+
+	// Do some work, operations run in parallel
 	proc.Add(func(ctx context.Context, errCh chan<- error) {
 		<-ctx.Done()
-		time.Sleep(100 * time.Millisecond)
 		logger.Info("end1")
+		op1.Done()
 	})
 	proc.Add(func(ctx context.Context, errCh chan<- error) {
 		<-ctx.Done()
-		time.Sleep(200 * time.Millisecond)
+		op1.Wait()
 		logger.Info("end2")
+		op2.Done()
 	})
 	proc.Add(func(ctx context.Context, errCh chan<- error) {
 		<-ctx.Done()
-		time.Sleep(300 * time.Millisecond)
+		op2.Wait()
 		logger.Info("end3")
+		op3.Done()
 	})
 	proc.Add(func(ctx context.Context, errCh chan<- error) {
 		errCh <- errors.New("operation failed")
@@ -46,6 +55,7 @@ func TestProcess_Add(t *testing.T) {
 		logger.Info("onShutdown2")
 	})
 	proc.OnShutdown(func() {
+		op3.Wait()
 		logger.Info("onShutdown3")
 	})
 	proc.WaitForShutdown()
@@ -54,12 +64,12 @@ func TestProcess_Add(t *testing.T) {
 	expected := `
 INFO  process unique id "<id>"
 INFO  exiting (operation failed)
-INFO  onShutdown3
-INFO  onShutdown2
-INFO  onShutdown1
 INFO  end1
 INFO  end2
 INFO  end3
+INFO  onShutdown3
+INFO  onShutdown2
+INFO  onShutdown1
 INFO  exited
 `
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
@@ -73,21 +83,30 @@ func TestProcess_Shutdown(t *testing.T) {
 	proc, err := New(ctx, cancel, logger, WithUniqueID("<id>"))
 	assert.NoError(t, err)
 
-	// Do some work, operations run in parallel, sleep determines the completion order to make it testable
+	op1 := &sync.WaitGroup{}
+	op1.Add(1)
+	op2 := &sync.WaitGroup{}
+	op2.Add(1)
+	op3 := &sync.WaitGroup{}
+	op3.Add(1)
+
+	// Do some work, operations run in parallel
 	proc.Add(func(ctx context.Context, errCh chan<- error) {
 		<-ctx.Done()
-		time.Sleep(100 * time.Millisecond)
 		logger.Info("end1")
+		op1.Done()
 	})
 	proc.Add(func(ctx context.Context, errCh chan<- error) {
 		<-ctx.Done()
-		time.Sleep(200 * time.Millisecond)
+		op1.Wait()
 		logger.Info("end2")
+		op2.Done()
 	})
 	proc.Add(func(ctx context.Context, errCh chan<- error) {
 		<-ctx.Done()
-		time.Sleep(300 * time.Millisecond)
+		op2.Wait()
 		logger.Info("end3")
+		op3.Done()
 	})
 	proc.OnShutdown(func() {
 		logger.Info("onShutdown1")
@@ -96,6 +115,7 @@ func TestProcess_Shutdown(t *testing.T) {
 		logger.Info("onShutdown2")
 	})
 	proc.OnShutdown(func() {
+		op3.Wait()
 		logger.Info("onShutdown3")
 	})
 	proc.Shutdown(errors.New("some error"))
@@ -105,12 +125,12 @@ func TestProcess_Shutdown(t *testing.T) {
 	expected := `
 INFO  process unique id "<id>"
 INFO  exiting (some error)
-INFO  onShutdown3
-INFO  onShutdown2
-INFO  onShutdown1
 INFO  end1
 INFO  end2
 INFO  end3
+INFO  onShutdown3
+INFO  onShutdown2
+INFO  onShutdown1
 INFO  exited
 `
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())

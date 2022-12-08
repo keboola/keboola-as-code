@@ -95,7 +95,7 @@ func New(ctx context.Context, cancel context.CancelFunc, logger log.Logger, opts
 		proc.terminating = true
 		proc.lock.Unlock()
 
-		// Iterate callbacks in reverse order, LIFO
+		// Iterate callbacks in reverse order, LIFO, see the OnShutdown method
 		for i := len(proc.onShutdown) - 1; i >= 0; i-- {
 			proc.onShutdown[i]()
 		}
@@ -167,10 +167,10 @@ func (v *Process) Add(operation func(ctx context.Context, errCh chan<- error)) {
 
 // OnShutdown registers a callback that is invoked when the process is terminating.
 // Graceful shutdown waits until the callback has finished.
-// Callback are invoked sequentially in LIFO order.
+// Callbacks are invoked sequentially, in LIFO order, see the New function.
 func (v *Process) OnShutdown(fn OnShutdownFn) {
 	v.lock.Lock()
-	if v.terminating == true {
+	if v.terminating {
 		v.logger.Errorf(`cannot register OnShutdown callback: the process is terminating`)
 	}
 	v.onShutdown = append(v.onShutdown, fn)
