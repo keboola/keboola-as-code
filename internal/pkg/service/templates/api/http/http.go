@@ -13,6 +13,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/muxer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	templatesSvr "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/http/templates/server"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
@@ -27,7 +28,7 @@ const (
 
 // HandleHTTPServer starts configures and starts a HTTP server on the given
 // URL. It shuts down the server if any error is received in the error channel.
-func HandleHTTPServer(ctx context.Context, d dependencies.ForServer, u *url.URL, endpoints *templates.Endpoints, errCh chan error, debug bool) {
+func HandleHTTPServer(proc *servicectx.Process, d dependencies.ForServer, u *url.URL, endpoints *templates.Endpoints, debug bool) {
 	logger := d.Logger()
 
 	// Trace endpoint start, finish and error
@@ -77,17 +78,14 @@ func HandleHTTPServer(ctx context.Context, d dependencies.ForServer, u *url.URL,
 		logger.Infof("HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 	}
 
-	wg := d.ServerWaitGroup()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
+	proc.Add(func(ctx context.Context, errCh chan<- error) {
 		// Start HTTP server in a separate goroutine.
 		go func() {
 			logger.Infof("HTTP server listening on %q", u.Host)
 			errCh <- srv.ListenAndServe()
 		}()
 
+		// Wait for termination
 		<-ctx.Done()
 		logger.Infof("shutting down HTTP server at %q", u.Host)
 
@@ -96,5 +94,5 @@ func HandleHTTPServer(ctx context.Context, d dependencies.ForServer, u *url.URL,
 		defer cancel()
 
 		_ = srv.Shutdown(ctx)
-	}()
+	})
 }

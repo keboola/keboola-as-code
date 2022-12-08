@@ -3,7 +3,6 @@ package dependencies
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
@@ -14,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
@@ -22,12 +22,13 @@ import (
 type ForService interface {
 	dependencies.Base
 	dependencies.Public
+	Process() *servicectx.Process
 	Store() *store.Store
 }
 
 func NewServiceDeps(
-	processCtx, ctx context.Context,
-	processWg *sync.WaitGroup,
+	ctx context.Context,
+	proc *servicectx.Process,
 	tracer trace.Tracer,
 	envs env.Provider,
 	logger log.Logger,
@@ -63,7 +64,7 @@ func NewServiceDeps(
 	// Create public dependencies - load API index
 	startTime := time.Now()
 	logger.Info("loading Storage API index")
-	publicDeps, err := dependencies.NewPublicDeps(processCtx, baseDeps, storageAPIHost)
+	publicDeps, err := dependencies.NewPublicDeps(ctx, baseDeps, storageAPIHost)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +72,7 @@ func NewServiceDeps(
 
 	// Create etcd client
 	etcdClient, err := etcdclient.New(
-		processCtx,
+		proc.Ctx(),
 		tracer,
 		envs.Get("BUFFER_ETCD_ENDPOINT"),
 		envs.Get("BUFFER_ETCD_NAMESPACE"),
@@ -81,15 +82,24 @@ func NewServiceDeps(
 		etcdclient.WithConnectTimeout(30*time.Second), // longer timeout, the etcd could be started at the same time as the API/Worker
 		etcdclient.WithLogger(logger),
 		etcdclient.WithDebugOpLogs(debug),
-		etcdclient.WithWaitGroup(processWg),
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	// Close client when shutting down the server
+	proc.OnShutdown(func() {
+		if err := etcdClient.Close(); err != nil {
+			logger.Warnf("cannot close connection etcd: %s", err)
+		} else {
+			logger.Info("closed connection to etcd")
+		}
+	})
+
 	return &forService{
 		Base:   baseDeps,
 		Public: publicDeps,
+		proc:   proc,
 		store:  store.New(logger, etcdClient, tracer),
 	}, nil
 }
@@ -98,7 +108,12 @@ func NewServiceDeps(
 type forService struct {
 	dependencies.Base
 	dependencies.Public
+	proc  *servicectx.Process
 	store *store.Store
+}
+
+func (v *forService) Process() *servicectx.Process {
+	return v.proc
 }
 
 func (v *forService) Store() *store.Store {

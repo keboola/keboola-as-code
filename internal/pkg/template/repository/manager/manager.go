@@ -29,6 +29,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/git"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	checkoutOp "github.com/keboola/keboola-as-code/pkg/lib/operation/repository/checkout"
 	loadRepositoryOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/repository/load"
@@ -53,11 +54,11 @@ type Manager struct {
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
+	Process() *servicectx.Process
 	Components() *model.ComponentsMap
-	ServerWaitGroup() *sync.WaitGroup
 }
 
-func New(ctx context.Context, defaultRepositories []model.TemplateRepository, d dependencies) (*Manager, error) {
+func New(ctx context.Context, d dependencies, defaultRepositories []model.TemplateRepository) (*Manager, error) {
 	m := &Manager{
 		ctx:                 ctx,
 		deps:                d,
@@ -69,13 +70,9 @@ func New(ctx context.Context, defaultRepositories []model.TemplateRepository, d 
 	}
 
 	// Free all repositories on server shutdown
-	serverWg := d.ServerWaitGroup()
-	serverWg.Add(1)
-	go func() {
-		defer serverWg.Done()
-		<-ctx.Done()
+	d.Process().OnShutdown(func() {
 		m.Free()
-	}()
+	})
 
 	// Init default repositories in parallel.
 	// It preloads all default repositories and templates in them.

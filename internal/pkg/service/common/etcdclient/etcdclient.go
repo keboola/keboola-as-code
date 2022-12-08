@@ -3,7 +3,6 @@ package etcdclient
 import (
 	"context"
 	"strings"
-	"sync"
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
@@ -39,7 +38,6 @@ type config struct {
 	keepAliveInterval time.Duration
 	autoSyncInterval  time.Duration
 	logger            log.Logger
-	waitGroup         *sync.WaitGroup
 }
 
 type Option func(c *config)
@@ -108,16 +106,6 @@ func WithAutoSyncInterval(v time.Duration) Option {
 func WithLogger(v log.Logger) Option {
 	return func(c *config) {
 		c.logger = v
-	}
-}
-
-// WithWaitGroup attach the client to a waitGroup.
-// When the connection is established, the waitGroup counter is increased,
-// when the connection is closed, it is decreased.
-// Connection is closed when the context is done, see New.
-func WithWaitGroup(v *sync.WaitGroup) Option {
-	return func(c *config) {
-		c.waitGroup = v
 	}
 }
 
@@ -220,22 +208,6 @@ func New(ctx context.Context, tracer trace.Tracer, endpoint, namespace string, o
 		_ = c.Close()
 		return nil, errors.Errorf("cannot create etcd client: cannot sync cluster members: %w", err)
 	}
-
-	// Close client when shutting down the server
-	if conf.waitGroup != nil {
-		conf.waitGroup.Add(1)
-	}
-	go func() {
-		if conf.waitGroup != nil {
-			defer conf.waitGroup.Done()
-		}
-		<-ctx.Done()
-		if err := c.Close(); err != nil {
-			logger.Warnf("cannot close connection etcd: %s", err)
-		} else {
-			logger.Info("closed connection to etcd")
-		}
-	}()
 
 	logger.Infof(`connected to etcd cluster "%s" | %s`, strings.Join(c.Endpoints(), ";"), time.Since(startTime))
 	return c, nil
