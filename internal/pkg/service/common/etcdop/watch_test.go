@@ -25,7 +25,7 @@ func TestPrefixT_Watch(t *testing.T) {
 	errHandler := func(err error) {
 		assert.FailNow(t, `unexpected watch error`, err.Error())
 	}
-	ch := pfx.Watch(ctx, c, errHandler, etcd.WithRev(0))
+	ch := pfx.Watch(ctx, c, errHandler, etcd.WithRev(1)) // rev=1, always include complete history
 
 	// CREATE key
 	go func() {
