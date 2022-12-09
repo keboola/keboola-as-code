@@ -12,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func TestTypedPrefix_Watch(t *testing.T) {
+func TestPrefixT_Watch(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -27,34 +27,59 @@ func TestTypedPrefix_Watch(t *testing.T) {
 	}
 	ch := pfx.Watch(ctx, c, errHandler, etcd.WithRev(0))
 
-	// PUT key
+	// CREATE key
 	go func() {
 		assert.NoError(t, pfx.Key("key1").Put("foo").Do(ctx, c))
 	}()
 
-	// Wait for PUT event
-	putDone := make(chan struct{})
+	// Wait for CREATE event
+	createDone := make(chan struct{})
 	go func() {
-		assert.Equal(t, EventT[fooType]{
-			Value: "foo",
-			Event: &etcd.Event{
-				Type: mvccpb.PUT,
-				Kv: &mvccpb.KeyValue{
-					Key:   []byte("my/prefix/key1"),
-					Value: []byte(`"foo"`),
-				},
-			},
-		}, clearEvent(<-ch))
-		close(putDone)
+		expected := EventT[fooType]{}
+		expected.Value = "foo"
+		expected.Type = CreateEvent
+		expected.KV = &mvccpb.KeyValue{
+			Key:   []byte("my/prefix/key1"),
+			Value: []byte(`"foo"`),
+		}
+		assert.Equal(t, expected, clearEvent(<-ch))
+		close(createDone)
 	}()
 	assert.Eventually(t, func() bool {
 		select {
-		case <-putDone:
+		case <-createDone:
 			return true
 		default:
 			return false
 		}
-	}, 5*time.Second, 50*time.Millisecond, "PUT timeout")
+	}, 5*time.Second, 50*time.Millisecond, "CREATE timeout")
+
+	// UPDATE key
+	go func() {
+		assert.NoError(t, pfx.Key("key1").Put("new").Do(ctx, c))
+	}()
+
+	// Wait for UPDATE event
+	updateDone := make(chan struct{})
+	go func() {
+		expected := EventT[fooType]{}
+		expected.Value = "new"
+		expected.Type = UpdateEvent
+		expected.KV = &mvccpb.KeyValue{
+			Key:   []byte("my/prefix/key1"),
+			Value: []byte(`"new"`),
+		}
+		assert.Equal(t, expected, clearEvent(<-ch))
+		close(updateDone)
+	}()
+	assert.Eventually(t, func() bool {
+		select {
+		case <-updateDone:
+			return true
+		default:
+			return false
+		}
+	}, 5*time.Second, 50*time.Millisecond, "UPDATE timeout")
 
 	// DELETE key
 	go func() {
@@ -66,14 +91,134 @@ func TestTypedPrefix_Watch(t *testing.T) {
 	// Wait for DELETE event
 	deleteDone := make(chan struct{})
 	go func() {
-		assert.Equal(t, EventT[fooType]{
-			Event: &etcd.Event{
-				Type: mvccpb.DELETE,
-				Kv: &mvccpb.KeyValue{
-					Key: []byte("my/prefix/key1"),
-				},
-			},
-		}, clearEvent(<-ch))
+		expected := EventT[fooType]{}
+		expected.Type = DeleteEvent
+		expected.KV = &mvccpb.KeyValue{
+			Key: []byte("my/prefix/key1"),
+		}
+		assert.Equal(t, expected, clearEvent(<-ch))
+		close(deleteDone)
+	}()
+	assert.Eventually(t, func() bool {
+		select {
+		case <-deleteDone:
+			return true
+		default:
+			return false
+		}
+	}, 5*time.Second, 50*time.Millisecond, "DELETE timeout")
+}
+
+func TestPrefixT_GetAllAndWatch(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	c := etcdhelper.ClientForTest(t)
+	pfx := typedPrefixForTest()
+
+	// CREATE key1
+	assert.NoError(t, pfx.Key("key1").Put("foo1").Do(ctx, c))
+
+	// Create watcher
+	errHandler := func(err error) {
+		assert.FailNow(t, `unexpected watch error`, err.Error())
+	}
+	ch := pfx.GetAllAndWatch(ctx, c, errHandler)
+
+	// Wait for CREATE key1 event
+	create1Done := make(chan struct{})
+	go func() {
+		expected := EventT[fooType]{}
+		expected.Value = "foo1"
+		expected.Type = CreateEvent
+		expected.KV = &mvccpb.KeyValue{
+			Key:   []byte("my/prefix/key1"),
+			Value: []byte(`"foo1"`),
+		}
+		assert.Equal(t, expected, clearEvent(<-ch))
+		close(create1Done)
+	}()
+	assert.Eventually(t, func() bool {
+		select {
+		case <-create1Done:
+			return true
+		default:
+			return false
+		}
+	}, 5*time.Second, 50*time.Millisecond, "CREATE1 timeout")
+
+	// CREATE key2
+	go func() {
+		assert.NoError(t, pfx.Key("key2").Put("foo2").Do(ctx, c))
+	}()
+
+	// Wait for CREATE key1 event
+	create2Done := make(chan struct{})
+	go func() {
+		expected := EventT[fooType]{}
+		expected.Value = "foo2"
+		expected.Type = CreateEvent
+		expected.KV = &mvccpb.KeyValue{
+			Key:   []byte("my/prefix/key2"),
+			Value: []byte(`"foo2"`),
+		}
+		assert.Equal(t, expected, clearEvent(<-ch))
+		close(create2Done)
+	}()
+	assert.Eventually(t, func() bool {
+		select {
+		case <-create2Done:
+			return true
+		default:
+			return false
+		}
+	}, 5*time.Second, 50*time.Millisecond, "CREATE2 timeout")
+
+	// UPDATE key
+	go func() {
+		assert.NoError(t, pfx.Key("key2").Put("new").Do(ctx, c))
+	}()
+
+	// Wait for UPDATE event
+	updateDone := make(chan struct{})
+	go func() {
+		expected := EventT[fooType]{}
+		expected.Value = "new"
+		expected.Type = UpdateEvent
+		expected.KV = &mvccpb.KeyValue{
+			Key:   []byte("my/prefix/key2"),
+			Value: []byte(`"new"`),
+		}
+		assert.Equal(t, expected, clearEvent(<-ch))
+		close(updateDone)
+	}()
+	assert.Eventually(t, func() bool {
+		select {
+		case <-updateDone:
+			return true
+		default:
+			return false
+		}
+	}, 5*time.Second, 50*time.Millisecond, "UPDATE timeout")
+
+	// DELETE key
+	go func() {
+		ok, err := pfx.Key("key1").Delete().Do(ctx, c)
+		assert.NoError(t, err)
+		assert.True(t, ok)
+	}()
+
+	// Wait for DELETE event
+	deleteDone := make(chan struct{})
+	go func() {
+		expected := EventT[fooType]{}
+		expected.Type = DeleteEvent
+		expected.KV = &mvccpb.KeyValue{
+			Key: []byte("my/prefix/key1"),
+		}
+		assert.Equal(t, expected, clearEvent(<-ch))
 		close(deleteDone)
 	}()
 	assert.Eventually(t, func() bool {
@@ -88,10 +233,9 @@ func TestTypedPrefix_Watch(t *testing.T) {
 
 func clearEvent(event EventT[fooType]) EventT[fooType] {
 	event.Header = nil
-	event.PrevKv = nil
-	event.Kv.CreateRevision = 0
-	event.Kv.ModRevision = 0
-	event.Kv.Version = 0
-	event.Kv.Lease = 0
+	event.KV.CreateRevision = 0
+	event.KV.ModRevision = 0
+	event.KV.Version = 0
+	event.KV.Lease = 0
 	return event
 }
