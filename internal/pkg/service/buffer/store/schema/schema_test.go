@@ -100,6 +100,26 @@ func TestSchema(t *testing.T) {
 			}).Key(),
 			"secret/export/token/123/my-receiver/my-export",
 		},
+		{
+			s.Runtime().Prefix(),
+			"runtime/",
+		},
+		{
+			s.Runtime().Workers().Prefix(),
+			"runtime/workers/",
+		},
+		{
+			s.Runtime().Workers().Active().Prefix(),
+			"runtime/workers/active/",
+		},
+		{
+			s.Runtime().Workers().Active().IDs().Prefix(),
+			"runtime/workers/active/ids/",
+		},
+		{
+			s.Runtime().Workers().Active().IDs().Node("my-node").Key(),
+			"runtime/workers/active/ids/my-node",
+		},
 	}
 
 	for i, c := range cases {
