@@ -172,17 +172,17 @@ func clearEvent(event EventT[fooType]) EventT[fooType] {
 
 func assertDone(t *testing.T, blockingOp func(), msgAndArgs ...any) {
 	t.Helper()
+
 	doneCh := make(chan struct{})
 	go func() {
 		blockingOp()
 		close(doneCh)
 	}()
-	assert.Eventually(t, func() bool {
-		select {
-		case <-doneCh:
-			return true
-		default:
-			return false
-		}
-	}, 5*time.Second, 50*time.Millisecond, msgAndArgs...)
+
+	select {
+	case <-doneCh:
+		// Ok
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "asertDone timeout", msgAndArgs...)
+	}
 }
