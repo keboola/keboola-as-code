@@ -43,6 +43,11 @@ func (v PrefixT[T]) Watch(ctx context.Context, client *etcd.Client, handleErr fu
 					return
 				}
 
+				if err := resp.Err(); err != nil {
+					handleErr(err)
+					continue
+				}
+
 				for _, event := range resp.Events {
 					typedEvent := EventT[T]{
 						Event:  event,
