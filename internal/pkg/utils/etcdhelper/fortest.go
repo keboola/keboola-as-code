@@ -22,6 +22,7 @@ import (
 type testOrBenchmark interface {
 	Cleanup(f func())
 	Skipf(format string, args ...any)
+	Logf(format string, args ...any)
 	Fatalf(format string, args ...any)
 }
 
@@ -110,6 +111,9 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespac
 		_, err := originalKV.Delete(ctx, namespaceStr, etcd.WithPrefix())
 		if err != nil {
 			t.Fatalf(`cannot clear etcd namespace "%s" after test: %s`, namespaceStr, err)
+		}
+		if err := etcdClient.Close(); err != nil {
+			t.Fatalf(`cannot close etcd connection after test: %s`, err)
 		}
 	})
 
