@@ -60,7 +60,7 @@ func start(host, port string, debug, debugHTTP bool, logger log.Logger, envs *en
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	proc, err := servicectx.New(ctx, cancel, logger)
+	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger))
 	if err != nil {
 		return err
 	}

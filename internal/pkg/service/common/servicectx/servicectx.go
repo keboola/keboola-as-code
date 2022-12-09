@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -34,6 +33,7 @@ type OnShutdownFn func()
 
 type config struct {
 	uniqueID string
+	logger   log.Logger
 }
 
 // WithUniqueID sets unique ID of the service process.
@@ -44,11 +44,22 @@ func WithUniqueID(v string) Option {
 	}
 }
 
-func New(ctx context.Context, cancel context.CancelFunc, logger log.Logger, opts ...Option) (*Process, error) {
+func WithLogger(v log.Logger) Option {
+	return func(c *config) {
+		c.logger = v
+	}
+}
+
+func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Process, error) {
 	// Apply options
 	c := config{}
 	for _, o := range opts {
 		o(&c)
+	}
+
+	// Default logger
+	if c.logger == nil {
+		c.logger = log.NewNopLogger()
 	}
 
 	// Generate uniqueID if not set
@@ -81,7 +92,7 @@ func New(ctx context.Context, cancel context.CancelFunc, logger log.Logger, opts
 	proc := &Process{
 		ctx:      ctx,
 		cancel:   cancel,
-		logger:   logger,
+		logger:   c.logger,
 		wg:       &sync.WaitGroup{},
 		errCh:    errCh,
 		uniqueID: c.uniqueID,
@@ -101,15 +112,15 @@ func New(ctx context.Context, cancel context.CancelFunc, logger log.Logger, opts
 		}
 	})
 
-	logger.Infof(`process unique id "%s"`, proc.UniqueID())
+	proc.logger.Infof(`process unique id "%s"`, proc.UniqueID())
 	return proc, nil
 }
 
-func NewForTest(t *testing.T) *Process {
+func NewForTest(t *testing.T, ctx context.Context, opts ...Option) *Process {
 	t.Helper()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	proc, err := New(ctx, cancel, log.NewNopLogger(), WithUniqueID("test_"+t.Name()+"_"+idgenerator.Random(5)))
+	ctx, cancel := context.WithCancel(ctx)
+	proc, err := New(ctx, cancel, opts...)
 	if err != nil {
 		t.Fatal(err)
 		return nil

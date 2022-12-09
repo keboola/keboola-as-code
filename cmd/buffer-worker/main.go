@@ -54,7 +54,7 @@ func start(debug, debugHTTP bool, logger log.Logger, envs *env.Map) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	proc, err := servicectx.New(ctx, cancel, logger)
+	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger))
 	if err != nil {
 		return err
 	}

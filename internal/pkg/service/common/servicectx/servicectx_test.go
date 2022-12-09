@@ -17,7 +17,7 @@ func TestProcess_Add(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := log.NewDebugLogger()
-	proc, err := New(ctx, cancel, logger, WithUniqueID("<id>"))
+	proc, err := New(ctx, cancel, WithLogger(logger), WithUniqueID("<id>"))
 	assert.NoError(t, err)
 
 	op1 := &sync.WaitGroup{}
@@ -80,7 +80,7 @@ func TestProcess_Shutdown(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := log.NewDebugLogger()
-	proc, err := New(ctx, cancel, logger, WithUniqueID("<id>"))
+	proc, err := New(ctx, cancel, WithLogger(logger), WithUniqueID("<id>"))
 	assert.NoError(t, err)
 
 	op1 := &sync.WaitGroup{}
