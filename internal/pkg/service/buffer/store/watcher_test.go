@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
@@ -336,4 +338,56 @@ func TestStore_Watcher_HandleExportEvent(t *testing.T) {
 	mappings, found := w.mappings.Load(receiver.ReceiverKey)
 	assert.True(t, found)
 	assert.Equal(t, map[key.ExportKey]*model.Mapping{expKey2: &mapping2}, mappings)
+}
+
+func TestStore_Watcher_HandleReceiverEvent(t *testing.T) {
+	t.Parallel()
+
+	// Init watcher
+	store := newStoreForTest(t)
+	now, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
+	now = now.UTC()
+	store.clock.(*clock.Mock).Set(now)
+	w, err := NewWatcher(store)
+	assert.NoError(t, err)
+
+	// Create receiver
+	w.handleReceiverEvent(etcdop.EventT[model.ReceiverBase]{
+		Type: etcdop.CreateEvent,
+		KeyValueT: op.KeyValueT[model.ReceiverBase]{
+			KV: &op.KeyValue{
+				Key: []byte("config/receiver/100/r1"),
+			},
+			Value: model.ReceiverBase{Secret: "sec1"},
+		},
+	})
+	secret, found := w.secrets.Load(receiver.ReceiverKey)
+	assert.True(t, found)
+	assert.Equal(t, "sec1", secret)
+
+	// Update receiver
+	w.handleReceiverEvent(etcdop.EventT[model.ReceiverBase]{
+		Type: etcdop.UpdateEvent,
+		KeyValueT: op.KeyValueT[model.ReceiverBase]{
+			KV: &op.KeyValue{
+				Key: []byte("config/receiver/100/r1"),
+			},
+			Value: model.ReceiverBase{Secret: "sec2"},
+		},
+	})
+	secret, found = w.secrets.Load(receiver.ReceiverKey)
+	assert.True(t, found)
+	assert.Equal(t, "sec2", secret)
+
+	// Delete receiver
+	w.handleReceiverEvent(etcdop.EventT[model.ReceiverBase]{
+		Type: etcdop.DeleteEvent,
+		KeyValueT: op.KeyValueT[model.ReceiverBase]{
+			KV: &op.KeyValue{
+				Key: []byte("config/receiver/100/r1"),
+			},
+		},
+	})
+	_, found = w.secrets.Load(receiver.ReceiverKey)
+	assert.False(t, found)
 }

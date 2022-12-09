@@ -66,6 +66,7 @@ func (w *Watcher) Watch(ctx context.Context, logger log.Logger, client *etcd.Cli
 		slicesCh := w.store.schema.Slices().Watch(ctx, client, handleErrors)
 		mappingsCh := w.store.schema.Configs().Mappings().Watch(ctx, client, handleErrors)
 		exportsCh := w.store.schema.Configs().Exports().Watch(ctx, client, handleErrors)
+		receiversCh := w.store.schema.Configs().Receivers().Watch(ctx, client, handleErrors)
 		for {
 			select {
 			case <-ctx.Done():
@@ -76,6 +77,8 @@ func (w *Watcher) Watch(ctx context.Context, logger log.Logger, client *etcd.Cli
 				w.handleMappingEvent(mapping)
 			case export := <-exportsCh:
 				w.handleExportEvent(export)
+			case receiver := <-receiversCh:
+				w.handleReceiverEvent(receiver)
 			}
 		}
 	}()
@@ -178,5 +181,31 @@ func (w *Watcher) handleExportEvent(event etcdop.EventT[model.ExportBase]) {
 	case etcdop.DeleteEvent:
 		w.slicesForExports.Delete(exportKey)
 		w.removeExportMapping(receiverKey, exportKey)
+	}
+}
+
+
+// handleReceiverEvent takes care of events on receiver keys
+// On Create add secret for the receiver to the store.
+// On Update replace secret for the receiver in the store (could be changed).
+// On Delete remove the secret for the receiver from the store.
+func (w *Watcher) handleReceiverEvent(event etcdop.EventT[model.ReceiverBase]) {
+	keyParts := strings.Split(event.Key(), "/")
+	if len(keyParts) != 4 {
+		panic(fmt.Sprintf("invalid key in receiver prefix: %s", event.Key()))
+	}
+	projectID, err := strconv.Atoi(keyParts[2])
+	if err != nil {
+		panic(fmt.Sprintf("invalid project ID in receiver prefix: %s", event.Key()))
+	}
+	receiverKey := key.ReceiverKey{
+		ProjectID:  projectID,
+		ReceiverID: keyParts[3],
+	}
+	switch event.Type {
+	case etcdop.CreateEvent, etcdop.UpdateEvent:
+		w.secrets.Store(receiverKey, event.Value.Secret)
+	case etcdop.DeleteEvent:
+		w.secrets.Delete(receiverKey)
 	}
 }
