@@ -15,6 +15,10 @@ type KeyValueT[T any] struct {
 	KV    *KeyValue
 }
 
+func (kv KeyValueT[T]) Key() string {
+	return string(kv.KV.Key)
+}
+
 func (kvs KeyValuesT[T]) Values() (out []T) {
 	out = make([]T, len(kvs))
 	for i, kv := range kvs {
