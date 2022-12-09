@@ -3,14 +3,23 @@ package etcdop
 import (
 	"context"
 
+	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcd "go.etcd.io/etcd/client/v3"
 )
 
 type EventT[T any] struct {
-	Type  mvccpb.Event_EventType
-	Key   string
-	Value *T
+	*etcd.Event
+	Header *etcdserverpb.ResponseHeader
+	Value  *T
+}
+
+func (e *EventT[T]) Rev() int64 {
+	return e.Header.Revision
+}
+
+func (e *EventT[T]) Key() string {
+	return string(e.Kv.Key)
 }
 
 func (v Prefix) Watch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) etcd.WatchChan {
@@ -36,9 +45,10 @@ func (v PrefixT[T]) Watch(ctx context.Context, client *etcd.Client, handleErr fu
 
 				for _, event := range resp.Events {
 					typedEvent := EventT[T]{
-						Type: event.Type,
-						Key:  string(event.Kv.Key),
+						Event:  event,
+						Header: &resp.Header,
 					}
+
 					// We care for the value only in PUT operation
 					if event.Type == mvccpb.PUT {
 						target := new(T)
