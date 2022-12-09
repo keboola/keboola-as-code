@@ -20,15 +20,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
 	bufferStore "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
+	bufferSchema "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 // mocked dependencies container implements Mocked interface.
@@ -44,6 +45,7 @@ type mocked struct {
 	proc                *servicectx.Process
 	requestHeader       http.Header
 	etcdClient          *etcd.Client
+	bufferSchema        *bufferSchema.Schema
 	bufferStore         *bufferStore.Store
 }
 
@@ -278,6 +280,13 @@ func (v *mocked) EtcdClient() *etcd.Client {
 		v.etcdClient = etcdhelper.ClientForTest(v.t)
 	}
 	return v.etcdClient
+}
+
+func (v *mocked) Schema() *bufferSchema.Schema {
+	if v.bufferSchema == nil {
+		v.bufferSchema = bufferSchema.New(validator.New().Validate)
+	}
+	return v.bufferSchema
 }
 
 func (v *mocked) Store() *bufferStore.Store {

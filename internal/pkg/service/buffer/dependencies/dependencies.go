@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
@@ -17,12 +18,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 type ForService interface {
 	dependencies.Base
 	dependencies.Public
 	Process() *servicectx.Process
+	Schema() *schema.Schema
 	Store() *store.Store
 }
 
@@ -96,11 +99,15 @@ func NewServiceDeps(
 		}
 	})
 
+	schemaInst := schema.New(validator.New().Validate)
+	storeInst := store.New(logger, etcdClient, tracer, schemaInst)
+
 	return &forService{
 		Base:   baseDeps,
 		Public: publicDeps,
 		proc:   proc,
-		store:  store.New(logger, etcdClient, tracer),
+		schema: schemaInst,
+		store:  storeInst,
 	}, nil
 }
 
@@ -108,12 +115,17 @@ func NewServiceDeps(
 type forService struct {
 	dependencies.Base
 	dependencies.Public
-	proc  *servicectx.Process
-	store *store.Store
+	proc   *servicectx.Process
+	schema *schema.Schema
+	store  *store.Store
 }
 
 func (v *forService) Process() *servicectx.Process {
 	return v.proc
+}
+
+func (v *forService) Schema() *schema.Schema {
+	return v.schema
 }
 
 func (v *forService) Store() *store.Store {

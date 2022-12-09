@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 type Store struct {
@@ -18,11 +17,11 @@ type Store struct {
 	schema *schema.Schema
 }
 
-func New(logger log.Logger, etcdClient *etcd.Client, tracer trace.Tracer) *Store {
+func New(logger log.Logger, etcdClient *etcd.Client, tracer trace.Tracer, schema *schema.Schema) *Store {
 	return &Store{
 		logger: logger,
 		client: etcdClient,
 		tracer: tracer,
-		schema: schema.New(validator.New().Validate),
+		schema: schema,
 	}
 }
