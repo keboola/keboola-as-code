@@ -63,10 +63,10 @@ func (w *Watcher) Watch(ctx context.Context, logger log.Logger, client *etcd.Cli
 		logger.Error(err)
 	}
 	go func() {
-		slicesCh := w.store.schema.Slices().Watch(ctx, client, handleErrors)
-		mappingsCh := w.store.schema.Configs().Mappings().Watch(ctx, client, handleErrors)
-		exportsCh := w.store.schema.Configs().Exports().Watch(ctx, client, handleErrors)
-		receiversCh := w.store.schema.Configs().Receivers().Watch(ctx, client, handleErrors)
+		slicesCh := w.store.schema.Slices().GetAllAndWatch(ctx, client, handleErrors)
+		mappingsCh := w.store.schema.Configs().Mappings().GetAllAndWatch(ctx, client, handleErrors)
+		exportsCh := w.store.schema.Configs().Exports().GetAllAndWatch(ctx, client, handleErrors)
+		receiversCh := w.store.schema.Configs().Receivers().GetAllAndWatch(ctx, client, handleErrors)
 		for {
 			select {
 			case <-ctx.Done():
@@ -183,7 +183,6 @@ func (w *Watcher) handleExportEvent(event etcdop.EventT[model.ExportBase]) {
 		w.removeExportMapping(receiverKey, exportKey)
 	}
 }
-
 
 // handleReceiverEvent takes care of events on receiver keys
 // On Create add secret for the receiver to the store.

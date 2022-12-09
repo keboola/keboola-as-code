@@ -391,3 +391,89 @@ func TestStore_Watcher_HandleReceiverEvent(t *testing.T) {
 	_, found = w.secrets.Load(receiver.ReceiverKey)
 	assert.False(t, found)
 }
+
+func TestStore_Watcher_Watch(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := newStoreForTest(t)
+	export := receiver.Exports[0]
+
+	// Create receiver
+	_, err := store.createReceiverBaseOp(ctx, receiver.ReceiverBase).Do(ctx, store.client)
+	assert.NoError(t, err)
+	// Create export
+	_, err = store.createExportBaseOp(ctx, export.ExportBase).Do(ctx, store.client)
+	assert.NoError(t, err)
+	// Create mapping
+	_, err = store.createMappingOp(ctx, export.Mapping).Do(ctx, store.client)
+	assert.NoError(t, err)
+
+	// Init watcher
+	w, err := NewWatcher(store)
+	assert.NoError(t, err)
+	w.Watch(ctx, log.NewNopLogger(), store.client)
+	time.Sleep(2 * time.Second)
+
+	// Check that the receiver, export and mapping events were created from the existing data
+	secret, found := w.secrets.Load(receiver.ReceiverKey)
+	assert.True(t, found)
+	assert.Equal(t, receiver.Secret, secret)
+	mappings, found := w.mappings.Load(export.ReceiverKey)
+	assert.True(t, found)
+	assert.Equal(t, map[key.ExportKey]*model.Mapping{export.ExportKey: &export.Mapping}, mappings)
+
+	// Check slice watcher - add slice
+	fileID, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
+	fileID = fileID.UTC()
+	sliceID := fileID.Add(time.Hour)
+	slice := model.Slice{
+		SliceKey: key.SliceKey{
+			FileKey: key.FileKey{
+				ExportKey: export.ExportKey,
+				FileID:    fileID,
+			},
+			SliceID: sliceID,
+		},
+		SliceNumber: 1,
+	}
+	_, found = w.slicesForExports.Load(export.ExportKey)
+	assert.False(t, found)
+	_, err = store.createSliceOp(ctx, slice).Do(ctx, store.client)
+	assert.NoError(t, err)
+	time.Sleep(2 * time.Second)
+	res, found := w.slicesForExports.Load(export.ExportKey)
+	assert.True(t, found)
+	assert.Equal(t, sliceID, res)
+
+	// Check mapping watcher - add mapping
+	newRecKey := key.ReceiverKey{ProjectID: 100, ReceiverID: "r2"}
+	newExpKey := key.ExportKey{ReceiverKey: newRecKey, ExportID: "e2"}
+	newMapping := export.Mapping
+	newMapping.MappingKey = key.MappingKey{ExportKey: newExpKey, RevisionID: 1}
+	_, err = store.createMappingOp(ctx, newMapping).Do(ctx, store.client)
+	assert.NoError(t, err)
+	time.Sleep(2 * time.Second)
+	mappings, found = w.mappings.Load(newRecKey)
+	assert.True(t, found)
+	assert.Equal(t, map[key.ExportKey]*model.Mapping{newExpKey: &newMapping}, mappings)
+
+	// Check export watcher - delete export
+	_, err = store.deleteExportBaseOp(ctx, export.ExportKey).Do(ctx, store.client)
+	assert.NoError(t, err)
+	time.Sleep(2 * time.Second)
+	_, found = w.slicesForExports.Load(export.ExportKey)
+	assert.False(t, found)
+	mappings, found = w.mappings.Load(receiver.ReceiverKey)
+	assert.True(t, found)
+	assert.Equal(t, map[key.ExportKey]*model.Mapping{}, mappings)
+
+	// Check receiver watcher - delete receiver
+	_, found = w.secrets.Load(receiver.ReceiverKey)
+	assert.True(t, found)
+	_, err = store.deleteReceiverBaseOp(ctx, receiver.ReceiverKey).Do(ctx, store.client)
+	assert.NoError(t, err)
+	time.Sleep(2 * time.Second)
+	_, found = w.secrets.Load(receiver.ReceiverKey)
+	assert.False(t, found)
+}
