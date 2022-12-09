@@ -31,6 +31,8 @@ type Option func(c *config)
 
 type OnShutdownFn func()
 
+type ShutdownFn func(error)
+
 type config struct {
 	uniqueID string
 	logger   log.Logger
@@ -79,7 +81,7 @@ func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Proce
 
 	// Create channel used by both the signal handler and service goroutines
 	// to notify the main goroutine when to stop the server.
-	errCh := make(chan error)
+	errCh := make(chan error, 1)
 
 	// Setup interrupt handler,
 	// so SIGINT and SIGTERM signals cause the services to stop gracefully.
@@ -100,11 +102,8 @@ func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Proce
 	}
 
 	// Register onShutdown operation
-	proc.Add(func(ctx context.Context, errCh chan<- error) {
+	proc.Add(func(ctx context.Context, _ ShutdownFn) {
 		<-ctx.Done()
-		proc.lock.Lock()
-		proc.terminating = true
-		proc.lock.Unlock()
 
 		// Iterate callbacks in reverse order, LIFO, see the OnShutdown method
 		for i := len(proc.onShutdown) - 1; i >= 0; i-- {
@@ -141,14 +140,28 @@ func (v *Process) Ctx() context.Context {
 
 // Shutdown triggers termination of the Process.
 func (v *Process) Shutdown(err error) {
-	go func() {
-		v.errCh <- err
-	}()
+	v.lock.Lock()
+	if v.terminating {
+		v.lock.Unlock()
+		return
+	}
+	v.terminating = true
+	v.lock.Unlock()
+
+	v.errCh <- err
+	close(v.errCh)
 }
 
 func (v *Process) WaitForShutdown() {
-	// Wait for signal.
-	v.logger.Infof("exiting (%v)", <-v.errCh)
+	// Wait for signal
+	err, ok := <-v.errCh
+	if !ok {
+		// Channel is closed, the process is already terminating, wait for completion
+		v.wg.Wait()
+		return
+	}
+
+	v.logger.Infof("exiting (%v)", err)
 
 	// Send cancellation signal to the goroutines.
 	v.cancel()
@@ -168,11 +181,11 @@ func (v *Process) UniqueID() string {
 // The Process is graceful terminated when all operations are completed.
 // The ctx parameter can be used to wait for the service termination.
 // The errCh parameter can be used to stop the service with an error.
-func (v *Process) Add(operation func(ctx context.Context, errCh chan<- error)) {
+func (v *Process) Add(operation func(context.Context, ShutdownFn)) {
 	v.wg.Add(1)
 	go func() {
 		defer v.wg.Done()
-		operation(v.ctx, v.errCh)
+		operation(v.ctx, v.Shutdown)
 	}()
 }
 
