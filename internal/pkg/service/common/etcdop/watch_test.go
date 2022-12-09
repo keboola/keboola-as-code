@@ -33,8 +33,7 @@ func TestPrefixT_Watch(t *testing.T) {
 	}()
 
 	// Wait for CREATE event
-	createDone := make(chan struct{})
-	go func() {
+	assertDone(t, func() {
 		expected := EventT[fooType]{}
 		expected.Value = "foo"
 		expected.Type = CreateEvent
@@ -43,16 +42,7 @@ func TestPrefixT_Watch(t *testing.T) {
 			Value: []byte(`"foo"`),
 		}
 		assert.Equal(t, expected, clearEvent(<-ch))
-		close(createDone)
-	}()
-	assert.Eventually(t, func() bool {
-		select {
-		case <-createDone:
-			return true
-		default:
-			return false
-		}
-	}, 5*time.Second, 50*time.Millisecond, "CREATE timeout")
+	}, "CREATE timeout")
 
 	// UPDATE key
 	go func() {
@@ -60,8 +50,7 @@ func TestPrefixT_Watch(t *testing.T) {
 	}()
 
 	// Wait for UPDATE event
-	updateDone := make(chan struct{})
-	go func() {
+	assertDone(t, func() {
 		expected := EventT[fooType]{}
 		expected.Value = "new"
 		expected.Type = UpdateEvent
@@ -70,16 +59,7 @@ func TestPrefixT_Watch(t *testing.T) {
 			Value: []byte(`"new"`),
 		}
 		assert.Equal(t, expected, clearEvent(<-ch))
-		close(updateDone)
-	}()
-	assert.Eventually(t, func() bool {
-		select {
-		case <-updateDone:
-			return true
-		default:
-			return false
-		}
-	}, 5*time.Second, 50*time.Millisecond, "UPDATE timeout")
+	}, "UPDATE timeout")
 
 	// DELETE key
 	go func() {
@@ -89,24 +69,14 @@ func TestPrefixT_Watch(t *testing.T) {
 	}()
 
 	// Wait for DELETE event
-	deleteDone := make(chan struct{})
-	go func() {
+	assertDone(t, func() {
 		expected := EventT[fooType]{}
 		expected.Type = DeleteEvent
 		expected.KV = &mvccpb.KeyValue{
 			Key: []byte("my/prefix/key1"),
 		}
 		assert.Equal(t, expected, clearEvent(<-ch))
-		close(deleteDone)
-	}()
-	assert.Eventually(t, func() bool {
-		select {
-		case <-deleteDone:
-			return true
-		default:
-			return false
-		}
-	}, 5*time.Second, 50*time.Millisecond, "DELETE timeout")
+	}, "DELETE timeout")
 }
 
 func TestPrefixT_GetAllAndWatch(t *testing.T) {
@@ -128,8 +98,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	ch := pfx.GetAllAndWatch(ctx, c, errHandler)
 
 	// Wait for CREATE key1 event
-	create1Done := make(chan struct{})
-	go func() {
+	assertDone(t, func() {
 		expected := EventT[fooType]{}
 		expected.Value = "foo1"
 		expected.Type = CreateEvent
@@ -138,16 +107,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 			Value: []byte(`"foo1"`),
 		}
 		assert.Equal(t, expected, clearEvent(<-ch))
-		close(create1Done)
-	}()
-	assert.Eventually(t, func() bool {
-		select {
-		case <-create1Done:
-			return true
-		default:
-			return false
-		}
-	}, 5*time.Second, 50*time.Millisecond, "CREATE1 timeout")
+	}, "CREATE1 timeout")
 
 	// CREATE key2
 	go func() {
@@ -155,8 +115,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	}()
 
 	// Wait for CREATE key1 event
-	create2Done := make(chan struct{})
-	go func() {
+	assertDone(t, func() {
 		expected := EventT[fooType]{}
 		expected.Value = "foo2"
 		expected.Type = CreateEvent
@@ -165,16 +124,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 			Value: []byte(`"foo2"`),
 		}
 		assert.Equal(t, expected, clearEvent(<-ch))
-		close(create2Done)
-	}()
-	assert.Eventually(t, func() bool {
-		select {
-		case <-create2Done:
-			return true
-		default:
-			return false
-		}
-	}, 5*time.Second, 50*time.Millisecond, "CREATE2 timeout")
+	}, "CREATE2 timeout")
 
 	// UPDATE key
 	go func() {
@@ -182,8 +132,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	}()
 
 	// Wait for UPDATE event
-	updateDone := make(chan struct{})
-	go func() {
+	assertDone(t, func() {
 		expected := EventT[fooType]{}
 		expected.Value = "new"
 		expected.Type = UpdateEvent
@@ -192,16 +141,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 			Value: []byte(`"new"`),
 		}
 		assert.Equal(t, expected, clearEvent(<-ch))
-		close(updateDone)
-	}()
-	assert.Eventually(t, func() bool {
-		select {
-		case <-updateDone:
-			return true
-		default:
-			return false
-		}
-	}, 5*time.Second, 50*time.Millisecond, "UPDATE timeout")
+	}, "UPDATE timeout")
 
 	// DELETE key
 	go func() {
@@ -211,24 +151,14 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	}()
 
 	// Wait for DELETE event
-	deleteDone := make(chan struct{})
-	go func() {
+	assertDone(t, func() {
 		expected := EventT[fooType]{}
 		expected.Type = DeleteEvent
 		expected.KV = &mvccpb.KeyValue{
 			Key: []byte("my/prefix/key1"),
 		}
 		assert.Equal(t, expected, clearEvent(<-ch))
-		close(deleteDone)
-	}()
-	assert.Eventually(t, func() bool {
-		select {
-		case <-deleteDone:
-			return true
-		default:
-			return false
-		}
-	}, 5*time.Second, 50*time.Millisecond, "DELETE timeout")
+	}, "DELETE timeout")
 }
 
 func clearEvent(event EventT[fooType]) EventT[fooType] {
@@ -238,4 +168,21 @@ func clearEvent(event EventT[fooType]) EventT[fooType] {
 	event.KV.Version = 0
 	event.KV.Lease = 0
 	return event
+}
+
+func assertDone(t *testing.T, blockingOp func(), msgAndArgs ...any) {
+	t.Helper()
+	doneCh := make(chan struct{})
+	go func() {
+		blockingOp()
+		close(doneCh)
+	}()
+	assert.Eventually(t, func() bool {
+		select {
+		case <-doneCh:
+			return true
+		default:
+			return false
+		}
+	}, 5*time.Second, 50*time.Millisecond, msgAndArgs...)
 }
