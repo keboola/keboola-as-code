@@ -35,9 +35,8 @@ func TestTypedPrefix_Watch(t *testing.T) {
 	// Wait for PUT event
 	putDone := make(chan struct{})
 	go func() {
-		fooVal := fooType("foo")
 		assert.Equal(t, EventT[fooType]{
-			Value: &fooVal,
+			Value: "foo",
 			Event: &etcd.Event{
 				Type: mvccpb.PUT,
 				Kv: &mvccpb.KeyValue{

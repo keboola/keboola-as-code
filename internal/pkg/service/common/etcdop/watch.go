@@ -11,7 +11,7 @@ import (
 type EventT[T any] struct {
 	*etcd.Event
 	Header *etcdserverpb.ResponseHeader
-	Value  *T
+	Value  T
 }
 
 func (e *EventT[T]) Rev() int64 {
@@ -49,10 +49,7 @@ func (v PrefixT[T]) Watch(ctx context.Context, client *etcd.Client, handleErr fu
 				}
 
 				for _, event := range resp.Events {
-					typedEvent := EventT[T]{
-						Event:  event,
-						Header: &resp.Header,
-					}
+					typedEvent := EventT[T]{Event: event, Header: &resp.Header}
 
 					// We care for the value only in PUT operation
 					if event.Type == mvccpb.PUT {
@@ -61,7 +58,7 @@ func (v PrefixT[T]) Watch(ctx context.Context, client *etcd.Client, handleErr fu
 							handleErr(err)
 							continue
 						}
-						typedEvent.Value = target
+						typedEvent.Value = *target
 					}
 					typedCh <- typedEvent
 				}
