@@ -29,7 +29,7 @@ func (e *EventT[T]) Rev() int64 {
 	return e.Header.Revision
 }
 
-func (v Prefix) Watch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) etcd.WatchChan {
+func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) etcd.WatchChan {
 	opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
 	return client.Watch(ctx, v.Prefix(), opts...)
 }
