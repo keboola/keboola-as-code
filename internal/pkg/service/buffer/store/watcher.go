@@ -64,12 +64,15 @@ func (w *Watcher) Watch(ctx context.Context, logger log.Logger, client *etcd.Cli
 	}
 	go func() {
 		slicesCh := w.store.schema.Slices().Watch(ctx, client, handleErrors)
+		mappingsCh := w.store.schema.Configs().Mappings().Watch(ctx, client, handleErrors)
 		for {
 			select {
 			case <-ctx.Done():
 				break
 			case slice := <-slicesCh:
 				w.handleSliceEvent(slice)
+			case mapping := <-mappingsCh:
+				w.handleMappingEvent(mapping)
 			}
 		}
 	}()
@@ -117,5 +120,32 @@ func (w *Watcher) handleSliceEvent(event etcdop.EventT[model.Slice]) {
 		if found && sliceID == resSliceID {
 			w.slicesForExports.Delete(exportKey)
 		}
+	}
+}
+
+// handleMappingEvent takes care of events on mapping keys
+// On Create store the new mapping (a previous mapping revision will be rewritten).
+// On Update do nothing (mappings are updated by adding new revisions).
+// On Delete do nothing (mappings are updated by adding new revisions).
+func (w *Watcher) handleMappingEvent(event etcdop.EventT[model.Mapping]) {
+	keyParts := strings.Split(event.Key(), "/")
+	if len(keyParts) != 7 {
+		panic(fmt.Sprintf("invalid key in mapping prefix: %s", event.Key()))
+	}
+	projectID, err := strconv.Atoi(keyParts[3])
+	if err != nil {
+		panic(fmt.Sprintf("invalid project ID in mapping prefix: %s", event.Key()))
+	}
+	receiverKey := key.ReceiverKey{
+		ProjectID:  projectID,
+		ReceiverID: keyParts[4],
+	}
+	exportKey := key.ExportKey{
+		ReceiverKey: receiverKey,
+		ExportID:    keyParts[5],
+	}
+	switch event.Type {
+	case etcdop.CreateEvent:
+		w.addExportMapping(receiverKey, exportKey, &event.Value)
 	}
 }

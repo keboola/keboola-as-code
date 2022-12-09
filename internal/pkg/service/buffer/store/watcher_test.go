@@ -239,3 +239,65 @@ func TestStore_Watcher_HandleSliceEvent(t *testing.T) {
 	_, found = w.slicesForExports.Load(expKey)
 	assert.False(t, found)
 }
+
+func TestStore_Watcher_HandleMappingEvent(t *testing.T) {
+	t.Parallel()
+
+	// Init watcher
+	store := newStoreForTest(t)
+	now, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
+	now = now.UTC()
+	store.clock.(*clock.Mock).Set(now)
+	w, err := NewWatcher(store)
+	assert.NoError(t, err)
+	expKey := receiver.Exports[0].ExportKey
+	mapping := receiver.Exports[0].Mapping
+
+	// Create mapping
+	w.handleMappingEvent(etcdop.EventT[model.Mapping]{
+		Type: etcdop.CreateEvent,
+		KeyValueT: op.KeyValueT[model.Mapping]{
+			Value: mapping,
+			KV: &op.KeyValue{
+				Key: []byte("config/mapping/revision/100/r1/e1/1"),
+			},
+		},
+	})
+	mappings, found := w.mappings.Load(receiver.ReceiverKey)
+	assert.True(t, found)
+	assert.Equal(t, map[key.ExportKey]*model.Mapping{expKey: &mapping}, mappings)
+
+	// Create mapping for the same export - replace mapping in w.mappings
+	newMapping := receiver.Exports[0].Mapping
+	newMapping.Incremental = false
+	w.handleMappingEvent(etcdop.EventT[model.Mapping]{
+		Type: etcdop.CreateEvent,
+		KeyValueT: op.KeyValueT[model.Mapping]{
+			Value: newMapping,
+			KV: &op.KeyValue{
+				Key: []byte("config/mapping/revision/100/r1/e1/2"),
+			},
+		},
+	})
+	mappings, found = w.mappings.Load(receiver.ReceiverKey)
+	assert.True(t, found)
+	assert.Equal(t, map[key.ExportKey]*model.Mapping{expKey: &newMapping}, mappings)
+
+	// Create mapping for another export
+	newExpKey := key.ExportKey{
+		ReceiverKey: receiver.ReceiverKey,
+		ExportID:    "e2",
+	}
+	w.handleMappingEvent(etcdop.EventT[model.Mapping]{
+		Type: etcdop.CreateEvent,
+		KeyValueT: op.KeyValueT[model.Mapping]{
+			Value: mapping,
+			KV: &op.KeyValue{
+				Key: []byte("config/mapping/revision/100/r1/e2/1"),
+			},
+		},
+	})
+	mappings, found = w.mappings.Load(receiver.ReceiverKey)
+	assert.True(t, found)
+	assert.Equal(t, map[key.ExportKey]*model.Mapping{expKey: &newMapping, newExpKey: &mapping}, mappings)
+}
