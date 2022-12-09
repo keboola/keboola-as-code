@@ -145,7 +145,11 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 
 	// Apply options
 	for _, opt := range opts {
-		opt(&values)
+		opt(&c)
+	}
+
+	if c.logger == nil {
+		c.logger = log.NewDebugLoggerWithPrefix(c.loggerPrefix)
 	}
 
 	// Mock APIs

@@ -33,6 +33,10 @@ func (v *oneLevelEnabler) Enabled(level zapcore.Level) bool {
 // NewDebugLogger returns logs as string by String() method.
 // See also other methods of the ioutil.Writer.
 func NewDebugLogger() DebugLogger {
+	return NewDebugLoggerWithPrefix("")
+}
+
+func NewDebugLoggerWithPrefix(prefix string) DebugLogger {
 	l := &debugLogger{
 		all:         ioutil.NewBufferedWriter(),
 		debug:       ioutil.NewBufferedWriter(),
@@ -41,14 +45,18 @@ func NewDebugLogger() DebugLogger {
 		warnOrError: ioutil.NewBufferedWriter(),
 		error:       ioutil.NewBufferedWriter(),
 	}
-	l.zapLogger = loggerFromZapCore(zapcore.NewTee(
+	cores := zapcore.NewTee(
 		debugCore(l.all, DebugLevel),                            // all = debug level and higher
 		debugCore(l.debug, &oneLevelEnabler{level: DebugLevel}), // only debug msgs
 		debugCore(l.info, &oneLevelEnabler{level: InfoLevel}),   // only info msgs
 		debugCore(l.warn, &oneLevelEnabler{level: WarnLevel}),   // only warn msgs
 		debugCore(l.warnOrError, WarnLevel),                     // warn or error = warn level and higher
 		debugCore(l.error, ErrorLevel),                          // error = error level and higher
-	))
+	)
+	if prefix != "" {
+		cores = cores.With([]zapcore.Field{{Key: "prefix", String: prefix, Type: zapcore.StringType}})
+	}
+	l.zapLogger = loggerFromZapCore(cores)
 	return l
 }
 
@@ -118,7 +126,7 @@ func debugCore(writer *ioutil.Writer, level zapcore.LevelEnabler) zapcore.Core {
 		ConsoleSeparator: "  ",
 	}
 	return zapcore.NewCore(
-		zapcore.NewConsoleEncoder(encoderConfig),
+		newPrefixEncoder(zapcore.NewConsoleEncoder(encoderConfig)),
 		zapcore.Lock(zapcore.AddSync(writer)),
 		level,
 	)
