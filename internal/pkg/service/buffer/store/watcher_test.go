@@ -301,3 +301,39 @@ func TestStore_Watcher_HandleMappingEvent(t *testing.T) {
 	assert.True(t, found)
 	assert.Equal(t, map[key.ExportKey]*model.Mapping{expKey: &newMapping, newExpKey: &mapping}, mappings)
 }
+
+func TestStore_Watcher_HandleExportEvent(t *testing.T) {
+	t.Parallel()
+
+	// Init watcher
+	store := newStoreForTest(t)
+	now, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
+	now = now.UTC()
+	store.clock.(*clock.Mock).Set(now)
+	w, err := NewWatcher(store)
+	assert.NoError(t, err)
+	expKey := receiver.Exports[0].ExportKey
+	mapping := receiver.Exports[0].Mapping
+
+	// Init watcher store
+	expKey2 := key.ExportKey{ExportID: "e2", ReceiverKey: receiver.ReceiverKey}
+	mapping2 := receiver.Exports[0].Mapping
+	sliceID, _ := time.Parse(key.TimeFormat, "2006-01-03T15:04:05.000Z")
+	w.slicesForExports.Store(expKey, sliceID)
+	w.mappings.Store(receiver.ReceiverKey, map[key.ExportKey]*model.Mapping{expKey: &mapping, expKey2: &mapping2})
+
+	// Delete export
+	w.handleExportEvent(etcdop.EventT[model.ExportBase]{
+		Type: etcdop.DeleteEvent,
+		KeyValueT: op.KeyValueT[model.ExportBase]{
+			KV: &op.KeyValue{
+				Key: []byte("config/export/100/r1/e1"),
+			},
+		},
+	})
+	_, found := w.slicesForExports.Load(expKey)
+	assert.False(t, found)
+	mappings, found := w.mappings.Load(receiver.ReceiverKey)
+	assert.True(t, found)
+	assert.Equal(t, map[key.ExportKey]*model.Mapping{expKey2: &mapping2}, mappings)
+}
