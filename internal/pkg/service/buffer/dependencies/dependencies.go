@@ -5,6 +5,7 @@ import (
 	"context"
 	"time"
 
+	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -25,6 +26,7 @@ type ForService interface {
 	dependencies.Base
 	dependencies.Public
 	Process() *servicectx.Process
+	EtcdClient() *etcd.Client
 	Schema() *schema.Schema
 	Store() *store.Store
 }
@@ -96,9 +98,9 @@ func NewServiceDeps(
 	// Close client when shutting down the server
 	proc.OnShutdown(func() {
 		if err := etcdClient.Close(); err != nil {
-			logger.Warnf("cannot close connection etcd: %s", err)
+			logger.Warnf("cannot close etcd connection: %s", err)
 		} else {
-			logger.Info("closed connection to etcd")
+			logger.Info("closed etcd connection")
 		}
 	})
 
@@ -106,11 +108,12 @@ func NewServiceDeps(
 	storeInst := store.New(logger, etcdClient, tracer, schemaInst)
 
 	return &forService{
-		Base:   baseDeps,
-		Public: publicDeps,
-		proc:   proc,
-		schema: schemaInst,
-		store:  storeInst,
+		Base:       baseDeps,
+		Public:     publicDeps,
+		proc:       proc,
+		etcdClient: etcdClient,
+		schema:     schemaInst,
+		store:      storeInst,
 	}, nil
 }
 
@@ -118,13 +121,18 @@ func NewServiceDeps(
 type forService struct {
 	dependencies.Base
 	dependencies.Public
-	proc   *servicectx.Process
-	schema *schema.Schema
-	store  *store.Store
+	proc       *servicectx.Process
+	etcdClient *etcd.Client
+	schema     *schema.Schema
+	store      *store.Store
 }
 
 func (v *forService) Process() *servicectx.Process {
 	return v.proc
+}
+
+func (v *forService) EtcdClient() *etcd.Client {
+	return v.etcdClient
 }
 
 func (v *forService) Schema() *schema.Schema {
