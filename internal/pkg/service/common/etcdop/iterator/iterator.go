@@ -25,7 +25,7 @@ type Definition struct {
 type Iterator struct {
 	config
 	ctx          context.Context
-	client       *etcd.Client
+	client       etcd.KV
 	err          error
 	start        string         // page start prefix
 	page         int            // page number, start from 1
@@ -45,7 +45,7 @@ func newIterator(config config) Definition {
 }
 
 // Do converts iterator definition to the iterator.
-func (v Definition) Do(ctx context.Context, client *etcd.Client) *Iterator {
+func (v Definition) Do(ctx context.Context, client etcd.KV) *Iterator {
 	return &Iterator{ctx: ctx, client: client, config: v.config, start: v.config.prefix, page: 0, currentIndex: 0}
 }
 

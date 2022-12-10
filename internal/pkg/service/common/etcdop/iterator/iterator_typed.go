@@ -24,7 +24,7 @@ func NewTyped[R any](start string, serde *serde.Serde, opts ...Option) Definitio
 }
 
 // Do converts iterator definition to the iterator.
-func (v DefinitionT[T]) Do(ctx context.Context, client *etcd.Client) *IteratorT[T] {
+func (v DefinitionT[T]) Do(ctx context.Context, client etcd.KV) *IteratorT[T] {
 	out := &IteratorT[T]{Iterator: newIterator(v.config).Do(ctx, client)}
 	out.serde = v.serde
 	return out
