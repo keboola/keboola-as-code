@@ -75,7 +75,10 @@ func NewServiceDeps(
 
 	// Create etcd client
 	etcdClient, err := etcdclient.New(
-		proc.Ctx(),
+		// Use separated context.
+		// Graceful shutdown is handled by Process.OnShutdown bellow.
+		// During the shutdown it is necessary to complete some etcd operations.
+		context.Background(),
 		tracer,
 		envs.Get("BUFFER_ETCD_ENDPOINT"),
 		envs.Get("BUFFER_ETCD_NAMESPACE"),
