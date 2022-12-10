@@ -20,15 +20,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
 	bufferStore "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
+	bufferSchema "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 // mocked dependencies container implements Mocked interface.
@@ -36,18 +37,26 @@ type mocked struct {
 	*base
 	*public
 	*project
+	config              MockedConfig
 	t                   *testing.T
 	envs                *env.Map
 	options             *options.Options
-	debugLogger         log.DebugLogger
 	mockedHTTPTransport *httpmock.MockTransport
 	proc                *servicectx.Process
 	requestHeader       http.Header
 	etcdClient          *etcd.Client
+	bufferSchema        *bufferSchema.Schema
 	bufferStore         *bufferStore.Store
 }
 
-type MockedValues struct {
+type MockedConfig struct {
+	ctx          context.Context
+	loggerPrefix string
+	logger       log.DebugLogger
+	procOpts     []servicectx.Option
+
+	etcdNamespace string
+
 	services                  storageapi.Services
 	features                  storageapi.Features
 	components                storageapi.Components
@@ -61,66 +70,100 @@ type MockedValues struct {
 	schedulerAPIClient  client.Client
 }
 
-type MockedOption func(values *MockedValues)
+type MockedOption func(c *MockedConfig)
+
+func WithCtx(v context.Context) MockedOption {
+	return func(c *MockedConfig) {
+		c.ctx = v
+	}
+}
+
+func WithDebugLogger(v log.DebugLogger) MockedOption {
+	return func(c *MockedConfig) {
+		c.logger = v
+	}
+}
+
+func WithLoggerPrefix(v string) MockedOption {
+	return func(c *MockedConfig) {
+		c.loggerPrefix = v
+	}
+}
+
+func WithEtcdNamespace(v string) MockedOption {
+	return func(c *MockedConfig) {
+		c.etcdNamespace = v
+	}
+}
+
+func WithUniqueID(v string) MockedOption {
+	return WithProcessOptions(servicectx.WithUniqueID(v))
+}
+
+func WithProcessOptions(opts ...servicectx.Option) MockedOption {
+	return func(c *MockedConfig) {
+		c.procOpts = append(c.procOpts, opts...)
+	}
+}
 
 func WithTestProject(project *testproject.Project) MockedOption {
-	return func(values *MockedValues) {
-		values.storageAPIHost = project.StorageAPIHost()
-		values.storageAPIToken = *project.StorageAPIToken()
+	return func(c *MockedConfig) {
+		c.storageAPIHost = project.StorageAPIHost()
+		c.storageAPIToken = *project.StorageAPIToken()
 
-		values.useRealAPIs = true
-		values.storageAPIClient = project.StorageAPIClient()
-		values.encryptionAPIClient = project.EncryptionAPIClient()
-		values.schedulerAPIClient = project.SchedulerAPIClient()
+		c.useRealAPIs = true
+		c.storageAPIClient = project.StorageAPIClient()
+		c.encryptionAPIClient = project.EncryptionAPIClient()
+		c.schedulerAPIClient = project.SchedulerAPIClient()
 	}
 }
 
 func WithMockedServices(services storageapi.Services) MockedOption {
-	return func(values *MockedValues) {
-		values.services = services
+	return func(c *MockedConfig) {
+		c.services = services
 	}
 }
 
 func WithMockedFeatures(features storageapi.Features) MockedOption {
-	return func(values *MockedValues) {
-		values.features = features
+	return func(c *MockedConfig) {
+		c.features = features
 	}
 }
 
 func WithMockedComponents(components storageapi.Components) MockedOption {
-	return func(values *MockedValues) {
-		values.components = components
+	return func(c *MockedConfig) {
+		c.components = components
 	}
 }
 
 func WithMockedStorageAPIHost(host string) MockedOption {
-	return func(values *MockedValues) {
-		values.storageAPIHost = host
+	return func(c *MockedConfig) {
+		c.storageAPIHost = host
 	}
 }
 
 func WithMockedStorageAPIToken(token storageapi.Token) MockedOption {
-	return func(values *MockedValues) {
-		values.storageAPIToken = token
+	return func(c *MockedConfig) {
+		c.storageAPIToken = token
 	}
 }
 
 // WithMultipleTokenVerification allows the mocked token verification to be called multiple times.
 func WithMultipleTokenVerification(v bool) MockedOption {
-	return func(values *MockedValues) {
-		values.multipleTokenVerification = v
+	return func(c *MockedConfig) {
+		c.multipleTokenVerification = v
 	}
 }
 
 func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 	t.Helper()
-	ctx := context.Background()
 	envs := env.Empty()
-	logger := log.NewDebugLogger()
 
 	// Default values
-	values := MockedValues{
-		useRealAPIs: false,
+	c := MockedConfig{
+		ctx:           context.Background(),
+		etcdNamespace: etcdhelper.NamespaceForTest(),
+		useRealAPIs:   false,
 		services: storageapi.Services{
 			{ID: "encryption", URL: "https://encryption.mocked.transport.http"},
 			{ID: "scheduler", URL: "https://scheduler.mocked.transport.http"},
@@ -145,63 +188,77 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 
 	// Apply options
 	for _, opt := range opts {
-		opt(&values)
+		opt(&c)
 	}
+
+	// Default logger
+	if c.logger == nil {
+		c.logger = log.NewDebugLoggerWithPrefix(c.loggerPrefix)
+	}
+
+	// Cancel context after the test
+	var cancel context.CancelFunc
+	c.ctx, cancel = context.WithCancel(c.ctx)
+	t.Cleanup(func() {
+		cancel()
+	})
 
 	// Mock APIs
 	httpClient, mockedHTTPTransport := client.NewMockedClient()
 	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/v2/storage/", values.storageAPIHost),
+		fmt.Sprintf("https://%s/v2/storage/", c.storageAPIHost),
 		httpmock.NewJsonResponderOrPanic(200, &storageapi.IndexComponents{
-			Index: storageapi.Index{Services: values.services, Features: values.features}, Components: values.components,
+			Index: storageapi.Index{Services: c.services, Features: c.features}, Components: c.components,
 		}).Once(),
 	)
 
 	// Mocked token verification
-	verificationResponder := httpmock.NewJsonResponderOrPanic(200, values.storageAPIToken)
-	if !values.multipleTokenVerification {
+	verificationResponder := httpmock.NewJsonResponderOrPanic(200, c.storageAPIToken)
+	if !c.multipleTokenVerification {
 		verificationResponder = verificationResponder.Times(1)
 	}
 	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/v2/storage/tokens/verify", values.storageAPIHost),
+		fmt.Sprintf("https://%s/v2/storage/tokens/verify", c.storageAPIHost),
 		verificationResponder,
 	)
 
 	// Create base, public and project dependencies
-	baseDeps := newBaseDeps(envs, nil, logger, httpClient)
-	publicDeps, err := newPublicDeps(ctx, baseDeps, values.storageAPIHost)
+	baseDeps := newBaseDeps(envs, nil, c.logger, httpClient)
+	publicDeps, err := newPublicDeps(c.ctx, baseDeps, c.storageAPIHost)
 	if err != nil {
 		panic(err)
 	}
-	projectDeps, err := newProjectDeps(baseDeps, publicDeps, values.storageAPIToken)
+	projectDeps, err := newProjectDeps(baseDeps, publicDeps, c.storageAPIToken)
 	if err != nil {
 		panic(err)
 	}
 
 	// Use real APIs
-	if values.useRealAPIs {
-		publicDeps.storageAPIClient = values.storageAPIClient
-		projectDeps.storageAPIClient = values.storageAPIClient
-		publicDeps.encryptionAPIClient = values.encryptionAPIClient
-		projectDeps.schedulerAPIClient = values.schedulerAPIClient
+	if c.useRealAPIs {
+		publicDeps.storageAPIClient = c.storageAPIClient
+		projectDeps.storageAPIClient = c.storageAPIClient
+		publicDeps.encryptionAPIClient = c.encryptionAPIClient
+		projectDeps.schedulerAPIClient = c.schedulerAPIClient
 		mockedHTTPTransport = nil
 	}
 
 	// Clear logs
-	logger.Truncate()
+	c.logger.Truncate()
+
+	// Create service process context
+	c.procOpts = append([]servicectx.Option{servicectx.WithLogger(c.logger)}, c.procOpts...)
 
 	return &mocked{
+		config:              c,
 		t:                   t,
 		base:                baseDeps,
 		public:              publicDeps,
 		project:             projectDeps,
 		envs:                envs,
 		options:             options.New(),
-		debugLogger:         logger,
 		mockedHTTPTransport: mockedHTTPTransport,
-		proc:                servicectx.NewForTest(t),
 		requestHeader:       make(http.Header),
 	}
 }
@@ -215,7 +272,7 @@ func (v *mocked) Options() *options.Options {
 }
 
 func (v *mocked) DebugLogger() log.DebugLogger {
-	return v.debugLogger
+	return v.config.logger
 }
 
 func (v *mocked) MockedHTTPTransport() *httpmock.MockTransport {
@@ -226,6 +283,9 @@ func (v *mocked) MockedHTTPTransport() *httpmock.MockTransport {
 }
 
 func (v *mocked) Process() *servicectx.Process {
+	if v.proc == nil {
+		v.proc = servicectx.NewForTest(v.t, v.config.ctx, v.config.procOpts...)
+	}
 	return v.proc
 }
 
@@ -238,7 +298,7 @@ func (v *mocked) MockedProject(fs filesystem.Fs) *projectPkg.Project {
 }
 
 func (v *mocked) MockedState() *state.State {
-	s, err := state.New(context.Background(), NewObjectsContainer(aferofs.NewMemoryFs(filesystem.WithLogger(v.debugLogger)), fixtures.NewManifest()), v)
+	s, err := state.New(context.Background(), NewObjectsContainer(aferofs.NewMemoryFs(filesystem.WithLogger(v.Logger())), fixtures.NewManifest()), v)
 	if err != nil {
 		panic(err)
 	}
@@ -271,14 +331,21 @@ func (v *mocked) BufferAPIHost() string {
 
 func (v *mocked) EtcdClient() *etcd.Client {
 	if v.etcdClient == nil {
-		v.etcdClient = etcdhelper.ClientForTest(v.t)
+		v.etcdClient = etcdhelper.ClientForTestWithNamespace(v.t, v.config.etcdNamespace)
 	}
 	return v.etcdClient
 }
 
+func (v *mocked) Schema() *bufferSchema.Schema {
+	if v.bufferSchema == nil {
+		v.bufferSchema = bufferSchema.New(validator.New().Validate)
+	}
+	return v.bufferSchema
+}
+
 func (v *mocked) Store() *bufferStore.Store {
 	if v.bufferStore == nil {
-		v.bufferStore = bufferStore.New(v.logger, v.EtcdClient(), telemetry.NewNopTracer())
+		v.bufferStore = bufferStore.New(v.logger, v.EtcdClient(), v.Tracer(), v.Schema())
 	}
 	return v.bufferStore
 }

@@ -78,11 +78,11 @@ func HandleHTTPServer(proc *servicectx.Process, d dependencies.ForServer, u *url
 		logger.Infof("HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 	}
 
-	proc.Add(func(ctx context.Context, errCh chan<- error) {
+	proc.Add(func(ctx context.Context, shutdown servicectx.ShutdownFn) {
 		// Start HTTP server in a separate goroutine.
 		go func() {
 			logger.Infof("HTTP server listening on %q", u.Host)
-			errCh <- srv.ListenAndServe()
+			shutdown(srv.ListenAndServe())
 		}()
 
 		// Wait for termination

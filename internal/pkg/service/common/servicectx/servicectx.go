@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -32,8 +31,11 @@ type Option func(c *config)
 
 type OnShutdownFn func()
 
+type ShutdownFn func(error)
+
 type config struct {
 	uniqueID string
+	logger   log.Logger
 }
 
 // WithUniqueID sets unique ID of the service process.
@@ -44,11 +46,22 @@ func WithUniqueID(v string) Option {
 	}
 }
 
-func New(ctx context.Context, cancel context.CancelFunc, logger log.Logger, opts ...Option) (*Process, error) {
+func WithLogger(v log.Logger) Option {
+	return func(c *config) {
+		c.logger = v
+	}
+}
+
+func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Process, error) {
 	// Apply options
 	c := config{}
 	for _, o := range opts {
 		o(&c)
+	}
+
+	// Default logger
+	if c.logger == nil {
+		c.logger = log.NewNopLogger()
 	}
 
 	// Generate uniqueID if not set
@@ -68,7 +81,7 @@ func New(ctx context.Context, cancel context.CancelFunc, logger log.Logger, opts
 
 	// Create channel used by both the signal handler and service goroutines
 	// to notify the main goroutine when to stop the server.
-	errCh := make(chan error)
+	errCh := make(chan error, 1)
 
 	// Setup interrupt handler,
 	// so SIGINT and SIGTERM signals cause the services to stop gracefully.
@@ -81,7 +94,7 @@ func New(ctx context.Context, cancel context.CancelFunc, logger log.Logger, opts
 	proc := &Process{
 		ctx:      ctx,
 		cancel:   cancel,
-		logger:   logger,
+		logger:   c.logger,
 		wg:       &sync.WaitGroup{},
 		errCh:    errCh,
 		uniqueID: c.uniqueID,
@@ -89,11 +102,8 @@ func New(ctx context.Context, cancel context.CancelFunc, logger log.Logger, opts
 	}
 
 	// Register onShutdown operation
-	proc.Add(func(ctx context.Context, errCh chan<- error) {
+	proc.Add(func(ctx context.Context, _ ShutdownFn) {
 		<-ctx.Done()
-		proc.lock.Lock()
-		proc.terminating = true
-		proc.lock.Unlock()
 
 		// Iterate callbacks in reverse order, LIFO, see the OnShutdown method
 		for i := len(proc.onShutdown) - 1; i >= 0; i-- {
@@ -101,15 +111,15 @@ func New(ctx context.Context, cancel context.CancelFunc, logger log.Logger, opts
 		}
 	})
 
-	logger.Infof(`process unique id "%s"`, proc.UniqueID())
+	proc.logger.Infof(`process unique id "%s"`, proc.UniqueID())
 	return proc, nil
 }
 
-func NewForTest(t *testing.T) *Process {
+func NewForTest(t *testing.T, ctx context.Context, opts ...Option) *Process {
 	t.Helper()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	proc, err := New(ctx, cancel, log.NewNopLogger(), WithUniqueID("test_"+t.Name()+"_"+idgenerator.Random(5)))
+	ctx, cancel := context.WithCancel(ctx)
+	proc, err := New(ctx, cancel, opts...)
 	if err != nil {
 		t.Fatal(err)
 		return nil
@@ -130,14 +140,28 @@ func (v *Process) Ctx() context.Context {
 
 // Shutdown triggers termination of the Process.
 func (v *Process) Shutdown(err error) {
-	go func() {
-		v.errCh <- err
-	}()
+	v.lock.Lock()
+	if v.terminating {
+		v.lock.Unlock()
+		return
+	}
+	v.terminating = true
+	v.lock.Unlock()
+
+	v.errCh <- err
+	close(v.errCh)
 }
 
 func (v *Process) WaitForShutdown() {
-	// Wait for signal.
-	v.logger.Infof("exiting (%v)", <-v.errCh)
+	// Wait for signal
+	err, ok := <-v.errCh
+	if !ok {
+		// Channel is closed, the process is already terminating, wait for completion
+		v.wg.Wait()
+		return
+	}
+
+	v.logger.Infof("exiting (%v)", err)
 
 	// Send cancellation signal to the goroutines.
 	v.cancel()
@@ -157,11 +181,11 @@ func (v *Process) UniqueID() string {
 // The Process is graceful terminated when all operations are completed.
 // The ctx parameter can be used to wait for the service termination.
 // The errCh parameter can be used to stop the service with an error.
-func (v *Process) Add(operation func(ctx context.Context, errCh chan<- error)) {
+func (v *Process) Add(operation func(context.Context, ShutdownFn)) {
 	v.wg.Add(1)
 	go func() {
 		defer v.wg.Done()
-		operation(v.ctx, v.errCh)
+		operation(v.ctx, v.Shutdown)
 	}()
 }
 

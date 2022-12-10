@@ -52,7 +52,7 @@ func (v ForType[R]) MapResponse(ctx context.Context, response etcd.OpResponse) (
 	return result, err
 }
 
-func (v ForType[R]) Do(ctx context.Context, client *etcd.Client) (R, error) {
+func (v ForType[R]) Do(ctx context.Context, client etcd.KV) (R, error) {
 	var empty R
 
 	// Create etcd operation

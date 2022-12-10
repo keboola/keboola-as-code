@@ -22,10 +22,20 @@ import (
 type testOrBenchmark interface {
 	Cleanup(f func())
 	Skipf(format string, args ...any)
+	Logf(format string, args ...any)
 	Fatalf(format string, args ...any)
 }
 
+func NamespaceForTest() string {
+	return idgenerator.EtcdNamespaceForTest()
+}
+
 func ClientForTest(t testOrBenchmark) *etcd.Client {
+	namespaceStr := fmt.Sprintf("unit-%s/", NamespaceForTest())
+	return ClientForTestWithNamespace(t, namespaceStr)
+}
+
+func ClientForTestWithNamespace(t testOrBenchmark, namespaceStr string) *etcd.Client {
 	envs, err := env.FromOs()
 	if err != nil {
 		t.Fatalf("cannot get envs: %s", err)
@@ -38,11 +48,11 @@ func ClientForTest(t testOrBenchmark) *etcd.Client {
 	endpoint := envs.Get("UNIT_ETCD_ENDPOINT")
 	username := envs.Get("UNIT_ETCD_USERNAME")
 	password := envs.Get("UNIT_ETCD_PASSWORD")
-	prefix := fmt.Sprintf("unit-%s/", idgenerator.EtcdNamespaceForTest())
-	return ClientForTestFrom(t, endpoint, username, password, prefix)
+
+	return ClientForTestFrom(t, endpoint, username, password, namespaceStr)
 }
 
-func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, prefix string) *etcd.Client {
+func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespaceStr string) *etcd.Client {
 	ctx := context.Background()
 	if endpoint == "" {
 		t.Fatalf(`etcd endpoint is not set`)
@@ -89,18 +99,21 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, prefix s
 
 	// Create namespace
 	originalKV := etcdClient.KV // not namespaced client for the cleanup
-	etcdClient.KV = namespace.NewKV(etcdClient.KV, prefix)
-	etcdClient.Lease = namespace.NewLease(etcdClient.Lease, prefix)
-	etcdClient.Watcher = namespace.NewWatcher(etcdClient.Watcher, prefix)
+	etcdClient.KV = namespace.NewKV(etcdClient.KV, namespaceStr)
+	etcdClient.Lease = namespace.NewLease(etcdClient.Lease, namespaceStr)
+	etcdClient.Watcher = namespace.NewWatcher(etcdClient.Watcher, namespaceStr)
 
 	// Add operations logger
 	etcdClient.KV = KVLogWrapper(etcdClient.KV, testhelper.VerboseStdout())
 
 	// Cleanup namespace after the test
 	t.Cleanup(func() {
-		_, err := originalKV.Delete(ctx, prefix, etcd.WithPrefix())
+		_, err := originalKV.Delete(ctx, namespaceStr, etcd.WithPrefix())
 		if err != nil {
-			t.Fatalf(`cannot clear etcd namespace "%s" after test: %s`, prefix, err)
+			t.Fatalf(`cannot clear etcd namespace "%s" after test: %s`, namespaceStr, err)
+		}
+		if err := etcdClient.Close(); err != nil {
+			t.Fatalf(`cannot close etcd connection after test: %s`, err)
 		}
 	})
 

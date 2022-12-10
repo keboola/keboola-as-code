@@ -17,7 +17,7 @@ func TestProcess_Add(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := log.NewDebugLogger()
-	proc, err := New(ctx, cancel, logger, WithUniqueID("<id>"))
+	proc, err := New(ctx, cancel, WithLogger(logger), WithUniqueID("<id>"))
 	assert.NoError(t, err)
 
 	op1 := &sync.WaitGroup{}
@@ -28,25 +28,25 @@ func TestProcess_Add(t *testing.T) {
 	op3.Add(1)
 
 	// Do some work, operations run in parallel
-	proc.Add(func(ctx context.Context, errCh chan<- error) {
+	proc.Add(func(ctx context.Context, shutdown ShutdownFn) {
 		<-ctx.Done()
 		logger.Info("end1")
 		op1.Done()
 	})
-	proc.Add(func(ctx context.Context, errCh chan<- error) {
+	proc.Add(func(ctx context.Context, shutdown ShutdownFn) {
 		<-ctx.Done()
 		op1.Wait()
 		logger.Info("end2")
 		op2.Done()
 	})
-	proc.Add(func(ctx context.Context, errCh chan<- error) {
+	proc.Add(func(ctx context.Context, shutdown ShutdownFn) {
 		<-ctx.Done()
 		op2.Wait()
 		logger.Info("end3")
 		op3.Done()
 	})
-	proc.Add(func(ctx context.Context, errCh chan<- error) {
-		errCh <- errors.New("operation failed")
+	proc.Add(func(ctx context.Context, shutdown ShutdownFn) {
+		shutdown(errors.New("operation failed"))
 	})
 	proc.OnShutdown(func() {
 		logger.Info("onShutdown1")
@@ -59,6 +59,16 @@ func TestProcess_Add(t *testing.T) {
 		logger.Info("onShutdown3")
 	})
 	proc.WaitForShutdown()
+
+	// Wait can be called multiple times
+	proc.WaitForShutdown()
+	proc.WaitForShutdown()
+	proc.WaitForShutdown()
+
+	// Shutdown can be called multiple times
+	proc.Shutdown(errors.New("ignore duplicated shutdown"))
+	proc.Shutdown(errors.New("ignore duplicated shutdown"))
+	proc.Shutdown(errors.New("ignore duplicated shutdown"))
 
 	// Check logs
 	expected := `
@@ -80,7 +90,7 @@ func TestProcess_Shutdown(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := log.NewDebugLogger()
-	proc, err := New(ctx, cancel, logger, WithUniqueID("<id>"))
+	proc, err := New(ctx, cancel, WithLogger(logger), WithUniqueID("<id>"))
 	assert.NoError(t, err)
 
 	op1 := &sync.WaitGroup{}
@@ -91,18 +101,18 @@ func TestProcess_Shutdown(t *testing.T) {
 	op3.Add(1)
 
 	// Do some work, operations run in parallel
-	proc.Add(func(ctx context.Context, errCh chan<- error) {
+	proc.Add(func(ctx context.Context, shutdown ShutdownFn) {
 		<-ctx.Done()
 		logger.Info("end1")
 		op1.Done()
 	})
-	proc.Add(func(ctx context.Context, errCh chan<- error) {
+	proc.Add(func(ctx context.Context, shutdown ShutdownFn) {
 		<-ctx.Done()
 		op1.Wait()
 		logger.Info("end2")
 		op2.Done()
 	})
-	proc.Add(func(ctx context.Context, errCh chan<- error) {
+	proc.Add(func(ctx context.Context, shutdown ShutdownFn) {
 		<-ctx.Done()
 		op2.Wait()
 		logger.Info("end3")
