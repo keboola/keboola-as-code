@@ -21,28 +21,28 @@ type obj struct {
 	Value string `json:"val"`
 }
 
-type result struct {
+type resultT struct {
 	key   string
 	value obj
 }
 
-type testCase struct {
+type testCaseT struct {
 	name         string
 	kvCount      int
 	pageSize     int
-	expected     []result
+	expected     []resultT
 	expectedLogs string
 }
 
-func TestIterator(t *testing.T) {
+func TestIteratorT(t *testing.T) {
 	t.Parallel()
 
-	cases := []testCase{
+	cases := []testCaseT{
 		{
 			name:     "empty",
 			kvCount:  0,
 			pageSize: 3,
-			expected: []result{},
+			expected: []resultT{},
 			expectedLogs: `
 ETCD_REQUEST[%d] GET "some/prefix/" | start
 ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 0 | %s
@@ -52,7 +52,7 @@ ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 0 | %s
 			name:     "count 1, under page size",
 			kvCount:  1,
 			pageSize: 3,
-			expected: []result{
+			expected: []resultT{
 				{key: "some/prefix/foo001", value: obj{"bar001"}},
 			},
 			expectedLogs: `
@@ -64,7 +64,7 @@ ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 1 | %s
 			name:     "count 1, equal to page size",
 			kvCount:  1,
 			pageSize: 1,
-			expected: []result{
+			expected: []resultT{
 				{key: "some/prefix/foo001", value: obj{"bar001"}},
 			},
 			expectedLogs: `
@@ -76,7 +76,7 @@ ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 1 | %s
 			name:     "count 2, under page size",
 			kvCount:  2,
 			pageSize: 3,
-			expected: []result{
+			expected: []resultT{
 				{key: "some/prefix/foo001", value: obj{"bar001"}},
 				{key: "some/prefix/foo002", value: obj{"bar002"}},
 			},
@@ -89,7 +89,7 @@ ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 2 | %s
 			name:     "count 3, equal to page size",
 			kvCount:  3,
 			pageSize: 3,
-			expected: []result{
+			expected: []resultT{
 				{key: "some/prefix/foo001", value: obj{"bar001"}},
 				{key: "some/prefix/foo002", value: obj{"bar002"}},
 				{key: "some/prefix/foo003", value: obj{"bar003"}},
@@ -103,7 +103,7 @@ ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 3 | %s
 			name:     "one on the second page",
 			kvCount:  4,
 			pageSize: 3,
-			expected: []result{
+			expected: []resultT{
 				{key: "some/prefix/foo001", value: obj{"bar001"}},
 				{key: "some/prefix/foo002", value: obj{"bar002"}},
 				{key: "some/prefix/foo003", value: obj{"bar003"}},
@@ -120,7 +120,7 @@ ETCD_REQUEST[%d] GET "some/prefix/foo004" | done | count: 1 | %s
 			name:     "two on the second page",
 			kvCount:  5,
 			pageSize: 3,
-			expected: []result{
+			expected: []resultT{
 				{key: "some/prefix/foo001", value: obj{"bar001"}},
 				{key: "some/prefix/foo002", value: obj{"bar002"}},
 				{key: "some/prefix/foo003", value: obj{"bar003"}},
@@ -138,7 +138,7 @@ ETCD_REQUEST[%d] GET "some/prefix/foo004" | done | count: 2 | %s
 			name:     "page size = 1",
 			kvCount:  5,
 			pageSize: 1,
-			expected: []result{
+			expected: []resultT{
 				{key: "some/prefix/foo001", value: obj{"bar001"}},
 				{key: "some/prefix/foo002", value: obj{"bar002"}},
 				{key: "some/prefix/foo003", value: obj{"bar003"}},
@@ -165,11 +165,11 @@ ETCD_REQUEST[%d] GET "some/prefix/foo005" | done | count: 1 | %s
 		ctx := context.Background()
 		client := etcdhelper.ClientForTest(t)
 		client.KV = etcdhelper.KVLogWrapper(client.KV, &logs)
-		prefix := generateKVs(t, tc.kvCount, ctx, client)
+		prefix := generateKVsT(t, tc.kvCount, ctx, client)
 
 		// Test iteration methods
 		logs.Reset()
-		actual := iterateAll(t, prefix.GetAll(iterator.WithPageSize(tc.pageSize)), ctx, client)
+		actual := iterateAllT(t, prefix.GetAll(iterator.WithPageSize(tc.pageSize)), ctx, client)
 		assert.Equal(t, tc.expected, actual, tc.name)
 		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
 
@@ -177,9 +177,9 @@ ETCD_REQUEST[%d] GET "some/prefix/foo005" | done | count: 1 | %s
 		logs.Reset()
 		actualKvs, err := prefix.GetAll(iterator.WithPageSize(tc.pageSize)).Do(ctx, client).All()
 		assert.NoError(t, err)
-		actual = make([]result, 0)
+		actual = make([]resultT, 0)
 		for _, kv := range actualKvs {
-			actual = append(actual, result{key: string(kv.KV.Key), value: kv.Value})
+			actual = append(actual, resultT{key: string(kv.KV.Key), value: kv.Value})
 		}
 		assert.Equal(t, tc.expected, actual, tc.name)
 		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
@@ -187,10 +187,10 @@ ETCD_REQUEST[%d] GET "some/prefix/foo005" | done | count: 1 | %s
 		// Test ForEachKV method
 		logs.Reset()
 		itr := prefix.GetAll(iterator.WithPageSize(tc.pageSize)).Do(ctx, client)
-		actual = make([]result, 0)
+		actual = make([]resultT, 0)
 		assert.NoError(t, itr.ForEachKV(func(kv op.KeyValueT[obj], header *iterator.Header) error {
 			assert.NotNil(t, header)
-			actual = append(actual, result{key: string(kv.KV.Key), value: kv.Value})
+			actual = append(actual, resultT{key: string(kv.KV.Key), value: kv.Value})
 			return nil
 		}))
 		assert.Equal(t, tc.expected, actual, tc.name)
@@ -210,7 +210,7 @@ ETCD_REQUEST[%d] GET "some/prefix/foo005" | done | count: 1 | %s
 	}
 }
 
-func TestIterator_Revision(t *testing.T) {
+func TestIteratorT_Revision(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t)
@@ -233,30 +233,30 @@ func TestIterator_Revision(t *testing.T) {
 	assert.NoError(t, prefix.Key("foo005").Put(obj{Value: "bar005"}).Do(ctx, client))
 
 	// Get all WithRev
-	var actual []result
+	var actual []resultT
 	assert.NoError(
 		t,
 		prefix.
 			GetAll(iterator.WithRev(revision)).Do(ctx, client).
 			ForEachKV(func(kv op.KeyValueT[obj], _ *iterator.Header) error {
-				actual = append(actual, result{key: string(kv.KV.Key), value: kv.Value})
+				actual = append(actual, resultT{key: string(kv.KV.Key), value: kv.Value})
 				return nil
 			}),
 	)
 
 	// The iterator only sees the values in the revision
-	assert.Equal(t, []result{
+	assert.Equal(t, []resultT{
 		{key: "some/prefix/foo001", value: obj{"bar001"}},
 		{key: "some/prefix/foo002", value: obj{"bar002"}},
 		{key: "some/prefix/foo003", value: obj{"bar003"}},
 	}, actual)
 }
 
-func TestIterator_Value_UsedIncorrectly(t *testing.T) {
+func TestIteratorT_Value_UsedIncorrectly(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t)
-	prefix := generateKVs(t, 3, ctx, client)
+	prefix := generateKVsT(t, 3, ctx, client)
 
 	it := prefix.GetAll().Do(ctx, client)
 	assert.PanicsWithError(t, "unexpected Value() call: Next() must be called first", func() {
@@ -264,19 +264,19 @@ func TestIterator_Value_UsedIncorrectly(t *testing.T) {
 	})
 }
 
-func iterateAll(t *testing.T, def iterator.DefinitionT[obj], ctx context.Context, client *etcd.Client) []result {
+func iterateAllT(t *testing.T, def iterator.DefinitionT[obj], ctx context.Context, client *etcd.Client) []resultT {
 	t.Helper()
 	it := def.Do(ctx, client)
-	actual := make([]result, 0)
+	actual := make([]resultT, 0)
 	for it.Next() {
 		kv := it.Value()
-		actual = append(actual, result{key: string(kv.KV.Key), value: kv.Value})
+		actual = append(actual, resultT{key: string(kv.KV.Key), value: kv.Value})
 	}
 	assert.NoError(t, it.Err())
 	return actual
 }
 
-func generateKVs(t *testing.T, count int, ctx context.Context, client *etcd.Client) etcdop.PrefixT[obj] {
+func generateKVsT(t *testing.T, count int, ctx context.Context, client *etcd.Client) etcdop.PrefixT[obj] {
 	t.Helper()
 
 	// There are some keys before the prefix

@@ -58,7 +58,6 @@ func (v *Iterator) Next() bool {
 			return false
 		}
 
-		// Decode item
 		v.currentValue = v.values[v.currentIndex]
 		return true
 	}
