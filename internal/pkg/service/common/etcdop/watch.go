@@ -2,6 +2,7 @@ package etcdop
 
 import (
 	"context"
+	"strconv"
 
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"go.etcd.io/etcd/api/v3/mvccpb"
@@ -11,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type EventType int32
+type EventType int
 
 const (
 	CreateEvent EventType = iota
@@ -20,15 +21,31 @@ const (
 )
 
 type Event struct {
-	*op.KeyValue
+	Kv     *op.KeyValue
+	PrevKv *op.KeyValue
 	Type   EventType
 	Header *etcdserverpb.ResponseHeader
 }
 
 type EventT[T any] struct {
-	op.KeyValueT[T]
+	Value  T
+	Kv     *op.KeyValue
+	PrevKv *op.KeyValue
 	Type   EventType
 	Header *etcdserverpb.ResponseHeader
+}
+
+func (v EventType) String() string {
+	switch v {
+	case CreateEvent:
+		return "create"
+	case UpdateEvent:
+		return "update"
+	case DeleteEvent:
+		return "delete"
+	default:
+		return strconv.Itoa(int(v))
+	}
 }
 
 func (e *EventT[T]) Rev() int64 {
@@ -49,9 +66,9 @@ func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleE
 		itr := v.GetAll().Do(ctx, client)
 		err := itr.ForEach(func(kv *op.KeyValue, header *etcdserverpb.ResponseHeader) error {
 			ch <- Event{
-				KeyValue: kv,
-				Type:     CreateEvent,
-				Header:   header,
+				Kv:     kv,
+				Type:   CreateEvent,
+				Header: header,
 			}
 			return nil
 		})
@@ -90,7 +107,7 @@ func (v Prefix) doWatch(ctx context.Context, client etcd.Watcher, handleErr func
 				}
 
 				for _, rawEvent := range resp.Events {
-					outEvent := Event{KeyValue: rawEvent.Kv, Header: &resp.Header}
+					outEvent := Event{Kv: rawEvent.Kv, PrevKv: rawEvent.PrevKv, Header: &resp.Header}
 
 					// Map event type
 					switch rawEvent.Type {
@@ -127,9 +144,10 @@ func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, han
 		itr := v.GetAll().Do(ctx, client)
 		err := itr.ForEachKV(func(kv op.KeyValueT[T], header *etcdserverpb.ResponseHeader) error {
 			outCh <- EventT[T]{
-				KeyValueT: kv,
-				Type:      CreateEvent,
-				Header:    header,
+				Kv:     kv.Kv,
+				Value:  kv.Value,
+				Type:   CreateEvent,
+				Header: header,
 			}
 			return nil
 		})
@@ -162,15 +180,16 @@ func (v PrefixT[T]) doWatch(ctx context.Context, client etcd.Watcher, handleErr 
 				}
 
 				outEvent := EventT[T]{
-					KeyValueT: op.KeyValueT[T]{KV: rawEvent.KeyValue},
-					Type:      rawEvent.Type,
-					Header:    rawEvent.Header,
+					Kv:     rawEvent.Kv,
+					PrevKv: rawEvent.PrevKv,
+					Type:   rawEvent.Type,
+					Header: rawEvent.Header,
 				}
 
 				// We care for the value only in CREATE/UPDATE operation
 				if rawEvent.Type == CreateEvent || rawEvent.Type == UpdateEvent {
 					target := new(T)
-					if err := v.serde.Decode(ctx, rawEvent.KeyValue, target); err != nil {
+					if err := v.serde.Decode(ctx, rawEvent.Kv, target); err != nil {
 						handleErr(err)
 						continue
 					}

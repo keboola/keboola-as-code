@@ -38,9 +38,9 @@ func (v *IteratorT[T]) Next() bool {
 	}
 
 	// Decode item
-	v.currentValue = op.KeyValueT[T]{KV: v.values[v.currentIndex]}
-	if err := v.serde.Decode(v.ctx, v.currentValue.KV, &v.currentValue.Value); err != nil {
-		v.err = errors.Errorf(`etcd iterator failed: cannot decode key "%s", page=%d, index=%d: %w`, v.currentValue.KV.Key, v.page, v.currentIndex, err)
+	v.currentValue = op.KeyValueT[T]{Kv: v.values[v.currentIndex]}
+	if err := v.serde.Decode(v.ctx, v.currentValue.Kv, &v.currentValue.Value); err != nil {
+		v.err = errors.Errorf(`etcd iterator failed: cannot decode key "%s", page=%d, index=%d: %w`, v.currentValue.Kv.Key, v.page, v.currentIndex, err)
 	}
 	return v.err == nil
 }

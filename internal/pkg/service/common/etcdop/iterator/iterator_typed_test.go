@@ -179,7 +179,7 @@ ETCD_REQUEST[%d] GET "some/prefix/foo005" | done | count: 1 | %s
 		assert.NoError(t, err)
 		actual = make([]resultT, 0)
 		for _, kv := range actualKvs {
-			actual = append(actual, resultT{key: string(kv.KV.Key), value: kv.Value})
+			actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})
 		}
 		assert.Equal(t, tc.expected, actual, tc.name)
 		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
@@ -190,7 +190,7 @@ ETCD_REQUEST[%d] GET "some/prefix/foo005" | done | count: 1 | %s
 		actual = make([]resultT, 0)
 		assert.NoError(t, itr.ForEachKV(func(kv op.KeyValueT[obj], header *iterator.Header) error {
 			assert.NotNil(t, header)
-			actual = append(actual, resultT{key: string(kv.KV.Key), value: kv.Value})
+			actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})
 			return nil
 		}))
 		assert.Equal(t, tc.expected, actual, tc.name)
@@ -226,7 +226,7 @@ func TestIteratorT_Revision(t *testing.T) {
 	// Get current revision
 	r, err := prefix.Key("foo003").Get().Do(ctx, client)
 	assert.NoError(t, err)
-	revision := r.KV.ModRevision
+	revision := r.Kv.ModRevision
 
 	// Add more keys
 	assert.NoError(t, prefix.Key("foo004").Put(obj{Value: "bar004"}).Do(ctx, client))
@@ -239,7 +239,7 @@ func TestIteratorT_Revision(t *testing.T) {
 		prefix.
 			GetAll(iterator.WithRev(revision)).Do(ctx, client).
 			ForEachKV(func(kv op.KeyValueT[obj], _ *iterator.Header) error {
-				actual = append(actual, resultT{key: string(kv.KV.Key), value: kv.Value})
+				actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})
 				return nil
 			}),
 	)
@@ -270,7 +270,7 @@ func iterateAllT(t *testing.T, def iterator.DefinitionT[obj], ctx context.Contex
 	actual := make([]resultT, 0)
 	for it.Next() {
 		kv := it.Value()
-		actual = append(actual, resultT{key: string(kv.KV.Key), value: kv.Value})
+		actual = append(actual, resultT{key: string(kv.Kv.Key), value: kv.Value})
 	}
 	assert.NoError(t, it.Err())
 	return actual

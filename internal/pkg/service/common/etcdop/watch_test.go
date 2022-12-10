@@ -36,7 +36,7 @@ func TestPrefix_Watch(t *testing.T) {
 	assertDone(t, func() {
 		expected := Event{}
 		expected.Type = CreateEvent
-		expected.KeyValue = &mvccpb.KeyValue{
+		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key1"),
 			Value: []byte("foo"),
 		}
@@ -52,7 +52,7 @@ func TestPrefix_Watch(t *testing.T) {
 	assertDone(t, func() {
 		expected := Event{}
 		expected.Type = UpdateEvent
-		expected.KeyValue = &mvccpb.KeyValue{
+		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key1"),
 			Value: []byte("new"),
 		}
@@ -70,7 +70,7 @@ func TestPrefix_Watch(t *testing.T) {
 	assertDone(t, func() {
 		expected := Event{}
 		expected.Type = DeleteEvent
-		expected.KeyValue = &mvccpb.KeyValue{
+		expected.Kv = &mvccpb.KeyValue{
 			Key: []byte("my/prefix/key1"),
 		}
 		assert.Equal(t, expected, clearEvent(<-ch))
@@ -99,7 +99,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	assertDone(t, func() {
 		expected := Event{}
 		expected.Type = CreateEvent
-		expected.KeyValue = &mvccpb.KeyValue{
+		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key1"),
 			Value: []byte("foo1"),
 		}
@@ -115,7 +115,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	assertDone(t, func() {
 		expected := Event{}
 		expected.Type = CreateEvent
-		expected.KeyValue = &mvccpb.KeyValue{
+		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key2"),
 			Value: []byte("foo2"),
 		}
@@ -131,7 +131,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	assertDone(t, func() {
 		expected := Event{}
 		expected.Type = UpdateEvent
-		expected.KeyValue = &mvccpb.KeyValue{
+		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key2"),
 			Value: []byte("new"),
 		}
@@ -149,7 +149,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	assertDone(t, func() {
 		expected := Event{}
 		expected.Type = DeleteEvent
-		expected.KeyValue = &mvccpb.KeyValue{
+		expected.Kv = &mvccpb.KeyValue{
 			Key: []byte("my/prefix/key1"),
 		}
 		assert.Equal(t, expected, clearEvent(<-ch))
@@ -181,7 +181,7 @@ func TestPrefixT_Watch(t *testing.T) {
 		expected := EventT[fooType]{}
 		expected.Value = "foo"
 		expected.Type = CreateEvent
-		expected.KV = &mvccpb.KeyValue{
+		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key1"),
 			Value: []byte(`"foo"`),
 		}
@@ -198,7 +198,7 @@ func TestPrefixT_Watch(t *testing.T) {
 		expected := EventT[fooType]{}
 		expected.Value = "new"
 		expected.Type = UpdateEvent
-		expected.KV = &mvccpb.KeyValue{
+		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key1"),
 			Value: []byte(`"new"`),
 		}
@@ -216,7 +216,7 @@ func TestPrefixT_Watch(t *testing.T) {
 	assertDone(t, func() {
 		expected := EventT[fooType]{}
 		expected.Type = DeleteEvent
-		expected.KV = &mvccpb.KeyValue{
+		expected.Kv = &mvccpb.KeyValue{
 			Key: []byte("my/prefix/key1"),
 		}
 		x := clearEventT(<-ch)
@@ -247,7 +247,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 		expected := EventT[fooType]{}
 		expected.Value = "foo1"
 		expected.Type = CreateEvent
-		expected.KV = &mvccpb.KeyValue{
+		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key1"),
 			Value: []byte(`"foo1"`),
 		}
@@ -264,7 +264,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 		expected := EventT[fooType]{}
 		expected.Value = "foo2"
 		expected.Type = CreateEvent
-		expected.KV = &mvccpb.KeyValue{
+		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key2"),
 			Value: []byte(`"foo2"`),
 		}
@@ -281,7 +281,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 		expected := EventT[fooType]{}
 		expected.Value = "new"
 		expected.Type = UpdateEvent
-		expected.KV = &mvccpb.KeyValue{
+		expected.Kv = &mvccpb.KeyValue{
 			Key:   []byte("my/prefix/key2"),
 			Value: []byte(`"new"`),
 		}
@@ -299,7 +299,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	assertDone(t, func() {
 		expected := EventT[fooType]{}
 		expected.Type = DeleteEvent
-		expected.KV = &mvccpb.KeyValue{
+		expected.Kv = &mvccpb.KeyValue{
 			Key: []byte("my/prefix/key1"),
 		}
 		assert.Equal(t, expected, clearEventT(<-ch))
@@ -308,19 +308,19 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 
 func clearEvent(event Event) Event {
 	event.Header = nil
-	event.KeyValue.CreateRevision = 0
-	event.KeyValue.ModRevision = 0
-	event.KeyValue.Version = 0
-	event.KeyValue.Lease = 0
+	event.Kv.CreateRevision = 0
+	event.Kv.ModRevision = 0
+	event.Kv.Version = 0
+	event.Kv.Lease = 0
 	return event
 }
 
 func clearEventT(event EventT[fooType]) EventT[fooType] {
 	event.Header = nil
-	event.KV.CreateRevision = 0
-	event.KV.ModRevision = 0
-	event.KV.Version = 0
-	event.KV.Lease = 0
+	event.Kv.CreateRevision = 0
+	event.Kv.ModRevision = 0
+	event.Kv.Version = 0
+	event.Kv.Lease = 0
 	return event
 }
 

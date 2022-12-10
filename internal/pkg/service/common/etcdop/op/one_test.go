@@ -73,7 +73,7 @@ func TestGetOneTOp(t *testing.T) {
 
 			return &KeyValueT[Data]{
 				Value: value,
-				KV:    kv,
+				Kv:    kv,
 			}, nil
 		}
 		return nil, nil

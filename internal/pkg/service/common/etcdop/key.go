@@ -122,7 +122,7 @@ func (v KeyT[T]) Get(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 				if err := v.serde.Decode(ctx, kv, target); err != nil {
 					return nil, errors.Errorf("etcd operation \"get one\" failed: %w", invalidValueError(v.Key(), err))
 				}
-				return &op.KeyValueT[T]{Value: *target, KV: kv}, nil
+				return &op.KeyValueT[T]{Value: *target, Kv: kv}, nil
 			} else {
 				return nil, errors.Errorf(`etcd get: at most one result result expected, found %d results`, count)
 			}
