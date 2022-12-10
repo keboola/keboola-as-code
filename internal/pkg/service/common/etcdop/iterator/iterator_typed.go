@@ -4,7 +4,6 @@ package iterator
 import (
 	"context"
 
-	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -12,17 +11,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const (
-	end = ""
-)
-
-type Header = etcdserverpb.ResponseHeader
-
-type Definition[T any] struct {
+type DefinitionT[T any] struct {
 	config
 }
 
-type Iterator[T any] struct {
+type IteratorT[T any] struct {
 	config
 	ctx          context.Context
 	client       *etcd.Client
@@ -36,18 +29,18 @@ type Iterator[T any] struct {
 	currentValue op.KeyValueT[T] // currentValue in the page, match currentIndex
 }
 
-func New[R any](start string, serde serde.Serde, opts ...Option) Definition[R] {
-	return Definition[R]{config: newConfig(start, serde, opts)}
+func NewTyped[R any](start string, serde *serde.Serde, opts ...Option) DefinitionT[R] {
+	return DefinitionT[R]{config: newConfig(start, serde, opts)}
 }
 
 // Do converts iterator definition to the iterator.
-func (v Definition[T]) Do(ctx context.Context, client *etcd.Client) *Iterator[T] {
-	return &Iterator[T]{ctx: ctx, client: client, config: v.config, start: v.config.prefix, page: 0, currentIndex: 0}
+func (v DefinitionT[T]) Do(ctx context.Context, client *etcd.Client) *IteratorT[T] {
+	return &IteratorT[T]{ctx: ctx, client: client, config: v.config, start: v.config.prefix, page: 0, currentIndex: 0}
 }
 
 // Next returns true if there is a next value.
 // False is returned if there is no next value or an error occurred.
-func (v *Iterator[T]) Next() bool {
+func (v *IteratorT[T]) Next() bool {
 	select {
 	case <-v.ctx.Done():
 		// Stop iteration if the context is done
@@ -70,7 +63,7 @@ func (v *Iterator[T]) Next() bool {
 
 // Value returns the current value.
 // It must be called after Next method.
-func (v *Iterator[T]) Value() op.KeyValueT[T] {
+func (v *IteratorT[T]) Value() op.KeyValueT[T] {
 	if v.page == 0 {
 		panic(errors.New("unexpected Value() call: Next() must be called first"))
 	}
@@ -81,19 +74,19 @@ func (v *Iterator[T]) Value() op.KeyValueT[T] {
 }
 
 // Header returns header of the page etcd response.
-func (v *Iterator[T]) Header() *Header {
+func (v *IteratorT[T]) Header() *Header {
 	return v.header
 }
 
 // Err returns error. It must be checked after iterations (Next() == false).
-func (v *Iterator[T]) Err() error {
+func (v *IteratorT[T]) Err() error {
 	return v.err
 }
 
 // All returns all values as a slice.
 //
 // The values are sorted by key in ascending order.
-func (v *Iterator[T]) All() (out op.KeyValuesT[T], err error) {
+func (v *IteratorT[T]) All() (out op.KeyValuesT[T], err error) {
 	if err = v.AllTo(&out); err != nil {
 		return nil, err
 	}
@@ -103,7 +96,7 @@ func (v *Iterator[T]) All() (out op.KeyValuesT[T], err error) {
 // AllTo resets the slice and add all values to the slice.
 //
 // The values are sorted by key in ascending order.
-func (v *Iterator[T]) AllTo(out *op.KeyValuesT[T]) (err error) {
+func (v *IteratorT[T]) AllTo(out *op.KeyValuesT[T]) (err error) {
 	*out = (*out)[:0]
 	for v.Next() {
 		*out = append(*out, v.Value())
@@ -115,7 +108,7 @@ func (v *Iterator[T]) AllTo(out *op.KeyValuesT[T]) (err error) {
 }
 
 // ForEachKV iterates the KVs using a callback.
-func (v *Iterator[T]) ForEachKV(fn func(value op.KeyValueT[T], header *Header) error) (err error) {
+func (v *IteratorT[T]) ForEachKV(fn func(value op.KeyValueT[T], header *Header) error) (err error) {
 	for v.Next() {
 		if err = fn(v.Value(), v.Header()); err != nil {
 			return err
@@ -128,7 +121,7 @@ func (v *Iterator[T]) ForEachKV(fn func(value op.KeyValueT[T], header *Header) e
 }
 
 // ForEachValue iterates the typed values using a callback.
-func (v *Iterator[T]) ForEachValue(fn func(value T, header *Header) error) (err error) {
+func (v *IteratorT[T]) ForEachValue(fn func(value T, header *Header) error) (err error) {
 	for v.Next() {
 		if err = fn(v.Value().Value, v.Header()); err != nil {
 			return err
@@ -140,7 +133,7 @@ func (v *Iterator[T]) ForEachValue(fn func(value T, header *Header) error) (err 
 	return nil
 }
 
-func (v *Iterator[T]) nextItem() bool {
+func (v *IteratorT[T]) nextItem() bool {
 	if v.lastIndex > v.currentIndex {
 		v.currentIndex++
 		return true
@@ -148,7 +141,7 @@ func (v *Iterator[T]) nextItem() bool {
 	return false
 }
 
-func (v *Iterator[T]) nextPage() bool {
+func (v *IteratorT[T]) nextPage() bool {
 	// Is there one more page?
 	if v.start == end {
 		return false

@@ -20,7 +20,7 @@ type Prefix string
 // PrefixT extends Prefix with generic functionality, contains type of the serialized value.
 type PrefixT[T any] struct {
 	prefix
-	serde serde.Serde
+	serde *serde.Serde
 }
 
 func (v Prefix) Prefix() string {
@@ -54,7 +54,7 @@ func NewPrefix(v string) Prefix {
 	return Prefix(strings.Trim(v, "/"))
 }
 
-func NewTypedPrefix[T any](v Prefix, s serde.Serde) PrefixT[T] {
+func NewTypedPrefix[T any](v Prefix, s *serde.Serde) PrefixT[T] {
 	return PrefixT[T]{prefix: v, serde: s}
 }
 
@@ -82,15 +82,8 @@ func (v Prefix) Count(opts ...etcd.OpOption) op.CountOp {
 	)
 }
 
-func (v Prefix) GetAll(opts ...etcd.OpOption) op.ForType[[]*op.KeyValue] {
-	return op.NewGetManyOp(
-		func(_ context.Context) (etcd.Op, error) {
-			opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
-			return etcd.OpGet(v.Prefix(), opts...), nil
-		}, func(_ context.Context, r etcd.OpResponse) ([]*op.KeyValue, error) {
-			return r.Get().Kvs, nil
-		},
-	)
+func (v Prefix) GetAll(opts ...iterator.Option) iterator.Definition {
+	return iterator.New(v.Prefix(), opts...)
 }
 
 func (v Prefix) DeleteAll(opts ...etcd.OpOption) op.CountOp {
@@ -130,6 +123,6 @@ func (v PrefixT[T]) GetOne(opts ...etcd.OpOption) op.ForType[*op.KeyValueT[T]] {
 	)
 }
 
-func (v PrefixT[T]) GetAll(opts ...iterator.Option) iterator.Definition[T] {
-	return iterator.New[T](v.Prefix(), v.serde, opts...)
+func (v PrefixT[T]) GetAll(opts ...iterator.Option) iterator.DefinitionT[T] {
+	return iterator.NewTyped[T](v.Prefix(), v.serde, opts...)
 }

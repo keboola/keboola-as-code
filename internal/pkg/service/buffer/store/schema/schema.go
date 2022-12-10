@@ -7,7 +7,7 @@ import (
 )
 
 type Schema struct {
-	serde serde.Serde
+	serde *serde.Serde
 }
 
 type prefix = etcdop.Prefix

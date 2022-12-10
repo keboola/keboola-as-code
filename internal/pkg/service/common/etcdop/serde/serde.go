@@ -29,11 +29,11 @@ func NoValidation(ctx context.Context, v any) error {
 	return nil
 }
 
-func New(encode EncodeFn, decode DecodeFn, validate ValidateFn) Serde {
-	return Serde{encode: encode, decode: decode, validate: validate}
+func New(encode EncodeFn, decode DecodeFn, validate ValidateFn) *Serde {
+	return &Serde{encode: encode, decode: decode, validate: validate}
 }
 
-func NewJSON(validate ValidateFn) Serde {
+func NewJSON(validate ValidateFn) *Serde {
 	if validate == nil {
 		panic(errors.New("validate fn cannot be nil"))
 	}

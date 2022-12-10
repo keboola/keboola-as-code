@@ -39,7 +39,7 @@ func (s *Store) UpdateTokens(ctx context.Context, tokens []model.TokenForExport)
 	return err
 }
 
-func (s *Store) getReceiverTokensOp(_ context.Context, receiverKey key.ReceiverKey) iterator.Definition[model.TokenForExport] {
+func (s *Store) getReceiverTokensOp(_ context.Context, receiverKey key.ReceiverKey) iterator.DefinitionT[model.TokenForExport] {
 	return s.schema.
 		Secrets().
 		Tokens().

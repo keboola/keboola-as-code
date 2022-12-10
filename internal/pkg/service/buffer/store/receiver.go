@@ -157,7 +157,7 @@ func (s *Store) ListReceivers(ctx context.Context, projectID int) (receivers []m
 	return receivers, nil
 }
 
-func (s *Store) receiversIterator(_ context.Context, projectID int) iterator.Definition[model.ReceiverBase] {
+func (s *Store) receiversIterator(_ context.Context, projectID int) iterator.DefinitionT[model.ReceiverBase] {
 	return s.schema.Configs().Receivers().InProject(projectID).GetAll()
 }
 

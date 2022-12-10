@@ -264,7 +264,7 @@ func TestIterator_Value_UsedIncorrectly(t *testing.T) {
 	})
 }
 
-func iterateAll(t *testing.T, def iterator.Definition[obj], ctx context.Context, client *etcd.Client) []result {
+func iterateAll(t *testing.T, def iterator.DefinitionT[obj], ctx context.Context, client *etcd.Client) []result {
 	t.Helper()
 	it := def.Do(ctx, client)
 	actual := make([]result, 0)

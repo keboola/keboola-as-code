@@ -18,7 +18,7 @@ type key = Key
 // KeyT extends Key with generic functionality, contains type of the serialized value.
 type KeyT[T any] struct {
 	key
-	serde serde.Serde
+	serde *serde.Serde
 }
 
 func (v Key) Key() string {

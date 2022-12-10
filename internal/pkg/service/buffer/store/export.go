@@ -158,7 +158,7 @@ func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey, op
 	return exports, nil
 }
 
-func (s *Store) exportsIterator(_ context.Context, receiverKey key.ReceiverKey, ops ...iterator.Option) iterator.Definition[model.ExportBase] {
+func (s *Store) exportsIterator(_ context.Context, receiverKey key.ReceiverKey, ops ...iterator.Option) iterator.DefinitionT[model.ExportBase] {
 	return s.schema.
 		Configs().
 		Exports().
