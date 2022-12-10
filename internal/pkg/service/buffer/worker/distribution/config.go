@@ -1,4 +1,4 @@
-package node
+package distribution
 
 import (
 	"time"
@@ -6,26 +6,26 @@ import (
 
 const (
 	DefaultSessionTTL      = 15               // seconds, see WithTTL
-	DefaultInitTimeout     = 60 * time.Second // timeout for PUT operation
-	DefaultShutdownTimeout = 5 * time.Second  // timeout for DELETE operation
+	DefaultStartupTimeout  = 60 * time.Second // timeout for registration, PUT operation
+	DefaultShutdownTimeout = 5 * time.Second  // timeout for un-registration, DELETE operation
 )
 
 type Option func(c *config)
 
 type config struct {
-	initTimeout     time.Duration
+	startupTimeout  time.Duration
 	shutdownTimeout time.Duration
 	ttlSeconds      int
 }
 
 func defaultConfig() config {
-	return config{initTimeout: DefaultInitTimeout, shutdownTimeout: DefaultShutdownTimeout, ttlSeconds: DefaultSessionTTL}
+	return config{startupTimeout: DefaultStartupTimeout, shutdownTimeout: DefaultShutdownTimeout, ttlSeconds: DefaultSessionTTL}
 }
 
 // WithStartupTimeout defines node registration timeout on the node startup.
 func WithStartupTimeout(v time.Duration) Option {
 	return func(c *config) {
-		c.initTimeout = v
+		c.startupTimeout = v
 	}
 }
 
