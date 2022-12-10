@@ -75,12 +75,12 @@ func TestStore_Watcher_GetMappings(t *testing.T) {
 	assert.NoError(t, err)
 	expKey := receiver.Exports[0].ExportKey
 	mapping := receiver.Exports[0].Mapping
-	w.mappings.Store(receiver.ReceiverKey, map[key.ExportKey]*model.Mapping{expKey: &mapping})
+	w.mappings.Store(receiver.ReceiverKey, map[key.ExportKey]model.Mapping{expKey: mapping})
 
 	// Found
 	exportsRes, found := w.GetMappings(receiver.ReceiverKey)
 	assert.True(t, found)
-	assert.Equal(t, map[key.ExportKey]*model.Mapping{expKey: &mapping}, exportsRes)
+	assert.Equal(t, map[key.ExportKey]model.Mapping{expKey: mapping}, exportsRes)
 
 	// Not found
 	_, found = w.GetMappings(key.ReceiverKey{ProjectID: 101, ReceiverID: "r2"})
@@ -146,7 +146,7 @@ func TestStore_Watcher_AddRemoveExportMapping(t *testing.T) {
 	w.addExportMapping(receiver.ReceiverKey, expKey, &mapping)
 	res, found := w.mappings.Load(receiver.ReceiverKey)
 	assert.True(t, found)
-	assert.Equal(t, map[key.ExportKey]*model.Mapping{expKey: &mapping}, res)
+	assert.Equal(t, map[key.ExportKey]model.Mapping{expKey: mapping}, res)
 
 	// Add new export mapping to existing receiver
 	newExpKey := key.ExportKey{
@@ -156,7 +156,7 @@ func TestStore_Watcher_AddRemoveExportMapping(t *testing.T) {
 	w.addExportMapping(receiver.ReceiverKey, newExpKey, &mapping)
 	res, found = w.mappings.Load(receiver.ReceiverKey)
 	assert.True(t, found)
-	assert.Equal(t, map[key.ExportKey]*model.Mapping{expKey: &mapping, newExpKey: &mapping}, res)
+	assert.Equal(t, map[key.ExportKey]model.Mapping{expKey: mapping, newExpKey: mapping}, res)
 
 	// Add mapping to existing export
 	newMapping := receiver.Exports[0].Mapping
@@ -164,13 +164,13 @@ func TestStore_Watcher_AddRemoveExportMapping(t *testing.T) {
 	w.addExportMapping(receiver.ReceiverKey, expKey, &newMapping)
 	res, found = w.mappings.Load(receiver.ReceiverKey)
 	assert.True(t, found)
-	assert.Equal(t, map[key.ExportKey]*model.Mapping{expKey: &newMapping, newExpKey: &mapping}, res)
+	assert.Equal(t, map[key.ExportKey]model.Mapping{expKey: newMapping, newExpKey: mapping}, res)
 
 	// Remove export mapping
 	w.removeExportMapping(receiver.ReceiverKey, expKey)
 	res, found = w.mappings.Load(receiver.ReceiverKey)
 	assert.True(t, found)
-	assert.Equal(t, map[key.ExportKey]*model.Mapping{newExpKey: &mapping}, res)
+	assert.Equal(t, map[key.ExportKey]model.Mapping{newExpKey: mapping}, res)
 }
 
 func TestStore_Watcher_HandleSliceEvent(t *testing.T) {
@@ -267,7 +267,7 @@ func TestStore_Watcher_HandleMappingEvent(t *testing.T) {
 	})
 	mappings, found := w.mappings.Load(receiver.ReceiverKey)
 	assert.True(t, found)
-	assert.Equal(t, map[key.ExportKey]*model.Mapping{expKey: &mapping}, mappings)
+	assert.Equal(t, map[key.ExportKey]model.Mapping{expKey: mapping}, mappings)
 
 	// Create mapping for the same export - replace mapping in w.mappings
 	newMapping := receiver.Exports[0].Mapping
@@ -283,7 +283,7 @@ func TestStore_Watcher_HandleMappingEvent(t *testing.T) {
 	})
 	mappings, found = w.mappings.Load(receiver.ReceiverKey)
 	assert.True(t, found)
-	assert.Equal(t, map[key.ExportKey]*model.Mapping{expKey: &newMapping}, mappings)
+	assert.Equal(t, map[key.ExportKey]model.Mapping{expKey: newMapping}, mappings)
 
 	// Create mapping for another export
 	newExpKey := key.ExportKey{
@@ -301,7 +301,7 @@ func TestStore_Watcher_HandleMappingEvent(t *testing.T) {
 	})
 	mappings, found = w.mappings.Load(receiver.ReceiverKey)
 	assert.True(t, found)
-	assert.Equal(t, map[key.ExportKey]*model.Mapping{expKey: &newMapping, newExpKey: &mapping}, mappings)
+	assert.Equal(t, map[key.ExportKey]model.Mapping{expKey: newMapping, newExpKey: mapping}, mappings)
 }
 
 func TestStore_Watcher_HandleExportEvent(t *testing.T) {
@@ -322,7 +322,7 @@ func TestStore_Watcher_HandleExportEvent(t *testing.T) {
 	mapping2 := receiver.Exports[0].Mapping
 	sliceID, _ := time.Parse(key.TimeFormat, "2006-01-03T15:04:05.000Z")
 	w.slicesForExports.Store(expKey, sliceID)
-	w.mappings.Store(receiver.ReceiverKey, map[key.ExportKey]*model.Mapping{expKey: &mapping, expKey2: &mapping2})
+	w.mappings.Store(receiver.ReceiverKey, map[key.ExportKey]model.Mapping{expKey: mapping, expKey2: mapping2})
 
 	// Delete export
 	w.handleExportEvent(etcdop.EventT[model.ExportBase]{
@@ -337,7 +337,7 @@ func TestStore_Watcher_HandleExportEvent(t *testing.T) {
 	assert.False(t, found)
 	mappings, found := w.mappings.Load(receiver.ReceiverKey)
 	assert.True(t, found)
-	assert.Equal(t, map[key.ExportKey]*model.Mapping{expKey2: &mapping2}, mappings)
+	assert.Equal(t, map[key.ExportKey]model.Mapping{expKey2: mapping2}, mappings)
 }
 
 func TestStore_Watcher_HandleReceiverEvent(t *testing.T) {
@@ -421,7 +421,7 @@ func TestStore_Watcher_Watch(t *testing.T) {
 	assert.Equal(t, receiver.Secret, secret)
 	mappings, found := w.mappings.Load(export.ReceiverKey)
 	assert.True(t, found)
-	assert.Equal(t, map[key.ExportKey]*model.Mapping{export.ExportKey: &export.Mapping}, mappings)
+	assert.Equal(t, map[key.ExportKey]model.Mapping{export.ExportKey: export.Mapping}, mappings)
 
 	// Check slice watcher - add slice
 	fileID, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
@@ -456,7 +456,7 @@ func TestStore_Watcher_Watch(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	mappings, found = w.mappings.Load(newRecKey)
 	assert.True(t, found)
-	assert.Equal(t, map[key.ExportKey]*model.Mapping{newExpKey: &newMapping}, mappings)
+	assert.Equal(t, map[key.ExportKey]model.Mapping{newExpKey: newMapping}, mappings)
 
 	// Check export watcher - delete export
 	_, err = store.deleteExportBaseOp(ctx, export.ExportKey).Do(ctx, store.client)
@@ -466,7 +466,7 @@ func TestStore_Watcher_Watch(t *testing.T) {
 	assert.False(t, found)
 	mappings, found = w.mappings.Load(receiver.ReceiverKey)
 	assert.True(t, found)
-	assert.Equal(t, map[key.ExportKey]*model.Mapping{}, mappings)
+	assert.Equal(t, map[key.ExportKey]model.Mapping{}, mappings)
 
 	// Check receiver watcher - delete receiver
 	_, found = w.secrets.Load(receiver.ReceiverKey)

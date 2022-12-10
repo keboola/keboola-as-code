@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/keboola/go-utils/pkg/deepcopy"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -33,12 +34,12 @@ func NewWatcher(store *Store) (*Watcher, error) {
 	return w, nil
 }
 
-func (w *Watcher) GetMappings(k key.ReceiverKey) (map[key.ExportKey]*model.Mapping, bool) {
+func (w *Watcher) GetMappings(k key.ReceiverKey) (map[key.ExportKey]model.Mapping, bool) {
 	mappings, found := w.mappings.Load(k)
 	if !found {
 		return nil, false
 	}
-	return mappings.(map[key.ExportKey]*model.Mapping), true
+	return deepcopy.Copy(mappings).(map[key.ExportKey]model.Mapping), true
 }
 
 func (w *Watcher) GetSecret(k key.ReceiverKey) (string, bool) {
@@ -85,13 +86,13 @@ func (w *Watcher) Watch(ctx context.Context, logger log.Logger, client *etcd.Cli
 }
 
 func (w *Watcher) addExportMapping(recKey key.ReceiverKey, expKey key.ExportKey, mapping *model.Mapping) {
-	mappings, _ := w.mappings.LoadOrStore(recKey, make(map[key.ExportKey]*model.Mapping))
-	mappings.(map[key.ExportKey]*model.Mapping)[expKey] = mapping
+	mappings, _ := w.mappings.LoadOrStore(recKey, make(map[key.ExportKey]model.Mapping))
+	mappings.(map[key.ExportKey]model.Mapping)[expKey] = *mapping
 }
 
 func (w *Watcher) removeExportMapping(recKey key.ReceiverKey, expKey key.ExportKey) {
-	mappings, _ := w.mappings.LoadOrStore(recKey, make(map[key.ExportKey]*model.Mapping))
-	delete(mappings.(map[key.ExportKey]*model.Mapping), expKey)
+	mappings, _ := w.mappings.LoadOrStore(recKey, make(map[key.ExportKey]model.Mapping))
+	delete(mappings.(map[key.ExportKey]model.Mapping), expKey)
 }
 
 // handleSliceEvent takes care of events on slice keys
