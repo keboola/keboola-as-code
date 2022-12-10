@@ -188,56 +188,56 @@ node3
 	// Logs differs in number of "the node ... gone" messages
 	wildcards.Assert(t, `
 [node1]INFO  process unique id "node1"
-[node1]INFO  creating etcd session
-[node1]INFO  created etcd session | %s
-[node1]INFO  registering the node "node1"
-[node1]INFO  the node "node1" registered | %s
-[node1]INFO  watching for other nodes
-[node1]INFO  found a new node "node%d"
-[node1]INFO  found a new node "node%d"
-[node1]INFO  found a new node "node%d"
+[node1][distribution]INFO  creating etcd session
+[node1][distribution]INFO  created etcd session | %s
+[node1][distribution]INFO  registering the node "node1"
+[node1][distribution]INFO  the node "node1" registered | %s
+[node1][distribution]INFO  watching for other nodes
+[node1][distribution]INFO  found a new node "node%d"
+[node1][distribution]INFO  found a new node "node%d"
+[node1][distribution]INFO  found a new node "node%d"
 [node1]INFO  exiting (bye bye 1)
-[node1]INFO  cancelled watcher
-[node1]INFO  unregistering the node "node1"
-[node1]INFO  the node "node1" unregistered | %s
-[node1]INFO  closed etcd session
+[node1][distribution]INFO  cancelled watcher
+[node1][distribution]INFO  unregistering the node "node1"
+[node1][distribution]INFO  the node "node1" unregistered | %s
+[node1][distribution]INFO  closed etcd session
 [node1]INFO  exited
 `, loggers[0].AllMessages())
 	wildcards.Assert(t, `
 [node2]INFO  process unique id "node2"
-[node2]INFO  creating etcd session
-[node2]INFO  created etcd session | %s
-[node2]INFO  registering the node "node2"
-[node2]INFO  the node "node2" registered | %s
-[node2]INFO  watching for other nodes
-[node2]INFO  found a new node "node%d"
-[node2]INFO  found a new node "node%d"
-[node2]INFO  found a new node "node%d"
-[node2]INFO  the node "node%d" gone
+[node2][distribution]INFO  creating etcd session
+[node2][distribution]INFO  created etcd session | %s
+[node2][distribution]INFO  registering the node "node2"
+[node2][distribution]INFO  the node "node2" registered | %s
+[node2][distribution]INFO  watching for other nodes
+[node2][distribution]INFO  found a new node "node%d"
+[node2][distribution]INFO  found a new node "node%d"
+[node2][distribution]INFO  found a new node "node%d"
+[node2][distribution]INFO  the node "node%d" gone
 [node2]INFO  exiting (bye bye 2)
-[node2]INFO  cancelled watcher
-[node2]INFO  unregistering the node "node2"
-[node2]INFO  the node "node2" unregistered | %s
-[node2]INFO  closed etcd session
+[node2][distribution]INFO  cancelled watcher
+[node2][distribution]INFO  unregistering the node "node2"
+[node2][distribution]INFO  the node "node2" unregistered | %s
+[node2][distribution]INFO  closed etcd session
 [node2]INFO  exited
 `, loggers[1].AllMessages())
 	wildcards.Assert(t, `
 [node3]INFO  process unique id "node3"
-[node3]INFO  creating etcd session
-[node3]INFO  created etcd session | %s
-[node3]INFO  registering the node "node3"
-[node3]INFO  the node "node3" registered | %s
-[node3]INFO  watching for other nodes
-[node3]INFO  found a new node "node%d"
-[node3]INFO  found a new node "node%d"
-[node3]INFO  found a new node "node%d"
-[node3]INFO  the node "node%d" gone
-[node3]INFO  the node "node%d" gone
+[node3][distribution]INFO  creating etcd session
+[node3][distribution]INFO  created etcd session | %s
+[node3][distribution]INFO  registering the node "node3"
+[node3][distribution]INFO  the node "node3" registered | %s
+[node3][distribution]INFO  watching for other nodes
+[node3][distribution]INFO  found a new node "node%d"
+[node3][distribution]INFO  found a new node "node%d"
+[node3][distribution]INFO  found a new node "node%d"
+[node3][distribution]INFO  the node "node%d" gone
+[node3][distribution]INFO  the node "node%d" gone
 [node3]INFO  exiting (bye bye 3)
-[node3]INFO  cancelled watcher
-[node3]INFO  unregistering the node "node3"
-[node3]INFO  the node "node3" unregistered | %s
-[node3]INFO  closed etcd session
+[node3][distribution]INFO  cancelled watcher
+[node3][distribution]INFO  unregistering the node "node3"
+[node3][distribution]INFO  the node "node3" unregistered | %s
+[node3][distribution]INFO  closed etcd session
 [node3]INFO  exited
 `, loggers[2].AllMessages())
 
@@ -267,17 +267,17 @@ node4
 
 	wildcards.Assert(t, `
 [node4]INFO  process unique id "node4"
-[node4]INFO  creating etcd session
-[node4]INFO  created etcd session | %s
-[node4]INFO  registering the node "node4"
-[node4]INFO  the node "node4" registered | %s
-[node4]INFO  watching for other nodes
-[node4]INFO  found a new node "node4"
+[node4][distribution]INFO  creating etcd session
+[node4][distribution]INFO  created etcd session | %s
+[node4][distribution]INFO  registering the node "node4"
+[node4][distribution]INFO  the node "node4" registered | %s
+[node4][distribution]INFO  watching for other nodes
+[node4][distribution]INFO  found a new node "node4"
 [node4]INFO  exiting (bye bye 4)
-[node4]INFO  cancelled watcher
-[node4]INFO  unregistering the node "node4"
-[node4]INFO  the node "node4" unregistered | %s
-[node4]INFO  closed etcd session
+[node4][distribution]INFO  cancelled watcher
+[node4][distribution]INFO  unregistering the node "node4"
+[node4][distribution]INFO  the node "node4" unregistered | %s
+[node4][distribution]INFO  closed etcd session
 [node4]INFO  exited
 `, d4.DebugLogger().AllMessages())
 }
