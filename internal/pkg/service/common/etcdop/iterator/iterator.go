@@ -36,7 +36,11 @@ type Iterator struct {
 }
 
 func New(start string, opts ...Option) Definition {
-	return Definition{config: newConfig(start, nil, opts)}
+	return newIterator(newConfig(start, nil, opts))
+}
+
+func newIterator(config config) Definition {
+	return Definition{config: config}
 }
 
 // Do converts iterator definition to the iterator.
