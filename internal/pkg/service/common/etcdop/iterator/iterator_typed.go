@@ -1,4 +1,3 @@
-// Package iterator provides iterator for etcd keys.
 package iterator
 
 import (

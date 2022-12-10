@@ -1,4 +1,5 @@
-// Package iterator provides iterator for etcd keys.
+// Package iterator provides iterator for etcd prefix.
+// Iterator is for raw values and IteratorT for typed values, with serialization support.
 package iterator
 
 import (
