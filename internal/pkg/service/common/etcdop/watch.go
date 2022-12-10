@@ -41,6 +41,34 @@ func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, handleErr func(e
 	return ch
 }
 
+func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) <-chan Event {
+	ch := make(chan Event)
+
+	go func() {
+		// GetAll
+		itr := v.GetAll().Do(ctx, client)
+		err := itr.ForEach(func(kv *op.KeyValue, header *etcdserverpb.ResponseHeader) error {
+			ch <- Event{
+				KeyValue: kv,
+				Type:     CreateEvent,
+				Header:   header,
+			}
+			return nil
+		})
+		if err != nil {
+			// GetAll error is fatal
+			handleErr(err)
+			close(ch)
+		}
+
+		// Continue with Watch where GetAll ended
+		opts = append(opts, etcd.WithRev(itr.Header().Revision+1))
+		v.doWatch(ctx, client, handleErr, ch, opts...)
+	}()
+
+	return ch
+}
+
 func (v Prefix) doWatch(ctx context.Context, client etcd.Watcher, handleErr func(err error), ch chan Event, opts ...etcd.OpOption) {
 	opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
 	rawCh := client.Watch(ctx, v.Prefix(), opts...)
@@ -51,7 +79,7 @@ func (v Prefix) doWatch(ctx context.Context, client etcd.Watcher, handleErr func
 				return
 			case resp, ok := <-rawCh:
 				if !ok {
-					// Close typed channel, if raw channel is closed
+					// Close output channel, if raw channel is closed
 					close(ch)
 					return
 				}
@@ -92,13 +120,13 @@ func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, handleErr fu
 }
 
 func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) <-chan EventT[T] {
-	typedCh := make(chan EventT[T])
+	outCh := make(chan EventT[T])
 
 	go func() {
 		// GetAll
 		itr := v.GetAll().Do(ctx, client)
 		err := itr.ForEachKV(func(kv op.KeyValueT[T], header *etcdserverpb.ResponseHeader) error {
-			typedCh <- EventT[T]{
+			outCh <- EventT[T]{
 				KeyValueT: kv,
 				Type:      CreateEvent,
 				Header:    header,
@@ -108,18 +136,18 @@ func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, han
 		if err != nil {
 			// GetAll error is fatal
 			handleErr(err)
-			close(typedCh)
+			close(outCh)
 		}
 
 		// Continue with Watch where GetAll ended
 		opts = append(opts, etcd.WithRev(itr.Header().Revision+1))
-		v.doWatch(ctx, client, handleErr, typedCh, opts...)
+		v.doWatch(ctx, client, handleErr, outCh, opts...)
 	}()
 
-	return typedCh
+	return outCh
 }
 
-func (v PrefixT[T]) doWatch(ctx context.Context, client etcd.Watcher, handleErr func(err error), typedCh chan EventT[T], opts ...etcd.OpOption) {
+func (v PrefixT[T]) doWatch(ctx context.Context, client etcd.Watcher, handleErr func(err error), outCh chan EventT[T], opts ...etcd.OpOption) {
 	rawCh := v.prefix.Watch(ctx, client, handleErr, opts...)
 	go func() {
 		for {
@@ -128,8 +156,8 @@ func (v PrefixT[T]) doWatch(ctx context.Context, client etcd.Watcher, handleErr 
 				return
 			case rawEvent, ok := <-rawCh:
 				if !ok {
-					// Close typed channel, if raw channel is closed
-					close(typedCh)
+					// Close output channel, if raw channel is closed
+					close(outCh)
 					return
 				}
 
@@ -149,7 +177,7 @@ func (v PrefixT[T]) doWatch(ctx context.Context, client etcd.Watcher, handleErr 
 					outEvent.Value = *target
 				}
 
-				typedCh <- outEvent
+				outCh <- outEvent
 			}
 		}
 	}()
