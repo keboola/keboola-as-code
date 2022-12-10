@@ -77,6 +77,85 @@ func TestPrefix_Watch(t *testing.T) {
 	}, "DELETE timeout")
 }
 
+func TestPrefix_GetAllAndWatch(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	c := etcdhelper.ClientForTest(t)
+	pfx := prefixForTest()
+
+	// CREATE key1
+	assert.NoError(t, pfx.Key("key1").Put("foo1").Do(ctx, c))
+
+	// Create watcher
+	errHandler := func(err error) {
+		assert.FailNow(t, `unexpected watch error`, err.Error())
+	}
+	ch := pfx.GetAllAndWatch(ctx, c, errHandler)
+
+	// Wait for CREATE key1 event
+	assertDone(t, func() {
+		expected := Event{}
+		expected.Type = CreateEvent
+		expected.KeyValue = &mvccpb.KeyValue{
+			Key:   []byte("my/prefix/key1"),
+			Value: []byte("foo1"),
+		}
+		assert.Equal(t, expected, clearEvent(<-ch))
+	}, "CREATE1 timeout")
+
+	// CREATE key2
+	go func() {
+		assert.NoError(t, pfx.Key("key2").Put("foo2").Do(ctx, c))
+	}()
+
+	// Wait for CREATE key1 event
+	assertDone(t, func() {
+		expected := Event{}
+		expected.Type = CreateEvent
+		expected.KeyValue = &mvccpb.KeyValue{
+			Key:   []byte("my/prefix/key2"),
+			Value: []byte("foo2"),
+		}
+		assert.Equal(t, expected, clearEvent(<-ch))
+	}, "CREATE2 timeout")
+
+	// UPDATE key
+	go func() {
+		assert.NoError(t, pfx.Key("key2").Put("new").Do(ctx, c))
+	}()
+
+	// Wait for UPDATE event
+	assertDone(t, func() {
+		expected := Event{}
+		expected.Type = UpdateEvent
+		expected.KeyValue = &mvccpb.KeyValue{
+			Key:   []byte("my/prefix/key2"),
+			Value: []byte("new"),
+		}
+		assert.Equal(t, expected, clearEvent(<-ch))
+	}, "UPDATE timeout")
+
+	// DELETE key
+	go func() {
+		ok, err := pfx.Key("key1").Delete().Do(ctx, c)
+		assert.NoError(t, err)
+		assert.True(t, ok)
+	}()
+
+	// Wait for DELETE event
+	assertDone(t, func() {
+		expected := Event{}
+		expected.Type = DeleteEvent
+		expected.KeyValue = &mvccpb.KeyValue{
+			Key: []byte("my/prefix/key1"),
+		}
+		assert.Equal(t, expected, clearEvent(<-ch))
+	}, "DELETE timeout")
+}
+
 func TestPrefixT_Watch(t *testing.T) {
 	t.Parallel()
 
@@ -140,7 +219,8 @@ func TestPrefixT_Watch(t *testing.T) {
 		expected.KV = &mvccpb.KeyValue{
 			Key: []byte("my/prefix/key1"),
 		}
-		assert.Equal(t, expected, clearEventT(<-ch))
+		x := clearEventT(<-ch)
+		assert.Equal(t, expected, x)
 	}, "DELETE timeout")
 }
 
