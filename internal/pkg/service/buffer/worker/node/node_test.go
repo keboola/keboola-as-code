@@ -37,6 +37,16 @@ func TestNodesDiscovery(t *testing.T) {
 	loggers := make(map[int]log.DebugLogger)
 	processes := make(map[int]*servicectx.Process)
 
+	createDeps := func(nodeNumber int) dependencies.Mocked {
+		return dependencies.NewMockedDeps(
+			t,
+			dependencies.WithUniqueID(fmt.Sprintf("node%d", nodeNumber)),
+			dependencies.WithLoggerPrefix(fmt.Sprintf("[node%d]", nodeNumber)),
+			dependencies.WithCtx(ctx),
+			dependencies.WithEtcdNamespace(etcdNamespace),
+		)
+	}
+
 	// Create nodes
 	wg := &sync.WaitGroup{}
 	for i := 0; i < nodesCount; i++ {
@@ -44,14 +54,7 @@ func TestNodesDiscovery(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			d := dependencies.NewMockedDeps(
-				t,
-				dependencies.WithUniqueID(fmt.Sprintf("node%d", i+1)),
-				dependencies.WithLoggerPrefix(fmt.Sprintf("[node%d]", i+1)),
-				dependencies.WithCtx(ctx),
-				dependencies.WithEtcdNamespace(etcdNamespace),
-			)
-
+			d := createDeps(i + 1)
 			logger := d.DebugLogger()
 			logger.ConnectTo(testhelper.VerboseStdout())
 			process := d.Process()
@@ -234,6 +237,45 @@ node3
 [node3]INFO  closed etcd session
 [node3]INFO  exited
 `, loggers[2].AllMessages())
+
+	// All node are off, start a new node
+	assert.Equal(t, 4, nodesCount+1)
+	d4 := createDeps(4)
+	process4 := d4.Process()
+	node4, err := New(d4, WithStartupTimeout(time.Second), WithShutdownTimeout(time.Second))
+	assert.NoError(t, err)
+	assert.Eventually(t, func() bool {
+		return reflect.DeepEqual([]string{"node4"}, node4.Nodes())
+	}, time.Second, 10*time.Millisecond)
+
+	// Check etcd state
+	etcdhelper.AssertKVs(t, client, `
+<<<<<
+runtime/workers/active/ids/node4 (lease=%d)
+-----
+node4
+>>>>>
+`)
+
+	// Shutdown node 4
+	process4.Shutdown(errors.New("bye bye 4"))
+	process4.WaitForShutdown()
+	etcdhelper.AssertKVs(t, client, "")
+
+	wildcards.Assert(t, `
+[node4]INFO  process unique id "node4"
+[node4]INFO  created etcd session
+[node4]INFO  registering the node "node4"
+[node4]INFO  the node "node4" registered
+[node4]INFO  watching for other nodes
+[node4]INFO  found a new node "node4"
+[node4]INFO  exiting (bye bye 4)
+[node4]INFO  cancelled watcher
+[node4]INFO  unregistering the node "node4"
+[node4]INFO  the node "node4" unregistered
+[node4]INFO  closed etcd session
+[node4]INFO  exited
+`, d4.DebugLogger().AllMessages())
 }
 
 // TestConsistentHashLib tests the library behavior and shows how it should be used.
