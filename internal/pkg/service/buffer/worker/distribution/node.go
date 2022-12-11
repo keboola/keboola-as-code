@@ -1,11 +1,11 @@
-// Package node provides:
-// - Registration of the worker node in the cluster.
-// - Discovering of other worker nodes in the cluster.
-// - Assignment of a task to a specific worker node (by a consistent hash/HashRing approach).
+// Package distribution provides distribution of various keys/tasks between worker nodes, it consists of:
+// - Registration of a worker node in the cluster as an etcd key (with lease).
+// - Discovering of other worker nodes in the cluster by the etcd Watch API.
+// - Local decision and assignment of a key/task to a specific worker node (by a consistent hash/HashRing approach).
 //
 // Key benefits:
 //   - The node only watch of other node's registration/un-registration, which doesn't happen often.
-//   - Based on this, the node can quickly and locally determine owner node for a task.
+//   - Based on this, the node can quickly and locally determine owner node for a key/task.
 //   - It aims to reduce the risk of collision and minimizes load.
 //
 // Atomicity:
@@ -15,8 +15,8 @@
 //
 // Read more:
 // - https://etcd.io/docs/v3.5/learning/why/#notes-on-the-usage-of-lock-and-lease
-// - "Actually, the lease mechanism itself doesn’t guarantee mutual exclusion...."
-package node
+// - "Actually, the lease mechanism itself doesn't guarantee mutual exclusion...."
+package distribution
 
 import (
 	"context"
@@ -53,7 +53,7 @@ type dependencies interface {
 	Process() *servicectx.Process
 }
 
-func New(d dependencies, opts ...Option) (*Node, error) {
+func NewNode(d dependencies, opts ...Option) (*Node, error) {
 	// Apply options
 	c := defaultConfig()
 	for _, o := range opts {
@@ -64,7 +64,7 @@ func New(d dependencies, opts ...Option) (*Node, error) {
 	n := &Node{
 		config: c,
 		proc:   d.Process(),
-		logger: d.Logger(),
+		logger: d.Logger().AddPrefix("[distribution]"),
 		schema: d.Schema(),
 		client: d.EtcdClient(),
 		id:     d.Process().UniqueID(),
@@ -152,6 +152,9 @@ func (n *Node) onWatchErr(err error) {
 }
 
 func (n *Node) createSession() (err error) {
+	startTime := time.Now()
+	n.logger.Infof(`creating etcd session`)
+
 	n.session, err = concurrency.NewSession(n.client, concurrency.WithTTL(n.config.ttlSeconds))
 	if err != nil {
 		return err
@@ -165,16 +168,17 @@ func (n *Node) createSession() (err error) {
 		}
 	})
 
-	n.logger.Info("created etcd session")
+	n.logger.Infof("created etcd session | %s", time.Since(startTime))
 	return nil
 }
 
 // register node in the etcd prefix,
 // Deregistration is ensured double: by OnShutdown callback and by the lease.
 func (n *Node) register() error {
-	ctx, cancel := context.WithTimeout(n.client.Ctx(), n.config.initTimeout)
+	ctx, cancel := context.WithTimeout(n.client.Ctx(), n.config.startupTimeout)
 	defer cancel()
 
+	startTime := time.Now()
 	n.logger.Infof(`registering the node "%s"`, n.id)
 
 	key := n.schema.Runtime().Workers().Active().IDs().Node(n.id)
@@ -186,7 +190,7 @@ func (n *Node) register() error {
 		n.unregister()
 	})
 
-	n.logger.Infof(`the node "%s" registered`, n.id)
+	n.logger.Infof(`the node "%s" registered | %s`, n.id, time.Since(startTime))
 	return nil
 }
 
@@ -194,6 +198,7 @@ func (n *Node) unregister() {
 	ctx, cancel := context.WithTimeout(context.Background(), n.config.shutdownTimeout)
 	defer cancel()
 
+	startTime := time.Now()
 	n.logger.Infof(`unregistering the node "%s"`, n.id)
 
 	key := n.schema.Runtime().Workers().Active().IDs().Node(n.id)
@@ -201,7 +206,7 @@ func (n *Node) unregister() {
 		n.logger.Warnf(`cannot unregister the node "%s": %s`, n.id, err)
 	}
 
-	n.logger.Infof(`the node "%s" unregistered`, n.id)
+	n.logger.Infof(`the node "%s" unregistered | %s`, n.id, time.Since(startTime))
 }
 
 // watch for other nodes.

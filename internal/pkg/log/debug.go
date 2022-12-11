@@ -57,6 +57,7 @@ func NewDebugLoggerWithPrefix(prefix string) DebugLogger {
 		cores = cores.With([]zapcore.Field{{Key: "prefix", String: prefix, Type: zapcore.StringType}})
 	}
 	l.zapLogger = loggerFromZapCore(cores)
+	l.zapLogger.prefix = prefix
 	return l
 }
 
