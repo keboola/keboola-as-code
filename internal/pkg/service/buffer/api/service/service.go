@@ -30,15 +30,15 @@ import (
 )
 
 type service struct {
+	deps   dependencies.ForServer
 	mapper mapper.Mapper
 }
 
-type serviceDeps interface {
-	BufferAPIHost() string
-}
-
-func New(d serviceDeps) buffer.Service {
-	return &service{mapper: mapper.NewMapper(d.BufferAPIHost())}
+func New(d dependencies.ForServer) buffer.Service {
+	return &service{
+		deps:   d,
+		mapper: mapper.NewMapper(d.BufferAPIHost()),
+	}
 }
 
 func (s *service) APIRootIndex(dependencies.ForPublicRequest) (err error) {
