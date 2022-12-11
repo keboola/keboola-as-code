@@ -184,12 +184,10 @@ func TestStore_Watcher_HandleSliceEvent(t *testing.T) {
 	sliceID1, _ := time.Parse(key.TimeFormat, "2006-01-02T15:04:05.000Z")
 	w.handleSliceEvent(etcdop.EventT[model.Slice]{
 		Type: etcdop.CreateEvent,
-		KeyValueT: op.KeyValueT[model.Slice]{
-			Value: model.Slice{SliceNumber: 1},
-			KV: &op.KeyValue{
-				Key: []byte("slice/100/r1/e1/2006-01-01T15:04:05.000Z/" + key.FormatTime(sliceID1)),
-			},
+		Kv: &op.KeyValue{
+			Key: []byte("slice/100/r1/e1/2006-01-01T15:04:05.000Z/" + key.FormatTime(sliceID1)),
 		},
+		Value: model.Slice{SliceNumber: 1},
 	})
 	val, found := w.slicesForExports.Load(expKey)
 	assert.True(t, found)
@@ -199,12 +197,10 @@ func TestStore_Watcher_HandleSliceEvent(t *testing.T) {
 	sliceID2, _ := time.Parse(key.TimeFormat, "2006-01-03T15:04:05.000Z")
 	w.handleSliceEvent(etcdop.EventT[model.Slice]{
 		Type: etcdop.CreateEvent,
-		KeyValueT: op.KeyValueT[model.Slice]{
-			Value: model.Slice{},
-			KV: &op.KeyValue{
-				Key: []byte("slice/100/r1/e1/2006-01-01T15:04:05.000Z/" + key.FormatTime(sliceID2)),
-			},
+		Kv: &op.KeyValue{
+			Key: []byte("slice/100/r1/e1/2006-01-01T15:04:05.000Z/" + key.FormatTime(sliceID2)),
 		},
+		Value: model.Slice{},
 	})
 	val, found = w.slicesForExports.Load(expKey)
 	assert.True(t, found)
@@ -213,12 +209,10 @@ func TestStore_Watcher_HandleSliceEvent(t *testing.T) {
 	// Delete the original slice - Keep the value in slicesForExports for the export key pointing to the new slice.
 	w.handleSliceEvent(etcdop.EventT[model.Slice]{
 		Type: etcdop.DeleteEvent,
-		KeyValueT: op.KeyValueT[model.Slice]{
-			Value: model.Slice{},
-			KV: &op.KeyValue{
-				Key: []byte("slice/100/r1/e1/2006-01-01T15:04:05.000Z/" + key.FormatTime(sliceID1)),
-			},
+		Kv: &op.KeyValue{
+			Key: []byte("slice/100/r1/e1/2006-01-01T15:04:05.000Z/" + key.FormatTime(sliceID1)),
 		},
+		Value: model.Slice{},
 	})
 	_, found = w.slicesForExports.Load(expKey)
 	assert.True(t, found)
@@ -226,12 +220,10 @@ func TestStore_Watcher_HandleSliceEvent(t *testing.T) {
 	// Delete the new slice - Remove the value in slicesForExports for the export key.
 	w.handleSliceEvent(etcdop.EventT[model.Slice]{
 		Type: etcdop.DeleteEvent,
-		KeyValueT: op.KeyValueT[model.Slice]{
-			Value: model.Slice{},
-			KV: &op.KeyValue{
-				Key: []byte("slice/100/r1/e1/2006-01-01T15:04:05.000Z/" + key.FormatTime(sliceID2)),
-			},
+		Kv: &op.KeyValue{
+			Key: []byte("slice/100/r1/e1/2006-01-01T15:04:05.000Z/" + key.FormatTime(sliceID2)),
 		},
+		Value: model.Slice{},
 	})
 	_, found = w.slicesForExports.Load(expKey)
 	assert.False(t, found)
@@ -246,19 +238,16 @@ func TestStore_Watcher_HandleMappingEvent(t *testing.T) {
 	now = now.UTC()
 	store.clock.(*clock.Mock).Set(now)
 	w := NewWatcher(store)
-	assert.NoError(t, err)
 	expKey := receiver.Exports[0].ExportKey
 	mapping := receiver.Exports[0].Mapping
 
 	// Create mapping
 	w.handleMappingEvent(etcdop.EventT[model.Mapping]{
 		Type: etcdop.CreateEvent,
-		KeyValueT: op.KeyValueT[model.Mapping]{
-			Value: mapping,
-			KV: &op.KeyValue{
-				Key: []byte("config/mapping/revision/100/r1/e1/1"),
-			},
+		Kv: &op.KeyValue{
+			Key: []byte("config/mapping/revision/100/r1/e1/1"),
 		},
+		Value: mapping,
 	})
 	mappings, found := w.mappings.Load(receiver.ReceiverKey)
 	assert.True(t, found)
@@ -269,12 +258,10 @@ func TestStore_Watcher_HandleMappingEvent(t *testing.T) {
 	newMapping.Incremental = false
 	w.handleMappingEvent(etcdop.EventT[model.Mapping]{
 		Type: etcdop.CreateEvent,
-		KeyValueT: op.KeyValueT[model.Mapping]{
-			Value: newMapping,
-			KV: &op.KeyValue{
-				Key: []byte("config/mapping/revision/100/r1/e1/2"),
-			},
+		Kv: &op.KeyValue{
+			Key: []byte("config/mapping/revision/100/r1/e1/2"),
 		},
+		Value: newMapping,
 	})
 	mappings, found = w.mappings.Load(receiver.ReceiverKey)
 	assert.True(t, found)
@@ -287,12 +274,10 @@ func TestStore_Watcher_HandleMappingEvent(t *testing.T) {
 	}
 	w.handleMappingEvent(etcdop.EventT[model.Mapping]{
 		Type: etcdop.CreateEvent,
-		KeyValueT: op.KeyValueT[model.Mapping]{
-			Value: mapping,
-			KV: &op.KeyValue{
-				Key: []byte("config/mapping/revision/100/r1/e2/1"),
-			},
+		Kv: &op.KeyValue{
+			Key: []byte("config/mapping/revision/100/r1/e2/1"),
 		},
+		Value: mapping,
 	})
 	mappings, found = w.mappings.Load(receiver.ReceiverKey)
 	assert.True(t, found)
@@ -321,10 +306,8 @@ func TestStore_Watcher_HandleExportEvent(t *testing.T) {
 	// Delete export
 	w.handleExportEvent(etcdop.EventT[model.ExportBase]{
 		Type: etcdop.DeleteEvent,
-		KeyValueT: op.KeyValueT[model.ExportBase]{
-			KV: &op.KeyValue{
-				Key: []byte("config/export/100/r1/e1"),
-			},
+		Kv: &op.KeyValue{
+			Key: []byte("config/export/100/r1/e1"),
 		},
 	})
 	_, found := w.slicesForExports.Load(expKey)
@@ -347,12 +330,10 @@ func TestStore_Watcher_HandleReceiverEvent(t *testing.T) {
 	// Create receiver
 	w.handleReceiverEvent(etcdop.EventT[model.ReceiverBase]{
 		Type: etcdop.CreateEvent,
-		KeyValueT: op.KeyValueT[model.ReceiverBase]{
-			KV: &op.KeyValue{
-				Key: []byte("config/receiver/100/r1"),
-			},
-			Value: model.ReceiverBase{Secret: "sec1"},
+		Kv: &op.KeyValue{
+			Key: []byte("config/receiver/100/r1"),
 		},
+		Value: model.ReceiverBase{Secret: "sec1"},
 	})
 	secret, found := w.secrets.Load(receiver.ReceiverKey)
 	assert.True(t, found)
@@ -361,12 +342,10 @@ func TestStore_Watcher_HandleReceiverEvent(t *testing.T) {
 	// Update receiver
 	w.handleReceiverEvent(etcdop.EventT[model.ReceiverBase]{
 		Type: etcdop.UpdateEvent,
-		KeyValueT: op.KeyValueT[model.ReceiverBase]{
-			KV: &op.KeyValue{
-				Key: []byte("config/receiver/100/r1"),
-			},
-			Value: model.ReceiverBase{Secret: "sec2"},
+		Kv: &op.KeyValue{
+			Key: []byte("config/receiver/100/r1"),
 		},
+		Value: model.ReceiverBase{Secret: "sec2"},
 	})
 	secret, found = w.secrets.Load(receiver.ReceiverKey)
 	assert.True(t, found)
@@ -375,10 +354,8 @@ func TestStore_Watcher_HandleReceiverEvent(t *testing.T) {
 	// Delete receiver
 	w.handleReceiverEvent(etcdop.EventT[model.ReceiverBase]{
 		Type: etcdop.DeleteEvent,
-		KeyValueT: op.KeyValueT[model.ReceiverBase]{
-			KV: &op.KeyValue{
-				Key: []byte("config/receiver/100/r1"),
-			},
+		Kv: &op.KeyValue{
+			Key: []byte("config/receiver/100/r1"),
 		},
 	})
 	_, found = w.secrets.Load(receiver.ReceiverKey)

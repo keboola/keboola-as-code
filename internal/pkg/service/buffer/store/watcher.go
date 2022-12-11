@@ -100,17 +100,18 @@ func (w *Watcher) removeExportMapping(recKey key.ReceiverKey, expKey key.ExportK
 // On Update do nothing, don't care about slice content.
 // On Delete remove the slice ID from the export-slice map.
 func (w *Watcher) handleSliceEvent(event etcdop.EventT[model.Slice]) {
-	keyParts := strings.Split(event.Key(), "/")
+	recordKey := string(event.Kv.Key)
+	keyParts := strings.Split(string(event.Kv.Key), "/")
 	if len(keyParts) != 7 {
-		panic(fmt.Sprintf("invalid key in slice prefix: %s", event.Key()))
+		panic(fmt.Sprintf("invalid key in slice prefix: %s", recordKey))
 	}
 	projectID, err := strconv.Atoi(keyParts[2])
 	if err != nil {
-		panic(fmt.Sprintf("invalid project ID in slice prefix: %s", event.Key()))
+		panic(fmt.Sprintf("invalid project ID in slice prefix: %s", recordKey))
 	}
 	sliceID, err := time.Parse(key.TimeFormat, keyParts[6])
 	if err != nil {
-		panic(fmt.Sprintf("invalid slice ID in slice prefix: %s", event.Key()))
+		panic(fmt.Sprintf("invalid slice ID in slice prefix: %s", recordKey))
 	}
 	exportKey := key.ExportKey{
 		ReceiverKey: key.ReceiverKey{
@@ -135,13 +136,14 @@ func (w *Watcher) handleSliceEvent(event etcdop.EventT[model.Slice]) {
 // On Update do nothing (mappings are updated by adding new revisions).
 // On Delete do nothing (mappings are updated by adding new revisions).
 func (w *Watcher) handleMappingEvent(event etcdop.EventT[model.Mapping]) {
-	keyParts := strings.Split(event.Key(), "/")
+	recordKey := string(event.Kv.Key)
+	keyParts := strings.Split(recordKey, "/")
 	if len(keyParts) != 7 {
-		panic(fmt.Sprintf("invalid key in mapping prefix: %s", event.Key()))
+		panic(fmt.Sprintf("invalid key in mapping prefix: %s", recordKey))
 	}
 	projectID, err := strconv.Atoi(keyParts[3])
 	if err != nil {
-		panic(fmt.Sprintf("invalid project ID in mapping prefix: %s", event.Key()))
+		panic(fmt.Sprintf("invalid project ID in mapping prefix: %s", recordKey))
 	}
 	receiverKey := key.ReceiverKey{
 		ProjectID:  projectID,
@@ -162,13 +164,14 @@ func (w *Watcher) handleMappingEvent(event etcdop.EventT[model.Mapping]) {
 // On Update do nothing.
 // On Delete remove the slice ID from the export-slice map and remove the mapping from the store.
 func (w *Watcher) handleExportEvent(event etcdop.EventT[model.ExportBase]) {
-	keyParts := strings.Split(event.Key(), "/")
+	recordKey := string(event.Kv.Key)
+	keyParts := strings.Split(recordKey, "/")
 	if len(keyParts) != 5 {
-		panic(fmt.Sprintf("invalid key in export prefix: %s", event.Key()))
+		panic(fmt.Sprintf("invalid key in export prefix: %s", recordKey))
 	}
 	projectID, err := strconv.Atoi(keyParts[2])
 	if err != nil {
-		panic(fmt.Sprintf("invalid project ID in export prefix: %s", event.Key()))
+		panic(fmt.Sprintf("invalid project ID in export prefix: %s", recordKey))
 	}
 	receiverKey := key.ReceiverKey{
 		ProjectID:  projectID,
@@ -190,13 +193,14 @@ func (w *Watcher) handleExportEvent(event etcdop.EventT[model.ExportBase]) {
 // On Update replace secret for the receiver in the store (could be changed).
 // On Delete remove the secret for the receiver from the store.
 func (w *Watcher) handleReceiverEvent(event etcdop.EventT[model.ReceiverBase]) {
-	keyParts := strings.Split(event.Key(), "/")
+	recordKey := string(event.Kv.Key)
+	keyParts := strings.Split(recordKey, "/")
 	if len(keyParts) != 4 {
-		panic(fmt.Sprintf("invalid key in receiver prefix: %s", event.Key()))
+		panic(fmt.Sprintf("invalid key in receiver prefix: %s", recordKey))
 	}
 	projectID, err := strconv.Atoi(keyParts[2])
 	if err != nil {
-		panic(fmt.Sprintf("invalid project ID in receiver prefix: %s", event.Key()))
+		panic(fmt.Sprintf("invalid project ID in receiver prefix: %s", recordKey))
 	}
 	receiverKey := key.ReceiverKey{
 		ProjectID:  projectID,
