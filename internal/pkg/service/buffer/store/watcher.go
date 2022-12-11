@@ -18,7 +18,8 @@ import (
 )
 
 type Watcher struct {
-	mappings         sync.Map
+	mappingsLock     *sync.RWMutex
+	mappings         map[key.ReceiverKey]map[key.ExportKey]*model.Mapping
 	secrets          sync.Map
 	slicesForExports sync.Map
 	store            *Store
@@ -26,7 +27,8 @@ type Watcher struct {
 
 func NewWatcher(store *Store) *Watcher {
 	w := &Watcher{
-		mappings:         sync.Map{},
+		mappingsLock:     &sync.RWMutex{},
+		mappings:         make(map[key.ReceiverKey]map[key.ExportKey]*model.Mapping),
 		secrets:          sync.Map{},
 		slicesForExports: sync.Map{},
 		store:            store,
@@ -34,12 +36,15 @@ func NewWatcher(store *Store) *Watcher {
 	return w
 }
 
-func (w *Watcher) GetMappings(k key.ReceiverKey) (map[key.ExportKey]model.Mapping, bool) {
-	mappings, found := w.mappings.Load(k)
+func (w *Watcher) GetMappings(k key.ReceiverKey) (map[key.ExportKey]*model.Mapping, bool) {
+	w.mappingsLock.RLock()
+	mappings, found := w.mappings[k]
 	if !found {
 		return nil, false
 	}
-	return deepcopy.Copy(mappings).(map[key.ExportKey]model.Mapping), true
+	res := deepcopy.Copy(mappings).(map[key.ExportKey]*model.Mapping)
+	w.mappingsLock.RUnlock()
+	return res, true
 }
 
 func (w *Watcher) GetSecret(k key.ReceiverKey) (string, bool) {
@@ -86,13 +91,22 @@ func (w *Watcher) Watch(ctx context.Context, logger log.Logger, client *etcd.Cli
 }
 
 func (w *Watcher) addExportMapping(recKey key.ReceiverKey, expKey key.ExportKey, mapping *model.Mapping) {
-	mappings, _ := w.mappings.LoadOrStore(recKey, make(map[key.ExportKey]model.Mapping))
-	mappings.(map[key.ExportKey]model.Mapping)[expKey] = *mapping
+	w.mappingsLock.Lock()
+	mappings, found := w.mappings[recKey]
+	if !found {
+		mappings = make(map[key.ExportKey]*model.Mapping)
+	}
+	mappings[expKey] = mapping
+	w.mappingsLock.Unlock()
 }
 
 func (w *Watcher) removeExportMapping(recKey key.ReceiverKey, expKey key.ExportKey) {
-	mappings, _ := w.mappings.LoadOrStore(recKey, make(map[key.ExportKey]model.Mapping))
-	delete(mappings.(map[key.ExportKey]model.Mapping), expKey)
+	w.mappingsLock.Lock()
+	mappings, found := w.mappings[recKey]
+	if found {
+		delete(mappings, expKey)
+	}
+	w.mappingsLock.Unlock()
 }
 
 // handleSliceEvent takes care of events on slice keys
