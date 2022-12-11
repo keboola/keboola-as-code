@@ -6,7 +6,7 @@ import gonanoid "github.com/matoous/go-nanoid/v2"
 const (
 	RequestIDLength               = 15
 	TemplateInstanceIDLength      = 25
-	EtcdNamespaceForE2ETestLength = 10
+	EtcdNamespaceForE2ETestLength = 20
 	ReceiverSecretLength          = 48
 )
 

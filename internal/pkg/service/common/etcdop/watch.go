@@ -2,6 +2,7 @@ package etcdop
 
 import (
 	"context"
+	"strconv"
 
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"go.etcd.io/etcd/api/v3/mvccpb"
@@ -11,7 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type EventType int32
+type EventType int
 
 const (
 	CreateEvent EventType = iota
@@ -19,57 +20,75 @@ const (
 	DeleteEvent
 )
 
-type EventT[T any] struct {
-	op.KeyValueT[T]
+type Event struct {
+	Kv     *op.KeyValue
+	PrevKv *op.KeyValue
 	Type   EventType
 	Header *etcdserverpb.ResponseHeader
+}
+
+type EventT[T any] struct {
+	Value  T
+	Kv     *op.KeyValue
+	PrevKv *op.KeyValue
+	Type   EventType
+	Header *etcdserverpb.ResponseHeader
+}
+
+func (v EventType) String() string {
+	switch v {
+	case CreateEvent:
+		return "create"
+	case UpdateEvent:
+		return "update"
+	case DeleteEvent:
+		return "delete"
+	default:
+		return strconv.Itoa(int(v))
+	}
 }
 
 func (e *EventT[T]) Rev() int64 {
 	return e.Header.Revision
 }
 
-func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) etcd.WatchChan {
-	opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
-	return client.Watch(ctx, v.Prefix(), opts...)
+func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, handleErr func(error), opts ...etcd.OpOption) <-chan Event {
+	ch := make(chan Event)
+	v.doWatch(ctx, client, handleErr, ch, opts...)
+	return ch
 }
 
-func (v PrefixT[T]) Watch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) <-chan EventT[T] {
-	typedCh := make(chan EventT[T])
-	v.doWatch(ctx, client, handleErr, typedCh, opts...)
-	return typedCh
-}
-
-func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) <-chan EventT[T] {
-	typedCh := make(chan EventT[T])
+func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) <-chan Event {
+	ch := make(chan Event)
 
 	go func() {
 		// GetAll
 		itr := v.GetAll().Do(ctx, client)
-		err := itr.ForEachKV(func(kv op.KeyValueT[T], header *etcdserverpb.ResponseHeader) error {
-			typedCh <- EventT[T]{
-				KeyValueT: kv,
-				Type:      CreateEvent,
-				Header:    header,
+		err := itr.ForEach(func(kv *op.KeyValue, header *etcdserverpb.ResponseHeader) error {
+			ch <- Event{
+				Kv:     kv,
+				Type:   CreateEvent,
+				Header: header,
 			}
 			return nil
 		})
 		if err != nil {
 			// GetAll error is fatal
 			handleErr(err)
-			close(typedCh)
+			close(ch)
 		}
 
 		// Continue with Watch where GetAll ended
 		opts = append(opts, etcd.WithRev(itr.Header().Revision+1))
-		v.doWatch(ctx, client, handleErr, typedCh, opts...)
+		v.doWatch(ctx, client, handleErr, ch, opts...)
 	}()
 
-	return typedCh
+	return ch
 }
 
-func (v PrefixT[T]) doWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), typedCh chan EventT[T], opts ...etcd.OpOption) {
-	rawCh := v.prefix.Watch(ctx, client, opts...)
+func (v Prefix) doWatch(ctx context.Context, client etcd.Watcher, handleErr func(err error), ch chan Event, opts ...etcd.OpOption) {
+	opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
+	rawCh := client.Watch(ctx, v.Prefix(), opts...)
 	go func() {
 		for {
 			select {
@@ -77,8 +96,8 @@ func (v PrefixT[T]) doWatch(ctx context.Context, client *etcd.Client, handleErr 
 				return
 			case resp, ok := <-rawCh:
 				if !ok {
-					// Close typed channel, if raw channel is closed
-					close(typedCh)
+					// Close output channel, if raw channel is closed
+					close(ch)
 					return
 				}
 
@@ -87,34 +106,97 @@ func (v PrefixT[T]) doWatch(ctx context.Context, client *etcd.Client, handleErr 
 					continue
 				}
 
-				for _, event := range resp.Events {
-					typedEvent := EventT[T]{KeyValueT: op.KeyValueT[T]{KV: event.Kv}, Header: &resp.Header}
+				for _, rawEvent := range resp.Events {
+					outEvent := Event{Kv: rawEvent.Kv, PrevKv: rawEvent.PrevKv, Header: &resp.Header}
 
 					// Map event type
-					switch event.Type {
+					switch rawEvent.Type {
 					case mvccpb.PUT:
-						if event.Kv.CreateRevision == event.Kv.ModRevision {
-							typedEvent.Type = CreateEvent
+						if rawEvent.Kv.CreateRevision == rawEvent.Kv.ModRevision {
+							outEvent.Type = CreateEvent
 						} else {
-							typedEvent.Type = UpdateEvent
+							outEvent.Type = UpdateEvent
 						}
 					case mvccpb.DELETE:
-						typedEvent.Type = DeleteEvent
+						outEvent.Type = DeleteEvent
 					default:
-						panic(errors.Errorf(`unexpected event type "%s"`, event.Type.String()))
+						panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
 					}
 
-					// We care for the value only in PUT operation
-					if event.Type == mvccpb.PUT {
-						target := new(T)
-						if err := v.serde.Decode(ctx, event.Kv, target); err != nil {
-							handleErr(err)
-							continue
-						}
-						typedEvent.Value = *target
-					}
-					typedCh <- typedEvent
+					ch <- outEvent
 				}
+			}
+		}
+	}()
+}
+
+func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, handleErr func(error), opts ...etcd.OpOption) <-chan EventT[T] {
+	ch := make(chan EventT[T])
+	v.doWatch(ctx, client, handleErr, ch, opts...)
+	return ch
+}
+
+func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) <-chan EventT[T] {
+	outCh := make(chan EventT[T])
+
+	go func() {
+		// GetAll
+		itr := v.GetAll().Do(ctx, client)
+		err := itr.ForEachKV(func(kv op.KeyValueT[T], header *etcdserverpb.ResponseHeader) error {
+			outCh <- EventT[T]{
+				Kv:     kv.Kv,
+				Value:  kv.Value,
+				Type:   CreateEvent,
+				Header: header,
+			}
+			return nil
+		})
+		if err != nil {
+			// GetAll error is fatal
+			handleErr(err)
+			close(outCh)
+		}
+
+		// Continue with Watch where GetAll ended
+		opts = append(opts, etcd.WithRev(itr.Header().Revision+1))
+		v.doWatch(ctx, client, handleErr, outCh, opts...)
+	}()
+
+	return outCh
+}
+
+func (v PrefixT[T]) doWatch(ctx context.Context, client etcd.Watcher, handleErr func(err error), outCh chan EventT[T], opts ...etcd.OpOption) {
+	rawCh := v.prefix.Watch(ctx, client, handleErr, opts...)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case rawEvent, ok := <-rawCh:
+				if !ok {
+					// Close output channel, if raw channel is closed
+					close(outCh)
+					return
+				}
+
+				outEvent := EventT[T]{
+					Kv:     rawEvent.Kv,
+					PrevKv: rawEvent.PrevKv,
+					Type:   rawEvent.Type,
+					Header: rawEvent.Header,
+				}
+
+				// We care for the value only in CREATE/UPDATE operation
+				if rawEvent.Type == CreateEvent || rawEvent.Type == UpdateEvent {
+					target := new(T)
+					if err := v.serde.Decode(ctx, rawEvent.Kv, target); err != nil {
+						handleErr(err)
+						continue
+					}
+					outEvent.Value = *target
+				}
+
+				outCh <- outEvent
 			}
 		}
 	}()

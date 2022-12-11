@@ -24,12 +24,12 @@ import (
 	"time"
 
 	"github.com/lafikl/consistent"
-	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -130,19 +130,25 @@ func (n *Node) MustCheckIsOwner(key string) bool {
 	return is
 }
 
-func (n *Node) onWatchEvent(event *etcd.Event) {
+func (n *Node) onWatchEvent(event etcdop.Event) {
 	switch event.Type {
-	case mvccpb.PUT:
+	case etcdop.CreateEvent:
+		fallthrough
+	case etcdop.UpdateEvent:
 		nodeID := string(event.Kv.Value)
 		n.nodes.Add(nodeID)
 		n.logger.Infof(`found a new node "%s"`, nodeID)
-	case mvccpb.DELETE:
+	case etcdop.DeleteEvent:
 		nodeID := string(event.PrevKv.Value)
 		n.nodes.Remove(nodeID)
 		n.logger.Infof(`the node "%s" gone`, nodeID)
 	default:
 		panic(errors.Errorf(`unexpected event type "%s"`, event.Type.String()))
 	}
+}
+
+func (n *Node) onWatchErr(err error) {
+	n.logger.Errorf("watcher failed: %s", err)
 }
 
 func (n *Node) createSession() (err error) {
@@ -214,7 +220,7 @@ func (n *Node) watch() {
 			default:
 				n.logger.Infof(`watching for other nodes`)
 				pfx := n.schema.Runtime().Workers().Active().IDs()
-				ch := pfx.Watch(ctx, n.client, etcd.WithRev(1), etcd.WithPrevKV(), etcd.WithCreatedNotify())
+				ch := pfx.GetAllAndWatch(ctx, n.client, n.onWatchErr, etcd.WithPrevKV(), etcd.WithCreatedNotify())
 				n.processEvents(ctx, ch)
 
 				// Wait and try to create watcher again
@@ -224,25 +230,18 @@ func (n *Node) watch() {
 	}()
 }
 
-func (n *Node) processEvents(ctx context.Context, ch <-chan etcd.WatchResponse) {
+func (n *Node) processEvents(ctx context.Context, ch <-chan etcdop.Event) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case resp, ok := <-ch:
+		case event, ok := <-ch:
 			if !ok {
 				n.logger.Info("watcher channel closed")
 				return
 			}
 
-			if err := resp.Err(); err != nil {
-				n.logger.Errorf("watcher failed: %s", err)
-				return
-			}
-
-			for _, event := range resp.Events {
-				n.onWatchEvent(event)
-			}
+			n.onWatchEvent(event)
 		}
 	}
 }

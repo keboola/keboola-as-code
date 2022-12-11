@@ -24,7 +24,7 @@ func NewTyped[R any](start string, serde *serde.Serde, opts ...Option) Definitio
 }
 
 // Do converts iterator definition to the iterator.
-func (v DefinitionT[T]) Do(ctx context.Context, client *etcd.Client) *IteratorT[T] {
+func (v DefinitionT[T]) Do(ctx context.Context, client etcd.KV) *IteratorT[T] {
 	out := &IteratorT[T]{Iterator: newIterator(v.config).Do(ctx, client)}
 	out.serde = v.serde
 	return out
@@ -38,9 +38,9 @@ func (v *IteratorT[T]) Next() bool {
 	}
 
 	// Decode item
-	v.currentValue = op.KeyValueT[T]{KV: v.values[v.currentIndex]}
-	if err := v.serde.Decode(v.ctx, v.currentValue.KV, &v.currentValue.Value); err != nil {
-		v.err = errors.Errorf(`etcd iterator failed: cannot decode key "%s", page=%d, index=%d: %w`, v.currentValue.KV.Key, v.page, v.currentIndex, err)
+	v.currentValue = op.KeyValueT[T]{Kv: v.values[v.currentIndex]}
+	if err := v.serde.Decode(v.ctx, v.currentValue.Kv, &v.currentValue.Value); err != nil {
+		v.err = errors.Errorf(`etcd iterator failed: cannot decode key "%s", page=%d, index=%d: %w`, v.currentValue.Kv.Key, v.page, v.currentIndex, err)
 	}
 	return v.err == nil
 }

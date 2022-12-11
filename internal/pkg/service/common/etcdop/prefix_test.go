@@ -392,9 +392,13 @@ func BenchmarkPrefixT_DeleteAll(b *testing.B) {
 	}
 }
 
+func prefixForTest() Prefix {
+	return Prefix("my").Add("prefix")
+}
+
 func typedPrefixForTest() PrefixT[fooType] {
 	return PrefixT[fooType]{
-		prefix: Prefix("my").Add("prefix"),
+		prefix: prefixForTest(),
 		serde:  serde.NewJSON(serde.NoValidation),
 	}
 }

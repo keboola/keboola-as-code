@@ -12,11 +12,11 @@ type KeyValuesT[T any] []KeyValueT[T]
 // KeyValueT - typed operation result.
 type KeyValueT[T any] struct {
 	Value T
-	KV    *KeyValue
+	Kv    *KeyValue
 }
 
 func (kv KeyValueT[T]) Key() string {
-	return string(kv.KV.Key)
+	return string(kv.Kv.Key)
 }
 
 func (kvs KeyValuesT[T]) Values() (out []T) {

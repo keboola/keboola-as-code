@@ -68,7 +68,7 @@ func TestGetManyTOp(t *testing.T) {
 
 			data = append(data, KeyValueT[Data]{
 				Value: value,
-				KV:    kv,
+				Kv:    kv,
 			})
 		}
 		return data, nil
