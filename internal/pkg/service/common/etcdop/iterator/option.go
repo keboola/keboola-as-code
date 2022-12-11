@@ -11,12 +11,12 @@ type Option func(c *config)
 
 type config struct {
 	prefix   string
-	serde    serde.Serde
+	serde    *serde.Serde // empty for not-typed iterator
 	pageSize int
 	revision int64 // revision of the all values, set by "WithRev" or by the first page
 }
 
-func newConfig(prefix string, s serde.Serde, opts []Option) config {
+func newConfig(prefix string, s *serde.Serde, opts []Option) config {
 	c := config{
 		prefix:   prefix,
 		serde:    s,
