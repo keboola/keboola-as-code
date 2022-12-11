@@ -53,7 +53,7 @@
 >>>>>
 
 <<<<<
-/file/%%TEST_KBC_PROJECT_ID%%/receiver-b/export-1/%s
+/file/opened/%%TEST_KBC_PROJECT_ID%%/receiver-b/export-1/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -93,7 +93,7 @@
 >>>>>
 
 <<<<<
-/file/%%TEST_KBC_PROJECT_ID%%/receiver-c/export-2/%s
+/file/opened/%%TEST_KBC_PROJECT_ID%%/receiver-c/export-2/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -139,7 +139,7 @@
 >>>>>
 
 <<<<<
-/slice/%%TEST_KBC_PROJECT_ID%%/receiver-b/export-1/%s
+/slice/opened/%%TEST_KBC_PROJECT_ID%%/receiver-b/export-1/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -152,7 +152,7 @@
 >>>>>
 
 <<<<<
-/slice/%%TEST_KBC_PROJECT_ID%%/receiver-c/export-2/%s
+/slice/opened/%%TEST_KBC_PROJECT_ID%%/receiver-c/export-2/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,

@@ -15,6 +15,7 @@ import (
 func (s *Store) createSliceOp(_ context.Context, slice model.Slice) op.BoolOp {
 	return s.schema.
 		Slices().
+		Opened().
 		ByKey(slice.SliceKey).
 		PutIfNotExists(slice).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
@@ -39,6 +40,7 @@ func (s *Store) GetSlice(ctx context.Context, sliceKey key.SliceKey) (r model.Sl
 func (s *Store) getSliceOp(_ context.Context, sliceKey key.SliceKey) op.ForType[*op.KeyValueT[model.Slice]] {
 	return s.schema.
 		Slices().
+		Opened().
 		ByKey(sliceKey).
 		Get().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Slice], err error) (*op.KeyValueT[model.Slice], error) {

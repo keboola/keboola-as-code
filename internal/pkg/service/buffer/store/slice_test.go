@@ -34,7 +34,7 @@ func TestStore_CreateSlice(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-slice/1000/github/github-issues/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/opened/1000/github/github-issues/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -74,7 +74,7 @@ func TestStore_GetSliceOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-slice/1000/github/github-issues/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/opened/1000/github/github-issues/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,

@@ -17,6 +17,10 @@ type Files struct {
 	files
 }
 
+type FilesInAState struct {
+	files
+}
+
 type FilesInExport struct {
 	files
 }
@@ -28,11 +32,31 @@ func (v *Schema) Files() Files {
 	)}
 }
 
-func (v Files) ByKey(k storeKey.FileKey) KeyT[model.File] {
+func (v Files) Opened() FilesInAState {
+	return FilesInAState{files: v.files.Add("opened")}
+}
+
+func (v Files) Closing() FilesInAState {
+	return FilesInAState{files: v.files.Add("closing")}
+}
+
+func (v Files) Closed() FilesInAState {
+	return FilesInAState{files: v.files.Add("closed")}
+}
+
+func (v Files) Imported() FilesInAState {
+	return FilesInAState{files: v.files.Add("imported")}
+}
+
+func (v Files) Failed() FilesInAState {
+	return FilesInAState{files: v.files.Add("failed")}
+}
+
+func (v FilesInAState) ByKey(k storeKey.FileKey) KeyT[model.File] {
 	return v.InExport(k.ExportKey).ID(k.FileID)
 }
 
-func (v Files) InExport(k storeKey.ExportKey) FilesInExport {
+func (v FilesInAState) InExport(k storeKey.ExportKey) FilesInExport {
 	if k.ProjectID == 0 {
 		panic(errors.New("file projectID cannot be empty"))
 	}
