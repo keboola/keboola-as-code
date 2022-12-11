@@ -24,14 +24,14 @@ type Watcher struct {
 	store            *Store
 }
 
-func NewWatcher(store *Store) (*Watcher, error) {
+func NewWatcher(store *Store) *Watcher {
 	w := &Watcher{
 		mappings:         sync.Map{},
 		secrets:          sync.Map{},
 		slicesForExports: sync.Map{},
 		store:            store,
 	}
-	return w, nil
+	return w
 }
 
 func (w *Watcher) GetMappings(k key.ReceiverKey) (map[key.ExportKey]model.Mapping, bool) {

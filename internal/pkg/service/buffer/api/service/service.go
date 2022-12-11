@@ -30,14 +30,18 @@ import (
 )
 
 type service struct {
-	deps   dependencies.ForServer
-	mapper mapper.Mapper
+	deps    dependencies.ForServer
+	mapper  mapper.Mapper
+	watcher *store.Watcher
 }
 
 func New(d dependencies.ForServer) buffer.Service {
+	w := store.NewWatcher(d.Store())
+	w.Watch(context.Background(), d.Logger(), d.EtcdClient())
 	return &service{
-		deps:   d,
-		mapper: mapper.NewMapper(d.BufferAPIHost()),
+		deps:    d,
+		mapper:  mapper.NewMapper(d.BufferAPIHost()),
+		watcher: w,
 	}
 }
 
@@ -378,15 +382,11 @@ func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer
 	return nil
 }
 
-func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPayload, reader io.ReadCloser) (err error) {
+func (s *service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPayload, reader io.ReadCloser) (err error) {
 	ctx, str, header, ip := d.RequestCtx(), d.Store(), d.RequestHeader(), d.RequestClientIP()
 
-	watcher, err := store.NewWatcher(str)
-	if err != nil {
-		return err
-	}
 	recKey := key.ReceiverKey{ProjectID: payload.ProjectID, ReceiverID: string(payload.ReceiverID)}
-	secret, found := watcher.GetSecret(recKey)
+	secret, found := s.watcher.GetSecret(recKey)
 	if !found || secret != payload.Secret {
 		return &buffer.GenericError{
 			StatusCode: 404,
@@ -395,7 +395,7 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 		}
 	}
 
-	mappings, found := watcher.GetMappings(recKey)
+	mappings, found := s.watcher.GetMappings(recKey)
 	if !found {
 		return errors.Errorf(`mappings for key "%s" not found in the store`, recKey.String())
 	}
@@ -419,7 +419,7 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 			csv = append(csv, csvValue)
 		}
 
-		sliceID, found := watcher.GetSliceID(exportKey)
+		sliceID, found := s.watcher.GetSliceID(exportKey)
 		if !found {
 			errs.Append(errors.Errorf(`slice ID for export "%s" not found`, exportKey.String()))
 		}

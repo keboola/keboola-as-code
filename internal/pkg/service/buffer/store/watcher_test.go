@@ -71,8 +71,7 @@ func TestStore_Watcher_GetMappings(t *testing.T) {
 
 	// Init watcher
 	store := newStoreForTest(t)
-	w, err := NewWatcher(store)
-	assert.NoError(t, err)
+	w := NewWatcher(store)
 	expKey := receiver.Exports[0].ExportKey
 	mapping := receiver.Exports[0].Mapping
 	w.mappings.Store(receiver.ReceiverKey, map[key.ExportKey]model.Mapping{expKey: mapping})
@@ -92,17 +91,16 @@ func TestStore_Watcher_GetSecret(t *testing.T) {
 
 	// Init watcher
 	store := newStoreForTest(t)
-	watcher, err := NewWatcher(store)
-	assert.NoError(t, err)
+	w := NewWatcher(store)
 
 	// Found
-	watcher.secrets.Store(receiver.ReceiverKey, receiver.Secret)
-	secRes, found := watcher.GetSecret(receiver.ReceiverKey)
+	w.secrets.Store(receiver.ReceiverKey, receiver.Secret)
+	secRes, found := w.GetSecret(receiver.ReceiverKey)
 	assert.True(t, found)
 	assert.Equal(t, receiver.Secret, secRes)
 
 	// Not found
-	secRes, found = watcher.GetSecret(key.ReceiverKey{ProjectID: 123, ReceiverID: "r2"})
+	secRes, found = w.GetSecret(key.ReceiverKey{ProjectID: 123, ReceiverID: "r2"})
 	assert.False(t, found)
 	assert.Equal(t, "", secRes)
 }
@@ -112,8 +110,7 @@ func TestStore_Watcher_GetSliceID(t *testing.T) {
 
 	// Init watcher
 	store := newStoreForTest(t)
-	w, err := NewWatcher(store)
-	assert.NoError(t, err)
+	w := NewWatcher(store)
 	expKey := receiver.Exports[0].ExportKey
 	sliceID, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
 	sliceID = sliceID.UTC()
@@ -137,8 +134,7 @@ func TestStore_Watcher_AddRemoveExportMapping(t *testing.T) {
 
 	// Init watcher
 	store := newStoreForTest(t)
-	w, err := NewWatcher(store)
-	assert.NoError(t, err)
+	w := NewWatcher(store)
 	expKey := receiver.Exports[0].ExportKey
 	mapping := receiver.Exports[0].Mapping
 
@@ -181,8 +177,7 @@ func TestStore_Watcher_HandleSliceEvent(t *testing.T) {
 	now, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
 	now = now.UTC()
 	store.clock.(*clock.Mock).Set(now)
-	w, err := NewWatcher(store)
-	assert.NoError(t, err)
+	w := NewWatcher(store)
 	expKey := receiver.Exports[0].ExportKey
 
 	// Create new slice - add value to slicesForExports for the export key.
@@ -250,7 +245,7 @@ func TestStore_Watcher_HandleMappingEvent(t *testing.T) {
 	now, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
 	now = now.UTC()
 	store.clock.(*clock.Mock).Set(now)
-	w, err := NewWatcher(store)
+	w := NewWatcher(store)
 	assert.NoError(t, err)
 	expKey := receiver.Exports[0].ExportKey
 	mapping := receiver.Exports[0].Mapping
@@ -312,8 +307,7 @@ func TestStore_Watcher_HandleExportEvent(t *testing.T) {
 	now, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
 	now = now.UTC()
 	store.clock.(*clock.Mock).Set(now)
-	w, err := NewWatcher(store)
-	assert.NoError(t, err)
+	w := NewWatcher(store)
 	expKey := receiver.Exports[0].ExportKey
 	mapping := receiver.Exports[0].Mapping
 
@@ -348,8 +342,7 @@ func TestStore_Watcher_HandleReceiverEvent(t *testing.T) {
 	now, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
 	now = now.UTC()
 	store.clock.(*clock.Mock).Set(now)
-	w, err := NewWatcher(store)
-	assert.NoError(t, err)
+	w := NewWatcher(store)
 
 	// Create receiver
 	w.handleReceiverEvent(etcdop.EventT[model.ReceiverBase]{
@@ -410,8 +403,7 @@ func TestStore_Watcher_Watch(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Init watcher
-	w, err := NewWatcher(store)
-	assert.NoError(t, err)
+	w := NewWatcher(store)
 	w.Watch(ctx, log.NewNopLogger(), store.client)
 	time.Sleep(2 * time.Second)
 
