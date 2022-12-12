@@ -4,12 +4,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 )
 
 var receiver = model.Receiver{
@@ -166,4 +169,73 @@ func TestStore_Watcher_AddRemoveExportMapping(t *testing.T) {
 	res, found = w.mappings.Load(receiver.ReceiverKey)
 	assert.True(t, found)
 	assert.Equal(t, map[key.ExportKey]*model.Mapping{newExpKey: &mapping}, res)
+}
+
+func TestStore_Watcher_HandleSliceEvent(t *testing.T) {
+	t.Parallel()
+
+	// Init watcher
+	store := newStoreForTest(t)
+	now, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
+	now = now.UTC()
+	store.clock.(*clock.Mock).Set(now)
+	w, err := NewWatcher(store)
+	assert.NoError(t, err)
+	expKey := receiver.Exports[0].ExportKey
+
+	// Create new slice - add value to slicesForExports for the export key.
+	sliceID1, _ := time.Parse(key.TimeFormat, "2006-01-02T15:04:05.000Z")
+	w.handleSliceEvent(etcdop.EventT[model.Slice]{
+		Type: etcdop.CreateEvent,
+		KeyValueT: op.KeyValueT[model.Slice]{
+			Value: model.Slice{SliceNumber: 1},
+			KV: &op.KeyValue{
+				Key: []byte("slice/100/r1/e1/2006-01-01T15:04:05.000Z/" + key.FormatTime(sliceID1)),
+			},
+		},
+	})
+	val, found := w.slicesForExports.Load(expKey)
+	assert.True(t, found)
+	assert.Equal(t, sliceID1, val)
+
+	// Create new slice for the same export - replace value in slicesForExports for the export key.
+	sliceID2, _ := time.Parse(key.TimeFormat, "2006-01-03T15:04:05.000Z")
+	w.handleSliceEvent(etcdop.EventT[model.Slice]{
+		Type: etcdop.CreateEvent,
+		KeyValueT: op.KeyValueT[model.Slice]{
+			Value: model.Slice{},
+			KV: &op.KeyValue{
+				Key: []byte("slice/100/r1/e1/2006-01-01T15:04:05.000Z/" + key.FormatTime(sliceID2)),
+			},
+		},
+	})
+	val, found = w.slicesForExports.Load(expKey)
+	assert.True(t, found)
+	assert.Equal(t, sliceID2, val)
+
+	// Delete the original slice - Keep the value in slicesForExports for the export key pointing to the new slice.
+	w.handleSliceEvent(etcdop.EventT[model.Slice]{
+		Type: etcdop.DeleteEvent,
+		KeyValueT: op.KeyValueT[model.Slice]{
+			Value: model.Slice{},
+			KV: &op.KeyValue{
+				Key: []byte("slice/100/r1/e1/2006-01-01T15:04:05.000Z/" + key.FormatTime(sliceID1)),
+			},
+		},
+	})
+	_, found = w.slicesForExports.Load(expKey)
+	assert.True(t, found)
+
+	// Delete the new slice - Remove the value in slicesForExports for the export key.
+	w.handleSliceEvent(etcdop.EventT[model.Slice]{
+		Type: etcdop.DeleteEvent,
+		KeyValueT: op.KeyValueT[model.Slice]{
+			Value: model.Slice{},
+			KV: &op.KeyValue{
+				Key: []byte("slice/100/r1/e1/2006-01-01T15:04:05.000Z/" + key.FormatTime(sliceID2)),
+			},
+		},
+	})
+	_, found = w.slicesForExports.Load(expKey)
+	assert.False(t, found)
 }

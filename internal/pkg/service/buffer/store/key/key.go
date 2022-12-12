@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const TimeFormat = "2006-01-02T15:04:05.000Z"
+
 type ReceiverKey struct {
 	ProjectID  int    `json:"projectId" validate:"required,min=1"`
 	ReceiverID string `json:"receiverId" validate:"required,min=1,max=48"`
@@ -38,7 +40,7 @@ type RecordKey struct {
 }
 
 func FormatTime(t time.Time) string {
-	return t.UTC().Format("2006-01-02T15:04:05.000Z")
+	return t.UTC().Format(TimeFormat)
 }
 
 func NewRecordKey(projectID int, receiverID string, exportID string, sliceID time.Time, now time.Time) RecordKey {
