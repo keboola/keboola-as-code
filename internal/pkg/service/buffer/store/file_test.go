@@ -49,7 +49,7 @@ func TestStore_CreateFile(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-file/1000/github/github-issues/2006-01-01T08:04:05.000Z
+file/opened/1000/github/github-issues/2006-01-01T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -127,7 +127,7 @@ func TestStore_GetFileOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-file/1000/github/github-issues/2006-01-01T08:04:05.000Z
+file/opened/1000/github/github-issues/2006-01-01T08:04:05.000Z
 -----
 {
   "projectId": 1000,

@@ -23,6 +23,7 @@ func (s *Store) CreateFile(ctx context.Context, file model.File) (err error) {
 func (s *Store) createFileOp(_ context.Context, file model.File) op.BoolOp {
 	return s.schema.
 		Files().
+		Opened().
 		ByKey(file.FileKey).
 		PutIfNotExists(file).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
@@ -47,6 +48,7 @@ func (s *Store) GetFile(ctx context.Context, fileKey key.FileKey) (r model.File,
 func (s *Store) getFileOp(_ context.Context, fileKey key.FileKey) op.ForType[*op.KeyValueT[model.File]] {
 	return s.schema.
 		Files().
+		Opened().
 		ByKey(fileKey).
 		Get().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.File], err error) (*op.KeyValueT[model.File], error) {

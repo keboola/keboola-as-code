@@ -17,6 +17,10 @@ type Slices struct {
 	slices
 }
 
+type SlicesInAState struct {
+	slices
+}
+
 type SlicesInFile struct {
 	slices
 }
@@ -28,11 +32,31 @@ func (v *Schema) Slices() Slices {
 	)}
 }
 
-func (v Slices) ByKey(k storeKey.SliceKey) KeyT[model.Slice] {
+func (v Slices) Opened() SlicesInAState {
+	return SlicesInAState{slices: v.slices.Add("opened")}
+}
+
+func (v Slices) Closing() SlicesInAState {
+	return SlicesInAState{slices: v.slices.Add("closing")}
+}
+
+func (v Slices) Closed() SlicesInAState {
+	return SlicesInAState{slices: v.slices.Add("closed")}
+}
+
+func (v Slices) Uploaded() SlicesInAState {
+	return SlicesInAState{slices: v.slices.Add("uploaded")}
+}
+
+func (v Slices) Failed() SlicesInAState {
+	return SlicesInAState{slices: v.slices.Add("failed")}
+}
+
+func (v SlicesInAState) ByKey(k storeKey.SliceKey) KeyT[model.Slice] {
 	return v.InFile(k.FileKey).ID(k.SliceID)
 }
 
-func (v Slices) InFile(k storeKey.FileKey) SlicesInFile {
+func (v SlicesInAState) InFile(k storeKey.FileKey) SlicesInFile {
 	if k.ProjectID == 0 {
 		panic(errors.New("slice projectID cannot be empty"))
 	}

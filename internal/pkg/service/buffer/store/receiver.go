@@ -32,9 +32,9 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver, fil
 		return serviceError.NewCountLimitReachedError("receiver", MaxReceiversPerProject, "project")
 	}
 
+	now := time.Now()
 	ops := []op.Op{s.createReceiverBaseOp(ctx, receiver.ReceiverBase)}
 	for _, export := range receiver.Exports {
-		now := time.Now()
 		fileKey := key.FileKey{FileID: now, ExportKey: export.ExportKey}
 		slice := model.Slice{
 			SliceKey:    key.SliceKey{SliceID: now, FileKey: fileKey},

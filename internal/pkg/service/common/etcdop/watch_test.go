@@ -2,6 +2,7 @@ package etcdop
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 func TestPrefix_Watch(t *testing.T) {
 	t.Parallel()
 
+	wg := sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -28,7 +30,9 @@ func TestPrefix_Watch(t *testing.T) {
 	ch := pfx.Watch(ctx, c, errHandler, etcd.WithRev(1)) // rev=1, always include complete history
 
 	// CREATE key
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		assert.NoError(t, pfx.Key("key1").Put("foo").Do(ctx, c))
 	}()
 
@@ -44,7 +48,9 @@ func TestPrefix_Watch(t *testing.T) {
 	}, "CREATE timeout")
 
 	// UPDATE key
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		assert.NoError(t, pfx.Key("key1").Put("new").Do(ctx, c))
 	}()
 
@@ -60,7 +66,9 @@ func TestPrefix_Watch(t *testing.T) {
 	}, "UPDATE timeout")
 
 	// DELETE key
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		ok, err := pfx.Key("key1").Delete().Do(ctx, c)
 		assert.NoError(t, err)
 		assert.True(t, ok)
@@ -80,6 +88,7 @@ func TestPrefix_Watch(t *testing.T) {
 func TestPrefix_GetAllAndWatch(t *testing.T) {
 	t.Parallel()
 
+	wg := sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -107,7 +116,9 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	}, "CREATE1 timeout")
 
 	// CREATE key2
+	wg.Add(1)
 	go func() {
+		wg.Done()
 		assert.NoError(t, pfx.Key("key2").Put("foo2").Do(ctx, c))
 	}()
 
@@ -123,7 +134,9 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	}, "CREATE2 timeout")
 
 	// UPDATE key
+	wg.Add(1)
 	go func() {
+		wg.Done()
 		assert.NoError(t, pfx.Key("key2").Put("new").Do(ctx, c))
 	}()
 
@@ -139,7 +152,9 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	}, "UPDATE timeout")
 
 	// DELETE key
+	wg.Add(1)
 	go func() {
+		wg.Done()
 		ok, err := pfx.Key("key1").Delete().Do(ctx, c)
 		assert.NoError(t, err)
 		assert.True(t, ok)
@@ -154,11 +169,14 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 		}
 		assert.Equal(t, expected, clearEvent(<-ch))
 	}, "DELETE timeout")
+
+	wg.Wait()
 }
 
 func TestPrefixT_Watch(t *testing.T) {
 	t.Parallel()
 
+	wg := sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -172,7 +190,9 @@ func TestPrefixT_Watch(t *testing.T) {
 	ch := pfx.Watch(ctx, c, errHandler, etcd.WithRev(1)) // rev=1, always include complete history
 
 	// CREATE key
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		assert.NoError(t, pfx.Key("key1").Put("foo").Do(ctx, c))
 	}()
 
@@ -189,7 +209,9 @@ func TestPrefixT_Watch(t *testing.T) {
 	}, "CREATE timeout")
 
 	// UPDATE key
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		assert.NoError(t, pfx.Key("key1").Put("new").Do(ctx, c))
 	}()
 
@@ -206,7 +228,9 @@ func TestPrefixT_Watch(t *testing.T) {
 	}, "UPDATE timeout")
 
 	// DELETE key
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		ok, err := pfx.Key("key1").Delete().Do(ctx, c)
 		assert.NoError(t, err)
 		assert.True(t, ok)
@@ -219,14 +243,16 @@ func TestPrefixT_Watch(t *testing.T) {
 		expected.Kv = &mvccpb.KeyValue{
 			Key: []byte("my/prefix/key1"),
 		}
-		x := clearEventT(<-ch)
-		assert.Equal(t, expected, x)
+		assert.Equal(t, expected, clearEventT(<-ch))
 	}, "DELETE timeout")
+
+	wg.Wait()
 }
 
 func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	t.Parallel()
 
+	wg := sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -255,7 +281,9 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	}, "CREATE1 timeout")
 
 	// CREATE key2
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		assert.NoError(t, pfx.Key("key2").Put("foo2").Do(ctx, c))
 	}()
 
@@ -272,7 +300,9 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	}, "CREATE2 timeout")
 
 	// UPDATE key
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		assert.NoError(t, pfx.Key("key2").Put("new").Do(ctx, c))
 	}()
 
@@ -289,7 +319,9 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	}, "UPDATE timeout")
 
 	// DELETE key
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		ok, err := pfx.Key("key1").Delete().Do(ctx, c)
 		assert.NoError(t, err)
 		assert.True(t, ok)
@@ -304,6 +336,8 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 		}
 		assert.Equal(t, expected, clearEventT(<-ch))
 	}, "DELETE timeout")
+
+	wg.Wait()
 }
 
 func clearEvent(event Event) Event {

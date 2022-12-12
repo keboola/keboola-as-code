@@ -17,7 +17,17 @@ type keyTestCase struct{ actual, expected string }
 func TestSchema(t *testing.T) {
 	t.Parallel()
 	s := schema.New(noValidation)
-	now, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
+
+	time1, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
+	time2 := time1.Add(time.Hour)
+
+	projectID := 123
+	receiverKey := key.ReceiverKey{ProjectID: projectID, ReceiverID: "my-receiver"}
+	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
+	mappingKey := key.MappingKey{ExportKey: exportKey, RevisionID: 10}
+	fileKey := key.FileKey{ExportKey: exportKey, FileID: time1}
+	sliceKey := key.SliceKey{SliceID: time2, FileKey: fileKey}
+
 	cases := []keyTestCase{
 		{
 			s.Configs().Prefix(),
@@ -28,11 +38,11 @@ func TestSchema(t *testing.T) {
 			"config/receiver/",
 		},
 		{
-			s.Configs().Receivers().InProject(123).Prefix(),
+			s.Configs().Receivers().InProject(projectID).Prefix(),
 			"config/receiver/123/",
 		},
 		{
-			s.Configs().Receivers().ByKey(key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}).Key(),
+			s.Configs().Receivers().ByKey(receiverKey).Key(),
 			"config/receiver/123/my-receiver",
 		},
 		{
@@ -40,11 +50,11 @@ func TestSchema(t *testing.T) {
 			"config/export/",
 		},
 		{
-			s.Configs().Exports().InReceiver(key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}).Prefix(),
+			s.Configs().Exports().InReceiver(receiverKey).Prefix(),
 			"config/export/123/my-receiver/",
 		},
 		{
-			s.Configs().Exports().ByKey(key.ExportKey{ExportID: "my-export", ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}}).Key(),
+			s.Configs().Exports().ByKey(exportKey).Key(),
 			"config/export/123/my-receiver/my-export",
 		},
 		{
@@ -52,24 +62,137 @@ func TestSchema(t *testing.T) {
 			"config/mapping/revision/",
 		},
 		{
-			s.Configs().Mappings().InReceiver(key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}).Prefix(),
+			s.Configs().Mappings().InReceiver(receiverKey).Prefix(),
 			"config/mapping/revision/123/my-receiver/",
 		},
 		{
-			s.Configs().Mappings().InExport(key.ExportKey{ExportID: "my-export", ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}}).Prefix(),
+			s.Configs().Mappings().InExport(exportKey).Prefix(),
 			"config/mapping/revision/123/my-receiver/my-export/",
 		},
 		{
-			s.Configs().Mappings().ByKey(key.MappingKey{ExportKey: key.ExportKey{ExportID: "my-export", ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}}, RevisionID: 10}).Key(),
+			s.Configs().Mappings().ByKey(mappingKey).Key(),
 			"config/mapping/revision/123/my-receiver/my-export/00000010",
 		},
 		{
-			s.Secrets().Tokens().InReceiver(key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}).Prefix(),
+			s.Secrets().Tokens().InReceiver(receiverKey).Prefix(),
 			"secret/export/token/123/my-receiver/",
 		},
 		{
-			s.Secrets().Tokens().InExport(key.ExportKey{ExportID: "my-export", ReceiverKey: key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}}).Key(),
+			s.Secrets().Tokens().InExport(exportKey).Key(),
 			"secret/export/token/123/my-receiver/my-export",
+		},
+
+		{
+			s.Files().Prefix(),
+			"file/",
+		},
+		{
+			s.Files().Opened().Prefix(),
+			"file/opened/",
+		},
+		{
+			s.Files().Opened().InExport(exportKey).Prefix(),
+			"file/opened/123/my-receiver/my-export/",
+		},
+		{
+			s.Files().Opened().ByKey(fileKey).Key(),
+			"file/opened/123/my-receiver/my-export/2006-01-02T08:04:05.000Z",
+		},
+		{
+			s.Files().Closing().Prefix(),
+			"file/closing/",
+		},
+		{
+			s.Files().Closing().InExport(exportKey).Prefix(),
+			"file/closing/123/my-receiver/my-export/",
+		},
+		{
+			s.Files().Closing().ByKey(fileKey).Key(),
+			"file/closing/123/my-receiver/my-export/2006-01-02T08:04:05.000Z",
+		},
+		{
+			s.Files().Closed().Prefix(),
+			"file/closed/",
+		},
+		{
+			s.Files().Closed().InExport(exportKey).Prefix(),
+			"file/closed/123/my-receiver/my-export/",
+		},
+		{
+			s.Files().Closed().ByKey(fileKey).Key(),
+			"file/closed/123/my-receiver/my-export/2006-01-02T08:04:05.000Z",
+		},
+		{
+			s.Files().Imported().Prefix(),
+			"file/imported/",
+		},
+		{
+			s.Files().Imported().InExport(exportKey).Prefix(),
+			"file/imported/123/my-receiver/my-export/",
+		},
+		{
+			s.Files().Imported().ByKey(fileKey).Key(),
+			"file/imported/123/my-receiver/my-export/2006-01-02T08:04:05.000Z",
+		},
+		{
+			s.Files().Failed().Prefix(),
+			"file/failed/",
+		},
+		{
+			s.Files().Failed().InExport(exportKey).Prefix(),
+			"file/failed/123/my-receiver/my-export/",
+		},
+		{
+			s.Files().Failed().ByKey(fileKey).Key(),
+			"file/failed/123/my-receiver/my-export/2006-01-02T08:04:05.000Z",
+		},
+		{
+			s.Slices().Prefix(),
+			"slice/",
+		},
+		{
+			s.Slices().Opened().Prefix(),
+			"slice/opened/",
+		},
+		{
+			s.Slices().Opened().InFile(fileKey).Prefix(),
+			"slice/opened/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
+		},
+		{
+			s.Slices().Opened().ByKey(sliceKey).Key(),
+			"slice/opened/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
+		},
+		{
+			s.Slices().Closing().InFile(fileKey).Prefix(),
+			"slice/closing/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
+		},
+		{
+			s.Slices().Closing().ByKey(sliceKey).Key(),
+			"slice/closing/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
+		},
+		{
+			s.Slices().Closed().InFile(fileKey).Prefix(),
+			"slice/closed/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
+		},
+		{
+			s.Slices().Closed().ByKey(sliceKey).Key(),
+			"slice/closed/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
+		},
+		{
+			s.Slices().Uploaded().InFile(fileKey).Prefix(),
+			"slice/uploaded/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
+		},
+		{
+			s.Slices().Uploaded().ByKey(sliceKey).Key(),
+			"slice/uploaded/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
+		},
+		{
+			s.Slices().Failed().InFile(fileKey).Prefix(),
+			"slice/failed/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
+		},
+		{
+			s.Slices().Failed().ByKey(sliceKey).Key(),
+			"slice/failed/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
 		},
 		{
 			s.Records().Prefix(),
@@ -77,7 +200,7 @@ func TestSchema(t *testing.T) {
 		},
 		{
 			s.Records().ByKey(key.RecordKey{
-				ReceivedAt:   now.Add(time.Hour),
+				ReceivedAt:   time2,
 				RandomSuffix: "abcdef",
 				ExportKey: key.ExportKey{
 					ExportID: "my-export",
@@ -86,7 +209,7 @@ func TestSchema(t *testing.T) {
 						ReceiverID: "my-receiver",
 					},
 				},
-				SliceID: now,
+				SliceID: time1,
 			}).Key(),
 			"record/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z_abcdef",
 		},
@@ -127,6 +250,6 @@ func TestSchema(t *testing.T) {
 	}
 }
 
-func noValidation(ctx context.Context, value any) error {
+func noValidation(_ context.Context, _ any) error {
 	return nil
 }
