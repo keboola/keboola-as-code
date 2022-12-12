@@ -244,6 +244,7 @@ node3
 	// All node are off, start a new node
 	assert.Equal(t, 4, nodesCount+1)
 	d4 := createDeps(4)
+	d4.DebugLogger().ConnectTo(testhelper.VerboseStdout())
 	process4 := d4.Process()
 	node4, err := NewNode(d4, WithStartupTimeout(time.Second), WithShutdownTimeout(time.Second))
 	assert.NoError(t, err)
@@ -259,7 +260,6 @@ runtime/workers/active/ids/node4 (lease=%d)
 node4
 >>>>>
 `)
-
 	// Shutdown node 4
 	process4.Shutdown(errors.New("bye bye 4"))
 	process4.WaitForShutdown()
