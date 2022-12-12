@@ -3,6 +3,7 @@
 package store
 
 import (
+	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 
@@ -13,14 +14,16 @@ import (
 type Store struct {
 	logger log.Logger
 	client *etcd.Client
+	clock  clock.Clock
 	tracer trace.Tracer
 	schema *schema.Schema
 }
 
-func New(logger log.Logger, etcdClient *etcd.Client, tracer trace.Tracer, schema *schema.Schema) *Store {
+func New(logger log.Logger, etcdClient *etcd.Client, tracer trace.Tracer, schema *schema.Schema, clck clock.Clock) *Store {
 	return &Store{
 		logger: logger,
 		client: etcdClient,
+		clock:  clck,
 		tracer: tracer,
 		schema: schema,
 	}

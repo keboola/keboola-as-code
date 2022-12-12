@@ -11,6 +11,7 @@ require (
 	github.com/MichaelMure/go-term-markdown v0.1.4
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
+	github.com/benbjohnson/clock v1.1.0
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/fatih/color v1.13.0

@@ -3,6 +3,8 @@ package store
 import (
 	"testing"
 
+	"github.com/benbjohnson/clock"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -12,5 +14,5 @@ import (
 
 func newStoreForTest(t *testing.T) *Store {
 	t.Helper()
-	return New(log.NewNopLogger(), etcdhelper.ClientForTest(t), telemetry.NewNopTracer(), schema.New(validator.New().Validate))
+	return New(log.NewNopLogger(), etcdhelper.ClientForTest(t), telemetry.NewNopTracer(), schema.New(validator.New().Validate), clock.NewMock())
 }

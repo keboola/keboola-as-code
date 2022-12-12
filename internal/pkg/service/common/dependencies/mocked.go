@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/benbjohnson/clock"
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
@@ -345,7 +346,7 @@ func (v *mocked) Schema() *bufferSchema.Schema {
 
 func (v *mocked) Store() *bufferStore.Store {
 	if v.bufferStore == nil {
-		v.bufferStore = bufferStore.New(v.logger, v.EtcdClient(), v.Tracer(), v.Schema())
+		v.bufferStore = bufferStore.New(v.logger, v.EtcdClient(), v.Tracer(), v.Schema(), clock.NewMock())
 	}
 	return v.bufferStore
 }

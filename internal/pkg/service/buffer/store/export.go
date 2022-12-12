@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"time"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -30,7 +29,7 @@ func (s *Store) CreateExport(ctx context.Context, export model.Export, fileRes *
 		return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
 	}
 
-	now := time.Now()
+	now := s.clock.Now()
 	fileKey := key.FileKey{FileID: now, ExportKey: export.ExportKey}
 	slice := model.Slice{
 		SliceKey:    key.SliceKey{SliceID: now, FileKey: fileKey},

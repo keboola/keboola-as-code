@@ -381,17 +381,23 @@ func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer
 func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPayload, reader io.ReadCloser) (err error) {
 	ctx, str, header, ip := d.RequestCtx(), d.Store(), d.RequestHeader(), d.RequestClientIP()
 
-	receiverKey := key.ReceiverKey{ProjectID: payload.ProjectID, ReceiverID: string(payload.ReceiverID)}
-	receiver, err := str.GetReceiver(ctx, receiverKey)
+	watcher, err := store.NewWatcher(str)
 	if err != nil {
 		return err
 	}
-	if receiver.Secret != payload.Secret {
+	recKey := key.ReceiverKey{ProjectID: payload.ProjectID, ReceiverID: string(payload.ReceiverID)}
+	secret, found := watcher.GetSecret(recKey)
+	if !found || secret != payload.Secret {
 		return &buffer.GenericError{
 			StatusCode: 404,
 			Name:       "buffer.receiverNotFound",
 			Message:    fmt.Sprintf(`Receiver "%s" with given secret not found.`, payload.ReceiverID),
 		}
+	}
+
+	mappings, found := watcher.GetMappings(recKey)
+	if !found {
+		return errors.Errorf(`mappings for key "%s" not found in the store`, recKey.String())
 	}
 
 	data, err := parseRequestBody(payload.ContentType, reader)
@@ -403,9 +409,9 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 	receivedAt := time.Now()
 
 	errs := errors.NewMultiError()
-	for _, e := range receiver.Exports {
+	for exportKey, mapping := range mappings {
 		csv := make([]string, 0)
-		for _, c := range e.Mapping.Columns {
+		for _, c := range mapping.Columns {
 			csvValue, err := c.CsvValue(importCtx)
 			if err != nil {
 				return err
@@ -413,13 +419,14 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 			csv = append(csv, csvValue)
 		}
 
-		// nolint:godox
-		// TODO get sliceID
-
-		record := key.NewRecordKey(e.ProjectID, e.ReceiverID, e.ExportID, receivedAt, receivedAt)
+		sliceID, found := watcher.GetSliceID(exportKey)
+		if !found {
+			errs.Append(errors.Errorf(`slice ID for export "%s" not found`, exportKey.String()))
+		}
+		record := key.NewRecordKey(exportKey.ProjectID, exportKey.ReceiverID, exportKey.ExportID, *sliceID, receivedAt)
 		err = str.CreateRecord(ctx, record, csv)
 		if err != nil {
-			errs.AppendWithPrefixf(err, `failed to create record for export "%s"`, e.ExportID)
+			errs.AppendWithPrefixf(err, `failed to create record for export "%s"`, exportKey.String())
 		}
 	}
 

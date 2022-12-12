@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -32,7 +31,7 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver, fil
 		return serviceError.NewCountLimitReachedError("receiver", MaxReceiversPerProject, "project")
 	}
 
-	now := time.Now()
+	now := s.clock.Now()
 	ops := []op.Op{s.createReceiverBaseOp(ctx, receiver.ReceiverBase)}
 	for _, export := range receiver.Exports {
 		fileKey := key.FileKey{FileID: now, ExportKey: export.ExportKey}

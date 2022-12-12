@@ -65,13 +65,81 @@
 >>>>>
 
 <<<<<
-/record/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/%s
+/file/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/2006-01-01T08:04:05.000Z
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "receiver-1",
+  "exportId": "export-1",
+  "fileId": "2006-01-01T15:04:05+07:00",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "receiver-1",
+    "exportId": "export-1",
+    "revisionId": 1,
+    "tableId": {
+      "stage": "in",
+      "bucketName": "bucket",
+      "tableName": "table"
+    },
+    "incremental": true,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "body",
+        "name": "body"
+      },
+      {
+        "type": "headers",
+        "name": "headers"
+      },
+      {
+        "type": "ip",
+        "name": "ip"
+      },
+      {
+        "type": "datetime",
+        "name": "datetime"
+      }
+    ]
+  },
+  "storageResource": {
+    "id": 929015222,
+    "created": "2022-12-07T12:27:41+01:00",
+    "isSliced": true,
+    "name": "my_export_1",
+    "url": "https://kbc-sapi-files.s3.amazonaws.com/exp-15/9367/files/2022/12/07/929015222.my_export_1manifest?X-Amz-Content-Sha256=UNSIGNED-PAYLOAD\u0026X-Amz-Algorithm=AWS4-HMAC-SHA256\u0026X-Amz-Credential=KEYID%2F20221207%2Fus-east-1%2Fs3%2Faws4_request\u0026X-Amz-Date=20221207T112741Z\u0026X-Amz-SignedHeaders=host\u0026X-Amz-Expires=3600\u0026X-Amz-Signature=XXX",
+    "provider": "aws",
+    "region": "us-east-1",
+    "maxAgeDays": 15,
+    "uploadParams": {
+      "key": "exp-15/9367/files/2022/12/07/929015222.my_export_1",
+      "bucket": "kbc-sapi-files",
+      "credentials": {
+        "AccessKeyId": "KEYID",
+        "SecretAccessKey": "123456",
+        "SessionToken": "sess123456",
+        "Expiration": "2022-12-07T23:27:41Z"
+      },
+      "acl": "private",
+      "x-amz-server-side-encryption": ""
+    },
+    "federationToken": true
+  }
+}
+>>>>>
+
+<<<<<
+/record/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/2006-01-02T08:04:05.000Z/%s
 -----
 <<~~id~~>>,"{""col1"":""val1"",""col2"":""val2""}","%s""User-Agent""%s",%s,%s
 >>>>>
 
 <<<<<
-/record/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/%s
+/record/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/2006-01-02T08:04:05.000Z/%s
 -----
 <<~~id~~>>,"{""col1"":""val3"",""col2"":""val4""}","%s""User-Agent""%s",%s,%s
 >>>>>
@@ -84,5 +152,18 @@
   "receiverId": "receiver-1",
   "exportId": "export-1",
   "token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+}
+>>>>>
+
+<<<<<
+/slice/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "receiver-1",
+  "exportId": "export-1",
+  "fileId": "2006-01-01T15:04:05+07:00",
+  "sliceId": "2006-01-02T15:04:05+07:00",
+  "sliceNumber": 2
 }
 >>>>>

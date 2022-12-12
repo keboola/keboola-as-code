@@ -5,6 +5,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 
@@ -105,7 +106,7 @@ func NewServiceDeps(
 	})
 
 	schemaInst := schema.New(validator.New().Validate)
-	storeInst := store.New(logger, etcdClient, tracer, schemaInst)
+	storeInst := store.New(logger, etcdClient, tracer, schemaInst, clock.New())
 
 	return &forService{
 		Base:       baseDeps,
