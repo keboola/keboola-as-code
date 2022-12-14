@@ -80,6 +80,21 @@ func (v Key) Delete(opts ...etcd.OpOption) op.BoolOp {
 	)
 }
 
+func (v Key) DeleteIfExists(opts ...etcd.OpOption) op.BoolOp {
+	return op.NewBoolOp(
+		func(_ context.Context) (etcd.Op, error) {
+			return etcd.OpTxn(
+				[]etcd.Cmp{etcd.Compare(etcd.Version(v.Key()), "!=", 0)},
+				[]etcd.Op{etcd.OpDelete(v.Key(), opts...)},
+				[]etcd.Op{},
+			), nil
+		},
+		func(_ context.Context, r etcd.OpResponse) (bool, error) {
+			return r.Txn().Succeeded, nil
+		},
+	)
+}
+
 func (v Key) Put(val string, opts ...etcd.OpOption) op.NoResultOp {
 	return op.NewNoResultOp(
 		func(_ context.Context) (etcd.Op, error) {
