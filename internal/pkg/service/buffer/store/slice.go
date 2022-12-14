@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -49,4 +50,24 @@ func (s *Store) getSliceOp(_ context.Context, sliceKey key.SliceKey) op.ForType[
 			}
 			return kv, err
 		})
+}
+
+func (s *Store) ListUploadedSlices(ctx context.Context, fileKey key.FileKey) (r []model.Slice, err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetAllUploadedSlices")
+	defer telemetry.EndSpan(span, &err)
+
+	slices, err := s.listUploadedSlicesOp(ctx, fileKey).Do(ctx, s.client).All()
+	if err != nil {
+		return nil, err
+	}
+
+	return slices.Values(), nil
+}
+
+func (s *Store) listUploadedSlicesOp(_ context.Context, fileKey key.FileKey) iterator.DefinitionT[model.Slice] {
+	return s.schema.
+		Slices().
+		Uploaded().
+		InFile(fileKey).
+		GetAll()
 }
