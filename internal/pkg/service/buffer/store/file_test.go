@@ -19,47 +19,25 @@ func TestStore_CreateFile(t *testing.T) {
 
 	ctx := context.Background()
 	store := newStoreForTest(t)
+	file := newFileForTest()
 
-	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "github"}
-	exportKey := key.ExportKey{ExportID: "github-issues", ReceiverKey: receiverKey}
-	fileID, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
-	fileKey := key.FileKey{FileID: fileID, ExportKey: exportKey}
-	file := model.File{
-		FileKey: fileKey,
-		Mapping: model.Mapping{
-			MappingKey: key.MappingKey{
-				ExportKey:  exportKey,
-				RevisionID: 1,
-			},
-			TableID: model.TableID{
-				Stage:  "in",
-				Bucket: "bucket",
-				Table:  "table",
-			},
-			Incremental: false,
-			Columns: []column.Column{
-				column.Body{Name: "body"},
-			},
-		},
-		StorageResource: &storageapi.File{ID: 1, Name: "file1"},
-	}
 	_, err := store.createFileOp(ctx, file).Do(ctx, store.client)
 	assert.NoError(t, err)
 
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-file/opened/1000/github/github-issues/2006-01-01T08:04:05.000Z
+file/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
 -----
 {
   "projectId": 1000,
-  "receiverId": "github",
-  "exportId": "github-issues",
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
   "fileId": "2006-01-01T15:04:05+07:00",
   "mapping": {
     "projectId": 1000,
-    "receiverId": "github",
-    "exportId": "github-issues",
+    "receiverId": "my-receiver",
+    "exportId": "my-export",
     "revisionId": 1,
     "tableId": {
       "stage": "in",
@@ -93,51 +71,29 @@ func TestStore_GetFileOp(t *testing.T) {
 
 	ctx := context.Background()
 	store := newStoreForTest(t)
+	file := newFileForTest()
 
-	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "github"}
-	exportKey := key.ExportKey{ExportID: "github-issues", ReceiverKey: receiverKey}
-	time1, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
-	fileKey := key.FileKey{FileID: time1, ExportKey: exportKey}
-	input := model.File{
-		FileKey: fileKey,
-		Mapping: model.Mapping{
-			MappingKey: key.MappingKey{
-				ExportKey:  exportKey,
-				RevisionID: 1,
-			},
-			TableID: model.TableID{
-				Stage:  "in",
-				Bucket: "bucket",
-				Table:  "table",
-			},
-			Incremental: false,
-			Columns: []column.Column{
-				column.Body{Name: "body"},
-			},
-		},
-		StorageResource: &storageapi.File{ID: 2, Name: "file2"},
-	}
-	_, err := store.createFileOp(ctx, input).Do(ctx, store.client)
+	_, err := store.createFileOp(ctx, file).Do(ctx, store.client)
 	assert.NoError(t, err)
 
-	kv, err := store.getFileOp(ctx, fileKey).Do(ctx, store.client)
+	kv, err := store.getFileOp(ctx, file.FileKey).Do(ctx, store.client)
 	assert.NoError(t, err)
-	assert.Equal(t, input, kv.Value)
+	assert.Equal(t, file, kv.Value)
 
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-file/opened/1000/github/github-issues/2006-01-01T08:04:05.000Z
+file/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
 -----
 {
   "projectId": 1000,
-  "receiverId": "github",
-  "exportId": "github-issues",
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
   "fileId": "2006-01-01T15:04:05+07:00",
   "mapping": {
     "projectId": 1000,
-    "receiverId": "github",
-    "exportId": "github-issues",
+    "receiverId": "my-receiver",
+    "exportId": "my-export",
     "revisionId": 1,
     "tableId": {
       "stage": "in",
@@ -153,9 +109,9 @@ file/opened/1000/github/github-issues/2006-01-01T08:04:05.000Z
     ]
   },
   "storageResource": {
-    "id": 2,
+    "id": 1,
     "created": "0001-01-01T00:00:00Z",
-    "name": "file2",
+    "name": "file1",
     "url": "",
     "provider": "",
     "region": "",
@@ -164,4 +120,27 @@ file/opened/1000/github/github-issues/2006-01-01T08:04:05.000Z
 }
 >>>>>
 `)
+}
+
+func newFileForTest() model.File {
+	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
+	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
+	now, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
+	mapping := model.Mapping{
+		MappingKey: key.MappingKey{
+			ExportKey:  exportKey,
+			RevisionID: 1,
+		},
+		TableID: model.TableID{
+			Stage:  "in",
+			Bucket: "bucket",
+			Table:  "table",
+		},
+		Incremental: false,
+		Columns: []column.Column{
+			column.Body{Name: "body"},
+		},
+	}
+	resource := &storageapi.File{ID: 1, Name: "file1"}
+	return model.NewFile(exportKey, now, mapping, resource)
 }

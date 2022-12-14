@@ -34,13 +34,13 @@ func (s *Store) createFileOp(_ context.Context, file model.File) op.BoolOp {
 		})
 }
 
-func (s *Store) GetFile(ctx context.Context, fileKey key.FileKey) (r model.File, err error) {
+func (s *Store) GetFile(ctx context.Context, fileKey key.FileKey) (out model.File, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetFile")
 	defer telemetry.EndSpan(span, &err)
 
 	file, err := s.getFileOp(ctx, fileKey).Do(ctx, s.client)
 	if err != nil {
-		return model.File{}, err
+		return out, err
 	}
 	return file.Value, nil
 }

@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/keboola/go-client/pkg/storageapi"
@@ -35,27 +34,7 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver, fil
 	now := time.Now()
 	ops := []op.Op{s.createReceiverBaseOp(ctx, receiver.ReceiverBase)}
 	for _, export := range receiver.Exports {
-		fileKey := key.FileKey{FileID: now, ExportKey: export.ExportKey}
-		slice := model.Slice{
-			SliceKey:    key.SliceKey{SliceID: now, FileKey: fileKey},
-			SliceNumber: 1,
-		}
-		fileRes, found := files[export.ExportKey]
-		if !found {
-			panic(fmt.Sprintf("file resource for export %s not found", export.ExportKey.String()))
-		}
-		file := model.File{
-			FileKey:         fileKey,
-			Mapping:         export.Mapping,
-			StorageResource: fileRes,
-		}
-		ops = append(ops,
-			s.createExportBaseOp(ctx, export.ExportBase),
-			s.createMappingOp(ctx, export.Mapping),
-			s.createTokenOp(ctx, model.TokenForExport{ExportKey: export.ExportKey, Token: export.Token}),
-			s.createFileOp(ctx, file),
-			s.createSliceOp(ctx, slice),
-		)
+		ops = append(ops, s.createExportOp(ctx, now, export, files[export.ExportKey]))
 	}
 	_, err = op.MergeToTxn(ctx, ops...).Do(ctx, s.client)
 	return err
