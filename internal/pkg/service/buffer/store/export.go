@@ -73,6 +73,7 @@ func (s *Store) UpdateExport(ctx context.Context, export model.Export) (err erro
 	defer telemetry.EndSpan(span, &err)
 
 	_, err = op.MergeToTxn(
+		ctx,
 		s.updateExportBaseOp(ctx, export.ExportBase),
 		s.updateMappingOp(ctx, export.Mapping),
 	).Do(ctx, s.client)
@@ -175,6 +176,7 @@ func (s *Store) DeleteExport(ctx context.Context, exportKey key.ExportKey) (err 
 	defer telemetry.EndSpan(span, &err)
 
 	_, err = op.MergeToTxn(
+		ctx,
 		s.deleteExportBaseOp(ctx, exportKey),
 		s.deleteExportMappingsOp(ctx, exportKey),
 		s.deleteExportTokenOp(ctx, exportKey),
