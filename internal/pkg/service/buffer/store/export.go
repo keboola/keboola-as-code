@@ -30,27 +30,21 @@ func (s *Store) CreateExport(ctx context.Context, export model.Export, fileRes *
 		return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
 	}
 
-	now := time.Now()
-	fileKey := key.FileKey{FileID: now, ExportKey: export.ExportKey}
-	slice := model.Slice{
-		SliceKey:    key.SliceKey{SliceID: now, FileKey: fileKey},
-		SliceNumber: 1,
-	}
-	// We store a copy of the mapping for retrieval optimization.
-	// A change in the mapping causes a new file to be created so that here it is immutable.
-	file := model.File{
-		FileKey:         fileKey,
-		Mapping:         export.Mapping,
-		StorageResource: fileRes,
-	}
-	_, err = op.MergeToTxn(
+	_, err = s.createExportOp(ctx, time.Now(), export, fileRes).Do(ctx, s.client)
+	return err
+}
+
+func (s *Store) createExportOp(ctx context.Context, now time.Time, export model.Export, fileRes *storageapi.File) *op.TxnOp {
+	file := model.NewFile(export.ExportKey, now, export.Mapping, fileRes)
+	slice := model.NewSlice(file.FileKey, now, 1)
+	return op.MergeToTxn(
+		ctx,
 		s.createExportBaseOp(ctx, export.ExportBase),
 		s.createMappingOp(ctx, export.Mapping),
 		s.createTokenOp(ctx, model.TokenForExport{ExportKey: export.ExportKey, Token: export.Token}),
 		s.createFileOp(ctx, file),
 		s.createSliceOp(ctx, slice),
-	).Do(ctx, s.client)
-	return err
+	)
 }
 
 func (s *Store) createExportBaseOp(_ context.Context, export model.ExportBase) op.BoolOp {
@@ -72,6 +66,7 @@ func (s *Store) UpdateExport(ctx context.Context, export model.Export) (err erro
 	defer telemetry.EndSpan(span, &err)
 
 	_, err = op.MergeToTxn(
+		ctx,
 		s.updateExportBaseOp(ctx, export.ExportBase),
 		s.updateMappingOp(ctx, export.Mapping),
 	).Do(ctx, s.client)
@@ -174,6 +169,7 @@ func (s *Store) DeleteExport(ctx context.Context, exportKey key.ExportKey) (err 
 	defer telemetry.EndSpan(span, &err)
 
 	_, err = op.MergeToTxn(
+		ctx,
 		s.deleteExportBaseOp(ctx, exportKey),
 		s.deleteExportMappingsOp(ctx, exportKey),
 		s.deleteExportTokenOp(ctx, exportKey),

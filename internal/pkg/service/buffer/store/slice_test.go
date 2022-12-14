@@ -17,29 +17,19 @@ func TestStore_CreateSlice(t *testing.T) {
 
 	ctx := context.Background()
 	store := newStoreForTest(t)
-
-	time1, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
-	time2, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
-	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "github"}
-	exportKey := key.ExportKey{ExportID: "github-issues", ReceiverKey: receiverKey}
-	fileKey := key.FileKey{FileID: time1, ExportKey: exportKey}
-	sliceKey := key.SliceKey{SliceID: time2, FileKey: fileKey}
-	slice := model.Slice{
-		SliceKey:    sliceKey,
-		SliceNumber: 1,
-	}
+	slice := sliceForTest()
 	_, err := store.createSliceOp(ctx, slice).Do(ctx, store.client)
 	assert.NoError(t, err)
 
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-slice/opened/1000/github/github-issues/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
-  "receiverId": "github",
-  "exportId": "github-issues",
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
   "fileId": "2006-01-01T15:04:05+07:00",
   "sliceId": "2006-01-02T15:04:05+07:00",
   "sliceNumber": 1
@@ -48,38 +38,41 @@ slice/opened/1000/github/github-issues/2006-01-01T08:04:05.000Z/2006-01-02T08:04
 `)
 }
 
+func sliceForTest() model.Slice {
+	time1, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
+	time2, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
+	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
+	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
+	fileKey := key.FileKey{FileID: time1, ExportKey: exportKey}
+	sliceKey := key.SliceKey{SliceID: time2, FileKey: fileKey}
+	return model.Slice{
+		SliceKey:    sliceKey,
+		SliceNumber: 1,
+	}
+}
+
 func TestStore_GetSliceOp(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
 	store := newStoreForTest(t)
-
-	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "github"}
-	exportKey := key.ExportKey{ExportID: "github-issues", ReceiverKey: receiverKey}
-	time1, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
-	time2, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
-	fileKey := key.FileKey{FileID: time1, ExportKey: exportKey}
-	sliceKey := key.SliceKey{SliceID: time2, FileKey: fileKey}
-	input := model.Slice{
-		SliceKey:    sliceKey,
-		SliceNumber: 1,
-	}
-	_, err := store.createSliceOp(ctx, input).Do(ctx, store.client)
+	slice := sliceForTest()
+	_, err := store.createSliceOp(ctx, slice).Do(ctx, store.client)
 	assert.NoError(t, err)
 
-	kv, err := store.getSliceOp(ctx, sliceKey).Do(ctx, store.client)
+	kv, err := store.getSliceOp(ctx, slice.SliceKey).Do(ctx, store.client)
 	assert.NoError(t, err)
-	assert.Equal(t, input, kv.Value)
+	assert.Equal(t, slice, kv.Value)
 
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-slice/opened/1000/github/github-issues/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
-  "receiverId": "github",
-  "exportId": "github-issues",
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
   "fileId": "2006-01-01T15:04:05+07:00",
   "sliceId": "2006-01-02T15:04:05+07:00",
   "sliceNumber": 1

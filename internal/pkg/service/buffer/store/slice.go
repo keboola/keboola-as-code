@@ -13,6 +13,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
+func (s *Store) CreateSlice(ctx context.Context, slice model.Slice) (err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.CreateSlice")
+	defer telemetry.EndSpan(span, &err)
+
+	_, err = s.createSliceOp(ctx, slice).Do(ctx, s.client)
+	return err
+}
+
 func (s *Store) createSliceOp(_ context.Context, slice model.Slice) op.BoolOp {
 	return s.schema.
 		Slices().
