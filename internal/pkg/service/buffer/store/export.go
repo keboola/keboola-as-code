@@ -44,6 +44,7 @@ func (s *Store) CreateExport(ctx context.Context, export model.Export, fileRes *
 		StorageResource: fileRes,
 	}
 	_, err = op.MergeToTxn(
+		ctx,
 		s.createExportBaseOp(ctx, export.ExportBase),
 		s.createMappingOp(ctx, export.Mapping),
 		s.createTokenOp(ctx, model.TokenForExport{ExportKey: export.ExportKey, Token: export.Token}),
