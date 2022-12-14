@@ -53,7 +53,7 @@ func ClientForTestWithNamespace(t testOrBenchmark, namespaceStr string) *etcd.Cl
 }
 
 func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespaceStr string) *etcd.Client {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
 	if endpoint == "" {
 		t.Fatalf(`etcd endpoint is not set`)
 	}
@@ -98,7 +98,7 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespac
 	}
 
 	// Create namespace
-	originalKV := etcdClient.KV // not namespaced client for the cleanup
+	originalClient := etcdClient // not namespaced client for the cleanup
 	etcdClient.KV = namespace.NewKV(etcdClient.KV, namespaceStr)
 	etcdClient.Lease = namespace.NewLease(etcdClient.Lease, namespaceStr)
 	etcdClient.Watcher = namespace.NewWatcher(etcdClient.Watcher, namespaceStr)
@@ -108,13 +108,11 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespac
 
 	// Cleanup namespace after the test
 	t.Cleanup(func() {
-		_, err := originalKV.Delete(ctx, namespaceStr, etcd.WithPrefix())
+		_, err := originalClient.Delete(ctx, namespaceStr, etcd.WithPrefix())
 		if err != nil {
 			t.Fatalf(`cannot clear etcd namespace "%s" after test: %s`, namespaceStr, err)
 		}
-		if err := etcdClient.Close(); err != nil {
-			t.Fatalf(`cannot close etcd connection after test: %s`, err)
-		}
+		cancel()
 	})
 
 	return etcdClient
