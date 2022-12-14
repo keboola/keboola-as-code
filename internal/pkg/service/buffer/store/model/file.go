@@ -22,6 +22,14 @@ type File struct {
 	LastError          string           `json:"lastError,omitempty"`
 }
 
+func NewFile(exportKey key.ExportKey, now time.Time, mapping Mapping, resource *storageapi.File) File {
+	return File{
+		FileKey:         key.FileKey{ExportKey: exportKey, FileID: now},
+		Mapping:         mapping,
+		StorageResource: resource,
+	}
+}
+
 func (v *File) OpenedAt() time.Time {
 	return v.FileID
 }

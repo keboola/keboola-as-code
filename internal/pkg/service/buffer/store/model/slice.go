@@ -18,6 +18,13 @@ type Slice struct {
 	LastError        string     `json:"lastError,omitempty"`
 }
 
+func NewSlice(fileKey key.FileKey, now time.Time, number int) Slice {
+	return Slice{
+		SliceKey:    key.SliceKey{FileKey: fileKey, SliceID: now},
+		SliceNumber: number,
+	}
+}
+
 func (v *Slice) OpenedAt() time.Time {
 	return v.SliceID
 }
