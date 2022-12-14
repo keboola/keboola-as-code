@@ -1,13 +1,16 @@
-package op
+package op_test
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -111,7 +114,7 @@ func TestNewTxnOp_If_True_Then_MapperError(t *testing.T) {
 	// But there is an error from a mapper
 	r, err := op.Do(ctx, client)
 	assert.Error(t, err)
-	assert.Equal(t, "cannot process etcd response from the transaction step [then][1]: error from the mapper", err.Error())
+	assert.Equal(t, "error from the mapper foo2", err.Error())
 	assert.Empty(t, r)
 }
 
@@ -119,34 +122,47 @@ func TestMergeToTxn_ToRaw_Complex(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	txn1 := MergeToTxn(opsForTest(false)...)
+	txn1 := MergeToTxn(ctx, opsForTest(false)...)
+
+	// Add another IF
 	txn1.If(etcd.Compare(etcd.Version("missingKey"), "=", 0))
 
-	// Convert high-level transaction to the low-level raw etcd operation
+	// Check mapping of the high-level transaction -> low-level transaction
 	rawOp, err := txn1.Op(ctx)
 	assert.NoError(t, err)
-
-	// Check mapping of the high-level transaction -> low-level transaction
 	cmps, thenOps, elseOps := rawOp.Txn()
 	assert.Equal(t, []etcd.Cmp{
+		etcd.Compare(etcd.Version("foo3"), "=", 0),
+		etcd.Compare(etcd.Version("foo4"), "=", 0),
 		etcd.Compare(etcd.Version("missingKey"), "=", 0),
 	}, cmps)
 	assert.Equal(t, []etcd.Op{
 		etcd.OpPut("foo1", "bar1"),
 		etcd.OpPut("foo2", "bar2"),
 		etcd.OpTxn(
-			[]etcd.Cmp{etcd.Compare(etcd.Version("foo3"), "=", 0)},
+			[]etcd.Cmp{},
 			[]etcd.Op{etcd.OpPut("foo3", "value3"), etcd.OpGet("foo3")},
+			[]etcd.Op{},
+		),
+		etcd.OpTxn(
+			[]etcd.Cmp{},
+			[]etcd.Op{etcd.OpPut("foo4", "value4"), etcd.OpGet("foo", etcd.WithPrefix())},
+			[]etcd.Op{},
+		),
+		etcd.OpGet("foo", etcd.WithPrefix(), etcd.WithCountOnly()),
+	}, thenOps)
+	assert.Equal(t, []etcd.Op{
+		etcd.OpTxn(
+			[]etcd.Cmp{etcd.Compare(etcd.Version("foo3"), "=", 0)},
+			[]etcd.Op{},
 			[]etcd.Op{etcd.OpGet("foo3")},
 		),
 		etcd.OpTxn(
 			[]etcd.Cmp{etcd.Compare(etcd.Version("foo4"), "=", 0)},
-			[]etcd.Op{etcd.OpPut("foo4", "value4"), etcd.OpGet("foo", etcd.WithPrefix())},
+			[]etcd.Op{},
 			[]etcd.Op{etcd.OpGet("foo", etcd.WithPrefix())},
 		),
-		etcd.OpGet("foo", etcd.WithPrefix(), etcd.WithCountOnly()),
-	}, thenOps)
-	assert.Equal(t, []etcd.Op{}, elseOps)
+	}, elseOps)
 }
 
 func TestMergeToTxn_ToRaw_Nested_Txn(t *testing.T) {
@@ -156,8 +172,9 @@ func TestMergeToTxn_ToRaw_Nested_Txn(t *testing.T) {
 
 	// Merge 3 operations
 	txn := MergeToTxn(
+		ctx,
 		NewTxnOp().
-			If(etcd.Compare(etcd.Version("missingKey1"), "=", 0)).
+			If(etcd.Compare(etcd.Version("shouldBeMissing1"), "=", 0)).
 			Then(
 				NewNoResultOp(
 					func(ctx context.Context) (etcd.Op, error) {
@@ -170,7 +187,7 @@ func TestMergeToTxn_ToRaw_Nested_Txn(t *testing.T) {
 			).Else(
 			NewGetOneOp(
 				func(ctx context.Context) (etcd.Op, error) {
-					return etcd.OpGet("missingKey1"), nil
+					return etcd.OpGet("shouldBeMissing1"), nil
 				},
 				func(ctx context.Context, r etcd.OpResponse) (*KeyValue, error) {
 					get := r.Get()
@@ -182,7 +199,7 @@ func TestMergeToTxn_ToRaw_Nested_Txn(t *testing.T) {
 			),
 		),
 		NewTxnOp().
-			If(etcd.Compare(etcd.Version("missingKey2"), "=", 0)).
+			If(etcd.Compare(etcd.Version("shouldBeMissing2"), "=", 0)).
 			Then(
 				NewNoResultOp(
 					func(ctx context.Context) (etcd.Op, error) {
@@ -195,7 +212,7 @@ func TestMergeToTxn_ToRaw_Nested_Txn(t *testing.T) {
 			).Else(
 			NewCountOp(
 				func(ctx context.Context) (etcd.Op, error) {
-					return etcd.OpGet("missingKey", etcd.WithPrefix(), etcd.WithCountOnly()), nil
+					return etcd.OpGet("shouldBeMissing", etcd.WithPrefix(), etcd.WithCountOnly()), nil
 				},
 				func(ctx context.Context, r etcd.OpResponse) (int64, error) {
 					return r.Get().Count, nil
@@ -215,58 +232,107 @@ func TestMergeToTxn_ToRaw_Nested_Txn(t *testing.T) {
 		),
 	)
 
-	// Convert high-level transaction to the low-level raw etcd operation
+	// Check mapping of the high-level transaction -> low-level transaction
 	rawOp, err := txn.Op(ctx)
 	assert.NoError(t, err)
-
-	// Check mapping of the high-level transaction -> low-level transaction
 	cmps, thenOps, elseOps := rawOp.Txn()
 	assert.Equal(t, []etcd.Cmp{
-		etcd.Compare(etcd.Version("missingKey1"), "=", 0),
-		etcd.Compare(etcd.Version("missingKey2"), "=", 0),
+		etcd.Compare(etcd.Version("shouldBeMissing1"), "=", 0),
+		etcd.Compare(etcd.Version("shouldBeMissing2"), "=", 0),
 	}, cmps)
 	assert.Equal(t, []etcd.Op{
-		etcd.OpPut("foo1", "bar1"),
-		etcd.OpPut("foo2", "bar2"),
+		etcd.OpTxn(
+			[]etcd.Cmp{},
+			[]etcd.Op{etcd.OpPut("foo1", "bar1")},
+			[]etcd.Op{},
+		),
+		etcd.OpTxn(
+			[]etcd.Cmp{},
+			[]etcd.Op{etcd.OpPut("foo2", "bar2")},
+			[]etcd.Op{},
+		),
 		etcd.OpPut("foo3", "bar3"),
 	}, thenOps)
 	assert.Equal(t, []etcd.Op{
-		etcd.OpGet("missingKey1"),
-		etcd.OpGet("missingKey", etcd.WithPrefix(), etcd.WithCountOnly()),
+		etcd.OpTxn(
+			[]etcd.Cmp{etcd.Compare(etcd.Version("shouldBeMissing1"), "=", 0)},
+			[]etcd.Op{},
+			[]etcd.Op{etcd.OpGet("shouldBeMissing1")},
+		),
+		etcd.OpTxn(
+			[]etcd.Cmp{etcd.Compare(etcd.Version("shouldBeMissing2"), "=", 0)},
+			[]etcd.Op{},
+			[]etcd.Op{etcd.OpGet("shouldBeMissing", etcd.WithPrefix(), etcd.WithCountOnly())},
+		),
 	}, elseOps)
 
-	// Try txn, IF false, key exists
-	_, err = client.Put(ctx, "missingKey1", "foo")
+	// Check failed transaction, keys exists
+	_, err = client.Put(ctx, "shouldBeMissing1", "foo")
+	assert.NoError(t, err)
+	_, err = client.Put(ctx, "shouldBeMissing2", "bar")
 	assert.NoError(t, err)
 	r, err := txn.Do(ctx, client)
 	assert.NoError(t, err)
 	assert.False(t, r.Succeeded)
 	r = clearRawValues(r)
-	assert.Equal(t, []any{
-		&KeyValue{Key: []byte("missingKey1"), Value: []byte("foo")},
-		int64(1001), // modified by the processor
-	}, r.Responses)
-	dump, err := etcdhelper.DumpAll(ctx, client)
-	assert.NoError(t, err)
+	assert.Equal(t, TxnResponse{
+		Succeeded: false,
+		// Response from the "Else" branch
+		Responses: []any{
+			TxnResponse{
+				Succeeded: false,
+				Responses: []any{
+					&KeyValue{Key: []byte("shouldBeMissing1"), Value: []byte("foo")},
+				},
+			},
+			TxnResponse{
+				Succeeded: false,
+				Responses: []any{int64(1002)}, // modified by the processor: 1000 + 2 (number of shouldBeMissing* keys)
+			},
+		},
+	}, r)
+
+	// Check etcd: no change
 	expected := `
 <<<<<
-missingKey1
+shouldBeMissing1
 -----
 foo
 >>>>>
+
+<<<<<
+shouldBeMissing2
+-----
+bar
+>>>>>
 `
+	dump, err := etcdhelper.DumpAll(ctx, client)
+	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), dump)
 
-	// Try txn, IF true, key not exists
-	_, err = client.Delete(ctx, "missingKey1")
+	// Check successful transaction, keys exist
+	_, err = client.Delete(ctx, "shouldBeMissing1")
+	assert.NoError(t, err)
+	_, err = client.Delete(ctx, "shouldBeMissing2")
 	assert.NoError(t, err)
 	r, err = txn.Do(ctx, client)
 	assert.NoError(t, err)
 	assert.True(t, r.Succeeded)
 	r = clearRawValues(r)
-	assert.Equal(t, []any{NoResult{}, NoResult{}, NoResult{}}, r.Responses) // 3x PUT
-	dump, err = etcdhelper.DumpAll(ctx, client)
-	assert.NoError(t, err)
+	assert.Equal(t, []any{
+		// Response from the "Then" branch
+		TxnResponse{
+			Succeeded: true,
+			Responses: []any{NoResult{}},
+		},
+		TxnResponse{
+			Succeeded: true,
+			Responses: []any{NoResult{}},
+		},
+		NoResult{},
+	}, r.Responses)
+
+	// Check etcd: 3x PUT
 	expected = `
 <<<<<
 foo1
@@ -286,7 +352,109 @@ foo3
 bar3
 >>>>>
 `
+	dump, err = etcdhelper.DumpAll(ctx, client)
+	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), dump)
+}
+
+func TestMergeToTxn_Processors(t *testing.T) {
+	t.Parallel()
+
+	// Setup
+	client := etcdhelper.ClientForTest(t)
+	ctx := context.Background()
+	pfx := etcdop.Prefix("my/prefix")
+
+	// There is a nested txn with some processors.
+	createProcessor := func(key string) func(context.Context, etcd.OpResponse, bool, error) (bool, error) {
+		return func(_ context.Context, _ etcd.OpResponse, result bool, err error) (bool, error) {
+			if !result && err == nil {
+				return false, errors.Errorf(`key "%s" already exists`, key)
+			}
+			return result, err
+		}
+	}
+	txn := MergeToTxn(
+		ctx,
+		pfx.Key("key1").PutIfNotExists("value").WithProcessor(createProcessor("key1")),
+		pfx.Key("key2").PutIfNotExists("value").WithProcessor(createProcessor("key2")),
+		MergeToTxn(
+			ctx,
+			pfx.Key("key3").PutIfNotExists("value").WithProcessor(createProcessor("key3")),
+			pfx.Key("key4").PutIfNotExists("value").WithProcessor(createProcessor("key4")),
+		),
+	)
+
+	testCases := []struct{ existingKeys, expectedErrs []string }{
+		{
+			existingKeys: nil,
+			expectedErrs: nil,
+		},
+		{
+			existingKeys: []string{"key1"},
+			expectedErrs: []string{`key "key1" already exists`},
+		},
+		{
+			existingKeys: []string{"key2"},
+			expectedErrs: []string{`key "key2" already exists`},
+		},
+		{
+			existingKeys: []string{"key3"},
+			expectedErrs: []string{`key "key3" already exists`},
+		},
+		{
+			existingKeys: []string{"key4"},
+			expectedErrs: []string{`key "key4" already exists`},
+		},
+		{
+			existingKeys: []string{"key1", "key2"},
+			expectedErrs: []string{`key "key1" already exists`, `key "key2" already exists`},
+		},
+		{
+			existingKeys: []string{"key3", "key4"},
+			expectedErrs: []string{`key "key3" already exists`, `key "key4" already exists`},
+		},
+		{
+			existingKeys: []string{"key1", "key3"},
+			expectedErrs: []string{`key "key1" already exists`, `key "key3" already exists`},
+		},
+		{
+			existingKeys: []string{"key2", "key4"},
+			expectedErrs: []string{`key "key2" already exists`, `key "key4" already exists`},
+		},
+		{
+			existingKeys: []string{"key1", "key2", "key3", "key4"},
+			expectedErrs: []string{
+				`key "key1" already exists`,
+				`key "key2" already exists`,
+				`key "key3" already exists`,
+				`key "key4" already exists`,
+			},
+		},
+	}
+
+	// Run test cases
+	for i, tc := range testCases {
+		desc := fmt.Sprintf("test case %d", i)
+
+		// Clean the prefix
+		_, err := pfx.DeleteAll().Do(ctx, client)
+		assert.NoError(t, err, desc)
+
+		// Create keys
+		for _, key := range tc.existingKeys {
+			assert.NoError(t, pfx.Key(key).Put("value").Do(ctx, client), desc)
+		}
+
+		// Do and compare errors
+		var actualErrs []string
+		if _, err := txn.Do(ctx, client); err != nil {
+			for _, item := range err.(errors.MultiError).WrappedErrors() {
+				actualErrs = append(actualErrs, item.Error())
+			}
+		}
+		assert.Equal(t, tc.expectedErrs, actualErrs, desc)
+	}
 }
 
 func txnForTest(success bool, withMapperError bool) *TxnOp {
@@ -337,7 +505,7 @@ func opsForTest(withMapperError bool) []Op {
 			},
 			func(ctx context.Context, r etcd.OpResponse) error {
 				if withMapperError {
-					return errors.New("error from the mapper")
+					return errors.New("error from the mapper foo2")
 				}
 				return nil
 			},
@@ -416,6 +584,8 @@ func clearRawValues(v TxnResponse) TxnResponse {
 				r[j] = item
 			}
 			v.Responses[i] = r
+		case TxnResponse:
+			v.Responses[i] = clearRawValues(r)
 		}
 	}
 	return v

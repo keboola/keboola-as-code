@@ -44,6 +44,7 @@ func (s *Store) CreateExport(ctx context.Context, export model.Export, fileRes *
 		StorageResource: fileRes,
 	}
 	_, err = op.MergeToTxn(
+		ctx,
 		s.createExportBaseOp(ctx, export.ExportBase),
 		s.createMappingOp(ctx, export.Mapping),
 		s.createTokenOp(ctx, model.TokenForExport{ExportKey: export.ExportKey, Token: export.Token}),
@@ -72,6 +73,7 @@ func (s *Store) UpdateExport(ctx context.Context, export model.Export) (err erro
 	defer telemetry.EndSpan(span, &err)
 
 	_, err = op.MergeToTxn(
+		ctx,
 		s.updateExportBaseOp(ctx, export.ExportBase),
 		s.updateMappingOp(ctx, export.Mapping),
 	).Do(ctx, s.client)
@@ -174,6 +176,7 @@ func (s *Store) DeleteExport(ctx context.Context, exportKey key.ExportKey) (err 
 	defer telemetry.EndSpan(span, &err)
 
 	_, err = op.MergeToTxn(
+		ctx,
 		s.deleteExportBaseOp(ctx, exportKey),
 		s.deleteExportMappingsOp(ctx, exportKey),
 		s.deleteExportTokenOp(ctx, exportKey),

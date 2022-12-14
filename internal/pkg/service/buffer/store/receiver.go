@@ -57,8 +57,7 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver, fil
 			s.createSliceOp(ctx, slice),
 		)
 	}
-
-	_, err = op.MergeToTxn(ops...).Do(ctx, s.client)
+	_, err = op.MergeToTxn(ctx, ops...).Do(ctx, s.client)
 	return err
 }
 
@@ -116,7 +115,7 @@ func (s *Store) UpdateReceiver(ctx context.Context, receiver model.Receiver) (er
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.UpdateReceiver")
 	defer telemetry.EndSpan(span, &err)
 
-	_, err = op.MergeToTxn(s.updateReceiverBaseOp(ctx, receiver.ReceiverBase)).Do(ctx, s.client)
+	_, err = op.MergeToTxn(ctx, s.updateReceiverBaseOp(ctx, receiver.ReceiverBase)).Do(ctx, s.client)
 
 	return err
 }
@@ -169,6 +168,7 @@ func (s *Store) DeleteReceiver(ctx context.Context, receiverKey key.ReceiverKey)
 	defer telemetry.EndSpan(span, &err)
 
 	_, err = op.MergeToTxn(
+		ctx,
 		s.deleteReceiverBaseOp(ctx, receiverKey),
 		s.deleteReceiverExportsOp(ctx, receiverKey),
 		s.deleteReceiverMappingsOp(ctx, receiverKey),
