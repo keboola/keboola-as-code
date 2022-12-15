@@ -2,10 +2,10 @@ package stats
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/benbjohnson/clock"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -23,7 +23,6 @@ type syncFn func(context.Context, []model.SliceStats)
 
 type update struct {
 	key            key.SliceStatsKey
-	count          uint64
 	size           uint64
 	lastReceivedAt time.Time
 }
@@ -61,13 +60,10 @@ func (m *Manager) Watch(ctx context.Context) {
 			select {
 			case <-ctx.Done():
 				m.ticker.Stop()
-				fmt.Println("stats watcher done")
 				return
 			case update := <-m.ch:
-				fmt.Println("stats watcher update")
 				m.handleUpdate(update)
 			case <-m.ticker.C:
-				fmt.Println("stats watcher sync")
 				m.handleSync(ctx)
 			}
 		}
