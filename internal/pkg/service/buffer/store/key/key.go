@@ -56,6 +56,17 @@ func NewRecordKey(projectID int, receiverID string, exportID string, sliceID tim
 	return k
 }
 
+func NewSliceStatsKey(projectID int, receiverID string, exportID string, fileID time.Time, sliceID time.Time, nodeID string) SliceStatsKey {
+	k := SliceStatsKey{}
+	k.ProjectID = projectID
+	k.ReceiverID = receiverID
+	k.ExportID = exportID
+	k.FileID = fileID
+	k.SliceID = sliceID
+	k.NodeID = nodeID
+	return k
+}
+
 func (v ReceiverKey) String() string {
 	return fmt.Sprintf("project:%d/receiver:%s", v.ProjectID, v.ReceiverID)
 }
