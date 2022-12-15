@@ -95,7 +95,7 @@ func (m *Manager) handleSync(ctx context.Context) {
 	for k, v := range m.perSlice {
 		if v.changed {
 			stats = append(stats, model.NewSliceStats(k, v.count, v.size, v.lastReceivedAt))
-			v.changed = true
+			v.changed = false
 		}
 	}
 
