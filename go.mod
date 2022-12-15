@@ -2,7 +2,7 @@ module github.com/keboola/keboola-as-code
 
 go 1.19
 
-replace github.com/google/go-jsonnet v0.18.0 => github.com/keboola/go-jsonnet v0.18.1-0.20220810085752-aee7595aa305
+replace github.com/google/go-jsonnet v0.19.1 => github.com/keboola/go-jsonnet v0.19.1
 
 require (
 	github.com/ActiveState/vt10x v1.3.1
@@ -20,7 +20,7 @@ require (
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/google/go-cmp v0.5.9
-	github.com/google/go-jsonnet v0.18.0
+	github.com/google/go-jsonnet v0.19.1
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/jarcoal/httpmock v1.2.0
 	github.com/joho/godotenv v1.4.0
@@ -29,6 +29,7 @@ require (
 	github.com/keboola/go-utils v0.7.0
 	github.com/kylelemons/godebug v1.1.0
 	github.com/lafikl/consistent v0.0.0-20220512074542-bdd3606bfc3e
+	github.com/qmuntal/stateless v1.6.1
 	github.com/relvacode/iso8601 v1.1.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.1.1
 	github.com/spf13/afero v1.9.3
@@ -42,14 +43,14 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.6
 	go.etcd.io/etcd/client/v3 v3.5.6
 	go.nhat.io/aferocopy/v2 v2.0.1
-	go.opentelemetry.io/otel v1.11.1
-	go.opentelemetry.io/otel/trace v1.11.1
-	go.uber.org/zap v1.23.0
+	go.opentelemetry.io/otel v1.11.2
+	go.opentelemetry.io/otel/trace v1.11.2
+	go.uber.org/zap v1.24.0
 	goa.design/goa/v3 v3.10.2
 	goa.design/plugins/v3 v3.10.2
 	golang.org/x/sync v0.1.0
 	google.golang.org/grpc v1.51.0
-	gopkg.in/DataDog/dd-trace-go.v1 v1.43.1
+	gopkg.in/DataDog/dd-trace-go.v1 v1.44.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	v.io/x/lib v0.1.10
 )
@@ -96,7 +97,7 @@ require (
 	golang.org/x/net v0.1.0 // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/term v0.1.0 // indirect
-	golang.org/x/text v0.4.0
+	golang.org/x/text v0.5.0
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect
 	golang.org/x/tools v0.2.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
@@ -120,6 +121,8 @@ require (
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.4.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.41.0-rc.3.0.20221208094921-9e0b0bfca62a // indirect
+	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/MichaelMure/go-term-text v0.3.1 // indirect
 	github.com/alecthomas/chroma v0.10.0 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
@@ -172,6 +175,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.2 // indirect
+	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.6 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go4.org/intern v0.0.0-20220617035311-6925f38cc365 // indirect

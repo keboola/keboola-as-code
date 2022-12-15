@@ -123,6 +123,18 @@ func TestSchema(t *testing.T) {
 			"file/closed/123/my-receiver/my-export/2006-01-02T08:04:05.000Z",
 		},
 		{
+			s.Files().Importing().Prefix(),
+			"file/importing/",
+		},
+		{
+			s.Files().Importing().InExport(exportKey).Prefix(),
+			"file/importing/123/my-receiver/my-export/",
+		},
+		{
+			s.Files().Importing().ByKey(fileKey).Key(),
+			"file/importing/123/my-receiver/my-export/2006-01-02T08:04:05.000Z",
+		},
+		{
 			s.Files().Imported().Prefix(),
 			"file/imported/",
 		},
@@ -177,6 +189,14 @@ func TestSchema(t *testing.T) {
 		{
 			s.Slices().Closed().ByKey(sliceKey).Key(),
 			"slice/closed/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
+		},
+		{
+			s.Slices().Uploading().InFile(fileKey).Prefix(),
+			"slice/uploading/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
+		},
+		{
+			s.Slices().Uploading().ByKey(sliceKey).Key(),
+			"slice/uploading/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
 		},
 		{
 			s.Slices().Uploaded().InFile(fileKey).Prefix(),

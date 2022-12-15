@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	storeKey "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
@@ -32,24 +33,32 @@ func (v *Schema) Files() Files {
 	)}
 }
 
+func (v Files) InState(state filestate.State) FilesInAState {
+	return FilesInAState{files: v.files.Add(string(state))}
+}
+
 func (v Files) Opened() FilesInAState {
-	return FilesInAState{files: v.files.Add("opened")}
+	return v.InState(filestate.Opened)
 }
 
 func (v Files) Closing() FilesInAState {
-	return FilesInAState{files: v.files.Add("closing")}
+	return v.InState(filestate.Closing)
 }
 
 func (v Files) Closed() FilesInAState {
-	return FilesInAState{files: v.files.Add("closed")}
+	return v.InState(filestate.Closed)
+}
+
+func (v Files) Importing() FilesInAState {
+	return v.InState(filestate.Importing)
 }
 
 func (v Files) Imported() FilesInAState {
-	return FilesInAState{files: v.files.Add("imported")}
+	return v.InState(filestate.Imported)
 }
 
 func (v Files) Failed() FilesInAState {
-	return FilesInAState{files: v.files.Add("failed")}
+	return v.InState(filestate.Failed)
 }
 
 func (v FilesInAState) ByKey(k storeKey.FileKey) KeyT[model.File] {

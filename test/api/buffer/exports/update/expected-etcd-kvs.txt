@@ -147,6 +147,7 @@
   "receiverId": "my-receiver",
   "exportId": "my-export-1",
   "fileId": "%s",
+  "state": "opened",
   "mapping": {
     "projectId": %%TEST_KBC_PROJECT_ID%%,
     "receiverId": "my-receiver",
@@ -193,6 +194,7 @@
   "exportId": "my-export-1",
   "fileId": "%s",
   "sliceId": "%s",
+  "state": "opened",
   "sliceNumber": 1
 }
 >>>>>

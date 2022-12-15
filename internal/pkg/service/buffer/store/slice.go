@@ -2,15 +2,18 @@ package store
 
 import (
 	"context"
+	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (s *Store) CreateSlice(ctx context.Context, slice model.Slice) (err error) {
@@ -78,4 +81,59 @@ func (s *Store) listUploadedSlicesOp(_ context.Context, fileKey key.FileKey) ite
 		Uploaded().
 		InFile(fileKey).
 		GetAll()
+}
+
+// SetSliceState method atomically changes the state of the file.
+// False is returned, if the given file is already in the target state.
+func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slicestate.State, now time.Time) (bool, error) { //nolint:dupl
+	stm := slicestate.NewSTM(slice.State, func(ctx context.Context, from, to slicestate.State) error {
+		// Update fields
+		clone := *slice
+		clone.State = to
+		switch to {
+		case slicestate.Closing:
+			clone.ClosingAt = &now
+		case slicestate.Closed:
+			clone.ClosedAt = &now
+		case slicestate.Uploading:
+			clone.UploadingAt = &now
+		case slicestate.Uploaded:
+			clone.UploadedAt = &now
+		case slicestate.Failed:
+			clone.FailedAt = &now
+		default:
+			panic(errors.Errorf(`unexpected state "%s"`, to))
+		}
+
+		// Atomically swap keys in the transaction
+		slices := s.schema.Slices()
+		resp, err := op.MergeToTxn(
+			ctx,
+			slices.InState(from).ByKey(slice.SliceKey).DeleteIfExists(),
+			slices.InState(to).ByKey(slice.SliceKey).PutIfNotExists(clone),
+		).Do(ctx, s.client)
+
+		// Check logical error, transaction failed
+		if err == nil && !resp.Succeeded {
+			slice.State = to
+			return fileTxnFailedError{error: errors.Errorf(
+				`transaction "%s" -> "%s" failed: the slice "%s" is already in the target state`,
+				from, to, slice.SliceKey.String(),
+			)}
+		}
+
+		if err == nil {
+			*slice = clone
+		}
+
+		return err
+	})
+
+	if err := stm.To(ctx, to); err != nil {
+		if errors.As(err, &fileTxnFailedError{}) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }

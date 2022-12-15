@@ -83,6 +83,8 @@ func TestPrefix_Watch(t *testing.T) {
 		}
 		assert.Equal(t, expected, clearEvent(<-ch))
 	}, "DELETE timeout")
+
+	wg.Wait()
 }
 
 func TestPrefix_GetAllAndWatch(t *testing.T) {
