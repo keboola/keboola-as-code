@@ -6,12 +6,14 @@ import (
 
 	"github.com/benbjohnson/clock"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 )
 
 type Manager struct {
+	logger   log.Logger
 	ch       chan update
 	syncFn   syncFn
 	clock    clock.Clock
@@ -34,12 +36,14 @@ type stats struct {
 	changed        bool
 }
 
-func New(store *store.Store) Manager {
+func New(store *store.Store, logger log.Logger) Manager {
+	logger = logger.AddPrefix("[stats]")
 	clock := clock.New()
 	return Manager{
+		logger: logger,
 		// channel needs to be large enough to not block under average load
 		ch:       make(chan update, 2048),
-		syncFn:   syncToStore(store),
+		syncFn:   syncToStore(store, logger),
 		clock:    clock,
 		ticker:   clock.Ticker(time.Second),
 		perSlice: make(map[key.SliceStatsKey]*stats),
@@ -91,14 +95,17 @@ func (m *Manager) handleSync(ctx context.Context) {
 	for k, v := range m.perSlice {
 		if v.changed {
 			stats = append(stats, model.NewSliceStats(k, v.count, v.size, v.lastReceivedAt))
+			v.changed = true
 		}
 	}
 
 	go m.syncFn(ctx, stats)
 }
 
-func syncToStore(store *store.Store) syncFn {
+func syncToStore(store *store.Store, logger log.Logger) syncFn {
 	return func(ctx context.Context, stats []model.SliceStats) {
-		_ = store.UpdateSliceStats(ctx, stats)
+		if err := store.UpdateSliceStats(ctx, stats); err != nil {
+			logger.Error("cannot update slice stats in etcd: %s", err.Error())
+		}
 	}
 }
