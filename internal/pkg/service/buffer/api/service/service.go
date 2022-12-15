@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
@@ -39,7 +38,7 @@ type service struct {
 }
 
 func New(d dependencies.ForServer) buffer.Service {
-	stats := stats.New(d.Store(), clock.New())
+	stats := stats.New(d.Store())
 	stats.Watch(d.Process().Ctx())
 
 	return &service{
@@ -369,7 +368,7 @@ func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer
 }
 
 func (s *service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPayload, reader io.ReadCloser) (err error) {
-	ctx, str, header, ip := d.RequestCtx(), d.Store(), d.RequestHeader(), d.RequestClientIP()
+	ctx, str, header, ip, stats := d.RequestCtx(), d.Store(), d.RequestHeader(), d.RequestClientIP(), s.stats
 
 	receiverKey := key.ReceiverKey{ProjectID: payload.ProjectID, ReceiverID: string(payload.ReceiverID)}
 	receiver, err := str.GetReceiver(ctx, receiverKey)
@@ -404,16 +403,27 @@ func (s *service) Import(d dependencies.ForPublicRequest, payload *buffer.Import
 		}
 
 		// nolint:godox
-		// TODO get sliceID
-
-		// nolint:godox
-		// TODO: s.stats.Notify
+		// TODO get sliceID and fileID + use in stats.Notify
 
 		record := key.NewRecordKey(e.ProjectID, e.ReceiverID, e.ExportID, receivedAt, receivedAt)
 		err = str.CreateRecord(ctx, record, csv)
 		if err != nil {
 			errs.AppendWithPrefixf(err, `failed to create record for export "%s"`, e.ExportID)
 		}
+
+		key := key.NewSliceStatsKey(
+			e.ProjectID,
+			e.ReceiverID,
+			e.ExportID,
+			receivedAt,
+			receivedAt,
+			d.Process().UniqueID(),
+		)
+		size := uint64(0)
+		for _, column := range csv {
+			size += uint64(len(column))
+		}
+		stats.Notify(key, size)
 	}
 
 	return errs.ErrorOrNil()
