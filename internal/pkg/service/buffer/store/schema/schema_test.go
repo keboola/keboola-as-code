@@ -263,6 +263,13 @@ func TestSchema(t *testing.T) {
 			s.Runtime().Workers().Active().IDs().Node("my-node").Key(),
 			"runtime/workers/active/ids/my-node",
 		},
+		{
+			s.SliceStats().ByKey(key.SliceStatsKey{
+				SliceKey: sliceKey,
+				NodeID:   "my-node",
+			}).Key(),
+			"stats/received/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z/my-node",
+		},
 	}
 
 	for i, c := range cases {
