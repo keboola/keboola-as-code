@@ -266,7 +266,7 @@ func TestSchema(t *testing.T) {
 		{
 			s.SliceStats().ByKey(key.SliceStatsKey{
 				SliceKey: sliceKey,
-				NodeID:   "test",
+				NodeID:   "my-node",
 			}).Key(),
 			"stats/received/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z/my-node",
 		},
