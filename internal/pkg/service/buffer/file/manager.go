@@ -54,7 +54,7 @@ func (m *Manager) CreateFilesForReceiver(ctx context.Context, receiver *model.Re
 func (m *Manager) UploadSlicedFileManifest(ctx context.Context, file *model.File, slices []*model.Slice) error {
 	sliceFiles := make([]string, 0)
 	for _, s := range slices {
-		sliceFiles = append(sliceFiles, sliceNumberToFilename(s.SliceNumber))
+		sliceFiles = append(sliceFiles, sliceNumberToFilename(s.Number))
 	}
 	_, err := storageapi.UploadSlicedFileManifest(ctx, file.StorageResource, sliceFiles)
 	return err
