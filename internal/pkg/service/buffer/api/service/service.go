@@ -21,7 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/file"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/stats"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -34,11 +34,11 @@ import (
 type service struct {
 	deps   dependencies.ForServer
 	mapper mapper.Mapper
-	stats  stats.Manager
+	stats  statistics.Manager
 }
 
 func New(d dependencies.ForServer) buffer.Service {
-	stats := stats.New(d.Store(), d.Logger())
+	stats := statistics.New(d.Store(), d.Logger())
 	stats.Watch(d.Process().Ctx())
 
 	return &service{
