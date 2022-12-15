@@ -89,6 +89,16 @@ func TestKeyOperations(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, kv)
 	assert.Equal(t, []byte("value1"), kv.Value)
+
+	// DeleteIfExists - found
+	ok, err = k.DeleteIfExists().Do(ctx, etcd)
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// DeleteIfNotExists - not found
+	ok, err = k.DeleteIfExists().Do(ctx, etcd)
+	assert.NoError(t, err)
+	assert.False(t, ok)
 }
 
 func TestTypedKeyOperations(t *testing.T) {
@@ -168,6 +178,17 @@ func TestTypedKeyOperations(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, kv)
 	assert.Equal(t, fooType("value1"), kv.Value)
+
+	// ------
+	// DeleteIfExists - found
+	ok, err = k.DeleteIfExists().Do(ctx, etcd)
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// DeleteIfNotExists - not found
+	ok, err = k.DeleteIfExists().Do(ctx, etcd)
+	assert.NoError(t, err)
+	assert.False(t, ok)
 }
 
 func BenchmarkKey_Exists(b *testing.B) {
