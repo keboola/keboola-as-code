@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,6 +41,126 @@ func TestSqlSplitAndJoin(t *testing.T) {
 				"SELECT * FROM [bar];",
 				"INSERT INTO bar VALUES('x', 'y');",
 				"TRUNCATE records;",
+			},
+		},
+		
+		// Tests from the UI: https://github.com/keboola/kbc-ui/blob/main/src/scripts/modules/transformations/utils/splitSqlQueries.spec.js
+		{
+			comment: "split queries",
+			input: `
+SELECT 1;
+Select 2;
+SELECT 3;
+`,
+			output: strings.TrimSpace(`
+SELECT 1;
+
+Select 2;
+
+SELECT 3;
+`),
+			statements: []string{
+				"SELECT 1;",
+				"Select 2;",
+				"SELECT 3;",
+			},
+		},
+		{
+			comment: "multi line comments with syntax /* */",
+			input: `
+SELECT 1;
+/*
+  Select 2;
+*/
+SELECT 3;
+`,
+			output: strings.TrimSpace(`
+SELECT 1;
+
+/*
+  Select 2;
+*/
+SELECT 3;
+`),
+			statements: []string{
+				"SELECT 1;",
+				"/*\n  Select 2;\n*/\nSELECT 3;",
+			},
+		},
+		{
+			comment: "single line comments with -- syntax",
+			input: `
+SELECT 1;
+-- Select 2;
+SELECT 3;
+`,
+			output: strings.TrimSpace(`
+SELECT 1;
+
+-- Select 2;
+SELECT 3;
+`),
+			statements: []string{
+				"SELECT 1;",
+				"-- Select 2;\nSELECT 3;",
+			},
+		},
+		{
+			comment: "single line comments with # syntax",
+			input: `
+SELECT 1;
+# Select 2;
+SELECT 3;
+`,
+			output: strings.TrimSpace(`
+SELECT 1;
+
+# Select 2;
+SELECT 3;
+`),
+			statements: []string{
+				"SELECT 1;",
+				"# Select 2;\nSELECT 3;",
+			},
+		},
+		{
+			comment: "single line comments with // syntax",
+			input: `
+SELECT 1;
+// Select 2;
+SELECT 3;
+`,
+			output: strings.TrimSpace(`
+SELECT 1;
+
+// Select 2;
+SELECT 3;
+`),
+			statements: []string{
+				"SELECT 1;",
+				"// Select 2;\nSELECT 3;",
+			},
+		},
+		{
+			comment: "multi line code with syntax $$",
+			input: `
+SELECT 1;
+execute immediate $$
+  SELECT 2;
+  SELECT 3;
+$$;
+`,
+			output: strings.TrimSpace(`
+SELECT 1;
+
+execute immediate $$
+  SELECT 2;
+  SELECT 3;
+$$;
+`),
+			statements: []string{
+				"SELECT 1;",
+				"execute immediate $$\n  SELECT 2;\n  SELECT 3;\n$$;",
 			},
 		},
 	}
