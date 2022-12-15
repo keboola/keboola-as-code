@@ -8,7 +8,7 @@ import (
 
 // Taken from UI: https://github.com/keboola/kbc-ui/blob/master/src/scripts/modules/transformations/utils/splitSqlQueriesWorker.js
 // Taken and modified from: http://stackoverflow.com/questions/4747808/split-mysql-queries-in-array-each-queries-separated-by/5610067#5610067
-const splitSQLRegexp = `\s*((?:'[^'\\]*(?:\\.[^'\\]*)*'|"[^"\\]*(?:\\.[^"\\]*)*"|\/\*[^*]*\*+(?:[^*/][^*]*\*+)*\/|#.*|--.*|[^"';#])+(?:;|$))`
+const splitSQLRegexp = `\s*((?:'[^'\\]*(?:\\.[^'\\]*)*'|"[^"\\]*(?:\\.[^"\\]*)*"|\$\$(?:.|\n|\r)*?\$\$|\/\*[^*]*\*+(?:[^*/][^*]*\*+)*\/|#.*|--.*|\/\/.*|[^"';#])+(?:;|$))`
 
 func Split(sql string) []string {
 	sql = strings.TrimSuffix(sql, "\n")
