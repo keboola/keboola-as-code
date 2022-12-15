@@ -98,7 +98,12 @@ invalid JSON schema:
 func TestValidateObjects_BooleanRequired(t *testing.T) {
 	t.Parallel()
 	invalidSchema := []byte(`{"properties": {"key1": {"required": true}}}`)
-	err := ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{
+
+	// Required field in a JSON schema should be an array of required nested fields.
+	// But, for historical reasons, in Keboola components, "required: true" is also used.
+	// In the UI, this causes the drop-down list to not have an empty value.
+	// For this reason,the error should be ignored.
+	assert.NoError(t, ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{
 		{
 			Key: "parameters",
 			Value: orderedmap.FromPairs([]orderedmap.Pair{
@@ -106,13 +111,7 @@ func TestValidateObjects_BooleanRequired(t *testing.T) {
 				{Key: "key2", Value: "value2"},
 			}),
 		},
-	}))
-	assert.Error(t, err)
-	expected := `
-invalid JSON schema:
-  - "properties.key1.required" is invalid: expected array, but got boolean
-`
-	assert.Equal(t, strings.TrimSpace(expected), err.Error())
+	})))
 }
 
 func TestValidateObjects_SkipEmpty(t *testing.T) {
@@ -124,7 +123,7 @@ func TestValidateObjects_SkipEmpty(t *testing.T) {
 
 func TestValidateObjects_InvalidSchema_Warning(t *testing.T) {
 	t.Parallel()
-	invalidSchema := []byte(`{"properties": {"key1": {"required": true}}}`)
+	invalidSchema := []byte(`{"properties": {"key1": {"properties": true}}}`)
 
 	componentID := storageapi.ComponentID("foo.bar")
 	components := model.NewComponentsMap(storageapi.Components{
@@ -166,9 +165,9 @@ func TestValidateObjects_InvalidSchema_Warning(t *testing.T) {
 	// Check logs
 	expected := `
 WARN  config JSON schema of the component "foo.bar" is invalid, please contact support:
-- "properties.key1.required" is invalid: expected array, but got boolean
+- "properties.key1.properties" is invalid: expected object, but got boolean
 WARN  config row JSON schema of the component "foo.bar" is invalid, please contact support:
-- "properties.key1.required" is invalid: expected array, but got boolean
+- "properties.key1.properties" is invalid: expected object, but got boolean
 `
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
 }

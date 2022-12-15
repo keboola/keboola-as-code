@@ -139,6 +139,13 @@ func processErrors(errs []*jsonschema.ValidationError) error {
 		path = strings.ReplaceAll(path, "/", ".")
 		msg := strings.ReplaceAll(e.Message, `'`, `"`)
 		if strings.HasPrefix(e.AbsoluteKeywordLocation, "https://json-schema.org/") {
+			// Required field in a JSON schema should be an array of required nested fields.
+			// But, for historical reasons, in Keboola components, "required: true" is also used.
+			// In the UI, this causes the drop-down list to not have an empty value.
+			// For this reason, we can ignore the error.
+			if strings.HasSuffix(e.InstanceLocation, "/required") && e.Message == "expected array, but got boolean" {
+				continue
+			}
 			schemaErrs.Append(errors.Wrapf(e, `"%s" is invalid: %s`, path, e.Message))
 		} else if path == "" {
 			docErrs.Append(&ValidationError{message: msg})
