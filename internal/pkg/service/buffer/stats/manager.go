@@ -94,7 +94,7 @@ func (m *Manager) handleSync(ctx context.Context) {
 		}
 	}
 
-	m.syncFn(ctx, stats)
+	go m.syncFn(ctx, stats)
 }
 
 func syncToStore(store *store.Store) syncFn {
