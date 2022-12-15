@@ -6,6 +6,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type SchemaError struct {
+	error
+}
+
 type ValidationError struct {
 	message string
 }
@@ -13,6 +17,14 @@ type ValidationError struct {
 type FieldValidationError struct {
 	path    string
 	message string
+}
+
+func (v SchemaError) Error() string {
+	return errors.PrefixError(v.error, "invalid JSON schema").Error()
+}
+
+func (v SchemaError) Unwrap() error {
+	return v.error
 }
 
 func (v ValidationError) Error() string {
