@@ -406,6 +406,7 @@ func (s *service) Import(d dependencies.ForPublicRequest, payload *buffer.Import
 		// nolint:godox
 		// TODO get sliceID
 
+		// nolint:godox
 		// TODO: s.stats.Notify
 
 		record := key.NewRecordKey(e.ProjectID, e.ReceiverID, e.ExportID, receivedAt, receivedAt)
