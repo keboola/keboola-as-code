@@ -9,6 +9,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 )
@@ -24,7 +25,8 @@ func TestStatsManager(t *testing.T) {
 
 	store := newMockStatsStore()
 	stats := Manager{
-		ch: make(chan update),
+		logger: log.NewNopLogger(),
+		ch:     make(chan update),
 		syncFn: func(_ context.Context, s []model.SliceStats) {
 			store.append(s...)
 		},

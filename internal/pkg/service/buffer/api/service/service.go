@@ -38,7 +38,7 @@ type service struct {
 }
 
 func New(d dependencies.ForServer) buffer.Service {
-	stats := stats.New(d.Store())
+	stats := stats.New(d.Store(), d.Logger())
 	stats.Watch(d.Process().Ctx())
 
 	return &service{
