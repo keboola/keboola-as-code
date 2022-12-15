@@ -9,7 +9,6 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 )
@@ -21,22 +20,12 @@ func TestStatsManager(t *testing.T) {
 	defer cancel()
 
 	clock := clock.NewMock()
-	ticker := clock.Ticker(time.Second)
 
 	// mock store which contains every version of `SliceStats`
 	store := newMockStatsStore()
-	stats := Manager{
-		logger: log.NewNopLogger(),
-		ch:     make(chan update),
-		syncFn: func(_ context.Context, s []model.SliceStats) {
-			store.append(s...)
-		},
-		clock:    clock,
-		ticker:   ticker,
-		perSlice: make(map[key.SliceStatsKey]*stats),
-	}
-
-	stats.Watch(ctx)
+	stats := New(ctx, func(_ context.Context, s []model.SliceStats) {
+		store.append(s...)
+	})
 
 	// no notify -> wait 1 second -> no sync
 	clock.Add(time.Second)

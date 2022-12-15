@@ -38,13 +38,14 @@ type service struct {
 }
 
 func New(d dependencies.ForServer) buffer.Service {
-	stats := statistics.New(d.Store(), d.Logger())
-	stats.Watch(d.Process().Ctx())
-
 	return &service{
 		deps:   d,
 		mapper: mapper.NewMapper(d.BufferAPIHost()),
-		stats:  stats,
+		stats: statistics.New(d.Process().Ctx(), func(ctx context.Context, stats []model.SliceStats) {
+			if err := d.Store().UpdateSliceStats(ctx, stats); err != nil {
+				d.Logger().Error("cannot update slice stats in etcd: %s", err.Error())
+			}
+		}),
 	}
 }
 
