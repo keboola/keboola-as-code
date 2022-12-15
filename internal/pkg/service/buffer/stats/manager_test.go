@@ -23,6 +23,7 @@ func TestStatsManager(t *testing.T) {
 	clock := clock.NewMock()
 	ticker := clock.Ticker(time.Second)
 
+	// mock store which contains every version of `SliceStats`
 	store := newMockStatsStore()
 	stats := Manager{
 		logger: log.NewNopLogger(),
@@ -37,34 +38,81 @@ func TestStatsManager(t *testing.T) {
 
 	stats.Watch(ctx)
 
+	// no notify -> wait 1 second -> no sync
 	clock.Add(time.Second)
 	assert.Empty(t, store.read())
 
-	receivedAt := clock.Now()
-	k := key.NewSliceStatsKey(123, "my-receiver", "my-export", receivedAt, receivedAt, "my-node")
+	// notify -> wait 1 second -> sync
+	receivedAt0 := clock.Now()
+	k := key.NewSliceStatsKey(123, "my-receiver", "my-export", receivedAt0, receivedAt0, "my-node")
 	stats.Notify(k, 1000)
 	clock.Add(time.Second)
 	assert.Equal(t,
-		model.SliceStats{
-			SliceStatsKey:  k,
-			Count:          1,
-			Size:           1000,
-			LastReceivedAt: receivedAt,
+		[]model.SliceStats{
+			{
+				SliceStatsKey:  k,
+				Count:          1,
+				Size:           1000,
+				LastReceivedAt: receivedAt0,
+			},
 		},
-		store.read()[0],
+		store.read(),
 	)
 
-	receivedAt = clock.Now()
+	// no notify -> wait 1 second -> no sync
+	clock.Add(time.Second)
+	assert.Equal(t,
+		[]model.SliceStats{
+			{
+				SliceStatsKey:  k,
+				Count:          1,
+				Size:           1000,
+				LastReceivedAt: receivedAt0,
+			},
+		},
+		store.read(),
+	)
+
+	// notify -> wait 1 second -> sync
+	receivedAt1 := clock.Now()
 	stats.Notify(k, 2000)
 	clock.Add(time.Second)
 	assert.Equal(t,
-		model.SliceStats{
-			SliceStatsKey:  k,
-			Count:          2,
-			Size:           3000,
-			LastReceivedAt: receivedAt,
+		[]model.SliceStats{
+			{
+				SliceStatsKey:  k,
+				Count:          1,
+				Size:           1000,
+				LastReceivedAt: receivedAt0,
+			},
+			{
+				SliceStatsKey:  k,
+				Count:          2,
+				Size:           3000,
+				LastReceivedAt: receivedAt1,
+			},
 		},
-		store.read()[1],
+		store.read(),
+	)
+
+	// no notify -> wait 1 second -> no sync
+	clock.Add(time.Second)
+	assert.Equal(t,
+		[]model.SliceStats{
+			{
+				SliceStatsKey:  k,
+				Count:          1,
+				Size:           1000,
+				LastReceivedAt: receivedAt0,
+			},
+			{
+				SliceStatsKey:  k,
+				Count:          2,
+				Size:           3000,
+				LastReceivedAt: receivedAt1,
+			},
+		},
+		store.read(),
 	)
 }
 
