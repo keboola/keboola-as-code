@@ -37,6 +37,11 @@ type RecordKey struct {
 	RandomSuffix string
 }
 
+type SliceStatsKey struct {
+	SliceKey
+	NodeID string `json:"nodeId" validate:"required"`
+}
+
 func FormatTime(t time.Time) string {
 	return t.UTC().Format("2006-01-02T15:04:05.000Z")
 }
@@ -77,4 +82,8 @@ func (v RecordKey) Key() string {
 
 func (v RecordKey) String() string {
 	return fmt.Sprintf("%s/record:%s", v.ExportKey.String(), v.Key())
+}
+
+func (v SliceStatsKey) String() string {
+	return fmt.Sprintf("%s/stats:%s", v.SliceKey.String(), v.NodeID)
 }
