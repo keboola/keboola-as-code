@@ -10,12 +10,13 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v5"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func ValidateSchemas(objects model.ObjectStates) error {
+func ValidateObjects(logger log.Logger, objects model.ObjectStates) error {
 	errs := errors.NewMultiError()
 	for _, config := range objects.Configs() {
 		// Validate only local files
@@ -28,7 +29,10 @@ func ValidateSchemas(objects model.ObjectStates) error {
 			return err
 		}
 
-		if err := ValidateConfig(component, config.Local); err != nil {
+		var schemaErr *SchemaError
+		if err := ValidateConfig(component, config.Local); errors.As(err, &schemaErr) {
+			logger.Warn(errors.PrefixErrorf(schemaErr.Unwrap(), `config JSON schema of the component "%s" is invalid, please contact support`, component.ID))
+		} else if err != nil {
 			errs.AppendWithPrefixf(err, "config \"%s\" doesn't match schema", filesystem.Join(config.Path(), naming.ConfigFile))
 		}
 	}
@@ -44,7 +48,10 @@ func ValidateSchemas(objects model.ObjectStates) error {
 			return err
 		}
 
-		if err := ValidateConfigRow(component, row.Local); err != nil {
+		var schemaErr *SchemaError
+		if err := ValidateConfigRow(component, row.Local); errors.As(err, &schemaErr) {
+			logger.Warn(errors.PrefixErrorf(schemaErr.Unwrap(), `config row JSON schema of the component "%s" is invalid, please contact support`, component.ID))
+		} else if err != nil {
 			errs.AppendWithPrefixf(err, "config row \"%s\" doesn't match schema", filesystem.Join(row.Path(), naming.ConfigFile))
 		}
 	}
@@ -57,7 +64,7 @@ func ValidateConfig(component *storageapi.Component, config *model.Config) error
 	if component.IsDeprecated() {
 		return nil
 	}
-	return validateContent(component.Schema, config.Content)
+	return ValidateContent(component.Schema, config.Content)
 }
 
 func ValidateConfigRow(component *storageapi.Component, configRow *model.ConfigRow) error {
@@ -65,10 +72,10 @@ func ValidateConfigRow(component *storageapi.Component, configRow *model.ConfigR
 	if component.IsDeprecated() {
 		return nil
 	}
-	return validateContent(component.SchemaRow, configRow.Content)
+	return ValidateContent(component.SchemaRow, configRow.Content)
 }
 
-func validateContent(schema []byte, content *orderedmap.OrderedMap) error {
+func ValidateContent(schema []byte, content *orderedmap.OrderedMap) error {
 	// Get parameters key
 	var parametersMap *orderedmap.OrderedMap
 	parameters, found := content.Get("parameters")
@@ -104,23 +111,25 @@ func validateContent(schema []byte, content *orderedmap.OrderedMap) error {
 func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
 	schema, err := compileSchema(schemaStr, false)
 	if err != nil {
-		return errors.Errorf(`invalid JSON schema: %w`, err)
+		msg := strings.TrimPrefix(err.Error(), "jsonschema: invalid json schema.json: ")
+		return &SchemaError{error: errors.Wrapf(err, msg)}
 	}
 	return schema.Validate(document.ToMap())
 }
 
-func processErrors(schemaErrs []*jsonschema.ValidationError) error {
+func processErrors(errs []*jsonschema.ValidationError) error {
 	// Sort errors
-	sort.Slice(schemaErrs, func(i, j int) bool {
-		return schemaErrs[i].InstanceLocation < schemaErrs[j].InstanceLocation
+	sort.Slice(errs, func(i, j int) bool {
+		return errs[i].InstanceLocation < errs[j].InstanceLocation
 	})
 
-	out := errors.NewMultiError()
-	for _, e := range schemaErrs {
+	schemaErrs := errors.NewMultiError()
+	docErrs := errors.NewMultiError()
+	for _, e := range errs {
 		// Process nested errors
 		if len(e.Causes) > 0 {
 			if err := processErrors(e.Causes); err != nil {
-				out.Append(err)
+				docErrs.Append(err)
 			}
 			continue
 		}
@@ -129,13 +138,27 @@ func processErrors(schemaErrs []*jsonschema.ValidationError) error {
 		path := strings.TrimLeft(e.InstanceLocation, "/")
 		path = strings.ReplaceAll(path, "/", ".")
 		msg := strings.ReplaceAll(e.Message, `'`, `"`)
-		if path == "" {
-			out.Append(&ValidationError{message: msg})
+		if strings.HasPrefix(e.AbsoluteKeywordLocation, "https://json-schema.org/") {
+			// Required field in a JSON schema should be an array of required nested fields.
+			// But, for historical reasons, in Keboola components, "required: true" is also used.
+			// In the UI, this causes the drop-down list to not have an empty value.
+			// For this reason, we can ignore the error.
+			if strings.HasSuffix(e.InstanceLocation, "/required") && e.Message == "expected array, but got boolean" {
+				continue
+			}
+			schemaErrs.Append(errors.Wrapf(e, `"%s" is invalid: %s`, path, e.Message))
+		} else if path == "" {
+			docErrs.Append(&ValidationError{message: msg})
 		} else {
-			out.Append(&FieldValidationError{path: path, message: msg})
+			docErrs.Append(&FieldValidationError{path: path, message: msg})
 		}
 	}
-	return out.ErrorOrNil()
+
+	if schemaErrs.Len() > 0 {
+		return &SchemaError{error: schemaErrs}
+	}
+
+	return docErrs.ErrorOrNil()
 }
 
 func compileSchema(schemaStr []byte, savePropertyOrder bool) (*jsonschema.Schema, error) {

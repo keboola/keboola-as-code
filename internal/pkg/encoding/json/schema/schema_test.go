@@ -1,14 +1,22 @@
-package schema
+package schema_test
 
 import (
 	"strings"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
+
+	. "github.com/keboola/keboola-as-code/internal/pkg/encoding/json/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/naming"
+	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
-func TestValidateJSONSchemaOk(t *testing.T) {
+func TestValidateObjects_Ok(t *testing.T) {
 	t.Parallel()
 	schema := getTestSchema()
 	parameters := orderedmap.FromPairs([]orderedmap.Pair{
@@ -18,10 +26,10 @@ func TestValidateJSONSchemaOk(t *testing.T) {
 	})
 	content := orderedmap.New()
 	content.Set(`parameters`, parameters)
-	assert.NoError(t, validateContent(schema, content))
+	assert.NoError(t, ValidateContent(schema, content))
 }
 
-func TestValidateJSONSchemaErr(t *testing.T) {
+func TestValidateObjects_Error(t *testing.T) {
 	t.Parallel()
 	schema := getTestSchema()
 	parameters := orderedmap.FromPairs([]orderedmap.Pair{
@@ -36,7 +44,7 @@ func TestValidateJSONSchemaErr(t *testing.T) {
 	})
 	content := orderedmap.New()
 	content.Set(`parameters`, parameters)
-	err := validateContent(schema, content)
+	err := ValidateContent(schema, content)
 	assert.Error(t, err)
 	expectedErr := `
 - missing properties: "firstName"
@@ -47,19 +55,121 @@ func TestValidateJSONSchemaErr(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
 }
 
-func TestValidateJSONSchemaSkipEmpty(t *testing.T) {
+func TestValidateObjects_InvalidSchema_JSON(t *testing.T) {
 	t.Parallel()
-	schema := getTestSchema()
-	content := orderedmap.New()
-	assert.NoError(t, validateContent(schema, content))
+	invalidSchema := []byte(`{...`)
+	err := ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "key1", Value: "value1"},
+				{Key: "key2", Value: "value2"},
+			}),
+		},
+	}))
+	assert.Error(t, err)
+	expected := `
+invalid JSON schema:
+- invalid character '.' looking for beginning of object key string
+`
+	assert.Equal(t, strings.TrimSpace(expected), err.Error())
 }
 
-func TestValidateJSONSchemaSkipEmptyParameters(t *testing.T) {
+func TestValidateObjects_InvalidSchema_FieldType(t *testing.T) {
+	t.Parallel()
+	invalidSchema := []byte(`{"properties":false}`)
+	err := ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "key1", Value: "value1"},
+				{Key: "key2", Value: "value2"},
+			}),
+		},
+	}))
+	assert.Error(t, err)
+	expected := `
+invalid JSON schema:
+  - "properties" is invalid: expected object, but got boolean
+`
+	assert.Equal(t, strings.TrimSpace(expected), err.Error())
+}
+
+func TestValidateObjects_BooleanRequired(t *testing.T) {
+	t.Parallel()
+	invalidSchema := []byte(`{"properties": {"key1": {"required": true}}}`)
+
+	// Required field in a JSON schema should be an array of required nested fields.
+	// But, for historical reasons, in Keboola components, "required: true" is also used.
+	// In the UI, this causes the drop-down list to not have an empty value.
+	// For this reason,the error should be ignored.
+	assert.NoError(t, ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "key1", Value: "value1"},
+				{Key: "key2", Value: "value2"},
+			}),
+		},
+	})))
+}
+
+func TestValidateObjects_SkipEmpty(t *testing.T) {
 	t.Parallel()
 	schema := getTestSchema()
 	content := orderedmap.New()
+	assert.NoError(t, ValidateContent(schema, content))
+}
+
+func TestValidateObjects_InvalidSchema_Warning(t *testing.T) {
+	t.Parallel()
+	invalidSchema := []byte(`{"properties": {"key1": {"properties": true}}}`)
+
+	componentID := storageapi.ComponentID("foo.bar")
+	components := model.NewComponentsMap(storageapi.Components{
+		{
+			ComponentKey: storageapi.ComponentKey{ID: componentID},
+			Type:         "other",
+			Name:         "Foo Bar",
+			Data:         storageapi.ComponentData{},
+			Schema:       invalidSchema,
+			SchemaRow:    invalidSchema,
+		},
+	})
+	someContent := orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key: "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{
+				{Key: "key1", Value: "value1"},
+				{Key: "key2", Value: "value2"},
+			}),
+		},
+	})
+
+	logger := log.NewDebugLogger()
+	registry := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), components, model.SortByID)
+	assert.NoError(t, registry.Set(&model.ConfigState{
+		ConfigManifest: &model.ConfigManifest{ConfigKey: model.ConfigKey{ComponentID: componentID}},
+		Local:          &model.Config{Content: someContent},
+	}))
+	assert.NoError(t, registry.Set(&model.ConfigRowState{
+		ConfigRowManifest: &model.ConfigRowManifest{ConfigRowKey: model.ConfigRowKey{ComponentID: componentID}},
+		Local:             &model.ConfigRow{Content: someContent},
+	}))
+
+	// Validate, no error
+	content := orderedmap.New()
 	content.Set(`parameters`, orderedmap.New())
-	assert.NoError(t, validateContent(schema, content))
+	assert.NoError(t, ValidateObjects(logger, registry))
+
+	// Check logs
+	expected := `
+WARN  config JSON schema of the component "foo.bar" is invalid, please contact support:
+- "properties.key1.properties" is invalid: expected object, but got boolean
+WARN  config row JSON schema of the component "foo.bar" is invalid, please contact support:
+- "properties.key1.properties" is invalid: expected object, but got boolean
+`
+	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
 }
 
 func getTestSchema() []byte {
