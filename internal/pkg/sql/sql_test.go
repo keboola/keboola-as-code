@@ -43,7 +43,7 @@ func TestSqlSplitAndJoin(t *testing.T) {
 				"TRUNCATE records;",
 			},
 		},
-		
+
 		// Tests from the UI: https://github.com/keboola/kbc-ui/blob/main/src/scripts/modules/transformations/utils/splitSqlQueries.spec.js
 		{
 			comment: "split queries",
