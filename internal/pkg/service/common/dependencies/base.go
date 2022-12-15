@@ -1,6 +1,7 @@
 package dependencies
 
 import (
+	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/client"
 	"go.opentelemetry.io/otel/trace"
 
@@ -14,14 +15,15 @@ type base struct {
 	envs       env.Provider
 	tracer     trace.Tracer
 	logger     log.Logger
+	clock      clock.Clock
 	httpClient client.Client
 }
 
 func NewBaseDeps(envs env.Provider, tracer trace.Tracer, logger log.Logger, httpClient client.Client) Base {
-	return newBaseDeps(envs, tracer, logger, httpClient)
+	return newBaseDeps(envs, tracer, logger, clock.New(), httpClient)
 }
 
-func newBaseDeps(envs env.Provider, tracer trace.Tracer, logger log.Logger, httpClient client.Client) *base {
+func newBaseDeps(envs env.Provider, tracer trace.Tracer, logger log.Logger, clock clock.Clock, httpClient client.Client) *base {
 	if tracer == nil {
 		// Default no operation tracer
 		tracer = telemetry.NewNopTracer()
@@ -31,6 +33,7 @@ func newBaseDeps(envs env.Provider, tracer trace.Tracer, logger log.Logger, http
 		envs:       envs,
 		tracer:     tracer,
 		logger:     logger,
+		clock:      clock,
 		httpClient: httpClient,
 	}
 }
@@ -45,6 +48,10 @@ func (v base) Tracer() trace.Tracer {
 
 func (v base) Logger() log.Logger {
 	return v.logger
+}
+
+func (v base) Clock() clock.Clock {
+	return v.clock
 }
 
 func (v base) HTTPClient() client.Client {

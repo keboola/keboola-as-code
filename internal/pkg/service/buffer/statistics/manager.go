@@ -32,18 +32,21 @@ type stats struct {
 	changed        bool
 }
 
-func New(ctx context.Context, fn syncFn) Manager {
-	clock := clock.New()
+type dependencies interface {
+	Clock() clock.Clock
+}
+
+func New(ctx context.Context, d dependencies, fn syncFn) Manager {
 	m := Manager{
 		// channel needs to be large enough to not block under average load
 		ch:       make(chan update, 2048),
 		syncFn:   fn,
-		clock:    clock,
+		clock:    d.Clock(),
 		perSlice: make(map[key.SliceStatsKey]*stats),
 	}
 
 	go func() {
-		ticker := clock.Ticker(time.Second)
+		ticker := m.clock.Ticker(time.Second)
 		defer ticker.Stop()
 		for {
 			select {

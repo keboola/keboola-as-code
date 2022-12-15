@@ -53,6 +53,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/benbjohnson/clock"
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
@@ -77,6 +78,7 @@ type Base interface {
 	Envs() env.Provider
 	Tracer() trace.Tracer
 	Logger() log.Logger
+	Clock() clock.Clock
 	HTTPClient() client.Client
 }
 

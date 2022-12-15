@@ -1,4 +1,4 @@
-package statistics
+package statistics_test
 
 import (
 	"context"
@@ -9,8 +9,10 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
 
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 )
 
 func TestStatsManager(t *testing.T) {
@@ -19,23 +21,24 @@ func TestStatsManager(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	clock := clock.NewMock()
+	clk := clock.NewMock()
+	d := dependencies.NewMockedDeps(t, dependencies.WithClock(clk))
 
 	// mock store which contains every version of `SliceStats`
 	store := newMockStatsStore()
-	stats := New(ctx, func(_ context.Context, s []model.SliceStats) {
+	stats := New(ctx, d, func(_ context.Context, s []model.SliceStats) {
 		store.append(s...)
 	})
 
 	// no notify -> wait 1 second -> no sync
-	clock.Add(time.Second)
+	clk.Add(time.Second)
 	assert.Empty(t, store.read())
 
 	// notify -> wait 1 second -> sync
-	receivedAt0 := clock.Now()
+	receivedAt0 := clk.Now()
 	k := key.NewSliceStatsKey(123, "my-receiver", "my-export", receivedAt0, receivedAt0, "my-node")
 	stats.Notify(k, 1000)
-	clock.Add(time.Second)
+	clk.Add(time.Second)
 	assert.Equal(t,
 		[]model.SliceStats{
 			{
@@ -49,7 +52,7 @@ func TestStatsManager(t *testing.T) {
 	)
 
 	// no notify -> wait 1 second -> no sync
-	clock.Add(time.Second)
+	clk.Add(time.Second)
 	assert.Equal(t,
 		[]model.SliceStats{
 			{
@@ -63,9 +66,9 @@ func TestStatsManager(t *testing.T) {
 	)
 
 	// notify -> wait 1 second -> sync
-	receivedAt1 := clock.Now()
+	receivedAt1 := clk.Now()
 	stats.Notify(k, 2000)
-	clock.Add(time.Second)
+	clk.Add(time.Second)
 	assert.Equal(t,
 		[]model.SliceStats{
 			{
@@ -85,7 +88,7 @@ func TestStatsManager(t *testing.T) {
 	)
 
 	// no notify -> wait 1 second -> no sync
-	clock.Add(time.Second)
+	clk.Add(time.Second)
 	assert.Equal(t,
 		[]model.SliceStats{
 			{
