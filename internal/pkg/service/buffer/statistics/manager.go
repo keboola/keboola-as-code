@@ -11,15 +11,15 @@ import (
 )
 
 type Manager struct {
-	ch       chan update
-	syncFn   syncFn
 	clock    clock.Clock
+	ch       chan notifyEvent
+	syncFn   syncFn
 	perSlice map[key.SliceStatsKey]*stats
 }
 
 type syncFn func(context.Context, []model.SliceStats)
 
-type update struct {
+type notifyEvent struct {
 	key            key.SliceStatsKey
 	size           uint64
 	lastReceivedAt time.Time
@@ -38,10 +38,10 @@ type dependencies interface {
 
 func New(ctx context.Context, d dependencies, fn syncFn) Manager {
 	m := Manager{
+		clock: d.Clock(),
 		// channel needs to be large enough to not block under average load
-		ch:       make(chan update, 2048),
+		ch:       make(chan notifyEvent, 2048),
 		syncFn:   fn,
-		clock:    d.Clock(),
 		perSlice: make(map[key.SliceStatsKey]*stats),
 	}
 
@@ -64,14 +64,14 @@ func New(ctx context.Context, d dependencies, fn syncFn) Manager {
 }
 
 func (m *Manager) Notify(key key.SliceStatsKey, size uint64) {
-	m.ch <- update{
+	m.ch <- notifyEvent{
 		key:            key,
 		size:           size,
 		lastReceivedAt: m.clock.Now(),
 	}
 }
 
-func (m *Manager) handleUpdate(update update) {
+func (m *Manager) handleUpdate(update notifyEvent) {
 	// Init stats
 	if _, exists := m.perSlice[update.key]; !exists {
 		m.perSlice[update.key] = &stats{}
