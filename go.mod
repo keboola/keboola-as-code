@@ -2,7 +2,7 @@ module github.com/keboola/keboola-as-code
 
 go 1.19
 
-replace github.com/google/go-jsonnet v0.18.0 => github.com/keboola/go-jsonnet v0.18.1-0.20220810085752-aee7595aa305
+replace github.com/google/go-jsonnet v0.19.1 => github.com/keboola/go-jsonnet v0.19.1
 
 require (
 	github.com/ActiveState/vt10x v1.3.1
@@ -19,7 +19,7 @@ require (
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/google/go-cmp v0.5.9
-	github.com/google/go-jsonnet v0.18.0
+	github.com/google/go-jsonnet v0.19.1
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/jarcoal/httpmock v1.2.0
 	github.com/joho/godotenv v1.4.0
