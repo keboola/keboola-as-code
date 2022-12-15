@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
@@ -21,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/file"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/stats"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -33,12 +35,17 @@ import (
 type service struct {
 	deps   dependencies.ForServer
 	mapper mapper.Mapper
+	stats  stats.Manager
 }
 
 func New(d dependencies.ForServer) buffer.Service {
+	stats := stats.New(d.Store(), clock.New())
+	stats.Watch(d.Process().Ctx())
+
 	return &service{
 		deps:   d,
 		mapper: mapper.NewMapper(d.BufferAPIHost()),
+		stats:  stats,
 	}
 }
 
@@ -361,7 +368,7 @@ func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer
 	return nil
 }
 
-func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPayload, reader io.ReadCloser) (err error) {
+func (s *service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPayload, reader io.ReadCloser) (err error) {
 	ctx, str, header, ip := d.RequestCtx(), d.Store(), d.RequestHeader(), d.RequestClientIP()
 
 	receiverKey := key.ReceiverKey{ProjectID: payload.ProjectID, ReceiverID: string(payload.ReceiverID)}
@@ -398,6 +405,8 @@ func (*service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPa
 
 		// nolint:godox
 		// TODO get sliceID
+
+		// TODO: s.stats.Notify
 
 		record := key.NewRecordKey(e.ProjectID, e.ReceiverID, e.ExportID, receivedAt, receivedAt)
 		err = str.CreateRecord(ctx, record, csv)
