@@ -20,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -81,25 +82,10 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	receiver.Exports = exports
 
 	// Create Storage files for exports
-	mutex := &sync.RWMutex{}
-	files := make(map[key.ExportKey]*storageapi.File)
-	wg := client.NewWaitGroup(ctx, d.StorageAPIClient())
-	for _, export := range receiver.Exports {
-		expKey := export.ExportKey
-		wg.Send(
-			storageapi.CreateFileResourceRequest(&storageapi.File{
-				Name:     export.Name,
-				IsSliced: true,
-			}).WithOnSuccess(func(ctx context.Context, sender client.Sender, result *storageapi.File) error {
-				mutex.Lock()
-				files[expKey] = result
-				mutex.Unlock()
-				return nil
-			}),
-		)
-	}
-	if err = wg.Wait(); err != nil {
-		return nil, err
+	m := file.NewManager(d.StorageAPIClient())
+	files, err := m.CreateFilesForReceiver(ctx, &receiver)
+	if err != nil {
+		return nil, errors.Errorf("creating Storage files failed: %w", err)
 	}
 
 	// Persist receiver
@@ -233,11 +219,8 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
 
 	// Create Storage file
-	storageClient := d.StorageAPIClient()
-	fileRes, err := storageapi.CreateFileResourceRequest(&storageapi.File{
-		Name:     payload.Name,
-		IsSliced: true,
-	}).Send(ctx, storageClient)
+	m := file.NewManager(d.StorageAPIClient())
+	fileRes, err := m.CreateFile(ctx, payload.Name)
 	if err != nil {
 		return nil, errors.Errorf("creating Storage file failed: %w", err)
 	}
