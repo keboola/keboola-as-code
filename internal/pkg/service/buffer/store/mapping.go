@@ -39,7 +39,7 @@ func (s *Store) CreateMapping(ctx context.Context, mapping model.Mapping) (err e
 		}
 
 		// Next RevisionID
-		mapping.RevisionID = int(count) + 1
+		mapping.RevisionID = key.RevisionID(int(count) + 1)
 
 		// Put
 		_, err = s.createMappingOp(ctx, mapping).Do(ctx, s.client)

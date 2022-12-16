@@ -1,9 +1,6 @@
 package schema
 
 import (
-	"strconv"
-	"time"
-
 	storeKey "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
@@ -78,12 +75,12 @@ func (v SlicesInAState) InFile(k storeKey.FileKey) SlicesInFile {
 	if k.FileID.IsZero() {
 		panic(errors.New("slice fileID cannot be empty"))
 	}
-	return SlicesInFile{slices: v.slices.Add(strconv.Itoa(k.ProjectID)).Add(k.ReceiverID).Add(k.ExportID).Add(storeKey.FormatTime(k.FileID))}
+	return SlicesInFile{slices: v.slices.Add(k.ProjectID.String()).Add(k.ReceiverID.String()).Add(k.ExportID.String()).Add(k.FileID.String())}
 }
 
-func (v SlicesInFile) ID(sliceID time.Time) KeyT[model.Slice] {
+func (v SlicesInFile) ID(sliceID storeKey.SliceID) KeyT[model.Slice] {
 	if sliceID.IsZero() {
 		panic(errors.New("slice sliceID cannot be empty"))
 	}
-	return v.slices.Key(storeKey.FormatTime(sliceID))
+	return v.slices.Key(sliceID.String())
 }

@@ -36,7 +36,7 @@ file/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
   "projectId": 1000,
   "receiverId": "my-receiver",
   "exportId": "my-export",
-  "fileId": "2006-01-01T15:04:05+07:00",
+  "fileId": "2006-01-01T08:04:05.000Z",
   "state": "opened",
   "mapping": {
     "projectId": 1000,
@@ -93,7 +93,7 @@ file/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
   "projectId": 1000,
   "receiverId": "my-receiver",
   "exportId": "my-export",
-  "fileId": "2006-01-01T15:04:05+07:00",
+  "fileId": "2006-01-01T08:04:05.000Z",
   "state": "opened",
   "mapping": {
     "projectId": 1000,
@@ -178,7 +178,7 @@ file/<STATE>/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
 func newFileForTest() model.File {
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
-	now, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
+	now, _ := time.Parse(time.RFC3339, "2006-01-01T08:04:05.000Z")
 	mapping := model.Mapping{
 		MappingKey: key.MappingKey{
 			ExportKey:  exportKey,

@@ -110,7 +110,7 @@ func (s *Store) updateReceiverBaseOp(_ context.Context, receiver model.ReceiverB
 // ListReceivers from the store.
 // Logic errors:
 // - ResourceNotFoundError.
-func (s *Store) ListReceivers(ctx context.Context, projectID int) (receivers []model.Receiver, err error) {
+func (s *Store) ListReceivers(ctx context.Context, projectID key.ProjectID) (receivers []model.Receiver, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.ListReceivers")
 	defer telemetry.EndSpan(span, &err)
 
@@ -135,7 +135,7 @@ func (s *Store) ListReceivers(ctx context.Context, projectID int) (receivers []m
 	return receivers, nil
 }
 
-func (s *Store) receiversIterator(_ context.Context, projectID int) iterator.DefinitionT[model.ReceiverBase] {
+func (s *Store) receiversIterator(_ context.Context, projectID key.ProjectID) iterator.DefinitionT[model.ReceiverBase] {
 	return s.schema.Configs().Receivers().InProject(projectID).GetAll()
 }
 

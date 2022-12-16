@@ -72,7 +72,7 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	secret := idgenerator.ReceiverSecret()
 
 	// Map payload to receiver
-	receiver, err := mpr.ReceiverModelFromPayload(d.ProjectID(), secret, *payload)
+	receiver, err := mpr.ReceiverModelFromPayload(key.ProjectID(d.ProjectID()), secret, *payload)
 	if err != nil {
 		return nil, err
 	}
@@ -104,8 +104,8 @@ func (s *service) UpdateReceiver(d dependencies.ForProjectRequest, payload *buff
 
 	// Get export
 	receiverKey := key.ReceiverKey{
-		ProjectID:  d.ProjectID(),
-		ReceiverID: string(payload.ReceiverID),
+		ProjectID:  key.ProjectID(d.ProjectID()),
+		ReceiverID: key.ReceiverID(payload.ReceiverID),
 	}
 
 	old, err := str.GetReceiver(ctx, receiverKey)
@@ -138,7 +138,7 @@ func (s *service) UpdateReceiver(d dependencies.ForProjectRequest, payload *buff
 func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.GetReceiverPayload) (res *buffer.Receiver, err error) {
 	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
 
-	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
+	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: key.ReceiverID(payload.ReceiverID)}
 
 	receiver, err := str.GetReceiver(ctx, receiverKey)
 	if err != nil {
@@ -153,8 +153,7 @@ func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.
 func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListReceiversPayload) (res *buffer.ReceiversList, err error) {
 	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
 
-	projectID := d.ProjectID()
-
+	projectID := key.ProjectID(d.ProjectID())
 	model, err := str.ListReceivers(ctx, projectID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list receivers in project \"%d\"", projectID)
@@ -172,7 +171,7 @@ func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.List
 func (s *service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer.DeleteReceiverPayload) (err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
-	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
+	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: key.ReceiverID(payload.ReceiverID)}
 	if err := str.DeleteReceiver(ctx, receiverKey); err != nil {
 		return err
 	}
@@ -183,7 +182,7 @@ func (s *service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buff
 func (s *service) RefreshReceiverTokens(d dependencies.ForProjectRequest, payload *buffer.RefreshReceiverTokensPayload) (res *buffer.Receiver, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
-	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
+	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: key.ReceiverID(payload.ReceiverID)}
 	tokens, err := str.ListTokens(ctx, receiverKey)
 	if err != nil {
 		return nil, err
@@ -229,7 +228,7 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 	}
 
 	// Map payload to export
-	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: string(payload.ReceiverID)}
+	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: key.ReceiverID(payload.ReceiverID)}
 	export, err := mpr.ExportModelFromPayload(
 		receiverKey,
 		buffer.CreateExportData{
@@ -266,10 +265,10 @@ func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer
 	// Get export
 	exportKey := key.ExportKey{
 		ReceiverKey: key.ReceiverKey{
-			ProjectID:  d.ProjectID(),
-			ReceiverID: string(payload.ReceiverID),
+			ProjectID:  key.ProjectID(d.ProjectID()),
+			ReceiverID: key.ReceiverID(payload.ReceiverID),
 		},
-		ExportID: string(payload.ExportID),
+		ExportID: key.ExportID(payload.ExportID),
 	}
 
 	old, err := str.GetExport(ctx, exportKey)
@@ -309,10 +308,10 @@ func (s *service) GetExport(d dependencies.ForProjectRequest, payload *buffer.Ge
 
 	exportKey := key.ExportKey{
 		ReceiverKey: key.ReceiverKey{
-			ProjectID:  d.ProjectID(),
-			ReceiverID: string(payload.ReceiverID),
+			ProjectID:  key.ProjectID(d.ProjectID()),
+			ReceiverID: key.ReceiverID(payload.ReceiverID),
 		},
-		ExportID: string(payload.ExportID),
+		ExportID: key.ExportID(payload.ExportID),
 	}
 
 	export, err := str.GetExport(ctx, exportKey)
@@ -329,8 +328,8 @@ func (s *service) ListExports(d dependencies.ForProjectRequest, payload *buffer.
 	ctx, str, mpr := d.RequestCtx(), d.Store(), s.mapper
 
 	receiverKey := key.ReceiverKey{
-		ProjectID:  d.ProjectID(),
-		ReceiverID: string(payload.ReceiverID),
+		ProjectID:  key.ProjectID(d.ProjectID()),
+		ReceiverID: key.ReceiverID(payload.ReceiverID),
 	}
 
 	model, err := str.ListExports(ctx, receiverKey)
@@ -352,10 +351,10 @@ func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer
 
 	exportKey := key.ExportKey{
 		ReceiverKey: key.ReceiverKey{
-			ProjectID:  d.ProjectID(),
-			ReceiverID: string(payload.ReceiverID),
+			ProjectID:  key.ProjectID(d.ProjectID()),
+			ReceiverID: key.ReceiverID(payload.ReceiverID),
 		},
-		ExportID: string(payload.ExportID),
+		ExportID: key.ExportID(payload.ExportID),
 	}
 	if err := str.DeleteExport(ctx, exportKey); err != nil {
 		return err
@@ -367,7 +366,7 @@ func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer
 func (s *service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPayload, reader io.ReadCloser) (err error) {
 	ctx, str, header, ip, stats := d.RequestCtx(), d.Store(), d.RequestHeader(), d.RequestClientIP(), s.stats
 
-	receiverKey := key.ReceiverKey{ProjectID: payload.ProjectID, ReceiverID: string(payload.ReceiverID)}
+	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(payload.ProjectID), ReceiverID: key.ReceiverID(payload.ReceiverID)}
 	receiver, err := str.GetReceiver(ctx, receiverKey)
 	if err != nil {
 		return err
@@ -392,8 +391,8 @@ func (s *service) Import(d dependencies.ForPublicRequest, payload *buffer.Import
 	for _, e := range receiver.Exports {
 		// nolint:godox
 		// TODO get sliceID and fileID + use in stats.Notify
-		fileKey := key.FileKey{ExportKey: e.ExportKey, FileID: receivedAt}
-		sliceKey := key.SliceKey{FileKey: fileKey, SliceID: receivedAt}
+		fileKey := key.FileKey{ExportKey: e.ExportKey, FileID: key.FileID(receivedAt)}
+		sliceKey := key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(receivedAt)}
 
 		csv := make([]string, 0)
 		for _, c := range e.Mapping.Columns {
@@ -404,7 +403,7 @@ func (s *service) Import(d dependencies.ForPublicRequest, payload *buffer.Import
 			csv = append(csv, csvValue)
 		}
 
-		record := key.NewRecordKey(e.ProjectID, e.ReceiverID, e.ExportID, receivedAt, receivedAt)
+		record := key.NewRecordKey(sliceKey, receivedAt)
 		err = str.CreateRecord(ctx, record, csv)
 		if err != nil {
 			errs.AppendWithPrefixf(err, `failed to create record for export "%s"`, e.ExportID)
