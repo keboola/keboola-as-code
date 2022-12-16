@@ -26,7 +26,7 @@ func (m *transformationMapper) isTransformationConfig(object interface{}) (bool,
 		return false, err
 	}
 
-	return component.IsTransformation(), nil
+	return component.IsTransformationWithBlocks(), nil
 }
 
 func (m *transformationMapper) isTransformationConfigState(objectState model.ObjectState) (bool, error) {
@@ -40,5 +40,5 @@ func (m *transformationMapper) isTransformationConfigState(objectState model.Obj
 		return false, err
 	}
 
-	return component.IsTransformation(), nil
+	return component.IsTransformationWithBlocks(), nil
 }

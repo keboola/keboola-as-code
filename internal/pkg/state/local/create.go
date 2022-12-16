@@ -24,7 +24,7 @@ func (m *Manager) createObject(key model.Key, name string) (model.Object, error)
 			Name:      name,
 			Content:   content,
 		}
-		if component.IsTransformation() {
+		if component.IsTransformationWithBlocks() {
 			config.Transformation = &model.Transformation{}
 		}
 		if component.IsOrchestrator() {
