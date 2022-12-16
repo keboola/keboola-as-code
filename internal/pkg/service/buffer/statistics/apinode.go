@@ -20,7 +20,7 @@ type APINode struct {
 	clock    clock.Clock
 	store    *store.Store
 	ch       chan notifyEvent
-	perSlice map[key.SliceStatsKey]*stats
+	perSlice map[key.SliceStatsKey]*sliceStats
 }
 
 type notifyEvent struct {
@@ -29,7 +29,7 @@ type notifyEvent struct {
 	lastReceivedAt time.Time
 }
 
-type stats struct {
+type sliceStats struct {
 	count          uint64
 	size           uint64
 	lastReceivedAt time.Time
@@ -50,7 +50,7 @@ func NewAPINode(d dependencies) *APINode {
 		store:  d.Store(),
 		// channel needs to be large enough to not block under average load
 		ch:       make(chan notifyEvent, 2048),
-		perSlice: make(map[key.SliceStatsKey]*stats),
+		perSlice: make(map[key.SliceStatsKey]*sliceStats),
 	}
 
 	// Receive notifications and periodically trigger sync
@@ -96,7 +96,7 @@ func (m *APINode) Notify(key key.SliceStatsKey, size uint64) {
 func (m *APINode) handleNotify(update notifyEvent) {
 	// Init stats
 	if _, exists := m.perSlice[update.key]; !exists {
-		m.perSlice[update.key] = &stats{}
+		m.perSlice[update.key] = &sliceStats{}
 	}
 
 	// Update stats
