@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/benbjohnson/clock"
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
@@ -51,6 +52,7 @@ type mocked struct {
 
 type MockedConfig struct {
 	ctx          context.Context
+	clock        clock.Clock
 	loggerPrefix string
 	logger       log.DebugLogger
 	procOpts     []servicectx.Option
@@ -75,6 +77,12 @@ type MockedOption func(c *MockedConfig)
 func WithCtx(v context.Context) MockedOption {
 	return func(c *MockedConfig) {
 		c.ctx = v
+	}
+}
+
+func WithClock(v clock.Clock) MockedOption {
+	return func(c *MockedConfig) {
+		c.clock = v
 	}
 }
 
@@ -162,6 +170,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 	// Default values
 	c := MockedConfig{
 		ctx:           context.Background(),
+		clock:         clock.New(),
 		etcdNamespace: etcdhelper.NamespaceForTest(),
 		useRealAPIs:   false,
 		services: storageapi.Services{
@@ -225,7 +234,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 	)
 
 	// Create base, public and project dependencies
-	baseDeps := newBaseDeps(envs, nil, c.logger, httpClient)
+	baseDeps := newBaseDeps(envs, nil, c.logger, c.clock, httpClient)
 	publicDeps, err := newPublicDeps(c.ctx, baseDeps, c.storageAPIHost)
 	if err != nil {
 		panic(err)

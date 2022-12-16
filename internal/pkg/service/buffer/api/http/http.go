@@ -80,19 +80,20 @@ func HandleHTTPServer(proc *servicectx.Process, d dependencies.ForServer, u *url
 
 	proc.Add(func(ctx context.Context, shutdown servicectx.ShutdownFn) {
 		// Start HTTP server in a separate goroutine.
-		go func() {
-			logger.Infof("HTTP server listening on %q", u.Host)
-			shutdown(srv.ListenAndServe())
-		}()
+		logger.Infof("HTTP server listening on %q", u.Host)
+		shutdown(srv.ListenAndServe())
+	})
 
-		// Wait for termination
-		<-ctx.Done()
+	proc.OnShutdown(func() {
 		logger.Infof("shutting down HTTP server at %q", u.Host)
 
 		// Shutdown gracefully with a 30s timeout.
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		_ = srv.Shutdown(ctx)
+		if err := srv.Shutdown(ctx); err != nil {
+			logger.Errorf(`HTTP server shutdown error: %w`, err)
+		}
+		logger.Info("HTTP server shutdown finished")
 	})
 }
