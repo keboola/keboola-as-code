@@ -134,6 +134,8 @@ func NewForTest(t *testing.T, ctx context.Context, opts ...Option) *Process {
 }
 
 // Ctx returns context of the Process.
+// The context in canceled immediately as the process receives termination request.
+// Then follows a graceful shutdown during which the context is already canceled.
 func (v *Process) Ctx() context.Context {
 	return v.ctx
 }

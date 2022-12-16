@@ -2,31 +2,31 @@ package statistics_test
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func TestStatsManager(t *testing.T) {
 	t.Parallel()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	clk := clock.NewMock()
 	d := dependencies.NewMockedDeps(t, dependencies.WithClock(clk))
 
 	// mock store which contains every version of `SliceStats`
 	store := newMockStatsStore()
-	stats := New(ctx, d, func(_ context.Context, s []model.SliceStats) {
+	stats := New(d, func(_ context.Context, s []model.SliceStats) {
 		store.append(s...)
 	})
 
@@ -106,6 +106,55 @@ func TestStatsManager(t *testing.T) {
 		},
 		store.read(),
 	)
+
+	// notify before shutdown
+	clk.Add(100 * time.Millisecond)
+	receivedAt2 := clk.Now()
+	stats.Notify(k, 3000)
+
+	d.Process().Shutdown(errors.New("test shutdown"))
+	d.Process().WaitForShutdown()
+
+	// shutdown triggered sync
+	assert.Equal(t,
+		[]model.SliceStats{
+			{
+				SliceStatsKey:  k,
+				Count:          1,
+				Size:           1000,
+				LastReceivedAt: receivedAt0,
+			},
+			{
+				SliceStatsKey:  k,
+				Count:          2,
+				Size:           3000,
+				LastReceivedAt: receivedAt1,
+			},
+			{
+				SliceStatsKey:  k,
+				Count:          3,
+				Size:           6000,
+				LastReceivedAt: receivedAt2,
+			},
+		},
+		store.read(),
+	)
+
+	// check logs
+	expected := `
+INFO  process unique id "%s"
+[stats]DEBUG  syncing 1 records
+[stats]DEBUG  sync done
+[stats]DEBUG  syncing 1 records
+[stats]DEBUG  sync done
+INFO  exiting (test shutdown)
+[stats]INFO  the server is shutting down, starting sync
+[stats]DEBUG  syncing 1 records
+[stats]DEBUG  sync done
+[stats]INFO  all done
+INFO  exited
+`
+	wildcards.Assert(t, strings.TrimSpace(expected), d.DebugLogger().AllMessages())
 }
 
 type mockStatsStore struct {

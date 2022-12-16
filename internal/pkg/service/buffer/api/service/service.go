@@ -41,7 +41,7 @@ func New(d dependencies.ForServer) buffer.Service {
 	return &service{
 		deps:   d,
 		mapper: mapper.NewMapper(d.BufferAPIHost()),
-		stats: statistics.New(d.Process().Ctx(), d, func(ctx context.Context, stats []model.SliceStats) {
+		stats: statistics.New(d, func(ctx context.Context, stats []model.SliceStats) {
 			if err := d.Store().UpdateSliceStats(ctx, stats); err != nil {
 				d.Logger().Error("cannot update slice stats in etcd: %s", err.Error())
 			}
