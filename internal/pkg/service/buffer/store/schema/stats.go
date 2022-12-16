@@ -1,8 +1,6 @@
 package schema
 
 import (
-	"strconv"
-
 	storeKey "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
@@ -43,11 +41,11 @@ func (v SliceStats) InSlice(k storeKey.SliceKey) SliceNodeStats {
 	}
 	return SliceNodeStats{
 		sliceStats: v.sliceStats.
-			Add(strconv.Itoa(k.ProjectID)).
-			Add(k.ReceiverID).
-			Add(k.ExportID).
-			Add(storeKey.FormatTime(k.FileID)).
-			Add(storeKey.FormatTime(k.SliceID)),
+			Add(k.ProjectID.String()).
+			Add(k.ReceiverID.String()).
+			Add(k.ExportID.String()).
+			Add(k.FileID.String()).
+			Add(k.SliceID.String()),
 	}
 }
 

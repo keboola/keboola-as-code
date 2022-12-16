@@ -1,9 +1,6 @@
 package schema
 
 import (
-	"strconv"
-	"time"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	storeKey "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -75,12 +72,12 @@ func (v FilesInAState) InExport(k storeKey.ExportKey) FilesInExport {
 	if k.ExportID == "" {
 		panic(errors.New("file exportID cannot be empty"))
 	}
-	return FilesInExport{files: v.files.Add(strconv.Itoa(k.ProjectID)).Add(k.ReceiverID).Add(k.ExportID)}
+	return FilesInExport{files: v.files.Add(k.ProjectID.String()).Add(k.ReceiverID.String()).Add(k.ExportID.String())}
 }
 
-func (v FilesInExport) ID(fileID time.Time) KeyT[model.File] {
+func (v FilesInExport) ID(fileID storeKey.FileID) KeyT[model.File] {
 	if fileID.IsZero() {
 		panic(errors.New("file fileID cannot be empty"))
 	}
-	return v.files.Key(storeKey.FormatTime(fileID))
+	return v.files.Key(fileID.String())
 }

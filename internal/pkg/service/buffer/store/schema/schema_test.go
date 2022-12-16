@@ -21,12 +21,12 @@ func TestSchema(t *testing.T) {
 	time1, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
 	time2 := time1.Add(time.Hour)
 
-	projectID := 123
+	projectID := key.ProjectID(123)
 	receiverKey := key.ReceiverKey{ProjectID: projectID, ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
 	mappingKey := key.MappingKey{ExportKey: exportKey, RevisionID: 10}
-	fileKey := key.FileKey{ExportKey: exportKey, FileID: time1}
-	sliceKey := key.SliceKey{SliceID: time2, FileKey: fileKey}
+	fileKey := key.FileKey{ExportKey: exportKey, FileID: key.FileID(time1)}
+	sliceKey := key.SliceKey{SliceID: key.SliceID(time2), FileKey: fileKey}
 
 	cases := []keyTestCase{
 		{
@@ -220,18 +220,11 @@ func TestSchema(t *testing.T) {
 		},
 		{
 			s.Records().ByKey(key.RecordKey{
-				ReceivedAt:   time2,
+				SliceKey:     sliceKey,
+				ReceivedAt:   key.ReceivedAt(time2.Add(time.Hour)),
 				RandomSuffix: "abcdef",
-				ExportKey: key.ExportKey{
-					ExportID: "my-export",
-					ReceiverKey: key.ReceiverKey{
-						ProjectID:  123,
-						ReceiverID: "my-receiver",
-					},
-				},
-				SliceID: time1,
 			}).Key(),
-			"record/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z_abcdef",
+			"record/123/my-receiver/my-export/2006-01-02T09:04:05.000Z/2006-01-02T10:04:05.000Z_abcdef",
 		},
 		{
 			s.Secrets().Tokens().InExport(key.ExportKey{

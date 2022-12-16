@@ -2,7 +2,6 @@ package schema
 
 import (
 	"fmt"
-	"strconv"
 
 	storeKey "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -38,14 +37,14 @@ func (v Mappings) InReceiver(k storeKey.ReceiverKey) MappingsInReceiver {
 	if k.ReceiverID == "" {
 		panic(errors.New("mapping receiverID cannot be empty"))
 	}
-	return MappingsInReceiver{mappings: v.mappings.Add(strconv.Itoa(k.ProjectID)).Add(k.ReceiverID)}
+	return MappingsInReceiver{mappings: v.mappings.Add(k.ProjectID.String()).Add(k.ReceiverID.String())}
 }
 
 func (v Mappings) InExport(k storeKey.ExportKey) MappingsInExport {
 	if k.ExportID == "" {
 		panic(errors.New("mapping exportID cannot be empty"))
 	}
-	return MappingsInExport{mappings: v.InReceiver(k.ReceiverKey).Add(k.ExportID)}
+	return MappingsInExport{mappings: v.InReceiver(k.ReceiverKey).Add(k.ExportID.String())}
 }
 
 func (v Mappings) ByKey(k storeKey.MappingKey) KeyT[model.Mapping] {

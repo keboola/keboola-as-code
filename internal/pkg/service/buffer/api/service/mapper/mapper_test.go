@@ -17,7 +17,7 @@ func TestReceiverModelFromPayload(t *testing.T) {
 
 	mapper := NewMapper("buffer.keboola.local")
 
-	projectID := 1000
+	projectID := key.ProjectID(1000)
 	secret := idgenerator.ReceiverSecret()
 
 	payload := buffer.CreateReceiverPayload{
@@ -213,7 +213,7 @@ func TestFormatUrl(t *testing.T) {
 
 	assert.Equal(
 		t,
-		"https://buffer.keboola.local/v1/import/1000/asdf/fdsa",
-		formatReceiverURL("buffer.keboola.local", 1000, "asdf", "fdsa"),
+		"https://buffer.keboola.local/v1/import/1000/my-receiver/my-secret",
+		formatReceiverURL("buffer.keboola.local", key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}, "my-secret"),
 	)
 }

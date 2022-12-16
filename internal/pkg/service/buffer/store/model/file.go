@@ -28,7 +28,7 @@ type File struct {
 
 func NewFile(exportKey key.ExportKey, now time.Time, mapping Mapping, resource *storageapi.File) File {
 	return File{
-		FileKey:         key.FileKey{ExportKey: exportKey, FileID: now},
+		FileKey:         key.FileKey{ExportKey: exportKey, FileID: key.FileID(now.UTC())},
 		State:           filestate.Opened,
 		Mapping:         mapping,
 		StorageResource: resource,
@@ -36,5 +36,5 @@ func NewFile(exportKey key.ExportKey, now time.Time, mapping Mapping, resource *
 }
 
 func (v *File) OpenedAt() time.Time {
-	return v.FileID
+	return time.Time(v.FileID)
 }

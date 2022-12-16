@@ -21,12 +21,12 @@ type Slice struct {
 
 func NewSlice(fileKey key.FileKey, now time.Time, number int) Slice {
 	return Slice{
-		SliceKey: key.SliceKey{FileKey: fileKey, SliceID: now},
+		SliceKey: key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(now)},
 		State:    slicestate.Opened,
 		Number:   number,
 	}
 }
 
 func (v *Slice) OpenedAt() time.Time {
-	return v.SliceID
+	return time.Time(v.SliceID)
 }

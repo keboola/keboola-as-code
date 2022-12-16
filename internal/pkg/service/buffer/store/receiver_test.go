@@ -87,7 +87,7 @@ func TestStore_ListReceiversBaseOp(t *testing.T) {
 	ctx := context.Background()
 	store := newStoreForTest(t)
 
-	projectID := 1000
+	projectID := key.ProjectID(1000)
 
 	// Create receivers
 	input := []model.ReceiverBase{

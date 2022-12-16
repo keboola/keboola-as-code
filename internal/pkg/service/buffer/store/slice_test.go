@@ -34,8 +34,8 @@ slice/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:0
   "projectId": 1000,
   "receiverId": "my-receiver",
   "exportId": "my-export",
-  "fileId": "2006-01-01T15:04:05+07:00",
-  "sliceId": "2006-01-02T15:04:05+07:00",
+  "fileId": "2006-01-01T08:04:05.000Z",
+  "sliceId": "2006-01-02T08:04:05.000Z",
   "state": "opened",
   "sliceNumber": 1
 }
@@ -66,8 +66,8 @@ slice/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:0
   "projectId": 1000,
   "receiverId": "my-receiver",
   "exportId": "my-export",
-  "fileId": "2006-01-01T15:04:05+07:00",
-  "sliceId": "2006-01-02T15:04:05+07:00",
+  "fileId": "2006-01-01T08:04:05.000Z",
+  "sliceId": "2006-01-02T08:04:05.000Z",
   "state": "opened",
   "sliceNumber": 1
 }
@@ -131,18 +131,18 @@ func TestStore_ListUploadedSlices(t *testing.T) {
 
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
-	time1, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
-	time2, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
-	time3, _ := time.Parse(time.RFC3339, "2006-01-03T15:04:05+07:00")
-	fileKey := key.FileKey{FileID: time1, ExportKey: exportKey}
+	time1, _ := time.Parse(time.RFC3339, "2006-01-01T08:04:05.000Z")
+	time2, _ := time.Parse(time.RFC3339, "2006-01-02T08:04:05.000Z")
+	time3, _ := time.Parse(time.RFC3339, "2006-01-03T08:04:05.000Z")
+	fileKey := key.FileKey{FileID: key.FileID(time1), ExportKey: exportKey}
 	input := []model.Slice{
 		{
-			SliceKey: key.SliceKey{SliceID: time2, FileKey: fileKey},
+			SliceKey: key.SliceKey{SliceID: key.SliceID(time2), FileKey: fileKey},
 			State:    slicestate.Uploaded,
 			Number:   1,
 		},
 		{
-			SliceKey: key.SliceKey{SliceID: time3, FileKey: fileKey},
+			SliceKey: key.SliceKey{SliceID: key.SliceID(time3), FileKey: fileKey},
 			State:    slicestate.Uploaded,
 			Number:   2,
 		},
@@ -166,8 +166,8 @@ slice/uploaded/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08
   "projectId": 1000,
   "receiverId": "my-receiver",
   "exportId": "my-export",
-  "fileId": "2006-01-01T15:04:05+07:00",
-  "sliceId": "2006-01-02T15:04:05+07:00",
+  "fileId": "2006-01-01T08:04:05.000Z",
+  "sliceId": "2006-01-02T08:04:05.000Z",
   "state": "uploaded",
   "sliceNumber": 1
 }
@@ -180,8 +180,8 @@ slice/uploaded/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-03T08
   "projectId": 1000,
   "receiverId": "my-receiver",
   "exportId": "my-export",
-  "fileId": "2006-01-01T15:04:05+07:00",
-  "sliceId": "2006-01-03T15:04:05+07:00",
+  "fileId": "2006-01-01T08:04:05.000Z",
+  "sliceId": "2006-01-03T08:04:05.000Z",
   "state": "uploaded",
   "sliceNumber": 2
 }
@@ -190,12 +190,12 @@ slice/uploaded/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-03T08
 }
 
 func sliceForTest() model.Slice {
-	time1, _ := time.Parse(time.RFC3339, "2006-01-01T15:04:05+07:00")
-	time2, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
+	time1, _ := time.Parse(time.RFC3339, "2006-01-01T08:04:05.000Z")
+	time2, _ := time.Parse(time.RFC3339, "2006-01-02T08:04:05.000Z")
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
-	fileKey := key.FileKey{FileID: time1, ExportKey: exportKey}
-	sliceKey := key.SliceKey{SliceID: time2, FileKey: fileKey}
+	fileKey := key.FileKey{FileID: key.FileID(time1.UTC()), ExportKey: exportKey}
+	sliceKey := key.SliceKey{SliceID: key.SliceID(time2.UTC()), FileKey: fileKey}
 	return model.Slice{
 		SliceKey: sliceKey,
 		State:    slicestate.Opened,

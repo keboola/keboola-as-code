@@ -24,7 +24,7 @@ func NewMapper(bufferAPIHost string) Mapper {
 }
 
 func (m Mapper) ReceiverPayloadFromModel(model model.Receiver) buffer.Receiver {
-	url := formatReceiverURL(m.bufferAPIHost, model.ProjectID, model.ReceiverID, model.Secret)
+	url := formatReceiverURL(m.bufferAPIHost, model.ReceiverKey, model.Secret)
 	exports := make([]*buffer.Export, 0, len(model.Exports))
 	for _, exportData := range model.Exports {
 		export := m.ExportPayloadFromModel(exportData)
@@ -112,7 +112,7 @@ func (m Mapper) MappingPayloadFromModel(model model.Mapping) buffer.Mapping {
 	}
 }
 
-func (m Mapper) ReceiverModelFromPayload(projectID int, secret string, payload buffer.CreateReceiverPayload) (r model.Receiver, err error) {
+func (m Mapper) ReceiverModelFromPayload(projectID key.ProjectID, secret string, payload buffer.CreateReceiverPayload) (r model.Receiver, err error) {
 	receiverBase := m.ReceiverBaseFromPayload(projectID, secret, payload)
 
 	exports := make([]model.Export, 0, len(payload.Exports))
@@ -140,15 +140,15 @@ func (m Mapper) ReceiverModelFromPayload(projectID int, secret string, payload b
 	}, nil
 }
 
-func (m Mapper) ReceiverBaseFromPayload(projectID int, secret string, payload buffer.CreateReceiverPayload) model.ReceiverBase {
+func (m Mapper) ReceiverBaseFromPayload(projectID key.ProjectID, secret string, payload buffer.CreateReceiverPayload) model.ReceiverBase {
 	name := payload.Name
 
 	// Generate receiver ID from Name if needed
-	var id string
+	var id key.ReceiverID
 	if payload.ID != nil && len(*payload.ID) != 0 {
-		id = strhelper.NormalizeName(string(*payload.ID))
+		id = key.ReceiverID(strhelper.NormalizeName(string(*payload.ID)))
 	} else {
-		id = strhelper.NormalizeName(name)
+		id = key.ReceiverID(strhelper.NormalizeName(name))
 	}
 
 	return model.ReceiverBase{
@@ -181,11 +181,11 @@ func (m Mapper) ExportBaseFromPayload(receiverKey key.ReceiverKey, payload buffe
 	name := payload.Name
 
 	// Generate export ID from Name if needed
-	var id string
+	var id key.ExportID
 	if payload.ID != nil && len(*payload.ID) != 0 {
-		id = string(*payload.ID)
+		id = key.ExportID(*payload.ID)
 	} else {
-		id = strhelper.NormalizeName(name)
+		id = key.ExportID(strhelper.NormalizeName(name))
 	}
 
 	// Handle conditions with defaults
@@ -204,7 +204,7 @@ func (m Mapper) ExportBaseFromPayload(receiverKey key.ReceiverKey, payload buffe
 	}, nil
 }
 
-func (m Mapper) MappingModelFromPayload(exportKey key.ExportKey, revisionID int, payload buffer.Mapping) (model.Mapping, error) {
+func (m Mapper) MappingModelFromPayload(exportKey key.ExportKey, revisionID key.RevisionID, payload buffer.Mapping) (model.Mapping, error) {
 	// mapping
 	tableID, err := model.ParseTableID(payload.TableID)
 	if err != nil {
@@ -262,6 +262,6 @@ func (m Mapper) ConditionsFromPayload(payload *buffer.Conditions) (r model.Impor
 	return conditions, nil
 }
 
-func formatReceiverURL(bufferAPIHost string, projectID int, receiverID string, secret string) string {
-	return fmt.Sprintf("https://%s/v1/import/%d/%s/%s", bufferAPIHost, projectID, receiverID, secret)
+func formatReceiverURL(bufferAPIHost string, k key.ReceiverKey, secret string) string {
+	return fmt.Sprintf("https://%s/v1/import/%s/%s/%s", bufferAPIHost, k.ProjectID.String(), k.ReceiverID.String(), secret)
 }

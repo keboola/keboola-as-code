@@ -25,8 +25,8 @@ func TestStatsManager(t *testing.T) {
 
 	receiverKey := key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
-	fileKey := key.FileKey{ExportKey: exportKey, FileID: clk.Now()}
-	sliceKey := key.SliceKey{FileKey: fileKey, SliceID: clk.Now()}
+	fileKey := key.FileKey{ExportKey: exportKey, FileID: key.FileID(clk.Now())}
+	sliceKey := key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(clk.Now())}
 	clk.Add(time.Hour)
 
 	// no notify -> wait 1 second -> no sync
@@ -46,11 +46,11 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
   "projectId": 123,
   "receiverId": "my-receiver",
   "exportId": "my-export",
-  "fileId": "1970-01-01T00:00:00Z",
-  "sliceId": "1970-01-01T00:00:00Z",
+  "fileId": "1970-01-01T00:00:00.000Z",
+  "sliceId": "1970-01-01T00:00:00.000Z",
   "count": 1,
   "size": 1000,
-  "lastReceivedAt": "1970-01-01T01:00:01Z"
+  "lastReceivedAt": "1970-01-01T01:00:01.000Z"
 }
 >>>>>
 `)
@@ -65,11 +65,11 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
   "projectId": 123,
   "receiverId": "my-receiver",
   "exportId": "my-export",
-  "fileId": "1970-01-01T00:00:00Z",
-  "sliceId": "1970-01-01T00:00:00Z",
+  "fileId": "1970-01-01T00:00:00.000Z",
+  "sliceId": "1970-01-01T00:00:00.000Z",
   "count": 1,
   "size": 1000,
-  "lastReceivedAt": "1970-01-01T01:00:01Z"
+  "lastReceivedAt": "1970-01-01T01:00:01.000Z"
 }
 >>>>>
 `)
@@ -87,11 +87,11 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
   "projectId": 123,
   "receiverId": "my-receiver",
   "exportId": "my-export",
-  "fileId": "1970-01-01T00:00:00Z",
-  "sliceId": "1970-01-01T00:00:00Z",
+  "fileId": "1970-01-01T00:00:00.000Z",
+  "sliceId": "1970-01-01T00:00:00.000Z",
   "count": 2,
   "size": 3000,
-  "lastReceivedAt": "1970-01-01T01:00:03Z"
+  "lastReceivedAt": "1970-01-01T01:00:03.000Z"
 }
 >>>>>
 `)
@@ -106,11 +106,11 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
   "projectId": 123,
   "receiverId": "my-receiver",
   "exportId": "my-export",
-  "fileId": "1970-01-01T00:00:00Z",
-  "sliceId": "1970-01-01T00:00:00Z",
+  "fileId": "1970-01-01T00:00:00.000Z",
+  "sliceId": "1970-01-01T00:00:00.000Z",
   "count": 2,
   "size": 3000,
-  "lastReceivedAt": "1970-01-01T01:00:03Z"
+  "lastReceivedAt": "1970-01-01T01:00:03.000Z"
 }
 >>>>>
 `)
@@ -131,11 +131,11 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
   "projectId": 123,
   "receiverId": "my-receiver",
   "exportId": "my-export",
-  "fileId": "1970-01-01T00:00:00Z",
-  "sliceId": "1970-01-01T00:00:00Z",
+  "fileId": "1970-01-01T00:00:00.000Z",
+  "sliceId": "1970-01-01T00:00:00.000Z",
   "count": 3,
   "size": 6000,
-  "lastReceivedAt": "1970-01-01T01:00:05Z"
+  "lastReceivedAt": "1970-01-01T01:00:05.000Z"
 }
 >>>>>
 `)

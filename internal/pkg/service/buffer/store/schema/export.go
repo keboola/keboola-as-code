@@ -1,8 +1,6 @@
 package schema
 
 import (
-	"strconv"
-
 	storeKey "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
@@ -37,12 +35,12 @@ func (v Exports) InReceiver(k storeKey.ReceiverKey) ExportsInReceiver {
 	if k.ReceiverID == "" {
 		panic(errors.New("export receiverID cannot be empty"))
 	}
-	return ExportsInReceiver{exports: v.exports.Add(strconv.Itoa(k.ProjectID)).Add(k.ReceiverID)}
+	return ExportsInReceiver{exports: v.exports.Add(k.ProjectID.String()).Add(k.ReceiverID.String())}
 }
 
-func (v ExportsInReceiver) ID(exportID string) KeyT[model.ExportBase] {
+func (v ExportsInReceiver) ID(exportID storeKey.ExportID) KeyT[model.ExportBase] {
 	if exportID == "" {
 		panic(errors.New("export exportID cannot be empty"))
 	}
-	return v.exports.Key(exportID)
+	return v.exports.Key(exportID.String())
 }

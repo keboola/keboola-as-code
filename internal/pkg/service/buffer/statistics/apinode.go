@@ -26,15 +26,15 @@ type APINode struct {
 }
 
 type notifyEvent struct {
-	key        key.SliceKey
+	sliceKey   key.SliceKey
 	size       uint64
-	receivedAt time.Time
+	receivedAt key.ReceivedAt
 }
 
 type sliceStats struct {
 	count          uint64
 	size           uint64
-	lastReceivedAt time.Time
+	lastReceivedAt key.ReceivedAt
 	changed        bool
 }
 
@@ -88,22 +88,22 @@ func NewAPINode(d dependencies) *APINode {
 	return m
 }
 
-func (m *APINode) Notify(key key.SliceKey, size uint64) {
+func (m *APINode) Notify(sliceKey key.SliceKey, size uint64) {
 	m.ch <- notifyEvent{
-		key:        key,
+		sliceKey:   sliceKey,
 		size:       size,
-		receivedAt: m.clock.Now(),
+		receivedAt: key.ReceivedAt(m.clock.Now()),
 	}
 }
 
 func (m *APINode) handleNotify(event notifyEvent) {
 	// Init stats
-	if _, exists := m.perSlice[event.key]; !exists {
-		m.perSlice[event.key] = &sliceStats{}
+	if _, exists := m.perSlice[event.sliceKey]; !exists {
+		m.perSlice[event.sliceKey] = &sliceStats{}
 	}
 
 	// Update stats
-	stats := m.perSlice[event.key]
+	stats := m.perSlice[event.sliceKey]
 	stats.count += 1
 	stats.size += event.size
 	if event.receivedAt.After(stats.lastReceivedAt) {

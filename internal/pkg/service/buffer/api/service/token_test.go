@@ -46,7 +46,7 @@ func TestTokenRefresh(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	oldTokens, err := str.ListTokens(deps.RequestCtx(), key.ReceiverKey{ProjectID: deps.ProjectID(), ReceiverID: string(receiver.ID)})
+	oldTokens, err := str.ListTokens(deps.RequestCtx(), key.ReceiverKey{ProjectID: key.ProjectID(deps.ProjectID()), ReceiverID: key.ReceiverID(receiver.ID)})
 	assert.NoError(t, err)
 
 	time.Sleep(time.Second)
@@ -55,7 +55,7 @@ func TestTokenRefresh(t *testing.T) {
 	_, err = svc.RefreshReceiverTokens(deps, &buffer.RefreshReceiverTokensPayload{ReceiverID: receiver.ID})
 	assert.NoError(t, err)
 
-	newTokens, err := str.ListTokens(deps.RequestCtx(), key.ReceiverKey{ProjectID: deps.ProjectID(), ReceiverID: string(receiver.ID)})
+	newTokens, err := str.ListTokens(deps.RequestCtx(), key.ReceiverKey{ProjectID: key.ProjectID(deps.ProjectID()), ReceiverID: key.ReceiverID(receiver.ID)})
 	assert.NoError(t, err)
 
 	// Assert that tokens were refreshed

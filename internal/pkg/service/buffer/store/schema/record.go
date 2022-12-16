@@ -1,9 +1,6 @@
 package schema
 
 import (
-	"strconv"
-	"time"
-
 	storeKey "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -52,16 +49,16 @@ func (v RecordsRoot) ByKey(k storeKey.RecordKey) Key {
 	if k.SliceID.IsZero() {
 		panic(errors.New("record sliceID cannot be empty"))
 	}
-	if k.ReceivedAt == (time.Time{}) {
+	if k.ReceivedAt.IsZero() {
 		panic(errors.New("record receivedAt cannot be empty"))
 	}
 	if k.RandomSuffix == "" {
 		panic(errors.New("record randomSuffix cannot be empty"))
 	}
 	return v.records.
-		Add(strconv.Itoa(k.ProjectID)).
-		Add(k.ReceiverID).
-		Add(k.ExportID).
-		Add(storeKey.FormatTime(k.SliceID)).
+		Add(k.ProjectID.String()).
+		Add(k.ReceiverID.String()).
+		Add(k.ExportID.String()).
+		Add(k.SliceID.String()).
 		Key(k.Key())
 }
