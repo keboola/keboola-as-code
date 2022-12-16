@@ -57,7 +57,7 @@ func (h *SharedCodeHelper) IsTransformation(key model.Key) (bool, error) {
 
 	// Is shared code?
 	component, err := h.state.Components().GetOrErr(configKey.ComponentID)
-	if err != nil || !component.IsTransformation() {
+	if err != nil || !component.IsTransformationWithBlocks() {
 		return false, err
 	}
 	return true, nil
