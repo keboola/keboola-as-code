@@ -19,11 +19,14 @@ func TestStatsManager(t *testing.T) {
 	t.Parallel()
 
 	clk := clock.NewMock()
-	d := dependencies.NewMockedDeps(t, dependencies.WithClock(clk))
+	d := dependencies.NewMockedDeps(t, dependencies.WithClock(clk), dependencies.WithUniqueID("my-node"))
 	client := d.EtcdClient()
 	node := NewAPINode(d)
 
-	sliceKey := key.NewSliceStatsKey(123, "my-receiver", "my-export", clk.Now(), clk.Now(), "my-node")
+	receiverKey := key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}
+	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
+	fileKey := key.FileKey{ExportKey: exportKey, FileID: clk.Now()}
+	sliceKey := key.SliceKey{FileKey: fileKey, SliceID: clk.Now()}
 	clk.Add(time.Hour)
 
 	// no notify -> wait 1 second -> no sync
@@ -45,7 +48,6 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
   "exportId": "my-export",
   "fileId": "1970-01-01T00:00:00Z",
   "sliceId": "1970-01-01T00:00:00Z",
-  "nodeId": "my-node",
   "count": 1,
   "size": 1000,
   "lastReceivedAt": "1970-01-01T01:00:01Z"
@@ -65,7 +67,6 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
   "exportId": "my-export",
   "fileId": "1970-01-01T00:00:00Z",
   "sliceId": "1970-01-01T00:00:00Z",
-  "nodeId": "my-node",
   "count": 1,
   "size": 1000,
   "lastReceivedAt": "1970-01-01T01:00:01Z"
@@ -88,7 +89,6 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
   "exportId": "my-export",
   "fileId": "1970-01-01T00:00:00Z",
   "sliceId": "1970-01-01T00:00:00Z",
-  "nodeId": "my-node",
   "count": 2,
   "size": 3000,
   "lastReceivedAt": "1970-01-01T01:00:03Z"
@@ -108,7 +108,6 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
   "exportId": "my-export",
   "fileId": "1970-01-01T00:00:00Z",
   "sliceId": "1970-01-01T00:00:00Z",
-  "nodeId": "my-node",
   "count": 2,
   "size": 3000,
   "lastReceivedAt": "1970-01-01T01:00:03Z"
@@ -134,7 +133,6 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
   "exportId": "my-export",
   "fileId": "1970-01-01T00:00:00Z",
   "sliceId": "1970-01-01T00:00:00Z",
-  "nodeId": "my-node",
   "count": 3,
   "size": 6000,
   "lastReceivedAt": "1970-01-01T01:00:05Z"

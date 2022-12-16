@@ -37,11 +37,6 @@ type RecordKey struct {
 	RandomSuffix string
 }
 
-type SliceStatsKey struct {
-	SliceKey
-	NodeID string `json:"nodeId" validate:"required"`
-}
-
 func FormatTime(t time.Time) string {
 	return t.UTC().Format("2006-01-02T15:04:05.000Z")
 }
@@ -53,17 +48,6 @@ func NewRecordKey(projectID int, receiverID string, exportID string, sliceID tim
 	k.ExportID = exportID
 	k.SliceID = sliceID
 	k.ReceivedAt = now
-	return k
-}
-
-func NewSliceStatsKey(projectID int, receiverID string, exportID string, fileID time.Time, sliceID time.Time, nodeID string) SliceStatsKey {
-	k := SliceStatsKey{}
-	k.ProjectID = projectID
-	k.ReceiverID = receiverID
-	k.ExportID = exportID
-	k.FileID = fileID
-	k.SliceID = sliceID
-	k.NodeID = nodeID
 	return k
 }
 
@@ -93,8 +77,4 @@ func (v RecordKey) Key() string {
 
 func (v RecordKey) String() string {
 	return fmt.Sprintf("%s/record:%s", v.ExportKey.String(), v.Key())
-}
-
-func (v SliceStatsKey) String() string {
-	return fmt.Sprintf("%s/stats:%s", v.SliceKey.String(), v.NodeID)
 }

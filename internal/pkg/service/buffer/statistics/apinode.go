@@ -15,18 +15,20 @@ import (
 
 const SyncInterval = time.Second
 
+// APINode collects node statistics in memory and periodically synchronizes them to the database.
 type APINode struct {
+	nodeID   string
 	logger   log.Logger
 	clock    clock.Clock
 	store    *store.Store
 	ch       chan notifyEvent
-	perSlice map[key.SliceStatsKey]*sliceStats
+	perSlice map[key.SliceKey]*sliceStats
 }
 
 type notifyEvent struct {
-	key            key.SliceStatsKey
-	size           uint64
-	lastReceivedAt time.Time
+	key        key.SliceKey
+	size       uint64
+	receivedAt time.Time
 }
 
 type sliceStats struct {
@@ -45,12 +47,13 @@ type dependencies interface {
 
 func NewAPINode(d dependencies) *APINode {
 	m := &APINode{
+		nodeID: d.Process().UniqueID(),
 		logger: d.Logger().AddPrefix("[stats]"),
 		clock:  d.Clock(),
 		store:  d.Store(),
 		// channel needs to be large enough to not block under average load
 		ch:       make(chan notifyEvent, 2048),
-		perSlice: make(map[key.SliceStatsKey]*sliceStats),
+		perSlice: make(map[key.SliceKey]*sliceStats),
 	}
 
 	// Receive notifications and periodically trigger sync
@@ -85,26 +88,26 @@ func NewAPINode(d dependencies) *APINode {
 	return m
 }
 
-func (m *APINode) Notify(key key.SliceStatsKey, size uint64) {
+func (m *APINode) Notify(key key.SliceKey, size uint64) {
 	m.ch <- notifyEvent{
-		key:            key,
-		size:           size,
-		lastReceivedAt: m.clock.Now(),
+		key:        key,
+		size:       size,
+		receivedAt: m.clock.Now(),
 	}
 }
 
-func (m *APINode) handleNotify(update notifyEvent) {
+func (m *APINode) handleNotify(event notifyEvent) {
 	// Init stats
-	if _, exists := m.perSlice[update.key]; !exists {
-		m.perSlice[update.key] = &sliceStats{}
+	if _, exists := m.perSlice[event.key]; !exists {
+		m.perSlice[event.key] = &sliceStats{}
 	}
 
 	// Update stats
-	stats := m.perSlice[update.key]
+	stats := m.perSlice[event.key]
 	stats.count += 1
-	stats.size += update.size
-	if update.lastReceivedAt.After(stats.lastReceivedAt) {
-		stats.lastReceivedAt = update.lastReceivedAt
+	stats.size += event.size
+	if event.receivedAt.After(stats.lastReceivedAt) {
+		stats.lastReceivedAt = event.receivedAt
 	}
 	stats.changed = true
 }
@@ -122,7 +125,7 @@ func (m *APINode) handleSync(ctx context.Context) <-chan struct{} {
 	if len(stats) > 0 {
 		go func() {
 			m.logger.Debugf("syncing %d records", len(stats))
-			if err := m.store.UpdateSliceStats(ctx, stats); err != nil {
+			if err := m.store.UpdateSliceStats(ctx, m.nodeID, stats); err != nil {
 				m.logger.Error("cannot update stats in etcd: %s", err.Error())
 			}
 			m.logger.Debug("sync done")

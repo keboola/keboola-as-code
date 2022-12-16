@@ -42,8 +42,8 @@ type Node struct {
 	client  *etcd.Client
 	session *concurrency.Session
 
-	id    string
-	nodes *consistent.Consistent
+	nodeID string
+	nodes  *consistent.Consistent
 }
 
 type dependencies interface {
@@ -67,7 +67,7 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 		logger: d.Logger().AddPrefix("[distribution]"),
 		schema: d.Schema(),
 		client: d.EtcdClient(),
-		id:     d.Process().UniqueID(),
+		nodeID: d.Process().UniqueID(),
 		nodes:  consistent.New(),
 	}
 
@@ -117,7 +117,7 @@ func (n *Node) IsOwner(key string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return node == n.id, nil
+	return node == n.nodeID, nil
 }
 
 // MustCheckIsOwner method returns true, if the node is owner of the key.
@@ -179,18 +179,18 @@ func (n *Node) register() error {
 	defer cancel()
 
 	startTime := time.Now()
-	n.logger.Infof(`registering the node "%s"`, n.id)
+	n.logger.Infof(`registering the node "%s"`, n.nodeID)
 
-	key := n.schema.Runtime().Workers().Active().IDs().Node(n.id)
-	if err := key.Put(n.id, etcd.WithLease(n.session.Lease())).Do(ctx, n.client); err != nil {
-		return errors.Errorf(`cannot register the node "%s": %w`, n.id, err)
+	key := n.schema.Runtime().Workers().Active().IDs().Node(n.nodeID)
+	if err := key.Put(n.nodeID, etcd.WithLease(n.session.Lease())).Do(ctx, n.client); err != nil {
+		return errors.Errorf(`cannot register the node "%s": %w`, n.nodeID, err)
 	}
 
 	n.proc.OnShutdown(func() {
 		n.unregister()
 	})
 
-	n.logger.Infof(`the node "%s" registered | %s`, n.id, time.Since(startTime))
+	n.logger.Infof(`the node "%s" registered | %s`, n.nodeID, time.Since(startTime))
 	return nil
 }
 
@@ -199,14 +199,14 @@ func (n *Node) unregister() {
 	defer cancel()
 
 	startTime := time.Now()
-	n.logger.Infof(`unregistering the node "%s"`, n.id)
+	n.logger.Infof(`unregistering the node "%s"`, n.nodeID)
 
-	key := n.schema.Runtime().Workers().Active().IDs().Node(n.id)
+	key := n.schema.Runtime().Workers().Active().IDs().Node(n.nodeID)
 	if _, err := key.Delete().Do(ctx, n.client); err != nil {
-		n.logger.Warnf(`cannot unregister the node "%s": %s`, n.id, err)
+		n.logger.Warnf(`cannot unregister the node "%s": %s`, n.nodeID, err)
 	}
 
-	n.logger.Infof(`the node "%s" unregistered | %s`, n.id, time.Since(startTime))
+	n.logger.Infof(`the node "%s" unregistered | %s`, n.nodeID, time.Since(startTime))
 }
 
 // watch for other nodes.

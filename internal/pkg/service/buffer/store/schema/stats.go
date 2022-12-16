@@ -13,17 +13,19 @@ type sliceStats = PrefixT[model.SliceStats]
 
 type SliceStats struct {
 	sliceStats
-	schema *Schema
+}
+
+type SliceNodeStats struct {
+	sliceStats
 }
 
 func (v *Schema) SliceStats() SliceStats {
 	return SliceStats{
 		sliceStats: NewTypedPrefix[model.SliceStats]("stats/received", v.serde),
-		schema:     v,
 	}
 }
 
-func (v SliceStats) ByKey(k storeKey.SliceStatsKey) KeyT[model.SliceStats] {
+func (v SliceStats) InSlice(k storeKey.SliceKey) SliceNodeStats {
 	if k.ProjectID == 0 {
 		panic(errors.New("stats projectID cannot be empty"))
 	}
@@ -39,14 +41,19 @@ func (v SliceStats) ByKey(k storeKey.SliceStatsKey) KeyT[model.SliceStats] {
 	if k.SliceID.IsZero() {
 		panic(errors.New("stats sliceID cannot be empty"))
 	}
-	if k.NodeID == "" {
+	return SliceNodeStats{
+		sliceStats: v.sliceStats.
+			Add(strconv.Itoa(k.ProjectID)).
+			Add(k.ReceiverID).
+			Add(k.ExportID).
+			Add(storeKey.FormatTime(k.FileID)).
+			Add(storeKey.FormatTime(k.SliceID)),
+	}
+}
+
+func (v SliceNodeStats) ByNodeID(nodeID string) KeyT[model.SliceStats] {
+	if nodeID == "" {
 		panic(errors.New("stats nodeID cannot be empty"))
 	}
-	return v.sliceStats.
-		Add(strconv.Itoa(k.ProjectID)).
-		Add(k.ReceiverID).
-		Add(k.ExportID).
-		Add(storeKey.FormatTime(k.FileID)).
-		Add(storeKey.FormatTime(k.SliceID)).
-		Key(k.NodeID)
+	return v.sliceStats.Key(nodeID)
 }

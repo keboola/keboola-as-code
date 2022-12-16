@@ -390,6 +390,11 @@ func (s *service) Import(d dependencies.ForPublicRequest, payload *buffer.Import
 
 	errs := errors.NewMultiError()
 	for _, e := range receiver.Exports {
+		// nolint:godox
+		// TODO get sliceID and fileID + use in stats.Notify
+		fileKey := key.FileKey{ExportKey: e.ExportKey, FileID: receivedAt}
+		sliceKey := key.SliceKey{FileKey: fileKey, SliceID: receivedAt}
+
 		csv := make([]string, 0)
 		for _, c := range e.Mapping.Columns {
 			csvValue, err := c.CsvValue(importCtx)
@@ -399,28 +404,17 @@ func (s *service) Import(d dependencies.ForPublicRequest, payload *buffer.Import
 			csv = append(csv, csvValue)
 		}
 
-		// nolint:godox
-		// TODO get sliceID and fileID + use in stats.Notify
-
 		record := key.NewRecordKey(e.ProjectID, e.ReceiverID, e.ExportID, receivedAt, receivedAt)
 		err = str.CreateRecord(ctx, record, csv)
 		if err != nil {
 			errs.AppendWithPrefixf(err, `failed to create record for export "%s"`, e.ExportID)
 		}
 
-		key := key.NewSliceStatsKey(
-			e.ProjectID,
-			e.ReceiverID,
-			e.ExportID,
-			receivedAt,
-			receivedAt,
-			d.Process().UniqueID(),
-		)
 		size := uint64(0)
 		for _, column := range csv {
 			size += uint64(len(column))
 		}
-		stats.Notify(key, size)
+		stats.Notify(sliceKey, size)
 	}
 
 	return errs.ErrorOrNil()

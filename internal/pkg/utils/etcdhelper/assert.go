@@ -47,5 +47,4 @@ func ExpectModification(t *testing.T, client *etcd.Client, operation func()) {
 		}
 		return
 	}
-
 }
