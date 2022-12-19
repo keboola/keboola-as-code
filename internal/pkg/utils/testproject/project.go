@@ -333,11 +333,11 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 	// Create buckets and tables
 	grp := client.NewWaitGroup(ctx, p.storageAPIClient)
 	for _, b := range buckets {
-		grp.Send(storageapi.CreateBucketRequest(&storageapi.Bucket{
-			Name:        b.Name,
-			Stage:       b.Stage,
-			Description: b.Description,
-		}).
+		req := storageapi.
+			CreateBucketRequest(&storageapi.Bucket{
+				ID:          b.ID,
+				Description: b.Description,
+			}).
 			WithBefore(func(ctx context.Context, sender client.Sender) error {
 				p.logf("▶ Bucket \"%s.c-%s\"...", b.Stage, b.Name)
 				return nil
@@ -348,7 +348,7 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 
 					for _, t := range b.Tables {
 						p.logf("▶ Table \"%s\"...", t.Name)
-						err = storageapi.CreateTable(ctx, sender, string(b.ID), t.Name, t.Columns, storageapi.WithPrimaryKey(t.PrimaryKey))
+						_, err = storageapi.CreateTable(ctx, sender, t.ID, t.Columns, storageapi.WithPrimaryKey(t.PrimaryKey))
 						if err != nil {
 							return err
 						}
@@ -359,7 +359,8 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 				} else {
 					return errors.Errorf(`cannot create bucket "%s": %w`, b.Name, err)
 				}
-			}))
+			})
+		grp.Send(req)
 	}
 	if err := grp.Wait(); err != nil {
 		return err

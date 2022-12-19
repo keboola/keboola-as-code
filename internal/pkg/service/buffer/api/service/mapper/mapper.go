@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -206,7 +207,7 @@ func (m Mapper) ExportBaseFromPayload(receiverKey key.ReceiverKey, payload buffe
 
 func (m Mapper) MappingModelFromPayload(exportKey key.ExportKey, revisionID key.RevisionID, payload buffer.Mapping) (model.Mapping, error) {
 	// mapping
-	tableID, err := model.ParseTableID(payload.TableID)
+	tableID, err := storageapi.ParseTableID(payload.TableID)
 	if err != nil {
 		return model.Mapping{}, err
 	}

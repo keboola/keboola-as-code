@@ -3,6 +3,7 @@ package mapper
 import (
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
@@ -86,10 +87,12 @@ func TestReceiverModelFromPayload(t *testing.T) {
 				},
 				Mapping: model.Mapping{
 					MappingKey: mappingKey,
-					TableID: model.TableID{
-						Stage:  model.TableStageIn,
-						Bucket: "bucket",
-						Table:  "table",
+					TableID: storageapi.TableID{
+						BucketID: storageapi.BucketID{
+							Stage:      storageapi.BucketStageIn,
+							BucketName: "bucket",
+						},
+						TableName: "table",
 					},
 					Incremental: false,
 					Columns: column.Columns{
@@ -147,10 +150,12 @@ func TestReceiverPayloadFromModel(t *testing.T) {
 				},
 				Mapping: model.Mapping{
 					MappingKey: mappingKey,
-					TableID: model.TableID{
-						Stage:  model.TableStageIn,
-						Bucket: "bucket",
-						Table:  "table",
+					TableID: storageapi.TableID{
+						BucketID: storageapi.BucketID{
+							Stage:      storageapi.BucketStageIn,
+							BucketName: "bucket",
+						},
+						TableName: "table",
 					},
 					Incremental: false,
 					Columns: column.Columns{

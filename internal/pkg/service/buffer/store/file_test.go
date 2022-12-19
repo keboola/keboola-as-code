@@ -43,11 +43,7 @@ file/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
     "receiverId": "my-receiver",
     "exportId": "my-export",
     "revisionId": 1,
-    "tableId": {
-      "stage": "in",
-      "bucketName": "bucket",
-      "tableName": "table"
-    },
+    "tableId": "in.c-bucket.table",
     "incremental": false,
     "columns": [
       {
@@ -100,11 +96,7 @@ file/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
     "receiverId": "my-receiver",
     "exportId": "my-export",
     "revisionId": 1,
-    "tableId": {
-      "stage": "in",
-      "bucketName": "bucket",
-      "tableName": "table"
-    },
+    "tableId": "in.c-bucket.table",
     "incremental": false,
     "columns": [
       {
@@ -184,10 +176,12 @@ func newFileForTest() model.File {
 			ExportKey:  exportKey,
 			RevisionID: 1,
 		},
-		TableID: model.TableID{
-			Stage:  "in",
-			Bucket: "bucket",
-			Table:  "table",
+		TableID: storageapi.TableID{
+			BucketID: storageapi.BucketID{
+				Stage:      storageapi.BucketStageIn,
+				BucketName: "bucket",
+			},
+			TableName: "table",
 		},
 		Incremental: false,
 		Columns: []column.Column{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -20,10 +21,12 @@ func TestStore_Mapping_Ops(t *testing.T) {
 
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "receiver1"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "export1"}
-	tableID := model.TableID{
-		Stage:  model.TableStageIn,
-		Bucket: "main",
-		Table:  "table1",
+	tableID := storageapi.TableID{
+		BucketID: storageapi.BucketID{
+			Stage:      storageapi.BucketStageIn,
+			BucketName: "main",
+		},
+		TableName: "table1",
 	}
 
 	// Create mapppings
@@ -83,11 +86,7 @@ config/mapping/revision/1000/receiver1/export1/00000001
   "receiverId": "receiver1",
   "exportId": "export1",
   "revisionId": 1,
-  "tableId": {
-    "stage": "in",
-    "bucketName": "main",
-    "tableName": "table1"
-  },
+  "tableId": "in.c-main.table1",
   "incremental": false,
   "columns": [
     {
@@ -106,11 +105,7 @@ config/mapping/revision/1000/receiver1/export1/00000002
   "receiverId": "receiver1",
   "exportId": "export1",
   "revisionId": 2,
-  "tableId": {
-    "stage": "in",
-    "bucketName": "main",
-    "tableName": "table1"
-  },
+  "tableId": "in.c-main.table1",
   "incremental": false,
   "columns": [
     {
@@ -129,11 +124,7 @@ config/mapping/revision/1000/receiver1/export1/00000010
   "receiverId": "receiver1",
   "exportId": "export1",
   "revisionId": 10,
-  "tableId": {
-    "stage": "in",
-    "bucketName": "main",
-    "tableName": "table1"
-  },
+  "tableId": "in.c-main.table1",
   "incremental": true,
   "columns": [
     {
@@ -159,10 +150,12 @@ func TestStore_DeleteReceiverMappingsOp(t *testing.T) {
 
 	export1 := key.ExportKey{ReceiverKey: key.ReceiverKey{ProjectID: 1000, ReceiverID: "receiver1"}, ExportID: "export1"}
 	export0 := key.ExportKey{ReceiverKey: key.ReceiverKey{ProjectID: 1000, ReceiverID: "receiver0"}, ExportID: "export0"}
-	tableID := model.TableID{
-		Stage:  model.TableStageIn,
-		Bucket: "main",
-		Table:  "table1",
+	tableID := storageapi.TableID{
+		BucketID: storageapi.BucketID{
+			Stage:      storageapi.BucketStageIn,
+			BucketName: "main",
+		},
+		TableName: "table1",
 	}
 
 	// Create mapppings
@@ -195,11 +188,7 @@ config/mapping/revision/1000/receiver0/export0/00000001
   "receiverId": "receiver0",
   "exportId": "export0",
   "revisionId": 1,
-  "tableId": {
-    "stage": "in",
-    "bucketName": "main",
-    "tableName": "table1"
-  },
+  "tableId": "in.c-main.table1",
   "incremental": false,
   "columns": [
     {
@@ -218,11 +207,7 @@ config/mapping/revision/1000/receiver1/export1/00000002
   "receiverId": "receiver1",
   "exportId": "export1",
   "revisionId": 2,
-  "tableId": {
-    "stage": "in",
-    "bucketName": "main",
-    "tableName": "table1"
-  },
+  "tableId": "in.c-main.table1",
   "incremental": false,
   "columns": [
     {
@@ -246,11 +231,7 @@ config/mapping/revision/1000/receiver1/export1/00000002
   "receiverId": "receiver1",
   "exportId": "export1",
   "revisionId": 2,
-  "tableId": {
-    "stage": "in",
-    "bucketName": "main",
-    "tableName": "table1"
-  },
+  "tableId": "in.c-main.table1",
   "incremental": false,
   "columns": [
     {

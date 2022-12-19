@@ -479,12 +479,12 @@ func setupSingleExport(ctx context.Context, client client.Sender, export model.E
 // setupExports handles creating table and token for exports.
 func setupExports(ctx context.Context, client client.Sender, exports []model.Export) ([]model.Export, error) {
 	wg := &sync.WaitGroup{}
-	errors := errors.NewMultiError()
+	errs := errors.NewMultiError()
 
 	// filter for unique buckets
-	buckets := make(map[string]model.TableID, 0)
+	buckets := make(map[storageapi.BucketID]storageapi.TableID, 0)
 	for _, export := range exports {
-		buckets[export.Mapping.TableID.BucketID()] = export.Mapping.TableID
+		buckets[export.Mapping.TableID.BucketID] = export.Mapping.TableID
 	}
 	// create all unique buckets in parallel
 	// this step is separate because interleaving it with creating tables would cause race conditions
@@ -496,23 +496,19 @@ func setupExports(ctx context.Context, client client.Sender, exports []model.Exp
 			defer wg.Done()
 
 			// create bucket if it does not exist
-			bucketID := storageapi.BucketID(tableID.BucketID())
+			bucketID := tableID.BucketID
 			err := storageapi.GetBucketRequest(bucketID).SendOrErr(ctx, client)
 			if err != nil {
-				bucket := &storageapi.Bucket{
-					Stage: tableID.Stage,
-					Name:  tableID.Bucket,
-				}
-				err := storageapi.CreateBucketRequest(bucket).SendOrErr(ctx, client)
+				err := storageapi.CreateBucketRequest(&storageapi.Bucket{ID: bucketID}).SendOrErr(ctx, client)
 				if err != nil {
-					errors.Append(err)
+					errs.Append(err)
 				}
 			}
 		}()
 	}
 
 	wg.Wait()
-	if err := errors.ErrorOrNil(); err != nil {
+	if err := errs.ErrorOrNil(); err != nil {
 		return nil, err
 	}
 
@@ -527,19 +523,19 @@ func setupExports(ctx context.Context, client client.Sender, exports []model.Exp
 			// Create table if it doesn't exist, and check schema if it does
 			err := setupMappingTable(ctx, client, export.Mapping)
 			if err != nil {
-				errors.Append(err)
+				errs.Append(err)
 				return
 			}
 
 			err = generateExportToken(ctx, client, export)
 			if err != nil {
-				errors.Append(err)
+				errs.Append(err)
 				return
 			}
 		}()
 	}
 	wg.Wait()
-	if err := errors.ErrorOrNil(); err != nil {
+	if err := errs.ErrorOrNil(); err != nil {
 		return nil, err
 	}
 
@@ -556,8 +552,7 @@ func setupMappingTable(ctx context.Context, client client.Sender, mapping model.
 		columnNames = append(columnNames, column.ColumnName())
 	}
 
-	bucketID := storageapi.BucketID(mapping.TableID.BucketID())
-	tableID := storageapi.TableID(mapping.TableID.String())
+	tableID := mapping.TableID
 
 	// check if table exists
 	table, err := storageapi.GetTableRequest(tableID).Send(ctx, client)
@@ -573,7 +568,7 @@ func setupMappingTable(ctx context.Context, client client.Sender, mapping model.
 	}
 
 	// create table
-	err = storageapi.CreateTable(ctx, client, string(bucketID), mapping.TableID.Table, columnNames)
+	_, err = storageapi.CreateTable(ctx, client, mapping.TableID, columnNames)
 	if err != nil {
 		return err
 	}
@@ -589,7 +584,7 @@ func generateExportToken(ctx context.Context, client client.Sender, export *mode
 			fmt.Sprintf("[_internal] Buffer Export %s for Receiver %s", export.ReceiverKey.ReceiverID, export.ExportID),
 		),
 		storageapi.WithBucketPermission(
-			storageapi.BucketID(export.Mapping.TableID.BucketID()),
+			export.Mapping.TableID.BucketID,
 			storageapi.BucketPermissionWrite,
 		),
 	).Send(ctx, client)

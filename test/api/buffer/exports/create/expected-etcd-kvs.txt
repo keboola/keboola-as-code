@@ -22,11 +22,7 @@
   "receiverId": "my-receiver",
   "exportId": "my-export-1",
   "revisionId": 1,
-  "tableId": {
-    "stage": "in",
-    "bucketName": "bucket",
-    "tableName": "table"
-  },
+  "tableId": "in.c-bucket.table",
   "incremental": true,
   "columns": [
     {
@@ -69,11 +65,7 @@
     "receiverId": "my-receiver",
     "exportId": "my-export-1",
     "revisionId": 1,
-    "tableId": {
-      "stage": "in",
-      "bucketName": "bucket",
-      "tableName": "table"
-    },
+    "tableId": "in.c-bucket.table",
     "incremental": true,
     "columns": [
       {
