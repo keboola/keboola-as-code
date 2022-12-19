@@ -15,11 +15,9 @@ func TestTablesByBucketsMap(t *testing.T) {
 	t.Parallel()
 
 	mainBucket := &storageapi.Bucket{
-		ID:             "out.c-main",
+		ID:             storageapi.MustParseBucketID("out.c-main"),
 		Uri:            "/uri",
-		Name:           "main",
 		DisplayName:    "main",
-		Stage:          "out",
 		Description:    "",
 		Created:        iso8601.Time{},
 		LastChangeDate: &iso8601.Time{},
@@ -28,11 +26,9 @@ func TestTablesByBucketsMap(t *testing.T) {
 		RowsCount:      0,
 	}
 	secondBucket := &storageapi.Bucket{
-		ID:             "out.c-second",
+		ID:             storageapi.MustParseBucketID("out.c-second"),
 		Uri:            "/uri",
-		Name:           "second",
 		DisplayName:    "second",
-		Stage:          "out",
 		Description:    "",
 		Created:        iso8601.Time{},
 		LastChangeDate: &iso8601.Time{},
@@ -41,7 +37,7 @@ func TestTablesByBucketsMap(t *testing.T) {
 		RowsCount:      0,
 	}
 	mainTable1 := &storageapi.Table{
-		ID:             "out.c-main.products",
+		ID:             storageapi.MustParseTableID("out.c-main.products"),
 		Uri:            "/uri",
 		Name:           "products",
 		DisplayName:    "Products",
@@ -57,7 +53,7 @@ func TestTablesByBucketsMap(t *testing.T) {
 		Bucket:         mainBucket,
 	}
 	mainTable2 := &storageapi.Table{
-		ID:             "out.c-main.categories",
+		ID:             storageapi.MustParseTableID("out.c-main.categories"),
 		Uri:            "/uri",
 		Name:           "categories",
 		DisplayName:    "Categories",
@@ -73,7 +69,7 @@ func TestTablesByBucketsMap(t *testing.T) {
 		Bucket:         mainBucket,
 	}
 	secTable1 := &storageapi.Table{
-		ID:             "out.c-second.products",
+		ID:             storageapi.MustParseTableID("out.c-second.products"),
 		Uri:            "/uri",
 		Name:           "products",
 		DisplayName:    "Products",
@@ -89,7 +85,7 @@ func TestTablesByBucketsMap(t *testing.T) {
 		Bucket:         secondBucket,
 	}
 	secTable2 := &storageapi.Table{
-		ID:             "out.c-second.third",
+		ID:             storageapi.MustParseTableID("out.c-second.third"),
 		Uri:            "/uri",
 		Name:           "third",
 		DisplayName:    "Third",
@@ -108,8 +104,8 @@ func TestTablesByBucketsMap(t *testing.T) {
 
 	res := tablesByBucketsMap(in)
 	assert.Equal(t, map[storageapi.BucketID][]*storageapi.Table{
-		"out.c-main":   {mainTable1, mainTable2},
-		"out.c-second": {secTable1, secTable2},
+		storageapi.MustParseBucketID("out.c-main"):   {mainTable1, mainTable2},
+		storageapi.MustParseBucketID("out.c-second"): {secTable1, secTable2},
 	}, res)
 }
 
@@ -117,11 +113,9 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 	t.Parallel()
 
 	mainBucket := &storageapi.Bucket{
-		ID:             "out.c-main",
+		ID:             storageapi.MustParseBucketID("out.c-main"),
 		Uri:            "/uri",
-		Name:           "main",
 		DisplayName:    "main",
-		Stage:          "out",
 		Description:    "",
 		Created:        iso8601.Time{},
 		LastChangeDate: &iso8601.Time{},
@@ -130,7 +124,7 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 		RowsCount:      0,
 	}
 	mainTable1 := &storageapi.Table{
-		ID:             "out.c-main.products",
+		ID:             storageapi.MustParseTableID("out.c-main.products"),
 		Uri:            "/uri",
 		Name:           "products",
 		DisplayName:    "Products",
@@ -146,7 +140,7 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 		Bucket:         mainBucket,
 	}
 	mainTable2 := &storageapi.Table{
-		ID:             "out.c-main.categories",
+		ID:             storageapi.MustParseTableID("out.c-main.categories"),
 		Uri:            "/uri",
 		Name:           "categories",
 		DisplayName:    "Categories",
@@ -162,7 +156,7 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 		Bucket:         mainBucket,
 	}
 
-	res := generateSourcesDefinition("target1", "out.c-main", []*storageapi.Table{mainTable1, mainTable2})
+	res := generateSourcesDefinition("target1", storageapi.MustParseBucketID("out.c-main"), []*storageapi.Table{mainTable1, mainTable2})
 	assert.Equal(t, dbt.SourceFile{
 		Version: 2,
 		Sources: []dbt.Source{

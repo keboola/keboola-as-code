@@ -22,11 +22,7 @@
   "receiverId": "receiver-b",
   "exportId": "export-1",
   "revisionId": 1,
-  "tableId": {
-    "stage": "in",
-    "bucketName": "bucket",
-    "tableName": "table"
-  },
+  "tableId": "in.c-bucket.table",
   "incremental": false,
   "columns": [
     {
@@ -66,11 +62,7 @@
     "receiverId": "receiver-b",
     "exportId": "export-1",
     "revisionId": 1,
-    "tableId": {
-      "stage": "in",
-      "bucketName": "bucket",
-      "tableName": "table"
-    },
+    "tableId": "in.c-bucket.table",
     "incremental": false,
     "columns": [
       {
@@ -107,11 +99,7 @@
     "receiverId": "receiver-c",
     "exportId": "export-2",
     "revisionId": 1,
-    "tableId": {
-      "stage": "in",
-      "bucketName": "bucket",
-      "tableName": "table"
-    },
+    "tableId": "in.c-bucket.table",
     "incremental": false,
     "columns": [
       {

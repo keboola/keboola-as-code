@@ -103,7 +103,7 @@ func generateSourcesDefinition(targetName string, bucketID storageapi.BucketID, 
 		Version: 2,
 		Sources: []dbt.Source{
 			{
-				Name: string(bucketID),
+				Name: bucketID.String(),
 				Freshness: dbt.SourceFreshness{
 					WarnAfter: dbt.SourceFreshnessWarnAfter{
 						Count:  1,
@@ -111,7 +111,7 @@ func generateSourcesDefinition(targetName string, bucketID storageapi.BucketID, 
 					},
 				},
 				Database:      fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", strings.ToUpper(targetName)),
-				Schema:        string(bucketID),
+				Schema:        bucketID.String(),
 				LoadedAtField: `"_timestamp"`,
 				Tables:        sourceTables,
 			},

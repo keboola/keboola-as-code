@@ -159,9 +159,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 					bucketsMap[b.ID] = &fixtures.Bucket{
 						ID:          b.ID,
 						URI:         b.Uri,
-						Name:        b.Name,
 						DisplayName: b.DisplayName,
-						Stage:       b.Stage,
 						Description: b.Description,
 						Tables:      make([]*fixtures.Table, 0),
 					}

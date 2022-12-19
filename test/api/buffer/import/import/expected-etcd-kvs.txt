@@ -22,11 +22,7 @@
   "receiverId": "receiver-1",
   "exportId": "export-1",
   "revisionId": 1,
-  "tableId": {
-    "stage": "in",
-    "bucketName": "bucket",
-    "tableName": "table"
-  },
+  "tableId": "in.c-bucket.table",
   "incremental": true,
   "columns": [
     {
