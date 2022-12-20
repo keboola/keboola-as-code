@@ -69,6 +69,22 @@ func TestNewTxnOp_If_True_Then(t *testing.T) {
 	client := etcdhelper.ClientForTest(t)
 	op := txnForTest(true, false)
 
+	// Test processor
+	var processorInvoked bool
+	op = op.WithProcessor(func(_ context.Context, _ *etcd.TxnResponse, _ TxnResult, _ error) error {
+		processorInvoked = true
+		return nil
+	})
+
+	// Test nested processor
+	var newstedProcessorInvoked bool
+	op.Then(
+		NewTxnOp().WithProcessor(func(_ context.Context, _ *etcd.TxnResponse, _ TxnResult, _ error) error {
+			newstedProcessorInvoked = true
+			return nil
+		}),
+	)
+
 	// "If" should be true and pass to "Then" ops
 	r, err := op.Do(ctx, client)
 	assert.NoError(t, err)
@@ -85,7 +101,13 @@ func TestNewTxnOp_If_True_Then(t *testing.T) {
 			{Key: []byte("foo4"), Value: []byte("value4")},
 		},
 		int64(400), // modified by the processor
-	}, r.Responses)
+		TxnResult{
+			Succeeded: true,
+			Results:   nil,
+		},
+	}, r.Results)
+	assert.True(t, processorInvoked)
+	assert.True(t, newstedProcessorInvoked)
 }
 
 func TestNewTxnOp_If_False_Else(t *testing.T) {
@@ -94,6 +116,13 @@ func TestNewTxnOp_If_False_Else(t *testing.T) {
 	client := etcdhelper.ClientForTest(t)
 	op := txnForTest(false, false)
 
+	// Test processor
+	var processorInvoked bool
+	op = op.WithProcessor(func(_ context.Context, _ *etcd.TxnResponse, _ TxnResult, _ error) error {
+		processorInvoked = true
+		return nil
+	})
+
 	// "If" should be true and pass to "Then" ops
 	r, err := op.Do(ctx, client)
 	assert.NoError(t, err)
@@ -101,7 +130,8 @@ func TestNewTxnOp_If_False_Else(t *testing.T) {
 	r = clearRawValues(r)
 	assert.Equal(t, []any{
 		int64(-100), // modified by the processor
-	}, r.Responses)
+	}, r.Results)
+	assert.True(t, processorInvoked)
 }
 
 func TestNewTxnOp_If_True_Then_MapperError(t *testing.T) {
@@ -110,11 +140,19 @@ func TestNewTxnOp_If_True_Then_MapperError(t *testing.T) {
 	client := etcdhelper.ClientForTest(t)
 	op := txnForTest(true, true)
 
+	// Test processor
+	op = op.WithProcessor(func(_ context.Context, _ *etcd.TxnResponse, _ TxnResult, err error) error {
+		if err != nil {
+			err = errors.Errorf("%w, wrapped by the processor", err)
+		}
+		return err
+	})
+
 	// "If" should be true and pass to "Then" ops
 	// But there is an error from a mapper
 	r, err := op.Do(ctx, client)
 	assert.Error(t, err)
-	assert.Equal(t, "error from the mapper foo2", err.Error())
+	assert.Equal(t, "error from the mapper foo2, wrapped by the processor", err.Error())
 	assert.Empty(t, r)
 }
 
@@ -275,19 +313,19 @@ func TestMergeToTxn_ToRaw_Nested_Txn(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, r.Succeeded)
 	r = clearRawValues(r)
-	assert.Equal(t, TxnResponse{
+	assert.Equal(t, TxnResult{
 		Succeeded: false,
 		// Response from the "Else" branch
-		Responses: []any{
-			TxnResponse{
+		Results: []any{
+			TxnResult{
 				Succeeded: false,
-				Responses: []any{
+				Results: []any{
 					&KeyValue{Key: []byte("shouldBeMissing1"), Value: []byte("foo")},
 				},
 			},
-			TxnResponse{
+			TxnResult{
 				Succeeded: false,
-				Responses: []any{int64(1002)}, // modified by the processor: 1000 + 2 (number of shouldBeMissing* keys)
+				Results:   []any{int64(1002)}, // modified by the processor: 1000 + 2 (number of shouldBeMissing* keys)
 			},
 		},
 	}, r)
@@ -321,16 +359,16 @@ bar
 	r = clearRawValues(r)
 	assert.Equal(t, []any{
 		// Response from the "Then" branch
-		TxnResponse{
+		TxnResult{
 			Succeeded: true,
-			Responses: []any{NoResult{}},
+			Results:   []any{NoResult{}},
 		},
-		TxnResponse{
+		TxnResult{
 			Succeeded: true,
-			Responses: []any{NoResult{}},
+			Results:   []any{NoResult{}},
 		},
 		NoResult{},
-	}, r.Responses)
+	}, r.Results)
 
 	// Check etcd: 3x PUT
 	expected = `
@@ -570,22 +608,22 @@ func opsForTest(withMapperError bool) []Op {
 }
 
 // clearRawValues from the TxnResponse, for easier comparison.
-func clearRawValues(v TxnResponse) TxnResponse {
-	for i, r := range v.Responses {
+func clearRawValues(v TxnResult) TxnResult {
+	for i, r := range v.Results {
 		switch r := r.(type) {
 		case *KeyValue:
 			if r != nil {
 				r = &KeyValue{Key: r.Key, Value: r.Value}
-				v.Responses[i] = r
+				v.Results[i] = r
 			}
 		case []*KeyValue:
 			for j, item := range r {
 				item = &KeyValue{Key: item.Key, Value: item.Value}
 				r[j] = item
 			}
-			v.Responses[i] = r
-		case TxnResponse:
-			v.Responses[i] = clearRawValues(r)
+			v.Results[i] = r
+		case TxnResult:
+			v.Results[i] = clearRawValues(r)
 		}
 	}
 	return v
