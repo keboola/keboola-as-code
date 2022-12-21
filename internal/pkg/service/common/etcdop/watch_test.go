@@ -104,7 +104,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	errHandler := func(err error) {
 		assert.FailNow(t, `unexpected watch error`, err.Error())
 	}
-	ch := pfx.GetAllAndWatch(ctx, c, errHandler)
+	ch, initDone := pfx.GetAllAndWatch(ctx, c, errHandler)
 
 	// Wait for CREATE key1 event
 	assertDone(t, func() {
@@ -116,6 +116,11 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 		}
 		assert.Equal(t, expected, clearEvent(<-ch))
 	}, "CREATE1 timeout")
+
+	// Init (GetAll) phase should be finished
+	assertDone(t, func() {
+		<-initDone
+	}, "initDone timeout")
 
 	// CREATE key2
 	wg.Add(1)
@@ -268,7 +273,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	errHandler := func(err error) {
 		assert.FailNow(t, `unexpected watch error`, err.Error())
 	}
-	ch := pfx.GetAllAndWatch(ctx, c, errHandler)
+	ch, initDone := pfx.GetAllAndWatch(ctx, c, errHandler, etcd.WithPrevKV())
 
 	// Wait for CREATE key1 event
 	assertDone(t, func() {
@@ -281,6 +286,11 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 		}
 		assert.Equal(t, expected, clearEventT(<-ch))
 	}, "CREATE1 timeout")
+
+	// Init (GetAll) phase should be finished
+	assertDone(t, func() {
+		<-initDone
+	}, "initDone timeout")
 
 	// CREATE key2
 	wg.Add(1)
@@ -317,6 +327,10 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 			Key:   []byte("my/prefix/key2"),
 			Value: []byte(`"new"`),
 		}
+		expected.PrevKv = &mvccpb.KeyValue{
+			Key:   []byte("my/prefix/key2"),
+			Value: []byte(`"foo2"`),
+		}
 		assert.Equal(t, expected, clearEventT(<-ch))
 	}, "UPDATE timeout")
 
@@ -332,9 +346,14 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	// Wait for DELETE event
 	assertDone(t, func() {
 		expected := EventT[fooType]{}
+		expected.Value = "foo1"
 		expected.Type = DeleteEvent
 		expected.Kv = &mvccpb.KeyValue{
 			Key: []byte("my/prefix/key1"),
+		}
+		expected.PrevKv = &mvccpb.KeyValue{
+			Key:   []byte("my/prefix/key1"),
+			Value: []byte(`"foo1"`),
 		}
 		assert.Equal(t, expected, clearEventT(<-ch))
 	}, "DELETE timeout")
@@ -348,6 +367,12 @@ func clearEvent(event Event) Event {
 	event.Kv.ModRevision = 0
 	event.Kv.Version = 0
 	event.Kv.Lease = 0
+	if event.PrevKv != nil {
+		event.PrevKv.CreateRevision = 0
+		event.PrevKv.ModRevision = 0
+		event.PrevKv.Version = 0
+		event.PrevKv.Lease = 0
+	}
 	return event
 }
 
@@ -357,6 +382,12 @@ func clearEventT(event EventT[fooType]) EventT[fooType] {
 	event.Kv.ModRevision = 0
 	event.Kv.Version = 0
 	event.Kv.Lease = 0
+	if event.PrevKv != nil {
+		event.PrevKv.CreateRevision = 0
+		event.PrevKv.ModRevision = 0
+		event.PrevKv.Version = 0
+		event.PrevKv.Lease = 0
+	}
 	return event
 }
 

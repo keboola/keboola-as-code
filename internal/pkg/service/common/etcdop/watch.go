@@ -3,6 +3,7 @@ package etcdop
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"go.etcd.io/etcd/api/v3/mvccpb"
@@ -58,14 +59,17 @@ func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, handleErr func(e
 	return ch
 }
 
-func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) <-chan Event {
-	ch := make(chan Event)
+// GetAllAndWatch loads all keys in the prefix by the iterator and then watch for changes.
+// initDone channel signals end of the load phase and start of the watch phase.
+func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) (out <-chan Event, initDone <-chan struct{}) {
+	outCh := make(chan Event)
+	initDoneCh := make(chan struct{})
 
 	go func() {
 		// GetAll
 		itr := v.GetAll().Do(ctx, client)
 		err := itr.ForEach(func(kv *op.KeyValue, header *etcdserverpb.ResponseHeader) error {
-			ch <- Event{
+			outCh <- Event{
 				Kv:     kv,
 				Type:   CreateEvent,
 				Header: header,
@@ -75,56 +79,52 @@ func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleE
 		if err != nil {
 			// GetAll error is fatal
 			handleErr(err)
-			close(ch)
+			close(outCh)
+			close(initDoneCh)
+			return
 		}
 
 		// Continue with Watch where GetAll ended
+		close(initDoneCh)
 		opts = append(opts, etcd.WithRev(itr.Header().Revision+1))
-		v.doWatch(ctx, client, handleErr, ch, opts...)
+		v.doWatch(ctx, client, handleErr, outCh, opts...)
 	}()
 
-	return ch
+	return outCh, initDoneCh
 }
 
-func (v Prefix) doWatch(ctx context.Context, client etcd.Watcher, handleErr func(err error), ch chan Event, opts ...etcd.OpOption) {
+func (v Prefix) doWatch(ctx context.Context, client etcd.Watcher, handleErr func(err error), outCh chan Event, opts ...etcd.OpOption) {
 	opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
-	rawCh := client.Watch(ctx, v.Prefix(), opts...)
 	go func() {
+		defer close(outCh)
+
+		// In case of an error, the watch channel can be closed.
+		// It will be recreated, and it will continue from the last revision.
+		revision := int64(0)
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case resp, ok := <-rawCh:
-				if !ok {
-					// Close output channel, if raw channel is closed
-					close(ch)
-					return
+			default:
+				// If the watch is recreated, continue from the last received revision
+				watchOpts := opts
+				if revision > 0 {
+					watchOpts = append(watchOpts, etcd.WithRev(revision+1))
 				}
 
-				if err := resp.Err(); err != nil {
-					handleErr(err)
-					continue
-				}
-
-				for _, rawEvent := range resp.Events {
-					outEvent := Event{Kv: rawEvent.Kv, PrevKv: rawEvent.PrevKv, Header: &resp.Header}
-
-					// Map event type
-					switch rawEvent.Type {
-					case mvccpb.PUT:
-						if rawEvent.Kv.CreateRevision == rawEvent.Kv.ModRevision {
-							outEvent.Type = CreateEvent
-						} else {
-							outEvent.Type = UpdateEvent
-						}
-					case mvccpb.DELETE:
-						outEvent.Type = DeleteEvent
-					default:
-						panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
+				// Wait before recreate attempt
+				if revision > 0 {
+					select {
+					case <-ctx.Done():
+						return
+					case <-time.After(time.Second):
+						// continue
 					}
-
-					ch <- outEvent
 				}
+
+				// Process watch events until the rawCh is closed
+				rawCh := client.Watch(ctx, v.Prefix(), watchOpts...)
+				processWatchEvents(ctx, &revision, handleErr, rawCh, outCh)
 			}
 		}
 	}()
@@ -136,8 +136,12 @@ func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, handleErr fu
 	return ch
 }
 
-func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) <-chan EventT[T] {
+// GetAllAndWatch loads all keys in the prefix by the iterator and then watch for changes.
+// Values are decoded to the type T.
+// initDone channel signals end of the load phase and start of the watch phase.
+func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) (out <-chan EventT[T], initDone <-chan struct{}) {
 	outCh := make(chan EventT[T])
+	initDoneCh := make(chan struct{})
 
 	go func() {
 		// GetAll
@@ -155,14 +159,17 @@ func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, han
 			// GetAll error is fatal
 			handleErr(err)
 			close(outCh)
+			close(initDoneCh)
+			return
 		}
 
-		// Continue with Watch where GetAll ended
+		// Continue with Watch where GetAll finished
+		close(initDoneCh)
 		opts = append(opts, etcd.WithRev(itr.Header().Revision+1))
 		v.doWatch(ctx, client, handleErr, outCh, opts...)
 	}()
 
-	return outCh
+	return outCh, initDoneCh
 }
 
 func (v PrefixT[T]) doWatch(ctx context.Context, client etcd.Watcher, handleErr func(err error), outCh chan EventT[T], opts ...etcd.OpOption) {
@@ -186,10 +193,19 @@ func (v PrefixT[T]) doWatch(ctx context.Context, client etcd.Watcher, handleErr 
 					Header: rawEvent.Header,
 				}
 
-				// We care for the value only in CREATE/UPDATE operation
 				if rawEvent.Type == CreateEvent || rawEvent.Type == UpdateEvent {
+					// Always decode create/update value
 					target := new(T)
 					if err := v.serde.Decode(ctx, rawEvent.Kv, target); err != nil {
+						handleErr(err)
+						continue
+					}
+					outEvent.Value = *target
+				} else if rawEvent.Type == DeleteEvent && rawEvent.PrevKv != nil {
+					// Decode previous value on delete, if is present.
+					// etcd.WithPrevKV() option must be used to enable it.
+					target := new(T)
+					if err := v.serde.Decode(ctx, rawEvent.PrevKv, target); err != nil {
 						handleErr(err)
 						continue
 					}
@@ -200,4 +216,44 @@ func (v PrefixT[T]) doWatch(ctx context.Context, client etcd.Watcher, handleErr 
 			}
 		}
 	}()
+}
+
+func processWatchEvents(ctx context.Context, revision *int64, handleErr func(err error), rawCh etcd.WatchChan, outCh chan<- Event) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case resp, ok := <-rawCh:
+			if !ok {
+				return
+			}
+
+			*revision = resp.Header.Revision
+
+			if err := resp.Err(); err != nil {
+				handleErr(err)
+				continue
+			}
+
+			for _, rawEvent := range resp.Events {
+				outEvent := Event{Kv: rawEvent.Kv, PrevKv: rawEvent.PrevKv, Header: &resp.Header}
+
+				// Map event type
+				switch rawEvent.Type {
+				case mvccpb.PUT:
+					if rawEvent.Kv.CreateRevision == rawEvent.Kv.ModRevision {
+						outEvent.Type = CreateEvent
+					} else {
+						outEvent.Type = UpdateEvent
+					}
+				case mvccpb.DELETE:
+					outEvent.Type = DeleteEvent
+				default:
+					panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
+				}
+
+				outCh <- outEvent
+			}
+		}
+	}
 }
