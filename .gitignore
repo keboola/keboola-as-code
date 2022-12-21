@@ -29,6 +29,7 @@ target
 
 # Environment
 /.env
+/scripts/k6/.env
 
 # Generated code
 /**/gen/*

@@ -30,6 +30,19 @@ A monorepo written in Go, represents [Keboola Connection](https://www.keboola.co
 - You can also send PR directly, but we do not guarantee that it will be accepted.
 - See the [developer's guide](./docs/DEVELOPMENT.md).
 
+### Buffer API Benchmarking
+
+1. Start the server: `docker-compose run -p 8001:8001 --rm dev make run-buffer-api`
+1. Run the load test: `API_TOKEN=<storage api token> docker-compose run k6 run /scripts/k6/buffer-static.js`
+
+Environment variables:
+- `API_TOKEN` - Storage API Token (required)
+- `API_HOST` - Buffer API host (default: localhost)
+- `API_PORT` - Buffer API port (default: 8001), set to empty to use no port
+- `API_USE_HTTPS` - Should k6 connect via HTTPS (default: false)
+- `K6_USERS` - number of workers that send requests (default: 6144)
+- `K6_DURATION` - duration of the test (default: 30s)
+
 ## License
 
 MIT licensed, see [LICENSE](./LICENSE) file.
