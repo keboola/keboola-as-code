@@ -21,8 +21,10 @@ package distribution
 import (
 	"context"
 	"sort"
+	"sync"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/lafikl/consistent"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
@@ -35,6 +37,9 @@ import (
 )
 
 type Node struct {
+	wg    *sync.WaitGroup
+	clock clock.Clock
+
 	config  config
 	proc    *servicectx.Process
 	logger  log.Logger
@@ -47,6 +52,7 @@ type Node struct {
 }
 
 type dependencies interface {
+	Clock() clock.Clock
 	Logger() log.Logger
 	EtcdClient() *etcd.Client
 	Schema() *schema.Schema
@@ -62,6 +68,8 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 
 	// Create instance
 	n := &Node{
+		wg:     &sync.WaitGroup{},
+		clock:  d.Clock(),
 		config: c,
 		proc:   d.Process(),
 		logger: d.Logger().AddPrefix("[distribution]"),
@@ -82,7 +90,16 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 	}
 
 	// Watch for nodes
-	n.watch()
+	ctx, cancel := context.WithCancel(context.Background())
+	n.watch(ctx)
+
+	n.proc.OnShutdown(func() {
+		n.logger.Info("received shutdown request")
+		cancel()
+		n.wg.Wait()
+		n.unregister()
+		n.logger.Info("shutdown done")
+	})
 
 	return n, nil
 }
@@ -184,10 +201,6 @@ func (n *Node) register() error {
 		return errors.Errorf(`cannot register the node "%s": %w`, n.nodeID, err)
 	}
 
-	n.proc.OnShutdown(func() {
-		n.unregister()
-	})
-
 	n.logger.Infof(`the node "%s" registered | %s`, n.nodeID, time.Since(startTime))
 	return nil
 }
@@ -208,43 +221,27 @@ func (n *Node) unregister() {
 }
 
 // watch for other nodes.
-func (n *Node) watch() {
-	ctx, cancel := context.WithCancel(n.client.Ctx())
-	n.proc.OnShutdown(func() {
-		cancel()
-		n.logger.Info("cancelled watcher")
-	})
+func (n *Node) watch(ctx context.Context) {
+	pfx := n.schema.Runtime().Workers().Active().IDs()
+	ch, initDone := pfx.GetAllAndWatch(ctx, n.client, n.onWatchErr, etcd.WithPrevKV(), etcd.WithCreatedNotify())
 
+	n.wg.Add(1)
 	go func() {
+		defer n.wg.Done()
+		n.logger.Info("watching for other nodes")
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			default:
-				n.logger.Infof(`watching for other nodes`)
-				pfx := n.schema.Runtime().Workers().Active().IDs()
-				ch := pfx.GetAllAndWatch(ctx, n.client, n.onWatchErr, etcd.WithPrevKV(), etcd.WithCreatedNotify())
-				n.processEvents(ctx, ch)
-
-				// Wait and try to create watcher again
-				time.Sleep(time.Second)
+			case event, ok := <-ch:
+				if !ok {
+					return
+				}
+				n.onWatchEvent(event)
 			}
 		}
 	}()
-}
 
-func (n *Node) processEvents(ctx context.Context, ch <-chan etcdop.Event) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case event, ok := <-ch:
-			if !ok {
-				n.logger.Info("watcher channel closed")
-				return
-			}
-
-			n.onWatchEvent(event)
-		}
-	}
+	// Wait for initial sync
+	<-initDone
 }

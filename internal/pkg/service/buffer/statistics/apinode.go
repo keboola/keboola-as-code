@@ -65,9 +65,7 @@ func NewAPINode(d dependencies) *APINode {
 		for {
 			select {
 			case <-ctx.Done():
-				m.logger.Info("the server is shutting down, starting sync")
 				<-m.handleSync(context.Background())
-				m.logger.Info("all done")
 				close(done)
 				return
 			case event := <-m.ch:
@@ -81,8 +79,10 @@ func NewAPINode(d dependencies) *APINode {
 	// The context is cancelled on shutdown, after the HTTP server.
 	// OnShutdown applies LIFO order, the HTTP server is started last and terminated first.
 	d.Process().OnShutdown(func() {
+		m.logger.Info("received shutdown request")
 		cancel()
 		<-done
+		m.logger.Info("shutdown done")
 	})
 
 	return m
