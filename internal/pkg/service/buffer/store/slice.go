@@ -17,7 +17,7 @@ import (
 )
 
 func (s *Store) CreateSlice(ctx context.Context, slice model.Slice) (err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.CreateSlice")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CreateSlice")
 	defer telemetry.EndSpan(span, &err)
 
 	_, err = s.createSliceOp(ctx, slice).Do(ctx, s.client)
@@ -39,7 +39,7 @@ func (s *Store) createSliceOp(_ context.Context, slice model.Slice) op.BoolOp {
 }
 
 func (s *Store) GetSlice(ctx context.Context, sliceKey key.SliceKey) (r model.Slice, err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetSlice")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetSlice")
 	defer telemetry.EndSpan(span, &err)
 
 	slice, err := s.getSliceOp(ctx, sliceKey).Do(ctx, s.client)
@@ -50,7 +50,7 @@ func (s *Store) GetSlice(ctx context.Context, sliceKey key.SliceKey) (r model.Sl
 }
 
 func (s *Store) GetLatestSlice(ctx context.Context, fileKey key.FileKey) (r model.Slice, err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetLatestSlice")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetLatestSlice")
 	defer telemetry.EndSpan(span, &err)
 
 	slice, err := s.getLatestSliceOp(ctx, fileKey).Do(ctx, s.client)
@@ -89,7 +89,7 @@ func (s *Store) getLatestSliceOp(_ context.Context, fileKey key.FileKey) op.ForT
 }
 
 func (s *Store) ListUploadedSlices(ctx context.Context, fileKey key.FileKey) (r []model.Slice, err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetAllUploadedSlices")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetAllUploadedSlices")
 	defer telemetry.EndSpan(span, &err)
 
 	slices, err := s.listUploadedSlicesOp(ctx, fileKey).Do(ctx, s.client).All()

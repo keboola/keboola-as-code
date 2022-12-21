@@ -9,7 +9,7 @@ import (
 )
 
 func (s *Store) UpdateSliceStats(ctx context.Context, nodeID string, stats []model.SliceStats) (err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.UpdateStats")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.UpdateStats")
 	defer telemetry.EndSpan(span, &err)
 
 	var ops []op.Op

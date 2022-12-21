@@ -18,7 +18,7 @@ import (
 // Logic errors:
 // - CountLimitReachedError.
 func (s *Store) CreateMapping(ctx context.Context, mapping model.Mapping) (err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.CreateMapping")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CreateMapping")
 	defer telemetry.EndSpan(span, &err)
 
 	if mapping.RevisionID != 0 {
@@ -89,7 +89,7 @@ func (s *Store) updateMappingOp(_ context.Context, mapping model.Mapping) op.NoR
 
 // GetLatestMapping fetches the current mapping from the store.
 func (s *Store) GetLatestMapping(ctx context.Context, exportKey key.ExportKey) (r model.Mapping, err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetLatestMapping")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetLatestMapping")
 	defer telemetry.EndSpan(span, &err)
 
 	kv, err := s.getLatestMappingOp(ctx, exportKey).Do(ctx, s.client)
@@ -118,7 +118,7 @@ func (s *Store) getLatestMappingOp(_ context.Context, exportKey key.ExportKey, o
 // Logic errors:
 // - ResourceNotFoundError.
 func (s *Store) GetMapping(ctx context.Context, mappingKey key.MappingKey) (r model.Mapping, err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetMapping")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetMapping")
 	defer telemetry.EndSpan(span, &err)
 
 	kv, err := s.getMappingOp(ctx, mappingKey).Do(ctx, s.client)
