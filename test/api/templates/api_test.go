@@ -119,11 +119,11 @@ func RunE2ETest(t *testing.T, testDir, workingDir string, binary string) {
 	apiUrl, stdout, stderr := RunApiServer(t, binary, project.StorageAPIHost(), repositories)
 
 	// Assert
-	RunRequests(t, envProvider, testDirFs, workingDirFs, apiUrl)
+	requestsOk := RunRequests(t, envProvider, testDirFs, workingDirFs, apiUrl)
 
 	// Optionally check project state
 	expectedStatePath := "expected-state.json"
-	if testDirFs.IsFile(expectedStatePath) {
+	if requestsOk && testDirFs.IsFile(expectedStatePath) {
 		// Read expected state
 		expectedSnapshot, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStatePath))
 		if err != nil {
@@ -158,17 +158,17 @@ func RunE2ETest(t *testing.T, testDir, workingDir string, binary string) {
 	// Optionally check API server stdout/stderr
 	expectedStdoutPath := "expected-server-stdout"
 	expectedStderrPath := "expected-server-stderr"
-	if testDirFs.IsFile(expectedStdoutPath) || testDirFs.IsFile(expectedStderrPath) {
+	if requestsOk && testDirFs.IsFile(expectedStdoutPath) || testDirFs.IsFile(expectedStderrPath) {
 		// Wait a while the server logs everything for previous requests.
 		time.Sleep(100 * time.Millisecond)
 	}
-	if testDirFs.IsFile(expectedStdoutPath) {
+	if requestsOk && testDirFs.IsFile(expectedStdoutPath) {
 		file, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStdoutPath))
 		assert.NoError(t, err)
 		expected := testhelper.MustReplaceEnvsString(file.Content, envProvider)
 		wildcards.Assert(t, expected, stdout.String(), "Unexpected STDOUT.")
 	}
-	if testDirFs.IsFile(expectedStderrPath) {
+	if requestsOk && testDirFs.IsFile(expectedStderrPath) {
 		file, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStderrPath))
 		assert.NoError(t, err)
 		expected := testhelper.MustReplaceEnvsString(file.Content, envProvider)
@@ -323,7 +323,7 @@ func RunRequests(
 	testDirFs filesystem.Fs,
 	workingDirFs filesystem.Fs,
 	apiUrl string,
-) {
+) bool {
 	t.Helper()
 	client := resty.New()
 	client.SetBaseURL(apiUrl)
@@ -403,9 +403,11 @@ func RunRequests(
 		// If the request failed, skip other requests
 		if !ok1 || !ok2 {
 			t.Errorf(`request "%s" failed, skipping the other requests`, requestDir)
-			break
+			return false
 		}
 	}
+
+	return true
 }
 
 // cmdOut is used to prevent race conditions, see https://hackmysql.com/post/reading-os-exec-cmd-output-without-race-conditions/
