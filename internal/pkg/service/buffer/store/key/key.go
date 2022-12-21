@@ -64,7 +64,7 @@ func NewRecordKey(sliceKey SliceKey, now time.Time) RecordKey {
 	return RecordKey{SliceKey: sliceKey, ReceivedAt: ReceivedAt(now)}
 }
 
-func (v *ReceiverKey) String() string {
+func (v ReceiverKey) String() string {
 	return fmt.Sprintf("project:%d/receiver:%s", v.ProjectID, v.ReceiverID)
 }
 
