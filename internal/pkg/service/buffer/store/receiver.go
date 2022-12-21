@@ -2,9 +2,7 @@ package store
 
 import (
 	"context"
-	"time"
 
-	"github.com/keboola/go-client/pkg/storageapi"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -19,7 +17,7 @@ import (
 // Logic errors:
 // - CountLimitReachedError
 // - ResourceAlreadyExistsError.
-func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver, files map[key.ExportKey]*storageapi.File) (err error) {
+func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.CreateReceiver")
 	defer telemetry.EndSpan(span, &err)
 
@@ -31,10 +29,9 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver, fil
 		return serviceError.NewCountLimitReachedError("receiver", MaxReceiversPerProject, "project")
 	}
 
-	now := time.Now()
 	ops := []op.Op{s.createReceiverBaseOp(ctx, receiver.ReceiverBase)}
 	for _, export := range receiver.Exports {
-		ops = append(ops, s.createExportOp(ctx, now, export, files[export.ExportKey]))
+		ops = append(ops, s.createExportOp(ctx, export))
 	}
 	_, err = op.MergeToTxn(ctx, ops...).Do(ctx, s.client)
 	return err
@@ -90,9 +87,16 @@ func (s *Store) getReceiverBaseOp(_ context.Context, receiverKey key.ReceiverKey
 		})
 }
 
-func (s *Store) UpdateReceiver(ctx context.Context, receiver model.Receiver) (err error) {
+func (s *Store) UpdateReceiver(ctx context.Context, k key.ReceiverKey, fn func(model.Receiver) (model.Receiver, error)) (err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.UpdateReceiver")
 	defer telemetry.EndSpan(span, &err)
+
+	receiver, err := s.GetReceiver(ctx, k)
+	if err != nil {
+		return err
+	}
+
+	receiver, err = fn(receiver)
 
 	_, err = op.MergeToTxn(ctx, s.updateReceiverBaseOp(ctx, receiver.ReceiverBase)).Do(ctx, s.client)
 

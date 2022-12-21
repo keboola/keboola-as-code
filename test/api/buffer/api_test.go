@@ -39,8 +39,9 @@ import (
 )
 
 const (
-	serverStartTimeout = 45 * time.Second
-	dumpDirCtxKey      = ctxKey("dumpDir")
+	serverStartTimeout        = 45 * time.Second
+	dumpDirCtxKey             = ctxKey("dumpDir")
+	receiverSecretPlaceholder = "<<RECEIVER_SECRET>>"
 )
 
 type ctxKey string
@@ -135,11 +136,11 @@ func RunE2ETest(t *testing.T, testDir, workingDir string, binary string) {
 	}
 
 	// Assert
-	RunRequests(t, envProvider, testDirFs, workingDirFs, apiUrl)
+	requestsOk := RunRequests(t, envProvider, testDirFs, workingDirFs, apiUrl, etcdClient)
 
 	// Optionally check project state
 	expectedStatePath := "expected-state.json"
-	if testDirFs.IsFile(expectedStatePath) {
+	if requestsOk && testDirFs.IsFile(expectedStatePath) {
 		// Read expected state
 		expectedSnapshot, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStatePath))
 		if err != nil {
@@ -174,7 +175,7 @@ func RunE2ETest(t *testing.T, testDir, workingDir string, binary string) {
 
 	// Optionally check etcd KVs
 	expectedEtcdKVsPath := "expected-etcd-kvs.txt"
-	if testDirFs.IsFile(expectedEtcdKVsPath) {
+	if requestsOk && testDirFs.IsFile(expectedEtcdKVsPath) {
 		// Read expected state
 		expected, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedEtcdKVsPath))
 		if err != nil {
@@ -197,17 +198,17 @@ func RunE2ETest(t *testing.T, testDir, workingDir string, binary string) {
 	// Optionally check API server stdout/stderr
 	expectedStdoutPath := "expected-server-stdout"
 	expectedStderrPath := "expected-server-stderr"
-	if testDirFs.IsFile(expectedStdoutPath) || testDirFs.IsFile(expectedStderrPath) {
+	if requestsOk && testDirFs.IsFile(expectedStdoutPath) || testDirFs.IsFile(expectedStderrPath) {
 		// Wait a while the server logs everything for previous requests.
 		time.Sleep(100 * time.Millisecond)
 	}
-	if testDirFs.IsFile(expectedStdoutPath) {
+	if requestsOk && testDirFs.IsFile(expectedStdoutPath) {
 		file, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStdoutPath))
 		assert.NoError(t, err)
 		expected := testhelper.MustReplaceEnvsString(file.Content, envProvider)
 		wildcards.Assert(t, expected, stdout.String(), "Unexpected STDOUT.")
 	}
-	if testDirFs.IsFile(expectedStderrPath) {
+	if requestsOk && testDirFs.IsFile(expectedStderrPath) {
 		file, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStderrPath))
 		assert.NoError(t, err)
 		expected := testhelper.MustReplaceEnvsString(file.Content, envProvider)
@@ -381,7 +382,8 @@ func RunRequests(
 	testDirFs filesystem.Fs,
 	workingDirFs filesystem.Fs,
 	apiUrl string,
-) {
+	etcdClient *etcd.Client,
+) bool {
 	t.Helper()
 	client := resty.New()
 	client.SetBaseURL(apiUrl)
@@ -424,9 +426,20 @@ func RunRequests(
 		}
 		r.SetHeaders(request.Headers)
 
+		// Buffer API specific, replace placeholder by the secret, loaded from the etcd
+		path := request.Path
+		if strings.Contains(path, receiverSecretPlaceholder) {
+			resp, err := etcdClient.Get(context.Background(), "/config/receiver/", etcd.WithPrefix())
+			if assert.NoError(t, err) && assert.Len(t, resp.Kvs, 1) {
+				receiver := make(map[string]any)
+				json.MustDecode(resp.Kvs[0].Value, &receiver)
+				path = strings.ReplaceAll(path, receiverSecretPlaceholder, receiver["secret"].(string))
+			}
+		}
+
 		// Send request
 		r.SetContext(context.WithValue(r.Context(), dumpDirCtxKey, requestDir))
-		resp, err := r.Execute(request.Method, request.Path)
+		resp, err := r.Execute(request.Method, path)
 		assert.NoError(t, err)
 
 		// Dump raw HTTP response
@@ -467,9 +480,11 @@ func RunRequests(
 		// If the request failed, skip other requests
 		if !ok1 || !ok2 {
 			t.Errorf(`request "%s" failed, skipping the other requests`, requestDir)
-			break
+			return false
 		}
 	}
+
+	return true
 }
 
 // cmdOut is used to prevent race conditions, see https://hackmysql.com/post/reading-os-exec-cmd-output-without-race-conditions/

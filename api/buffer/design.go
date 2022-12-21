@@ -275,7 +275,7 @@ var _ = Service("buffer", func() {
 		Description("Upload data into the receiver.")
 		NoSecurity()
 		Payload(func() {
-			Attribute("projectId", Int, "ID of the project")
+			Attribute("projectId", ProjectID)
 			Attribute("receiverId", ReceiverID)
 			Attribute("secret", String, func() {
 				Description("Secret used for authentication.")
@@ -319,9 +319,15 @@ var ServiceDetail = Type("ServiceDetail", func() {
 	Required("api", "documentation")
 })
 
+var ProjectID = Type("ProjectID", Int, func() {
+	Description("ID of the project")
+	Meta("struct:field:type", "= key.ProjectID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key")
+})
+
 // Receiver -----------------------------------------------------------------------------------------------------------
 
 var ReceiverID = Type("ReceiverID", String, func() {
+	Meta("struct:field:type", "= key.ReceiverID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key")
 	Description("Unique ID of the receiver.")
 	MinLength(1)
 	MaxLength(48)
@@ -380,6 +386,7 @@ var receiverFields = func() {
 // Export -------------------------------------------------------------------------------------------------------------
 
 var ExportID = Type("ExportID", String, func() {
+	Meta("struct:field:type", "= key.ExportID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key")
 	Description("Unique ID of the export.")
 	MinLength(1)
 	MaxLength(48)

@@ -6,9 +6,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 )
 
-type Token = storageapi.Token
+type StorageToken = storageapi.Token
 
-type TokenForExport struct {
+type Token struct {
 	key.ExportKey
-	Token `validate:"dive"`
+	StorageToken `validate:"dive"`
 }

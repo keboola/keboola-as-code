@@ -13,17 +13,18 @@ import (
 // Values are mapped by the op.mapper operations
 // and processed by the op.processors, see ForType[R] type.
 type TxnOp struct {
-	cmps     []etcd.Cmp
-	thenOps  []Op
-	elseOps  []Op
-	initErrs errors.MultiError
+	cmps       []etcd.Cmp
+	thenOps    []Op
+	elseOps    []Op
+	initErrs   errors.MultiError
+	processors []func(ctx context.Context, rawResponse *etcd.TxnResponse, result TxnResult, err error) error
 }
 
-// TxnResponse with mapped response.
+// TxnResult with mapped partial results.
 // Response type differs according to the used operation.
-type TxnResponse struct {
+type TxnResult struct {
 	Succeeded bool
-	Responses []any
+	Results   []any
 }
 
 // inlineOp is helper for NewTxnOp, it implements Op interface.
@@ -106,18 +107,18 @@ func (v *TxnOp) Else(ops ...Op) *TxnOp {
 	return v
 }
 
-func (v *TxnOp) Do(ctx context.Context, client *etcd.Client) (TxnResponse, error) {
+func (v *TxnOp) Do(ctx context.Context, client *etcd.Client) (TxnResult, error) {
 	op, err := v.Op(ctx)
 	if err != nil {
-		return TxnResponse{}, err
+		return TxnResult{}, err
 	}
 
-	response, err := client.Do(ctx, op)
+	resp, err := client.Do(ctx, op)
 	if err != nil {
-		return TxnResponse{}, err
+		return TxnResult{}, err
 	}
 
-	return v.mapResponse(ctx, response)
+	return v.mapResponse(ctx, resp)
 }
 
 func (v *TxnOp) Op(ctx context.Context) (etcd.Op, error) {
@@ -156,11 +157,17 @@ func (v *TxnOp) Op(ctx context.Context) (etcd.Op, error) {
 	return etcd.OpTxn(cmps, thenOps, elseOps), nil
 }
 
+func (v *TxnOp) WithProcessor(p func(ctx context.Context, rawResponse *etcd.TxnResponse, result TxnResult, err error) error) *TxnOp {
+	clone := *v
+	clone.processors = append(clone.processors, p)
+	return &clone
+}
+
 func (v *TxnOp) MapResponse(ctx context.Context, response etcd.OpResponse) (result any, err error) {
 	return v.mapResponse(ctx, response)
 }
 
-func (v *TxnOp) mapResponse(ctx context.Context, response etcd.OpResponse) (result TxnResponse, err error) {
+func (v *TxnOp) mapResponse(ctx context.Context, response etcd.OpResponse) (result TxnResult, err error) {
 	r := response.Txn()
 	result.Succeeded = r.Succeeded
 
@@ -171,7 +178,7 @@ func (v *TxnOp) mapResponse(ctx context.Context, response etcd.OpResponse) (resu
 			if subErr != nil {
 				errs.Append(subErr)
 			}
-			result.Responses = append(result.Responses, subResult)
+			result.Results = append(result.Results, subResult)
 		}
 	} else {
 		for i, subResponse := range r.Responses {
@@ -179,12 +186,17 @@ func (v *TxnOp) mapResponse(ctx context.Context, response etcd.OpResponse) (resu
 			if subErr != nil {
 				errs.Append(subErr)
 			}
-			result.Responses = append(result.Responses, subResult)
+			result.Results = append(result.Results, subResult)
 		}
 	}
 
-	if errs.Len() > 0 {
-		return TxnResponse{}, errs.ErrorOrNil()
+	err = errs.ErrorOrNil()
+	for _, p := range v.processors {
+		err = p(ctx, response.Txn(), result, err)
+	}
+
+	if err != nil {
+		return TxnResult{}, err
 	}
 
 	return result, nil

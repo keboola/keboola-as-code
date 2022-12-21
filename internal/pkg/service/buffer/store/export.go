@@ -2,13 +2,14 @@ package store
 
 import (
 	"context"
-	"time"
+	"reflect"
 
-	"github.com/keboola/go-client/pkg/storageapi"
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -19,7 +20,7 @@ import (
 // Logic errors:
 // - CountLimitReachedError
 // - ResourceAlreadyExistsError.
-func (s *Store) CreateExport(ctx context.Context, export model.Export, fileRes *storageapi.File) (err error) {
+func (s *Store) CreateExport(ctx context.Context, export model.Export) (err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.CreateExport")
 	defer telemetry.EndSpan(span, &err)
 
@@ -30,20 +31,17 @@ func (s *Store) CreateExport(ctx context.Context, export model.Export, fileRes *
 		return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
 	}
 
-	_, err = s.createExportOp(ctx, time.Now(), export, fileRes).Do(ctx, s.client)
+	_, err = s.createExportOp(ctx, export).Do(ctx, s.client)
 	return err
 }
 
-func (s *Store) createExportOp(ctx context.Context, now time.Time, export model.Export, fileRes *storageapi.File) *op.TxnOp {
-	file := model.NewFile(export.ExportKey, now, export.Mapping, fileRes)
-	slice := model.NewSlice(file.FileKey, now, 1)
+func (s *Store) createExportOp(ctx context.Context, export model.Export) *op.TxnOp {
 	return op.MergeToTxn(
 		ctx,
 		s.createExportBaseOp(ctx, export.ExportBase),
 		s.createMappingOp(ctx, export.Mapping),
-		s.createTokenOp(ctx, model.TokenForExport{ExportKey: export.ExportKey, Token: export.Token}),
-		s.createFileOp(ctx, file),
-		s.createSliceOp(ctx, slice),
+		s.createTokenOp(ctx, export.Token),
+		s.createFileOp(ctx, export.OpenedFile),
 	)
 }
 
@@ -61,17 +59,67 @@ func (s *Store) createExportBaseOp(_ context.Context, export model.ExportBase) o
 		})
 }
 
-func (s *Store) UpdateExport(ctx context.Context, export model.Export) (err error) {
+func (s *Store) UpdateExport(ctx context.Context, k key.ExportKey, fn func(model.Export) (model.Export, error)) (err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.UpdateExport")
 	defer telemetry.EndSpan(span, &err)
 
-	_, err = op.MergeToTxn(
-		ctx,
-		s.updateExportBaseOp(ctx, export.ExportBase),
-		s.updateMappingOp(ctx, export.Mapping),
-	).Do(ctx, s.client)
+	export, err := s.GetExport(ctx, k)
+	if err != nil {
+		return err
+	}
 
+	oldValue := export
+	export, err = fn(export)
+	if err != nil {
+		return err
+	}
+
+	txn, err := s.updateExportOp(ctx, oldValue, export)
+	if err != nil {
+		return err
+	}
+
+	_, err = txn.Do(ctx, s.client)
 	return err
+}
+
+func (s *Store) updateExportOp(ctx context.Context, oldValue, newValue model.Export) (*op.TxnOp, error) {
+	ops := []op.Op{
+		s.updateExportBaseOp(ctx, newValue.ExportBase),
+	}
+
+	if !reflect.DeepEqual(newValue.Mapping, oldValue.Mapping) {
+		ops = append(ops, s.updateMappingOp(ctx, newValue.Mapping))
+	}
+
+	if newValue.Token.ID != oldValue.Token.ID {
+		ops = append(ops, s.updateTokenOp(ctx, newValue.Token))
+	}
+
+	if newValue.OpenedFile.FileID != oldValue.OpenedFile.FileID {
+		now := newValue.OpenedFile.OpenedAt()
+
+		// Close opened file and create the new file
+		createFileTxn := s.createFileOp(ctx, newValue.OpenedFile)
+		closeFileTxn, err := s.setFileStateOp(ctx, now, &oldValue.OpenedFile, filestate.Closing)
+		if err != nil {
+			return nil, err
+		}
+
+		// Close opened slice
+		slice, err := s.getLatestSliceOp(ctx, oldValue.OpenedFile.FileKey).Do(ctx, s.client)
+		if err != nil {
+			return nil, err
+		}
+		closeSliceTxn, err := s.setSliceStateOp(ctx, now, &slice.Value, slicestate.Closing)
+		if err != nil {
+			return nil, err
+		}
+
+		ops = append(ops, createFileTxn, closeFileTxn, closeSliceTxn)
+	}
+
+	return op.MergeToTxn(ctx, ops...), nil
 }
 
 func (s *Store) updateExportBaseOp(_ context.Context, export model.ExportBase) op.NoResultOp {
@@ -88,24 +136,27 @@ func (s *Store) updateExportBaseOp(_ context.Context, export model.ExportBase) o
 func (s *Store) GetExport(ctx context.Context, exportKey key.ExportKey) (r model.Export, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetExport")
 	defer telemetry.EndSpan(span, &err)
+	return s.getExportOp(ctx, exportKey).Do(ctx, s.client)
+}
 
-	export, err := s.getExportBaseOp(ctx, exportKey).Do(ctx, s.client)
-	if err != nil {
-		return model.Export{}, err
-	}
-	mapping, err := s.getLatestMappingOp(ctx, exportKey).Do(ctx, s.client)
-	if err != nil {
-		return model.Export{}, err
-	}
-	token, err := s.getTokenOp(ctx, exportKey).Do(ctx, s.client)
-	if err != nil {
-		return model.Export{}, err
-	}
-	return model.Export{
-		ExportBase: export.Value,
-		Mapping:    mapping.Value,
-		Token:      token.Value.Token,
-	}, nil
+func (s *Store) getExportOp(ctx context.Context, exportKey key.ExportKey) op.JoinTo[model.Export] {
+	export := model.Export{}
+	return op.Join(
+		ctx,
+		&export,
+		s.getExportBaseOp(ctx, exportKey).WithOnResult(func(kv *op.KeyValueT[model.ExportBase]) {
+			export.ExportBase = kv.Value
+		}),
+		s.getLatestMappingOp(ctx, exportKey).WithOnResult(func(kv *op.KeyValueT[model.Mapping]) {
+			export.Mapping = kv.Value
+		}),
+		s.getTokenOp(ctx, exportKey).WithOnResult(func(kv *op.KeyValueT[model.Token]) {
+			export.Token = kv.Value
+		}),
+		s.getOpenedFileOp(ctx, exportKey).WithOnResult(func(kv *op.KeyValueT[model.File]) {
+			export.OpenedFile = kv.Value
+		}),
+	)
 }
 
 func (s *Store) getExportBaseOp(_ context.Context, exportKey key.ExportKey) op.ForType[*op.KeyValueT[model.ExportBase]] {
@@ -128,20 +179,28 @@ func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey, op
 	defer telemetry.EndSpan(span, &err)
 
 	err = s.
-		exportsIterator(ctx, receiverKey).Do(ctx, s.client).
-		ForEachValue(func(exportBase model.ExportBase, _ *iterator.Header) error {
-			mapping, err := s.getLatestMappingOp(ctx, exportBase.ExportKey).Do(ctx, s.client)
+		exportBaseIterator(ctx, receiverKey).Do(ctx, s.client).
+		ForEachValue(func(exportBase model.ExportBase, header *iterator.Header) error {
+			mapping, err := s.getLatestMappingOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
 			if err != nil {
 				return err
 			}
-			token, err := s.getTokenOp(ctx, exportBase.ExportKey).Do(ctx, s.client)
+
+			token, err := s.getTokenOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
 			if err != nil {
 				return err
 			}
+
+			openedFile, err := s.getOpenedFileOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
+			if err != nil {
+				return err
+			}
+
 			exports = append(exports, model.Export{
 				ExportBase: exportBase,
 				Mapping:    mapping.Value,
-				Token:      token.Value.Token,
+				Token:      token.Value,
+				OpenedFile: openedFile.Value,
 			})
 			return nil
 		})
@@ -153,7 +212,7 @@ func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey, op
 	return exports, nil
 }
 
-func (s *Store) exportsIterator(_ context.Context, receiverKey key.ReceiverKey, ops ...iterator.Option) iterator.DefinitionT[model.ExportBase] {
+func (s *Store) exportBaseIterator(_ context.Context, receiverKey key.ReceiverKey, ops ...iterator.Option) iterator.DefinitionT[model.ExportBase] {
 	return s.schema.
 		Configs().
 		Exports().

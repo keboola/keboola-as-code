@@ -99,12 +99,13 @@ func (s *Store) GetLatestMapping(ctx context.Context, exportKey key.ExportKey) (
 	return kv.Value, nil
 }
 
-func (s *Store) getLatestMappingOp(_ context.Context, exportKey key.ExportKey) op.ForType[*op.KeyValueT[model.Mapping]] {
+func (s *Store) getLatestMappingOp(_ context.Context, exportKey key.ExportKey, opts ...etcd.OpOption) op.ForType[*op.KeyValueT[model.Mapping]] {
+	opts = append(opts, etcd.WithSort(etcd.SortByKey, etcd.SortDescend))
 	return s.schema.
 		Configs().
 		Mappings().
 		InExport(exportKey).
-		GetOne(etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).
+		GetOne(opts...).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Mapping], err error) (*op.KeyValueT[model.Mapping], error) {
 			if kv == nil && err == nil {
 				return nil, serviceError.NewResourceNotFoundError("mapping", fmt.Sprintf("%s/mapping:latest", exportKey.String()))

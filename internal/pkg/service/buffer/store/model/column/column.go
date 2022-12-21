@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -63,6 +64,13 @@ const (
 	columnHeadersType  = "headers"
 	columnTemplateType = "template"
 )
+
+func (v Columns) Names() (out []string) {
+	for _, col := range v {
+		out = append(out, col.ColumnName())
+	}
+	return out
+}
 
 func (v Columns) MarshalJSON() ([]byte, error) {
 	var items []json.RawMessage
@@ -132,7 +140,7 @@ func (v *Columns) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// ColumnToType returns the stringified type of the column.
+// MakeColumn returns the stringified type of the column.
 //
 // This function returns `column` as a value.
 func MakeColumn(typ string, name string) (Column, error) {
@@ -157,15 +165,23 @@ func MakeColumn(typ string, name string) (Column, error) {
 type ImportCtx struct {
 	Body     *orderedmap.OrderedMap
 	DateTime time.Time
-	Header   http.Header
+	Headers  *orderedmap.OrderedMap
 	IP       net.IP
 }
 
 func NewImportCtx(body *orderedmap.OrderedMap, header http.Header, ip net.IP) ImportCtx {
+	headers := orderedmap.New()
+	for k := range header {
+		headers.Set(k, header.Get(k))
+	}
+	headers.SortKeys(func(keys []string) {
+		sort.Strings(keys)
+	})
+
 	return ImportCtx{
 		Body:     body,
 		DateTime: time.Now(),
-		Header:   header,
+		Headers:  headers,
 		IP:       ip,
 	}
 }
@@ -212,7 +228,7 @@ func (Body) CsvValue(importCtx ImportCtx) (string, error) {
 }
 
 func (Headers) CsvValue(importCtx ImportCtx) (string, error) {
-	header, err := json.Marshal(importCtx.Header)
+	header, err := json.Marshal(importCtx.Headers)
 	if err != nil {
 		return "", err
 	}
@@ -224,14 +240,8 @@ func (c Template) CsvValue(importCtx ImportCtx) (string, error) {
 		ctx := jsonnet.NewContext()
 		ctx.NativeFunctionWithAlias(getBodyPath(c, importCtx.Body))
 		ctx.NativeFunctionWithAlias(getBody(importCtx.Body))
-
-		headers := orderedmap.New()
-		for k := range importCtx.Header {
-			headers.Set(k, importCtx.Header.Get(k))
-		}
-		ctx.NativeFunctionWithAlias(getHeader(c, headers))
-		ctx.NativeFunctionWithAlias(getHeaders(headers))
-
+		ctx.NativeFunctionWithAlias(getHeader(c, importCtx.Headers))
+		ctx.NativeFunctionWithAlias(getHeaders(importCtx.Headers))
 		ctx.GlobalBinding("currentDatetime", jsonnet.ValueToLiteral(importCtx.DateTime.Format(time.RFC3339)))
 
 		res, err := jsonnet.Evaluate(c.Content, ctx)

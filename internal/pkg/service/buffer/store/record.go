@@ -18,10 +18,11 @@ func (s *Store) CreateRecord(ctx context.Context, recordKey key.RecordKey, csvDa
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.recordstore.CreateRecord")
 	defer telemetry.EndSpan(span, &err)
 
-	if recordKey.RandomSuffix != "" {
+	if recordKey.RandomSuffix == "" {
+		recordKey.RandomSuffix = idgenerator.Random(5)
+	} else {
 		return errors.New("unexpected state: record random suffix should by empty, it is generated on record create")
 	}
-	recordKey.RandomSuffix = idgenerator.Random(5)
 
 	// Convert columns to CSV
 	csvBuffer := new(bytes.Buffer)

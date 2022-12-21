@@ -63,6 +63,20 @@ file/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
   }
 }
 >>>>>
+
+<<<<<
+slice/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-01T08:04:05.000Z
+-----
+{
+  "projectId": 1000,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "fileId": "2006-01-01T08:04:05.000Z",
+  "sliceId": "2006-01-01T08:04:05.000Z",
+  "state": "opened",
+  "sliceNumber": 1
+}
+>>>>>
 `)
 }
 
@@ -116,6 +130,20 @@ file/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
   }
 }
 >>>>>
+
+<<<<<
+slice/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-01T08:04:05.000Z
+-----
+{
+  "projectId": 1000,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "fileId": "2006-01-01T08:04:05.000Z",
+  "sliceId": "2006-01-01T08:04:05.000Z",
+  "state": "opened",
+  "sliceNumber": 1
+}
+>>>>>
 `)
 }
 
@@ -138,11 +166,12 @@ func TestStore_SetFileState_Transitions(t *testing.T) {
 	now, _ := time.Parse(time.RFC3339, "2010-01-01T01:01:01+07:00")
 
 	// Create file
-	assert.NoError(t, store.CreateFile(ctx, file))
+	_, err := store.createFileOp(ctx, file).Do(ctx, store.client)
+	assert.NoError(t, err)
 
 	for _, tc := range testCases {
 		// Trigger transition
-		ok, err := store.SetFileState(ctx, &file, tc.to, now)
+		ok, err := store.SetFileState(ctx, now, &file, tc.to)
 		desc := fmt.Sprintf("%s -> %s", tc.from, tc.to)
 		assert.NoError(t, err, desc)
 		assert.True(t, ok, desc)
@@ -160,7 +189,7 @@ file/<STATE>/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
 
 		// Test duplicated transition -> nop
 		file.State = tc.from
-		ok, err = store.SetFileState(ctx, &file, tc.to, time.Now())
+		ok, err = store.SetFileState(ctx, time.Now(), &file, tc.to)
 		assert.NoError(t, err, desc)
 		assert.False(t, ok, desc)
 		assert.Equal(t, tc.to, file.State, desc)

@@ -124,14 +124,14 @@
 >>>>>
 
 <<<<<
-/file/opened/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%sZ
+/file/closing/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%sZ
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "receiverId": "my-receiver",
   "exportId": "my-export-1",
   "fileId": "%s",
-  "state": "opened",
+  "state": "closing",
   "mapping": {
     "projectId": %%TEST_KBC_PROJECT_ID%%,
     "receiverId": "my-receiver",
@@ -155,6 +155,111 @@
   },
   "storageResource": {
     %A
+  },
+  "closingAt": "%s"
+}
+>>>>>
+
+<<<<<
+/file/closing/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%sZ
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "fileId": "%s",
+  "state": "closing",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "my-receiver",
+    "exportId": "my-export-1",
+    "revisionId": 2,
+    "tableId": "in.c-bucket.table",
+    "incremental": false,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "template",
+        "name": "template",
+        "language": "jsonnet",
+        "undefinedValueStrategy": "error",
+        "content": "body.key+\":\"+body.value"
+      }
+    ]
+  },
+  "storageResource": {
+    %A
+  },
+  "closingAt": "%s"
+}
+>>>>>
+
+<<<<<
+/file/closing/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%sZ
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "fileId": "%s",
+  "state": "closing",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "my-receiver",
+    "exportId": "my-export-1",
+    "revisionId": 3,
+    "tableId": "in.c-bucket.table2",
+    "incremental": true,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
+  "storageResource": {
+    %A
+  },
+  "closingAt": "%s"
+}
+>>>>>
+
+<<<<<
+/file/opened/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%sZ
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "fileId": "%s",
+  "state": "opened",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "my-receiver",
+    "exportId": "my-export-1",
+    "revisionId": 4,
+    "tableId": "in.c-bucket2.table1",
+    "incremental": true,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
+  "storageResource": {
+    %A
   }
 }
 >>>>>
@@ -162,11 +267,58 @@
 <<<<<
 /secret/export/token/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1
 -----
+{
 %A
+}
 >>>>>
 
 <<<<<
-/slice/opened/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s
+/slice/closing/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/%sZ
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "fileId": "%s",
+  "sliceId": "%s,
+  "state": "closing",
+  "sliceNumber": 1,
+  "closingAt": "%s"
+}
+>>>>>
+
+<<<<<
+/slice/closing/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/%sZ
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "state": "closing",
+  "sliceNumber": 1,
+  "closingAt": "%s"
+}
+>>>>>
+
+<<<<<
+/slice/closing/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/%sZ
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "state": "closing",
+  "sliceNumber": 1,
+  "closingAt": "%s"
+}
+>>>>>
+
+<<<<<
+/slice/opened/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/%sZ
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
