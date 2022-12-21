@@ -3,8 +3,10 @@ package store
 import (
 	"context"
 	"reflect"
+	"sort"
 
 	etcd "go.etcd.io/etcd/client/v3"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -178,29 +180,38 @@ func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey, op
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.ListExports")
 	defer telemetry.EndSpan(span, &err)
 
+	// Load sub-objects in parallel, stop at the first error
+	exportsMap := make(map[key.ExportKey]*model.Export)
+	grp, _ := errgroup.WithContext(ctx)
+
+	i := 0
 	err = s.
 		exportBaseIterator(ctx, receiverKey).Do(ctx, s.client).
 		ForEachValue(func(exportBase model.ExportBase, header *iterator.Header) error {
-			mapping, err := s.getLatestMappingOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
-			if err != nil {
-				return err
-			}
+			export := &model.Export{ExportBase: exportBase}
+			exportsMap[exportBase.ExportKey] = export
+			i++
 
-			token, err := s.getTokenOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
-			if err != nil {
+			grp.Go(func() error {
+				mapping, err := s.getLatestMappingOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
+				if err == nil {
+					export.Mapping = mapping.Value
+				}
 				return err
-			}
-
-			openedFile, err := s.getOpenedFileOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
-			if err != nil {
+			})
+			grp.Go(func() error {
+				token, err := s.getTokenOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
+				if err == nil {
+					export.Token = token.Value
+				}
 				return err
-			}
-
-			exports = append(exports, model.Export{
-				ExportBase: exportBase,
-				Mapping:    mapping.Value,
-				Token:      token.Value,
-				OpenedFile: openedFile.Value,
+			})
+			grp.Go(func() error {
+				openedFile, err := s.getOpenedFileOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
+				if err == nil {
+					export.OpenedFile = openedFile.Value
+				}
+				return err
 			})
 			return nil
 		})
@@ -209,6 +220,19 @@ func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey, op
 		return nil, err
 	}
 
+	// Wait for sub-objects
+	if err := grp.Wait(); err != nil {
+		return nil, err
+	}
+
+	// Convert map to slice
+	exports = make([]model.Export, 0, len(exportsMap))
+	for _, v := range exportsMap {
+		exports = append(exports, *v)
+	}
+	sort.SliceStable(exports, func(i, j int) bool {
+		return exports[i].ExportID < exports[j].ExportID
+	})
 	return exports, nil
 }
 
