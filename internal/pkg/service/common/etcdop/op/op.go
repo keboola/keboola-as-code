@@ -37,6 +37,16 @@ func (v ForType[R]) WithProcessor(p func(ctx context.Context, response etcd.OpRe
 	return v
 }
 
+// WithOnResult is a shortcut for the WithProcessor.
+func (v ForType[R]) WithOnResult(fn func(result R)) ForType[R] {
+	return v.WithProcessor(func(_ context.Context, _ etcd.OpResponse, result R, err error) (R, error) {
+		if err == nil {
+			fn(result)
+		}
+		return result, err
+	})
+}
+
 func (v ForType[R]) MapResponse(ctx context.Context, response etcd.OpResponse) (any, error) {
 	// Same as a part of the "Do" method, but not generic.
 	// The method is used in processing of a transaction responses.
