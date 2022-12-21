@@ -8,20 +8,25 @@ export function setup() {
   common.setup();
 
   const res = post("v1/receivers", {
-    id: "buffer-static",
-    name: "Buffer API Static Benchmark",
+    id: "buffer-template",
+    name: "Buffer API Template Benchmark",
     exports: [
       {
         exportId: "test-export",
         name: "test-export",
         mapping: {
-          tableId: "in.c-buffer-static.data",
+          tableId: "in.c-buffer-template.data",
           columns: [
             { type: "id", name: "id" },
-            { type: "datetime", name: "datetime" },
-            { type: "ip", name: "ip" },
-            { type: "body", name: "body" },
-            { type: "headers", name: "headers" },
+            {
+              type: "template",
+              name: "template",
+              template: {
+                language: "jsonnet",
+                undefinedValueStrategy: "null",
+                content: `Body.a.b+":"+Body.c.f.g`,
+              },
+            },
           ],
         },
       },
