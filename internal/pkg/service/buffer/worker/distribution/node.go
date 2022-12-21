@@ -132,9 +132,7 @@ func (n *Node) MustCheckIsOwner(key string) bool {
 
 func (n *Node) onWatchEvent(event etcdop.Event) {
 	switch event.Type {
-	case etcdop.CreateEvent:
-		fallthrough
-	case etcdop.UpdateEvent:
+	case etcdop.CreateEvent, etcdop.UpdateEvent:
 		nodeID := string(event.Kv.Value)
 		n.nodes.Add(nodeID)
 		n.logger.Infof(`found a new node "%s"`, nodeID)
