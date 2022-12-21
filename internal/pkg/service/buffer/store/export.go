@@ -186,7 +186,7 @@ func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey, op
 
 	i := 0
 	err = s.
-		exportBaseIterator(ctx, receiverKey).Do(ctx, s.client).
+		exportBaseIterator(ctx, receiverKey, ops...).Do(ctx, s.client).
 		ForEachValue(func(exportBase model.ExportBase, header *iterator.Header) error {
 			export := &model.Export{ExportBase: exportBase}
 			exportsMap[exportBase.ExportKey] = export
