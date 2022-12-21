@@ -34,6 +34,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	serviceDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/table"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -71,6 +74,9 @@ type ForPublicRequest interface {
 type ForProjectRequest interface {
 	ForPublicRequest
 	dependencies.Project
+	TokenManager() *token.Manager
+	TableManager() *table.Manager
+	FileManager() *file.Manager
 }
 
 // forServer implements ForServer interface.
@@ -92,7 +98,10 @@ type forPublicRequest struct {
 type forProjectRequest struct {
 	dependencies.Project
 	ForPublicRequest
-	logger log.Logger
+	logger       log.Logger
+	tokenManager *token.Manager
+	tableManager *table.Manager
+	fileManager  *file.Manager
 }
 
 func NewServerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provider, logger log.Logger, debug, dumpHTTP bool) (v ForServer, err error) {
@@ -155,11 +164,15 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 		fmt.Sprintf("[project=%d][token=%s]", projectDeps.ProjectID(), projectDeps.StorageAPITokenID()),
 	)
 
-	return &forProjectRequest{
-		logger:           logger,
+	d := &forProjectRequest{
 		Project:          projectDeps,
 		ForPublicRequest: publicDeps,
-	}, nil
+		logger:           logger,
+	}
+	d.tokenManager = token.NewManager(d)
+	d.tableManager = table.NewManager(d)
+	d.fileManager = file.NewManager(d)
+	return d, nil
 }
 
 func (v *forServer) BufferAPIHost() string {
@@ -188,4 +201,16 @@ func (v *forPublicRequest) RequestClientIP() net.IP {
 
 func (v *forProjectRequest) Logger() log.Logger {
 	return v.logger
+}
+
+func (v *forProjectRequest) TokenManager() *token.Manager {
+	return v.tokenManager
+}
+
+func (v *forProjectRequest) TableManager() *table.Manager {
+	return v.tableManager
+}
+
+func (v *forProjectRequest) FileManager() *file.Manager {
+	return v.fileManager
 }
