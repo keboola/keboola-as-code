@@ -20,7 +20,6 @@ import (
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/testproject"
 	"github.com/spf13/cast"
-	"github.com/stretchr/testify/assert"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 
@@ -57,7 +56,9 @@ func GetTestProjectForTest(t *testing.T) *Project {
 	t.Helper()
 
 	p, unlockFn, err := GetTestProject(env.Empty())
-	assert.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Cleanup(func() {
 		// Unlock and cancel background jobs
