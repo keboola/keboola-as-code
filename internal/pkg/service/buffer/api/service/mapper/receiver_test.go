@@ -1,4 +1,4 @@
-package mapper
+package mapper_test
 
 import (
 	"testing"
@@ -8,15 +8,18 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 )
 
-func TestReceiverModelFromPayload(t *testing.T) {
+func TestReceiverModel(t *testing.T) {
 	t.Parallel()
 
-	mapper := NewMapper("buffer.keboola.local")
+	d := dependencies.NewMockedDeps(t)
+	mapper := NewMapper(d)
 
 	projectID := key.ProjectID(1000)
 	secret := idgenerator.ReceiverSecret()
@@ -109,15 +112,16 @@ func TestReceiverModelFromPayload(t *testing.T) {
 		},
 	}
 
-	model, err := mapper.ReceiverModelFromPayload(projectID, secret, payload)
+	out, err := mapper.CreateReceiverModel(projectID, secret, payload)
 	assert.NoError(t, err)
-	assert.Equal(t, expected, model)
+	assert.Equal(t, expected, out)
 }
 
-func TestReceiverPayloadFromModel(t *testing.T) {
+func TestReceiverPayload(t *testing.T) {
 	t.Parallel()
 
-	mapper := NewMapper("buffer.keboola.local")
+	d := dependencies.NewMockedDeps(t)
+	mapper := NewMapper(d)
 
 	receiverKey := key.ReceiverKey{
 		ProjectID:  1000,
@@ -131,7 +135,7 @@ func TestReceiverPayloadFromModel(t *testing.T) {
 		ExportKey:  exportKey,
 		RevisionID: 1,
 	}
-	model := model.Receiver{
+	out := model.Receiver{
 		ReceiverBase: model.ReceiverBase{
 			ReceiverKey: receiverKey,
 			Name:        "Receiver",
@@ -172,7 +176,7 @@ func TestReceiverPayloadFromModel(t *testing.T) {
 		},
 	}
 
-	expected := buffer.Receiver{
+	expected := &buffer.Receiver{
 		ID:   "receiver",
 		URL:  "https://buffer.keboola.local/v1/import/1000/receiver/test",
 		Name: "Receiver",
@@ -209,16 +213,6 @@ func TestReceiverPayloadFromModel(t *testing.T) {
 		},
 	}
 
-	payload := mapper.ReceiverPayloadFromModel(model)
+	payload := mapper.ReceiverPayload(out)
 	assert.Equal(t, expected, payload)
-}
-
-func TestFormatUrl(t *testing.T) {
-	t.Parallel()
-
-	assert.Equal(
-		t,
-		"https://buffer.keboola.local/v1/import/1000/my-receiver/my-secret",
-		formatReceiverURL("buffer.keboola.local", key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}, "my-secret"),
-	)
 }
