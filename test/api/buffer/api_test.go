@@ -443,9 +443,11 @@ func RunRequests(
 		assert.NoError(t, err)
 
 		// Dump raw HTTP response
-		respDump, err := httputil.DumpResponse(resp.RawResponse, false)
-		assert.NoError(t, err)
-		assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile(filesystem.Join(requestDir, "response.txt"), string(respDump)+string(resp.Body()))))
+		if err == nil {
+			respDump, err := httputil.DumpResponse(resp.RawResponse, false)
+			assert.NoError(t, err)
+			assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile(filesystem.Join(requestDir, "response.txt"), string(respDump)+string(resp.Body()))))
+		}
 
 		// Compare response body
 		expectedRespFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(requestDir, "expected-response.json")))
