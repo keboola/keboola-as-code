@@ -49,6 +49,17 @@ func (s *Store) GetSlice(ctx context.Context, sliceKey key.SliceKey) (r model.Sl
 	return slice.Value, nil
 }
 
+func (s *Store) GetLatestSlice(ctx context.Context, fileKey key.FileKey) (r model.Slice, err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetLatestSlice")
+	defer telemetry.EndSpan(span, &err)
+
+	slice, err := s.getLatestSliceOp(ctx, fileKey).Do(ctx, s.client)
+	if err != nil {
+		return model.Slice{}, err
+	}
+	return slice.Value, nil
+}
+
 func (s *Store) getSliceOp(_ context.Context, sliceKey key.SliceKey) op.ForType[*op.KeyValueT[model.Slice]] {
 	return s.schema.
 		Slices().
@@ -58,6 +69,20 @@ func (s *Store) getSliceOp(_ context.Context, sliceKey key.SliceKey) op.ForType[
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Slice], err error) (*op.KeyValueT[model.Slice], error) {
 			if kv == nil && err == nil {
 				return nil, serviceError.NewResourceNotFoundError("slice", sliceKey.String())
+			}
+			return kv, err
+		})
+}
+
+func (s *Store) getLatestSliceOp(_ context.Context, fileKey key.FileKey) op.ForType[*op.KeyValueT[model.Slice]] {
+	return s.schema.
+		Slices().
+		Opened().
+		InFile(fileKey).
+		GetOne(etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).
+		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Slice], err error) (*op.KeyValueT[model.Slice], error) {
+			if kv == nil && err == nil {
+				return nil, serviceError.NewResourceNotFoundError("latest slice", fileKey.String())
 			}
 			return kv, err
 		})
@@ -86,9 +111,29 @@ func (s *Store) listUploadedSlicesOp(_ context.Context, fileKey key.FileKey) ite
 // SetSliceState method atomically changes the state of the file.
 // False is returned, if the given file is already in the target state.
 func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slicestate.State, now time.Time) (bool, error) { //nolint:dupl
+	txn, err := s.setSliceStateOp(ctx, now, slice, to)
+	if err != nil {
+		return false, err
+	}
+
+	resp, err := txn.Do(ctx, s.client)
+	if err != nil {
+		return false, err
+	}
+
+	if err == nil && !resp.Succeeded {
+		// File is already in the target state
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model.Slice, to slicestate.State) (*op.TxnOp, error) { //nolint:dupl
+	from := slice.State
+	clone := *slice
 	stm := slicestate.NewSTM(slice.State, func(ctx context.Context, from, to slicestate.State) error {
 		// Update fields
-		clone := *slice
 		clone.State = to
 		switch to {
 		case slicestate.Closing:
@@ -104,36 +149,26 @@ func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slices
 		default:
 			panic(errors.Errorf(`unexpected state "%s"`, to))
 		}
-
-		// Atomically swap keys in the transaction
-		slices := s.schema.Slices()
-		resp, err := op.MergeToTxn(
-			ctx,
-			slices.InState(from).ByKey(slice.SliceKey).DeleteIfExists(),
-			slices.InState(to).ByKey(slice.SliceKey).PutIfNotExists(clone),
-		).Do(ctx, s.client)
-
-		// Check logical error, transaction failed
-		if err == nil && !resp.Succeeded {
-			slice.State = to
-			return fileTxnFailedError{error: errors.Errorf(
-				`transaction "%s" -> "%s" failed: the slice "%s" is already in the target state`,
-				from, to, slice.SliceKey.String(),
-			)}
-		}
-
-		if err == nil {
-			*slice = clone
-		}
-
-		return err
+		return nil
 	})
 
 	if err := stm.To(ctx, to); err != nil {
-		if errors.As(err, &fileTxnFailedError{}) {
-			return false, nil
-		}
-		return false, err
+		return nil, err
 	}
-	return true, nil
+
+	// Atomically swap keys in the transaction
+	txn := op.
+		MergeToTxn(
+			ctx,
+			s.schema.Slices().InState(from).ByKey(slice.SliceKey).DeleteIfExists(),
+			s.schema.Slices().InState(to).ByKey(slice.SliceKey).PutIfNotExists(clone),
+		).
+		WithProcessor(func(_ context.Context, _ *etcd.TxnResponse, result op.TxnResult, err error) error {
+			if err == nil {
+				*slice = clone
+			}
+			return err
+		})
+
+	return txn, nil
 }

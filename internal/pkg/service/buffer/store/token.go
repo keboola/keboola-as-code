@@ -13,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
-func (s *Store) ListTokens(ctx context.Context, receiverKey key.ReceiverKey) (out []model.TokenForExport, err error) {
+func (s *Store) ListTokens(ctx context.Context, receiverKey key.ReceiverKey) (out []model.Token, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.ListTokens")
 	defer telemetry.EndSpan(span, &err)
 
@@ -25,7 +25,7 @@ func (s *Store) ListTokens(ctx context.Context, receiverKey key.ReceiverKey) (ou
 	return tokens.Values(), nil
 }
 
-func (s *Store) UpdateTokens(ctx context.Context, tokens []model.TokenForExport) (err error) {
+func (s *Store) UpdateTokens(ctx context.Context, tokens []model.Token) (err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.UpdateTokens")
 	defer telemetry.EndSpan(span, &err)
 
@@ -39,7 +39,7 @@ func (s *Store) UpdateTokens(ctx context.Context, tokens []model.TokenForExport)
 	return err
 }
 
-func (s *Store) getReceiverTokensOp(_ context.Context, receiverKey key.ReceiverKey) iterator.DefinitionT[model.TokenForExport] {
+func (s *Store) getReceiverTokensOp(_ context.Context, receiverKey key.ReceiverKey) iterator.DefinitionT[model.Token] {
 	return s.schema.
 		Secrets().
 		Tokens().
@@ -47,7 +47,7 @@ func (s *Store) getReceiverTokensOp(_ context.Context, receiverKey key.ReceiverK
 		GetAll()
 }
 
-func (s *Store) updateTokenOp(_ context.Context, token model.TokenForExport) op.NoResultOp {
+func (s *Store) updateTokenOp(_ context.Context, token model.Token) op.NoResultOp {
 	return s.schema.
 		Secrets().
 		Tokens().
@@ -55,7 +55,7 @@ func (s *Store) updateTokenOp(_ context.Context, token model.TokenForExport) op.
 		Put(token)
 }
 
-func (s *Store) createTokenOp(_ context.Context, token model.TokenForExport) op.BoolOp {
+func (s *Store) createTokenOp(_ context.Context, token model.Token) op.BoolOp {
 	return s.schema.
 		Secrets().
 		Tokens().
@@ -69,13 +69,13 @@ func (s *Store) createTokenOp(_ context.Context, token model.TokenForExport) op.
 		})
 }
 
-func (s *Store) getTokenOp(_ context.Context, exportKey key.ExportKey) op.ForType[*op.KeyValueT[model.TokenForExport]] {
+func (s *Store) getTokenOp(_ context.Context, exportKey key.ExportKey, opts ...etcd.OpOption) op.ForType[*op.KeyValueT[model.Token]] {
 	return s.schema.
 		Secrets().
 		Tokens().
 		InExport(exportKey).
-		Get().
-		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.TokenForExport], err error) (*op.KeyValueT[model.TokenForExport], error) {
+		Get(opts...).
+		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Token], err error) (*op.KeyValueT[model.Token], error) {
 			if kv == nil && err == nil {
 				return nil, serviceError.NewResourceNotFoundError("token", exportKey.String())
 			}

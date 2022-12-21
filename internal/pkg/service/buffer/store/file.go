@@ -15,20 +15,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type fileTxnFailedError struct {
-	error
-}
-
-func (s *Store) CreateFile(ctx context.Context, file model.File) (err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.CreateFile")
-	defer telemetry.EndSpan(span, &err)
-
-	_, err = s.createFileOp(ctx, file).Do(ctx, s.client)
-	return err
-}
-
-func (s *Store) createFileOp(_ context.Context, file model.File) op.BoolOp {
-	return s.schema.
+func (s *Store) createFileOp(ctx context.Context, file model.File) *op.TxnOp {
+	createFile := s.schema.
 		Files().
 		Opened().
 		ByKey(file.FileKey).
@@ -39,6 +27,8 @@ func (s *Store) createFileOp(_ context.Context, file model.File) op.BoolOp {
 			}
 			return ok, err
 		})
+	createSlice := s.createSliceOp(ctx, model.NewSlice(file.FileKey, file.OpenedAt(), 1))
+	return op.MergeToTxn(ctx, createSlice, createFile)
 }
 
 func (s *Store) GetFile(ctx context.Context, fileKey key.FileKey) (out model.File, err error) {
@@ -47,9 +37,24 @@ func (s *Store) GetFile(ctx context.Context, fileKey key.FileKey) (out model.Fil
 
 	file, err := s.getFileOp(ctx, fileKey).Do(ctx, s.client)
 	if err != nil {
-		return out, err
+		return model.File{}, err
 	}
 	return file.Value, nil
+}
+
+func (s *Store) getOpenedFileOp(_ context.Context, exportKey key.ExportKey, opts ...etcd.OpOption) op.ForType[*op.KeyValueT[model.File]] {
+	opts = append(opts, etcd.WithSort(etcd.SortByKey, etcd.SortDescend))
+	return s.schema.
+		Files().
+		Opened().
+		InExport(exportKey).
+		GetOne(opts...).
+		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.File], err error) (*op.KeyValueT[model.File], error) {
+			if kv == nil && err == nil {
+				return nil, serviceError.NewResourceNotFoundError("opened file", exportKey.String())
+			}
+			return kv, err
+		})
 }
 
 func (s *Store) getFileOp(_ context.Context, fileKey key.FileKey) op.ForType[*op.KeyValueT[model.File]] {
@@ -68,10 +73,30 @@ func (s *Store) getFileOp(_ context.Context, fileKey key.FileKey) op.ForType[*op
 
 // SetFileState method atomically changes the state of the file.
 // False is returned, if the given file is already in the target state.
-func (s *Store) SetFileState(ctx context.Context, file *model.File, to filestate.State, now time.Time) (bool, error) { //nolint:dupl
+func (s *Store) SetFileState(ctx context.Context, now time.Time, file *model.File, to filestate.State) (bool, error) { //nolint:dupl
+	txn, err := s.setFileStateOp(ctx, now, file, to)
+	if err != nil {
+		return false, err
+	}
+
+	resp, err := txn.Do(ctx, s.client)
+	if err != nil {
+		return false, err
+	}
+
+	if err == nil && !resp.Succeeded {
+		// File is already in the target state
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func (s *Store) setFileStateOp(ctx context.Context, now time.Time, file *model.File, to filestate.State) (*op.TxnOp, error) {
+	from := file.State
+	clone := *file
 	stm := filestate.NewSTM(file.State, func(ctx context.Context, from, to filestate.State) error {
 		// Update fields
-		clone := *file
 		clone.State = to
 		switch to {
 		case filestate.Closing:
@@ -87,36 +112,27 @@ func (s *Store) SetFileState(ctx context.Context, file *model.File, to filestate
 		default:
 			panic(errors.Errorf(`unexpected state "%s"`, to))
 		}
-
-		// Atomically swap keys in the transaction
-		files := s.schema.Files()
-		resp, err := op.MergeToTxn(
-			ctx,
-			files.InState(from).ByKey(file.FileKey).DeleteIfExists(),
-			files.InState(to).ByKey(file.FileKey).PutIfNotExists(clone),
-		).Do(ctx, s.client)
-
-		// Check logical error, transaction failed
-		if err == nil && !resp.Succeeded {
-			file.State = to
-			return fileTxnFailedError{error: errors.Errorf(
-				`transaction "%s" -> "%s" failed: the file "%s" is already in the target state`,
-				from, to, file.FileKey.String(),
-			)}
-		}
-
-		if err == nil {
-			*file = clone
-		}
-
-		return err
+		return nil
 	})
 
 	if err := stm.To(ctx, to); err != nil {
-		if errors.As(err, &fileTxnFailedError{}) {
-			return false, nil
-		}
-		return false, err
+		return nil, err
 	}
-	return true, nil
+
+	// Atomically swap keys in the transaction
+	ops := []op.Op{
+		s.schema.Files().InState(from).ByKey(file.FileKey).DeleteIfExists(),
+		s.schema.Files().InState(to).ByKey(file.FileKey).PutIfNotExists(clone),
+	}
+
+	// Create transaction
+	txn := op.
+		MergeToTxn(ctx, ops...).
+		WithProcessor(func(_ context.Context, _ *etcd.TxnResponse, result op.TxnResult, err error) error {
+			if err == nil {
+				*file = clone
+			}
+			return err
+		})
+	return txn, nil
 }
