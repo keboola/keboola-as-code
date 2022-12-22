@@ -22,13 +22,14 @@ import (
 )
 
 func (s *service) Import(d dependencies.ForPublicRequest, payload *buffer.ImportPayload, reader io.ReadCloser) (err error) {
-	ctx, str, header, ip, stats := d.RequestCtx(), d.Store(), d.RequestHeader(), d.RequestClientIP(), s.stats
+	ctx, header, ip, str, stats := d.RequestCtx(), d.RequestHeader(), d.RequestClientIP(), d.Store(), s.stats
 
 	receiverKey := key.ReceiverKey{ProjectID: payload.ProjectID, ReceiverID: payload.ReceiverID}
-	receiver, err := str.GetReceiver(ctx, receiverKey)
-	if err != nil {
-		return err
+	receiver, found := s.state.Receiver(receiverKey)
+	if !found {
+		return NewResourceNotFoundError("receiver", payload.ReceiverID.String())
 	}
+
 	if receiver.Secret != payload.Secret {
 		return &buffer.GenericError{
 			StatusCode: 404,

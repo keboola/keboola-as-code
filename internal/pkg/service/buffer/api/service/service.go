@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/watcher"
 )
 
 type service struct {
@@ -16,6 +17,7 @@ type service struct {
 	logger log.Logger
 	stats  *statistics.APINode
 	mapper *mapper.Mapper
+	state  *watcher.State
 }
 
 func New(d dependencies.ForServer) buffer.Service {
@@ -25,6 +27,7 @@ func New(d dependencies.ForServer) buffer.Service {
 		logger: d.Logger(),
 		stats:  statistics.NewAPINode(d),
 		mapper: mapper.NewMapper(d),
+		state:  watcher.NewState(d),
 	}
 }
 

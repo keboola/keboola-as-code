@@ -14,7 +14,7 @@ import (
 )
 
 func (s *Store) ListTokens(ctx context.Context, receiverKey key.ReceiverKey) (out []model.Token, err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.ListTokens")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.ListTokens")
 	defer telemetry.EndSpan(span, &err)
 
 	tokens, err := s.getReceiverTokensOp(ctx, receiverKey).Do(ctx, s.client).All()
@@ -26,7 +26,7 @@ func (s *Store) ListTokens(ctx context.Context, receiverKey key.ReceiverKey) (ou
 }
 
 func (s *Store) UpdateTokens(ctx context.Context, tokens []model.Token) (err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.UpdateTokens")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.UpdateTokens")
 	defer telemetry.EndSpan(span, &err)
 
 	ops := make([]op.Op, 0, len(tokens))

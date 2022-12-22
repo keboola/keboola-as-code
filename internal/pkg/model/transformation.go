@@ -126,11 +126,7 @@ func (v Scripts) String(componentID storageapi.ComponentID) string {
 	}
 
 	switch componentID.String() {
-	case `keboola.snowflake-transformation`:
-		fallthrough
-	case `keboola.synapse-transformation`:
-		fallthrough
-	case `keboola.oracle-transformation`:
+	case `keboola.snowflake-transformation`, `keboola.synapse-transformation`, `keboola.oracle-transformation`:
 		return sql.Join(items) + "\n"
 	default:
 		return strings.Join(items, "\n") + "\n"
@@ -175,11 +171,7 @@ func ScriptsFromStr(content string, componentID storageapi.ComponentID) Scripts 
 	content = NormalizeScript(content)
 	var items []string
 	switch componentID.String() {
-	case `keboola.snowflake-transformation`:
-		fallthrough
-	case `keboola.synapse-transformation`:
-		fallthrough
-	case `keboola.oracle-transformation`:
+	case `keboola.snowflake-transformation`, `keboola.synapse-transformation`, `keboola.oracle-transformation`:
 		items = sql.Split(content)
 	default:
 		items = []string{content}

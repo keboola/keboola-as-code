@@ -109,9 +109,7 @@ func getDefaultValueFor(schema *jsonschema.Schema, level int) interface{} {
 			return `3e4666bf-d5e5-4aa7-b8ce-cefe41c7568a`
 		}
 		return ``
-	case `number`:
-		fallthrough
-	case `integer`:
+	case `number`, `integer`:
 		return 0
 	case `boolean`:
 		return false

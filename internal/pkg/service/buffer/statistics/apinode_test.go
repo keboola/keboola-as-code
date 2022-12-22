@@ -148,10 +148,10 @@ INFO  process unique id "%s"
 [stats]DEBUG  syncing 1 records
 [stats]DEBUG  sync done
 INFO  exiting (test shutdown)
-[stats]INFO  the server is shutting down, starting sync
+[stats]INFO  received shutdown request
 [stats]DEBUG  syncing 1 records
 [stats]DEBUG  sync done
-[stats]INFO  all done
+[stats]INFO  shutdown done
 INFO  exited
 `
 	wildcards.Assert(t, strings.TrimSpace(expected), d.DebugLogger().AllMessages())

@@ -32,7 +32,7 @@ func (s *Store) createFileOp(ctx context.Context, file model.File) *op.TxnOp {
 }
 
 func (s *Store) GetFile(ctx context.Context, fileKey key.FileKey) (out model.File, err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetFile")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetFile")
 	defer telemetry.EndSpan(span, &err)
 
 	file, err := s.getFileOp(ctx, fileKey).Do(ctx, s.client)

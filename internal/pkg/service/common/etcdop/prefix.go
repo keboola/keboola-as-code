@@ -39,6 +39,10 @@ func (v PrefixT[T]) Prefix() string {
 	return v.prefix.Prefix()
 }
 
+func (v PrefixT[T]) PrefixT() PrefixT[T] {
+	return v
+}
+
 func (v PrefixT[T]) Add(str string) PrefixT[T] {
 	return PrefixT[T]{prefix: v.prefix.Add(str), serde: v.serde}
 }

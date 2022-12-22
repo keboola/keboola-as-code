@@ -3,8 +3,10 @@ package store
 import (
 	"context"
 	"reflect"
+	"sort"
 
 	etcd "go.etcd.io/etcd/client/v3"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -21,7 +23,7 @@ import (
 // - CountLimitReachedError
 // - ResourceAlreadyExistsError.
 func (s *Store) CreateExport(ctx context.Context, export model.Export) (err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.CreateExport")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CreateExport")
 	defer telemetry.EndSpan(span, &err)
 
 	count, err := s.schema.Configs().Exports().InReceiver(export.ReceiverKey).Count().Do(ctx, s.client)
@@ -60,7 +62,7 @@ func (s *Store) createExportBaseOp(_ context.Context, export model.ExportBase) o
 }
 
 func (s *Store) UpdateExport(ctx context.Context, k key.ExportKey, fn func(model.Export) (model.Export, error)) (err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.UpdateExport")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.UpdateExport")
 	defer telemetry.EndSpan(span, &err)
 
 	export, err := s.GetExport(ctx, k)
@@ -134,7 +136,7 @@ func (s *Store) updateExportBaseOp(_ context.Context, export model.ExportBase) o
 // Logic errors:
 // - ResourceNotFoundError.
 func (s *Store) GetExport(ctx context.Context, exportKey key.ExportKey) (r model.Export, err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.GetExport")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetExport")
 	defer telemetry.EndSpan(span, &err)
 	return s.getExportOp(ctx, exportKey).Do(ctx, s.client)
 }
@@ -175,32 +177,41 @@ func (s *Store) getExportBaseOp(_ context.Context, exportKey key.ExportKey) op.F
 
 // ListExports from the store.
 func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey, ops ...iterator.Option) (exports []model.Export, err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.ListExports")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.ListExports")
 	defer telemetry.EndSpan(span, &err)
 
+	// Load sub-objects in parallel, stop at the first error
+	exportsMap := make(map[key.ExportKey]*model.Export)
+	grp, _ := errgroup.WithContext(ctx)
+
+	i := 0
 	err = s.
-		exportBaseIterator(ctx, receiverKey).Do(ctx, s.client).
+		exportBaseIterator(ctx, receiverKey, ops...).Do(ctx, s.client).
 		ForEachValue(func(exportBase model.ExportBase, header *iterator.Header) error {
-			mapping, err := s.getLatestMappingOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
-			if err != nil {
-				return err
-			}
+			export := &model.Export{ExportBase: exportBase}
+			exportsMap[exportBase.ExportKey] = export
+			i++
 
-			token, err := s.getTokenOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
-			if err != nil {
+			grp.Go(func() error {
+				mapping, err := s.getLatestMappingOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
+				if err == nil {
+					export.Mapping = mapping.Value
+				}
 				return err
-			}
-
-			openedFile, err := s.getOpenedFileOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
-			if err != nil {
+			})
+			grp.Go(func() error {
+				token, err := s.getTokenOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
+				if err == nil {
+					export.Token = token.Value
+				}
 				return err
-			}
-
-			exports = append(exports, model.Export{
-				ExportBase: exportBase,
-				Mapping:    mapping.Value,
-				Token:      token.Value,
-				OpenedFile: openedFile.Value,
+			})
+			grp.Go(func() error {
+				openedFile, err := s.getOpenedFileOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
+				if err == nil {
+					export.OpenedFile = openedFile.Value
+				}
+				return err
 			})
 			return nil
 		})
@@ -209,6 +220,19 @@ func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey, op
 		return nil, err
 	}
 
+	// Wait for sub-objects
+	if err := grp.Wait(); err != nil {
+		return nil, err
+	}
+
+	// Convert map to slice
+	exports = make([]model.Export, 0, len(exportsMap))
+	for _, v := range exportsMap {
+		exports = append(exports, *v)
+	}
+	sort.SliceStable(exports, func(i, j int) bool {
+		return exports[i].ExportID < exports[j].ExportID
+	})
 	return exports, nil
 }
 
@@ -224,7 +248,7 @@ func (s *Store) exportBaseIterator(_ context.Context, receiverKey key.ReceiverKe
 // Logic errors:
 // - ResourceNotFoundError.
 func (s *Store) DeleteExport(ctx context.Context, exportKey key.ExportKey) (err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.configstore.DeleteReceiver")
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.DeleteReceiver")
 	defer telemetry.EndSpan(span, &err)
 
 	_, err = op.MergeToTxn(

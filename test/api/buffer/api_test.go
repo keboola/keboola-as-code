@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -114,7 +115,7 @@ func RunE2ETest(t *testing.T, testDir, workingDir string, binary string) {
 	testhelper.MustReplaceEnvsDir(workingDirFs, `/`, envProvider)
 
 	// Run API server
-	apiUrl, apiEnvs, stdout, stderr := RunApiServer(t, binary, project.StorageAPIHost())
+	apiUrl, apiEnvs, cmd, cmdWaitCh, stdout, stderr := RunApiServer(t, binary, project.StorageAPIHost())
 
 	// Connect to the etcd
 	etcdClient := etcdhelper.ClientForTestFrom(
@@ -135,8 +136,17 @@ func RunE2ETest(t *testing.T, testDir, workingDir string, binary string) {
 		assert.NoError(t, err)
 	}
 
-	// Assert
+	// Request
 	requestsOk := RunRequests(t, envProvider, testDirFs, workingDirFs, apiUrl, etcdClient)
+
+	// Shutdown API server
+	_ = cmd.Process.Signal(syscall.SIGTERM)
+	select {
+	case <-time.After(10 * time.Second):
+		t.Fatalf("timeout while waiting for server shutdown")
+	case <-cmdWaitCh:
+		// continue
+	}
 
 	// Optionally check project state
 	expectedStatePath := "expected-state.json"
@@ -291,7 +301,7 @@ func waitForAPI(cmdErrCh <-chan error, apiUrl string) error {
 }
 
 // RunApiServer runs the compiled api binary on the background.
-func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl string, p env.Provider, stdout, stderr *cmdOut) {
+func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl string, p env.Provider, cmd *exec.Cmd, cmdWait <-chan error, stdout, stderr *cmdOut) {
 	t.Helper()
 
 	// Get a free port
@@ -323,7 +333,7 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl st
 	// Start API server
 	stdout = newCmdOut()
 	stderr = newCmdOut()
-	cmd := exec.Command(binary, args...)
+	cmd = exec.Command(binary, args...)
 	cmd.Env = envs.ToSlice()
 	cmd.Stdout = io.MultiWriter(stdout, testhelper.VerboseStdout())
 	cmd.Stderr = io.MultiWriter(stderr, testhelper.VerboseStderr())
@@ -331,16 +341,14 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl st
 		t.Fatalf("Server failed to start: %s", err)
 	}
 
-	cmdErrCh := make(chan error, 1)
+	cmdWaitCh := make(chan error, 1)
 	go func() {
-		cmdErrCh <- cmd.Wait()
+		cmdWaitCh <- cmd.Wait()
 	}()
 
 	t.Cleanup(func() {
 		// kill api server
-		if err := cmd.Process.Kill(); err != nil {
-			assert.NoError(t, err)
-		}
+		_ = cmd.Process.Kill()
 
 		// delete etcd namespace
 		ctx := context.Background()
@@ -356,7 +364,7 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl st
 	})
 
 	// Wait for API server
-	if err = waitForAPI(cmdErrCh, apiUrl); err != nil {
+	if err = waitForAPI(cmdWaitCh, apiUrl); err != nil {
 		t.Fatalf(
 			"Unexpected error while waiting for API: %s\n\nServer STDERR:%s\n\nServer STDOUT:%s\n",
 			err,
@@ -365,7 +373,7 @@ func RunApiServer(t *testing.T, binary string, storageApiHost string) (apiUrl st
 		)
 	}
 
-	return apiUrl, envs, stdout, stderr
+	return apiUrl, envs, cmd, cmdWaitCh, stdout, stderr
 }
 
 type ApiRequest struct {
@@ -443,9 +451,11 @@ func RunRequests(
 		assert.NoError(t, err)
 
 		// Dump raw HTTP response
-		respDump, err := httputil.DumpResponse(resp.RawResponse, false)
-		assert.NoError(t, err)
-		assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile(filesystem.Join(requestDir, "response.txt"), string(respDump)+string(resp.Body()))))
+		if err == nil {
+			respDump, err := httputil.DumpResponse(resp.RawResponse, false)
+			assert.NoError(t, err)
+			assert.NoError(t, workingDirFs.WriteFile(filesystem.NewRawFile(filesystem.Join(requestDir, "response.txt"), string(respDump)+string(resp.Body()))))
+		}
 
 		// Compare response body
 		expectedRespFile, err := testDirFs.ReadFile(filesystem.NewFileDef(filesystem.Join(requestDir, "expected-response.json")))

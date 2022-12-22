@@ -120,13 +120,13 @@
 >>>>>
 
 <<<<<
-/record/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/%s/%s
+/record/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/%sZ/%sZ_%c%c%c%c%c
 -----
 <<~~id~~>>,"{""col1"":""val1"",""col2"":""val2""}","{""Accept"":""application/json"",""Accept-Encoding"":""gzip"",""Content-Length"":""29"",""Content-Type"":""application/json"",""User-Agent"":""%s""}",%s,%s,"""val1:val2"""
 >>>>>
 
 <<<<<
-/record/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/%s/%s
+/record/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/%sZ/%sZ_%c%c%c%c%c
 -----
 <<~~id~~>>,"{""col1"":""val3"",""col2"":""val4""}","{""Accept-Encoding"":""gzip"",""Content-Length"":""19"",""Content-Type"":""application/x-www-form-urlencoded"",""User-Agent"":""%s""}",%s,%s,"""val3:val4"""
 >>>>>
@@ -164,7 +164,7 @@
 >>>>>
 
 <<<<<
-/slice/opened/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/%s
+/slice/opened/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/%sZ/%sZ
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -174,5 +174,35 @@
   "sliceId": "%s",
   "state": "opened",
   "sliceNumber": 1
+}
+>>>>>
+
+<<<<<
+/stats/received/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/%sZ/%sZ/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "receiver-1",
+  "exportId": "export-1",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "count": 1,
+  "size": %d,
+  "lastReceivedAt": "%s"
+}
+>>>>>
+
+<<<<<
+/stats/received/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/%sZ/%sZ/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "receiver-1",
+  "exportId": "export-1",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "count": 1,
+  "size": %d,
+  "lastReceivedAt": "%s"
 }
 >>>>>
