@@ -53,7 +53,7 @@ require (
 	google.golang.org/grpc v1.51.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.44.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
-	v.io/x/lib v0.1.10
+	v.io/x/lib v0.1.11
 )
 
 require (

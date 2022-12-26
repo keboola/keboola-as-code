@@ -2567,5 +2567,5 @@ sigs.k8s.io/yaml v1.2.0/go.mod h1:yfXDCHCao9+ENCvLSE62v9VSji2MKu5jeNfTrofGhJc=
 sigs.k8s.io/yaml v1.3.0 h1:a2VclLzOGrwOHDiV8EfBGhvjHvP46CtW5j6POvhYGGo=
 sigs.k8s.io/yaml v1.3.0/go.mod h1:GeOyir5tyXNByN85N/dRIT9es5UQNerPYEKK56eTBm8=
 sourcegraph.com/sourcegraph/appdash v0.0.0-20190731080439-ebfcffb1b5c0/go.mod h1:hI742Nqp5OhwiqlzhgfbWU4mW4yO10fP+LoT9WOswdU=
-v.io/x/lib v0.1.10 h1:oSXNclpbySqJuoDwZtsw5TfHzY4tgLHXKOaCRjVJcGA=
-v.io/x/lib v0.1.10/go.mod h1:N/kxyn9njW2LNCVv19Y4eO/7lc6NUDWzQ4UBDY9FVGA=
+v.io/x/lib v0.1.11 h1:56otqHMEOEkmPelLLytS9vFhPhGyp7IxYoqhTyGnK8c=
+v.io/x/lib v0.1.11/go.mod h1:N/kxyn9njW2LNCVv19Y4eO/7lc6NUDWzQ4UBDY9FVGA=
