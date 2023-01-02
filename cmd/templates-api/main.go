@@ -31,13 +31,13 @@ func main() {
 	repositoriesF := flag.String("repositories", "", "Default repositories, <name1>|<repo1>|<branch1>;<name2>|<repo2>|<branch2>;...")
 	debugF := flag.Bool("debug", false, "Enable debug log level.")
 	debugHTTPF := flag.Bool("debug-http", false, "Log HTTP client request and response bodies.")
-	cpuProf := flag.String("cpuprofile", "", "write cpu profile to `file`")
+	cpuProf := flag.String("cpu-profile", "", "write cpu profile to `file`")
 	flag.Parse()
 
 	// Create logger.
 	logger := log.NewServiceLogger(os.Stderr, *debugF).AddPrefix("[templatesApi]")
 
-	// Start CPU profiling, if enabled
+	// Start CPU profiling, if enabled.
 	if filePath := *cpuProf; filePath != "" {
 		stop := cpuprofile.Start(filePath, logger)
 		defer stop()
