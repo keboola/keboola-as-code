@@ -7,6 +7,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -133,19 +134,21 @@ func watch[T fmt.Stringer](s *State, prefix etcdop.PrefixT[T]) *objectsState[T] 
 
 	tree := prefixtree.NewWithLock[T](s.lock)
 	ch, initDone := watchFactory()
+
+	// Log only changes, not initial load
+	logsEnabled := atomic.NewBool(false)
+	go func() {
+		<-initDone
+		logsEnabled.Store(true)
+	}()
+
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
-
-		// Log only changes, not initial load
-		logsEnabled := false
-
 		for {
 			select {
 			case <-s.ctx.Done():
 				return
-			case <-initDone:
-				logsEnabled = true
 			case event, ok := <-ch:
 				if !ok {
 					return
@@ -155,7 +158,7 @@ func watch[T fmt.Stringer](s *State, prefix etcdop.PrefixT[T]) *objectsState[T] 
 				case etcdop.CreateEvent, etcdop.UpdateEvent:
 					k := event.Value.String()
 					tree.Insert(k, event.Value)
-					if logsEnabled {
+					if logsEnabled.Load() {
 						s.logger.Infof(`updated %s%s`, prefix.Prefix(), k)
 					}
 				case etcdop.DeleteEvent:
@@ -164,7 +167,7 @@ func watch[T fmt.Stringer](s *State, prefix etcdop.PrefixT[T]) *objectsState[T] 
 					}
 					k := event.Value.String()
 					tree.Delete(k)
-					if logsEnabled {
+					if logsEnabled.Load() {
 						s.logger.Infof(`deleted %s%s`, prefix.Prefix(), k)
 					}
 				default:

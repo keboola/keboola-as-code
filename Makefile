@@ -40,6 +40,9 @@ build-buffer-worker:
 run-buffer-api: generate-buffer-api
 	air -c ./provisioning/buffer/dev/.air-api.toml
 
+run-buffer-api-once: build-buffer-api
+	./target/buffer/api
+
 run-buffer-worker:
 	air -c ./provisioning/buffer/dev/.air-worker.toml
 

@@ -13,16 +13,24 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/cpuprofile"
 )
 
 func main() {
 	// Flags.
 	debugF := flag.Bool("debug", false, "Enable debug log level.")
 	debugHTTPF := flag.Bool("debug-http", false, "Log HTTP client request and response bodies.")
+	cpuProf := flag.String("cpu-profile", "", "write cpu profile to `file`")
 	flag.Parse()
 
 	// Create logger.
 	logger := log.NewServiceLogger(os.Stderr, *debugF).AddPrefix("[bufferWorker]")
+
+	// Start CPU profiling, if enabled.
+	if filePath := *cpuProf; filePath != "" {
+		stop := cpuprofile.Start(filePath, logger)
+		defer stop()
+	}
 
 	// Envs.
 	envs, err := env.FromOs()
