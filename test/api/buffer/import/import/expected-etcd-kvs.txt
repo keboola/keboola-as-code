@@ -49,8 +49,7 @@
       "type": "template",
       "name": "template",
       "language": "jsonnet",
-      "undefinedValueStrategy": "error",
-      "content": "BodyPath('col1')+\":\"+BodyPath('col2')"
+      "content": "Body('col1')+\":\"+Body('col2')"
     }
   ]
 }
@@ -108,8 +107,7 @@
         "type": "template",
         "name": "template",
         "language": "jsonnet",
-        "undefinedValueStrategy": "error",
-        "content": "BodyPath('col1')+\":\"+BodyPath('col2')"
+        "content": "Body('col1')+\":\"+Body('col2')"
       }
     ]
   },
@@ -128,7 +126,7 @@
 <<<<<
 /record/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/%sZ/%sZ_%c%c%c%c%c
 -----
-<<~~id~~>>,"{""col1"":""val3"",""col2"":""val4""}","{""Accept-Encoding"":""gzip"",""Content-Length"":""19"",""Content-Type"":""application/x-www-form-urlencoded"",""User-Agent"":""%s""}",%s,%s,"""val3:val4"""
+<<~~id~~>>,col1=val3&col2=val4,"{""Accept-Encoding"":""gzip"",""Content-Length"":""19"",""Content-Type"":""application/x-www-form-urlencoded"",""User-Agent"":""%s""}",%s,%s,"""val3:val4"""
 >>>>>
 
 <<<<<
@@ -186,23 +184,8 @@
   "exportId": "export-1",
   "fileId": "%s",
   "sliceId": "%s",
-  "count": 1,
-  "size": %d,
-  "lastReceivedAt": "%s"
-}
->>>>>
-
-<<<<<
-/stats/received/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/%sZ/%sZ/%s
------
-{
-  "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "receiver-1",
-  "exportId": "export-1",
-  "fileId": "%s",
-  "sliceId": "%s",
-  "count": 1,
-  "size": %d,
+  "count": 2,
+  "size": 567,
   "lastReceivedAt": "%s"
 }
 >>>>>

@@ -17,7 +17,6 @@
             "name": "template",
             "template": {
               "language": "jsonnet",
-              "undefinedValueStrategy": "error",
               "content": "body.key+\":\"+body.value"
             }
           }
@@ -46,7 +45,6 @@
             "name": "template",
             "template": {
               "language": "jsonnet",
-              "undefinedValueStrategy": "error",
               "content": "body.key+\":\"+body.value"
             }
           }
