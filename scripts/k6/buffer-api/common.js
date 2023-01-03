@@ -21,8 +21,14 @@ export const options = {
             maxDuration: TIMEOUT,
         },
     },
+    // Workaround: https://k6.io/docs/using-k6/workaround-to-calculate-iteration_duration/
     thresholds: {
         'http_req_duration{scenario:default}': [`max>=0`],
+        'http_req_duration{group:::setup}': [`max>=0`],
+        'http_req_duration{group:::teardown}': [`max>=0`],
+        'iteration_duration{scenario:default}': [`max>=0`],
+        'iteration_duration{group:::setup}': [`max>=0`],
+        'iteration_duration{group:::teardown}': [`max>=0`],
     },
 };
 
