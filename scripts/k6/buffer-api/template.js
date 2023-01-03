@@ -18,7 +18,7 @@ export function setup() {
             template: {
               language: "jsonnet",
               undefinedValueStrategy: "null",
-              content: `Body().a+":"+Body().c.f.g`,
+              content: `Body('a')+":"+Body('c.f.g')`,
             },
           },
         ],
