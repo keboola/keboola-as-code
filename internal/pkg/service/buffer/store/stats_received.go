@@ -13,8 +13,20 @@ import (
 
 const maxStatsPerTxn = 50
 
-func (s *Store) UpdateSliceStats(ctx context.Context, nodeID string, stats []model.SliceStats) (err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.UpdateSliceStats")
+func (s *Store) GetReceivedStatsByFile(ctx context.Context, fileKey key.FileKey) (stats model.Stats, found bool, err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetReceivedStatsByFile")
+	defer telemetry.EndSpan(span, &err)
+	return sumStats(ctx, s.client, s.schema.ReceivedStats().InFile(fileKey).GetAll())
+}
+
+func (s *Store) GetReceivedStatsBySlice(ctx context.Context, sliceKey key.SliceKey) (stats model.Stats, found bool, err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetReceivedStatsBySlice")
+	defer telemetry.EndSpan(span, &err)
+	return sumStats(ctx, s.client, s.schema.ReceivedStats().InSlice(sliceKey).GetAll())
+}
+
+func (s *Store) UpdateSliceReceivedStats(ctx context.Context, nodeID string, stats []model.SliceStats) (err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.UpdateSliceReceivedStats")
 	defer telemetry.EndSpan(span, &err)
 
 	var currentTxn *op.TxnOp
@@ -52,7 +64,7 @@ func (s *Store) UpdateSliceStats(ctx context.Context, nodeID string, stats []mod
 
 func (s *Store) updateStatsOp(_ context.Context, nodeID string, stats model.SliceStats) op.NoResultOp {
 	return s.schema.
-		SliceStats().
+		ReceivedStats().
 		InSlice(stats.SliceKey).
 		ByNodeID(nodeID).
 		Put(stats)
@@ -60,7 +72,7 @@ func (s *Store) updateStatsOp(_ context.Context, nodeID string, stats model.Slic
 
 func (s *Store) deleteReceiverStatsOp(_ context.Context, receiverKey key.ReceiverKey) op.CountOp {
 	return s.schema.
-		SliceStats().
+		ReceivedStats().
 		InReceiver(receiverKey).
 		DeleteAll()
 }
