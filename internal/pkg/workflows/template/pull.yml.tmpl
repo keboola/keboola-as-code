@@ -16,6 +16,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Install Keboola as Code CLI
         uses: ./.github/actions/install
+        with:
+          githubToken: {{`${{ secrets.GITHUB_TOKEN }}`}}
       # Pull remote project's state
       - name: Pull from Keboola Connection
         id: kbc_pull_step
