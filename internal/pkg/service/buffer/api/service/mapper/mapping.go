@@ -21,9 +21,8 @@ func (m Mapper) MappingPayload(model model.Mapping) buffer.Mapping {
 
 		if v, ok := input.(column.Template); ok {
 			output.Template = &buffer.Template{
-				Language:               v.Language,
-				UndefinedValueStrategy: v.UndefinedValueStrategy,
-				Content:                v.Content,
+				Language: v.Language,
+				Content:  v.Content,
 			}
 		}
 
@@ -54,7 +53,6 @@ func (m Mapper) CreateMappingModel(exportKey key.ExportKey, revisionID key.Revis
 			}
 			v.Name = c.ColumnName()
 			v.Language = data.Template.Language
-			v.UndefinedValueStrategy = data.Template.UndefinedValueStrategy
 			v.Content = data.Template.Content
 			c = v
 		}

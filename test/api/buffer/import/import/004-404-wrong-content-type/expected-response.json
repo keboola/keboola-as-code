@@ -1,5 +1,5 @@
 {
   "statusCode": 415,
   "error": "buffer.unsupportedMediaType",
-  "message": "Supported media types are application/json and application/x-www-form-urlencoded."
+  "message": "Unsupported content type \"text/plain\", supported types: application/json and application/x-www-form-urlencoded."
 }

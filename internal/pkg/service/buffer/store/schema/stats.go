@@ -13,6 +13,10 @@ type SliceStats struct {
 	sliceStats
 }
 
+type SliceReceiverStats struct {
+	sliceStats
+}
+
 type SliceNodeStats struct {
 	sliceStats
 }
@@ -23,13 +27,21 @@ func (v *Schema) SliceStats() SliceStats {
 	}
 }
 
-func (v SliceStats) InSlice(k storeKey.SliceKey) SliceNodeStats {
+func (v SliceStats) InReceiver(k storeKey.ReceiverKey) SliceReceiverStats {
 	if k.ProjectID == 0 {
 		panic(errors.New("stats projectID cannot be empty"))
 	}
 	if k.ReceiverID == "" {
 		panic(errors.New("stats receiverID cannot be empty"))
 	}
+	return SliceReceiverStats{
+		sliceStats: v.sliceStats.
+			Add(k.ProjectID.String()).
+			Add(k.ReceiverID.String()),
+	}
+}
+
+func (v SliceStats) InSlice(k storeKey.SliceKey) SliceNodeStats {
 	if k.ExportID == "" {
 		panic(errors.New("stats exportID cannot be empty"))
 	}
@@ -40,9 +52,7 @@ func (v SliceStats) InSlice(k storeKey.SliceKey) SliceNodeStats {
 		panic(errors.New("stats sliceID cannot be empty"))
 	}
 	return SliceNodeStats{
-		sliceStats: v.sliceStats.
-			Add(k.ProjectID.String()).
-			Add(k.ReceiverID.String()).
+		sliceStats: v.InReceiver(k.ReceiverKey).sliceStats.
 			Add(k.ExportID.String()).
 			Add(k.FileID.String()).
 			Add(k.SliceID.String()),

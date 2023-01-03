@@ -25,12 +25,13 @@ type State struct {
 	logger log.Logger
 	client *etcd.Client
 
-	lock        *sync.RWMutex
-	receivers   *objectsState[model.ReceiverBase]
-	exports     *objectsState[model.ExportBase]
-	mappings    *objectsState[model.Mapping]
-	openedFiles *objectsState[model.File]
-	tokens      *objectsState[model.Token]
+	lock         *sync.RWMutex
+	receivers    *objectsState[model.ReceiverBase]
+	exports      *objectsState[model.ExportBase]
+	mappings     *objectsState[model.Mapping]
+	openedFiles  *objectsState[model.File]
+	openedSlices *objectsState[model.Slice]
+	tokens       *objectsState[model.Token]
 }
 
 type objectsState[T any] struct {
@@ -68,6 +69,7 @@ func NewState(d dependencies) *State {
 	s.exports = watch(s, sm.Configs().Exports().PrefixT())
 	s.mappings = watch(s, sm.Configs().Mappings().PrefixT())
 	s.openedFiles = watch(s, sm.Files().Opened().PrefixT())
+	s.openedSlices = watch(s, sm.Slices().Opened().PrefixT())
 	s.tokens = watch(s, sm.Secrets().Tokens().PrefixT())
 
 	// Wait for initial load
@@ -76,6 +78,7 @@ func NewState(d dependencies) *State {
 	<-s.exports.initDone
 	<-s.mappings.initDone
 	<-s.openedFiles.initDone
+	<-s.openedSlices.initDone
 	<-s.tokens.initDone
 	s.logger.Infof(`initialized | %s`, d.Clock().Since(startTime))
 	return s
@@ -116,6 +119,11 @@ func (s *State) exportDetails(base model.ExportBase) (out model.Export, found bo
 	}
 
 	out.OpenedFile, found = s.openedFiles.LastFromPrefix(base.ExportKey.String())
+	if !found {
+		return out, false
+	}
+
+	out.OpenedSlice, found = s.openedSlices.LastFromPrefix(base.ExportKey.String())
 	if !found {
 		return out, false
 	}

@@ -1,9 +1,7 @@
 package store
 
 import (
-	"bytes"
 	"context"
-	"encoding/csv"
 
 	"github.com/c2h5oh/datasize"
 
@@ -14,8 +12,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (s *Store) CreateRecord(ctx context.Context, recordKey key.RecordKey, csvData []string) (err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.recordstore.CreateRecord")
+func (s *Store) CreateRecord(ctx context.Context, recordKey key.RecordKey, csvRow string) (err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CreateRecord")
 	defer telemetry.EndSpan(span, &err)
 
 	if recordKey.RandomSuffix == "" {
@@ -24,24 +22,13 @@ func (s *Store) CreateRecord(ctx context.Context, recordKey key.RecordKey, csvDa
 		return errors.New("unexpected state: record random suffix should by empty, it is generated on record create")
 	}
 
-	// Convert columns to CSV
-	csvBuffer := new(bytes.Buffer)
-	w := csv.NewWriter(csvBuffer)
-	if err := w.WriteAll([][]string{csvData}); err != nil {
-		return err
-	}
-	if err := w.Error(); err != nil {
-		return err
-	}
-
 	// Check size
-	csvString := csvBuffer.String()
-	if datasize.ByteSize(len(csvString)) > MaxMappedCSVRowSizeInBytes {
+	if datasize.ByteSize(len(csvRow)) > MaxMappedCSVRowSizeInBytes {
 		return serviceError.NewPayloadTooLargeError(errors.Errorf(
 			"size of the mapped csv row exceeded the limit of %s.",
 			MaxMappedCSVRowSizeInBytes,
 		))
 	}
 
-	return s.schema.Records().ByKey(recordKey).Put(csvString).Do(ctx, s.client)
+	return s.schema.Records().ByKey(recordKey).Put(csvRow).Do(ctx, s.client)
 }

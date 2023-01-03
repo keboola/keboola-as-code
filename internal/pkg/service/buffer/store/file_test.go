@@ -63,20 +63,6 @@ file/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
   }
 }
 >>>>>
-
-<<<<<
-slice/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-01T08:04:05.000Z
------
-{
-  "projectId": 1000,
-  "receiverId": "my-receiver",
-  "exportId": "my-export",
-  "fileId": "2006-01-01T08:04:05.000Z",
-  "sliceId": "2006-01-01T08:04:05.000Z",
-  "state": "opened",
-  "sliceNumber": 1
-}
->>>>>
 `)
 }
 
@@ -128,20 +114,6 @@ file/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
     "region": "",
     "maxAgeDays": 0
   }
-}
->>>>>
-
-<<<<<
-slice/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-01T08:04:05.000Z
------
-{
-  "projectId": 1000,
-  "receiverId": "my-receiver",
-  "exportId": "my-export",
-  "fileId": "2006-01-01T08:04:05.000Z",
-  "sliceId": "2006-01-01T08:04:05.000Z",
-  "state": "opened",
-  "sliceNumber": 1
 }
 >>>>>
 `)

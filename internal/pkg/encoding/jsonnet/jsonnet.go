@@ -48,9 +48,16 @@ func EvaluateAst(input ast.Node, ctx *Context) (jsonOut string, err error) {
 
 	// Format (go-jsonnet library use 3 space indent)
 	var out bytes.Buffer
-	if err := json.Indent(&out, []byte(jsonContent), "", "  "); err != nil {
-		return "", err
+	if ctx.Pretty() {
+		if err := json.Indent(&out, []byte(jsonContent), "", "  "); err != nil {
+			return "", err
+		}
+	} else {
+		if err := json.Compact(&out, []byte(jsonContent)); err != nil {
+			return "", err
+		}
 	}
+
 	return out.String(), nil
 }
 

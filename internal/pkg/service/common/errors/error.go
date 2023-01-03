@@ -2,6 +2,7 @@
 package errors
 
 type WithStatusCode interface {
+	error
 	StatusCode() int
 }
 

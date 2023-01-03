@@ -126,7 +126,7 @@ func (m *APINode) handleSync(ctx context.Context) <-chan struct{} {
 		go func() {
 			m.logger.Debugf("syncing %d records", len(stats))
 			if err := m.store.UpdateSliceStats(ctx, m.nodeID, stats); err != nil {
-				m.logger.Error("cannot update stats in etcd: %s", err.Error())
+				m.logger.Errorf("cannot update stats in etcd: %s", err.Error())
 			}
 			m.logger.Debug("sync done")
 			close(done)

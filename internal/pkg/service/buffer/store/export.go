@@ -44,6 +44,7 @@ func (s *Store) createExportOp(ctx context.Context, export model.Export) *op.Txn
 		s.createMappingOp(ctx, export.Mapping),
 		s.createTokenOp(ctx, export.Token),
 		s.createFileOp(ctx, export.OpenedFile),
+		s.createSliceOp(ctx, export.OpenedSlice),
 	)
 }
 
@@ -101,24 +102,22 @@ func (s *Store) updateExportOp(ctx context.Context, oldValue, newValue model.Exp
 	if newValue.OpenedFile.FileID != oldValue.OpenedFile.FileID {
 		now := newValue.OpenedFile.OpenedAt()
 
-		// Close opened file and create the new file
-		createFileTxn := s.createFileOp(ctx, newValue.OpenedFile)
-		closeFileTxn, err := s.setFileStateOp(ctx, now, &oldValue.OpenedFile, filestate.Closing)
+		// Close opened file
+		closeFileOp, err := s.setFileStateOp(ctx, now, &oldValue.OpenedFile, filestate.Closing)
 		if err != nil {
 			return nil, err
 		}
 
 		// Close opened slice
-		slice, err := s.getLatestSliceOp(ctx, oldValue.OpenedFile.FileKey).Do(ctx, s.client)
-		if err != nil {
-			return nil, err
-		}
-		closeSliceTxn, err := s.setSliceStateOp(ctx, now, &slice.Value, slicestate.Closing)
+		closeSliceOp, err := s.setSliceStateOp(ctx, now, &oldValue.OpenedSlice, slicestate.Closing)
 		if err != nil {
 			return nil, err
 		}
 
-		ops = append(ops, createFileTxn, closeFileTxn, closeSliceTxn)
+		// Create new file and slice
+		createFileOp := s.createFileOp(ctx, newValue.OpenedFile)
+		createSliceOp := s.createSliceOp(ctx, newValue.OpenedSlice)
+		ops = append(ops, closeFileOp, closeSliceOp, createFileOp, createSliceOp)
 	}
 
 	return op.MergeToTxn(ctx, ops...), nil
@@ -157,6 +156,9 @@ func (s *Store) getExportOp(ctx context.Context, exportKey key.ExportKey) op.Joi
 		}),
 		s.getOpenedFileOp(ctx, exportKey).WithOnResult(func(kv *op.KeyValueT[model.File]) {
 			export.OpenedFile = kv.Value
+		}),
+		s.getOpenedSliceOp(ctx, exportKey).WithOnResult(func(kv *op.KeyValueT[model.Slice]) {
+			export.OpenedSlice = kv.Value
 		}),
 	)
 }
@@ -207,9 +209,16 @@ func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey, op
 				return err
 			})
 			grp.Go(func() error {
-				openedFile, err := s.getOpenedFileOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
+				kv, err := s.getOpenedFileOp(ctx, exportBase.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
 				if err == nil {
-					export.OpenedFile = openedFile.Value
+					export.OpenedFile = kv.Value
+				}
+				return err
+			})
+			grp.Go(func() error {
+				kv, err := s.getOpenedSliceOp(ctx, export.ExportKey, etcd.WithRev(header.Revision)).Do(ctx, s.client)
+				if err == nil {
+					export.OpenedSlice = kv.Value
 				}
 				return err
 			})

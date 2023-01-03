@@ -1,5 +1,5 @@
 {
   "statusCode": 400,
   "error": "buffer.badRequest",
-  "message": "Empty request body."
+  "message": "Failed to format record for export \"export-1\":\n- path \"col1\" not found in the body."
 }

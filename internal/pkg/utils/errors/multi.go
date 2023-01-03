@@ -31,6 +31,10 @@ func NewMultiError() MultiError {
 	return &multiError{lock: &sync.Mutex{}, trace: callers()}
 }
 
+func NewMultiErrorNoTrace() MultiError {
+	return &multiError{lock: &sync.Mutex{}}
+}
+
 func (e *multiError) Error() string {
 	return Format(e)
 }

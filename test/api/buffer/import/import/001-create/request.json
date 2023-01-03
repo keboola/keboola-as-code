@@ -41,8 +41,7 @@
               "name": "template",
               "template": {
                 "language": "jsonnet",
-                "undefinedValueStrategy": "error",
-                "content": "BodyPath('col1')+\":\"+BodyPath('col2')"
+                "content": "Body('col1')+\":\"+Body('col2')"
               }
             }
           ]

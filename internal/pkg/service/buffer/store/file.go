@@ -15,8 +15,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (s *Store) createFileOp(ctx context.Context, file model.File) *op.TxnOp {
-	createFile := s.schema.
+func (s *Store) createFileOp(_ context.Context, file model.File) op.BoolOp {
+	return s.schema.
 		Files().
 		Opened().
 		ByKey(file.FileKey).
@@ -27,8 +27,6 @@ func (s *Store) createFileOp(ctx context.Context, file model.File) *op.TxnOp {
 			}
 			return ok, err
 		})
-	createSlice := s.createSliceOp(ctx, model.NewSlice(file.FileKey, file.OpenedAt(), 1))
-	return op.MergeToTxn(ctx, createSlice, createFile)
 }
 
 func (s *Store) GetFile(ctx context.Context, fileKey key.FileKey) (out model.File, err error) {

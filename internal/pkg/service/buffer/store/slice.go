@@ -49,17 +49,6 @@ func (s *Store) GetSlice(ctx context.Context, sliceKey key.SliceKey) (r model.Sl
 	return slice.Value, nil
 }
 
-func (s *Store) GetLatestSlice(ctx context.Context, fileKey key.FileKey) (r model.Slice, err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetLatestSlice")
-	defer telemetry.EndSpan(span, &err)
-
-	slice, err := s.getLatestSliceOp(ctx, fileKey).Do(ctx, s.client)
-	if err != nil {
-		return model.Slice{}, err
-	}
-	return slice.Value, nil
-}
-
 func (s *Store) getSliceOp(_ context.Context, sliceKey key.SliceKey) op.ForType[*op.KeyValueT[model.Slice]] {
 	return s.schema.
 		Slices().
@@ -74,15 +63,16 @@ func (s *Store) getSliceOp(_ context.Context, sliceKey key.SliceKey) op.ForType[
 		})
 }
 
-func (s *Store) getLatestSliceOp(_ context.Context, fileKey key.FileKey) op.ForType[*op.KeyValueT[model.Slice]] {
+func (s *Store) getOpenedSliceOp(_ context.Context, exportKey key.ExportKey, opts ...etcd.OpOption) op.ForType[*op.KeyValueT[model.Slice]] {
+	opts = append(opts, etcd.WithSort(etcd.SortByKey, etcd.SortDescend))
 	return s.schema.
 		Slices().
 		Opened().
-		InFile(fileKey).
-		GetOne(etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).
+		InExport(exportKey).
+		GetOne(opts...).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Slice], err error) (*op.KeyValueT[model.Slice], error) {
 			if kv == nil && err == nil {
-				return nil, serviceError.NewResourceNotFoundError("latest slice", fileKey.String())
+				return nil, serviceError.NewResourceNotFoundError("opened slice", exportKey.String())
 			}
 			return kv, err
 		})
