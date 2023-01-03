@@ -48,3 +48,6 @@ target
 # .tfstate files
 *.tfstate
 *.tfstate.*
+
+# CPU profiles
+/**/*.prof
