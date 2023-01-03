@@ -11,6 +11,7 @@ import (
 
 type Context struct {
 	ctx             context.Context
+	pretty          bool
 	filePath        string
 	importer        jsonnet.Importer
 	extVariables    variablesValues
@@ -32,6 +33,7 @@ type NotifierFactory func(ctx context.Context) jsonnet.Notifier
 func NewContext() *Context {
 	return &Context{
 		ctx:           context.Background(),
+		pretty:        true,
 		extVariables:  make(variablesValues),
 		globalBinding: make(globalBinding),
 	}
@@ -44,6 +46,16 @@ func (c *Context) WithCtx(ctx context.Context) *Context {
 		clone = *c
 	}
 	clone.ctx = ctx
+	return &clone
+}
+
+// WithPretty returns clone with the ctx set.
+func (c *Context) WithPretty(v bool) *Context {
+	var clone Context
+	if c != nil {
+		clone = *c
+	}
+	clone.pretty = v
 	return &clone
 }
 
@@ -72,6 +84,13 @@ func (c *Context) Ctx() context.Context {
 		return context.Background()
 	}
 	return c.ctx
+}
+
+func (c *Context) Pretty() bool {
+	if c == nil {
+		return true
+	}
+	return c.pretty
 }
 
 func (c *Context) FilePath() string {

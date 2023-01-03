@@ -28,6 +28,14 @@ func TestVmContext_Empty(t *testing.T) {
 	assert.Equal(t, "{\n  \"foo\": \"bar\"\n}\n", output)
 }
 
+func TestVmContext_Pretty_False(t *testing.T) {
+	t.Parallel()
+	ctx := NewContext().WithPretty(false)
+	output, err := Evaluate(`{foo: "bar"}`, ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, `{"foo":"bar"}`, output)
+}
+
 func TestVmContext_Complex(t *testing.T) {
 	t.Parallel()
 	ctx := NewContext()
