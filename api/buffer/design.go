@@ -484,14 +484,11 @@ var Template = Type("Template", func() {
 	Attribute("language", String, func() {
 		Enum("jsonnet")
 	})
-	Attribute("undefinedValueStrategy", String, func() {
-		Enum("null", "error")
-	})
 	Attribute("content", String, func() {
 		MinLength(1)
 		MaxLength(4096)
 	})
-	Required("language", "undefinedValueStrategy", "content")
+	Required("language", "content")
 })
 
 var ImportConditions = Type("Conditions", func() {
@@ -623,9 +620,8 @@ func exampleImportConditions() map[string]interface{} {
 
 func exampleTemplateMapping() map[string]interface{} {
 	return map[string]interface{}{
-		"language":               "jsonnet",
-		"undefinedValueStrategy": "error",
-		"content":                `body.foo + "-" + body.bar`,
+		"language": "jsonnet",
+		"content":  `body.foo + "-" + body.bar`,
 	}
 }
 
