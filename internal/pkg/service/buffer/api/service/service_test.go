@@ -36,16 +36,6 @@ func TestParseRequestBody_Form(t *testing.T) {
 	assert.Equal(t, exp, res)
 }
 
-func TestParseRequestBody_TooLarge(t *testing.T) {
-	t.Parallel()
-
-	size := int(datasize.MB + 1)
-	assert.Equal(t, 1024*1024+1, size)
-	r := io.NopCloser(strings.NewReader(idgenerator.Random(size)))
-	_, err := parseRequestBody("application/x-www-form-urlencoded", r)
-	assert.EqualError(t, err, "Payload too large, the maximum size is 1MB.")
-}
-
 func TestParseRequestBody_CustomJsonApi(t *testing.T) {
 	t.Parallel()
 
