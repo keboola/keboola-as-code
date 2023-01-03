@@ -26,9 +26,8 @@ func TestStore_CreateRecord(t *testing.T) {
 	fileKey := key.FileKey{ExportKey: exportKey, FileID: key.FileID(time1)}
 	sliceKey := key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(time2)}
 
-	csv := []string{"one", "two", `th"ree`}
 	record := key.NewRecordKey(sliceKey, time2)
-	err = store.CreateRecord(ctx, record, csv)
+	err = store.CreateRecord(ctx, record, `one,two,"th""ree"`)
 	assert.NoError(t, err)
 
 	// Check keys
