@@ -156,6 +156,7 @@ func (s *Store) DeleteReceiver(ctx context.Context, receiverKey key.ReceiverKey)
 		s.deleteReceiverExportsOp(ctx, receiverKey),
 		s.deleteReceiverMappingsOp(ctx, receiverKey),
 		s.deleteReceiverTokensOp(ctx, receiverKey),
+		s.deleteReceiverStatsOp(ctx, receiverKey),
 	).Do(ctx, s.client)
 	return err
 }

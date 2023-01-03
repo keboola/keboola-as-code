@@ -257,6 +257,10 @@ func TestSchema(t *testing.T) {
 			"runtime/workers/active/ids/my-node",
 		},
 		{
+			s.SliceStats().InReceiver(receiverKey).Prefix(),
+			"stats/received/123/my-receiver/",
+		},
+		{
 			s.SliceStats().InSlice(sliceKey).Prefix(),
 			"stats/received/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z/",
 		},
