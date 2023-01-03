@@ -19,6 +19,10 @@ type SlicesInAState struct {
 	slices
 }
 
+type SlicesInExport struct {
+	slices
+}
+
 type SlicesInFile struct {
 	slices
 }
@@ -62,7 +66,7 @@ func (v SlicesInAState) ByKey(k storeKey.SliceKey) KeyT[model.Slice] {
 	return v.InFile(k.FileKey).ID(k.SliceID)
 }
 
-func (v SlicesInAState) InFile(k storeKey.FileKey) SlicesInFile {
+func (v SlicesInAState) InExport(k storeKey.ExportKey) SlicesInExport {
 	if k.ProjectID == 0 {
 		panic(errors.New("slice projectID cannot be empty"))
 	}
@@ -72,10 +76,14 @@ func (v SlicesInAState) InFile(k storeKey.FileKey) SlicesInFile {
 	if k.ExportID == "" {
 		panic(errors.New("slice exportID cannot be empty"))
 	}
+	return SlicesInExport{slices: v.slices.Add(k.ProjectID.String()).Add(k.ReceiverID.String()).Add(k.ExportID.String())}
+}
+
+func (v SlicesInAState) InFile(k storeKey.FileKey) SlicesInFile {
 	if k.FileID.IsZero() {
 		panic(errors.New("slice fileID cannot be empty"))
 	}
-	return SlicesInFile{slices: v.slices.Add(k.ProjectID.String()).Add(k.ReceiverID.String()).Add(k.ExportID.String()).Add(k.FileID.String())}
+	return SlicesInFile{slices: v.InExport(k.ExportKey).slices.Add(k.FileID.String())}
 }
 
 func (v SlicesInFile) ID(sliceID storeKey.SliceID) KeyT[model.Slice] {

@@ -12,7 +12,8 @@ type ExportBase struct {
 
 type Export struct {
 	ExportBase
-	Mapping    Mapping `validate:"dive"`
-	Token      Token   `validate:"dive"`
-	OpenedFile File    `validate:"dive"`
+	Mapping     Mapping `validate:"dive"`
+	Token       Token   `validate:"dive"`
+	OpenedFile  File    `validate:"dive"`
+	OpenedSlice Slice   `validate:"dive"`
 }
