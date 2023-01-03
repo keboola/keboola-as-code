@@ -31,7 +31,7 @@ const (
 	// DefaultTimeFormat with fixed length, so it can be used for lexicographic sorting in the target database.
 	// Value is RFC3339 and ISO8601 compatible.
 	DefaultTimeFormat   = "%Y-%m-%dT%H:%M:%S.%fZ"
-	ThrowErrOnUndefined = "<<~~errOrUndefined~~>>"
+	ThrowErrOnUndefined = "<<~~errOnUndefined~~>>"
 	nowFnName           = "_now"
 	headersMapFnName    = "_headersMap"
 	headerFnName        = "_header"
