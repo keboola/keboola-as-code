@@ -50,7 +50,7 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
   "sliceId": "1970-01-01T00:00:00.000Z",
   "count": 1,
   "size": 1000,
-  "lastReceivedAt": "1970-01-01T01:00:01.000Z"
+  "lastAt": "1970-01-01T01:00:01.000Z"
 }
 >>>>>
 `)
@@ -69,7 +69,7 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
   "sliceId": "1970-01-01T00:00:00.000Z",
   "count": 1,
   "size": 1000,
-  "lastReceivedAt": "1970-01-01T01:00:01.000Z"
+  "lastAt": "1970-01-01T01:00:01.000Z"
 }
 >>>>>
 `)
@@ -91,7 +91,7 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
   "sliceId": "1970-01-01T00:00:00.000Z",
   "count": 2,
   "size": 3000,
-  "lastReceivedAt": "1970-01-01T01:00:03.000Z"
+  "lastAt": "1970-01-01T01:00:03.000Z"
 }
 >>>>>
 `)
@@ -110,7 +110,7 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
   "sliceId": "1970-01-01T00:00:00.000Z",
   "count": 2,
   "size": 3000,
-  "lastReceivedAt": "1970-01-01T01:00:03.000Z"
+  "lastAt": "1970-01-01T01:00:03.000Z"
 }
 >>>>>
 `)
@@ -135,7 +135,7 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
   "sliceId": "1970-01-01T00:00:00.000Z",
   "count": 3,
   "size": 6000,
-  "lastReceivedAt": "1970-01-01T01:00:05.000Z"
+  "lastAt": "1970-01-01T01:00:05.000Z"
 }
 >>>>>
 `)
