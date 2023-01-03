@@ -185,7 +185,7 @@
   "fileId": "%s",
   "sliceId": "%s",
   "count": 2,
-  "size": 567,
+  "size": %d,
   "lastReceivedAt": "%s"
 }
 >>>>>
