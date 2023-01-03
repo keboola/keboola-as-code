@@ -470,6 +470,7 @@ var Mapping = Type("Mapping", func() {
 var Column = Type("Column", func() {
 	Description("An output mapping defined by a template.")
 	Attribute("type", String, func() {
+		Meta("struct:field:type", "column.Type", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column")
 		Description("Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).")
 		Enum("id", "datetime", "ip", "body", "headers", "template")
 	})

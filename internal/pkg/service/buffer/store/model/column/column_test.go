@@ -3,16 +3,17 @@ package column_test
 import (
 	"encoding/json"
 	"net"
+	"net/http"
 	"testing"
 	"time"
 
-	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/receive/receivectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 )
 
-func TestMappedColumns(t *testing.T) {
+func TestMappedColumns_Serde(t *testing.T) {
 	t.Parallel()
 
 	typed := column.Columns{
@@ -22,17 +23,16 @@ func TestMappedColumns(t *testing.T) {
 		column.Body{Name: "body"},
 		column.Headers{Name: "headers"},
 		column.Template{
-			Name:                   "template",
-			Language:               "jsonnet",
-			UndefinedValueStrategy: "null",
-			Content:                `body.my.key+":"+body.my.value`,
+			Name:     "template",
+			Language: column.TemplateLanguageJsonnet,
+			Content:  `Body('my.key')+':'+Body('my.value')'`,
 		},
 	}
-	untyped := `[{"type":"id","name":"id"},{"type":"datetime","name":"datetime"},{"type":"ip","name":"ip"},{"type":"body","name":"body"},{"type":"headers","name":"headers"},{"type":"template","name":"template","language":"jsonnet","undefinedValueStrategy":"null","content":"body.my.key+\":\"+body.my.value"}]`
+	expectedJSON := `[{"type":"id","name":"id"},{"type":"datetime","name":"datetime"},{"type":"ip","name":"ip"},{"type":"body","name":"body"},{"type":"headers","name":"headers"},{"type":"template","name":"template","language":"jsonnet","content":"Body('my.key')+':'+Body('my.value')'"}]`
 
 	bytes, err := json.Marshal(&typed)
 	assert.NoError(t, err)
-	assert.Equal(t, untyped, string(bytes))
+	assert.Equal(t, expectedJSON, string(bytes))
 
 	var output column.Columns
 	err = json.Unmarshal(bytes, &output)
@@ -40,13 +40,12 @@ func TestMappedColumns(t *testing.T) {
 	assert.Equal(t, typed, output)
 }
 
-func TestMappedColumns_Error(t *testing.T) {
+func TestMappedColumns_Serde_UnknownType(t *testing.T) {
 	t.Parallel()
 
-	// Unmarshal unknown type
 	var output column.Columns
 	err := json.Unmarshal([]byte(`[{"type":"unknown"}]`), &output)
-	assert.Error(t, err, `invalid column type name "unknown"`)
+	assert.Error(t, err, `invalid column type "unknown"`)
 }
 
 func TestColumn_ID(t *testing.T) {
@@ -54,7 +53,7 @@ func TestColumn_ID(t *testing.T) {
 
 	c := column.ID{}
 
-	val, err := c.CsvValue(column.ImportCtx{})
+	val, err := c.CSVValue(&receivectx.Context{})
 	assert.NoError(t, err)
 	assert.Equal(t, column.IDPlaceholder, val)
 }
@@ -64,10 +63,10 @@ func TestColumn_DateTime(t *testing.T) {
 
 	c := column.Datetime{}
 
-	tm := time.Now()
-	val, err := c.CsvValue(column.ImportCtx{DateTime: tm})
+	now, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
+	val, err := c.CSVValue(&receivectx.Context{Now: now})
 	assert.NoError(t, err)
-	assert.Equal(t, tm.Format(time.RFC3339), val)
+	assert.Equal(t, "2006-01-02T08:04:05.000Z", val)
 }
 
 func TestColumn_IP(t *testing.T) {
@@ -75,7 +74,7 @@ func TestColumn_IP(t *testing.T) {
 
 	c := column.IP{}
 
-	val, err := c.CsvValue(column.ImportCtx{IP: net.ParseIP("1.2.3.4")})
+	val, err := c.CSVValue(&receivectx.Context{IP: net.ParseIP("1.2.3.4")})
 	assert.NoError(t, err)
 	assert.Equal(t, "1.2.3.4", val)
 }
@@ -85,134 +84,126 @@ func TestColumn_Body(t *testing.T) {
 
 	c := column.Body{}
 
-	body := orderedmap.New()
-	body.Set("one", "two")
-	body.Set("three", "four")
-	val, err := c.CsvValue(column.ImportCtx{Body: body})
+	body := "a,b,c"
+	val, err := c.CSVValue(&receivectx.Context{Body: body})
 	assert.NoError(t, err)
-	bodyMarshalled, err := json.Marshal(body)
-	assert.NoError(t, err)
-	assert.Equal(t, string(bodyMarshalled), val)
+	assert.Equal(t, "a,b,c", val)
 }
 
-func TestColumn_Header(t *testing.T) {
+func TestColumn_Headers(t *testing.T) {
 	t.Parallel()
 
 	c := column.Headers{}
 
-	header := orderedmap.New()
-	header.Set("Content-Type", "application/json")
-	header.Set("Content-Encoding", "gzip")
-	val, err := c.CsvValue(column.ImportCtx{Headers: header})
+	header := http.Header{"Foo1": []string{"bar1"}, "Foo2": []string{"bar2", "bar3"}}
+
+	val, err := c.CSVValue(&receivectx.Context{Headers: header})
 	assert.NoError(t, err)
-	headerMarshalled, err := json.Marshal(header)
-	assert.NoError(t, err)
-	assert.Equal(t, string(headerMarshalled), val)
+	assert.Equal(t, `{"Foo1":"bar1","Foo2":"bar2"}`, val)
 }
 
-func TestColumn_Template_Body_Scalar(t *testing.T) {
+func TestColumn_Template_Json_Scalar(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "BodyPath('key1.key2')"}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1.key2')"}
 
-	val1 := orderedmap.New()
-	val1.Set("key2", "val2")
-	body := orderedmap.New()
-	body.Set("key1", val1)
-	body.Set("key3", "val3")
+	body := `{"key1":{"key2":"val2"},"key3":"val3"}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	header := orderedmap.New()
-	header.Set("Content-Type", "application/json")
-	header.Set("Content-Encoding", "gzip")
-
-	val, err := c.CsvValue(column.ImportCtx{Body: body, Headers: header})
+	val, err := c.CSVValue(&receivectx.Context{Body: body, Headers: header})
 	assert.NoError(t, err)
 	assert.Equal(t, "\"val2\"", val)
 }
 
-func TestColumn_Template_Body_Object(t *testing.T) {
+func TestColumn_Template_Json_Object(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "BodyPath('key1')"}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1')"}
 
-	val1 := orderedmap.New()
-	val1.Set("key2", "val2")
-	body := orderedmap.New()
-	body.Set("key1", val1)
-	body.Set("key3", "val3")
+	body := `{"key1":{"key2":"val2"},"key3":"val3"}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	header := orderedmap.New()
-	header.Set("Content-Type", "application/json")
-	header.Set("Content-Encoding", "gzip")
-
-	val, err := c.CsvValue(column.ImportCtx{Body: body, Headers: header})
+	val, err := c.CSVValue(&receivectx.Context{Body: body, Headers: header})
 	assert.NoError(t, err)
-	assert.Equal(t, "{\n  \"key2\": \"val2\"\n}", val)
+	assert.Equal(t, `{"key2":"val2"}`, val)
 }
 
-func TestColumn_Template_Body_ArrayOfObjects(t *testing.T) {
+func TestColumn_Template_Json_ArrayOfObjects(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "BodyPath('key1')"}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1')"}
 
-	val2 := orderedmap.New()
-	val2.Set("key2", "val2")
-	val3 := orderedmap.New()
-	val3.Set("key3", "val3")
-	body := orderedmap.New()
-	body.Set("key1", []any{val2, val3})
+	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	header := orderedmap.New()
-
-	val, err := c.CsvValue(column.ImportCtx{Body: body, Headers: header})
+	val, err := c.CSVValue(&receivectx.Context{Body: body, Headers: header})
 	assert.NoError(t, err)
-	assert.Equal(t, "[\n  {\n    \"key2\": \"val2\"\n  },\n  {\n    \"key3\": \"val3\"\n  }\n]", val)
+	assert.Equal(t, `[{"key2":"val2","key3":"val3"}]`, val)
 }
 
-func TestColumn_Template_Body_ArrayIndex(t *testing.T) {
+func TestColumn_Template_Json_ArrayIndex(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "BodyPath('key1')[1]"}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: "Body('key1[1].key3')"}
 
-	body := orderedmap.New()
-	body.Set("key1", []any{"val2", "val3"})
+	body := `{"key1":[{"key2":"val2"},{"key3":"val3"}]}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	header := orderedmap.New()
-
-	val, err := c.CsvValue(column.ImportCtx{Body: body, Headers: header})
+	val, err := c.CSVValue(&receivectx.Context{Body: body, Headers: header})
 	assert.NoError(t, err)
-	assert.Equal(t, "\"val3\"", val)
+	assert.Equal(t, `"val3"`, val)
 }
 
-func TestColumn_Template_Body_Full(t *testing.T) {
+func TestColumn_Template_Json_Full(t *testing.T) {
 	t.Parallel()
 
 	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Body()`}
 
-	body := orderedmap.New()
-	body.Set("key1", []any{"val2", "val3"})
+	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	header := orderedmap.New()
-
-	val, err := c.CsvValue(column.ImportCtx{Body: body, Headers: header})
+	val, err := c.CSVValue(&receivectx.Context{Body: body, Headers: header})
 	assert.NoError(t, err)
-	assert.Equal(t, "{\n  \"key1\": [\n    \"val2\",\n    \"val3\"\n  ]\n}", val)
+	assert.Equal(t, `{"key1":[{"key2":"val2","key3":"val3"}]}`, val)
 }
 
-func TestColumn_Template_Body_UndefinedKeyErr(t *testing.T) {
+func TestColumn_Template_Json_UndefinedKey_Error(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `BodyPath('key1.invalid')`}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Body('key1.invalid')`}
 
-	val1 := orderedmap.New()
-	val1.Set("key2", "val2")
-	body := orderedmap.New()
-	body.Set("key1", val1)
-	body.Set("key3", "val3")
-	header := orderedmap.New()
+	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	_, err := c.CsvValue(column.ImportCtx{Body: body, Headers: header})
-	assert.ErrorContains(t, err, `path "key1.invalid" not found in the body`)
+	_, err := c.CSVValue(&receivectx.Context{Body: body, Headers: header})
+	assert.Error(t, err)
+	assert.Equal(t, `path "key1.invalid" not found in the body`, err.Error())
+}
+
+func TestColumn_Template_Json_UndefinedKey_DefaultValue(t *testing.T) {
+	t.Parallel()
+
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Body('key1.invalid', 123)`}
+
+	body := `{"key1":[{"key2":"val2","key3":"val3"}]}`
+	header := http.Header{"Content-Type": []string{"application/json"}}
+
+	val, err := c.CSVValue(&receivectx.Context{Body: body, Headers: header})
+	assert.NoError(t, err)
+	assert.Equal(t, "123", val)
+}
+
+func TestColumn_Template_FormData_Full(t *testing.T) {
+	t.Parallel()
+
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Body()`}
+
+	body := `key1=bar1&key2[]=bar2&key2[]=bar3`
+	header := http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}
+
+	val, err := c.CSVValue(&receivectx.Context{Body: body, Headers: header})
+	assert.NoError(t, err)
+	assert.Equal(t, `{"key1":"bar1","key2[]":["bar2","bar3"]}`, val)
 }
 
 func TestColumn_Template_Headers(t *testing.T) {
@@ -220,13 +211,9 @@ func TestColumn_Template_Headers(t *testing.T) {
 
 	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Header('Content-Encoding')`}
 
-	body := orderedmap.New()
+	header := http.Header{"Content-Type": []string{"application/json"}, "Content-Encoding": []string{"gzip"}}
 
-	header := orderedmap.New()
-	header.Set("Content-Type", "application/json")
-	header.Set("Content-Encoding", "gzip")
-
-	val, err := c.CsvValue(column.ImportCtx{Body: body, Headers: header})
+	val, err := c.CSVValue(&receivectx.Context{Headers: header})
 	assert.NoError(t, err)
 	assert.Equal(t, "\"gzip\"", val)
 }
@@ -236,13 +223,9 @@ func TestColumn_Template_Headers_Case(t *testing.T) {
 
 	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Header('CONTENT-ENCODING')`}
 
-	body := orderedmap.New()
+	header := http.Header{"Content-Type": []string{"application/json"}, "Content-Encoding": []string{"gzip"}}
 
-	header := orderedmap.New()
-	header.Set("Content-Type", "application/json")
-	header.Set("Content-Encoding", "gzip")
-
-	val, err := c.CsvValue(column.ImportCtx{Body: body, Headers: header})
+	val, err := c.CSVValue(&receivectx.Context{Headers: header})
 	assert.NoError(t, err)
 	assert.Equal(t, "\"gzip\"", val)
 }
@@ -250,46 +233,36 @@ func TestColumn_Template_Headers_Case(t *testing.T) {
 func TestColumn_Template_Headers_All(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Headers()`}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Header()`}
 
-	body := orderedmap.New()
+	header := http.Header{"Content-Type": []string{"application/json"}, "Content-Encoding": []string{"gzip"}}
 
-	header := orderedmap.New()
-	header.Set("Content-Type", "application/json")
-	header.Set("Content-Encoding", "gzip")
-
-	val, err := c.CsvValue(column.ImportCtx{Body: body, Headers: header})
+	val, err := c.CSVValue(&receivectx.Context{Headers: header})
 	assert.NoError(t, err)
-	assert.Equal(t, "{\n  \"Content-Encoding\": \"gzip\",\n  \"Content-Type\": \"application/json\"\n}", val)
+	assert.Equal(t, `{"Content-Encoding":"gzip","Content-Type":"application/json"}`, val)
 }
 
-func TestColumn_Template_Headers_UndefinedKeyErr(t *testing.T) {
+func TestColumn_Template_Headers_UndefinedKey_Error(t *testing.T) {
 	t.Parallel()
 
 	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Header('Invalid-KEY')`}
 
-	body := orderedmap.New()
-	header := orderedmap.New()
+	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	_, err := c.CsvValue(column.ImportCtx{Body: body, Headers: header})
+	_, err := c.CSVValue(&receivectx.Context{Headers: header})
 	assert.ErrorContains(t, err, `header "Invalid-Key" not found`)
 }
 
-func TestColumn_Template_UndefinedKeyNil(t *testing.T) {
+func TestColumn_Template_Headers_UndefinedKey_DefaultValue(t *testing.T) {
 	t.Parallel()
 
-	c := column.Template{
-		Language:               column.TemplateLanguageJsonnet,
-		Content:                `Header('Invalid-Key')`,
-		UndefinedValueStrategy: column.UndefinedValueStrategyNull,
-	}
+	c := column.Template{Language: column.TemplateLanguageJsonnet, Content: `Header('Invalid-KEY', "abc")`}
 
-	body := orderedmap.New()
-	header := orderedmap.New()
+	header := http.Header{"Content-Type": []string{"application/json"}}
 
-	val, err := c.CsvValue(column.ImportCtx{Body: body, Headers: header})
+	val, err := c.CSVValue(&receivectx.Context{Headers: header})
 	assert.NoError(t, err)
-	assert.Equal(t, "null", val)
+	assert.Equal(t, `"abc"`, val)
 }
 
 func TestColumn_Template_InvalidLanguage(t *testing.T) {
@@ -297,9 +270,6 @@ func TestColumn_Template_InvalidLanguage(t *testing.T) {
 
 	c := column.Template{Language: "invalid", Content: `Body("")`}
 
-	body := orderedmap.New()
-	header := orderedmap.New()
-
-	_, err := c.CsvValue(column.ImportCtx{Body: body, Headers: header})
-	assert.ErrorContains(t, err, `unsupported language "invalid", use jsonnet instead`)
+	_, err := c.CSVValue(&receivectx.Context{})
+	assert.ErrorContains(t, err, `unsupported language "invalid", only "jsonnet" is supported`)
 }
