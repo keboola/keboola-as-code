@@ -2,65 +2,36 @@ package store
 
 import (
 	"context"
-	"sync"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
+	etcd "go.etcd.io/etcd/client/v3"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 )
 
-const maxStatsPerTxn = 50
-
-func (s *Store) UpdateSliceStats(ctx context.Context, nodeID string, stats []model.SliceStats) (err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.UpdateSliceStats")
-	defer telemetry.EndSpan(span, &err)
-
-	var currentTxn *op.TxnOp
-	var allTxn []*op.TxnOp
-	addTxn := func() {
-		currentTxn = op.NewTxnOp()
-		allTxn = append(allTxn, currentTxn)
-	}
-
-	i := 0
-	for _, v := range stats {
-		if i == 0 || i >= maxStatsPerTxn {
-			i = 0
-			addTxn()
-		}
-		currentTxn.Then(s.updateStatsOp(ctx, nodeID, v))
-		i++
-	}
-
-	wg := &sync.WaitGroup{}
-	errs := errors.NewMultiError()
-	for _, txn := range allTxn {
-		txn := txn
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if _, err := txn.Do(ctx, s.client); err != nil {
-				errs.Append(err)
+// sumStats sums all stats under the prefix.
+func sumStats[T model.StatsProvider](ctx context.Context, client *etcd.Client, prefix iterator.DefinitionT[T]) (model.Stats, bool, error) {
+	count := 0
+	out := model.Stats{}
+	err := prefix.
+		Do(ctx, client).
+		ForEachValue(func(item T, _ *iterator.Header) error {
+			count++
+			partialStats := item.GetStats()
+			out.Count += partialStats.Count
+			out.Size += partialStats.Size
+			if partialStats.LastRecordAt.After(out.LastRecordAt) {
+				out.LastRecordAt = partialStats.LastRecordAt
 			}
-		}()
+			return nil
+		})
+	if err != nil {
+		return out, false, err
 	}
-	wg.Wait()
-	return errs.ErrorOrNil()
-}
 
-func (s *Store) updateStatsOp(_ context.Context, nodeID string, stats model.SliceStats) op.NoResultOp {
-	return s.schema.
-		SliceStats().
-		InSlice(stats.SliceKey).
-		ByNodeID(nodeID).
-		Put(stats)
-}
+	if count == 0 {
+		return out, false, nil
+	}
 
-func (s *Store) deleteReceiverStatsOp(_ context.Context, receiverKey key.ReceiverKey) op.CountOp {
-	return s.schema.
-		SliceStats().
-		InReceiver(receiverKey).
-		DeleteAll()
+	return out, true, nil
 }

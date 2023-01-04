@@ -257,15 +257,23 @@ func TestSchema(t *testing.T) {
 			"runtime/workers/active/ids/my-node",
 		},
 		{
-			s.SliceStats().InReceiver(receiverKey).Prefix(),
+			s.ReceivedStats().InReceiver(receiverKey).Prefix(),
 			"stats/received/123/my-receiver/",
 		},
 		{
-			s.SliceStats().InSlice(sliceKey).Prefix(),
+			s.ReceivedStats().InExport(exportKey).Prefix(),
+			"stats/received/123/my-receiver/my-export/",
+		},
+		{
+			s.ReceivedStats().InFile(fileKey).Prefix(),
+			"stats/received/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
+		},
+		{
+			s.ReceivedStats().InSlice(sliceKey).Prefix(),
 			"stats/received/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z/",
 		},
 		{
-			s.SliceStats().InSlice(sliceKey).ByNodeID("my-node").Key(),
+			s.ReceivedStats().InSlice(sliceKey).ByNodeID("my-node").Key(),
 			"stats/received/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z/my-node",
 		},
 	}
