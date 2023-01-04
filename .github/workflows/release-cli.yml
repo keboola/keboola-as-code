@@ -19,7 +19,7 @@ env:
   AWS_BUCKET_NAME: cli-dist-keboola-com
 
   # WinGet packages
-  WINGET_PACKAGES_REPO_FORK: "keboola/winget-pkgs"
+  WINGET_PACKAGES_REPO_FORK: "KeboolaAsCodeBot/winget-pkgs"
 
   # macOS notarization
   APPLE_ACCOUNT_USERNAME: "apple@keboola.com"
