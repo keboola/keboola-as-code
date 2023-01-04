@@ -1,6 +1,6 @@
 class KeboolaCli < Formula
   desc "Keboola CLI tool"
-  homepage "https://cli.keboola.com"
+  homepage "https://www.keboola.com/product/cli"
   license "MIT"
   version "${VERSION}"
 
