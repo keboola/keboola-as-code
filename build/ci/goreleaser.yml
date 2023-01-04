@@ -46,7 +46,7 @@ snapshot:
 nfpms:
   - id: packages
     vendor: Keboola
-    homepage: https://cli.keboola.com
+    homepage: https://www.keboola.com/product/cli
     maintainer: Keboola <support@keboola.com>
     description: Keboola CLI tool.
     license: MIT
