@@ -186,6 +186,6 @@
   "sliceId": "%s",
   "count": 2,
   "size": %d,
-  "lastAt": "%s"
+  "lastRecordAt": "%s"
 }
 >>>>>

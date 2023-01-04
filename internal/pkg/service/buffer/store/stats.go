@@ -20,8 +20,8 @@ func sumStats[T model.StatsProvider](ctx context.Context, client *etcd.Client, p
 			partialStats := item.GetStats()
 			out.Count += partialStats.Count
 			out.Size += partialStats.Size
-			if partialStats.LastAt.After(out.LastAt) {
-				out.LastAt = partialStats.LastAt
+			if partialStats.LastRecordAt.After(out.LastRecordAt) {
+				out.LastRecordAt = partialStats.LastRecordAt
 			}
 			return nil
 		})
