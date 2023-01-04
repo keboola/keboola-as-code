@@ -11,7 +11,7 @@ import (
 
 // File represent a file with records.
 // A copy of the mapping is stored for retrieval optimization.
-// A change in the mapping causes a new file to be created so the mapping is immutable.
+// A change in the mapping causes a new file and slice to be created so the mapping is immutable.
 type File struct {
 	key.FileKey
 	State              filestate.State  `json:"state" validate:"required,oneof=opened closing closed importing imported failed"`

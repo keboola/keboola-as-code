@@ -7,10 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -37,6 +39,20 @@ slice/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T
   "fileId": "2006-01-01T08:04:05.000Z",
   "sliceId": "2006-01-02T08:04:05.000Z",
   "state": "opened",
+  "mapping": {
+    "projectId": 1000,
+    "receiverId": "my-receiver",
+    "exportId": "my-export",
+    "revisionId": 1,
+    "tableId": "in.c-bucket.table",
+    "incremental": false,
+    "columns": [
+      {
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
   "sliceNumber": 1
 }
 >>>>>
@@ -69,6 +85,20 @@ slice/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T
   "fileId": "2006-01-01T08:04:05.000Z",
   "sliceId": "2006-01-02T08:04:05.000Z",
   "state": "opened",
+  "mapping": {
+    "projectId": 1000,
+    "receiverId": "my-receiver",
+    "exportId": "my-export",
+    "revisionId": 1,
+    "tableId": "in.c-bucket.table",
+    "incremental": false,
+    "columns": [
+      {
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
   "sliceNumber": 1
 }
 >>>>>
@@ -135,18 +165,29 @@ func TestStore_ListUploadedSlices(t *testing.T) {
 	time2, _ := time.Parse(time.RFC3339, "2006-01-02T08:04:05.000Z")
 	time3, _ := time.Parse(time.RFC3339, "2006-01-03T08:04:05.000Z")
 	fileKey := key.FileKey{FileID: key.FileID(time1), ExportKey: exportKey}
-	input := []model.Slice{
-		{
-			SliceKey: key.SliceKey{SliceID: key.SliceID(time2), FileKey: fileKey},
-			State:    slicestate.Uploaded,
-			Number:   1,
+	mapping := model.Mapping{
+		MappingKey: key.MappingKey{
+			ExportKey:  exportKey,
+			RevisionID: 1,
 		},
-		{
-			SliceKey: key.SliceKey{SliceID: key.SliceID(time3), FileKey: fileKey},
-			State:    slicestate.Uploaded,
-			Number:   2,
+		TableID: storageapi.TableID{
+			BucketID: storageapi.BucketID{
+				Stage:      storageapi.BucketStageIn,
+				BucketName: "bucket",
+			},
+			TableName: "table",
+		},
+		Incremental: false,
+		Columns: []column.Column{
+			column.Body{Name: "body"},
 		},
 	}
+	slice1 := model.NewSlice(fileKey, time2, mapping, 1)
+	slice1.State = slicestate.Uploaded
+	slice2 := model.NewSlice(fileKey, time3, mapping, 2)
+	slice2.State = slicestate.Uploaded
+	input := []model.Slice{slice1, slice2}
+
 	// Create uploaded slices
 	for _, slice := range input {
 		_, err := store.schema.Slices().Uploaded().ByKey(slice.SliceKey).PutIfNotExists(slice).Do(ctx, store.client)
@@ -169,6 +210,20 @@ slice/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-0
   "fileId": "2006-01-01T08:04:05.000Z",
   "sliceId": "2006-01-02T08:04:05.000Z",
   "state": "uploaded",
+  "mapping": {
+    "projectId": 1000,
+    "receiverId": "my-receiver",
+    "exportId": "my-export",
+    "revisionId": 1,
+    "tableId": "in.c-bucket.table",
+    "incremental": false,
+    "columns": [
+      {
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
   "sliceNumber": 1
 }
 >>>>>
@@ -183,6 +238,20 @@ slice/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-0
   "fileId": "2006-01-01T08:04:05.000Z",
   "sliceId": "2006-01-03T08:04:05.000Z",
   "state": "uploaded",
+  "mapping": {
+    "projectId": 1000,
+    "receiverId": "my-receiver",
+    "exportId": "my-export",
+    "revisionId": 1,
+    "tableId": "in.c-bucket.table",
+    "incremental": false,
+    "columns": [
+      {
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
   "sliceNumber": 2
 }
 >>>>>
@@ -195,10 +264,22 @@ func sliceForTest() model.Slice {
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
 	fileKey := key.FileKey{FileID: key.FileID(time1.UTC()), ExportKey: exportKey}
-	sliceKey := key.SliceKey{SliceID: key.SliceID(time2.UTC()), FileKey: fileKey}
-	return model.Slice{
-		SliceKey: sliceKey,
-		State:    slicestate.Opened,
-		Number:   1,
+	mapping := model.Mapping{
+		MappingKey: key.MappingKey{
+			ExportKey:  exportKey,
+			RevisionID: 1,
+		},
+		TableID: storageapi.TableID{
+			BucketID: storageapi.BucketID{
+				Stage:      storageapi.BucketStageIn,
+				BucketName: "bucket",
+			},
+			TableName: "table",
+		},
+		Incremental: false,
+		Columns: []column.Column{
+			column.Body{Name: "body"},
+		},
 	}
+	return model.NewSlice(fileKey, time2, mapping, 1)
 }
