@@ -31,6 +31,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -80,7 +81,9 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 	}
 
 	// Create etcd session
-	if err := n.createSession(); err != nil {
+	var err error
+	n.session, err = etcdclient.CreateConcurrencySession(n.logger, n.proc, n.client, c.ttlSeconds)
+	if err != nil {
 		return nil, err
 	}
 
@@ -164,27 +167,6 @@ func (n *Node) onWatchEvent(event etcdop.Event) {
 
 func (n *Node) onWatchErr(err error) {
 	n.logger.Errorf("watcher failed: %s", err)
-}
-
-func (n *Node) createSession() (err error) {
-	startTime := time.Now()
-	n.logger.Infof(`creating etcd session`)
-
-	n.session, err = concurrency.NewSession(n.client, concurrency.WithTTL(n.config.ttlSeconds))
-	if err != nil {
-		return err
-	}
-
-	n.proc.OnShutdown(func() {
-		if err := n.session.Close(); err != nil {
-			n.logger.Warnf("cannot close etcd session: %s", err)
-		} else {
-			n.logger.Info("closed etcd session")
-		}
-	})
-
-	n.logger.Infof("created etcd session | %s", time.Since(startTime))
-	return nil
 }
 
 // register node in the etcd prefix,
