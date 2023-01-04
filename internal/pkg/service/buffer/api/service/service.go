@@ -8,7 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/mapper"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/watcher"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 )
 
 type service struct {
