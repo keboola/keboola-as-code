@@ -38,6 +38,7 @@ helm upgrade \
   --install templates-api-etcd bitnami/etcd \
   --version "$ETCD_HELM_CHART_VERSION" \
   --values ./kubernetes/deploy/etcd/values.yaml \
+  --values ./kubernetes/deploy/etcd/values_templates.yaml \
   --namespace "$NAMESPACE" \
   --set "replicaCount=$TEMPLATES_API_ETCD_REPLICAS" \
   --set "pdb.create=$TEMPLATES_API_ETCD_PDB_CREATE" \
