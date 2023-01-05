@@ -86,6 +86,26 @@ func (v Prefix) Count(opts ...etcd.OpOption) op.CountOp {
 	)
 }
 
+func (v Prefix) GetOne(opts ...etcd.OpOption) op.GetOneOp {
+	return op.NewGetOneOp(
+		func(_ context.Context) (etcd.Op, error) {
+			opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithLimit(1)}, opts...)
+			return etcd.OpGet(v.Prefix(), opts...), nil
+		},
+		func(ctx context.Context, r etcd.OpResponse) (*op.KeyValue, error) {
+			// Not r.Get.Count(), it returns the count of all records, regardless of the limit
+			count := len(r.Get().Kvs)
+			if count == 0 {
+				return nil, nil
+			} else if count == 1 {
+				return r.Get().Kvs[0], nil
+			} else {
+				return nil, errors.Errorf(`etcd get: at most one result result expected, found %d results`, count)
+			}
+		},
+	)
+}
+
 func (v Prefix) GetAll(opts ...iterator.Option) iterator.Definition {
 	return iterator.New(v.Prefix(), opts...)
 }
