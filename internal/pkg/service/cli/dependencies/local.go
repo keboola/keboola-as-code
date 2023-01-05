@@ -50,7 +50,7 @@ func newPublicDeps(baseDeps Base) (*local, error) {
 	}
 
 	// Create common local dependencies
-	publicDep, err := dependencies.NewPublicDeps(baseDeps.CommandCtx(), baseDeps, host)
+	publicDep, err := dependencies.NewPublicDeps(baseDeps.CommandCtx(), baseDeps, host, true)
 	if err != nil {
 		return nil, err
 	}
