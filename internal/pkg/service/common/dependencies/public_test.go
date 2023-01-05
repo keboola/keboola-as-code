@@ -18,7 +18,7 @@ func TestNewPublicDeps_LazyLoadComponents(t *testing.T) {
 	baseDeps := newBaseDeps(env.Empty(), nil, log.NewNopLogger(), clock.New(), httpClient)
 
 	// Create public deps without loading components.
-	deps, err := newPublicDeps(context.Background(), baseDeps, "https://connection.keboola.com", false)
+	deps, err := newPublicDeps(context.Background(), baseDeps, "https://connection.keboola.com")
 	assert.NoError(t, err)
 	// Check the components are loaded lazily.
 	c, found := deps.Components().Get("keboola.ex-currency")

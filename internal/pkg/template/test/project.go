@@ -103,7 +103,7 @@ func PrepareProject(ctx context.Context, tracer trace.Tracer, logger log.Logger,
 
 func newTestDependencies(ctx context.Context, tracer trace.Tracer, logger log.Logger, apiHost, apiToken string) (*Dependencies, error) {
 	baseDeps := dependenciesPkg.NewBaseDeps(env.Empty(), tracer, logger, client.NewTestClient())
-	publicDeps, err := dependenciesPkg.NewPublicDeps(ctx, baseDeps, apiHost, true)
+	publicDeps, err := dependenciesPkg.NewPublicDeps(ctx, baseDeps, apiHost, dependenciesPkg.WithPreloadComponents(true))
 	if err != nil {
 		return nil, err
 	}

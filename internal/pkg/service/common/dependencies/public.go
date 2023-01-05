@@ -24,13 +24,36 @@ type public struct {
 	components          Lazy[*model.ComponentsProvider]
 }
 
-func NewPublicDeps(ctx context.Context, base Base, storageAPIHost string, loadComponents bool) (v Public, err error) {
-	ctx, span := base.Tracer().Start(ctx, "kac.lib.dependencies.NewPublicDeps")
-	defer telemetry.EndSpan(span, &err)
-	return newPublicDeps(ctx, base, storageAPIHost, loadComponents)
+type PublicDepsOption func(*publicDepsConfig)
+
+type publicDepsConfig struct {
+	preloadComponents bool
 }
 
-func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, loadComponents bool) (*public, error) {
+func publicDepsDefaultConfig() publicDepsConfig {
+	return publicDepsConfig{preloadComponents: false}
+}
+
+// WithPreloadComponents defines if the components should be retrieved from Storage index on startup.
+func WithPreloadComponents(v bool) PublicDepsOption {
+	return func(c *publicDepsConfig) {
+		c.preloadComponents = v
+	}
+}
+
+func NewPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts ...PublicDepsOption) (v Public, err error) {
+	ctx, span := base.Tracer().Start(ctx, "kac.lib.dependencies.NewPublicDeps")
+	defer telemetry.EndSpan(span, &err)
+	return newPublicDeps(ctx, base, storageAPIHost, opts...)
+}
+
+func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts ...PublicDepsOption) (*public, error) {
+	// Apply options
+	c := publicDepsDefaultConfig()
+	for _, o := range opts {
+		o(&c)
+	}
+
 	v := &public{
 		base:             base,
 		storageAPIHost:   storageAPIHost,
@@ -39,7 +62,7 @@ func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, loadCo
 
 	// Load API index (stack services, stack features, components)
 	var index *storageapi.Index
-	if loadComponents {
+	if c.preloadComponents {
 		indexWithComponents, err := storageAPIIndexWithComponents(ctx, base, v.storageAPIClient)
 		if err != nil {
 			return nil, err

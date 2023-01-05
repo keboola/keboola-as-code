@@ -69,7 +69,7 @@ func NewServiceDeps(
 	// Create public dependencies - load API index
 	startTime := time.Now()
 	logger.Info("loading Storage API index")
-	publicDeps, err := dependencies.NewPublicDeps(ctx, baseDeps, storageAPIHost, false)
+	publicDeps, err := dependencies.NewPublicDeps(ctx, baseDeps, storageAPIHost)
 	if err != nil {
 		return nil, err
 	}
