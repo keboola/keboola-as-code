@@ -32,7 +32,7 @@ func TestStore_GetTokenOp(t *testing.T) {
 
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-secret/export/token/1000/receiver1/export1
+secret/export/token/00001000/receiver1/export1
 -----
 {
   "projectId": 1000,
@@ -81,7 +81,7 @@ func TestStore_DeleteExportTokenOp(t *testing.T) {
 
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-secret/export/token/1000/receiver1/export1
+secret/export/token/00001000/receiver1/export1
 -----
 {
   "projectId": 1000,
@@ -149,7 +149,7 @@ func TestStore_DeleteReceiverTokensOp(t *testing.T) {
 
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-secret/export/token/1000/receiver1/export0
+secret/export/token/00001000/receiver1/export0
 -----
 {
   "projectId": 1000,
@@ -177,7 +177,7 @@ secret/export/token/1000/receiver1/export0
 >>>>>
 
 <<<<<
-secret/export/token/1000/receiver1/export1
+secret/export/token/00001000/receiver1/export1
 -----
 {
   "projectId": 1000,

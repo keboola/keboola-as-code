@@ -5,7 +5,6 @@ import (
 	storeKey "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type files = PrefixT[model.File]
@@ -59,25 +58,9 @@ func (v Files) Failed() FilesInAState {
 }
 
 func (v FilesInAState) ByKey(k storeKey.FileKey) KeyT[model.File] {
-	return v.InExport(k.ExportKey).ID(k.FileID)
+	return v.Key(k.String())
 }
 
 func (v FilesInAState) InExport(k storeKey.ExportKey) FilesInExport {
-	if k.ProjectID == 0 {
-		panic(errors.New("file projectID cannot be empty"))
-	}
-	if k.ReceiverID == "" {
-		panic(errors.New("file receiverID cannot be empty"))
-	}
-	if k.ExportID == "" {
-		panic(errors.New("file exportID cannot be empty"))
-	}
-	return FilesInExport{files: v.files.Add(k.ProjectID.String()).Add(k.ReceiverID.String()).Add(k.ExportID.String())}
-}
-
-func (v FilesInExport) ID(fileID storeKey.FileID) KeyT[model.File] {
-	if fileID.IsZero() {
-		panic(errors.New("file fileID cannot be empty"))
-	}
-	return v.files.Key(fileID.String())
+	return FilesInExport{files: v.files.Add(k.String())}
 }

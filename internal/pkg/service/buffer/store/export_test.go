@@ -36,7 +36,7 @@ func TestStore_CreateExportBaseOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-config/export/1000/github/github-issues
+config/export/00001000/github/github-issues
 -----
 {
   "projectId": 1000,
@@ -80,7 +80,7 @@ func TestStore_GetExportBaseOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-config/export/1000/github/github-issues
+config/export/00001000/github/github-issues
 -----
 {
   "projectId": 1000,
@@ -140,7 +140,7 @@ func TestStore_ListExportsBaseOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-config/export/1000/receiver1/export-1
+config/export/00001000/receiver1/export-1
 -----
 {
   "projectId": 1000,
@@ -156,7 +156,7 @@ config/export/1000/receiver1/export-1
 >>>>>
 
 <<<<<
-config/export/1000/receiver1/export-2
+config/export/00001000/receiver1/export-2
 -----
 {
   "projectId": 1000,
@@ -196,7 +196,7 @@ func TestStore_DeleteExportBaseOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-config/export/1000/github/github-issues
+config/export/00001000/github/github-issues
 -----
 {
   "projectId": 1000,
@@ -262,7 +262,7 @@ func TestStore_DeleteExportBaseListOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-config/export/1000/receiver1/export-1
+config/export/00001000/receiver1/export-1
 -----
 {
   "projectId": 1000,
@@ -278,7 +278,7 @@ config/export/1000/receiver1/export-1
 >>>>>
 
 <<<<<
-config/export/1000/receiver1/export-2
+config/export/00001000/receiver1/export-2
 -----
 {
   "projectId": 1000,

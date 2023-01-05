@@ -5,7 +5,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type slices = PrefixT[model.Slice]
@@ -63,32 +62,13 @@ func (v Slices) Failed() SlicesInAState {
 }
 
 func (v SlicesInAState) ByKey(k storeKey.SliceKey) KeyT[model.Slice] {
-	return v.InFile(k.FileKey).ID(k.SliceID)
+	return v.Key(k.String())
 }
 
 func (v SlicesInAState) InExport(k storeKey.ExportKey) SlicesInExport {
-	if k.ProjectID == 0 {
-		panic(errors.New("slice projectID cannot be empty"))
-	}
-	if k.ReceiverID == "" {
-		panic(errors.New("slice receiverID cannot be empty"))
-	}
-	if k.ExportID == "" {
-		panic(errors.New("slice exportID cannot be empty"))
-	}
-	return SlicesInExport{slices: v.slices.Add(k.ProjectID.String()).Add(k.ReceiverID.String()).Add(k.ExportID.String())}
+	return SlicesInExport{slices: v.slices.Add(k.String())}
 }
 
 func (v SlicesInAState) InFile(k storeKey.FileKey) SlicesInFile {
-	if k.FileID.IsZero() {
-		panic(errors.New("slice fileID cannot be empty"))
-	}
-	return SlicesInFile{slices: v.InExport(k.ExportKey).slices.Add(k.FileID.String())}
-}
-
-func (v SlicesInFile) ID(sliceID storeKey.SliceID) KeyT[model.Slice] {
-	if sliceID.IsZero() {
-		panic(errors.New("slice sliceID cannot be empty"))
-	}
-	return v.slices.Key(sliceID.String())
+	return SlicesInFile{slices: v.Add(k.String())}
 }

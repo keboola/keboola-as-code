@@ -522,7 +522,7 @@ func getBranch(d dependencies.ForProjectRequest, branchDef string) (model.Branch
 		return targetBranch, NewBadRequestError(errors.Errorf(`branch ID "%s" is not numeric`, branchDef))
 	} else if _, err := storageapi.GetBranchRequest(storageapi.BranchKey{ID: storageapi.BranchID(branchId)}).Send(d.RequestCtx(), storageAPIClient); err != nil {
 		// Branch not found
-		return targetBranch, NewResourceNotFoundError("branch", strconv.Itoa(branchId))
+		return targetBranch, NewResourceNotFoundError("branch", strconv.Itoa(branchId), "project")
 	} else {
 		// Branch found
 		targetBranch.ID = storageapi.BranchID(branchId)

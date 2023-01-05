@@ -4,7 +4,6 @@ import (
 	storeKey "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type exports = PrefixT[model.ExportBase]
@@ -24,23 +23,10 @@ func (v ConfigsRoot) Exports() Exports {
 	)}
 }
 
-func (v Exports) ByKey(k storeKey.ExportKey) KeyT[model.ExportBase] {
-	return v.InReceiver(k.ReceiverKey).ID(k.ExportID)
-}
-
 func (v Exports) InReceiver(k storeKey.ReceiverKey) ExportsInReceiver {
-	if k.ProjectID == 0 {
-		panic(errors.New("export projectID cannot be empty"))
-	}
-	if k.ReceiverID == "" {
-		panic(errors.New("export receiverID cannot be empty"))
-	}
-	return ExportsInReceiver{exports: v.exports.Add(k.ProjectID.String()).Add(k.ReceiverID.String())}
+	return ExportsInReceiver{exports: v.exports.Add(k.String())}
 }
 
-func (v ExportsInReceiver) ID(exportID storeKey.ExportID) KeyT[model.ExportBase] {
-	if exportID == "" {
-		panic(errors.New("export exportID cannot be empty"))
-	}
-	return v.exports.Key(exportID.String())
+func (v Exports) ByKey(k storeKey.ExportKey) KeyT[model.ExportBase] {
+	return v.Key(k.String())
 }

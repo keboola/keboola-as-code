@@ -1,6 +1,6 @@
 {
   "statusCode": 404,
   "error": "buffer.exportNotFound",
-  "message": "Export \"project:%s/export:unknown\" not found."
+  "message": "Export \"unknown\" not found in the receiver."
 }
 

@@ -63,7 +63,7 @@ func (s *Store) createTokenOp(_ context.Context, token model.Token) op.BoolOp {
 		PutIfNotExists(token).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
 			if !ok && err == nil {
-				return false, serviceError.NewResourceAlreadyExistsError("token", token.ExportKey.String(), "export")
+				return false, serviceError.NewResourceAlreadyExistsError("token", token.ID, "export")
 			}
 			return ok, err
 		})
@@ -77,7 +77,7 @@ func (s *Store) getTokenOp(_ context.Context, exportKey key.ExportKey, opts ...e
 		Get(opts...).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Token], err error) (*op.KeyValueT[model.Token], error) {
 			if kv == nil && err == nil {
-				return nil, serviceError.NewResourceNotFoundError("token", exportKey.String())
+				return nil, serviceError.NewNoResourceFoundError("token", "export")
 			}
 			return kv, err
 		})
@@ -91,7 +91,7 @@ func (s *Store) deleteExportTokenOp(_ context.Context, exportKey key.ExportKey) 
 		Delete().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, result bool, err error) (bool, error) {
 			if !result && err == nil {
-				return false, serviceError.NewResourceNotFoundError("token", exportKey.String())
+				return false, serviceError.NewNoResourceFoundError("token", "export")
 			}
 			return result, err
 		})

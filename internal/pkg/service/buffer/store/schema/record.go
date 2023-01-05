@@ -3,7 +3,6 @@ package schema
 import (
 	storeKey "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type records = Prefix
@@ -37,28 +36,5 @@ func (v *Schema) Records() RecordsRoot {
 }
 
 func (v RecordsRoot) ByKey(k storeKey.RecordKey) Key {
-	if k.ProjectID == 0 {
-		panic(errors.New("record projectID cannot be empty"))
-	}
-	if k.ReceiverID == "" {
-		panic(errors.New("record receiverID cannot be empty"))
-	}
-	if k.ExportID == "" {
-		panic(errors.New("record exportID cannot be empty"))
-	}
-	if k.SliceID.IsZero() {
-		panic(errors.New("record sliceID cannot be empty"))
-	}
-	if k.ReceivedAt.IsZero() {
-		panic(errors.New("record receivedAt cannot be empty"))
-	}
-	if k.RandomSuffix == "" {
-		panic(errors.New("record randomSuffix cannot be empty"))
-	}
-	return v.records.
-		Add(k.ProjectID.String()).
-		Add(k.ReceiverID.String()).
-		Add(k.ExportID.String()).
-		Add(k.SliceID.String()).
-		Key(k.Key())
+	return v.records.Key(k.String())
 }

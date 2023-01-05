@@ -32,7 +32,7 @@ func (s *Store) createSliceOp(_ context.Context, slice model.Slice) op.BoolOp {
 		PutIfNotExists(slice).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
 			if !ok && err == nil {
-				return false, serviceError.NewResourceAlreadyExistsError("slice", slice.SliceKey.String(), "file")
+				return false, serviceError.NewResourceAlreadyExistsError("slice", slice.SliceID.String(), "file")
 			}
 			return ok, err
 		})
@@ -57,7 +57,7 @@ func (s *Store) getSliceOp(_ context.Context, sliceKey key.SliceKey) op.ForType[
 		Get().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Slice], err error) (*op.KeyValueT[model.Slice], error) {
 			if kv == nil && err == nil {
-				return nil, serviceError.NewResourceNotFoundError("slice", sliceKey.String())
+				return nil, serviceError.NewResourceNotFoundError("slice", sliceKey.SliceID.String(), "file")
 			}
 			return kv, err
 		})
@@ -72,7 +72,7 @@ func (s *Store) getOpenedSliceOp(_ context.Context, exportKey key.ExportKey, opt
 		GetOne(opts...).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Slice], err error) (*op.KeyValueT[model.Slice], error) {
 			if kv == nil && err == nil {
-				return nil, serviceError.NewResourceNotFoundError("opened slice", exportKey.String())
+				return nil, serviceError.NewNoResourceFoundError("opened slice", "export")
 			}
 			return kv, err
 		})
