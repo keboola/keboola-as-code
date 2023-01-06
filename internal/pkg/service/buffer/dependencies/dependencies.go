@@ -77,16 +77,13 @@ func NewServiceDeps(
 
 	// Create etcd client
 	etcdClient, err := etcdclient.New(
-		// Use separated context.
-		// Graceful shutdown is handled by Process.OnShutdown bellow.
-		// During the shutdown it is necessary to complete some etcd operations.
-		context.Background(),
+		ctx,
+		proc,
 		tracer,
 		envs.Get("BUFFER_ETCD_ENDPOINT"),
 		envs.Get("BUFFER_ETCD_NAMESPACE"),
 		etcdclient.WithUsername(envs.Get("BUFFER_ETCD_USERNAME")),
 		etcdclient.WithPassword(envs.Get("BUFFER_ETCD_PASSWORD")),
-		etcdclient.WithConnectContext(ctx),
 		etcdclient.WithConnectTimeout(30*time.Second), // longer timeout, the etcd could be started at the same time as the API/Worker
 		etcdclient.WithLogger(logger),
 		etcdclient.WithDebugOpLogs(debug),
@@ -94,15 +91,6 @@ func NewServiceDeps(
 	if err != nil {
 		return nil, err
 	}
-
-	// Close client when shutting down the server
-	proc.OnShutdown(func() {
-		if err := etcdClient.Close(); err != nil {
-			logger.Warnf("cannot close etcd connection: %s", err)
-		} else {
-			logger.Info("closed etcd connection")
-		}
-	})
 
 	schemaInst := schema.New(validator.New().Validate)
 	storeInst := store.New(logger, etcdClient, tracer, schemaInst)

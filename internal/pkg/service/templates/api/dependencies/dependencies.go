@@ -238,35 +238,18 @@ func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 			return nil, errors.New("etcd integration is disabled")
 		}
 
-		etcdClient, err := etcdclient.New(
-			// Use separated context.
-			// Graceful shutdown is handled by Process.OnShutdown bellow.
-			// During the shutdown it is necessary to complete some etcd operations.
-			context.Background(),
+		return etcdclient.New(
+			ctx,
+			v.proc,
 			v.Tracer(),
 			envs.Get("TEMPLATES_API_ETCD_ENDPOINT"),
 			envs.Get("TEMPLATES_API_ETCD_NAMESPACE"),
 			etcdclient.WithUsername(envs.Get("TEMPLATES_API_ETCD_USERNAME")),
 			etcdclient.WithPassword(envs.Get("TEMPLATES_API_ETCD_PASSWORD")),
-			etcdclient.WithConnectContext(ctx),
 			etcdclient.WithConnectTimeout(connectTimeout),
 			etcdclient.WithLogger(v.logger),
 			etcdclient.WithDebugOpLogs(v.debug),
 		)
-		if err != nil {
-			return nil, err
-		}
-
-		// Close client when shutting down the server
-		v.proc.OnShutdown(func() {
-			if err := etcdClient.Close(); err != nil {
-				v.logger.Warnf("cannot close etcd connection: %s", err)
-			} else {
-				v.logger.Info("closed etcd connection")
-			}
-		})
-
-		return etcdClient, nil
 	})
 }
 
