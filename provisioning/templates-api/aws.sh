@@ -17,7 +17,7 @@ aws eks update-kubeconfig --name "$AWS_EKS_CLUSTER_NAME" --region "$AWS_REGION"
 
 if [ "${TMP_ETCD_REDEPLOY:-false}" = "true" ]
 then
-    helm delete templates-api-etcd
+    helm uninstall templates-api-etcd -n templates-api
     echo "ETCD for Template API is deleted."
 fi
 
