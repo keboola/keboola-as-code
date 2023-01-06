@@ -125,7 +125,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	// CREATE key2
 	wg.Add(1)
 	go func() {
-		wg.Done()
+		defer wg.Done()
 		assert.NoError(t, pfx.Key("key2").Put("foo2").Do(ctx, c))
 	}()
 
@@ -143,7 +143,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	// UPDATE key
 	wg.Add(1)
 	go func() {
-		wg.Done()
+		defer wg.Done()
 		assert.NoError(t, pfx.Key("key2").Put("new").Do(ctx, c))
 	}()
 
@@ -161,7 +161,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	// DELETE key
 	wg.Add(1)
 	go func() {
-		wg.Done()
+		defer wg.Done()
 		ok, err := pfx.Key("key1").Delete().Do(ctx, c)
 		assert.NoError(t, err)
 		assert.True(t, ok)
