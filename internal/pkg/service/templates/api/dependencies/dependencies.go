@@ -147,7 +147,7 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 	// Create public dependencies - load API index
 	startTime := time.Now()
 	logger.Info("loading Storage API index")
-	publicDeps, err := dependencies.NewPublicDeps(ctx, baseDeps, storageAPIHost)
+	publicDeps, err := dependencies.NewPublicDeps(ctx, baseDeps, storageAPIHost, dependencies.WithPreloadComponents(true))
 	if err != nil {
 		return nil, err
 	}
