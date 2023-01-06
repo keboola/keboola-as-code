@@ -188,8 +188,8 @@ node3
 	// Logs differs in number of "the node ... gone" messages
 	wildcards.Assert(t, `
 [node1]INFO  process unique id "node1"
-[node1][distribution]INFO  creating etcd session
-[node1][distribution]INFO  created etcd session | %s
+[node1][distribution][etcd-session]INFO  creating etcd session
+[node1][distribution][etcd-session]INFO  created etcd session | %s
 [node1][distribution]INFO  registering the node "node1"
 [node1][distribution]INFO  the node "node1" registered | %s
 [node1][distribution]INFO  watching for other nodes
@@ -201,13 +201,14 @@ node3
 [node1][distribution]INFO  unregistering the node "node1"
 [node1][distribution]INFO  the node "node1" unregistered | %s
 [node1][distribution]INFO  shutdown done
-[node1][distribution]INFO  closed etcd session
+[node1][distribution][etcd-session]INFO  closing etcd session
+[node1][distribution][etcd-session]INFO  closed etcd session | %s
 [node1]INFO  exited
 `, loggers[0].AllMessages())
 	wildcards.Assert(t, `
 [node2]INFO  process unique id "node2"
-[node2][distribution]INFO  creating etcd session
-[node2][distribution]INFO  created etcd session | %s
+[node2][distribution][etcd-session]INFO  creating etcd session
+[node2][distribution][etcd-session]INFO  created etcd session | %s
 [node2][distribution]INFO  registering the node "node2"
 [node2][distribution]INFO  the node "node2" registered | %s
 [node2][distribution]INFO  watching for other nodes
@@ -220,13 +221,14 @@ node3
 [node2][distribution]INFO  unregistering the node "node2"
 [node2][distribution]INFO  the node "node2" unregistered | %s
 [node2][distribution]INFO  shutdown done
-[node2][distribution]INFO  closed etcd session
+[node2][distribution][etcd-session]INFO  closing etcd session
+[node2][distribution][etcd-session]INFO  closed etcd session | %s
 [node2]INFO  exited
 `, loggers[1].AllMessages())
 	wildcards.Assert(t, `
 [node3]INFO  process unique id "node3"
-[node3][distribution]INFO  creating etcd session
-[node3][distribution]INFO  created etcd session | %s
+[node3][distribution][etcd-session]INFO  creating etcd session
+[node3][distribution][etcd-session]INFO  created etcd session | %s
 [node3][distribution]INFO  registering the node "node3"
 [node3][distribution]INFO  the node "node3" registered | %s
 [node3][distribution]INFO  watching for other nodes
@@ -240,7 +242,8 @@ node3
 [node3][distribution]INFO  unregistering the node "node3"
 [node3][distribution]INFO  the node "node3" unregistered | %s
 [node3][distribution]INFO  shutdown done
-[node3][distribution]INFO  closed etcd session
+[node3][distribution][etcd-session]INFO  closing etcd session
+[node3][distribution][etcd-session]INFO  closed etcd session | %s
 [node3]INFO  exited
 `, loggers[2].AllMessages())
 
@@ -270,8 +273,8 @@ node4
 
 	wildcards.Assert(t, `
 [node4]INFO  process unique id "node4"
-[node4][distribution]INFO  creating etcd session
-[node4][distribution]INFO  created etcd session | %s
+[node4][distribution][etcd-session]INFO  creating etcd session
+[node4][distribution][etcd-session]INFO  created etcd session | %s
 [node4][distribution]INFO  registering the node "node4"
 [node4][distribution]INFO  the node "node4" registered | %s
 [node4][distribution]INFO  watching for other nodes
@@ -281,7 +284,8 @@ node4
 [node4][distribution]INFO  unregistering the node "node4"
 [node4][distribution]INFO  the node "node4" unregistered | %s
 [node4][distribution]INFO  shutdown done
-[node4][distribution]INFO  closed etcd session
+[node4][distribution][etcd-session]INFO  closing etcd session
+[node4][distribution][etcd-session]INFO  closed etcd session | %s
 [node4]INFO  exited
 `, d4.DebugLogger().AllMessages())
 }
