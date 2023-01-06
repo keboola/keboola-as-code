@@ -119,7 +119,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 
 	// Init (GetAll) phase should be finished
 	assertDone(t, func() {
-		<-initDone
+		assert.NoError(t, <-initDone)
 	}, "initDone timeout")
 
 	// CREATE key2
@@ -289,7 +289,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 
 	// Init (GetAll) phase should be finished
 	assertDone(t, func() {
-		<-initDone
+		assert.NoError(t, <-initDone)
 	}, "initDone timeout")
 
 	// CREATE key2

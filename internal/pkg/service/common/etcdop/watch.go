@@ -61,9 +61,9 @@ func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, handleErr func(e
 
 // GetAllAndWatch loads all keys in the prefix by the iterator and then watch for changes.
 // initDone channel signals end of the load phase and start of the watch phase.
-func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) (out <-chan Event, initDone <-chan struct{}) {
+func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) (out <-chan Event, initDone <-chan error) {
 	outCh := make(chan Event)
-	initDoneCh := make(chan struct{})
+	initDoneCh := make(chan error)
 
 	go func() {
 		// GetAll
@@ -79,6 +79,7 @@ func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleE
 		if err != nil {
 			// GetAll error is fatal
 			handleErr(err)
+			initDoneCh <- err
 			close(outCh)
 			close(initDoneCh)
 			return
@@ -139,9 +140,9 @@ func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, handleErr fu
 // GetAllAndWatch loads all keys in the prefix by the iterator and then watch for changes.
 // Values are decoded to the type T.
 // initDone channel signals end of the load phase and start of the watch phase.
-func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) (out <-chan EventT[T], initDone <-chan struct{}) {
+func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) (out <-chan EventT[T], initDone <-chan error) {
 	outCh := make(chan EventT[T])
-	initDoneCh := make(chan struct{})
+	initDoneCh := make(chan error)
 
 	go func() {
 		// GetAll
@@ -158,6 +159,7 @@ func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, han
 		if err != nil {
 			// GetAll error is fatal
 			handleErr(err)
+			initDoneCh <- err
 			close(outCh)
 			close(initDoneCh)
 			return
