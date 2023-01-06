@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/backoff"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -32,7 +33,6 @@ type config struct {
 	password          string
 	namespace         string
 	debugOpLogs       bool
-	connectCtx        context.Context
 	connectTimeout    time.Duration
 	keepAliveTimeout  time.Duration
 	keepAliveInterval time.Duration
@@ -58,13 +58,6 @@ func WithPassword(v string) Option {
 func WithDebugOpLogs(v bool) Option {
 	return func(c *config) {
 		c.debugOpLogs = v
-	}
-}
-
-// WithConnectContext allows you to use a different context within connection testing in the New function.
-func WithConnectContext(v context.Context) Option {
-	return func(c *config) {
-		c.connectCtx = v
 	}
 }
 
@@ -111,7 +104,7 @@ func WithLogger(v log.Logger) Option {
 
 // New creates new etcd client.
 // The client terminates the connection when the context is done.
-func New(ctx context.Context, tracer trace.Tracer, endpoint, namespace string, opts ...Option) (c *etcd.Client, err error) {
+func New(ctx context.Context, proc *servicectx.Process, tracer trace.Tracer, endpoint, namespace string, opts ...Option) (c *etcd.Client, err error) {
 	ctx, span := tracer.Start(ctx, "kac.api.server.templates.dependencies.EtcdClient")
 	defer telemetry.EndSpan(span, &err)
 
@@ -119,7 +112,6 @@ func New(ctx context.Context, tracer trace.Tracer, endpoint, namespace string, o
 	conf := config{
 		endpoint:          endpoint,
 		namespace:         namespace,
-		connectCtx:        ctx,
 		connectTimeout:    defaultConnectionTimeout,
 		keepAliveTimeout:  defaultKeepAliveTimeout,
 		keepAliveInterval: defaultKeepAliveInterval,
@@ -140,7 +132,7 @@ func New(ctx context.Context, tracer trace.Tracer, endpoint, namespace string, o
 	}
 
 	// Setup logger
-	logger := conf.logger
+	logger := conf.logger.AddPrefix("[etcd-client]")
 	if logger == nil {
 		logger = log.NewNopLogger()
 	}
@@ -160,14 +152,14 @@ func New(ctx context.Context, tracer trace.Tracer, endpoint, namespace string, o
 	}))
 
 	// Create connect context
-	connectCtx, connectCancel := context.WithTimeout(conf.connectCtx, conf.connectTimeout)
+	connectCtx, connectCancel := context.WithTimeout(ctx, conf.connectTimeout)
 	defer connectCancel()
 
 	// Create client
 	startTime := time.Now()
 	logger.Infof("connecting to etcd, connectTimeout=%s, keepAliveTimeout=%s, keepAliveInterval=%s", conf.connectTimeout, conf.keepAliveTimeout, conf.keepAliveInterval)
 	c, err = etcd.New(etcd.Config{
-		Context:              ctx, // !!! a long-lived context must be used, client exists as long as the entire server
+		Context:              context.Background(), // !!! a long-lived context must be used, client exists as long as the entire server
 		Endpoints:            []string{endpoint},
 		AutoSyncInterval:     conf.autoSyncInterval,
 		DialTimeout:          conf.connectTimeout,
@@ -208,6 +200,17 @@ func New(ctx context.Context, tracer trace.Tracer, endpoint, namespace string, o
 		_ = c.Close()
 		return nil, errors.Errorf("cannot create etcd client: cannot sync cluster members: %w", err)
 	}
+
+	// Close client when shutting down the server
+	proc.OnShutdown(func() {
+		startTime := time.Now()
+		logger.Info("closing etcd connection")
+		if err := c.Close(); err != nil {
+			logger.Warnf("cannot close etcd connection: %s", err)
+		} else {
+			logger.Infof("closed etcd connection | %s", time.Since(startTime))
+		}
+	})
 
 	logger.Infof(`connected to etcd cluster "%s" | %s`, strings.Join(c.Endpoints(), ";"), time.Since(startTime))
 	return c, nil
