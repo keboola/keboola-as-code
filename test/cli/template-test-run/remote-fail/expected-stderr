@@ -1,4 +1,4 @@
 FAIL keboola/my-template/0.0.1 one remote
 Error:
 - Running remote test "one" for template "my-template" failed:
-  - Job "%s" failed: [%s] logger.ERROR: The 'config' section is required in the configuration. [] []
+  - Job "%s" failed: Invalid configuration: Key "parameters.operation" does not exist.

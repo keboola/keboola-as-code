@@ -10,7 +10,7 @@
           description: "Default Step",
           inputs: [
             {
-              id: "ex-generic-v2-api-base-url",
+              id: "test-api-base-url",
               name: "Api BaseUrl",
               description: "a",
               type: "string",
@@ -47,7 +47,7 @@
           description: "Step 2-1",
           inputs: [
             {
-              id: "ex-generic-v2-api-base-url-2",
+              id: "test-api-base-url-2",
               name: "Api BaseUrl",
               description: "a",
               type: "string",

@@ -1,19 +1,19 @@
 {
   mainConfig: {
-    componentId: "ex-generic-v2",
+    componentId: "keboola.runner-config-test",
     id: ConfigId("empty"),
   },
   configurations: [
     {
-      componentId: "ex-generic-v2",
+      componentId: "keboola.runner-config-test",
       id: ConfigId("empty"),
-      path: "extractor/ex-generic-v2/empty",
+      path: "application/keboola.runner-config-test/empty",
       rows: [],
     },
     {
-      componentId: "ex-generic-v2",
+      componentId: "keboola.runner-config-test",
       id: ConfigId("without-rows"),
-      path: "extractor/ex-generic-v2/without-rows",
+      path: "application/keboola.runner-config-test/without-rows",
       rows: [],
     },
     {
