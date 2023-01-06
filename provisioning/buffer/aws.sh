@@ -17,7 +17,7 @@ aws eks update-kubeconfig --name "$AWS_EKS_CLUSTER_NAME" --region "$AWS_REGION"
 
 if [ "${TMP_ETCD_REDEPLOY:-false}" = "true" ]
 then
-    helm uninstall buffer-etcd -n buffer
+    helm uninstall buffer-etcd -n buffer --wait
     echo "ETCD for Buffer is deleted."
 fi
 
