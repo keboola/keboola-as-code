@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"fmt"
 
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -69,7 +68,7 @@ func (s *Store) createMappingOp(_ context.Context, mapping model.Mapping) op.Boo
 		PutIfNotExists(mapping).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
 			if !ok && err == nil {
-				return false, serviceError.NewResourceAlreadyExistsError("mapping", mapping.MappingKey.String(), "export")
+				return false, serviceError.NewResourceAlreadyExistsError("mapping", mapping.RevisionID.String(), "export")
 			}
 			return ok, err
 		})
@@ -108,7 +107,7 @@ func (s *Store) getLatestMappingOp(_ context.Context, exportKey key.ExportKey, o
 		GetOne(opts...).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Mapping], err error) (*op.KeyValueT[model.Mapping], error) {
 			if kv == nil && err == nil {
-				return nil, serviceError.NewResourceNotFoundError("mapping", fmt.Sprintf("%s/mapping:latest", exportKey.String()))
+				return nil, serviceError.NewNoResourceFoundError("mapping", "export")
 			}
 			return kv, err
 		})
@@ -136,7 +135,7 @@ func (s *Store) getMappingOp(_ context.Context, mappingKey key.MappingKey) op.Fo
 		Get().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Mapping], err error) (*op.KeyValueT[model.Mapping], error) {
 			if kv == nil && err == nil {
-				return nil, serviceError.NewResourceNotFoundError("mapping", mappingKey.String())
+				return nil, serviceError.NewResourceNotFoundError("mapping", mappingKey.RevisionID.String(), "export")
 			}
 			return kv, err
 		})

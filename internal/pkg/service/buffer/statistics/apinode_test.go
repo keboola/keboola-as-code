@@ -40,7 +40,7 @@ func TestStatsManager(t *testing.T) {
 	})
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
+stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
 -----
 {
   "projectId": 123,
@@ -59,7 +59,7 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
 	clk.Add(SyncInterval)
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
+stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
 -----
 {
   "projectId": 123,
@@ -81,7 +81,7 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
 	})
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
+stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
 -----
 {
   "projectId": 123,
@@ -100,7 +100,7 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
 	clk.Add(SyncInterval)
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
+stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
 -----
 {
   "projectId": 123,
@@ -125,7 +125,7 @@ stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:
 	// shutdown triggered sync
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-stats/received/123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
+stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
 -----
 {
   "projectId": 123,

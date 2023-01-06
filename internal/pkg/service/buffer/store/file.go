@@ -23,7 +23,7 @@ func (s *Store) createFileOp(_ context.Context, file model.File) op.BoolOp {
 		PutIfNotExists(file).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
 			if !ok && err == nil {
-				return false, serviceError.NewResourceAlreadyExistsError("file", file.FileKey.String(), "export")
+				return false, serviceError.NewResourceAlreadyExistsError("file", file.FileID.String(), "export")
 			}
 			return ok, err
 		})
@@ -49,7 +49,7 @@ func (s *Store) getOpenedFileOp(_ context.Context, exportKey key.ExportKey, opts
 		GetOne(opts...).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.File], err error) (*op.KeyValueT[model.File], error) {
 			if kv == nil && err == nil {
-				return nil, serviceError.NewResourceNotFoundError("opened file", exportKey.String())
+				return nil, serviceError.NewNoResourceFoundError("opened file", "export")
 			}
 			return kv, err
 		})
@@ -63,7 +63,7 @@ func (s *Store) getFileOp(_ context.Context, fileKey key.FileKey) op.ForType[*op
 		Get().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.File], err error) (*op.KeyValueT[model.File], error) {
 			if kv == nil && err == nil {
-				return nil, serviceError.NewResourceNotFoundError("file", fileKey.String())
+				return nil, serviceError.NewResourceNotFoundError("file", fileKey.FileID.String(), "export")
 			}
 			return kv, err
 		})

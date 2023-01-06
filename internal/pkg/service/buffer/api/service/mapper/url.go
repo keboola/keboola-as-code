@@ -7,5 +7,5 @@ import (
 )
 
 func formatReceiverURL(bufferAPIHost string, k key.ReceiverKey, secret string) string {
-	return fmt.Sprintf("https://%s/v1/import/%s/%s/%s", bufferAPIHost, k.ProjectID.String(), k.ReceiverID, secret)
+	return fmt.Sprintf("https://%s/v1/import/%d/%s/%s", bufferAPIHost, k.ProjectID, k.ReceiverID, secret)
 }

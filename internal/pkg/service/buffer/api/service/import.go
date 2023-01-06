@@ -22,7 +22,7 @@ func (s *service) Import(d dependencies.ForPublicRequest, payload *buffer.Import
 	receiverKey := key.ReceiverKey{ProjectID: payload.ProjectID, ReceiverID: payload.ReceiverID}
 	receiver, found := s.state.Receiver(receiverKey)
 	if !found {
-		return NewResourceNotFoundError("receiver", payload.ReceiverID.String())
+		return NewResourceNotFoundError("receiver", payload.ReceiverID.String(), "project")
 	}
 
 	// Verify secret

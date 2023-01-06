@@ -360,7 +360,7 @@ func TestStore_UpdateSliceStats(t *testing.T) {
 
 	etcdhelper.AssertKVs(t, store.client.KV, `
 <<<<<
-stats/received/123/my-receiver/my-export/0001-01-01T00:01:00.000Z/0001-01-01T01:01:00.000Z/my-node
+stats/received/00000123/my-receiver/my-export/0001-01-01T00:01:00.000Z/0001-01-01T01:01:00.000Z/my-node
 -----
 {
   "projectId": 123,
@@ -375,7 +375,7 @@ stats/received/123/my-receiver/my-export/0001-01-01T00:01:00.000Z/0001-01-01T01:
 >>>>>
 
 <<<<<
-stats/received/123/my-receiver/my-export/0001-01-01T12:01:00.000Z/0001-01-01T13:01:00.000Z/my-node
+stats/received/00000123/my-receiver/my-export/0001-01-01T12:01:00.000Z/0001-01-01T13:01:00.000Z/my-node
 -----
 {
   "projectId": 123,

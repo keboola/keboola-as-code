@@ -1,5 +1,5 @@
 {
   "statusCode": 404,
   "error": "templates.branchNotFound",
-  "message": "Branch \"0\" not found."
+  "message": "Branch \"0\" not found in the project."
 }

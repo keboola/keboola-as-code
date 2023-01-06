@@ -45,7 +45,7 @@ func (s *Store) createReceiverBaseOp(_ context.Context, receiver model.ReceiverB
 		PutIfNotExists(receiver).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
 			if !ok && err == nil {
-				return false, serviceError.NewResourceAlreadyExistsError("receiver", receiver.ReceiverKey.String(), "project")
+				return false, serviceError.NewResourceAlreadyExistsError("receiver", receiver.ReceiverID.String(), "project")
 			}
 			return ok, err
 		})
@@ -81,7 +81,7 @@ func (s *Store) getReceiverBaseOp(_ context.Context, receiverKey key.ReceiverKey
 		Get().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.ReceiverBase], err error) (*op.KeyValueT[model.ReceiverBase], error) {
 			if kv == nil && err == nil {
-				return nil, serviceError.NewResourceNotFoundError("receiver", receiverKey.String())
+				return nil, serviceError.NewResourceNotFoundError("receiver", receiverKey.ReceiverID.String(), "project")
 			}
 			return kv, err
 		})
@@ -169,7 +169,7 @@ func (s *Store) deleteReceiverBaseOp(_ context.Context, receiverKey key.Receiver
 		Delete().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
 			if !ok && err == nil {
-				return false, serviceError.NewResourceNotFoundError("receiver", receiverKey.String())
+				return false, serviceError.NewResourceNotFoundError("receiver", receiverKey.ReceiverID.String(), "project")
 			}
 			return ok, err
 		})

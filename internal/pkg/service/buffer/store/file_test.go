@@ -30,7 +30,7 @@ func TestStore_CreateFile(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-file/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
+file/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -83,7 +83,7 @@ func TestStore_GetFileOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-file/opened/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
+file/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -150,7 +150,7 @@ func TestStore_SetFileState_Transitions(t *testing.T) {
 		assert.Equal(t, tc.to, file.State, desc)
 		expected := `
 <<<<<
-file/<STATE>/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
+file/<STATE>/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z
 -----
 %A
   "state": "<STATE>",%A

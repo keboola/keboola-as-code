@@ -56,7 +56,7 @@ func (s *Store) createExportBaseOp(_ context.Context, export model.ExportBase) o
 		PutIfNotExists(export).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
 			if !ok && err == nil {
-				return false, serviceError.NewResourceAlreadyExistsError("export", export.ExportKey.String(), "receiver")
+				return false, serviceError.NewResourceAlreadyExistsError("export", export.ExportID.String(), "receiver")
 			}
 			return ok, err
 		})
@@ -171,7 +171,7 @@ func (s *Store) getExportBaseOp(_ context.Context, exportKey key.ExportKey) op.F
 		Get().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.ExportBase], err error) (*op.KeyValueT[model.ExportBase], error) {
 			if kv == nil && err == nil {
-				return nil, serviceError.NewResourceNotFoundError("export", exportKey.String())
+				return nil, serviceError.NewResourceNotFoundError("export", exportKey.ExportID.String(), "receiver")
 			}
 			return kv, err
 		})
@@ -277,7 +277,7 @@ func (s *Store) deleteExportBaseOp(_ context.Context, exportKey key.ExportKey) o
 		Delete().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
 			if !ok && err == nil {
-				return false, serviceError.NewResourceNotFoundError("export", exportKey.String())
+				return false, serviceError.NewResourceNotFoundError("export", exportKey.ExportID.String(), "receiver")
 			}
 			return ok, err
 		})
