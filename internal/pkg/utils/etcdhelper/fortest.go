@@ -112,7 +112,13 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespac
 		if err != nil {
 			t.Fatalf(`cannot clear etcd namespace "%s" after test: %s`, namespaceStr, err)
 		}
-		cancel()
+
+		// Close context after second, so running request can finish.
+		// It prevents warnings in the test console.
+		go func() {
+			<-time.After(time.Second)
+			cancel()
+		}()
 	})
 
 	return etcdClient
