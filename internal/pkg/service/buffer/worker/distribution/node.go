@@ -147,18 +147,20 @@ func (n *Node) MustCheckIsOwner(key string) bool {
 	return is
 }
 
-func (n *Node) onWatchEvent(event etcdop.Event) {
-	switch event.Type {
-	case etcdop.CreateEvent, etcdop.UpdateEvent:
-		nodeID := string(event.Kv.Value)
-		n.nodes.Add(nodeID)
-		n.logger.Infof(`found a new node "%s"`, nodeID)
-	case etcdop.DeleteEvent:
-		nodeID := string(event.PrevKv.Value)
-		n.nodes.Remove(nodeID)
-		n.logger.Infof(`the node "%s" gone`, nodeID)
-	default:
-		panic(errors.Errorf(`unexpected event type "%s"`, event.Type.String()))
+func (n *Node) onWatchEvent(events etcdop.Events) {
+	for _, event := range events.Events {
+		switch event.Type {
+		case etcdop.CreateEvent, etcdop.UpdateEvent:
+			nodeID := string(event.Kv.Value)
+			n.nodes.Add(nodeID)
+			n.logger.Infof(`found a new node "%s"`, nodeID)
+		case etcdop.DeleteEvent:
+			nodeID := string(event.PrevKv.Value)
+			n.nodes.Remove(nodeID)
+			n.logger.Infof(`the node "%s" gone`, nodeID)
+		default:
+			panic(errors.Errorf(`unexpected event type "%s"`, event.Type.String()))
+		}
 	}
 }
 
@@ -175,7 +177,7 @@ func (n *Node) register(timeout time.Duration) error {
 	startTime := time.Now()
 	n.logger.Infof(`registering the node "%s"`, n.nodeID)
 
-	key := n.schema.Runtime().Workers().Active().IDs().Node(n.nodeID)
+	key := n.schema.Runtime().WorkerNodes().Active().IDs().Node(n.nodeID)
 	if err := key.Put(n.nodeID, etcd.WithLease(n.session.Lease())).Do(ctx, n.client); err != nil {
 		return errors.Errorf(`cannot register the node "%s": %w`, n.nodeID, err)
 	}
@@ -191,7 +193,7 @@ func (n *Node) unregister(timeout time.Duration) {
 	startTime := time.Now()
 	n.logger.Infof(`unregistering the node "%s"`, n.nodeID)
 
-	key := n.schema.Runtime().Workers().Active().IDs().Node(n.nodeID)
+	key := n.schema.Runtime().WorkerNodes().Active().IDs().Node(n.nodeID)
 	if _, err := key.Delete().Do(ctx, n.client); err != nil {
 		n.logger.Warnf(`cannot unregister the node "%s": %s`, n.nodeID, err)
 	}
@@ -201,7 +203,7 @@ func (n *Node) unregister(timeout time.Duration) {
 
 // watch for other nodes.
 func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) {
-	pfx := n.schema.Runtime().Workers().Active().IDs()
+	pfx := n.schema.Runtime().WorkerNodes().Active().IDs()
 	ch, initDone := pfx.GetAllAndWatch(ctx, n.client, n.onWatchErr, etcd.WithPrevKV(), etcd.WithCreatedNotify())
 
 	wg.Add(1)
@@ -212,11 +214,11 @@ func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) {
 			select {
 			case <-ctx.Done():
 				return
-			case event, ok := <-ch:
+			case events, ok := <-ch:
 				if !ok {
 					return
 				}
-				n.onWatchEvent(event)
+				n.onWatchEvent(events)
 			}
 		}
 	}()
