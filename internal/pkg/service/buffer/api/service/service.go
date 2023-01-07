@@ -12,22 +12,22 @@ import (
 )
 
 type service struct {
-	deps   dependencies.ForServer
-	clock  clock.Clock
-	logger log.Logger
-	stats  *statistics.APINode
-	mapper *mapper.Mapper
-	state  *watcher.State
+	deps    dependencies.ForServer
+	clock   clock.Clock
+	logger  log.Logger
+	stats   *statistics.APINode
+	mapper  *mapper.Mapper
+	watcher *watcher.APINode
 }
 
 func New(d dependencies.ForServer) buffer.Service {
 	return &service{
-		deps:   d,
-		clock:  d.Clock(),
-		logger: d.Logger(),
-		stats:  statistics.NewAPINode(d),
-		mapper: mapper.NewMapper(d),
-		state:  watcher.NewState(d),
+		deps:    d,
+		clock:   d.Clock(),
+		logger:  d.Logger(),
+		stats:   statistics.NewAPINode(d),
+		mapper:  mapper.NewMapper(d),
+		watcher: d.WatcherAPINode(),
 	}
 }
 

@@ -15,6 +15,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	serviceDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -23,11 +25,15 @@ import (
 // The container exists during the entire run of the Worker.
 type ForWorker interface {
 	serviceDependencies.ForService
+	DistributionWorkerNode() *distribution.Node
+	WatcherWorkerNode() *watcher.WorkerNode
 }
 
 // forWorker implements ForWorker interface.
 type forWorker struct {
 	serviceDependencies.ForService
+	distNode    *distribution.Node
+	watcherNode *watcher.WorkerNode
 }
 
 func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provider, logger log.Logger, debug, dumpHTTP bool) (v ForWorker, err error) {
@@ -54,5 +60,23 @@ func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 		ForService: serviceDeps,
 	}
 
+	d.distNode, err = distribution.NewNode(d)
+	if err != nil {
+		return nil, err
+	}
+
+	d.watcherNode, err = watcher.NewWorkerNode(d)
+	if err != nil {
+		return nil, err
+	}
+
 	return d, nil
+}
+
+func (v *forWorker) DistributionWorkerNode() *distribution.Node {
+	return v.distNode
+}
+
+func (v *forWorker) WatcherWorkerNode() *watcher.WorkerNode {
+	return v.watcherNode
 }

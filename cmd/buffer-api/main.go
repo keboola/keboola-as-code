@@ -81,9 +81,12 @@ func start(host, port string, debug, debugHTTP bool, logger log.Logger, envs *en
 		return err
 	}
 
+	// Create service.
+	srv := service.New(d)
+
 	// Wrap the services in endpoints that can be invoked from other services
 	// potentially running in different processes.
-	endpoints := bufferGen.NewEndpoints(service.New(d))
+	endpoints := bufferGen.NewEndpoints(srv)
 
 	// Create server URL.
 	serverURL := &url.URL{Scheme: "http", Host: net.JoinHostPort(host, port)}

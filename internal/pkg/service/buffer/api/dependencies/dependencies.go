@@ -37,6 +37,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -57,6 +58,7 @@ const (
 type ForServer interface {
 	serviceDependencies.ForService
 	BufferAPIHost() string
+	WatcherAPINode() *watcher.APINode
 }
 
 // ForPublicRequest interface provides dependencies for a public request that does not contain the Storage API token.
@@ -83,6 +85,7 @@ type ForProjectRequest interface {
 type forServer struct {
 	serviceDependencies.ForService
 	bufferApiHost string
+	watcher       *watcher.APINode
 }
 
 // forPublicRequest implements ForPublicRequest interface.
@@ -135,6 +138,11 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 		bufferApiHost: bufferApiHost,
 	}
 
+	d.watcher, err = watcher.NewAPINode(d)
+	if err != nil {
+		return nil, err
+	}
+
 	return d, nil
 }
 
@@ -177,6 +185,10 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 
 func (v *forServer) BufferAPIHost() string {
 	return v.bufferApiHost
+}
+
+func (v *forServer) WatcherAPINode() *watcher.APINode {
+	return v.watcher
 }
 
 func (v *forPublicRequest) Logger() log.Logger {
