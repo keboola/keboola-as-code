@@ -34,6 +34,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	serviceDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
@@ -58,6 +59,7 @@ const (
 type ForServer interface {
 	serviceDependencies.ForService
 	BufferAPIHost() string
+	StatsAPINode() *statistics.APINode
 	WatcherAPINode() *watcher.APINode
 }
 
@@ -85,6 +87,7 @@ type ForProjectRequest interface {
 type forServer struct {
 	serviceDependencies.ForService
 	bufferApiHost string
+	stats         *statistics.APINode
 	watcher       *watcher.APINode
 }
 
@@ -138,6 +141,8 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 		bufferApiHost: bufferApiHost,
 	}
 
+	d.stats = statistics.NewAPINode(d)
+
 	d.watcher, err = watcher.NewAPINode(d)
 	if err != nil {
 		return nil, err
@@ -185,6 +190,10 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 
 func (v *forServer) BufferAPIHost() string {
 	return v.bufferApiHost
+}
+
+func (v *forServer) StatsAPINode() *statistics.APINode {
+	return v.stats
 }
 
 func (v *forServer) WatcherAPINode() *watcher.APINode {
