@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
 )
 
@@ -23,7 +24,7 @@ func AssertKVs(t *testing.T, client etcd.KV, expected string) {
 }
 
 // ExpectModification waits until the operation makes some change in etcd or a timeout occurs.
-func ExpectModification(t *testing.T, client *etcd.Client, operation func()) {
+func ExpectModification(t *testing.T, client *etcd.Client, operation func()) *etcdserverpb.ResponseHeader {
 	t.Helper()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -45,6 +46,8 @@ func ExpectModification(t *testing.T, client *etcd.Client, operation func()) {
 		if resp.Err() != nil {
 			t.Fatal(resp.Err())
 		}
-		return
+		return &resp.Header
 	}
+
+	return nil
 }
