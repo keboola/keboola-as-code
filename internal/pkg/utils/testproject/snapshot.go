@@ -188,7 +188,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	// Join buckets with tables
 	for _, t := range tables {
-		b := bucketsMap[t.Bucket.ID]
+		b := bucketsMap[t.ID.BucketID]
 		b.Tables = append(b.Tables, &fixtures.Table{
 			ID:          t.ID,
 			URI:         t.Uri,

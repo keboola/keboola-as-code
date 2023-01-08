@@ -1,0 +1,58 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    }
+  ],
+  "buckets": [
+    {
+      "id": "in.c-bucket",
+      "uri": "https://%%TEST_KBC_STORAGE_API_HOST%%/v2/storage/buckets/in.c-bucket",
+      "name": "",
+      "displayName": "bucket",
+      "stage": "",
+      "description": "",
+      "tables": [
+        {
+          "id": "in.c-bucket.table",
+          "uri": "https://%%TEST_KBC_STORAGE_API_HOST%%/v2/storage/tables/in.c-bucket.table",
+          "name": "table",
+          "displayName": "table",
+          "primaryKey": [],
+          "columns": null
+        },
+        {
+          "id": "in.c-bucket.table2",
+          "uri": "https://%%TEST_KBC_STORAGE_API_HOST%%/v2/storage/tables/in.c-bucket.table2",
+          "name": "table2",
+          "displayName": "table2",
+          "primaryKey": [],
+          "columns": null
+        }
+      ]
+    },
+    {
+      "id": "in.c-bucket2",
+      "uri": "https://%%TEST_KBC_STORAGE_API_HOST%%/v2/storage/buckets/in.c-bucket2",
+      "name": "",
+      "displayName": "bucket2",
+      "stage": "",
+      "description": "",
+      "tables": [
+        {
+          "id": "in.c-bucket2.table1",
+          "uri": "https://%%TEST_KBC_STORAGE_API_HOST%%/v2/storage/tables/in.c-bucket2.table1",
+          "name": "table1",
+          "displayName": "table1",
+          "primaryKey": [],
+          "columns": null
+        }
+      ]
+    }
+  ]
+}
