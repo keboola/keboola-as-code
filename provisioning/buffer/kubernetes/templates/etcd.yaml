@@ -17,4 +17,3 @@ defragmentation:
 persistence:
   enabled: true
   size: 10Gi
-  storageClass: "$ETCD_STORAGE_CLASS_NAME"

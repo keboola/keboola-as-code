@@ -9,7 +9,7 @@ envsubst < templates/namespace.yaml > deploy/namespace.yaml
 
 # Etcd
 cp ../../common/etcd/values.yaml deploy/etcd/values_common.yaml
-envsubst < templates/etcd.yaml > deploy/etcd/values_buffer.yaml
+cp templates/etcd.yaml deploy/etcd/values_buffer.yaml
 
 # API
 envsubst < templates/api/config-map.yaml > deploy/api/config-map.yaml
