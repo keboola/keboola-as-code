@@ -17,12 +17,10 @@ aws eks update-kubeconfig --name "$AWS_EKS_CLUSTER_NAME" --region "$AWS_REGION"
 
 if [ "${TMP_ETCD_REDEPLOY:-false}" = "true" ]
 then
-    kubectl delete deployment buffer-api -n buffer
-    kubectl delete deployment buffer-worker -n buffer
     helm uninstall buffer-etcd -n buffer --wait
-    kubectl delete PersistentVolumeClaim data-buffer-etcd-0 -n buffer
-    kubectl delete PersistentVolumeClaim data-buffer-etcd-1 -n buffer
-    kubectl delete PersistentVolumeClaim data-buffer-etcd-2 -n buffer
+    kubectl delete pvc data-buffer-etcd-0 -n buffer
+    kubectl delete pvc data-buffer-etcd-1 -n buffer
+    kubectl delete pvc data-buffer-etcd-2 -n buffer
     echo "ETCD for Buffer is deleted."
 fi
 
