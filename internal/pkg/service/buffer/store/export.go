@@ -37,9 +37,8 @@ func (s *Store) CreateExport(ctx context.Context, export model.Export) (err erro
 	return err
 }
 
-func (s *Store) createExportOp(ctx context.Context, export model.Export) *op.TxnOp {
+func (s *Store) createExportOp(ctx context.Context, export model.Export) *op.TxnOpDef {
 	return op.MergeToTxn(
-		ctx,
 		s.createExportBaseOp(ctx, export.ExportBase),
 		s.createMappingOp(ctx, export.Mapping),
 		s.createTokenOp(ctx, export.Token),
@@ -86,7 +85,7 @@ func (s *Store) UpdateExport(ctx context.Context, k key.ExportKey, fn func(model
 	return err
 }
 
-func (s *Store) updateExportOp(ctx context.Context, oldValue, newValue model.Export) (*op.TxnOp, error) {
+func (s *Store) updateExportOp(ctx context.Context, oldValue, newValue model.Export) (*op.TxnOpDef, error) {
 	ops := []op.Op{
 		s.updateExportBaseOp(ctx, newValue.ExportBase),
 	}
@@ -120,7 +119,7 @@ func (s *Store) updateExportOp(ctx context.Context, oldValue, newValue model.Exp
 		ops = append(ops, closeFileOp, closeSliceOp, createFileOp, createSliceOp)
 	}
 
-	return op.MergeToTxn(ctx, ops...), nil
+	return op.MergeToTxn(ops...), nil
 }
 
 func (s *Store) updateExportBaseOp(_ context.Context, export model.ExportBase) op.NoResultOp {
@@ -143,7 +142,6 @@ func (s *Store) GetExport(ctx context.Context, exportKey key.ExportKey) (r model
 func (s *Store) getExportOp(ctx context.Context, exportKey key.ExportKey) op.JoinTo[model.Export] {
 	export := model.Export{}
 	return op.Join(
-		ctx,
 		&export,
 		s.getExportBaseOp(ctx, exportKey).WithOnResult(func(kv *op.KeyValueT[model.ExportBase]) {
 			export.ExportBase = kv.Value
@@ -261,7 +259,6 @@ func (s *Store) DeleteExport(ctx context.Context, exportKey key.ExportKey) (err 
 	defer telemetry.EndSpan(span, &err)
 
 	_, err = op.MergeToTxn(
-		ctx,
 		s.deleteExportBaseOp(ctx, exportKey),
 		s.deleteExportMappingsOp(ctx, exportKey),
 		s.deleteExportTokenOp(ctx, exportKey),

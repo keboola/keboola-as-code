@@ -111,7 +111,6 @@ func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, lock stri
 	// Atomicity: If the lock key already exists, the then the transaction fails and task is ignored.
 	// Resistance to outages: If the Worker node fails, the lock is released automatically by the lease, after the session TTL seconds.
 	createTaskOp := op.MergeToTxn(
-		ctx,
 		taskEtcdKey.Put(task),
 		lockEtcdKey.PutIfNotExists(task.WorkerNode, etcd.WithLease(n.session.Lease())),
 	)
@@ -163,7 +162,6 @@ func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, lock stri
 
 			// Update task and release lock in etcd
 			finishTaskOp := op.MergeToTxn(
-				opCtx,
 				taskEtcdKey.Put(task),
 				lockEtcdKey.DeleteIfExists(),
 			)

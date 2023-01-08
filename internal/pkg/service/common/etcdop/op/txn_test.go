@@ -160,7 +160,7 @@ func TestMergeToTxn_ToRaw_Complex(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	txn1 := MergeToTxn(ctx, opsForTest(false)...)
+	txn1 := MergeToTxn(opsForTest(false)...).Txn(ctx)
 
 	// Add another IF
 	txn1.If(etcd.Compare(etcd.Version("missingKey"), "=", 0))
@@ -210,7 +210,6 @@ func TestMergeToTxn_ToRaw_Nested_Txn(t *testing.T) {
 
 	// Merge 3 operations
 	txn := MergeToTxn(
-		ctx,
 		NewTxnOp().
 			If(etcd.Compare(etcd.Version("shouldBeMissing1"), "=", 0)).
 			Then(
@@ -413,11 +412,9 @@ func TestMergeToTxn_Processors(t *testing.T) {
 		}
 	}
 	txn := MergeToTxn(
-		ctx,
 		pfx.Key("key1").PutIfNotExists("value").WithProcessor(createProcessor("key1")),
 		pfx.Key("key2").PutIfNotExists("value").WithProcessor(createProcessor("key2")),
 		MergeToTxn(
-			ctx,
 			pfx.Key("key3").PutIfNotExists("value").WithProcessor(createProcessor("key3")),
 			pfx.Key("key4").PutIfNotExists("value").WithProcessor(createProcessor("key4")),
 		),

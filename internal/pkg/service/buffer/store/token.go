@@ -34,7 +34,7 @@ func (s *Store) UpdateTokens(ctx context.Context, tokens []model.Token) (err err
 		ops = append(ops, s.updateTokenOp(ctx, token))
 	}
 
-	_, err = op.MergeToTxn(ctx, ops...).Do(ctx, s.client)
+	_, err = op.MergeToTxn(ops...).Do(ctx, s.client)
 
 	return err
 }

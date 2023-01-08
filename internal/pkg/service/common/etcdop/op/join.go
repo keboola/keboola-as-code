@@ -8,15 +8,15 @@ import (
 
 type JoinTo[R any] struct {
 	result *R
-	txn    *TxnOp
+	txn    *TxnOpDef
 }
 
 // Join is a wrapper over a transaction mapped to a result R.
 // For usage see tests.
-func Join[R any](ctx context.Context, result *R, ops ...Op) JoinTo[R] {
+func Join[R any](result *R, ops ...Op) JoinTo[R] {
 	return JoinTo[R]{
 		result: result,
-		txn:    MergeToTxn(ctx, ops...),
+		txn:    MergeToTxn(ops...),
 	}
 }
 

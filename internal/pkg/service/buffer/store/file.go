@@ -90,7 +90,7 @@ func (s *Store) SetFileState(ctx context.Context, now time.Time, file *model.Fil
 	return true, nil
 }
 
-func (s *Store) setFileStateOp(ctx context.Context, now time.Time, file *model.File, to filestate.State) (*op.TxnOp, error) {
+func (s *Store) setFileStateOp(ctx context.Context, now time.Time, file *model.File, to filestate.State) (*op.TxnOpDef, error) {
 	from := file.State
 	clone := *file
 	stm := filestate.NewSTM(file.State, func(ctx context.Context, from, to filestate.State) error {
@@ -125,7 +125,7 @@ func (s *Store) setFileStateOp(ctx context.Context, now time.Time, file *model.F
 
 	// Create transaction
 	txn := op.
-		MergeToTxn(ctx, ops...).
+		MergeToTxn(ops...).
 		WithProcessor(func(_ context.Context, _ *etcd.TxnResponse, result op.TxnResult, err error) error {
 			if err == nil {
 				*file = clone
