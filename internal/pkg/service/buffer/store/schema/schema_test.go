@@ -241,20 +241,36 @@ func TestSchema(t *testing.T) {
 			"runtime/",
 		},
 		{
-			s.Runtime().Workers().Prefix(),
-			"runtime/workers/",
+			s.Runtime().WorkerNodes().Prefix(),
+			"runtime/worker/node/",
 		},
 		{
-			s.Runtime().Workers().Active().Prefix(),
-			"runtime/workers/active/",
+			s.Runtime().WorkerNodes().Active().Prefix(),
+			"runtime/worker/node/active/",
 		},
 		{
-			s.Runtime().Workers().Active().IDs().Prefix(),
-			"runtime/workers/active/ids/",
+			s.Runtime().WorkerNodes().Active().IDs().Prefix(),
+			"runtime/worker/node/active/id/",
 		},
 		{
-			s.Runtime().Workers().Active().IDs().Node("my-node").Key(),
-			"runtime/workers/active/ids/my-node",
+			s.Runtime().WorkerNodes().Active().IDs().Node("my-node").Key(),
+			"runtime/worker/node/active/id/my-node",
+		},
+		{
+			s.Runtime().APINodes().Prefix(),
+			"runtime/api/node/",
+		},
+		{
+			s.Runtime().APINodes().Watchers().Prefix(),
+			"runtime/api/node/watcher/",
+		},
+		{
+			s.Runtime().APINodes().Watchers().SlicesRevision().Prefix(),
+			"runtime/api/node/watcher/slices/revision/",
+		},
+		{
+			s.Runtime().APINodes().Watchers().SlicesRevision().Node("my-node").Key(),
+			"runtime/api/node/watcher/slices/revision/my-node",
 		},
 		{
 			s.ReceivedStats().InReceiver(receiverKey).Prefix(),

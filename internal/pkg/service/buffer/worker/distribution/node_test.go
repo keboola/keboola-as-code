@@ -99,19 +99,19 @@ func TestNodesDiscovery(t *testing.T) {
 	// Check etcd state
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-runtime/workers/active/ids/node1 (lease=%d)
+runtime/worker/node/active/id/node1 (lease=%d)
 -----
 node1
 >>>>>
 
 <<<<<
-runtime/workers/active/ids/node2 (lease=%d)
+runtime/worker/node/active/id/node2 (lease=%d)
 -----
 node2
 >>>>>
 
 <<<<<
-runtime/workers/active/ids/node3 (lease=%d)
+runtime/worker/node/active/id/node3 (lease=%d)
 -----
 node3
 >>>>>
@@ -130,13 +130,13 @@ node3
 	// Check etcd state
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-runtime/workers/active/ids/node2 (lease=%d)
+runtime/worker/node/active/id/node2 (lease=%d)
 -----
 node2
 >>>>>
 
 <<<<<
-runtime/workers/active/ids/node3 (lease=%d)
+runtime/worker/node/active/id/node3 (lease=%d)
 -----
 node3
 >>>>>
@@ -164,7 +164,7 @@ node3
 	// Check etcd state
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-runtime/workers/active/ids/node3 (lease=%d)
+runtime/worker/node/active/id/node3 (lease=%d)
 -----
 node3
 >>>>>
@@ -261,7 +261,7 @@ node3
 	// Check etcd state
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-runtime/workers/active/ids/node4 (lease=%d)
+runtime/worker/node/active/id/node4 (lease=%d)
 -----
 node4
 >>>>>

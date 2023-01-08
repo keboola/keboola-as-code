@@ -38,11 +38,7 @@ import (
 )
 
 type Node struct {
-	wg    *sync.WaitGroup
-	clock clock.Clock
-
-	config  config
-	proc    *servicectx.Process
+	clock   clock.Clock
 	logger  log.Logger
 	schema  *schema.Schema
 	client  *etcd.Client
@@ -67,12 +63,11 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 		o(&c)
 	}
 
+	proc := d.Process()
+
 	// Create instance
 	n := &Node{
-		wg:     &sync.WaitGroup{},
 		clock:  d.Clock(),
-		config: c,
-		proc:   d.Process(),
 		logger: d.Logger().AddPrefix("[distribution]"),
 		schema: d.Schema(),
 		client: d.EtcdClient(),
@@ -82,27 +77,29 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 
 	// Create etcd session
 	var err error
-	n.session, err = etcdclient.CreateConcurrencySession(n.logger, n.proc, n.client, c.ttlSeconds)
+	n.session, err = etcdclient.CreateConcurrencySession(n.logger, proc, n.client, c.ttlSeconds)
 	if err != nil {
 		return nil, err
 	}
 
 	// Register node
-	if err := n.register(); err != nil {
+	if err := n.register(c.startupTimeout); err != nil {
 		return nil, err
 	}
 
-	// Watch for nodes
+	// Graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
-	n.watch(ctx)
-
-	n.proc.OnShutdown(func() {
+	wg := &sync.WaitGroup{}
+	proc.OnShutdown(func() {
 		n.logger.Info("received shutdown request")
 		cancel()
-		n.wg.Wait()
-		n.unregister()
+		wg.Wait()
+		n.unregister(c.shutdownTimeout)
 		n.logger.Info("shutdown done")
 	})
+
+	// Watch for nodes
+	n.watch(ctx, wg)
 
 	return n, nil
 }
@@ -150,18 +147,20 @@ func (n *Node) MustCheckIsOwner(key string) bool {
 	return is
 }
 
-func (n *Node) onWatchEvent(event etcdop.Event) {
-	switch event.Type {
-	case etcdop.CreateEvent, etcdop.UpdateEvent:
-		nodeID := string(event.Kv.Value)
-		n.nodes.Add(nodeID)
-		n.logger.Infof(`found a new node "%s"`, nodeID)
-	case etcdop.DeleteEvent:
-		nodeID := string(event.PrevKv.Value)
-		n.nodes.Remove(nodeID)
-		n.logger.Infof(`the node "%s" gone`, nodeID)
-	default:
-		panic(errors.Errorf(`unexpected event type "%s"`, event.Type.String()))
+func (n *Node) onWatchEvent(events etcdop.Events) {
+	for _, event := range events.Events {
+		switch event.Type {
+		case etcdop.CreateEvent, etcdop.UpdateEvent:
+			nodeID := string(event.Kv.Value)
+			n.nodes.Add(nodeID)
+			n.logger.Infof(`found a new node "%s"`, nodeID)
+		case etcdop.DeleteEvent:
+			nodeID := string(event.PrevKv.Value)
+			n.nodes.Remove(nodeID)
+			n.logger.Infof(`the node "%s" gone`, nodeID)
+		default:
+			panic(errors.Errorf(`unexpected event type "%s"`, event.Type.String()))
+		}
 	}
 }
 
@@ -171,14 +170,14 @@ func (n *Node) onWatchErr(err error) {
 
 // register node in the etcd prefix,
 // Deregistration is ensured double: by OnShutdown callback and by the lease.
-func (n *Node) register() error {
-	ctx, cancel := context.WithTimeout(n.client.Ctx(), n.config.startupTimeout)
+func (n *Node) register(timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(n.client.Ctx(), timeout)
 	defer cancel()
 
 	startTime := time.Now()
 	n.logger.Infof(`registering the node "%s"`, n.nodeID)
 
-	key := n.schema.Runtime().Workers().Active().IDs().Node(n.nodeID)
+	key := n.schema.Runtime().WorkerNodes().Active().IDs().Node(n.nodeID)
 	if err := key.Put(n.nodeID, etcd.WithLease(n.session.Lease())).Do(ctx, n.client); err != nil {
 		return errors.Errorf(`cannot register the node "%s": %w`, n.nodeID, err)
 	}
@@ -187,14 +186,14 @@ func (n *Node) register() error {
 	return nil
 }
 
-func (n *Node) unregister() {
-	ctx, cancel := context.WithTimeout(context.Background(), n.config.shutdownTimeout)
+func (n *Node) unregister(timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	startTime := time.Now()
 	n.logger.Infof(`unregistering the node "%s"`, n.nodeID)
 
-	key := n.schema.Runtime().Workers().Active().IDs().Node(n.nodeID)
+	key := n.schema.Runtime().WorkerNodes().Active().IDs().Node(n.nodeID)
 	if _, err := key.Delete().Do(ctx, n.client); err != nil {
 		n.logger.Warnf(`cannot unregister the node "%s": %s`, n.nodeID, err)
 	}
@@ -203,23 +202,23 @@ func (n *Node) unregister() {
 }
 
 // watch for other nodes.
-func (n *Node) watch(ctx context.Context) {
-	pfx := n.schema.Runtime().Workers().Active().IDs()
+func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) {
+	pfx := n.schema.Runtime().WorkerNodes().Active().IDs()
 	ch, initDone := pfx.GetAllAndWatch(ctx, n.client, n.onWatchErr, etcd.WithPrevKV(), etcd.WithCreatedNotify())
 
-	n.wg.Add(1)
+	wg.Add(1)
 	go func() {
-		defer n.wg.Done()
+		defer wg.Done()
 		n.logger.Info("watching for other nodes")
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case event, ok := <-ch:
+			case events, ok := <-ch:
 				if !ok {
 					return
 				}
-				n.onWatchEvent(event)
+				n.onWatchEvent(events)
 			}
 		}
 	}()

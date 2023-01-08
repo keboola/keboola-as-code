@@ -171,6 +171,42 @@
   "fileId": "%s",
   "sliceId": "%s",
   "state": "opened",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "receiver-1",
+    "exportId": "export-1",
+    "revisionId": 1,
+    "tableId": "in.c-bucket.table",
+    "incremental": true,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "body",
+        "name": "body"
+      },
+      {
+        "type": "headers",
+        "name": "headers"
+      },
+      {
+        "type": "ip",
+        "name": "ip"
+      },
+      {
+        "type": "datetime",
+        "name": "datetime"
+      },
+      {
+        "type": "template",
+        "name": "template",
+        "language": "jsonnet",
+        "content": "Body('col1')+\":\"+Body('col2')"
+      }
+    ]
+  },
   "sliceNumber": 1
 }
 >>>>>

@@ -83,14 +83,6 @@ func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Proce
 	// to notify the main goroutine when to stop the server.
 	errCh := make(chan error, 1)
 
-	// Setup interrupt handler,
-	// so SIGINT and SIGTERM signals cause the services to stop gracefully.
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-		errCh <- errors.Errorf("%s", <-c)
-	}()
-
 	proc := &Process{
 		ctx:      ctx,
 		cancel:   cancel,
@@ -110,6 +102,21 @@ func New(ctx context.Context, cancel context.CancelFunc, opts ...Option) (*Proce
 			proc.onShutdown[i]()
 		}
 	})
+
+	// Setup interrupt handler,
+	// so SIGINT and SIGTERM signals cause the services to stop gracefully.
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+		select {
+		case <-ctx.Done():
+			// Shutdown was triggered by another way
+		case sig := <-sigCh:
+			// Shutdown signal
+			proc.Shutdown(errors.Errorf("%s", sig))
+		}
+	}()
 
 	proc.logger.Infof(`process unique id "%s"`, proc.UniqueID())
 	return proc, nil

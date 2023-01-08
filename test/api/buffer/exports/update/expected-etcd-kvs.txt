@@ -278,6 +278,26 @@
   "fileId": "%s",
   "sliceId": "%s,
   "state": "closing",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "my-receiver",
+    "exportId": "my-export-1",
+    "revisionId": 1,
+    "tableId": "in.c-bucket.table",
+    "incremental": true,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "template",
+        "name": "template",
+        "language": "jsonnet",
+        "content": "body.key+\":\"+body.value"
+      }
+    ]
+  },
   "sliceNumber": 1,
   "closingAt": "%s"
 }
@@ -293,6 +313,26 @@
   "fileId": "%s",
   "sliceId": "%s",
   "state": "closing",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "my-receiver",
+    "exportId": "my-export-1",
+    "revisionId": 2,
+    "tableId": "in.c-bucket.table",
+    "incremental": false,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "template",
+        "name": "template",
+        "language": "jsonnet",
+        "content": "body.key+\":\"+body.value"
+      }
+    ]
+  },
   "sliceNumber": 1,
   "closingAt": "%s"
 }
@@ -308,6 +348,24 @@
   "fileId": "%s",
   "sliceId": "%s",
   "state": "closing",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "my-receiver",
+    "exportId": "my-export-1",
+    "revisionId": 3,
+    "tableId": "in.c-bucket.table2",
+    "incremental": true,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
   "sliceNumber": 1,
   "closingAt": "%s"
 }
@@ -323,6 +381,24 @@
   "fileId": "%s",
   "sliceId": "%s",
   "state": "opened",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "my-receiver",
+    "exportId": "my-export-1",
+    "revisionId": 4,
+    "tableId": "in.c-bucket2.table1",
+    "incremental": true,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
   "sliceNumber": 1
 }
 >>>>>

@@ -7,9 +7,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 )
 
+// Slice represent a file slice with records.
+// A copy of the mapping is stored for retrieval optimization.
+// A change in the mapping causes a new file and slice to be created so the mapping is immutable.
 type Slice struct {
 	key.SliceKey
 	State       slicestate.State `json:"state" validate:"required,oneof=opened closing closed uploading uploaded failed"`
+	Mapping     Mapping          `json:"mapping" validate:"required,dive"`
 	Number      int              `json:"sliceNumber" validate:"required"`
 	ClosingAt   *time.Time       `json:"closingAt,omitempty"`
 	ClosedAt    *time.Time       `json:"closedAt,omitempty"`
@@ -19,10 +23,11 @@ type Slice struct {
 	LastError   string           `json:"lastError,omitempty"`
 }
 
-func NewSlice(fileKey key.FileKey, now time.Time, number int) Slice {
+func NewSlice(fileKey key.FileKey, now time.Time, mapping Mapping, number int) Slice {
 	return Slice{
 		SliceKey: key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(now)},
 		State:    slicestate.Opened,
+		Mapping:  mapping,
 		Number:   number,
 	}
 }

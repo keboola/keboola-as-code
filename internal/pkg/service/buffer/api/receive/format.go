@@ -9,13 +9,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func FormatCSVRow(ctx *receivectx.Context, export model.Export) (string, error) {
+func FormatCSVRow(ctx *receivectx.Context, mapping model.Mapping) (string, error) {
 	errs := errors.NewMultiErrorNoTrace()
-	csvRow := make([]string, len(export.Mapping.Columns))
+	csvRow := make([]string, len(mapping.Columns))
 
 	// Get value for each column
 	i := 0
-	for _, column := range export.Mapping.Columns {
+	for _, column := range mapping.Columns {
 		if csvCol, err := column.CSVValue(ctx); err == nil {
 			csvRow[i] = csvCol
 		} else {

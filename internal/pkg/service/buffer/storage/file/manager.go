@@ -66,7 +66,7 @@ func (m *Manager) CreateFile(ctx context.Context, rb rollback.Builder, export *m
 	})
 
 	export.OpenedFile = model.NewFile(export.ExportKey, now, export.Mapping, file)
-	export.OpenedSlice = model.NewSlice(export.OpenedFile.FileKey, now, 1)
+	export.OpenedSlice = model.NewSlice(export.OpenedFile.FileKey, now, export.Mapping, 1)
 	return nil
 }
 

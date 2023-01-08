@@ -138,6 +138,24 @@
   "fileId": "%s",
   "sliceId": "%s",
   "state": "opened",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "receiver-b",
+    "exportId": "export-1",
+    "revisionId": 1,
+    "tableId": "in.c-bucket.table",
+    "incremental": false,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
   "sliceNumber": 1
 }
 >>>>>
@@ -152,6 +170,24 @@
   "fileId": "%s",
   "sliceId": "%s",
   "state": "opened",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "receiver-c",
+    "exportId": "export-2",
+    "revisionId": 1,
+    "tableId": "in.c-bucket.table",
+    "incremental": false,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
   "sliceNumber": 1
 }
 >>>>>

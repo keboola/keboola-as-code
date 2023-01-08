@@ -44,7 +44,7 @@ func TestPrefix_Watch(t *testing.T) {
 			Key:   []byte("my/prefix/key1"),
 			Value: []byte("foo"),
 		}
-		assert.Equal(t, expected, clearEvent(<-ch))
+		assert.Equal(t, Events{Events: []Event{expected}}, clearEvents(<-ch))
 	}, "CREATE timeout")
 
 	// UPDATE key
@@ -62,7 +62,7 @@ func TestPrefix_Watch(t *testing.T) {
 			Key:   []byte("my/prefix/key1"),
 			Value: []byte("new"),
 		}
-		assert.Equal(t, expected, clearEvent(<-ch))
+		assert.Equal(t, Events{Events: []Event{expected}}, clearEvents(<-ch))
 	}, "UPDATE timeout")
 
 	// DELETE key
@@ -81,7 +81,7 @@ func TestPrefix_Watch(t *testing.T) {
 		expected.Kv = &mvccpb.KeyValue{
 			Key: []byte("my/prefix/key1"),
 		}
-		assert.Equal(t, expected, clearEvent(<-ch))
+		assert.Equal(t, Events{Events: []Event{expected}}, clearEvents(<-ch))
 	}, "DELETE timeout")
 
 	wg.Wait()
@@ -114,18 +114,18 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 			Key:   []byte("my/prefix/key1"),
 			Value: []byte("foo1"),
 		}
-		assert.Equal(t, expected, clearEvent(<-ch))
+		assert.Equal(t, Events{Events: []Event{expected}}, clearEvents(<-ch))
 	}, "CREATE1 timeout")
 
 	// Init (GetAll) phase should be finished
 	assertDone(t, func() {
-		<-initDone
+		assert.NoError(t, <-initDone)
 	}, "initDone timeout")
 
 	// CREATE key2
 	wg.Add(1)
 	go func() {
-		wg.Done()
+		defer wg.Done()
 		assert.NoError(t, pfx.Key("key2").Put("foo2").Do(ctx, c))
 	}()
 
@@ -137,13 +137,13 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 			Key:   []byte("my/prefix/key2"),
 			Value: []byte("foo2"),
 		}
-		assert.Equal(t, expected, clearEvent(<-ch))
+		assert.Equal(t, Events{Events: []Event{expected}}, clearEvents(<-ch))
 	}, "CREATE2 timeout")
 
 	// UPDATE key
 	wg.Add(1)
 	go func() {
-		wg.Done()
+		defer wg.Done()
 		assert.NoError(t, pfx.Key("key2").Put("new").Do(ctx, c))
 	}()
 
@@ -155,13 +155,13 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 			Key:   []byte("my/prefix/key2"),
 			Value: []byte("new"),
 		}
-		assert.Equal(t, expected, clearEvent(<-ch))
+		assert.Equal(t, Events{Events: []Event{expected}}, clearEvents(<-ch))
 	}, "UPDATE timeout")
 
 	// DELETE key
 	wg.Add(1)
 	go func() {
-		wg.Done()
+		defer wg.Done()
 		ok, err := pfx.Key("key1").Delete().Do(ctx, c)
 		assert.NoError(t, err)
 		assert.True(t, ok)
@@ -174,7 +174,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 		expected.Kv = &mvccpb.KeyValue{
 			Key: []byte("my/prefix/key1"),
 		}
-		assert.Equal(t, expected, clearEvent(<-ch))
+		assert.Equal(t, Events{Events: []Event{expected}}, clearEvents(<-ch))
 	}, "DELETE timeout")
 
 	wg.Wait()
@@ -212,7 +212,7 @@ func TestPrefixT_Watch(t *testing.T) {
 			Key:   []byte("my/prefix/key1"),
 			Value: []byte(`"foo"`),
 		}
-		assert.Equal(t, expected, clearEventT(<-ch))
+		assert.Equal(t, EventsT[fooType]{Events: []EventT[fooType]{expected}}, clearEventsT(<-ch))
 	}, "CREATE timeout")
 
 	// UPDATE key
@@ -231,7 +231,7 @@ func TestPrefixT_Watch(t *testing.T) {
 			Key:   []byte("my/prefix/key1"),
 			Value: []byte(`"new"`),
 		}
-		assert.Equal(t, expected, clearEventT(<-ch))
+		assert.Equal(t, EventsT[fooType]{Events: []EventT[fooType]{expected}}, clearEventsT(<-ch))
 	}, "UPDATE timeout")
 
 	// DELETE key
@@ -250,7 +250,7 @@ func TestPrefixT_Watch(t *testing.T) {
 		expected.Kv = &mvccpb.KeyValue{
 			Key: []byte("my/prefix/key1"),
 		}
-		assert.Equal(t, expected, clearEventT(<-ch))
+		assert.Equal(t, EventsT[fooType]{Events: []EventT[fooType]{expected}}, clearEventsT(<-ch))
 	}, "DELETE timeout")
 
 	wg.Wait()
@@ -284,12 +284,12 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 			Key:   []byte("my/prefix/key1"),
 			Value: []byte(`"foo1"`),
 		}
-		assert.Equal(t, expected, clearEventT(<-ch))
+		assert.Equal(t, EventsT[fooType]{Events: []EventT[fooType]{expected}}, clearEventsT(<-ch))
 	}, "CREATE1 timeout")
 
 	// Init (GetAll) phase should be finished
 	assertDone(t, func() {
-		<-initDone
+		assert.NoError(t, <-initDone)
 	}, "initDone timeout")
 
 	// CREATE key2
@@ -308,7 +308,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 			Key:   []byte("my/prefix/key2"),
 			Value: []byte(`"foo2"`),
 		}
-		assert.Equal(t, expected, clearEventT(<-ch))
+		assert.Equal(t, EventsT[fooType]{Events: []EventT[fooType]{expected}}, clearEventsT(<-ch))
 	}, "CREATE2 timeout")
 
 	// UPDATE key
@@ -331,7 +331,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 			Key:   []byte("my/prefix/key2"),
 			Value: []byte(`"foo2"`),
 		}
-		assert.Equal(t, expected, clearEventT(<-ch))
+		assert.Equal(t, EventsT[fooType]{Events: []EventT[fooType]{expected}}, clearEventsT(<-ch))
 	}, "UPDATE timeout")
 
 	// DELETE key
@@ -355,40 +355,46 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 			Key:   []byte("my/prefix/key1"),
 			Value: []byte(`"foo1"`),
 		}
-		assert.Equal(t, expected, clearEventT(<-ch))
+		assert.Equal(t, EventsT[fooType]{Events: []EventT[fooType]{expected}}, clearEventsT(<-ch))
 	}, "DELETE timeout")
 
 	wg.Wait()
 }
 
-func clearEvent(event Event) Event {
-	event.Header = nil
-	event.Kv.CreateRevision = 0
-	event.Kv.ModRevision = 0
-	event.Kv.Version = 0
-	event.Kv.Lease = 0
-	if event.PrevKv != nil {
-		event.PrevKv.CreateRevision = 0
-		event.PrevKv.ModRevision = 0
-		event.PrevKv.Version = 0
-		event.PrevKv.Lease = 0
+func clearEvents(events Events) Events {
+	for i := range events.Events {
+		event := &events.Events[i]
+		event.Kv.CreateRevision = 0
+		event.Kv.ModRevision = 0
+		event.Kv.Version = 0
+		event.Kv.Lease = 0
+		if event.PrevKv != nil {
+			event.PrevKv.CreateRevision = 0
+			event.PrevKv.ModRevision = 0
+			event.PrevKv.Version = 0
+			event.PrevKv.Lease = 0
+		}
 	}
-	return event
+	events.Header = nil
+	return events
 }
 
-func clearEventT(event EventT[fooType]) EventT[fooType] {
-	event.Header = nil
-	event.Kv.CreateRevision = 0
-	event.Kv.ModRevision = 0
-	event.Kv.Version = 0
-	event.Kv.Lease = 0
-	if event.PrevKv != nil {
-		event.PrevKv.CreateRevision = 0
-		event.PrevKv.ModRevision = 0
-		event.PrevKv.Version = 0
-		event.PrevKv.Lease = 0
+func clearEventsT(events EventsT[fooType]) EventsT[fooType] {
+	for i := range events.Events {
+		event := &events.Events[i]
+		event.Kv.CreateRevision = 0
+		event.Kv.ModRevision = 0
+		event.Kv.Version = 0
+		event.Kv.Lease = 0
+		if event.PrevKv != nil {
+			event.PrevKv.CreateRevision = 0
+			event.PrevKv.ModRevision = 0
+			event.PrevKv.Version = 0
+			event.PrevKv.Lease = 0
+		}
 	}
-	return event
+	events.Header = nil
+	return events
 }
 
 func assertDone(t *testing.T, blockingOp func(), msgAndArgs ...any) {
