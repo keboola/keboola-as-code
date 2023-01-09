@@ -30,7 +30,6 @@ func TestJoin(t *testing.T) {
 	// Use Join
 	result := fooResult{}
 	joinTxn := Join(
-		ctx,
 		&result,
 		key1.Get().WithOnResult(func(kv *KeyValue) {
 			result.field1 = string(kv.Value)

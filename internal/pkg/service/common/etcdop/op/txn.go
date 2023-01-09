@@ -17,7 +17,14 @@ type TxnOp struct {
 	thenOps    []Op
 	elseOps    []Op
 	initErrs   errors.MultiError
-	processors []func(ctx context.Context, rawResponse *etcd.TxnResponse, result TxnResult, err error) error
+	processors []txnProcessor
+}
+
+type txnProcessor func(ctx context.Context, rawResponse *etcd.TxnResponse, result TxnResult, err error) error
+
+type TxnOpDef struct {
+	ops        []Op
+	processors []txnProcessor
 }
 
 // TxnResult with mapped partial results.
@@ -51,9 +58,23 @@ func NewTxnOp() *TxnOp {
 	return &TxnOp{initErrs: errors.NewMultiError()}
 }
 
-func MergeToTxn(ctx context.Context, ops ...Op) *TxnOp {
+func MergeToTxn(ops ...Op) *TxnOpDef {
+	return &TxnOpDef{ops: ops}
+}
+
+func (v *TxnOpDef) Add(ops ...Op) *TxnOpDef {
+	v.ops = append(v.ops, ops...)
+	return v
+}
+
+func (v *TxnOpDef) WithProcessor(p txnProcessor) *TxnOpDef {
+	v.processors = append(v.processors, p)
+	return v
+}
+
+func (v *TxnOpDef) Txn(ctx context.Context) *TxnOp {
 	txn := NewTxnOp()
-	for _, item := range ops {
+	for _, item := range v.ops {
 		item := item
 
 		// Convert high-level operation to low-level operation.
@@ -82,7 +103,22 @@ func MergeToTxn(ctx context.Context, ops ...Op) *TxnOp {
 		// should be called only if the sub-txn caused the parent txn fall.
 		txn.Else(newInlineOp(etcd.OpTxn(subCmps, []etcd.Op{}, subElse), item.MapResponse))
 	}
+
+	txn.processors = v.processors[:]
+
 	return txn
+}
+
+func (v *TxnOpDef) Do(ctx context.Context, client *etcd.Client) (TxnResult, error) {
+	return v.Txn(ctx).Do(ctx, client)
+}
+
+func (v *TxnOpDef) Op(ctx context.Context) (etcd.Op, error) {
+	return v.Txn(ctx).Op(ctx)
+}
+
+func (v *TxnOpDef) MapResponse(ctx context.Context, response etcd.OpResponse) (result any, err error) {
+	return v.Txn(ctx).MapResponse(ctx, response)
 }
 
 // If takes a list of comparison. If all comparisons passed in succeed,
@@ -157,7 +193,7 @@ func (v *TxnOp) Op(ctx context.Context) (etcd.Op, error) {
 	return etcd.OpTxn(cmps, thenOps, elseOps), nil
 }
 
-func (v *TxnOp) WithProcessor(p func(ctx context.Context, rawResponse *etcd.TxnResponse, result TxnResult, err error) error) *TxnOp {
+func (v *TxnOp) WithProcessor(p txnProcessor) *TxnOp {
 	clone := *v
 	clone.processors = append(clone.processors, p)
 	return &clone

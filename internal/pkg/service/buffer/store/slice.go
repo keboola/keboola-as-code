@@ -119,7 +119,7 @@ func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slices
 	return true, nil
 }
 
-func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model.Slice, to slicestate.State) (*op.TxnOp, error) { //nolint:dupl
+func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model.Slice, to slicestate.State) (*op.TxnOpDef, error) { //nolint:dupl
 	from := slice.State
 	clone := *slice
 	stm := slicestate.NewSTM(slice.State, func(ctx context.Context, from, to slicestate.State) error {
@@ -149,7 +149,6 @@ func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model
 	// Atomically swap keys in the transaction
 	txn := op.
 		MergeToTxn(
-			ctx,
 			s.schema.Slices().InState(from).ByKey(slice.SliceKey).DeleteIfExists(),
 			s.schema.Slices().InState(to).ByKey(slice.SliceKey).PutIfNotExists(clone),
 		).
