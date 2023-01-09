@@ -27,6 +27,8 @@ func TestSchema(t *testing.T) {
 	mappingKey := key.MappingKey{ExportKey: exportKey, RevisionID: 10}
 	fileKey := key.FileKey{ExportKey: exportKey, FileID: key.FileID(time1)}
 	sliceKey := key.SliceKey{SliceID: key.SliceID(time2), FileKey: fileKey}
+	recordKey := key.RecordKey{SliceKey: sliceKey, ReceivedAt: key.ReceivedAt(time2.Add(time.Hour)), RandomSuffix: "abcdef"}
+	taskKey := key.TaskKey{ExportKey: exportKey, CreatedAt: key.UTCTime(time1), RandomSuffix: "abcdef"}
 
 	cases := []keyTestCase{
 		{
@@ -183,14 +185,6 @@ func TestSchema(t *testing.T) {
 			"slice/closing/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
 		},
 		{
-			s.Slices().Closed().InFile(fileKey).Prefix(),
-			"slice/closed/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
-		},
-		{
-			s.Slices().Closed().ByKey(sliceKey).Key(),
-			"slice/closed/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
-		},
-		{
 			s.Slices().Uploading().InFile(fileKey).Prefix(),
 			"slice/uploading/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
 		},
@@ -219,21 +213,11 @@ func TestSchema(t *testing.T) {
 			"record/",
 		},
 		{
-			s.Records().ByKey(key.RecordKey{
-				SliceKey:     sliceKey,
-				ReceivedAt:   key.ReceivedAt(time2.Add(time.Hour)),
-				RandomSuffix: "abcdef",
-			}).Key(),
+			s.Records().ByKey(recordKey).Key(),
 			"record/00000123/my-receiver/my-export/2006-01-02T09:04:05.000Z/2006-01-02T10:04:05.000Z_abcdef",
 		},
 		{
-			s.Secrets().Tokens().InExport(key.ExportKey{
-				ReceiverKey: key.ReceiverKey{
-					ProjectID:  123,
-					ReceiverID: "my-receiver",
-				},
-				ExportID: "my-export",
-			}).Key(),
+			s.Secrets().Tokens().InExport(exportKey).Key(),
 			"secret/export/token/00000123/my-receiver/my-export",
 		},
 		{
@@ -271,6 +255,42 @@ func TestSchema(t *testing.T) {
 		{
 			s.Runtime().APINodes().Watchers().SlicesRevision().Node("my-node").Key(),
 			"runtime/api/node/watcher/slices/revision/my-node",
+		},
+		{
+			s.Runtime().Lock().Prefix(),
+			"runtime/lock/",
+		},
+		{
+			s.Runtime().Lock().Task().Prefix(),
+			"runtime/lock/task/",
+		},
+		{
+			s.Runtime().Lock().Task().InExport(exportKey).Prefix(),
+			"runtime/lock/task/00000123/my-receiver/my-export/",
+		},
+		{
+			s.Runtime().Lock().Task().InExport(exportKey).Key("my-lock").Key(),
+			"runtime/lock/task/00000123/my-receiver/my-export/my-lock",
+		},
+		{
+			s.Tasks().Prefix(),
+			"task/",
+		},
+		{
+			s.Tasks().ByProject(projectID).Prefix(),
+			"task/00000123/",
+		},
+		{
+			s.Tasks().ByReceiver(receiverKey).Prefix(),
+			"task/00000123/my-receiver/",
+		},
+		{
+			s.Tasks().ByExport(exportKey).Prefix(),
+			"task/00000123/my-receiver/my-export/",
+		},
+		{
+			s.Tasks().ByKey(taskKey).Key(),
+			"task/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z_abcdef",
 		},
 		{
 			s.ReceivedStats().InReceiver(receiverKey).Prefix(),

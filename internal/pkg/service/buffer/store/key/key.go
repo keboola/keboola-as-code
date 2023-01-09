@@ -40,6 +40,12 @@ type RecordKey struct {
 	RandomSuffix string
 }
 
+type TaskKey struct {
+	ExportKey
+	CreatedAt    UTCTime `json:"createdAt" validate:"required"`
+	RandomSuffix string  `json:"-" validate:"required"`
+}
+
 func FormatTime(t time.Time) string {
 	return t.UTC().Format(TimeFormat)
 }
@@ -69,10 +75,10 @@ func (v SliceKey) String() string {
 }
 
 func (v RecordKey) String() string {
-	return fmt.Sprintf("%s/%s/%s", v.ExportKey.String(), v.SliceID.String(), v.Key())
+	return fmt.Sprintf("%s/%s/%s", v.ExportKey.String(), v.SliceID.String(), v.ID())
 }
 
-func (v RecordKey) Key() string {
+func (v RecordKey) ID() string {
 	if v.ReceivedAt.IsZero() {
 		panic(errors.New("receivedAt cannot be empty"))
 	}
@@ -80,4 +86,18 @@ func (v RecordKey) Key() string {
 		panic(errors.New("randomSuffix cannot be empty"))
 	}
 	return v.ReceivedAt.String() + "_" + v.RandomSuffix
+}
+
+func (v TaskKey) String() string {
+	return fmt.Sprintf("%s/%s", v.ExportKey.String(), v.ID())
+}
+
+func (v TaskKey) ID() string {
+	if v.CreatedAt.IsZero() {
+		panic(errors.New("createdAt cannot be empty"))
+	}
+	if v.RandomSuffix == "" {
+		panic(errors.New("randomSuffix cannot be empty"))
+	}
+	return v.CreatedAt.String() + "_" + v.RandomSuffix
 }
