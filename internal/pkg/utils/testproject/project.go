@@ -340,7 +340,7 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 				Description: b.Description,
 			}).
 			WithBefore(func(ctx context.Context, sender client.Sender) error {
-				p.logf("▶ Bucket \"%s.c-%s\"...", b.Stage, b.Name)
+				p.logf("▶ Bucket \"%s.c-%s\"...", b.ID.Stage, b.ID.BucketName)
 				return nil
 			}).
 			WithOnComplete(func(ctx context.Context, sender client.Sender, apiBucket *storageapi.Bucket, err error) error {
@@ -358,7 +358,7 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 
 					return nil
 				} else {
-					return errors.Errorf(`cannot create bucket "%s": %w`, b.Name, err)
+					return errors.Errorf(`cannot create bucket "%s": %w`, b.ID.String(), err)
 				}
 			})
 		grp.Send(req)
