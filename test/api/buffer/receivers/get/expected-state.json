@@ -13,9 +13,7 @@
     {
       "id": "in.c-bucket",
       "uri": "https://%%TEST_KBC_STORAGE_API_HOST%%/v2/storage/buckets/in.c-bucket",
-      "name": "",
       "displayName": "bucket",
-      "stage": "",
       "description": "",
       "tables": [
         {
@@ -24,7 +22,10 @@
           "name": "table1",
           "displayName": "table1",
           "primaryKey": [],
-          "columns": null
+          "columns": [
+            "id",
+            "template"
+          ]
         },
         {
           "id": "in.c-bucket.table2",
@@ -32,7 +33,11 @@
           "name": "table2",
           "displayName": "table2",
           "primaryKey": [],
-          "columns": null
+          "columns": [
+            "id",
+            "body",
+            "headers"
+          ]
         }
       ]
     }

@@ -13,9 +13,7 @@
     {
       "id": "in.c-bucket",
       "uri": "https://%%TEST_KBC_STORAGE_API_HOST%%/v2/storage/buckets/in.c-bucket",
-      "name": "",
       "displayName": "bucket",
-      "stage": "",
       "description": "",
       "tables": [
         {
@@ -24,7 +22,10 @@
           "name": "table",
           "displayName": "table",
           "primaryKey": [],
-          "columns": null
+          "columns": [
+            "id",
+            "template"
+          ]
         },
         {
           "id": "in.c-bucket.table2",
@@ -32,16 +33,17 @@
           "name": "table2",
           "displayName": "table2",
           "primaryKey": [],
-          "columns": null
+          "columns": [
+            "id",
+            "body"
+          ]
         }
       ]
     },
     {
       "id": "in.c-bucket2",
       "uri": "https://%%TEST_KBC_STORAGE_API_HOST%%/v2/storage/buckets/in.c-bucket2",
-      "name": "",
       "displayName": "bucket2",
-      "stage": "",
       "description": "",
       "tables": [
         {
@@ -50,7 +52,10 @@
           "name": "table1",
           "displayName": "table1",
           "primaryKey": [],
-          "columns": null
+          "columns": [
+            "id",
+            "body"
+          ]
         }
       ]
     }

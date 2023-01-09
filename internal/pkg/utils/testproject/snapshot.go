@@ -173,7 +173,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	var tables []*storageapi.Table
 	grp.Go(func() error {
 		request := storageapi.
-			ListTablesRequest().
+			ListTablesRequest(storageapi.WithBuckets(), storageapi.WithColumns()).
 			WithOnSuccess(func(_ context.Context, _ client.Sender, apiTables *[]*storageapi.Table) error {
 				tables = append(tables, *apiTables...)
 				return nil

@@ -53,9 +53,7 @@ type Sandbox struct {
 type Bucket struct {
 	ID          storageapi.BucketID `json:"id"`
 	URI         string              `json:"uri"`
-	Name        string              `json:"name"`
 	DisplayName string              `json:"displayName"`
-	Stage       string              `json:"stage"`
 	Description string              `json:"description"`
 	Tables      []*Table            `json:"tables"`
 }
