@@ -38,6 +38,7 @@ minikube image list
 minikube kubectl -- label nodes --overwrite --all nodepool=main > /dev/null
 
 # Common part
+export ETCD_STORAGE_CLASS_NAME="standard"
 echo
 echo "Starting deployment ..."
 echo "--------------------------"
