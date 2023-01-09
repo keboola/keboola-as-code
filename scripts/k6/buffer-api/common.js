@@ -3,7 +3,7 @@ import {randomString} from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
 const TOKEN = __ENV.API_TOKEN;
 const HOST = __ENV.API_HOST || "http://localhost:8001";
-const ITERATIONS = __ENV.K6_ITERATIONS || 10000;
+const ITERATIONS = __ENV.K6_ITERATIONS || 100000;
 const PARALLELISM = __ENV.K6_PARALLELISM || 1000;
 const TIMEOUT = __ENV.K6_TIMEOUT || "60s";
 
