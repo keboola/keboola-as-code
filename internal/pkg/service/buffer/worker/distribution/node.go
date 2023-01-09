@@ -43,8 +43,9 @@ type Node struct {
 	schema  *schema.Schema
 	client  *etcd.Client
 	session *concurrency.Session
+	nodeID  string
 
-	nodeID string
+	config config
 	nodes  *consistent.Consistent
 }
 
@@ -73,6 +74,7 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 		client: d.EtcdClient(),
 		nodeID: d.Process().UniqueID(),
 		nodes:  consistent.New(),
+		config: c,
 	}
 
 	// Create etcd session

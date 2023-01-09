@@ -23,6 +23,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
+const eventsGroupInterval = 10 * time.Millisecond // only for tests
+
 func TestNodesDiscovery(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
