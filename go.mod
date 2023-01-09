@@ -32,7 +32,7 @@ require (
 	github.com/lafikl/consistent v0.0.0-20220512074542-bdd3606bfc3e
 	github.com/lestrrat-go/strftime v1.0.6
 	github.com/qmuntal/stateless v1.6.1
-	github.com/relvacode/iso8601 v1.1.0
+	github.com/relvacode/iso8601 v1.3.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.1.1
 	github.com/spf13/afero v1.9.3
 	github.com/spf13/cast v1.5.0
