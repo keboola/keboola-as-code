@@ -216,15 +216,11 @@ func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
 	go func() {
 		defer wg.Done()
 		n.logger.Info("watching for other nodes")
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case events, ok := <-ch:
-				if !ok {
-					return
-				}
-				n.onWatchEvent(events)
+
+		// Channel is closed on shutdown, so the context does not have to be checked
+		for events := range ch {
+			for _, event := range events.Events {
+				n.onWatchEvent(event)
 			}
 		}
 	}()
