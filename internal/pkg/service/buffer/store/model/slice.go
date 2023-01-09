@@ -16,7 +16,6 @@ type Slice struct {
 	Mapping     Mapping          `json:"mapping" validate:"required,dive"`
 	Number      int              `json:"sliceNumber" validate:"required"`
 	ClosingAt   *time.Time       `json:"closingAt,omitempty"`
-	ClosedAt    *time.Time       `json:"closedAt,omitempty"`
 	UploadingAt *time.Time       `json:"uploadingAt,omitempty"`
 	UploadedAt  *time.Time       `json:"uploadedAt,omitempty"`
 	FailedAt    *time.Time       `json:"failedAt,omitempty"`

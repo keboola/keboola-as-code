@@ -128,8 +128,6 @@ func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model
 		switch to {
 		case slicestate.Closing:
 			clone.ClosingAt = &now
-		case slicestate.Closed:
-			clone.ClosedAt = &now
 		case slicestate.Uploading:
 			clone.UploadingAt = &now
 		case slicestate.Uploaded:
