@@ -111,8 +111,7 @@ func TestStore_SetSliceState_Transitions(t *testing.T) {
 	// Test all transitions
 	testCases := []struct{ from, to slicestate.State }{
 		{slicestate.Opened, slicestate.Closing},
-		{slicestate.Closing, slicestate.Closed},
-		{slicestate.Closed, slicestate.Uploading},
+		{slicestate.Closing, slicestate.Uploading},
 		{slicestate.Uploading, slicestate.Failed},
 		{slicestate.Failed, slicestate.Uploading},
 		{slicestate.Uploading, slicestate.Uploaded},

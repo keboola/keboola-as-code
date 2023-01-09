@@ -18,12 +18,9 @@ const Opened State = "opened"
 // Waiting for the API nodes until they switch to the new slice.
 const Closing State = "closing"
 
-// Closed
-// The slice is ready for upload.
-const Closed State = "closed"
-
 // Uploading
-// Slice upload into the file storage is in progress.
+// The slice is ready for upload.
+// Some worker is/will be uploading it.
 const Uploading State = "uploading"
 
 // Uploaded
@@ -49,8 +46,7 @@ func NewSTM(state State, fn onEntry) *STM {
 		return errors.Errorf(`slice state transition "%s" -> "%s" is not allowed`, state, trigger)
 	})
 	v.permit(Opened, Closing)
-	v.permit(Closing, Closed)
-	v.permit(Closed, Uploading)
+	v.permit(Closing, Uploading)
 	v.permit(Uploading, Failed)
 	v.permit(Failed, Uploading)
 	v.permit(Uploading, Uploaded)

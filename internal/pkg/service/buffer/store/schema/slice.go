@@ -45,10 +45,6 @@ func (v Slices) Closing() SlicesInAState {
 	return v.InState(slicestate.Closing)
 }
 
-func (v Slices) Closed() SlicesInAState {
-	return v.InState(slicestate.Closed)
-}
-
 func (v Slices) Uploading() SlicesInAState {
 	return v.InState(slicestate.Uploading)
 }
