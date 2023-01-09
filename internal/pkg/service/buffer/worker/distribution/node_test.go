@@ -187,6 +187,9 @@ node3
 [node1][distribution]INFO  found a new node "node%d"
 [node1][distribution]INFO  found a new node "node%d"
 [node1]INFO  exiting (bye bye 1)
+[node1][distribution][listeners]INFO  received shutdown request
+[node1][distribution][listeners]INFO  waiting for listeners
+[node1][distribution][listeners]INFO  shutdown done
 [node1][distribution]INFO  received shutdown request
 [node1][distribution]INFO  unregistering the node "node1"
 [node1][distribution]INFO  the node "node1" unregistered | %s
@@ -207,6 +210,9 @@ node3
 [node2][distribution]INFO  found a new node "node%d"
 [node2][distribution]INFO  the node "node%d" gone
 [node2]INFO  exiting (bye bye 2)
+[node2][distribution][listeners]INFO  received shutdown request
+[node2][distribution][listeners]INFO  waiting for listeners
+[node2][distribution][listeners]INFO  shutdown done
 [node2][distribution]INFO  received shutdown request
 [node2][distribution]INFO  unregistering the node "node2"
 [node2][distribution]INFO  the node "node2" unregistered | %s
@@ -228,6 +234,9 @@ node3
 [node3][distribution]INFO  the node "node%d" gone
 [node3][distribution]INFO  the node "node%d" gone
 [node3]INFO  exiting (bye bye 3)
+[node3][distribution][listeners]INFO  received shutdown request
+[node3][distribution][listeners]INFO  waiting for listeners
+[node3][distribution][listeners]INFO  shutdown done
 [node3][distribution]INFO  received shutdown request
 [node3][distribution]INFO  unregistering the node "node3"
 [node3][distribution]INFO  the node "node3" unregistered | %s
@@ -267,6 +276,9 @@ node4
 [node4][distribution]INFO  watching for other nodes
 [node4][distribution]INFO  found a new node "node4"
 [node4]INFO  exiting (bye bye 4)
+[node4][distribution][listeners]INFO  received shutdown request
+[node4][distribution][listeners]INFO  waiting for listeners
+[node4][distribution][listeners]INFO  shutdown done
 [node4][distribution]INFO  received shutdown request
 [node4][distribution]INFO  unregistering the node "node4"
 [node4][distribution]INFO  the node "node4" unregistered | %s
