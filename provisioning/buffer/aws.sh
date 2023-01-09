@@ -15,7 +15,17 @@ fi
 # Get credentials to the Amazon Elastic Kubernetes Service
 aws eks update-kubeconfig --name "$AWS_EKS_CLUSTER_NAME" --region "$AWS_REGION"
 
+if [ "${TMP_ETCD_REDEPLOY:-false}" = "true" ]
+then
+    helm uninstall buffer-etcd -n buffer --wait
+    kubectl delete pvc data-buffer-etcd-0 -n buffer
+    kubectl delete pvc data-buffer-etcd-1 -n buffer
+    kubectl delete pvc data-buffer-etcd-2 -n buffer
+    echo "ETCD for Buffer is deleted."
+fi
+
 # Common part of the deploy
+export ETCD_STORAGE_CLASS_NAME="etcd-gp3"
 . ./common.sh
 
 # AWS specific part of the deploy

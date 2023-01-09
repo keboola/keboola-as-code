@@ -18,6 +18,7 @@ fi
 : ${BUFFER_API_REPLICAS?"Missing BUFFER_API_REPLICAS"}
 : ${BUFFER_WORKER_REPLICAS?"Missing BUFFER_WORKER_REPLICAS"}
 : ${BUFFER_ETCD_REPLICAS?"Missing BUFFER_ETCD_REPLICAS"}
+: ${ETCD_STORAGE_CLASS_NAME?"Missing ETCD_STORAGE_CLASS_NAME"}
 
 # Constants
 export NAMESPACE="buffer"
@@ -41,7 +42,8 @@ helm upgrade \
   --values ./kubernetes/deploy/etcd/values_buffer.yaml \
   --namespace "$NAMESPACE" \
   --set "replicaCount=$BUFFER_ETCD_REPLICAS" \
-  --set "auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD"
+  --set "auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD" \
+  --set "persistence.storageClass=$ETCD_STORAGE_CLASS_NAME"
 
 # API
 kubectl apply -f ./kubernetes/deploy/api/config-map.yaml

@@ -15,6 +15,7 @@ fi
 : ${TEMPLATES_API_IMAGE_TAG?"Missing TEMPLATES_API_IMAGE_TAG"}
 : ${TEMPLATES_API_REPLICAS?"Missing TEMPLATES_API_REPLICAS"}
 : ${TEMPLATES_API_ETCD_REPLICAS?"Missing TEMPLATES_API_ETCD_REPLICAS"}
+: ${ETCD_STORAGE_CLASS_NAME?"Missing ETCD_STORAGE_CLASS_NAME"}
 
 # Constants
 export NAMESPACE="templates-api"
@@ -41,7 +42,8 @@ helm upgrade \
   --namespace "$NAMESPACE" \
   --set "replicaCount=$TEMPLATES_API_ETCD_REPLICAS" \
   --set "pdb.create=$TEMPLATES_API_ETCD_PDB_CREATE" \
-  --set "auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD"
+  --set "auth.rbac.rootPassword=$ETCD_ROOT_PASSWORD" \
+  --set "persistence.storageClass=$ETCD_STORAGE_CLASS_NAME"
 
 # API
 kubectl apply -f ./kubernetes/deploy/api/config-map.yaml
