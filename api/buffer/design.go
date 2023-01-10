@@ -343,6 +343,7 @@ var Receiver = Type("Receiver", func() {
 	receiverFields()
 	Attribute("exports", ArrayOf(Export), func() {
 		Description("List of exports, max 20 exports per a receiver.")
+		Example([]any{ExampleExport()})
 	})
 	Required("id", "url", "name", "exports")
 	Example(ExampleReceiver())
@@ -370,7 +371,9 @@ var UpdateReceiverRequest = Type("UpdateReceiverRequest", func() {
 })
 
 var ReceiversList = Type("ReceiversList", func() {
-	Attribute("receivers", ArrayOf(Receiver))
+	Attribute("receivers", ArrayOf(Receiver), func() {
+		Example([]any{ExampleReceiver()})
+	})
 	Required("receivers")
 })
 
@@ -403,7 +406,9 @@ var Export = Type("Export", func() {
 })
 
 var ExportsList = Type("ExportsList", func() {
-	Attribute("exports", ArrayOf(Export))
+	Attribute("exports", ArrayOf(Export), func() {
+		Example([]any{ExampleExport()})
+	})
 	Required("exports")
 })
 
@@ -464,6 +469,7 @@ var Mapping = Type("Mapping", func() {
 	})
 	Attribute("columns", ArrayOf(Column), func() {
 		Description("List of export column mappings. An export may have a maximum of 50 columns.")
+		Example([]any{ExampleColumn()})
 	})
 	Required("tableId", "columns")
 	Example(ExampleMapping())
