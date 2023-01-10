@@ -1,4 +1,4 @@
 FAIL keboola/my-template/0.0.1 one remote
 Error:
 - Running remote test "one" for template "my-template" failed:
-  - Job "%s" failed: Invalid configuration: Key "parameters.operation" does not exist.
+  - Job "%s" failed: This is a user error.
