@@ -1,14 +1,18 @@
-// Package distribution provides distribution of various keys/tasks between worker nodes, it consists of:
+// Package distribution provides distribution of various keys/tasks between worker nodes.
+//
+// The package consists of:
 // - Registration of a worker node in the cluster as an etcd key (with lease).
 // - Discovering of other worker nodes in the cluster by the etcd Watch API.
 // - Local decision and assignment of a key/task to a specific worker node (by a consistent hash/HashRing approach).
 //
-// Key benefits:
-//   - The node only watch of other node's registration/un-registration, which doesn't happen often.
-//   - Based on this, the node can quickly and locally determine owner node for a key/task.
-//   - It aims to reduce the risk of collision and minimizes load.
+// # Key benefits
 //
-// Atomicity:
+// - The node only watch of other node's registration/un-registration, which doesn't happen often.
+// - Based on this, the node can quickly and locally determine owner node for a key/task.
+// - It aims to reduce the risk of collision and minimizes load.
+//
+// # Atomicity
+//
 // - During watch propagation or lease timeout, individual nodes can have a different list of the active nodes.
 // - This could lead to the situation, when 2+ nodes have ownership of a task at the same time.
 // - Therefore, the task itself must be also protected by a transaction (version number validation).
@@ -16,10 +20,15 @@
 // Read more:
 // - https://etcd.io/docs/v3.5/learning/why/#notes-on-the-usage-of-lock-and-lease
 // - "Actually, the lease mechanism itself doesn't guarantee mutual exclusion...."
+//
+// # Listeners
+//
+// Use Node.OnChangeListener method to create a listener for nodes distribution change events.
 package distribution
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -43,9 +52,11 @@ type Node struct {
 	schema  *schema.Schema
 	client  *etcd.Client
 	session *concurrency.Session
+	nodeID  string
 
-	nodeID string
-	nodes  *consistent.Consistent
+	config    config
+	nodes     *consistent.Consistent
+	listeners *listeners
 }
 
 type dependencies interface {
@@ -73,6 +84,7 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 		client: d.EtcdClient(),
 		nodeID: d.Process().UniqueID(),
 		nodes:  consistent.New(),
+		config: c,
 	}
 
 	// Create etcd session
@@ -98,10 +110,20 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 		n.logger.Info("shutdown done")
 	})
 
+	// Create listeners handler
+	n.listeners = newListeners(proc, n.clock, n.logger, n.config)
+
 	// Watch for nodes
-	n.watch(ctx, wg)
+	if err := n.watch(ctx, wg); err != nil {
+		return nil, err
+	}
 
 	return n, nil
+}
+
+// OnChangeListener returns a new listener, it contains channel C with streamed distribution change Events.
+func (n *Node) OnChangeListener() *Listener {
+	return n.listeners.add()
 }
 
 // Nodes method returns IDs of all known nodes.
@@ -147,21 +169,32 @@ func (n *Node) MustCheckIsOwner(key string) bool {
 	return is
 }
 
-func (n *Node) onWatchEvent(events etcdop.Events) {
-	for _, event := range events.Events {
-		switch event.Type {
-		case etcdop.CreateEvent, etcdop.UpdateEvent:
-			nodeID := string(event.Kv.Value)
-			n.nodes.Add(nodeID)
-			n.logger.Infof(`found a new node "%s"`, nodeID)
-		case etcdop.DeleteEvent:
-			nodeID := string(event.PrevKv.Value)
-			n.nodes.Remove(nodeID)
-			n.logger.Infof(`the node "%s" gone`, nodeID)
-		default:
-			panic(errors.Errorf(`unexpected event type "%s"`, event.Type.String()))
+func (n *Node) onWatchEvent(rawEvent etcdop.Event) {
+	var event Event
+	switch rawEvent.Type {
+	case etcdop.CreateEvent, etcdop.UpdateEvent:
+		nodeID := string(rawEvent.Kv.Value)
+		event = Event{
+			Type:    EventTypeAdd,
+			NodeID:  nodeID,
+			Message: fmt.Sprintf(`found a new node "%s"`, nodeID),
 		}
+		n.nodes.Add(nodeID)
+		n.logger.Infof(event.Message)
+	case etcdop.DeleteEvent:
+		nodeID := string(rawEvent.PrevKv.Value)
+		event = Event{
+			Type:    EventTypeRemove,
+			NodeID:  nodeID,
+			Message: fmt.Sprintf(`the node "%s" gone`, nodeID),
+		}
+		n.nodes.Remove(nodeID)
+		n.logger.Infof(event.Message)
+	default:
+		panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
 	}
+
+	n.listeners.Notify(event)
 }
 
 func (n *Node) onWatchErr(err error) {
@@ -202,7 +235,9 @@ func (n *Node) unregister(timeout time.Duration) {
 }
 
 // watch for other nodes.
-func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) {
+func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
+	selfDiscovery := n.waitForSelfDiscovery(ctx, wg)
+
 	pfx := n.schema.Runtime().WorkerNodes().Active().IDs()
 	ch, initDone := pfx.GetAllAndWatch(ctx, n.client, n.onWatchErr, etcd.WithPrevKV(), etcd.WithCreatedNotify())
 
@@ -210,19 +245,20 @@ func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) {
 	go func() {
 		defer wg.Done()
 		n.logger.Info("watching for other nodes")
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case events, ok := <-ch:
-				if !ok {
-					return
-				}
-				n.onWatchEvent(events)
+
+		// Channel is closed on shutdown, so the context does not have to be checked
+		for events := range ch {
+			for _, event := range events.Events {
+				n.onWatchEvent(event)
 			}
 		}
 	}()
 
+	// Wait for self-discovery
+	if err := <-selfDiscovery; err != nil {
+		return err
+	}
+
 	// Wait for initial sync
-	<-initDone
+	return <-initDone
 }

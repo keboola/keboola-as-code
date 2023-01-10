@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/lafikl/consistent"
 	gonanoid "github.com/matoous/go-nanoid/v2"
@@ -22,11 +23,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
+const eventsGroupInterval = 10 * time.Millisecond // only for tests
+
 func TestNodesDiscovery(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	clk := clock.New() // use real clock
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 
@@ -37,16 +41,6 @@ func TestNodesDiscovery(t *testing.T) {
 	loggers := make(map[int]log.DebugLogger)
 	processes := make(map[int]*servicectx.Process)
 
-	createDeps := func(nodeNumber int) dependencies.Mocked {
-		return dependencies.NewMockedDeps(
-			t,
-			dependencies.WithUniqueID(fmt.Sprintf("node%d", nodeNumber)),
-			dependencies.WithLoggerPrefix(fmt.Sprintf("[node%d]", nodeNumber)),
-			dependencies.WithCtx(ctx),
-			dependencies.WithEtcdNamespace(etcdNamespace),
-		)
-	}
-
 	// Create nodes
 	wg := &sync.WaitGroup{}
 	for i := 0; i < nodesCount; i++ {
@@ -54,17 +48,13 @@ func TestNodesDiscovery(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			d := createDeps(i + 1)
-			logger := d.DebugLogger()
-			logger.ConnectTo(testhelper.VerboseStdout())
-			process := d.Process()
-			node, err := NewNode(d, WithStartupTimeout(time.Second), WithShutdownTimeout(time.Second))
-			assert.NoError(t, err)
+
+			node, d := createNode(t, ctx, clk, etcdNamespace, fmt.Sprintf("node%d", i+1))
 
 			lock.Lock()
-			processes[i] = process
 			nodes[i] = node
-			loggers[i] = logger
+			processes[i] = d.Process()
+			loggers[i] = d.DebugLogger()
 			lock.Unlock()
 		}()
 	}
@@ -197,6 +187,9 @@ node3
 [node1][distribution]INFO  found a new node "node%d"
 [node1][distribution]INFO  found a new node "node%d"
 [node1]INFO  exiting (bye bye 1)
+[node1][distribution][listeners]INFO  received shutdown request
+[node1][distribution][listeners]INFO  waiting for listeners
+[node1][distribution][listeners]INFO  shutdown done
 [node1][distribution]INFO  received shutdown request
 [node1][distribution]INFO  unregistering the node "node1"
 [node1][distribution]INFO  the node "node1" unregistered | %s
@@ -217,6 +210,9 @@ node3
 [node2][distribution]INFO  found a new node "node%d"
 [node2][distribution]INFO  the node "node%d" gone
 [node2]INFO  exiting (bye bye 2)
+[node2][distribution][listeners]INFO  received shutdown request
+[node2][distribution][listeners]INFO  waiting for listeners
+[node2][distribution][listeners]INFO  shutdown done
 [node2][distribution]INFO  received shutdown request
 [node2][distribution]INFO  unregistering the node "node2"
 [node2][distribution]INFO  the node "node2" unregistered | %s
@@ -238,6 +234,9 @@ node3
 [node3][distribution]INFO  the node "node%d" gone
 [node3][distribution]INFO  the node "node%d" gone
 [node3]INFO  exiting (bye bye 3)
+[node3][distribution][listeners]INFO  received shutdown request
+[node3][distribution][listeners]INFO  waiting for listeners
+[node3][distribution][listeners]INFO  shutdown done
 [node3][distribution]INFO  received shutdown request
 [node3][distribution]INFO  unregistering the node "node3"
 [node3][distribution]INFO  the node "node3" unregistered | %s
@@ -249,11 +248,8 @@ node3
 
 	// All node are off, start a new node
 	assert.Equal(t, 4, nodesCount+1)
-	d4 := createDeps(4)
-	d4.DebugLogger().ConnectTo(testhelper.VerboseStdout())
+	node4, d4 := createNode(t, ctx, clk, etcdNamespace, "node4")
 	process4 := d4.Process()
-	node4, err := NewNode(d4, WithStartupTimeout(time.Second), WithShutdownTimeout(time.Second))
-	assert.NoError(t, err)
 	assert.Eventually(t, func() bool {
 		return reflect.DeepEqual([]string{"node4"}, node4.Nodes())
 	}, time.Second, 10*time.Millisecond)
@@ -280,6 +276,9 @@ node4
 [node4][distribution]INFO  watching for other nodes
 [node4][distribution]INFO  found a new node "node4"
 [node4]INFO  exiting (bye bye 4)
+[node4][distribution][listeners]INFO  received shutdown request
+[node4][distribution][listeners]INFO  waiting for listeners
+[node4][distribution][listeners]INFO  shutdown done
 [node4][distribution]INFO  received shutdown request
 [node4][distribution]INFO  unregistering the node "node4"
 [node4][distribution]INFO  the node "node4" unregistered | %s
@@ -338,4 +337,42 @@ func TestConsistentHashLib(t *testing.T) {
 		"node3": 30,
 		"node5": 23,
 	}, keysPerNode)
+}
+
+func createNode(t *testing.T, ctx context.Context, clk clock.Clock, etcdNamespace, nodeName string) (*Node, dependencies.Mocked) {
+	t.Helper()
+
+	// Create dependencies
+	d := createDeps(t, ctx, clk, etcdNamespace, nodeName)
+
+	// Disable waiting for self-discovery in tests with mocked clocks
+	selfDiscoveryTimeout := time.Second
+	if _, ok := clk.(*clock.Mock); ok {
+		selfDiscoveryTimeout = 0
+	}
+
+	// Create node
+	node, err := NewNode(
+		d,
+		WithStartupTimeout(time.Second),
+		WithShutdownTimeout(time.Second),
+		WithSelfDiscoveryTimeout(selfDiscoveryTimeout),
+		WithEventsGroupInterval(eventsGroupInterval),
+	)
+	assert.NoError(t, err)
+	return node, d
+}
+
+func createDeps(t *testing.T, ctx context.Context, clk clock.Clock, etcdNamespace, nodeName string) dependencies.Mocked {
+	t.Helper()
+	d := dependencies.NewMockedDeps(
+		t,
+		dependencies.WithClock(clk),
+		dependencies.WithUniqueID(nodeName),
+		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
+		dependencies.WithCtx(ctx),
+		dependencies.WithEtcdNamespace(etcdNamespace),
+	)
+	d.DebugLogger().ConnectTo(testhelper.VerboseStdout())
+	return d
 }
