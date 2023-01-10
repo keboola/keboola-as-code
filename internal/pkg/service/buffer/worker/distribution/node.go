@@ -29,12 +29,10 @@ package distribution
 import (
 	"context"
 	"fmt"
-	"sort"
 	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/lafikl/consistent"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
@@ -47,18 +45,18 @@ import (
 )
 
 type Node struct {
-	clock   clock.Clock
-	logger  log.Logger
-	proc    *servicectx.Process
-	schema  *schema.Schema
-	client  *etcd.Client
-	session *concurrency.Session
-	nodeID  string
-
-	config    config
-	nodes     *consistent.Consistent
+	*assigner
+	clock     clock.Clock
+	logger    log.Logger
+	proc      *servicectx.Process
+	schema    *schema.Schema
+	client    *etcd.Client
+	session   *concurrency.Session
+	config    nodeConfig
 	listeners *listeners
 }
+
+type assigner = Assigner
 
 type dependencies interface {
 	Clock() clock.Clock
@@ -68,23 +66,22 @@ type dependencies interface {
 	Process() *servicectx.Process
 }
 
-func NewNode(d dependencies, opts ...Option) (*Node, error) {
+func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 	// Apply options
-	c := defaultConfig()
+	c := defaultNodeConfig()
 	for _, o := range opts {
 		o(&c)
 	}
 
 	// Create instance
 	n := &Node{
-		clock:  d.Clock(),
-		logger: d.Logger().AddPrefix("[distribution]"),
-		proc:   d.Process(),
-		schema: d.Schema(),
-		client: d.EtcdClient(),
-		nodeID: d.Process().UniqueID(),
-		nodes:  consistent.New(),
-		config: c,
+		assigner: newAssigner(d.Process().UniqueID()),
+		clock:    d.Clock(),
+		logger:   d.Logger().AddPrefix("[distribution]"),
+		proc:     d.Process(),
+		schema:   d.Schema(),
+		client:   d.EtcdClient(),
+		config:   c,
 	}
 
 	// Create etcd session
@@ -129,47 +126,9 @@ func (n *Node) OnChangeListener() *Listener {
 	return n.listeners.add()
 }
 
-// Nodes method returns IDs of all known nodes.
-func (n *Node) Nodes() []string {
-	out := n.nodes.Hosts()
-	sort.Strings(out)
-	return out
-}
-
-// NodeFor returns ID of the key's owner node.
-// The consistent.ErrNoHosts may occur if there is no node in the list.
-func (n *Node) NodeFor(key string) (string, error) {
-	return n.nodes.Get(key)
-}
-
-// MustGetNodeFor returns ID of the key's owner node.
-// The method panic if there is no node in the list.
-func (n *Node) MustGetNodeFor(key string) string {
-	node, err := n.NodeFor(key)
-	if err != nil {
-		panic(err)
-	}
-	return node
-}
-
-// IsOwner method returns true, if the node is owner of the key.
-// The consistent.ErrNoHosts may occur if there is no node in the list.
-func (n *Node) IsOwner(key string) (bool, error) {
-	node, err := n.NodeFor(key)
-	if err != nil {
-		return false, err
-	}
-	return node == n.nodeID, nil
-}
-
-// MustCheckIsOwner method returns true, if the node is owner of the key.
-// The method panic if there is no node in the list.
-func (n *Node) MustCheckIsOwner(key string) bool {
-	is, err := n.IsOwner(key)
-	if err != nil {
-		panic(err)
-	}
-	return is
+// CloneAssigner returns cloned Assigner frozen in the actual distribution.
+func (n *Node) CloneAssigner() *Assigner {
+	return n.assigner.clone()
 }
 
 func (n *Node) onWatchEvent(rawEvent etcdop.Event) {
@@ -182,7 +141,7 @@ func (n *Node) onWatchEvent(rawEvent etcdop.Event) {
 			NodeID:  nodeID,
 			Message: fmt.Sprintf(`found a new node "%s"`, nodeID),
 		}
-		n.nodes.Add(nodeID)
+		n.assigner.addNode(nodeID)
 		n.logger.Infof(event.Message)
 	case etcdop.DeleteEvent:
 		nodeID := string(rawEvent.PrevKv.Value)
@@ -191,7 +150,7 @@ func (n *Node) onWatchEvent(rawEvent etcdop.Event) {
 			NodeID:  nodeID,
 			Message: fmt.Sprintf(`the node "%s" gone`, nodeID),
 		}
-		n.nodes.Remove(nodeID)
+		n.assigner.removeNode(nodeID)
 		n.logger.Infof(event.Message)
 	default:
 		panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
