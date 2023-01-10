@@ -92,17 +92,17 @@ func NewServiceDeps(
 		return nil, err
 	}
 
-	schemaInst := schema.New(validator.New().Validate)
-	storeInst := store.New(logger, etcdClient, tracer, schemaInst)
-
-	return &forService{
+	serviceDeps := &forService{
 		Base:       baseDeps,
 		Public:     publicDeps,
 		proc:       proc,
 		etcdClient: etcdClient,
-		schema:     schemaInst,
-		store:      storeInst,
-	}, nil
+		schema:     schema.New(validator.New().Validate),
+	}
+
+	serviceDeps.store = store.New(serviceDeps)
+
+	return serviceDeps, nil
 }
 
 // forServer implements ForService interface.

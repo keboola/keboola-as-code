@@ -3,6 +3,7 @@
 package store
 
 import (
+	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 
@@ -11,17 +12,31 @@ import (
 )
 
 type Store struct {
+	clock  clock.Clock
 	logger log.Logger
 	client *etcd.Client
 	tracer trace.Tracer
 	schema *schema.Schema
 }
 
-func New(logger log.Logger, etcdClient *etcd.Client, tracer trace.Tracer, schema *schema.Schema) *Store {
+type dependencies interface {
+	Clock() clock.Clock
+	Logger() log.Logger
+	Tracer() trace.Tracer
+	Schema() *schema.Schema
+	EtcdClient() *etcd.Client
+}
+
+func New(d dependencies) *Store {
+	return newFrom(d.Clock(), d.Logger(), d.Tracer(), d.EtcdClient(), d.Schema())
+}
+
+func newFrom(clock clock.Clock, logger log.Logger, tracer trace.Tracer, etcdClient *etcd.Client, schema *schema.Schema) *Store {
 	return &Store{
+		clock:  clock,
 		logger: logger,
-		client: etcdClient,
 		tracer: tracer,
+		client: etcdClient,
 		schema: schema,
 	}
 }

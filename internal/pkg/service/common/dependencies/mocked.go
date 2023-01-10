@@ -354,7 +354,7 @@ func (v *mocked) Schema() *bufferSchema.Schema {
 
 func (v *mocked) Store() *bufferStore.Store {
 	if v.bufferStore == nil {
-		v.bufferStore = bufferStore.New(v.logger, v.EtcdClient(), v.Tracer(), v.Schema())
+		v.bufferStore = bufferStore.New(v)
 	}
 	return v.bufferStore
 }
