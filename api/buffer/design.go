@@ -469,7 +469,7 @@ var Mapping = Type("Mapping", func() {
 	})
 	Attribute("columns", ArrayOf(Column), func() {
 		Description("List of export column mappings. An export may have a maximum of 50 columns.")
-		Example([]any{ExampleColumn()})
+		Example([]any{ExampleColumnTypeBody()})
 	})
 	Required("tableId", "columns")
 	Example(ExampleMapping())
@@ -487,7 +487,7 @@ var Column = Type("Column", func() {
 		Description("Template mapping details.")
 	})
 	Required("type", "name")
-	Example(ExampleColumn())
+	Example(ExampleColumnTypeBody())
 })
 
 var Template = Type("Template", func() {
@@ -669,7 +669,10 @@ func ExampleMapping() ExampleMappingDef {
 		TableID:     "in.c-github.changes",
 		Incremental: true,
 		Columns: []ExampleColumnDef{
-			ExampleColumn(),
+			ExampleColumnTypeID(),
+			ExampleColumnTypeDatetime(),
+			ExampleColumnTypeIP(),
+			ExampleColumnTypeHeaders(),
 			ExampleColumnTypeTemplate(),
 		},
 	}
@@ -682,15 +685,45 @@ func ExampleTemplate() ExampleTemplateDef {
 	}
 }
 
-func ExampleColumn() ExampleColumnDef {
+func ExampleColumnTypeID() ExampleColumnDef {
+	return ExampleColumnDef{
+		Type: "id",
+		Name: "column1",
+	}
+}
+
+func ExampleColumnTypeDatetime() ExampleColumnDef {
+	return ExampleColumnDef{
+		Type: "datetime",
+		Name: "column2",
+	}
+}
+
+func ExampleColumnTypeIP() ExampleColumnDef {
+	return ExampleColumnDef{
+		Type: "ip",
+		Name: "column3",
+	}
+}
+
+func ExampleColumnTypeBody() ExampleColumnDef {
 	return ExampleColumnDef{
 		Type: "body",
+		Name: "column4",
+	}
+}
+
+func ExampleColumnTypeHeaders() ExampleColumnDef {
+	return ExampleColumnDef{
+		Type: "headers",
+		Name: "column5",
 	}
 }
 
 func ExampleColumnTypeTemplate() ExampleColumnDef {
 	return ExampleColumnDef{
 		Type:     "template",
+		Name:     "column6",
 		Template: ExampleTemplate(),
 	}
 }
