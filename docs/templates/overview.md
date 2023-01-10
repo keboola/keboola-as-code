@@ -3,6 +3,8 @@
 - CLI commands and API to create a template from an existing [Keboola](https://www.keboola.com/product/overview) project and to apply a template to some other [Keboola Connection](https://www.keboola.com/product/overview) project.
 - The [Jsonnet](https://jsonnet.org/) language is used to define JSON configurations in the templates.
 
+The [user documentation](https://developers.keboola.com/cli/templates/) describes how to create and use the templates.
+
 ## CLI
 
 Templates functionality is implemented also in the CLI. See the commands:
@@ -32,11 +34,6 @@ The command generates:
 
 Endpoints behavior is implemented in [internal/pkg/service/templates/api/service/service.go](../../internal/pkg/service/templates/api/service/service.go).
 
-Endpoints code performs validation of user inputs and typically runs one or more operations. (The operation
-corresponds to the [`command design pattern`](https://refactoring.guru/design-patterns/command) but we decided to rename
-the commands to operations not to confuse them with the CLI commands.)
-
-The operations are defined in [`pkg/lib/operation`](../../pkg/lib/operation) folder. 
-
+Endpoints code performs validation of user inputs and typically runs one or more operations.
 See [internal/pkg/service/common/dependencies/dependencies.go](../../internal/pkg/service/common/dependencies/dependencies.go)
 for a detailed explanation of dependency injection and the command design pattern implementation.

@@ -160,29 +160,3 @@ If a ENV placeholder in the form `^TEST_NEW_TICKET_\d+$` is found, it is replace
 The scripts `make mod`, `make fix`, `make ci` calls `go mod vendor`.
 It syncs all dependencies (Go modules) to the `vendor` directory.
 So integration with the IDE should work automatically.
-
-### Buffer API Benchmarking
-
-1. Start the server:
-```
-export KBC_STORAGE_API_HOST=connection.keboola.com
-docker-compose run -u "$UID:$GID"  -p 10000:8000 --rm dev make run-buffer-api-once
-```
-2. Run the benchmark:
-```
-export API_TOKEN=<token>
-export API_HOST=http://localhost:10000
-docker-compose run -u "$UID:$GID" k6 run /scripts/k6/buffer-api/<name>
-```
-
-Where `<name>` is one of the following benchmark names:
-- `static.js` - Receiver with a single export. Export only has static columns.
-- `template.js` - Receiver with a single export. Export has a template column.
-
-Available environment variables:
-
-- `API_TOKEN` - Storage API Token (required)
-- `API_HOST` - Buffer API host (default: `http://localhost:8001`)
-- `K6_TIMEOUT` - max duration of the test (default: `60s`)
-- `K6_ITERATIONS` - number of all requests (default: `10 000`)
-- `K6_PARALLELISM` - number of workers that send requests (default: `1000`)

@@ -19,7 +19,7 @@
 
 ### Buffer Service
 
-- A Proxy API to buffer imported data and their import to Storage tables in batches.
+- A Proxy API to buffer collected data and their import to Storage tables in batches.
 - See **[architecture overview](./docs/buffer/overview.md)** for more details.
 
 
@@ -30,6 +30,10 @@
   https://www.keboola.com/resources/roadmap.
 - You can also send PR directly, but we do not guarantee that it will be accepted.
 - See the [developer's guide](./docs/DEVELOPMENT.md) and [description of the release process](./docs/RELEASE.md).
+
+## Tests
+
+- **TODO**
 
 ## License
 
