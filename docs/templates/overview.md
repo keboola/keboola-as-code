@@ -1,5 +1,8 @@
 # Templates Architecture Overview
 
+- CLI commands and API to create a template from an existing [Keboola](https://www.keboola.com/product/overview) project and to apply a template to some other [Keboola Connection](https://www.keboola.com/product/overview) project.
+- The [Jsonnet](https://jsonnet.org/) language is used to define JSON configurations in the templates.
+
 ## CLI
 
 Templates functionality is implemented also in the CLI. See the commands:

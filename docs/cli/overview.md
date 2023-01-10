@@ -1,5 +1,11 @@
 # CLI Architecture Overview
 
+- Bidirectional synchronization of a local directory and [Keboola Connection](https://www.keboola.com/product/overview) project:
+    - Push / pull operations.
+    - Calls [Keboola Storage API](https://developers.keboola.com/integrate/storage/api/).
+    - Local directory can be easily versioned by [Git](https://git-scm.com/) or a similar tool.
+- Configurations in the local directory are represented as JSON files, transformations are represented as native files (SQL, Python, etc).
+
 The installation, usage, and complete list of available commands are available at [https://developers.keboola.com/cli/](https://developers.keboola.com/cli/). 
 
 ## Entrypoint
