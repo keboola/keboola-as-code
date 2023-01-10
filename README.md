@@ -1,4 +1,4 @@
-# Keboola as Code
+# Keboola Go Monorepo
 
 A monorepo written in Go. Contains
 
@@ -8,26 +8,28 @@ A monorepo written in Go. Contains
 
 ## Overview
 
-### CLI
+### Keboola as Code 
+
+#### CLI
 
 - Bidirectional synchronization of a local directory and [Keboola Connection](https://www.keboola.com/product/overview) project:
   - Push / pull operations.
   - Calls [Keboola Storage API](https://developers.keboola.com/integrate/storage/api/).
-  - Local directory can be easly versioned by [Git](https://git-scm.com/) or a similar tool.
+  - Local directory can be easily versioned by [Git](https://git-scm.com/) or a similar tool.
 - Configurations are represented as JSON files.
 - Transformations are represented as native files, for example SQL, Python, etc.
 - Read more in the [Documentation](https://developers.keboola.com/cli/).
 - See [architecture overview](./docs/cli/overview.md)
 
-### Templates
+#### Templates Service
 
 - To create a template from an existing [Keboola Connection](https://www.keboola.com/product/overview) project.
-- To apply template to some other [Keboola Connection](https://www.keboola.com/product/overview) project.
+- To apply a template to some other [Keboola Connection](https://www.keboola.com/product/overview) project.
 - The [Jsonnet](https://jsonnet.org/) language is used to define the JSON files.
 - Available via CLI and API.
 - See [architecture overview](./docs/templates/overview.md)
 
-### Buffer
+### Buffer Service
 
 - A Proxy API to import data to Storage tables.
 - Incoming data are buffered until some configured condition is met to import them to Storage in a single batch.

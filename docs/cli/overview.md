@@ -1,5 +1,7 @@
 # CLI Architecture Overview
 
+The installation, usage, and complete list of available commands are available at [https://developers.keboola.com/cli/](https://developers.keboola.com/cli/). 
+
 ## Entrypoint
 
 [cmd/kbc/main.go](../../cmd/kbc/main.go)
@@ -21,6 +23,7 @@ CLI commands are defined in [`internal/pkg/service/cli/cmd/`](../../internal/pkg
 
 Most CLI commands offer an interactive dialog to fill in the needed information. E.g. `local create` command asks what to create 
 by calling [`d.Dialogs().AskWhatCreateLocal()`](https://github.com/keboola/keboola-as-code/blob/6157a3d111c04adc58e87485e065b386046fffaa/internal/pkg/service/cli/cmd/local/create.go#L28-L28).
+The user inputs can be filled in a non-interactive mode using command flags.
 
 The dialogs are defined in the [`internal/pkg/service/cli/dialog`](../../internal/pkg/service/cli/dialog) package.
 
@@ -41,3 +44,6 @@ corresponds to the [`command design pattern`](https://refactoring.guru/design-pa
 the commands to operations not to confuse them with the CLI commands.)
 
 The operations are defined in [`pkg/lib/operation`](../../pkg/lib/operation) folder. 
+
+See [internal/pkg/service/common/dependencies/dependencies.go](../../internal/pkg/service/common/dependencies/dependencies.go)
+for a detailed explanation of dependency injection and the command design pattern implementation. 
