@@ -32,7 +32,7 @@ type listeners struct {
 
 type listenerID string
 
-func newListeners(proc *servicectx.Process, clock clock.Clock, logger log.Logger, config config) *listeners {
+func newListeners(proc *servicectx.Process, clock clock.Clock, logger log.Logger, config nodeConfig) *listeners {
 	logger = logger.AddPrefix("[listeners]")
 	v := &listeners{
 		config:    config,
