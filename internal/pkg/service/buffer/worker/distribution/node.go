@@ -1,29 +1,3 @@
-// Package distribution provides distribution of various keys/tasks between worker nodes.
-//
-// The package consists of:
-// - Registration of a worker node in the cluster as an etcd key (with lease).
-// - Discovering of other worker nodes in the cluster by the etcd Watch API.
-// - Local decision and assignment of a key/task to a specific worker node (by a consistent hash/HashRing approach).
-//
-// # Key benefits
-//
-// - The node only watch of other node's registration/un-registration, which doesn't happen often.
-// - Based on this, the node can quickly and locally determine owner node for a key/task.
-// - It aims to reduce the risk of collision and minimizes load.
-//
-// # Atomicity
-//
-// - During watch propagation or lease timeout, individual nodes can have a different list of the active nodes.
-// - This could lead to the situation, when 2+ nodes have ownership of a task at the same time.
-// - Therefore, the task itself must be also protected by a transaction (version number validation).
-//
-// Read more:
-// - https://etcd.io/docs/v3.5/learning/why/#notes-on-the-usage-of-lock-and-lease
-// - "Actually, the lease mechanism itself doesn't guarantee mutual exclusion...."
-//
-// # Listeners
-//
-// Use Node.OnChangeListener method to create a listener for nodes distribution change events.
 package distribution
 
 import (
@@ -44,6 +18,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// Node is created within each Worker node.
+//
+// It is responsible for:
+// - Registration/un-registration of the worker node in the cluster, see register and unregister methods.
+// - Discovery of the self and other nodes in the cluster, see watch method.
+// - StartExecutor method starts a new Executor, which is restarted on the distribution changes.
+// - Embedded assigner locally assigns the owner for the task, see documentation of the Assigner.
+// - Embedded listeners listen for distribution changes, when a node is added or removed.
 type Node struct {
 	*assigner
 	clock     clock.Clock
@@ -115,7 +97,8 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 		return nil, err
 	}
 
-	// Reset events from the initialization
+	// Reset events created during the initialization.
+	// There is no listener yet, and some events can be buffered by grouping interval.
 	n.listeners.Reset()
 
 	return n, nil
@@ -131,13 +114,18 @@ func (n *Node) CloneAssigner() *Assigner {
 	return n.assigner.clone()
 }
 
+// StartExecutor starts the ExecutorWork, see documentation there.
+func (n *Node) StartExecutor(name string, workFactory ExecutorWork, opts ...ExecutorOption) error {
+	return startExecutor(n, name, workFactory, opts...)
+}
+
 func (n *Node) onWatchEvent(rawEvent etcdop.Event) {
 	var event Event
 	switch rawEvent.Type {
 	case etcdop.CreateEvent, etcdop.UpdateEvent:
 		nodeID := string(rawEvent.Kv.Value)
 		event = Event{
-			Type:    EventTypeAdd,
+			Type:    EventNodeAdded,
 			NodeID:  nodeID,
 			Message: fmt.Sprintf(`found a new node "%s"`, nodeID),
 		}
@@ -146,7 +134,7 @@ func (n *Node) onWatchEvent(rawEvent etcdop.Event) {
 	case etcdop.DeleteEvent:
 		nodeID := string(rawEvent.PrevKv.Value)
 		event = Event{
-			Type:    EventTypeRemove,
+			Type:    EventNodeRemoved,
 			NodeID:  nodeID,
 			Message: fmt.Sprintf(`the node "%s" gone`, nodeID),
 		}
@@ -229,5 +217,14 @@ func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
 	}
 
 	// Wait for initial sync
-	return <-initDone
+	if err := <-initDone; err != nil {
+		return err
+	}
+
+	// Check self-discovery
+	if !n.assigner.HasNode(n.nodeID) {
+		return errors.Errorf(`self-discovery failed: missing "%s" in discovered nodes`, n.nodeID)
+	}
+
+	return nil
 }
