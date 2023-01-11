@@ -1,40 +1,12 @@
-// Package distribution provides distribution of various keys/tasks between worker nodes.
-//
-// The package consists of:
-// - Registration of a worker node in the cluster as an etcd key (with lease).
-// - Discovering of other worker nodes in the cluster by the etcd Watch API.
-// - Local decision and assignment of a key/task to a specific worker node (by a consistent hash/HashRing approach).
-//
-// # Key benefits
-//
-// - The node only watch of other node's registration/un-registration, which doesn't happen often.
-// - Based on this, the node can quickly and locally determine owner node for a key/task.
-// - It aims to reduce the risk of collision and minimizes load.
-//
-// # Atomicity
-//
-// - During watch propagation or lease timeout, individual nodes can have a different list of the active nodes.
-// - This could lead to the situation, when 2+ nodes have ownership of a task at the same time.
-// - Therefore, the task itself must be also protected by a transaction (version number validation).
-//
-// Read more:
-// - https://etcd.io/docs/v3.5/learning/why/#notes-on-the-usage-of-lock-and-lease
-// - "Actually, the lease mechanism itself doesn't guarantee mutual exclusion...."
-//
-// # Listeners
-//
-// Use Node.OnChangeListener method to create a listener for nodes distribution change events.
 package distribution
 
 import (
 	"context"
 	"fmt"
-	"sort"
 	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/lafikl/consistent"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 
@@ -46,18 +18,27 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// Node is created within each Worker node.
+//
+// It is responsible for:
+// - Registration/un-registration of the worker node in the cluster, see register and unregister methods.
+// - Discovery of the self and other nodes in the cluster, see watch method.
+// - StartExecutor method starts a new Executor, which is restarted on the distribution changes.
+// - Embedded assigner locally assigns the owner for the task, see documentation of the Assigner.
+// - Embedded listeners listen for distribution changes, when a node is added or removed.
 type Node struct {
-	clock   clock.Clock
-	logger  log.Logger
-	schema  *schema.Schema
-	client  *etcd.Client
-	session *concurrency.Session
-	nodeID  string
-
-	config    config
-	nodes     *consistent.Consistent
+	*assigner
+	clock     clock.Clock
+	logger    log.Logger
+	proc      *servicectx.Process
+	schema    *schema.Schema
+	client    *etcd.Client
+	session   *concurrency.Session
+	config    nodeConfig
 	listeners *listeners
 }
+
+type assigner = Assigner
 
 type dependencies interface {
 	Clock() clock.Clock
@@ -67,29 +48,27 @@ type dependencies interface {
 	Process() *servicectx.Process
 }
 
-func NewNode(d dependencies, opts ...Option) (*Node, error) {
+func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 	// Apply options
-	c := defaultConfig()
+	c := defaultNodeConfig()
 	for _, o := range opts {
 		o(&c)
 	}
 
-	proc := d.Process()
-
 	// Create instance
 	n := &Node{
-		clock:  d.Clock(),
-		logger: d.Logger().AddPrefix("[distribution]"),
-		schema: d.Schema(),
-		client: d.EtcdClient(),
-		nodeID: d.Process().UniqueID(),
-		nodes:  consistent.New(),
-		config: c,
+		assigner: newAssigner(d.Process().UniqueID()),
+		clock:    d.Clock(),
+		logger:   d.Logger().AddPrefix("[distribution]"),
+		proc:     d.Process(),
+		schema:   d.Schema(),
+		client:   d.EtcdClient(),
+		config:   c,
 	}
 
 	// Create etcd session
 	var err error
-	n.session, err = etcdclient.CreateConcurrencySession(n.logger, proc, n.client, c.ttlSeconds)
+	n.session, err = etcdclient.CreateConcurrencySession(n.logger, n.proc, n.client, c.ttlSeconds)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +81,7 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 	// Graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	proc.OnShutdown(func() {
+	n.proc.OnShutdown(func() {
 		n.logger.Info("received shutdown request")
 		cancel()
 		wg.Wait()
@@ -111,12 +90,16 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 	})
 
 	// Create listeners handler
-	n.listeners = newListeners(proc, n.clock, n.logger, n.config)
+	n.listeners = newListeners(n.proc, n.clock, n.logger, n.config)
 
 	// Watch for nodes
 	if err := n.watch(ctx, wg); err != nil {
 		return nil, err
 	}
+
+	// Reset events created during the initialization.
+	// There is no listener yet, and some events can be buffered by grouping interval.
+	n.listeners.Reset()
 
 	return n, nil
 }
@@ -126,47 +109,14 @@ func (n *Node) OnChangeListener() *Listener {
 	return n.listeners.add()
 }
 
-// Nodes method returns IDs of all known nodes.
-func (n *Node) Nodes() []string {
-	out := n.nodes.Hosts()
-	sort.Strings(out)
-	return out
+// CloneAssigner returns cloned Assigner frozen in the actual distribution.
+func (n *Node) CloneAssigner() *Assigner {
+	return n.assigner.clone()
 }
 
-// NodeFor returns ID of the key's owner node.
-// The consistent.ErrNoHosts may occur if there is no node in the list.
-func (n *Node) NodeFor(key string) (string, error) {
-	return n.nodes.Get(key)
-}
-
-// MustGetNodeFor returns ID of the key's owner node.
-// The method panic if there is no node in the list.
-func (n *Node) MustGetNodeFor(key string) string {
-	node, err := n.NodeFor(key)
-	if err != nil {
-		panic(err)
-	}
-	return node
-}
-
-// IsOwner method returns true, if the node is owner of the key.
-// The consistent.ErrNoHosts may occur if there is no node in the list.
-func (n *Node) IsOwner(key string) (bool, error) {
-	node, err := n.NodeFor(key)
-	if err != nil {
-		return false, err
-	}
-	return node == n.nodeID, nil
-}
-
-// MustCheckIsOwner method returns true, if the node is owner of the key.
-// The method panic if there is no node in the list.
-func (n *Node) MustCheckIsOwner(key string) bool {
-	is, err := n.IsOwner(key)
-	if err != nil {
-		panic(err)
-	}
-	return is
+// StartExecutor starts the ExecutorWork, see documentation there.
+func (n *Node) StartExecutor(name string, workFactory ExecutorWork, opts ...ExecutorOption) error {
+	return startExecutor(n, name, workFactory, opts...)
 }
 
 func (n *Node) onWatchEvent(rawEvent etcdop.Event) {
@@ -175,20 +125,20 @@ func (n *Node) onWatchEvent(rawEvent etcdop.Event) {
 	case etcdop.CreateEvent, etcdop.UpdateEvent:
 		nodeID := string(rawEvent.Kv.Value)
 		event = Event{
-			Type:    EventTypeAdd,
+			Type:    EventNodeAdded,
 			NodeID:  nodeID,
 			Message: fmt.Sprintf(`found a new node "%s"`, nodeID),
 		}
-		n.nodes.Add(nodeID)
+		n.assigner.addNode(nodeID)
 		n.logger.Infof(event.Message)
 	case etcdop.DeleteEvent:
 		nodeID := string(rawEvent.PrevKv.Value)
 		event = Event{
-			Type:    EventTypeRemove,
+			Type:    EventNodeRemoved,
 			NodeID:  nodeID,
 			Message: fmt.Sprintf(`the node "%s" gone`, nodeID),
 		}
-		n.nodes.Remove(nodeID)
+		n.assigner.removeNode(nodeID)
 		n.logger.Infof(event.Message)
 	default:
 		panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
@@ -236,8 +186,6 @@ func (n *Node) unregister(timeout time.Duration) {
 
 // watch for other nodes.
 func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
-	selfDiscovery := n.waitForSelfDiscovery(ctx, wg)
-
 	pfx := n.schema.Runtime().WorkerNodes().Active().IDs()
 	ch := pfx.GetAllAndWatch(ctx, n.client, n.onWatchErr, etcd.WithPrevKV(), etcd.WithCreatedNotify())
 	initDone := make(chan error)
@@ -261,11 +209,15 @@ func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
 		}
 	}()
 
-	// Wait for self-discovery
-	if err := <-selfDiscovery; err != nil {
+	// Wait for initial sync
+	if err := <-initDone; err != nil {
 		return err
 	}
 
-	// Wait for initial sync
-	return <-initDone
+	// Check self-discovery
+	if !n.assigner.HasNode(n.nodeID) {
+		return errors.Errorf(`self-discovery failed: missing "%s" in discovered nodes`, n.nodeID)
+	}
+
+	return nil
 }

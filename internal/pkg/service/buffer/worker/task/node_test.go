@@ -3,6 +3,7 @@ package task_test
 import (
 	"context"
 	"fmt"
+	"io"
 	"testing"
 	"time"
 
@@ -400,7 +401,7 @@ func exportKeyForTest() key.ExportKey {
 	return exportKey
 }
 
-func createNode(t *testing.T, etcdNamespace string, logs *ioutil.Writer, nodeName string) (*task.Node, dependencies.Mocked) {
+func createNode(t *testing.T, etcdNamespace string, logs io.Writer, nodeName string) (*task.Node, dependencies.Mocked) {
 	t.Helper()
 	d := createDeps(t, etcdNamespace, logs, nodeName)
 	node, err := task.NewNode(d)
@@ -408,7 +409,7 @@ func createNode(t *testing.T, etcdNamespace string, logs *ioutil.Writer, nodeNam
 	return node, d
 }
 
-func createDeps(t *testing.T, etcdNamespace string, logs *ioutil.Writer, nodeName string) dependencies.Mocked {
+func createDeps(t *testing.T, etcdNamespace string, logs io.Writer, nodeName string) dependencies.Mocked {
 	t.Helper()
 	d := dependencies.NewMockedDeps(
 		t,
@@ -416,7 +417,9 @@ func createDeps(t *testing.T, etcdNamespace string, logs *ioutil.Writer, nodeNam
 		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
 		dependencies.WithEtcdNamespace(etcdNamespace),
 	)
-	d.DebugLogger().ConnectTo(logs)
+	if logs != nil {
+		d.DebugLogger().ConnectTo(logs)
+	}
 	d.DebugLogger().ConnectTo(testhelper.VerboseStdout())
 	return d
 }

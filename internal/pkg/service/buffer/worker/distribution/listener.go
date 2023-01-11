@@ -3,6 +3,7 @@ package distribution
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/benbjohnson/clock"
 	gonanoid "github.com/matoous/go-nanoid/v2"
@@ -11,7 +12,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 )
 
-// Listener contains channel C with distribution change Events.
+// Listener listens for distribution changes, when a node is added or removed.
+// It contains the C channel with distribution change Events.
 type Listener struct {
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -22,6 +24,7 @@ type Listener struct {
 }
 
 type listeners struct {
+	config         nodeConfig
 	lock           *sync.Mutex
 	bufferedEvents []Event
 	listeners      map[listenerID]*Listener
@@ -29,9 +32,10 @@ type listeners struct {
 
 type listenerID string
 
-func newListeners(proc *servicectx.Process, clock clock.Clock, logger log.Logger, config config) *listeners {
+func newListeners(proc *servicectx.Process, clock clock.Clock, logger log.Logger, config nodeConfig) *listeners {
 	logger = logger.AddPrefix("[listeners]")
 	v := &listeners{
+		config:    config,
 		lock:      &sync.Mutex{},
 		listeners: make(map[listenerID]*Listener),
 	}
@@ -50,10 +54,16 @@ func newListeners(proc *servicectx.Process, clock clock.Clock, logger log.Logger
 	go func() {
 		defer wg.Done()
 
-		// Listeners are not triggered immediately on change,
-		// but all events within the groupInterval are processed at once.
-		triggerTicker := clock.Ticker(config.eventsGroupInterval)
-		defer triggerTicker.Stop()
+		var tickerC <-chan time.Time
+		if config.eventsGroupInterval > 0 {
+			// Listeners are not triggered immediately on change,
+			// but all events within the groupInterval are processed at once.
+			triggerTicker := clock.Ticker(config.eventsGroupInterval)
+			defer triggerTicker.Stop()
+		} else {
+			// No grouping interval, trigger is called immediately, see Notify method.
+			tickerC = make(chan time.Time)
+		}
 
 		for {
 			select {
@@ -65,14 +75,14 @@ func newListeners(proc *servicectx.Process, clock clock.Clock, logger log.Logger
 				v.trigger()
 				// Stop all listeners
 				for _, l := range v.listeners {
-					l.wg.Wait()
 					l.cancel()
+					l.wg.Wait()
 					close(l.C)
 				}
 				v.listeners = nil
 				v.lock.Unlock()
 				return
-			case <-triggerTicker.C:
+			case <-tickerC:
 				// Trigger listeners at most once per "group interval"
 				v.lock.Lock()
 				v.trigger()
@@ -84,12 +94,25 @@ func newListeners(proc *servicectx.Process, clock clock.Clock, logger log.Logger
 	return v
 }
 
+func (v *listeners) Reset() {
+	v.lock.Lock()
+	v.bufferedEvents = nil
+	v.lock.Unlock()
+}
+
 // Notify listeners about a new event. The event is not processed immediately.
 // All events within the "group interval" are processed at once, see trigger method.
 func (v *listeners) Notify(event Event) {
 	v.lock.Lock()
+	defer v.lock.Unlock()
+
+	// All events within the "group interval" are processed at once.
 	v.bufferedEvents = append(v.bufferedEvents, event)
-	v.lock.Unlock()
+
+	// Trigger listeners immediately, if there is no grouping interval
+	if v.config.eventsGroupInterval == 0 {
+		v.trigger()
+	}
 }
 
 // add a new listener, it contains channel C with streamed distribution change Events.
@@ -138,7 +161,7 @@ func (l *Listener) trigger(events Events) {
 		case <-l.ctx.Done():
 			// stop goroutine on stop/shutdown
 		case l.C <- events:
-			// propagate events, wait for other side
+			// propagate events, wait for receiver side
 		}
 	}()
 }

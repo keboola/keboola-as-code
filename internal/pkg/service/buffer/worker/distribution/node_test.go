@@ -1,8 +1,8 @@
 package distribution_test
 
 import (
-	"context"
 	"fmt"
+	"io"
 	"reflect"
 	"sync"
 	"testing"
@@ -23,12 +23,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
-const eventsGroupInterval = 10 * time.Millisecond // only for tests
-
 func TestNodesDiscovery(t *testing.T) {
 	t.Parallel()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	clk := clock.New() // use real clock
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
@@ -48,14 +44,14 @@ func TestNodesDiscovery(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-
-			node, d := createNode(t, ctx, clk, etcdNamespace, fmt.Sprintf("node%d", i+1))
-
-			lock.Lock()
-			nodes[i] = node
-			processes[i] = d.Process()
-			loggers[i] = d.DebugLogger()
-			lock.Unlock()
+			node, d := createNode(t, clk, nil, etcdNamespace, fmt.Sprintf("node%d", i+1))
+			if node != nil {
+				lock.Lock()
+				nodes[i] = node
+				processes[i] = d.Process()
+				loggers[i] = d.DebugLogger()
+				lock.Unlock()
+			}
 		}()
 	}
 	wg.Wait()
@@ -73,11 +69,11 @@ func TestNodesDiscovery(t *testing.T) {
 	// Check tasks distribution.
 	// Distribution is random, it depends on the hash function.
 	// But all nodes return the same location for the task.
-	for i := 0; i < nodesCount; i++ {
-		assert.Equal(t, "node2", nodes[i].MustGetNodeFor("foo1"))
-		assert.Equal(t, "node3", nodes[i].MustGetNodeFor("foo2"))
-		assert.Equal(t, "node3", nodes[i].MustGetNodeFor("foo3"))
-		assert.Equal(t, "node1", nodes[i].MustGetNodeFor("foo4"))
+	for _, node := range nodes {
+		assert.Equal(t, "node2", node.MustGetNodeFor("foo1"))
+		assert.Equal(t, "node3", node.MustGetNodeFor("foo2"))
+		assert.Equal(t, "node3", node.MustGetNodeFor("foo3"))
+		assert.Equal(t, "node1", node.MustGetNodeFor("foo4"))
 	}
 	assert.True(t, nodes[0].MustCheckIsOwner("foo4"))
 	assert.True(t, nodes[1].MustCheckIsOwner("foo1"))
@@ -248,7 +244,7 @@ node3
 
 	// All node are off, start a new node
 	assert.Equal(t, 4, nodesCount+1)
-	node4, d4 := createNode(t, ctx, clk, etcdNamespace, "node4")
+	node4, d4 := createNode(t, clk, nil, etcdNamespace, "node4")
 	process4 := d4.Process()
 	assert.Eventually(t, func() bool {
 		return reflect.DeepEqual([]string{"node4"}, node4.Nodes())
@@ -339,16 +335,17 @@ func TestConsistentHashLib(t *testing.T) {
 	}, keysPerNode)
 }
 
-func createNode(t *testing.T, ctx context.Context, clk clock.Clock, etcdNamespace, nodeName string) (*Node, dependencies.Mocked) {
+func createNode(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, nodeName string) (*Node, dependencies.Mocked) {
 	t.Helper()
 
 	// Create dependencies
-	d := createDeps(t, ctx, clk, etcdNamespace, nodeName)
+	d := createDeps(t, clk, logs, etcdNamespace, nodeName)
 
-	// Disable waiting for self-discovery in tests with mocked clocks
-	selfDiscoveryTimeout := time.Second
+	// Disable events grouping interval in tests with mocked clocks,
+	// events will be processed immediately.
+	groupInterval := 10 * time.Millisecond // speedup tests with real clock
 	if _, ok := clk.(*clock.Mock); ok {
-		selfDiscoveryTimeout = 0
+		groupInterval = 0
 	}
 
 	// Create node
@@ -356,23 +353,24 @@ func createNode(t *testing.T, ctx context.Context, clk clock.Clock, etcdNamespac
 		d,
 		WithStartupTimeout(time.Second),
 		WithShutdownTimeout(time.Second),
-		WithSelfDiscoveryTimeout(selfDiscoveryTimeout),
-		WithEventsGroupInterval(eventsGroupInterval),
+		WithEventsGroupInterval(groupInterval),
 	)
 	assert.NoError(t, err)
 	return node, d
 }
 
-func createDeps(t *testing.T, ctx context.Context, clk clock.Clock, etcdNamespace, nodeName string) dependencies.Mocked {
+func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, nodeName string) dependencies.Mocked {
 	t.Helper()
 	d := dependencies.NewMockedDeps(
 		t,
 		dependencies.WithClock(clk),
 		dependencies.WithUniqueID(nodeName),
 		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
-		dependencies.WithCtx(ctx),
 		dependencies.WithEtcdNamespace(etcdNamespace),
 	)
+	if logs != nil {
+		d.DebugLogger().ConnectTo(logs)
+	}
 	d.DebugLogger().ConnectTo(testhelper.VerboseStdout())
 	return d
 }
