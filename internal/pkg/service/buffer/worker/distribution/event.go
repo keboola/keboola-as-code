@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	EventTypeAdd EventType = iota
-	EventTypeRemove
+	EventNodeAdded EventType = iota
+	EventNodeRemoved
 )
 
 type EventType int
@@ -19,6 +19,7 @@ type Event struct {
 	Message string
 }
 
+// Messages converts events to a string for logging purposes.
 func (v Events) Messages() string {
 	var out strings.Builder
 	last := len(v) - 1
