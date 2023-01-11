@@ -1,8 +1,8 @@
 package distribution_test
 
 import (
-	"context"
 	"fmt"
+	"io"
 	"reflect"
 	"sync"
 	"testing"
@@ -341,12 +341,6 @@ func createNode(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, no
 	// Create dependencies
 	d := createDeps(t, clk, logs, etcdNamespace, nodeName)
 
-	// Disable waiting for self-discovery in tests with mocked clocks
-	selfDiscoveryTimeout := time.Second
-	if _, ok := clk.(*clock.Mock); ok {
-		selfDiscoveryTimeout = 0
-	}
-
 	// Disable events grouping interval in tests with mocked clocks,
 	// events will be processed immediately.
 	groupInterval := 10 * time.Millisecond // speedup tests with real clock
@@ -359,7 +353,6 @@ func createNode(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, no
 		d,
 		WithStartupTimeout(time.Second),
 		WithShutdownTimeout(time.Second),
-		WithSelfDiscoveryTimeout(selfDiscoveryTimeout),
 		WithEventsGroupInterval(groupInterval),
 	)
 	assert.NoError(t, err)

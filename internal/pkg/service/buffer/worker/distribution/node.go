@@ -186,8 +186,6 @@ func (n *Node) unregister(timeout time.Duration) {
 
 // watch for other nodes.
 func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
-	selfDiscovery := n.waitForSelfDiscovery(ctx, wg)
-
 	pfx := n.schema.Runtime().WorkerNodes().Active().IDs()
 	ch := pfx.GetAllAndWatch(ctx, n.client, n.onWatchErr, etcd.WithPrevKV(), etcd.WithCreatedNotify())
 	initDone := make(chan error)
@@ -210,11 +208,6 @@ func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
 			}
 		}
 	}()
-
-	// Wait for self-discovery
-	if err := <-selfDiscovery; err != nil {
-		return err
-	}
 
 	// Wait for initial sync
 	if err := <-initDone; err != nil {

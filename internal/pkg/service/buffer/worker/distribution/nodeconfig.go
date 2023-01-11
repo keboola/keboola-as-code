@@ -5,30 +5,27 @@ import (
 )
 
 const (
-	DefaultSessionTTL           = 15               // seconds, see WithTTL
-	DefaultStartupTimeout       = 60 * time.Second // timeout for registration, PUT operation
-	DefaultShutdownTimeout      = 5 * time.Second  // timeout for un-registration, DELETE operation
-	DefaultSelfDiscoveryTimeout = 30 * time.Second // timeout, how long the Node should wait to discover itself back by the etcd watcher.
-	DefaultEventsGroupInterval  = 5 * time.Second  // all changes in the interval are grouped together, so that updates do not occur too often
+	DefaultSessionTTL          = 15               // seconds, see WithTTL
+	DefaultStartupTimeout      = 60 * time.Second // timeout for registration, PUT operation
+	DefaultShutdownTimeout     = 5 * time.Second  // timeout for un-registration, DELETE operation
+	DefaultEventsGroupInterval = 5 * time.Second  // all changes in the interval are grouped together, so that updates do not occur too often
 )
 
 type NodeOption func(c *nodeConfig)
 
 type nodeConfig struct {
-	startupTimeout       time.Duration
-	shutdownTimeout      time.Duration
-	selfDiscoveryTimeout time.Duration
-	eventsGroupInterval  time.Duration
-	ttlSeconds           int
+	startupTimeout      time.Duration
+	shutdownTimeout     time.Duration
+	eventsGroupInterval time.Duration
+	ttlSeconds          int
 }
 
 func defaultNodeConfig() nodeConfig {
 	return nodeConfig{
-		startupTimeout:       DefaultStartupTimeout,
-		shutdownTimeout:      DefaultShutdownTimeout,
-		selfDiscoveryTimeout: DefaultSelfDiscoveryTimeout,
-		eventsGroupInterval:  DefaultEventsGroupInterval,
-		ttlSeconds:           DefaultSessionTTL,
+		startupTimeout:      DefaultStartupTimeout,
+		shutdownTimeout:     DefaultShutdownTimeout,
+		eventsGroupInterval: DefaultEventsGroupInterval,
+		ttlSeconds:          DefaultSessionTTL,
 	}
 }
 
@@ -43,13 +40,6 @@ func WithStartupTimeout(v time.Duration) NodeOption {
 func WithShutdownTimeout(v time.Duration) NodeOption {
 	return func(c *nodeConfig) {
 		c.shutdownTimeout = v
-	}
-}
-
-// WithSelfDiscoveryTimeout defines how long the Node should wait to discover itself back by the etcd watcher.
-func WithSelfDiscoveryTimeout(v time.Duration) NodeOption {
-	return func(c *nodeConfig) {
-		c.selfDiscoveryTimeout = v
 	}
 }
 
