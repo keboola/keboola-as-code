@@ -65,8 +65,8 @@ func newListeners(proc *servicectx.Process, clock clock.Clock, logger log.Logger
 				v.trigger()
 				// Stop all listeners
 				for _, l := range v.listeners {
-					l.wg.Wait()
 					l.cancel()
+					l.wg.Wait()
 					close(l.C)
 				}
 				v.listeners = nil
