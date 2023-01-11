@@ -239,7 +239,8 @@ func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
 	selfDiscovery := n.waitForSelfDiscovery(ctx, wg)
 
 	pfx := n.schema.Runtime().WorkerNodes().Active().IDs()
-	ch, initDone := pfx.GetAllAndWatch(ctx, n.client, n.onWatchErr, etcd.WithPrevKV(), etcd.WithCreatedNotify())
+	ch := pfx.GetAllAndWatch(ctx, n.client, n.onWatchErr, etcd.WithPrevKV(), etcd.WithCreatedNotify())
+	initDone := make(chan error)
 
 	wg.Add(1)
 	go func() {
@@ -248,6 +249,12 @@ func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
 
 		// Channel is closed on shutdown, so the context does not have to be checked
 		for events := range ch {
+			if err := events.InitErr; err != nil {
+				initDone <- err
+				close(initDone)
+			} else if events.Created {
+				close(initDone)
+			}
 			for _, event := range events.Events {
 				n.onWatchEvent(event)
 			}

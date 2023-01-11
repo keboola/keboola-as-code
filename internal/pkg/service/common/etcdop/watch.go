@@ -36,6 +36,10 @@ type Event struct {
 type Events struct {
 	Header *etcdserverpb.ResponseHeader
 	Events []Event
+	// Created is used to indicate the creation of the watcher.
+	Created bool
+	// InitErr signals an error during initialization of the watcher.
+	InitErr error
 }
 
 type EventT[T any] struct {
@@ -48,6 +52,10 @@ type EventT[T any] struct {
 type EventsT[T any] struct {
 	Header *etcdserverpb.ResponseHeader
 	Events []EventT[T]
+	// Created is used to indicate the creation of the watcher.
+	Created bool
+	// InitErr signals an error during initialization of the watcher.
+	InitErr error
 }
 
 func (v EventType) String() string {
@@ -82,9 +90,8 @@ func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, handleErr func(e
 
 // GetAllAndWatch loads all keys in the prefix by the iterator and then watch for changes.
 // initDone channel signals end of the load phase and start of the watch phase.
-func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) (out <-chan Events, initDone <-chan error) {
+func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) (out <-chan Events) {
 	outCh := make(chan Events)
-	initDoneCh := make(chan error)
 
 	go func() {
 		defer close(outCh)
@@ -110,23 +117,21 @@ func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleE
 		})
 		sendBatch()
 
-		// Check iterator error
+		// Check getAll error
 		if err != nil {
-			initDoneCh <- err
-			close(initDoneCh)
+			outCh <- Events{InitErr: err}
 			return
 		}
 
 		// Continue with Watch where GetAll ended
-		close(initDoneCh)
 		v.doWatch(ctx, client, handleErr, outCh, append(opts, etcd.WithRev(itr.Header().Revision+1))...)
 	}()
 
-	return outCh, initDoneCh
+	return outCh
 }
 
 func (v Prefix) doWatch(ctx context.Context, client etcd.Watcher, handleErr func(err error), outCh chan Events, opts ...etcd.OpOption) {
-	opts = append([]etcd.OpOption{etcd.WithPrefix()}, opts...)
+	opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithCreatedNotify()}, opts...)
 
 	// In case of an error, the watch channel can be closed.
 	// It will be recreated, and it will continue from the last revision.
@@ -154,7 +159,9 @@ func (v Prefix) doWatch(ctx context.Context, client etcd.Watcher, handleErr func
 
 			// Process watch events until the rawCh is closed
 			rawCh := client.Watch(ctx, v.Prefix(), watchOpts...)
-			processWatchEvents(ctx, &revision, handleErr, rawCh, outCh)
+			if !processWatchEvents(ctx, &revision, handleErr, rawCh, outCh) {
+				return
+			}
 		}
 	}
 }
@@ -171,9 +178,8 @@ func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, handleErr fu
 // GetAllAndWatch loads all keys in the prefix by the iterator and then watch for changes.
 // Values are decoded to the type T.
 // initDone channel signals end of the load phase and start of the watch phase.
-func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) (out <-chan EventsT[T], initDone <-chan error) {
+func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) (out <-chan EventsT[T]) {
 	outCh := make(chan EventsT[T])
-	initDoneCh := make(chan error)
 
 	go func() {
 		defer close(outCh)
@@ -199,19 +205,17 @@ func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, han
 		})
 		sendBatch()
 
-		// Check iterator error
+		// Check getAll error
 		if err != nil {
-			initDoneCh <- err
-			close(initDoneCh)
+			outCh <- EventsT[T]{InitErr: err}
 			return
 		}
 
 		// Continue with Watch where GetAll finished
-		close(initDoneCh)
 		v.doWatch(ctx, client, handleErr, outCh, append(opts, etcd.WithRev(itr.Header().Revision+1))...)
 	}()
 
-	return outCh, initDoneCh
+	return outCh
 }
 
 func (v PrefixT[T]) doWatch(ctx context.Context, client etcd.Watcher, handleErr func(err error), outCh chan EventsT[T], opts ...etcd.OpOption) {
@@ -256,28 +260,40 @@ func (v PrefixT[T]) doWatch(ctx context.Context, client etcd.Watcher, handleErr 
 			}
 
 			outCh <- EventsT[T]{
-				Header: rawEvents.Header,
-				Events: outEvents,
+				Header:  rawEvents.Header,
+				Events:  outEvents,
+				Created: rawEvents.Created,
+				InitErr: rawEvents.InitErr,
 			}
 		}
 	}
 }
 
-func processWatchEvents(ctx context.Context, revision *int64, handleErr func(err error), rawCh etcd.WatchChan, outCh chan<- Events) {
+func processWatchEvents(ctx context.Context, revision *int64, handleErr func(err error), rawCh etcd.WatchChan, outCh chan<- Events) (retry bool) {
+	created := false
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return false
 		case resp, ok := <-rawCh:
 			if !ok {
-				return
+				return true
 			}
 
 			*revision = resp.Header.Revision
 
 			if err := resp.Err(); err != nil {
+				if !created {
+					// Stop on initialization error
+					outCh <- Events{InitErr: err}
+					return true
+				}
 				handleErr(err)
 				continue
+			}
+
+			if resp.Created {
+				created = true
 			}
 
 			// Sort events from the batch (if multiple keys have been modified in one txn, in one revision)
@@ -312,8 +328,9 @@ func processWatchEvents(ctx context.Context, revision *int64, handleErr func(err
 			}
 
 			outCh <- Events{
-				Header: &resp.Header,
-				Events: outEvents,
+				Header:  &resp.Header,
+				Events:  outEvents,
+				Created: resp.Created,
 			}
 		}
 	}

@@ -101,16 +101,11 @@ func (s *state) onError(err error) {
 func watch[T fmt.Stringer](ctx context.Context, wg *sync.WaitGroup, s *state, prefix etcdop.PrefixT[T], rev *revision.Syncer) *stateOf[T] {
 	tree := prefixtree.New[T]()
 
-	ch, _initDone := prefix.GetAllAndWatch(ctx, s.client, s.onError, etcd.WithCreatedNotify(), etcd.WithPrevKV())
+	initDone := make(chan error)
+	ch := prefix.GetAllAndWatch(ctx, s.client, s.onError, etcd.WithCreatedNotify(), etcd.WithPrevKV())
 
 	// Log only changes, not initial load
 	logsEnabled := atomic.NewBool(false)
-	initDone := make(chan error)
-	go func() {
-		err := <-_initDone
-		logsEnabled.Store(true)
-		initDone <- err
-	}()
 
 	wg.Add(1)
 	go func() {
@@ -118,6 +113,14 @@ func watch[T fmt.Stringer](ctx context.Context, wg *sync.WaitGroup, s *state, pr
 
 		// Channel is closed on shutdown, so the context does not have to be checked
 		for events := range ch {
+			if err := events.InitErr; err != nil {
+				initDone <- err
+				close(initDone)
+			} else if events.Created {
+				logsEnabled.Store(true)
+				close(initDone)
+			}
+
 			// Modify cache
 			tree.ModifyAtomic(func(t *prefixtree.Tree[T]) {
 				for _, event := range events.Events {
