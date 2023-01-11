@@ -48,14 +48,9 @@ func TestOnChangeListener(t *testing.T) {
 	// Add node 2,3, stop node 2
 	etcdhelper.ExpectModification(t, client, func() {
 		_, d2 = createNode(t, ctx, clk, etcdNamespace, "node2")
-		clk.Add(eventsGroupInterval)
-
 		_, d3 = createNode(t, ctx, clk, etcdNamespace, "node3")
-		clk.Add(eventsGroupInterval)
-
 		d2.Process().Shutdown(errors.New("test"))
 		d2.Process().WaitForShutdown()
-		clk.Add(eventsGroupInterval)
 	})
 
 	// Stop listener

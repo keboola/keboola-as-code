@@ -23,8 +23,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
-const eventsGroupInterval = 10 * time.Millisecond // only for tests
-
 func TestNodesDiscovery(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -351,13 +349,20 @@ func createNode(t *testing.T, ctx context.Context, clk clock.Clock, etcdNamespac
 		selfDiscoveryTimeout = 0
 	}
 
+	// Disable events grouping interval in tests with mocked clocks,
+	// events will be processed immediately.
+	groupInterval := 10 * time.Millisecond // speedup tests with real clock
+	if _, ok := clk.(*clock.Mock); ok {
+		groupInterval = 0
+	}
+
 	// Create node
 	node, err := NewNode(
 		d,
 		WithStartupTimeout(time.Second),
 		WithShutdownTimeout(time.Second),
 		WithSelfDiscoveryTimeout(selfDiscoveryTimeout),
-		WithEventsGroupInterval(eventsGroupInterval),
+		WithEventsGroupInterval(groupInterval),
 	)
 	assert.NoError(t, err)
 	return node, d
