@@ -35,6 +35,10 @@ for a detailed explanation of dependency injection and the command design patter
 
 **TODO**
 
+## Resources
+
+The Service uses an [etcd](https://etcd.io/) database to buffer incoming data until they are imported to Storage.
+
 ## Other information
 
 - [API Benchmarks](./benchmarks.md)

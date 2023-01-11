@@ -29,11 +29,11 @@
 - Suggestions for improvements and new features can be submitted at:  
   https://www.keboola.com/resources/roadmap.
 - You can also send PR directly, but we do not guarantee that it will be accepted.
-- See the [developer's guide](./docs/DEVELOPMENT.md) and [description of the release process](./docs/RELEASE.md).
 
-## Tests
-
-- **TODO**
+## Other Links 
+- [Developers' guide](./docs/DEVELOPMENT.md)
+- [Release process](./docs/RELEASE.md)
+- [E2E tests](./docs/e2etests.md)
 
 ## License
 

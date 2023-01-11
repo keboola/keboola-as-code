@@ -37,3 +37,8 @@ Endpoints behavior is implemented in [internal/pkg/service/templates/api/service
 Endpoints code performs validation of user inputs and typically runs one or more operations.
 See [internal/pkg/service/common/dependencies/dependencies.go](../../internal/pkg/service/common/dependencies/dependencies.go)
 for a detailed explanation of dependency injection and the command design pattern implementation.
+
+## Resources
+
+The Service uses an [etcd](https://etcd.io/) database for shared locks mechanism to ensure atomicity of write operations 
+through the API. etcd availability is not critical as the API can work without it but then it does not ensure the atomicity.
