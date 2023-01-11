@@ -17,6 +17,7 @@ import (
 	serviceDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -27,6 +28,7 @@ type ForWorker interface {
 	serviceDependencies.ForService
 	DistributionWorkerNode() *distribution.Node
 	WatcherWorkerNode() *watcher.WorkerNode
+	TaskWorkerNode() *task.Node
 }
 
 // forWorker implements ForWorker interface.
@@ -34,6 +36,7 @@ type forWorker struct {
 	serviceDependencies.ForService
 	distNode    *distribution.Node
 	watcherNode *watcher.WorkerNode
+	taskNode    *task.Node
 }
 
 func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provider, logger log.Logger, debug, dumpHTTP bool) (v ForWorker, err error) {
@@ -55,7 +58,7 @@ func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 		return nil, err
 	}
 
-	// Create server dependencies
+	// Create worker dependencies
 	d := &forWorker{
 		ForService: serviceDeps,
 	}
@@ -66,6 +69,8 @@ func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 	}
 
 	d.watcherNode, err = watcher.NewWorkerNode(d)
+
+	d.taskNode, err = task.NewNode(d)
 	if err != nil {
 		return nil, err
 	}
@@ -79,4 +84,8 @@ func (v *forWorker) DistributionWorkerNode() *distribution.Node {
 
 func (v *forWorker) WatcherWorkerNode() *watcher.WorkerNode {
 	return v.watcherNode
+}
+
+func (v *forWorker) TaskWorkerNode() *task.Node {
+	return v.taskNode
 }
