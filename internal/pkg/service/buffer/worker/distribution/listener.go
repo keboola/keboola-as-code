@@ -94,6 +94,12 @@ func newListeners(proc *servicectx.Process, clock clock.Clock, logger log.Logger
 	return v
 }
 
+func (v *listeners) Reset() {
+	v.lock.Lock()
+	v.bufferedEvents = nil
+	v.lock.Unlock()
+}
+
 // Notify listeners about a new event. The event is not processed immediately.
 // All events within the "group interval" are processed at once, see trigger method.
 func (v *listeners) Notify(event Event) {

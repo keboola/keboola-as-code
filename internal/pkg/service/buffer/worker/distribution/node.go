@@ -49,6 +49,7 @@ import (
 type Node struct {
 	clock   clock.Clock
 	logger  log.Logger
+	proc    *servicectx.Process
 	schema  *schema.Schema
 	client  *etcd.Client
 	session *concurrency.Session
@@ -74,12 +75,11 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 		o(&c)
 	}
 
-	proc := d.Process()
-
 	// Create instance
 	n := &Node{
 		clock:  d.Clock(),
 		logger: d.Logger().AddPrefix("[distribution]"),
+		proc:   d.Process(),
 		schema: d.Schema(),
 		client: d.EtcdClient(),
 		nodeID: d.Process().UniqueID(),
@@ -89,7 +89,7 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 
 	// Create etcd session
 	var err error
-	n.session, err = etcdclient.CreateConcurrencySession(n.logger, proc, n.client, c.ttlSeconds)
+	n.session, err = etcdclient.CreateConcurrencySession(n.logger, n.proc, n.client, c.ttlSeconds)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 	// Graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	proc.OnShutdown(func() {
+	n.proc.OnShutdown(func() {
 		n.logger.Info("received shutdown request")
 		cancel()
 		wg.Wait()
@@ -111,12 +111,15 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 	})
 
 	// Create listeners handler
-	n.listeners = newListeners(proc, n.clock, n.logger, n.config)
+	n.listeners = newListeners(n.proc, n.clock, n.logger, n.config)
 
 	// Watch for nodes
 	if err := n.watch(ctx, wg); err != nil {
 		return nil, err
 	}
+
+	// Reset events from the initialization
+	n.listeners.Reset()
 
 	return n, nil
 }
