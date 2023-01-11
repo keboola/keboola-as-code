@@ -2,6 +2,7 @@ package testproject
 
 import (
 	"context"
+	"sort"
 	"strings"
 	"sync"
 
@@ -201,8 +202,14 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	snapshot.Buckets = make([]*fixtures.Bucket, 0)
 	for _, b := range bucketsMap {
+		sort.Slice(b.Tables, func(i, j int) bool {
+			return b.Tables[i].ID.String() < b.Tables[j].ID.String()
+		})
 		snapshot.Buckets = append(snapshot.Buckets, b)
 	}
+	sort.Slice(snapshot.Buckets, func(i, j int) bool {
+		return snapshot.Buckets[i].ID.String() < snapshot.Buckets[j].ID.String()
+	})
 
 	defBranch, err := p.DefaultBranch()
 	if err != nil {
