@@ -11,12 +11,6 @@
       rows: [],
     },
     {
-      componentId: "keboola.runner-config-test",
-      id: ConfigId("without-rows"),
-      path: "application/keboola.runner-config-test/without-rows",
-      rows: [],
-    },
-    {
       componentId: "keboola.ex-db-mysql",
       id: ConfigId("with-rows"),
       path: "extractor/keboola.ex-db-mysql/with-rows",

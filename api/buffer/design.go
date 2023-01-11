@@ -343,8 +343,10 @@ var Receiver = Type("Receiver", func() {
 	receiverFields()
 	Attribute("exports", ArrayOf(Export), func() {
 		Description("List of exports, max 20 exports per a receiver.")
+		Example([]any{ExampleExport()})
 	})
 	Required("id", "url", "name", "exports")
+	Example(ExampleReceiver())
 })
 
 var CreateReceiverRequest = Type("CreateReceiverRequest", func() {
@@ -369,7 +371,9 @@ var UpdateReceiverRequest = Type("UpdateReceiverRequest", func() {
 })
 
 var ReceiversList = Type("ReceiversList", func() {
-	Attribute("receivers", ArrayOf(Receiver))
+	Attribute("receivers", ArrayOf(Receiver), func() {
+		Example([]any{ExampleReceiver()})
+	})
 	Required("receivers")
 })
 
@@ -380,7 +384,6 @@ var receiverFields = func() {
 		MaxLength(40)
 		Example("Github Webhook Receiver")
 	})
-	Example(exampleReceiver())
 }
 
 // Export -------------------------------------------------------------------------------------------------------------
@@ -399,10 +402,13 @@ var Export = Type("Export", func() {
 	Attribute("receiverId", ReceiverID)
 	ExportFields()
 	Required("id", "receiverId", "name", "mapping", "conditions")
+	Example(ExampleExport())
 })
 
 var ExportsList = Type("ExportsList", func() {
-	Attribute("exports", ArrayOf(Export))
+	Attribute("exports", ArrayOf(Export), func() {
+		Example([]any{ExampleExport()})
+	})
 	Required("exports")
 })
 
@@ -463,8 +469,10 @@ var Mapping = Type("Mapping", func() {
 	})
 	Attribute("columns", ArrayOf(Column), func() {
 		Description("List of export column mappings. An export may have a maximum of 50 columns.")
+		Example([]any{ExampleColumnTypeBody()})
 	})
 	Required("tableId", "columns")
+	Example(ExampleMapping())
 })
 
 var Column = Type("Column", func() {
@@ -479,6 +487,7 @@ var Column = Type("Column", func() {
 		Description("Template mapping details.")
 	})
 	Required("type", "name")
+	Example(ExampleColumnTypeBody())
 })
 
 var Template = Type("Template", func() {
@@ -490,6 +499,7 @@ var Template = Type("Template", func() {
 		MaxLength(4096)
 	})
 	Required("language", "content")
+	Example(ExampleTemplate())
 })
 
 var ImportConditions = Type("Conditions", func() {
@@ -509,6 +519,7 @@ var ImportConditions = Type("Conditions", func() {
 		Description("Minimum import interval. Units: [s]econd,[m]inute,[h]our.")
 		Default(def.Time.String())
 	})
+	Example(ExampleConditions())
 })
 
 // Errors ------------------------------------------------------------------------------------------------------------
@@ -573,68 +584,146 @@ func ResourceCountLimitReachedError() {
 
 // Examples ------------------------------------------------------------------------------------------------------------
 
-func ExampleError(statusCode int, name, message string) map[string]interface{} {
-	return map[string]interface{}{
-		"statusCode": statusCode,
-		"error":      name,
-		"message":    message,
+type ExampleErrorDef struct {
+	StatusCode int    `json:"statusCode" yaml:"statusCode"`
+	Error      string `json:"error" yaml:"error"`
+	Message    string `json:"message" yaml:"message"`
+}
+
+func ExampleError(statusCode int, name, message string) ExampleErrorDef {
+	return ExampleErrorDef{
+		StatusCode: statusCode,
+		Error:      name,
+		Message:    message,
 	}
 }
 
-func exampleReceiver() map[string]interface{} {
+type ExampleReceiverDef struct {
+	ID      string             `json:"id" yaml:"id"`
+	URL     string             `json:"url" yaml:"url"`
+	Name    string             `json:"name" yaml:"name"`
+	Exports []ExampleExportDef `json:"exports" yaml:"exports"`
+}
+
+type ExampleExportDef struct {
+	ID         string               `json:"id" yaml:"id"`
+	ReceiverID string               `json:"receiverId" yaml:"receiverId"`
+	Name       string               `json:"name" yaml:"name"`
+	Mapping    ExampleMappingDef    `json:"mapping" yaml:"mapping"`
+	Conditions ExampleConditionsDef `json:"conditions" yaml:"conditions"`
+}
+
+type ExampleMappingDef struct {
+	TableID     string             `json:"tableId" yaml:"tableId"`
+	Incremental bool               `json:"incremental" yaml:"incremental"`
+	Columns     []ExampleColumnDef `json:"columns" yaml:"columns"`
+}
+
+type ExampleColumnDef struct {
+	Type     string             `json:"type" yaml:"type"`
+	Name     string             `json:"name" yaml:"name"`
+	Template ExampleTemplateDef `json:"template" yaml:"template"`
+}
+
+type ExampleTemplateDef struct {
+	Language string `json:"language" yaml:"language"`
+	Content  string `json:"content" yaml:"content"`
+}
+
+type ExampleConditionsDef struct {
+	Count int    `json:"count" yaml:"count"`
+	Size  string `json:"size" yaml:"size"`
+	Time  string `json:"time" yaml:"time"`
+}
+
+func ExampleReceiver() ExampleReceiverDef {
 	id := "github-pull-requests"
-	return map[string]interface{}{
-		"id":      &id,
-		"url":     "https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH",
-		"exports": exampleExportArray(),
+	return ExampleReceiverDef{
+		ID:      id,
+		URL:     "https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH",
+		Name:    "receiver 1",
+		Exports: []ExampleExportDef{ExampleExport()},
 	}
 }
 
-func exampleExportArray() []map[string]interface{} {
-	return []map[string]interface{}{
-		exampleExport(),
-	}
-}
-
-func exampleExport() map[string]interface{} {
+func ExampleExport() ExampleExportDef {
 	id := "github-changed-files"
-	return map[string]interface{}{
-		"exportId":    &id,
-		"name":        "GitHub Changed Files",
-		"tableID":     "in.c-github.changes",
-		"incremental": true,
-		"columns": []map[string]interface{}{
-			exampleColumnMapping(),
-			exampleColumnMapping_TemplateVariant(),
+	return ExampleExportDef{
+		ID:         id,
+		Name:       "GitHub Changed Files",
+		Mapping:    ExampleMapping(),
+		Conditions: ExampleConditions(),
+	}
+}
+
+func ExampleConditions() ExampleConditionsDef {
+	return ExampleConditionsDef{
+		Count: 100,
+		Size:  "12kB",
+		Time:  "1m10s",
+	}
+}
+
+func ExampleMapping() ExampleMappingDef {
+	return ExampleMappingDef{
+		TableID:     "in.c-github.changes",
+		Incremental: true,
+		Columns: []ExampleColumnDef{
+			ExampleColumnTypeID(),
+			ExampleColumnTypeDatetime(),
+			ExampleColumnTypeIP(),
+			ExampleColumnTypeHeaders(),
+			ExampleColumnTypeTemplate(),
 		},
-		"conditions": exampleImportConditions(),
 	}
 }
 
-func exampleImportConditions() map[string]interface{} {
-	return map[string]interface{}{
-		"count": 100,
-		"size":  1_000_000,
-		"time":  60,
+func ExampleTemplate() ExampleTemplateDef {
+	return ExampleTemplateDef{
+		Language: "jsonnet",
+		Content:  `body.foo + "-" + body.bar`,
 	}
 }
 
-func exampleTemplateMapping() map[string]interface{} {
-	return map[string]interface{}{
-		"language": "jsonnet",
-		"content":  `body.foo + "-" + body.bar`,
+func ExampleColumnTypeID() ExampleColumnDef {
+	return ExampleColumnDef{
+		Type: "id",
+		Name: "column1",
 	}
 }
 
-func exampleColumnMapping() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "body",
+func ExampleColumnTypeDatetime() ExampleColumnDef {
+	return ExampleColumnDef{
+		Type: "datetime",
+		Name: "column2",
 	}
 }
 
-func exampleColumnMapping_TemplateVariant() map[string]interface{} {
-	return map[string]interface{}{
-		"type":     "template",
-		"template": exampleTemplateMapping(),
+func ExampleColumnTypeIP() ExampleColumnDef {
+	return ExampleColumnDef{
+		Type: "ip",
+		Name: "column3",
+	}
+}
+
+func ExampleColumnTypeBody() ExampleColumnDef {
+	return ExampleColumnDef{
+		Type: "body",
+		Name: "column4",
+	}
+}
+
+func ExampleColumnTypeHeaders() ExampleColumnDef {
+	return ExampleColumnDef{
+		Type: "headers",
+		Name: "column5",
+	}
+}
+
+func ExampleColumnTypeTemplate() ExampleColumnDef {
+	return ExampleColumnDef{
+		Type:     "template",
+		Name:     "column6",
+		Template: ExampleTemplate(),
 	}
 }
