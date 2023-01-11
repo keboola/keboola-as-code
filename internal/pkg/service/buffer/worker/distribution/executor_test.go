@@ -108,52 +108,52 @@ func TestDistributedExecutor(t *testing.T) {
 	expected1 := `
 %A
 [node1][distribution][my-executor]INFO  reset: initialization
-[node1][distribution][my-executor][work]INFO  I am owning tasks: 1,2,3,4,5,6,7,8,9,10
+[node1][distribution][my-executor][work]INFO  Assigned tasks: 1,2,3,4,5,6,7,8,9,10
 [node1][distribution][my-executor]INFO  reset: periodical
-[node1][distribution][my-executor][work]INFO  I am owning tasks: 1,2,3,4,5,6,7,8,9,10
+[node1][distribution][my-executor][work]INFO  Assigned tasks: 1,2,3,4,5,6,7,8,9,10
 [node1][distribution][my-executor]INFO  reset: periodical
-[node1][distribution][my-executor][work]INFO  I am owning tasks: 1,2,3,4,5,6,7,8,9,10
+[node1][distribution][my-executor][work]INFO  Assigned tasks: 1,2,3,4,5,6,7,8,9,10
 [node1][distribution][my-executor]INFO  reset: periodical
-[node1][distribution][my-executor][work]INFO  I am owning tasks: 1,2,3,4,5,6,7,8,9,10
+[node1][distribution][my-executor][work]INFO  Assigned tasks: 1,2,3,4,5,6,7,8,9,10
 [node1]INFO  exiting (bye bye 1)
 %A
 `
 	expected2 := `
 %A
 [node2][distribution][my-executor]INFO  reset: initialization
-[node2][distribution][my-executor][work]INFO  I am owning tasks: 1,2,3,4,5,6,7,8,9,10
+[node2][distribution][my-executor][work]INFO  Assigned tasks: 1,2,3,4,5,6,7,8,9,10
 [node2][distribution]INFO  found a new node "node3"
 [node2][distribution][my-executor]INFO  reset: distribution changed: found a new node "node3"
-[node2][distribution][my-executor][work]INFO  I am owning tasks: 4,7,8,9,10
+[node2][distribution][my-executor][work]INFO  Assigned tasks: 4,7,8,9,10
 [node2][distribution]INFO  found a new node "node4"
 [node2][distribution][my-executor]INFO  reset: distribution changed: found a new node "node4"
-[node2][distribution][my-executor][work]INFO  I am owning tasks: 4,8,9,10
+[node2][distribution][my-executor][work]INFO  Assigned tasks: 4,8,9,10
 [node2][distribution]INFO  the node "node3" gone
 [node2][distribution][my-executor]INFO  reset: distribution changed: the node "node3" gone
-[node2][distribution][my-executor][work]INFO  I am owning tasks: 1,3,4,6,8,9,10
+[node2][distribution][my-executor][work]INFO  Assigned tasks: 1,3,4,6,8,9,10
 [node2][distribution]INFO  the node "node4" gone
 [node2][distribution][my-executor]INFO  reset: distribution changed: the node "node4" gone
-[node2][distribution][my-executor][work]INFO  I am owning tasks: 1,2,3,4,5,6,7,8,9,10
+[node2][distribution][my-executor][work]INFO  Assigned tasks: 1,2,3,4,5,6,7,8,9,10
 [node2]INFO  exiting (bye bye 2)
 %A
 `
 	expected3 := `
 %A
 [node3][distribution][my-executor]INFO  reset: initialization
-[node3][distribution][my-executor][work]INFO  I am owning tasks: 1,2,3,5,6
+[node3][distribution][my-executor][work]INFO  Assigned tasks: 1,2,3,5,6
 [node3][distribution]INFO  found a new node "node4"
 [node3][distribution][my-executor]INFO  reset: distribution changed: found a new node "node4"
-[node3][distribution][my-executor][work]INFO  I am owning tasks: 1,3,6
+[node3][distribution][my-executor][work]INFO  Assigned tasks: 1,3,6
 [node3]INFO  exiting (bye bye 3)
 %A
 `
 	expected4 := `
 %A
 [node4][distribution][my-executor]INFO  reset: initialization
-[node4][distribution][my-executor][work]INFO  I am owning tasks: 2,5,7
+[node4][distribution][my-executor][work]INFO  Assigned tasks: 2,5,7
 [node4][distribution]INFO  the node "node3" gone
 [node4][distribution][my-executor]INFO  reset: distribution changed: the node "node3" gone
-[node4][distribution][my-executor][work]INFO  I am owning tasks: 2,5,7
+[node4][distribution][my-executor][work]INFO  Assigned tasks: 2,5,7
 [node4]INFO  exiting (bye bye 4)
 %A
 `
@@ -185,7 +185,7 @@ func createNodeWithExecutor(t *testing.T, clk clock.Clock, logs io.Writer, etcdN
 				}
 			}
 
-			logger.Infof("I am owning tasks: %s", strings.Join(ownedTasks, ","))
+			logger.Infof("Assigned tasks: %s", strings.Join(ownedTasks, ","))
 			close(initDone)
 
 			<-ctx.Done()
