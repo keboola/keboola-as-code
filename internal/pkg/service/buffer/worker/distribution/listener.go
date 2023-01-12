@@ -26,7 +26,7 @@ type Listener struct {
 type listeners struct {
 	config         nodeConfig
 	lock           *sync.Mutex
-	bufferedEvents []Event
+	bufferedEvents Events
 	listeners      map[listenerID]*Listener
 }
 
@@ -102,12 +102,12 @@ func (v *listeners) Reset() {
 
 // Notify listeners about a new event. The event is not processed immediately.
 // All events within the "group interval" are processed at once, see trigger method.
-func (v *listeners) Notify(event Event) {
+func (v *listeners) Notify(events Events) {
 	v.lock.Lock()
 	defer v.lock.Unlock()
 
 	// All events within the "group interval" are processed at once.
-	v.bufferedEvents = append(v.bufferedEvents, event)
+	v.bufferedEvents = append(v.bufferedEvents, events...)
 
 	// Trigger listeners immediately, if there is no grouping interval
 	if v.config.eventsGroupInterval == 0 {
