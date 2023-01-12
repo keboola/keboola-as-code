@@ -66,8 +66,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
-	bufferStore "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
-	bufferSchema "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -122,6 +120,7 @@ type Mocked interface {
 	MockedState() *state.State
 	MockedProject(fs filesystem.Fs) *projectPkg.Project
 	MockedHTTPTransport() *httpmock.MockTransport
+	EtcdClient() *etcd.Client
 
 	Process() *servicectx.Process
 
@@ -130,9 +129,4 @@ type Mocked interface {
 	RequestHeader() http.Header
 	RequestHeaderMutable() http.Header
 	RequestClientIP() net.IP
-
-	BufferAPIHost() string
-	EtcdClient() *etcd.Client
-	Schema() *bufferSchema.Schema
-	Store() *bufferStore.Store
 }
