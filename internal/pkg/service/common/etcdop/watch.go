@@ -8,6 +8,7 @@ import (
 
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"go.etcd.io/etcd/api/v3/mvccpb"
+	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -152,14 +153,20 @@ func (v Prefix) doWatch(ctx context.Context, client etcd.Watcher, handleErr func
 				select {
 				case <-ctx.Done():
 					return
-				case <-time.After(time.Second):
+				case <-time.After(10 * time.Second):
 					// continue
 				}
 			}
 
 			// Process watch events until the rawCh is closed
 			rawCh := client.Watch(ctx, v.Prefix(), watchOpts...)
-			if !processWatchEvents(ctx, &revision, handleErr, rawCh, outCh) {
+			retry, err := processWatchEvents(ctx, &revision, handleErr, rawCh, outCh)
+			if err != nil {
+				if errors.Is(err, rpctypes.ErrCompacted) {
+					revision = 0
+				}
+			}
+			if !retry {
 				return
 			}
 		}
@@ -269,15 +276,15 @@ func (v PrefixT[T]) doWatch(ctx context.Context, client etcd.Watcher, handleErr 
 	}
 }
 
-func processWatchEvents(ctx context.Context, revision *int64, handleErr func(err error), rawCh etcd.WatchChan, outCh chan<- Events) (retry bool) {
+func processWatchEvents(ctx context.Context, revision *int64, handleErr func(err error), rawCh etcd.WatchChan, outCh chan<- Events) (retry bool, err error) {
 	created := false
 	for {
 		select {
 		case <-ctx.Done():
-			return false
+			return false, nil
 		case resp, ok := <-rawCh:
 			if !ok {
-				return true
+				return true, nil
 			}
 
 			*revision = resp.Header.Revision
@@ -286,7 +293,7 @@ func processWatchEvents(ctx context.Context, revision *int64, handleErr func(err
 				if !created {
 					// Stop on initialization error
 					outCh <- Events{InitErr: err}
-					return true
+					return true, err
 				}
 				handleErr(err)
 				continue
