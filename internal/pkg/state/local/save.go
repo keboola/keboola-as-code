@@ -127,7 +127,7 @@ func (w *modelWriter) restoreBackups() {
 	if w.errors.Len() > 0 {
 		for dst, src := range w.backups {
 			if err := w.fs.Move(src, dst); err != nil {
-				w.logger.Debug(errors.Errorf(`cannot restore backup "%s" -> "%s": %w`, src, dst, err))
+				w.logger.Debug(errors.Errorf(`cannot restore backup "%s" -> "%s": %s`, src, dst, err))
 			}
 		}
 	}
@@ -137,7 +137,7 @@ func (w *modelWriter) restoreBackups() {
 func (w *modelWriter) removeBackups() {
 	for _, path := range w.backups {
 		if err := w.fs.Remove(path); err != nil {
-			w.logger.Debug(errors.Errorf(`cannot remove backup "%s": %w`, path, err))
+			w.logger.Debug(errors.Errorf(`cannot remove backup "%s": %s`, path, err))
 		}
 	}
 	w.backups = make(map[string]string)

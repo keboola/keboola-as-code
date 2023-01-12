@@ -92,7 +92,7 @@ func HandleHTTPServer(proc *servicectx.Process, d dependencies.ForServer, u *url
 		defer cancel()
 
 		if err := srv.Shutdown(ctx); err != nil {
-			logger.Errorf(`HTTP server shutdown error: %w`, err)
+			logger.Errorf(`HTTP server shutdown error: %s`, err)
 		}
 		logger.Info("HTTP server shutdown finished")
 	})
