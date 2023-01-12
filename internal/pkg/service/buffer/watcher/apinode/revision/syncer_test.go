@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
+	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher/apinode/revision"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -17,7 +18,7 @@ import (
 func TestRevisionSyncer(t *testing.T) {
 	t.Parallel()
 	clk := clock.NewMock()
-	d := dependencies.NewMockedDeps(t, dependencies.WithClock(clk))
+	d := bufferDependencies.NewMockedDeps(t, dependencies.WithClock(clk))
 	client := d.EtcdClient()
 
 	// Create revision syncer.

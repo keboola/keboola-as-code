@@ -8,9 +8,10 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-utils/pkg/wildcards"
 
+	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	dependenciesPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -19,7 +20,7 @@ func TestStatsManager(t *testing.T) {
 	t.Parallel()
 
 	clk := clock.NewMock()
-	d := dependencies.NewMockedDeps(t, dependencies.WithClock(clk), dependencies.WithUniqueID("my-node"))
+	d := bufferDependencies.NewMockedDeps(t, dependenciesPkg.WithClock(clk), dependenciesPkg.WithUniqueID("my-node"))
 	client := d.EtcdClient()
 	node := NewAPINode(d)
 

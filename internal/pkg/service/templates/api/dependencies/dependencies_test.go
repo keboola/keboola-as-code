@@ -22,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	repositoryManager "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -41,7 +42,7 @@ func TestForPublicRequest_Components_Cached(t *testing.T) {
 	assert.NotEqual(t, components1, components2)
 
 	// Create mocked dependencies for server with "components1"
-	mockedDeps := dependencies.NewMockedDeps(t, dependencies.WithMockedComponents(components1))
+	mockedDeps := bufferDependencies.NewMockedDeps(t, dependencies.WithMockedComponents(components1))
 	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, logger: log.NewNopLogger()}
 
 	// Request 1 gets "components1"
@@ -83,7 +84,7 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 
 	// Create mocked dependencies for server
 	ctx := context.Background()
-	mockedDeps := dependencies.NewMockedDeps(t, dependencies.WithMultipleTokenVerification(true))
+	mockedDeps := bufferDependencies.NewMockedDeps(t, dependencies.WithMultipleTokenVerification(true))
 	manager, err := repositoryManager.New(ctx, mockedDeps, nil)
 	assert.NoError(t, err)
 	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, logger: log.NewNopLogger(), repositoryManager: manager}
@@ -208,7 +209,7 @@ func TestForProjectRequest_Template_Cached(t *testing.T) {
 
 	// Create mocked dependencies for server
 	ctx := context.Background()
-	mockedDeps := dependencies.NewMockedDeps(t, dependencies.WithMultipleTokenVerification(true))
+	mockedDeps := bufferDependencies.NewMockedDeps(t, dependencies.WithMultipleTokenVerification(true))
 	manager, err := repositoryManager.New(ctx, mockedDeps, nil)
 	assert.NoError(t, err)
 	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, logger: log.NewNopLogger(), repositoryManager: manager}

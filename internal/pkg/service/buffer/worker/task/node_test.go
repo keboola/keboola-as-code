@@ -13,6 +13,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -409,9 +410,9 @@ func createNode(t *testing.T, etcdNamespace string, logs io.Writer, nodeName str
 	return node, d
 }
 
-func createDeps(t *testing.T, etcdNamespace string, logs io.Writer, nodeName string) dependencies.Mocked {
+func createDeps(t *testing.T, etcdNamespace string, logs io.Writer, nodeName string) bufferDependencies.Mocked {
 	t.Helper()
-	d := dependencies.NewMockedDeps(
+	d := bufferDependencies.NewMockedDeps(
 		t,
 		dependencies.WithUniqueID(nodeName),
 		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
