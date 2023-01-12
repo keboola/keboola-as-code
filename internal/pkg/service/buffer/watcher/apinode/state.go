@@ -7,7 +7,6 @@ import (
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
-	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -93,63 +92,84 @@ func (s *state) GetReceiver(receiverKey key.ReceiverKey) (out ReceiverCore, foun
 	return out, true, unlockFn
 }
 
-func (s *state) onError(err error) {
-	s.logger.Error(err)
-}
-
 // The function belongs to the state struct, but generic method cannot be currently defined.
 func watch[T fmt.Stringer](ctx context.Context, wg *sync.WaitGroup, s *state, prefix etcdop.PrefixT[T], rev *revision.Syncer) *stateOf[T] {
 	tree := prefixtree.New[T]()
 
 	initDone := make(chan error)
-	ch := prefix.GetAllAndWatch(ctx, s.client, s.onError, etcd.WithCreatedNotify(), etcd.WithPrevKV())
-
-	// Log only changes, not initial load
-	logsEnabled := atomic.NewBool(false)
+	ch := prefix.GetAllAndWatch(ctx, s.client, etcd.WithCreatedNotify(), etcd.WithPrevKV())
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
-		// Channel is closed on shutdown, so the context does not have to be checked
-		for events := range ch {
-			if err := events.InitErr; err != nil {
-				initDone <- err
-				close(initDone)
-			} else if events.Created {
-				logsEnabled.Store(true)
-				close(initDone)
-			}
+		// Reset the tree on the restart event.
+		reset := false
 
-			// Modify cache
-			tree.ModifyAtomic(func(t *prefixtree.Tree[T]) {
-				for _, event := range events.Events {
-					k := event.Value.String()
-					switch event.Type {
-					case etcdop.CreateEvent:
-						t.Insert(k, event.Value)
-						if logsEnabled.Load() {
-							s.logger.Infof(`created %s%s`, prefix.Prefix(), k)
-						}
-					case etcdop.UpdateEvent:
-						t.Insert(k, event.Value)
-						if logsEnabled.Load() {
-							s.logger.Infof(`updated %s%s`, prefix.Prefix(), k)
-						}
-					case etcdop.DeleteEvent:
-						t.Delete(k)
-						if logsEnabled.Load() {
-							s.logger.Infof(`deleted %s%s`, prefix.Prefix(), k)
-						}
-					default:
-						panic(errors.Errorf(`unexpected event type "%v"`, event.Type))
+		// Log only changes, not initial load.
+		logsEnabled := false
+
+		// Channel is closed on shutdown, so the context does not have to be checked.
+		for resp := range ch {
+			switch {
+			case resp.InitErr != nil:
+				// Initialization error, stop worker via initDone channel
+				initDone <- resp.InitErr
+				close(initDone)
+			case resp.Err != nil:
+				// An error occurred, it is logged.
+				// If it is a fatal error, then it is followed
+				// by the "Restarted" event handled bellow,
+				// and the operation starts from the beginning.
+				s.logger.Error(resp.Err)
+			case resp.Restarted:
+				// A fatal error (etcd ErrCompacted) occurred.
+				// It is not possible to continue watching, the operation must be restarted.
+				reset = true
+				logsEnabled = false
+				s.logger.Warnf(`restart: %s`, resp.RestartReason)
+			case resp.Created:
+				// The watcher has been successfully created.
+				// This means transition from GetAll to Watch phase.
+				logsEnabled = true
+				close(initDone)
+			default:
+				tree.ModifyAtomic(func(t *prefixtree.Tree[T]) {
+					// Reset the tree after receiving the first batch after the restart.
+					if reset {
+						t.Reset()
+						reset = false
 					}
-				}
-			})
 
-			// ACK revision, so worker nodes knows that the API node is switched to the new slice.
-			if rev != nil {
-				rev.Notify(events.Header.Revision)
+					//  Atomically process all events
+					for _, event := range resp.Events {
+						k := event.Value.String()
+						switch event.Type {
+						case etcdop.CreateEvent:
+							t.Insert(k, event.Value)
+							if logsEnabled {
+								s.logger.Infof(`created %s%s`, prefix.Prefix(), k)
+							}
+						case etcdop.UpdateEvent:
+							t.Insert(k, event.Value)
+							if logsEnabled {
+								s.logger.Infof(`updated %s%s`, prefix.Prefix(), k)
+							}
+						case etcdop.DeleteEvent:
+							t.Delete(k)
+							if logsEnabled {
+								s.logger.Infof(`deleted %s%s`, prefix.Prefix(), k)
+							}
+						default:
+							panic(errors.Errorf(`unexpected event type "%v"`, event.Type))
+						}
+					}
+				})
+
+				// ACK revision, so worker nodes knows that the API node is switched to the new slice.
+				if rev != nil {
+					rev.Notify(resp.Header.Revision)
+				}
 			}
 		}
 	}()
