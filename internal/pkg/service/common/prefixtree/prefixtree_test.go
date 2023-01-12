@@ -84,4 +84,8 @@ func TestPrefixTree(t *testing.T) {
 	assert.True(t, found)
 	_, found = tree.Get("key/4")
 	assert.True(t, found)
+
+	// Reset
+	tree.Reset()
+	assert.Empty(t, tree.AllFromPrefix(""))
 }
