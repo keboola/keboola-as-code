@@ -79,6 +79,12 @@ func (t *TreeThreadSafe[T]) Get(key string) (T, bool) {
 	return t.Tree.Get(key)
 }
 
+func (t *TreeThreadSafe[T]) Reset() {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+	t.Tree.Reset()
+}
+
 func (t *TreeThreadSafe[T]) WalkPrefix(key string, fn func(key string, value T) (stop bool)) {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
@@ -101,6 +107,18 @@ func (t *Tree[T]) Get(key string) (T, bool) {
 		return empty, false
 	}
 	return val.(T), true
+}
+
+func (t *Tree[T]) Reset() {
+	var keys []string
+	t.WalkPrefix("", func(key string, _ T) bool {
+		keys = append(keys, key)
+		return false
+	})
+	// Keys must be deleted outside WalkPrefix
+	for _, key := range keys {
+		t.Delete(key)
+	}
 }
 
 func (t *Tree[T]) WalkPrefix(key string, fn func(key string, value T) (stop bool)) {
