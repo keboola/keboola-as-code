@@ -9,126 +9,118 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 )
 
-type EventT[T any] struct {
-	Value  T
+type WatchEventT[T any] struct {
+	Type   EventType
 	Kv     *op.KeyValue
 	PrevKv *op.KeyValue
-	Type   EventType
+	Value  T
 }
 
-type EventsT[T any] struct {
-	Header *etcdserverpb.ResponseHeader
-	Events []EventT[T]
-	// Created is used to indicate the creation of the watcher.
-	Created bool
-	// InitErr signals an error during initialization of the watcher.
-	InitErr error
+type WatchResponseT[T any] struct {
+	WatcherStatus
+	Events []WatchEventT[T]
 }
 
-func (e *EventsT[T]) Rev() int64 {
+func (e *WatchResponseT[T]) Rev() int64 {
 	return e.Header.Revision
 }
 
-func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, handleErr func(error), opts ...etcd.OpOption) <-chan EventsT[T] {
-	outCh := make(chan EventsT[T])
-	go func() {
-		defer close(outCh)
-		v.doWatch(ctx, client, handleErr, outCh, opts...)
-	}()
-	return outCh
+// Watch method wraps low-level etcd watcher.
+// Values are decoded to the type T.
+//
+// In addition, if a fatal error occurs, the watcher is restarted.
+// The "restarted" event is emitted before the restart.
+// Then, the following events are streamed from the beginning.
+//
+// If the InitErr occurs during the first attempt to create the watcher,
+// the operation is stopped and the restart is not performed.
+//
+// See WatchResponse for details.
+func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) <-chan WatchResponseT[T] {
+	return v.decodeChannel(ctx, func(ctx context.Context) <-chan WatchResponse {
+		return v.prefix.Watch(ctx, client, opts...)
+	})
 }
 
 // GetAllAndWatch loads all keys in the prefix by the iterator and then watch for changes.
 // Values are decoded to the type T.
-// initDone channel signals end of the load phase and start of the watch phase.
-func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) (out <-chan EventsT[T]) {
-	outCh := make(chan EventsT[T])
+//
+// If a fatal error occurs, the watcher is restarted.
+// The "restarted" event is emitted before the restart.
+// Then, the following events are streamed from the beginning.
+//
+// See WatchResponse for details.
+func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) (out <-chan WatchResponseT[T]) {
+	return v.decodeChannel(ctx, func(ctx context.Context) <-chan WatchResponse {
+		return v.prefix.GetAllAndWatch(ctx, client, opts...)
+	})
+}
 
+// decodeChannel is used by Watch and GetAllAndWatch to decode raw data to typed data.
+func (v PrefixT[T]) decodeChannel(ctx context.Context, channelFactory func(ctx context.Context) <-chan WatchResponse) <-chan WatchResponseT[T] {
+	outCh := make(chan WatchResponseT[T])
 	go func() {
 		defer close(outCh)
 
-		// Get all iterator
-		itr := v.GetAll().Do(ctx, client)
-		var events []EventT[T]
-		sendBatch := func() {
-			if len(events) > 0 {
-				outCh <- EventsT[T]{Header: itr.Header(), Events: events}
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		// Decode value, if an error occurs, send it through the channel.
+		decode := func(kv *op.KeyValue, header *etcdserverpb.ResponseHeader) (T, bool) {
+			var target T
+			if err := v.serde.Decode(ctx, kv, &target); err != nil {
+				resp := WatchResponseT[T]{}
+				resp.Header = header
+				resp.Err = err
+				outCh <- resp
+				return target, false
 			}
-			events = nil
+			return target, true
 		}
 
-		// Iterate and send batches of events
-		i := 1
-		err := itr.ForEachKV(func(kv op.KeyValueT[T], _ *etcdserverpb.ResponseHeader) error {
-			events = append(events, EventT[T]{Kv: kv.Kv, Value: kv.Value, Type: CreateEvent})
-			if i%getAllBatchSize == 0 {
-				sendBatch()
-			}
-			return nil
-		})
-		sendBatch()
-
-		// Check getAll error
-		if err != nil {
-			outCh <- EventsT[T]{InitErr: err}
-			return
-		}
-
-		// Continue with Watch where GetAll finished
-		v.doWatch(ctx, client, handleErr, outCh, append(opts, etcd.WithRev(itr.Header().Revision+1))...)
-	}()
-
-	return outCh
-}
-
-// doWatch is called from the Watch and GetAllAndWatch methods.
-func (v PrefixT[T]) doWatch(ctx context.Context, client etcd.Watcher, handleErr func(err error), outCh chan EventsT[T], opts ...etcd.OpOption) {
-	rawCh := v.prefix.Watch(ctx, client, handleErr, opts...)
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case rawEvents, ok := <-rawCh:
-			if !ok {
-				return
+		// Channel is closed by the context, so the context does not have to be checked here again.
+		rawCh := channelFactory(ctx)
+		for rawResp := range rawCh {
+			var events []WatchEventT[T]
+			if len(rawResp.Events) > 0 {
+				events = make([]WatchEventT[T], 0, len(rawResp.Events))
 			}
 
-			outEvents := make([]EventT[T], len(rawEvents.Events))
-			for i, rawEvent := range rawEvents.Events {
-				outEvent := EventT[T]{
-					Kv:     rawEvent.Kv,
-					PrevKv: rawEvent.PrevKv,
-					Type:   rawEvent.Type,
-				}
-
+			// Map raw response to typed response.
+			for _, rawEvent := range rawResp.Events {
+				// Decode value.
+				var value T
+				var ok bool
 				if rawEvent.Type == CreateEvent || rawEvent.Type == UpdateEvent {
-					// Always decode create/update value
-					target := new(T)
-					if err := v.serde.Decode(ctx, rawEvent.Kv, target); err != nil {
-						handleErr(err)
+					// Always decode create/update value.
+					value, ok = decode(rawEvent.Kv, rawResp.Header)
+					if !ok {
 						continue
 					}
-					outEvent.Value = *target
 				} else if rawEvent.Type == DeleteEvent && rawEvent.PrevKv != nil {
 					// Decode previous value on delete, if is present.
 					// etcd.WithPrevKV() option must be used to enable it.
-					target := new(T)
-					if err := v.serde.Decode(ctx, rawEvent.PrevKv, target); err != nil {
-						handleErr(err)
+					value, ok = decode(rawEvent.PrevKv, rawResp.Header)
+					if !ok {
 						continue
 					}
-					outEvent.Value = *target
 				}
 
-				outEvents[i] = outEvent
+				events = append(events, WatchEventT[T]{
+					Type:   rawEvent.Type,
+					Kv:     rawEvent.Kv,
+					PrevKv: rawEvent.PrevKv,
+					Value:  value,
+				})
 			}
 
-			outCh <- EventsT[T]{
-				Header:  rawEvents.Header,
-				Events:  outEvents,
-				Created: rawEvents.Created,
-				InitErr: rawEvents.InitErr,
+			// Pass the response
+			outCh <- WatchResponseT[T]{
+				WatcherStatus: rawResp.WatcherStatus,
+				Events:        events,
 			}
 		}
-	}
+	}()
+
+	return outCh
 }

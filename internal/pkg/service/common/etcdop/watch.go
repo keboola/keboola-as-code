@@ -1,11 +1,13 @@
 package etcdop
 
 import (
+	"bytes"
 	"context"
 	"sort"
 	"strconv"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -27,19 +29,31 @@ const (
 	getAllBatchSize = 100
 )
 
-type Event struct {
+type WatchEvent struct {
+	Type   EventType
 	Kv     *op.KeyValue
 	PrevKv *op.KeyValue
-	Type   EventType
 }
 
-type Events struct {
+type WatcherStatus struct {
 	Header *etcdserverpb.ResponseHeader
-	Events []Event
-	// Created is used to indicate the creation of the watcher.
-	Created bool
-	// InitErr signals an error during initialization of the watcher.
+	// InitErr is used to indicate an error during initialization of the watcher, before the first event is received.
 	InitErr error
+	// Err is used to indicate an error.
+	// Fatal error is followed by the "Restarted" event.
+	Err error
+	// Created is used to indicate the creation of the watcher, it is emitted before the first event.
+	Created bool
+	// Restarted is used to indicate re-creation of the watcher, the following events are streamed from the beginning.
+	// It is used in case of a fatal error (etcd ErrCompacted) from which it is not possible to recover.
+	Restarted     bool
+	RestartReason error
+	RestartDelay  time.Duration
+}
+
+type WatchResponse struct {
+	WatcherStatus
+	Events []WatchEvent
 }
 
 func (v EventType) String() string {
@@ -55,161 +69,265 @@ func (v EventType) String() string {
 	}
 }
 
-func (e *Events) Rev() int64 {
+func (e *WatchResponse) Rev() int64 {
 	return e.Header.Revision
 }
 
-func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, handleErr func(error), opts ...etcd.OpOption) <-chan Events {
-	outCh := make(chan Events)
-	go func() {
-		defer close(outCh)
-		v.doWatch(ctx, client, handleErr, outCh, opts...)
-	}()
-	return outCh
+// Watch method wraps low-level etcd watcher.
+// In addition, if a fatal error occurs, the watcher is restarted.
+// The "restarted" event is emitted before the restart.
+// Then, the following events are streamed from the beginning.
+//
+// If the InitErr occurs during the first attempt to create the watcher,
+// the operation is stopped and the restart is not performed.
+//
+// See WatchResponse for details.
+func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) <-chan WatchResponse {
+	return wrapWatchWithRestart(ctx, func(ctx context.Context) <-chan WatchResponse {
+		return v.watch(ctx, client, opts...)
+	})
 }
 
 // GetAllAndWatch loads all keys in the prefix by the iterator and then watch for changes.
-// initDone channel signals end of the load phase and start of the watch phase.
-func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, handleErr func(err error), opts ...etcd.OpOption) (out <-chan Events) {
-	outCh := make(chan Events)
+//
+// If a fatal error occurs, the watcher is restarted.
+// The "restarted" event is emitted before the restart.
+// Then, the following events are streamed from the beginning.
+//
+// See WatchResponse for details.
+func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) (out <-chan WatchResponse) {
+	return wrapWatchWithRestart(ctx, func(ctx context.Context) <-chan WatchResponse {
+		outCh := make(chan WatchResponse)
+		go func() {
+			defer close(outCh)
 
+			ctx, cancel := context.WithCancel(ctx)
+			defer cancel()
+
+			// GetAll phase
+			itr := v.GetAll().Do(ctx, client)
+			var events []WatchEvent
+			sendBatch := func() {
+				if len(events) > 0 {
+					resp := WatchResponse{}
+					resp.Header = itr.Header()
+					resp.Events = events
+					events = nil
+					outCh <- resp
+				}
+			}
+
+			// Iterate and send batches of events
+			i := 1
+			err := itr.ForEach(func(kv *op.KeyValue, _ *etcdserverpb.ResponseHeader) error {
+				events = append(events, WatchEvent{Kv: kv, Type: CreateEvent})
+				if i%getAllBatchSize == 0 {
+					sendBatch()
+				}
+				return nil
+			})
+			sendBatch()
+
+			// Process GetAll error
+			if err != nil {
+				resp := WatchResponse{}
+				resp.InitErr = err
+				events = nil
+				outCh <- resp
+
+				// Stop
+				return
+			}
+
+			// Watch phase, continue  where the GetAll operation ended (revision + 1)
+			rawCh := v.watch(ctx, client, append([]etcd.OpOption{etcd.WithRev(itr.Header().Revision + 1)}, opts...)...)
+			for resp := range rawCh {
+				outCh <- resp
+			}
+		}()
+
+		return outCh
+	})
+}
+
+// watch the Prefix, operation can be cancelled by the context or a fatal error (etcd ErrCompacted).
+// Otherwise, watch will retry on other recoverable errors forever until reconnected.
+func (v Prefix) watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) <-chan WatchResponse {
+	outCh := make(chan WatchResponse)
 	go func() {
 		defer close(outCh)
 
-		// Get all iterator
-		itr := v.GetAll().Do(ctx, client)
-		var events []Event
-		sendBatch := func() {
-			if len(events) > 0 {
-				outCh <- Events{Header: itr.Header(), Events: events}
-			}
-			events = nil
-		}
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
 
-		// Iterate and send batches of events
-		i := 1
-		err := itr.ForEach(func(kv *op.KeyValue, _ *etcdserverpb.ResponseHeader) error {
-			events = append(events, Event{Kv: kv, Type: CreateEvent})
-			if i%getAllBatchSize == 0 {
-				sendBatch()
-			}
-			return nil
-		})
-		sendBatch()
+		// The initialization phase lasts until etcd sends the "created" event.
+		// It is the first event that is sent.
+		// The application logic usually waits for this event when the application starts.
+		// At most one WatchResponse.InitErr will be emitted.
+		init := true
 
-		// Check getAll error
-		if err != nil {
-			outCh <- Events{InitErr: err}
-			return
-		}
+		// The rawCh channel is closed by the context, so the context does not have to be checked here again.
+		rawCh := client.Watch(ctx, v.Prefix(), append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithCreatedNotify()}, opts...)...)
+		for rawResp := range rawCh {
+			resp := WatchResponse{}
+			resp.Header = &rawResp.Header
+			resp.Created = rawResp.Created
 
-		// Continue with Watch where GetAll ended
-		v.doWatch(ctx, client, handleErr, outCh, append(opts, etcd.WithRev(itr.Header().Revision+1))...)
-	}()
+			// Handle error
+			if err := rawResp.Err(); err != nil {
+				if init {
+					// Pass initialization error
+					resp.InitErr = err
+					outCh <- resp
 
-	return outCh
-}
-
-// doWatch is called from the Watch and GetAllAndWatch methods.
-func (v Prefix) doWatch(ctx context.Context, client etcd.Watcher, handleErr func(err error), outCh chan Events, opts ...etcd.OpOption) {
-	opts = append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithCreatedNotify()}, opts...)
-
-	// In case of an error, the watch channel can be closed.
-	// It will be recreated, and it will continue from the last revision.
-	revision := int64(0)
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			// If the watch is recreated, continue from the last received revision
-			watchOpts := opts
-			if revision > 0 {
-				watchOpts = append(watchOpts, etcd.WithRev(revision+1))
-			}
-
-			// Wait before recreate attempt
-			if revision > 0 {
-				select {
-				case <-ctx.Done():
+					// Stop
 					return
-				case <-time.After(time.Second):
-					// continue
+				} else {
+					// Pass other error
+					resp.Err = err
+					outCh <- resp
+					continue
 				}
 			}
 
-			// Process watch events until the rawCh is closed
-			rawCh := client.Watch(ctx, v.Prefix(), watchOpts...)
-			if !processWatchEvents(ctx, &revision, handleErr, rawCh, outCh) {
-				return
-			}
-		}
-	}
-}
-
-func processWatchEvents(ctx context.Context, revision *int64, handleErr func(err error), rawCh etcd.WatchChan, outCh chan<- Events) (retry bool) {
-	created := false
-	for {
-		select {
-		case <-ctx.Done():
-			return false
-		case resp, ok := <-rawCh:
-			if !ok {
-				return true
-			}
-
-			*revision = resp.Header.Revision
-
-			if err := resp.Err(); err != nil {
-				if !created {
-					// Stop on initialization error
-					outCh <- Events{InitErr: err}
-					return true
-				}
-				handleErr(err)
+			// Stop initialization phase after the "created" event
+			if rawResp.Created {
+				init = false
+				outCh <- resp
 				continue
-			}
-
-			if resp.Created {
-				created = true
 			}
 
 			// Sort events from the batch (if multiple keys have been modified in one txn, in one revision)
 			// 1. By type, PUT before DELETE
 			// 2. By key, A->Z
-			sort.SliceStable(resp.Events, func(i, j int) bool {
-				if resp.Events[i].Type != resp.Events[j].Type {
-					return resp.Events[i].Type < resp.Events[j].Type
+			sort.SliceStable(rawResp.Events, func(i, j int) bool {
+				if rawResp.Events[i].Type != rawResp.Events[j].Type {
+					return rawResp.Events[i].Type < rawResp.Events[j].Type
 				}
-				return string(resp.Events[i].Kv.Key) < string(resp.Events[j].Kv.Key)
+				return bytes.Compare(rawResp.Events[i].Kv.Key, rawResp.Events[j].Kv.Key) == -1
 			})
 
-			outEvents := make([]Event, len(resp.Events))
-			for i, rawEvent := range resp.Events {
-				outEvent := Event{Kv: rawEvent.Kv, PrevKv: rawEvent.PrevKv}
+			if len(rawResp.Events) > 0 {
+				resp.Events = make([]WatchEvent, 0, len(rawResp.Events))
+			}
 
-				// Map event type
+			// Map event type
+			for _, rawEvent := range rawResp.Events {
+				var typ EventType
 				switch rawEvent.Type {
 				case mvccpb.PUT:
 					if rawEvent.Kv.CreateRevision == rawEvent.Kv.ModRevision {
-						outEvent.Type = CreateEvent
+						typ = CreateEvent
 					} else {
-						outEvent.Type = UpdateEvent
+						typ = UpdateEvent
 					}
 				case mvccpb.DELETE:
-					outEvent.Type = DeleteEvent
+					typ = DeleteEvent
 				default:
 					panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
 				}
 
-				outEvents[i] = outEvent
+				resp.Events = append(resp.Events, WatchEvent{
+					Type:   typ,
+					Kv:     rawEvent.Kv,
+					PrevKv: rawEvent.PrevKv,
+				})
 			}
 
-			outCh <- Events{
-				Header:  &resp.Header,
-				Events:  outEvents,
-				Created: resp.Created,
-			}
+			// Pass the response
+			outCh <- resp
 		}
-	}
+	}()
+
+	return outCh
+}
+
+func wrapWatchWithRestart(ctx context.Context, chanFactory func(ctx context.Context) <-chan WatchResponse) <-chan WatchResponse {
+	b := backoff.WithContext(newWatchBackoff(), ctx)
+	outCh := make(chan WatchResponse)
+	go func() {
+		defer close(outCh)
+
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		// The initialization phase lasts until the first "created" event.
+		// If the watch operation was restarted,
+		// the next initialization error is converted to a common error.
+		init := true
+
+		// The "restarted" event contains RestartReason - last error.
+		var lastErr error
+
+		for {
+			// The rawCh channel is closed by the context, so the context does not have to be checked here again.
+			rawCh := chanFactory(ctx)
+			for resp := range rawCh {
+				// Stop initialization phase after the "created" event
+				if resp.Created {
+					init = false
+				}
+
+				// Update lastErr for "restarted" event
+				if resp.InitErr != nil {
+					lastErr = resp.InitErr
+				} else if resp.Err != nil {
+					lastErr = resp.Err
+				}
+
+				// Handle initialization error
+				if resp.InitErr != nil {
+					if init {
+						// Stop on initialization error
+						outCh <- resp
+						return
+					} else {
+						// Convert initialization error
+						// from an 1+ attempt to a common error and restart watch.
+						resp.Err = resp.InitErr
+						resp.InitErr = nil
+						outCh <- resp
+						break
+					}
+				}
+
+				// Pass the response
+				outCh <- resp
+			}
+
+			// Underlying watcher has stopped, restart
+			delay := b.NextBackOff()
+			if delay == backoff.Stop {
+				return
+			}
+
+			// Wait before restart
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(delay):
+				// continue
+			}
+
+			// Emit "restarted" event
+			resp := WatchResponse{}
+			resp.Restarted = true
+			resp.RestartReason = errors.Errorf(`restarted after delay %s, reason: %s`, delay, lastErr)
+			resp.RestartDelay = delay
+			outCh <- resp
+		}
+	}()
+
+	return outCh
+}
+
+func newWatchBackoff() *backoff.ExponentialBackOff {
+	b := backoff.NewExponentialBackOff()
+	b.RandomizationFactor = 0.2
+	b.InitialInterval = 50 * time.Millisecond
+	b.Multiplier = 2
+	b.MaxInterval = 1 * time.Minute
+	b.MaxElapsedTime = 0 // never stop
+	b.Reset()
+	return b
 }
