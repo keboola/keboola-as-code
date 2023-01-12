@@ -2,6 +2,7 @@ package distribution
 
 import (
 	"sort"
+	"sync"
 
 	"github.com/lafikl/consistent"
 )
@@ -13,12 +14,14 @@ import (
 // it is provided by the "consistent" package.
 type Assigner struct {
 	nodeID string
+	mutex  *sync.RWMutex
 	nodes  *consistent.Consistent
 }
 
 func newAssigner(nodeID string) *Assigner {
 	return &Assigner{
 		nodeID: nodeID,
+		mutex:  &sync.RWMutex{},
 		nodes:  consistent.New(),
 	}
 }
@@ -30,6 +33,8 @@ func (a *Assigner) NodeID() string {
 
 // Nodes method returns IDs of all known nodes.
 func (a *Assigner) Nodes() []string {
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
 	out := a.nodes.Hosts()
 	sort.Strings(out)
 	return out
@@ -38,6 +43,8 @@ func (a *Assigner) Nodes() []string {
 // NodeFor returns ID of the key's owner node.
 // The consistent.ErrNoHosts may occur if there is no node in the list.
 func (a *Assigner) NodeFor(key string) (string, error) {
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
 	return a.nodes.Get(key)
 }
 
@@ -87,6 +94,20 @@ func (a *Assigner) clone() *Assigner {
 		clone.addNode(nodeID)
 	}
 	return clone
+}
+
+// lock acquires write lock for resetNodes, addNode, removeNode operations.
+func (a *Assigner) lock() {
+	a.mutex.Lock()
+}
+
+// unlock releases write lock for resetNodes, addNode, removeNode operations.
+func (a *Assigner) unlock() {
+	a.mutex.Unlock()
+}
+
+func (a *Assigner) resetNodes() {
+	a.nodes = consistent.New()
 }
 
 func (a *Assigner) addNode(nodeID string) {
