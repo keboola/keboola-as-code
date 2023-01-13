@@ -157,13 +157,13 @@ task/00000123/my-receiver/my-export-1/%s
 [node2][tasks][taskId=%s]INFO  task ignored, the lock "my-lock" is in use
 [node1][tasks][taskId=%s]INFO  some message from the task (1)
 [node1][tasks][taskId=%s]INFO  task succeeded (%s): some result (1)
-[node1][tasks][taskId=%s]INFO  lock "my-lock" released
+[node1][tasks][taskId=%s]INFO  releasing lock "my-lock"
 [node2][tasks][taskId=%s]INFO  new task, key "00000123/my-receiver/my-export-1/%s"
 [node2][tasks][taskId=%s]INFO  acquiring lock "my-lock"
 [node2][tasks][taskId=%s]INFO  lock "my-lock" acquired
 [node2][tasks][taskId=%s]INFO  some message from the task (2)
 [node2][tasks][taskId=%s]INFO  task succeeded (%s): some result (2)
-[node2][tasks][taskId=%s]INFO  lock "my-lock" released
+[node2][tasks][taskId=%s]INFO  releasing lock "my-lock"
 `, logs.String())
 }
 
@@ -301,13 +301,13 @@ task/00000123/my-receiver/my-export-1/%s
 [node2][tasks][taskId=%s]INFO  task ignored, the lock "my-lock" is in use
 [node1][tasks][taskId=%s]INFO  some message from the task (1)
 [node1][tasks][taskId=%s]WARN  task failed (%s): some error (1)
-[node1][tasks][taskId=%s]INFO  lock "my-lock" released
+[node1][tasks][taskId=%s]INFO  releasing lock "my-lock"
 [node2][tasks][taskId=%s]INFO  new task, key "00000123/my-receiver/my-export-1/%s"
 [node2][tasks][taskId=%s]INFO  acquiring lock "my-lock"
 [node2][tasks][taskId=%s]INFO  lock "my-lock" acquired
 [node2][tasks][taskId=%s]INFO  some message from the task (2)
 [node2][tasks][taskId=%s]WARN  task failed (%s): some error (2)
-[node2][tasks][taskId=%s]INFO  lock "my-lock" released
+[node2][tasks][taskId=%s]INFO  releasing lock "my-lock"
 `, logs.String())
 }
 
@@ -388,7 +388,7 @@ task/00000123/my-receiver/my-export-1/%s
 [node1][tasks]INFO  waiting for "1" tasks to be finished
 [node1][tasks][taskId=%s]INFO  some message from the task
 [node1][tasks][taskId=%s]INFO  task succeeded (%s): some result
-[node1][tasks][taskId=%s]INFO  lock "my-lock" released
+[node1][tasks][taskId=%s]INFO  releasing lock "my-lock"
 [node1][tasks]INFO  shutdown done
 [node1][tasks][etcd-session]INFO  closing etcd session
 [node1][tasks][etcd-session]INFO  closed etcd session | %s
