@@ -222,6 +222,130 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Both clients must use same namespace
+	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
+
+	// Create client for the test
+	testClient := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
+
+	// Create watcher client with custom dialer
+	var conn net.Conn
+	dialerLock := &sync.Mutex{}
+	dialer := func(ctx context.Context, s string) (net.Conn, error) {
+		dialerLock.Lock()
+		defer dialerLock.Unlock()
+		var err error
+		conn, err = (&net.Dialer{}).DialContext(ctx, "tcp", s)
+		return conn, err
+	}
+	watchClient := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace, grpc.WithContextDialer(dialer))
+
+	// Create watcher
+	pfx := prefixForTest()
+	ch := pfx.GetAllAndWatch(ctx, watchClient)
+	receive := func(expectedLen int) WatchResponse {
+		resp := <-ch
+		assert.False(t, resp.Created)
+		assert.False(t, resp.Restarted)
+		assert.NoError(t, resp.InitErr)
+		assert.NoError(t, resp.Err)
+		assert.Len(t, resp.Events, expectedLen)
+		return resp
+	}
+
+	// Expect "created" event, there is no record for GetAll phase, transition to the Watch phase
+	resp := <-ch
+	assert.True(t, resp.Created)
+
+	// Add some key
+	value := "value"
+	assert.NoError(t, pfx.Key("key01").Put(value).Do(ctx, testClient))
+
+	// Read key
+	assert.Equal(t, []byte("my/prefix/key01"), receive(1).Events[0].Kv.Key)
+
+	// Close watcher connection and block a new one
+	dialerLock.Lock()
+	assert.NoError(t, conn.Close())
+
+	// Add some other keys, during the watcher is disconnected
+	assert.NoError(t, pfx.Key("key02").Put(value).Do(ctx, testClient))
+	assert.NoError(t, pfx.Key("key03").Put(value).Do(ctx, testClient))
+
+	// Compact, during the watcher is disconnected
+	status, err := testClient.Status(ctx, testClient.Endpoints()[0])
+	assert.NoError(t, err)
+	_, err = testClient.Compact(ctx, status.Header.Revision)
+	assert.NoError(t, err)
+
+	// Unblock dialer, watcher will be reconnected
+	dialerLock.Unlock()
+
+	// Expect ErrCompacted, all the keys were merged into one revision, it is not possible to load only the missing ones
+	resp = <-ch
+	assert.Error(t, resp.Err)
+	assert.Equal(t, "etcdserver: mvcc: required revision has been compacted", resp.Err.Error())
+
+	// Expect "restarted" event
+	resp = <-ch
+	assert.True(t, resp.Restarted)
+	wildcards.Assert(t, "restarted after %s, reason: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
+
+	// Read keys, watcher was restarted, it is now in the GetAll phase,
+	// so all keys are received at once
+	resp = receive(3)
+	assert.Equal(t, []byte("my/prefix/key01"), resp.Events[0].Kv.Key)
+	assert.Equal(t, []byte("my/prefix/key02"), resp.Events[1].Kv.Key)
+	assert.Equal(t, []byte("my/prefix/key03"), resp.Events[2].Kv.Key)
+
+	// Expect "created" event, transition to the Watch phase
+	resp = <-ch
+	assert.True(t, resp.Created)
+
+	// Add key
+	assert.NoError(t, pfx.Key("key04").Put(value).Do(ctx, testClient))
+
+	// Read keys
+	assert.Equal(t, []byte("my/prefix/key04"), receive(1).Events[0].Kv.Key)
+
+	// And let's try compact operation again, in the same way
+	dialerLock.Lock()
+	assert.NoError(t, conn.Close())
+	assert.NoError(t, pfx.Key("key05").Put(value).Do(ctx, testClient))
+	assert.NoError(t, pfx.Key("key06").Put(value).Do(ctx, testClient))
+	status, err = testClient.Status(ctx, testClient.Endpoints()[0])
+	assert.NoError(t, err)
+	_, err = testClient.Compact(ctx, status.Header.Revision)
+	assert.NoError(t, err)
+	dialerLock.Unlock()
+	resp = <-ch
+	assert.Error(t, resp.Err)
+	assert.Equal(t, "etcdserver: mvcc: required revision has been compacted", resp.Err.Error())
+	resp = <-ch
+	assert.True(t, resp.Restarted)
+	wildcards.Assert(t, "restarted after %s, reason: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
+	resp = receive(6)
+	assert.Equal(t, []byte("my/prefix/key01"), resp.Events[0].Kv.Key)
+	assert.Equal(t, []byte("my/prefix/key02"), resp.Events[1].Kv.Key)
+	assert.Equal(t, []byte("my/prefix/key03"), resp.Events[2].Kv.Key)
+	assert.Equal(t, []byte("my/prefix/key04"), resp.Events[3].Kv.Key)
+	assert.Equal(t, []byte("my/prefix/key05"), resp.Events[4].Kv.Key)
+	assert.Equal(t, []byte("my/prefix/key06"), resp.Events[5].Kv.Key)
+	resp = <-ch
+	assert.True(t, resp.Created)
+
+	// Channel should be closed by the context
+	cancel()
+	_, ok := <-ch
+	assert.False(t, ok)
+}
+
 func TestWatchBackoff(t *testing.T) {
 	t.Parallel()
 
