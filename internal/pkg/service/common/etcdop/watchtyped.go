@@ -25,6 +25,20 @@ func (e *WatchResponseT[T]) Rev() int64 {
 	return e.Header.Revision
 }
 
+// GetAllAndWatch loads all keys in the prefix by the iterator and then watch for changes.
+// Values are decoded to the type T.
+//
+// If a fatal error occurs, the watcher is restarted.
+// The "restarted" event is emitted before the restart.
+// Then, the following events are streamed from the beginning.
+//
+// See WatchResponse for details.
+func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) (out <-chan WatchResponseT[T]) {
+	return v.decodeChannel(ctx, func(ctx context.Context) <-chan WatchResponse {
+		return v.prefix.GetAllAndWatch(ctx, client, opts...)
+	})
+}
+
 // Watch method wraps low-level etcd watcher.
 // Values are decoded to the type T.
 //
@@ -39,20 +53,6 @@ func (e *WatchResponseT[T]) Rev() int64 {
 func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) <-chan WatchResponseT[T] {
 	return v.decodeChannel(ctx, func(ctx context.Context) <-chan WatchResponse {
 		return v.prefix.Watch(ctx, client, opts...)
-	})
-}
-
-// GetAllAndWatch loads all keys in the prefix by the iterator and then watch for changes.
-// Values are decoded to the type T.
-//
-// If a fatal error occurs, the watcher is restarted.
-// The "restarted" event is emitted before the restart.
-// Then, the following events are streamed from the beginning.
-//
-// See WatchResponse for details.
-func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) (out <-chan WatchResponseT[T]) {
-	return v.decodeChannel(ctx, func(ctx context.Context) <-chan WatchResponse {
-		return v.prefix.GetAllAndWatch(ctx, client, opts...)
 	})
 }
 

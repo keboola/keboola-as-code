@@ -75,13 +75,7 @@ func (e *WatchResponse) Rev() int64 {
 	return e.Header.Revision
 }
 
-// Watch method wraps low-level etcd watcher and watch for changes in the prefix.
-// See WatchResponse for details.
-func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) <-chan WatchResponse {
-	return v.watch(ctx, client, opts...)
-}
-
-// GetAllAndWatch loads all keys in the prefix by the iterator and then watch for changes.
+// GetAllAndWatch loads all keys in the prefix by the iterator and then Watch for changes.
 //
 // If a fatal error occurs, the watcher is restarted.
 // The "restarted" event is emitted before the restart.
@@ -133,7 +127,7 @@ func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ..
 			}
 
 			// Watch phase, continue  where the GetAll operation ended (revision + 1)
-			rawCh := v.watch(ctx, client, append([]etcd.OpOption{etcd.WithRev(itr.Header().Revision + 1)}, opts...)...)
+			rawCh := v.Watch(ctx, client, append([]etcd.OpOption{etcd.WithRev(itr.Header().Revision + 1)}, opts...)...)
 			for resp := range rawCh {
 				outCh <- resp
 			}
@@ -143,9 +137,10 @@ func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ..
 	})
 }
 
-// watch the Prefix, operation can be cancelled by the context or a fatal error (etcd ErrCompacted).
-// Otherwise, watch will retry on other recoverable errors forever until reconnected.
-func (v Prefix) watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) <-chan WatchResponse {
+// Watch method wraps low-level etcd watcher and watch for changes in the prefix.
+// Operation can be cancelled by the context or a fatal error (etcd ErrCompacted).
+// Otherwise, Watch will retry on other recoverable errors forever until reconnected.
+func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) <-chan WatchResponse {
 	outCh := make(chan WatchResponse)
 	go func() {
 		defer close(outCh)
