@@ -28,6 +28,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Syncer struct {
@@ -113,8 +114,8 @@ func NewSyncer(d dependencies, targetKey etcdop.Key, opts ...Option) (*Syncer, e
 			case <-ctx.Done():
 				return
 			case <-syncTicker.C:
-				if err := r.sync(ctx); err != nil {
-					r.logger.Errorf(`sync error: %w`, err)
+				if err := r.sync(ctx); err != nil && !errors.Is(err, context.Canceled) {
+					r.logger.Errorf(`sync error: %s`, err)
 				}
 			}
 		}

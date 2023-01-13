@@ -165,6 +165,7 @@ func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, lock stri
 				taskEtcdKey.Put(task),
 				lockEtcdKey.DeleteIfExists(),
 			)
+			logger.Infof(`releasing lock "%s"`, task.Lock)
 			if resp, err := finishTaskOp.Do(opCtx, n.client); err != nil {
 				logger.Errorf(`cannot update task and release lock: %s`, err)
 				return
@@ -172,7 +173,6 @@ func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, lock stri
 				logger.Errorf(`cannot release task lock "%s", not found`, task.Lock)
 				return
 			}
-			logger.Infof(`lock "%s" released`, task.Lock)
 		}()
 
 		// Do operation

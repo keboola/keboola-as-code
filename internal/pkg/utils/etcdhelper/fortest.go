@@ -30,12 +30,12 @@ func NamespaceForTest() string {
 	return idgenerator.EtcdNamespaceForTest()
 }
 
-func ClientForTest(t testOrBenchmark) *etcd.Client {
+func ClientForTest(t testOrBenchmark, dialOpts ...grpc.DialOption) *etcd.Client {
 	namespaceStr := fmt.Sprintf("unit-%s/", NamespaceForTest())
-	return ClientForTestWithNamespace(t, namespaceStr)
+	return ClientForTestWithNamespace(t, namespaceStr, dialOpts...)
 }
 
-func ClientForTestWithNamespace(t testOrBenchmark, namespaceStr string) *etcd.Client {
+func ClientForTestWithNamespace(t testOrBenchmark, namespaceStr string, dialOpts ...grpc.DialOption) *etcd.Client {
 	envs, err := env.FromOs()
 	if err != nil {
 		t.Fatalf("cannot get envs: %s", err)
@@ -49,10 +49,10 @@ func ClientForTestWithNamespace(t testOrBenchmark, namespaceStr string) *etcd.Cl
 	username := envs.Get("UNIT_ETCD_USERNAME")
 	password := envs.Get("UNIT_ETCD_PASSWORD")
 
-	return ClientForTestFrom(t, endpoint, username, password, namespaceStr)
+	return ClientForTestFrom(t, endpoint, username, password, namespaceStr, dialOpts...)
 }
 
-func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespaceStr string) *etcd.Client {
+func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespaceStr string, dialOpts ...grpc.DialOption) *etcd.Client {
 	ctx, cancel := context.WithCancel(context.Background())
 	if endpoint == "" {
 		t.Fatalf(`etcd endpoint is not set`)
@@ -70,6 +70,21 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespac
 		}))
 	}
 
+	// Dial options
+	dialOpts = append(
+		dialOpts,
+		grpc.WithBlock(),                 // wait for the connection
+		grpc.WithReturnConnectionError(), // wait for the connection error
+		grpc.WithConnectParams(grpc.ConnectParams{
+			Backoff: backoff.Config{
+				BaseDelay:  100 * time.Millisecond,
+				Multiplier: 1.5,
+				Jitter:     0.2,
+				MaxDelay:   15 * time.Second,
+			},
+		}),
+	)
+
 	// Create etcd client
 	etcdClient, err := etcd.New(etcd.Config{
 		Context:              ctx,
@@ -80,18 +95,7 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespac
 		Username:             username, // optional
 		Password:             password, // optional
 		Logger:               logger,
-		DialOptions: []grpc.DialOption{
-			grpc.WithBlock(), // wait for the connection
-			grpc.WithReturnConnectionError(),
-			grpc.WithConnectParams(grpc.ConnectParams{
-				Backoff: backoff.Config{
-					BaseDelay:  100 * time.Millisecond,
-					Multiplier: 1.5,
-					Jitter:     0.2,
-					MaxDelay:   15 * time.Second,
-				},
-			}),
-		},
+		DialOptions:          dialOpts,
 	})
 	if err != nil {
 		t.Fatalf("cannot create etcd client: %s", err)
