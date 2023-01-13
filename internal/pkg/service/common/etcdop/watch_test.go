@@ -210,6 +210,40 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	}, "DELETE timeout")
 
 	wg.Wait()
+func TestWatchBackoff(t *testing.T) {
+	t.Parallel()
+
+	b := newWatchBackoff()
+	b.RandomizationFactor = 0
+
+	// Get all delays without sleep
+	var delays []time.Duration
+	for i := 0; i < 14; i++ {
+		delay := b.NextBackOff()
+		if delay == backoff.Stop {
+			assert.Fail(t, "unexpected stop")
+			break
+		}
+		delays = append(delays, delay)
+	}
+
+	// Assert
+	assert.Equal(t, []time.Duration{
+		50 * time.Millisecond,
+		100 * time.Millisecond,
+		200 * time.Millisecond,
+		400 * time.Millisecond,
+		800 * time.Millisecond,
+		1600 * time.Millisecond,
+		3200 * time.Millisecond,
+		6400 * time.Millisecond,
+		12800 * time.Millisecond,
+		25600 * time.Millisecond,
+		51200 * time.Millisecond,
+		time.Minute,
+		time.Minute,
+		time.Minute,
+	}, delays)
 }
 
 func clearEvents(events Events) Events {
