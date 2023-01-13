@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
+	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -21,7 +22,7 @@ func TestManager_CreateToken(t *testing.T) {
 
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
-	d := dependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
+	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
 	m := NewManager(d)
 	rb := rollback.New(d.Logger())
 	client := p.StorageAPIClient()
@@ -65,7 +66,7 @@ func TestManager_RefreshToken_TokenExists(t *testing.T) {
 
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
-	d := dependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
+	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
 	m := NewManager(d)
 	rb := rollback.New(d.Logger())
 	client := p.StorageAPIClient()
@@ -115,7 +116,7 @@ func TestManager_RefreshToken_TokenMissing(t *testing.T) {
 
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
-	d := dependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
+	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
 	m := NewManager(d)
 	rb := rollback.New(d.Logger())
 	client := p.StorageAPIClient()

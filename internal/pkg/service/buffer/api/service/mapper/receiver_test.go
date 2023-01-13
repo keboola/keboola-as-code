@@ -9,16 +9,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/mapper"
+	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 )
 
 func TestReceiverModel(t *testing.T) {
 	t.Parallel()
 
-	d := dependencies.NewMockedDeps(t)
+	d := bufferDependencies.NewMockedDeps(t)
 	mapper := NewMapper(d)
 
 	projectID := key.ProjectID(1000)
@@ -118,7 +118,7 @@ func TestReceiverModel(t *testing.T) {
 func TestReceiverPayload(t *testing.T) {
 	t.Parallel()
 
-	d := dependencies.NewMockedDeps(t)
+	d := bufferDependencies.NewMockedDeps(t)
 	mapper := NewMapper(d)
 
 	receiverKey := key.ReceiverKey{

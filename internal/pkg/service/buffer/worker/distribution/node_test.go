@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -335,7 +336,7 @@ func TestConsistentHashLib(t *testing.T) {
 	}, keysPerNode)
 }
 
-func createNode(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, nodeName string) (*Node, dependencies.Mocked) {
+func createNode(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, nodeName string) (*Node, bufferDependencies.Mocked) {
 	t.Helper()
 
 	// Create dependencies
@@ -359,9 +360,9 @@ func createNode(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, no
 	return node, d
 }
 
-func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, nodeName string) dependencies.Mocked {
+func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, nodeName string) bufferDependencies.Mocked {
 	t.Helper()
-	d := dependencies.NewMockedDeps(
+	d := bufferDependencies.NewMockedDeps(
 		t,
 		dependencies.WithClock(clk),
 		dependencies.WithUniqueID(nodeName),

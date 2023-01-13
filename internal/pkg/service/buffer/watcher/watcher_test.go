@@ -13,6 +13,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -34,11 +35,11 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 
-	d := dependencies.NewMockedDeps(t, dependencies.WithEtcdNamespace(etcdNamespace))
+	d := bufferDependencies.NewMockedDeps(t, dependencies.WithEtcdNamespace(etcdNamespace))
 	str := d.Store()
 
-	createDeps := func(nodeName string) dependencies.Mocked {
-		nodeDeps := dependencies.NewMockedDeps(
+	createDeps := func(nodeName string) bufferDependencies.Mocked {
+		nodeDeps := bufferDependencies.NewMockedDeps(
 			t,
 			dependencies.WithUniqueID(nodeName),
 			dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),

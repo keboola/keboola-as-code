@@ -9,8 +9,8 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 
+	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
@@ -24,7 +24,7 @@ func TestOnChangeListener(t *testing.T) {
 	defer cancel()
 
 	var node1 *Node
-	var d1, d2, d3, d4 dependencies.Mocked
+	var d1, d2, d3, d4 bufferDependencies.Mocked
 
 	listenerLogs := ioutil.NewBufferedWriter()
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)

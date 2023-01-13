@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -163,7 +164,7 @@ func TestDistributedExecutor(t *testing.T) {
 	wildcards.Assert(t, expected4, logsPerNode["node4"].String())
 }
 
-func createNodeWithExecutor(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace string, nodeName string) (*Node, dependencies.Mocked) {
+func createNodeWithExecutor(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace string, nodeName string) (*Node, bufferDependencies.Mocked) {
 	t.Helper()
 	node, d := createNode(t, clk, logs, etcdNamespace, nodeName)
 	work := func(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, assigner *Assigner) (initErr error) {
