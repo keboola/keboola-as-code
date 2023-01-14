@@ -4,7 +4,10 @@ package op
 import (
 	"context"
 
+	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // Op is common interface for all operations in the package.
@@ -13,6 +16,8 @@ import (
 type Op interface {
 	Op(ctx context.Context) (etcd.Op, error)
 	MapResponse(ctx context.Context, response etcd.OpResponse) (result any, err error)
+	DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*etcdserverpb.ResponseHeader, error)
+	DoOrErr(ctx context.Context, client etcd.KV, opts ...Option) error
 }
 
 // ForType is generic type for all typed operations in the package.
@@ -47,6 +52,16 @@ func (v ForType[R]) WithOnResult(fn func(result R)) ForType[R] {
 	})
 }
 
+// WithOnResultOrErr is a shortcut for the WithProcessor.
+func (v ForType[R]) WithOnResultOrErr(fn func(result R) error) ForType[R] {
+	return v.WithProcessor(func(_ context.Context, _ etcd.OpResponse, result R, err error) (R, error) {
+		if err == nil {
+			err = fn(result)
+		}
+		return result, err
+	})
+}
+
 func (v ForType[R]) MapResponse(ctx context.Context, response etcd.OpResponse) (any, error) {
 	// Same as a part of the "Do" method, but not generic.
 	// The method is used in processing of a transaction responses.
@@ -62,19 +77,19 @@ func (v ForType[R]) MapResponse(ctx context.Context, response etcd.OpResponse) (
 	return result, err
 }
 
-func (v ForType[R]) Do(ctx context.Context, client etcd.KV) (R, error) {
+func (v ForType[R]) DoWithAll(ctx context.Context, client etcd.KV, opts ...Option) (R, *etcdserverpb.ResponseHeader, error) {
 	var empty R
 
 	// Create etcd operation
 	etcdOp, err := v.Op(ctx)
 	if err != nil {
-		return empty, err
+		return empty, nil, err
 	}
 
-	// Do
-	response, err := client.Do(ctx, etcdOp)
+	// Do with retry
+	response, err := DoWithRetry(ctx, client, etcdOp, opts...)
 	if err != nil {
-		return empty, err
+		return empty, nil, err
 	}
 
 	// Map
@@ -85,5 +100,36 @@ func (v ForType[R]) Do(ctx context.Context, client etcd.KV) (R, error) {
 		result, err = p(ctx, response, result, err)
 	}
 
-	return result, err
+	return result, getResponseHeader(response), err
+}
+
+func (v ForType[R]) Do(ctx context.Context, client etcd.KV, opts ...Option) (R, error) {
+	r, _, err := v.DoWithAll(ctx, client, opts...)
+	return r, err
+}
+
+func (v ForType[R]) DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*etcdserverpb.ResponseHeader, error) {
+	_, h, err := v.DoWithAll(ctx, client, opts...)
+	return h, err
+}
+
+func (v ForType[R]) DoOrErr(ctx context.Context, client etcd.KV, opts ...Option) error {
+	_, _, err := v.DoWithAll(ctx, client, opts...)
+	return err
+}
+
+func getResponseHeader(response etcd.OpResponse) *etcdserverpb.ResponseHeader {
+	var header *etcdserverpb.ResponseHeader
+	if v := response.Get(); v != nil {
+		header = v.Header
+	} else if v := response.Del(); v != nil {
+		header = v.Header
+	} else if v := response.Put(); v != nil {
+		header = v.Header
+	} else if v := response.Txn(); v != nil {
+		header = v.Header
+	} else {
+		panic(errors.Errorf(`unexpected response type`))
+	}
+	return header
 }

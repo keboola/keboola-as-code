@@ -327,7 +327,7 @@ func TestMergeToTxn_ToRaw_Nested_Txn(t *testing.T) {
 				Results:   []any{int64(1002)}, // modified by the processor: 1000 + 2 (number of shouldBeMissing* keys)
 			},
 		},
-	}, r)
+	}, clearRawValues(r))
 
 	// Check etcd: no change
 	expected := `
@@ -367,7 +367,7 @@ bar
 			Results:   []any{NoResult{}},
 		},
 		NoResult{},
-	}, r.Results)
+	}, clearRawValues(r).Results)
 
 	// Check etcd: 3x PUT
 	expected = `
@@ -606,6 +606,7 @@ func opsForTest(withMapperError bool) []Op {
 
 // clearRawValues from the TxnResponse, for easier comparison.
 func clearRawValues(v TxnResult) TxnResult {
+	v.Header = nil
 	for i, r := range v.Results {
 		switch r := r.(type) {
 		case *KeyValue:

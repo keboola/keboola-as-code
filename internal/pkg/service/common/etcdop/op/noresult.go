@@ -29,7 +29,6 @@ func NewNoResultOp(factory Factory, mapper NoResultMapper) NoResultOp {
 	return out
 }
 
-func (v NoResultOp) Do(ctx context.Context, client etcd.KV) (err error) {
-	_, err = v.ForType.Do(ctx, client)
-	return err
+func (v NoResultOp) Do(ctx context.Context, client etcd.KV) error {
+	return v.ForType.DoOrErr(ctx, client)
 }

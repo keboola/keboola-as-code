@@ -31,27 +31,43 @@ type TxnOpDef struct {
 // Response type differs according to the used operation.
 type TxnResult struct {
 	Succeeded bool
+	Header    *etcdserverpb.ResponseHeader
 	Results   []any
 }
 
 // inlineOp is helper for NewTxnOp, it implements Op interface.
 type inlineOp struct {
 	op          etcd.Op
+	err         error
 	mapResponse mapResponseFn
 }
 
 type mapResponseFn func(ctx context.Context, response etcd.OpResponse) (result any, err error)
 
-func newInlineOp(op etcd.Op, fn mapResponseFn) Op {
-	return &inlineOp{op: op, mapResponse: fn}
+func newInlineOp(op etcd.Op, err error, fn mapResponseFn) Op {
+	return &inlineOp{op: op, err: err, mapResponse: fn}
 }
 
 func (v *inlineOp) Op(_ context.Context) (etcd.Op, error) {
-	return v.op, nil
+	return v.op, v.err
 }
 
 func (v *inlineOp) MapResponse(ctx context.Context, response etcd.OpResponse) (result any, err error) {
 	return v.mapResponse(ctx, response)
+}
+
+func (v *inlineOp) DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*etcdserverpb.ResponseHeader, error) {
+	op, err := v.Op(ctx)
+	if err != nil {
+		return nil, err
+	}
+	response, err := DoWithRetry(ctx, client, op, opts...)
+	return getResponseHeader(response), err
+}
+
+func (v *inlineOp) DoOrErr(ctx context.Context, client etcd.KV, opts ...Option) error {
+	_, err := v.DoWithHeader(ctx, client, opts...)
+	return err
 }
 
 func NewTxnOp() *TxnOp {
@@ -70,6 +86,26 @@ func (v *TxnOpDef) Add(ops ...Op) *TxnOpDef {
 func (v *TxnOpDef) WithProcessor(p txnProcessor) *TxnOpDef {
 	v.processors = append(v.processors, p)
 	return v
+}
+
+// WithOnResult is a shortcut for the WithProcessor.
+func (v *TxnOpDef) WithOnResult(fn func(result TxnResult)) *TxnOpDef {
+	return v.WithProcessor(func(_ context.Context, _ *etcd.TxnResponse, result TxnResult, err error) error {
+		if err == nil {
+			fn(result)
+		}
+		return err
+	})
+}
+
+// WithOnResultOrErr is a shortcut for the WithProcessor.
+func (v *TxnOpDef) WithOnResultOrErr(fn func(result TxnResult) error) *TxnOpDef {
+	return v.WithProcessor(func(_ context.Context, _ *etcd.TxnResponse, result TxnResult, err error) error {
+		if err == nil {
+			err = fn(result)
+		}
+		return err
+	})
 }
 
 func (v *TxnOpDef) Txn(ctx context.Context) *TxnOp {
@@ -98,10 +134,10 @@ func (v *TxnOpDef) Txn(ctx context.Context) *TxnOp {
 		// AND logic applies, so all merged "If" conditions must be met, to run all merged "Then" operations.
 		txn.If(subCmps...)
 		// Conditions are moved to the parent txn ^^^, so here are not needed.
-		txn.Then(newInlineOp(etcd.OpTxn([]etcd.Cmp{}, subThen, []etcd.Op{}), item.MapResponse))
+		txn.Then(newInlineOp(etcd.OpTxn([]etcd.Cmp{}, subThen, []etcd.Op{}), nil, item.MapResponse))
 		// MapResponse/Processors for the "Else" branch of the sub-txn
 		// should be called only if the sub-txn caused the parent txn fall.
-		txn.Else(newInlineOp(etcd.OpTxn(subCmps, []etcd.Op{}, subElse), item.MapResponse))
+		txn.Else(newInlineOp(etcd.OpTxn(subCmps, []etcd.Op{}, subElse), nil, item.MapResponse))
 	}
 
 	txn.processors = v.processors[:]
@@ -109,8 +145,16 @@ func (v *TxnOpDef) Txn(ctx context.Context) *TxnOp {
 	return txn
 }
 
-func (v *TxnOpDef) Do(ctx context.Context, client *etcd.Client) (TxnResult, error) {
-	return v.Txn(ctx).Do(ctx, client)
+func (v *TxnOpDef) Do(ctx context.Context, client etcd.KV, opts ...Option) (TxnResult, error) {
+	return v.Txn(ctx).Do(ctx, client, opts...)
+}
+
+func (v *TxnOpDef) DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*etcdserverpb.ResponseHeader, error) {
+	return v.Txn(ctx).DoWithHeader(ctx, client, opts...)
+}
+
+func (v *TxnOpDef) DoOrErr(ctx context.Context, client etcd.KV, opts ...Option) error {
+	return v.Txn(ctx).DoOrErr(ctx, client, opts...)
 }
 
 func (v *TxnOpDef) Op(ctx context.Context) (etcd.Op, error) {
@@ -143,18 +187,27 @@ func (v *TxnOp) Else(ops ...Op) *TxnOp {
 	return v
 }
 
-func (v *TxnOp) Do(ctx context.Context, client *etcd.Client) (TxnResult, error) {
+func (v *TxnOp) Do(ctx context.Context, client etcd.KV, opts ...Option) (TxnResult, error) {
 	op, err := v.Op(ctx)
 	if err != nil {
 		return TxnResult{}, err
 	}
-
-	resp, err := client.Do(ctx, op)
+	response, err := DoWithRetry(ctx, client, op, opts...)
 	if err != nil {
 		return TxnResult{}, err
 	}
 
-	return v.mapResponse(ctx, resp)
+	return v.mapResponse(ctx, response)
+}
+
+func (v *TxnOp) DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*etcdserverpb.ResponseHeader, error) {
+	r, err := v.Do(ctx, client, opts...)
+	return r.Header, err
+}
+
+func (v *TxnOp) DoOrErr(ctx context.Context, client etcd.KV, opts ...Option) error {
+	_, err := v.Do(ctx, client, opts...)
+	return err
 }
 
 func (v *TxnOp) Op(ctx context.Context) (etcd.Op, error) {
@@ -205,6 +258,7 @@ func (v *TxnOp) MapResponse(ctx context.Context, response etcd.OpResponse) (resu
 
 func (v *TxnOp) mapResponse(ctx context.Context, response etcd.OpResponse) (result TxnResult, err error) {
 	r := response.Txn()
+	result.Header = r.Header
 	result.Succeeded = r.Succeeded
 
 	errs := errors.NewMultiError()
