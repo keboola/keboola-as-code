@@ -29,9 +29,10 @@ import (
 func TestAPIAndWorkerNodesSync(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
-	logger := log.NewDebugLogger()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
+	logger := log.NewDebugLogger()
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 
@@ -76,18 +77,8 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 	// There is no revision lock/work in progress,
 	// so API nodes immediately report the latest revision to Worker nodes.
 	// WaitForRevision calls wait for it and they are immediately unblocked.
-	select {
-	case <-workerNode1.WaitForRevision(rev1):
-		// ok
-	case <-time.After(time.Second):
-		t.Fatal("timeout")
-	}
-	select {
-	case <-workerNode2.WaitForRevision(rev1):
-		// ok
-	case <-time.After(time.Second):
-		t.Fatal("timeout")
-	}
+	assert.NoError(t, workerNode1.WaitForRevision(ctx, rev1))
+	assert.NoError(t, workerNode2.WaitForRevision(ctx, rev1))
 
 	// API nodes do some work based on the current Rev1.
 	r1, found, unlock1Rev1 := apiNode1.GetReceiver(receiverKey)
@@ -103,7 +94,13 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 	sliceKey2, rev2 := updateExport(t, ctx, client, str, exportKey, now)
 
 	// Wait until the change is propagated to API nodes.
-	time.Sleep(200 * time.Millisecond)
+	assert.Eventually(t, func() bool {
+		return apiNode1.StateRev() == rev2 && apiNode2.StateRev() == rev2
+	}, time.Second, 10*time.Millisecond, "timeout")
+
+	// Rev1 is still locked
+	assert.Equal(t, rev1, apiNode1.MinRevInUse())
+	assert.Equal(t, rev1, apiNode2.MinRevInUse())
 
 	// API nodes do some work based on the current Rev2.
 	r1, found, unlock1Rev2 := apiNode1.GetReceiver(receiverKey)
@@ -120,12 +117,12 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 	done1, done2, done3, done4 := make(chan struct{}), make(chan struct{}), make(chan struct{}), make(chan struct{})
 	go func() {
 		defer close(done1)
-		<-workerNode1.WaitForRevision(rev2)
+		assert.NoError(t, workerNode1.WaitForRevision(ctx, rev2))
 		logger.Info("unblocked")
 	}()
 	go func() {
 		defer close(done2)
-		<-workerNode2.WaitForRevision(rev2)
+		assert.NoError(t, workerNode2.WaitForRevision(ctx, rev2))
 		logger.Info("unblocked")
 	}()
 

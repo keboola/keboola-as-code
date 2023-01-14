@@ -1,30 +1,38 @@
-package revision_test
+package apinode
 
 import (
+	"context"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"go.etcd.io/etcd/client/v3/concurrency"
 
-	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher/apinode/revision"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
 func TestRevisionSyncer(t *testing.T) {
 	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Test dependencies
+	wg := &sync.WaitGroup{}
 	clk := clock.NewMock()
-	d := bufferDependencies.NewMockedDeps(t, dependencies.WithClock(clk))
-	client := d.EtcdClient()
+	logger := log.NewDebugLogger()
+	client := etcdhelper.ClientForTest(t)
+	session, err := concurrency.NewSession(client)
+	assert.NoError(t, err)
 
 	// Create revision syncer.
 	interval := 1 * time.Second
-	syncer, err := revision.NewSyncer(d, "my/revision", revision.WithSyncInterval(interval))
-	sync := func() {
+	s, err := newSyncer(ctx, wg, clk, logger, session, "my/revision", interval)
+	doSync := func() {
 		clk.Add(interval)
 	}
 
@@ -39,13 +47,13 @@ my/revision (lease=%s)
 `)
 
 	// State is updated to the revision "30".
-	syncer.Notify(10)
-	syncer.Notify(20)
-	syncer.Notify(30)
+	s.Notify(10)
+	s.Notify(20)
+	s.Notify(30)
 
 	// There is no lock, so the latest revision "30" is synced.
 	etcdhelper.ExpectModification(t, client, func() {
-		sync()
+		doSync()
 	})
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
@@ -56,14 +64,14 @@ my/revision (lease=%s)
 `)
 
 	// Acquire locks, we are doing some work with the current revision "30", so sync will be blocked.
-	unlockRev30Lock1 := syncer.LockCurrentRevision()
-	unlockRev30Lock2 := syncer.LockCurrentRevision()
+	unlockRev30Lock1 := s.Lock()
+	unlockRev30Lock2 := s.Lock()
 
 	// State is updated to the revision "50", but the work based on the revision "30" is not finished yet.
 	// No wand.
-	syncer.Notify(40)
-	syncer.Notify(50)
-	sync()
+	s.Notify(40)
+	s.Notify(50)
+	doSync()
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
 my/revision (lease=%s)
@@ -75,7 +83,7 @@ my/revision (lease=%s)
 	// Unlock "rev30Lock2", revision "30" is still locked by the "rev30Lock1".
 	// No sync.
 	unlockRev30Lock2()
-	sync()
+	doSync()
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
 my/revision (lease=%s)
@@ -85,18 +93,18 @@ my/revision (lease=%s)
 `)
 
 	// Acquire new locks, we are doing some work with the current revision "50".
-	unlockRev50Lock1 := syncer.LockCurrentRevision()
-	unlockRev50Lock2 := syncer.LockCurrentRevision()
+	unlockRev50Lock1 := s.Lock()
+	unlockRev50Lock2 := s.Lock()
 
 	// State is updated to the revision "70", but the work based on the revisions "30" and "50" is not finished yet.
-	syncer.Notify(60)
-	syncer.Notify(70)
+	s.Notify(60)
+	s.Notify(70)
 
 	// Release last lock of the revision "30", so the sync is unblocked.
 	// Minimal revision is use is now the revision "50".
 	etcdhelper.ExpectModification(t, client, func() {
 		unlockRev30Lock1()
-		sync()
+		doSync()
 	})
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
@@ -108,7 +116,7 @@ my/revision (lease=%s)
 
 	// Unlock "rev50Lock1", no sync, revision "50" is still locked by the "rev50Lock2"
 	unlockRev50Lock1()
-	sync()
+	doSync()
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
 my/revision (lease=%s)
@@ -121,7 +129,7 @@ my/revision (lease=%s)
 	// There is no revision in use, so the key is synced to the current revision "70".
 	etcdhelper.ExpectModification(t, client, func() {
 		unlockRev50Lock2()
-		sync()
+		doSync()
 	})
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
@@ -132,26 +140,20 @@ my/revision (lease=%s)
 `)
 
 	// Etcd key should be deleted (by lease), when the API node is turned off
-	etcdhelper.ExpectModification(t, client, func() {
-		d.Process().Shutdown(errors.New("test shutdown"))
-		d.Process().WaitForShutdown()
-	})
+	logger.Info("close session")
+	assert.NoError(t, session.Close())
 	etcdhelper.AssertKVs(t, client, "")
 
 	// Check logs - no unexpected syncs
 	wildcards.Assert(t, `
-INFO  process unique id "%s"
-[watcher][api][revision][etcd-session]INFO  creating etcd session
-[watcher][api][revision][etcd-session]INFO  created etcd session | %s
-[watcher][api][revision]INFO  reported revision "1"
-[watcher][api][revision]INFO  reported revision "30"
-[watcher][api][revision]INFO  reported revision "50"
-[watcher][api][revision]INFO  reported revision "70"
-INFO  exiting (test shutdown)
-[watcher][api][revision]INFO  received shutdown request
-[watcher][api][revision]INFO  shutdown done
-[watcher][api][revision][etcd-session]INFO  closing etcd session
-[watcher][api][revision][etcd-session]INFO  closed etcd session | %s
-INFO  exited
-`, d.DebugLogger().AllMessages())
+INFO  reported revision "1"
+INFO  reported revision "30"
+INFO  locked revision "30"
+INFO  locked revision "50"
+INFO  unlocked revision "30"
+INFO  reported revision "50"
+INFO  unlocked revision "50"
+INFO  reported revision "70"
+INFO  close session
+`, logger.AllMessages())
 }

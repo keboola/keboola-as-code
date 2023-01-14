@@ -6,48 +6,89 @@ import (
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"go.uber.org/atomic"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
 // listeners are used to wait until all API nodes are synchronized to a requested revision.
 type listeners struct {
+	logger    log.Logger
+	wg        *sync.WaitGroup
 	lock      *sync.Mutex
-	listeners map[listenerID]*listener
+	listeners map[listenerID]*Listener
 }
 
 type listenerID string
 
-type listener struct {
+type Listener struct {
+	all *listeners
 	// id of the listener, so it can be removed from the map, if the requested revision is met
 	id listenerID
 	// rev is requested revision
-	rev int64
+	rev       int64
+	cancelled bool
 	// C channel is closed when all API nodes are synchronized to a requested revision
 	C chan struct{}
 }
 
-func newListeners() *listeners {
+func newListeners(logger log.Logger) *listeners {
 	return &listeners{
+		logger:    logger,
+		wg:        &sync.WaitGroup{},
 		lock:      &sync.Mutex{},
-		listeners: make(map[listenerID]*listener),
+		listeners: make(map[listenerID]*Listener),
 	}
 }
 
-// waitForRevision returns the channel that is closed when all API nodes are synced to the requested revision.
-func (l *listeners) waitForRevision(requestedRev int64, currentRev *atomic.Int64) <-chan struct{} {
-	out := &listener{id: listenerID(gonanoid.Must(10)), rev: requestedRev, C: make(chan struct{})}
+func (v *Listener) Cancel() {
+	v.all.lock.Lock()
+	defer v.all.lock.Unlock()
+	v.cancel()
+}
 
+func (v *Listener) cancel() {
+	if !v.cancelled {
+		v.cancelled = true
+		close(v.C)
+		delete(v.all.listeners, v.id)
+		v.all.wg.Done()
+	}
+}
+
+func (l *listeners) count() int {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	return len(l.listeners)
+}
+
+// waitForRevision returns the channel that is closed when all API nodes are synced to the requested revision.
+func (l *listeners) waitForRevision(requestedRev int64, currentRev *atomic.Int64) *Listener {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
-	if out.rev <= currentRev.Load() {
-		// The condition has already been met
-		close(out.C)
-	} else {
-		// Check again the next time, see onChange method
-		l.listeners[out.id] = out
+	// Check if the condition has already been met
+	if rev := currentRev.Load(); requestedRev <= rev || rev == noAPINode {
+		ch := make(chan struct{})
+		close(ch)
+		return &Listener{all: l, cancelled: true, C: ch}
 	}
 
-	return out.C
+	// Check again the next time, see onChange method
+	out := &Listener{all: l, id: listenerID(gonanoid.Must(10)), rev: requestedRev, C: make(chan struct{})}
+	l.wg.Add(1)
+	l.listeners[out.id] = out
+	return out
+}
+
+func (l *listeners) wait() {
+	l.lock.Lock()
+	count := len(l.listeners)
+	l.lock.Unlock()
+
+	if count > 0 {
+		l.logger.Infof(`waiting for "%d" listeners`, count)
+	}
+	l.wg.Wait()
 }
 
 // onChange is called when the minimal revision, that match all API nodes, is increased.
@@ -61,11 +102,10 @@ func (l *listeners) onChange(ctx context.Context, currentRev *atomic.Int64) int 
 		v := v
 		select {
 		case <-ctx.Done():
-			return 0
+			break
 		default:
-			if v.rev <= rev {
-				close(v.C)
-				delete(l.listeners, v.id)
+			if v.rev <= rev || rev == noAPINode {
+				v.cancel()
 				unblockedCount++
 			}
 		}
