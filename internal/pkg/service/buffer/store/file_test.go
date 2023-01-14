@@ -154,7 +154,7 @@ file/<STATE>/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z
 -----
 %A
   "state": "<STATE>",%A
-  "<STATE>At": "2010-01-01T01:01:01+07:00"%A
+  "<STATE>At": "2009-12-31T18:01:01.000Z"%A
 >>>>>
 `
 		etcdhelper.AssertKVs(t, store.client, strings.ReplaceAll(expected, "<STATE>", tc.to.String()))

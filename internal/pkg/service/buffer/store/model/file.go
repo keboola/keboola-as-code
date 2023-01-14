@@ -17,12 +17,12 @@ type File struct {
 	State              filestate.State  `json:"state" validate:"required,oneof=opened closing closed importing imported failed"`
 	Mapping            Mapping          `json:"mapping" validate:"required,dive"`
 	StorageResource    *storageapi.File `json:"storageResource" validate:"required"`
-	ClosingAt          *time.Time       `json:"closingAt,omitempty"`
-	ClosedAt           *time.Time       `json:"closedAt,omitempty"`
-	ImportingAt        *time.Time       `json:"importingAt,omitempty"`
-	ImportedAt         *time.Time       `json:"importedAt,omitempty"`
-	ManifestUploadedAt *time.Time       `json:"manifestUploadedAt,omitempty"`
-	FailedAt           *time.Time       `json:"failedAt,omitempty"`
+	ClosingAt          *UTCTime         `json:"closingAt,omitempty"`
+	ClosedAt           *UTCTime         `json:"closedAt,omitempty"`
+	ImportingAt        *UTCTime         `json:"importingAt,omitempty"`
+	ImportedAt         *UTCTime         `json:"importedAt,omitempty"`
+	ManifestUploadedAt *UTCTime         `json:"manifestUploadedAt,omitempty"`
+	FailedAt           *UTCTime         `json:"failedAt,omitempty"`
 	LastError          string           `json:"lastError,omitempty"`
 }
 

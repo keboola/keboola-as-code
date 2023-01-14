@@ -95,18 +95,19 @@ func (s *Store) setFileStateOp(ctx context.Context, now time.Time, file *model.F
 	clone := *file
 	stm := filestate.NewSTM(file.State, func(ctx context.Context, from, to filestate.State) error {
 		// Update fields
+		nowUTC := model.UTCTime(now)
 		clone.State = to
 		switch to {
 		case filestate.Closing:
-			clone.ClosingAt = &now
+			clone.ClosingAt = &nowUTC
 		case filestate.Closed:
-			clone.ClosedAt = &now
+			clone.ClosedAt = &nowUTC
 		case filestate.Importing:
-			clone.ImportingAt = &now
+			clone.ImportingAt = &nowUTC
 		case filestate.Imported:
-			clone.ImportedAt = &now
+			clone.ImportedAt = &nowUTC
 		case filestate.Failed:
-			clone.FailedAt = &now
+			clone.FailedAt = &nowUTC
 		default:
 			panic(errors.Errorf(`unexpected state "%s"`, to))
 		}

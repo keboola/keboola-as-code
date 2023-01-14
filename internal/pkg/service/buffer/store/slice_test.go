@@ -120,14 +120,13 @@ func TestStore_SetSliceState_Transitions(t *testing.T) {
 	ctx := context.Background()
 	store := newStoreForTest(t)
 	slice := sliceForTest()
-	now, _ := time.Parse(time.RFC3339, "2010-01-01T01:01:01+07:00")
 
 	// Create slice
 	assert.NoError(t, store.CreateSlice(ctx, slice))
 
 	for _, tc := range testCases {
 		// Trigger transition
-		ok, err := store.SetSliceState(ctx, &slice, tc.to, now)
+		ok, err := store.SetSliceState(ctx, &slice, tc.to)
 		desc := fmt.Sprintf("%s -> %s", tc.from, tc.to)
 		assert.NoError(t, err, desc)
 		assert.True(t, ok, desc)
@@ -138,14 +137,14 @@ slice/<STATE>/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02
 -----
 %A
   "state": "<STATE>",%A
-  "<STATE>At": "2010-01-01T01:01:01+07:00"%A
+  "<STATE>At": "2009-12-31T18:01:01.000Z"%A
 >>>>>
 `
 		etcdhelper.AssertKVs(t, store.client, strings.ReplaceAll(expected, "<STATE>", tc.to.String()))
 
 		// Test duplicated transition -> nop
 		slice.State = tc.from
-		ok, err = store.SetSliceState(ctx, &slice, tc.to, time.Now())
+		ok, err = store.SetSliceState(ctx, &slice, tc.to)
 		assert.NoError(t, err, desc)
 		assert.False(t, ok, desc)
 		assert.Equal(t, tc.to, slice.State, desc)
