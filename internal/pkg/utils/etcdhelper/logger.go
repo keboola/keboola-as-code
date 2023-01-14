@@ -99,7 +99,7 @@ func (v *kvWrapper) start(op *Op, opName, key, value string) string {
 		cmpOps, thenOps, elseOps := op.Txn()
 
 		if len(cmpOps) > 0 {
-			dump.WriteString("  >>> IF:\n")
+			dump.WriteString("  ➡️  IF:\n")
 			for i, item := range cmpOps {
 				expectedResult := fmt.Sprintf("%v", item.TargetUnion)
 				expectedResult = strings.TrimPrefix(expectedResult, "&{")
@@ -109,7 +109,7 @@ func (v *kvWrapper) start(op *Op, opName, key, value string) string {
 		}
 
 		if len(thenOps) > 0 {
-			dump.WriteString("  >>> THEN:\n")
+			dump.WriteString("  ➡️  THEN:\n")
 			for i, item := range thenOps {
 				linePrefix := fmt.Sprintf("  %03d ", i+1)
 				prefixLines(linePrefix, v.startOp(item), &dump)
@@ -117,7 +117,7 @@ func (v *kvWrapper) start(op *Op, opName, key, value string) string {
 		}
 
 		if len(elseOps) > 0 {
-			dump.WriteString("  >>> ELSE:\n")
+			dump.WriteString("  ➡️  ELSE:\n")
 			for i, item := range elseOps {
 				linePrefix := fmt.Sprintf("  %03d ", i+1)
 				prefixLines(linePrefix, v.startOp(item), &dump)
@@ -128,9 +128,9 @@ func (v *kvWrapper) start(op *Op, opName, key, value string) string {
 	}
 
 	if dumpStr == "" {
-		return opName
+		return fmt.Sprintf("➡️  %s", opName)
 	} else {
-		return fmt.Sprintf("%s\n%s", opName, dumpStr)
+		return fmt.Sprintf("➡️  %s\n%s", opName, dumpStr)
 	}
 }
 
