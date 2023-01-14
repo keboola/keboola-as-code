@@ -118,7 +118,7 @@ func (v *kvWrapper) start(op *Op, opName, key, value string) string {
 
 		if len(elseOps) > 0 {
 			dump.WriteString("  >>> ELSE:\n")
-			for i, item := range thenOps {
+			for i, item := range elseOps {
 				linePrefix := fmt.Sprintf("  %03d ", i+1)
 				prefixLines(linePrefix, v.startOp(item), &dump)
 			}
