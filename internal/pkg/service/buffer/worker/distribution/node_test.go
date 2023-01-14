@@ -342,9 +342,10 @@ func createNode(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, no
 	// Create dependencies
 	d := createDeps(t, clk, logs, etcdNamespace, nodeName)
 
-	// Disable events grouping interval in tests with mocked clocks,
+	// Speedup tests with real clock,
+	// and disable events grouping interval in tests with mocked clocks,
 	// events will be processed immediately.
-	groupInterval := 10 * time.Millisecond // speedup tests with real clock
+	groupInterval := 10 * time.Millisecond
 	if _, ok := clk.(*clock.Mock); ok {
 		groupInterval = 0
 	}
