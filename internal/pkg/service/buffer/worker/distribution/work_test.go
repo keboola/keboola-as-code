@@ -3,7 +3,6 @@ package distribution_test
 import (
 	"context"
 	"fmt"
-	"io"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,9 +13,9 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -26,7 +25,7 @@ import (
 
 const resetInterval = time.Minute // only for tests
 
-func TestDistributedExecutor(t *testing.T) {
+func TestDistributedWork(t *testing.T) {
 	t.Parallel()
 
 	clk := clock.NewMock()
@@ -35,14 +34,24 @@ func TestDistributedExecutor(t *testing.T) {
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 
 	logsPerNode := make(map[string]*ioutil.Writer)
-	createNode := func(nodeName string) (*Node, dependencies.Mocked) {
+	createNodeWithWork := func(nodeName string) (*Node, dependencies.Mocked, *atomic.Int64) {
 		logs := ioutil.NewBufferedWriter()
 		logsPerNode[nodeName] = logs
-		return createNodeWithExecutor(t, clk, logs, etcdNamespace, nodeName)
+		node, d := createNode(t, clk, logs, etcdNamespace, nodeName)
+
+		// Start distributed work
+		ctx, cancel := context.WithCancel(context.Background())
+		wg := &sync.WaitGroup{}
+		restartCount := startWork(t, node, ctx, wg, d.Logger().AddPrefix("[work]"))
+		d.Process().OnShutdown(func() {
+			cancel()
+			wg.Wait()
+		})
+		return node, d, restartCount
 	}
 
 	// Create node 1
-	node1, d1 := createNode("node1")
+	node1, d1, restartCount1 := createNodeWithWork("node1")
 	assertAllTasksAssignedOnce(t, node1)
 
 	// 3x reset
@@ -54,49 +63,52 @@ func TestDistributedExecutor(t *testing.T) {
 	assertAllTasksAssignedOnce(t, node1)
 
 	// Stop node 1
+	assert.Eventually(t, func() bool {
+		return restartCount1.Load() == 3
+	}, time.Second, 10*time.Millisecond, "timeout")
 	etcdhelper.ExpectModification(t, client, func() {
 		d1.Process().Shutdown(errors.New("bye bye 1"))
 		d1.Process().WaitForShutdown()
 	})
 
 	// Create node 2
-	node2, d2 := createNode("node2")
+	node2, d2, restartCount2 := createNodeWithWork("node2")
 	assertAllTasksAssignedOnce(t, node2)
 
 	// Create node 3
-	node3, d3 := createNode("node3")
+	node3, d3, restartCount3 := createNodeWithWork("node3")
 	assert.Eventually(t, func() bool {
-		return node2.HasNode("node3")
-	}, 5*time.Second, 10*time.Millisecond, "timeout")
+		return node2.HasNode("node3") && restartCount2.Load() == 1
+	}, time.Second, 10*time.Millisecond, "timeout")
 	assertAllTasksAssignedOnce(t, node2, node3)
 
 	// Create node 4
-	node4, d4 := createNode("node4")
+	node4, d4, restartCount4 := createNodeWithWork("node4")
 	assert.Eventually(t, func() bool {
-		return node2.HasNode("node4")
-	}, 5*time.Second, 10*time.Millisecond, "timeout")
+		return node2.HasNode("node4") && restartCount2.Load() == 2
+	}, time.Second, 10*time.Millisecond, "timeout")
 	assert.Eventually(t, func() bool {
-		return node3.HasNode("node4")
-	}, 5*time.Second, 10*time.Millisecond, "timeout")
+		return node3.HasNode("node4") && restartCount3.Load() == 1
+	}, time.Second, 10*time.Millisecond, "timeout")
 	assertAllTasksAssignedOnce(t, node2, node3, node4)
 
 	// Shutdown node 3
 	d3.Process().Shutdown(errors.New("bye bye 3"))
 	d3.Process().WaitForShutdown()
 	assert.Eventually(t, func() bool {
-		return !node2.HasNode("node3")
-	}, 5*time.Second, 10*time.Millisecond, "timeout")
+		return !node2.HasNode("node3") && restartCount2.Load() == 3
+	}, time.Second, 10*time.Millisecond, "timeout")
 	assert.Eventually(t, func() bool {
-		return !node4.HasNode("node3")
-	}, 5*time.Second, 10*time.Millisecond, "timeout")
+		return !node4.HasNode("node3") && restartCount4.Load() == 1
+	}, time.Second, 10*time.Millisecond, "timeout")
 	assertAllTasksAssignedOnce(t, node2, node4)
 
 	// Shutdown node 4
 	d4.Process().Shutdown(errors.New("bye bye 4"))
 	d4.Process().WaitForShutdown()
 	assert.Eventually(t, func() bool {
-		return !node2.HasNode("node4")
-	}, 5*time.Second, 10*time.Millisecond, "timeout")
+		return !node2.HasNode("node4") && restartCount2.Load() == 4
+	}, time.Second, 10*time.Millisecond, "timeout")
 	assertAllTasksAssignedOnce(t, node2)
 
 	// Shutdown node 2
@@ -108,53 +120,53 @@ func TestDistributedExecutor(t *testing.T) {
 	// Check logs
 	expected1 := `
 %A
-[node1][distribution][my-executor]INFO  reset: initialization
-[node1][distribution][my-executor][work]INFO  Assigned tasks: 1,2,3,4,5,6,7,8,9,10
-[node1][distribution][my-executor]INFO  reset: periodical
-[node1][distribution][my-executor][work]INFO  Assigned tasks: 1,2,3,4,5,6,7,8,9,10
-[node1][distribution][my-executor]INFO  reset: periodical
-[node1][distribution][my-executor][work]INFO  Assigned tasks: 1,2,3,4,5,6,7,8,9,10
-[node1][distribution][my-executor]INFO  reset: periodical
-[node1][distribution][my-executor][work]INFO  Assigned tasks: 1,2,3,4,5,6,7,8,9,10
+[node1][work]INFO  ready
+[node1][work]INFO  assigned tasks: 1,2,3,4,5,6,7,8,9,10
+[node1][work]INFO  restart: periodical
+[node1][work]INFO  assigned tasks: 1,2,3,4,5,6,7,8,9,10
+[node1][work]INFO  restart: periodical
+[node1][work]INFO  assigned tasks: 1,2,3,4,5,6,7,8,9,10
+[node1][work]INFO  restart: periodical
+[node1][work]INFO  assigned tasks: 1,2,3,4,5,6,7,8,9,10
 [node1]INFO  exiting (bye bye 1)
 %A
 `
 	expected2 := `
 %A
-[node2][distribution][my-executor]INFO  reset: initialization
-[node2][distribution][my-executor][work]INFO  Assigned tasks: 1,2,3,4,5,6,7,8,9,10
+[node2][work]INFO  ready
+[node2][work]INFO  assigned tasks: 1,2,3,4,5,6,7,8,9,10
 [node2][distribution]INFO  found a new node "node3"
-[node2][distribution][my-executor]INFO  reset: distribution changed: found a new node "node3"
-[node2][distribution][my-executor][work]INFO  Assigned tasks: 4,7,8,9,10
+[node2][work]INFO  restart: distribution changed: found a new node "node3"
+[node2][work]INFO  assigned tasks: 4,7,8,9,10
 [node2][distribution]INFO  found a new node "node4"
-[node2][distribution][my-executor]INFO  reset: distribution changed: found a new node "node4"
-[node2][distribution][my-executor][work]INFO  Assigned tasks: 4,8,9,10
+[node2][work]INFO  restart: distribution changed: found a new node "node4"
+[node2][work]INFO  assigned tasks: 4,8,9,10
 [node2][distribution]INFO  the node "node3" gone
-[node2][distribution][my-executor]INFO  reset: distribution changed: the node "node3" gone
-[node2][distribution][my-executor][work]INFO  Assigned tasks: 1,3,4,6,8,9,10
+[node2][work]INFO  restart: distribution changed: the node "node3" gone
+[node2][work]INFO  assigned tasks: 1,3,4,6,8,9,10
 [node2][distribution]INFO  the node "node4" gone
-[node2][distribution][my-executor]INFO  reset: distribution changed: the node "node4" gone
-[node2][distribution][my-executor][work]INFO  Assigned tasks: 1,2,3,4,5,6,7,8,9,10
+[node2][work]INFO  restart: distribution changed: the node "node4" gone
+[node2][work]INFO  assigned tasks: 1,2,3,4,5,6,7,8,9,10
 [node2]INFO  exiting (bye bye 2)
 %A
 `
 	expected3 := `
 %A
-[node3][distribution][my-executor]INFO  reset: initialization
-[node3][distribution][my-executor][work]INFO  Assigned tasks: 1,2,3,5,6
+[node3][work]INFO  ready
+[node3][work]INFO  assigned tasks: 1,2,3,5,6
 [node3][distribution]INFO  found a new node "node4"
-[node3][distribution][my-executor]INFO  reset: distribution changed: found a new node "node4"
-[node3][distribution][my-executor][work]INFO  Assigned tasks: 1,3,6
+[node3][work]INFO  restart: distribution changed: found a new node "node4"
+[node3][work]INFO  assigned tasks: 1,3,6
 [node3]INFO  exiting (bye bye 3)
 %A
 `
 	expected4 := `
 %A
-[node4][distribution][my-executor]INFO  reset: initialization
-[node4][distribution][my-executor][work]INFO  Assigned tasks: 2,5,7
+[node4][work]INFO  ready
+[node4][work]INFO  assigned tasks: 2,5,7
 [node4][distribution]INFO  the node "node3" gone
-[node4][distribution][my-executor]INFO  reset: distribution changed: the node "node3" gone
-[node4][distribution][my-executor][work]INFO  Assigned tasks: 2,5,7
+[node4][work]INFO  restart: distribution changed: the node "node3" gone
+[node4][work]INFO  assigned tasks: 2,5,7
 [node4]INFO  exiting (bye bye 4)
 %A
 `
@@ -164,12 +176,11 @@ func TestDistributedExecutor(t *testing.T) {
 	wildcards.Assert(t, expected4, logsPerNode["node4"].String())
 }
 
-func createNodeWithExecutor(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace string, nodeName string) (*Node, bufferDependencies.Mocked) {
+func startWork(t *testing.T, node *Node, ctx context.Context, wg *sync.WaitGroup, logger log.Logger) *atomic.Int64 {
 	t.Helper()
-	node, d := createNode(t, clk, logs, etcdNamespace, nodeName)
-	work := func(ctx context.Context, wg *sync.WaitGroup, logger log.Logger, assigner *Assigner) (initErr error) {
-		logger = logger.AddPrefix("[work]")
-		initDone := make(chan struct{})
+	restarts := atomic.NewInt64(-1) // -1, first call is start, not restart
+	work := func(ctx context.Context, assigner *Assigner) <-chan error {
+		initDone := make(chan error)
 
 		wg.Add(1)
 		go func() {
@@ -186,18 +197,16 @@ func createNodeWithExecutor(t *testing.T, clk clock.Clock, logs io.Writer, etcdN
 				}
 			}
 
-			logger.Infof("Assigned tasks: %s", strings.Join(ownedTasks, ","))
+			logger.Infof("assigned tasks: %s", strings.Join(ownedTasks, ","))
 			close(initDone)
-
+			restarts.Inc()
 			<-ctx.Done()
 		}()
 
-		// No init error
-		<-initDone
-		return nil
+		return initDone
 	}
-	assert.NoError(t, node.StartExecutor("my-executor", work, WithResetInterval(resetInterval)))
-	return node, d
+	assert.NoError(t, <-node.StartWork(ctx, wg, logger, work, WithResetInterval(resetInterval)))
+	return restarts
 }
 
 func assertAllTasksAssignedOnce(t *testing.T, nodes ...*Node) {

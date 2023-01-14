@@ -5,11 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	gonanoid "github.com/matoous/go-nanoid/v2"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 )
 
 // Listener listens for distribution changes, when a node is added or removed.
@@ -32,10 +28,11 @@ type listeners struct {
 
 type listenerID string
 
-func newListeners(proc *servicectx.Process, clock clock.Clock, logger log.Logger, config nodeConfig) *listeners {
-	logger = logger.AddPrefix("[listeners]")
+func newListeners(n *Node) *listeners {
+	logger := n.logger.AddPrefix("[listeners]")
+
 	v := &listeners{
-		config:    config,
+		config:    n.config,
 		lock:      &sync.Mutex{},
 		listeners: make(map[listenerID]*Listener),
 	}
@@ -43,7 +40,7 @@ func newListeners(proc *servicectx.Process, clock clock.Clock, logger log.Logger
 	// Graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	proc.OnShutdown(func() {
+	n.proc.OnShutdown(func() {
 		logger.Info("received shutdown request")
 		cancel()
 		wg.Wait()
@@ -54,31 +51,37 @@ func newListeners(proc *servicectx.Process, clock clock.Clock, logger log.Logger
 	go func() {
 		defer wg.Done()
 
+		// If the interval > 0, then listeners are not triggered immediately on change,
+		// but all events within the groupInterval are processed at once.
+		// Otherwise, trigger is called immediately, see Notify method.
 		var tickerC <-chan time.Time
-		if config.eventsGroupInterval > 0 {
-			// Listeners are not triggered immediately on change,
-			// but all events within the groupInterval are processed at once.
-			triggerTicker := clock.Ticker(config.eventsGroupInterval)
-			defer triggerTicker.Stop()
-		} else {
-			// No grouping interval, trigger is called immediately, see Notify method.
-			tickerC = make(chan time.Time)
+		if v.config.eventsGroupInterval > 0 {
+			ticker := n.clock.Ticker(v.config.eventsGroupInterval)
+			defer ticker.Stop()
+			tickerC = ticker.C
 		}
 
 		for {
 			select {
 			case <-ctx.Done():
 				// Handle shutdown
-				logger.Info("waiting for listeners")
 				v.lock.Lock()
+
+				// Log info
+				count := len(v.listeners)
+				if count > 0 {
+					logger.Infof(`waiting for "%d" listeners`, count)
+				}
+
 				// Process remaining events
 				v.trigger()
+
 				// Stop all listeners
 				for _, l := range v.listeners {
 					l.cancel()
 					l.wg.Wait()
-					close(l.C)
 				}
+
 				v.listeners = nil
 				v.lock.Unlock()
 				return
@@ -139,13 +142,21 @@ func (v *listeners) trigger() {
 	v.bufferedEvents = nil
 }
 
+func (l *Listener) Wait(ctx context.Context) (Events, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case events := <-l.C:
+		return events, nil
+	}
+}
+
 func (l *Listener) Stop() {
 	l.all.lock.Lock()
 	defer l.all.lock.Unlock()
 
 	l.cancel()
 	l.wg.Wait()
-	close(l.C)
 	delete(l.all.listeners, l.id)
 }
 

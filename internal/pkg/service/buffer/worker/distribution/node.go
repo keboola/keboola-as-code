@@ -90,7 +90,7 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 	})
 
 	// Create listeners handler
-	n.listeners = newListeners(n.proc, n.clock, n.logger, n.config)
+	n.listeners = newListeners(n)
 
 	// Watch for nodes
 	if err := n.watch(ctx, wg); err != nil {
@@ -112,11 +112,6 @@ func (n *Node) OnChangeListener() *Listener {
 // CloneAssigner returns cloned Assigner frozen in the actual distribution.
 func (n *Node) CloneAssigner() *Assigner {
 	return n.assigner.clone()
-}
-
-// StartExecutor starts the ExecutorWork, see documentation there.
-func (n *Node) StartExecutor(name string, workFactory ExecutorWork, opts ...ExecutorOption) error {
-	return startExecutor(n, name, workFactory, opts...)
 }
 
 // register node in the etcd prefix,
