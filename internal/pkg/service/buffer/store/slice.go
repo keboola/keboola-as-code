@@ -100,8 +100,8 @@ func (s *Store) listUploadedSlicesOp(_ context.Context, fileKey key.FileKey) ite
 
 // SetSliceState method atomically changes the state of the file.
 // False is returned, if the given file is already in the target state.
-func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slicestate.State, now time.Time) (bool, error) { //nolint:dupl
-	txn, err := s.setSliceStateOp(ctx, now, slice, to)
+func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slicestate.State) (bool, error) { //nolint:dupl
+	txn, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, to)
 	if err != nil {
 		return false, err
 	}
@@ -124,16 +124,17 @@ func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model
 	clone := *slice
 	stm := slicestate.NewSTM(slice.State, func(ctx context.Context, from, to slicestate.State) error {
 		// Update fields
+		nowUTC := model.UTCTime(now)
 		clone.State = to
 		switch to {
 		case slicestate.Closing:
-			clone.ClosingAt = &now
+			clone.ClosingAt = &nowUTC
 		case slicestate.Uploading:
-			clone.UploadingAt = &now
+			clone.UploadingAt = &nowUTC
 		case slicestate.Uploaded:
-			clone.UploadedAt = &now
+			clone.UploadedAt = &nowUTC
 		case slicestate.Failed:
-			clone.FailedAt = &now
+			clone.FailedAt = &nowUTC
 		default:
 			panic(errors.Errorf(`unexpected state "%s"`, to))
 		}

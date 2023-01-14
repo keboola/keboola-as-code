@@ -15,10 +15,10 @@ type Slice struct {
 	State       slicestate.State `json:"state" validate:"required,oneof=opened closing closed uploading uploaded failed"`
 	Mapping     Mapping          `json:"mapping" validate:"required,dive"`
 	Number      int              `json:"sliceNumber" validate:"required"`
-	ClosingAt   *time.Time       `json:"closingAt,omitempty"`
-	UploadingAt *time.Time       `json:"uploadingAt,omitempty"`
-	UploadedAt  *time.Time       `json:"uploadedAt,omitempty"`
-	FailedAt    *time.Time       `json:"failedAt,omitempty"`
+	ClosingAt   *UTCTime         `json:"closingAt,omitempty"`
+	UploadingAt *UTCTime         `json:"uploadingAt,omitempty"`
+	UploadedAt  *UTCTime         `json:"uploadedAt,omitempty"`
+	FailedAt    *UTCTime         `json:"failedAt,omitempty"`
 	LastError   string           `json:"lastError,omitempty"`
 }
 

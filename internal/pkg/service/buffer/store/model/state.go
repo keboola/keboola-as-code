@@ -9,8 +9,8 @@ import (
 type CurrentImportState struct {
 	Count        int
 	Size         datasize.ByteSize
-	Now          time.Time
-	LastImportAt time.Time
+	Now          UTCTime
+	LastImportAt UTCTime
 }
 
 func DefaultConditions() ImportConditions {
