@@ -45,7 +45,7 @@ func TestIteratorT(t *testing.T) {
 			expected: []resultT{},
 			expectedLogs: `
 ETCD_REQUEST[%d] GET "some/prefix/" | start
-ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 0 | %s
+ETCD_REQUEST[%d] GET "some/prefix/" | done | rev: %d | count: 0 | %s
 `,
 		},
 		{
@@ -57,7 +57,7 @@ ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 0 | %s
 			},
 			expectedLogs: `
 ETCD_REQUEST[%d] GET "some/prefix/" | start
-ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 1 | %s
+ETCD_REQUEST[%d] GET "some/prefix/" | done | rev: %d | count: 1 | %s
 `,
 		},
 		{
@@ -69,7 +69,7 @@ ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 1 | %s
 			},
 			expectedLogs: `
 ETCD_REQUEST[%d] GET "some/prefix/" | start
-ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 1 | %s
+ETCD_REQUEST[%d] GET "some/prefix/" | done | rev: %d | count: 1 | %s
 `,
 		},
 		{
@@ -82,7 +82,7 @@ ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 1 | %s
 			},
 			expectedLogs: `
 ETCD_REQUEST[%d] GET "some/prefix/" | start
-ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 2 | %s
+ETCD_REQUEST[%d] GET "some/prefix/" | done | rev: %d | count: 2 | %s
 `,
 		},
 		{
@@ -96,7 +96,7 @@ ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 2 | %s
 			},
 			expectedLogs: `
 ETCD_REQUEST[%d] GET "some/prefix/" | start
-ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 3 | %s
+ETCD_REQUEST[%d] GET "some/prefix/" | done | rev: %d | count: 3 | %s
 `,
 		},
 		{
@@ -111,9 +111,9 @@ ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 3 | %s
 			},
 			expectedLogs: `
 ETCD_REQUEST[%d] GET "some/prefix/" | start
-ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 4 | %s
+ETCD_REQUEST[%d] GET "some/prefix/" | done | rev: %d | count: 4 | %s
 ETCD_REQUEST[%d] GET "some/prefix/foo004" | start
-ETCD_REQUEST[%d] GET "some/prefix/foo004" | done | count: 1 | %s
+ETCD_REQUEST[%d] GET "some/prefix/foo004" | done | rev: %d | count: 1 | %s
 `,
 		},
 		{
@@ -129,9 +129,9 @@ ETCD_REQUEST[%d] GET "some/prefix/foo004" | done | count: 1 | %s
 			},
 			expectedLogs: `
 ETCD_REQUEST[%d] GET "some/prefix/" | start
-ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 5 | %s
+ETCD_REQUEST[%d] GET "some/prefix/" | done | rev: %d | count: 5 | %s
 ETCD_REQUEST[%d] GET "some/prefix/foo004" | start
-ETCD_REQUEST[%d] GET "some/prefix/foo004" | done | count: 2 | %s
+ETCD_REQUEST[%d] GET "some/prefix/foo004" | done | rev: %d | count: 2 | %s
 `,
 		},
 		{
@@ -147,15 +147,15 @@ ETCD_REQUEST[%d] GET "some/prefix/foo004" | done | count: 2 | %s
 			},
 			expectedLogs: `
 ETCD_REQUEST[%d] GET "some/prefix/" | start
-ETCD_REQUEST[%d] GET "some/prefix/" | done | count: 5 | %s
+ETCD_REQUEST[%d] GET "some/prefix/" | done | rev: %d | count: 5 | %s
 ETCD_REQUEST[%d] GET "some/prefix/foo002" | start
-ETCD_REQUEST[%d] GET "some/prefix/foo002" | done | count: 4 | %s
+ETCD_REQUEST[%d] GET "some/prefix/foo002" | done | rev: %d | count: 4 | %s
 ETCD_REQUEST[%d] GET "some/prefix/foo003" | start
-ETCD_REQUEST[%d] GET "some/prefix/foo003" | done | count: 3 | %s
+ETCD_REQUEST[%d] GET "some/prefix/foo003" | done | rev: %d | count: 3 | %s
 ETCD_REQUEST[%d] GET "some/prefix/foo004" | start
-ETCD_REQUEST[%d] GET "some/prefix/foo004" | done | count: 2 | %s
+ETCD_REQUEST[%d] GET "some/prefix/foo004" | done | rev: %d | count: 2 | %s
 ETCD_REQUEST[%d] GET "some/prefix/foo005" | start
-ETCD_REQUEST[%d] GET "some/prefix/foo005" | done | count: 1 | %s
+ETCD_REQUEST[%d] GET "some/prefix/foo005" | done | rev: %d | count: 1 | %s
 `,
 		},
 	}

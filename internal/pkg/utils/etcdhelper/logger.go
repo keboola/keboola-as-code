@@ -94,12 +94,14 @@ func (v *kvWrapper) logStart(requestID uint64, op, key string) {
 func (v *kvWrapper) logEnd(requestID uint64, op, key, val string, startTime time.Time, r OpResponse, err error) {
 	if err != nil {
 		v.log(requestID, `%s "%s" | error | %s | %s`, op, key, err, time.Since(startTime))
-	} else if r.Get() != nil {
-		v.log(requestID, `%s "%s" | done | count: %d | %s`, op, key, r.Get().Count, time.Since(startTime))
-	} else if r.Put() != nil {
-		v.log(requestID, "%s \"%s\" | done | %s | value:\n%s", op, key, time.Since(startTime), val)
-	} else if r.Del() != nil {
-		v.log(requestID, `%s "%s" | done | deleted: %d| %s`, op, key, r.Del().Deleted, time.Since(startTime))
+	} else if get := r.Get(); get != nil {
+		v.log(requestID, `%s "%s" | done | rev: %v | count: %d | %s`, op, key, get.Header.Revision, get.Count, time.Since(startTime))
+	} else if put := r.Put(); put != nil {
+		v.log(requestID, "%s \"%s\" | done | rev: %v | %s | value:\n%s", op, key, put.Header.Revision, time.Since(startTime), val)
+	} else if del := r.Del(); del != nil {
+		v.log(requestID, `%s "%s" | done | rev: %v | deleted: %d| %s`, op, key, del.Header.Revision, del.Deleted, time.Since(startTime))
+	} else if txn := r.Txn(); txn != nil {
+		v.log(requestID, `%s "%s" | done | rev: %v | %s`, op, key, txn.Header.Revision, time.Since(startTime))
 	} else {
 		v.log(requestID, `%s "%s" | done | %s`, op, key, time.Since(startTime))
 	}
@@ -118,7 +120,7 @@ func (v *txnWrapper) Commit() (*TxnResponse, error) {
 	if err != nil {
 		v.log(requestID, `TXN | error | %s | %s`, err, time.Since(startTime))
 	} else {
-		v.log(requestID, `TXN | done | succeeded: %t | %s`, r.Succeeded, time.Since(startTime))
+		v.log(requestID, `TXN | done | rev: %v | succeeded: %t | %s`, r.Succeeded, r.Header.Revision, time.Since(startTime))
 	}
 
 	return r, err
