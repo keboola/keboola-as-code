@@ -111,20 +111,26 @@ func (s *Store) getReceiverBaseOp(_ context.Context, receiverKey key.ReceiverKey
 		})
 }
 
-func (s *Store) UpdateReceiver(ctx context.Context, k key.ReceiverKey, fn func(model.Receiver) (model.Receiver, error)) (err error) {
+func (s *Store) UpdateReceiver(ctx context.Context, k key.ReceiverKey, fn func(base model.ReceiverBase) (model.ReceiverBase, error)) (err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.UpdateReceiver")
 	defer telemetry.EndSpan(span, &err)
 
-	receiver, err := s.GetReceiver(ctx, k)
-	if err != nil {
-		return err
-	}
-
-	receiver, err = fn(receiver)
-
-	_, err = op.MergeToTxn(s.updateReceiverBaseOp(ctx, receiver.ReceiverBase)).Do(ctx, s.client)
-
-	return err
+	var receiver *model.ReceiverBase
+	return op.Atomic().
+		Read(func() op.Op {
+			return s.getReceiverBaseOp(ctx, k).WithOnResult(func(v *op.KeyValueT[model.ReceiverBase]) {
+				receiver = &v.Value
+			})
+		}).
+		WriteOrErr(func() (op.Op, error) {
+			oldValue := *receiver
+			newValue, err := fn(oldValue)
+			if err != nil {
+				return nil, err
+			}
+			return s.updateReceiverBaseOp(ctx, newValue), nil
+		}).
+		Do(ctx, s.client)
 }
 
 func (s *Store) updateReceiverBaseOp(_ context.Context, receiver model.ReceiverBase) op.NoResultOp {

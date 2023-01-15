@@ -68,12 +68,12 @@ func TestStore_CreateExport_MaxCount(t *testing.T) {
 	start := make(chan struct{})
 	store := newStoreForTest(t)
 
-	receiver := model.ReceiverForTest("my-receiver", 2, time.Time{})
+	receiver := model.ReceiverForTest("my-receiver", 0, time.Time{})
 	assert.NoError(t, store.CreateReceiver(ctx, receiver))
-	assert.Len(t, receiver.Exports, 2)
+	assert.Len(t, receiver.Exports, 0)
 
 	overflow := 10
-	for i := 0; i < MaxExportsPerReceiver-len(receiver.Exports)+overflow; i++ {
+	for i := 0; i < MaxExportsPerReceiver+overflow; i++ {
 		i := i
 		wg.Add(1)
 		go func() {

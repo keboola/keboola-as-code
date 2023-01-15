@@ -52,7 +52,7 @@ func (m Mapper) CreateReceiverModel(projectID key.ProjectID, secret string, payl
 	}, nil
 }
 
-func (m Mapper) UpdateReceiverModel(receiver model.Receiver, payload buffer.UpdateReceiverPayload) (r model.Receiver, err error) {
+func (m Mapper) UpdateReceiverModel(receiver model.ReceiverBase, payload buffer.UpdateReceiverPayload) (r model.ReceiverBase, err error) {
 	if payload.Name != nil {
 		receiver.Name = *payload.Name
 	}

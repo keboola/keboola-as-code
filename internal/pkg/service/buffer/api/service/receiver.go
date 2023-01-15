@@ -42,7 +42,7 @@ func (s *service) UpdateReceiver(d dependencies.ForProjectRequest, payload *buff
 	defer rb.InvokeIfErr(ctx, &err)
 
 	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
-	err = str.UpdateReceiver(ctx, receiverKey, func(receiver model.Receiver) (model.Receiver, error) {
+	err = str.UpdateReceiver(ctx, receiverKey, func(receiver model.ReceiverBase) (model.ReceiverBase, error) {
 		return s.mapper.UpdateReceiverModel(receiver, *payload)
 	})
 
