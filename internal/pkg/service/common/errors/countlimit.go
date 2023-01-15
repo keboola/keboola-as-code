@@ -24,7 +24,7 @@ func (e CountLimitReachedError) StatusCode() int {
 }
 
 func (e CountLimitReachedError) Error() string {
-	return fmt.Sprintf("%s count limit reached in the %s, the maximum is %d.", e.what, e.in, e.max)
+	return fmt.Sprintf("%s count limit reached in the %s, the maximum is %d", e.what, e.in, e.max)
 }
 
 func (e CountLimitReachedError) ErrorUserMessage() string {
