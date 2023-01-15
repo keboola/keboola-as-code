@@ -68,7 +68,8 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 	workerNode2 := createWorkerNode("worker-node-2")
 
 	// Create export.
-	sliceKey1, rev1 := createExport(t, ctx, client, str)
+	now := time.Now().UTC()
+	sliceKey1, rev1 := createExport(t, ctx, client, str, now)
 	receiverKey := sliceKey1.ReceiverKey
 	exportKey := sliceKey1.ExportKey
 
@@ -99,7 +100,7 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 	assert.Equal(t, sliceKey1.String(), r2.Slices[0].SliceKey.String())
 
 	// Update export, create new slice, close old slice.
-	sliceKey2, rev2 := updateExport(t, ctx, client, str, exportKey)
+	sliceKey2, rev2 := updateExport(t, ctx, client, str, exportKey, now)
 
 	// Wait until the change is propagated to API nodes.
 	time.Sleep(200 * time.Millisecond)
@@ -167,71 +168,26 @@ INFO  unblocked
 }
 
 // createReceiver creates receiver,export,mapping,file and slice.
-func createExport(t *testing.T, ctx context.Context, client *etcd.Client, str *store.Store) (key.SliceKey, int64) {
+func createExport(t *testing.T, ctx context.Context, client *etcd.Client, str *store.Store, now time.Time) (key.SliceKey, int64) {
 	t.Helper()
-
-	receiverKey := key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}
-	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export-1"}
-
-	now := time.Now().UTC()
-	fileKey1 := key.FileKey{ExportKey: exportKey, FileID: key.FileID(now)}
-	sliceKey1 := key.SliceKey{FileKey: fileKey1, SliceID: key.SliceID(now)}
-	mapping := model.Mapping{
-		MappingKey: key.MappingKey{ExportKey: exportKey, RevisionID: 1},
-		TableID:    storageapi.MustParseTableID("in.c-bucket.table"),
-		Columns:    []column.Column{column.ID{Name: "id"}},
-	}
-
+	receiver := model.ReceiverForTest("my-receiver", 1, now)
 	header := etcdhelper.ExpectModification(t, client, func() {
-		assert.NoError(t, str.CreateReceiver(ctx, model.Receiver{
-			ReceiverBase: model.ReceiverBase{
-				ReceiverKey: receiverKey,
-				Name:        "My Receiver",
-				Secret:      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-			},
-			Exports: []model.Export{
-				{
-					ExportBase: model.ExportBase{
-						ExportKey:        exportKey,
-						Name:             "My Export 1",
-						ImportConditions: model.DefaultConditions(),
-					},
-					Mapping: mapping,
-					Token: model.Token{
-						ExportKey:    exportKey,
-						StorageToken: storageapi.Token{Token: "my-token", ID: "1234"},
-					},
-					OpenedFile: model.File{
-						FileKey:         fileKey1,
-						State:           filestate.Opened,
-						Mapping:         mapping,
-						StorageResource: &storageapi.File{},
-					},
-					OpenedSlice: model.Slice{
-						SliceKey: sliceKey1,
-						State:    slicestate.Opened,
-						Mapping:  mapping,
-						Number:   1,
-					},
-				},
-			},
-		}))
+		assert.NoError(t, str.CreateReceiver(ctx, receiver))
 	})
-	return sliceKey1, header.Revision
+	return receiver.Exports[0].OpenedSlice.SliceKey, header.Revision
 }
 
 // updateExport updates export and mapping, creates new file and slice.
-func updateExport(t *testing.T, ctx context.Context, client *etcd.Client, str *store.Store, exportKey key.ExportKey) (key.SliceKey, int64) {
+func updateExport(t *testing.T, ctx context.Context, client *etcd.Client, str *store.Store, exportKey key.ExportKey, now time.Time) (key.SliceKey, int64) {
 	t.Helper()
 
-	now := time.Now().UTC()
 	fileKey2 := key.FileKey{ExportKey: exportKey, FileID: key.FileID(now.Add(time.Hour))}
 	sliceKey2 := key.SliceKey{FileKey: fileKey2, SliceID: key.SliceID(now.Add(time.Hour))}
 
 	header := etcdhelper.ExpectModification(t, client, func() {
 		assert.NoError(t, str.UpdateExport(ctx, exportKey, func(export model.Export) (model.Export, error) {
 			newMapping := export.Mapping
-			newMapping.Columns = []column.Column{column.ID{Name: "id"}, column.Body{Name: "body"}}
+			newMapping.Columns = []column.Column{column.ID{Name: "id"}, column.Body{Name: "body"}, column.IP{Name: "ip"}}
 			export.Mapping = newMapping
 			export.OpenedFile = model.File{
 				FileKey:         fileKey2,
