@@ -2,19 +2,18 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"sort"
+	"sync"
 	"testing"
 	"time"
 
-	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -24,88 +23,59 @@ func TestStore_CreateReceiverOp(t *testing.T) {
 	ctx := context.Background()
 	store := newStoreForTest(t)
 
-	now, _ := time.Parse(time.RFC3339, "2006-01-01T08:04:05.000Z")
-	receiverKey := key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}
-	exportKey1 := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export-1"}
-	fileKey1 := key.FileKey{ExportKey: exportKey1, FileID: key.FileID(now)}
-	sliceKey1 := key.SliceKey{FileKey: fileKey1, SliceID: key.SliceID(now)}
-	mapping1 := model.Mapping{
-		MappingKey: key.MappingKey{ExportKey: exportKey1, RevisionID: 1},
-		TableID:    storageapi.MustParseTableID("in.c-bucket.table1"),
-		Columns:    []column.Column{column.ID{Name: "id"}},
-	}
-	exportKey2 := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export-2"}
-	fileKey2 := key.FileKey{ExportKey: exportKey2, FileID: key.FileID(now)}
-	sliceKey2 := key.SliceKey{FileKey: fileKey2, SliceID: key.SliceID(now)}
-	mapping2 := model.Mapping{
-		MappingKey:  key.MappingKey{ExportKey: exportKey2, RevisionID: 1},
-		Incremental: true,
-		TableID:     storageapi.MustParseTableID("in.c-bucket.table2"),
-		Columns:     []column.Column{column.Body{Name: "body"}},
-	}
-	receiver := model.Receiver{
-		ReceiverBase: model.ReceiverBase{
-			ReceiverKey: receiverKey,
-			Name:        "My Receiver",
-			Secret:      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-		},
-		Exports: []model.Export{
-			{
-				ExportBase: model.ExportBase{
-					ExportKey:        exportKey1,
-					Name:             "My Export 1",
-					ImportConditions: model.DefaultConditions(),
-				},
-				Mapping: mapping1,
-				Token: model.Token{
-					ExportKey:    exportKey1,
-					StorageToken: storageapi.Token{Token: "my-token", ID: "1234"},
-				},
-				OpenedFile: model.File{
-					FileKey:         fileKey1,
-					State:           filestate.Opened,
-					Mapping:         mapping1,
-					StorageResource: &storageapi.File{},
-				},
-				OpenedSlice: model.Slice{
-					SliceKey: sliceKey1,
-					State:    slicestate.Opened,
-					Mapping:  mapping1,
-					Number:   1,
-				},
-			},
-			{
-				ExportBase: model.ExportBase{
-					ExportKey:        exportKey2,
-					Name:             "My Export 2",
-					ImportConditions: model.DefaultConditions(),
-				},
-				Mapping: mapping2,
-				Token: model.Token{
-					ExportKey:    exportKey2,
-					StorageToken: storageapi.Token{Token: "my-token", ID: "1234"},
-				},
-				OpenedFile: model.File{
-					FileKey:         fileKey2,
-					State:           filestate.Opened,
-					Mapping:         mapping2,
-					StorageResource: &storageapi.File{},
-				},
-				OpenedSlice: model.Slice{
-					SliceKey: sliceKey2,
-					State:    slicestate.Opened,
-					Mapping:  mapping2,
-					Number:   1,
-				},
-			},
-		},
-	}
-
 	// Create and get
+	receiver := model.ReceiverForTest("my-receiver", 2, time.Time{})
 	assert.NoError(t, store.CreateReceiver(ctx, receiver))
-	out, err := store.GetReceiver(ctx, receiverKey)
+	out, err := store.GetReceiver(ctx, receiver.ReceiverKey)
 	assert.NoError(t, err)
 	assert.Equal(t, receiver, out)
+}
+
+func TestStore_CreateReceiverOp_MaxReceiversCount(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	wg := &sync.WaitGroup{}
+	errs := errors.NewMultiError()
+	start := make(chan struct{})
+	store := newStoreForTest(t)
+
+	overflow := 10
+	for i := 0; i < MaxReceiversPerProject+overflow; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			receiver := model.ReceiverForTest(fmt.Sprintf("my-receiver-%03d", i), 0, time.Time{})
+			if err := store.CreateReceiver(ctx, receiver); err != nil {
+				errs.Append(err)
+			}
+		}()
+	}
+
+	close(start)
+	wg.Wait()
+
+	// Number of the errors must match
+	assert.Equal(t, overflow, errs.Len())
+	for _, err := range errs.WrappedErrors() {
+		assert.Equal(t, "receiver count limit reached in the project, the maximum is 100", err.Error())
+	}
+}
+
+func TestStore_CreateReceiverOp_MaxExportsCount(t *testing.T) {
+	t.Parallel()
+
+	store := newStoreForTest(t)
+
+	exportsCount := MaxExportsPerReceiver + 1
+	receiver := model.ReceiverForTest("my-receiver", exportsCount, time.Time{})
+	err := store.CreateReceiver(context.Background(), receiver)
+	assert.Error(t, err)
+	assert.Equal(t, "export count limit reached in the receiver, the maximum is 20", err.Error())
 }
 
 func TestStore_CreateReceiverBaseOp(t *testing.T) {

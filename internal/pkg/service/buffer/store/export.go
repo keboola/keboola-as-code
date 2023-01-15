@@ -26,15 +26,21 @@ func (s *Store) CreateExport(ctx context.Context, export model.Export) (err erro
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CreateExport")
 	defer telemetry.EndSpan(span, &err)
 
-	count, err := s.schema.Configs().Exports().InReceiver(export.ReceiverKey).Count().Do(ctx, s.client)
-	if err != nil {
-		return err
-	} else if count >= MaxExportsPerReceiver {
-		return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
-	}
-
-	_, err = s.createExportOp(ctx, export).Do(ctx, s.client)
-	return err
+	exports := s.schema.Configs().Exports().InReceiver(export.ReceiverKey)
+	return op.
+		Atomic().
+		Read(func() op.Op {
+			return exports.Count().WithOnResultOrErr(func(count int64) error {
+				if count >= MaxExportsPerReceiver {
+					return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
+				}
+				return nil
+			})
+		}).
+		Write(func() op.Op {
+			return s.createExportOp(ctx, export)
+		}).
+		Do(ctx, s.client)
 }
 
 func (s *Store) createExportOp(ctx context.Context, export model.Export) *op.TxnOpDef {

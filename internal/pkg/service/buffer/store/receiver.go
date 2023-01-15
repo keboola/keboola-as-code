@@ -21,20 +21,44 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CreateReceiver")
 	defer telemetry.EndSpan(span, &err)
 
-	receivers := s.schema.Configs().Receivers().InProject(receiver.ProjectID)
-	count, err := receivers.Count().Do(ctx, s.client)
-	if err != nil {
-		return err
-	} else if count >= MaxReceiversPerProject {
-		return serviceError.NewCountLimitReachedError("receiver", MaxReceiversPerProject, "project")
+	// Check exports count
+	if len(receiver.Exports) >= MaxExportsPerReceiver {
+		return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
 	}
 
-	ops := []op.Op{s.createReceiverBaseOp(ctx, receiver.ReceiverBase)}
+	return op.Atomic().
+		// Check receivers count
+		Read(func() op.Op {
+			return s.schema.
+				Configs().
+				Receivers().
+				InProject(receiver.ProjectID).
+				Count().
+				WithOnResultOrErr(func(count int64) error {
+					if count >= MaxReceiversPerProject {
+						return serviceError.NewCountLimitReachedError("receiver", MaxReceiversPerProject, "project")
+					}
+					return nil
+				})
+		}).
+		// Create receiver and exports
+		Write(func() op.Op {
+			return s.createReceiverOp(ctx, receiver)
+		}).
+		Do(ctx, s.client)
+}
+
+func (s *Store) createReceiverOp(ctx context.Context, receiver model.Receiver) op.Op {
+	// Create receiver
+	txn := op.NewTxnOp()
+	txn.Then(s.createReceiverBaseOp(ctx, receiver.ReceiverBase))
+
+	// Create exports
 	for _, export := range receiver.Exports {
-		ops = append(ops, s.createExportOp(ctx, export))
+		txn.Then(s.createExportOp(ctx, export))
 	}
-	_, err = op.MergeToTxn(ops...).Do(ctx, s.client)
-	return err
+
+	return txn
 }
 
 func (s *Store) createReceiverBaseOp(_ context.Context, receiver model.ReceiverBase) op.BoolOp {
