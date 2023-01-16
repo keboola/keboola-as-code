@@ -222,9 +222,8 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	assert.False(t, ok)
 }
 
+// nolint:paralleltest // the test run the "compact" operation and breaks the other tests running in parallel
 func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
-	t.Parallel()
-
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 

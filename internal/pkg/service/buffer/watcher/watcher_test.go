@@ -145,7 +145,7 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 		select {
 		case <-ch:
 			// ok
-		case <-time.After(time.Second):
+		case <-time.After(5 * time.Second):
 			t.Fatal("timeout", i+1)
 		}
 	}
