@@ -42,8 +42,9 @@ type RecordKey struct {
 
 type TaskKey struct {
 	ExportKey
+	Type         string  `json:"type" validate:"required"`
 	CreatedAt    UTCTime `json:"createdAt" validate:"required"`
-	RandomSuffix string  `json:"-" validate:"required"`
+	RandomSuffix string  `json:"randomId" validate:"required"`
 }
 
 func FormatTime(t time.Time) string {
@@ -52,6 +53,10 @@ func FormatTime(t time.Time) string {
 
 func NewRecordKey(sliceKey SliceKey, now time.Time) RecordKey {
 	return RecordKey{SliceKey: sliceKey, ReceivedAt: ReceivedAt(now)}
+}
+
+func (v ExportKey) GetExportKey() ExportKey {
+	return v
 }
 
 func (v ReceiverKey) String() string {
@@ -93,11 +98,14 @@ func (v TaskKey) String() string {
 }
 
 func (v TaskKey) ID() string {
+	if v.Type == "" {
+		panic(errors.New("type cannot be empty"))
+	}
 	if v.CreatedAt.IsZero() {
 		panic(errors.New("createdAt cannot be empty"))
 	}
 	if v.RandomSuffix == "" {
 		panic(errors.New("randomSuffix cannot be empty"))
 	}
-	return v.CreatedAt.String() + "_" + v.RandomSuffix
+	return fmt.Sprintf("%s/%s_%s", v.Type, v.CreatedAt.String(), v.RandomSuffix)
 }
