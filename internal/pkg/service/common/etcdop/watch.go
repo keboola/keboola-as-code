@@ -254,9 +254,16 @@ func wrapWatchWithRestart(ctx context.Context, channelFactory func(ctx context.C
 			// The rawCh channel is closed by the context, so the context does not have to be checked here again.
 			rawCh := channelFactory(ctx)
 			for resp := range rawCh {
-				// Stop initialization phase after the "created" event
+				// Stop initialization phase after the first "created" event
 				if resp.Created {
-					init = false
+					if init {
+						init = false
+						// Pass event to the outCh channel
+					} else {
+						// Create event can be emitted only once.
+						// The Restarted event has already been sent.
+						continue
+					}
 				}
 
 				// Update lastErr for "restarted" event

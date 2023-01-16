@@ -304,10 +304,6 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	assert.Equal(t, []byte("my/prefix/key02"), resp.Events[1].Kv.Key)
 	assert.Equal(t, []byte("my/prefix/key03"), resp.Events[2].Kv.Key)
 
-	// Expect "created" event, transition to the Watch phase
-	resp = <-ch
-	assert.True(t, resp.Created)
-
 	// Add key
 	assert.NoError(t, pfx.Key("key04").Put(value).Do(ctx, testClient))
 
@@ -337,8 +333,6 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	assert.Equal(t, []byte("my/prefix/key04"), resp.Events[3].Kv.Key)
 	assert.Equal(t, []byte("my/prefix/key05"), resp.Events[4].Kv.Key)
 	assert.Equal(t, []byte("my/prefix/key06"), resp.Events[5].Kv.Key)
-	resp = <-ch
-	assert.True(t, resp.Created)
 
 	// Channel should be closed by the context
 	cancel()
