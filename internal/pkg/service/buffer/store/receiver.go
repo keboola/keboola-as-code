@@ -21,20 +21,44 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CreateReceiver")
 	defer telemetry.EndSpan(span, &err)
 
-	receivers := s.schema.Configs().Receivers().InProject(receiver.ProjectID)
-	count, err := receivers.Count().Do(ctx, s.client)
-	if err != nil {
-		return err
-	} else if count >= MaxReceiversPerProject {
-		return serviceError.NewCountLimitReachedError("receiver", MaxReceiversPerProject, "project")
+	// Check exports count
+	if len(receiver.Exports) >= MaxExportsPerReceiver {
+		return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
 	}
 
-	ops := []op.Op{s.createReceiverBaseOp(ctx, receiver.ReceiverBase)}
+	return op.Atomic().
+		// Check receivers count
+		Read(func() op.Op {
+			return s.schema.
+				Configs().
+				Receivers().
+				InProject(receiver.ProjectID).
+				Count().
+				WithOnResultOrErr(func(count int64) error {
+					if count >= MaxReceiversPerProject {
+						return serviceError.NewCountLimitReachedError("receiver", MaxReceiversPerProject, "project")
+					}
+					return nil
+				})
+		}).
+		// Create receiver and exports
+		Write(func() op.Op {
+			return s.createReceiverOp(ctx, receiver)
+		}).
+		Do(ctx, s.client)
+}
+
+func (s *Store) createReceiverOp(ctx context.Context, receiver model.Receiver) op.Op {
+	// Create receiver
+	txn := op.NewTxnOp()
+	txn.Then(s.createReceiverBaseOp(ctx, receiver.ReceiverBase))
+
+	// Create exports
 	for _, export := range receiver.Exports {
-		ops = append(ops, s.createExportOp(ctx, export))
+		txn.Then(s.createExportOp(ctx, export))
 	}
-	_, err = op.MergeToTxn(ops...).Do(ctx, s.client)
-	return err
+
+	return txn
 }
 
 func (s *Store) createReceiverBaseOp(_ context.Context, receiver model.ReceiverBase) op.BoolOp {
@@ -87,20 +111,26 @@ func (s *Store) getReceiverBaseOp(_ context.Context, receiverKey key.ReceiverKey
 		})
 }
 
-func (s *Store) UpdateReceiver(ctx context.Context, k key.ReceiverKey, fn func(model.Receiver) (model.Receiver, error)) (err error) {
+func (s *Store) UpdateReceiver(ctx context.Context, k key.ReceiverKey, fn func(base model.ReceiverBase) (model.ReceiverBase, error)) (err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.UpdateReceiver")
 	defer telemetry.EndSpan(span, &err)
 
-	receiver, err := s.GetReceiver(ctx, k)
-	if err != nil {
-		return err
-	}
-
-	receiver, err = fn(receiver)
-
-	_, err = op.MergeToTxn(s.updateReceiverBaseOp(ctx, receiver.ReceiverBase)).Do(ctx, s.client)
-
-	return err
+	var receiver *model.ReceiverBase
+	return op.Atomic().
+		Read(func() op.Op {
+			return s.getReceiverBaseOp(ctx, k).WithOnResult(func(v *op.KeyValueT[model.ReceiverBase]) {
+				receiver = &v.Value
+			})
+		}).
+		WriteOrErr(func() (op.Op, error) {
+			oldValue := *receiver
+			newValue, err := fn(oldValue)
+			if err != nil {
+				return nil, err
+			}
+			return s.updateReceiverBaseOp(ctx, newValue), nil
+		}).
+		Do(ctx, s.client)
 }
 
 func (s *Store) updateReceiverBaseOp(_ context.Context, receiver model.ReceiverBase) op.NoResultOp {

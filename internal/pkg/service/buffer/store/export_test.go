@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -10,6 +12,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -51,6 +55,49 @@ config/export/00001000/github/github-issues
 }
 >>>>>
 `)
+}
+
+func TestStore_CreateExport_MaxCount(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	wg := &sync.WaitGroup{}
+	errs := errors.NewMultiError()
+	start := make(chan struct{})
+	store := newStoreForTest(t)
+
+	receiver := model.ReceiverForTest("my-receiver", 0, time.Time{})
+	assert.NoError(t, store.CreateReceiver(ctx, receiver))
+	assert.Len(t, receiver.Exports, 0)
+
+	overflow := 10
+	for i := 0; i < MaxExportsPerReceiver+overflow; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+
+			exportID := fmt.Sprintf("my-export-%03d", i)
+			tableID := fmt.Sprintf("in.c-bucket.table%03d", i)
+			columns := []column.Column{column.ID{Name: "col1"}, column.Body{Name: "col2"}}
+			export := model.ExportForTest(receiver.ReceiverKey, exportID, tableID, columns, time.Time{})
+			if err := store.CreateExport(ctx, export); err != nil {
+				errs.Append(err)
+			}
+		}()
+	}
+
+	close(start)
+	wg.Wait()
+
+	// Number of the errors must match
+	assert.Equal(t, overflow, errs.Len())
+	for _, err := range errs.WrappedErrors() {
+		assert.Equal(t, "export count limit reached in the receiver, the maximum is 20", err.Error())
+	}
 }
 
 func TestStore_GetExportBaseOp(t *testing.T) {

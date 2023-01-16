@@ -9,6 +9,7 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/acarl005/stripansi"
 	"github.com/spf13/cast"
@@ -108,12 +109,14 @@ func MustReplaceEnvsDir(fs filesystem.Fs, root string, provider EnvProvider) {
 
 // stripAnsiWriter strips ANSI characters from
 type stripAnsiWriter struct {
+	lock   *sync.Mutex
 	buf    *bytes.Buffer
 	writer io.Writer
 }
 
 func newStripAnsiWriter(writer io.Writer) *stripAnsiWriter {
 	return &stripAnsiWriter{
+		lock:   &sync.Mutex{},
 		buf:    &bytes.Buffer{},
 		writer: writer,
 	}
@@ -128,6 +131,9 @@ func (w *stripAnsiWriter) writeBuffer() error {
 }
 
 func (w *stripAnsiWriter) Write(p []byte) (int, error) {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
 	// Append to the buffer
 	n, err := w.buf.Write(p)
 
@@ -143,6 +149,9 @@ func (w *stripAnsiWriter) Write(p []byte) (int, error) {
 }
 
 func (w *stripAnsiWriter) Close() error {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+	
 	if err := w.writeBuffer(); err != nil {
 		return err
 	}

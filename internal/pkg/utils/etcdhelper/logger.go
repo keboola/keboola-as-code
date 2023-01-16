@@ -9,7 +9,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	. "go.etcd.io/etcd/client/v3"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type kvWrapper struct {
@@ -20,6 +23,9 @@ type kvWrapper struct {
 
 type txnWrapper struct {
 	Txn
+	ifOps   []Cmp
+	thenOps []Op
+	elseOps []Op
 	*kvWrapper
 }
 
@@ -36,30 +42,18 @@ func (v *kvWrapper) nextRequestID() uint64 {
 }
 
 func (v *kvWrapper) Put(ctx context.Context, key, val string, opts ...OpOption) (*PutResponse, error) {
-	requestID := v.nextRequestID()
-	startTime := time.Now()
-	v.log(requestID, v.start(nil, "PUT", quote(key), val))
-	r, err := v.KV.Put(ctx, key, val, opts...)
-	v.log(requestID, v.end("PUT", quote(key), startTime, r.OpResponse(), err))
-	return r, err
+	r, err := v.Do(ctx, OpPut(key, val, opts...))
+	return r.Put(), err
 }
 
 func (v *kvWrapper) Get(ctx context.Context, key string, opts ...OpOption) (*GetResponse, error) {
-	requestID := v.nextRequestID()
-	startTime := time.Now()
-	v.log(requestID, v.start(nil, "GET", quote(key), ""))
-	r, err := v.KV.Get(ctx, key, opts...)
-	v.log(requestID, v.end("GET", quote(key), startTime, r.OpResponse(), err))
-	return r, err
+	r, err := v.Do(ctx, OpGet(key, opts...))
+	return r.Get(), err
 }
 
 func (v *kvWrapper) Delete(ctx context.Context, key string, opts ...OpOption) (*DeleteResponse, error) {
-	requestID := v.nextRequestID()
-	startTime := time.Now()
-	v.log(requestID, v.start(nil, "DEL", quote(key), ""))
-	r, err := v.KV.Delete(ctx, key, opts...)
-	v.log(requestID, v.end("DEL", quote(key), startTime, r.OpResponse(), err))
-	return r, err
+	r, err := v.Do(ctx, OpDelete(key, opts...))
+	return r.Del(), err
 }
 
 func (v *kvWrapper) Do(ctx context.Context, op Op) (OpResponse, error) {
@@ -101,10 +95,22 @@ func (v *kvWrapper) start(op *Op, opName, key, value string) string {
 		if len(cmpOps) > 0 {
 			dump.WriteString("  ➡️  IF:\n")
 			for i, item := range cmpOps {
-				expectedResult := fmt.Sprintf("%v", item.TargetUnion)
-				expectedResult = strings.TrimPrefix(expectedResult, "&{")
-				expectedResult = strings.TrimSuffix(expectedResult, "}")
-				dump.WriteString(fmt.Sprintf("  %03d %s %s %v \"%s\"\n", i+1, keyToStr(item.Key, item.RangeEnd), item.Target, item.Result, expectedResult))
+				var expectedResult string
+				switch v := item.TargetUnion.(type) {
+				case *etcdserverpb.Compare_Version:
+					expectedResult = fmt.Sprintf(`%v`, v.Version)
+				case *etcdserverpb.Compare_CreateRevision:
+					expectedResult = fmt.Sprintf(`%v`, v.CreateRevision)
+				case *etcdserverpb.Compare_ModRevision:
+					expectedResult = fmt.Sprintf(`%v`, v.ModRevision)
+				case *etcdserverpb.Compare_Value:
+					expectedResult = fmt.Sprintf(`"%s"`, string(v.Value))
+				case *etcdserverpb.Compare_Lease:
+					expectedResult = fmt.Sprintf(`%v`, v.Lease)
+				default:
+					panic(errors.Errorf(`unexpected type "%T"`, item.TargetUnion))
+				}
+				dump.WriteString(fmt.Sprintf("  %03d %s %s %v %s\n", i+1, keyToStr(item.Key, item.RangeEnd), item.Target, item.Result, expectedResult))
 			}
 		}
 
@@ -166,10 +172,29 @@ func (v *kvWrapper) Txn(ctx context.Context) Txn {
 	return &txnWrapper{Txn: v.KV.Txn(ctx), kvWrapper: v}
 }
 
+func (v *txnWrapper) If(ops ...Cmp) Txn {
+	v.Txn.If(ops...)
+	v.ifOps = append(v.ifOps, ops...)
+	return v
+}
+
+func (v *txnWrapper) Then(ops ...Op) Txn {
+	v.Txn.Then(ops...)
+	v.thenOps = append(v.thenOps, ops...)
+	return v
+}
+
+func (v *txnWrapper) Else(ops ...Op) Txn {
+	v.Txn.Else(ops...)
+	v.elseOps = append(v.elseOps, ops...)
+	return v
+}
+
 func (v *txnWrapper) Commit() (*TxnResponse, error) {
 	requestID := v.nextRequestID()
 	startTime := time.Now()
-	v.log(requestID, v.start(nil, "TXN", "", ""))
+	op := OpTxn(v.ifOps, v.thenOps, v.elseOps)
+	v.log(requestID, v.start(&op, "TXN", "", ""))
 	r, err := v.Txn.Commit()
 	v.log(requestID, v.end("TXN", "", startTime, r.OpResponse(), err))
 	return r, err

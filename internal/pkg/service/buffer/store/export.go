@@ -26,15 +26,21 @@ func (s *Store) CreateExport(ctx context.Context, export model.Export) (err erro
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CreateExport")
 	defer telemetry.EndSpan(span, &err)
 
-	count, err := s.schema.Configs().Exports().InReceiver(export.ReceiverKey).Count().Do(ctx, s.client)
-	if err != nil {
-		return err
-	} else if count >= MaxExportsPerReceiver {
-		return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
-	}
-
-	_, err = s.createExportOp(ctx, export).Do(ctx, s.client)
-	return err
+	exports := s.schema.Configs().Exports().InReceiver(export.ReceiverKey)
+	return op.
+		Atomic().
+		Read(func() op.Op {
+			return exports.Count().WithOnResultOrErr(func(count int64) error {
+				if count >= MaxExportsPerReceiver {
+					return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
+				}
+				return nil
+			})
+		}).
+		Write(func() op.Op {
+			return s.createExportOp(ctx, export)
+		}).
+		Do(ctx, s.client)
 }
 
 func (s *Store) createExportOp(ctx context.Context, export model.Export) *op.TxnOpDef {
@@ -65,24 +71,26 @@ func (s *Store) UpdateExport(ctx context.Context, k key.ExportKey, fn func(model
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.UpdateExport")
 	defer telemetry.EndSpan(span, &err)
 
-	export, err := s.GetExport(ctx, k)
-	if err != nil {
-		return err
-	}
-
-	oldValue := export
-	export, err = fn(export)
-	if err != nil {
-		return err
-	}
-
-	txn, err := s.updateExportOp(ctx, oldValue, export)
-	if err != nil {
-		return err
-	}
-
-	_, err = txn.Do(ctx, s.client)
-	return err
+	var export *model.Export
+	return op.Atomic().
+		Read(func() op.Op {
+			return s.getExportOp(ctx, k).WithOnResult(func(v *model.Export) {
+				export = v
+			})
+		}).
+		WriteOrErr(func() (op.Op, error) {
+			oldValue := *export
+			newValue, err := fn(oldValue)
+			if err != nil {
+				return nil, err
+			}
+			txn, err := s.updateExportOp(ctx, oldValue, newValue)
+			if err != nil {
+				return nil, err
+			}
+			return txn, nil
+		}).
+		Do(ctx, s.client)
 }
 
 func (s *Store) updateExportOp(ctx context.Context, oldValue, newValue model.Export) (*op.TxnOpDef, error) {
@@ -139,7 +147,7 @@ func (s *Store) GetExport(ctx context.Context, exportKey key.ExportKey) (r model
 	return s.getExportOp(ctx, exportKey).Do(ctx, s.client)
 }
 
-func (s *Store) getExportOp(ctx context.Context, exportKey key.ExportKey) op.JoinTo[model.Export] {
+func (s *Store) getExportOp(ctx context.Context, exportKey key.ExportKey) *op.JoinTo[model.Export] {
 	export := model.Export{}
 	return op.Join(
 		&export,
