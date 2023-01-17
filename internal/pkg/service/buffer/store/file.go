@@ -71,7 +71,10 @@ func (s *Store) getFileOp(_ context.Context, fileKey key.FileKey) op.ForType[*op
 
 // SetFileState method atomically changes the state of the file.
 // False is returned, if the given file is already in the target state.
-func (s *Store) SetFileState(ctx context.Context, now time.Time, file *model.File, to filestate.State) (bool, error) { //nolint:dupl
+func (s *Store) SetFileState(ctx context.Context, now time.Time, file *model.File, to filestate.State) (ok bool, err error) { //nolint:dupl
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.SetFileState")
+	defer telemetry.EndSpan(span, &err)
+
 	txn, err := s.setFileStateOp(ctx, now, file, to)
 	if err != nil {
 		return false, err

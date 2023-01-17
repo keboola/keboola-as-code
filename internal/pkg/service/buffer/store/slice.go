@@ -100,7 +100,10 @@ func (s *Store) listUploadedSlicesOp(_ context.Context, fileKey key.FileKey) ite
 
 // SetSliceState method atomically changes the state of the file.
 // False is returned, if the given file is already in the target state.
-func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slicestate.State) (bool, error) { //nolint:dupl
+func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slicestate.State) (ok bool, err error) { //nolint:dupl
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.SetSliceState")
+	defer telemetry.EndSpan(span, &err)
+
 	txn, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, to)
 	if err != nil {
 		return false, err
