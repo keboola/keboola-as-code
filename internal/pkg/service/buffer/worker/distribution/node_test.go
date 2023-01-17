@@ -185,7 +185,6 @@ node3
 [node1][distribution]INFO  found a new node "node%d"
 [node1]INFO  exiting (bye bye 1)
 [node1][distribution][listeners]INFO  received shutdown request
-[node1][distribution][listeners]INFO  waiting for listeners
 [node1][distribution][listeners]INFO  shutdown done
 [node1][distribution]INFO  received shutdown request
 [node1][distribution]INFO  unregistering the node "node1"
@@ -208,7 +207,6 @@ node3
 [node2][distribution]INFO  the node "node%d" gone
 [node2]INFO  exiting (bye bye 2)
 [node2][distribution][listeners]INFO  received shutdown request
-[node2][distribution][listeners]INFO  waiting for listeners
 [node2][distribution][listeners]INFO  shutdown done
 [node2][distribution]INFO  received shutdown request
 [node2][distribution]INFO  unregistering the node "node2"
@@ -232,7 +230,6 @@ node3
 [node3][distribution]INFO  the node "node%d" gone
 [node3]INFO  exiting (bye bye 3)
 [node3][distribution][listeners]INFO  received shutdown request
-[node3][distribution][listeners]INFO  waiting for listeners
 [node3][distribution][listeners]INFO  shutdown done
 [node3][distribution]INFO  received shutdown request
 [node3][distribution]INFO  unregistering the node "node3"
@@ -274,7 +271,6 @@ node4
 [node4][distribution]INFO  found a new node "node4"
 [node4]INFO  exiting (bye bye 4)
 [node4][distribution][listeners]INFO  received shutdown request
-[node4][distribution][listeners]INFO  waiting for listeners
 [node4][distribution][listeners]INFO  shutdown done
 [node4][distribution]INFO  received shutdown request
 [node4][distribution]INFO  unregistering the node "node4"
@@ -342,9 +338,10 @@ func createNode(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, no
 	// Create dependencies
 	d := createDeps(t, clk, logs, etcdNamespace, nodeName)
 
-	// Disable events grouping interval in tests with mocked clocks,
+	// Speedup tests with real clock,
+	// and disable events grouping interval in tests with mocked clocks,
 	// events will be processed immediately.
-	groupInterval := 10 * time.Millisecond // speedup tests with real clock
+	groupInterval := 10 * time.Millisecond
 	if _, ok := clk.(*clock.Mock); ok {
 		groupInterval = 0
 	}

@@ -2,12 +2,17 @@ package service
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/upload"
 )
 
 type Service struct {
-	dependencies.ForWorker
+	uploader *upload.Uploader
 }
 
-func New(d dependencies.ForWorker) *Service {
-	return &Service{ForWorker: d}
+func New(d dependencies.ForWorker) (*Service, error) {
+	uploader, err := upload.NewUploader(d)
+	if err != nil {
+		return nil, err
+	}
+	return &Service{uploader: uploader}, nil
 }

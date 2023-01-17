@@ -27,8 +27,8 @@ func (v APINodes) Watchers() APIWatchers {
 	return APIWatchers{prefix: v.prefix.Add("watcher")}
 }
 
-func (v APIWatchers) SlicesRevision() APISliceWatchers {
-	return APISliceWatchers{prefix: v.prefix.Add("slices/revision")}
+func (v APIWatchers) Revision() APISliceWatchers {
+	return APISliceWatchers{prefix: v.prefix.Add("cached/revision")}
 }
 
 func (v APISliceWatchers) Node(nodeID string) Key {

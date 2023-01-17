@@ -2,12 +2,16 @@ package dependencies
 
 import (
 	"testing"
+	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	bufferStore "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	bufferSchema "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher/apinode"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -19,6 +23,8 @@ type Mocked interface {
 	BufferAPIHost() string
 	Schema() *bufferSchema.Schema
 	Store() *bufferStore.Store
+	StatsAPINode() *statistics.APINode
+	WatcherAPINode() *watcher.APINode
 	DistributionWorkerNode() *distribution.Node
 	WatcherWorkerNode() *watcher.WorkerNode
 	TaskWorkerNode() *task.Node
@@ -29,8 +35,10 @@ type mocked struct {
 	t                  *testing.T
 	bufferSchema       *bufferSchema.Schema
 	bufferStore        *bufferStore.Store
-	distWorkerNode     *distribution.Node
+	statsAPINode       *statistics.APINode
+	watcherAPINode     *watcher.APINode
 	watcherWatcherNode *watcher.WorkerNode
+	distWorkerNode     *distribution.Node
 	taskWorkerNode     *task.Node
 }
 
@@ -57,10 +65,42 @@ func (v *mocked) Store() *bufferStore.Store {
 	return v.bufferStore
 }
 
+func (v *mocked) StatsAPINode() *statistics.APINode {
+	if v.statsAPINode == nil {
+		v.statsAPINode = statistics.NewAPINode(v)
+	}
+	return v.statsAPINode
+}
+
+func (v *mocked) WatcherAPINode() *watcher.APINode {
+	if v.watcherAPINode == nil {
+		// Speedup tests with real clock,
+		// and disable sync interval in tests with mocked clocks,
+		// events will be processed immediately.
+		syncInterval := 10 * time.Millisecond
+		if _, ok := v.Clock().(*clock.Mock); ok {
+			syncInterval = 0
+		}
+
+		var err error
+		v.watcherAPINode, err = watcher.NewAPINode(v, apinode.WithSyncInterval(syncInterval))
+		assert.NoError(v.t, err)
+	}
+	return v.watcherAPINode
+}
+
 func (v *mocked) DistributionWorkerNode() *distribution.Node {
 	if v.distWorkerNode == nil {
+		// Speedup tests with real clock,
+		// and disable events grouping interval in tests with mocked clocks,
+		// events will be processed immediately.
+		groupingInterval := 10 * time.Millisecond
+		if _, ok := v.Clock().(*clock.Mock); ok {
+			groupingInterval = 0
+		}
+
 		var err error
-		v.distWorkerNode, err = distribution.NewNode(v)
+		v.distWorkerNode, err = distribution.NewNode(v, distribution.WithEventsGroupInterval(groupingInterval))
 		assert.NoError(v.t, err)
 	}
 	return v.distWorkerNode

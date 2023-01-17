@@ -76,7 +76,10 @@ func start(debug, debugHTTP bool, logger log.Logger, envs *env.Map) error {
 	}
 
 	// Start worker service.
-	_ = service.New(d)
+	_, err = service.New(d)
+	if err != nil {
+		return err
+	}
 
 	proc.WaitForShutdown()
 	return nil

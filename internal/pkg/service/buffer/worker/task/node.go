@@ -5,6 +5,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -25,20 +26,23 @@ import (
 )
 
 type Node struct {
-	clock   clock.Clock
-	logger  log.Logger
-	schema  *schema.Schema
-	client  *etcd.Client
-	session *concurrency.Session
-	nodeID  string
-	config  config
-	// wg waits for tasks on shutdown
-	wg *sync.WaitGroup
-	// tasksCount contains number of running tasks, for logs
-	tasksCount *atomic.Int64
+	ctx              context.Context
+	wg               *sync.WaitGroup
+	clock            clock.Clock
+	logger           log.Logger
+	schema           *schema.Schema
+	client           *etcd.Client
+	session          *concurrency.Session
+	nodeID           string
+	config           config
+	tasksCount       *atomic.Int64
+	runningTasksLock *sync.Mutex
+	runningTasks     map[key.TaskKey]bool
 }
 
-type Operation func(ctx context.Context, logger log.Logger) (string, error)
+type Result = string
+
+type Task func(ctx context.Context, logger log.Logger) (Result, error)
 
 type dependencies interface {
 	Clock() clock.Clock
@@ -57,77 +61,85 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 
 	proc := d.Process()
 
-	m := &Node{
-		clock:      d.Clock(),
-		logger:     d.Logger().AddPrefix("[tasks]"),
-		schema:     d.Schema(),
-		client:     d.EtcdClient(),
-		nodeID:     proc.UniqueID(),
-		config:     c,
-		wg:         &sync.WaitGroup{},
-		tasksCount: atomic.NewInt64(0),
+	n := &Node{
+		clock:            d.Clock(),
+		logger:           d.Logger().AddPrefix("[task]"),
+		schema:           d.Schema(),
+		client:           d.EtcdClient(),
+		nodeID:           proc.UniqueID(),
+		config:           c,
+		tasksCount:       atomic.NewInt64(0),
+		runningTasksLock: &sync.Mutex{},
+		runningTasks:     make(map[key.TaskKey]bool),
 	}
 
 	// Create etcd session
 	var err error
-	m.session, err = etcdclient.CreateConcurrencySession(m.logger, proc, m.client, c.ttlSeconds)
+	n.session, err = etcdclient.CreateConcurrencySession(n.logger, proc, n.client, c.ttlSeconds)
 	if err != nil {
 		return nil, err
 	}
 
 	// Graceful shutdown
+	var cancel context.CancelFunc
+	n.wg = &sync.WaitGroup{}
+	n.ctx, cancel = context.WithCancel(context.Background())
 	proc.OnShutdown(func() {
-		m.logger.Info("received shutdown request")
-		if c := m.tasksCount.Load(); c > 0 {
-			m.logger.Infof(`waiting for "%d" tasks to be finished`, c)
+		n.logger.Info("received shutdown request")
+		if c := n.tasksCount.Load(); c > 0 {
+			n.logger.Infof(`waiting for "%d" tasks to be finished`, c)
 		}
-		m.wg.Wait()
-		m.logger.Info("shutdown done")
+		cancel()
+		n.wg.Wait()
+		n.logger.Info("shutdown done")
 	})
 
-	return m, nil
+	return n, nil
+}
+
+func (n *Node) TasksCount() int64 {
+	return n.tasksCount.Load()
 }
 
 // StartTask backed by the lock, so the task run at most once.
 // The context will be passed to the operation callback and must contain timeout/deadline.
-func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, lock string, operation Operation) error {
-	// Check if a timeout is defined
-	_, found := ctx.Deadline()
-	if !found {
-		return errors.New("task must have a timeout specified via the context")
+func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, typ, lock string, operation Task) (*model.Task, error) {
+	taskKey := key.TaskKey{ExportKey: exportKey, Type: typ, CreatedAt: key.UTCTime(n.clock.Now()), RandomSuffix: gonanoid.Must(5)}
+
+	// Lock task locally for periodical re-syncs,
+	// so locally can be determined that the task is already running.
+	ok, unlock := n.lockTask(taskKey)
+	if !ok {
+		return nil, nil
 	}
 
-	taskKey := key.TaskKey{ExportKey: exportKey, CreatedAt: key.UTCTime(n.clock.Now()), RandomSuffix: gonanoid.Must(5)}
+	// Create task model
 	task := model.Task{TaskKey: taskKey, WorkerNode: n.nodeID, Lock: lock}
-
-	taskEtcdKey := n.schema.Tasks().ByKey(task.TaskKey)
-	lockEtcdKey := n.schema.Runtime().Lock().Task().InExport(exportKey).LockKey(task.Lock)
-
-	logger := n.logger.AddPrefix(fmt.Sprintf("[taskId=%s]", taskKey.ID()))
-	logger.Infof(`new task, key "%s"`, taskKey.String())
-	logger.Infof(`acquiring lock "%s"`, task.Lock)
 
 	// Create task and lock in etcd
 	// Atomicity: If the lock key already exists, the then the transaction fails and task is ignored.
 	// Resistance to outages: If the Worker node fails, the lock is released automatically by the lease, after the session TTL seconds.
+	taskEtcdKey := n.schema.Tasks().ByKey(task.TaskKey)
+	lockEtcdKey := n.schema.Runtime().Lock().Task().InExport(exportKey).LockKey(task.Lock)
+	logger := n.logger.AddPrefix(fmt.Sprintf("[%s]", taskKey.ID()))
 	createTaskOp := op.MergeToTxn(
 		taskEtcdKey.Put(task),
 		lockEtcdKey.PutIfNotExists(task.WorkerNode, etcd.WithLease(n.session.Lease())),
 	)
-	if resp, err := createTaskOp.Do(ctx, n.client); err != nil {
-		return errors.Errorf(`cannot create task: %s`, err)
+	if resp, err := createTaskOp.Do(n.ctx, n.client); err != nil {
+		unlock()
+		return nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, err)
 	} else if !resp.Succeeded {
-		logger.Infof(`task ignored, the lock "%s" is in use`, task.Lock)
-		return nil
+		unlock()
+		logger.Infof(`task ignored, the lock "%s" is in use`, lockEtcdKey.Key())
+		return nil, nil
 	}
-	logger.Infof(`lock "%s" acquired`, task.Lock)
+	logger.Infof(`started task "%s"`, taskKey)
+	logger.Debugf(`lock acquired "%s"`, lockEtcdKey.Key())
 
 	// Run operation in the background
-	n.wg.Add(1)
-	n.tasksCount.Inc()
 	go func() {
-		defer n.wg.Done()
-		defer n.tasksCount.Dec()
+		defer unlock()
 
 		// Process results, in defer, to catch panic
 		var result string
@@ -137,7 +149,8 @@ func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, lock stri
 			// Catch panic
 			if panicErr := recover(); panicErr != nil {
 				result = ""
-				err = errors.Errorf("panic: %s", panicErr)
+				err = errors.Errorf("panic: %s\n%s", panicErr, string(debug.Stack()))
+				logger.Errorf(`task panic: %s`, err)
 			}
 
 			// Calculate duration
@@ -153,7 +166,7 @@ func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, lock stri
 				logger.Infof(`task succeeded (%s): %s`, duration, result)
 			} else {
 				task.Error = err.Error()
-				logger.Warnf(`task failed (%s): %s`, duration, err)
+				logger.Warnf(`task failed (%s): %s`, duration, errors.Format(err, errors.FormatWithStack()))
 			}
 
 			// If release of the lock takes longer than the ttl, lease is expired anyway
@@ -165,18 +178,38 @@ func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, lock stri
 				taskEtcdKey.Put(task),
 				lockEtcdKey.DeleteIfExists(),
 			)
-			logger.Infof(`releasing lock "%s"`, task.Lock)
 			if resp, err := finishTaskOp.Do(opCtx, n.client); err != nil {
 				logger.Errorf(`cannot update task and release lock: %s`, err)
 				return
 			} else if !resp.Succeeded {
-				logger.Errorf(`cannot release task lock "%s", not found`, task.Lock)
+				logger.Errorf(`cannot release task lock "%s", not found`, lockEtcdKey.Key())
 				return
 			}
+			logger.Debugf(`lock released "%s"`, lockEtcdKey.Key())
 		}()
 
 		// Do operation
 		result, err = operation(ctx, logger)
 	}()
-	return nil
+	return &task, nil
+}
+
+func (n *Node) lockTask(taskKey key.TaskKey) (ok bool, unlock func()) {
+	n.runningTasksLock.Lock()
+	defer n.runningTasksLock.Unlock()
+	if n.runningTasks[taskKey] {
+		return false, nil
+	}
+
+	n.wg.Add(1)
+	n.tasksCount.Inc()
+	n.runningTasks[taskKey] = true
+
+	return true, func() {
+		n.runningTasksLock.Lock()
+		defer n.runningTasksLock.Unlock()
+		delete(n.runningTasks, taskKey)
+		n.tasksCount.Dec()
+		n.wg.Done()
+	}
 }

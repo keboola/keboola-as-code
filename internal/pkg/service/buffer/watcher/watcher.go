@@ -71,12 +71,12 @@ import (
 )
 
 type (
-	APINode    = apinode.APINode
+	APINode    = apinode.Node
 	WorkerNode = workernode.Node
 )
 
-func NewAPINode(d apinode.Dependencies) (*APINode, error) {
-	return apinode.NewAPINode(d)
+func NewAPINode(d apinode.Dependencies, opts ...apinode.Option) (*APINode, error) {
+	return apinode.New(d, opts...)
 }
 
 func NewWorkerNode(d apinode.Dependencies) (*WorkerNode, error) {

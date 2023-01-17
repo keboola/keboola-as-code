@@ -1,11 +1,11 @@
-package revision
+package apinode
 
 import (
 	"time"
 )
 
 const (
-	DefaultSyncInterval = 100 * time.Millisecond
+	DefaultSyncInterval = 1000 * time.Millisecond
 	DefaultSessionTTL   = 15 // seconds, see WithTTL
 )
 

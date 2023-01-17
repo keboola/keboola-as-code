@@ -28,7 +28,7 @@ func TestSchema(t *testing.T) {
 	fileKey := key.FileKey{ExportKey: exportKey, FileID: key.FileID(time1)}
 	sliceKey := key.SliceKey{SliceID: key.SliceID(time2), FileKey: fileKey}
 	recordKey := key.RecordKey{SliceKey: sliceKey, ReceivedAt: key.ReceivedAt(time2.Add(time.Hour)), RandomSuffix: "abcdef"}
-	taskKey := key.TaskKey{ExportKey: exportKey, CreatedAt: key.UTCTime(time1), RandomSuffix: "abcdef"}
+	taskKey := key.TaskKey{ExportKey: exportKey, Type: "some.task", CreatedAt: key.UTCTime(time1), RandomSuffix: "abcdef"}
 
 	cases := []keyTestCase{
 		{
@@ -249,12 +249,12 @@ func TestSchema(t *testing.T) {
 			"runtime/api/node/watcher/",
 		},
 		{
-			s.Runtime().APINodes().Watchers().SlicesRevision().Prefix(),
-			"runtime/api/node/watcher/slices/revision/",
+			s.Runtime().APINodes().Watchers().Revision().Prefix(),
+			"runtime/api/node/watcher/cached/revision/",
 		},
 		{
-			s.Runtime().APINodes().Watchers().SlicesRevision().Node("my-node").Key(),
-			"runtime/api/node/watcher/slices/revision/my-node",
+			s.Runtime().APINodes().Watchers().Revision().Node("my-node").Key(),
+			"runtime/api/node/watcher/cached/revision/my-node",
 		},
 		{
 			s.Runtime().Lock().Prefix(),
@@ -290,7 +290,7 @@ func TestSchema(t *testing.T) {
 		},
 		{
 			s.Tasks().ByKey(taskKey).Key(),
-			"task/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z_abcdef",
+			"task/00000123/my-receiver/my-export/some.task/2006-01-02T08:04:05.000Z_abcdef",
 		},
 		{
 			s.ReceivedStats().InReceiver(receiverKey).Prefix(),

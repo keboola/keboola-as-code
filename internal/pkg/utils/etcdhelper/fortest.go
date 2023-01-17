@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
@@ -98,7 +99,7 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespac
 		DialOptions:          dialOpts,
 	})
 	if err != nil {
-		t.Fatalf("cannot create etcd client: %s", err)
+		t.Fatalf("cannot create etcd client: %s, %s", err, debug.Stack())
 	}
 
 	// Create namespace
