@@ -25,7 +25,7 @@ func createExport(t *testing.T, ctx context.Context, clk clock.Clock, client *et
 		column.IP{Name: "col03"},
 		column.Body{Name: "col04"},
 		column.Headers{Name: "col05"},
-		column.Template{Name: "col06", Language: "jsonnet", Content: `"---" + Body("key1") + "---"`},
+		column.Template{Name: "col06", Language: "jsonnet", Content: `"---" + Body("key") + "---"`},
 	}
 	export := model.ExportForTest(receiver.ReceiverKey, "my-export", "in.c-bucket.table", columns, clk.Now())
 	etcdhelper.ExpectModification(t, client, func() {

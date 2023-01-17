@@ -12,7 +12,7 @@ import (
 
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
-	workerservice "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/upload"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -43,7 +43,7 @@ func TestSliceCloseTask(t *testing.T) {
 	// Start worker node
 	workerDeps := bufferDependencies.NewMockedDeps(t, opts...)
 	workerDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
-	_, err := workerservice.New(workerDeps)
+	_, err := upload.NewUploader(workerDeps, upload.WithCloseSlices(true), upload.WithUploadSlices(false))
 	assert.NoError(t, err)
 
 	// The receiver, in the current state, is twice used by some requests, in the API node
@@ -142,7 +142,7 @@ slice/uploading/00000123/my-receiver/my-export/0001-01-01T00:00:01.000Z/0001-01-
         "type": "template",
         "name": "col06",
         "language": "jsonnet",
-        "content": "\"---\" + Body(\"key1\") + \"---\""
+        "content": "\"---\" + Body(\"key\") + \"---\""
       }
     ]
   },
