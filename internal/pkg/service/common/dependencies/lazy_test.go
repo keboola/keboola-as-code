@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/atomic"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -44,7 +44,7 @@ func TestLazy_InitAndGet(t *testing.T) {
 func TestLazy_InitAndGet_Parallel(t *testing.T) {
 	t.Parallel()
 
-	callCount := atomic.NewCounter(0)
+	callCount := atomic.NewInt64(0)
 	initFn := func() (string, error) {
 		callCount.Inc()
 		return "abc", nil
@@ -63,6 +63,7 @@ func TestLazy_InitAndGet_Parallel(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+	assert.Equal(t, int64(1), callCount.Load())
 }
 
 func TestLazy_InitAndGet_Error(t *testing.T) {

@@ -4,10 +4,10 @@ import (
 	"context"
 	"sync"
 
+	"go.uber.org/atomic"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/atomic"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -18,9 +18,9 @@ type Workers struct {
 	started   *sync.WaitGroup
 	semaphore *semaphore.Weighted
 	group     *errgroup.Group
-	workerNum *atomic.Counter
+	workerNum *atomic.Int64
 	lock      *sync.Mutex
-	errors    map[int]error
+	errors    map[int64]error
 	invoked   bool
 }
 
@@ -30,10 +30,10 @@ func NewWorkers(parentCtx context.Context) *Workers {
 		ctx:       ctx,
 		started:   &sync.WaitGroup{},
 		semaphore: semaphore.NewWeighted(MaxLocalWorkers),
-		workerNum: atomic.NewCounter(0),
+		workerNum: atomic.NewInt64(0),
 		group:     group,
 		lock:      &sync.Mutex{},
-		errors:    make(map[int]error),
+		errors:    make(map[int64]error),
 	}
 	w.started.Add(1) // block all until Invoke called
 	return w
@@ -44,7 +44,7 @@ func (w *Workers) AddWorker(worker func() error) {
 		panic(`invoked local.Workers cannot be reused`)
 	}
 
-	workerNumber := w.workerNum.GetAndInc()
+	workerNumber := w.workerNum.Inc() - 1
 	w.group.Go(func() error {
 		w.started.Wait()
 
@@ -80,8 +80,8 @@ func (w *Workers) StartAndWait() error {
 	w.invoked = true
 
 	// Collect errors in the same order as workers were defined
-	workersCount := w.workerNum.Get()
-	for i := 0; i < workersCount; i++ {
+	workersCount := w.workerNum.Load()
+	for i := int64(0); i < workersCount; i++ {
 		if err, ok := w.errors[i]; ok {
 			errs.Append(err)
 		}
