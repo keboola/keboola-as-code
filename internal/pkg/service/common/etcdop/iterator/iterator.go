@@ -37,6 +37,12 @@ type Iterator struct {
 	currentValue *op.KeyValue   // currentValue in the page, match currentIndex
 }
 
+// ForEachOp definition, it can be part of a transaction.
+type ForEachOp struct {
+	def Definition
+	fn  func(value *op.KeyValue, header *Header) error
+}
+
 func New(start string, opts ...Option) Definition {
 	return newIterator(newConfig(start, nil, opts))
 }
@@ -49,6 +55,46 @@ func newIterator(config config) Definition {
 func (v Definition) Do(ctx context.Context, client etcd.KV, opts ...op.Option) *Iterator {
 	return &Iterator{ctx: ctx, client: client, opts: opts, config: v.config, start: v.config.prefix, page: 0, currentIndex: 0}
 }
+
+// ForEachOp method converts iterator to for each operation definition, so it can be part of a transaction.
+func (v Definition) ForEachOp(fn func(value *op.KeyValue, header *Header) error) *ForEachOp {
+	return &ForEachOp{def: v, fn: fn}
+}
+
+func (v *ForEachOp) Op(ctx context.Context) (etcd.Op, error) {
+	// If ForEachOp is combined with other operations into a transaction,
+	// then the first page is loaded within the transaction.
+	// Other pages are loaded within MapResponse method, see below.
+	// Iterator always load next pages WithRevision,
+	// so all results, from all pages, are from the same revision.
+	return firstPageOp(v.def.prefix, v.def.pageSize, v.def.revision).Op(ctx)
+}
+
+func (v *ForEachOp) MapResponse(ctx context.Context, response op.Response) (result any, err error) {
+	// See comment in the Op method.
+	itr := v.def.Do(ctx, response.Client, response.Options...)
+
+	// Inject the first page, from the response
+	itr.moveToPage(response.Get())
+	itr.currentIndex--
+
+	// Process all records from the first page and load next pages, if any.
+	return op.NoResult{}, itr.ForEach(v.fn)
+}
+
+func (v *ForEachOp) DoWithHeader(ctx context.Context, client etcd.KV, opts ...op.Option) (*etcdserverpb.ResponseHeader, error) {
+	// See comment in the Op method.
+	itr := v.def.Do(ctx, client, opts...)
+	if err := itr.ForEach(v.fn); err != nil {
+		return nil, err
+	}
+	return itr.Header(), nil
+}
+
+func (v *ForEachOp) DoOrErr(ctx context.Context, client etcd.KV, opts ...op.Option) error {
+	// See comment in the Op method.
+	_, err := v.DoWithHeader(ctx, client, opts...)
+	return err
 }
 
 // Next returns true if there is a next value.
@@ -179,6 +225,10 @@ func (v *Iterator) moveToPage(resp *etcd.GetResponse) bool {
 	v.revision = header.Revision
 	v.page++
 	return true
+}
+
+func firstPageOp(prefix string, pageSize int, revision int64) op.GetManyOp {
+	return nextPageOp(prefix, prefix, pageSize, revision)
 }
 
 func nextPageOp(prefix, start string, pageSize int, revision int64) op.GetManyOp {

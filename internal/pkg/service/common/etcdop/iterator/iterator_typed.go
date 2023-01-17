@@ -3,6 +3,7 @@ package iterator
 import (
 	"context"
 
+	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -19,6 +20,12 @@ type IteratorT[T any] struct {
 	currentValue op.KeyValueT[T] // currentValue in the page, match currentIndex
 }
 
+// ForEachOpT definition, it can be part of a transaction.
+type ForEachOpT[T any] struct {
+	def DefinitionT[T]
+	fn  func(value T, header *Header) error
+}
+
 func NewTyped[R any](start string, serde *serde.Serde, opts ...Option) DefinitionT[R] {
 	return DefinitionT[R]{config: newConfig(start, serde, opts)}
 }
@@ -28,6 +35,47 @@ func (v DefinitionT[T]) Do(ctx context.Context, client etcd.KV, opts ...op.Optio
 	out := &IteratorT[T]{Iterator: newIterator(v.config).Do(ctx, client, opts...)}
 	out.serde = v.serde
 	return out
+}
+
+// ForEachOp method converts iterator to for each operation definition, so it can be part of a transaction.
+func (v DefinitionT[T]) ForEachOp(fn func(value T, header *Header) error) *ForEachOpT[T] {
+	return &ForEachOpT[T]{def: v, fn: fn}
+}
+
+func (v *ForEachOpT[T]) Op(ctx context.Context) (etcd.Op, error) {
+	// If ForEachOpT is combined with other operations into a transaction,
+	// then the first page is loaded within the transaction.
+	// Other pages are loaded within MapResponse method, see below.
+	// Iterator always load next pages WithRevision,
+	// so all results, from all pages, are from the same revision.
+	return firstPageOp(v.def.prefix, v.def.pageSize, v.def.revision).Op(ctx)
+}
+
+func (v *ForEachOpT[T]) MapResponse(ctx context.Context, response op.Response) (result any, err error) {
+	// See comment in the Op method.
+	itr := v.def.Do(ctx, response.Client, response.Options...)
+
+	// Inject the first page, from the response
+	itr.moveToPage(response.Get())
+	itr.currentIndex--
+
+	// Process all records from the first page and load next pages, if any.
+	return op.NoResult{}, itr.ForEachValue(v.fn)
+}
+
+func (v *ForEachOpT[T]) DoWithHeader(ctx context.Context, client etcd.KV, opts ...op.Option) (*etcdserverpb.ResponseHeader, error) {
+	// See comment in the Op method.
+	itr := v.def.Do(ctx, client, opts...)
+	if err := itr.ForEachValue(v.fn); err != nil {
+		return nil, err
+	}
+	return itr.Header(), nil
+}
+
+func (v *ForEachOpT[T]) DoOrErr(ctx context.Context, client etcd.KV, opts ...op.Option) error {
+	// See comment in the Op method.
+	_, err := v.DoWithHeader(ctx, client, opts...)
+	return err
 }
 
 // Next returns true if there is a next value.
