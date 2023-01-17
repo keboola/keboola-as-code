@@ -29,7 +29,7 @@ func TestManager_CreateFile(t *testing.T) {
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithClock(clk), dependencies.WithTestProject(p))
-	m := NewManager(d)
+	m := NewManager(d.Clock(), d.StorageAPIClient())
 	rb := rollback.New(d.Logger())
 	client := p.StorageAPIClient()
 

@@ -14,20 +14,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const DateFormat = "20060102150405"
+const (
+	DateFormat = "20060102150405"
+)
 
 type Manager struct {
 	clock  clock.Clock
 	client client.Sender
 }
 
-type dependencies interface {
-	Clock() clock.Clock
-	StorageAPIClient() client.Sender
-}
-
-func NewManager(d dependencies) *Manager {
-	return &Manager{clock: d.Clock(), client: d.StorageAPIClient()}
+func NewManager(clk clock.Clock, client client.Sender) *Manager {
+	return &Manager{clock: clk, client: client}
 }
 
 func (m *Manager) CreateFiles(ctx context.Context, rb rollback.Builder, receiver *model.Receiver) error {
