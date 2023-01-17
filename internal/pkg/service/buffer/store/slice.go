@@ -108,6 +108,7 @@ func (s *Store) MarkSliceClosed(ctx context.Context, slice *model.Slice) (err er
 	}
 	return nil
 }
+
 // SetSliceState method atomically changes the state of the file.
 // False is returned, if the given file is already in the target state.
 func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slicestate.State) (ok bool, err error) { //nolint:dupl

@@ -27,14 +27,16 @@ type APINode struct {
 
 type notifyEvent struct {
 	sliceKey   key.SliceKey
-	size       uint64
+	recordSize uint64
+	bodySize   uint64
 	receivedAt key.ReceivedAt
 }
 
 type sliceStats struct {
-	count          uint64
-	size           uint64
 	lastReceivedAt key.ReceivedAt
+	recordsCount   uint64
+	recordsSize    uint64
+	bodySize       uint64
 	changed        bool
 }
 
@@ -88,10 +90,11 @@ func NewAPINode(d dependencies) *APINode {
 	return m
 }
 
-func (m *APINode) Notify(sliceKey key.SliceKey, size uint64) {
+func (m *APINode) Notify(sliceKey key.SliceKey, recordSize, bodySize uint64) {
 	m.ch <- notifyEvent{
 		sliceKey:   sliceKey,
-		size:       size,
+		recordSize: recordSize,
+		bodySize:   bodySize,
 		receivedAt: key.ReceivedAt(m.clock.Now()),
 	}
 }
@@ -104,8 +107,9 @@ func (m *APINode) handleNotify(event notifyEvent) {
 
 	// Update stats
 	stats := m.perSlice[event.sliceKey]
-	stats.count += 1
-	stats.size += event.size
+	stats.recordsCount += 1
+	stats.recordsSize += event.recordSize
+	stats.bodySize += event.bodySize
 	if event.receivedAt.After(stats.lastReceivedAt) {
 		stats.lastReceivedAt = event.receivedAt
 	}
@@ -116,7 +120,15 @@ func (m *APINode) handleSync(ctx context.Context) <-chan struct{} {
 	stats := make([]model.SliceStats, 0, len(m.perSlice))
 	for k, v := range m.perSlice {
 		if v.changed {
-			stats = append(stats, model.NewSliceStats(k, v.count, v.size, v.lastReceivedAt))
+			stats = append(stats, model.SliceStats{
+				SliceKey: k,
+				Stats: model.Stats{
+					LastRecordAt: model.UTCTime(v.lastReceivedAt),
+					RecordsCount: v.recordsCount,
+					RecordsSize:  v.recordsSize,
+					BodySize:     v.bodySize,
+				},
+			})
 			v.changed = false
 		}
 	}

@@ -71,7 +71,7 @@ func (r *Importer) CreateRecord(ctx context.Context, d requestDeps, receiverKey 
 		}
 	}
 
-	body, err := ReadBody(bodyReader)
+	body, bodySize, err := ReadBody(bodyReader)
 	if err != nil {
 		return errors.Errorf(`cannot read request body: %w`, err)
 	}
@@ -103,7 +103,7 @@ func (r *Importer) CreateRecord(ctx context.Context, d requestDeps, receiverKey 
 		}
 
 		// Update statistics
-		r.stats.Notify(slice.SliceKey, uint64(len(csvRow)))
+		r.stats.Notify(slice.SliceKey, uint64(len(csvRow)), uint64(bodySize))
 	}
 
 	if errs.Len() > 1 {
