@@ -143,37 +143,31 @@ func (v *Iterator) nextPage() bool {
 		return false
 	}
 
-	// Range options
-	ops := []etcd.OpOption{
-		etcd.WithFromKey(),
-		etcd.WithRange(etcd.GetPrefixRangeEnd(v.prefix)), // iterate to the end of the prefix
-		etcd.WithLimit(int64(v.pageSize)),
-		etcd.WithSort(etcd.SortByKey, etcd.SortAscend),
-	}
-
-	// Ensure atomicity
-	if v.revision > 0 {
-		ops = append(ops, etcd.WithRev(v.revision))
-	}
-
-	// Get page
-	v.page++
-	r, err := v.client.Get(v.ctx, v.start, ops...)
+	// Do with retry
+	_, raw, err := nextPageOp(v.prefix, v.start, v.pageSize, v.revision).DoWithRaw(v.ctx, v.client, v.opts...)
 	if err != nil {
 		v.err = errors.Errorf(`etcd iterator failed: cannot get page "%s", page=%d: %w`, v.start, v.page, err)
 		return false
 	}
 
+	return v.moveToPage(raw.Get())
+}
+
+func (v *Iterator) moveToPage(resp *etcd.GetResponse) bool {
+	kvs := resp.Kvs
+	header := resp.Header
+	more := resp.More
+
 	// Handle empty result
-	v.values = r.Kvs
-	v.header = r.Header
+	v.values = kvs
+	v.header = header
 	v.lastIndex = len(v.values) - 1
 	if v.lastIndex == -1 {
 		return false
 	}
 
 	// Prepare next page
-	if r.More {
+	if more {
 		// Start of the next page is one key after the last key
 		lastKey := string(v.values[v.lastIndex].Key)
 		v.start = etcd.GetPrefixRangeEnd(lastKey)
@@ -182,6 +176,31 @@ func (v *Iterator) nextPage() bool {
 	}
 
 	v.currentIndex = 0
-	v.revision = r.Header.Revision
+	v.revision = header.Revision
+	v.page++
 	return true
+}
+
+func nextPageOp(prefix, start string, pageSize int, revision int64) op.GetManyOp {
+	// Range options
+	opts := []etcd.OpOption{
+		etcd.WithFromKey(),
+		etcd.WithRange(etcd.GetPrefixRangeEnd(prefix)), // iterate to the end of the prefix
+		etcd.WithLimit(int64(pageSize)),
+		etcd.WithSort(etcd.SortByKey, etcd.SortAscend),
+	}
+
+	// Ensure atomicity
+	if revision > 0 {
+		opts = append(opts, etcd.WithRev(revision))
+	}
+
+	return op.NewGetManyOp(
+		func(ctx context.Context) (etcd.Op, error) {
+			return etcd.OpGet(start, opts...), nil
+		},
+		func(_ context.Context, r etcd.OpResponse) ([]*op.KeyValue, error) {
+			return r.Get().Kvs, nil
+		},
+	)
 }
