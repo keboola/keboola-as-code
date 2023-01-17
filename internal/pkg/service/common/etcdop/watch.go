@@ -119,7 +119,6 @@ func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ..
 			if err != nil {
 				resp := WatchResponse{}
 				resp.InitErr = err
-				events = nil
 				outCh <- resp
 
 				// Stop
@@ -228,6 +227,13 @@ func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpO
 			// Pass the response
 			outCh <- resp
 		}
+
+		// Send init error, if the context has been cancelled before the "Created" event
+		if init {
+			resp := WatchResponse{}
+			resp.InitErr = ctx.Err()
+			outCh <- resp
+		}
 	}()
 
 	return outCh
@@ -274,15 +280,19 @@ func wrapWatchWithRestart(ctx context.Context, channelFactory func(ctx context.C
 				}
 
 				// Handle initialization error
-				if resp.InitErr != nil {
+				if err := resp.InitErr; err != nil {
 					if init {
 						// Stop on initialization error
 						outCh <- resp
 						return
+					} else if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+						// Context cancelled event is forwarded only during the initialization.
+						// In other cases, closing the channel is sufficient.
+						continue
 					} else {
 						// Convert initialization error
 						// from an 1+ attempt to a common error and restart watch.
-						resp.Err = resp.InitErr
+						resp.Err = err
 						resp.InitErr = nil
 						outCh <- resp
 						break

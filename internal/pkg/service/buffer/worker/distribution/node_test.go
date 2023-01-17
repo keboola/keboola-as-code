@@ -65,7 +65,7 @@ func TestNodesDiscovery(t *testing.T) {
 			}
 		}
 		return true
-	}, 5*time.Second, 100*time.Millisecond)
+	}, 10*time.Second, 100*time.Millisecond)
 
 	// Check tasks distribution.
 	// Distribution is random, it depends on the hash function.

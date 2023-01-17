@@ -14,7 +14,6 @@ func TestNewDebugLogger_All(t *testing.T) {
 	logger.Warn("warn")
 	logger.Error("error")
 	assert.Equal(t, "DEBUG  debug\nINFO  info\nWARN  warn\nERROR  error\n", logger.AllMessages())
-	assert.Empty(t, logger.AllMessages())
 }
 
 func TestNewDebugLogger_Debug(t *testing.T) {

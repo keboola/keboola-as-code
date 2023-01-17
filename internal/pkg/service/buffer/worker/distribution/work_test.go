@@ -33,9 +33,9 @@ func TestDistributedWork(t *testing.T) {
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 
-	logsPerNode := make(map[string]*ioutil.Writer)
+	logsPerNode := make(map[string]*ioutil.AtomicWriter)
 	createNodeWithWork := func(nodeName string) (*Node, dependencies.Mocked, *atomic.Int64) {
-		logs := ioutil.NewBufferedWriter()
+		logs := ioutil.NewAtomicWriter()
 		logsPerNode[nodeName] = logs
 		node, d := createNode(t, clk, logs, etcdNamespace, nodeName)
 

@@ -269,7 +269,7 @@ func TestIteratorT_ForEachOp(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	client := etcdhelper.ClientForTest(t)
-	out := ioutil.NewBufferedWriter()
+	out := ioutil.NewAtomicWriter()
 	prefix := generateKVsT(t, 5, ctx, client)
 
 	// Define op
