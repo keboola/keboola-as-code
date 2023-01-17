@@ -42,7 +42,7 @@ type inlineOp struct {
 	mapResponse mapResponseFn
 }
 
-type mapResponseFn func(ctx context.Context, response etcd.OpResponse) (result any, err error)
+type mapResponseFn func(ctx context.Context, response Response) (result any, err error)
 
 func newInlineOp(op etcd.Op, err error, fn mapResponseFn) Op {
 	return &inlineOp{op: op, err: err, mapResponse: fn}
@@ -52,7 +52,7 @@ func (v *inlineOp) Op(_ context.Context) (etcd.Op, error) {
 	return v.op, v.err
 }
 
-func (v *inlineOp) MapResponse(ctx context.Context, response etcd.OpResponse) (result any, err error) {
+func (v *inlineOp) MapResponse(ctx context.Context, response Response) (result any, err error) {
 	return v.mapResponse(ctx, response)
 }
 
@@ -161,7 +161,7 @@ func (v *TxnOpDef) Op(ctx context.Context) (etcd.Op, error) {
 	return v.Txn(ctx).Op(ctx)
 }
 
-func (v *TxnOpDef) MapResponse(ctx context.Context, response etcd.OpResponse) (result any, err error) {
+func (v *TxnOpDef) MapResponse(ctx context.Context, response Response) (result any, err error) {
 	return v.Txn(ctx).MapResponse(ctx, response)
 }
 
@@ -197,7 +197,7 @@ func (v *TxnOp) Do(ctx context.Context, client etcd.KV, opts ...Option) (TxnResu
 		return TxnResult{}, err
 	}
 
-	return v.mapResponse(ctx, response)
+	return v.mapResponse(ctx, Response{OpResponse: response, Client: client, Options: opts})
 }
 
 func (v *TxnOp) DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*etcdserverpb.ResponseHeader, error) {
@@ -252,11 +252,11 @@ func (v *TxnOp) WithProcessor(p txnProcessor) *TxnOp {
 	return &clone
 }
 
-func (v *TxnOp) MapResponse(ctx context.Context, response etcd.OpResponse) (result any, err error) {
+func (v *TxnOp) MapResponse(ctx context.Context, response Response) (result any, err error) {
 	return v.mapResponse(ctx, response)
 }
 
-func (v *TxnOp) mapResponse(ctx context.Context, response etcd.OpResponse) (result TxnResult, err error) {
+func (v *TxnOp) mapResponse(ctx context.Context, response Response) (result TxnResult, err error) {
 	r := response.Txn()
 	result.Header = r.Header
 	result.Succeeded = r.Succeeded
@@ -264,7 +264,7 @@ func (v *TxnOp) mapResponse(ctx context.Context, response etcd.OpResponse) (resu
 	errs := errors.NewMultiError()
 	if r.Succeeded {
 		for i, subResponse := range r.Responses {
-			subResult, subErr := v.thenOps[i].MapResponse(ctx, toOpResponse(subResponse))
+			subResult, subErr := v.thenOps[i].MapResponse(ctx, toOpResponse(response, subResponse))
 			if subErr != nil {
 				errs.Append(subErr)
 			}
@@ -272,7 +272,7 @@ func (v *TxnOp) mapResponse(ctx context.Context, response etcd.OpResponse) (resu
 		}
 	} else {
 		for i, subResponse := range r.Responses {
-			subResult, subErr := v.elseOps[i].MapResponse(ctx, toOpResponse(subResponse))
+			subResult, subErr := v.elseOps[i].MapResponse(ctx, toOpResponse(response, subResponse))
 			if subErr != nil {
 				errs.Append(subErr)
 			}
@@ -292,17 +292,20 @@ func (v *TxnOp) mapResponse(ctx context.Context, response etcd.OpResponse) (resu
 	return result, nil
 }
 
-func toOpResponse(r *etcdserverpb.ResponseOp) etcd.OpResponse {
+func toOpResponse(response Response, subResponse *etcdserverpb.ResponseOp) Response {
+	var v etcd.OpResponse
 	switch {
-	case r.GetResponseRange() != nil:
-		return (*etcd.GetResponse)(r.GetResponseRange()).OpResponse()
-	case r.GetResponsePut() != nil:
-		return (*etcd.PutResponse)(r.GetResponsePut()).OpResponse()
-	case r.GetResponseDeleteRange() != nil:
-		return (*etcd.DeleteResponse)(r.GetResponseDeleteRange()).OpResponse()
-	case r.GetResponseTxn() != nil:
-		return (*etcd.TxnResponse)(r.GetResponseTxn()).OpResponse()
+	case subResponse.GetResponseRange() != nil:
+		v = (*etcd.GetResponse)(subResponse.GetResponseRange()).OpResponse()
+	case subResponse.GetResponsePut() != nil:
+		v = (*etcd.PutResponse)(subResponse.GetResponsePut()).OpResponse()
+	case subResponse.GetResponseDeleteRange() != nil:
+		v = (*etcd.DeleteResponse)(subResponse.GetResponseDeleteRange()).OpResponse()
+	case subResponse.GetResponseTxn() != nil:
+		v = (*etcd.TxnResponse)(subResponse.GetResponseTxn()).OpResponse()
 	default:
-		panic(errors.Errorf(`unexpected type "%T"`, r))
+		panic(errors.Errorf(`unexpected type "%T"`, subResponse))
 	}
+
+	return Response{OpResponse: v, Client: response.Client, Options: response.Options}
 }
