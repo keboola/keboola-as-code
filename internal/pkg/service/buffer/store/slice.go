@@ -98,6 +98,16 @@ func (s *Store) listUploadedSlicesOp(_ context.Context, fileKey key.FileKey) ite
 		GetAll()
 }
 
+func (s *Store) MarkSliceClosed(ctx context.Context, slice *model.Slice) (err error) {
+	ok, err := s.SetSliceState(ctx, slice, slicestate.Uploading)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.Errorf(`slice "%s" is already in the "uploading" state`, slice.SliceKey)
+	}
+	return nil
+}
 // SetSliceState method atomically changes the state of the file.
 // False is returned, if the given file is already in the target state.
 func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slicestate.State) (ok bool, err error) { //nolint:dupl
