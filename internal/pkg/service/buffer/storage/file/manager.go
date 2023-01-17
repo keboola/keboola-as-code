@@ -3,18 +3,23 @@ package file
 import (
 	"context"
 	"fmt"
+	"io"
 	"sync"
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
+	gzip "github.com/klauspost/pgzip"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const DateFormat = "20060102150405"
+const (
+	DateFormat = "20060102150405"
+	gzipLevel  = 2 // 1 - BestSpeed, 9 - BestCompression
+)
 
 type Manager struct {
 	clock  clock.Clock
@@ -70,6 +75,33 @@ func (m *Manager) CreateFile(ctx context.Context, rb rollback.Builder, export *m
 	return nil
 }
 
+func (m *Manager) UploadSlice(ctx context.Context, f model.File, s model.Slice, data io.Reader) (uncompressed, compressed int64, err error) {
+	sliceWr, err := storageapi.NewUploadSliceWriter(ctx, f.StorageResource, sliceNumberToFilename(s.Number))
+	if err != nil {
+		return 0, 0, err
+	}
+	defer func() {
+		if closeErr := sliceWr.Close(); err == nil && closeErr != nil {
+			err = errors.Errorf(`cannot close slice writer: %w`, err)
+		}
+	}()
+
+	sizeWr := newSizeWriter(sliceWr)
+	gzipWr, err := gzip.NewWriterLevel(sizeWr, gzipLevel)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer func() {
+		if closeErr := gzipWr.Close(); err == nil && closeErr != nil {
+			err = errors.Errorf(`cannot close slice gzip writer: %w`, err)
+		}
+	}()
+
+	uncompressed, err = io.Copy(gzipWr, data)
+	compressed = sizeWr.Size
+	return uncompressed, compressed, err
+}
+
 func (m *Manager) UploadManifest(ctx context.Context, file *model.File, slices []*model.Slice) error {
 	sliceFiles := make([]string, 0)
 	for _, s := range slices {
@@ -77,4 +109,19 @@ func (m *Manager) UploadManifest(ctx context.Context, file *model.File, slices [
 	}
 	_, err := storageapi.UploadSlicedFileManifest(ctx, file.StorageResource, sliceFiles)
 	return err
+}
+
+type sizeWriter struct {
+	w    io.Writer
+	Size int64
+}
+
+func newSizeWriter(w io.Writer) *sizeWriter {
+	return &sizeWriter{w: w}
+}
+
+func (cw *sizeWriter) Write(p []byte) (int, error) {
+	n, err := cw.w.Write(p)
+	cw.Size += int64(n)
+	return n, err
 }

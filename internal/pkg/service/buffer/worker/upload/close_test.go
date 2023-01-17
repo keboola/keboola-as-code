@@ -142,7 +142,7 @@ slice/uploading/00000123/my-receiver/my-export/0001-01-01T00:00:01.000Z/0001-01-
         "type": "template",
         "name": "col06",
         "language": "jsonnet",
-        "content": "\"---\" + Body(\"key1\") + \"---\""
+        "content": "\"---\" + Body(\"key\") + \"---\""
       }
     ]
   },

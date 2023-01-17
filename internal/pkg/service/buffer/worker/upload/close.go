@@ -7,7 +7,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
@@ -35,7 +34,7 @@ func (u *Uploader) closeSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 
 				// Close the slice, no API node is writing to it.
 				slice := event.Value
-				if _, err := u.store.SetSliceState(ctx, &slice, slicestate.Uploading); err != nil {
+				if err := u.store.MarkSliceClosed(ctx, &slice); err != nil {
 					return "", err
 				}
 

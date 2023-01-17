@@ -98,9 +98,52 @@ func (s *Store) listUploadedSlicesOp(_ context.Context, fileKey key.FileKey) ite
 		GetAll()
 }
 
+func (s *Store) MarkSliceUploaded(ctx context.Context, slice *model.Slice) error {
+	stats := model.Stats{}
+	return op.
+		Atomic().
+		ReadOrErr(func() (op.Op, error) {
+			return s.getReceivedStatsBySliceOp(slice.SliceKey, &stats), nil
+		}).
+		WriteOrErr(func() (op.Op, error) {
+			var ops []op.Op
+
+			// Modify slice state "uploading" -> "uploaded".
+			if v, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, slicestate.Uploaded); err != nil {
+				ops = append(ops,
+					v.WithOnResultOrErr(func(result op.TxnResult) error {
+						if !result.Succeeded {
+							return errors.Errorf(`slice "%s" is already in the "uploaded" state`, slice.SliceKey)
+						}
+						return nil
+					}),
+				)
+			}
+
+			//
+			
+			return op.MergeToTxn(ops...), nil
+		}).
+		Do(ctx, s.client)
+}
+
+func (s *Store) MarkSliceClosed(ctx context.Context, slice *model.Slice) (err error) {
+	ok, err := s.SetSliceState(ctx, slice, slicestate.Uploading)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.Errorf(`slice "%s" is already in the "uploading" state`, slice.SliceKey)
+	}
+	return nil
+}
+
 // SetSliceState method atomically changes the state of the file.
 // False is returned, if the given file is already in the target state.
-func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slicestate.State) (bool, error) { //nolint:dupl
+func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slicestate.State) (ok bool, err error) { //nolint:dupl
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.SetSliceState")
+	defer telemetry.EndSpan(span, &err)
+
 	txn, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, to)
 	if err != nil {
 		return false, err

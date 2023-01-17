@@ -62,6 +62,7 @@ func NewUploader(d dependencies) (*Uploader, error) {
 	// Create tasks
 	init := []<-chan error{
 		u.closeSlices(ctx, wg, d),
+		u.uploadSlices(ctx, wg, d),
 	}
 
 	// Check initialization
