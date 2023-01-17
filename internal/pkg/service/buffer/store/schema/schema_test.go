@@ -213,6 +213,10 @@ func TestSchema(t *testing.T) {
 			"record/",
 		},
 		{
+			s.Records().InSlice(sliceKey).Prefix(),
+			"record/00000123/my-receiver/my-export/2006-01-02T09:04:05.000Z/",
+		},
+		{
 			s.Records().ByKey(recordKey).Key(),
 			"record/00000123/my-receiver/my-export/2006-01-02T09:04:05.000Z/2006-01-02T10:04:05.000Z_abcdef",
 		},

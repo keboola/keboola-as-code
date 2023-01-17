@@ -32,3 +32,9 @@ func (s *Store) CreateRecord(ctx context.Context, recordKey key.RecordKey, csvRo
 
 	return s.schema.Records().ByKey(recordKey).Put(csvRow).Do(ctx, s.client)
 }
+
+func (s *Store) CountRecords(ctx context.Context, k key.SliceKey) (count int64, err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.RecordsCount")
+	defer telemetry.EndSpan(span, &err)
+	return s.schema.Records().InSlice(k).Count().Do(ctx, s.client)
+}
