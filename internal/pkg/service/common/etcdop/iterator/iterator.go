@@ -25,6 +25,7 @@ type Definition struct {
 type Iterator struct {
 	config
 	ctx          context.Context
+	opts         []op.Option
 	client       etcd.KV
 	err          error
 	start        string         // page start prefix
@@ -45,8 +46,9 @@ func newIterator(config config) Definition {
 }
 
 // Do converts iterator definition to the iterator.
-func (v Definition) Do(ctx context.Context, client etcd.KV) *Iterator {
-	return &Iterator{ctx: ctx, client: client, config: v.config, start: v.config.prefix, page: 0, currentIndex: 0}
+func (v Definition) Do(ctx context.Context, client etcd.KV, opts ...op.Option) *Iterator {
+	return &Iterator{ctx: ctx, client: client, opts: opts, config: v.config, start: v.config.prefix, page: 0, currentIndex: 0}
+}
 }
 
 // Next returns true if there is a next value.
