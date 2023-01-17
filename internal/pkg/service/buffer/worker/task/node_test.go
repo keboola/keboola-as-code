@@ -34,7 +34,7 @@ func TestSuccessfulTask(t *testing.T) {
 
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-	logs := ioutil.NewBufferedWriter()
+	logs := ioutil.NewAtomicWriter()
 
 	// Create nodes
 	node1, _ := createNode(t, etcdNamespace, logs, "node1")
@@ -185,7 +185,7 @@ func TestFailedTask(t *testing.T) {
 
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-	logs := ioutil.NewBufferedWriter()
+	logs := ioutil.NewAtomicWriter()
 
 	// Create nodes
 	node1, _ := createNode(t, etcdNamespace, logs, "node1")
@@ -336,7 +336,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-	logs := ioutil.NewBufferedWriter()
+	logs := ioutil.NewAtomicWriter()
 
 	// Create node
 	node1, d := createNode(t, etcdNamespace, logs, "node1")

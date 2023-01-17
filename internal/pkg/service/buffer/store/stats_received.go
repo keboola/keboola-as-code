@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -13,16 +14,30 @@ import (
 
 const maxStatsPerTxn = 50
 
-func (s *Store) GetReceivedStatsByFile(ctx context.Context, fileKey key.FileKey) (stats model.Stats, found bool, err error) {
+func (s *Store) GetReceivedStatsByFile(ctx context.Context, fileKey key.FileKey) (stats model.Stats, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetReceivedStatsByFile")
 	defer telemetry.EndSpan(span, &err)
-	return sumStats(ctx, s.client, s.schema.ReceivedStats().InFile(fileKey).GetAll())
+
+	out := model.Stats{}
+	err = s.getReceivedStatsByFileOp(fileKey, &out).DoOrErr(ctx, s.client)
+	return out, err
 }
 
-func (s *Store) GetReceivedStatsBySlice(ctx context.Context, sliceKey key.SliceKey) (stats model.Stats, found bool, err error) {
+func (s *Store) getReceivedStatsByFileOp(fileKey key.FileKey, out *model.Stats) *iterator.ForEachOpT[model.SliceStats] {
+	return sumStatsOp(s.schema.ReceivedStats().InFile(fileKey).GetAll(), out)
+}
+
+func (s *Store) GetReceivedStatsBySlice(ctx context.Context, sliceKey key.SliceKey) (stats model.Stats, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetReceivedStatsBySlice")
 	defer telemetry.EndSpan(span, &err)
-	return sumStats(ctx, s.client, s.schema.ReceivedStats().InSlice(sliceKey).GetAll())
+
+	out := model.Stats{}
+	err = s.getReceivedStatsBySliceOp(sliceKey, &out).DoOrErr(ctx, s.client)
+	return out, err
+}
+
+func (s *Store) getReceivedStatsBySliceOp(sliceKey key.SliceKey, out *model.Stats) *iterator.ForEachOpT[model.SliceStats] {
+	return sumStatsOp(s.schema.ReceivedStats().InSlice(sliceKey).GetAll(), out)
 }
 
 func (s *Store) UpdateSliceReceivedStats(ctx context.Context, nodeID string, stats []model.SliceStats) (err error) {

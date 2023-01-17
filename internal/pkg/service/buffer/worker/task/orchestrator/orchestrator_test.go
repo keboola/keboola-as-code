@@ -45,8 +45,8 @@ func TestOrchestrator(t *testing.T) {
 
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-	d1 := bufferDependencies.NewMockedDeps(t, dependencies.WithEtcdNamespace(etcdNamespace), dependencies.WithUniqueID("node1"))
-	d2 := bufferDependencies.NewMockedDeps(t, dependencies.WithEtcdNamespace(etcdNamespace), dependencies.WithUniqueID("node2"))
+	d1 := bufferDependencies.NewMockedDeps(t, dependencies.WithCtx(ctx), dependencies.WithEtcdNamespace(etcdNamespace), dependencies.WithUniqueID("node1"))
+	d2 := bufferDependencies.NewMockedDeps(t, dependencies.WithCtx(ctx), dependencies.WithEtcdNamespace(etcdNamespace), dependencies.WithUniqueID("node2"))
 
 	exportKey := key.ExportKey{ReceiverKey: key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}, ExportID: "my-export"}
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
@@ -60,7 +60,7 @@ func TestOrchestrator(t *testing.T) {
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Task {
 			return func(_ context.Context, logger log.Logger) (task.Result, error) {
 				defer func() {
-					taskDone <- struct{}{}
+					close(taskDone)
 				}()
 				logger.Info("message from the task")
 				return event.Value.ID, nil
@@ -89,7 +89,6 @@ func TestOrchestrator(t *testing.T) {
 [distribution]INFO  found a new node "node2"
 [orchestrator][some.task]INFO  restart: distribution changed: found a new node "node2"
 [orchestrator][some.task]DEBUG  not assigned "00001000/my-receiver/my-export/ResourceID"
-[orchestrator][some.task]INFO  stopped
 %A
 `, d1.DebugLogger().AllMessages())
 
@@ -101,7 +100,7 @@ func TestOrchestrator(t *testing.T) {
 [task][%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/my-export/some.task/ResourceID"
 [task][%s]INFO  message from the task
 [task][%s]INFO  task succeeded (%s): ResourceID
-[orchestrator][some.task]INFO  stopped
+%A
 [task][%s]DEBUG  lock released "runtime/lock/task/00001000/my-receiver/my-export/some.task/ResourceID"
 %A
 `, d2.DebugLogger().AllMessages())

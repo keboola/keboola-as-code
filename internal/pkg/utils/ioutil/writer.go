@@ -10,31 +10,31 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Writer is a simple buffer writer for testing.
+// AtomicWriter is a simple buffer writer for testing.
 // It implements these interfaces:
 // - io.Writer
 // - io.WriteCloser
 // - io.Closer
 // - terminal.FileWriter.
-type Writer struct {
+type AtomicWriter struct {
 	mutex   *sync.Mutex
 	writers []io.Writer
 	buffer  *bytes.Buffer
 }
 
-func NewBufferedWriter() *Writer {
+func NewAtomicWriter() *AtomicWriter {
 	var buffer bytes.Buffer
-	return &Writer{&sync.Mutex{}, []io.Writer{bufio.NewWriter(&buffer)}, &buffer}
+	return &AtomicWriter{&sync.Mutex{}, []io.Writer{bufio.NewWriter(&buffer)}, &buffer}
 }
 
 // ConnectTo allows writes to multiple targets.
-func (w *Writer) ConnectTo(writer io.Writer) {
+func (w *AtomicWriter) ConnectTo(writer io.Writer) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 	w.writers = append(w.writers, writer)
 }
 
-func (w *Writer) Write(p []byte) (n int, err error) {
+func (w *AtomicWriter) Write(p []byte) (n int, err error) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 	for _, writer := range w.writers {
@@ -46,11 +46,11 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func (w *Writer) WriteString(s string) (n int, err error) {
+func (w *AtomicWriter) WriteString(s string) (n int, err error) {
 	return w.Write([]byte(s))
 }
 
-func (w *Writer) Flush() (err error) {
+func (w *AtomicWriter) Flush() (err error) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 	for _, writer := range w.writers {
@@ -64,27 +64,31 @@ func (w *Writer) Flush() (err error) {
 	return nil
 }
 
-func (w *Writer) Close() error {
+func (w *AtomicWriter) Close() error {
 	return w.Flush()
 }
 
 // Fd fake terminal file descriptor.
-func (*Writer) Fd() uintptr {
+func (*AtomicWriter) Fd() uintptr {
 	return os.Stdout.Fd()
 }
 
-func (w *Writer) Truncate() {
+func (w *AtomicWriter) Truncate() {
 	if err := w.Flush(); err != nil {
 		panic(errors.New("cannot flush utils log writer"))
 	}
 	w.buffer.Truncate(0)
 }
 
-func (w *Writer) String() string {
+func (w *AtomicWriter) String() string {
 	if err := w.Flush(); err != nil {
 		panic(errors.New("cannot flush utils log writer"))
 	}
-	str := w.buffer.String()
+	return w.buffer.String()
+}
+
+func (w *AtomicWriter) StringAndTruncate() string {
+	str := w.String()
 	w.Truncate()
 	return str
 }

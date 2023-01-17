@@ -213,9 +213,9 @@ func TestGetLogFileFromFlags(t *testing.T) {
 	assert.NoError(t, root.logFile.File().Close())
 }
 
-func newTestRootCommand(fs filesystem.Fs) (*RootCommand, *ioutil.Writer) {
+func newTestRootCommand(fs filesystem.Fs) (*RootCommand, *ioutil.AtomicWriter) {
 	in := ioutil.NewBufferedReader()
-	out := ioutil.NewBufferedWriter()
+	out := ioutil.NewAtomicWriter()
 	fsFactory := func(opts ...filesystem.Option) (filesystem.Fs, error) {
 		return fs, nil
 	}

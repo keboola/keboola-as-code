@@ -10,7 +10,7 @@ import (
 
 func TestBufferedWriter(t *testing.T) {
 	t.Parallel()
-	writer := NewBufferedWriter()
+	writer := NewAtomicWriter()
 	_, err := writer.WriteString("test")
 	assert.NoError(t, err)
 	assert.Equal(t, "test", writer.String())
@@ -18,7 +18,7 @@ func TestBufferedWriter(t *testing.T) {
 
 func TestBufferedWriter_ConnectTo(t *testing.T) {
 	t.Parallel()
-	writer := NewBufferedWriter()
+	writer := NewAtomicWriter()
 	otherBuffer := bytes.Buffer{}
 	otherWriter := bufio.NewWriter(&otherBuffer)
 	writer.ConnectTo(otherWriter)

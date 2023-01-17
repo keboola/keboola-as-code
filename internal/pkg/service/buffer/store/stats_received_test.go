@@ -38,13 +38,11 @@ func TestStore_GetReceivedStatsByFile(t *testing.T) {
 	}}))
 
 	// No stats
-	stats, found, err := store.GetReceivedStatsByFile(ctx, fileF1Key)
+	stats, err := store.GetReceivedStatsByFile(ctx, fileF1Key)
 	assert.NoError(t, err)
-	assert.False(t, found)
 	assert.Empty(t, stats)
-	stats, found, err = store.GetReceivedStatsByFile(ctx, fileF2Key)
+	stats, err = store.GetReceivedStatsByFile(ctx, fileF2Key)
 	assert.NoError(t, err)
-	assert.False(t, found)
 	assert.Empty(t, stats)
 
 	// First sync - node 1
@@ -129,13 +127,11 @@ func TestStore_GetReceivedStatsByFile(t *testing.T) {
 
 	// Delete receiver - no stats
 	assert.NoError(t, store.DeleteReceiver(ctx, receiverKey))
-	stats, found, err = store.GetReceivedStatsByFile(ctx, fileF1Key)
+	stats, err = store.GetReceivedStatsByFile(ctx, fileF1Key)
 	assert.NoError(t, err)
-	assert.False(t, found)
 	assert.Empty(t, stats)
-	stats, found, err = store.GetReceivedStatsByFile(ctx, fileF2Key)
+	stats, err = store.GetReceivedStatsByFile(ctx, fileF2Key)
 	assert.NoError(t, err)
-	assert.False(t, found)
 	assert.Empty(t, stats)
 }
 
@@ -168,8 +164,7 @@ func TestStore_GetReceivedStatsByFile_Many(t *testing.T) {
 		assert.NoError(t, store.UpdateSliceReceivedStats(ctx, nodeID, stats))
 	}
 
-	stats, found, err := store.GetReceivedStatsByFile(ctx, fileKey)
-	assert.True(t, found)
+	stats, err := store.GetReceivedStatsByFile(ctx, fileKey)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(3*1000), stats.Count)
 	assert.Equal(t, uint64(3*10*1000), stats.Size)
@@ -204,13 +199,11 @@ func TestStore_GetReceivedStatsBySlice(t *testing.T) {
 	}}))
 
 	// No stats
-	stats, found, err := store.GetReceivedStatsBySlice(ctx, slice1Key)
+	stats, err := store.GetReceivedStatsBySlice(ctx, slice1Key)
 	assert.NoError(t, err)
-	assert.False(t, found)
 	assert.Empty(t, stats)
-	stats, found, err = store.GetReceivedStatsBySlice(ctx, slice2Key)
+	stats, err = store.GetReceivedStatsBySlice(ctx, slice2Key)
 	assert.NoError(t, err)
-	assert.False(t, found)
 	assert.Empty(t, stats)
 
 	// First sync - node 1
@@ -271,13 +264,11 @@ func TestStore_GetReceivedStatsBySlice(t *testing.T) {
 
 	// Delete receiver - no stats
 	assert.NoError(t, store.DeleteReceiver(ctx, receiverKey))
-	stats, found, err = store.GetReceivedStatsBySlice(ctx, slice1Key)
+	stats, err = store.GetReceivedStatsBySlice(ctx, slice1Key)
 	assert.NoError(t, err)
-	assert.False(t, found)
 	assert.Empty(t, stats)
-	stats, found, err = store.GetReceivedStatsBySlice(ctx, slice2Key)
+	stats, err = store.GetReceivedStatsBySlice(ctx, slice2Key)
 	assert.NoError(t, err)
-	assert.False(t, found)
 	assert.Empty(t, stats)
 }
 
@@ -309,16 +300,14 @@ func TestStore_GetReceivedStatsBySlice_Many(t *testing.T) {
 	}
 
 	// Slice stats
-	stats, found, err := store.GetReceivedStatsBySlice(ctx, sliceKey)
-	assert.True(t, found)
+	stats, err := store.GetReceivedStatsBySlice(ctx, sliceKey)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(100), stats.Count)
 	assert.Equal(t, uint64(10*100), stats.Size)
 	assert.Equal(t, key.UTCTime(fileOpenedAt.Add(100*time.Minute)), stats.LastRecordAt)
 
 	// File stats
-	stats, found, err = store.GetReceivedStatsByFile(ctx, fileKey)
-	assert.True(t, found)
+	stats, err = store.GetReceivedStatsByFile(ctx, fileKey)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(100), stats.Count)
 	assert.Equal(t, uint64(10*100), stats.Size)
@@ -393,9 +382,8 @@ stats/received/00000123/my-receiver/my-export/0001-01-01T12:01:00.000Z/0001-01-0
 
 func assertFileStats(t *testing.T, store *Store, fileKey key.FileKey, count, size uint64, lastAt time.Time) {
 	t.Helper()
-	stats, found, err := store.GetReceivedStatsByFile(context.Background(), fileKey)
+	stats, err := store.GetReceivedStatsByFile(context.Background(), fileKey)
 	assert.NoError(t, err)
-	assert.True(t, found)
 	assert.Equal(t, count, stats.Count)
 	assert.Equal(t, size, stats.Size)
 	assert.Equal(t, key.UTCTime(lastAt), stats.LastRecordAt)
@@ -403,9 +391,8 @@ func assertFileStats(t *testing.T, store *Store, fileKey key.FileKey, count, siz
 
 func assertSliceStats(t *testing.T, store *Store, sliceKey key.SliceKey, count, size uint64, lastAt time.Time) {
 	t.Helper()
-	stats, found, err := store.GetReceivedStatsBySlice(context.Background(), sliceKey)
+	stats, err := store.GetReceivedStatsBySlice(context.Background(), sliceKey)
 	assert.NoError(t, err)
-	assert.True(t, found)
 	assert.Equal(t, count, stats.Count)
 	assert.Equal(t, size, stats.Size)
 	assert.Equal(t, key.UTCTime(lastAt), stats.LastRecordAt)

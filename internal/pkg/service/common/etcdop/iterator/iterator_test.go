@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
 
 type testCase struct {
@@ -244,6 +245,40 @@ func TestIterator_Value_UsedIncorrectly(t *testing.T) {
 	assert.PanicsWithError(t, "unexpected Value() call: Next() must be called first", func() {
 		it.Value()
 	})
+}
+
+func TestIterator_ForEachOp(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t)
+	out := ioutil.NewAtomicWriter()
+	prefix := generateKVs(t, 5, ctx, client)
+
+	// Define op
+	getAllOp := prefix.GetAll(iterator.WithPageSize(2)).ForEachOp(func(value *op.KeyValue, header *iterator.Header) error {
+		_, _ = out.WriteString(fmt.Sprintf("%s\n", string(value.Value)))
+		return nil
+	})
+
+	// Run op
+	tracker := op.NewTracker(client)
+	assert.NoError(t, getAllOp.DoOrErr(ctx, tracker))
+
+	// All requests can be tracked by the TrackerKV
+	assert.Equal(t, []op.TrackedOp{
+		{Type: op.GetOp, Key: []byte("some/prefix/"), RangeEnd: []byte("some/prefix0"), Count: 5},
+		{Type: op.GetOp, Key: []byte("some/prefix/foo003"), RangeEnd: []byte("some/prefix0"), Count: 3},
+		{Type: op.GetOp, Key: []byte("some/prefix/foo005"), RangeEnd: []byte("some/prefix0"), Count: 1},
+	}, tracker.Operations())
+
+	// All values have been received
+	assert.Equal(t, strings.TrimSpace(`
+bar001
+bar002
+bar003
+bar004
+bar005
+`), strings.TrimSpace(out.String()))
 }
 
 func iterateAll(t *testing.T, def iterator.Definition, ctx context.Context, client *etcd.Client) []result {

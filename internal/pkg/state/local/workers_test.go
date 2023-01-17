@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/atomic"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -16,7 +16,7 @@ func TestWorkers(t *testing.T) {
 	t.Parallel()
 	w := NewWorkers(context.Background())
 
-	counter := atomic.NewCounter(0)
+	counter := atomic.NewInt64(0)
 	w.AddWorker(func() error {
 		counter.Inc()
 		return nil
@@ -28,11 +28,11 @@ func TestWorkers(t *testing.T) {
 
 	// Not stared
 	time.Sleep(10 * time.Millisecond)
-	assert.Equal(t, 0, counter.Get())
+	assert.Equal(t, int64(0), counter.Load())
 
 	// Start and wait
 	assert.NoError(t, w.StartAndWait())
-	assert.Equal(t, 2, counter.Get())
+	assert.Equal(t, int64(2), counter.Load())
 
 	// Cannot be reused
 	assert.PanicsWithError(t, `invoked local.Workers cannot be reused`, func() {

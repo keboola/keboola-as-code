@@ -3,6 +3,7 @@ package distribution_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/atomic"
 
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
@@ -28,12 +28,11 @@ func TestOnChangeListener(t *testing.T) {
 	var node1 *Node
 	var d1, d2, d3, d4 bufferDependencies.Mocked
 
-	listenerLogs := ioutil.NewBufferedWriter()
+	listenerLogs := ioutil.NewAtomicWriter()
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
 
 	// Create node with a listener
 	node1, d1 = createNode(t, clk, nil, etcdNamespace, "node1")
-	count := atomic.NewInt64(0)
 	listener := node1.OnChangeListener()
 	go func() {
 		for {
@@ -43,19 +42,28 @@ func TestOnChangeListener(t *testing.T) {
 			case events := <-listener.C:
 				for _, event := range events {
 					_, _ = listenerLogs.WriteString(fmt.Sprintf("distribution changed: %s\n", event.Message))
-					count.Inc()
 				}
 			}
 		}
 	}()
 
-	// Add node 2,3, stop node 2
+	// Add node 2
 	_, d2 = createNode(t, clk, nil, etcdNamespace, "node2")
+	assert.Eventually(t, func() bool {
+		return strings.Contains(listenerLogs.String(), `found a new node "node2"`)
+	}, time.Second, 10*time.Millisecond, "timeout")
+
+	// Add node 3
 	_, d3 = createNode(t, clk, nil, etcdNamespace, "node3")
+	assert.Eventually(t, func() bool {
+		return strings.Contains(listenerLogs.String(), `found a new node "node3"`)
+	}, time.Second, 10*time.Millisecond, "timeout")
+
+	// Stop node 2
 	d2.Process().Shutdown(errors.New("test"))
 	d2.Process().WaitForShutdown()
 	assert.Eventually(t, func() bool {
-		return count.Load() == 3
+		return strings.Contains(listenerLogs.String(), `the node "node2" gone`)
 	}, time.Second, 10*time.Millisecond, "timeout")
 
 	// Stop listener

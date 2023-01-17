@@ -13,12 +13,12 @@ import (
 // Logs are stored in a buffer by ioutil.Writer.
 type debugLogger struct {
 	*zapLogger
-	all         *ioutil.Writer
-	debug       *ioutil.Writer
-	info        *ioutil.Writer
-	warn        *ioutil.Writer
-	warnOrError *ioutil.Writer
-	error       *ioutil.Writer
+	all         *ioutil.AtomicWriter
+	debug       *ioutil.AtomicWriter
+	info        *ioutil.AtomicWriter
+	warn        *ioutil.AtomicWriter
+	warnOrError *ioutil.AtomicWriter
+	error       *ioutil.AtomicWriter
 }
 
 // oneLevelEnabler enables only one level. The others are discarded.
@@ -38,12 +38,12 @@ func NewDebugLogger() DebugLogger {
 
 func NewDebugLoggerWithPrefix(prefix string) DebugLogger {
 	l := &debugLogger{
-		all:         ioutil.NewBufferedWriter(),
-		debug:       ioutil.NewBufferedWriter(),
-		info:        ioutil.NewBufferedWriter(),
-		warn:        ioutil.NewBufferedWriter(),
-		warnOrError: ioutil.NewBufferedWriter(),
-		error:       ioutil.NewBufferedWriter(),
+		all:         ioutil.NewAtomicWriter(),
+		debug:       ioutil.NewAtomicWriter(),
+		info:        ioutil.NewAtomicWriter(),
+		warn:        ioutil.NewAtomicWriter(),
+		warnOrError: ioutil.NewAtomicWriter(),
+		error:       ioutil.NewAtomicWriter(),
 	}
 	cores := zapcore.NewTee(
 		debugCore(l.all, DebugLevel),                            // all = debug level and higher
@@ -114,11 +114,11 @@ func (l *debugLogger) ErrorMessages() string {
 	return l.error.String()
 }
 
-func (l *debugLogger) allWriters() []*ioutil.Writer {
-	return []*ioutil.Writer{l.all, l.debug, l.info, l.warn, l.warnOrError, l.error}
+func (l *debugLogger) allWriters() []*ioutil.AtomicWriter {
+	return []*ioutil.AtomicWriter{l.all, l.debug, l.info, l.warn, l.warnOrError, l.error}
 }
 
-func debugCore(writer *ioutil.Writer, level zapcore.LevelEnabler) zapcore.Core {
+func debugCore(writer *ioutil.AtomicWriter, level zapcore.LevelEnabler) zapcore.Core {
 	encoderConfig := zapcore.EncoderConfig{
 		TimeKey:          "ts",
 		LevelKey:         "level",

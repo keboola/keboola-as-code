@@ -61,7 +61,7 @@ func (v *JoinTo[R]) Do(ctx context.Context, client *etcd.Client) (R, error) {
 	return *v.result, nil
 }
 
-func (v *JoinTo[R]) MapResponse(ctx context.Context, response etcd.OpResponse) (result any, err error) {
+func (v *JoinTo[R]) MapResponse(ctx context.Context, response Response) (result any, err error) {
 	return v.txn.MapResponse(ctx, response)
 }
 

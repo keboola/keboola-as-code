@@ -13,8 +13,8 @@ import (
 
 func TestCliLogger_New(t *testing.T) {
 	t.Parallel()
-	stdout := ioutil.NewBufferedWriter()
-	stderr := ioutil.NewBufferedWriter()
+	stdout := ioutil.NewAtomicWriter()
+	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, false)
 	assert.NotNil(t, logger)
 }
@@ -26,8 +26,8 @@ func TestCliLogger_File(t *testing.T) {
 	file, err := NewLogFile(filePath)
 	assert.NoError(t, err)
 
-	stdout := ioutil.NewBufferedWriter()
-	stderr := ioutil.NewBufferedWriter()
+	stdout := ioutil.NewAtomicWriter()
+	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, file, false)
 
 	logger.Debug("Debug msg")
@@ -45,8 +45,8 @@ func TestCliLogger_File(t *testing.T) {
 
 func TestCliLogger_VerboseFalse(t *testing.T) {
 	t.Parallel()
-	stdout := ioutil.NewBufferedWriter()
-	stderr := ioutil.NewBufferedWriter()
+	stdout := ioutil.NewAtomicWriter()
+	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, false)
 
 	logger.Debug("Debug msg")
@@ -65,8 +65,8 @@ func TestCliLogger_VerboseFalse(t *testing.T) {
 
 func TestCliLogger_VerboseTrue(t *testing.T) {
 	t.Parallel()
-	stdout := ioutil.NewBufferedWriter()
-	stderr := ioutil.NewBufferedWriter()
+	stdout := ioutil.NewAtomicWriter()
+	stderr := ioutil.NewAtomicWriter()
 	logger := NewCliLogger(stdout, stderr, nil, true)
 	logger.Debug("Debug msg")
 	logger.Info("Info msg")
