@@ -51,41 +51,6 @@
 >>>>>
 
 <<<<<
-/file/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s
------
-{
-  "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "my-receiver",
-  "exportId": "my-export-1",
-  "fileId": "%s",
-  "state": "opened",
-  "mapping": {
-    "projectId": %%TEST_KBC_PROJECT_ID%%,
-    "receiverId": "my-receiver",
-    "exportId": "my-export-1",
-    "revisionId": 1,
-    "tableId": "in.c-bucket.table",
-    "incremental": true,
-    "columns": [
-      {
-        "type": "id",
-        "name": "id"
-      },
-      {
-        "type": "template",
-        "name": "template",
-        "language": "jsonnet",
-        "content": "body.key+\":\"+body.value"
-      }
-    ]
-  },
-  "storageResource": {
-    %A
-  }
-}
->>>>>
-
-<<<<<
 /file/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s
 -----
 {
@@ -124,40 +89,6 @@
 /secret/export/token/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2
 -----
 %A
->>>>>
-
-<<<<<
-/slice/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s
------
-{
-  "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "my-receiver",
-  "exportId": "my-export-1",
-  "fileId": "%s",
-  "sliceId": "%s",
-  "state": "opened",
-  "mapping": {
-    "projectId": %%TEST_KBC_PROJECT_ID%%,
-    "receiverId": "my-receiver",
-    "exportId": "my-export-1",
-    "revisionId": 1,
-    "tableId": "in.c-bucket.table",
-    "incremental": true,
-    "columns": [
-      {
-        "type": "id",
-        "name": "id"
-      },
-      {
-        "type": "template",
-        "name": "template",
-        "language": "jsonnet",
-        "content": "body.key+\":\"+body.value"
-      }
-    ]
-  },
-  "sliceNumber": 1
-}
 >>>>>
 
 <<<<<
