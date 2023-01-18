@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -17,6 +18,7 @@ import (
 type remote struct {
 	dependencies.Project
 	ForLocalCommand
+	eventSender event.Sender
 }
 
 func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand) (*remote, error) {
@@ -45,10 +47,13 @@ func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand) (*remote
 		}
 	}
 
+	eventSender := event.NewSender(cmdPublicDeps.Logger(), projectDeps.StorageAPIClient(), projectDeps.ProjectID())
+
 	// Compose all together
 	return &remote{
 		ForLocalCommand: cmdPublicDeps,
 		Project:         projectDeps,
+		eventSender:     eventSender,
 	}, nil
 }
 
@@ -78,4 +83,8 @@ func storageAPIHost(fs filesystem.Fs, opts *options.Options) (string, error) {
 	} else {
 		return host, nil
 	}
+}
+
+func (r *remote) EventSender() event.Sender {
+	return r.eventSender
 }
