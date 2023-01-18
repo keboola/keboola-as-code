@@ -55,7 +55,8 @@ func TestSliceCloseTask(t *testing.T) {
 	clk.Add(time.Minute)
 	notEmptySliceKey := createExport(t, "my-receiver-2", "my-export-2", ctx, clk, client, str)
 	clk.Add(time.Minute)
-	createRecords(t, ctx, clk, apiDeps1, notEmptySliceKey.ReceiverKey, 1, 3)
+	createRecords(t, ctx, clk, apiDeps1, notEmptySliceKey.ReceiverKey, 1, 1)
+	createRecords(t, ctx, clk, apiDeps2, notEmptySliceKey.ReceiverKey, 2, 2)
 
 	// NOW = slice.closingAt = task.createdAt = 0001-01-01T00:01:01Z
 	clk.Add(time.Minute)

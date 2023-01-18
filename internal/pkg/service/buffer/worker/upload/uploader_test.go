@@ -48,7 +48,7 @@ func createRecords(t *testing.T, ctx context.Context, clk *clock.Mock, d bufferD
 
 	importer := receive.NewImporter(d)
 	d.RequestHeaderMutable().Set("Content-Type", "application/json")
-	for i := start; i <= count; i++ {
+	for i := start; i < start+count; i++ {
 		if clk != nil {
 			clk.Add(time.Second)
 		}
