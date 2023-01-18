@@ -10,7 +10,6 @@ import (
 	"github.com/keboola/go-client/pkg/schedulerapi"
 	"github.com/keboola/go-client/pkg/storageapi"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -25,7 +24,6 @@ type project struct {
 	schedulerAPIClient client.Client
 	jobsQueueAPIClient client.Client
 	sandboxesAPIClient client.Client
-	eventSender        event.Sender
 }
 
 func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr string) (v Project, err error) {
@@ -75,9 +73,6 @@ func newProjectDeps(base Base, public Public, token storageapi.Token) (*project,
 		v.sandboxesAPIClient = sandboxesapi.ClientWithHostAndToken(v.base.HTTPClient(), sandboxesHost.String(), v.token.Token)
 	}
 
-	// Setup event sender
-	v.eventSender = event.NewSender(v.base.Logger(), v.StorageAPIClient(), v.ProjectID())
-
 	return v, nil
 }
 
@@ -115,10 +110,6 @@ func (v project) JobsQueueAPIClient() client.Sender {
 
 func (v project) SandboxesAPIClient() client.Sender {
 	return v.sandboxesAPIClient
-}
-
-func (v project) EventSender() event.Sender {
-	return v.eventSender
 }
 
 func (v project) ObjectIDGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider {

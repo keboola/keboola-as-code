@@ -7,6 +7,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	bufferStore "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	bufferSchema "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
@@ -28,6 +29,7 @@ type Mocked interface {
 	DistributionWorkerNode() *distribution.Node
 	WatcherWorkerNode() *watcher.WorkerNode
 	TaskWorkerNode() *task.Node
+	EventSender() *event.Sender
 }
 
 type mocked struct {
@@ -40,6 +42,7 @@ type mocked struct {
 	watcherWatcherNode *watcher.WorkerNode
 	distWorkerNode     *distribution.Node
 	taskWorkerNode     *task.Node
+	eventSender        *event.Sender
 }
 
 func NewMockedDeps(t *testing.T, opts ...dependencies.MockedOption) Mocked {
@@ -122,4 +125,11 @@ func (v *mocked) TaskWorkerNode() *task.Node {
 		assert.NoError(v.t, err)
 	}
 	return v.taskWorkerNode
+}
+
+func (v *mocked) EventSender() *event.Sender {
+	if v.eventSender == nil {
+		v.eventSender = event.NewSender(v.Logger(), v.StorageAPIClient())
+	}
+	return v.eventSender
 }

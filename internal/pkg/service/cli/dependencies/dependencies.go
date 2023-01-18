@@ -20,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
@@ -65,6 +66,7 @@ type ForLocalCommand interface {
 type ForRemoteCommand interface {
 	ForLocalCommand
 	dependencies.Project
+	EventSender() event.Sender
 }
 
 // Provider of CLI dependencies.

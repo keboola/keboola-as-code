@@ -61,7 +61,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -102,7 +101,6 @@ type Project interface {
 	SchedulerAPIClient() client.Sender
 	JobsQueueAPIClient() client.Sender
 	SandboxesAPIClient() client.Sender
-	EventSender() event.Sender
 	ObjectIDGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider
 }
 
