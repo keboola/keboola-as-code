@@ -47,11 +47,11 @@ func TestSliceCloseTask(t *testing.T) {
 	_, err := upload.NewUploader(workerDeps, upload.WithCloseSlices(true), upload.WithUploadSlices(false))
 	assert.NoError(t, err)
 
-	// Create receivers and exports
+	// Create receivers, exports and records
 	str := apiDeps1.Store()
-	emptySliceKey := createExport(t, "my-receiver-1", "my-export-1", ctx, clk, client, str)
+	emptySliceKey := createExport(t, "my-receiver-1", "my-export-1", ctx, clk, client, str, nil)
 	clk.Add(time.Minute)
-	notEmptySliceKey := createExport(t, "my-receiver-2", "my-export-2", ctx, clk, client, str)
+	notEmptySliceKey := createExport(t, "my-receiver-2", "my-export-2", ctx, clk, client, str, nil)
 	clk.Add(time.Minute)
 	createRecords(t, ctx, clk, apiDeps1, notEmptySliceKey.ReceiverKey, 1, 1)
 	createRecords(t, ctx, clk, apiDeps2, notEmptySliceKey.ReceiverKey, 2, 2)
