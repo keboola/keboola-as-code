@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -23,7 +24,14 @@ func NewSender(logger log.Logger, client client.Sender) *Sender {
 	return &Sender{logger: logger, client: client}
 }
 
-func (s *Sender) SendSliceUploadEvent(ctx context.Context, start time.Time, err error, projectID int) {
+type EventParams struct {
+	ProjectID  int
+	ReceiverID string
+	ExportID   string
+	Stats      *model.Stats
+}
+
+func (s *Sender) SendSliceUploadEvent(ctx context.Context, start time.Time, err error, params EventParams) {
 	// Catch panic
 	panicErr := recover()
 	if panicErr != nil {
@@ -38,7 +46,7 @@ func (s *Sender) SendSliceUploadEvent(ctx context.Context, start time.Time, err 
 		}
 	}
 
-	s.sendEvent(ctx, start, err, "upload-slice", formatMsg, projectID)
+	s.sendEvent(ctx, start, err, "upload-slice", formatMsg, params)
 
 	// Throw panic
 	if panicErr != nil {
@@ -46,7 +54,7 @@ func (s *Sender) SendSliceUploadEvent(ctx context.Context, start time.Time, err 
 	}
 }
 
-func (s *Sender) SendFileImportEvent(ctx context.Context, start time.Time, err error, projectID int) {
+func (s *Sender) SendFileImportEvent(ctx context.Context, start time.Time, err error, params EventParams) {
 	// Catch panic
 	panicErr := recover()
 	if panicErr != nil {
@@ -61,7 +69,7 @@ func (s *Sender) SendFileImportEvent(ctx context.Context, start time.Time, err e
 		}
 	}
 
-	s.sendEvent(ctx, start, err, "file-import", formatMsg, projectID)
+	s.sendEvent(ctx, start, err, "file-import", formatMsg, params)
 
 	// Throw panic
 	if panicErr != nil {
@@ -80,7 +88,17 @@ Ok:
 		"task": "..."
 	},
 	"results": {
-		"projectId": "...",
+		"projectId":  "...",
+		"receiverId": "...",
+		"exportId":   "...",
+		"statistics": {
+			"lastRecordAt": "...",
+			"recordsCount": "...",
+			"recordsSize":  "...",
+			"bodySize":     "...",
+			"fileSize":     "...",
+			"fileGZipSize": "...",
+		},
 	}
 }
 
@@ -95,27 +113,40 @@ Error:
 	},
 	"results": {
 		"projectId": "...",
+		"receiverId": "...",
+		"exportId":   "...",
 		"error": "...",
 	}
 }
 */
 
-func (s *Sender) sendEvent(ctx context.Context, start time.Time, err error, task string, msg func(error) string, projectID int) {
+func (s *Sender) sendEvent(ctx context.Context, start time.Time, err error, task string, msg func(error) string, params EventParams) {
 	event := &storageapi.Event{
 		ComponentID: componentID,
 		Message:     msg(err),
 		Type:        "info",
 		Duration:    client.DurationSeconds(time.Since(start)),
-		Params: map[string]interface{}{
+		Params: map[string]any{
 			"task": task,
 		},
-		Results: map[string]interface{}{
-			"projectId": projectID,
+		Results: map[string]any{
+			"projectId":  params.ProjectID,
+			"receiverId": params.ReceiverID,
+			"exportId":   params.ExportID,
 		},
 	}
 	if err != nil {
 		event.Type = "error"
 		event.Results["error"] = fmt.Sprintf("%s", err)
+	} else {
+		event.Results["statistics"] = map[string]any{
+			"lastRecordAt": params.Stats.LastRecordAt.String(),
+			"recordsCount": params.Stats.RecordsCount,
+			"recordsSize":  params.Stats.RecordsSize,
+			"bodySize":     params.Stats.BodySize,
+			"fileSize":     params.Stats.FileSize,
+			"fileGZipSize": params.Stats.FileGZipSize,
+		}
 	}
 
 	event, err = storageapi.CreatEventRequest(event).Send(ctx, s.client)
