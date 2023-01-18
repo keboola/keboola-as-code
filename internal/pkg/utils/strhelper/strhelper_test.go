@@ -214,3 +214,24 @@ func TestAsSentence(t *testing.T) {
 		assert.Equal(t, c.expected, AsSentence(c.in), "case "+cast.ToString(i))
 	}
 }
+
+func TestFilterLines(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		in       string
+		expected string
+	}{
+		{"", ""},
+		{" ", ""},
+		{"<KEEP>", "<KEEP>"},
+		{"<KEEP> foo", "<KEEP> foo"},
+		{"<KEEP> foo\n", "<KEEP> foo"},
+		{"\n\n\n<KEEP> foo\n\n\n", "<KEEP> foo"},
+		{"foo\n<KEEP> a\nfoo\n<KEEP> b\nfoo\n<KEEP> c\n", "<KEEP> a\n<KEEP> b\n<KEEP> c"},
+	}
+
+	for i, c := range cases {
+		assert.Equal(t, c.expected, FilterLines("^<KEEP>", c.in), "case "+cast.ToString(i))
+	}
+}
