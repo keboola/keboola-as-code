@@ -10,7 +10,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 const componentID = storageapi.ComponentID("keboola.keboola-buffer")
@@ -24,23 +23,22 @@ func NewSender(logger log.Logger, client client.Sender) *Sender {
 	return &Sender{logger: logger, client: client}
 }
 
-// SendCmdEvent sends failed event if an error occurred, otherwise it sends successful event.
-func (s *Sender) SendCmdEvent(ctx context.Context, cmdStart time.Time, err error, cmd string, projectID int) {
+func (s *Sender) SendSliceUploadEvent(ctx context.Context, start time.Time, err error, projectID int) {
 	// Catch panic
 	panicErr := recover()
 	if panicErr != nil {
 		err = errors.Errorf(`%s`, panicErr)
 	}
 
-	// Send successful event if no error
-	if err == nil {
-		msg := fmt.Sprintf(`%s command done.`, strhelper.FirstUpper(cmd))
-		s.sendCmdSuccessfulEvent(ctx, cmdStart, cmd, msg, projectID)
-		return
+	formatMsg := func(err error) string {
+		if err != nil {
+			return "Slice upload failed."
+		} else {
+			return "Slice upload done."
+		}
 	}
 
-	msg := fmt.Sprintf(`%s command failed.`, strhelper.FirstUpper(cmd))
-	s.sendCmdFailedEvent(ctx, cmdStart, err, cmd, msg, projectID)
+	s.sendEvent(ctx, start, err, "upload-slice", formatMsg, projectID)
 
 	// Throw panic
 	if panicErr != nil {
@@ -48,51 +46,82 @@ func (s *Sender) SendCmdEvent(ctx context.Context, cmdStart time.Time, err error
 	}
 }
 
-// sendCmdSuccessful send command successful event.
-func (s *Sender) sendCmdSuccessfulEvent(ctx context.Context, cmdStart time.Time, cmd, msg string, projectID int) {
-	duration := time.Since(cmdStart)
-	params := map[string]interface{}{
-		"command": cmd,
+func (s *Sender) SendFileImportEvent(ctx context.Context, start time.Time, err error, projectID int) {
+	// Catch panic
+	panicErr := recover()
+	if panicErr != nil {
+		err = errors.Errorf(`%s`, panicErr)
 	}
-	results := map[string]interface{}{
-		"projectId": projectID,
+
+	formatMsg := func(err error) string {
+		if err != nil {
+			return "File import failed."
+		} else {
+			return "File import done."
+		}
 	}
-	event, err := storageapi.CreatEventRequest(&storageapi.Event{
-		ComponentID: componentID,
-		Type:        "info",
-		Message:     msg,
-		Duration:    client.DurationSeconds(duration),
-		Params:      params,
-		Results:     results,
-	}).Send(ctx, s.client)
-	if err == nil {
-		s.logger.Debugf("Sent \"%s\" successful event id: \"%s\"", cmd, event.ID)
-	} else {
-		s.logger.Warnf("Cannot send \"%s\" successful event: %s", cmd, err)
+
+	s.sendEvent(ctx, start, err, "file-import", formatMsg, projectID)
+
+	// Throw panic
+	if panicErr != nil {
+		panic(panicErr)
 	}
 }
 
-// sendCmdFailed send command failed event.
-func (s *Sender) sendCmdFailedEvent(ctx context.Context, cmdStart time.Time, err error, cmd, msg string, projectID int) {
-	duration := time.Since(cmdStart)
-	params := map[string]interface{}{
-		"command": cmd,
+/*
+Ok:
+{
+	"componentId": "keboola.keboola-buffer",
+	"type": "info",
+	"message": "...",
+	"duration": "...",
+	"params": {
+		"task": "..."
+	},
+	"results": {
+		"projectId": "...",
 	}
-	results := map[string]interface{}{
-		"projectId": projectID,
-		"error":     fmt.Sprintf("%s", err),
+}
+
+Error:
+{
+	"componentId": "keboola.keboola-buffer",
+	"type": "error",
+	"message": "...",
+	"duration": "...",
+	"params": {
+		"task": "..."
+	},
+	"results": {
+		"projectId": "...",
+		"error": "...",
 	}
-	event, err := storageapi.CreatEventRequest(&storageapi.Event{
+}
+*/
+
+func (s *Sender) sendEvent(ctx context.Context, start time.Time, err error, task string, msg func(error) string, projectID int) {
+	event := &storageapi.Event{
 		ComponentID: componentID,
-		Type:        "error",
-		Message:     msg,
-		Duration:    client.DurationSeconds(duration),
-		Params:      params,
-		Results:     results,
-	}).Send(ctx, s.client)
+		Message:     msg(err),
+		Type:        "info",
+		Duration:    client.DurationSeconds(time.Since(start)),
+		Params: map[string]interface{}{
+			"task": task,
+		},
+		Results: map[string]interface{}{
+			"projectId": projectID,
+		},
+	}
+	if err != nil {
+		event.Type = "error"
+		event.Results["error"] = fmt.Sprintf("%s", err)
+	}
+
+	event, err = storageapi.CreatEventRequest(event).Send(ctx, s.client)
 	if err == nil {
-		s.logger.Debugf("Sent \"%s\" failed event id: \"%s\"", cmd, event.ID)
+		s.logger.Debugf("Sent \"%s\" event id: \"%s\"", task, event.ID)
 	} else {
-		s.logger.Warnf("Cannot send \"%s\" failed event: %s", cmd, err)
+		s.logger.Warnf("Cannot send \"%s\" event: %s", task, err)
 	}
 }
