@@ -239,20 +239,16 @@ func TestSchema(t *testing.T) {
 			"runtime/lock/task/00000123/my-receiver/my-export/my-lock",
 		},
 		{
-			s.Runtime().Counter().Prefix(),
-			"runtime/counter/",
+			s.Runtime().LastRecordID().Prefix(),
+			"runtime/last/record/id/",
 		},
 		{
-			s.Runtime().Counter().RecordID().Prefix(),
-			"runtime/counter/record/id/",
+			s.Runtime().LastRecordID().InReceiver(exportKey.ReceiverKey).Prefix(),
+			"runtime/last/record/id/00000123/my-receiver/",
 		},
 		{
-			s.Runtime().Counter().RecordID().InReceiver(exportKey.ReceiverKey).Prefix(),
-			"runtime/counter/record/id/00000123/my-receiver/",
-		},
-		{
-			s.Runtime().Counter().RecordID().ByKey(exportKey).Key(),
-			"runtime/counter/record/id/00000123/my-receiver/my-export",
+			s.Runtime().LastRecordID().ByKey(exportKey).Key(),
+			"runtime/last/record/id/00000123/my-receiver/my-export",
 		},
 		{
 			s.Tasks().Prefix(),
