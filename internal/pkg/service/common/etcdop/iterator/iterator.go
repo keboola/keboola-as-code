@@ -67,7 +67,7 @@ func (v *ForEachOp) Op(ctx context.Context) (etcd.Op, error) {
 	// Other pages are loaded within MapResponse method, see below.
 	// Iterator always load next pages WithRevision,
 	// so all results, from all pages, are from the same revision.
-	return firstPageOp(v.def.prefix, v.def.pageSize, v.def.revision).Op(ctx)
+	return firstPageOp(v.def.prefix, v.def.end, v.def.pageSize, v.def.revision).Op(ctx)
 }
 
 func (v *ForEachOp) MapResponse(ctx context.Context, response op.Response) (result any, err error) {
@@ -190,7 +190,7 @@ func (v *Iterator) nextPage() bool {
 	}
 
 	// Do with retry
-	_, raw, err := nextPageOp(v.prefix, v.start, v.pageSize, v.revision).DoWithRaw(v.ctx, v.client, v.opts...)
+	_, raw, err := nextPageOp(v.start, v.end, v.pageSize, v.revision).DoWithRaw(v.ctx, v.client, v.opts...)
 	if err != nil {
 		v.err = errors.Errorf(`etcd iterator failed: cannot get page "%s", page=%d: %w`, v.start, v.page, err)
 		return false
@@ -227,15 +227,15 @@ func (v *Iterator) moveToPage(resp *etcd.GetResponse) bool {
 	return true
 }
 
-func firstPageOp(prefix string, pageSize int, revision int64) op.GetManyOp {
-	return nextPageOp(prefix, prefix, pageSize, revision)
+func firstPageOp(prefix, end string, pageSize int, revision int64) op.GetManyOp {
+	return nextPageOp(prefix, end, pageSize, revision)
 }
 
-func nextPageOp(prefix, start string, pageSize int, revision int64) op.GetManyOp {
+func nextPageOp(start, end string, pageSize int, revision int64) op.GetManyOp {
 	// Range options
 	opts := []etcd.OpOption{
 		etcd.WithFromKey(),
-		etcd.WithRange(etcd.GetPrefixRangeEnd(prefix)), // iterate to the end of the prefix
+		etcd.WithRange(end), // iterate to the end of the prefix
 		etcd.WithLimit(int64(pageSize)),
 		etcd.WithSort(etcd.SortByKey, etcd.SortAscend),
 	}

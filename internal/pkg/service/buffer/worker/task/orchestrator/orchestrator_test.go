@@ -2,6 +2,7 @@ package orchestrator_test
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -52,16 +53,12 @@ func TestOrchestrator(t *testing.T) {
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
 
 	// Orchestrator config
-	taskDone := make(chan struct{})
 	config := orchestrator.Config[testResource]{
 		Prefix:         pfx,
 		ReSyncInterval: time.Second,
 		TaskType:       "some.task",
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Task {
 			return func(_ context.Context, logger log.Logger) (task.Result, error) {
-				defer func() {
-					close(taskDone)
-				}()
 				logger.Info("message from the task")
 				return event.Value.ID, nil
 			}
@@ -75,7 +72,16 @@ func TestOrchestrator(t *testing.T) {
 	// Put some key to trigger the task
 	assert.NoError(t, pfx.Key("key1").Put(testResource{ExportKey: exportKey, ID: "ResourceID"}).Do(ctx, client))
 
-	<-taskDone
+	// Wait for "not assigned" message form the node 1
+	assert.Eventually(t, func() bool {
+		return strings.Contains(d1.DebugLogger().AllMessages(), "DEBUG  not assigned")
+	}, time.Second, 10*time.Millisecond, "timeout")
+
+	// Wait for task on the node 2
+	assert.Eventually(t, func() bool {
+		return strings.Contains(d2.DebugLogger().AllMessages(), "DEBUG  lock released")
+	}, time.Second, 10*time.Millisecond, "timeout")
+
 	cancel()
 	wg.Wait()
 	d1.Process().Shutdown(errors.New("bye bye 1"))
@@ -100,7 +106,6 @@ func TestOrchestrator(t *testing.T) {
 [task][%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/my-export/some.task/ResourceID"
 [task][%s]INFO  message from the task
 [task][%s]INFO  task succeeded (%s): ResourceID
-%A
 [task][%s]DEBUG  lock released "runtime/lock/task/00001000/my-receiver/my-export/some.task/ResourceID"
 %A
 `, d2.DebugLogger().AllMessages())

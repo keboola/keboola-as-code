@@ -20,7 +20,7 @@ const Opened State = "opened"
 const Closing State = "closing"
 
 // Closed
-// The file is ready for import.
+// The file is ready for import, the manifest has been uploaded.
 const Closed State = "closed"
 
 // Importing

@@ -42,6 +42,7 @@ type RevisionSyncer struct {
 	ctx          context.Context
 	wg           *sync.WaitGroup
 	logger       log.Logger
+	stats        StatsSyncer
 	targetKey    etcdop.Key
 	syncInterval time.Duration
 
@@ -59,14 +60,19 @@ type RevisionSyncer struct {
 	revInUse map[int64]int
 }
 
+type StatsSyncer interface {
+	Sync(ctx context.Context) <-chan struct{}
+}
+
 type UnlockFn func()
 
-func newSyncer(ctx context.Context, wg *sync.WaitGroup, clk clock.Clock, logger log.Logger, sess *concurrency.Session, targetKey etcdop.Key, syncInterval time.Duration) (*RevisionSyncer, error) {
+func newSyncer(ctx context.Context, wg *sync.WaitGroup, clk clock.Clock, logger log.Logger, stats StatsSyncer, sess *concurrency.Session, targetKey etcdop.Key, syncInterval time.Duration) (*RevisionSyncer, error) {
 	// Create
 	s := &RevisionSyncer{
 		ctx:          ctx,
 		wg:           wg,
 		logger:       logger,
+		stats:        stats,
 		targetKey:    targetKey,
 		syncInterval: syncInterval,
 		session:      sess,
@@ -201,6 +207,9 @@ func (s *RevisionSyncer) sync() error {
 		// nop
 		return nil
 	}
+
+	// Force statistics sync
+	<-s.stats.Sync(s.ctx)
 
 	// Update etcd key
 	updateOp := s.targetKey.Put(cast.ToString(minRevInUse), etcd.WithLease(s.session.Lease()))

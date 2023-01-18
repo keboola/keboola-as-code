@@ -15,6 +15,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
+type statsSyncer struct {
+	logger log.Logger
+}
+
+func (s *statsSyncer) Sync(_ context.Context) <-chan struct{} {
+	s.logger.Debug(">>> statistics sync")
+	done := make(chan struct{})
+	close(done)
+	return done
+}
+
 func TestRevisionSyncer(t *testing.T) {
 	t.Parallel()
 
@@ -31,7 +42,7 @@ func TestRevisionSyncer(t *testing.T) {
 
 	// Create revision syncer.
 	interval := 1 * time.Second
-	s, err := newSyncer(ctx, wg, clk, logger, session, "my/revision", interval)
+	s, err := newSyncer(ctx, wg, clk, logger, &statsSyncer{logger: logger}, session, "my/revision", interval)
 	doSync := func() {
 		clk.Add(interval)
 	}
@@ -146,13 +157,17 @@ my/revision (lease=%s)
 
 	// Check logs - no unexpected syncs
 	wildcards.Assert(t, `
+DEBUG  >>> statistics sync
 INFO  reported revision "1"
+DEBUG  >>> statistics sync
 INFO  reported revision "30"
 INFO  locked revision "30"
 INFO  locked revision "50"
 INFO  unlocked revision "30"
+DEBUG  >>> statistics sync
 INFO  reported revision "50"
 INFO  unlocked revision "50"
+DEBUG  >>> statistics sync
 INFO  reported revision "70"
 INFO  close session
 `, logger.AllMessages())

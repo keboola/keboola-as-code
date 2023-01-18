@@ -13,6 +13,7 @@ import (
 type Slice struct {
 	key.SliceKey
 	State       slicestate.State `json:"state" validate:"required,oneof=opened closing closed uploading uploaded failed"`
+	IsEmpty     bool             `json:"isEmpty,omitempty"`
 	Mapping     Mapping          `json:"mapping" validate:"required,dive"`
 	Number      int              `json:"sliceNumber" validate:"required"`
 	ClosingAt   *UTCTime         `json:"closingAt,omitempty"`
@@ -20,6 +21,8 @@ type Slice struct {
 	UploadedAt  *UTCTime         `json:"uploadedAt,omitempty"`
 	FailedAt    *UTCTime         `json:"failedAt,omitempty"`
 	LastError   string           `json:"lastError,omitempty"`
+	// Statistics are set by the "slice close" operation, the value is nil, if there is no record.
+	Statistics *Stats `json:"statistics,omitempty"`
 }
 
 func NewSlice(fileKey key.FileKey, now time.Time, mapping Mapping, number int) Slice {

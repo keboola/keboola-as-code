@@ -12,7 +12,7 @@ import (
 )
 
 // ReadBody of the import endpoint, body length is limited.
-func ReadBody(bodyReader io.ReadCloser) (str string, err error) {
+func ReadBody(bodyReader io.ReadCloser) (str string, size int64, err error) {
 	// Close reader at the end
 	defer func() {
 		if closeErr := bodyReader.Close(); closeErr != nil && err == nil {
@@ -27,15 +27,15 @@ func ReadBody(bodyReader io.ReadCloser) (str string, err error) {
 
 	// Read request body
 	var out strings.Builder
-	size, err := io.Copy(&out, limitedReader)
+	size, err = io.Copy(&out, limitedReader)
 	if err != nil {
-		return "", errors.Errorf("cannot read: %w", err)
+		return "", 0, errors.Errorf("cannot read: %w", err)
 	}
 
 	// Check maximum size
 	if datasize.ByteSize(size) > limit {
-		return "", serviceError.NewPayloadTooLargeError(errors.Wrapf(err, `payload too large, the maximum size is %s`, limit.String()))
+		return "", 0, serviceError.NewPayloadTooLargeError(errors.Wrapf(err, `payload too large, the maximum size is %s`, limit.String()))
 	}
 
-	return out.String(), nil
+	return out.String(), size, nil
 }

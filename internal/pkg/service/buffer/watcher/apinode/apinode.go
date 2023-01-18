@@ -13,6 +13,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
@@ -30,6 +31,7 @@ type Node struct {
 	clock  clock.Clock
 	logger log.Logger
 	client *etcd.Client
+	stats  *statistics.APINode
 
 	revision  *RevisionSyncer
 	receivers *stateOf[model.ReceiverBase]
@@ -48,6 +50,7 @@ type Dependencies interface {
 	Process() *servicectx.Process
 	Schema() *schema.Schema
 	EtcdClient() *etcd.Client
+	StatsAPINode() *statistics.APINode
 }
 
 type stateOf[T any] struct {
@@ -69,6 +72,7 @@ func New(d Dependencies, opts ...Option) (*Node, error) {
 		clock:  d.Clock(),
 		logger: d.Logger().AddPrefix("[api][watcher]"),
 		client: d.EtcdClient(),
+		stats:  d.StatsAPINode(),
 	}
 
 	// Create etcd session
@@ -91,7 +95,7 @@ func New(d Dependencies, opts ...Option) (*Node, error) {
 	// Sync slices revision to Worker nodes
 	nodeID := d.Process().UniqueID()
 	revisionKey := sm.Runtime().APINodes().Watchers().Revision().Node(nodeID)
-	n.revision, err = newSyncer(n.ctx, n.wg, n.clock, n.logger, sess, revisionKey, c.syncInterval)
+	n.revision, err = newSyncer(n.ctx, n.wg, n.clock, n.logger, n.stats, sess, revisionKey, c.syncInterval)
 	if err != nil {
 		return nil, err
 	}

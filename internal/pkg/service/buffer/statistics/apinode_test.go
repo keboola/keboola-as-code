@@ -35,7 +35,7 @@ func TestStatsManager(t *testing.T) {
 	etcdhelper.AssertKVs(t, client, "")
 
 	// notify -> wait 1 second -> sync
-	node.Notify(sliceKey, 1000)
+	node.Notify(sliceKey, 1000, 1100)
 	etcdhelper.ExpectModification(t, client, func() {
 		clk.Add(SyncInterval)
 	})
@@ -49,9 +49,10 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
   "exportId": "my-export",
   "fileId": "1970-01-01T00:00:00.000Z",
   "sliceId": "1970-01-01T00:00:00.000Z",
-  "count": 1,
-  "size": 1000,
-  "lastRecordAt": "1970-01-01T01:00:01.000Z"
+  "lastRecordAt": "1970-01-01T01:00:01.000Z",
+  "recordsCount": 1,
+  "recordsSize": 1000,
+  "bodySize": 1100
 }
 >>>>>
 `)
@@ -68,15 +69,16 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
   "exportId": "my-export",
   "fileId": "1970-01-01T00:00:00.000Z",
   "sliceId": "1970-01-01T00:00:00.000Z",
-  "count": 1,
-  "size": 1000,
-  "lastRecordAt": "1970-01-01T01:00:01.000Z"
+  "lastRecordAt": "1970-01-01T01:00:01.000Z",
+  "recordsCount": 1,
+  "recordsSize": 1000,
+  "bodySize": 1100
 }
 >>>>>
 `)
 
 	// notify -> wait 1 second -> sync
-	node.Notify(sliceKey, 2000)
+	node.Notify(sliceKey, 2000, 2200)
 	etcdhelper.ExpectModification(t, client, func() {
 		clk.Add(SyncInterval)
 	})
@@ -90,9 +92,10 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
   "exportId": "my-export",
   "fileId": "1970-01-01T00:00:00.000Z",
   "sliceId": "1970-01-01T00:00:00.000Z",
-  "count": 2,
-  "size": 3000,
-  "lastRecordAt": "1970-01-01T01:00:03.000Z"
+  "lastRecordAt": "1970-01-01T01:00:03.000Z",
+  "recordsCount": 2,
+  "recordsSize": 3000,
+  "bodySize": 3300
 }
 >>>>>
 `)
@@ -109,15 +112,16 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
   "exportId": "my-export",
   "fileId": "1970-01-01T00:00:00.000Z",
   "sliceId": "1970-01-01T00:00:00.000Z",
-  "count": 2,
-  "size": 3000,
-  "lastRecordAt": "1970-01-01T01:00:03.000Z"
+  "lastRecordAt": "1970-01-01T01:00:03.000Z",
+  "recordsCount": 2,
+  "recordsSize": 3000,
+  "bodySize": 3300
 }
 >>>>>
 `)
 
 	// notify before shutdown
-	node.Notify(sliceKey, 3000)
+	node.Notify(sliceKey, 3000, 3300)
 	etcdhelper.ExpectModification(t, client, func() {
 		d.Process().Shutdown(errors.New("test shutdown"))
 		d.Process().WaitForShutdown()
@@ -134,9 +138,10 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
   "exportId": "my-export",
   "fileId": "1970-01-01T00:00:00.000Z",
   "sliceId": "1970-01-01T00:00:00.000Z",
-  "count": 3,
-  "size": 6000,
-  "lastRecordAt": "1970-01-01T01:00:05.000Z"
+  "lastRecordAt": "1970-01-01T01:00:05.000Z",
+  "recordsCount": 3,
+  "recordsSize": 6000,
+  "bodySize": 6600
 }
 >>>>>
 `)

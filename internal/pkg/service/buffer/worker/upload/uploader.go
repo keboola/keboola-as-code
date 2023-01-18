@@ -24,6 +24,7 @@ type Uploader struct {
 	client  *etcd.Client
 	schema  *schema.Schema
 	watcher *watcher.WorkerNode
+	config  config
 }
 
 type dependencies interface {
@@ -38,7 +39,7 @@ type dependencies interface {
 	TaskWorkerNode() *task.Node
 }
 
-func NewUploader(d dependencies) (*Uploader, error) {
+func NewUploader(d dependencies, ops ...Option) (*Uploader, error) {
 	u := &Uploader{
 		clock:   d.Clock(),
 		logger:  d.Logger().AddPrefix("[upload]"),
@@ -46,6 +47,7 @@ func NewUploader(d dependencies) (*Uploader, error) {
 		client:  d.EtcdClient(),
 		schema:  d.Schema(),
 		watcher: d.WatcherWorkerNode(),
+		config:  newConfig(ops),
 	}
 
 	// Graceful shutdown
@@ -60,8 +62,9 @@ func NewUploader(d dependencies) (*Uploader, error) {
 	})
 
 	// Create tasks
-	init := []<-chan error{
-		u.closeSlices(ctx, wg, d),
+	var init []<-chan error
+	if u.config.CloseSlices {
+		init = append(init, u.closeSlices(ctx, wg, d))
 	}
 
 	// Check initialization

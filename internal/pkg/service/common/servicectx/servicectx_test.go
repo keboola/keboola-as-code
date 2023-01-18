@@ -45,7 +45,9 @@ func TestProcess_Add(t *testing.T) {
 		logger.Info("end3")
 		op3.Done()
 	})
+	startShutdown := make(chan struct{})
 	proc.Add(func(ctx context.Context, shutdown ShutdownFn) {
+		<-startShutdown
 		shutdown(errors.New("operation failed"))
 	})
 	proc.OnShutdown(func() {
@@ -58,9 +60,10 @@ func TestProcess_Add(t *testing.T) {
 		op3.Wait()
 		logger.Info("onShutdown3")
 	})
-	proc.WaitForShutdown()
 
 	// Wait can be called multiple times
+	close(startShutdown)
+	proc.WaitForShutdown()
 	proc.WaitForShutdown()
 	proc.WaitForShutdown()
 	proc.WaitForShutdown()

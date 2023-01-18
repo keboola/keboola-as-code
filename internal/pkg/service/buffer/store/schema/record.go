@@ -35,6 +35,18 @@ func (v *Schema) Records() RecordsRoot {
 	return RecordsRoot{records: NewPrefix("record")}
 }
 
+func (v RecordsRoot) InReceiver(k storeKey.ReceiverKey) RecordsInReceiver {
+	return RecordsInReceiver{
+		records: v.records.Add(k.String()),
+	}
+}
+
+func (v RecordsRoot) InSlice(k storeKey.SliceKey) RecordsInSlice {
+	return RecordsInSlice{
+		records: v.records.Add(k.ExportKey.String()).Add(k.SliceID.String()),
+	}
+}
+
 func (v RecordsRoot) ByKey(k storeKey.RecordKey) Key {
-	return v.records.Key(k.String())
+	return v.InSlice(k.SliceKey).Key(k.ID())
 }

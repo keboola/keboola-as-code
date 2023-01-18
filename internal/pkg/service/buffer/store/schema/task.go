@@ -28,15 +28,15 @@ func (v *Schema) Tasks() TasksRoot {
 	return TasksRoot{tasks: NewTypedPrefix[model.Task]("task", v.serde)}
 }
 
-func (v TasksRoot) ByProject(projectID key.ProjectID) TasksByProject {
+func (v TasksRoot) InProject(projectID key.ProjectID) TasksByProject {
 	return TasksByProject{tasks: v.tasks.Add(projectID.String())}
 }
 
-func (v TasksRoot) ByReceiver(k key.ReceiverKey) TasksByReceiver {
+func (v TasksRoot) InReceiver(k key.ReceiverKey) TasksByReceiver {
 	return TasksByReceiver{tasks: v.tasks.Add(k.String())}
 }
 
-func (v TasksRoot) ByExport(k key.ExportKey) TasksByReceiver {
+func (v TasksRoot) InExport(k key.ExportKey) TasksByReceiver {
 	return TasksByReceiver{tasks: v.tasks.Add(k.String())}
 }
 

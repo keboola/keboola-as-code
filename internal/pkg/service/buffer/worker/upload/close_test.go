@@ -9,10 +9,11 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
+	etcd "go.etcd.io/etcd/client/v3"
 
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
-	workerservice "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/upload"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -30,48 +31,72 @@ func TestSliceCloseTask(t *testing.T) {
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	opts := []dependencies.MockedOption{dependencies.WithClock(clk), dependencies.WithEtcdNamespace(etcdNamespace)}
-	str := bufferDependencies.NewMockedDeps(t, opts...).Store()
-
-	// Create an export
-	sliceKey := createExport(t, ctx, clk, client, str)
 
 	// Start API node
-	apiDeps := bufferDependencies.NewMockedDeps(t, opts...)
-	apiDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
-	apiNode := apiDeps.WatcherAPINode()
+	apiDeps1 := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("api-node-1"))...)
+	apiDeps1.DebugLogger().ConnectTo(testhelper.VerboseStdout())
+	apiNode := apiDeps1.WatcherAPINode()
+
+	// Some other API node is also running
+	apiDeps2 := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("api-node-2"))...)
+	_ = apiDeps2.WatcherAPINode()
 
 	// Start worker node
 	workerDeps := bufferDependencies.NewMockedDeps(t, opts...)
 	workerDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
-	_, err := workerservice.New(workerDeps)
+	_, err := upload.NewUploader(workerDeps, upload.WithCloseSlices(true), upload.WithUploadSlices(false))
 	assert.NoError(t, err)
 
-	// The receiver, in the current state, is twice used by some requests, in the API node
-	_, found, unlockR1 := apiNode.GetReceiver(sliceKey.ReceiverKey)
-	assert.True(t, found)
-	_, found, unlockR2 := apiNode.GetReceiver(sliceKey.ReceiverKey)
-	assert.True(t, found)
+	// Create receivers and exports
+	str := apiDeps1.Store()
+	emptySliceKey := createExport(t, "my-receiver-1", "my-export-1", ctx, clk, client, str)
+	clk.Add(time.Minute)
+	notEmptySliceKey := createExport(t, "my-receiver-2", "my-export-2", ctx, clk, client, str)
+	clk.Add(time.Minute)
+	createRecords(t, ctx, clk, apiDeps1, notEmptySliceKey.ReceiverKey, 1, 1)
+	createRecords(t, ctx, clk, apiDeps2, notEmptySliceKey.ReceiverKey, 2, 2)
 
 	// NOW = slice.closingAt = task.createdAt = 0001-01-01T00:01:01Z
 	clk.Add(time.Minute)
 
-	// Slice is closing (mapping has been changed or upload conditions are met)
-	slice, err := str.GetSlice(ctx, sliceKey)
+	// Truncate init logs
+	apiDeps1.DebugLogger().Truncate()
+	workerDeps.DebugLogger().Truncate()
+
+	// The receiver, in the current state, is twice used by some requests, in the API node
+	_, found, unlockR1 := apiNode.GetReceiver(emptySliceKey.ReceiverKey)
+	assert.True(t, found)
+	_, found, unlockR2 := apiNode.GetReceiver(emptySliceKey.ReceiverKey)
+	assert.True(t, found)
+	_, found, unlockR3 := apiNode.GetReceiver(notEmptySliceKey.ReceiverKey)
+	assert.True(t, found)
+	workerDeps.DebugLogger().Info("---> locked")
+	apiDeps1.DebugLogger().Info("---> locked")
+
+	// Close the empty slice (mapping has been changed or upload conditions are met)
+	emptySlice, err := str.GetSlice(ctx, emptySliceKey)
 	assert.NoError(t, err)
 	header := etcdhelper.ExpectModification(t, client, func() {
-		ok, err := str.SetSliceState(ctx, &slice, slicestate.Closing)
-		assert.True(t, ok)
-		assert.NoError(t, err)
+		assert.NoError(t, str.SetSliceState(ctx, &emptySlice, slicestate.Closing))
 	})
-
-	// Wait for sync of the Watcher in the API node
 	assert.Eventually(t, func() bool {
-		return apiDeps.WatcherAPINode().StateRev() == header.Revision
+		return apiNode.StateRev() >= header.Revision
 	}, time.Second, 10*time.Millisecond, "timeout")
-
-	// Wait until the worker node start wait for the API nodes
 	assert.Eventually(t, func() bool {
 		return workerDeps.WatcherWorkerNode().ListenersCount() == 1
+	}, time.Second, 10*time.Millisecond, "timeout")
+
+	// Close the not empty slice (mapping has been changed or upload conditions are met)
+	notEmptySlice, err := str.GetSlice(ctx, notEmptySliceKey)
+	assert.NoError(t, err)
+	header = etcdhelper.ExpectModification(t, client, func() {
+		assert.NoError(t, str.SetSliceState(ctx, &notEmptySlice, slicestate.Closing))
+	})
+	assert.Eventually(t, func() bool {
+		return apiNode.StateRev() >= header.Revision
+	}, time.Second, 10*time.Millisecond, "timeout")
+	assert.Eventually(t, func() bool {
+		return workerDeps.WatcherWorkerNode().ListenersCount() == 2
 	}, time.Second, 10*time.Millisecond, "timeout")
 
 	// NOW = slice.uploadingAt = task.finishedAt = 0001-01-01T00:01:31Z
@@ -79,112 +104,32 @@ func TestSliceCloseTask(t *testing.T) {
 
 	// Requests which were writing to the closing slice are completed.
 	// Worker can switch the slice from the closing to the uploading state.
-	workerDeps.DebugLogger().Info("---> first unlock")
-	apiDeps.DebugLogger().Info("---> first unlock")
+	workerDeps.DebugLogger().Info("---> unlocked")
+	apiDeps1.DebugLogger().Info("---> unlocked")
 	unlockR1()
-	workerDeps.DebugLogger().Info("---> second unlock")
-	apiDeps.DebugLogger().Info("---> second unlock")
 	unlockR2()
-
-	// Wait for the Worker task to finish
+	unlockR3()
 	assert.Eventually(t, func() bool {
 		return workerDeps.TaskWorkerNode().TasksCount() == 0
 	}, time.Second, 10*time.Millisecond, "timeout")
 
 	// Shutdown API node and worker
-	apiDeps.Process().Shutdown(errors.New("bye bye API"))
-	apiDeps.Process().WaitForShutdown()
+	apiDeps1.Process().Shutdown(errors.New("bye bye API"))
+	apiDeps1.Process().WaitForShutdown()
+	apiDeps2.Process().Shutdown(errors.New("bye bye API"))
+	apiDeps2.Process().WaitForShutdown()
 	workerDeps.Process().Shutdown(errors.New("bye bye Worker"))
 	workerDeps.Process().WaitForShutdown()
 
-	// Check etcd state
-	etcdhelper.AssertKVs(t, client, `
-%A
-<<<<<
-slice/uploading/00000123/my-receiver/my-export/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
------
-{
-  "projectId": 123,
-  "receiverId": "my-receiver",
-  "exportId": "my-export",
-  "fileId": "0001-01-01T00:00:01.000Z",
-  "sliceId": "0001-01-01T00:00:01.000Z",
-  "state": "uploading",
-  "mapping": {
-    "projectId": 123,
-    "receiverId": "my-receiver",
-    "exportId": "my-export",
-    "revisionId": 1,
-    "tableId": "in.c-bucket.table",
-    "incremental": false,
-    "columns": [
-      {
-        "type": "id",
-        "name": "col01"
-      },
-      {
-        "type": "datetime",
-        "name": "col02"
-      },
-      {
-        "type": "ip",
-        "name": "col03"
-      },
-      {
-        "type": "body",
-        "name": "col04"
-      },
-      {
-        "type": "headers",
-        "name": "col05"
-      },
-      {
-        "type": "template",
-        "name": "col06",
-        "language": "jsonnet",
-        "content": "\"---\" + Body(\"key1\") + \"---\""
-      }
-    ]
-  },
-  "sliceNumber": 1,
-  "closingAt": "0001-01-01T00:01:01.000Z",
-  "uploadingAt": "0001-01-01T00:01:31.000Z"
-}
->>>>>
-
-<<<<<
-task/00000123/my-receiver/my-export/slice.close/0001-01-01T00:01:01.000Z_%c%c%c%c%c
------
-{
-  "projectId": 123,
-  "receiverId": "my-receiver",
-  "exportId": "my-export",
-  "type": "slice.close",
-  "createdAt": "0001-01-01T00:01:01.000Z",
-  "randomId": "%s",
-  "finishedAt": "0001-01-01T00:01:31.000Z",
-  "workerNode": "%s",
-  "lock": "slice.close/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
-  "result": "slice closed",
-  "duration": 30000000000
-}
->>>>>
-`)
-
 	// Check logs
 	wildcards.Assert(t, `
-INFO  process unique id "%s"
-[api][watcher][etcd-session]INFO  creating etcd session
-[api][watcher][etcd-session]INFO  created etcd session | %s
-[api][watcher]INFO  reported revision "1"
-[api][watcher]INFO  state updated to the revision "%s"
-[api][watcher]INFO  reported revision "%s"
-[api][watcher]INFO  initialized | %s
 [api][watcher]INFO  locked revision "%s"
-[api][watcher]INFO  deleted slice/opened/00000123/my-receiver/my-export/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
+INFO  ---> locked
+[api][watcher]INFO  deleted slice/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
 [api][watcher]INFO  state updated to the revision "%s"
-INFO  ---> first unlock
-INFO  ---> second unlock
+[api][watcher]INFO  deleted slice/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
+[api][watcher]INFO  state updated to the revision "%s"
+INFO  ---> unlocked
 [api][watcher]INFO  unlocked revision "%s"
 [api][watcher]INFO  reported revision "%s"
 INFO  exiting (bye bye API)
@@ -192,23 +137,148 @@ INFO  exiting (bye bye API)
 [api][watcher]INFO  shutdown done
 [api][watcher][etcd-session]INFO  closing etcd session
 [api][watcher][etcd-session]INFO  closed etcd session | %s
+[stats]INFO  received shutdown request
+[stats]INFO  shutdown done
 INFO  exited
-
-`, apiDeps.DebugLogger().AllMessages())
-
+`, apiDeps1.DebugLogger().AllMessages())
 	wildcards.Assert(t, `
-%A
-[orchestrator][slice.close]INFO  ready
-[orchestrator][slice.close]INFO  assigned "00000123/my-receiver/my-export/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z"
-[task][%s]INFO  started task "00000123/my-receiver/my-export/slice.close/0001-01-01T00:01:01.000Z_%s"
-[task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver/my-export/slice.close/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z"
+INFO  ---> locked
+[orchestrator][slice.close]INFO  assigned "00000123/my-receiver-1/my-export-1/%s"
+[task][%s]INFO  started task "00000123/my-receiver-1/my-export-1/slice.close/%s"
+[task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-1/my-export-1/slice.close/%s"
 [task][%s]INFO  waiting until all API nodes switch to a revision >= %s
-INFO  ---> first unlock
-INFO  ---> second unlock
-[watcher][worker]INFO  revision updated to "%s", unblocked "1" listeners
-[task][%s]INFO  task succeeded (30s): slice closed
-[task][%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver/my-export/slice.close/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z"
-%A
+[orchestrator][slice.close]INFO  assigned "00000123/my-receiver-2/my-export-2/%s"
+[task][%s]INFO  started task "00000123/my-receiver-2/my-export-2/slice.close/%s"
+[task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.close/%s"
+[task][%s]INFO  waiting until all API nodes switch to a revision >= %s
+INFO  ---> unlocked
+[watcher][worker]INFO  revision updated to "%s", unblocked "2" listeners
+[task][%s]INFO  task succeeded (30s): %A
+[task][%s]INFO  task succeeded (30s): %A
 INFO  exited
 `, workerDeps.DebugLogger().AllMessages())
+
+	// Check etcd state
+	assertStateAfterClose(t, client)
+
+	// After deleting the receivers, the database should remain empty
+	assert.NoError(t, str.DeleteReceiver(ctx, emptySlice.ReceiverKey))
+	assert.NoError(t, str.DeleteReceiver(ctx, notEmptySlice.ReceiverKey))
+	etcdhelper.AssertKVs(t, client, "")
+}
+
+func assertStateAfterClose(t *testing.T, client *etcd.Client) {
+	t.Helper()
+	etcdhelper.AssertKVs(t, client, `
+<<<<<
+config/export/00000123/my-receiver-1/my-export-1
+-----
+%A
+>>>>>
+
+<<<<<
+config/export/00000123/my-receiver-2/my-export-2
+-----
+%A
+>>>>>
+
+<<<<<
+config/mapping/revision/00000123/my-receiver-1/my-export-1/00000001
+-----
+%A
+>>>>>
+
+<<<<<
+config/mapping/revision/00000123/my-receiver-2/my-export-2/00000001
+-----
+%A
+>>>>>
+
+<<<<<
+config/receiver/00000123/my-receiver-1
+-----
+%A
+>>>>>
+
+<<<<<
+config/receiver/00000123/my-receiver-2
+-----
+%A
+>>>>>
+
+<<<<<
+file/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z
+-----
+%A
+>>>>>
+
+<<<<<
+file/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z
+-----
+%A
+>>>>>
+
+<<<<<
+record/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:02.000Z_%s
+-----
+<<~~id~~>>,0001-01-01T00:02:02.000Z,1.2.3.4,"{""key"":""value001""}","{""Content-Type"":""application/json""}","""---value001---"""
+>>>>>
+
+<<<<<
+record/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:03.000Z_%s
+-----
+<<~~id~~>>,0001-01-01T00:02:03.000Z,1.2.3.4,"{""key"":""value002""}","{""Content-Type"":""application/json""}","""---value002---"""
+>>>>>
+
+<<<<<
+record/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:04.000Z_%s
+-----
+<<~~id~~>>,0001-01-01T00:02:04.000Z,1.2.3.4,"{""key"":""value003""}","{""Content-Type"":""application/json""}","""---value003---"""
+>>>>>
+
+<<<<<
+secret/export/token/00000123/my-receiver-1/my-export-1
+-----
+%A
+>>>>>
+
+<<<<<
+secret/export/token/00000123/my-receiver-2/my-export-2
+-----
+%A
+>>>>>
+
+<<<<<
+slice/uploading/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
+-----
+{
+%A
+  "state": "uploading",
+  "isEmpty": true,
+%A
+  "sliceNumber": 1,
+  "closingAt": "0001-01-01T00:03:04.000Z",
+  "uploadingAt": "0001-01-01T00:03:34.000Z"
+%A
+>>>>>
+
+<<<<<
+slice/uploading/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
+-----
+{
+%A
+  "state": "uploading",
+%A
+  "sliceNumber": 1,
+  "closingAt": "0001-01-01T00:03:04.000Z",
+  "uploadingAt": "0001-01-01T00:03:34.000Z",
+  "statistics": {
+    "lastRecordAt": "0001-01-01T00:02:04.000Z",
+    "recordsCount": 3,
+    "recordsSize": 396,
+    "bodySize": 54
+  }
+%A
+>>>>>
+`)
 }

@@ -14,6 +14,10 @@ type Files struct {
 	files
 }
 
+type FilesInReceiver struct {
+	files
+}
+
 type FilesInAState struct {
 	files
 }
@@ -59,6 +63,10 @@ func (v Files) Failed() FilesInAState {
 
 func (v FilesInAState) ByKey(k storeKey.FileKey) KeyT[model.File] {
 	return v.Key(k.String())
+}
+
+func (v FilesInAState) InReceiver(k storeKey.ReceiverKey) FilesInReceiver {
+	return FilesInReceiver{files: v.files.Add(k.String())}
 }
 
 func (v FilesInAState) InExport(k storeKey.ExportKey) FilesInExport {

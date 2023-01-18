@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -31,4 +32,17 @@ func (s *Store) CreateRecord(ctx context.Context, recordKey key.RecordKey, csvRo
 	}
 
 	return s.schema.Records().ByKey(recordKey).Put(csvRow).Do(ctx, s.client)
+}
+
+func (s *Store) CountRecords(ctx context.Context, k key.SliceKey) (count int64, err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.RecordsCount")
+	defer telemetry.EndSpan(span, &err)
+	err = s.countRecordsOp(k, &count).DoOrErr(ctx, s.client)
+	return count, err
+}
+
+func (s *Store) countRecordsOp(k key.SliceKey, out *int64) op.Op {
+	return s.schema.Records().InSlice(k).Count().WithOnResult(func(v int64) {
+		*out = v
+	})
 }

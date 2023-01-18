@@ -235,6 +235,40 @@ func TestIterator_Revision(t *testing.T) {
 	}, actual)
 }
 
+func TestIterator_End(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t)
+
+	prefix := etcdop.NewPrefix("some/prefix")
+
+	// There are 5 keys
+	assert.NoError(t, prefix.Key("foo001").Put("bar001").Do(ctx, client))
+	assert.NoError(t, prefix.Key("foo002").Put("bar002").Do(ctx, client))
+	assert.NoError(t, prefix.Key("foo003").Put("bar003").Do(ctx, client))
+	assert.NoError(t, prefix.Key("foo004").Put("bar004").Do(ctx, client))
+	assert.NoError(t, prefix.Key("foo005").Put("bar005").Do(ctx, client))
+
+	// Get all WithEnd, so only the first 3 keys are loaded
+	var actual []result
+	assert.NoError(
+		t,
+		prefix.
+			GetAll(iterator.WithEnd("foo004")).Do(ctx, client).
+			ForEach(func(kv *op.KeyValue, _ *iterator.Header) error {
+				actual = append(actual, result{key: string(kv.Key), value: string(kv.Value)})
+				return nil
+			}),
+	)
+
+	// The iterator only sees the values in the revision
+	assert.Equal(t, []result{
+		{key: "some/prefix/foo001", value: "bar001"},
+		{key: "some/prefix/foo002", value: "bar002"},
+		{key: "some/prefix/foo003", value: "bar003"},
+	}, actual)
+}
+
 func TestIterator_Value_UsedIncorrectly(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

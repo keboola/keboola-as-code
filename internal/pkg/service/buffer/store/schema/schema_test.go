@@ -8,8 +8,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 )
 
 type keyTestCase struct{ actual, expected string }
@@ -89,11 +91,11 @@ func TestSchema(t *testing.T) {
 			"file/",
 		},
 		{
-			s.Files().Opened().Prefix(),
-			"file/opened/",
+			s.Files().InState(filestate.Opened).InReceiver(receiverKey).Prefix(),
+			"file/opened/00000123/my-receiver/",
 		},
 		{
-			s.Files().Opened().InExport(exportKey).Prefix(),
+			s.Files().InState(filestate.Opened).InExport(exportKey).Prefix(),
 			"file/opened/00000123/my-receiver/my-export/",
 		},
 		{
@@ -101,64 +103,44 @@ func TestSchema(t *testing.T) {
 			"file/opened/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z",
 		},
 		{
+			s.Files().Opened().Prefix(),
+			"file/opened/",
+		},
+		{
 			s.Files().Closing().Prefix(),
 			"file/closing/",
-		},
-		{
-			s.Files().Closing().InExport(exportKey).Prefix(),
-			"file/closing/00000123/my-receiver/my-export/",
-		},
-		{
-			s.Files().Closing().ByKey(fileKey).Key(),
-			"file/closing/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z",
 		},
 		{
 			s.Files().Closed().Prefix(),
 			"file/closed/",
 		},
 		{
-			s.Files().Closed().InExport(exportKey).Prefix(),
-			"file/closed/00000123/my-receiver/my-export/",
-		},
-		{
-			s.Files().Closed().ByKey(fileKey).Key(),
-			"file/closed/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z",
-		},
-		{
-			s.Files().Importing().Prefix(),
-			"file/importing/",
-		},
-		{
-			s.Files().Importing().InExport(exportKey).Prefix(),
-			"file/importing/00000123/my-receiver/my-export/",
-		},
-		{
-			s.Files().Importing().ByKey(fileKey).Key(),
-			"file/importing/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z",
-		},
-		{
 			s.Files().Imported().Prefix(),
 			"file/imported/",
-		},
-		{
-			s.Files().Imported().InExport(exportKey).Prefix(),
-			"file/imported/00000123/my-receiver/my-export/",
-		},
-		{
-			s.Files().Imported().ByKey(fileKey).Key(),
-			"file/imported/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z",
 		},
 		{
 			s.Files().Failed().Prefix(),
 			"file/failed/",
 		},
 		{
-			s.Files().Failed().InExport(exportKey).Prefix(),
-			"file/failed/00000123/my-receiver/my-export/",
+			s.Slices().InState(slicestate.Opened).Prefix(),
+			"slice/opened/",
 		},
 		{
-			s.Files().Failed().ByKey(fileKey).Key(),
-			"file/failed/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z",
+			s.Slices().InState(slicestate.Opened).InReceiver(receiverKey).Prefix(),
+			"slice/opened/00000123/my-receiver/",
+		},
+		{
+			s.Slices().InState(slicestate.Opened).InExport(exportKey).Prefix(),
+			"slice/opened/00000123/my-receiver/my-export/",
+		},
+		{
+			s.Slices().InState(slicestate.Opened).InFile(fileKey).Prefix(),
+			"slice/opened/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
+		},
+		{
+			s.Slices().InState(slicestate.Opened).ByKey(sliceKey).Key(),
+			"slice/opened/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
 		},
 		{
 			s.Slices().Prefix(),
@@ -169,48 +151,32 @@ func TestSchema(t *testing.T) {
 			"slice/opened/",
 		},
 		{
-			s.Slices().Opened().InFile(fileKey).Prefix(),
-			"slice/opened/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
+			s.Slices().Closing().Prefix(),
+			"slice/closing/",
 		},
 		{
-			s.Slices().Opened().ByKey(sliceKey).Key(),
-			"slice/opened/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
+			s.Slices().Uploading().Prefix(),
+			"slice/uploading/",
 		},
 		{
-			s.Slices().Closing().InFile(fileKey).Prefix(),
-			"slice/closing/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
+			s.Slices().Uploaded().Prefix(),
+			"slice/uploaded/",
 		},
 		{
-			s.Slices().Closing().ByKey(sliceKey).Key(),
-			"slice/closing/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
-		},
-		{
-			s.Slices().Uploading().InFile(fileKey).Prefix(),
-			"slice/uploading/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
-		},
-		{
-			s.Slices().Uploading().ByKey(sliceKey).Key(),
-			"slice/uploading/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
-		},
-		{
-			s.Slices().Uploaded().InFile(fileKey).Prefix(),
-			"slice/uploaded/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
-		},
-		{
-			s.Slices().Uploaded().ByKey(sliceKey).Key(),
-			"slice/uploaded/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
-		},
-		{
-			s.Slices().Failed().InFile(fileKey).Prefix(),
-			"slice/failed/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
-		},
-		{
-			s.Slices().Failed().ByKey(sliceKey).Key(),
-			"slice/failed/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
+			s.Slices().Failed().Prefix(),
+			"slice/failed/",
 		},
 		{
 			s.Records().Prefix(),
 			"record/",
+		},
+		{
+			s.Records().InReceiver(receiverKey).Prefix(),
+			"record/00000123/my-receiver/",
+		},
+		{
+			s.Records().InSlice(sliceKey).Prefix(),
+			"record/00000123/my-receiver/my-export/2006-01-02T09:04:05.000Z/",
 		},
 		{
 			s.Records().ByKey(recordKey).Key(),
@@ -273,19 +239,35 @@ func TestSchema(t *testing.T) {
 			"runtime/lock/task/00000123/my-receiver/my-export/my-lock",
 		},
 		{
+			s.Runtime().Counter().Prefix(),
+			"runtime/counter/",
+		},
+		{
+			s.Runtime().Counter().RecordID().Prefix(),
+			"runtime/counter/record/id/",
+		},
+		{
+			s.Runtime().Counter().RecordID().InReceiver(exportKey.ReceiverKey).Prefix(),
+			"runtime/counter/record/id/00000123/my-receiver/",
+		},
+		{
+			s.Runtime().Counter().RecordID().ByKey(exportKey).Key(),
+			"runtime/counter/record/id/00000123/my-receiver/my-export",
+		},
+		{
 			s.Tasks().Prefix(),
 			"task/",
 		},
 		{
-			s.Tasks().ByProject(projectID).Prefix(),
+			s.Tasks().InProject(projectID).Prefix(),
 			"task/00000123/",
 		},
 		{
-			s.Tasks().ByReceiver(receiverKey).Prefix(),
+			s.Tasks().InReceiver(receiverKey).Prefix(),
 			"task/00000123/my-receiver/",
 		},
 		{
-			s.Tasks().ByExport(exportKey).Prefix(),
+			s.Tasks().InExport(exportKey).Prefix(),
 			"task/00000123/my-receiver/my-export/",
 		},
 		{
