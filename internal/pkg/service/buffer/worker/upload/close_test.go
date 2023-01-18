@@ -13,7 +13,6 @@ import (
 
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/upload"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -40,13 +39,12 @@ func TestSliceCloseTask(t *testing.T) {
 
 	// Some other API node is also running
 	apiDeps2 := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("api-node-2"))...)
-	_, err := watcher.NewAPINode(apiDeps2)
-	assert.NoError(t, err)
+	_ = apiDeps2.WatcherAPINode()
 
 	// Start worker node
 	workerDeps := bufferDependencies.NewMockedDeps(t, opts...)
 	workerDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
-	_, err = upload.NewUploader(workerDeps, upload.WithCloseSlices(true), upload.WithUploadSlices(false))
+	_, err := upload.NewUploader(workerDeps, upload.WithCloseSlices(true), upload.WithUploadSlices(false))
 	assert.NoError(t, err)
 
 	// Create receivers and exports
