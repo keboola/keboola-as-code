@@ -121,7 +121,7 @@ func TestSliceCloseTask(t *testing.T) {
 	workerDeps.Process().Shutdown(errors.New("bye bye Worker"))
 	workerDeps.Process().WaitForShutdown()
 
-	// Check logs
+	// Check API logs
 	wildcards.Assert(t, `
 [api][watcher]INFO  locked revision "%s"
 INFO  ---> locked
@@ -141,6 +141,8 @@ INFO  exiting (bye bye API)
 [stats]INFO  shutdown done
 INFO  exited
 `, apiDeps1.DebugLogger().AllMessages())
+
+	// Check worker logs
 	wildcards.Assert(t, `
 INFO  ---> locked
 [orchestrator][slice.close]INFO  assigned "00000123/my-receiver-1/my-export-1/%s"
