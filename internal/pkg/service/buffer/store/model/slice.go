@@ -13,6 +13,7 @@ import (
 type Slice struct {
 	key.SliceKey
 	State       slicestate.State `json:"state" validate:"required,oneof=opened closing closed uploading uploaded failed"`
+	IsEmpty     bool             `json:"isEmpty,omitempty"`
 	Mapping     Mapping          `json:"mapping" validate:"required,dive"`
 	Number      int              `json:"sliceNumber" validate:"required"`
 	ClosingAt   *UTCTime         `json:"closingAt,omitempty"`

@@ -122,6 +122,8 @@ func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) 
 			if recordsCount > 0 {
 				slice.Statistics = &stats
 				slice.Statistics.RecordsCount = uint64(recordsCount)
+			} else {
+				slice.IsEmpty = true
 			}
 
 			// Delete all "per node" statistics
