@@ -237,6 +237,12 @@ record/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00
 >>>>>
 
 <<<<<
+runtime/last/record/id/00000123/my-receiver-2/my-export-2
+-----
+3
+>>>>>
+
+<<<<<
 secret/export/token/00000123/my-receiver-1/my-export-1
 -----
 %A
@@ -277,6 +283,10 @@ slice/uploading/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001
     "recordsCount": 3,
     "recordsSize": 396,
     "bodySize": 54
+  },
+  "idRange": {
+    "start": 1,
+    "count": 3
   }
 %A
 >>>>>
