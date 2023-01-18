@@ -98,7 +98,8 @@ func (s *Store) listUploadedSlicesOp(_ context.Context, fileKey key.FileKey) ite
 func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) {
 	k := slice.SliceKey
 	statsPfx := s.schema.ReceivedStats().InSlice(k)
-	var recordsCount int64
+	var recordsCount uint64
+	var recordLastID uint64
 	var stats model.Stats
 	return op.
 		Atomic().
@@ -106,31 +107,41 @@ func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) 
 			return op.MergeToTxn(
 				assertAllPrevSlicesClosed(s.schema, k),
 				sumStatsOp(statsPfx.PrefixT().GetAll(), &stats),
-				s.countRecordsOp(slice.SliceKey, &recordsCount),
+				s.countRecordsOp(k, &recordsCount),
+				s.loadExportRecordsCounter(k.ExportKey, &recordLastID),
 			)
 		}).
 		WriteOrErr(func() (op.Op, error) {
 			var ops []op.Op
 
-			// Set ID range to the slice
-
-			// Update ID counter
+			// Copy slice and do modifications
+			modSlice := *slice
 
 			// Set statistics to the slice.
 			// The records count from the statistics may not be accurate
 			// if some statistics were not sent due to a network error.
 			if recordsCount > 0 {
-				slice.Statistics = &stats
-				slice.Statistics.RecordsCount = uint64(recordsCount)
+				modSlice.Statistics = &stats
+				modSlice.Statistics.RecordsCount = recordsCount
 			} else {
-				slice.IsEmpty = true
+				modSlice.IsEmpty = true
 			}
 
 			// Delete all "per node" statistics
 			ops = append(ops, statsPfx.DeleteAll())
 
-			// Set slice state from "closing" -> "uploading"
-			if v, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, slicestate.Uploading); err != nil {
+			// Set ID range to the slice and update counter
+			if recordsCount > 0 {
+				modSlice.IDRange = &model.SliceIDRange{
+					Start: recordLastID + 1,
+					Count: recordsCount,
+				}
+				ops = append(ops, s.setExportRecordsCounterOp(k.ExportKey, recordLastID+recordsCount))
+			}
+
+			// Set slice state from "closing" to "uploading"
+			// This also saves the changes.
+			if v, err := s.setSliceStateOp(ctx, s.clock.Now(), &modSlice, slicestate.Uploading); err != nil {
 				return nil, err
 			} else {
 				ops = append(ops, v)
