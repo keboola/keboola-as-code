@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/c2h5oh/datasize"
 
@@ -34,15 +35,40 @@ func (s *Store) CreateRecord(ctx context.Context, recordKey key.RecordKey, csvRo
 	return s.schema.Records().ByKey(recordKey).Put(csvRow).Do(ctx, s.client)
 }
 
-func (s *Store) CountRecords(ctx context.Context, k key.SliceKey) (count int64, err error) {
+func (s *Store) CountRecords(ctx context.Context, k key.SliceKey) (count uint64, err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.RecordsCount")
 	defer telemetry.EndSpan(span, &err)
 	err = s.countRecordsOp(k, &count).DoOrErr(ctx, s.client)
 	return count, err
 }
 
-func (s *Store) countRecordsOp(k key.SliceKey, out *int64) op.Op {
+func (s *Store) countRecordsOp(k key.SliceKey, out *uint64) op.Op {
 	return s.schema.Records().InSlice(k).Count().WithOnResult(func(v int64) {
-		*out = v
+		*out = uint64(v)
 	})
+}
+
+func (s *Store) setExportRecordsCounterOp(k key.ExportKey, newValue uint64) op.Op {
+	counterKey := s.schema.Runtime().LastRecordID().ByKey(k)
+	return counterKey.Put(strconv.FormatUint(newValue, 10))
+}
+
+func (s *Store) loadExportRecordsCounter(k key.ExportKey, out *uint64) op.Op {
+	counterKey := s.schema.Runtime().LastRecordID().ByKey(k)
+	return counterKey.Get().
+		WithOnResultOrErr(func(kv *op.KeyValue) error {
+			if kv == nil {
+				// Counter key is missing, use zero
+				*out = 0
+				return nil
+			}
+
+			// Key has been found, parse it
+			parsed, err := strconv.ParseUint(string(kv.Value), 10, 64)
+			if err != nil {
+				return err
+			}
+			*out = parsed
+			return nil
+		})
 }

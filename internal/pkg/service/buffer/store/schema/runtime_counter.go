@@ -5,10 +5,6 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 )
 
-type Counters struct {
-	prefix
-}
-
 type RecordIDCounter struct {
 	prefix
 }
@@ -17,12 +13,8 @@ type RecordIDCounterInReceiver struct {
 	prefix
 }
 
-func (v RuntimeRoot) Counter() Counters {
-	return Counters{prefix: v.prefix.Add("counter")}
-}
-
-func (v Counters) RecordID() RecordIDCounter {
-	return RecordIDCounter{prefix: v.prefix.Add("record/id")}
+func (v RuntimeRoot) LastRecordID() RecordIDCounter {
+	return RecordIDCounter{prefix: v.prefix.Add("last/record/id")}
 }
 
 func (v RecordIDCounter) InReceiver(k storeKey.ReceiverKey) RecordIDCounterInReceiver {

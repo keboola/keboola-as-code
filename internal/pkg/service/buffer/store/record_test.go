@@ -41,18 +41,18 @@ func TestStore_CountRecords(t *testing.T) {
 	recordKey3 := recordKeyForTest("2006-01-02T15:04:30+07:00")
 
 	count, err := store.CountRecords(ctx, recordKey1.SliceKey)
-	assert.Equal(t, int64(0), count)
+	assert.Equal(t, uint64(0), count)
 	assert.NoError(t, err)
 
 	assert.NoError(t, store.CreateRecord(ctx, recordKey1, `...`))
 	count, err = store.CountRecords(ctx, recordKey1.SliceKey)
-	assert.Equal(t, int64(1), count)
+	assert.Equal(t, uint64(1), count)
 	assert.NoError(t, err)
 
 	assert.NoError(t, store.CreateRecord(ctx, recordKey2, `...`))
 	assert.NoError(t, store.CreateRecord(ctx, recordKey3, `...`))
 	count, err = store.CountRecords(ctx, recordKey1.SliceKey)
-	assert.Equal(t, int64(3), count)
+	assert.Equal(t, uint64(3), count)
 	assert.NoError(t, err)
 }
 

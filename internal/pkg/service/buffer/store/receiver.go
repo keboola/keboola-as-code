@@ -182,9 +182,9 @@ func (s *Store) DeleteReceiver(ctx context.Context, receiverKey key.ReceiverKey)
 
 	_, err = op.MergeToTxn(
 		s.deleteReceiverBaseOp(ctx, receiverKey),
-		s.deleteReceiverExportsOp(ctx, receiverKey),
 		s.deleteReceiverMappingsOp(ctx, receiverKey),
 		s.deleteReceiverTokensOp(ctx, receiverKey),
+		s.schema.Configs().Exports().InReceiver(receiverKey).DeleteAll(),
 		s.schema.ReceivedStats().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Files().Opened().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Files().Closed().InReceiver(receiverKey).DeleteAll(),
@@ -199,6 +199,7 @@ func (s *Store) DeleteReceiver(ctx context.Context, receiverKey key.ReceiverKey)
 		s.schema.Slices().Failed().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Records().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Tasks().InReceiver(receiverKey).DeleteAll(),
+		s.schema.Runtime().LastRecordID().InReceiver(receiverKey).DeleteAll(),
 	).Do(ctx, s.client)
 	return err
 }

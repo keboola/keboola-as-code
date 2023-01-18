@@ -41,6 +41,12 @@ func (v RecordsRoot) InReceiver(k storeKey.ReceiverKey) RecordsInReceiver {
 	}
 }
 
+func (v RecordsRoot) InExport(k storeKey.ExportKey) RecordsInExport {
+	return RecordsInExport{
+		records: v.records.Add(k.String()),
+	}
+}
+
 func (v RecordsRoot) InSlice(k storeKey.SliceKey) RecordsInSlice {
 	return RecordsInSlice{
 		records: v.records.Add(k.ExportKey.String()).Add(k.SliceID.String()),
