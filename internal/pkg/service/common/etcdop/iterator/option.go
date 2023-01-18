@@ -1,6 +1,8 @@
 package iterator
 
 import (
+	etcd "go.etcd.io/etcd/client/v3"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -11,6 +13,7 @@ type Option func(c *config)
 
 type config struct {
 	prefix   string
+	end      string       // optional range end, it is a suffix to the prefix field
 	serde    *serde.Serde // empty for not-typed iterator
 	pageSize int
 	revision int64 // revision of the all values, set by "WithRev" or by the first page
@@ -19,6 +22,7 @@ type config struct {
 func newConfig(prefix string, s *serde.Serde, opts []Option) config {
 	c := config{
 		prefix:   prefix,
+		end:      etcd.GetPrefixRangeEnd(prefix), // default range end, read the entire prefix
 		serde:    s,
 		pageSize: DefaultLimit,
 	}
@@ -46,5 +50,12 @@ func WithRev(v int64) Option {
 	}
 	return func(c *config) {
 		c.revision = v
+	}
+}
+
+// WithEnd defines end of the iteration, all keys from the range [prefix, end) will be loaded.
+func WithEnd(v string) Option {
+	return func(c *config) {
+		c.end = c.prefix + v
 	}
 }
