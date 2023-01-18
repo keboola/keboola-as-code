@@ -59,9 +59,7 @@ func TestSliceCloseTask(t *testing.T) {
 	slice, err := str.GetSlice(ctx, sliceKey)
 	assert.NoError(t, err)
 	header := etcdhelper.ExpectModification(t, client, func() {
-		ok, err := str.SetSliceState(ctx, &slice, slicestate.Closing)
-		assert.True(t, ok)
-		assert.NoError(t, err)
+		assert.NoError(t, str.SetSliceState(ctx, &slice, slicestate.Closing))
 	})
 
 	// Wait for sync of the Watcher in the API node
@@ -192,6 +190,8 @@ INFO  exiting (bye bye API)
 [api][watcher]INFO  shutdown done
 [api][watcher][etcd-session]INFO  closing etcd session
 [api][watcher][etcd-session]INFO  closed etcd session | %s
+[stats]INFO  received shutdown request
+[stats]INFO  shutdown done
 INFO  exited
 
 `, apiDeps.DebugLogger().AllMessages())

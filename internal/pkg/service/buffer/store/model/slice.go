@@ -20,6 +20,8 @@ type Slice struct {
 	UploadedAt  *UTCTime         `json:"uploadedAt,omitempty"`
 	FailedAt    *UTCTime         `json:"failedAt,omitempty"`
 	LastError   string           `json:"lastError,omitempty"`
+	// Statistics are set by the "slice close" operation, the value is nil, if there is no record.
+	Statistics *Stats `json:"statistics,omitempty"`
 }
 
 func NewSlice(fileKey key.FileKey, now time.Time, mapping Mapping, number int) Slice {

@@ -34,7 +34,7 @@ func (u *Uploader) closeSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 
 				// Close the slice, no API node is writing to it.
 				slice := event.Value
-				if err := u.store.MarkSliceClosed(ctx, &slice); err != nil {
+				if err := u.store.CloseSlice(ctx, &slice); err != nil {
 					return "", err
 				}
 

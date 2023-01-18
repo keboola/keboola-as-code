@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -126,10 +127,9 @@ func TestStore_SetSliceState_Transitions(t *testing.T) {
 
 	for _, tc := range testCases {
 		// Trigger transition
-		ok, err := store.SetSliceState(ctx, &slice, tc.to)
 		desc := fmt.Sprintf("%s -> %s", tc.from, tc.to)
+		err := store.SetSliceState(ctx, &slice, tc.to)
 		assert.NoError(t, err, desc)
-		assert.True(t, ok, desc)
 		assert.Equal(t, tc.to, slice.State, desc)
 		expected := `
 <<<<<
@@ -144,9 +144,9 @@ slice/<STATE>/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02
 
 		// Test duplicated transition -> nop
 		slice.State = tc.from
-		ok, err = store.SetSliceState(ctx, &slice, tc.to)
-		assert.NoError(t, err, desc)
-		assert.False(t, ok, desc)
+		err = store.SetSliceState(ctx, &slice, tc.to)
+		assert.Error(t, err, desc)
+		wildcards.Assert(t, `slice "%s" is already in the "%s" state`, err.Error(), desc)
 		assert.Equal(t, tc.to, slice.State, desc)
 	}
 }

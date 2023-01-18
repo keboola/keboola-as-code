@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
@@ -91,46 +92,66 @@ func (s *Store) ListUploadedSlices(ctx context.Context, fileKey key.FileKey) (r 
 }
 
 func (s *Store) listUploadedSlicesOp(_ context.Context, fileKey key.FileKey) iterator.DefinitionT[model.Slice] {
-	return s.schema.
-		Slices().
-		Uploaded().
-		InFile(fileKey).
-		GetAll()
+	return s.schema.Slices().Uploaded().InFile(fileKey).GetAll()
 }
 
-func (s *Store) MarkSliceClosed(ctx context.Context, slice *model.Slice) (err error) {
-	ok, err := s.SetSliceState(ctx, slice, slicestate.Uploading)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errors.Errorf(`slice "%s" is already in the "uploading" state`, slice.SliceKey)
-	}
-	return nil
+func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) {
+	k := slice.SliceKey
+	statsPfx := s.schema.ReceivedStats().InSlice(k)
+	var recordsCount int64
+	var stats model.Stats
+	return op.
+		Atomic().
+		Read(func() op.Op {
+			return op.MergeToTxn(
+				assertAllPrevSlicesClosed(s.schema, k),
+				sumStatsOp(statsPfx.PrefixT().GetAll(), &stats),
+				s.countRecordsOp(slice.SliceKey, &recordsCount),
+			)
+		}).
+		WriteOrErr(func() (op.Op, error) {
+			var ops []op.Op
+
+			// Set ID range to the slice
+
+			// Update ID counter
+
+			// Set statistics to the slice.
+			// The records count from the statistics may not be accurate
+			// if some statistics were not sent due to a network error.
+			if recordsCount > 0 {
+				slice.Statistics = &stats
+				slice.Statistics.RecordsCount = uint64(recordsCount)
+			}
+
+			// Delete all "per node" statistics
+			ops = append(ops, statsPfx.DeleteAll())
+
+			// Set slice state from "closing" -> "uploading"
+			if v, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, slicestate.Uploading); err != nil {
+				return nil, err
+			} else {
+				ops = append(ops, v)
+			}
+
+			return op.MergeToTxn(ops...), nil
+		}).
+		Do(ctx, s.client)
 }
 
 // SetSliceState method atomically changes the state of the file.
 // False is returned, if the given file is already in the target state.
-func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slicestate.State) (ok bool, err error) { //nolint:dupl
+func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slicestate.State) (err error) { //nolint:dupl
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.SetSliceState")
 	defer telemetry.EndSpan(span, &err)
 
 	txn, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, to)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	resp, err := txn.Do(ctx, s.client)
-	if err != nil {
-		return false, err
-	}
-
-	if err == nil && !resp.Succeeded {
-		// File is already in the target state
-		return false, nil
-	}
-
-	return true, nil
+	_, err = txn.Do(ctx, s.client)
+	return err
 }
 
 func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model.Slice, to slicestate.State) (*op.TxnOpDef, error) { //nolint:dupl
@@ -160,7 +181,7 @@ func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model
 	}
 
 	// Atomically swap keys in the transaction
-	txn := op.
+	return op.
 		MergeToTxn(
 			s.schema.Slices().InState(from).ByKey(slice.SliceKey).DeleteIfExists(),
 			s.schema.Slices().InState(to).ByKey(slice.SliceKey).PutIfNotExists(clone),
@@ -168,9 +189,30 @@ func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model
 		WithProcessor(func(_ context.Context, _ *etcd.TxnResponse, result op.TxnResult, err error) error {
 			if err == nil {
 				*slice = clone
+				if !result.Succeeded {
+					return errors.Errorf(`slice "%s" is already in the "uploading" state`, slice.SliceKey)
+				}
 			}
 			return err
-		})
+		}), nil
+}
 
-	return txn, nil
+// assertAllPrevSlicesClosed checks there is no other previous slice that is not closed,
+// So the ID range for slice records can be generated.
+func assertAllPrevSlicesClosed(schema *schema.Schema, k key.SliceKey) op.Op {
+	return op.MergeToTxn(
+		assertNoPreviousSliceInState(schema, k, slicestate.Opened),
+		assertNoPreviousSliceInState(schema, k, slicestate.Closing),
+	)
+}
+
+func assertNoPreviousSliceInState(schema *schema.Schema, k key.SliceKey, state slicestate.State) op.Op {
+	prefix := schema.Slices().InState(state)
+	end := etcd.WithRange(prefix.ByKey(k).Key())
+	return prefix.InExport(k.ExportKey).Count(end).WithOnResultOrErr(func(v int64) error {
+		if v > 0 {
+			return errors.Errorf(`no slice in the state "%s" expected before the "%s", found %v`, state, k, v)
+		}
+		return nil
+	})
 }
