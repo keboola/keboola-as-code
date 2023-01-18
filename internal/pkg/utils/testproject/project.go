@@ -220,7 +220,7 @@ func (p *Project) SandboxesAPIClient() client.Client {
 func (p *Project) Clean() error {
 	p.logf("□ Cleaning project...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
 	// Clean whole project - configs, buckets, schedules, sandbox instances, etc.
