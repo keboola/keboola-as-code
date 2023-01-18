@@ -10,7 +10,6 @@ package dependencies
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/client"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -28,8 +27,6 @@ import (
 // The container exists during the entire run of the Worker.
 type ForWorker interface {
 	serviceDependencies.ForService
-	HTTPClient() client.Client
-	StorageAPIHost() string
 	DistributionWorkerNode() *distribution.Node
 	WatcherWorkerNode() *watcher.WorkerNode
 	TaskWorkerNode() *task.Node

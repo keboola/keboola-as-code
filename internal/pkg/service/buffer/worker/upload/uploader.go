@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/benbjohnson/clock"
+	"github.com/keboola/go-client/pkg/client"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -18,13 +19,15 @@ import (
 )
 
 type Uploader struct {
-	clock   clock.Clock
-	logger  log.Logger
-	store   *store.Store
-	client  *etcd.Client
-	schema  *schema.Schema
-	watcher *watcher.WorkerNode
-	config  config
+	clock          clock.Clock
+	logger         log.Logger
+	store          *store.Store
+	etcdClient     *etcd.Client
+	httpClient     client.Client
+	storageAPIHost string
+	schema         *schema.Schema
+	watcher        *watcher.WorkerNode
+	config         config
 }
 
 type dependencies interface {
@@ -32,6 +35,8 @@ type dependencies interface {
 	Logger() log.Logger
 	Process() *servicectx.Process
 	EtcdClient() *etcd.Client
+	HTTPClient() client.Client
+	StorageAPIHost() string
 	Schema() *schema.Schema
 	Store() *store.Store
 	WatcherWorkerNode() *watcher.WorkerNode
@@ -41,13 +46,15 @@ type dependencies interface {
 
 func NewUploader(d dependencies, ops ...Option) (*Uploader, error) {
 	u := &Uploader{
-		clock:   d.Clock(),
-		logger:  d.Logger().AddPrefix("[upload]"),
-		store:   d.Store(),
-		client:  d.EtcdClient(),
-		schema:  d.Schema(),
-		watcher: d.WatcherWorkerNode(),
-		config:  newConfig(ops),
+		clock:          d.Clock(),
+		logger:         d.Logger().AddPrefix("[upload]"),
+		store:          d.Store(),
+		etcdClient:     d.EtcdClient(),
+		httpClient:     d.HTTPClient(),
+		storageAPIHost: d.StorageAPIHost(),
+		schema:         d.Schema(),
+		watcher:        d.WatcherWorkerNode(),
+		config:         newConfig(ops),
 	}
 
 	// Graceful shutdown
