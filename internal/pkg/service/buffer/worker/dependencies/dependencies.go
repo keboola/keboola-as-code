@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	serviceDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task"
@@ -32,6 +33,7 @@ type ForWorker interface {
 	DistributionWorkerNode() *distribution.Node
 	WatcherWorkerNode() *watcher.WorkerNode
 	TaskWorkerNode() *task.Node
+	EventSender() *event.Sender
 }
 
 // forWorker implements ForWorker interface.
@@ -40,6 +42,7 @@ type forWorker struct {
 	distNode    *distribution.Node
 	watcherNode *watcher.WorkerNode
 	taskNode    *task.Node
+	eventSender *event.Sender
 }
 
 func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provider, logger log.Logger, debug, dumpHTTP bool) (v ForWorker, err error) {
@@ -78,6 +81,8 @@ func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 		return nil, err
 	}
 
+	d.eventSender = event.NewSender(logger, d.StorageAPIPublicClient())
+
 	return d, nil
 }
 
@@ -91,4 +96,8 @@ func (v *forWorker) WatcherWorkerNode() *watcher.WorkerNode {
 
 func (v *forWorker) TaskWorkerNode() *task.Node {
 	return v.taskNode
+}
+
+func (v *forWorker) EventSender() *event.Sender {
+	return v.eventSender
 }
