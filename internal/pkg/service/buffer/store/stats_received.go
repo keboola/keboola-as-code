@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -56,11 +55,4 @@ func (s *Store) updateStatsOp(_ context.Context, nodeID string, stats model.Slic
 		InSlice(stats.SliceKey).
 		ByNodeID(nodeID).
 		Put(stats)
-}
-
-func (s *Store) deleteReceiverStatsOp(_ context.Context, receiverKey key.ReceiverKey) op.CountOp {
-	return s.schema.
-		ReceivedStats().
-		InReceiver(receiverKey).
-		DeleteAll()
 }

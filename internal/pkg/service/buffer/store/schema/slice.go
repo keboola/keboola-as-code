@@ -18,6 +18,10 @@ type SlicesInAState struct {
 	slices
 }
 
+type SlicesInReceiver struct {
+	slices
+}
+
 type SlicesInExport struct {
 	slices
 }
@@ -59,6 +63,10 @@ func (v Slices) Failed() SlicesInAState {
 
 func (v SlicesInAState) ByKey(k storeKey.SliceKey) KeyT[model.Slice] {
 	return v.Key(k.String())
+}
+
+func (v SlicesInAState) InReceiver(k storeKey.ReceiverKey) SlicesInReceiver {
+	return SlicesInReceiver{slices: v.slices.Add(k.String())}
 }
 
 func (v SlicesInAState) InExport(k storeKey.ExportKey) SlicesInExport {

@@ -162,6 +162,11 @@ INFO  exited
 
 	// Check etcd state
 	assertStateAfterClose(t, client)
+
+	// After deleting the receivers, the database should remain empty
+	assert.NoError(t, str.DeleteReceiver(ctx, emptySlice.ReceiverKey))
+	assert.NoError(t, str.DeleteReceiver(ctx, notEmptySlice.ReceiverKey))
+	etcdhelper.AssertKVs(t, client, "")
 }
 
 func assertStateAfterClose(t *testing.T, client *etcd.Client) {
