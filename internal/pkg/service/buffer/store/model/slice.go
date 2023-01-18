@@ -22,7 +22,13 @@ type Slice struct {
 	FailedAt    *UTCTime         `json:"failedAt,omitempty"`
 	LastError   string           `json:"lastError,omitempty"`
 	// Statistics are set by the "slice close" operation, the value is nil, if there is no record.
-	Statistics *Stats `json:"statistics,omitempty"`
+	Statistics *Stats        `json:"statistics,omitempty"`
+	IDRange    *SliceIDRange `json:"idRange,omitempty"`
+}
+
+type SliceIDRange struct {
+	Start uint64 `json:"start" validate:"required"`
+	Count uint64 `json:"count" validate:"required"`
 }
 
 func NewSlice(fileKey key.FileKey, now time.Time, mapping Mapping, number int) Slice {
