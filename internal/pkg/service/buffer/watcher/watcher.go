@@ -79,6 +79,6 @@ func NewAPINode(d apinode.Dependencies, opts ...apinode.Option) (*APINode, error
 	return apinode.New(d, opts...)
 }
 
-func NewWorkerNode(d apinode.Dependencies) (*WorkerNode, error) {
+func NewWorkerNode(d workernode.Dependencies) (*WorkerNode, error) {
 	return workernode.New(d)
 }

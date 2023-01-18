@@ -67,13 +67,13 @@ func NewAPINode(d dependencies) *APINode {
 		for {
 			select {
 			case <-ctx.Done():
-				<-m.handleSync(context.Background())
+				<-m.Sync(context.Background())
 				close(done)
 				return
 			case event := <-m.ch:
 				m.handleNotify(event)
 			case <-ticker.C:
-				m.handleSync(ctx)
+				m.Sync(ctx)
 			}
 		}
 	}()
@@ -99,24 +99,7 @@ func (m *APINode) Notify(sliceKey key.SliceKey, recordSize, bodySize uint64) {
 	}
 }
 
-func (m *APINode) handleNotify(event notifyEvent) {
-	// Init stats
-	if _, exists := m.perSlice[event.sliceKey]; !exists {
-		m.perSlice[event.sliceKey] = &sliceStats{}
-	}
-
-	// Update stats
-	stats := m.perSlice[event.sliceKey]
-	stats.recordsCount += 1
-	stats.recordsSize += event.recordSize
-	stats.bodySize += event.bodySize
-	if event.receivedAt.After(stats.lastReceivedAt) {
-		stats.lastReceivedAt = event.receivedAt
-	}
-	stats.changed = true
-}
-
-func (m *APINode) handleSync(ctx context.Context) <-chan struct{} {
+func (m *APINode) Sync(ctx context.Context) <-chan struct{} {
 	stats := make([]model.SliceStats, 0, len(m.perSlice))
 	for k, v := range m.perSlice {
 		if v.changed {
@@ -148,4 +131,21 @@ func (m *APINode) handleSync(ctx context.Context) <-chan struct{} {
 	}
 
 	return done
+}
+
+func (m *APINode) handleNotify(event notifyEvent) {
+	// Init stats
+	if _, exists := m.perSlice[event.sliceKey]; !exists {
+		m.perSlice[event.sliceKey] = &sliceStats{}
+	}
+
+	// Update stats
+	stats := m.perSlice[event.sliceKey]
+	stats.recordsCount += 1
+	stats.recordsSize += event.recordSize
+	stats.bodySize += event.bodySize
+	if event.receivedAt.After(stats.lastReceivedAt) {
+		stats.lastReceivedAt = event.receivedAt
+	}
+	stats.changed = true
 }
