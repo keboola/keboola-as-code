@@ -19,7 +19,6 @@ import (
 
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/upload"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -63,12 +62,12 @@ func TestSliceUploadTask(t *testing.T) {
 	str := apiDeps1.Store()
 	emptySliceKey := createExport(t, "my-receiver-1", "my-export-1", ctx, clk, client, str, file)
 	clk.Add(time.Minute)
-	notEmptySliceKey := createExport(t, "my-receiver-2", "my-export-2", ctx, clk, client, str, file)
+	slice1Key := createExport(t, "my-receiver-2", "my-export-2", ctx, clk, client, str, file)
 	clk.Add(time.Minute)
-	createRecords(t, ctx, clk, apiDeps1, notEmptySliceKey.ReceiverKey, 1, 3)
-	createRecords(t, ctx, clk, apiDeps2, notEmptySliceKey.ReceiverKey, 4, 4)
+	createRecords(t, ctx, clk, apiDeps1, slice1Key.ReceiverKey, 1, 3)
+	createRecords(t, ctx, clk, apiDeps2, slice1Key.ReceiverKey, 4, 4)
 	assert.Eventually(t, func() bool {
-		count, err := str.CountRecords(ctx, notEmptySliceKey)
+		count, err := str.CountRecords(ctx, slice1Key)
 		assert.NoError(t, err)
 		return count == 7
 	}, time.Second, 10*time.Millisecond)
@@ -90,19 +89,21 @@ func TestSliceUploadTask(t *testing.T) {
 	// Get slices
 	emptySlice, err := str.GetSlice(ctx, emptySliceKey)
 	assert.NoError(t, err)
-	notEmptySlice, err := str.GetSlice(ctx, notEmptySliceKey)
+	slice1, err := str.GetSlice(ctx, slice1Key)
 	assert.NoError(t, err)
 
-	// Switch slices to the closing state
+	// Switch both slices to the "closing" state and create new slices.
 	clk.Add(10 * time.Second)
-	assert.NoError(t, str.SetSliceState(ctx, &emptySlice, slicestate.Closing))
+	_, err = str.SwapSlice(ctx, &emptySlice)
+	assert.NoError(t, err)
 	assert.Eventually(t, func() bool {
 		count, err := apiDeps1.Schema().Slices().Uploaded().Count().Do(ctx, client)
 		assert.NoError(t, err)
 		return count == 1
 	}, 10*time.Second, 100*time.Millisecond)
 	clk.Add(10 * time.Second)
-	assert.NoError(t, str.SetSliceState(ctx, &notEmptySlice, slicestate.Closing))
+	_, err = str.SwapSlice(ctx, &slice1)
+	assert.NoError(t, err)
 	assert.Eventually(t, func() bool {
 		count, err := apiDeps1.Schema().Slices().Uploaded().Count().Do(ctx, client)
 		assert.NoError(t, err)
@@ -155,7 +156,7 @@ func TestSliceUploadTask(t *testing.T) {
 	assertStateAfterUpload(t, client)
 
 	// Check content of the uploaded slice
-	AssertUploadedSlice(t, ctx, file, notEmptySlice, project, strings.TrimLeft(`
+	AssertUploadedSlice(t, ctx, file, slice1, project, strings.TrimLeft(`
 1,0001-01-01T00:02:02.000Z,1.2.3.4,"{""key"":""value001""}","{""Content-Type"":""application/json""}","""---value001---"""
 2,0001-01-01T00:02:03.000Z,1.2.3.4,"{""key"":""value002""}","{""Content-Type"":""application/json""}","""---value002---"""
 3,0001-01-01T00:02:04.000Z,1.2.3.4,"{""key"":""value003""}","{""Content-Type"":""application/json""}","""---value003---"""
@@ -418,6 +419,40 @@ secret/export/token/00000123/my-receiver-1/my-export-1
 secret/export/token/00000123/my-receiver-2/my-export-2
 -----
 %A
+>>>>>
+
+<<<<<
+slice/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:02:18.000Z
+-----
+{
+  "projectId": 123,
+  "receiverId": "my-receiver-1",
+  "exportId": "my-export-1",
+  "fileId": "0001-01-01T00:00:01.000Z",
+  "sliceId": "0001-01-01T00:02:18.000Z",
+  "state": "opened",
+  "mapping": {
+%A
+  },
+  "sliceNumber": 2
+}
+>>>>>
+
+<<<<<
+slice/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z
+-----
+{
+  "projectId": 123,
+  "receiverId": "my-receiver-2",
+  "exportId": "my-export-2",
+  "fileId": "0001-01-01T00:01:01.000Z",
+  "sliceId": "0001-01-01T00:02:28.000Z",
+  "state": "opened",
+  "mapping": {
+%A
+  },
+  "sliceNumber": 2
+}
 >>>>>
 
 <<<<<
