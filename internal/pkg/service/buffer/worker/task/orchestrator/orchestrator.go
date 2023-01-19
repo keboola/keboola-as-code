@@ -95,7 +95,7 @@ func Start[R ExportResource](ctx context.Context, wg *sync.WaitGroup, d dependen
 }
 
 func (w orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan error {
-	return w.dist.StartWork(ctx, wg, w.logger, func(distCtx context.Context, assigner *distribution.Assigner) <-chan error {
+	work := func(distCtx context.Context, assigner *distribution.Assigner) <-chan error {
 		initDone := make(chan error)
 		wg.Add(1)
 		go func() {
@@ -134,7 +134,8 @@ func (w orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan e
 			}
 		}()
 		return initDone
-	})
+	}
+	return w.dist.StartWork(ctx, wg, w.logger, work, distribution.WithResetInterval(w.config.ReSyncInterval))
 }
 
 // startTask for the event received from the watched prefix.

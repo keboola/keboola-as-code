@@ -128,7 +128,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	// Orchestrator config
 	config := orchestrator.Config[testResource]{
 		Prefix:         pfx,
-		ReSyncInterval: time.Second,
+		ReSyncInterval: time.Minute,
 		TaskType:       "some.task",
 		StartTaskIf: func(event etcdop.WatchEventT[testResource]) (string, bool) {
 			if event.Value.ID == "GoodID" { // <<<<<<<<<<<<<<<<<<<<
