@@ -90,10 +90,10 @@ func (m *Manager) UploadSlice(ctx context.Context, f model.File, s *model.Slice,
 	// Upload
 	uncompressed, err := io.Copy(gzipWr, recordsReader)
 	if closeErr := gzipWr.Close(); err == nil && closeErr != nil {
-		err = errors.Errorf(`cannot close slice gzip writer: %w`, err)
+		err = errors.Errorf(`cannot close slice gzip writer: %w`, closeErr)
 	}
 	if closeErr := sliceWr.Close(); err == nil && closeErr != nil {
-		err = errors.Errorf(`cannot close slice writer: %w`, err)
+		err = errors.Errorf(`cannot close slice writer: %w`, closeErr)
 	}
 
 	// Update stats
