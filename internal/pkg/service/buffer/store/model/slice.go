@@ -16,16 +16,17 @@ const (
 // A change in the mapping causes a new file and slice to be created so the mapping is immutable.
 type Slice struct {
 	key.SliceKey
-	State       slicestate.State `json:"state" validate:"required,oneof=opened closing closed uploading uploaded failed"`
-	IsEmpty     bool             `json:"isEmpty,omitempty"`
-	Mapping     Mapping          `json:"mapping" validate:"required,dive"`
-	Number      int              `json:"sliceNumber" validate:"required"`
-	ClosingAt   *UTCTime         `json:"closingAt,omitempty"`
-	UploadingAt *UTCTime         `json:"uploadingAt,omitempty"`
-	UploadedAt  *UTCTime         `json:"uploadedAt,omitempty"`
-	FailedAt    *UTCTime         `json:"failedAt,omitempty"`
-	LastError   string           `json:"lastError,omitempty"`
-	Attempt     int              `json:"attempt,omitempty"`
+	State        slicestate.State `json:"state" validate:"required,oneof=opened closing closed uploading uploaded failed"`
+	IsEmpty      bool             `json:"isEmpty,omitempty"`
+	Mapping      Mapping          `json:"mapping" validate:"required,dive"`
+	Number       int              `json:"sliceNumber" validate:"required"`
+	ClosingAt    *UTCTime         `json:"closingAt,omitempty"`
+	UploadingAt  *UTCTime         `json:"uploadingAt,omitempty"`
+	UploadedAt   *UTCTime         `json:"uploadedAt,omitempty"`
+	FailedAt     *UTCTime         `json:"failedAt,omitempty"`
+	LastError    string           `json:"lastError,omitempty"`
+	RetryAttempt int              `json:"retryAttempt,omitempty"`
+	RetryAfter   *UTCTime         `json:"retryAfter,omitempty"`
 	// Statistics are set by the "slice close" operation, the value is nil, if there is no record.
 	Statistics *Stats        `json:"statistics,omitempty"`
 	IDRange    *SliceIDRange `json:"idRange,omitempty"`

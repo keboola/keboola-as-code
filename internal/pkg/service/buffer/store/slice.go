@@ -176,6 +176,15 @@ func (s *Store) MarkSliceUploadFailed(ctx context.Context, slice *model.Slice) e
 	return setOp.DoOrErr(ctx, s.client)
 }
 
+// ScheduleSliceForRetry when it is time for the next upload attempt.
+func (s *Store) ScheduleSliceForRetry(ctx context.Context, slice *model.Slice) error {
+	setOp, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, slicestate.Uploading)
+	if err != nil {
+		return err
+	}
+	return setOp.DoOrErr(ctx, s.client)
+}
+
 // SetSliceState method atomically changes the state of the file.
 // False is returned, if the given file is already in the target state.
 func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slicestate.State) (err error) { //nolint:dupl

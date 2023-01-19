@@ -38,7 +38,9 @@ func (u *Uploader) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depen
 				// Handle error
 				defer func() {
 					if err != nil {
-						slice.Attempt++
+						slice.RetryAttempt++
+						retryAfter := model.UTCTime(RetryAt(NewRetryBackoff(), u.clock.Now(), slice.RetryAttempt))
+						slice.RetryAfter = &retryAfter
 						if err := u.store.MarkSliceUploadFailed(ctx, &slice); err != nil {
 							u.logger.Errorf(`cannot mark the slice "%s" as failed: %s`, slice.SliceKey, err)
 						}
