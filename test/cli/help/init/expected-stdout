@@ -20,7 +20,7 @@ Usage:
 
 Flags:
   -b, --branches string           comma separated IDs or name globs, use "*" for all (default "main")
-      --ci                        non-interactive mode, other ci-* flags may still be set
+      --ci                        generate workflows (default true)
       --ci-main-branch string     name of the main branch for push/pull workflows (default "main")
       --ci-pull                   create workflow to sync main branch each hour (default true)
       --ci-push                   create workflow to push change in main branch to the project (default true)
