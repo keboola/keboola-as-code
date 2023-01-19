@@ -200,6 +200,16 @@ func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slices
 	return err
 }
 
+// swapSliceOp closes the old slice and creates the new one.
+func (s *Store) swapSliceOp(ctx context.Context, now time.Time, oldSlice *model.Slice, newSlice model.Slice) (op.Op, error) {
+	createSliceOp := s.createSliceOp(ctx, newSlice)
+	closeSliceOp, err := s.setSliceStateOp(ctx, now, oldSlice, slicestate.Closing)
+	if err != nil {
+		return nil, err
+	}
+	return op.MergeToTxn(createSliceOp, closeSliceOp), nil
+}
+
 func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model.Slice, to slicestate.State) (*op.TxnOpDef, error) { //nolint:dupl
 	from := slice.State
 	clone := *slice

@@ -8,10 +8,8 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -108,23 +106,11 @@ func (s *Store) updateExportOp(ctx context.Context, oldValue, newValue model.Exp
 
 	if newValue.OpenedFile.FileID != oldValue.OpenedFile.FileID {
 		now := newValue.OpenedFile.OpenedAt()
-
-		// Close opened file
-		closeFileOp, err := s.setFileStateOp(ctx, now, &oldValue.OpenedFile, filestate.Closing)
+		swapFile, err := s.swapFileOp(ctx, now, &oldValue.OpenedFile, &oldValue.OpenedSlice, newValue.OpenedFile, newValue.OpenedSlice)
 		if err != nil {
 			return nil, err
 		}
-
-		// Close opened slice
-		closeSliceOp, err := s.setSliceStateOp(ctx, now, &oldValue.OpenedSlice, slicestate.Closing)
-		if err != nil {
-			return nil, err
-		}
-
-		// Create new file and slice
-		createFileOp := s.createFileOp(ctx, newValue.OpenedFile)
-		createSliceOp := s.createSliceOp(ctx, newValue.OpenedSlice)
-		ops = append(ops, closeFileOp, closeSliceOp, createFileOp, createSliceOp)
+		ops = append(ops, swapFile)
 	}
 
 	return op.MergeToTxn(ops...), nil

@@ -93,6 +93,20 @@ func (s *Store) SetFileState(ctx context.Context, now time.Time, file *model.Fil
 	return true, nil
 }
 
+// swapSliceOp closes the old slice and creates the new one.
+func (s *Store) swapFileOp(ctx context.Context, now time.Time, oldFile *model.File, oldSlice *model.Slice, newFile model.File, newSlice model.Slice) (op.Op, error) {
+	createFileOp := s.createFileOp(ctx, newFile)
+	closeFileOp, err := s.setFileStateOp(ctx, now, oldFile, filestate.Closing)
+	if err != nil {
+		return nil, err
+	}
+	swapSliceOp, err := s.swapSliceOp(ctx, now, oldSlice, newSlice)
+	if err != nil {
+		return nil, err
+	}
+	return op.MergeToTxn(createFileOp, closeFileOp, swapSliceOp), nil
+}
+
 func (s *Store) setFileStateOp(ctx context.Context, now time.Time, file *model.File, to filestate.State) (*op.TxnOpDef, error) {
 	from := file.State
 	clone := *file
