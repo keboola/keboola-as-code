@@ -1,7 +1,11 @@
 package upload_test
 
 import (
+	"compress/gzip"
 	"context"
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,6 +17,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/upload"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -42,7 +47,8 @@ func TestSliceUploadTask(t *testing.T) {
 
 	// Create file
 	file := &storageapi.File{
-		Name: "slice-upload-task-test",
+		Name:     "slice-upload-task-test",
+		IsSliced: true,
 	}
 	if _, err := storageapi.CreateFileResourceRequest(file).Send(ctx, project.StorageAPIClient()); err != nil {
 		assert.Fail(t, err.Error())
@@ -141,8 +147,16 @@ func TestSliceUploadTask(t *testing.T) {
 	// Check etcd state
 	assertStateAfterUpload(t, client)
 
-	// Load uploaded file
-
+	// Check content of the uploaded slice
+	AssertUploadedSlice(t, ctx, file, notEmptySlice, strings.TrimLeft(`
+1,0001-01-01T00:02:02.000Z,1.2.3.4,"{""key"":""value001""}","{""Content-Type"":""application/json""}","""---value001---"""
+2,0001-01-01T00:02:03.000Z,1.2.3.4,"{""key"":""value002""}","{""Content-Type"":""application/json""}","""---value002---"""
+3,0001-01-01T00:02:04.000Z,1.2.3.4,"{""key"":""value003""}","{""Content-Type"":""application/json""}","""---value003---"""
+4,0001-01-01T00:02:05.000Z,1.2.3.4,"{""key"":""value004""}","{""Content-Type"":""application/json""}","""---value004---"""
+5,0001-01-01T00:02:06.000Z,1.2.3.4,"{""key"":""value005""}","{""Content-Type"":""application/json""}","""---value005---"""
+6,0001-01-01T00:02:07.000Z,1.2.3.4,"{""key"":""value006""}","{""Content-Type"":""application/json""}","""---value006---"""
+7,0001-01-01T00:02:08.000Z,1.2.3.4,"{""key"":""value007""}","{""Content-Type"":""application/json""}","""---value007---"""
+`, "\n"))
 }
 
 func assertStateBeforeUpload(t *testing.T, client *etcd.Client) {
@@ -441,7 +455,9 @@ slice/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
     "lastRecordAt": "0001-01-01T00:02:08.000Z",
     "recordsCount": 7,
     "recordsSize": 924,
-    "bodySize": 126
+    "bodySize": 126,
+    "fileSize": 861,
+    "fileGZipSize": 195
   },
   "idRange": {
     "start": 1,
@@ -522,4 +538,28 @@ task/00000123/my-receiver-2/my-export-2/slice.upload/0001-01-01T00:04:08.000Z_%s
 }
 >>>>>
 `)
+}
+
+func AssertUploadedSlice(t *testing.T, ctx context.Context, file *storageapi.File, slice model.Slice, expected string) {
+	t.Helper()
+
+	// Get file content
+	sliceURL := strings.ReplaceAll(file.Url, file.Name+"manifest", file.Name+slice.Filename())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sliceURL, nil)
+	assert.NoError(t, err)
+	resp, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	// Read file content
+	gz, err := gzip.NewReader(resp.Body)
+	assert.NoError(t, err)
+	data, err := io.ReadAll(gz)
+	_ = resp.Body.Close()
+	_ = gz.Close()
+	assert.NoError(t, err)
+	assert.NoError(t, gz.Close())
+
+	// Compare
+	assert.Equal(t, expected, string(data))
 }

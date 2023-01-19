@@ -152,7 +152,7 @@ func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) 
 		Do(ctx, s.client)
 }
 
-// MarkSliceUploaded and update statistics, the result param can be nil, if the slice is empty.
+// MarkSliceUploaded when the upload is finished.
 func (s *Store) MarkSliceUploaded(ctx context.Context, slice *model.Slice) error {
 	setOp, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, slicestate.Uploaded)
 	if err != nil {
@@ -165,6 +165,15 @@ func (s *Store) MarkSliceUploaded(ctx context.Context, slice *model.Slice) error
 		// Remove uploaded records
 		s.schema.Records().InSlice(slice.SliceKey).DeleteAll(),
 	).DoOrErr(ctx, s.client)
+}
+
+// MarkSliceUploadFailed when the upload failed.
+func (s *Store) MarkSliceUploadFailed(ctx context.Context, slice *model.Slice) error {
+	setOp, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, slicestate.Failed)
+	if err != nil {
+		return err
+	}
+	return setOp.DoOrErr(ctx, s.client)
 }
 
 // SetSliceState method atomically changes the state of the file.
