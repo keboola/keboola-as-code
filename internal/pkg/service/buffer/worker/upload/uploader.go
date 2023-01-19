@@ -70,13 +70,13 @@ func NewUploader(d dependencies, ops ...Option) (*Uploader, error) {
 
 	// Create tasks
 	var init []<-chan error
-	if u.config.CloseSlices {
+	if u.config.closeSlices {
 		init = append(init, u.closeSlices(ctx, wg, d))
 	}
-	if u.config.UploadSlices {
+	if u.config.uploadSlices {
 		init = append(init, u.uploadSlices(ctx, wg, d))
 	}
-	if u.config.RetryFailedSlices {
+	if u.config.retryFailedSlices {
 		init = append(init, u.retryFailedUploads(ctx, wg, d))
 	}
 

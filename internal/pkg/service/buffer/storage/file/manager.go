@@ -3,6 +3,7 @@ package file
 import (
 	"context"
 	"io"
+	"net/http"
 	"sync"
 
 	"github.com/benbjohnson/clock"
@@ -21,12 +22,13 @@ const (
 )
 
 type Manager struct {
-	clock  clock.Clock
-	client client.Sender
+	clock     clock.Clock
+	client    client.Sender
+	transport http.RoundTripper
 }
 
-func NewManager(clk clock.Clock, client client.Sender) *Manager {
-	return &Manager{clock: clk, client: client}
+func NewManager(clk clock.Clock, client client.Sender, transport http.RoundTripper) *Manager {
+	return &Manager{clock: clk, client: client, transport: transport}
 }
 
 func (m *Manager) CreateFiles(ctx context.Context, rb rollback.Builder, receiver *model.Receiver) error {
@@ -73,7 +75,7 @@ func (m *Manager) CreateFile(ctx context.Context, rb rollback.Builder, export *m
 
 func (m *Manager) UploadSlice(ctx context.Context, f model.File, s *model.Slice, recordsReader io.Reader) error {
 	// Create slice writer
-	sliceWr, err := storageapi.NewUploadSliceWriter(ctx, f.StorageResource, s.Filename())
+	sliceWr, err := storageapi.NewUploadSliceWriter(ctx, f.StorageResource, s.Filename(), storageapi.WithUploadTransport(m.transport))
 	if err != nil {
 		return err
 	}

@@ -184,7 +184,7 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 	}
 	d.tokenManager = token.NewManager(d)
 	d.tableManager = table.NewManager(d)
-	d.fileManager = file.NewManager(d.Clock(), d.StorageAPIClient())
+	d.fileManager = file.NewManager(d.Clock(), d.StorageAPIClient(), nil)
 	return d, nil
 }
 

@@ -1,17 +1,22 @@
 package upload
 
+import (
+	"net/http"
+)
+
 type config struct {
-	CloseSlices       bool
-	UploadSlices      bool
-	RetryFailedSlices bool
+	closeSlices       bool
+	uploadSlices      bool
+	retryFailedSlices bool
+	uploadTransport   http.RoundTripper
 }
 
 type Option func(c *config)
 
 func newConfig(ops []Option) config {
 	c := config{
-		CloseSlices:  true,
-		UploadSlices: true,
+		closeSlices:  true,
+		uploadSlices: true,
 	}
 	for _, o := range ops {
 		o(&c)
@@ -22,20 +27,27 @@ func newConfig(ops []Option) config {
 // WithCloseSlices enables/disables the "close slices" task.
 func WithCloseSlices(v bool) Option {
 	return func(c *config) {
-		c.CloseSlices = v
+		c.closeSlices = v
 	}
 }
 
 // WithUploadSlices enables/disables the "upload slices" task.
 func WithUploadSlices(v bool) Option {
 	return func(c *config) {
-		c.UploadSlices = v
+		c.uploadSlices = v
 	}
 }
 
 // WithRetryFailedSlices enables/disables the "retry failed uploads" task.
 func WithRetryFailedSlices(v bool) Option {
 	return func(c *config) {
-		c.RetryFailedSlices = v
+		c.retryFailedSlices = v
+	}
+}
+
+// WithUploadTransport overwrites default HTTP transport.
+func WithUploadTransport(v http.RoundTripper) Option {
+	return func(c *config) {
+		c.uploadTransport = v
 	}
 }
