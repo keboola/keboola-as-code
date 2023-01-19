@@ -58,7 +58,7 @@ func (p *Dialogs) AskInitOptions(ctx context.Context, d initDeps) (initOp.Option
 
 	// Ask for workflows options
 	options := d.Options()
-	if options.IsSet("ci") && options.GetBool("ci") == false {
+	if options.IsSet("ci") && !options.GetBool("ci") {
 		if options.IsSet("ci-validate") || options.IsSet("ci-push") || options.IsSet("ci-pull") {
 			return out, errors.New("`ci-*` flags may not be set if `ci` is set to `false`")
 		}
