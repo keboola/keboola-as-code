@@ -11,6 +11,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/storageapi"
+	testproject2 "github.com/keboola/go-utils/pkg/testproject"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
@@ -148,7 +149,7 @@ func TestSliceUploadTask(t *testing.T) {
 	assertStateAfterUpload(t, client)
 
 	// Check content of the uploaded slice
-	AssertUploadedSlice(t, ctx, file, notEmptySlice, strings.TrimLeft(`
+	AssertUploadedSlice(t, ctx, file, notEmptySlice, project, strings.TrimLeft(`
 1,0001-01-01T00:02:02.000Z,1.2.3.4,"{""key"":""value001""}","{""Content-Type"":""application/json""}","""---value001---"""
 2,0001-01-01T00:02:03.000Z,1.2.3.4,"{""key"":""value002""}","{""Content-Type"":""application/json""}","""---value002---"""
 3,0001-01-01T00:02:04.000Z,1.2.3.4,"{""key"":""value003""}","{""Content-Type"":""application/json""}","""---value003---"""
@@ -540,8 +541,15 @@ task/00000123/my-receiver-2/my-export-2/slice.upload/0001-01-01T00:04:08.000Z_%s
 `)
 }
 
-func AssertUploadedSlice(t *testing.T, ctx context.Context, file *storageapi.File, slice model.Slice, expected string) {
+func AssertUploadedSlice(t *testing.T, ctx context.Context, file *storageapi.File, slice model.Slice, project *testproject.Project, expected string) {
 	t.Helper()
+
+	// There is currently no way to load a slice from Keboola S3, neither via HTTP nor the S3 client:
+	// https://github.com/keboola/go-client/pull/65
+	if project.StagingStorage() == testproject2.StagingStorageS3 {
+		t.Logf(`skipped AssertUploadedSlice, it is not possible to download a slice from S3, insufficient permissions`)
+		return
+	}
 
 	// Get file content
 	sliceURL := strings.ReplaceAll(file.Url, file.Name+"manifest", file.Name+slice.Filename())
