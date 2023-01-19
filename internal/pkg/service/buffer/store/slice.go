@@ -200,8 +200,25 @@ func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slices
 	return err
 }
 
-// swapSliceOp closes the old slice and creates the new one.
+// SwapSlice closes the old slice and creates the new one, in the same export.
+func (s *Store) SwapSlice(ctx context.Context, oldSlice *model.Slice) (newSlice model.Slice, err error) {
+	now := s.clock.Now()
+	newSlice = model.NewSlice(oldSlice.FileKey, now, oldSlice.Mapping, oldSlice.Number+1)
+	swapOp, err := s.swapSliceOp(ctx, now, oldSlice, newSlice)
+	if err != nil {
+		return model.Slice{}, err
+	}
+	if err := swapOp.DoOrErr(ctx, s.client); err != nil {
+		return model.Slice{}, err
+	}
+	return newSlice, err
+}
+
+// swapSliceOp closes the old slice and creates the new one, in the same export.
 func (s *Store) swapSliceOp(ctx context.Context, now time.Time, oldSlice *model.Slice, newSlice model.Slice) (op.Op, error) {
+	if newSlice.ExportKey != oldSlice.ExportKey {
+		panic(errors.Errorf(`new slice "%s" is not from the export "%s"`, newSlice.SliceKey, oldSlice.ExportKey))
+	}
 	createSliceOp := s.createSliceOp(ctx, newSlice)
 	closeSliceOp, err := s.setSliceStateOp(ctx, now, oldSlice, slicestate.Closing)
 	if err != nil {

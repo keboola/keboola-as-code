@@ -93,8 +93,26 @@ func (s *Store) SetFileState(ctx context.Context, now time.Time, file *model.Fil
 	return true, nil
 }
 
-// swapSliceOp closes the old slice and creates the new one.
+// SwapFile closes the old slice and creates the new one, in the same file.
+func (s *Store) SwapFile(ctx context.Context, oldFile *model.File, oldSlice *model.Slice, newFile model.File, newSlice model.Slice) error {
+	swapOp, err := s.swapFileOp(ctx, s.clock.Now(), oldFile, oldSlice, newFile, newSlice)
+	if err != nil {
+		return err
+	}
+	return swapOp.DoOrErr(ctx, s.client)
+}
+
+// swapSliceOp closes the old slice and creates the new one, in the same file.
 func (s *Store) swapFileOp(ctx context.Context, now time.Time, oldFile *model.File, oldSlice *model.Slice, newFile model.File, newSlice model.Slice) (op.Op, error) {
+	if oldFile.FileKey != oldSlice.FileKey {
+		panic(errors.Errorf(`slice "%s" is not from the file "%s"`, oldSlice.SliceKey, oldFile.FileKey))
+	}
+	if newFile.FileKey != newSlice.FileKey {
+		panic(errors.Errorf(`slice "%s" is not from the file "%s"`, newSlice.SliceKey, newFile.FileKey))
+	}
+	if newFile.ExportKey != oldFile.ExportKey {
+		panic(errors.Errorf(`new file "%s" is not from the export "%s"`, newFile.FileKey, oldFile.ExportKey))
+	}
 	createFileOp := s.createFileOp(ctx, newFile)
 	closeFileOp, err := s.setFileStateOp(ctx, now, oldFile, filestate.Closing)
 	if err != nil {
