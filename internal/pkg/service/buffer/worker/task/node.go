@@ -149,7 +149,7 @@ func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, typ, lock
 			// Catch panic
 			if panicErr := recover(); panicErr != nil {
 				result = ""
-				err = errors.Errorf("panic: %s\n%s", panicErr, string(debug.Stack()))
+				err = errors.Errorf("panic: %s, stacktrace: %s", panicErr, string(debug.Stack()))
 				logger.Errorf(`task panic: %s`, err)
 			}
 

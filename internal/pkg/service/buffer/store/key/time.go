@@ -42,8 +42,12 @@ func (v UTCTime) IsZero() bool {
 	return time.Time(v).IsZero()
 }
 
+func (v UTCTime) Time() time.Time {
+	return time.Time(v)
+}
+
 func (v UTCTime) After(target UTCTime) bool {
-	return time.Time(v).After(time.Time(target))
+	return v.Time().After(time.Time(target))
 }
 
 func (v UTCTime) MarshalJSON() ([]byte, error) {

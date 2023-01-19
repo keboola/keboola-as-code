@@ -1,12 +1,17 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/keboola/go-client/pkg/storageapi"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
+)
+
+const (
+	FileNameDateFormat = "20060102150405"
 )
 
 // File represent a file with records.
@@ -37,4 +42,8 @@ func NewFile(exportKey key.ExportKey, now time.Time, mapping Mapping, resource *
 
 func (v *File) OpenedAt() time.Time {
 	return time.Time(v.FileID)
+}
+
+func (v *File) Filename() string {
+	return fmt.Sprintf(`%s_%s_%s`, v.ReceiverID, v.ExportID, v.OpenedAt().Format(FileNameDateFormat))
 }

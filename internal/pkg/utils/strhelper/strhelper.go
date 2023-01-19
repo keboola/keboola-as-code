@@ -1,6 +1,7 @@
 package strhelper
 
 import (
+	"bufio"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -168,4 +169,21 @@ func AsSentence(msg string) string {
 		out = out + "."
 	}
 	return out
+}
+
+func FilterLines(keep, lines string) string {
+	var out strings.Builder
+	exp := regexpcache.MustCompile(keep)
+	s := bufio.NewScanner(strings.NewReader(lines))
+	for s.Scan() {
+		line := s.Text()
+		if exp.MatchString(line) {
+			out.WriteString(line)
+			out.WriteString("\n")
+		}
+	}
+	if err := s.Err(); err != nil {
+		panic(err)
+	}
+	return strings.TrimRight(out.String(), "\n")
 }

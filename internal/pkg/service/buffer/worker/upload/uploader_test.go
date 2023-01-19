@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -24,7 +25,7 @@ import (
 const receiverSecret = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
 // createExport creates receiver,export,mapping,file and slice.
-func createExport(t *testing.T, receiverID, exportID string, ctx context.Context, clk clock.Clock, client *etcd.Client, str *store.Store) key.SliceKey {
+func createExport(t *testing.T, receiverID, exportID string, ctx context.Context, clk clock.Clock, client *etcd.Client, str *store.Store, fileRes *storageapi.File) key.SliceKey {
 	t.Helper()
 	receiver := model.ReceiverForTest(receiverID, 0, clk.Now())
 	columns := []column.Column{
@@ -36,6 +37,11 @@ func createExport(t *testing.T, receiverID, exportID string, ctx context.Context
 		column.Template{Name: "col06", Language: "jsonnet", Content: `"---" + Body("key") + "---"`},
 	}
 	export := model.ExportForTest(receiver.ReceiverKey, exportID, "in.c-bucket.table", columns, clk.Now())
+
+	if fileRes != nil {
+		export.OpenedFile.StorageResource = fileRes
+	}
+
 	etcdhelper.ExpectModification(t, client, func() {
 		assert.NoError(t, str.CreateReceiver(ctx, receiver))
 		assert.NoError(t, str.CreateExport(ctx, export))

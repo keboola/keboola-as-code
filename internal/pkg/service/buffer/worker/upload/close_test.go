@@ -20,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
+// TestSliceCloseTask - the worker closes the slice only after it is not used by any API node.
 func TestSliceCloseTask(t *testing.T) {
 	t.Parallel()
 
@@ -44,14 +45,19 @@ func TestSliceCloseTask(t *testing.T) {
 	// Start worker node
 	workerDeps := bufferDependencies.NewMockedDeps(t, opts...)
 	workerDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
-	_, err := upload.NewUploader(workerDeps, upload.WithCloseSlices(true), upload.WithUploadSlices(false))
+	_, err := upload.NewUploader(
+		workerDeps,
+		upload.WithCloseSlices(true),
+		upload.WithUploadSlices(false),
+		upload.WithRetryFailedSlices(false),
+	)
 	assert.NoError(t, err)
 
-	// Create receivers and exports
+	// Create receivers, exports and records
 	str := apiDeps1.Store()
-	emptySliceKey := createExport(t, "my-receiver-1", "my-export-1", ctx, clk, client, str)
+	emptySliceKey := createExport(t, "my-receiver-1", "my-export-1", ctx, clk, client, str, nil)
 	clk.Add(time.Minute)
-	notEmptySliceKey := createExport(t, "my-receiver-2", "my-export-2", ctx, clk, client, str)
+	notEmptySliceKey := createExport(t, "my-receiver-2", "my-export-2", ctx, clk, client, str, nil)
 	clk.Add(time.Minute)
 	createRecords(t, ctx, clk, apiDeps1, notEmptySliceKey.ReceiverKey, 1, 1)
 	createRecords(t, ctx, clk, apiDeps2, notEmptySliceKey.ReceiverKey, 2, 2)
@@ -121,7 +127,7 @@ func TestSliceCloseTask(t *testing.T) {
 	workerDeps.Process().Shutdown(errors.New("bye bye Worker"))
 	workerDeps.Process().WaitForShutdown()
 
-	// Check logs
+	// Check API logs
 	wildcards.Assert(t, `
 [api][watcher]INFO  locked revision "%s"
 INFO  ---> locked
@@ -141,6 +147,8 @@ INFO  exiting (bye bye API)
 [stats]INFO  shutdown done
 INFO  exited
 `, apiDeps1.DebugLogger().AllMessages())
+
+	// Check worker logs
 	wildcards.Assert(t, `
 INFO  ---> locked
 [orchestrator][slice.close]INFO  assigned "00000123/my-receiver-1/my-export-1/%s"
