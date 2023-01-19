@@ -2,7 +2,6 @@ package file
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"sync"
 
@@ -52,10 +51,11 @@ func (m *Manager) CreateFiles(ctx context.Context, rb rollback.Builder, receiver
 
 func (m *Manager) CreateFile(ctx context.Context, rb rollback.Builder, export *model.Export) error {
 	now := m.clock.Now().UTC()
-	file, err := storageapi.CreateFileResourceRequest(&storageapi.File{
-		Name:     fmt.Sprintf(`%s_%s_%s`, export.ReceiverID, export.ExportID, now.Format(DateFormat)),
-		IsSliced: true,
-	}).Send(ctx, m.client)
+	fileModel := model.NewFile(export.ExportKey, now, export.Mapping, nil)
+	fileName := fileModel.Filename()
+	sliceModel := model.NewSlice(fileModel.FileKey, now, export.Mapping, 1)
+
+	file, err := storageapi.CreateFileResourceRequest(&storageapi.File{Name: fileName, IsSliced: true}).Send(ctx, m.client)
 	if err != nil {
 		return err
 	}
@@ -65,8 +65,9 @@ func (m *Manager) CreateFile(ctx context.Context, rb rollback.Builder, export *m
 		return nil
 	})
 
-	export.OpenedFile = model.NewFile(export.ExportKey, now, export.Mapping, file)
-	export.OpenedSlice = model.NewSlice(export.OpenedFile.FileKey, now, export.Mapping, 1)
+	fileModel.StorageResource = file
+	export.OpenedFile = fileModel
+	export.OpenedSlice = sliceModel
 	return nil
 }
 
