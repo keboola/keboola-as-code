@@ -76,6 +76,9 @@ func NewUploader(d dependencies, ops ...Option) (*Uploader, error) {
 	if u.config.UploadSlices {
 		init = append(init, u.uploadSlices(ctx, wg, d))
 	}
+	if u.config.RetryFailedSlices {
+		init = append(init, u.retryFailedUploads(ctx, wg, d))
+	}
 
 	// Check initialization
 	errs := errors.NewMultiError()

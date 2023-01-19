@@ -1,8 +1,9 @@
 package upload
 
 type config struct {
-	CloseSlices  bool
-	UploadSlices bool
+	CloseSlices       bool
+	UploadSlices      bool
+	RetryFailedSlices bool
 }
 
 type Option func(c *config)
@@ -18,16 +19,23 @@ func newConfig(ops []Option) config {
 	return c
 }
 
-// WithCloseSlices enables/disables the close slices task.
+// WithCloseSlices enables/disables the "close slices" task.
 func WithCloseSlices(v bool) Option {
 	return func(c *config) {
 		c.CloseSlices = v
 	}
 }
 
-// WithUploadSlices enables/disables the upload slices task.
+// WithUploadSlices enables/disables the "upload slices" task.
 func WithUploadSlices(v bool) Option {
 	return func(c *config) {
 		c.UploadSlices = v
+	}
+}
+
+// WithRetryFailedSlices enables/disables the "retry failed uploads" task.
+func WithRetryFailedSlices(v bool) Option {
+	return func(c *config) {
+		c.RetryFailedSlices = v
 	}
 }
