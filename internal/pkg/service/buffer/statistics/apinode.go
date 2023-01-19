@@ -2,6 +2,7 @@ package statistics
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -17,19 +18,13 @@ const SyncInterval = time.Second
 
 // APINode collects node statistics in memory and periodically synchronizes them to the database.
 type APINode struct {
-	nodeID   string
-	logger   log.Logger
-	clock    clock.Clock
-	store    *store.Store
-	ch       chan notifyEvent
-	perSlice map[key.SliceKey]*sliceStats
-}
+	nodeID string
+	logger log.Logger
+	clock  clock.Clock
+	store  *store.Store
 
-type notifyEvent struct {
-	sliceKey   key.SliceKey
-	recordSize uint64
-	bodySize   uint64
-	receivedAt key.ReceivedAt
+	statsLock     *sync.Mutex
+	statsPerSlice map[key.SliceKey]*sliceStats
 }
 
 type sliceStats struct {
@@ -49,13 +44,12 @@ type dependencies interface {
 
 func NewAPINode(d dependencies) *APINode {
 	m := &APINode{
-		nodeID: d.Process().UniqueID(),
-		logger: d.Logger().AddPrefix("[stats]"),
-		clock:  d.Clock(),
-		store:  d.Store(),
-		// channel needs to be large enough to not block under average load
-		ch:       make(chan notifyEvent, 2048),
-		perSlice: make(map[key.SliceKey]*sliceStats),
+		nodeID:        d.Process().UniqueID(),
+		logger:        d.Logger().AddPrefix("[stats]"),
+		clock:         d.Clock(),
+		store:         d.Store(),
+		statsLock:     &sync.Mutex{},
+		statsPerSlice: make(map[key.SliceKey]*sliceStats),
 	}
 
 	// Receive notifications and periodically trigger sync
@@ -70,8 +64,6 @@ func NewAPINode(d dependencies) *APINode {
 				<-m.Sync(context.Background())
 				close(done)
 				return
-			case event := <-m.ch:
-				m.handleNotify(event)
 			case <-ticker.C:
 				m.Sync(ctx)
 			}
@@ -91,31 +83,28 @@ func NewAPINode(d dependencies) *APINode {
 }
 
 func (m *APINode) Notify(sliceKey key.SliceKey, recordSize, bodySize uint64) {
-	m.ch <- notifyEvent{
-		sliceKey:   sliceKey,
-		recordSize: recordSize,
-		bodySize:   bodySize,
-		receivedAt: key.ReceivedAt(m.clock.Now()),
+	m.statsLock.Lock()
+	defer m.statsLock.Unlock()
+
+	// Init stats
+	if _, exists := m.statsPerSlice[sliceKey]; !exists {
+		m.statsPerSlice[sliceKey] = &sliceStats{}
 	}
+
+	// Update stats
+	receivedAt := key.ReceivedAt(m.clock.Now())
+	stats := m.statsPerSlice[sliceKey]
+	stats.recordsCount += 1
+	stats.recordsSize += recordSize
+	stats.bodySize += bodySize
+	if receivedAt.After(stats.lastReceivedAt) {
+		stats.lastReceivedAt = receivedAt
+	}
+	stats.changed = true
 }
 
 func (m *APINode) Sync(ctx context.Context) <-chan struct{} {
-	stats := make([]model.SliceStats, 0, len(m.perSlice))
-	for k, v := range m.perSlice {
-		if v.changed {
-			stats = append(stats, model.SliceStats{
-				SliceKey: k,
-				Stats: model.Stats{
-					LastRecordAt: model.UTCTime(v.lastReceivedAt),
-					RecordsCount: v.recordsCount,
-					RecordsSize:  v.recordsSize,
-					BodySize:     v.bodySize,
-				},
-			})
-			v.changed = false
-		}
-	}
-
+	stats := m.statsForSync()
 	done := make(chan struct{})
 	if len(stats) > 0 {
 		go func() {
@@ -133,19 +122,22 @@ func (m *APINode) Sync(ctx context.Context) <-chan struct{} {
 	return done
 }
 
-func (m *APINode) handleNotify(event notifyEvent) {
-	// Init stats
-	if _, exists := m.perSlice[event.sliceKey]; !exists {
-		m.perSlice[event.sliceKey] = &sliceStats{}
+func (m *APINode) statsForSync() (out []model.SliceStats) {
+	m.statsLock.Lock()
+	defer m.statsLock.Unlock()
+	for k, v := range m.statsPerSlice {
+		if v.changed {
+			out = append(out, model.SliceStats{
+				SliceKey: k,
+				Stats: model.Stats{
+					LastRecordAt: model.UTCTime(v.lastReceivedAt),
+					RecordsCount: v.recordsCount,
+					RecordsSize:  v.recordsSize,
+					BodySize:     v.bodySize,
+				},
+			})
+			v.changed = false
+		}
 	}
-
-	// Update stats
-	stats := m.perSlice[event.sliceKey]
-	stats.recordsCount += 1
-	stats.recordsSize += event.recordSize
-	stats.bodySize += event.bodySize
-	if event.receivedAt.After(stats.lastReceivedAt) {
-		stats.lastReceivedAt = event.receivedAt
-	}
-	stats.changed = true
+	return out
 }
