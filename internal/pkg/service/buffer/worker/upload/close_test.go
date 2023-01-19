@@ -20,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
+// TestSliceCloseTask - the worker closes the slice only after it is not used by any API node.
 func TestSliceCloseTask(t *testing.T) {
 	t.Parallel()
 
@@ -44,7 +45,12 @@ func TestSliceCloseTask(t *testing.T) {
 	// Start worker node
 	workerDeps := bufferDependencies.NewMockedDeps(t, opts...)
 	workerDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
-	_, err := upload.NewUploader(workerDeps, upload.WithCloseSlices(true), upload.WithUploadSlices(false), upload.WithRetryFailedSlices(false))
+	_, err := upload.NewUploader(
+		workerDeps,
+		upload.WithCloseSlices(true),
+		upload.WithUploadSlices(false),
+		upload.WithRetryFailedSlices(false),
+	)
 	assert.NoError(t, err)
 
 	// Create receivers, exports and records

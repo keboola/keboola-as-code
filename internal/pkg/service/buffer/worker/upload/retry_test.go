@@ -30,7 +30,7 @@ type notRetryableError struct {
 	error
 }
 
-// RetryableError is used by the AWS client.
+// RetryableError disables retries in S3 AWS client.
 func (v notRetryableError) RetryableError() bool {
 	return false
 }
@@ -83,6 +83,8 @@ func TestRetryAt(t *testing.T) {
 	assert.Equal(t, "2010-01-01T11:50:00Z", upload.RetryAt(b, now, 7).Format(time.RFC3339))
 }
 
+// TestRetryFailedUploadsTask - the worker switches the "failed" slice to the "uploading" state,
+// after the slice.RetryAfter interval.
 func TestRetryFailedUploadsTask(t *testing.T) {
 	t.Parallel()
 

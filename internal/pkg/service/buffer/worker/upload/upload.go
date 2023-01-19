@@ -20,11 +20,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// UploadingSlicesCheckInterval defines how often it will be checked
+// that each slice in the "uploading" state has a running "slice.upload" task.
+// This re-check mechanism provides retries for failed tasks or failed worker nodes.
+// In normal operation, switch to the "uploading" state is processed immediately, we are notified via the Watch API.
+const UploadingSlicesCheckInterval = time.Minute
+
 func (u *Uploader) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
 	// Watch for slices switched to the uploading state.
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
 		Prefix:         u.schema.Slices().Uploading().PrefixT(),
-		ReSyncInterval: 1 * time.Minute,
+		ReSyncInterval: UploadingSlicesCheckInterval,
 		TaskType:       "slice.upload",
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Task {
 			return func(_ context.Context, logger log.Logger) (result string, err error) {
@@ -38,9 +44,11 @@ func (u *Uploader) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depen
 				// Handle error
 				defer func() {
 					if err != nil {
-						slice.RetryAttempt++
-						retryAfter := model.UTCTime(RetryAt(NewRetryBackoff(), u.clock.Now(), slice.RetryAttempt))
+						attempt := slice.RetryAttempt + 1
+						retryAfter := model.UTCTime(RetryAt(NewRetryBackoff(), u.clock.Now(), attempt))
+						slice.RetryAttempt = attempt
 						slice.RetryAfter = &retryAfter
+						err = errors.Errorf(`slice upload failed: %w, upload will be retried after "%s"`, err, slice.RetryAfter)
 						if err := u.store.MarkSliceUploadFailed(ctx, &slice); err != nil {
 							u.logger.Errorf(`cannot mark the slice "%s" as failed: %s`, slice.SliceKey, err)
 						}
@@ -69,11 +77,11 @@ func (u *Uploader) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depen
 
 				// Create file manager
 				apiClient := storageapi.ClientWithHostAndToken(u.httpClient, u.storageAPIHost, token.Token)
-				files := file.NewManager(d.Clock(), apiClient)
+				files := file.NewManager(d.Clock(), apiClient, u.config.uploadTransport)
 
 				// Upload slice, set statistics
 				if err := files.UploadSlice(ctx, fileRes, &slice, u.newRecordsReader(ctx, slice)); err != nil {
-					return "", err
+					return "", errors.Errorf(`file upload failed: %w`, err)
 				}
 
 				// Mark slice uploaded

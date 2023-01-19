@@ -2,6 +2,7 @@ package upload
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -15,18 +16,24 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 )
 
+// FailedSlicesCheckInterval defines how often it will be checked
+// that Slice.RetryAfter time has expired, and the upload task should be started again.
+const FailedSlicesCheckInterval = time.Minute
+
 func (u *Uploader) retryFailedUploads(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
 	// Watch for failed slices.
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
 		Prefix:         u.schema.Slices().Failed().PrefixT(),
-		ReSyncInterval: 1 * time.Minute,
-		TaskType:       "slice.retry.schedule",
+		ReSyncInterval: FailedSlicesCheckInterval,
+		TaskType:       "slice.retry.check",
 		StartTaskIf: func(event etcdop.WatchEventT[model.Slice]) (string, bool) {
 			slice := event.Value
-			if u.clock.Now().After(slice.RetryAfter.Time()) {
+			now := model.UTCTime(u.clock.Now())
+			needed := *slice.RetryAfter
+			if now.After(needed) {
 				return "", true
 			}
-			return "Slice.RetryAfter condition not met", false
+			return fmt.Sprintf(`Slice.RetryAfter condition not met, now: "%s", needed: "%s"`, now, needed), false
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Task {
 			return func(_ context.Context, logger log.Logger) (result string, err error) {
