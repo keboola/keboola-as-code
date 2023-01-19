@@ -133,3 +133,40 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 		},
 	}, opts)
 }
+
+func TestDialogs_AskInitOptions_No_CI(t *testing.T) {
+	t.Parallel()
+
+	// testDependencies
+	dialog, console := createDialogs(t, true)
+	d := dependencies.NewMockedDeps(t)
+
+	branches := []*model.Branch{{BranchKey: model.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}
+	d.MockedHTTPTransport().RegisterResponder(
+		"GET", `=~/storage/dev-branches`,
+		httpmock.NewJsonResponderOrPanic(200, branches),
+	)
+
+	// Default values are defined by options
+	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
+	ci.WorkflowsCmdFlags(flags)
+	assert.NoError(t, d.Options().BindPFlags(flags))
+	d.Options().Set("ci", "false")
+	d.Options().Set("branches", "main")
+
+	// Run
+	opts, err := dialog.AskInitOptions(context.Background(), d)
+	assert.NoError(t, err)
+	assert.NoError(t, console.Tty().Close())
+	assert.NoError(t, console.Close())
+
+	// Assert
+	assert.Equal(t, initOp.Options{
+		Pull: true,
+		ManifestOptions: createManifest.Options{
+			Naming:          naming.TemplateWithoutIds(),
+			AllowedBranches: model.AllowedBranches{model.MainBranchDef},
+		},
+		Workflows: genWorkflows.Options{MainBranch: "main"},
+	}, opts)
+}
