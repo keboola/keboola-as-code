@@ -42,6 +42,8 @@ type Config[R ExportResource] struct {
 	ReSyncInterval time.Duration
 	TaskType       string
 	TaskFactory    TaskFactory[R]
+	// StartTaskIf can be nil, if set, it determines whether the task is started or not
+	StartTaskIf func(event etcdop.WatchEventT[R]) (skipReason string, start bool)
 }
 
 // Orchestrator creates a task for each watch event, but only on one worker node in the cluster.
@@ -73,6 +75,12 @@ func Start[R ExportResource](ctx context.Context, wg *sync.WaitGroup, d dependen
 	// Validate the config
 	if config.ReSyncInterval <= 0 {
 		panic(errors.New("re-sync interval must be configured"))
+	}
+	if config.TaskType == "" {
+		panic(errors.New("task type must be configured"))
+	}
+	if config.TaskFactory == nil {
+		panic(errors.New("task factory must be configured"))
 	}
 
 	w := &orchestrator[R]{
@@ -131,8 +139,16 @@ func (w orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan e
 
 // startTask for the event received from the watched prefix.
 func (w orchestrator[R]) startTask(ctx context.Context, assigner *distribution.Assigner, event etcdop.WatchEventT[R]) {
-	// Error is not expected, there is present always at least one node - self.
+	// Should be the task started?
 	resourceKey := event.Value.String()
+	if w.config.StartTaskIf != nil {
+		if skipReason, start := w.config.StartTaskIf(event); !start {
+			w.logger.Debugf(`skipped "%s", %s`, resourceKey, skipReason)
+			return
+		}
+	}
+
+	// Error is not expected, there is present always at least one node - self.
 	if !assigner.MustCheckIsOwner(resourceKey) {
 		// Another worker node handles the resource.
 		w.logger.Debugf(`not assigned "%s"`, resourceKey)
