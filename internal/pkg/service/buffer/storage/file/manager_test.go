@@ -48,7 +48,7 @@ func TestManager_CreateFile(t *testing.T) {
 	}
 
 	// Create file for the export
-	assert.NoError(t, m.CreateFile(ctx, rb, &export))
+	assert.NoError(t, m.CreateFileForExport(ctx, rb, &export))
 	assert.NotEmpty(t, export.OpenedFile.StorageResource.ID)
 	assert.Equal(t, "my_receiver_my_export_20060101080405", export.OpenedFile.StorageResource.Name)
 

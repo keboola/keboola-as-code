@@ -138,7 +138,7 @@ func (s *service) createResourcesForExport(ctx context.Context, d dependencies.F
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := d.FileManager().CreateFile(ctx, rb, export); err != nil {
+		if err := d.FileManager().CreateFileForExport(ctx, rb, export); err != nil {
 			errs.Append(err)
 		}
 	}()
