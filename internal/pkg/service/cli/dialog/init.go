@@ -58,16 +58,20 @@ func (p *Dialogs) AskInitOptions(ctx context.Context, d initDeps) (initOp.Option
 
 	// Ask for workflows options
 	options := d.Options()
-	if p.Prompt.IsInteractive() && !options.GetBool("ci") {
-		if p.Confirm(&prompt.Confirm{Label: "Generate workflows files for GitHub Actions?", Default: true}) {
-			out.Workflows = p.AskWorkflowsOptions(options)
+	if options.IsSet("ci") && options.GetBool("ci") == false {
+		if options.IsSet("ci-validate") || options.IsSet("ci-push") || options.IsSet("ci-pull") {
+			return out, errors.New("`ci-*` flags may not be set if `ci` is set to `false`")
+		}
+
+		out.Workflows = workflowsGen.Options{
+			Validate:   false,
+			Push:       false,
+			Pull:       false,
+			MainBranch: options.GetString("ci-main-branch"),
 		}
 	} else {
-		out.Workflows = workflowsGen.Options{
-			Validate:   options.GetBool("ci-validate"),
-			Push:       options.GetBool("ci-push"),
-			Pull:       options.GetBool("ci-pull"),
-			MainBranch: options.GetString("ci-main-branch"),
+		if p.Confirm(&prompt.Confirm{Label: "Generate workflows files for GitHub Actions?", Default: true}) {
+			out.Workflows = p.AskWorkflowsOptions(options)
 		}
 	}
 

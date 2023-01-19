@@ -42,7 +42,7 @@ func WorkflowsCommand(p dependencies.Provider) *cobra.Command {
 
 // WorkflowsCmdFlags are used also by init command.
 func WorkflowsCmdFlags(flags *pflag.FlagSet) {
-	flags.Bool("ci", false, "non-interactive mode, other ci-* flags may still be set")
+	flags.Bool("ci", true, "generate workflows")
 	flags.Bool("ci-validate", true, "create workflow to validate all branches on change")
 	flags.Bool("ci-push", true, "create workflow to push change in main branch to the project")
 	flags.Bool("ci-pull", true, "create workflow to sync main branch each hour")
