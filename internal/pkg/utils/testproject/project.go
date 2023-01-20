@@ -82,7 +82,7 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 
 	// Init storage API
 	httpClient := client.NewTestClient()
-	p.keboolaAPIClient = keboola.NewAPI(p.StorageAPIHost(), keboola.WithClient(&httpClient), keboola.WithToken(p.Project.StorageAPIToken()))
+	p.keboolaAPIClient = keboola.NewAPI(ctx, p.StorageAPIHost(), keboola.WithClient(&httpClient), keboola.WithToken(p.Project.StorageAPIToken()))
 
 	// Check token/project ID
 	errs := errors.NewMultiError()

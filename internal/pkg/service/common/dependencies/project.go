@@ -29,10 +29,10 @@ func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr stri
 
 	base.Logger().Debugf("Storage API token is valid.")
 	base.Logger().Debugf(`Project id: "%d", project name: "%s".`, token.ProjectID(), token.ProjectName())
-	return newProjectDeps(base, public, *token)
+	return newProjectDeps(ctx, base, public, *token)
 }
 
-func newProjectDeps(base Base, public Public, token keboola.Token) (*project, error) {
+func newProjectDeps(ctx context.Context, base Base, public Public, token keboola.Token) (*project, error) {
 	// Require master token
 	if !token.IsMaster {
 		return nil, MasterTokenRequiredError{}
@@ -44,7 +44,7 @@ func newProjectDeps(base Base, public Public, token keboola.Token) (*project, er
 		public:           public,
 		token:            token,
 		projectFeatures:  token.Owner.Features.ToMap(),
-		keboolaAPIClient: keboola.NewAPI(public.StorageAPIHost(), keboola.WithClient(&httpClient), keboola.WithToken(token.Token)),
+		keboolaAPIClient: keboola.NewAPI(ctx, public.StorageAPIHost(), keboola.WithClient(&httpClient), keboola.WithToken(token.Token)),
 	}
 
 	return v, nil

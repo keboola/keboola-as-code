@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
@@ -28,7 +29,13 @@ func TestContext(t *testing.T) {
 
 	// Mocked ticket provider
 	c, httpTransport := client.NewMockedClient()
-	api := keboola.NewAPI("https://connection.keboola.com", keboola.WithClient(&c))
+	httpTransport.RegisterResponder(resty.MethodGet, `https://connection.keboola.com/v2/storage/?exclude=components`,
+		httpmock.NewStringResponder(200, `{
+			"services": [],
+			"features": []
+		}`),
+	)
+	api := keboola.NewAPI(context.Background(), "https://connection.keboola.com", keboola.WithClient(&c))
 	tickets := keboola.NewTicketProvider(context.Background(), api)
 
 	// Mocked tickets

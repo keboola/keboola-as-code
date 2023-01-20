@@ -54,29 +54,19 @@ func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 	v := &public{
 		base:             base,
 		storageAPIHost:   storageAPIHost,
-		keboolaAPIClient: keboola.NewAPI(storageAPIHost, keboola.WithClient(&baseHTTPClient)),
+		keboolaAPIClient: keboola.NewAPI(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient)),
 	}
+	// Set values derived from the index
+	v.stackFeatures = v.keboolaAPIClient.Features().ToMap()
+	v.stackServices = v.keboolaAPIClient.Services().ToMap()
 
-	// Load API index (stack services, stack features, components)
-	var index *keboola.Index
 	if c.preloadComponents {
 		indexWithComponents, err := storageAPIIndexWithComponents(ctx, base, v.keboolaAPIClient)
 		if err != nil {
 			return nil, err
 		}
 		v.components.Set(model.NewComponentsProvider(indexWithComponents, v.base.Logger(), v.KeboolaAPIPublicClient()))
-		index = &indexWithComponents.Index
-	} else {
-		idx, err := storageAPIIndex(ctx, base, v.keboolaAPIClient)
-		if err != nil {
-			return nil, err
-		}
-		index = idx
 	}
-
-	// Set values derived from the index
-	v.stackFeatures = index.Features.ToMap()
-	v.stackServices = index.Services.ToMap()
 
 	return v, nil
 }
@@ -92,20 +82,6 @@ func storageAPIIndexWithComponents(ctx context.Context, d Base, keboolaAPIClient
 		return nil, err
 	}
 	d.Logger().Debugf("Storage API index with components loaded | %s", time.Since(startTime))
-	return index, nil
-}
-
-func storageAPIIndex(ctx context.Context, d Base, apiClient *keboola.API) (index *keboola.Index, err error) {
-	startTime := time.Now()
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.dependencies.public.storageApiIndex")
-	span.SetAttributes(telemetry.KeepSpan())
-	defer telemetry.EndSpan(span, &err)
-
-	index, err = apiClient.IndexRequest().Send(ctx)
-	if err != nil {
-		return nil, err
-	}
-	d.Logger().Debugf("Storage API index loaded | %s", time.Since(startTime))
 	return index, nil
 }
 

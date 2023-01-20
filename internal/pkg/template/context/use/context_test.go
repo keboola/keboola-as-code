@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
@@ -31,8 +32,15 @@ func TestContext(t *testing.T) {
 
 	// Mocked ticket provider
 	c, httpTransport := client.NewMockedClient()
-	api := keboola.NewAPI("https://connection.keboola.com", keboola.WithClient(&c))
-	tickets := keboola.NewTicketProvider(context.Background(), api)
+	httpTransport.RegisterResponder(resty.MethodGet, `=~storage/?exclude=components`,
+		httpmock.NewStringResponder(200, `{
+			"services": [],
+			"features": []
+		}`),
+	)
+	ctx := context.Background()
+	api := keboola.NewAPI(ctx, "https://connection.keboola.com", keboola.WithClient(&c))
+	tickets := keboola.NewTicketProvider(ctx, api)
 
 	// Mocked tickets
 	var ticketResponses []*http.Response
@@ -79,10 +87,10 @@ func TestContext(t *testing.T) {
 	fileDef := filesystem.NewFileDef("foo.bar")
 	fileDef.AddMetadata(filesystem.ObjectKeyMetadata, objectKey)
 	fileDef.AddTag(model.FileKindObjectConfig)
-	ctx := context.WithValue(context.Background(), jsonnetfiles.FileDefCtxKey, fileDef)
+	ctxWithVal := context.WithValue(context.Background(), jsonnetfiles.FileDefCtxKey, fileDef)
 
 	// Create template use context
-	useCtx := NewContext(ctx, templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap())
+	useCtx := NewContext(ctxWithVal, templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap())
 
 	// Check Jsonnet functions
 	code := `
@@ -175,8 +183,15 @@ func TestComponentsFunctions(t *testing.T) {
 	t.Parallel()
 
 	// Mocked ticket provider
-	c, _ := client.NewMockedClient()
-	api := keboola.NewAPI("https://connection.keboola.com", keboola.WithClient(&c))
+	c, httpTransport := client.NewMockedClient()
+	httpTransport.RegisterResponder(resty.MethodGet, `=~storage/?exclude=components`,
+		httpmock.NewStringResponder(200, `{
+			"services": [],
+			"features": []
+		}`),
+	)
+	ctx := context.Background()
+	api := keboola.NewAPI(ctx, "https://connection.keboola.com", keboola.WithClient(&c))
 	tickets := keboola.NewTicketProvider(context.Background(), api)
 	components := model.NewComponentsMap(keboola.Components{})
 	targetBranch := model.BranchKey{ID: 123}
@@ -185,7 +200,6 @@ func TestComponentsFunctions(t *testing.T) {
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
 	instanceID := "my-instance"
 	fs := aferofs.NewMemoryFs()
-	ctx := context.Background()
 
 	// Context factory for template use operation
 	newUseCtx := func() *Context {

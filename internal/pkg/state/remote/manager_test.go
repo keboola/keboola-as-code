@@ -466,9 +466,16 @@ func TestSaveConfigMetadata_Update_NoChange(t *testing.T) {
 func newTestRemoteUOW(t *testing.T, mappers ...interface{}) (*remote.UnitOfWork, *httpmock.MockTransport, *state.Registry) {
 	t.Helper()
 	c, httpTransport := client.NewMockedClient()
-	api := keboola.NewAPI("https://connection.keboola.com", keboola.WithClient(&c))
+	api := keboola.NewAPI(context.Background(), "https://connection.keboola.com", keboola.WithClient(&c))
 	localManager, projectState := newTestLocalManager(t, mappers)
 	mapperInst := mapper.New().AddMapper(mappers...)
+
+	httpTransport.RegisterResponder(resty.MethodGet, `=~storage/?exclude=components`,
+		httpmock.NewStringResponder(200, `{
+			"services": [],
+			"features": []
+		}`),
+	)
 
 	remoteManager := remote.NewManager(localManager, api, projectState, mapperInst)
 	return remoteManager.NewUnitOfWork(context.Background(), `change desc`), httpTransport, projectState
