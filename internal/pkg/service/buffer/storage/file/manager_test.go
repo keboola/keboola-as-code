@@ -40,7 +40,8 @@ func TestManager_CreateFile(t *testing.T) {
 			ExportKey: exportKey,
 		},
 		Mapping: model.Mapping{
-			TableID: storageapi.MustParseTableID("in.c-bucket.table"),
+			MappingKey: key.MappingKey{ExportKey: exportKey, RevisionID: 1},
+			TableID:    storageapi.MustParseTableID("in.c-bucket.table"),
 			Columns: []column.Column{
 				column.ID{Name: "id"},
 			},
