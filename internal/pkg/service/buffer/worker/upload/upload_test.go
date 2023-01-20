@@ -19,7 +19,6 @@ import (
 
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/upload"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -63,12 +62,12 @@ func TestSliceUploadTask(t *testing.T) {
 	str := apiDeps1.Store()
 	emptySliceKey := createExport(t, "my-receiver-1", "my-export-1", ctx, clk, client, str, file)
 	clk.Add(time.Minute)
-	notEmptySliceKey := createExport(t, "my-receiver-2", "my-export-2", ctx, clk, client, str, file)
+	slice1Key := createExport(t, "my-receiver-2", "my-export-2", ctx, clk, client, str, file)
 	clk.Add(time.Minute)
-	createRecords(t, ctx, clk, apiDeps1, notEmptySliceKey.ReceiverKey, 1, 3)
-	createRecords(t, ctx, clk, apiDeps2, notEmptySliceKey.ReceiverKey, 4, 4)
+	createRecords(t, ctx, clk, apiDeps1, slice1Key.ReceiverKey, 1, 3)
+	createRecords(t, ctx, clk, apiDeps2, slice1Key.ReceiverKey, 4, 4)
 	assert.Eventually(t, func() bool {
-		count, err := str.CountRecords(ctx, notEmptySliceKey)
+		count, err := str.CountRecords(ctx, slice1Key)
 		assert.NoError(t, err)
 		return count == 7
 	}, time.Second, 10*time.Millisecond)
@@ -90,24 +89,60 @@ func TestSliceUploadTask(t *testing.T) {
 	// Get slices
 	emptySlice, err := str.GetSlice(ctx, emptySliceKey)
 	assert.NoError(t, err)
-	notEmptySlice, err := str.GetSlice(ctx, notEmptySliceKey)
+	slice1, err := str.GetSlice(ctx, slice1Key)
 	assert.NoError(t, err)
 
-	// Switch slices to the closing state
+	// Close the empty slice (a new slice is created)
 	clk.Add(10 * time.Second)
-	assert.NoError(t, str.SetSliceState(ctx, &emptySlice, slicestate.Closing))
+	_, err = str.SwapSlice(ctx, &emptySlice)
+	assert.NoError(t, err)
 	assert.Eventually(t, func() bool {
 		count, err := apiDeps1.Schema().Slices().Uploaded().Count().Do(ctx, client)
 		assert.NoError(t, err)
 		return count == 1
 	}, 10*time.Second, 100*time.Millisecond)
 	clk.Add(10 * time.Second)
-	assert.NoError(t, str.SetSliceState(ctx, &notEmptySlice, slicestate.Closing))
+
+	// Close the slice1 (slice 2 is created)
+	slice2, err := str.SwapSlice(ctx, &slice1)
+	assert.NoError(t, err)
 	assert.Eventually(t, func() bool {
 		count, err := apiDeps1.Schema().Slices().Uploaded().Count().Do(ctx, client)
 		assert.NoError(t, err)
 		return count == 2
 	}, 10*time.Second, 100*time.Millisecond)
+
+	// Check content of the uploaded slice
+	AssertUploadedSlice(t, ctx, file, slice1, project, strings.TrimLeft(`
+1,0001-01-01T00:02:02.000Z,1.2.3.4,"{""key"":""value001""}","{""Content-Type"":""application/json""}","""---value001---"""
+2,0001-01-01T00:02:03.000Z,1.2.3.4,"{""key"":""value002""}","{""Content-Type"":""application/json""}","""---value002---"""
+3,0001-01-01T00:02:04.000Z,1.2.3.4,"{""key"":""value003""}","{""Content-Type"":""application/json""}","""---value003---"""
+4,0001-01-01T00:02:05.000Z,1.2.3.4,"{""key"":""value004""}","{""Content-Type"":""application/json""}","""---value004---"""
+5,0001-01-01T00:02:06.000Z,1.2.3.4,"{""key"":""value005""}","{""Content-Type"":""application/json""}","""---value005---"""
+6,0001-01-01T00:02:07.000Z,1.2.3.4,"{""key"":""value006""}","{""Content-Type"":""application/json""}","""---value006---"""
+7,0001-01-01T00:02:08.000Z,1.2.3.4,"{""key"":""value007""}","{""Content-Type"":""application/json""}","""---value007---"""
+`, "\n"))
+
+	// Create some records also in the slice2
+	clk.Add(time.Minute)
+	createRecords(t, ctx, clk, apiDeps1, slice2.ReceiverKey, 8, 1)
+	createRecords(t, ctx, clk, apiDeps2, slice2.ReceiverKey, 9, 2)
+
+	// Close the slice2 (a new slice is created)
+	_, err = str.SwapSlice(ctx, &slice2)
+	assert.NoError(t, err)
+	assert.Eventually(t, func() bool {
+		count, err := apiDeps1.Schema().Slices().Uploaded().Count().Do(ctx, client)
+		assert.NoError(t, err)
+		return count == 3
+	}, 10*time.Second, 100*time.Millisecond)
+
+	// Check content of the uploaded slice
+	AssertUploadedSlice(t, ctx, file, slice2, project, strings.TrimLeft(`
+8,0001-01-01T00:03:29.000Z,1.2.3.4,"{""key"":""value008""}","{""Content-Type"":""application/json""}","""---value008---"""
+9,0001-01-01T00:03:30.000Z,1.2.3.4,"{""key"":""value009""}","{""Content-Type"":""application/json""}","""---value009---"""
+10,0001-01-01T00:03:31.000Z,1.2.3.4,"{""key"":""value010""}","{""Content-Type"":""application/json""}","""---value010---"""
+`, "\n"))
 
 	// Shutdown
 	apiDeps1.Process().Shutdown(errors.New("bye bye API 1"))
@@ -116,6 +151,9 @@ func TestSliceUploadTask(t *testing.T) {
 	apiDeps2.Process().WaitForShutdown()
 	workerDeps.Process().Shutdown(errors.New("bye bye Worker"))
 	workerDeps.Process().WaitForShutdown()
+
+	// Check etcd state
+	assertStateAfterUpload(t, client)
 
 	// Check "close slice" logs
 	wildcards.Assert(t, `
@@ -127,6 +165,13 @@ func TestSliceUploadTask(t *testing.T) {
 [task][slice.close/%s]INFO  task succeeded (0s): slice closed
 [task][slice.close/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-1/my-export-1/slice.close/%s"
 [orchestrator][slice.close]INFO  assigned "00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z"
+[task][slice.close/%s]INFO  started task "00000123/my-receiver-2/my-export-2/slice.close/%s"
+[task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.close/%s"
+[task][slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %s
+[task][slice.close/%s]INFO  task succeeded (0s): slice closed
+[task][slice.close/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.close/%s"
+[orchestrator][slice.close]INFO  restart: periodical
+[orchestrator][slice.close]INFO  assigned "00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z"
 [task][slice.close/%s]INFO  started task "00000123/my-receiver-2/my-export-2/slice.close/%s"
 [task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.close/%s"
 [task][slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %s
@@ -148,22 +193,14 @@ func TestSliceUploadTask(t *testing.T) {
 [task][slice.upload/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.upload/%s"
 [task][slice.upload/%s]INFO  task succeeded (0s): slice uploaded
 [task][slice.upload/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.upload/%s"
+[orchestrator][slice.upload]INFO  restart: periodical
+[orchestrator][slice.upload]INFO  assigned "00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z"
+[task][slice.upload/%s]INFO  started task "00000123/my-receiver-2/my-export-2/slice.upload/%s"
+[task][slice.upload/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.upload/%s"
+[task][slice.upload/%s]INFO  task succeeded (0s): slice uploaded
+[task][slice.upload/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.upload/%s"
 [orchestrator][slice.upload]INFO  stopped
 `, strhelper.FilterLines(`^(\[task\]\[slice.upload\/)|(\[orchestrator\]\[slice.upload\])`, workerDeps.DebugLogger().AllMessages()))
-
-	// Check etcd state
-	assertStateAfterUpload(t, client)
-
-	// Check content of the uploaded slice
-	AssertUploadedSlice(t, ctx, file, notEmptySlice, project, strings.TrimLeft(`
-1,0001-01-01T00:02:02.000Z,1.2.3.4,"{""key"":""value001""}","{""Content-Type"":""application/json""}","""---value001---"""
-2,0001-01-01T00:02:03.000Z,1.2.3.4,"{""key"":""value002""}","{""Content-Type"":""application/json""}","""---value002---"""
-3,0001-01-01T00:02:04.000Z,1.2.3.4,"{""key"":""value003""}","{""Content-Type"":""application/json""}","""---value003---"""
-4,0001-01-01T00:02:05.000Z,1.2.3.4,"{""key"":""value004""}","{""Content-Type"":""application/json""}","""---value004---"""
-5,0001-01-01T00:02:06.000Z,1.2.3.4,"{""key"":""value005""}","{""Content-Type"":""application/json""}","""---value005---"""
-6,0001-01-01T00:02:07.000Z,1.2.3.4,"{""key"":""value006""}","{""Content-Type"":""application/json""}","""---value006---"""
-7,0001-01-01T00:02:08.000Z,1.2.3.4,"{""key"":""value007""}","{""Content-Type"":""application/json""}","""---value007---"""
-`, "\n"))
 }
 
 func assertStateBeforeUpload(t *testing.T, client *etcd.Client) {
@@ -405,7 +442,7 @@ file/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z
 <<<<<
 runtime/last/record/id/00000123/my-receiver-2/my-export-2
 -----
-7
+10
 >>>>>
 
 <<<<<
@@ -418,6 +455,40 @@ secret/export/token/00000123/my-receiver-1/my-export-1
 secret/export/token/00000123/my-receiver-2/my-export-2
 -----
 %A
+>>>>>
+
+<<<<<
+slice/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:02:18.000Z
+-----
+{
+  "projectId": 123,
+  "receiverId": "my-receiver-1",
+  "exportId": "my-export-1",
+  "fileId": "0001-01-01T00:00:01.000Z",
+  "sliceId": "0001-01-01T00:02:18.000Z",
+  "state": "opened",
+  "mapping": {
+%A
+  },
+  "sliceNumber": 2
+}
+>>>>>
+
+<<<<<
+slice/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:03:31.000Z
+-----
+{
+  "projectId": 123,
+  "receiverId": "my-receiver-2",
+  "exportId": "my-export-2",
+  "fileId": "0001-01-01T00:01:01.000Z",
+  "sliceId": "0001-01-01T00:03:31.000Z",
+  "state": "opened",
+  "mapping": {
+%A
+  },
+  "sliceNumber": 3
+}
 >>>>>
 
 <<<<<
@@ -469,6 +540,38 @@ slice/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
   "idRange": {
     "start": 1,
     "count": 7
+  }
+}
+>>>>>
+
+<<<<<
+slice/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z
+-----
+{
+  "projectId": 123,
+  "receiverId": "my-receiver-2",
+  "exportId": "my-export-2",
+  "fileId": "0001-01-01T00:01:01.000Z",
+  "sliceId": "0001-01-01T00:02:28.000Z",
+  "state": "uploaded",
+  "mapping": {
+%A
+  },
+  "sliceNumber": 2,
+  "closingAt": "%s",
+  "uploadingAt": "%s",
+  "uploadedAt": "%s",
+  "statistics": {
+    "lastRecordAt": "0001-01-01T00:03:31.000Z",
+    "recordsCount": 3,
+    "recordsSize": 396,
+    "bodySize": 54,
+    "fileSize": 370,
+    "fileGZipSize": 160
+  },
+  "idRange": {
+    "start": 8,
+    "count": 3
   }
 }
 >>>>>
@@ -528,6 +631,24 @@ task/00000123/my-receiver-2/my-export-2/slice.close/%s
 >>>>>
 
 <<<<<
+task/00000123/my-receiver-2/my-export-2/slice.close/%s
+-----
+{
+  "projectId": 123,
+  "receiverId": "my-receiver-2",
+  "exportId": "my-export-2",
+  "type": "slice.close",
+  "createdAt": "%s",
+  "randomId": "%s",
+  "finishedAt": "%s",
+  "workerNode": "my-worker",
+  "lock": "slice.close/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z",
+  "result": "slice closed",
+  "duration": 0
+}
+>>>>>
+
+<<<<<
 task/00000123/my-receiver-2/my-export-2/slice.upload/%s
 -----
 {
@@ -540,6 +661,24 @@ task/00000123/my-receiver-2/my-export-2/slice.upload/%s
   "finishedAt": "%s",
   "workerNode": "my-worker",
   "lock": "slice.upload/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z",
+  "result": "slice uploaded",
+  "duration": 0
+}
+>>>>>
+
+<<<<<
+task/00000123/my-receiver-2/my-export-2/slice.upload/%s
+-----
+{
+  "projectId": 123,
+  "receiverId": "my-receiver-2",
+  "exportId": "my-export-2",
+  "type": "slice.upload",
+  "createdAt": "%s",
+  "randomId": "%s",
+  "finishedAt": "%s",
+  "workerNode": "my-worker",
+  "lock": "slice.upload/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z",
   "result": "slice uploaded",
   "duration": 0
 }

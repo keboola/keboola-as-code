@@ -51,5 +51,5 @@ func (v *Slice) OpenedAt() time.Time {
 }
 
 func (v *Slice) Filename() string {
-	return v.OpenedAt().Format(SliceFilenameDateFormat)
+	return v.OpenedAt().Format(SliceFilenameDateFormat) + ".gz"
 }

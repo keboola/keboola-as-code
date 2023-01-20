@@ -40,7 +40,8 @@ func TestManager_CreateFile(t *testing.T) {
 			ExportKey: exportKey,
 		},
 		Mapping: model.Mapping{
-			TableID: storageapi.MustParseTableID("in.c-bucket.table"),
+			MappingKey: key.MappingKey{ExportKey: exportKey, RevisionID: 1},
+			TableID:    storageapi.MustParseTableID("in.c-bucket.table"),
 			Columns: []column.Column{
 				column.ID{Name: "id"},
 			},
@@ -48,7 +49,7 @@ func TestManager_CreateFile(t *testing.T) {
 	}
 
 	// Create file for the export
-	assert.NoError(t, m.CreateFile(ctx, rb, &export))
+	assert.NoError(t, m.CreateFileForExport(ctx, rb, &export))
 	assert.NotEmpty(t, export.OpenedFile.StorageResource.ID)
 	assert.Equal(t, "my_receiver_my_export_20060101080405", export.OpenedFile.StorageResource.Name)
 

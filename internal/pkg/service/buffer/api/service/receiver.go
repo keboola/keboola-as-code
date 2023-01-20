@@ -112,7 +112,7 @@ func (s *service) createResourcesForReceiver(ctx context.Context, d dependencies
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := d.FileManager().CreateFiles(ctx, rb, receiver); err != nil {
+		if err := d.FileManager().CreateFilesForReceiver(ctx, rb, receiver); err != nil {
 			errs.Append(err)
 		}
 	}()
