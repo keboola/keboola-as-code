@@ -11,17 +11,17 @@ type StatsProvider interface {
 
 // Stats struct is common for received/uploaded/imported statistics.
 type Stats struct {
-	// LastRecordAt contains the timestamp of the last received/uploaded/imported record, according to the type of statistics.
+	// LastRecordAt contains the timestamp of the last received record.
 	LastRecordAt UTCTime `json:"lastRecordAt" validate:"required"`
-	// RecordsCount is count of received/uploaded/imported records.
+	// RecordsCount is count of received records.
 	RecordsCount uint64 `json:"recordsCount" validate:"required"`
 	// RecordsSize is total size of CSV rows.
 	RecordsSize uint64 `json:"recordsSize"`
 	// BodySize is total size of all processed request bodies.
 	BodySize uint64 `json:"bodySize"`
-	// FileSize total file size before compression.
+	// FileSize is total uploaded size before compression.
 	FileSize uint64 `json:"fileSize,omitempty"`
-	// FileSize total file size after compression.
+	// FileSize is total uploaded size after compression.
 	FileGZipSize uint64 `json:"fileGZipSize,omitempty"`
 }
 

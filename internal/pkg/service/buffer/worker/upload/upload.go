@@ -23,8 +23,8 @@ import (
 // In normal operation, switch to the "uploading" state is processed immediately, we are notified via the Watch API.
 const UploadingSlicesCheckInterval = time.Minute
 
+// uploadSlices watches for slices switched to the uploading state.
 func (u *Uploader) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
-	// Watch for slices switched to the uploading state.
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
 		Prefix:         u.schema.Slices().Uploading().PrefixT(),
 		ReSyncInterval: UploadingSlicesCheckInterval,
