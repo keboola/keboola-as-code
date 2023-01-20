@@ -6,18 +6,23 @@ import (
 	"io"
 	"strconv"
 
+	etcd "go.etcd.io/etcd/client/v3"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (u *Uploader) newRecordsReader(ctx context.Context, slice model.Slice) io.Reader {
+func newRecordsReader(ctx context.Context, logger log.Logger, client *etcd.Client, schema *schema.Schema, slice model.Slice) io.Reader {
 	out, in := io.Pipe()
 	go func() {
 		var err error
 		defer func() {
 			if closeErr := in.CloseWithError(err); closeErr != nil {
-				u.logger.Errorf(`cannot close records reader pipe: %w`, closeErr)
+				logger.Errorf(`cannot close records reader pipe: %w`, closeErr)
 			}
 		}()
 
@@ -49,7 +54,7 @@ func (u *Uploader) newRecordsReader(ctx context.Context, slice model.Slice) io.R
 
 		// Check records count
 		if count != slice.Statistics.RecordsCount {
-			u.logger.Errorf(
+			logger.Errorf(
 				`unexpected number of uploaded records, expected "%d", found "%d"`,
 				slice.Statistics.RecordsCount, count,
 			)

@@ -76,7 +76,8 @@ func (u *Uploader) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depen
 				files := file.NewManager(d.Clock(), apiClient, u.config.uploadTransport)
 
 				// Upload slice, set statistics
-				if err := files.UploadSlice(ctx, fileRes, &slice, u.newRecordsReader(ctx, slice)); err != nil {
+				reader := newRecordsReader(ctx, u.logger, u.etcdClient, u.schema, slice)
+				if err := files.UploadSlice(ctx, fileRes, &slice, reader); err != nil {
 					return "", errors.Errorf(`file upload failed: %w`, err)
 				}
 
