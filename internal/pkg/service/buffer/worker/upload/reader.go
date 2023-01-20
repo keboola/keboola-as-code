@@ -33,10 +33,15 @@ func newRecordsReader(ctx context.Context, logger log.Logger, client *etcd.Clien
 			panic(errors.Errorf(`record ID must be > 0, found "%v"`, id))
 		}
 
-		// Read records
-		records := u.schema.Records().InSlice(slice.SliceKey).GetAll().Do(ctx, u.etcdClient)
-		for records.Next() {
-			row := records.Value().Value
+		// Read records.
+		// It is guaranteed that new records are not added to the prefix, and existing ones are not changed.
+		// Therefore, the WithFromSameRev(false) is used.
+		// This also prevents ErrCompacted, because we are not requesting a specific version.
+		pageSize := 100
+		records := schema.Records().InSlice(slice.SliceKey)
+		itr := records.GetAll(iterator.WithPageSize(pageSize), iterator.WithFromSameRev(false)).Do(ctx, client)
+		for itr.Next() {
+			row := itr.Value().Value
 			row = bytes.ReplaceAll(row, idPlaceholder, []byte(strconv.FormatUint(id, 10)))
 			_, err = in.Write(row)
 			if err != nil {
@@ -47,7 +52,7 @@ func newRecordsReader(ctx context.Context, logger log.Logger, client *etcd.Clien
 		}
 
 		// Check iterator error
-		err = records.Err()
+		err = itr.Err()
 		if err != nil {
 			return
 		}
