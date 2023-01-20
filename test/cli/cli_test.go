@@ -2,9 +2,7 @@
 package cli
 
 import (
-	"bytes"
 	"context"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -17,17 +15,15 @@ import (
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/e2etest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenv"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
 const (
-	TestEnvFile = "env"
 	TestTimeout = 3 * time.Minute
 )
 
@@ -35,19 +31,13 @@ const (
 func TestCliE2E(t *testing.T) {
 	t.Parallel()
 
-	// Create temp dir
 	_, testFile, _, _ := runtime.Caller(0)
-	rootDir := filepath.Dir(testFile)
-	tempDir := t.TempDir()
+	rootDir, tempDir := filepath.Dir(testFile), t.TempDir()
 
 	// Compile binary, it will be run in the tests
-	projectDir := filepath.Join(rootDir, "..", "..")
-	binary := CompileBinary(t, projectDir, tempDir)
+	binaryPath := e2etest.CompileBinary(t, filepath.Join(rootDir, "..", ".."), tempDir, "bin_func_tests", "TARGET_PATH", "build-local")
 
-	// Clear tests output directory
-	testOutputDir := filepath.Join(rootDir, ".out")
-	assert.NoError(t, os.RemoveAll(testOutputDir))
-	assert.NoError(t, os.MkdirAll(testOutputDir, 0o755))
+	testOutputDir := e2etest.PrepareOutputDir(t, rootDir)
 
 	// Run test for each directory
 	for _, testDirRel := range testhelper.GetTestDirs(t, rootDir) {
@@ -55,7 +45,7 @@ func TestCliE2E(t *testing.T) {
 		workingDir := filepath.Join(testOutputDir, testDirRel)
 		t.Run(testDirRel, func(t *testing.T) {
 			t.Parallel()
-			RunTest(t, testDir, workingDir, binary)
+			RunTest(t, testDir, workingDir, binaryPath)
 		})
 	}
 }
@@ -64,10 +54,7 @@ func TestCliE2E(t *testing.T) {
 func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 	t.Helper()
 
-	// Clean working dir
-	assert.NoError(t, os.RemoveAll(workingDir))
-	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
-	assert.NoError(t, os.Chdir(workingDir))
+	e2etest.PrepareWorkingDir(t, workingDir)
 
 	// Virtual fs for test and working dir
 	testDirFs, err := aferofs.NewLocalFs(testDir)
@@ -75,26 +62,14 @@ func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 	workingDirFs, err := aferofs.NewLocalFs(workingDir)
 	assert.NoError(t, err)
 
-	// Copy all from "in" dir to "runtime" dir
-	inDir := `in`
-	if !testDirFs.IsDir(inDir) {
-		t.Fatalf(`Missing directory "%s" in "%s".`, inDir, testDir)
-	}
-
-	// Init working dir from "in" dir
-	assert.NoError(t, aferofs.CopyFs2Fs(testDirFs, inDir, workingDirFs, `/`))
+	e2etest.CopyInToRuntime(t, testDir, testDirFs, workingDirFs)
 
 	// Get test project
 	project := testproject.GetTestProjectForTest(t)
 	envs := project.Env()
 	api := project.KeboolaProjectAPI()
 
-	// Setup project state
-	projectStateFile := "initial-state.json"
-	if testDirFs.IsFile(projectStateFile) {
-		err := project.SetState(filepath.Join(testDir, projectStateFile))
-		assert.NoError(t, err)
-	}
+	e2etest.SetInitialProjectState(t, testDir, testDirFs, project)
 
 	// Create context with timeout.
 	// Acquiring a test project and setting it up is not part of the timeout.
@@ -104,25 +79,7 @@ func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 	// Create ENV provider
 	envProvider := storageenv.CreateStorageEnvTicketProvider(ctx, api, envs)
 
-	// Add envs from test "env" file if present
-	if testDirFs.Exists(TestEnvFile) {
-		envFile, err := testDirFs.ReadFile(filesystem.NewFileDef(TestEnvFile))
-		if err != nil {
-			t.Fatalf(`Cannot load "env" file %s`, err)
-		}
-
-		// Replace all %%ENV_VAR%% in "env" file
-		envFileContent := testhelper.MustReplaceEnvsString(envFile.Content, envProvider)
-
-		// Parse "env" file
-		envsFromFile, err := env.LoadEnvString(envFileContent)
-		if err != nil {
-			t.Fatalf(`Cannot load "env" file: %s`, err)
-		}
-
-		// Merge
-		envs.Merge(envsFromFile, true)
-	}
+	e2etest.AddEnvVars(t, testDirFs, envs, envProvider)
 
 	// Replace all %%ENV_VAR%% in all files in the working directory
 	testhelper.MustReplaceEnvsDir(workingDirFs, `/`, envProvider)
@@ -192,35 +149,6 @@ func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 	AssertExpectations(t, envProvider, testDirFs, workingDirFs, exitCode, cmdio, project)
 }
 
-// CompileBinary compiles component to binary used in this test.
-func CompileBinary(t *testing.T, projectDir string, tempDir string) string {
-	t.Helper()
-
-	binaryPath := filepath.Join(tempDir, "/bin_func_tests")
-	if runtime.GOOS == "windows" {
-		binaryPath += `.exe`
-	}
-
-	// Envs
-	envs, err := env.FromOs()
-	assert.NoError(t, err)
-	envs.Set("TARGET_PATH", binaryPath)
-	envs.Set("SKIP_API_CODE_REGENERATION", "1")
-
-	// Build binary
-	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("make", "build-local")
-	cmd.Dir = projectDir
-	cmd.Env = envs.ToSlice()
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("Compilation failed: %s\n%s\n%s\n", err, stdout.Bytes(), stderr.Bytes())
-	}
-
-	return binaryPath
-}
-
 // AssertExpectations compares expectations with the actual state.
 func AssertExpectations(
 	t *testing.T,
@@ -277,33 +205,5 @@ func AssertExpectations(
 	// Compare actual and expected dirs
 	testhelper.AssertDirectoryContentsSame(t, expectedDirFs, `/`, workingDirFs, `/`)
 
-	// Check project state
-	expectedStatePath := "expected-state.json"
-	if testDirFs.IsFile(expectedStatePath) {
-		// Read expected state
-		expectedSnapshot, err := testDirFs.ReadFile(filesystem.NewFileDef(expectedStatePath))
-		if err != nil {
-			assert.FailNow(t, err.Error())
-		}
-
-		// Load actual state
-		actualSnapshot, err := project.NewSnapshot()
-		if err != nil {
-			assert.FailNow(t, err.Error())
-		}
-
-		// Write actual state
-		err = workingDirFs.WriteFile(filesystem.NewRawFile("actual-state.json", json.MustEncodeString(actualSnapshot, true)))
-		if err != nil {
-			assert.FailNow(t, err.Error())
-		}
-
-		// Compare expected and actual state
-		wildcards.Assert(
-			t,
-			testhelper.MustReplaceEnvsString(expectedSnapshot.Content, envProvider),
-			json.MustEncodeString(actualSnapshot, true),
-			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir.`,
-		)
-	}
+	e2etest.AssertProjectState(t, testDirFs, workingDirFs, project, envProvider)
 }
