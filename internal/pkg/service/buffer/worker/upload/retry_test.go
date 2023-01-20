@@ -281,8 +281,8 @@ slice/failed/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01
   "statistics": {
     "lastRecordAt": "0001-01-01T00:00:06.000Z",
     "recordsCount": 5,
-    "recordsSize": 660,
-    "bodySize": 90
+    "recordsSize": "660B",
+    "bodySize": "90B"
   },
   "idRange": {
     "start": 1,

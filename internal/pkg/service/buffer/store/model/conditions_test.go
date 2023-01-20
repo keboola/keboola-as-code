@@ -18,11 +18,8 @@ func TestImportConditions_Evaluate_Defaults(t *testing.T) {
 	before20MinUTC := model.UTCTime(now.Add(-20 * time.Minute))
 
 	// Defaults
-	ic := model.Conditions{
-		Count: 0,
-		Size:  0,
-		Time:  0,
-	}
+	ic := model.DefaultImportConditions()
+
 	// Defaults not met
 	res, desc := ic.Evaluate(now, model.Stats{
 		RecordsCount: 50,
@@ -30,25 +27,25 @@ func TestImportConditions_Evaluate_Defaults(t *testing.T) {
 		LastRecordAt: before01MinUTC,
 	})
 	assert.False(t, res)
-	assert.Equal(t, "conditions not met", desc)
+	assert.Equal(t, "no condition met", desc)
 
 	// Default count met
 	res, desc = ic.Evaluate(now, model.Stats{
-		RecordsCount: 2000,
+		RecordsCount: 20000,
 		RecordsSize:  1 * datasize.MB,
 		LastRecordAt: before01MinUTC,
 	})
 	assert.True(t, res)
-	assert.Equal(t, "import count threshold met, received: 2000 rows, threshold: 1000 rows", desc)
+	assert.Equal(t, "count threshold met, received: 20000 rows, threshold: 10000 rows", desc)
 
 	// Default size met
 	res, desc = ic.Evaluate(now, model.Stats{
 		RecordsCount: 100,
-		RecordsSize:  5 * datasize.MB,
+		RecordsSize:  10 * datasize.MB,
 		LastRecordAt: before01MinUTC,
 	})
 	assert.True(t, res)
-	assert.Equal(t, "import size threshold met, received: 5MB, threshold: 1MB", desc)
+	assert.Equal(t, "size threshold met, received: 10MB, threshold: 5MB", desc)
 
 	// Default time met
 	res, desc = ic.Evaluate(now, model.Stats{
@@ -57,7 +54,7 @@ func TestImportConditions_Evaluate_Defaults(t *testing.T) {
 		LastRecordAt: before20MinUTC,
 	})
 	assert.True(t, res)
-	assert.Equal(t, "import time threshold met, last import at: 2010-01-01T00:41:01.000Z, passed: 20m0s threshold: 5m0s", desc)
+	assert.Equal(t, "time threshold met, last import at: 2010-01-01T00:41:01.000Z, passed: 20m0s threshold: 5m0s", desc)
 }
 
 func TestImportConditions_Evaluate_Custom(t *testing.T) {
@@ -80,7 +77,7 @@ func TestImportConditions_Evaluate_Custom(t *testing.T) {
 		LastRecordAt: before01MinUTC,
 	})
 	assert.False(t, res)
-	assert.Equal(t, "conditions not met", desc)
+	assert.Equal(t, "no condition met", desc)
 
 	// Count met
 	res, desc = ic.Evaluate(now, model.Stats{
@@ -89,7 +86,7 @@ func TestImportConditions_Evaluate_Custom(t *testing.T) {
 		LastRecordAt: before01MinUTC,
 	})
 	assert.True(t, res)
-	assert.Equal(t, "import count threshold met, received: 200 rows, threshold: 100 rows", desc)
+	assert.Equal(t, "count threshold met, received: 200 rows, threshold: 100 rows", desc)
 
 	// Size met
 	res, desc = ic.Evaluate(now, model.Stats{
@@ -98,7 +95,7 @@ func TestImportConditions_Evaluate_Custom(t *testing.T) {
 		LastRecordAt: before01MinUTC,
 	})
 	assert.True(t, res)
-	assert.Equal(t, "import size threshold met, received: 10MB, threshold: 5MB", desc)
+	assert.Equal(t, "size threshold met, received: 10MB, threshold: 5MB", desc)
 
 	// Time met
 	res, desc = ic.Evaluate(now, model.Stats{
@@ -107,5 +104,5 @@ func TestImportConditions_Evaluate_Custom(t *testing.T) {
 		LastRecordAt: before20MinUTC,
 	})
 	assert.True(t, res)
-	assert.Equal(t, "import time threshold met, last import at: 2010-01-01T00:41:01.000Z, passed: 20m0s threshold: 10m0s", desc)
+	assert.Equal(t, "time threshold met, last import at: 2010-01-01T00:41:01.000Z, passed: 20m0s threshold: 10m0s", desc)
 }

@@ -51,8 +51,8 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
   "sliceId": "1970-01-01T00:00:00.000Z",
   "lastRecordAt": "1970-01-01T01:00:01.000Z",
   "recordsCount": 1,
-  "recordsSize": 1000,
-  "bodySize": 1100
+  "recordsSize": "1000B",
+  "bodySize": "1100B"
 }
 >>>>>
 `)
@@ -71,8 +71,8 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
   "sliceId": "1970-01-01T00:00:00.000Z",
   "lastRecordAt": "1970-01-01T01:00:01.000Z",
   "recordsCount": 1,
-  "recordsSize": 1000,
-  "bodySize": 1100
+  "recordsSize": "1000B",
+  "bodySize": "1100B"
 }
 >>>>>
 `)
@@ -94,8 +94,8 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
   "sliceId": "1970-01-01T00:00:00.000Z",
   "lastRecordAt": "1970-01-01T01:00:03.000Z",
   "recordsCount": 2,
-  "recordsSize": 3000,
-  "bodySize": 3300
+  "recordsSize": "3000B",
+  "bodySize": "3300B"
 }
 >>>>>
 `)
@@ -114,8 +114,8 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
   "sliceId": "1970-01-01T00:00:00.000Z",
   "lastRecordAt": "1970-01-01T01:00:03.000Z",
   "recordsCount": 2,
-  "recordsSize": 3000,
-  "bodySize": 3300
+  "recordsSize": "3000B",
+  "bodySize": "3300B"
 }
 >>>>>
 `)
@@ -140,8 +140,8 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
   "sliceId": "1970-01-01T00:00:00.000Z",
   "lastRecordAt": "1970-01-01T01:00:05.000Z",
   "recordsCount": 3,
-  "recordsSize": 6000,
-  "bodySize": 6600
+  "recordsSize": "6000B",
+  "bodySize": "6600B"
 }
 >>>>>
 `)

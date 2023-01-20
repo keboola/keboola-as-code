@@ -375,8 +375,8 @@ stats/received/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
   "sliceId": "0001-01-01T00:01:01.000Z",
   "lastRecordAt": "0001-01-01T00:02:04.000Z",
   "recordsCount": 3,
-  "recordsSize": 396,
-  "bodySize": 54
+  "recordsSize": "396B",
+  "bodySize": "54B"
 }
 >>>>>
 
@@ -391,8 +391,8 @@ stats/received/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
   "sliceId": "0001-01-01T00:01:01.000Z",
   "lastRecordAt": "0001-01-01T00:02:08.000Z",
   "recordsCount": 4,
-  "recordsSize": 528,
-  "bodySize": 72
+  "recordsSize": "528B",
+  "bodySize": "72B"
 }
 >>>>>
 `)
@@ -542,10 +542,10 @@ slice/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
   "statistics": {
     "lastRecordAt": "0001-01-01T00:02:08.000Z",
     "recordsCount": 7,
-    "recordsSize": 924,
-    "bodySize": 126,
-    "fileSize": 861,
-    "fileGZipSize": 195
+    "recordsSize": "924B",
+    "bodySize": "126B",
+    "fileSize": "861B",
+    "fileGZipSize": "195B"
   },
   "idRange": {
     "start": 1,
@@ -574,10 +574,10 @@ slice/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
   "statistics": {
     "lastRecordAt": "0001-01-01T00:03:31.000Z",
     "recordsCount": 3,
-    "recordsSize": 396,
-    "bodySize": 54,
-    "fileSize": 370,
-    "fileGZipSize": 160
+    "recordsSize": "396B",
+    "bodySize": "54B",
+    "fileSize": "370B",
+    "fileGZipSize": "160B"
   },
   "idRange": {
     "start": 8,

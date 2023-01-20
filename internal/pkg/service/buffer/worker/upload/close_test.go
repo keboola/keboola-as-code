@@ -289,8 +289,8 @@ slice/uploading/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001
   "statistics": {
     "lastRecordAt": "0001-01-01T00:02:04.000Z",
     "recordsCount": 3,
-    "recordsSize": 396,
-    "bodySize": 54
+    "recordsSize": "396B",
+    "bodySize": "54B"
   },
   "idRange": {
     "start": 1,
