@@ -53,7 +53,7 @@ func ExportForTest(receiverKey key.ReceiverKey, exportID, tableID string, column
 		ExportBase: ExportBase{
 			ExportKey:        exportKey,
 			Name:             "My Export 1",
-			ImportConditions: DefaultConditions(),
+			ImportConditions: DefaultImportConditions(),
 		},
 		Mapping: mapping,
 		Token: Token{

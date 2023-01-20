@@ -81,7 +81,7 @@ func TestReceiverModel(t *testing.T) {
 				ExportBase: model.ExportBase{
 					ExportKey: exportKey,
 					Name:      "Export",
-					ImportConditions: model.ImportConditions{
+					ImportConditions: model.Conditions{
 						Count: 1000,
 						Size:  104857600,
 						Time:  180_000_000_000,
@@ -144,7 +144,7 @@ func TestReceiverPayload(t *testing.T) {
 				ExportBase: model.ExportBase{
 					ExportKey: exportKey,
 					Name:      "Export",
-					ImportConditions: model.ImportConditions{
+					ImportConditions: model.Conditions{
 						Count: 1000,
 						Size:  100,
 						Time:  100_000_000_000,

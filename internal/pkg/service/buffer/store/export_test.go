@@ -28,7 +28,7 @@ func TestStore_CreateExportBaseOp(t *testing.T) {
 	export := model.ExportBase{
 		ExportKey: exportKey,
 		Name:      "Github Issues",
-		ImportConditions: model.ImportConditions{
+		ImportConditions: model.Conditions{
 			Count: 5,
 			Size:  datasize.MustParseString("50kB"),
 			Time:  30 * time.Minute,
@@ -111,7 +111,7 @@ func TestStore_GetExportBaseOp(t *testing.T) {
 	input := model.ExportBase{
 		ExportKey: exportKey,
 		Name:      "Github Issues",
-		ImportConditions: model.ImportConditions{
+		ImportConditions: model.Conditions{
 			Count: 5,
 			Size:  datasize.MustParseString("50kB"),
 			Time:  30 * time.Minute,
@@ -157,7 +157,7 @@ func TestStore_ListExportsBaseOp(t *testing.T) {
 		{
 			ExportKey: key.ExportKey{ExportID: "export-1", ReceiverKey: receiverKey},
 			Name:      "Export 1",
-			ImportConditions: model.ImportConditions{
+			ImportConditions: model.Conditions{
 				Count: 5,
 				Size:  datasize.MustParseString("50kB"),
 				Time:  30 * time.Minute,
@@ -166,7 +166,7 @@ func TestStore_ListExportsBaseOp(t *testing.T) {
 		{
 			ExportKey: key.ExportKey{ExportID: "export-2", ReceiverKey: receiverKey},
 			Name:      "Export 2",
-			ImportConditions: model.ImportConditions{
+			ImportConditions: model.Conditions{
 				Count: 5,
 				Size:  datasize.MustParseString("50kB"),
 				Time:  5 * time.Minute,
@@ -231,7 +231,7 @@ func TestStore_DeleteExportBaseOp(t *testing.T) {
 	export := model.ExportBase{
 		ExportKey: exportKey,
 		Name:      "Github Issues",
-		ImportConditions: model.ImportConditions{
+		ImportConditions: model.Conditions{
 			Count: 5,
 			Size:  datasize.MustParseString("50kB"),
 			Time:  30 * time.Minute,

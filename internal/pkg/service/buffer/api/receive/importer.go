@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/benbjohnson/clock"
+	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
@@ -103,7 +104,7 @@ func (r *Importer) CreateRecord(ctx context.Context, d requestDeps, receiverKey 
 		}
 
 		// Update statistics
-		r.stats.Notify(slice.SliceKey, uint64(len(csvRow)), uint64(bodySize))
+		r.stats.Notify(slice.SliceKey, datasize.ByteSize(len(csvRow)), datasize.ByteSize(bodySize))
 	}
 
 	if errs.Len() > 1 {

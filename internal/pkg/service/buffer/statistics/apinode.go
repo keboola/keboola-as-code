@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
@@ -30,8 +31,8 @@ type APINode struct {
 type sliceStats struct {
 	lastReceivedAt key.ReceivedAt
 	recordsCount   uint64
-	recordsSize    uint64
-	bodySize       uint64
+	recordsSize    datasize.ByteSize
+	bodySize       datasize.ByteSize
 	changed        bool
 }
 
@@ -82,7 +83,7 @@ func NewAPINode(d dependencies) *APINode {
 	return m
 }
 
-func (m *APINode) Notify(sliceKey key.SliceKey, recordSize, bodySize uint64) {
+func (m *APINode) Notify(sliceKey key.SliceKey, recordSize, bodySize datasize.ByteSize) {
 	m.statsLock.Lock()
 	defer m.statsLock.Unlock()
 

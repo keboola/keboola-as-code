@@ -1,6 +1,8 @@
 package model
 
 import (
+	"github.com/c2h5oh/datasize"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 )
 
@@ -16,13 +18,13 @@ type Stats struct {
 	// RecordsCount is count of received records.
 	RecordsCount uint64 `json:"recordsCount" validate:"required"`
 	// RecordsSize is total size of CSV rows.
-	RecordsSize uint64 `json:"recordsSize"`
+	RecordsSize datasize.ByteSize `json:"recordsSize"`
 	// BodySize is total size of all processed request bodies.
-	BodySize uint64 `json:"bodySize"`
+	BodySize datasize.ByteSize `json:"bodySize"`
 	// FileSize is total uploaded size before compression.
-	FileSize uint64 `json:"fileSize,omitempty"`
+	FileSize datasize.ByteSize `json:"fileSize,omitempty"`
 	// FileSize is total uploaded size after compression.
-	FileGZipSize uint64 `json:"fileGZipSize,omitempty"`
+	FileGZipSize datasize.ByteSize `json:"fileGZipSize,omitempty"`
 }
 
 type SliceStats struct {

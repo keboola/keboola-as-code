@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/benbjohnson/clock"
+	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
 	gzip "github.com/klauspost/pgzip"
@@ -85,8 +86,8 @@ func (m *Manager) UploadSlice(ctx context.Context, f model.File, s *model.Slice,
 
 	// Update stats
 	if err == nil {
-		s.Statistics.FileSize += uint64(uncompressed)
-		s.Statistics.FileGZipSize += sizeWr.Size
+		s.Statistics.FileSize += datasize.ByteSize(uncompressed)
+		s.Statistics.FileGZipSize += datasize.ByteSize(sizeWr.Size)
 	}
 
 	return err

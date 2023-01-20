@@ -11,20 +11,20 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m Mapper) ConditionsModel(payload *buffer.Conditions) (r model.ImportConditions, err error) {
-	conditions := model.DefaultConditions()
+func (m Mapper) ConditionsModel(payload *buffer.Conditions) (r model.Conditions, err error) {
+	conditions := model.DefaultImportConditions()
 	if payload != nil {
-		conditions.Count = payload.Count
+		conditions.Count = uint64(payload.Count)
 		conditions.Size, err = datasize.ParseString(payload.Size)
 		if err != nil {
-			return model.ImportConditions{}, serviceError.NewBadRequestError(errors.Errorf(
+			return model.Conditions{}, serviceError.NewBadRequestError(errors.Errorf(
 				`value "%s" is not valid buffer size in bytes. Allowed units: B, kB, MB. For example: "5MB"`,
 				payload.Size,
 			))
 		}
 		conditions.Time, err = time.ParseDuration(payload.Time)
 		if err != nil {
-			return model.ImportConditions{}, serviceError.NewBadRequestError(errors.Errorf(
+			return model.Conditions{}, serviceError.NewBadRequestError(errors.Errorf(
 				`value "%s" is not valid time duration. Allowed units: s, m, h. For example: "30s"`,
 				payload.Size,
 			))

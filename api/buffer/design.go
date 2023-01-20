@@ -503,13 +503,13 @@ var Template = Type("Template", func() {
 })
 
 var ImportConditions = Type("Conditions", func() {
-	def := model.DefaultConditions()
+	def := model.DefaultImportConditions()
 	Description("Table import triggers.")
 	Attribute("count", Int, func() {
 		Description("Maximum import buffer size in number of records.")
 		Minimum(1)
 		Maximum(10_000_000)
-		Default(def.Count)
+		Default(int(def.Count))
 	})
 	Attribute("size", String, func() {
 		Description("Maximum import buffer size in bytes. Units: B, KB, MB.")
