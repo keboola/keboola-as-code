@@ -12,19 +12,21 @@ const DefaultLimit = 100
 type Option func(c *config)
 
 type config struct {
-	prefix   string
-	end      string       // optional range end, it is a suffix to the prefix field
-	serde    *serde.Serde // empty for not-typed iterator
-	pageSize int
-	revision int64 // revision of the all values, set by "WithRev" or by the first page
+	prefix      string
+	end         string       // optional range end, it is a suffix to the prefix field
+	serde       *serde.Serde // empty for not-typed iterator
+	pageSize    int
+	revision    int64 // revision of the all values, set by "WithRev" or by the first page
+	fromSameRev bool  // fromSameRev if true, then 2+ page will be loaded from the same revision as the first page
 }
 
 func newConfig(prefix string, s *serde.Serde, opts []Option) config {
 	c := config{
-		prefix:   prefix,
-		end:      etcd.GetPrefixRangeEnd(prefix), // default range end, read the entire prefix
-		serde:    s,
-		pageSize: DefaultLimit,
+		prefix:      prefix,
+		end:         etcd.GetPrefixRangeEnd(prefix), // default range end, read the entire prefix
+		serde:       s,
+		pageSize:    DefaultLimit,
+		fromSameRev: true,
 	}
 
 	// Apply options
@@ -50,6 +52,20 @@ func WithRev(v int64) Option {
 	}
 	return func(c *config) {
 		c.revision = v
+		if v > 0 {
+			c.fromSameRev = false
+		}
+	}
+}
+
+// WithFromSameRev - if true, then 2+ page will be loaded from the same revision as the first page.
+// It is incompatible with specifying exact revision via WithRev.
+func WithFromSameRev(v bool) Option {
+	return func(c *config) {
+		c.fromSameRev = v
+		if v {
+			c.revision = 0
+		}
 	}
 }
 

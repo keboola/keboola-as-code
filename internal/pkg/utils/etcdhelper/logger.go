@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -77,6 +78,10 @@ func (v *kvWrapper) start(op *Op, opName, key, value string) string {
 	if key != "" {
 		var out strings.Builder
 		out.WriteString(fmt.Sprintf(`➡️  %s %s`, opName, key))
+		if op.Rev() > 0 {
+			out.WriteString(" | rev: ")
+			out.WriteString(strconv.FormatInt(op.Rev(), 10))
+		}
 		if value != "" {
 			out.WriteString(" | value:")
 			out.WriteString("\n")

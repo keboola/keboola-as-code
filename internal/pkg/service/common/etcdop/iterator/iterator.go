@@ -23,12 +23,13 @@ type Definition struct {
 }
 
 type Iterator struct {
-	config
+	config       config
 	ctx          context.Context
 	opts         []op.Option
 	client       etcd.KV
 	err          error
 	start        string         // page start prefix
+	end          string         // page start prefix
 	page         int            // page number, start from 1
 	lastIndex    int            // lastIndex in the page, 0 means empty
 	currentIndex int            // currentIndex in the page, start from 0
@@ -53,7 +54,7 @@ func newIterator(config config) Definition {
 
 // Do converts iterator definition to the iterator.
 func (v Definition) Do(ctx context.Context, client etcd.KV, opts ...op.Option) *Iterator {
-	return &Iterator{ctx: ctx, client: client, opts: opts, config: v.config, start: v.config.prefix, page: 0, currentIndex: 0}
+	return &Iterator{ctx: ctx, client: client, opts: opts, config: v.config, start: v.config.prefix, end: v.config.end, page: 0, currentIndex: 0}
 }
 
 // ForEachOp method converts iterator to for each operation definition, so it can be part of a transaction.
@@ -189,8 +190,17 @@ func (v *Iterator) nextPage() bool {
 		return false
 	}
 
+	// If these keys can change, we will ensure that all pages are from the same revision.
+	// Enabled by default, see WithFromSameRev.
+	revision := int64(0)
+	if v.header != nil && v.config.fromSameRev {
+		revision = v.header.Revision
+	} else if v.config.revision > 0 {
+		revision = v.config.revision
+	}
+
 	// Do with retry
-	_, raw, err := nextPageOp(v.start, v.end, v.pageSize, v.revision).DoWithRaw(v.ctx, v.client, v.opts...)
+	_, raw, err := nextPageOp(v.start, v.end, v.config.pageSize, revision).DoWithRaw(v.ctx, v.client, v.opts...)
 	if err != nil {
 		v.err = errors.Errorf(`etcd iterator failed: cannot get page "%s", page=%d: %w`, v.start, v.page, err)
 		return false
@@ -222,7 +232,6 @@ func (v *Iterator) moveToPage(resp *etcd.GetResponse) bool {
 	}
 
 	v.currentIndex = 0
-	v.revision = header.Revision
 	v.page++
 	return true
 }
