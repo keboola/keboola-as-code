@@ -123,6 +123,11 @@ func TestSliceUploadTask(t *testing.T) {
 7,0001-01-01T00:02:08.000Z,1.2.3.4,"{""key"":""value007""}","{""Content-Type"":""application/json""}","""---value007---"""
 `, "\n"))
 
+	// Check content of the uploaded manifest
+	AssertUploadedManifest(t, ctx, file, `
+{"entries":[{"url":"%s00010101000101.gz"}]}
+`)
+
 	// Create some records also in the slice2
 	clk.Add(time.Minute)
 	createRecords(t, ctx, clk, apiDeps1, slice2.ReceiverKey, 8, 1)
@@ -143,6 +148,11 @@ func TestSliceUploadTask(t *testing.T) {
 9,0001-01-01T00:03:30.000Z,1.2.3.4,"{""key"":""value009""}","{""Content-Type"":""application/json""}","""---value009---"""
 10,0001-01-01T00:03:31.000Z,1.2.3.4,"{""key"":""value010""}","{""Content-Type"":""application/json""}","""---value010---"""
 `, "\n"))
+
+	// Check content of the uploaded manifest
+	AssertUploadedManifest(t, ctx, file, `
+{"entries":[{"url":"%s00010101000101.gz"},{"url":"%s00010101000228.gz"}]}
+`)
 
 	// Shutdown
 	apiDeps1.Process().Shutdown(errors.New("bye bye API 1"))
@@ -708,11 +718,29 @@ func AssertUploadedSlice(t *testing.T, ctx context.Context, file *storageapi.Fil
 	gz, err := gzip.NewReader(resp.Body)
 	assert.NoError(t, err)
 	data, err := io.ReadAll(gz)
-	_ = resp.Body.Close()
-	_ = gz.Close()
-	assert.NoError(t, err)
+	assert.NoError(t, resp.Body.Close())
 	assert.NoError(t, gz.Close())
+	assert.NoError(t, err)
 
 	// Compare
 	assert.Equal(t, expected, string(data))
+}
+
+func AssertUploadedManifest(t *testing.T, ctx context.Context, file *storageapi.File, expected string) {
+	t.Helper()
+
+	// Get file content
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, file.Url, nil)
+	assert.NoError(t, err)
+	resp, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	// Read file content
+	data, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+	assert.NoError(t, resp.Body.Close())
+
+	// Compare
+	wildcards.Assert(t, expected, string(data))
 }

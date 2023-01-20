@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -79,6 +80,24 @@ func (u *Uploader) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depen
 				reader := newRecordsReader(ctx, u.logger, u.etcdClient, u.schema, slice)
 				if err := files.UploadSlice(ctx, fileRes, &slice, reader); err != nil {
 					return "", errors.Errorf(`file upload failed: %w`, err)
+				}
+
+				// Get all uploaded slices from the file
+				var allSlices []model.Slice
+				getSlicesOp := u.schema.Slices().Uploaded().InFile(slice.FileKey).
+					GetAll().
+					ForEachOp(func(s model.Slice, _ *iterator.Header) error {
+						allSlices = append(allSlices, s)
+						return nil
+					})
+				if err := getSlicesOp.DoOrErr(ctx, u.etcdClient); err != nil {
+					return "", errors.Errorf(`get uploaded slices query failed: %w`, err)
+				}
+
+				// Update manifest, so the file is always importable.
+				allSlices = append(allSlices, slice)
+				if err := files.UploadManifest(ctx, fileRes, allSlices); err != nil {
+					return "", errors.Errorf(`manifest upload failed: %w`, err)
 				}
 
 				// Mark slice uploaded
