@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
+	workflowsGen "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/init"
 )
 
@@ -56,8 +57,22 @@ func (p *Dialogs) AskInitOptions(ctx context.Context, d initDeps) (initOp.Option
 	}
 
 	// Ask for workflows options
-	if p.Confirm(&prompt.Confirm{Label: "Generate workflows files for GitHub Actions?", Default: true}) {
-		out.Workflows = p.AskWorkflowsOptions(d.Options())
+	options := d.Options()
+	if options.IsSet("ci") {
+		if options.IsSet("ci-validate") || options.IsSet("ci-push") || options.IsSet("ci-pull") {
+			return out, errors.New("`ci-*` flags may not be set if `ci` is set to `false`")
+		}
+
+		out.Workflows = workflowsGen.Options{
+			Validate:   options.GetBool("ci"),
+			Push:       options.GetBool("ci"),
+			Pull:       options.GetBool("ci"),
+			MainBranch: options.GetString("ci-main-branch"),
+		}
+	} else {
+		if p.Confirm(&prompt.Confirm{Label: "Generate workflows files for GitHub Actions?", Default: true}) {
+			out.Workflows = p.AskWorkflowsOptions(options)
+		}
 	}
 
 	return out, nil
