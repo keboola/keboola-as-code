@@ -92,7 +92,7 @@ func (m *Manager) UploadSlice(ctx context.Context, f model.File, s *model.Slice,
 	return err
 }
 
-func (m *Manager) UploadManifest(ctx context.Context, file *model.File, slices []*model.Slice) error {
+func (m *Manager) UploadManifest(ctx context.Context, file model.File, slices []model.Slice) error {
 	sliceFiles := make([]string, 0)
 	for _, s := range slices {
 		sliceFiles = append(sliceFiles, s.Filename())
