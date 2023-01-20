@@ -21,6 +21,7 @@ type testCase struct {
 	name         string
 	kvCount      int
 	pageSize     int
+	options      []iterator.Option
 	expected     []result
 	expectedLogs string
 }
@@ -108,7 +109,7 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix0") | rev: %d | cou
 			expectedLogs: `
 ETCD_REQUEST[%d] ➡️  GET ["some/prefix/", "some/prefix0")
 ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 4 | %s
-ETCD_REQUEST[%d] ➡️  GET ["some/prefix/foo004", "some/prefix0")
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d
 ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | count: 1 | %s
 `,
 		},
@@ -126,7 +127,7 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d
 			expectedLogs: `
 ETCD_REQUEST[%d] ➡️  GET ["some/prefix/", "some/prefix0")
 ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 5 | %s
-ETCD_REQUEST[%d] ➡️  GET ["some/prefix/foo004", "some/prefix0")
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d
 ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | count: 2 | %s
 `,
 		},
@@ -134,6 +135,31 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d
 			name:     "page size = 1",
 			kvCount:  5,
 			pageSize: 1,
+			expected: []result{
+				{key: "some/prefix/foo001", value: "bar001"},
+				{key: "some/prefix/foo002", value: "bar002"},
+				{key: "some/prefix/foo003", value: "bar003"},
+				{key: "some/prefix/foo004", value: "bar004"},
+				{key: "some/prefix/foo005", value: "bar005"},
+			},
+			expectedLogs: `
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/", "some/prefix0")
+ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/", "some/prefix0") | rev: %d | count: 5 | %s
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/foo002", "some/prefix0") | rev: %d
+ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo002", "some/prefix0") | rev: %d | count: 4 | %s
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/foo003", "some/prefix0") | rev: %d
+ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo003", "some/prefix0") | rev: %d | count: 3 | %s
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d
+ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo004", "some/prefix0") | rev: %d | count: 2 | %s
+ETCD_REQUEST[%d] ➡️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
+ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d | count: 1 | %s
+`,
+		},
+		{
+			name:     "WithFromSameRev = false",
+			kvCount:  5,
+			pageSize: 1,
+			options:  []iterator.Option{iterator.WithFromSameRev(false)},
 			expected: []result{
 				{key: "some/prefix/foo001", value: "bar001"},
 				{key: "some/prefix/foo002", value: "bar002"},
@@ -162,16 +188,17 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
 		client := etcdhelper.ClientForTest(t)
 		client.KV = etcdhelper.KVLogWrapper(client.KV, &logs)
 		prefix := generateKVs(t, tc.kvCount, ctx, client)
+		ops := append([]iterator.Option{iterator.WithPageSize(tc.pageSize)}, tc.options...)
 
 		// Test iteration methods
 		logs.Reset()
-		actual := iterateAll(t, prefix.GetAll(iterator.WithPageSize(tc.pageSize)), ctx, client)
+		actual := iterateAll(t, prefix.GetAll(ops...), ctx, client)
 		assert.Equal(t, tc.expected, actual, tc.name)
 		wildcards.Assert(t, tc.expectedLogs, logs.String(), tc.name)
 
 		// Test All method
 		logs.Reset()
-		actualKvs, err := prefix.GetAll(iterator.WithPageSize(tc.pageSize)).Do(ctx, client).All()
+		actualKvs, err := prefix.GetAll(ops...).Do(ctx, client).All()
 		assert.NoError(t, err)
 		actual = make([]result, 0)
 		for _, kv := range actualKvs {
@@ -182,7 +209,7 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
 
 		// Test ForEach method
 		logs.Reset()
-		itr := prefix.GetAll(iterator.WithPageSize(tc.pageSize)).Do(ctx, client)
+		itr := prefix.GetAll(ops...).Do(ctx, client)
 		actual = make([]result, 0)
 		assert.NoError(t, itr.ForEach(func(kv *op.KeyValue, header *iterator.Header) error {
 			assert.NotNil(t, header)
