@@ -193,10 +193,11 @@ func updateExport(t *testing.T, ctx context.Context, client *etcd.Client, str *s
 				StorageResource: &storageapi.File{},
 			}
 			export.OpenedSlice = model.Slice{
-				SliceKey: sliceKey2,
-				State:    slicestate.Opened,
-				Mapping:  newMapping,
-				Number:   1,
+				SliceKey:        sliceKey2,
+				State:           slicestate.Opened,
+				Mapping:         newMapping,
+				StorageResource: &storageapi.File{},
+				Number:          1,
 			}
 			return export, nil
 		}))

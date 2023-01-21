@@ -54,6 +54,9 @@ slice/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T
       }
     ]
   },
+  "storageResource": {
+    %A
+  },
   "sliceNumber": 1
 }
 >>>>>
@@ -99,6 +102,9 @@ slice/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T
         "name": "body"
       }
     ]
+  },
+  "storageResource": {
+    %A
   },
   "sliceNumber": 1
 }
@@ -180,9 +186,9 @@ func TestStore_ListUploadedSlices(t *testing.T) {
 			column.Body{Name: "body"},
 		},
 	}
-	slice1 := model.NewSlice(fileKey, time2, mapping, 1)
+	slice1 := model.NewSlice(fileKey, time2, mapping, 1, &storageapi.File{})
 	slice1.State = slicestate.Uploaded
-	slice2 := model.NewSlice(fileKey, time3, mapping, 2)
+	slice2 := model.NewSlice(fileKey, time3, mapping, 2, &storageapi.File{})
 	slice2.State = slicestate.Uploaded
 	input := []model.Slice{slice1, slice2}
 
@@ -222,6 +228,9 @@ slice/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-0
       }
     ]
   },
+  "storageResource": {
+    %A
+  },
   "sliceNumber": 1
 }
 >>>>>
@@ -249,6 +258,9 @@ slice/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-0
         "name": "body"
       }
     ]
+  },
+  "storageResource": {
+    %A
   },
   "sliceNumber": 2
 }
@@ -279,5 +291,5 @@ func sliceForTest() model.Slice {
 			column.Body{Name: "body"},
 		},
 	}
-	return model.NewSlice(fileKey, time2, mapping, 1)
+	return model.NewSlice(fileKey, time2, mapping, 1, &storageapi.File{})
 }

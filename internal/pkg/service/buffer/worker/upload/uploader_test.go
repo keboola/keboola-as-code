@@ -40,6 +40,7 @@ func createExport(t *testing.T, receiverID, exportID string, ctx context.Context
 
 	if fileRes != nil {
 		export.OpenedFile.StorageResource = fileRes
+		export.OpenedSlice.StorageResource = fileRes
 	}
 
 	etcdhelper.ExpectModification(t, client, func() {

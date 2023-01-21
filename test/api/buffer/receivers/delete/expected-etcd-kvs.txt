@@ -119,6 +119,9 @@
       }
     ]
   },
+  "storageResource": {
+    %A
+  },
   "sliceNumber": 1
 }
 >>>>>

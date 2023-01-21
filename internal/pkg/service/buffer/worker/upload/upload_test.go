@@ -343,6 +343,9 @@ slice/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01
   "mapping": {
 %A
   },
+  "storageResource": {
+%A
+  },
   "sliceNumber": 1
 }
 >>>>>
@@ -358,6 +361,9 @@ slice/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01
   "sliceId": "0001-01-01T00:01:01.000Z",
   "state": "opened",
   "mapping": {
+%A
+  },
+  "storageResource": {
 %A
   },
   "sliceNumber": 1
@@ -480,6 +486,9 @@ slice/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01
   "mapping": {
 %A
   },
+  "storageResource": {
+%A
+  },
   "sliceNumber": 2
 }
 >>>>>
@@ -495,6 +504,9 @@ slice/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01
   "sliceId": "0001-01-01T00:03:31.000Z",
   "state": "opened",
   "mapping": {
+%A
+  },
+  "storageResource": {
 %A
   },
   "sliceNumber": 3
@@ -515,6 +527,9 @@ slice/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-
   "mapping": {
 %A
   },
+  "storageResource": {
+%A
+  },
   "sliceNumber": 1,
   "closingAt": "%s",
   "uploadingAt": "%s",
@@ -533,6 +548,9 @@ slice/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
   "sliceId": "0001-01-01T00:01:01.000Z",
   "state": "uploaded",
   "mapping": {
+%A
+  },
+  "storageResource": {
 %A
   },
   "sliceNumber": 1,
@@ -565,6 +583,9 @@ slice/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
   "sliceId": "0001-01-01T00:02:28.000Z",
   "state": "uploaded",
   "mapping": {
+%A
+  },
+  "storageResource": {
 %A
   },
   "sliceNumber": 2,

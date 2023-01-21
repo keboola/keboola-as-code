@@ -203,7 +203,7 @@ func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slices
 // SwapSlice closes the old slice and creates the new one, in the same export.
 func (s *Store) SwapSlice(ctx context.Context, oldSlice *model.Slice) (newSlice model.Slice, err error) {
 	now := s.clock.Now()
-	newSlice = model.NewSlice(oldSlice.FileKey, now, oldSlice.Mapping, oldSlice.Number+1)
+	newSlice = model.NewSlice(oldSlice.FileKey, now, oldSlice.Mapping, oldSlice.Number+1, oldSlice.StorageResource)
 	swapOp, err := s.swapSliceOp(ctx, now, oldSlice, newSlice)
 	if err != nil {
 		return model.Slice{}, err

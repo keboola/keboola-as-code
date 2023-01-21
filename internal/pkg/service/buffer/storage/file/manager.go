@@ -61,9 +61,9 @@ func (m *Manager) CreateFileForExport(ctx context.Context, rb rollback.Builder, 
 	return err
 }
 
-func (m *Manager) UploadSlice(ctx context.Context, f model.File, s *model.Slice, recordsReader io.Reader) error {
+func (m *Manager) UploadSlice(ctx context.Context, s *model.Slice, recordsReader io.Reader) error {
 	// Create slice writer
-	sliceWr, err := storageapi.NewUploadSliceWriter(ctx, f.StorageResource, s.Filename(), storageapi.WithUploadTransport(m.transport))
+	sliceWr, err := storageapi.NewUploadSliceWriter(ctx, s.StorageResource, s.Filename(), storageapi.WithUploadTransport(m.transport))
 	if err != nil {
 		return err
 	}
@@ -93,33 +93,34 @@ func (m *Manager) UploadSlice(ctx context.Context, f model.File, s *model.Slice,
 	return err
 }
 
-func (m *Manager) UploadManifest(ctx context.Context, file model.File, slices []model.Slice) error {
+func (m *Manager) UploadManifest(ctx context.Context, resource *storageapi.File, slices []model.Slice) error {
 	sliceFiles := make([]string, 0)
 	for _, s := range slices {
 		sliceFiles = append(sliceFiles, s.Filename())
 	}
-	_, err := storageapi.UploadSlicedFileManifest(ctx, file.StorageResource, sliceFiles)
+	_, err := storageapi.UploadSlicedFileManifest(ctx, resource, sliceFiles)
 	return err
 }
 
 func (m *Manager) createFile(ctx context.Context, rb rollback.Builder, mapping model.Mapping) (model.File, model.Slice, error) {
 	now := m.clock.Now().UTC()
-	fileModel := model.NewFile(mapping.ExportKey, now, mapping, nil)
-	fileName := fileModel.Filename()
-	sliceModel := model.NewSlice(fileModel.FileKey, now, mapping, 1)
+	file := model.NewFile(mapping.ExportKey, now, mapping, nil)
+	fileName := file.Filename()
+	slice := model.NewSlice(file.FileKey, now, mapping, 1, nil)
 
-	file, err := storageapi.CreateFileResourceRequest(&storageapi.File{Name: fileName, IsSliced: true}).Send(ctx, m.client)
+	resource, err := storageapi.CreateFileResourceRequest(&storageapi.File{Name: fileName, IsSliced: true}).Send(ctx, m.client)
 	if err != nil {
 		return model.File{}, model.Slice{}, err
 	}
 
 	rb.Add(func(ctx context.Context) error {
-		_, err = storageapi.DeleteFileRequest(file.ID).Send(ctx, m.client)
+		_, err = storageapi.DeleteFileRequest(resource.ID).Send(ctx, m.client)
 		return nil
 	})
 
-	fileModel.StorageResource = file
-	return fileModel, sliceModel, nil
+	file.StorageResource = resource
+	slice.StorageResource = resource
+	return file, slice, nil
 }
 
 type sizeWriter struct {
