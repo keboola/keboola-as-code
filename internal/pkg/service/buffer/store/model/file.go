@@ -23,7 +23,6 @@ type File struct {
 	Mapping         Mapping          `json:"mapping" validate:"required,dive"`
 	StorageResource *storageapi.File `json:"storageResource" validate:"required"`
 	ClosingAt       *UTCTime         `json:"closingAt,omitempty"`
-	ClosedAt        *UTCTime         `json:"closedAt,omitempty"`
 	ImportingAt     *UTCTime         `json:"importingAt,omitempty"`
 	ImportedAt      *UTCTime         `json:"importedAt,omitempty"`
 	FailedAt        *UTCTime         `json:"failedAt,omitempty"`

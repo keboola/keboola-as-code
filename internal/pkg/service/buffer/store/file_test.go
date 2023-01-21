@@ -125,8 +125,7 @@ func TestStore_SetFileState_Transitions(t *testing.T) {
 	// Test all transitions
 	testCases := []struct{ from, to filestate.State }{
 		{filestate.Opened, filestate.Closing},
-		{filestate.Closing, filestate.Closed},
-		{filestate.Closed, filestate.Importing},
+		{filestate.Closing, filestate.Importing},
 		{filestate.Importing, filestate.Failed},
 		{filestate.Failed, filestate.Importing},
 		{filestate.Importing, filestate.Imported},

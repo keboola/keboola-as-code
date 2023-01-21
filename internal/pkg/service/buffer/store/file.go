@@ -135,8 +135,6 @@ func (s *Store) setFileStateOp(ctx context.Context, now time.Time, file *model.F
 		switch to {
 		case filestate.Closing:
 			clone.ClosingAt = &nowUTC
-		case filestate.Closed:
-			clone.ClosedAt = &nowUTC
 		case filestate.Importing:
 			clone.ImportingAt = &nowUTC
 		case filestate.Imported:

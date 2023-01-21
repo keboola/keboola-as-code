@@ -111,10 +111,6 @@ func TestSchema(t *testing.T) {
 			"file/closing/",
 		},
 		{
-			s.Files().Closed().Prefix(),
-			"file/closed/",
-		},
-		{
 			s.Files().Imported().Prefix(),
 			"file/imported/",
 		},
