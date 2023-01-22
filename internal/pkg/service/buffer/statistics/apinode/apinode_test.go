@@ -1,4 +1,4 @@
-package statistics_test
+package apinode_test
 
 import (
 	"strings"
@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
-	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics/apinode"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	dependenciesPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -22,7 +22,7 @@ func TestStatsManager(t *testing.T) {
 	clk := clock.NewMock()
 	d := bufferDependencies.NewMockedDeps(t, dependenciesPkg.WithClock(clk), dependenciesPkg.WithUniqueID("my-node"))
 	client := d.EtcdClient()
-	node := NewAPINode(d)
+	node := New(d)
 
 	receiverKey := key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
