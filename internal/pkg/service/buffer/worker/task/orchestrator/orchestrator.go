@@ -96,44 +96,15 @@ func Start[R ExportResource](ctx context.Context, wg *sync.WaitGroup, d dependen
 
 func (w orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan error {
 	work := func(distCtx context.Context, assigner *distribution.Assigner) <-chan error {
-		initDone := make(chan error)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			// Watch for all PUT events
-			ch := w.config.Prefix.GetAllAndWatch(distCtx, w.client, etcd.WithFilterDelete())
-			for resp := range ch {
-				switch {
-				case resp.Created:
-					// The watcher has been successfully created.
-					// This means transition from GetAll to Watch phase.
-					close(initDone)
-				case resp.Restarted:
-					// A fatal error (etcd ErrCompacted) occurred.
-					// It is not possible to continue watching, the operation must be restarted.
-					// Duplicate tasks are prevented by the lock, so here is no special handling of the reset.
-					// Running tasks are NOT stopped.
-					w.logger.Warn(resp.RestartReason)
-				case resp.InitErr != nil:
-					// Initialization error, stop via initDone channel
-					initDone <- resp.InitErr
-					close(initDone)
-				case resp.Err != nil:
-					// An error occurred, it is logged.
-					// If it is a fatal error, then it is followed
-					// by the "Restarted" event handled bellow,
-					// and the operation starts from the beginning.
-					w.logger.Error(resp.Err)
-				default:
-					// Process events
-					for _, event := range resp.Events {
-						w.startTask(ctx, assigner, event)
-					}
+		return w.config.Prefix.
+			GetAllAndWatch(distCtx, w.client, etcd.WithFilterDelete()).
+			SetupConsumer(w.logger).
+			WithForEach(func(events []etcdop.WatchEventT[R], header *etcdop.Header, _ bool) {
+				for _, event := range events {
+					w.startTask(ctx, assigner, event)
 				}
-			}
-		}()
-		return initDone
+			}).
+			StartConsumer(wg)
 	}
 	return w.dist.StartWork(ctx, wg, w.logger, work, distribution.WithResetInterval(w.config.ReSyncInterval))
 }
