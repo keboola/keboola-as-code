@@ -514,7 +514,7 @@ slice/active/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/
 >>>>>
 
 <<<<<
-slice/active/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
+slice/closed/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
 -----
 {
   "projectId": 123,
@@ -538,7 +538,7 @@ slice/active/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000
 >>>>>
 
 <<<<<
-slice/active/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
+slice/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
 -----
 {
   "projectId": 123,
@@ -573,7 +573,7 @@ slice/active/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000
 >>>>>
 
 <<<<<
-slice/active/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z
+slice/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z
 -----
 {
   "projectId": 123,
