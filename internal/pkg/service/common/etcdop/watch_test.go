@@ -21,7 +21,7 @@ func TestPrefix_Watch(t *testing.T) {
 	t.Parallel()
 
 	wg := sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	c := etcdhelper.ClientForTest(t)
@@ -115,7 +115,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	t.Parallel()
 
 	wg := sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	c := etcdhelper.ClientForTest(t)

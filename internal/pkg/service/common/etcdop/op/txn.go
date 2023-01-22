@@ -31,7 +31,7 @@ type TxnOpDef struct {
 // Response type differs according to the used operation.
 type TxnResult struct {
 	Succeeded bool
-	Header    *etcdserverpb.ResponseHeader
+	Header    *Header
 	Results   []any
 }
 
@@ -56,7 +56,7 @@ func (v *inlineOp) MapResponse(ctx context.Context, response Response) (result a
 	return v.mapResponse(ctx, response)
 }
 
-func (v *inlineOp) DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*etcdserverpb.ResponseHeader, error) {
+func (v *inlineOp) DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*Header, error) {
 	op, err := v.Op(ctx)
 	if err != nil {
 		return nil, err
@@ -149,7 +149,7 @@ func (v *TxnOpDef) Do(ctx context.Context, client etcd.KV, opts ...Option) (TxnR
 	return v.Txn(ctx).Do(ctx, client, opts...)
 }
 
-func (v *TxnOpDef) DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*etcdserverpb.ResponseHeader, error) {
+func (v *TxnOpDef) DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*Header, error) {
 	return v.Txn(ctx).DoWithHeader(ctx, client, opts...)
 }
 
@@ -200,7 +200,7 @@ func (v *TxnOp) Do(ctx context.Context, client etcd.KV, opts ...Option) (TxnResu
 	return v.mapResponse(ctx, Response{OpResponse: response, Client: client, Options: opts})
 }
 
-func (v *TxnOp) DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*etcdserverpb.ResponseHeader, error) {
+func (v *TxnOp) DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*Header, error) {
 	r, err := v.Do(ctx, client, opts...)
 	return r.Header, err
 }

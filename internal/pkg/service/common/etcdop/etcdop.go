@@ -32,3 +32,9 @@
 // - Prefix[T].Watch calls Prefix.Watch and Prefix[T].decodeChannel
 // - Prefix[T].GetAllAndWatch calls Prefix.GetAllAndWatch and Prefix[T].decodeChannel
 package etcdop
+
+import (
+	"go.etcd.io/etcd/api/v3/etcdserverpb"
+)
+
+type Header = etcdserverpb.ResponseHeader
