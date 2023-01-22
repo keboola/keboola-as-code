@@ -31,7 +31,21 @@ const Uploaded State = "uploaded"
 // Upload failed, try again later.
 const Failed State = "failed"
 
+// Imported
+// The parent File has been successfully imported to the target table.
+const Imported State = "imported"
+
+// AllActive is a set of states that represent an active slice that has not yet been imported into a target table.
+// See State.IsActive method.
+const AllActive StateGroup = "active"
+
+// AllArchived is a set of states that represent an archived slice that has been imported into a target table.
+// See State.IsArchived method.
+const AllArchived StateGroup = "archived"
+
 type State string
+
+type StateGroup string
 
 type onEntry func(ctx context.Context, from, to State) error
 
@@ -50,6 +64,7 @@ func NewSTM(state State, fn onEntry) *STM {
 	v.permit(Uploading, Failed)
 	v.permit(Failed, Uploading)
 	v.permit(Uploading, Uploaded)
+	v.permit(Uploaded, Imported)
 	return v
 }
 
@@ -69,6 +84,31 @@ func (v *STM) permit(from, to State) {
 		})
 }
 
+// Prefix returns <GROUP>/<STATE>.
+func (v State) Prefix() string {
+	if v.IsActive() {
+		return string(AllActive) + "/" + string(v)
+	}
+	if v.IsArchived() {
+		return string(AllArchived) + "/" + string(v)
+	}
+	panic(errors.Errorf(`unexpected state "%s"`, string(v)))
+}
+
 func (v State) String() string {
+	return string(v)
+}
+
+// IsActive returns true if the state means that the slice is active and has not yet been imported into a target table.
+func (v State) IsActive() bool {
+	return v == Opened || v == Closing || v == Uploading || v == Uploaded || v == Failed
+}
+
+// IsArchived returns true if the state means that the slice has been imported into a target table.
+func (v State) IsArchived() bool {
+	return v == Imported
+}
+
+func (v StateGroup) String() string {
 	return string(v)
 }

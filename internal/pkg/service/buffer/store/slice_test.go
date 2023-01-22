@@ -31,7 +31,7 @@ func TestStore_CreateSlice(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-slice/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/active/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -80,7 +80,7 @@ func TestStore_GetSliceOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-slice/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/active/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -140,14 +140,16 @@ func TestStore_SetSliceState_Transitions(t *testing.T) {
 		assert.Equal(t, tc.to, slice.State, desc)
 		expected := `
 <<<<<
-slice/<STATE>/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/<PREFIX>/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 %A
   "state": "<STATE>",%A
   "<STATE>At": "2009-12-31T18:01:01.000Z"%A
 >>>>>
 `
-		etcdhelper.AssertKVs(t, store.client, strings.ReplaceAll(expected, "<STATE>", tc.to.String()))
+		expected = strings.ReplaceAll(expected, "<PREFIX>", tc.to.Prefix())
+		expected = strings.ReplaceAll(expected, "<STATE>", tc.to.String())
+		etcdhelper.AssertKVs(t, store.client, expected)
 
 		// Test duplicated transition -> nop
 		slice.State = tc.from
@@ -206,7 +208,7 @@ func TestStore_ListUploadedSlices(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-slice/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/active/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -237,7 +239,7 @@ slice/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-0
 >>>>>
 
 <<<<<
-slice/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-03T08:04:05.000Z
+slice/active/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-03T08:04:05.000Z
 -----
 {
   "projectId": 1000,

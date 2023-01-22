@@ -140,7 +140,7 @@
 >>>>>
 
 <<<<<
-/slice/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-with-exports/my-export-1/%s
+/slice/active/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-with-exports/my-export-1/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,

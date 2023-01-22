@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -57,4 +58,14 @@ func (v *Slice) OpenedAt() time.Time {
 
 func (v *Slice) Filename() string {
 	return v.OpenedAt().Format(SliceFilenameDateFormat) + ".gz"
+}
+
+func (v *Slice) GetStats() Stats {
+	if v.State == slicestate.Opened || v.State == slicestate.Closing {
+		panic(errors.Errorf(
+			`slice "%s" in the state "%s" doesn't contain statistics, the state must be uploaded/failed`,
+			v.SliceKey, v.State,
+		))
+	}
+	return *v.Statistics
 }

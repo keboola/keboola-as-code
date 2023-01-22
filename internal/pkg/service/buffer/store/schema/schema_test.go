@@ -119,48 +119,60 @@ func TestSchema(t *testing.T) {
 			"file/failed/",
 		},
 		{
-			s.Slices().InState(slicestate.Opened).Prefix(),
-			"slice/opened/",
-		},
-		{
-			s.Slices().InState(slicestate.Opened).InReceiver(receiverKey).Prefix(),
-			"slice/opened/00000123/my-receiver/",
-		},
-		{
-			s.Slices().InState(slicestate.Opened).InExport(exportKey).Prefix(),
-			"slice/opened/00000123/my-receiver/my-export/",
-		},
-		{
-			s.Slices().InState(slicestate.Opened).InFile(fileKey).Prefix(),
-			"slice/opened/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
-		},
-		{
-			s.Slices().InState(slicestate.Opened).ByKey(sliceKey).Key(),
-			"slice/opened/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
-		},
-		{
 			s.Slices().Prefix(),
 			"slice/",
 		},
 		{
+			s.Slices().Active().Prefix(),
+			"slice/active/",
+		},
+		{
+			s.Slices().Archived().Prefix(),
+			"slice/archived/",
+		},
+		{
 			s.Slices().Opened().Prefix(),
-			"slice/opened/",
+			"slice/active/opened/",
 		},
 		{
 			s.Slices().Closing().Prefix(),
-			"slice/closing/",
+			"slice/active/closing/",
 		},
 		{
 			s.Slices().Uploading().Prefix(),
-			"slice/uploading/",
+			"slice/active/uploading/",
 		},
 		{
 			s.Slices().Uploaded().Prefix(),
-			"slice/uploaded/",
+			"slice/active/uploaded/",
 		},
 		{
 			s.Slices().Failed().Prefix(),
-			"slice/failed/",
+			"slice/active/failed/",
+		},
+		{
+			s.Slices().Imported().Prefix(),
+			"slice/archived/imported/",
+		},
+		{
+			s.Slices().InState(slicestate.Opened).Prefix(),
+			"slice/active/opened/",
+		},
+		{
+			s.Slices().InState(slicestate.Opened).InReceiver(receiverKey).Prefix(),
+			"slice/active/opened/00000123/my-receiver/",
+		},
+		{
+			s.Slices().InState(slicestate.Opened).InExport(exportKey).Prefix(),
+			"slice/active/opened/00000123/my-receiver/my-export/",
+		},
+		{
+			s.Slices().InState(slicestate.Opened).InFile(fileKey).Prefix(),
+			"slice/active/opened/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
+		},
+		{
+			s.Slices().InState(slicestate.Opened).ByKey(sliceKey).Key(),
+			"slice/active/opened/00000123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z",
 		},
 		{
 			s.Records().Prefix(),

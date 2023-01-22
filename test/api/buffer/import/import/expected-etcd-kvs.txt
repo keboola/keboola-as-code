@@ -162,7 +162,7 @@
 >>>>>
 
 <<<<<
-/slice/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-1/export-1/%sZ/%sZ
+/slice/active/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-1/export-1/%sZ/%sZ
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
