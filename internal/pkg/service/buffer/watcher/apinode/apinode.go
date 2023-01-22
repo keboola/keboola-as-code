@@ -54,7 +54,7 @@ type Dependencies interface {
 }
 
 type stateOf[T any] struct {
-	*prefixtree.TreeThreadSafe[T]
+	*prefixtree.AtomicTree[T]
 	initDone <-chan error
 }
 
