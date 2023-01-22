@@ -243,6 +243,8 @@ func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model
 			clone.UploadedAt = &nowUTC
 		case slicestate.Failed:
 			clone.FailedAt = &nowUTC
+		case slicestate.Imported:
+			clone.ImportedAt = &nowUTC
 		default:
 			panic(errors.Errorf(`unexpected state "%s"`, to))
 		}

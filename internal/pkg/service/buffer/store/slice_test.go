@@ -122,6 +122,7 @@ func TestStore_SetSliceState_Transitions(t *testing.T) {
 		{slicestate.Uploading, slicestate.Failed},
 		{slicestate.Failed, slicestate.Uploading},
 		{slicestate.Uploading, slicestate.Uploaded},
+		{slicestate.Uploaded, slicestate.Imported},
 	}
 
 	ctx := context.Background()

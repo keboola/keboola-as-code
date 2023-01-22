@@ -18,7 +18,7 @@ const (
 // A change in the mapping causes a new file and slice to be created so the mapping is immutable.
 type Slice struct {
 	key.SliceKey
-	State           slicestate.State `json:"state" validate:"required,oneof=opened closing closed uploading uploaded failed"`
+	State           slicestate.State `json:"state" validate:"required,oneof=opened closing closed uploading uploaded failed imported"`
 	IsEmpty         bool             `json:"isEmpty,omitempty"`
 	Mapping         Mapping          `json:"mapping" validate:"required,dive"`
 	StorageResource *storageapi.File `json:"storageResource" validate:"required"`
@@ -27,6 +27,7 @@ type Slice struct {
 	UploadingAt     *UTCTime         `json:"uploadingAt,omitempty"`
 	UploadedAt      *UTCTime         `json:"uploadedAt,omitempty"`
 	FailedAt        *UTCTime         `json:"failedAt,omitempty"`
+	ImportedAt      *UTCTime         `json:"importedAt,omitempty"`
 	LastError       string           `json:"lastError,omitempty"`
 	RetryAttempt    int              `json:"retryAttempt,omitempty"`
 	RetryAfter      *UTCTime         `json:"retryAfter,omitempty"`
