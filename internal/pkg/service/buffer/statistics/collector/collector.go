@@ -54,32 +54,33 @@ func NewNode(d Dependencies) *Node {
 		statsPerSlice: make(map[key.SliceKey]*sliceStats),
 	}
 
-	// Receive notifications and periodically trigger sync
+	// The context is cancelled on shutdown, after the HTTP server.
+	// OnShutdown applies LIFO order, the HTTP server is started last and terminated first.
 	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan struct{})
+	wg := &sync.WaitGroup{}
+	d.Process().OnShutdown(func() {
+		m.logger.Info("received shutdown request")
+		cancel()
+		wg.Wait()
+		m.logger.Info("shutdown done")
+	})
+
+	// Receive notifications and periodically trigger sync
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		ticker := m.clock.Ticker(SyncInterval)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ctx.Done():
 				<-m.Sync(context.Background())
-				close(done)
 				return
 			case <-ticker.C:
 				m.Sync(ctx)
 			}
 		}
 	}()
-
-	// The context is cancelled on shutdown, after the HTTP server.
-	// OnShutdown applies LIFO order, the HTTP server is started last and terminated first.
-	d.Process().OnShutdown(func() {
-		m.logger.Info("received shutdown request")
-		cancel()
-		<-done
-		m.logger.Info("shutdown done")
-	})
 
 	return m
 }
