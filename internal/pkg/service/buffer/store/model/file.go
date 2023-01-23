@@ -19,7 +19,7 @@ const (
 // On change in the Mapping, a new file and slice are created, so the Mapping field is immutable.
 type File struct {
 	key.FileKey
-	State           filestate.State  `json:"state" validate:"required,oneof=opened closing closed importing imported failed"`
+	State           filestate.State  `json:"state" validate:"required,oneof=opened closing importing imported failed"`
 	Mapping         Mapping          `json:"mapping" validate:"required,dive"`
 	StorageResource *storageapi.File `json:"storageResource" validate:"required"`
 	ClosingAt       *UTCTime         `json:"closingAt,omitempty"`
