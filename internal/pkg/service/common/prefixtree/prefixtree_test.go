@@ -88,4 +88,10 @@ func TestPrefixTree(t *testing.T) {
 	// Reset
 	tree.Reset()
 	assert.Empty(t, tree.AllFromPrefix(""))
+
+	// DeletePrefix
+	tree.Insert("key/1", value{field: "value1"})
+	tree.Insert("key/2", value{field: "value2"})
+	tree.DeletePrefix("key/")
+	assert.Empty(t, tree.AllFromPrefix(""))
 }

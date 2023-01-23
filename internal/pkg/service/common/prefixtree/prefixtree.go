@@ -91,6 +91,12 @@ func (t *AtomicTree[T]) WalkPrefix(key string, fn func(key string, value T) (sto
 	t.Tree.WalkPrefix(key, fn)
 }
 
+func (t *AtomicTree[T]) DeletePrefix(key string) {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+	t.Tree.DeletePrefix(key)
+}
+
 func (t *Tree[T]) Insert(key string, value T) {
 	t.tree.Insert(key, value)
 }
@@ -125,4 +131,15 @@ func (t *Tree[T]) WalkPrefix(key string, fn func(key string, value T) (stop bool
 	t.tree.WalkPrefix(key, func(key string, value interface{}) bool {
 		return fn(key, value.(T))
 	})
+}
+
+func (t *Tree[T]) DeletePrefix(key string) {
+	var toDelete []string
+	t.WalkPrefix(key, func(key string, _ T) bool {
+		toDelete = append(toDelete, key)
+		return false
+	})
+	for _, k := range toDelete {
+		t.Delete(k)
+	}
 }
