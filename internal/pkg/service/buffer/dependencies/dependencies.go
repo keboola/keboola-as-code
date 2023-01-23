@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -29,6 +30,7 @@ type ForService interface {
 	EtcdClient() *etcd.Client
 	Schema() *schema.Schema
 	Store() *store.Store
+	StatsCacheNode() *statistics.CacheNode
 }
 
 func NewServiceDeps(
@@ -102,6 +104,11 @@ func NewServiceDeps(
 
 	serviceDeps.store = store.New(serviceDeps)
 
+	serviceDeps.statsCache, err = statistics.NewCacheNode(d)
+	if err != nil {
+		return nil, err
+	}
+
 	return serviceDeps, nil
 }
 
@@ -113,6 +120,7 @@ type forService struct {
 	etcdClient *etcd.Client
 	schema     *schema.Schema
 	store      *store.Store
+	statsCache *statistics.CacheNode
 }
 
 func (v *forService) Process() *servicectx.Process {
@@ -129,4 +137,8 @@ func (v *forService) Schema() *schema.Schema {
 
 func (v *forService) Store() *store.Store {
 	return v.store
+}
+
+func (v *forService) StatsCacheNode() *statistics.CacheNode {
+	return v.statsCache
 }

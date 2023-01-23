@@ -29,6 +29,7 @@ type Mocked interface {
 	DistributionWorkerNode() *distribution.Node
 	WatcherWorkerNode() *watcher.WorkerNode
 	TaskWorkerNode() *task.Node
+	StatsCacheNode() *statistics.CacheNode
 	EventSender() *event.Sender
 }
 
@@ -42,6 +43,7 @@ type mocked struct {
 	watcherWatcherNode *watcher.WorkerNode
 	distWorkerNode     *distribution.Node
 	taskWorkerNode     *task.Node
+	statsCacheNode     *statistics.CacheNode
 	eventSender        *event.Sender
 }
 
@@ -125,6 +127,15 @@ func (v *mocked) TaskWorkerNode() *task.Node {
 		assert.NoError(v.t, err)
 	}
 	return v.taskWorkerNode
+}
+
+func (v *mocked) StatsCacheNode() *statistics.CacheNode {
+	if v.statsCacheNode == nil {
+		var err error
+		v.statsCacheNode, err = statistics.NewCacheNode(v)
+		assert.NoError(v.t, err)
+	}
+	return v.statsCacheNode
 }
 
 func (v *mocked) EventSender() *event.Sender {
