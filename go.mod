@@ -15,7 +15,7 @@ require (
 	github.com/benbjohnson/clock v1.3.0
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/cenkalti/backoff/v4 v4.2.0
-	github.com/fatih/color v1.13.0
+	github.com/fatih/color v1.14.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.11.1
@@ -98,7 +98,7 @@ require (
 	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/mod v0.6.0 // indirect
 	golang.org/x/net v0.1.0 // indirect
-	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/term v0.1.0 // indirect
 	golang.org/x/text v0.6.0
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect
