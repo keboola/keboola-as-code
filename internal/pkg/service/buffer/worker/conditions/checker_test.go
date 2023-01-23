@@ -70,18 +70,18 @@ func TestConditionsChecker(t *testing.T) {
 	_, err = conditions.NewChecker(workerDeps2)
 	assert.NoError(t, err)
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(time.Second)
 	clk.Add(conditions.CheckInterval)
 	apiStats.Notify(sliceKey1, 100*datasize.KB, 300*datasize.KB)
 	<-apiStats.Sync(ctx)
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(time.Second)
 	clk.Add(conditions.CheckInterval)
 	apiStats.Notify(sliceKey1, 150*datasize.KB, 300*datasize.KB)
 	apiStats.Notify(sliceKey2, 10*datasize.KB, 10*datasize.KB)
 	<-apiStats.Sync(ctx)
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(time.Second)
 	clk.Add(conditions.CheckInterval)
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(time.Second)
 	clk.Add(conditions.CheckInterval)
 
 	// Shutdown

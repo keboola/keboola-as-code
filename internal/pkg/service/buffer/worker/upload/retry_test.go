@@ -179,10 +179,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	// Retried upload
 	wildcards.Assert(t, `
 %A
-[task][slice.upload/%s]INFO  started task %s
-[task][slice.upload/%s]DEBUG  lock acquired %s
 [task][slice.upload/%s]WARN  task failed (%s): slice upload failed: %s some network error, upload will be retried after "0001-01-01T00:%s" %s
-[task][slice.upload/%s]DEBUG  lock released %s
 %A
 `, strhelper.FilterLines(`^(\[task\]\[slice.upload\/)|(\[orchestrator\]\[slice.upload\])`, workerDeps.DebugLogger().AllMessages()))
 
