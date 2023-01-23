@@ -55,7 +55,7 @@ func TestOrchestrator(t *testing.T) {
 	// Orchestrator config
 	config := orchestrator.Config[testResource]{
 		Prefix:         pfx,
-		ReSyncInterval: time.Second,
+		ReSyncInterval: time.Minute,
 		TaskType:       "some.task",
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Task {
 			return func(_ context.Context, logger log.Logger) (task.Result, error) {
