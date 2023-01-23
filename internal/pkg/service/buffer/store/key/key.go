@@ -34,6 +34,11 @@ type SliceKey struct {
 	SliceID SliceID `json:"sliceId" validate:"required"`
 }
 
+type SliceNodeKey struct {
+	SliceKey
+	NodeID string `json:"nodeId" validate:"required"`
+}
+
 type RecordKey struct {
 	SliceKey
 	ReceivedAt   ReceivedAt
@@ -77,6 +82,10 @@ func (v FileKey) String() string {
 
 func (v SliceKey) String() string {
 	return fmt.Sprintf("%s/%s", v.FileKey.String(), v.SliceID.String())
+}
+
+func (v SliceNodeKey) String() string {
+	return fmt.Sprintf("%s/%s", v.SliceKey.String(), v.NodeID)
 }
 
 func (v RecordKey) String() string {

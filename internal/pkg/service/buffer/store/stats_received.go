@@ -29,6 +29,7 @@ func (s *Store) UpdateSliceReceivedStats(ctx context.Context, nodeID string, sta
 			i = 0
 			addTxn()
 		}
+		v.NodeID = nodeID
 		currentTxn.Then(s.updateStatsOp(ctx, nodeID, v))
 		i++
 	}

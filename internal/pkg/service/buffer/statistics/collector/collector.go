@@ -130,7 +130,10 @@ func (m *Node) statsForSync() (out []model.SliceStats) {
 	for k, v := range m.statsPerSlice {
 		if v.changed {
 			out = append(out, model.SliceStats{
-				SliceKey: k,
+				SliceNodeKey: key.SliceNodeKey{
+					SliceKey: k,
+					NodeID:   m.nodeID,
+				},
 				Stats: model.Stats{
 					LastRecordAt: v.lastRecordAt,
 					RecordsCount: v.recordsCount,

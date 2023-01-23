@@ -5,18 +5,18 @@ package statistics
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics/apinode"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics/workernode"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics/cache"
 )
 
 type (
-	APINode    = apinode.Node
-	WorkerNode = workernode.Node
+	APINode   = apinode.Node
+	CacheNode = cache.Node
 )
 
 func NewAPINode(d apinode.Dependencies) *APINode {
 	return apinode.New(d)
 }
 
-func NewWorkerNode(d workernode.Dependencies) (*WorkerNode, error) {
-	return workernode.New(d)
+func NewCacheNode(d cache.Dependencies) (*CacheNode, error) {
+	return cache.NewNode(d)
 }
