@@ -55,28 +55,28 @@ func (s WatchStreamE[E]) SetupConsumer(logger log.Logger) WatchConsumer[E] {
 	return newConsumer[E](logger, s)
 }
 
-func (o WatchConsumer[E]) WithForEach(v func(events []E, header *Header, restart bool)) WatchConsumer[E] {
-	o.forEachFn = v
-	return o
+func (c WatchConsumer[E]) WithForEach(v func(events []E, header *Header, restart bool)) WatchConsumer[E] {
+	c.forEachFn = v
+	return c
 }
 
-func (o WatchConsumer[E]) WithOnCreated(v onWatcherCreated) WatchConsumer[E] {
-	o.onCreated = v
-	return o
+func (c WatchConsumer[E]) WithOnCreated(v onWatcherCreated) WatchConsumer[E] {
+	c.onCreated = v
+	return c
 }
 
-func (o WatchConsumer[E]) WithOnRestarted(v onWatcherRestarted) WatchConsumer[E] {
-	o.onRestarted = v
-	return o
+func (c WatchConsumer[E]) WithOnRestarted(v onWatcherRestarted) WatchConsumer[E] {
+	c.onRestarted = v
+	return c
 }
 
-func (o WatchConsumer[E]) WithOnError(v onWatcherError) WatchConsumer[E] {
-	o.onError = v
-	return o
+func (c WatchConsumer[E]) WithOnError(v onWatcherError) WatchConsumer[E] {
+	c.onError = v
+	return c
 }
 
-func (o WatchConsumer[E]) StartConsumer(wg *sync.WaitGroup) (initErr <-chan error) {
-	initErrCh := make(chan error)
+func (c WatchConsumer[E]) StartConsumer(wg *sync.WaitGroup) (initErr <-chan error) {
+	initErrCh := make(chan error, 1)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -89,7 +89,7 @@ func (o WatchConsumer[E]) StartConsumer(wg *sync.WaitGroup) (initErr <-chan erro
 
 		// Channel is closed when the watcher context is cancelled,
 		// so the context does not have to be checked here.
-		for resp := range o.stream {
+		for resp := range c.stream {
 			switch {
 			case resp.InitErr != nil:
 				// Initialization error, the channel will be closed in the beginning of the next iteration.
@@ -109,31 +109,31 @@ func (o WatchConsumer[E]) StartConsumer(wg *sync.WaitGroup) (initErr <-chan erro
 				// It is suspicious if a short time has passed between two errors,
 				// then the error is logged with error log level.
 				if interval := time.Since(lastErrorAt); interval > watchErrorThreshold {
-					o.logger.Warn(resp.Err)
+					c.logger.Warn(resp.Err)
 				} else {
-					o.logger.Error(errors.Errorf(`%w (previous error %s ago)`, resp.Err, interval))
+					c.logger.Error(errors.Errorf(`%w (previous error %s ago)`, resp.Err, interval))
 				}
 				lastErrorAt = time.Now()
-				if o.onError != nil {
-					o.onError(resp.Err)
+				if c.onError != nil {
+					c.onError(resp.Err)
 				}
 			case resp.Restarted:
 				// A fatal error (etcd ErrCompacted) occurred.
 				// It is not possible to continue watching, the operation must be restarted.
 				restart = true
-				o.logger.Warn(resp.RestartReason)
-				if o.onRestarted != nil {
-					o.onRestarted(resp.RestartReason, resp.RestartDelay)
+				c.logger.Warn(resp.RestartReason)
+				if c.onRestarted != nil {
+					c.onRestarted(resp.RestartReason, resp.RestartDelay)
 				}
 			case resp.Created:
 				// The watcher has been successfully created.
 				// This means transition from GetAll to Watch phase.
-				if o.onCreated != nil {
-					o.onCreated(resp.Header)
+				if c.onCreated != nil {
+					c.onCreated(resp.Header)
 				}
 				close(initErrCh)
 			default:
-				o.forEachFn(resp.Events, resp.Header, restart)
+				c.forEachFn(resp.Events, resp.Header, restart)
 				restart = false
 			}
 		}
