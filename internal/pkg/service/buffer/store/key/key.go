@@ -80,8 +80,16 @@ func (v FileKey) String() string {
 	return fmt.Sprintf("%s/%s", v.ExportKey.String(), v.FileID.String())
 }
 
+func (v FileKey) OpenedAt() time.Time {
+	return time.Time(v.FileID)
+}
+
 func (v SliceKey) String() string {
 	return fmt.Sprintf("%s/%s", v.FileKey.String(), v.SliceID.String())
+}
+
+func (v SliceKey) OpenedAt() time.Time {
+	return time.Time(v.SliceID)
 }
 
 func (v SliceNodeKey) String() string {

@@ -52,10 +52,6 @@ func NewSlice(fileKey key.FileKey, now time.Time, mapping Mapping, number int, r
 	}
 }
 
-func (v Slice) OpenedAt() time.Time {
-	return time.Time(v.SliceID)
-}
-
 func (v Slice) Filename() string {
 	return v.OpenedAt().Format(SliceFilenameDateFormat) + ".gz"
 }
