@@ -223,6 +223,7 @@
   "exportId": "export-1",
   "fileId": "%s",
   "sliceId": "%s",
+  "nodeId": "%s",
   "lastRecordAt": "%s",
   "recordsCount": 2,
   "recordsSize": %s,
