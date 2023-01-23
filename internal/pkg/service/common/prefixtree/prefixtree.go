@@ -27,8 +27,8 @@ func NewWithLock[T any](lock *sync.RWMutex) *AtomicTree[T] {
 	}
 }
 
-// ModifyAtomic can be used to make multiple atomic changes, under an exclusive lock.
-func (t *AtomicTree[T]) ModifyAtomic(do func(t *Tree[T])) {
+// Atomic can be used to make multiple atomic changes, under an exclusive lock.
+func (t *AtomicTree[T]) Atomic(do func(t *Tree[T])) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	do(t.Tree)

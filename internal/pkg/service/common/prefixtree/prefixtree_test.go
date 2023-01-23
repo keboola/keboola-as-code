@@ -69,8 +69,8 @@ func TestPrefixTree(t *testing.T) {
 	assert.True(t, found)
 	assert.Equal(t, value{field: "value1"}, v)
 
-	// ModifyAtomic
-	tree.ModifyAtomic(func(t *Tree[value]) {
+	// Atomic
+	tree.Atomic(func(t *Tree[value]) {
 		t.Delete("key/1")
 		t.Delete("key/2")
 		t.Insert("key/3", value{field: "foo"})

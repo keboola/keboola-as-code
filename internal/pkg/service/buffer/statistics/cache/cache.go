@@ -93,20 +93,22 @@ func (n *Node) ExportStats(k key.ExportKey) model.StatsByType {
 }
 
 func (n *Node) statsFor(prefix string) (out model.StatsByType) {
-	n.cache.WalkPrefix(prefixBuffered+prefix, func(_ string, v model.Stats) bool {
-		out.Total = out.Total.Add(v)
-		out.Buffered = out.Buffered.Add(v)
-		return false
-	})
-	n.cache.WalkPrefix(prefixUploading+prefix, func(_ string, v model.Stats) bool {
-		out.Total = out.Total.Add(v)
-		out.Uploading = out.Uploading.Add(v)
-		return false
-	})
-	n.cache.WalkPrefix(prefixUploaded+prefix, func(_ string, v model.Stats) bool {
-		out.Total = out.Total.Add(v)
-		out.Uploaded = out.Uploaded.Add(v)
-		return false
+	n.cache.Atomic(func(t *prefixtree.Tree[model.Stats]) {
+		t.WalkPrefix(prefixBuffered+prefix, func(_ string, v model.Stats) bool {
+			out.Total = out.Total.Add(v)
+			out.Buffered = out.Buffered.Add(v)
+			return false
+		})
+		t.WalkPrefix(prefixUploading+prefix, func(_ string, v model.Stats) bool {
+			out.Total = out.Total.Add(v)
+			out.Uploading = out.Uploading.Add(v)
+			return false
+		})
+		t.WalkPrefix(prefixUploaded+prefix, func(_ string, v model.Stats) bool {
+			out.Total = out.Total.Add(v)
+			out.Uploaded = out.Uploaded.Add(v)
+			return false
+		})
 	})
 	return out
 }
@@ -121,7 +123,7 @@ func watchActiveSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan 
 		GetAllAndWatch(ctx, n.client, etcd.WithFilterDelete()).
 		SetupConsumer(n.logger).
 		WithForEach(func(events []etcdop.WatchEventT[model.SliceStats], header *etcdop.Header, restart bool) {
-			n.cache.ModifyAtomic(func(t *prefixtree.Tree[model.Stats]) {
+			n.cache.Atomic(func(t *prefixtree.Tree[model.Stats]) {
 				// Process all PUt events, the keys will be cleared by the watchClosedSlices.
 				for _, event := range events {
 					statsPerAPINode := event.Value
@@ -151,7 +153,7 @@ func watchClosedSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan 
 		GetAllAndWatch(ctx, n.client, etcd.WithPrevKV()).
 		SetupConsumer(n.logger).
 		WithForEach(func(events []etcdop.WatchEventT[model.Slice], header *etcdop.Header, restart bool) {
-			n.cache.ModifyAtomic(func(t *prefixtree.Tree[model.Stats]) {
+			n.cache.Atomic(func(t *prefixtree.Tree[model.Stats]) {
 				// Reset the tree after receiving the first batch after the restart.
 				if restart {
 					t.Reset()
