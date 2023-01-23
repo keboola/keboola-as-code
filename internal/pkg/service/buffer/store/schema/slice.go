@@ -49,6 +49,10 @@ func (v Slices) Active() SlicesActive {
 	return SlicesActive{slices: v.slices.Add(slicestate.AllActive.String())}
 }
 
+func (v Slices) Closed() SlicesActive {
+	return SlicesActive{slices: v.slices.Add(slicestate.AllClosed.String())}
+}
+
 func (v Slices) Archived() SlicesActive {
 	return SlicesActive{slices: v.slices.Add(slicestate.AllArchived.String())}
 }

@@ -1,4 +1,4 @@
-package apinode_test
+package collector_test
 
 import (
 	"strings"
@@ -9,7 +9,7 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
-	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics/apinode"
+	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics/collector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	dependenciesPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -22,7 +22,7 @@ func TestStatsManager(t *testing.T) {
 	clk := clock.NewMock()
 	d := bufferDependencies.NewMockedDeps(t, dependenciesPkg.WithClock(clk), dependenciesPkg.WithUniqueID("my-node"))
 	client := d.EtcdClient()
-	node := New(d)
+	node := NewNode(d)
 
 	receiverKey := key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
@@ -49,6 +49,7 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
   "exportId": "my-export",
   "fileId": "1970-01-01T00:00:00.000Z",
   "sliceId": "1970-01-01T00:00:00.000Z",
+  "nodeId": "my-node",
   "lastRecordAt": "1970-01-01T01:00:01.000Z",
   "recordsCount": 1,
   "recordsSize": "1000B",
@@ -69,6 +70,7 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
   "exportId": "my-export",
   "fileId": "1970-01-01T00:00:00.000Z",
   "sliceId": "1970-01-01T00:00:00.000Z",
+  "nodeId": "my-node",
   "lastRecordAt": "1970-01-01T01:00:01.000Z",
   "recordsCount": 1,
   "recordsSize": "1000B",
@@ -92,6 +94,7 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
   "exportId": "my-export",
   "fileId": "1970-01-01T00:00:00.000Z",
   "sliceId": "1970-01-01T00:00:00.000Z",
+  "nodeId": "my-node",
   "lastRecordAt": "1970-01-01T01:00:03.000Z",
   "recordsCount": 2,
   "recordsSize": "3000B",
@@ -112,6 +115,7 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
   "exportId": "my-export",
   "fileId": "1970-01-01T00:00:00.000Z",
   "sliceId": "1970-01-01T00:00:00.000Z",
+  "nodeId": "my-node",
   "lastRecordAt": "1970-01-01T01:00:03.000Z",
   "recordsCount": 2,
   "recordsSize": "3000B",
@@ -138,6 +142,7 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
   "exportId": "my-export",
   "fileId": "1970-01-01T00:00:00.000Z",
   "sliceId": "1970-01-01T00:00:00.000Z",
+  "nodeId": "my-node",
   "lastRecordAt": "1970-01-01T01:00:05.000Z",
   "recordsCount": 3,
   "recordsSize": "6000B",

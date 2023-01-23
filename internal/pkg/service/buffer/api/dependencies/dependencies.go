@@ -59,7 +59,7 @@ const (
 type ForServer interface {
 	serviceDependencies.ForService
 	BufferAPIHost() string
-	StatsAPINode() *statistics.APINode
+	StatsCollector() *statistics.CollectorNode
 	WatcherAPINode() *watcher.APINode
 }
 
@@ -87,7 +87,7 @@ type ForProjectRequest interface {
 type forServer struct {
 	serviceDependencies.ForService
 	bufferApiHost string
-	stats         *statistics.APINode
+	stats         *statistics.CollectorNode
 	watcher       *watcher.APINode
 }
 
@@ -141,7 +141,7 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 		bufferApiHost: bufferApiHost,
 	}
 
-	d.stats = statistics.NewAPINode(d)
+	d.stats = statistics.NewCollectorNode(d)
 
 	d.watcher, err = watcher.NewAPINode(d)
 	if err != nil {
@@ -192,7 +192,7 @@ func (v *forServer) BufferAPIHost() string {
 	return v.bufferApiHost
 }
 
-func (v *forServer) StatsAPINode() *statistics.APINode {
+func (v *forServer) StatsCollector() *statistics.CollectorNode {
 	return v.stats
 }
 

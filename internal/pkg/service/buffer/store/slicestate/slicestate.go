@@ -35,11 +35,19 @@ const Failed State = "failed"
 // The parent File has been successfully imported to the target table.
 const Imported State = "imported"
 
-// AllActive is a set of states that represent an active slice that has not yet been imported into a target table.
+// AllActive is a set of states (opened, closing) that represent an active slice:
+// - API nodes write new records to it.
 // See State.IsActive method.
 const AllActive StateGroup = "active"
 
-// AllArchived is a set of states that represent an archived slice that has been imported into a target table.
+// AllClosed is a set of states (uploading, failed, uploaded) that represent a closed slice:
+// - API nodes no longer write new records to it.
+// - It has not yet been imported to a target table.
+// See State.IsClosed method.
+const AllClosed StateGroup = "closed"
+
+// AllArchived is a set of states (imported) that represent an archived slice:
+// - It has been imported into a target table.
 // See State.IsArchived method.
 const AllArchived StateGroup = "archived"
 
@@ -89,6 +97,9 @@ func (v State) Prefix() string {
 	if v.IsActive() {
 		return string(AllActive) + "/" + string(v)
 	}
+	if v.IsClosed() {
+		return string(AllClosed) + "/" + string(v)
+	}
 	if v.IsArchived() {
 		return string(AllArchived) + "/" + string(v)
 	}
@@ -99,9 +110,14 @@ func (v State) String() string {
 	return string(v)
 }
 
-// IsActive returns true if the state means that the slice is active and has not yet been imported into a target table.
+// IsActive returns true if the state means that the slice is active and receives new records.
 func (v State) IsActive() bool {
-	return v == Opened || v == Closing || v == Uploading || v == Uploaded || v == Failed
+	return v == Opened || v == Closing
+}
+
+// IsClosed returns true if the state means that the slice is active, but has not yet been uploaded into the file storage.
+func (v State) IsClosed() bool {
+	return v == Uploading || v == Failed || v == Uploaded
 }
 
 // IsArchived returns true if the state means that the slice has been imported into a target table.

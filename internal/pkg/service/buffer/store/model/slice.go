@@ -52,15 +52,15 @@ func NewSlice(fileKey key.FileKey, now time.Time, mapping Mapping, number int, r
 	}
 }
 
-func (v *Slice) OpenedAt() time.Time {
+func (v Slice) OpenedAt() time.Time {
 	return time.Time(v.SliceID)
 }
 
-func (v *Slice) Filename() string {
+func (v Slice) Filename() string {
 	return v.OpenedAt().Format(SliceFilenameDateFormat) + ".gz"
 }
 
-func (v *Slice) GetStats() Stats {
+func (v Slice) GetStats() Stats {
 	if v.State == slicestate.Opened || v.State == slicestate.Closing {
 		panic(errors.Errorf(
 			`slice "%s" in the state "%s" doesn't contain statistics, the state must be uploaded/failed`,

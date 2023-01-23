@@ -127,6 +127,10 @@ func TestSchema(t *testing.T) {
 			"slice/active/",
 		},
 		{
+			s.Slices().Closed().Prefix(),
+			"slice/closed/",
+		},
+		{
 			s.Slices().Archived().Prefix(),
 			"slice/archived/",
 		},
@@ -140,15 +144,15 @@ func TestSchema(t *testing.T) {
 		},
 		{
 			s.Slices().Uploading().Prefix(),
-			"slice/active/uploading/",
-		},
-		{
-			s.Slices().Uploaded().Prefix(),
-			"slice/active/uploaded/",
+			"slice/closed/uploading/",
 		},
 		{
 			s.Slices().Failed().Prefix(),
-			"slice/active/failed/",
+			"slice/closed/failed/",
+		},
+		{
+			s.Slices().Uploaded().Prefix(),
+			"slice/closed/uploaded/",
 		},
 		{
 			s.Slices().Imported().Prefix(),

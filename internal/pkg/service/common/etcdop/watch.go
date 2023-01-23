@@ -162,8 +162,9 @@ func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpO
 		// The rawCh channel is closed by the context, so the context does not have to be checked here again.
 		rawCh := client.Watch(ctx, v.Prefix(), append([]etcd.OpOption{etcd.WithPrefix(), etcd.WithCreatedNotify()}, opts...)...)
 		for rawResp := range rawCh {
+			header := rawResp.Header
 			resp := WatchResponse{}
-			resp.Header = &rawResp.Header
+			resp.Header = &header
 			resp.Created = rawResp.Created
 
 			// Handle error

@@ -1,22 +1,23 @@
-// Package statistics provides collecting of statistics from the API node import endpoint
-// and resolving of the upload and import conditions in the Worker node.
+// Package statistics provides:
+// - Collecting of statistics from the API node import endpoint.
+// - Caching of statistics used by of the upload and import conditions resolver.
 
 package statistics
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics/apinode"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics/workernode"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics/cache"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics/collector"
 )
 
 type (
-	APINode    = apinode.Node
-	WorkerNode = workernode.Node
+	CollectorNode = collector.Node
+	CacheNode     = cache.Node
 )
 
-func NewAPINode(d apinode.Dependencies) *APINode {
-	return apinode.New(d)
+func NewCollectorNode(d collector.Dependencies) *CollectorNode {
+	return collector.NewNode(d)
 }
 
-func NewWorkerNode(d workernode.Dependencies) (*WorkerNode, error) {
-	return workernode.New(d)
+func NewCacheNode(d cache.Dependencies) (*CacheNode, error) {
+	return cache.NewNode(d)
 }

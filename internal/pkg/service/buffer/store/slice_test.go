@@ -208,7 +208,7 @@ func TestStore_ListUploadedSlices(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-slice/active/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/closed/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -239,7 +239,7 @@ slice/active/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/20
 >>>>>
 
 <<<<<
-slice/active/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-03T08:04:05.000Z
+slice/closed/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-03T08:04:05.000Z
 -----
 {
   "projectId": 1000,

@@ -24,7 +24,7 @@ type Mocked interface {
 	BufferAPIHost() string
 	Schema() *bufferSchema.Schema
 	Store() *bufferStore.Store
-	StatsAPINode() *statistics.APINode
+	StatsCollector() *statistics.CollectorNode
 	WatcherAPINode() *watcher.APINode
 	DistributionWorkerNode() *distribution.Node
 	WatcherWorkerNode() *watcher.WorkerNode
@@ -37,7 +37,7 @@ type mocked struct {
 	t                  *testing.T
 	bufferSchema       *bufferSchema.Schema
 	bufferStore        *bufferStore.Store
-	statsAPINode       *statistics.APINode
+	statsAPINode       *statistics.CollectorNode
 	watcherAPINode     *watcher.APINode
 	watcherWatcherNode *watcher.WorkerNode
 	distWorkerNode     *distribution.Node
@@ -68,9 +68,9 @@ func (v *mocked) Store() *bufferStore.Store {
 	return v.bufferStore
 }
 
-func (v *mocked) StatsAPINode() *statistics.APINode {
+func (v *mocked) StatsCollector() *statistics.CollectorNode {
 	if v.statsAPINode == nil {
-		v.statsAPINode = statistics.NewAPINode(v)
+		v.statsAPINode = statistics.NewCollectorNode(v)
 	}
 	return v.statsAPINode
 }

@@ -27,11 +27,34 @@ type Stats struct {
 	FileGZipSize datasize.ByteSize `json:"fileGZipSize,omitempty"`
 }
 
+type StatsByType struct {
+	// Received = active + closed + uploaded
+	Total Stats
+	// Buffered = all in active state group, buffered in the etcd
+	Buffered Stats
+	// Uploading = all in closed state group, in the process of uploading from the etcd to the file storage
+	Uploading Stats
+	// Uploaded = all in uploaded state group, uploaded in the file storage
+	Uploaded Stats
+}
+
 type SliceStats struct {
-	key.SliceKey
+	key.SliceNodeKey
 	Stats
 }
 
 func (s Stats) GetStats() Stats {
+	return s
+}
+
+func (s Stats) Add(v Stats) Stats {
+	s.RecordsCount += v.RecordsCount
+	s.RecordsSize += v.RecordsSize
+	s.BodySize += v.BodySize
+	s.FileSize += v.FileSize
+	s.FileGZipSize += v.FileGZipSize
+	if v.LastRecordAt.After(s.LastRecordAt) {
+		s.LastRecordAt = v.LastRecordAt
+	}
 	return s
 }

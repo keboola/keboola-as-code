@@ -71,8 +71,8 @@ func TestSliceUploadTask(t *testing.T) {
 		assert.NoError(t, err)
 		return count == 7
 	}, time.Second, 10*time.Millisecond)
-	<-apiDeps1.StatsAPINode().Sync(ctx)
-	<-apiDeps2.StatsAPINode().Sync(ctx)
+	<-apiDeps1.StatsCollector().Sync(ctx)
+	<-apiDeps2.StatsCollector().Sync(ctx)
 	assertStateBeforeUpload(t, client)
 
 	// Start worker node
@@ -379,6 +379,7 @@ stats/received/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
   "exportId": "my-export-2",
   "fileId": "0001-01-01T00:01:01.000Z",
   "sliceId": "0001-01-01T00:01:01.000Z",
+  "nodeId": "api-node-1",
   "lastRecordAt": "0001-01-01T00:02:04.000Z",
   "recordsCount": 3,
   "recordsSize": "396B",
@@ -395,6 +396,7 @@ stats/received/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
   "exportId": "my-export-2",
   "fileId": "0001-01-01T00:01:01.000Z",
   "sliceId": "0001-01-01T00:01:01.000Z",
+  "nodeId": "api-node-2",
   "lastRecordAt": "0001-01-01T00:02:08.000Z",
   "recordsCount": 4,
   "recordsSize": "528B",
@@ -514,7 +516,7 @@ slice/active/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/
 >>>>>
 
 <<<<<
-slice/active/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
+slice/closed/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
 -----
 {
   "projectId": 123,
@@ -538,7 +540,7 @@ slice/active/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000
 >>>>>
 
 <<<<<
-slice/active/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
+slice/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
 -----
 {
   "projectId": 123,
@@ -573,7 +575,7 @@ slice/active/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000
 >>>>>
 
 <<<<<
-slice/active/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z
+slice/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z
 -----
 {
   "projectId": 123,

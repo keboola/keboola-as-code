@@ -147,7 +147,11 @@ func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) 
 				ops = append(ops, v)
 			}
 
-			return op.MergeToTxn(ops...), nil
+			return op.
+				MergeToTxn(ops...).
+				WithOnResult(func(result op.TxnResult) {
+					*slice = modSlice
+				}), nil
 		}).
 		Do(ctx, s.client)
 }
