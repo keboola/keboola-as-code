@@ -29,5 +29,25 @@
         }
       ]
     }
+  ],
+  "files": [
+    {
+      "name": "receiver_b_export_1_%s",
+      "tags": [
+        "buffer.exportID=export-1",
+        "buffer.receiverID=receiver-b"
+      ],
+      "isSliced": true,
+      %A
+    },
+    {
+      "name": "receiver_c_export_2_%s",
+      "tags": [
+        "buffer.exportID=export-2",
+        "buffer.receiverID=receiver-c"
+      ],
+      "isSliced": true,
+      %A
+    }
   ]
 }

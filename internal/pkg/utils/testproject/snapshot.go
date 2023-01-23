@@ -182,6 +182,18 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		return request.SendOrErr(ctx, p.storageAPIClient)
 	})
 
+	// Storage Files
+	var files []*storageapi.File
+	grp.Go(func() error {
+		request := storageapi.
+			ListFilesRequest().
+			WithOnSuccess(func(_ context.Context, _ client.Sender, apiFiles *[]*storageapi.File) error {
+				files = *apiFiles
+				return nil
+			})
+		return request.SendOrErr(ctx, p.storageAPIClient)
+	})
+
 	// Wait for requests
 	if err := grp.Wait(); err != nil {
 		return nil, err
@@ -209,6 +221,21 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	}
 	sort.Slice(snapshot.Buckets, func(i, j int) bool {
 		return snapshot.Buckets[i].ID.String() < snapshot.Buckets[j].ID.String()
+	})
+
+	// Storage Files
+	snapshot.Files = make([]*fixtures.File, 0)
+	for _, f := range files {
+		snapshot.Files = append(snapshot.Files, &fixtures.File{
+			Name:        f.Name,
+			Tags:        f.Tags,
+			IsEncrypted: f.IsEncrypted,
+			IsPermanent: f.IsPermanent,
+			IsSliced:    f.IsSliced,
+		})
+	}
+	sort.Slice(snapshot.Files, func(i, j int) bool {
+		return snapshot.Files[i].Name < snapshot.Files[j].Name
 	})
 
 	defBranch, err := p.DefaultBranch()
