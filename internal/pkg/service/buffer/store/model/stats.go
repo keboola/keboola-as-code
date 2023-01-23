@@ -35,3 +35,15 @@ type SliceStats struct {
 func (s Stats) GetStats() Stats {
 	return s
 }
+
+func (s Stats) Add(v Stats) Stats {
+	s.RecordsCount += v.RecordsCount
+	s.RecordsSize += v.RecordsSize
+	s.BodySize += v.BodySize
+	s.FileSize += v.FileSize
+	s.FileGZipSize += v.FileGZipSize
+	if v.LastRecordAt.After(s.LastRecordAt) {
+		s.LastRecordAt = v.LastRecordAt
+	}
+	return s
+}

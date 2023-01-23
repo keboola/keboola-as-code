@@ -18,15 +18,7 @@ func GetStatsFrom[T model.StatsProvider](ctx context.Context, s *Store, prefix i
 // sumStatsOp sums all stats from the iterator.
 func sumStatsOp[T model.StatsProvider](prefix iterator.DefinitionT[T], out *model.Stats) *iterator.ForEachOpT[T] {
 	return prefix.ForEachOp(func(item T, _ *iterator.Header) error {
-		partial := item.GetStats()
-		out.RecordsCount += partial.RecordsCount
-		out.RecordsSize += partial.RecordsSize
-		out.BodySize += partial.BodySize
-		out.FileSize += partial.FileSize
-		out.FileGZipSize += partial.FileGZipSize
-		if partial.LastRecordAt.After(out.LastRecordAt) {
-			out.LastRecordAt = partial.LastRecordAt
-		}
+		*out = out.Add(item.GetStats())
 		return nil
 	})
 }
