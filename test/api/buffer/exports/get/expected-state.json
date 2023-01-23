@@ -21,7 +21,9 @@
           "uri": "https://%%TEST_KBC_STORAGE_API_HOST%%/v2/storage/tables/in.c-bucket.table1",
           "name": "table1",
           "displayName": "table1",
-          "primaryKey": [],
+          "primaryKey": [
+            "id"
+          ],
           "columns": [
             "id",
             "template"

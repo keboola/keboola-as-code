@@ -15,6 +15,7 @@
           "incremental": true,
           "columns": [
             {
+              "primaryKey": true,
               "type": "id",
               "name": "id"
             },
