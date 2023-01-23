@@ -104,7 +104,7 @@ func NewServiceDeps(
 
 	serviceDeps.store = store.New(serviceDeps)
 
-	serviceDeps.statsCache, err = statistics.NewCacheNode(d)
+	serviceDeps.statsCache, err = statistics.NewCacheNode(serviceDeps)
 	if err != nil {
 		return nil, err
 	}
