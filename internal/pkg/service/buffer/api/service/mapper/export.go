@@ -18,7 +18,7 @@ func (m Mapper) ExportsPayload(exports []model.Export) []*buffer.Export {
 func (m Mapper) ExportPayload(model model.Export) *buffer.Export {
 	mapping := m.MappingPayload(model.Mapping)
 	conditions := &buffer.Conditions{
-		Count: model.ImportConditions.Count,
+		Count: int(model.ImportConditions.Count),
 		Size:  model.ImportConditions.Size.String(),
 		Time:  model.ImportConditions.Time.String(),
 	}

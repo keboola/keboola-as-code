@@ -3,7 +3,6 @@ package iterator
 import (
 	"context"
 
-	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -63,7 +62,7 @@ func (v *ForEachOpT[T]) MapResponse(ctx context.Context, response op.Response) (
 	return op.NoResult{}, itr.ForEachValue(v.fn)
 }
 
-func (v *ForEachOpT[T]) DoWithHeader(ctx context.Context, client etcd.KV, opts ...op.Option) (*etcdserverpb.ResponseHeader, error) {
+func (v *ForEachOpT[T]) DoWithHeader(ctx context.Context, client etcd.KV, opts ...op.Option) (*Header, error) {
 	// See comment in the Op method.
 	itr := v.def.Do(ctx, client, opts...)
 	if err := itr.ForEachValue(v.fn); err != nil {

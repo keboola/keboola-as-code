@@ -159,85 +159,51 @@ func (s *Node) GetReceiver(receiverKey key.ReceiverKey) (out ReceiverCore, found
 // The function belongs to the Node struct, but generic method cannot be currently defined.
 func watch[T fmt.Stringer](n *Node, prefix etcdop.PrefixT[T], revSyncer *RevisionSyncer) *stateOf[T] {
 	tree := prefixtree.New[T]()
-
-	initDone := make(chan error)
-	ch := prefix.GetAllAndWatch(n.ctx, n.client, etcd.WithPrevKV())
-
-	n.wg.Add(1)
-	go func() {
-		defer n.wg.Done()
-
-		// Reset the tree on the restart event.
-		reset := false
-
-		// Log only changes, not initial load.
-		logsEnabled := false
-
-		// Channel is closed on shutdown, so the context does not have to be checked.
-		for resp := range ch {
-			switch {
-			case resp.Created:
-				// The watcher has been successfully created.
-				// This means transition from GetAll to Watch phase.
-				logsEnabled = true
-				close(initDone)
-			case resp.Restarted:
-				// A fatal error (etcd ErrCompacted) occurred.
-				// It is not possible to continue watching, the operation must be restarted.
-				reset = true
-				logsEnabled = false
-				n.logger.Warn(resp.RestartReason)
-			case resp.InitErr != nil:
-				// Initialization error, stop worker via initDone channel
-				initDone <- resp.InitErr
-				close(initDone)
-			case resp.Err != nil:
-				// An error occurred, it is logged.
-				// If it is a fatal error, then it is followed
-				// by the "Restarted" event handled bellow,
-				// and the operation starts from the beginning.
-				n.logger.Error(resp.Err)
-			default:
-				tree.ModifyAtomic(func(t *prefixtree.Tree[T]) {
-					// Reset the tree after receiving the first batch after the restart.
-					if reset {
-						t.Reset()
-						reset = false
-					}
-
-					//  Atomically process all events
-					for _, event := range resp.Events {
-						k := event.Value.String()
-						switch event.Type {
-						case etcdop.CreateEvent:
-							t.Insert(k, event.Value)
-							if logsEnabled {
-								n.logger.Infof(`created %s%s`, prefix.Prefix(), k)
-							}
-						case etcdop.UpdateEvent:
-							t.Insert(k, event.Value)
-							if logsEnabled {
-								n.logger.Infof(`updated %s%s`, prefix.Prefix(), k)
-							}
-						case etcdop.DeleteEvent:
-							t.Delete(k)
-							if logsEnabled {
-								n.logger.Infof(`deleted %s%s`, prefix.Prefix(), k)
-							}
-						default:
-							panic(errors.Errorf(`unexpected event type "%v"`, event.Type))
-						}
-					}
-				})
-
-				// ACK revision, so worker nodes knows that the API node is switched to the new slice.
-				if revSyncer != nil {
-					n.logger.Infof(`state updated to the revision "%v"`, resp.Header.Revision)
-					revSyncer.Notify(resp.Header.Revision)
+	logsEnabled := false
+	init := prefix.
+		GetAllAndWatch(n.ctx, n.client, etcd.WithPrevKV()).
+		SetupConsumer(n.logger).
+		WithOnCreated(func(header *etcdop.Header) {
+			logsEnabled = true
+		}).
+		WithForEach(func(events []etcdop.WatchEventT[T], header *etcdop.Header, restart bool) {
+			tree.ModifyAtomic(func(t *prefixtree.Tree[T]) {
+				// Reset the tree after receiving the first batch after the restart.
+				if restart {
+					t.Reset()
 				}
-			}
-		}
-	}()
 
-	return &stateOf[T]{tree, initDone}
+				// Atomically process all events
+				for _, event := range events {
+					k := event.Value.String()
+					switch event.Type {
+					case etcdop.CreateEvent:
+						t.Insert(k, event.Value)
+						if logsEnabled {
+							n.logger.Infof(`created %s%s`, prefix.Prefix(), k)
+						}
+					case etcdop.UpdateEvent:
+						t.Insert(k, event.Value)
+						if logsEnabled {
+							n.logger.Infof(`updated %s%s`, prefix.Prefix(), k)
+						}
+					case etcdop.DeleteEvent:
+						t.Delete(k)
+						if logsEnabled {
+							n.logger.Infof(`deleted %s%s`, prefix.Prefix(), k)
+						}
+					default:
+						panic(errors.Errorf(`unexpected event type "%v"`, event.Type))
+					}
+				}
+			})
+
+			// ACK revision, so worker nodes knows that the API node is switched to the new slice.
+			if revSyncer != nil {
+				n.logger.Infof(`state updated to the revision "%v"`, header.Revision)
+				revSyncer.Notify(header.Revision)
+			}
+		}).
+		StartConsumer(n.wg)
+	return &stateOf[T]{tree, init}
 }

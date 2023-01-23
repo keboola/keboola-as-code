@@ -92,7 +92,7 @@
 >>>>>
 
 <<<<<
-/slice/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-b/export-1/%s
+/slice/active/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-b/export-1/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -118,6 +118,9 @@
         "name": "body"
       }
     ]
+  },
+  "storageResource": {
+    %A
   },
   "sliceNumber": 1
 }

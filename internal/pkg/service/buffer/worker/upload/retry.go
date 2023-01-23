@@ -20,8 +20,8 @@ import (
 // that Slice.RetryAfter time has expired, and the upload task should be started again.
 const FailedSlicesCheckInterval = time.Minute
 
+// retryFailedUploads watches for failed slices.
 func (u *Uploader) retryFailedUploads(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
-	// Watch for failed slices.
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
 		Prefix:         u.schema.Slices().Failed().PrefixT(),
 		ReSyncInterval: FailedSlicesCheckInterval,

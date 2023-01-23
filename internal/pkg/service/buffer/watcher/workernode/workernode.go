@@ -38,8 +38,6 @@ type Dependencies interface {
 }
 
 func New(d Dependencies) (*Node, error) {
-	proc := d.Process()
-
 	// Create
 	n := &Node{
 		logger:             d.Logger().AddPrefix("[watcher][worker]"),
@@ -55,7 +53,7 @@ func New(d Dependencies) (*Node, error) {
 	// Graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
-	proc.OnShutdown(func() {
+	d.Process().OnShutdown(func() {
 		n.logger.Info("received shutdown request")
 		n.listeners.wait()
 		cancel()
@@ -64,7 +62,7 @@ func New(d Dependencies) (*Node, error) {
 	})
 
 	// Watch revisions of all API nodes
-	if err := n.watch(ctx, wg); err != nil {
+	if err := <-n.watch(ctx, wg); err != nil {
 		return nil, err
 	}
 
@@ -94,57 +92,23 @@ func (n *Node) WaitForRevisionChan(requiredRev int64) (<-chan struct{}, func()) 
 }
 
 // watch for changes in revisions of API nodes.
-func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
-	pfx := n.schema.Runtime().APINodes().Watchers().Revision()
-	ch := pfx.GetAllAndWatch(ctx, n.client, etcd.WithCreatedNotify())
-	initDone := make(chan error)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		// Reset the nodes on the restart event.
-		reset := false
-
-		// Channel is closed on shutdown, so the context does not have to be checked
-		for resp := range ch {
-			switch {
-			case resp.Created:
-				// The watcher has been successfully created.
-				// This means transition from GetAll to Watch phase.
-				close(initDone)
-			case resp.Restarted:
-				// A fatal error (etcd ErrCompacted) occurred.
-				// It is not possible to continue watching, the operation must be restarted.
-				reset = true
-				n.logger.Warn(resp.RestartReason)
-			case resp.InitErr != nil:
-				// Initialization error, stop worker via initDone channel
-				initDone <- resp.InitErr
-				close(initDone)
-			case resp.Err != nil:
-				// An error occurred, it is logged.
-				// If it is a fatal error, then it is followed
-				// by the "Restarted" event handled bellow,
-				// and the operation starts from the beginning.
-				n.logger.Error(resp.Err)
-			default:
-				n.updateRevisionsFrom(ctx, resp, reset)
-				reset = false
-			}
-		}
-	}()
-
-	// Wait for initial load
-	return <-initDone
+func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) (init <-chan error) {
+	return n.schema.
+		Runtime().APINodes().Watchers().Revision().
+		GetAllAndWatch(ctx, n.client).
+		SetupConsumer(n.logger).
+		WithForEach(func(events []etcdop.WatchEvent, header *etcdop.Header, restart bool) {
+			n.updateRevisionsFrom(ctx, events, restart)
+		}).
+		StartConsumer(wg)
 }
 
-func (n *Node) updateRevisionsFrom(ctx context.Context, resp etcdop.WatchResponse, reset bool) {
-	if reset {
+func (n *Node) updateRevisionsFrom(ctx context.Context, events []etcdop.WatchEvent, restart bool) {
+	if restart {
 		n.revisionPerAPINode = make(map[string]int64)
 	}
 
-	for _, event := range resp.Events {
+	for _, event := range events {
 		switch event.Type {
 		case etcdop.CreateEvent, etcdop.UpdateEvent:
 			// Cached state of th API node has been updated

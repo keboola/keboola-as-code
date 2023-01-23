@@ -83,7 +83,7 @@ func (v *ForEachOp) MapResponse(ctx context.Context, response op.Response) (resu
 	return op.NoResult{}, itr.ForEach(v.fn)
 }
 
-func (v *ForEachOp) DoWithHeader(ctx context.Context, client etcd.KV, opts ...op.Option) (*etcdserverpb.ResponseHeader, error) {
+func (v *ForEachOp) DoWithHeader(ctx context.Context, client etcd.KV, opts ...op.Option) (*Header, error) {
 	// See comment in the Op method.
 	itr := v.def.Do(ctx, client, opts...)
 	if err := itr.ForEach(v.fn); err != nil {

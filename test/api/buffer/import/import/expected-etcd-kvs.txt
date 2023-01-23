@@ -7,8 +7,8 @@
   "exportId": "export-1",
   "name": "Export 1",
   "importConditions": {
-    "count": 1000,
-    "size": "1MB",
+    "count": 10000,
+    "size": "5MB",
     "time": 300000000000
   }
 }
@@ -162,7 +162,7 @@
 >>>>>
 
 <<<<<
-/slice/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-1/export-1/%sZ/%sZ
+/slice/active/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-1/export-1/%sZ/%sZ
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -207,6 +207,9 @@
       }
     ]
   },
+  "storageResource": {
+    %A
+  },
   "sliceNumber": 1
 }
 >>>>>
@@ -222,7 +225,7 @@
   "sliceId": "%s",
   "lastRecordAt": "%s",
   "recordsCount": 2,
-  "recordsSize": %d,
-  "bodySize": 48
+  "recordsSize": %s,
+  "bodySize": "48B"
 }
 >>>>>

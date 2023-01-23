@@ -131,9 +131,9 @@ func TestSliceCloseTask(t *testing.T) {
 	wildcards.Assert(t, `
 [api][watcher]INFO  locked revision "%s"
 INFO  ---> locked
-[api][watcher]INFO  deleted slice/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
+[api][watcher]INFO  deleted slice/active/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
 [api][watcher]INFO  state updated to the revision "%s"
-[api][watcher]INFO  deleted slice/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
+[api][watcher]INFO  deleted slice/active/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
 [api][watcher]INFO  state updated to the revision "%s"
 INFO  ---> unlocked
 [api][watcher]INFO  unlocked revision "%s"
@@ -263,7 +263,7 @@ secret/export/token/00000123/my-receiver-2/my-export-2
 >>>>>
 
 <<<<<
-slice/uploading/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
+slice/active/uploading/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
 -----
 {
 %A
@@ -277,7 +277,7 @@ slice/uploading/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001
 >>>>>
 
 <<<<<
-slice/uploading/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
+slice/active/uploading/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
 -----
 {
 %A
@@ -289,8 +289,8 @@ slice/uploading/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001
   "statistics": {
     "lastRecordAt": "0001-01-01T00:02:04.000Z",
     "recordsCount": 3,
-    "recordsSize": 396,
-    "bodySize": 54
+    "recordsSize": "396B",
+    "bodySize": "54B"
   },
   "idRange": {
     "start": 1,

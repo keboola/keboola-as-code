@@ -63,12 +63,12 @@ func NewUploader(d dependencies, ops ...Option) (*Uploader, error) {
 	d.Process().OnShutdown(func() {
 		u.logger.Info("received shutdown request")
 		cancel()
-		u.logger.Info("waiting for watchers to finish")
+		u.logger.Info("waiting for orchestrators")
 		wg.Wait()
 		u.logger.Info("shutdown done")
 	})
 
-	// Create tasks
+	// Create orchestrators
 	var init []<-chan error
 	if u.config.closeSlices {
 		init = append(init, u.closeSlices(ctx, wg, d))

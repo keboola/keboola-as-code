@@ -258,7 +258,6 @@ func (s *Store) DeleteExport(ctx context.Context, exportKey key.ExportKey) (err 
 		s.deleteExportTokenOp(ctx, exportKey),
 		s.schema.ReceivedStats().InExport(exportKey).DeleteAll(),
 		s.schema.Files().Opened().InExport(exportKey).DeleteAll(),
-		s.schema.Files().Closed().InExport(exportKey).DeleteAll(),
 		s.schema.Files().Closing().InExport(exportKey).DeleteAll(),
 		s.schema.Files().Importing().InExport(exportKey).DeleteAll(),
 		s.schema.Files().Imported().InExport(exportKey).DeleteAll(),

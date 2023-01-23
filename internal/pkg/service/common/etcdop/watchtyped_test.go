@@ -52,7 +52,7 @@ func TestPrefixT_Watch(t *testing.T) {
 		resp := <-ch
 		assert.False(t, resp.Created)
 		assert.NoError(t, resp.InitErr)
-		assert.Equal(t, WatchResponseT[fooType]{Events: []WatchEventT[fooType]{expected}}, clearReponseT(resp))
+		assert.Equal(t, WatchResponseE[WatchEventT[fooType]]{Events: []WatchEventT[fooType]{expected}}, clearResponseT(resp))
 	}, "CREATE timeout")
 
 	// UPDATE key
@@ -74,7 +74,7 @@ func TestPrefixT_Watch(t *testing.T) {
 		resp := <-ch
 		assert.False(t, resp.Created)
 		assert.NoError(t, resp.InitErr)
-		assert.Equal(t, WatchResponseT[fooType]{Events: []WatchEventT[fooType]{expected}}, clearReponseT(resp))
+		assert.Equal(t, WatchResponseE[WatchEventT[fooType]]{Events: []WatchEventT[fooType]{expected}}, clearResponseT(resp))
 	}, "UPDATE timeout")
 
 	// DELETE key
@@ -96,7 +96,7 @@ func TestPrefixT_Watch(t *testing.T) {
 		resp := <-ch
 		assert.False(t, resp.Created)
 		assert.NoError(t, resp.InitErr)
-		assert.Equal(t, WatchResponseT[fooType]{Events: []WatchEventT[fooType]{expected}}, clearReponseT(resp))
+		assert.Equal(t, WatchResponseE[WatchEventT[fooType]]{Events: []WatchEventT[fooType]{expected}}, clearResponseT(resp))
 	}, "DELETE timeout")
 
 	// Wait for all goroutines
@@ -136,7 +136,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 		resp := <-ch
 		assert.False(t, resp.Created)
 		assert.NoError(t, resp.InitErr)
-		assert.Equal(t, WatchResponseT[fooType]{Events: []WatchEventT[fooType]{expected}}, clearReponseT(resp))
+		assert.Equal(t, WatchResponseE[WatchEventT[fooType]]{Events: []WatchEventT[fooType]{expected}}, clearResponseT(resp))
 	}, "CREATE1 timeout")
 
 	// Wait for watcher created event
@@ -166,7 +166,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 		resp := <-ch
 		assert.False(t, resp.Created)
 		assert.NoError(t, resp.InitErr)
-		assert.Equal(t, WatchResponseT[fooType]{Events: []WatchEventT[fooType]{expected}}, clearReponseT(resp))
+		assert.Equal(t, WatchResponseE[WatchEventT[fooType]]{Events: []WatchEventT[fooType]{expected}}, clearResponseT(resp))
 	}, "CREATE2 timeout")
 
 	// UPDATE key
@@ -192,7 +192,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 		resp := <-ch
 		assert.False(t, resp.Created)
 		assert.NoError(t, resp.InitErr)
-		assert.Equal(t, WatchResponseT[fooType]{Events: []WatchEventT[fooType]{expected}}, clearReponseT(resp))
+		assert.Equal(t, WatchResponseE[WatchEventT[fooType]]{Events: []WatchEventT[fooType]{expected}}, clearResponseT(resp))
 	}, "UPDATE timeout")
 
 	// DELETE key
@@ -219,7 +219,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 		resp := <-ch
 		assert.False(t, resp.Created)
 		assert.NoError(t, resp.InitErr)
-		assert.Equal(t, WatchResponseT[fooType]{Events: []WatchEventT[fooType]{expected}}, clearReponseT(resp))
+		assert.Equal(t, WatchResponseE[WatchEventT[fooType]]{Events: []WatchEventT[fooType]{expected}}, clearResponseT(resp))
 	}, "DELETE timeout")
 
 	// Wait for all goroutines
@@ -231,7 +231,7 @@ func TestPrefixT_GetAllAndWatch(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func clearReponseT(resp WatchResponseT[fooType]) WatchResponseT[fooType] {
+func clearResponseT(resp WatchResponseE[WatchEventT[fooType]]) WatchResponseE[WatchEventT[fooType]] {
 	for i := range resp.Events {
 		event := &resp.Events[i]
 		event.Kv.CreateRevision = 0

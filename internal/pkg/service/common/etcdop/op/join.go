@@ -3,7 +3,6 @@ package op
 import (
 	"context"
 
-	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
 )
 
@@ -65,7 +64,7 @@ func (v *JoinTo[R]) MapResponse(ctx context.Context, response Response) (result 
 	return v.txn.MapResponse(ctx, response)
 }
 
-func (v *JoinTo[R]) DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*etcdserverpb.ResponseHeader, error) {
+func (v *JoinTo[R]) DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*Header, error) {
 	op, err := v.Op(ctx)
 	if err != nil {
 		return nil, err

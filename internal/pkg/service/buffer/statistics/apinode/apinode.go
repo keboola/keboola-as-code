@@ -1,4 +1,5 @@
-package statistics
+// Package apinode provides lock free collection of statistics from the API import endpoint.
+package apinode
 
 import (
 	"context"
@@ -6,6 +7,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
@@ -16,8 +18,8 @@ import (
 
 const SyncInterval = time.Second
 
-// APINode collects node statistics in memory and periodically synchronizes them to the database.
-type APINode struct {
+// Node collects node statistics in memory and periodically synchronizes them to the database.
+type Node struct {
 	nodeID string
 	logger log.Logger
 	clock  clock.Clock
@@ -28,22 +30,22 @@ type APINode struct {
 }
 
 type sliceStats struct {
-	lastReceivedAt key.ReceivedAt
-	recordsCount   uint64
-	recordsSize    uint64
-	bodySize       uint64
-	changed        bool
+	lastRecordAt model.UTCTime
+	recordsCount uint64
+	recordsSize  datasize.ByteSize
+	bodySize     datasize.ByteSize
+	changed      bool
 }
 
-type dependencies interface {
+type Dependencies interface {
 	Logger() log.Logger
 	Clock() clock.Clock
 	Process() *servicectx.Process
 	Store() *store.Store
 }
 
-func NewAPINode(d dependencies) *APINode {
-	m := &APINode{
+func New(d Dependencies) *Node {
+	m := &Node{
 		nodeID:        d.Process().UniqueID(),
 		logger:        d.Logger().AddPrefix("[stats]"),
 		clock:         d.Clock(),
@@ -82,7 +84,7 @@ func NewAPINode(d dependencies) *APINode {
 	return m
 }
 
-func (m *APINode) Notify(sliceKey key.SliceKey, recordSize, bodySize uint64) {
+func (m *Node) Notify(sliceKey key.SliceKey, recordSize, bodySize datasize.ByteSize) {
 	m.statsLock.Lock()
 	defer m.statsLock.Unlock()
 
@@ -92,18 +94,18 @@ func (m *APINode) Notify(sliceKey key.SliceKey, recordSize, bodySize uint64) {
 	}
 
 	// Update stats
-	receivedAt := key.ReceivedAt(m.clock.Now())
+	receivedAt := model.UTCTime(m.clock.Now())
 	stats := m.statsPerSlice[sliceKey]
 	stats.recordsCount += 1
 	stats.recordsSize += recordSize
 	stats.bodySize += bodySize
-	if receivedAt.After(stats.lastReceivedAt) {
-		stats.lastReceivedAt = receivedAt
+	if receivedAt.After(stats.lastRecordAt) {
+		stats.lastRecordAt = receivedAt
 	}
 	stats.changed = true
 }
 
-func (m *APINode) Sync(ctx context.Context) <-chan struct{} {
+func (m *Node) Sync(ctx context.Context) <-chan struct{} {
 	stats := m.statsForSync()
 	done := make(chan struct{})
 	if len(stats) > 0 {
@@ -122,7 +124,7 @@ func (m *APINode) Sync(ctx context.Context) <-chan struct{} {
 	return done
 }
 
-func (m *APINode) statsForSync() (out []model.SliceStats) {
+func (m *Node) statsForSync() (out []model.SliceStats) {
 	m.statsLock.Lock()
 	defer m.statsLock.Unlock()
 	for k, v := range m.statsPerSlice {
@@ -130,7 +132,7 @@ func (m *APINode) statsForSync() (out []model.SliceStats) {
 			out = append(out, model.SliceStats{
 				SliceKey: k,
 				Stats: model.Stats{
-					LastRecordAt: model.UTCTime(v.lastReceivedAt),
+					LastRecordAt: v.lastRecordAt,
 					RecordsCount: v.recordsCount,
 					RecordsSize:  v.recordsSize,
 					BodySize:     v.bodySize,

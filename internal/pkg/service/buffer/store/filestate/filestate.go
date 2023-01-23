@@ -16,12 +16,8 @@ const Opened State = "opened"
 
 // Closing
 // Import conditions have been met.
-// Waiting for the last slice to be closed and the upload of the file manifest.
+// Waiting for the last slice to be closed.
 const Closing State = "closing"
-
-// Closed
-// The file is ready for import, the manifest has been uploaded.
-const Closed State = "closed"
 
 // Importing
 // File import into the table is in progress.
@@ -50,8 +46,7 @@ func NewSTM(state State, fn onEntry) *STM {
 		return errors.Errorf(`file state transition "%s" -> "%s" is not allowed`, state, trigger)
 	})
 	v.permit(Opened, Closing)
-	v.permit(Closing, Closed)
-	v.permit(Closed, Importing)
+	v.permit(Closing, Importing)
 	v.permit(Importing, Failed)
 	v.permit(Failed, Importing)
 	v.permit(Importing, Imported)

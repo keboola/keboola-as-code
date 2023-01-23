@@ -3,8 +3,11 @@ package model
 import (
 	"time"
 
+	"github.com/keboola/go-client/pkg/storageapi"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -16,17 +19,19 @@ const (
 // A change in the mapping causes a new file and slice to be created so the mapping is immutable.
 type Slice struct {
 	key.SliceKey
-	State        slicestate.State `json:"state" validate:"required,oneof=opened closing closed uploading uploaded failed"`
-	IsEmpty      bool             `json:"isEmpty,omitempty"`
-	Mapping      Mapping          `json:"mapping" validate:"required,dive"`
-	Number       int              `json:"sliceNumber" validate:"required"`
-	ClosingAt    *UTCTime         `json:"closingAt,omitempty"`
-	UploadingAt  *UTCTime         `json:"uploadingAt,omitempty"`
-	UploadedAt   *UTCTime         `json:"uploadedAt,omitempty"`
-	FailedAt     *UTCTime         `json:"failedAt,omitempty"`
-	LastError    string           `json:"lastError,omitempty"`
-	RetryAttempt int              `json:"retryAttempt,omitempty"`
-	RetryAfter   *UTCTime         `json:"retryAfter,omitempty"`
+	State           slicestate.State `json:"state" validate:"required,oneof=opened closing closed uploading uploaded failed imported"`
+	IsEmpty         bool             `json:"isEmpty,omitempty"`
+	Mapping         Mapping          `json:"mapping" validate:"required,dive"`
+	StorageResource *storageapi.File `json:"storageResource" validate:"required"`
+	Number          int              `json:"sliceNumber" validate:"required"`
+	ClosingAt       *UTCTime         `json:"closingAt,omitempty"`
+	UploadingAt     *UTCTime         `json:"uploadingAt,omitempty"`
+	UploadedAt      *UTCTime         `json:"uploadedAt,omitempty"`
+	FailedAt        *UTCTime         `json:"failedAt,omitempty"`
+	ImportedAt      *UTCTime         `json:"importedAt,omitempty"`
+	LastError       string           `json:"lastError,omitempty"`
+	RetryAttempt    int              `json:"retryAttempt,omitempty"`
+	RetryAfter      *UTCTime         `json:"retryAfter,omitempty"`
 	// Statistics are set by the "slice close" operation, the value is nil, if there is no record.
 	Statistics *Stats        `json:"statistics,omitempty"`
 	IDRange    *SliceIDRange `json:"idRange,omitempty"`
@@ -37,12 +42,13 @@ type SliceIDRange struct {
 	Count uint64 `json:"count" validate:"required"`
 }
 
-func NewSlice(fileKey key.FileKey, now time.Time, mapping Mapping, number int) Slice {
+func NewSlice(fileKey key.FileKey, now time.Time, mapping Mapping, number int, resource *storageapi.File) Slice {
 	return Slice{
-		SliceKey: key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(now)},
-		State:    slicestate.Opened,
-		Mapping:  mapping,
-		Number:   number,
+		SliceKey:        key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(now)},
+		State:           slicestate.Opened,
+		Mapping:         mapping,
+		StorageResource: resource,
+		Number:          number,
 	}
 }
 
@@ -52,4 +58,14 @@ func (v *Slice) OpenedAt() time.Time {
 
 func (v *Slice) Filename() string {
 	return v.OpenedAt().Format(SliceFilenameDateFormat) + ".gz"
+}
+
+func (v *Slice) GetStats() Stats {
+	if v.State == slicestate.Opened || v.State == slicestate.Closing {
+		panic(errors.Errorf(
+			`slice "%s" in the state "%s" doesn't contain statistics, the state must be uploaded/failed`,
+			v.SliceKey, v.State,
+		))
+	}
+	return *v.Statistics
 }

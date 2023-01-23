@@ -3,9 +3,9 @@ package etcdop
 import (
 	"context"
 
-	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 )
 
@@ -16,13 +16,10 @@ type WatchEventT[T any] struct {
 	Value  T
 }
 
-type WatchResponseT[T any] struct {
-	WatcherStatus
-	Events []WatchEventT[T]
-}
+type WatchStreamT[T any] chan WatchResponseE[WatchEventT[T]]
 
-func (e *WatchResponseT[T]) Rev() int64 {
-	return e.Header.Revision
+func (s WatchStreamT[T]) SetupConsumer(logger log.Logger) WatchConsumer[WatchEventT[T]] {
+	return newConsumer(logger, s)
 }
 
 // GetAllAndWatch loads all keys in the prefix by the iterator and then watch for changes.
@@ -33,8 +30,8 @@ func (e *WatchResponseT[T]) Rev() int64 {
 // Then, the following events are streamed from the beginning.
 //
 // See WatchResponse for details.
-func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) (out <-chan WatchResponseT[T]) {
-	return v.decodeChannel(ctx, func(ctx context.Context) <-chan WatchResponse {
+func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) (out WatchStreamT[T]) {
+	return v.decodeChannel(ctx, func(ctx context.Context) WatchStream {
 		return v.prefix.GetAllAndWatch(ctx, client, opts...)
 	})
 }
@@ -50,15 +47,15 @@ func (v PrefixT[T]) GetAllAndWatch(ctx context.Context, client *etcd.Client, opt
 // the operation is stopped and the restart is not performed.
 //
 // See WatchResponse for details.
-func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) <-chan WatchResponseT[T] {
-	return v.decodeChannel(ctx, func(ctx context.Context) <-chan WatchResponse {
+func (v PrefixT[T]) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) WatchStreamT[T] {
+	return v.decodeChannel(ctx, func(ctx context.Context) WatchStream {
 		return v.prefix.Watch(ctx, client, opts...)
 	})
 }
 
 // decodeChannel is used by Watch and GetAllAndWatch to decode raw data to typed data.
-func (v PrefixT[T]) decodeChannel(ctx context.Context, channelFactory func(ctx context.Context) <-chan WatchResponse) <-chan WatchResponseT[T] {
-	outCh := make(chan WatchResponseT[T])
+func (v PrefixT[T]) decodeChannel(ctx context.Context, channelFactory func(ctx context.Context) WatchStream) WatchStreamT[T] {
+	outCh := make(chan WatchResponseE[WatchEventT[T]])
 	go func() {
 		defer close(outCh)
 
@@ -66,10 +63,10 @@ func (v PrefixT[T]) decodeChannel(ctx context.Context, channelFactory func(ctx c
 		defer cancel()
 
 		// Decode value, if an error occurs, send it through the channel.
-		decode := func(kv *op.KeyValue, header *etcdserverpb.ResponseHeader) (T, bool) {
+		decode := func(kv *op.KeyValue, header *Header) (T, bool) {
 			var target T
 			if err := v.serde.Decode(ctx, kv, &target); err != nil {
-				resp := WatchResponseT[T]{}
+				resp := WatchResponseE[WatchEventT[T]]{}
 				resp.Header = header
 				resp.Err = err
 				outCh <- resp
@@ -115,7 +112,7 @@ func (v PrefixT[T]) decodeChannel(ctx context.Context, channelFactory func(ctx c
 			}
 
 			// Pass the response
-			outCh <- WatchResponseT[T]{
+			outCh <- WatchResponseE[WatchEventT[T]]{
 				WatcherStatus: rawResp.WatcherStatus,
 				Events:        events,
 			}

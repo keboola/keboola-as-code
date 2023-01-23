@@ -45,10 +45,6 @@ func (v Files) Closing() FilesInAState {
 	return v.InState(filestate.Closing)
 }
 
-func (v Files) Closed() FilesInAState {
-	return v.InState(filestate.Closed)
-}
-
 func (v Files) Importing() FilesInAState {
 	return v.InState(filestate.Importing)
 }

@@ -42,8 +42,8 @@
         ]
       },
       "conditions": {
-        "count": 1000,
-        "size": "1MB",
+        "count": 10000,
+        "size": "5MB",
         "time": "5m0s"
       }
     }

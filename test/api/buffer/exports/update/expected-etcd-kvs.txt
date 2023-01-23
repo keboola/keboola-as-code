@@ -269,7 +269,7 @@
 >>>>>
 
 <<<<<
-/slice/closing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
+/slice/active/closing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -298,13 +298,16 @@
       }
     ]
   },
+  "storageResource": {
+    %A
+  },
   "sliceNumber": 1,
   "closingAt": "%s"
 }
 >>>>>
 
 <<<<<
-/slice/closing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
+/slice/active/closing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -333,13 +336,16 @@
       }
     ]
   },
+  "storageResource": {
+    %A
+  },
   "sliceNumber": 1,
   "closingAt": "%s"
 }
 >>>>>
 
 <<<<<
-/slice/closing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
+/slice/active/closing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -366,13 +372,16 @@
       }
     ]
   },
+  "storageResource": {
+    %A
+  },
   "sliceNumber": 1,
   "closingAt": "%s"
 }
 >>>>>
 
 <<<<<
-/slice/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
+/slice/active/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -398,6 +407,9 @@
         "name": "body"
       }
     ]
+  },
+  "storageResource": {
+    %A
   },
   "sliceNumber": 1
 }

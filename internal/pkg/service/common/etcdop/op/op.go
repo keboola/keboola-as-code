@@ -16,9 +16,11 @@ import (
 type Op interface {
 	Op(ctx context.Context) (etcd.Op, error)
 	MapResponse(ctx context.Context, response Response) (result any, err error)
-	DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*etcdserverpb.ResponseHeader, error)
+	DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*Header, error)
 	DoOrErr(ctx context.Context, client etcd.KV, opts ...Option) error
 }
+
+type Header = etcdserverpb.ResponseHeader
 
 // ForType is generic type for all typed operations in the package.
 type ForType[R any] struct {
@@ -108,7 +110,7 @@ func (v ForType[R]) Do(ctx context.Context, client etcd.KV, opts ...Option) (R, 
 	return r, err
 }
 
-func (v ForType[R]) DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*etcdserverpb.ResponseHeader, error) {
+func (v ForType[R]) DoWithHeader(ctx context.Context, client etcd.KV, opts ...Option) (*Header, error) {
 	_, h, err := v.DoWithRaw(ctx, client, opts...)
 	return getResponseHeader(h), err
 }
@@ -118,8 +120,8 @@ func (v ForType[R]) DoOrErr(ctx context.Context, client etcd.KV, opts ...Option)
 	return err
 }
 
-func getResponseHeader(response etcd.OpResponse) *etcdserverpb.ResponseHeader {
-	var header *etcdserverpb.ResponseHeader
+func getResponseHeader(response etcd.OpResponse) *Header {
+	var header *Header
 	if v := response.Get(); v != nil {
 		header = v.Header
 	} else if v := response.Del(); v != nil {

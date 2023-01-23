@@ -16,19 +16,17 @@ const (
 
 // File represent a file with records.
 // A copy of the mapping is stored for retrieval optimization.
-// A change in the mapping causes a new file and slice to be created so the mapping is immutable.
+// On change in the Mapping, a new file and slice are created, so the Mapping field is immutable.
 type File struct {
 	key.FileKey
-	State              filestate.State  `json:"state" validate:"required,oneof=opened closing closed importing imported failed"`
-	Mapping            Mapping          `json:"mapping" validate:"required,dive"`
-	StorageResource    *storageapi.File `json:"storageResource" validate:"required"`
-	ClosingAt          *UTCTime         `json:"closingAt,omitempty"`
-	ClosedAt           *UTCTime         `json:"closedAt,omitempty"`
-	ImportingAt        *UTCTime         `json:"importingAt,omitempty"`
-	ImportedAt         *UTCTime         `json:"importedAt,omitempty"`
-	ManifestUploadedAt *UTCTime         `json:"manifestUploadedAt,omitempty"`
-	FailedAt           *UTCTime         `json:"failedAt,omitempty"`
-	LastError          string           `json:"lastError,omitempty"`
+	State           filestate.State  `json:"state" validate:"required,oneof=opened closing importing imported failed"`
+	Mapping         Mapping          `json:"mapping" validate:"required,dive"`
+	StorageResource *storageapi.File `json:"storageResource" validate:"required"`
+	ClosingAt       *UTCTime         `json:"closingAt,omitempty"`
+	ImportingAt     *UTCTime         `json:"importingAt,omitempty"`
+	ImportedAt      *UTCTime         `json:"importedAt,omitempty"`
+	FailedAt        *UTCTime         `json:"failedAt,omitempty"`
+	LastError       string           `json:"lastError,omitempty"`
 }
 
 func NewFile(exportKey key.ExportKey, now time.Time, mapping Mapping, resource *storageapi.File) File {

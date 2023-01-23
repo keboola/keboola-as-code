@@ -18,6 +18,14 @@ type SlicesInAState struct {
 	slices
 }
 
+type SlicesActive struct {
+	slices
+}
+
+type SlicesArchived struct {
+	slices
+}
+
 type SlicesInReceiver struct {
 	slices
 }
@@ -37,8 +45,16 @@ func (v *Schema) Slices() Slices {
 	)}
 }
 
+func (v Slices) Active() SlicesActive {
+	return SlicesActive{slices: v.slices.Add(slicestate.AllActive.String())}
+}
+
+func (v Slices) Archived() SlicesActive {
+	return SlicesActive{slices: v.slices.Add(slicestate.AllArchived.String())}
+}
+
 func (v Slices) InState(state slicestate.State) SlicesInAState {
-	return SlicesInAState{slices: v.slices.Add(string(state))}
+	return SlicesInAState{slices: v.slices.Add(state.Prefix())}
 }
 
 func (v Slices) Opened() SlicesInAState {
@@ -59,6 +75,10 @@ func (v Slices) Uploaded() SlicesInAState {
 
 func (v Slices) Failed() SlicesInAState {
 	return v.InState(slicestate.Failed)
+}
+
+func (v Slices) Imported() SlicesInAState {
+	return v.InState(slicestate.Imported)
 }
 
 func (v SlicesInAState) ByKey(k storeKey.SliceKey) KeyT[model.Slice] {

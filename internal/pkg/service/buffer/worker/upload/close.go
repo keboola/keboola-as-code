@@ -18,8 +18,8 @@ import (
 // In normal operation, switch to the "closing" state is processed immediately, we are notified via the Watch API.
 const ClosingSlicesCheckInterval = time.Minute
 
+// closeSlices watches for slices switched to the closing state.
 func (u *Uploader) closeSlices(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
-	// Watch for slices switched to the closing state.
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
 		Prefix:         u.schema.Slices().Closing().PrefixT(),
 		ReSyncInterval: ClosingSlicesCheckInterval,

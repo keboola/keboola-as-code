@@ -23,8 +23,8 @@ import (
 // In normal operation, switch to the "uploading" state is processed immediately, we are notified via the Watch API.
 const UploadingSlicesCheckInterval = time.Minute
 
+// uploadSlices watches for slices switched to the uploading state.
 func (u *Uploader) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
-	// Watch for slices switched to the uploading state.
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
 		Prefix:         u.schema.Slices().Uploading().PrefixT(),
 		ReSyncInterval: UploadingSlicesCheckInterval,
@@ -60,12 +60,6 @@ func (u *Uploader) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depen
 					return "skipped upload of the empty slice", nil
 				}
 
-				// Load file
-				fileRes, err := u.store.GetFile(ctx, slice.FileKey)
-				if err != nil {
-					return "", errors.Errorf(`cannot load file "%s": %w`, slice.FileKey, err)
-				}
-
 				// Load token
 				token, err := u.store.GetToken(ctx, slice.ExportKey)
 				if err != nil {
@@ -78,7 +72,7 @@ func (u *Uploader) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depen
 
 				// Upload slice, set statistics
 				reader := newRecordsReader(ctx, u.logger, u.etcdClient, u.schema, slice)
-				if err := files.UploadSlice(ctx, fileRes, &slice, reader); err != nil {
+				if err := files.UploadSlice(ctx, &slice, reader); err != nil {
 					return "", errors.Errorf(`file upload failed: %w`, err)
 				}
 
@@ -96,7 +90,7 @@ func (u *Uploader) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depen
 
 				// Update manifest, so the file is always importable.
 				allSlices = append(allSlices, slice)
-				if err := files.UploadManifest(ctx, fileRes, allSlices); err != nil {
+				if err := files.UploadManifest(ctx, slice.StorageResource, allSlices); err != nil {
 					return "", errors.Errorf(`manifest upload failed: %w`, err)
 				}
 

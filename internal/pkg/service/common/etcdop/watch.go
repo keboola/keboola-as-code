@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -28,6 +27,8 @@ const (
 const (
 	// getAllBatchSize defines batch size for "getAll" phase of the GetAllAndWatch operation.
 	getAllBatchSize = 100
+	// watchErrorThreshold - if less than the interval elapses between two watch errors, it is not a warning, but an error.
+	watchErrorThreshold = 5 * time.Second
 )
 
 type WatchEvent struct {
@@ -37,7 +38,7 @@ type WatchEvent struct {
 }
 
 type WatcherStatus struct {
-	Header *etcdserverpb.ResponseHeader
+	Header *Header
 	// InitErr is used to indicate an error during initialization of the watcher, before the first event is received.
 	InitErr error
 	// Err is used to indicate an error.
@@ -53,9 +54,18 @@ type WatcherStatus struct {
 	RestartDelay  time.Duration
 }
 
-type WatchResponse struct {
+type WatchStream = WatchStreamE[WatchEvent]
+
+type WatchResponse = WatchResponseE[WatchEvent]
+
+// WatchResponseE wraps events of the type E.
+type WatchResponseE[E any] struct {
 	WatcherStatus
-	Events []WatchEvent
+	Events []E
+}
+
+func (e *WatchResponseE[E]) Rev() int64 {
+	return e.Header.Revision
 }
 
 func (v EventType) String() string {
@@ -71,10 +81,6 @@ func (v EventType) String() string {
 	}
 }
 
-func (e *WatchResponse) Rev() int64 {
-	return e.Header.Revision
-}
-
 // GetAllAndWatch loads all keys in the prefix by the iterator and then Watch for changes.
 //
 // If a fatal error occurs, the watcher is restarted.
@@ -82,8 +88,8 @@ func (e *WatchResponse) Rev() int64 {
 // Then, the following events are streamed from the beginning.
 //
 // See WatchResponse for details.
-func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) (out <-chan WatchResponse) {
-	return wrapWatchWithRestart(ctx, func(ctx context.Context) <-chan WatchResponse {
+func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ...etcd.OpOption) (out WatchStream) {
+	return wrapWatchWithRestart(ctx, func(ctx context.Context) WatchStream {
 		outCh := make(chan WatchResponse)
 		go func() {
 			defer close(outCh)
@@ -106,7 +112,7 @@ func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ..
 
 			// Iterate and send batches of events
 			i := 1
-			err := itr.ForEach(func(kv *op.KeyValue, _ *etcdserverpb.ResponseHeader) error {
+			err := itr.ForEach(func(kv *op.KeyValue, _ *Header) error {
 				events = append(events, WatchEvent{Kv: kv, Type: CreateEvent})
 				if i%getAllBatchSize == 0 {
 					sendBatch()
@@ -139,7 +145,7 @@ func (v Prefix) GetAllAndWatch(ctx context.Context, client *etcd.Client, opts ..
 // Watch method wraps low-level etcd watcher and watch for changes in the prefix.
 // Operation can be cancelled by the context or a fatal error (etcd ErrCompacted).
 // Otherwise, Watch will retry on other recoverable errors forever until reconnected.
-func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) <-chan WatchResponse {
+func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpOption) WatchStream {
 	outCh := make(chan WatchResponse)
 	go func() {
 		defer close(outCh)
@@ -239,7 +245,7 @@ func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpO
 	return outCh
 }
 
-func wrapWatchWithRestart(ctx context.Context, channelFactory func(ctx context.Context) <-chan WatchResponse) <-chan WatchResponse {
+func wrapWatchWithRestart(ctx context.Context, channelFactory func(ctx context.Context) WatchStream) WatchStream {
 	b := backoff.WithContext(newWatchBackoff(), ctx)
 	outCh := make(chan WatchResponse)
 	go func() {
@@ -262,6 +268,7 @@ func wrapWatchWithRestart(ctx context.Context, channelFactory func(ctx context.C
 			for resp := range rawCh {
 				// Stop initialization phase after the first "created" event
 				if resp.Created {
+					b.Reset()
 					if init {
 						init = false
 						// Pass event to the outCh channel
@@ -272,7 +279,7 @@ func wrapWatchWithRestart(ctx context.Context, channelFactory func(ctx context.C
 					}
 				}
 
-				// Update lastErr for "restarted" event
+				// Update lastErr for RestartReason
 				if resp.InitErr != nil {
 					lastErr = resp.InitErr
 				} else if resp.Err != nil {

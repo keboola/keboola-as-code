@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -171,7 +172,7 @@ func TestStore_GetReceivedStatsByFile_Many(t *testing.T) {
 	stats, err := GetStatsFrom(ctx, store, sm.ReceivedStats().InFile(fileKey).GetAll())
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(3*1000), stats.RecordsCount)
-	assert.Equal(t, uint64(3*10*1000), stats.RecordsSize)
+	assert.Equal(t, datasize.ByteSize(3*10*1000), stats.RecordsSize)
 	assert.Equal(t, key.UTCTime(fileOpenedAt.Add(1000*time.Hour+1*time.Minute)), stats.LastRecordAt)
 }
 
@@ -309,14 +310,14 @@ func TestStore_GetReceivedStatsBySlice_Many(t *testing.T) {
 	stats, err := GetStatsFrom(ctx, store, sm.ReceivedStats().InSlice(sliceKey).GetAll())
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(100), stats.RecordsCount)
-	assert.Equal(t, uint64(10*100), stats.RecordsSize)
+	assert.Equal(t, datasize.ByteSize(10*100), stats.RecordsSize)
 	assert.Equal(t, key.UTCTime(fileOpenedAt.Add(100*time.Minute)), stats.LastRecordAt)
 
 	// File stats
 	stats, err = GetStatsFrom(ctx, store, sm.ReceivedStats().InFile(fileKey).GetAll())
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(100), stats.RecordsCount)
-	assert.Equal(t, uint64(10*100), stats.RecordsSize)
+	assert.Equal(t, datasize.ByteSize(10*100), stats.RecordsSize)
 	assert.Equal(t, key.UTCTime(fileOpenedAt.Add(100*time.Minute)), stats.LastRecordAt)
 }
 
@@ -367,8 +368,8 @@ stats/received/00000123/my-receiver/my-export/0001-01-01T00:01:00.000Z/0001-01-0
   "sliceId": "0001-01-01T01:01:00.000Z",
   "lastRecordAt": "0001-01-01T02:01:00.000Z",
   "recordsCount": 111,
-  "recordsSize": 1111,
-  "bodySize": 11111
+  "recordsSize": "1111B",
+  "bodySize": "11111B"
 }
 >>>>>
 
@@ -383,14 +384,14 @@ stats/received/00000123/my-receiver/my-export/0001-01-01T12:01:00.000Z/0001-01-0
   "sliceId": "0001-01-01T13:01:00.000Z",
   "lastRecordAt": "0001-01-01T14:01:00.000Z",
   "recordsCount": 222,
-  "recordsSize": 2222,
-  "bodySize": 22222
+  "recordsSize": "2222B",
+  "bodySize": "22222B"
 }
 >>>>>
 `)
 }
 
-func assertFileStats(t *testing.T, store *Store, fileKey key.FileKey, recordsCount, recordsSize, bodySize uint64, lastAt time.Time) {
+func assertFileStats(t *testing.T, store *Store, fileKey key.FileKey, recordsCount uint64, recordsSize, bodySize datasize.ByteSize, lastAt time.Time) {
 	t.Helper()
 	sm := schema.New(validator.New().Validate)
 	stats, err := GetStatsFrom(context.Background(), store, sm.ReceivedStats().InFile(fileKey).GetAll())
@@ -401,7 +402,7 @@ func assertFileStats(t *testing.T, store *Store, fileKey key.FileKey, recordsCou
 	assert.Equal(t, key.UTCTime(lastAt), stats.LastRecordAt)
 }
 
-func assertSliceStats(t *testing.T, store *Store, sliceKey key.SliceKey, recordsCount, recordsSize, bodySize uint64, lastAt time.Time) {
+func assertSliceStats(t *testing.T, store *Store, sliceKey key.SliceKey, recordsCount uint64, recordsSize, bodySize datasize.ByteSize, lastAt time.Time) {
 	t.Helper()
 	sm := schema.New(validator.New().Validate)
 	stats, err := GetStatsFrom(context.Background(), store, sm.ReceivedStats().InSlice(sliceKey).GetAll())

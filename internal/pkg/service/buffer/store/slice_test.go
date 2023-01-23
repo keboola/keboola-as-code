@@ -31,7 +31,7 @@ func TestStore_CreateSlice(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-slice/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/active/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -53,6 +53,9 @@ slice/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T
         "name": "body"
       }
     ]
+  },
+  "storageResource": {
+    %A
   },
   "sliceNumber": 1
 }
@@ -77,7 +80,7 @@ func TestStore_GetSliceOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-slice/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/active/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -100,6 +103,9 @@ slice/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T
       }
     ]
   },
+  "storageResource": {
+    %A
+  },
   "sliceNumber": 1
 }
 >>>>>
@@ -116,6 +122,7 @@ func TestStore_SetSliceState_Transitions(t *testing.T) {
 		{slicestate.Uploading, slicestate.Failed},
 		{slicestate.Failed, slicestate.Uploading},
 		{slicestate.Uploading, slicestate.Uploaded},
+		{slicestate.Uploaded, slicestate.Imported},
 	}
 
 	ctx := context.Background()
@@ -133,14 +140,16 @@ func TestStore_SetSliceState_Transitions(t *testing.T) {
 		assert.Equal(t, tc.to, slice.State, desc)
 		expected := `
 <<<<<
-slice/<STATE>/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/<PREFIX>/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 %A
   "state": "<STATE>",%A
   "<STATE>At": "2009-12-31T18:01:01.000Z"%A
 >>>>>
 `
-		etcdhelper.AssertKVs(t, store.client, strings.ReplaceAll(expected, "<STATE>", tc.to.String()))
+		expected = strings.ReplaceAll(expected, "<PREFIX>", tc.to.Prefix())
+		expected = strings.ReplaceAll(expected, "<STATE>", tc.to.String())
+		etcdhelper.AssertKVs(t, store.client, expected)
 
 		// Test duplicated transition -> nop
 		slice.State = tc.from
@@ -180,9 +189,9 @@ func TestStore_ListUploadedSlices(t *testing.T) {
 			column.Body{Name: "body"},
 		},
 	}
-	slice1 := model.NewSlice(fileKey, time2, mapping, 1)
+	slice1 := model.NewSlice(fileKey, time2, mapping, 1, &storageapi.File{})
 	slice1.State = slicestate.Uploaded
-	slice2 := model.NewSlice(fileKey, time3, mapping, 2)
+	slice2 := model.NewSlice(fileKey, time3, mapping, 2, &storageapi.File{})
 	slice2.State = slicestate.Uploaded
 	input := []model.Slice{slice1, slice2}
 
@@ -199,7 +208,7 @@ func TestStore_ListUploadedSlices(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-slice/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/active/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -222,12 +231,15 @@ slice/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-0
       }
     ]
   },
+  "storageResource": {
+    %A
+  },
   "sliceNumber": 1
 }
 >>>>>
 
 <<<<<
-slice/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-03T08:04:05.000Z
+slice/active/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-03T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -249,6 +261,9 @@ slice/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-0
         "name": "body"
       }
     ]
+  },
+  "storageResource": {
+    %A
   },
   "sliceNumber": 2
 }
@@ -279,5 +294,5 @@ func sliceForTest() model.Slice {
 			column.Body{Name: "body"},
 		},
 	}
-	return model.NewSlice(fileKey, time2, mapping, 1)
+	return model.NewSlice(fileKey, time2, mapping, 1, &storageapi.File{})
 }

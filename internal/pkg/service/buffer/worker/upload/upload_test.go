@@ -331,7 +331,7 @@ secret/export/token/00000123/my-receiver-2/my-export-2
 >>>>>
 
 <<<<<
-slice/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
+slice/active/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
 -----
 {
   "projectId": 123,
@@ -343,12 +343,15 @@ slice/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01
   "mapping": {
 %A
   },
+  "storageResource": {
+%A
+  },
   "sliceNumber": 1
 }
 >>>>>
 
 <<<<<
-slice/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
+slice/active/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
 -----
 {
   "projectId": 123,
@@ -358,6 +361,9 @@ slice/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01
   "sliceId": "0001-01-01T00:01:01.000Z",
   "state": "opened",
   "mapping": {
+%A
+  },
+  "storageResource": {
 %A
   },
   "sliceNumber": 1
@@ -375,8 +381,8 @@ stats/received/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
   "sliceId": "0001-01-01T00:01:01.000Z",
   "lastRecordAt": "0001-01-01T00:02:04.000Z",
   "recordsCount": 3,
-  "recordsSize": 396,
-  "bodySize": 54
+  "recordsSize": "396B",
+  "bodySize": "54B"
 }
 >>>>>
 
@@ -391,8 +397,8 @@ stats/received/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
   "sliceId": "0001-01-01T00:01:01.000Z",
   "lastRecordAt": "0001-01-01T00:02:08.000Z",
   "recordsCount": 4,
-  "recordsSize": 528,
-  "bodySize": 72
+  "recordsSize": "528B",
+  "bodySize": "72B"
 }
 >>>>>
 `)
@@ -468,7 +474,7 @@ secret/export/token/00000123/my-receiver-2/my-export-2
 >>>>>
 
 <<<<<
-slice/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:02:18.000Z
+slice/active/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:02:18.000Z
 -----
 {
   "projectId": 123,
@@ -480,12 +486,15 @@ slice/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01
   "mapping": {
 %A
   },
+  "storageResource": {
+%A
+  },
   "sliceNumber": 2
 }
 >>>>>
 
 <<<<<
-slice/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:03:31.000Z
+slice/active/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:03:31.000Z
 -----
 {
   "projectId": 123,
@@ -497,12 +506,15 @@ slice/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01
   "mapping": {
 %A
   },
+  "storageResource": {
+%A
+  },
   "sliceNumber": 3
 }
 >>>>>
 
 <<<<<
-slice/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
+slice/active/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
 -----
 {
   "projectId": 123,
@@ -515,6 +527,9 @@ slice/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-
   "mapping": {
 %A
   },
+  "storageResource": {
+%A
+  },
   "sliceNumber": 1,
   "closingAt": "%s",
   "uploadingAt": "%s",
@@ -523,7 +538,7 @@ slice/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-
 >>>>>
 
 <<<<<
-slice/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
+slice/active/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
 -----
 {
   "projectId": 123,
@@ -535,6 +550,9 @@ slice/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
   "mapping": {
 %A
   },
+  "storageResource": {
+%A
+  },
   "sliceNumber": 1,
   "closingAt": "%s",
   "uploadingAt": "%s",
@@ -542,10 +560,10 @@ slice/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
   "statistics": {
     "lastRecordAt": "0001-01-01T00:02:08.000Z",
     "recordsCount": 7,
-    "recordsSize": 924,
-    "bodySize": 126,
-    "fileSize": 861,
-    "fileGZipSize": 195
+    "recordsSize": "924B",
+    "bodySize": "126B",
+    "fileSize": "861B",
+    "fileGZipSize": "195B"
   },
   "idRange": {
     "start": 1,
@@ -555,7 +573,7 @@ slice/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
 >>>>>
 
 <<<<<
-slice/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z
+slice/active/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z
 -----
 {
   "projectId": 123,
@@ -567,6 +585,9 @@ slice/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
   "mapping": {
 %A
   },
+  "storageResource": {
+%A
+  },
   "sliceNumber": 2,
   "closingAt": "%s",
   "uploadingAt": "%s",
@@ -574,10 +595,10 @@ slice/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
   "statistics": {
     "lastRecordAt": "0001-01-01T00:03:31.000Z",
     "recordsCount": 3,
-    "recordsSize": 396,
-    "bodySize": 54,
-    "fileSize": 370,
-    "fileGZipSize": 160
+    "recordsSize": "396B",
+    "bodySize": "54B",
+    "fileSize": "370B",
+    "fileGZipSize": "160B"
   },
   "idRange": {
     "start": 8,

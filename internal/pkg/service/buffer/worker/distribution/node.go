@@ -149,50 +149,19 @@ func (n *Node) unregister(timeout time.Duration) {
 
 // watch for other nodes.
 func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
-	pfx := n.schema.Runtime().WorkerNodes().Active().IDs()
-	ch := pfx.GetAllAndWatch(ctx, n.client, etcd.WithPrevKV(), etcd.WithCreatedNotify())
-	initDone := make(chan error)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		n.logger.Info("watching for other nodes")
-
-		// Reset the nodes on the restart event.
-		reset := false
-
-		// Channel is closed on shutdown, so the context does not have to be checked
-		for resp := range ch {
-			switch {
-			case resp.InitErr != nil:
-				// Initialization error, stop worker via initDone channel
-				initDone <- resp.InitErr
-				close(initDone)
-			case resp.Err != nil:
-				// An error occurred, it is logged.
-				// If it is a fatal error, then it is followed
-				// by the "Restarted" event handled bellow,
-				// and the operation starts from the beginning.
-				n.logger.Error(resp.Err)
-			case resp.Restarted:
-				// A fatal error (etcd ErrCompacted) occurred.
-				// It is not possible to continue watching, the operation must be restarted.
-				reset = true
-				n.logger.Warn(resp.RestartReason)
-			case resp.Created:
-				// The watcher has been successfully created.
-				// This means transition from GetAll to Watch phase.
-				close(initDone)
-			default:
-				events := n.updateNodesFrom(resp, reset)
-				n.listeners.Notify(events)
-				reset = false
-			}
-		}
-	}()
+	n.logger.Info("watching for other nodes")
+	init := n.schema.
+		Runtime().WorkerNodes().Active().IDs().
+		GetAllAndWatch(ctx, n.client, etcd.WithPrevKV()).
+		SetupConsumer(n.logger).
+		WithForEach(func(events []etcdop.WatchEvent, _ *etcdop.Header, restart bool) {
+			modifiedNodes := n.updateNodesFrom(events, restart)
+			n.listeners.Notify(modifiedNodes)
+		}).
+		StartConsumer(wg)
 
 	// Wait for initial sync
-	if err := <-initDone; err != nil {
+	if err := <-init; err != nil {
 		return err
 	}
 
@@ -205,7 +174,7 @@ func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
 }
 
 // updateNodesFrom events. The operation is atomic.
-func (n *Node) updateNodesFrom(resp etcdop.WatchResponse, reset bool) Events {
+func (n *Node) updateNodesFrom(events []etcdop.WatchEvent, reset bool) Events {
 	n.assigner.lock()
 	defer n.assigner.unlock()
 
@@ -213,24 +182,24 @@ func (n *Node) updateNodesFrom(resp etcdop.WatchResponse, reset bool) Events {
 		n.assigner.resetNodes()
 	}
 
-	var events Events
-	for _, rawEvent := range resp.Events {
+	var out Events
+	for _, rawEvent := range events {
 		switch rawEvent.Type {
 		case etcdop.CreateEvent, etcdop.UpdateEvent:
 			nodeID := string(rawEvent.Kv.Value)
 			event := Event{Type: EventNodeAdded, NodeID: nodeID, Message: fmt.Sprintf(`found a new node "%s"`, nodeID)}
-			events = append(events, event)
+			out = append(out, event)
 			n.assigner.addNode(nodeID)
 			n.logger.Infof(event.Message)
 		case etcdop.DeleteEvent:
 			nodeID := string(rawEvent.PrevKv.Value)
 			event := Event{Type: EventNodeRemoved, NodeID: nodeID, Message: fmt.Sprintf(`the node "%s" gone`, nodeID)}
-			events = append(events, event)
+			out = append(out, event)
 			n.assigner.removeNode(nodeID)
 			n.logger.Infof(event.Message)
 		default:
 			panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
 		}
 	}
-	return events
+	return out
 }
