@@ -71,8 +71,8 @@ func TestSliceUploadTask(t *testing.T) {
 		assert.NoError(t, err)
 		return count == 7
 	}, time.Second, 10*time.Millisecond)
-	<-apiDeps1.StatsAPINode().Sync(ctx)
-	<-apiDeps2.StatsAPINode().Sync(ctx)
+	<-apiDeps1.StatsCollector().Sync(ctx)
+	<-apiDeps2.StatsCollector().Sync(ctx)
 	assertStateBeforeUpload(t, client)
 
 	// Start worker node

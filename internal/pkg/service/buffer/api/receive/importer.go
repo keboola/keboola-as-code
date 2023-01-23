@@ -27,7 +27,7 @@ import (
 type Importer struct {
 	clock   clock.Clock
 	store   *store.Store
-	stats   *statistics.APINode
+	stats   *statistics.CollectorNode
 	watcher *watcher.APINode
 }
 
@@ -36,7 +36,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Process() *servicectx.Process
 	Store() *store.Store
-	StatsAPINode() *statistics.APINode
+	StatsCollector() *statistics.CollectorNode
 	WatcherAPINode() *watcher.APINode
 }
 
@@ -49,7 +49,7 @@ func NewImporter(d dependencies) *Importer {
 	return &Importer{
 		clock:   d.Clock(),
 		store:   d.Store(),
-		stats:   d.StatsAPINode(),
+		stats:   d.StatsCollector(),
 		watcher: d.WatcherAPINode(),
 	}
 }

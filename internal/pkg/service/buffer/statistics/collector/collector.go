@@ -1,5 +1,5 @@
-// Package apinode provides lock free collection of statistics from the API import endpoint.
-package apinode
+// Package collector provides lock free collection of statistics from the API import endpoint.
+package collector
 
 import (
 	"context"
@@ -44,7 +44,7 @@ type Dependencies interface {
 	Store() *store.Store
 }
 
-func New(d Dependencies) *Node {
+func NewNode(d Dependencies) *Node {
 	m := &Node{
 		nodeID:        d.Process().UniqueID(),
 		logger:        d.Logger().AddPrefix("[stats]"),

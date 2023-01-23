@@ -31,7 +31,7 @@ type Node struct {
 	clock  clock.Clock
 	logger log.Logger
 	client *etcd.Client
-	stats  *statistics.APINode
+	stats  *statistics.CollectorNode
 
 	revision  *RevisionSyncer
 	receivers *stateOf[model.ReceiverBase]
@@ -50,7 +50,7 @@ type Dependencies interface {
 	Process() *servicectx.Process
 	Schema() *schema.Schema
 	EtcdClient() *etcd.Client
-	StatsAPINode() *statistics.APINode
+	StatsCollector() *statistics.CollectorNode
 }
 
 type stateOf[T any] struct {
@@ -72,7 +72,7 @@ func New(d Dependencies, opts ...Option) (*Node, error) {
 		clock:  d.Clock(),
 		logger: d.Logger().AddPrefix("[api][watcher]"),
 		client: d.EtcdClient(),
-		stats:  d.StatsAPINode(),
+		stats:  d.StatsCollector(),
 	}
 
 	// Create etcd session

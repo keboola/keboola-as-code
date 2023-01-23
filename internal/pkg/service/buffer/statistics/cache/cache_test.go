@@ -35,8 +35,8 @@ func TestCacheNode(t *testing.T) {
 	str := apiDeps1.Store()
 
 	// Create nodes
-	collector1 := statistics.NewAPINode(apiDeps1)
-	collector2 := statistics.NewAPINode(apiDeps2)
+	collector1 := statistics.NewCollectorNode(apiDeps1)
+	collector2 := statistics.NewCollectorNode(apiDeps2)
 	cache, err := statistics.NewCacheNode(bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("worker-node"))...))
 	assert.NoError(t, err)
 
