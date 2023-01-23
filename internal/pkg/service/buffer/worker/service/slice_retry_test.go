@@ -8,8 +8,8 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/jarcoal/httpmock"
-	"github.com/keboola/go-client/pkg/storageapi"
-	"github.com/keboola/go-client/pkg/storageapi/s3"
+	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-client/pkg/keboola/storage_file_upload/s3"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
@@ -52,7 +52,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	}
 
 	// Create file
-	file := &storageapi.File{
+	file := &keboola.File{
 		Name:           "slice-upload-task-test",
 		IsSliced:       true,
 		Provider:       s3.Provider,
