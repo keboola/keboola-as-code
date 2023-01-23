@@ -10,7 +10,8 @@ const (
 )
 
 type Datetime struct {
-	Name string `json:"name" validate:"required"`
+	Name       string `json:"name" validate:"required"`
+	PrimaryKey bool   `json:"primaryKey,omitempty"`
 }
 
 func (v Datetime) ColumnType() Type {
@@ -19,6 +20,10 @@ func (v Datetime) ColumnType() Type {
 
 func (v Datetime) ColumnName() string {
 	return v.Name
+}
+
+func (v Datetime) IsPrimaryKey() bool {
+	return v.PrimaryKey
 }
 
 func (v Datetime) CSVValue(ctx *receivectx.Context) (string, error) {

@@ -10,7 +10,8 @@ const (
 )
 
 type Headers struct {
-	Name string `json:"name" validate:"required"`
+	Name       string `json:"name" validate:"required"`
+	PrimaryKey bool   `json:"primaryKey,omitempty"`
 }
 
 func (v Headers) ColumnType() Type {
@@ -19,6 +20,10 @@ func (v Headers) ColumnType() Type {
 
 func (v Headers) ColumnName() string {
 	return v.Name
+}
+
+func (v Headers) IsPrimaryKey() bool {
+	return v.PrimaryKey
 }
 
 func (Headers) CSVValue(ctx *receivectx.Context) (string, error) {

@@ -58,12 +58,17 @@ func (m *Manager) EnsureTablesExist(ctx context.Context, rb rollback.Builder, re
 func (m *Manager) EnsureTableExists(ctx context.Context, rb rollback.Builder, export *model.Export) error {
 	tableID := export.Mapping.TableID
 	columns := export.Mapping.Columns.Names()
+	primaryKey := export.Mapping.Columns.PrimaryKey()
 
 	table, err := storageapi.GetTableRequest(tableID).Send(ctx, m.client)
 	var apiErr *storageapi.Error
 	if errors.As(err, &apiErr) && apiErr.ErrCode == "storage.tables.notFound" {
+		var opts []storageapi.CreateTableOption
+		if len(primaryKey) > 0 {
+			opts = append(opts, storageapi.WithPrimaryKey(primaryKey))
+		}
 		// Table doesn't exist -> create it
-		if req, err := storageapi.CreateTableDeprecatedSyncRequest(tableID, columns); err != nil {
+		if req, err := storageapi.CreateTableDeprecatedSyncRequest(tableID, columns, opts...); err != nil {
 			return err
 		} else if table, err = req.Send(ctx, m.client); err != nil {
 			return err
@@ -82,6 +87,13 @@ func (m *Manager) EnsureTableExists(ctx context.Context, rb rollback.Builder, ex
 		return serviceError.NewBadRequestError(errors.Errorf(
 			`columns of the table "%s" do not match expected %s, found %s`,
 			table.ID.String(), json.MustEncodeString(columns, false), json.MustEncodeString(table.Columns, false),
+		))
+	}
+	// Check primary key
+	if !reflect.DeepEqual(primaryKey, table.PrimaryKey) {
+		return serviceError.NewBadRequestError(errors.Errorf(
+			`primary key of the table "%s" does not match expected %s, found %s`,
+			table.ID.String(), json.MustEncodeString(primaryKey, false), json.MustEncodeString(table.PrimaryKey, false),
 		))
 	}
 

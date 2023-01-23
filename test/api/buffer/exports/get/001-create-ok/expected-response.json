@@ -12,8 +12,14 @@
         "incremental": true,
         "columns": [
           {
+            "primaryKey": true,
             "type": "id",
             "name": "id"
+          },
+          {
+            "primaryKey": true,
+            "type": "id",
+            "name": "id2"
           },
           {
             "type": "template",
