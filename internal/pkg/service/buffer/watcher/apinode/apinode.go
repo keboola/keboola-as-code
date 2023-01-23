@@ -167,7 +167,7 @@ func watch[T fmt.Stringer](n *Node, prefix etcdop.PrefixT[T], revSyncer *Revisio
 			logsEnabled = true
 		}).
 		WithForEach(func(events []etcdop.WatchEventT[T], header *etcdop.Header, restart bool) {
-			tree.ModifyAtomic(func(t *prefixtree.Tree[T]) {
+			tree.Atomic(func(t *prefixtree.Tree[T]) {
 				// Reset the tree after receiving the first batch after the restart.
 				if restart {
 					t.Reset()
