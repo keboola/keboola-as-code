@@ -22,10 +22,12 @@
           "name": "table1",
           "displayName": "table1",
           "primaryKey": [
-            "id"
+            "id",
+            "id2"
           ],
           "columns": [
             "id",
+            "id2",
             "template"
           ]
         },
