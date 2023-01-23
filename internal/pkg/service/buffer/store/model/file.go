@@ -38,10 +38,6 @@ func NewFile(exportKey key.ExportKey, now time.Time, mapping Mapping, resource *
 	}
 }
 
-func (v *File) OpenedAt() time.Time {
-	return time.Time(v.FileID)
-}
-
 func (v *File) Filename() string {
 	return fmt.Sprintf(`%s_%s_%s`, v.ReceiverID, v.ExportID, v.OpenedAt().Format(FileNameDateFormat))
 }

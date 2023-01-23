@@ -96,6 +96,8 @@ func (s *Store) listUploadedSlicesOp(_ context.Context, fileKey key.FileKey) ite
 }
 
 func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CloseSlice")
+	defer telemetry.EndSpan(span, &err)
 	k := slice.SliceKey
 	statsPfx := s.schema.ReceivedStats().InSlice(k)
 	var recordsCount uint64

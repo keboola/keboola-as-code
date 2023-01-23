@@ -33,7 +33,7 @@ func DefaultImportConditions() Conditions {
 	}
 }
 
-func (c Conditions) Evaluate(now time.Time, s Stats) (bool, string) {
+func (c Conditions) Evaluate(now time.Time, openedAt time.Time, s Stats) (bool, string) {
 	if s.RecordsCount == 0 {
 		return false, "no record"
 	}
@@ -45,10 +45,9 @@ func (c Conditions) Evaluate(now time.Time, s Stats) (bool, string) {
 		return true, fmt.Sprintf("size threshold met, received: %s, threshold: %s", s.RecordsSize.String(), c.Size.String())
 	}
 
-	lastImportAt := time.Time(s.LastRecordAt)
-	sinceLastImport := now.Sub(lastImportAt).Truncate(time.Second)
-	if sinceLastImport >= c.Time {
-		return true, fmt.Sprintf("time threshold met, last import at: %s, passed: %s threshold: %s", lastImportAt.Format(TimeFormat), sinceLastImport.String(), c.Time.String())
+	sinceOpened := now.Sub(openedAt).Truncate(time.Second)
+	if sinceOpened >= c.Time {
+		return true, fmt.Sprintf("time threshold met, opened at: %s, passed: %s threshold: %s", openedAt.Format(TimeFormat), sinceOpened.String(), c.Time.String())
 	}
 
 	return false, "no condition met"

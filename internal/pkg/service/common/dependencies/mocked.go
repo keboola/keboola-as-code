@@ -246,6 +246,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 		publicDeps.encryptionAPIClient = c.encryptionAPIClient
 		projectDeps.schedulerAPIClient = c.schedulerAPIClient
 		mockedHTTPTransport = nil
+		baseDeps.httpClient = client.NewTestClient()
 	}
 
 	// Clear logs
