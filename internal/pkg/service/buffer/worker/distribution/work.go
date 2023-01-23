@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // DistributedWork is a callback used by the Node.StartWork method.
@@ -44,7 +45,11 @@ func (n *Node) StartWork(ctx context.Context, wg *sync.WaitGroup, logger log.Log
 			// Re-create work
 			workCtx, cancelWork := context.WithCancel(ctx)
 			if err := <-work(workCtx, n.CloneAssigner()); err != nil {
-				logger.Errorf("failed: %s", err)
+				if errors.Is(err, context.Canceled) {
+					logger.Infof("work finished: %s", err)
+				} else {
+					logger.Errorf("work failed: %s", err)
+				}
 				if initDone != nil {
 					initDone <- err
 				}
