@@ -20,24 +20,25 @@ type Type string
 type Column interface {
 	ColumnName() string
 	ColumnType() Type
+	IsPrimaryKey() bool
 	CSVValue(ctx *receivectx.Context) (string, error)
 }
 
-func MakeColumn(typ Type, name string) (Column, error) {
+func MakeColumn(typ Type, name string, primaryKey bool) (Column, error) {
 	var v Column
 	switch typ {
 	case columnIDType:
-		v = ID{Name: name}
+		v = ID{Name: name, PrimaryKey: primaryKey}
 	case columnDatetimeType:
-		v = Datetime{Name: name}
+		v = Datetime{Name: name, PrimaryKey: primaryKey}
 	case columnIPType:
-		v = IP{Name: name}
+		v = IP{Name: name, PrimaryKey: primaryKey}
 	case columnBodyType:
-		v = Body{Name: name}
+		v = Body{Name: name, PrimaryKey: primaryKey}
 	case columnHeadersType:
-		v = Headers{Name: name}
+		v = Headers{Name: name, PrimaryKey: primaryKey}
 	case columnTemplateType:
-		v = Template{Name: name}
+		v = Template{Name: name, PrimaryKey: primaryKey}
 	default:
 		return nil, errors.Errorf(`invalid column type "%s"`, typ)
 	}

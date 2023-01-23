@@ -17,7 +17,7 @@ func TestMappedColumns_Serde(t *testing.T) {
 	t.Parallel()
 
 	typed := column.Columns{
-		column.ID{Name: "id"},
+		column.ID{Name: "id", PrimaryKey: true},
 		column.Datetime{Name: "datetime"},
 		column.IP{Name: "ip"},
 		column.Body{Name: "body"},
@@ -28,7 +28,7 @@ func TestMappedColumns_Serde(t *testing.T) {
 			Content:  `Body('my.key')+':'+Body('my.value')'`,
 		},
 	}
-	expectedJSON := `[{"type":"id","name":"id"},{"type":"datetime","name":"datetime"},{"type":"ip","name":"ip"},{"type":"body","name":"body"},{"type":"headers","name":"headers"},{"type":"template","name":"template","language":"jsonnet","content":"Body('my.key')+':'+Body('my.value')'"}]`
+	expectedJSON := `[{"type":"id","name":"id","primaryKey":true},{"type":"datetime","name":"datetime"},{"type":"ip","name":"ip"},{"type":"body","name":"body"},{"type":"headers","name":"headers"},{"type":"template","name":"template","language":"jsonnet","content":"Body('my.key')+':'+Body('my.value')'"}]`
 
 	bytes, err := json.Marshal(&typed)
 	assert.NoError(t, err)

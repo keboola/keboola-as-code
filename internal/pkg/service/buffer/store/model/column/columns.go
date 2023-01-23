@@ -14,6 +14,16 @@ func (v Columns) Names() (out []string) {
 	return out
 }
 
+func (v Columns) PrimaryKey() []string {
+	var pk []string
+	for _, c := range v {
+		if c.IsPrimaryKey() {
+			pk = append(pk, c.ColumnName())
+		}
+	}
+	return pk
+}
+
 func (v Columns) MarshalJSON() ([]byte, error) {
 	var items []json.RawMessage
 
@@ -57,14 +67,15 @@ func (v *Columns) UnmarshalJSON(b []byte) error {
 
 	for _, item := range items {
 		t := struct {
-			Name string `json:"name"`
-			Type Type   `json:"type"`
+			Name       string `json:"name"`
+			Type       Type   `json:"type"`
+			PrimaryKey bool   `json:"primaryKey"`
 		}{}
 		if err := json.Unmarshal(item, &t); err != nil {
 			return err
 		}
 
-		data, err := MakeColumn(t.Type, t.Name)
+		data, err := MakeColumn(t.Type, t.Name, t.PrimaryKey)
 		if err != nil {
 			return err
 		}

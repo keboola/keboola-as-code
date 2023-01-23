@@ -9,7 +9,8 @@ const (
 )
 
 type Body struct {
-	Name string `json:"name" validate:"required"`
+	Name       string `json:"name" validate:"required"`
+	PrimaryKey bool   `json:"primaryKey,omitempty"`
 }
 
 func (v Body) ColumnType() Type {
@@ -18,6 +19,10 @@ func (v Body) ColumnType() Type {
 
 func (v Body) ColumnName() string {
 	return v.Name
+}
+
+func (v Body) IsPrimaryKey() bool {
+	return v.PrimaryKey
 }
 
 func (Body) CSVValue(ctx *receivectx.Context) (string, error) {
