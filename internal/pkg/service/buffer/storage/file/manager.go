@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -108,7 +109,13 @@ func (m *Manager) createFile(ctx context.Context, rb rollback.Builder, mapping m
 	fileName := file.Filename()
 	slice := model.NewSlice(file.FileKey, now, mapping, 1, nil)
 
-	resource, err := storageapi.CreateFileResourceRequest(&storageapi.File{Name: fileName, IsSliced: true}).Send(ctx, m.client)
+	resource, err := storageapi.
+		CreateFileResourceRequest(&storageapi.File{
+			Name:     fileName,
+			IsSliced: true,
+			Tags:     []string{fmt.Sprintf("buffer.exportID=%s", mapping.ExportID.String()), fmt.Sprintf("buffer.receiverID=%s", mapping.ReceiverID.String())},
+		}).
+		Send(ctx, m.client)
 	if err != nil {
 		return model.File{}, model.Slice{}, err
 	}

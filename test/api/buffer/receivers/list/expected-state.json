@@ -41,5 +41,25 @@
         }
       ]
     }
+  ],
+  "files": [
+    {
+      "name": "receiver_b_my_id_export_1_my_id_%s",
+      "tags": [
+        "buffer.exportID=export-1-my-id",
+        "buffer.receiverID=receiver-b-my-id"
+      ],
+      "isSliced": true,
+      %A
+    },
+    {
+      "name": "receiver_b_my_id_export_2_%s",
+      "tags": [
+        "buffer.exportID=export-2",
+        "buffer.receiverID=receiver-b-my-id"
+      ],
+      "isSliced": true,
+      %A
+    }
   ]
 }

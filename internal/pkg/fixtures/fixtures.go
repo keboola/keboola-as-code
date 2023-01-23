@@ -21,6 +21,7 @@ type ProjectSnapshot struct {
 	Schedules []*Schedule          `json:"schedules,omitempty"`
 	Sandboxes []*Sandbox           `json:"sandboxes,omitempty"`
 	Buckets   []*Bucket            `json:"buckets,omitempty"`
+	Files     []*File              `json:"files,omitempty"`
 }
 
 type Branch struct {
@@ -65,6 +66,14 @@ type Table struct {
 	DisplayName string             `json:"displayName"`
 	PrimaryKey  []string           `json:"primaryKey"`
 	Columns     []string           `json:"columns"`
+}
+
+type File struct {
+	Name        string   `json:"name"`
+	Tags        []string `json:"tags"`
+	IsSliced    bool     `json:"isSliced"`
+	IsEncrypted bool     `json:"isEncrypted"`
+	IsPermanent bool     `json:"isPermanent"`
 }
 
 type Config struct {
