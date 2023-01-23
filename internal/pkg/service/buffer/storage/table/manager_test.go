@@ -100,7 +100,7 @@ func TestManager_EnsureTableExists(t *testing.T) {
 	}
 	err = m.EnsureTableExists(ctx, rb, export)
 	assert.Error(t, err)
-	assert.Equal(t, `primary key of the table "in.c-my-bucket.my-table" does not match expected ["id"], found []`, err.Error())
+	assert.Equal(t, `primary key of the table "in.c-my-bucket.my-table" does not match expected ["foo"], found []`, err.Error())
 
 	// Columns do not match
 	export.Mapping.Columns = []column.Column{

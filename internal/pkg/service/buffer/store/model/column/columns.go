@@ -15,7 +15,7 @@ func (v Columns) Names() (out []string) {
 }
 
 func (v Columns) PrimaryKey() []string {
-	var pk []string
+	pk := make([]string, 0)
 	for _, c := range v {
 		if c.IsPrimaryKey() {
 			pk = append(pk, c.ColumnName())

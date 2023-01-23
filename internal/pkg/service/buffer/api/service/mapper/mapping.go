@@ -48,7 +48,6 @@ func (m Mapper) CreateMappingModel(exportKey key.ExportKey, revisionID key.Revis
 	}
 	columns := make([]column.Column, 0, len(payload.Columns))
 	for _, data := range payload.Columns {
-
 		primaryKey := false
 		if data.PrimaryKey != nil {
 			primaryKey = *data.PrimaryKey
