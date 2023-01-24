@@ -53,7 +53,7 @@ func (s *Store) GetSlice(ctx context.Context, sliceKey key.SliceKey) (r model.Sl
 func (s *Store) getSliceOp(_ context.Context, sliceKey key.SliceKey) op.ForType[*op.KeyValueT[model.Slice]] {
 	return s.schema.
 		Slices().
-		Opened().
+		Writing().
 		ByKey(sliceKey).
 		Get().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Slice], err error) (*op.KeyValueT[model.Slice], error) {
@@ -68,7 +68,7 @@ func (s *Store) getOpenedSliceOp(_ context.Context, exportKey key.ExportKey, opt
 	opts = append(opts, etcd.WithSort(etcd.SortByKey, etcd.SortDescend))
 	return s.schema.
 		Slices().
-		Opened().
+		Writing().
 		InExport(exportKey).
 		GetOne(opts...).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Slice], err error) (*op.KeyValueT[model.Slice], error) {
@@ -292,7 +292,7 @@ func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model
 // So the ID range for slice records can be generated.
 func assertAllPrevSlicesClosed(schema *schema.Schema, k key.SliceKey) op.Op {
 	return op.MergeToTxn(
-		assertNoPreviousSliceInState(schema, k, slicestate.Opened),
+		assertNoPreviousSliceInState(schema, k, slicestate.Writing),
 		assertNoPreviousSliceInState(schema, k, slicestate.Closing),
 	)
 }

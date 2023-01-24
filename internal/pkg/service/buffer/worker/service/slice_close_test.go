@@ -132,9 +132,9 @@ func TestSliceCloseTask(t *testing.T) {
 	wildcards.Assert(t, `
 [api][watcher]INFO  locked revision "%s"
 INFO  ---> locked
-[api][watcher]INFO  deleted slice/active/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
+[api][watcher]INFO  deleted slice/active/opened/writing/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
 [api][watcher]INFO  state updated to the revision "%s"
-[api][watcher]INFO  deleted slice/active/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
+[api][watcher]INFO  deleted slice/active/opened/writing/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
 [api][watcher]INFO  state updated to the revision "%s"
 INFO  ---> unlocked
 [api][watcher]INFO  unlocked revision "%s"
@@ -264,11 +264,11 @@ secret/export/token/00000123/my-receiver-2/my-export-2
 >>>>>
 
 <<<<<
-slice/closed/uploading/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
+slice/active/closed/uploading/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
 -----
 {
 %A
-  "state": "uploading",
+  "state": "active/closed/uploading",
   "isEmpty": true,
 %A
   "sliceNumber": 1,
@@ -278,11 +278,11 @@ slice/closed/uploading/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.00
 >>>>>
 
 <<<<<
-slice/closed/uploading/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
+slice/active/closed/uploading/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
 -----
 {
 %A
-  "state": "uploading",
+  "state": "active/closed/uploading",
 %A
   "sliceNumber": 1,
   "closingAt": "0001-01-01T00:03:04.000Z",

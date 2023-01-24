@@ -332,7 +332,7 @@ secret/export/token/00000123/my-receiver-2/my-export-2
 >>>>>
 
 <<<<<
-slice/active/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
+slice/active/opened/writing/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
 -----
 {
   "projectId": 123,
@@ -340,7 +340,7 @@ slice/active/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/
   "exportId": "my-export-1",
   "fileId": "0001-01-01T00:00:01.000Z",
   "sliceId": "0001-01-01T00:00:01.000Z",
-  "state": "opened",
+  "state": "active/opened/writing",
   "mapping": {
 %A
   },
@@ -352,7 +352,7 @@ slice/active/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/
 >>>>>
 
 <<<<<
-slice/active/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
+slice/active/opened/writing/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
 -----
 {
   "projectId": 123,
@@ -360,7 +360,7 @@ slice/active/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/
   "exportId": "my-export-2",
   "fileId": "0001-01-01T00:01:01.000Z",
   "sliceId": "0001-01-01T00:01:01.000Z",
-  "state": "opened",
+  "state": "active/opened/writing",
   "mapping": {
 %A
   },
@@ -477,47 +477,7 @@ secret/export/token/00000123/my-receiver-2/my-export-2
 >>>>>
 
 <<<<<
-slice/active/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:02:18.000Z
------
-{
-  "projectId": 123,
-  "receiverId": "my-receiver-1",
-  "exportId": "my-export-1",
-  "fileId": "0001-01-01T00:00:01.000Z",
-  "sliceId": "0001-01-01T00:02:18.000Z",
-  "state": "opened",
-  "mapping": {
-%A
-  },
-  "storageResource": {
-%A
-  },
-  "sliceNumber": 2
-}
->>>>>
-
-<<<<<
-slice/active/opened/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:03:31.000Z
------
-{
-  "projectId": 123,
-  "receiverId": "my-receiver-2",
-  "exportId": "my-export-2",
-  "fileId": "0001-01-01T00:01:01.000Z",
-  "sliceId": "0001-01-01T00:03:31.000Z",
-  "state": "opened",
-  "mapping": {
-%A
-  },
-  "storageResource": {
-%A
-  },
-  "sliceNumber": 3
-}
->>>>>
-
-<<<<<
-slice/closed/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
+slice/active/closed/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
 -----
 {
   "projectId": 123,
@@ -525,7 +485,7 @@ slice/closed/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000
   "exportId": "my-export-1",
   "fileId": "0001-01-01T00:00:01.000Z",
   "sliceId": "0001-01-01T00:00:01.000Z",
-  "state": "uploaded",
+  "state": "active/closed/uploaded",
   "isEmpty": true,
   "mapping": {
 %A
@@ -541,7 +501,7 @@ slice/closed/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000
 >>>>>
 
 <<<<<
-slice/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
+slice/active/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z
 -----
 {
   "projectId": 123,
@@ -549,7 +509,7 @@ slice/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000
   "exportId": "my-export-2",
   "fileId": "0001-01-01T00:01:01.000Z",
   "sliceId": "0001-01-01T00:01:01.000Z",
-  "state": "uploaded",
+  "state": "active/closed/uploaded",
   "mapping": {
 %A
   },
@@ -576,7 +536,7 @@ slice/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000
 >>>>>
 
 <<<<<
-slice/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z
+slice/active/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z
 -----
 {
   "projectId": 123,
@@ -584,7 +544,7 @@ slice/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000
   "exportId": "my-export-2",
   "fileId": "0001-01-01T00:01:01.000Z",
   "sliceId": "0001-01-01T00:02:28.000Z",
-  "state": "uploaded",
+  "state": "active/closed/uploaded",
   "mapping": {
 %A
   },
@@ -607,6 +567,46 @@ slice/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000
     "start": 8,
     "count": 3
   }
+}
+>>>>>
+
+<<<<<
+slice/active/opened/writing/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:02:18.000Z
+-----
+{
+  "projectId": 123,
+  "receiverId": "my-receiver-1",
+  "exportId": "my-export-1",
+  "fileId": "0001-01-01T00:00:01.000Z",
+  "sliceId": "0001-01-01T00:02:18.000Z",
+  "state": "active/opened/writing",
+  "mapping": {
+%A
+  },
+  "storageResource": {
+%A
+  },
+  "sliceNumber": 2
+}
+>>>>>
+
+<<<<<
+slice/active/opened/writing/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:03:31.000Z
+-----
+{
+  "projectId": 123,
+  "receiverId": "my-receiver-2",
+  "exportId": "my-export-2",
+  "fileId": "0001-01-01T00:01:01.000Z",
+  "sliceId": "0001-01-01T00:03:31.000Z",
+  "state": "active/opened/writing",
+  "mapping": {
+%A
+  },
+  "storageResource": {
+%A
+  },
+  "sliceNumber": 3
 }
 >>>>>
 

@@ -222,30 +222,30 @@ secret/export/token/00000123/my-receiver-B/my-export-2
 >>>>>
 
 <<<<<
-slice/active/closing/00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z
+slice/active/opened/closing/00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z
 -----
 %A
 >>>>>
 
 <<<<<
-slice/active/closing/00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/0001-01-01T00:01:02.000Z
+slice/active/opened/closing/00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/0001-01-01T00:01:02.000Z
 -----
 %A
 >>>>>
 
 <<<<<
-slice/active/closing/00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z
+slice/active/opened/closing/00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z
 -----
 %A
 >>>>>
 
 <<<<<
-slice/active/opened/00000123/my-receiver-A/my-export-1/%s
+slice/active/opened/writing/00000123/my-receiver-A/my-export-1/%s
 %A
 >>>>>
 
 <<<<<
-slice/active/opened/00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/%s
+slice/active/opened/writing/00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/%s
 %A
 >>>>>
 

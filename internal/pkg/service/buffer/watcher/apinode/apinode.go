@@ -102,7 +102,7 @@ func New(d Dependencies, opts ...Option) (*Node, error) {
 
 	// Watch receivers and slices
 	n.receivers = watch(n, sm.Configs().Receivers().PrefixT(), nil)
-	n.slices = watch(n, sm.Slices().Opened().PrefixT(), n.revision)
+	n.slices = watch(n, sm.Slices().Writing().PrefixT(), n.revision)
 
 	// Wait for initial load
 	startTime := time.Now()

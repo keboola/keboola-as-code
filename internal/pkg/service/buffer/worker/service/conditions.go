@@ -164,7 +164,7 @@ func (c *checker) watchImportConditions(ctx context.Context, wg *sync.WaitGroup)
 
 func (c *checker) watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup) <-chan error {
 	// Watch opened slices
-	return c.schema.Slices().Opened().
+	return c.schema.Slices().Writing().
 		GetAllAndWatch(ctx, c.etcdClient, etcd.WithPrevKV()).
 		SetupConsumer(c.logger).
 		WithForEach(func(events []etcdop.WatchEventT[model.Slice], header *etcdop.Header, restart bool) {

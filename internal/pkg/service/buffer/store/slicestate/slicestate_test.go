@@ -14,18 +14,18 @@ func TestSTM(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	var transitions []string
-	stm := NewSTM(Opened, func(ctx context.Context, from, to State) error {
+	stm := NewSTM(Writing, func(ctx context.Context, from, to State) error {
 		transitions = append(transitions, fmt.Sprintf("%s -> %s", from, to))
 		return nil
 	})
 
 	// Valid transition
 	assert.NoError(t, stm.To(ctx, Closing))
-	assert.Equal(t, []string{"opened -> closing"}, transitions)
+	assert.Equal(t, []string{"active/opened/writing -> active/opened/closing"}, transitions)
 
 	// Invalid transition
 	err := stm.To(ctx, Uploaded)
 	assert.Error(t, err)
-	assert.Equal(t, `slice state transition "closing" -> "uploaded" is not allowed`, err.Error())
-	assert.Equal(t, []string{"opened -> closing"}, transitions)
+	assert.Equal(t, `slice state transition "active/opened/closing" -> "active/closed/uploaded" is not allowed`, err.Error())
+	assert.Equal(t, []string{"active/opened/writing -> active/opened/closing"}, transitions)
 }

@@ -269,7 +269,7 @@
 >>>>>
 
 <<<<<
-/slice/active/closing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
+/slice/active/opened/closing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -277,7 +277,7 @@
   "exportId": "my-export-1",
   "fileId": "%s",
   "sliceId": "%s,
-  "state": "closing",
+  "state": "active/opened/closing",
   "mapping": {
     "projectId": %%TEST_KBC_PROJECT_ID%%,
     "receiverId": "my-receiver",
@@ -307,7 +307,7 @@
 >>>>>
 
 <<<<<
-/slice/active/closing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
+/slice/active/opened/closing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -315,7 +315,7 @@
   "exportId": "my-export-1",
   "fileId": "%s",
   "sliceId": "%s",
-  "state": "closing",
+  "state": "active/opened/closing",
   "mapping": {
     "projectId": %%TEST_KBC_PROJECT_ID%%,
     "receiverId": "my-receiver",
@@ -345,7 +345,7 @@
 >>>>>
 
 <<<<<
-/slice/active/closing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
+/slice/active/opened/closing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -353,7 +353,7 @@
   "exportId": "my-export-1",
   "fileId": "%s",
   "sliceId": "%s",
-  "state": "closing",
+  "state": "active/opened/closing",
   "mapping": {
     "projectId": %%TEST_KBC_PROJECT_ID%%,
     "receiverId": "my-receiver",
@@ -381,7 +381,7 @@
 >>>>>
 
 <<<<<
-/slice/active/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
+/slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%sZ
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -389,7 +389,7 @@
   "exportId": "my-export-1",
   "fileId": "%s",
   "sliceId": "%s",
-  "state": "opened",
+  "state": "active/opened/writing",
   "mapping": {
     "projectId": %%TEST_KBC_PROJECT_ID%%,
     "receiverId": "my-receiver",

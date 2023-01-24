@@ -69,7 +69,7 @@ func NewNode(d Dependencies) (*Node, error) {
 
 	// Stop on initialization error
 	startTime := time.Now()
-	if err := <-watchActiveSlices(ctx, wg, n); err != nil {
+	if err := <-watchOpenedSlices(ctx, wg, n); err != nil {
 		return nil, err
 	}
 	if err := <-watchClosedSlices(ctx, wg, n); err != nil {
@@ -113,10 +113,10 @@ func (n *Node) statsFor(prefix string) (out model.StatsByType) {
 	return out
 }
 
-// watchActiveSlices operation watches for statistics of slices in opened/closing state.
+// watchOpenedSlices operation watches for statistics of slices in writing/closing state.
 // These temporary statistics are stored separately.
 // The key has format "<sliceKey>/<apiNode>".
-func watchActiveSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan error {
+func watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan error {
 	// The WithFilterDelete option is used, so only PUT events are watched and statistics are only inserted.
 	// Delete operation is part of the watchClosedSlices, to make transitions between states atomic and prevent duplicates.
 	return n.schema.ReceivedStats().
@@ -149,7 +149,7 @@ func watchActiveSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan 
 // watchActiveSlices operation watches for statistics of slices in uploading/failed/uploaded state.
 // These statistics are stored inside the model.Slice structure.
 func watchClosedSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan error {
-	return n.schema.Slices().Closed().
+	return n.schema.Slices().AllClosed().
 		GetAllAndWatch(ctx, n.client, etcd.WithPrevKV()).
 		SetupConsumer(n.logger).
 		WithForEach(func(events []etcdop.WatchEventT[model.Slice], header *etcdop.Header, restart bool) {

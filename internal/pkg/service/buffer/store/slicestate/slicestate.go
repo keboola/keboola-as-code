@@ -1,55 +1,69 @@
+// Package slicestate provides transitions between allowed slice states.
+//
+// ## States
+//
+//	Writing:   active/opened/writing/          - API nodes are writing new records to the slice
+//	Closing:   active/opened/closing/          - We are waiting for the API nodes to stop writing to the slice.
+//	Uploading: active/closed/uploading/        - Slice upload is in progress.
+//	Uploaded:  active/closed/failed/           - Slice upload succeed, the parent file will be imported.
+//	Failed:    active/closed/uploaded/         - Slice upload failed, it will be retried.
+//	Imported:  archived/successful/imported/   - Slice has been imported to a target table.
+//
+// ## State Groups
+//
+// They are used to watch a group of states.
+//
+//	AllActive:       active/                   - All slices that have not yet been imported.
+//	  AllOpened      active/opened/            - All slices to which records are written.
+//	  AllClosed      active/closed/            - All slices waiting for import (and some also for upload).
+//	AllArchived:     archived/                 - All the slices we don't have to care about anymore.
+//	  AllSuccessful: archived/successful/      - All slices completed successfully.
 package slicestate
 
 import (
 	"context"
+	"strings"
 
 	"github.com/qmuntal/stateless"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Opened
+// Writing
 // It is the initial state of the slice.
 // API nodes can write records to the related etcd prefix.
-const Opened State = "opened"
+const Writing State = "active/opened/writing"
 
 // Closing
 // Upload conditions have been met.
 // Waiting for the API nodes until they switch to the new slice.
-const Closing State = "closing"
+const Closing State = "active/opened/closing"
 
 // Uploading
 // The slice is ready for upload.
 // Some worker is/will be uploading it.
-const Uploading State = "uploading"
+const Uploading State = "active/closed/uploading"
 
 // Uploaded
 // The slice has been successfully uploaded.
-const Uploaded State = "uploaded"
+const Uploaded State = "active/closed/uploaded"
 
 // Failed
 // Upload failed, try again later.
-const Failed State = "failed"
+const Failed State = "active/closed/failed"
 
 // Imported
 // The parent File has been successfully imported to the target table.
-const Imported State = "imported"
+const Imported State = "archived/successful/imported"
 
-// AllActive is a set of states (opened, closing) that represent an active slice:
-// - API nodes write new records to it.
-// See State.IsActive method.
-const AllActive StateGroup = "active"
-
-// AllClosed is a set of states (uploading, failed, uploaded) that represent a closed slice:
-// - API nodes no longer write new records to it.
-// - It has not yet been imported to a target table.
-// See State.IsClosed method.
-const AllClosed StateGroup = "closed"
-
-// AllArchived is a set of states (imported) that represent an archived slice:
-// - It has been imported into a target table.
-// See State.IsArchived method.
-const AllArchived StateGroup = "archived"
+// State groups, see package documentation.
+const (
+	AllActive     StateGroup = "active"
+	AllArchived   StateGroup = "archived"
+	AllOpened     StateGroup = "active/opened"
+	AllClosed     StateGroup = "active/closed"
+	AllSuccessful StateGroup = "archived/successful"
+)
 
 type State string
 
@@ -67,7 +81,7 @@ func NewSTM(state State, fn onEntry) *STM {
 	v.stm.OnUnhandledTrigger(func(_ context.Context, state stateless.State, trigger stateless.Trigger, _ []string) error {
 		return errors.Errorf(`slice state transition "%s" -> "%s" is not allowed`, state, trigger)
 	})
-	v.permit(Opened, Closing)
+	v.permit(Writing, Closing)
 	v.permit(Closing, Uploading)
 	v.permit(Uploading, Failed)
 	v.permit(Failed, Uploading)
@@ -92,37 +106,13 @@ func (v *STM) permit(from, to State) {
 		})
 }
 
-// Prefix returns <GROUP>/<STATE>.
-func (v State) Prefix() string {
-	if v.IsActive() {
-		return string(AllActive) + "/" + string(v)
-	}
-	if v.IsClosed() {
-		return string(AllClosed) + "/" + string(v)
-	}
-	if v.IsArchived() {
-		return string(AllArchived) + "/" + string(v)
-	}
-	panic(errors.Errorf(`unexpected state "%s"`, string(v)))
-}
-
 func (v State) String() string {
 	return string(v)
 }
 
-// IsActive returns true if the state means that the slice is active and receives new records.
-func (v State) IsActive() bool {
-	return v == Opened || v == Closing
-}
-
-// IsClosed returns true if the state means that the slice is active, but has not yet been uploaded into the file storage.
-func (v State) IsClosed() bool {
-	return v == Uploading || v == Failed || v == Uploaded
-}
-
-// IsArchived returns true if the state means that the slice has been imported into a target table.
-func (v State) IsArchived() bool {
-	return v == Imported
+func (v State) StateShort() string {
+	pfx := v.String()
+	return pfx[strings.LastIndex(pfx, "/")+1:]
 }
 
 func (v StateGroup) String() string {

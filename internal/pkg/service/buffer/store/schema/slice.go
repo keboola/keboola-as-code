@@ -45,24 +45,32 @@ func (v *Schema) Slices() Slices {
 	)}
 }
 
-func (v Slices) Active() SlicesActive {
+func (v Slices) AllActive() SlicesActive {
 	return SlicesActive{slices: v.slices.Add(slicestate.AllActive.String())}
 }
 
-func (v Slices) Closed() SlicesActive {
-	return SlicesActive{slices: v.slices.Add(slicestate.AllClosed.String())}
-}
-
-func (v Slices) Archived() SlicesActive {
+func (v Slices) AllArchived() SlicesActive {
 	return SlicesActive{slices: v.slices.Add(slicestate.AllArchived.String())}
 }
 
-func (v Slices) InState(state slicestate.State) SlicesInAState {
-	return SlicesInAState{slices: v.slices.Add(state.Prefix())}
+func (v Slices) AllOpened() SlicesActive {
+	return SlicesActive{slices: v.slices.Add(slicestate.AllOpened.String())}
 }
 
-func (v Slices) Opened() SlicesInAState {
-	return v.InState(slicestate.Opened)
+func (v Slices) AllClosed() SlicesActive {
+	return SlicesActive{slices: v.slices.Add(slicestate.AllClosed.String())}
+}
+
+func (v Slices) AllSuccessful() SlicesActive {
+	return SlicesActive{slices: v.slices.Add(slicestate.AllSuccessful.String())}
+}
+
+func (v Slices) InState(state slicestate.State) SlicesInAState {
+	return SlicesInAState{slices: v.slices.Add(state.String())}
+}
+
+func (v Slices) Writing() SlicesInAState {
+	return v.InState(slicestate.Writing)
 }
 
 func (v Slices) Closing() SlicesInAState {

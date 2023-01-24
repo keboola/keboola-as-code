@@ -68,7 +68,7 @@ func ExportForTest(receiverKey key.ReceiverKey, exportID, tableID string, column
 		},
 		OpenedSlice: Slice{
 			SliceKey:        sliceKey,
-			State:           slicestate.Opened,
+			State:           slicestate.Writing,
 			Mapping:         mapping,
 			StorageResource: &storageapi.File{},
 			Number:          1,
