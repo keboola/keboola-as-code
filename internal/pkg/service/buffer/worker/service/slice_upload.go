@@ -1,4 +1,4 @@
-package upload
+package service
 
 import (
 	"context"
@@ -24,9 +24,9 @@ import (
 const UploadingSlicesCheckInterval = time.Minute
 
 // uploadSlices watches for slices switched to the uploading state.
-func (u *Uploader) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
+func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
-		Prefix:         u.schema.Slices().Uploading().PrefixT(),
+		Prefix:         s.schema.Slices().Uploading().PrefixT(),
 		ReSyncInterval: UploadingSlicesCheckInterval,
 		TaskType:       "slice.upload",
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Task {
@@ -42,49 +42,49 @@ func (u *Uploader) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depen
 				defer func() {
 					if err != nil {
 						attempt := slice.RetryAttempt + 1
-						retryAfter := model.UTCTime(RetryAt(NewRetryBackoff(), u.clock.Now(), attempt))
+						retryAfter := model.UTCTime(RetryAt(NewRetryBackoff(), s.clock.Now(), attempt))
 						slice.RetryAttempt = attempt
 						slice.RetryAfter = &retryAfter
 						err = errors.Errorf(`slice upload failed: %w, upload will be retried after "%s"`, err, slice.RetryAfter)
-						if err := u.store.MarkSliceUploadFailed(ctx, &slice); err != nil {
-							u.logger.Errorf(`cannot mark the slice "%s" as failed: %s`, slice.SliceKey, err)
+						if err := s.store.MarkSliceUploadFailed(ctx, &slice); err != nil {
+							s.logger.Errorf(`cannot mark the slice "%s" as failed: %s`, slice.SliceKey, err)
 						}
 					}
 				}()
 
 				// Skip empty
 				if slice.IsEmpty {
-					if err := u.store.MarkSliceUploaded(ctx, &slice); err != nil {
+					if err := s.store.MarkSliceUploaded(ctx, &slice); err != nil {
 						return "", err
 					}
 					return "skipped upload of the empty slice", nil
 				}
 
 				// Load token
-				token, err := u.store.GetToken(ctx, slice.ExportKey)
+				token, err := s.store.GetToken(ctx, slice.ExportKey)
 				if err != nil {
 					return "", errors.Errorf(`cannot load token for export "%s": %w`, slice.ExportKey, err)
 				}
 
 				// Create file manager
-				apiClient := storageapi.ClientWithHostAndToken(u.httpClient, u.storageAPIHost, token.Token)
-				files := file.NewManager(d.Clock(), apiClient, u.config.uploadTransport)
+				apiClient := storageapi.ClientWithHostAndToken(s.httpClient, s.storageAPIHost, token.Token)
+				files := file.NewManager(d.Clock(), apiClient, s.config.uploadTransport)
 
 				// Upload slice, set statistics
-				reader := newRecordsReader(ctx, u.logger, u.etcdClient, u.schema, slice)
+				reader := newRecordsReader(ctx, s.logger, s.etcdClient, s.schema, slice)
 				if err := files.UploadSlice(ctx, &slice, reader); err != nil {
 					return "", errors.Errorf(`file upload failed: %w`, err)
 				}
 
 				// Get all uploaded slices from the file
 				var allSlices []model.Slice
-				getSlicesOp := u.schema.Slices().Uploaded().InFile(slice.FileKey).
+				getSlicesOp := s.schema.Slices().Uploaded().InFile(slice.FileKey).
 					GetAll().
 					ForEachOp(func(s model.Slice, _ *iterator.Header) error {
 						allSlices = append(allSlices, s)
 						return nil
 					})
-				if err := getSlicesOp.DoOrErr(ctx, u.etcdClient); err != nil {
+				if err := getSlicesOp.DoOrErr(ctx, s.etcdClient); err != nil {
 					return "", errors.Errorf(`get uploaded slices query failed: %w`, err)
 				}
 
@@ -95,7 +95,7 @@ func (u *Uploader) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depen
 				}
 
 				// Mark slice uploaded
-				if err := u.store.MarkSliceUploaded(ctx, &slice); err != nil {
+				if err := s.store.MarkSliceUploaded(ctx, &slice); err != nil {
 					return "", err
 				}
 

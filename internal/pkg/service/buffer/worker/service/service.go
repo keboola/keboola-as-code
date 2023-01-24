@@ -1,24 +1,108 @@
 package service
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/conditions"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/upload"
+	"context"
+	"sync"
+
+	"github.com/benbjohnson/clock"
+	"github.com/keboola/go-client/pkg/client"
+	etcd "go.etcd.io/etcd/client/v3"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Service struct {
-	uploader *upload.Uploader
-	checker  *conditions.Checker
+	clock          clock.Clock
+	logger         log.Logger
+	store          *store.Store
+	etcdClient     *etcd.Client
+	httpClient     client.Client
+	storageAPIHost string
+	schema         *schema.Schema
+	watcher        *watcher.WorkerNode
+	dist           *distribution.Node
+	stats          *statistics.CacheNode
+	tasks          *task.Node
+	config         config
 }
 
-func New(d dependencies.ForWorker) (*Service, error) {
-	uploader, err := upload.NewUploader(d)
-	if err != nil {
+type dependencies interface {
+	Clock() clock.Clock
+	Logger() log.Logger
+	Process() *servicectx.Process
+	EtcdClient() *etcd.Client
+	HTTPClient() client.Client
+	StorageAPIHost() string
+	Schema() *schema.Schema
+	Store() *store.Store
+	WatcherWorkerNode() *watcher.WorkerNode
+	DistributionWorkerNode() *distribution.Node
+	StatsCacheNode() *statistics.CacheNode
+	TaskWorkerNode() *task.Node
+}
+
+func New(d dependencies, ops ...Option) (*Service, error) {
+	s := &Service{
+		clock:          d.Clock(),
+		logger:         d.Logger().AddPrefix("[service]"),
+		store:          d.Store(),
+		etcdClient:     d.EtcdClient(),
+		httpClient:     d.HTTPClient(),
+		storageAPIHost: d.StorageAPIHost(),
+		schema:         d.Schema(),
+		config:         newConfig(ops),
+	}
+
+	// Graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	d.Process().OnShutdown(func() {
+		s.logger.Info("received shutdown request")
+		cancel()
+		s.logger.Info("waiting for orchestrators")
+		wg.Wait()
+		s.logger.Info("shutdown done")
+	})
+
+	// Create orchestrators
+	var init []<-chan error
+	if s.config.checkConditions {
+		s.dist = d.DistributionWorkerNode()
+		s.stats = d.StatsCacheNode()
+		s.tasks = d.TaskWorkerNode()
+		init = append(init, s.checkConditions(ctx, wg))
+	}
+	if s.config.closeSlices {
+		s.watcher = d.WatcherWorkerNode()
+		init = append(init, s.closeSlices(ctx, wg, d))
+	}
+	if s.config.uploadSlices {
+		init = append(init, s.uploadSlices(ctx, wg, d))
+	}
+	if s.config.retryFailedSlices {
+		init = append(init, s.retryFailedUploads(ctx, wg, d))
+	}
+
+	// Check initialization
+	errs := errors.NewMultiError()
+	for _, done := range init {
+		if err := <-done; err != nil {
+			errs.Append(err)
+		}
+	}
+
+	// Stop on initialization error
+	if err := errs.ErrorOrNil(); err != nil {
 		return nil, err
 	}
-	checker, err := conditions.NewChecker(d)
-	if err != nil {
-		return nil, err
-	}
-	return &Service{uploader: uploader, checker: checker}, nil
+
+	return s, nil
 }

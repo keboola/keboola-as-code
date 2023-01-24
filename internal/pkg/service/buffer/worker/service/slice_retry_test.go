@@ -1,4 +1,4 @@
-package upload_test
+package service_test
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/upload"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -38,7 +38,7 @@ func (v notRetryableError) RetryableError() bool {
 func TestRetryBackoff(t *testing.T) {
 	t.Parallel()
 
-	b := upload.NewRetryBackoff()
+	b := service.NewRetryBackoff()
 	b.RandomizationFactor = 0
 
 	clk := clock.NewMock()
@@ -71,16 +71,16 @@ func TestRetryBackoff(t *testing.T) {
 func TestRetryAt(t *testing.T) {
 	t.Parallel()
 
-	b := upload.NewRetryBackoff()
+	b := service.NewRetryBackoff()
 	b.RandomizationFactor = 0
 	now, _ := time.Parse(time.RFC3339, "2010-01-01T00:00:00Z")
-	assert.Equal(t, "2010-01-01T00:02:00Z", upload.RetryAt(b, now, 1).Format(time.RFC3339))
-	assert.Equal(t, "2010-01-01T00:10:00Z", upload.RetryAt(b, now, 2).Format(time.RFC3339))
-	assert.Equal(t, "2010-01-01T00:42:00Z", upload.RetryAt(b, now, 3).Format(time.RFC3339)) // 2 + 8 + 32 = 42
-	assert.Equal(t, "2010-01-01T02:50:00Z", upload.RetryAt(b, now, 4).Format(time.RFC3339)) // ...
-	assert.Equal(t, "2010-01-01T05:50:00Z", upload.RetryAt(b, now, 5).Format(time.RFC3339))
-	assert.Equal(t, "2010-01-01T08:50:00Z", upload.RetryAt(b, now, 6).Format(time.RFC3339))
-	assert.Equal(t, "2010-01-01T11:50:00Z", upload.RetryAt(b, now, 7).Format(time.RFC3339))
+	assert.Equal(t, "2010-01-01T00:02:00Z", service.RetryAt(b, now, 1).Format(time.RFC3339))
+	assert.Equal(t, "2010-01-01T00:10:00Z", service.RetryAt(b, now, 2).Format(time.RFC3339))
+	assert.Equal(t, "2010-01-01T00:42:00Z", service.RetryAt(b, now, 3).Format(time.RFC3339)) // 2 + 8 + 32 = 42
+	assert.Equal(t, "2010-01-01T02:50:00Z", service.RetryAt(b, now, 4).Format(time.RFC3339)) // ...
+	assert.Equal(t, "2010-01-01T05:50:00Z", service.RetryAt(b, now, 5).Format(time.RFC3339))
+	assert.Equal(t, "2010-01-01T08:50:00Z", service.RetryAt(b, now, 6).Format(time.RFC3339))
+	assert.Equal(t, "2010-01-01T11:50:00Z", service.RetryAt(b, now, 7).Format(time.RFC3339))
 }
 
 // TestRetryFailedUploadsTask - the worker switches the "failed" slice to the "uploading" state,
@@ -125,12 +125,13 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	// Start worker node
 	workerDeps := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("my-worker"))...)
 	workerDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
-	_, err := upload.NewUploader(
+	_, err := service.New(
 		workerDeps,
-		upload.WithUploadTransport(uploadTransport),
-		upload.WithCloseSlices(true),
-		upload.WithUploadSlices(true),
-		upload.WithRetryFailedSlices(true),
+		service.WithUploadTransport(uploadTransport),
+		service.WithCheckConditions(false),
+		service.WithCloseSlices(true),
+		service.WithUploadSlices(true),
+		service.WithRetryFailedSlices(true),
 	)
 	assert.NoError(t, err)
 
@@ -148,7 +149,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond)
 
 	// 3 minutes later:
-	// - triggers upload.FailedSlicesCheckInterval
+	// - triggers service.FailedSlicesCheckInterval
 	// - unblock the first backoff1 interval
 	workerDeps.DebugLogger().Truncate()
 	clk.Add(3 * time.Minute)
