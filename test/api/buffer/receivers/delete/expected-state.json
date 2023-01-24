@@ -38,6 +38,7 @@
         "buffer.receiverID=receiver-b"
       ],
       "isSliced": true,
+      "isEncrypted": true,
       %A
     },
     {
@@ -47,6 +48,7 @@
         "buffer.receiverID=receiver-c"
       ],
       "isSliced": true,
+      "isEncrypted": true,
       %A
     }
   ]

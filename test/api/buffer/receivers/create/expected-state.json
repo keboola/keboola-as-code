@@ -38,6 +38,7 @@
         "buffer.receiverID=my-receiver-with-exports"
       ],
       "isSliced": true,
+      "isEncrypted": true,
       %A
     }
   ]

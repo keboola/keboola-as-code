@@ -79,8 +79,8 @@
     "id": %d,
     "created": "%s",
     "isSliced": true,
+    "isEncrypted": true,
     %A
-    "federationToken": true
   }
 }
 >>>>>
