@@ -1,4 +1,4 @@
-package upload
+package service
 
 import (
 	"context"
@@ -19,14 +19,14 @@ import (
 const ClosingSlicesCheckInterval = time.Minute
 
 // closeSlices watches for slices switched to the closing state.
-func (u *Uploader) closeSlices(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
+func (s *Service) closeSlices(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
-		Prefix:         u.schema.Slices().Closing().PrefixT(),
+		Prefix:         s.schema.Slices().Closing().PrefixT(),
 		ReSyncInterval: ClosingSlicesCheckInterval,
 		TaskType:       "slice.close",
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Task {
 			return func(ctx context.Context, logger log.Logger) (string, error) {
-				// On shutdown, the task is stopped immediately, because it is connected to the Uploader ctx.
+				// On shutdown, the task is stopped immediately, because it is connected to the Service ctx.
 				// There is no reason to wait, because it can be started again on another node.
 				ctx, cancel := context.WithTimeout(ctx, time.Minute)
 				defer cancel()
@@ -34,13 +34,13 @@ func (u *Uploader) closeSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 				// Wait until all API nodes switch to a new slice.
 				rev := event.Kv.ModRevision
 				logger.Infof(`waiting until all API nodes switch to a revision >= %v`, rev)
-				if err := u.watcher.WaitForRevision(ctx, rev); err != nil {
+				if err := s.watcher.WaitForRevision(ctx, rev); err != nil {
 					return "", err
 				}
 
 				// Close the slice, no API node is writing to it.
 				slice := event.Value
-				if err := u.store.CloseSlice(ctx, &slice); err != nil {
+				if err := s.store.CloseSlice(ctx, &slice); err != nil {
 					return "", err
 				}
 

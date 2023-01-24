@@ -1,4 +1,4 @@
-package conditions_test
+package service_test
 
 import (
 	"context"
@@ -18,11 +18,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/conditions"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
@@ -59,30 +60,38 @@ func TestConditionsChecker(t *testing.T) {
 	if _, err := storageapi.CreateFileResourceRequest(file2).Send(ctx, project.StorageAPIClient()); err != nil {
 		assert.Fail(t, err.Error())
 	}
-	sliceKey1 := createExport(t, "my-receiver-A", "my-export-1", ctx, clk, client, str, file1, importConditions1, project.StorageAPIToken().Token)
-	sliceKey2 := createExport(t, "my-receiver-B", "my-export-2", ctx, clk, client, str, file2, importConditions2, project.StorageAPIToken().Token)
+	sliceKey1 := createExport2(t, "my-receiver-A", "my-export-1", ctx, clk, client, str, file1, importConditions1, project.StorageAPIToken().Token)
+	sliceKey2 := createExport2(t, "my-receiver-B", "my-export-2", ctx, clk, client, str, file2, importConditions2, project.StorageAPIToken().Token)
 
 	// Create nodes
 	workerDeps1 := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("worker-node-1"))...)
 	workerDeps2 := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("worker-node-2"))...)
-	_, err := conditions.NewChecker(workerDeps1)
+	workerDeps1.DebugLogger().ConnectTo(testhelper.VerboseStdout())
+	workerDeps2.DebugLogger().ConnectTo(testhelper.VerboseStdout())
+	serviceOps := []service.Option{
+		service.WithCheckConditions(true),
+		service.WithCloseSlices(false),
+		service.WithUploadSlices(false),
+		service.WithRetryFailedSlices(false),
+	}
+	_, err := service.New(workerDeps1, serviceOps...)
 	assert.NoError(t, err)
-	_, err = conditions.NewChecker(workerDeps2)
+	_, err = service.New(workerDeps2, serviceOps...)
 	assert.NoError(t, err)
 
 	time.Sleep(time.Second)
-	clk.Add(conditions.CheckInterval)
+	clk.Add(service.CheckConditionsInterval)
 	apiStats.Notify(sliceKey1, 100*datasize.KB, 300*datasize.KB)
 	<-apiStats.Sync(ctx)
 	time.Sleep(time.Second)
-	clk.Add(conditions.CheckInterval)
+	clk.Add(service.CheckConditionsInterval)
 	apiStats.Notify(sliceKey1, 150*datasize.KB, 300*datasize.KB)
 	apiStats.Notify(sliceKey2, 10*datasize.KB, 10*datasize.KB)
 	<-apiStats.Sync(ctx)
 	time.Sleep(time.Second)
-	clk.Add(conditions.CheckInterval)
+	clk.Add(service.CheckConditionsInterval)
 	time.Sleep(time.Second)
-	clk.Add(conditions.CheckInterval)
+	clk.Add(service.CheckConditionsInterval)
 
 	// Shutdown
 	time.Sleep(2 * time.Second)
@@ -96,23 +105,21 @@ func TestConditionsChecker(t *testing.T) {
 	// Check conditions checker logs
 	wildcards.Assert(t, `
 %A
-[conditions]INFO  checked "1" opened slices | %s
-[conditions]INFO  checked "1" opened slices | %s
-[conditions]INFO  checked "1" opened slices | %s
-[conditions]INFO  closing slice "00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z": time threshold met, opened at: 0001-01-01T00:00:02.000Z, passed: 1m30s threshold: 1m0s
-[conditions]INFO  checked "1" opened slices | %s
+[service][conditions]INFO  checked "1" opened slices | %s
+[service][conditions]INFO  checked "1" opened slices | %s
+[service][conditions]INFO  checked "1" opened slices | %s
+[service][conditions]INFO  closing slice "00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z": time threshold met, opened at: 0001-01-01T00:00:02.000Z, passed: 1m30s threshold: 1m0s
 %A
-`, strhelper.FilterLines(`^(\[conditions\])`, workerDeps1.DebugLogger().AllMessages()))
+`, strhelper.FilterLines(`^(\[service\]\[conditions\])`, workerDeps1.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
 %A
-[conditions]INFO  checked "1" opened slices | %s
-[conditions]INFO  checked "1" opened slices | %s
-[conditions]INFO  closing slice "00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z": time threshold met, opened at: 0001-01-01T00:00:02.000Z, passed: 1m0s threshold: 1m0s
-[conditions]INFO  checked "1" opened slices | %s
-[conditions]INFO  closing file "00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z": size threshold met, received: 250KB, threshold: 200KB
-[conditions]INFO  checked "1" opened slices | %s
+[service][conditions]INFO  checked "1" opened slices | %s
+[service][conditions]INFO  checked "1" opened slices | %s
+[service][conditions]INFO  closing slice "00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z": time threshold met, opened at: 0001-01-01T00:00:02.000Z, passed: 1m0s threshold: 1m0s
+[service][conditions]INFO  checked "1" opened slices | %s
+[service][conditions]INFO  closing file "00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z": size threshold met, received: 250KB, threshold: 200KB
 %A
-`, strhelper.FilterLines(`^(\[conditions\])`, workerDeps2.DebugLogger().AllMessages()))
+`, strhelper.FilterLines(`^(\[service\]\[conditions\])`, workerDeps2.DebugLogger().AllMessages()))
 
 	// Check conditions checker logs
 	wildcards.Assert(t, `
@@ -309,7 +316,7 @@ task/00000123/my-receiver-B/my-export-2/slice.closing/%s
 }
 
 // createExport creates receiver,export,mapping,file and slice.
-func createExport(t *testing.T, receiverID, exportID string, ctx context.Context, clk clock.Clock, client *etcd.Client, str *store.Store, fileRes *storageapi.File, importConditions model.Conditions, token string) key.SliceKey {
+func createExport2(t *testing.T, receiverID, exportID string, ctx context.Context, clk clock.Clock, client *etcd.Client, str *store.Store, fileRes *storageapi.File, importConditions model.Conditions, token string) key.SliceKey {
 	t.Helper()
 	receiver := model.ReceiverForTest(receiverID, 0, clk.Now())
 	columns := []column.Column{

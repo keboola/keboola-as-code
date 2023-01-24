@@ -1,4 +1,4 @@
-package upload
+package service
 
 import (
 	"context"
@@ -21,14 +21,14 @@ import (
 const FailedSlicesCheckInterval = time.Minute
 
 // retryFailedUploads watches for failed slices.
-func (u *Uploader) retryFailedUploads(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
+func (s *Service) retryFailedUploads(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
-		Prefix:         u.schema.Slices().Failed().PrefixT(),
+		Prefix:         s.schema.Slices().Failed().PrefixT(),
 		ReSyncInterval: FailedSlicesCheckInterval,
 		TaskType:       "slice.retry.check",
 		StartTaskIf: func(event etcdop.WatchEventT[model.Slice]) (string, bool) {
 			slice := event.Value
-			now := model.UTCTime(u.clock.Now())
+			now := model.UTCTime(s.clock.Now())
 			needed := *slice.RetryAfter
 			if now.After(needed) {
 				return "", true
@@ -38,7 +38,7 @@ func (u *Uploader) retryFailedUploads(ctx context.Context, wg *sync.WaitGroup, d
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Task {
 			return func(_ context.Context, logger log.Logger) (result string, err error) {
 				slice := event.Value
-				if err := u.store.ScheduleSliceForRetry(ctx, &slice); err != nil {
+				if err := s.store.ScheduleSliceForRetry(ctx, &slice); err != nil {
 					return "", err
 				}
 				return "slice scheduled for retry", nil

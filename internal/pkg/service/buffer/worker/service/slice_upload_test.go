@@ -1,4 +1,4 @@
-package upload_test
+package service_test
 
 import (
 	"compress/gzip"
@@ -19,7 +19,7 @@ import (
 
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/upload"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -78,11 +78,12 @@ func TestSliceUploadTask(t *testing.T) {
 	// Start worker node
 	workerDeps := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("my-worker"))...)
 	workerDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
-	_, err := upload.NewUploader(
+	_, err := service.New(
 		workerDeps,
-		upload.WithCloseSlices(true),
-		upload.WithUploadSlices(true),
-		upload.WithRetryFailedSlices(false),
+		service.WithCheckConditions(false),
+		service.WithCloseSlices(true),
+		service.WithUploadSlices(true),
+		service.WithRetryFailedSlices(false),
 	)
 	assert.NoError(t, err)
 
