@@ -1,5 +1,5 @@
-Creating new workspace, please wait.
-Created new workspace "dbt_source".
+Creating a new workspace, please wait.
+Created the new workspace "dbt_source".
 Profile stored in "profiles.yml".
 Sources stored in "models/_sources" directory.
 Commands to set environment for the dbt target:
