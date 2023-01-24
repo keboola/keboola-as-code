@@ -49,7 +49,7 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	d.Logger().Info(`Creating new workspace, please wait.`)
+	d.Logger().Info(`Creating a new workspace, please wait.`)
 	// Create workspace
 	s, err := sandboxesapi.Create(
 		ctx,
@@ -63,7 +63,7 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 	if err != nil {
 		return errors.Errorf("cannot create workspace: %w", err)
 	}
-	d.Logger().Infof(`Created new workspace "%s".`, opts.WorkspaceName)
+	d.Logger().Infof(`Created the new workspace "%s".`, opts.WorkspaceName)
 
 	workspace := s.Sandbox
 

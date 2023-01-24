@@ -1,5 +1,5 @@
-Creating new workspace, please wait.
-Created new workspace "foo" (%s).
+Creating a new workspace, please wait.
+Created the new workspace "foo" (%s).
 Credentials:
   Host: %s
   User: %s

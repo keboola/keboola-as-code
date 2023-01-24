@@ -47,7 +47,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 		opts = append(opts, sandboxesapi.WithSize(o.Size))
 	}
 
-	logger.Info(`Creating new workspace, please wait.`)
+	logger.Info(`Creating a new workspace, please wait.`)
 	// Create workspace by API
 	s, err := sandboxesapi.Create(
 		ctx,
@@ -65,7 +65,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 
 	sandbox := s.Sandbox
 
-	logger.Infof(`Created new workspace "%s" (%s).`, o.Name, s.Config.ID)
+	logger.Infof(`Created the new workspace "%s" (%s).`, o.Name, s.Config.ID)
 	switch sandbox.Type {
 	case sandboxesapi.TypeSnowflake:
 		logger.Infof(
