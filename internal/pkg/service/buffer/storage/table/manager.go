@@ -24,13 +24,9 @@ type Manager struct {
 	singleCreateBucket *singleflight.Group
 }
 
-type dependencies interface {
-	StorageAPIClient() client.Sender
-}
-
-func NewManager(d dependencies) *Manager {
+func NewManager(client client.Sender) *Manager {
 	return &Manager{
-		client:             d.StorageAPIClient(),
+		client:             client,
 		lock:               &sync.Mutex{},
 		singleGetBucket:    &singleflight.Group{},
 		singleCreateBucket: &singleflight.Group{},
