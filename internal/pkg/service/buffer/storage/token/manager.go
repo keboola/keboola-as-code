@@ -112,5 +112,6 @@ func (m *Manager) createTokenRequest(exportKey key.ExportKey, permissions storag
 				fmt.Sprintf("[_internal] Buffer Export %s for Receiver %s", exportKey.ReceiverID, exportKey.ExportID),
 			),
 			storageapi.WithBucketPermissions(permissions),
+			storageapi.WithCanReadAllFileUploads(true),
 		)
 }

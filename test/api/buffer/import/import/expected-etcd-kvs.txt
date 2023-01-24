@@ -142,7 +142,7 @@
   "isMasterToken": false,
   "canManageBuckets": false,
   "canManageTokens": false,
-  "canReadAllFileUploads": false,
+  "canReadAllFileUploads": true,
   "canPurgeTrash": false,
   "created": "%s",
   "refreshed": "%s",
