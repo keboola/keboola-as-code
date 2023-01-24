@@ -20,17 +20,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// CheckConditionsInterval defines how often it will be checked upload and import conditions.
-const CheckConditionsInterval = 30 * time.Second
-
 // MinimalCredentialsExpiration which triggers the import.
 const MinimalCredentialsExpiration = time.Hour
 
 type checker struct {
 	*Service
-	logger           log.Logger
-	assigner         *distribution.Assigner
-	uploadConditions model.Conditions
+	logger   log.Logger
+	assigner *distribution.Assigner
 
 	lock             *sync.RWMutex
 	importConditions cachedConditions
@@ -51,7 +47,6 @@ func startChecker(ctx context.Context, wg *sync.WaitGroup, s *Service, assigner 
 		Service:          s,
 		logger:           s.logger.AddPrefix("[conditions]"),
 		assigner:         assigner,
-		uploadConditions: model.UploadConditions(),
 		lock:             &sync.RWMutex{},
 		importConditions: make(cachedConditions),
 		openedSlices:     make(cachedSlices),
@@ -125,7 +120,7 @@ func (c *checker) check(ctx context.Context) {
 		}
 
 		// Check upload conditions
-		if met, reason := c.uploadConditions.Evaluate(now, sliceKey.OpenedAt(), c.stats.SliceStats(sliceKey).Total); met {
+		if met, reason := c.config.uploadConditions.Evaluate(now, sliceKey.OpenedAt(), c.stats.SliceStats(sliceKey).Total); met {
 			if err := c.closeSlice(ctx, sliceKey, reason); err != nil {
 				c.logger.Error(err)
 			}
@@ -198,7 +193,7 @@ func (c *checker) startTicker(ctx context.Context, wg *sync.WaitGroup) {
 	go func() {
 		defer wg.Done()
 
-		ticker := c.clock.Ticker(CheckConditionsInterval)
+		ticker := c.clock.Ticker(c.config.checkConditionsInterval)
 		defer ticker.Stop()
 
 		for {

@@ -15,7 +15,7 @@ type Conditions struct {
 }
 
 // UploadConditions determines when a slice will be uploaded. These settings are not configurable.
-func UploadConditions() Conditions {
+func DefaultUploadConditions() Conditions {
 	return Conditions{
 		Count: 1000,
 		Size:  1 * datasize.MB,

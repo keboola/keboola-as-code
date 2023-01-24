@@ -73,6 +73,9 @@ func TestConditionsChecker(t *testing.T) {
 		service.WithCloseSlices(false),
 		service.WithUploadSlices(false),
 		service.WithRetryFailedSlices(false),
+		service.WithCloseFiles(false),
+		service.WithImportFiles(false),
+		service.WithRetryFailedFiles(false),
 	}
 	_, err := service.New(workerDeps1, serviceOps...)
 	assert.NoError(t, err)
@@ -80,18 +83,18 @@ func TestConditionsChecker(t *testing.T) {
 	assert.NoError(t, err)
 
 	time.Sleep(time.Second)
-	clk.Add(service.CheckConditionsInterval)
+	clk.Add(service.DefaultCheckConditionsInterval)
 	apiStats.Notify(sliceKey1, 100*datasize.KB, 300*datasize.KB)
 	<-apiStats.Sync(ctx)
 	time.Sleep(time.Second)
-	clk.Add(service.CheckConditionsInterval)
+	clk.Add(service.DefaultCheckConditionsInterval)
 	apiStats.Notify(sliceKey1, 150*datasize.KB, 300*datasize.KB)
 	apiStats.Notify(sliceKey2, 10*datasize.KB, 10*datasize.KB)
 	<-apiStats.Sync(ctx)
 	time.Sleep(time.Second)
-	clk.Add(service.CheckConditionsInterval)
+	clk.Add(service.DefaultCheckConditionsInterval)
 	time.Sleep(time.Second)
-	clk.Add(service.CheckConditionsInterval)
+	clk.Add(service.DefaultCheckConditionsInterval)
 
 	// Shutdown
 	time.Sleep(2 * time.Second)

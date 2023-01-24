@@ -51,6 +51,9 @@ func TestSliceCloseTask(t *testing.T) {
 		service.WithCloseSlices(true),
 		service.WithUploadSlices(false),
 		service.WithRetryFailedSlices(false),
+		service.WithCloseFiles(false),
+		service.WithImportFiles(false),
+		service.WithRetryFailedFiles(false),
 	)
 	assert.NoError(t, err)
 

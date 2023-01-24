@@ -83,6 +83,9 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 		service.WithCloseSlices(true),
 		service.WithUploadSlices(true),
 		service.WithRetryFailedSlices(true),
+		service.WithCloseFiles(false),
+		service.WithImportFiles(false),
+		service.WithRetryFailedFiles(false),
 	)
 	assert.NoError(t, err)
 

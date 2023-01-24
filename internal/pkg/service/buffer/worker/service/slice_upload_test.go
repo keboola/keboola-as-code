@@ -84,6 +84,9 @@ func TestSliceUploadTask(t *testing.T) {
 		service.WithCloseSlices(true),
 		service.WithUploadSlices(true),
 		service.WithRetryFailedSlices(false),
+		service.WithCloseFiles(false),
+		service.WithImportFiles(false),
+		service.WithRetryFailedFiles(false),
 	)
 	assert.NoError(t, err)
 

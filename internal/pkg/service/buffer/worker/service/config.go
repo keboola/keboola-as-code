@@ -2,24 +2,40 @@ package service
 
 import (
 	"net/http"
+	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 )
 
+// DefaultCheckConditionsInterval defines how often it will be checked upload and import conditions.
+const DefaultCheckConditionsInterval = 30 * time.Second
+
 type config struct {
-	checkConditions   bool
-	closeSlices       bool
-	uploadSlices      bool
-	retryFailedSlices bool
-	uploadTransport   http.RoundTripper
+	checkConditions         bool
+	closeSlices             bool
+	uploadSlices            bool
+	retryFailedSlices       bool
+	closeFiles              bool
+	importFiles             bool
+	retryFailedFiles        bool
+	uploadTransport         http.RoundTripper
+	checkConditionsInterval time.Duration
+	uploadConditions        model.Conditions
 }
 
 type Option func(c *config)
 
 func newConfig(ops []Option) config {
 	c := config{
-		checkConditions:   true,
-		closeSlices:       true,
-		uploadSlices:      true,
-		retryFailedSlices: true,
+		checkConditions:         true,
+		closeSlices:             true,
+		uploadSlices:            true,
+		retryFailedSlices:       true,
+		closeFiles:              true,
+		importFiles:             true,
+		retryFailedFiles:        true,
+		checkConditionsInterval: DefaultCheckConditionsInterval,
+		uploadConditions:        model.DefaultUploadConditions(),
 	}
 	for _, o := range ops {
 		o(&c)
@@ -27,7 +43,19 @@ func newConfig(ops []Option) config {
 	return c
 }
 
-// WithCheckConditions enables/disables the coditions checker.
+func WithCheckConditionsInterval(v time.Duration) Option {
+	return func(c *config) {
+		c.checkConditionsInterval = v
+	}
+}
+
+func WithUploadConditions(v model.Conditions) Option {
+	return func(c *config) {
+		c.uploadConditions = v
+	}
+}
+
+// WithCheckConditions enables/disables the conditions checker.
 func WithCheckConditions(v bool) Option {
 	return func(c *config) {
 		c.checkConditions = v
@@ -59,5 +87,26 @@ func WithRetryFailedSlices(v bool) Option {
 func WithUploadTransport(v http.RoundTripper) Option {
 	return func(c *config) {
 		c.uploadTransport = v
+	}
+}
+
+// WithCloseFiles enables/disables the "close files" task.
+func WithCloseFiles(v bool) Option {
+	return func(c *config) {
+		c.closeFiles = v
+	}
+}
+
+// WithImportFiles enables/disables the "upload file" task.
+func WithImportFiles(v bool) Option {
+	return func(c *config) {
+		c.importFiles = v
+	}
+}
+
+// WithRetryFailedFiles enables/disables the "retry failed imports" task.
+func WithRetryFailedFiles(v bool) Option {
+	return func(c *config) {
+		c.retryFailedFiles = v
 	}
 }
