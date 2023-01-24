@@ -20,10 +20,12 @@
             "incremental": false,
             "columns": [
               {
+                "primaryKey": false,
                 "type": "id",
                 "name": "id"
               },
               {
+                "primaryKey": false,
                 "type": "body",
                 "name": "body"
               }
@@ -51,10 +53,12 @@
             "incremental": false,
             "columns": [
               {
+                "primaryKey": false,
                 "type": "id",
                 "name": "id"
               },
               {
+                "primaryKey": false,
                 "type": "body",
                 "name": "body"
               }

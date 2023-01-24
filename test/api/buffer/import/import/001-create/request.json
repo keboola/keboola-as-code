@@ -17,26 +17,32 @@
           "incremental": true,
           "columns": [
             {
+              "primaryKey": false,
               "type": "id",
               "name": "id"
             },
             {
+              "primaryKey": false,
               "type": "body",
               "name": "body"
             },
             {
+              "primaryKey": false,
               "type": "headers",
               "name": "headers"
             },
             {
+              "primaryKey": false,
               "type": "ip",
               "name": "ip"
             },
             {
+              "primaryKey": false,
               "type": "datetime",
               "name": "datetime"
             },
             {
+              "primaryKey": false,
               "type": "template",
               "name": "template",
               "template": {

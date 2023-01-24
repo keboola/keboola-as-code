@@ -16,10 +16,12 @@
           "incremental": true,
           "columns": [
             {
+              "primaryKey": false,
               "type": "id",
               "name": "id"
             },
             {
+              "primaryKey": false,
               "type": "template",
               "name": "template",
               "template": {

@@ -59,12 +59,8 @@ func (m *Manager) EnsureTableExists(ctx context.Context, rb rollback.Builder, ex
 	table, err := storageapi.GetTableRequest(tableID).Send(ctx, m.client)
 	var apiErr *storageapi.Error
 	if errors.As(err, &apiErr) && apiErr.ErrCode == "storage.tables.notFound" {
-		var opts []storageapi.CreateTableOption
-		if len(primaryKey) > 0 {
-			opts = append(opts, storageapi.WithPrimaryKey(primaryKey))
-		}
 		// Table doesn't exist -> create it
-		if req, err := storageapi.CreateTableDeprecatedSyncRequest(tableID, columns, opts...); err != nil {
+		if req, err := storageapi.CreateTableDeprecatedSyncRequest(tableID, columns, storageapi.WithPrimaryKey(primaryKey)); err != nil {
 			return err
 		} else if table, err = req.Send(ctx, m.client); err != nil {
 			return err

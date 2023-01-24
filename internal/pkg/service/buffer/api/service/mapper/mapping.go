@@ -15,13 +15,9 @@ func (m Mapper) MappingPayload(model model.Mapping) buffer.Mapping {
 	columns := make([]*buffer.Column, 0, len(model.Columns))
 	for _, input := range model.Columns {
 		output := &buffer.Column{
-			Type: input.ColumnType(),
-			Name: input.ColumnName(),
-		}
-
-		if input.IsPrimaryKey() {
-			v := true
-			output.PrimaryKey = &v
+			Type:       input.ColumnType(),
+			Name:       input.ColumnName(),
+			PrimaryKey: input.IsPrimaryKey(),
 		}
 
 		if v, ok := input.(column.Template); ok {
@@ -48,12 +44,7 @@ func (m Mapper) CreateMappingModel(exportKey key.ExportKey, revisionID key.Revis
 	}
 	columns := make([]column.Column, 0, len(payload.Columns))
 	for _, data := range payload.Columns {
-		primaryKey := false
-		if data.PrimaryKey != nil {
-			primaryKey = *data.PrimaryKey
-		}
-
-		c, err := column.MakeColumn(data.Type, data.Name, primaryKey)
+		c, err := column.MakeColumn(data.Type, data.Name, data.PrimaryKey)
 		if err != nil {
 			return model.Mapping{}, err
 		}

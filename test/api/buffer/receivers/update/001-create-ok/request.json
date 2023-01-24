@@ -16,6 +16,7 @@
           "incremental": true,
           "columns": [
             {
+              "primaryKey": false,
               "type": "body",
               "name": "body"
             }
