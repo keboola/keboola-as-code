@@ -45,6 +45,8 @@ func ExportForTest(receiverKey key.ReceiverKey, exportID, tableID string, column
 	fileKey := key.FileKey{ExportKey: exportKey, FileID: key.FileID(now)}
 	sliceKey := key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(now)}
 	mapping := MappingForTest(exportKey)
+	mapping.TableID = storageapi.MustParseTableID(tableID)
+	mapping.Columns = columns
 	return Export{
 		ExportBase: ExportBase{
 			ExportKey:        exportKey,

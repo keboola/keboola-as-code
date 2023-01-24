@@ -19,8 +19,7 @@ import (
 )
 
 const (
-	DateFormat = "20060102150405"
-	gzipLevel  = 2 // 1 - BestSpeed, 9 - BestCompression
+	gzipLevel = 2 // 1 - BestSpeed, 9 - BestCompression
 )
 
 type Manager struct {

@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -93,8 +94,78 @@ func (s *Store) SetFileState(ctx context.Context, now time.Time, file *model.Fil
 	return true, nil
 }
 
+// MarkFileImported when the import is finished.
+func (s *Store) MarkFileImported(ctx context.Context, file *model.File) (err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.MarkFileImported")
+	defer telemetry.EndSpan(span, &err)
+	now := s.clock.Now()
+	var slices []model.Slice
+	return op.Atomic().
+		Read(func() op.Op {
+			slices = nil
+			return s.schema.Slices().Uploaded().InFile(file.FileKey).
+				GetAll().
+				ForEachOp(func(value model.Slice, header *op.Header) error {
+					slices = append(slices, value)
+					return nil
+				})
+		}).
+		WriteOrErr(func() (op.Op, error) {
+			fileStateOp, err := s.setFileStateOp(ctx, now, file, filestate.Imported)
+			if err != nil {
+				return nil, err
+			}
+			ops := []op.Op{fileStateOp}
+			for _, slice := range slices {
+				slice := slice
+				sliceStateOp, err := s.setSliceStateOp(ctx, now, &slice, slicestate.Imported)
+				if err != nil {
+					return nil, err
+				}
+				ops = append(ops, sliceStateOp)
+			}
+
+			return op.MergeToTxn(ops...), nil
+		}).
+		Do(ctx, s.client)
+}
+
+// MarkFileImportFailed when the import failed.
+func (s *Store) MarkFileImportFailed(ctx context.Context, file *model.File) (err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.MarkFileImportFailed")
+	defer telemetry.EndSpan(span, &err)
+	setOp, err := s.setFileStateOp(ctx, s.clock.Now(), file, filestate.Failed)
+	if err != nil {
+		return err
+	}
+	return setOp.DoOrErr(ctx, s.client)
+}
+
+// ScheduleFileForRetry when it is time for the next import attempt.
+func (s *Store) ScheduleFileForRetry(ctx context.Context, file *model.File) (err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.ScheduleFileRetry")
+	defer telemetry.EndSpan(span, &err)
+	setOp, err := s.setFileStateOp(ctx, s.clock.Now(), file, filestate.Importing)
+	if err != nil {
+		return err
+	}
+	return setOp.DoOrErr(ctx, s.client)
+}
+
+func (s *Store) CloseFile(ctx context.Context, file *model.File) (err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CloseFile")
+	defer telemetry.EndSpan(span, &err)
+	swapOp, err := s.setFileStateOp(ctx, s.clock.Now(), file, filestate.Importing)
+	if err != nil {
+		return err
+	}
+	return swapOp.DoOrErr(ctx, s.client)
+}
+
 // SwapFile closes the old slice and creates the new one, in the same file.
-func (s *Store) SwapFile(ctx context.Context, oldFile *model.File, oldSlice *model.Slice, newFile model.File, newSlice model.Slice) error {
+func (s *Store) SwapFile(ctx context.Context, oldFile *model.File, oldSlice *model.Slice, newFile model.File, newSlice model.Slice) (err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.SwapFile")
+	defer telemetry.EndSpan(span, &err)
 	swapOp, err := s.swapFileOp(ctx, s.clock.Now(), oldFile, oldSlice, newFile, newSlice)
 	if err != nil {
 		return err

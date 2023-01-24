@@ -27,6 +27,8 @@ type File struct {
 	ImportedAt      *UTCTime         `json:"importedAt,omitempty"`
 	FailedAt        *UTCTime         `json:"failedAt,omitempty"`
 	LastError       string           `json:"lastError,omitempty"`
+	RetryAttempt    int              `json:"retryAttempt,omitempty"`
+	RetryAfter      *UTCTime         `json:"retryAfter,omitempty"`
 }
 
 func NewFile(exportKey key.ExportKey, now time.Time, mapping Mapping, resource *storageapi.File) File {

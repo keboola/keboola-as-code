@@ -33,6 +33,15 @@ func NewManager(client client.Sender) *Manager {
 	}
 }
 
+func (m *Manager) ImportFile(ctx context.Context, file model.File) (err error) {
+	r := storageapi.
+		LoadDataFromFileRequest(file.Mapping.TableID, file.StorageResource.ID, storageapi.WithIncrementalLoad(file.Mapping.Incremental), storageapi.WithoutHeader(true)).
+		WithOnSuccess(func(ctx context.Context, sender client.Sender, job *storageapi.Job) error {
+			return storageapi.WaitForJob(ctx, sender, job)
+		})
+	return r.SendOrErr(ctx, m.client)
+}
+
 func (m *Manager) EnsureTablesExist(ctx context.Context, rb rollback.Builder, receiver *model.Receiver) (err error) {
 	rb = rb.AddParallel()
 	wg := &sync.WaitGroup{}
