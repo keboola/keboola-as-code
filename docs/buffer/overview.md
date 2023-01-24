@@ -1,8 +1,10 @@
 # Buffer Architecture Overview
 
-- A Proxy API to buffer collected data and their import to Storage tables in batches.
+- The Buffer Service consists of API and Worker nodes.
+- API nodes contain configuration endpoints and collect data via the Import endpoint.
+- Worker nodes import the collected data into Storage tables in batches.
 
-**TODO Link to user docs**
+User documentation can be found at [https://developers.keboola.com/integrate/push-data/](https://developers.keboola.com/integrate/push-data/).
 
 ## API Entrypoint
 
@@ -30,10 +32,21 @@ See [internal/pkg/service/common/dependencies/dependencies.go](../../internal/pk
 for a detailed explanation of dependency injection and the command design pattern implementation.
 
 ## Worker Implementation
+Entrypoint: [cmd/buffer-worker/main.go](../../cmd/buffer-worker/main.go).
 
-- Entrypoint: [cmd/buffer-worker/main.go](../../cmd/buffer-worker/main.go)
+Worker behavior is implemented in [internal/pkg/service/buffer/worker/service/service.go](../../internal/pkg/service/buffer/worker/service/service.go).
 
-**TODO**
+The [`internal/pkg/service/buffer/watcher`](../../internal/pkg/service/buffer/watcher) package provides cache for API nodes
+and synchronization between API/Worker nodes. See [internal/pkg/service/buffer/watcher/watcher.go](../../internal/pkg/service/buffer/watcher/watcher.go) for details.
+
+The [`internal/pkg/service/buffer/worker/distribution`](../../internal/pkg/service/buffer/worker/distribution) package
+provides distribution of various keys/tasks between worker nodes. See [internal/pkg/service/buffer/worker/distribution/doc.go](../../internal/pkg/service/buffer/worker/distribution/doc.go) for details.
+
+The [`internal/pkg/service/buffer/worker/task`](../../internal/pkg/service/buffer/worker/task) package
+provides task abstraction for long-running operations in the Worker node.
+
+The [`internal/pkg/service/buffer/worker/task/orchestrator`](../../internal/pkg/service/buffer/worker/task/orchestrator) package
+combines `distribution.Node` and `task.Node` to run a task on one node in the cluster only, as a reaction to a watch event. See [internal/pkg/service/buffer/worker/task/orchestrator/orchestrator.go](../../internal/pkg/service/buffer/worker/task/orchestrator/orchestrator.go) for details.
 
 ## Resources
 
