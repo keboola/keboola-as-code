@@ -63,5 +63,8 @@ func (v Slice) GetStats() Stats {
 			v.SliceKey, v.State,
 		))
 	}
+	if v.Statistics == nil {
+		return Stats{}
+	}
 	return *v.Statistics
 }
