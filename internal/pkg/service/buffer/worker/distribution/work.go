@@ -73,7 +73,7 @@ func (n *Node) StartWork(ctx context.Context, wg *sync.WaitGroup, logger log.Log
 				logger.Infof("restart: distribution changed: %s", events.Messages())
 			case <-restartTicker.C:
 				// Reset periodically to fix stuck states, e.g. some task failed, so it must be started again.
-				logger.Info("restart: periodical")
+				logger.Debug("restart: periodical")
 			}
 
 			// Cancel previous work and try again
