@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/keboola/go-client/pkg/storageapi"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +48,7 @@ func TestUploadAndImportE2E(t *testing.T) {
 	api := service2.New(apiDeps)
 
 	// Create receiver and export
-	receiver, secret, _ := createReceiverAndExportViaAPI(t, apiDeps, api)
+	receiver, secret, export := createReceiverAndExportViaAPI(t, apiDeps, api)
 
 	// Start worker node
 	workerDeps := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("worker-node"))...)
@@ -100,6 +101,13 @@ func TestUploadAndImportE2E(t *testing.T) {
 		return conditionsOk && sliceCloseOk && sliceUploadOk && fileCloseWaitOk && fileCloseOk && fileImportOk
 	}, 60*time.Second, 100*time.Millisecond, logger.AllMessages())
 	logger.Truncate()
+
+	// Check the target table
+	table, err := storageapi.
+		GetTableRequest(storageapi.MustParseTableID(export.Mapping.TableID)).
+		Send(ctx, project.StorageAPIClient())
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(10), table.RowsCount)
 
 	// Shutdown
 	apiDeps.Process().Shutdown(errors.New("bye bye API"))
