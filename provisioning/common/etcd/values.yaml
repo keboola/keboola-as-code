@@ -62,7 +62,7 @@ auth:
     allowNoneAuthentication: false
   token:
     type: jwt
-    ttl: 10m
+    ttl: 10080m # temporary: https://github.com/etcd-io/etcd/pull/14995
 
 # Only internal communication is allowed: no public IP
 service:

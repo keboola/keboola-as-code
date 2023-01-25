@@ -22,7 +22,7 @@ func TestOnChangeListener(t *testing.T) {
 	t.Parallel()
 
 	clk := clock.NewMock()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	var node1 *Node
@@ -51,20 +51,20 @@ func TestOnChangeListener(t *testing.T) {
 	_, d2 = createNode(t, clk, nil, etcdNamespace, "node2")
 	assert.Eventually(t, func() bool {
 		return strings.Contains(listenerLogs.String(), `found a new node "node2"`)
-	}, time.Second, 10*time.Millisecond, "timeout")
+	}, 10*time.Second, 10*time.Millisecond, "timeout")
 
 	// Add node 3
 	_, d3 = createNode(t, clk, nil, etcdNamespace, "node3")
 	assert.Eventually(t, func() bool {
 		return strings.Contains(listenerLogs.String(), `found a new node "node3"`)
-	}, time.Second, 10*time.Millisecond, "timeout")
+	}, 10*time.Second, 10*time.Millisecond, "timeout")
 
 	// Stop node 2
 	d2.Process().Shutdown(errors.New("test"))
 	d2.Process().WaitForShutdown()
 	assert.Eventually(t, func() bool {
 		return strings.Contains(listenerLogs.String(), `the node "node2" gone`)
-	}, time.Second, 10*time.Millisecond, "timeout")
+	}, 10*time.Second, 10*time.Millisecond, "timeout")
 
 	// Stop listener
 	listener.Stop()

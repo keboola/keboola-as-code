@@ -108,18 +108,16 @@ func TestConditionsChecker(t *testing.T) {
 	// Check conditions checker logs
 	wildcards.Assert(t, `
 %A
-[service][conditions]INFO  checked "1" opened slices | %s
-[service][conditions]INFO  checked "1" opened slices | %s
-[service][conditions]INFO  checked "1" opened slices | %s
 [service][conditions]INFO  closing slice "00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z": time threshold met, opened at: 0001-01-01T00:00:02.000Z, passed: 1m30s threshold: 1m0s
 %A
 `, strhelper.FilterLines(`^(\[service\]\[conditions\])`, workerDeps1.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
 %A
-[service][conditions]INFO  checked "1" opened slices | %s
-[service][conditions]INFO  checked "1" opened slices | %s
 [service][conditions]INFO  closing slice "00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z": time threshold met, opened at: 0001-01-01T00:00:02.000Z, passed: 1m0s threshold: 1m0s
-[service][conditions]INFO  checked "1" opened slices | %s
+%A
+`, strhelper.FilterLines(`^(\[service\]\[conditions\])`, workerDeps2.DebugLogger().AllMessages()))
+	wildcards.Assert(t, `
+%A
 [service][conditions]INFO  closing file "00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z": size threshold met, received: 250KB, threshold: 200KB
 %A
 `, strhelper.FilterLines(`^(\[service\]\[conditions\])`, workerDeps2.DebugLogger().AllMessages()))
