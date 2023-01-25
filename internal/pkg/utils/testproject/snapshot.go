@@ -188,14 +188,14 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	grp.Go(func() error {
 		// Files metadata are not atomic, wait a moment.
 		// The creation/deletion of the file does not take effect immediately.
-		time.Sleep(50 * time.Millisecond)
-		request := storageapi.
+		time.Sleep(100 * time.Millisecond)
+		return storageapi.
 			ListFilesRequest().
 			WithOnSuccess(func(_ context.Context, _ client.Sender, apiFiles *[]*storageapi.File) error {
 				files = *apiFiles
 				return nil
-			})
-		return request.SendOrErr(ctx, p.storageAPIClient)
+			}).
+			SendOrErr(ctx, p.storageAPIClient)
 	})
 
 	// Wait for requests
