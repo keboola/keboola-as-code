@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
+	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	service2 "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service"
@@ -34,6 +35,7 @@ func TestUploadAndImportE2E(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
+	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	_ = etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	project := testproject.GetTestProjectForTest(t)
 	opts := []dependencies.MockedOption{
@@ -109,9 +111,334 @@ func TestUploadAndImportE2E(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(10), table.RowsCount)
 
+	// Check etcd state
+	assertStateAfterImport(t, client)
+
 	// Shutdown
 	apiDeps.Process().Shutdown(errors.New("bye bye API"))
 	apiDeps.Process().WaitForShutdown()
 	workerDeps.Process().Shutdown(errors.New("bye bye Worker"))
 	workerDeps.Process().WaitForShutdown()
+}
+
+func assertStateAfterImport(t *testing.T, client *etcd.Client) {
+	t.Helper()
+	etcdhelper.AssertKVs(t, client, `
+<<<<<
+config/export/%s/my-receiver/my-export
+-----
+%A
+>>>>>
+
+<<<<<
+config/mapping/revision/%s/my-receiver/my-export/00000001
+-----
+%A
+>>>>>
+
+<<<<<
+config/receiver/%s/my-receiver
+-----
+%A
+>>>>>
+
+<<<<<
+file/imported/%s/my-receiver/my-export/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "fileId": "%A",
+  "state": "imported",
+  "mapping": {
+%A
+  },
+  "storageResource": {
+%A
+  },
+  "closingAt": "%s",
+  "importingAt": "%s",
+  "importedAt": "%s"
+}
+>>>>>
+
+<<<<<
+file/opened/%s/my-receiver/my-export/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "fileId": "%s",
+  "state": "opened",
+  "mapping": {
+%A
+  },
+  "storageResource": {
+%A
+  }
+}
+>>>>>
+
+<<<<<
+runtime/api/node/watcher/cached/revision/api-node (lease=%d)
+-----
+%d
+>>>>>
+
+<<<<<
+runtime/last/record/id/%s/my-receiver/my-export
+-----
+10
+>>>>>
+
+<<<<<
+runtime/worker/node/active/id/worker-node (lease=%d)
+-----
+worker-node
+>>>>>
+
+<<<<<
+secret/export/token/%s/my-receiver/my-export
+-----
+%A
+>>>>>
+
+<<<<<
+slice/active/opened/writing/%s/my-receiver/my-export/%s/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "state": "active/opened/writing",
+  "mapping": {
+%A
+  },
+  "storageResource": {
+%A
+  },
+  "sliceNumber": 1
+}
+>>>>>
+
+<<<<<
+slice/archived/successful/imported/%s/my-receiver/my-export/%s/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "state": "archived/successful/imported",
+  "mapping": {
+%A
+  },
+  "storageResource": {
+%A
+  },
+  "sliceNumber": 1,
+  "closingAt": "%s",
+  "uploadingAt": "%s",
+  "uploadedAt": "%s",
+  "importedAt": "%s",
+  "statistics": {
+    "lastRecordAt": "%s",
+    "recordsCount": 6,
+    "recordsSize": "282B",
+    "bodySize": "60B",
+    "fileSize": "228B",
+    "fileGZipSize": "%s"
+  },
+  "idRange": {
+    "start": 1,
+    "count": 6
+  }
+}
+>>>>>
+
+<<<<<
+slice/archived/successful/imported/%s/my-receiver/my-export/%s/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "state": "archived/successful/imported",
+  "mapping": {
+%A
+  },
+  "storageResource": {
+%A
+  },
+  "sliceNumber": 2,
+  "closingAt": "%s",
+  "uploadingAt": "%s",
+  "uploadedAt": "%s",
+  "importedAt": "%s",
+  "statistics": {
+    "lastRecordAt": "%s",
+    "recordsCount": 4,
+    "recordsSize": "188B",
+    "bodySize": "40B",
+    "fileSize": "153B",
+    "fileGZipSize": "%s"
+  },
+  "idRange": {
+    "start": 7,
+    "count": 4
+  }
+}
+>>>>>
+
+<<<<<
+task/%s/my-receiver/my-export/file.close/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "type": "file.close",
+  "createdAt": "%s",
+  "randomId": "%s",
+  "finishedAt": "%s",
+  "workerNode": "worker-node",
+  "lock": "file.close/%s",
+  "result": "file closed",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
+task/%s/my-receiver/my-export/file.closing/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "type": "file.closing",
+  "createdAt": "%s",
+  "randomId": "%s",
+  "finishedAt": "%s",
+  "workerNode": "worker-node",
+  "lock": "file.closing/%s",
+  "result": "file switched to the closing state",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
+task/%s/my-receiver/my-export/file.import/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "type": "file.import",
+  "createdAt": "%s",
+  "randomId": "%s",
+  "finishedAt": "%s",
+  "workerNode": "worker-node",
+  "lock": "file.import/%s",
+  "result": "file imported",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
+task/%s/my-receiver/my-export/slice.close/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "type": "slice.close",
+  "createdAt": "%s",
+  "randomId": "%s",
+  "finishedAt": "%s",
+  "workerNode": "worker-node",
+  "lock": "slice.close/%s",
+  "result": "slice closed",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
+task/%s/my-receiver/my-export/slice.close/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "type": "slice.close",
+  "createdAt": "%s",
+  "randomId": "%s",
+  "finishedAt": "%s",
+  "workerNode": "worker-node",
+  "lock": "slice.close/%s",
+  "result": "slice closed",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
+task/%s/my-receiver/my-export/slice.closing/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "type": "slice.closing",
+  "createdAt": "%s",
+  "randomId": "%s",
+  "finishedAt": "%s",
+  "workerNode": "worker-node",
+  "lock": "slice.closing/%s",
+  "result": "slice switched to the closing state",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
+task/%s/my-receiver/my-export/slice.upload/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "type": "slice.upload",
+  "createdAt": "%s",
+  "randomId": "%s",
+  "finishedAt": "%s",
+  "workerNode": "worker-node",
+  "lock": "slice.upload/%s",
+  "result": "slice uploaded",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
+task/%s/my-receiver/my-export/slice.upload/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "type": "slice.upload",
+  "createdAt": "%s",
+  "randomId": "%s",
+  "finishedAt": "%s",
+  "workerNode": "worker-node",
+  "lock": "slice.upload/%s",
+  "result": "slice uploaded",
+  "duration": %d
+}
+>>>>>
+`)
 }

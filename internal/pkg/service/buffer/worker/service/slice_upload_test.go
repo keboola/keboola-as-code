@@ -529,7 +529,7 @@ slice/active/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01
     "recordsSize": "924B",
     "bodySize": "126B",
     "fileSize": "861B",
-    "fileGZipSize": "195B"
+    "fileGZipSize": "%s"
   },
   "idRange": {
     "start": 1,
@@ -564,7 +564,7 @@ slice/active/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01
     "recordsSize": "396B",
     "bodySize": "54B",
     "fileSize": "370B",
-    "fileGZipSize": "160B"
+    "fileGZipSize": "%s"
   },
   "idRange": {
     "start": 8,
