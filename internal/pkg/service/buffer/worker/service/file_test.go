@@ -316,24 +316,6 @@ task/%s/my-receiver/my-export/file.close/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/my-export/file.closing/%s
------
-{
-  "projectId": %d,
-  "receiverId": "my-receiver",
-  "exportId": "my-export",
-  "type": "file.closing",
-  "createdAt": "%s",
-  "randomId": "%s",
-  "finishedAt": "%s",
-  "workerNode": "worker-node",
-  "lock": "file.closing/%s",
-  "result": "file switched to the closing state",
-  "duration": %d
-}
->>>>>
-
-<<<<<
 task/%s/my-receiver/my-export/file.import/%s
 -----
 {
@@ -352,19 +334,19 @@ task/%s/my-receiver/my-export/file.import/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/my-export/slice.close/%s
+task/%s/my-receiver/my-export/file.swap/%s
 -----
 {
   "projectId": %d,
   "receiverId": "my-receiver",
   "exportId": "my-export",
-  "type": "slice.close",
+  "type": "file.swap",
   "createdAt": "%s",
   "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node",
-  "lock": "slice.close/%s",
-  "result": "slice closed",
+  "lock": "file.swap/%s",
+  "result": "new file created, the old is closing",
   "duration": %d
 }
 >>>>>
@@ -388,19 +370,37 @@ task/%s/my-receiver/my-export/slice.close/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/my-export/slice.closing/%s
+task/%s/my-receiver/my-export/slice.close/%s
 -----
 {
   "projectId": %d,
   "receiverId": "my-receiver",
   "exportId": "my-export",
-  "type": "slice.closing",
+  "type": "slice.close",
   "createdAt": "%s",
   "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node",
-  "lock": "slice.closing/%s",
-  "result": "slice switched to the closing state",
+  "lock": "slice.close/%s",
+  "result": "slice closed",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
+task/%s/my-receiver/my-export/slice.swap/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "type": "slice.swap",
+  "createdAt": "%s",
+  "randomId": "%s",
+  "finishedAt": "%s",
+  "workerNode": "worker-node",
+  "lock": "slice.swap/%s",
+  "result": "new slice created, the old is closing",
   "duration": %d
 }
 >>>>>
