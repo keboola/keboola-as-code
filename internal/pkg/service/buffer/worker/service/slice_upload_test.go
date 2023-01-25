@@ -184,7 +184,7 @@ func TestSliceUploadTask(t *testing.T) {
 [task][slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %s
 [task][slice.close/%s]INFO  task succeeded (0s): slice closed
 [task][slice.close/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.close/%s"
-[orchestrator][slice.close]INFO  restart: periodical
+[orchestrator][slice.close]DEBUG  restart: periodical
 [orchestrator][slice.close]INFO  assigned "00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z"
 [task][slice.close/%s]INFO  started task "00000123/my-receiver-2/my-export-2/slice.close/%s"
 [task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.close/%s"
@@ -207,7 +207,7 @@ func TestSliceUploadTask(t *testing.T) {
 [task][slice.upload/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.upload/%s"
 [task][slice.upload/%s]INFO  task succeeded (0s): slice uploaded
 [task][slice.upload/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.upload/%s"
-[orchestrator][slice.upload]INFO  restart: periodical
+[orchestrator][slice.upload]DEBUG  restart: periodical
 [orchestrator][slice.upload]INFO  assigned "00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z"
 [task][slice.upload/%s]INFO  started task "00000123/my-receiver-2/my-export-2/slice.upload/%s"
 [task][slice.upload/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.upload/%s"

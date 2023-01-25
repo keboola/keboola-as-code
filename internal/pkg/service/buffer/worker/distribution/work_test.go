@@ -122,11 +122,11 @@ func TestDistributedWork(t *testing.T) {
 %A
 [node1][work]INFO  ready
 [node1][work]INFO  assigned tasks: 1,2,3,4,5,6,7,8,9,10
-[node1][work]INFO  restart: periodical
+[node1][work]DEBUG  restart: periodical
 [node1][work]INFO  assigned tasks: 1,2,3,4,5,6,7,8,9,10
-[node1][work]INFO  restart: periodical
+[node1][work]DEBUG  restart: periodical
 [node1][work]INFO  assigned tasks: 1,2,3,4,5,6,7,8,9,10
-[node1][work]INFO  restart: periodical
+[node1][work]DEBUG  restart: periodical
 [node1][work]INFO  assigned tasks: 1,2,3,4,5,6,7,8,9,10
 [node1]INFO  exiting (bye bye 1)
 %A
