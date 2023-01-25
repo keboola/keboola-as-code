@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/sandboxesapi"
@@ -185,13 +186,16 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	// Storage Files
 	var files []*storageapi.File
 	grp.Go(func() error {
-		request := storageapi.
+		// Files metadata are not atomic, wait a moment.
+		// The creation/deletion of the file does not take effect immediately.
+		time.Sleep(100 * time.Millisecond)
+		return storageapi.
 			ListFilesRequest().
 			WithOnSuccess(func(_ context.Context, _ client.Sender, apiFiles *[]*storageapi.File) error {
 				files = *apiFiles
 				return nil
-			})
-		return request.SendOrErr(ctx, p.storageAPIClient)
+			}).
+			SendOrErr(ctx, p.storageAPIClient)
 	})
 
 	// Wait for requests

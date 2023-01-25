@@ -50,6 +50,7 @@
         "buffer.receiverID=receiver-b-my-id"
       ],
       "isSliced": true,
+      "isEncrypted": true,
       %A
     },
     {
@@ -59,6 +60,7 @@
         "buffer.receiverID=receiver-b-my-id"
       ],
       "isSliced": true,
+      "isEncrypted": true,
       %A
     }
   ]

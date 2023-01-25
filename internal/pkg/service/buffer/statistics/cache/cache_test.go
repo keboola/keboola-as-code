@@ -51,8 +51,8 @@ func TestCacheNode(t *testing.T) {
 	columns := []column.Column{column.ID{Name: "col1"}, column.Body{Name: "col2"}}
 	mappingKey := key.MappingKey{ExportKey: exportKey, RevisionID: 1}
 	mapping := model.Mapping{MappingKey: mappingKey, TableID: tableID, Columns: columns}
-	slice1 := model.Slice{SliceKey: slice1Key, State: slicestate.Opened, Mapping: mapping, StorageResource: &storageapi.File{}, Number: 1}
-	slice2 := model.Slice{SliceKey: slice2Key, State: slicestate.Opened, Mapping: mapping, StorageResource: &storageapi.File{}, Number: 1}
+	slice1 := model.Slice{SliceKey: slice1Key, State: slicestate.Writing, Mapping: mapping, StorageResource: &storageapi.File{}, Number: 1}
+	slice2 := model.Slice{SliceKey: slice2Key, State: slicestate.Writing, Mapping: mapping, StorageResource: &storageapi.File{}, Number: 1}
 
 	// Create records for the sliceS1
 	assert.NoError(t, str.CreateSlice(ctx, slice1))

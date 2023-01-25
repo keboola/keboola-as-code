@@ -20,17 +20,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// CheckConditionsInterval defines how often it will be checked upload and import conditions.
-const CheckConditionsInterval = 30 * time.Second
-
 // MinimalCredentialsExpiration which triggers the import.
 const MinimalCredentialsExpiration = time.Hour
 
 type checker struct {
 	*Service
-	logger           log.Logger
-	assigner         *distribution.Assigner
-	uploadConditions model.Conditions
+	logger   log.Logger
+	assigner *distribution.Assigner
 
 	lock             *sync.RWMutex
 	importConditions cachedConditions
@@ -51,7 +47,6 @@ func startChecker(ctx context.Context, wg *sync.WaitGroup, s *Service, assigner 
 		Service:          s,
 		logger:           s.logger.AddPrefix("[conditions]"),
 		assigner:         assigner,
-		uploadConditions: model.UploadConditions(),
 		lock:             &sync.RWMutex{},
 		importConditions: make(cachedConditions),
 		openedSlices:     make(cachedSlices),
@@ -125,7 +120,7 @@ func (c *checker) check(ctx context.Context) {
 		}
 
 		// Check upload conditions
-		if met, reason := c.uploadConditions.Evaluate(now, sliceKey.OpenedAt(), c.stats.SliceStats(sliceKey).Total); met {
+		if met, reason := c.config.uploadConditions.Evaluate(now, sliceKey.OpenedAt(), c.stats.SliceStats(sliceKey).Total); met {
 			if err := c.closeSlice(ctx, sliceKey, reason); err != nil {
 				c.logger.Error(err)
 			}
@@ -164,7 +159,7 @@ func (c *checker) watchImportConditions(ctx context.Context, wg *sync.WaitGroup)
 
 func (c *checker) watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup) <-chan error {
 	// Watch opened slices
-	return c.schema.Slices().Opened().
+	return c.schema.Slices().Writing().
 		GetAllAndWatch(ctx, c.etcdClient, etcd.WithPrevKV()).
 		SetupConsumer(c.logger).
 		WithForEach(func(events []etcdop.WatchEventT[model.Slice], header *etcdop.Header, restart bool) {
@@ -198,7 +193,7 @@ func (c *checker) startTicker(ctx context.Context, wg *sync.WaitGroup) {
 	go func() {
 		defer wg.Done()
 
-		ticker := c.clock.Ticker(CheckConditionsInterval)
+		ticker := c.clock.Ticker(c.config.checkConditionsInterval)
 		defer ticker.Stop()
 
 		for {
@@ -213,8 +208,8 @@ func (c *checker) startTicker(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (c *checker) closeFile(ctx context.Context, fileKey key.FileKey, reason string) (err error) {
-	lock := "file.closing/" + fileKey.FileID.String()
-	_, err = c.tasks.StartTask(ctx, fileKey.ExportKey, "file.closing", lock, func(ctx context.Context, logger log.Logger) (task.Result, error) {
+	lock := "file.swap/" + fileKey.FileID.String()
+	_, err = c.tasks.StartTask(ctx, fileKey.ExportKey, "file.swap", lock, func(ctx context.Context, logger log.Logger) (task.Result, error) {
 		c.logger.Infof(`closing file "%s": %s`, fileKey, reason)
 		rb := rollback.New(c.logger)
 		defer rb.InvokeIfErr(ctx, &err)
@@ -246,14 +241,14 @@ func (c *checker) closeFile(ctx context.Context, fileKey key.FileKey, reason str
 			return "", errors.Errorf(`cannot close file "%s": cannot swap old and new file: %w`, fileKey.String(), err)
 		}
 
-		return "file switched to the closing state", nil
+		return "new file created, the old is closing", nil
 	})
 	return err
 }
 
 func (c *checker) closeSlice(ctx context.Context, sliceKey key.SliceKey, reason string) (err error) {
-	lock := "slice.closing/" + sliceKey.SliceID.String()
-	_, err = c.tasks.StartTask(ctx, sliceKey.ExportKey, "slice.closing", lock, func(ctx context.Context, logger log.Logger) (task.Result, error) {
+	lock := "slice.swap/" + sliceKey.SliceID.String()
+	_, err = c.tasks.StartTask(ctx, sliceKey.ExportKey, "slice.swap", lock, func(ctx context.Context, logger log.Logger) (task.Result, error) {
 		c.logger.Infof(`closing slice "%s": %s`, sliceKey, reason)
 		rb := rollback.New(c.logger)
 		defer rb.InvokeIfErr(ctx, &err)
@@ -276,7 +271,7 @@ func (c *checker) closeSlice(ctx context.Context, sliceKey key.SliceKey, reason 
 			return "", errors.Errorf(`cannot close slice "%s": cannot swap old and new slice: %w`, sliceKey.String(), err)
 		}
 
-		return "slice switched to the closing state", nil
+		return "new slice created, the old is closing", nil
 	})
 	return err
 }

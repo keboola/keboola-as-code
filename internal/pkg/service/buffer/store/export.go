@@ -262,7 +262,7 @@ func (s *Store) DeleteExport(ctx context.Context, exportKey key.ExportKey) (err 
 		s.schema.Files().Importing().InExport(exportKey).DeleteAll(),
 		s.schema.Files().Imported().InExport(exportKey).DeleteAll(),
 		s.schema.Files().Failed().InExport(exportKey).DeleteAll(),
-		s.schema.Slices().Opened().InExport(exportKey).DeleteAll(),
+		s.schema.Slices().Writing().InExport(exportKey).DeleteAll(),
 		s.schema.Slices().Closing().InExport(exportKey).DeleteAll(),
 		s.schema.Slices().Uploading().InExport(exportKey).DeleteAll(),
 		s.schema.Slices().Uploaded().InExport(exportKey).DeleteAll(),

@@ -24,17 +24,22 @@ type Manager struct {
 	singleCreateBucket *singleflight.Group
 }
 
-type dependencies interface {
-	StorageAPIClient() client.Sender
-}
-
-func NewManager(d dependencies) *Manager {
+func NewManager(client client.Sender) *Manager {
 	return &Manager{
-		client:             d.StorageAPIClient(),
+		client:             client,
 		lock:               &sync.Mutex{},
 		singleGetBucket:    &singleflight.Group{},
 		singleCreateBucket: &singleflight.Group{},
 	}
+}
+
+func (m *Manager) ImportFile(ctx context.Context, file model.File) (err error) {
+	r := storageapi.
+		LoadDataFromFileRequest(file.Mapping.TableID, file.StorageResource.ID, storageapi.WithIncrementalLoad(file.Mapping.Incremental), storageapi.WithoutHeader(true)).
+		WithOnSuccess(func(ctx context.Context, sender client.Sender, job *storageapi.Job) error {
+			return storageapi.WaitForJob(ctx, sender, job)
+		})
+	return r.SendOrErr(ctx, m.client)
 }
 
 func (m *Manager) EnsureTablesExist(ctx context.Context, rb rollback.Builder, receiver *model.Receiver) (err error) {
@@ -63,12 +68,8 @@ func (m *Manager) EnsureTableExists(ctx context.Context, rb rollback.Builder, ex
 	table, err := storageapi.GetTableRequest(tableID).Send(ctx, m.client)
 	var apiErr *storageapi.Error
 	if errors.As(err, &apiErr) && apiErr.ErrCode == "storage.tables.notFound" {
-		var opts []storageapi.CreateTableOption
-		if len(primaryKey) > 0 {
-			opts = append(opts, storageapi.WithPrimaryKey(primaryKey))
-		}
 		// Table doesn't exist -> create it
-		if req, err := storageapi.CreateTableDeprecatedSyncRequest(tableID, columns, opts...); err != nil {
+		if req, err := storageapi.CreateTableDeprecatedSyncRequest(tableID, columns, storageapi.WithPrimaryKey(primaryKey)); err != nil {
 			return err
 		} else if table, err = req.Send(ctx, m.client); err != nil {
 			return err

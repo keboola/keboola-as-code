@@ -9,6 +9,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/table"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
 	bufferStore "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	bufferSchema "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
@@ -31,6 +34,12 @@ type Mocked interface {
 	TaskWorkerNode() *task.Node
 	StatsCacheNode() *statistics.CacheNode
 	EventSender() *event.Sender
+
+	// Token based:
+
+	TokenManager() *token.Manager
+	TableManager() *table.Manager
+	FileManager() *file.Manager
 }
 
 type mocked struct {
@@ -45,6 +54,9 @@ type mocked struct {
 	taskWorkerNode     *task.Node
 	statsCacheNode     *statistics.CacheNode
 	eventSender        *event.Sender
+	tokenManager       *token.Manager
+	tableManager       *table.Manager
+	fileManager        *file.Manager
 }
 
 func NewMockedDeps(t *testing.T, opts ...dependencies.MockedOption) Mocked {
@@ -143,4 +155,25 @@ func (v *mocked) EventSender() *event.Sender {
 		v.eventSender = event.NewSender(v.Logger(), v.StorageAPIClient())
 	}
 	return v.eventSender
+}
+
+func (v *mocked) TokenManager() *token.Manager {
+	if v.tokenManager == nil {
+		v.tokenManager = token.NewManager(v)
+	}
+	return v.tokenManager
+}
+
+func (v *mocked) TableManager() *table.Manager {
+	if v.tableManager == nil {
+		v.tableManager = table.NewManager(v.StorageAPIClient())
+	}
+	return v.tableManager
+}
+
+func (v *mocked) FileManager() *file.Manager {
+	if v.fileManager == nil {
+		v.fileManager = file.NewManager(v.Clock(), v.StorageAPIClient(), nil)
+	}
+	return v.fileManager
 }

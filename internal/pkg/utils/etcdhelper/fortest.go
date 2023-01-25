@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
@@ -61,7 +62,16 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespac
 
 	// Setup logger
 	var logger *zap.Logger
-	if testhelper.TestIsVerbose() {
+
+	// Should be logger enabled?
+	verboseStr, found := os.LookupEnv("ETCD_VERBOSE")
+	verbose := found && strings.ToLower(verboseStr) == "true"
+	if !found {
+		verbose = testhelper.TestIsVerbose()
+	}
+
+	// Enable logger
+	if verbose {
 		encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
 		logger = zap.New(log.NewCallbackCore(func(entry zapcore.Entry, fields []zapcore.Field) {
 			if entry.Level > log.DebugLevel {
@@ -109,7 +119,9 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespac
 	etcdClient.Watcher = namespace.NewWatcher(etcdClient.Watcher, namespaceStr)
 
 	// Add operations logger
-	etcdClient.KV = KVLogWrapper(etcdClient.KV, testhelper.VerboseStdout())
+	if verbose {
+		etcdClient.KV = KVLogWrapper(etcdClient.KV, os.Stdout)
+	}
 
 	// Cleanup namespace after the test
 	t.Cleanup(func() {

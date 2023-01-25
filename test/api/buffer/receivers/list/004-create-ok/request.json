@@ -17,10 +17,12 @@
           "incremental": true,
           "columns": [
             {
+              "primaryKey": false,
               "type": "id",
               "name": "id"
             },
             {
+              "primaryKey": false,
               "type": "template",
               "name": "template",
               "template": {
@@ -38,14 +40,17 @@
           "incremental": false,
           "columns": [
             {
+              "primaryKey": false,
               "type": "id",
               "name": "id"
             },
             {
+              "primaryKey": false,
               "type": "body",
               "name": "body"
             },
             {
+              "primaryKey": false,
               "type": "headers",
               "name": "headers"
             }

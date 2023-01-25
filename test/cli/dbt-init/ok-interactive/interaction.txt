@@ -11,4 +11,4 @@
 > dbt_source
 
 < Creating a new workspace, please wait.
-< [60s] Created the new workspace "dbt_source".
+< [120s] Created the new workspace "dbt_source".

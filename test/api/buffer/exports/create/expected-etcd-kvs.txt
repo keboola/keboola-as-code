@@ -83,8 +83,8 @@
     "id": %d,
     "created": "%s",
     "isSliced": true,
+    "isEncrypted": true,
     %A
-    "federationToken": true
   }
 }
 >>>>>
@@ -96,7 +96,7 @@
 >>>>>
 
 <<<<<
-/slice/active/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s
+/slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -104,7 +104,7 @@
   "exportId": "my-export-1",
   "fileId": "%s",
   "sliceId": "%s",
-  "state": "opened",
+  "state": "active/opened/writing",
   "mapping": {
     "projectId": %%TEST_KBC_PROJECT_ID%%,
     "receiverId": "my-receiver",

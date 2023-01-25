@@ -90,6 +90,15 @@ func New(d dependencies, ops ...Option) (*Service, error) {
 	if s.config.retryFailedSlices {
 		init = append(init, s.retryFailedUploads(ctx, wg, d))
 	}
+	if s.config.closeFiles {
+		init = append(init, s.closeFiles(ctx, wg, d))
+	}
+	if s.config.importFiles {
+		init = append(init, s.importFiles(ctx, wg, d))
+	}
+	if s.config.retryFailedFiles {
+		init = append(init, s.retryFailedImports(ctx, wg, d))
+	}
 
 	// Check initialization
 	errs := errors.NewMultiError()

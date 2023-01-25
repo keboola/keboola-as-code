@@ -44,11 +44,9 @@ func ExportForTest(receiverKey key.ReceiverKey, exportID, tableID string, column
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: key.ExportID(exportID)}
 	fileKey := key.FileKey{ExportKey: exportKey, FileID: key.FileID(now)}
 	sliceKey := key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(now)}
-	mapping := Mapping{
-		MappingKey: key.MappingKey{ExportKey: exportKey, RevisionID: 1},
-		TableID:    storageapi.MustParseTableID(tableID),
-		Columns:    columns,
-	}
+	mapping := MappingForTest(exportKey)
+	mapping.TableID = storageapi.MustParseTableID(tableID)
+	mapping.Columns = columns
 	return Export{
 		ExportBase: ExportBase{
 			ExportKey:        exportKey,
@@ -68,10 +66,18 @@ func ExportForTest(receiverKey key.ReceiverKey, exportID, tableID string, column
 		},
 		OpenedSlice: Slice{
 			SliceKey:        sliceKey,
-			State:           slicestate.Opened,
+			State:           slicestate.Writing,
 			Mapping:         mapping,
 			StorageResource: &storageapi.File{},
 			Number:          1,
 		},
+	}
+}
+
+func MappingForTest(exportKey key.ExportKey) Mapping {
+	return Mapping{
+		MappingKey: key.MappingKey{ExportKey: exportKey, RevisionID: 1},
+		TableID:    storageapi.MustParseTableID("in.c-table.table1"),
+		Columns:    []column.Column{column.ID{Name: "id"}},
 	}
 }

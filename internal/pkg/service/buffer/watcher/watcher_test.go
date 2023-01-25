@@ -194,7 +194,7 @@ func updateExport(t *testing.T, ctx context.Context, client *etcd.Client, str *s
 			}
 			export.OpenedSlice = model.Slice{
 				SliceKey:        sliceKey2,
-				State:           slicestate.Opened,
+				State:           slicestate.Writing,
 				Mapping:         newMapping,
 				StorageResource: &storageapi.File{},
 				Number:          1,

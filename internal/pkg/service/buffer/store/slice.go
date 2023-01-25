@@ -28,7 +28,7 @@ func (s *Store) CreateSlice(ctx context.Context, slice model.Slice) (err error) 
 func (s *Store) createSliceOp(_ context.Context, slice model.Slice) op.BoolOp {
 	return s.schema.
 		Slices().
-		Opened().
+		InState(slice.State).
 		ByKey(slice.SliceKey).
 		PutIfNotExists(slice).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, ok bool, err error) (bool, error) {
@@ -53,7 +53,7 @@ func (s *Store) GetSlice(ctx context.Context, sliceKey key.SliceKey) (r model.Sl
 func (s *Store) getSliceOp(_ context.Context, sliceKey key.SliceKey) op.ForType[*op.KeyValueT[model.Slice]] {
 	return s.schema.
 		Slices().
-		Opened().
+		Writing().
 		ByKey(sliceKey).
 		Get().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Slice], err error) (*op.KeyValueT[model.Slice], error) {
@@ -68,7 +68,7 @@ func (s *Store) getOpenedSliceOp(_ context.Context, exportKey key.ExportKey, opt
 	opts = append(opts, etcd.WithSort(etcd.SortByKey, etcd.SortDescend))
 	return s.schema.
 		Slices().
-		Opened().
+		Writing().
 		InExport(exportKey).
 		GetOne(opts...).
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Slice], err error) (*op.KeyValueT[model.Slice], error) {
@@ -262,17 +262,27 @@ func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model
 	}
 
 	// Atomically swap keys in the transaction
+	alreadyInState := false
 	return op.
 		MergeToTxn(
-			s.schema.Slices().InState(from).ByKey(slice.SliceKey).DeleteIfExists(),
-			s.schema.Slices().InState(to).ByKey(slice.SliceKey).PutIfNotExists(clone),
+			s.schema.Slices().InState(to).ByKey(slice.SliceKey).PutIfNotExists(clone).WithOnResultOrErr(func(ok bool) error {
+				if !ok {
+					alreadyInState = true
+					slice.State = to
+					return errors.Errorf(`slice "%s" is already in the "%s" state`, slice.SliceKey, to)
+				}
+				return nil
+			}),
+			s.schema.Slices().InState(from).ByKey(slice.SliceKey).DeleteIfExists().WithOnResultOrErr(func(ok bool) error {
+				if !ok && !alreadyInState {
+					return errors.Errorf(`slice "%s" not found in the "%s" state`, slice.SliceKey, slice.State)
+				}
+				return nil
+			}),
 		).
 		WithProcessor(func(_ context.Context, _ *etcd.TxnResponse, result op.TxnResult, err error) error {
 			if err == nil {
 				*slice = clone
-				if !result.Succeeded {
-					return errors.Errorf(`slice "%s" is already in the "uploading" state`, slice.SliceKey)
-				}
 			}
 			return err
 		}), nil
@@ -282,7 +292,7 @@ func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model
 // So the ID range for slice records can be generated.
 func assertAllPrevSlicesClosed(schema *schema.Schema, k key.SliceKey) op.Op {
 	return op.MergeToTxn(
-		assertNoPreviousSliceInState(schema, k, slicestate.Opened),
+		assertNoPreviousSliceInState(schema, k, slicestate.Writing),
 		assertNoPreviousSliceInState(schema, k, slicestate.Closing),
 	)
 }

@@ -73,6 +73,9 @@ func TestConditionsChecker(t *testing.T) {
 		service.WithCloseSlices(false),
 		service.WithUploadSlices(false),
 		service.WithRetryFailedSlices(false),
+		service.WithCloseFiles(false),
+		service.WithImportFiles(false),
+		service.WithRetryFailedFiles(false),
 	}
 	_, err := service.New(workerDeps1, serviceOps...)
 	assert.NoError(t, err)
@@ -80,18 +83,18 @@ func TestConditionsChecker(t *testing.T) {
 	assert.NoError(t, err)
 
 	time.Sleep(time.Second)
-	clk.Add(service.CheckConditionsInterval)
+	clk.Add(service.DefaultCheckConditionsInterval)
 	apiStats.Notify(sliceKey1, 100*datasize.KB, 300*datasize.KB)
 	<-apiStats.Sync(ctx)
 	time.Sleep(time.Second)
-	clk.Add(service.CheckConditionsInterval)
+	clk.Add(service.DefaultCheckConditionsInterval)
 	apiStats.Notify(sliceKey1, 150*datasize.KB, 300*datasize.KB)
 	apiStats.Notify(sliceKey2, 10*datasize.KB, 10*datasize.KB)
 	<-apiStats.Sync(ctx)
 	time.Sleep(time.Second)
-	clk.Add(service.CheckConditionsInterval)
+	clk.Add(service.DefaultCheckConditionsInterval)
 	time.Sleep(time.Second)
-	clk.Add(service.CheckConditionsInterval)
+	clk.Add(service.DefaultCheckConditionsInterval)
 
 	// Shutdown
 	time.Sleep(2 * time.Second)
@@ -124,22 +127,22 @@ func TestConditionsChecker(t *testing.T) {
 	// Check conditions checker logs
 	wildcards.Assert(t, `
 %A
-[task][slice.closing/%s]INFO  started task "00000123/my-receiver-B/my-export-2/slice.closing/%s"
-[task][slice.closing/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-B/my-export-2/slice.closing/%s"
-[task][slice.closing/%s]INFO  task succeeded (%s): slice switched to the closing state
-[task][slice.closing/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-B/my-export-2/slice.closing/%s"
+[task][slice.swap/%s]INFO  started task "00000123/my-receiver-B/my-export-2/slice.swap/%s"
+[task][slice.swap/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-B/my-export-2/slice.swap/%s"
+[task][slice.swap/%s]INFO  task succeeded (%s): new slice created, the old is closing
+[task][slice.swap/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-B/my-export-2/slice.swap/%s"
 %A
 `, strhelper.FilterLines(`^(\[task\])`, workerDeps1.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
 %A
-[task][slice.closing/%s]INFO  started task "00000123/my-receiver-A/my-export-1/slice.closing/%s"
-[task][slice.closing/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-A/my-export-1/slice.closing/%s"
-[task][slice.closing/%s]INFO  task succeeded (%s): slice switched to the closing state
-[task][slice.closing/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-A/my-export-1/slice.closing/%s"
-[task][file.closing/%s]INFO  started task "00000123/my-receiver-A/my-export-1/file.closing/%s"
-[task][file.closing/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-A/my-export-1/file.closing/%s"
-[task][file.closing/%s]INFO  task succeeded (%s): file switched to the closing state
-[task][file.closing/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-A/my-export-1/file.closing/%s"
+[task][slice.swap/%s]INFO  started task "00000123/my-receiver-A/my-export-1/slice.swap/%s"
+[task][slice.swap/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-A/my-export-1/slice.swap/%s"
+[task][slice.swap/%s]INFO  task succeeded (%s): new slice created, the old is closing
+[task][slice.swap/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-A/my-export-1/slice.swap/%s"
+[task][file.swap/%s]INFO  started task "00000123/my-receiver-A/my-export-1/file.swap/%s"
+[task][file.swap/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-A/my-export-1/file.swap/%s"
+[task][file.swap/%s]INFO  task succeeded (%s): new file created, the old is closing
+[task][file.swap/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-A/my-export-1/file.swap/%s"
 %A
 `, strhelper.FilterLines(`^(\[task\])`, workerDeps2.DebugLogger().AllMessages()))
 
@@ -222,30 +225,30 @@ secret/export/token/00000123/my-receiver-B/my-export-2
 >>>>>
 
 <<<<<
-slice/active/closing/00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z
+slice/active/opened/closing/00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z
 -----
 %A
 >>>>>
 
 <<<<<
-slice/active/closing/00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/0001-01-01T00:01:02.000Z
+slice/active/opened/closing/00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/0001-01-01T00:01:02.000Z
 -----
 %A
 >>>>>
 
 <<<<<
-slice/active/closing/00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z
+slice/active/opened/closing/00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z
 -----
 %A
 >>>>>
 
 <<<<<
-slice/active/opened/00000123/my-receiver-A/my-export-1/%s
+slice/active/opened/writing/00000123/my-receiver-A/my-export-1/%s
 %A
 >>>>>
 
 <<<<<
-slice/active/opened/00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/%s
+slice/active/opened/writing/00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/%s
 %A
 >>>>>
 
@@ -260,55 +263,55 @@ stats/received/00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/0001-
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-A/my-export-1/file.closing/%s
+task/00000123/my-receiver-A/my-export-1/file.swap/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver-A",
   "exportId": "my-export-1",
-  "type": "file.closing",
+  "type": "file.swap",
   "createdAt": "%s",
   "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node-2",
-  "lock": "file.closing/%s",
-  "result": "file switched to the closing state",
+  "lock": "file.swap/%s",
+  "result": "new file created, the old is closing",
   "duration": 0
 }
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-A/my-export-1/slice.closing/%s
+task/00000123/my-receiver-A/my-export-1/slice.swap/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver-A",
   "exportId": "my-export-1",
-  "type": "slice.closing",
+  "type": "slice.swap",
   "createdAt": "%s",
   "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node-2",
-  "lock": "slice.closing/%s",
-  "result": "slice switched to the closing state",
+  "lock": "slice.swap/%s",
+  "result": "new slice created, the old is closing",
   "duration": 0
 }
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-B/my-export-2/slice.closing/%s
+task/00000123/my-receiver-B/my-export-2/slice.swap/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver-B",
   "exportId": "my-export-2",
-  "type": "slice.closing",
+  "type": "slice.swap",
   "createdAt": "%s",
   "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node-1",
-  "lock": "slice.closing/%s",
-  "result": "slice switched to the closing state",
+  "lock": "slice.swap/%s",
+  "result": "new slice created, the old is closing",
   "duration": 0
 }
 >>>>>

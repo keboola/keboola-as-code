@@ -19,8 +19,7 @@ import (
 )
 
 const (
-	DateFormat = "20060102150405"
-	gzipLevel  = 2 // 1 - BestSpeed, 9 - BestCompression
+	gzipLevel = 2 // 1 - BestSpeed, 9 - BestCompression
 )
 
 type Manager struct {
@@ -111,9 +110,10 @@ func (m *Manager) createFile(ctx context.Context, rb rollback.Builder, mapping m
 
 	resource, err := storageapi.
 		CreateFileResourceRequest(&storageapi.File{
-			Name:     fileName,
-			IsSliced: true,
-			Tags:     []string{fmt.Sprintf("buffer.exportID=%s", mapping.ExportID.String()), fmt.Sprintf("buffer.receiverID=%s", mapping.ReceiverID.String())},
+			Name:        fileName,
+			IsSliced:    true,
+			IsEncrypted: true,
+			Tags:        []string{fmt.Sprintf("buffer.exportID=%s", mapping.ExportID.String()), fmt.Sprintf("buffer.receiverID=%s", mapping.ReceiverID.String())},
 		}).
 		Send(ctx, m.client)
 	if err != nil {

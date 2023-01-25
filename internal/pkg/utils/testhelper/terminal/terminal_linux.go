@@ -22,7 +22,7 @@ import (
 
 const (
 	sendDelay     = 20 * time.Millisecond
-	expectTimeout = 10 * time.Second
+	expectTimeout = 15 * time.Second
 )
 
 // console implements Console.

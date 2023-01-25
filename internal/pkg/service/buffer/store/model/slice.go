@@ -19,7 +19,7 @@ const (
 // A change in the mapping causes a new file and slice to be created so the mapping is immutable.
 type Slice struct {
 	key.SliceKey
-	State           slicestate.State `json:"state" validate:"required,oneof=opened closing closed uploading uploaded failed imported"`
+	State           slicestate.State `json:"state" validate:"required,oneof=active/opened/writing active/opened/closing active/closed/uploading active/closed/uploaded active/closed/failed archived/successful/imported"`
 	IsEmpty         bool             `json:"isEmpty,omitempty"`
 	Mapping         Mapping          `json:"mapping" validate:"required,dive"`
 	StorageResource *storageapi.File `json:"storageResource" validate:"required"`
@@ -45,7 +45,7 @@ type SliceIDRange struct {
 func NewSlice(fileKey key.FileKey, now time.Time, mapping Mapping, number int, resource *storageapi.File) Slice {
 	return Slice{
 		SliceKey:        key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(now)},
-		State:           slicestate.Opened,
+		State:           slicestate.Writing,
 		Mapping:         mapping,
 		StorageResource: resource,
 		Number:          number,
@@ -57,7 +57,7 @@ func (v Slice) Filename() string {
 }
 
 func (v Slice) GetStats() Stats {
-	if v.State == slicestate.Opened || v.State == slicestate.Closing {
+	if v.State == slicestate.Writing || v.State == slicestate.Closing {
 		panic(errors.Errorf(
 			`slice "%s" in the state "%s" doesn't contain statistics, the state must be uploaded/failed`,
 			v.SliceKey, v.State,

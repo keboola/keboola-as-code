@@ -22,7 +22,7 @@ func TestManager_EnsureBucketExists(t *testing.T) {
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
-	m := NewManager(d)
+	m := NewManager(d.StorageAPIClient())
 	rb := rollback.New(d.Logger())
 	client := p.StorageAPIClient()
 
@@ -57,7 +57,7 @@ func TestManager_EnsureTableExists(t *testing.T) {
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
-	m := NewManager(d)
+	m := NewManager(d.StorageAPIClient())
 	rb := rollback.New(d.Logger())
 	client := p.StorageAPIClient()
 

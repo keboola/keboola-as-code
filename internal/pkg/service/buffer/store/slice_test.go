@@ -31,7 +31,7 @@ func TestStore_CreateSlice(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-slice/active/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/active/opened/writing/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -39,7 +39,7 @@ slice/active/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006
   "exportId": "my-export",
   "fileId": "2006-01-01T08:04:05.000Z",
   "sliceId": "2006-01-02T08:04:05.000Z",
-  "state": "opened",
+  "state": "active/opened/writing",
   "mapping": {
     "projectId": 1000,
     "receiverId": "my-receiver",
@@ -80,7 +80,7 @@ func TestStore_GetSliceOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-slice/active/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/active/opened/writing/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -88,7 +88,7 @@ slice/active/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006
   "exportId": "my-export",
   "fileId": "2006-01-01T08:04:05.000Z",
   "sliceId": "2006-01-02T08:04:05.000Z",
-  "state": "opened",
+  "state": "active/opened/writing",
   "mapping": {
     "projectId": 1000,
     "receiverId": "my-receiver",
@@ -117,7 +117,7 @@ func TestStore_SetSliceState_Transitions(t *testing.T) {
 
 	// Test all transitions
 	testCases := []struct{ from, to slicestate.State }{
-		{slicestate.Opened, slicestate.Closing},
+		{slicestate.Writing, slicestate.Closing},
 		{slicestate.Closing, slicestate.Uploading},
 		{slicestate.Uploading, slicestate.Failed},
 		{slicestate.Failed, slicestate.Uploading},
@@ -140,15 +140,15 @@ func TestStore_SetSliceState_Transitions(t *testing.T) {
 		assert.Equal(t, tc.to, slice.State, desc)
 		expected := `
 <<<<<
-slice/<PREFIX>/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/<FULL_STATE>/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 %A
-  "state": "<STATE>",%A
-  "<STATE>At": "2009-12-31T18:01:01.000Z"%A
+  "state": "<FULL_STATE>",%A
+  "<SHORT_STATE>At": "2009-12-31T18:01:01.000Z"%A
 >>>>>
 `
-		expected = strings.ReplaceAll(expected, "<PREFIX>", tc.to.Prefix())
-		expected = strings.ReplaceAll(expected, "<STATE>", tc.to.String())
+		expected = strings.ReplaceAll(expected, "<FULL_STATE>", tc.to.String())
+		expected = strings.ReplaceAll(expected, "<SHORT_STATE>", tc.to.StateShort())
 		etcdhelper.AssertKVs(t, store.client, expected)
 
 		// Test duplicated transition -> nop
@@ -208,7 +208,7 @@ func TestStore_ListUploadedSlices(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVs(t, store.client, `
 <<<<<
-slice/closed/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/active/closed/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -216,7 +216,7 @@ slice/closed/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/20
   "exportId": "my-export",
   "fileId": "2006-01-01T08:04:05.000Z",
   "sliceId": "2006-01-02T08:04:05.000Z",
-  "state": "uploaded",
+  "state": "active/closed/uploaded",
   "mapping": {
     "projectId": 1000,
     "receiverId": "my-receiver",
@@ -239,7 +239,7 @@ slice/closed/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/20
 >>>>>
 
 <<<<<
-slice/closed/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-03T08:04:05.000Z
+slice/active/closed/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-03T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -247,7 +247,7 @@ slice/closed/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/20
   "exportId": "my-export",
   "fileId": "2006-01-01T08:04:05.000Z",
   "sliceId": "2006-01-03T08:04:05.000Z",
-  "state": "uploaded",
+  "state": "active/closed/uploaded",
   "mapping": {
     "projectId": 1000,
     "receiverId": "my-receiver",
