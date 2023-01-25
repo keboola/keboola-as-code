@@ -168,6 +168,7 @@ func New(ctx context.Context, proc *servicectx.Process, tracer trace.Tracer, end
 		Username:             conf.username, // optional
 		Password:             conf.password, // optional
 		Logger:               etcdLogger,
+		PermitWithoutStream:  true, // always send keep-alive pings
 		DialOptions: []grpc.DialOption{
 			grpc.WithBlock(), // wait for the connection
 			grpc.WithReturnConnectionError(),
