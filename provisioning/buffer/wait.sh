@@ -15,6 +15,7 @@ KUBERNETES_ROLLOUT_WAIT="${KUBERNETES_ROLLOUT_WAIT:=1200s}"
 echo
 echo "Waiting for the etcd rollout ..."
 echo "--------------------------"
+kubectl rollout restart sts/buffer-etcd --namespace "$NAMESPACE"
 if kubectl rollout status sts/buffer-etcd --namespace "$NAMESPACE" --timeout "$KUBERNETES_ROLLOUT_WAIT"; then
   echo
   echo "Etcd deployment has been successful."
