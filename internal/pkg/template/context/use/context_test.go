@@ -32,7 +32,7 @@ func TestContext(t *testing.T) {
 
 	// Mocked ticket provider
 	c, httpTransport := client.NewMockedClient()
-	httpTransport.RegisterResponder(resty.MethodGet, `=~storage/?exclude=components`,
+	httpTransport.RegisterResponder(resty.MethodGet, `/v2/storage/?exclude=components`,
 		httpmock.NewStringResponder(200, `{
 			"services": [],
 			"features": []
@@ -184,7 +184,7 @@ func TestComponentsFunctions(t *testing.T) {
 
 	// Mocked ticket provider
 	c, httpTransport := client.NewMockedClient()
-	httpTransport.RegisterResponder(resty.MethodGet, `=~storage/?exclude=components`,
+	httpTransport.RegisterResponder(resty.MethodGet, `/v2/storage/?exclude=components`,
 		httpmock.NewStringResponder(200, `{
 			"services": [],
 			"features": []

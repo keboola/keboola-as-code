@@ -217,7 +217,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 		fmt.Sprintf("https://%s/v2/storage/?exclude=components", c.storageAPIHost),
 		httpmock.NewJsonResponderOrPanic(200, &keboola.IndexComponents{
 			Index: keboola.Index{Services: c.services, Features: c.features}, Components: keboola.Components{},
-		}).Once(),
+		}),
 	)
 
 	// Mocked token verification
