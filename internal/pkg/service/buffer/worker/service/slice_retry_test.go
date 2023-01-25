@@ -118,7 +118,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	// Orchestrator logs
 	wildcards.Assert(t, `
 %A
-[orchestrator][slice.retry.check]INFO  restart: periodical
+[orchestrator][slice.retry.check]DEBUG  restart: periodical
 [orchestrator][slice.retry.check]INFO  assigned "%s"
 %A
 `, strhelper.FilterLines(`^(\[orchestrator\]\[slice.retry.check\])`, workerDeps.DebugLogger().AllMessages()))

@@ -59,9 +59,13 @@ func (v Slice) Filename() string {
 func (v Slice) GetStats() Stats {
 	if v.State == slicestate.Writing || v.State == slicestate.Closing {
 		panic(errors.Errorf(
-			`slice "%s" in the state "%s" doesn't contain statistics, the state must be uploaded/failed`,
+			`slice "%s" in the state "%s" doesn't contain statistics, the state must be uploading, failed or uploaded`,
 			v.SliceKey, v.State,
 		))
+	}
+	// Statistics are not set for an empty slice.
+	if v.Statistics == nil {
+		return Stats{}
 	}
 	return *v.Statistics
 }

@@ -165,7 +165,6 @@ func watchClosedSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan 
 					cacheKey := keyForClosedSlice(slice)
 
 					// Update slice stats
-					stats := event.Value.GetStats()
 					switch event.Type {
 					case etcdop.CreateEvent:
 						// Clear temporary stats to prevent duplicates.
@@ -173,6 +172,7 @@ func watchClosedSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan 
 						t.DeletePrefix(prefixForActiveStats(slice.SliceKey))
 						fallthrough
 					case etcdop.UpdateEvent:
+						stats := event.Value.GetStats()
 						t.Insert(cacheKey, stats)
 					case etcdop.DeleteEvent:
 						t.Delete(cacheKey)
