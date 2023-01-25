@@ -31,15 +31,15 @@ spec:
           resources:
             requests:
               cpu: "200m"
-              memory: "512Mi"
+              memory: "768Mi"
             limits:
-              memory: "512Mi"
+              memory: "768Mi"
           ports:
             - containerPort: 8000
           env:
             # 80% of the resources.limits.memory
             - name: GOMEMLIMIT
-              value: "400MiB"
+              value: "550MiB"
             - name: KBC_STORAGE_API_HOST
               valueFrom:
                 configMapKeyRef:
