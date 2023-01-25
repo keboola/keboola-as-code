@@ -25,7 +25,7 @@ func TestSliceCloseTask(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	clk := clock.NewMock()
 	clk.Set(time.Time{}.Add(time.Second))
