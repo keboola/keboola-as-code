@@ -20,10 +20,10 @@ import (
 )
 
 type Manager struct {
-	state            model.ObjectStates
-	localManager     *local.Manager
-	keboolaAPIClient *keboola.API
-	mapper           *mapper.Mapper
+	state             model.ObjectStates
+	localManager      *local.Manager
+	keboolaProjectAPI *keboola.API
+	mapper            *mapper.Mapper
 }
 
 type UnitOfWork struct {
@@ -42,12 +42,12 @@ type UnitOfWork struct {
 	branchesSem *semaphore.Weighted
 }
 
-func NewManager(localManager *local.Manager, apiClient *keboola.API, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
+func NewManager(localManager *local.Manager, keboolaProjectAPI *keboola.API, objects model.ObjectStates, mapper *mapper.Mapper) *Manager {
 	return &Manager{
-		state:            objects,
-		localManager:     localManager,
-		keboolaAPIClient: apiClient,
-		mapper:           mapper,
+		state:             objects,
+		localManager:      localManager,
+		keboolaProjectAPI: keboolaProjectAPI,
+		mapper:            mapper,
 	}
 }
 
@@ -75,7 +75,7 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 	configsMetadata := make(map[model.ConfigKey]keboola.Metadata)
 	configsMetadataLock := &sync.Mutex{}
 
-	req := u.keboolaAPIClient.
+	req := u.keboolaProjectAPI.
 		ListBranchesRequest().
 		WithOnSuccess(func(ctx context.Context, apiBranches *[]*keboola.Branch) error {
 			wg := client.NewWaitGroup(ctx)
@@ -91,7 +91,7 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 				branches[branch.BranchKey] = branch
 
 				// Load branch metadata
-				wg.Send(u.keboolaAPIClient.
+				wg.Send(u.keboolaProjectAPI.
 					ListBranchMetadataRequest(apiBranch.BranchKey).
 					WithOnSuccess(func(_ context.Context, metadata *keboola.MetadataDetails) error {
 						branch.Metadata = model.BranchMetadata(metadata.ToMap())
@@ -100,7 +100,7 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 				)
 
 				// Load configs and rows
-				wg.Send(u.keboolaAPIClient.
+				wg.Send(u.keboolaProjectAPI.
 					ListConfigsAndRowsFrom(apiBranch.BranchKey).
 					WithOnSuccess(func(_ context.Context, components *[]*keboola.ComponentWithConfigs) error {
 						// Save component, it contains all configs and rows
@@ -138,7 +138,7 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 				)
 
 				// Load configs metadata
-				wg.Send(u.keboolaAPIClient.
+				wg.Send(u.keboolaProjectAPI.
 					ListConfigMetadataRequest(apiBranch.ID).
 					WithOnSuccess(func(_ context.Context, metadata *keboola.ConfigsMetadata) error {
 						for _, item := range *metadata {
@@ -306,7 +306,7 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 			metadataRequestLevel = object.Level() + 1
 		}
 		changedFields.Remove("metadata")
-		u.runGroupFor(metadataRequestLevel).Add(u.keboolaAPIClient.AppendMetadataRequest(v.ToAPIObjectKey(), v.ToAPIMetadata()))
+		u.runGroupFor(metadataRequestLevel).Add(u.keboolaProjectAPI.AppendMetadataRequest(v.ToAPIObjectKey(), v.ToAPIMetadata()))
 	}
 
 	// Create or update
@@ -321,7 +321,7 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 
 func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe) client.APIRequest[keboola.Object] {
 	apiObject, _ := recipe.Object.(model.ToAPIObject).ToAPIObject(u.changeDescription, nil)
-	request := u.keboolaAPIClient.
+	request := u.keboolaProjectAPI.
 		CreateRequest(apiObject).
 		WithOnSuccess(func(_ context.Context, apiObject keboola.Object) error {
 			// Update internal state
@@ -360,7 +360,7 @@ func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.O
 
 func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) client.APIRequest[keboola.Object] {
 	apiObject, apiChangedFields := recipe.Object.(model.ToAPIObject).ToAPIObject(u.changeDescription, changedFields)
-	return u.keboolaAPIClient.
+	return u.keboolaProjectAPI.
 		UpdateRequest(apiObject, apiChangedFields).
 		WithOnSuccess(func(_ context.Context, apiObject keboola.Object) error {
 			// Update internal state
@@ -371,7 +371,7 @@ func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.O
 }
 
 func (u *UnitOfWork) delete(objectState model.ObjectState) {
-	request := u.keboolaAPIClient.
+	request := u.keboolaProjectAPI.
 		DeleteRequest(objectState.(model.ToAPIObjectKey).ToAPIObjectKey()).
 		WithOnSuccess(func(_ context.Context, _ client.NoResult) error {
 			u.Manifest().Delete(objectState)
@@ -407,7 +407,7 @@ func (u *UnitOfWork) runGroupFor(level int) *client.RunGroup {
 		return value.(*client.RunGroup)
 	}
 
-	grp := client.NewRunGroup(u.ctx, u.keboolaAPIClient.Client())
+	grp := client.NewRunGroup(u.ctx, u.keboolaProjectAPI.Client())
 	u.runGroups.Set(key, grp)
 	return grp
 }

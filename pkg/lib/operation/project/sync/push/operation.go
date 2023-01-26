@@ -25,7 +25,7 @@ type Options struct {
 }
 
 type dependencies interface {
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	ProjectID() int
 	Tracer() trace.Tracer

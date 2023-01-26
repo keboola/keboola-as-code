@@ -47,7 +47,7 @@ func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand) (*remote
 		}
 	}
 
-	eventSender := event.NewSender(cmdPublicDeps.Logger(), projectDeps.KeboolaAPIClient(), projectDeps.ProjectID())
+	eventSender := event.NewSender(cmdPublicDeps.Logger(), projectDeps.KeboolaProjectAPI(), projectDeps.ProjectID())
 
 	// Compose all together
 	return &remote{

@@ -29,9 +29,9 @@ func TestManager_CreateFile(t *testing.T) {
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithClock(clk), dependencies.WithTestProject(p))
-	m := NewManager(d.Clock(), d.KeboolaAPIClient(), nil)
+	m := NewManager(d.Clock(), d.KeboolaProjectAPI(), nil)
 	rb := rollback.New(d.Logger())
-	client := p.KeboolaAPIClient()
+	client := p.KeboolaProjectAPI()
 
 	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(123), ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export"}

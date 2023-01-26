@@ -25,7 +25,7 @@ func TestManager_CreateToken(t *testing.T) {
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
 	m := NewManager(d)
 	rb := rollback.New(d.Logger())
-	client := p.KeboolaAPIClient()
+	client := p.KeboolaProjectAPI()
 
 	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(123), ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export"}
@@ -69,7 +69,7 @@ func TestManager_RefreshToken_TokenExists(t *testing.T) {
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
 	m := NewManager(d)
 	rb := rollback.New(d.Logger())
-	client := p.KeboolaAPIClient()
+	client := p.KeboolaProjectAPI()
 
 	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(123), ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export"}
@@ -119,7 +119,7 @@ func TestManager_RefreshToken_TokenMissing(t *testing.T) {
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
 	m := NewManager(d)
 	rb := rollback.New(d.Logger())
-	client := p.KeboolaAPIClient()
+	client := p.KeboolaProjectAPI()
 
 	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(123), ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export"}

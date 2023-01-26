@@ -14,7 +14,7 @@ import (
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 }
 
 func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspace *keboola.WorkspaceWithConfig) (err error) {
@@ -27,7 +27,7 @@ func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspa
 	defer cancel()
 
 	logger.Infof(`Deleting the workspace "%s" (%s), please wait.`, workspace.Config.Name, workspace.Config.ID)
-	err = d.KeboolaAPIClient().DeleteWorkspace(
+	err = d.KeboolaProjectAPI().DeleteWorkspace(
 		ctx,
 		branchID,
 		workspace.Config.ID,

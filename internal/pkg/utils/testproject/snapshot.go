@@ -28,7 +28,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	// Branches
 	grp.Go(func() error {
-		request := p.keboolaAPIClient.
+		request := p.keboolaProjectAPI.
 			ListBranchesRequest().
 			WithOnSuccess(func(ctx context.Context, apiBranches *[]*keboola.Branch) error {
 				wg := client.NewWaitGroup(ctx)
@@ -42,7 +42,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 					snapshot.Branches = append(snapshot.Branches, branch)
 
 					// Load branch metadata
-					wg.Send(p.keboolaAPIClient.
+					wg.Send(p.keboolaProjectAPI.
 						ListBranchMetadataRequest(apiBranch.BranchKey).
 						WithOnSuccess(func(_ context.Context, metadata *keboola.MetadataDetails) error {
 							branch.Metadata = metadata.ToMap()
@@ -51,7 +51,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 					)
 
 					// Load configs and rows
-					wg.Send(p.keboolaAPIClient.
+					wg.Send(p.keboolaProjectAPI.
 						ListConfigsAndRowsFrom(apiBranch.BranchKey).
 						WithOnSuccess(func(ctx context.Context, components *[]*keboola.ComponentWithConfigs) error {
 							for _, component := range *components {
@@ -89,7 +89,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 					)
 
 					// Load configs metadata
-					wg.Send(p.keboolaAPIClient.
+					wg.Send(p.keboolaProjectAPI.
 						ListConfigMetadataRequest(apiBranch.ID).
 						WithOnSuccess(func(_ context.Context, metadata *keboola.ConfigsMetadata) error {
 							for _, item := range *metadata {
@@ -127,7 +127,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	// Schedules for main branch
 	var schedules []*keboola.Schedule
 	grp.Go(func() error {
-		request := p.keboolaAPIClient.
+		request := p.keboolaProjectAPI.
 			ListSchedulesRequest().
 			WithOnSuccess(func(_ context.Context, apiSchedules *[]*keboola.Schedule) error {
 				schedules = append(schedules, *apiSchedules...)
@@ -138,7 +138,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	workspacesMap := make(map[string]*keboola.Workspace)
 	grp.Go(func() error {
-		request := p.keboolaAPIClient.
+		request := p.keboolaProjectAPI.
 			ListWorkspaceInstancesRequest().
 			WithOnSuccess(func(ctx context.Context, result *[]*keboola.Workspace) error {
 				for _, sandbox := range *result {
@@ -152,7 +152,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	// Storage Buckets
 	bucketsMap := map[keboola.BucketID]*fixtures.Bucket{}
 	grp.Go(func() error {
-		request := p.keboolaAPIClient.
+		request := p.keboolaProjectAPI.
 			ListBucketsRequest().
 			WithOnSuccess(func(_ context.Context, apiBuckets *[]*keboola.Bucket) error {
 				for _, b := range *apiBuckets {
@@ -172,7 +172,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	// Storage Tables
 	var tables []*keboola.Table
 	grp.Go(func() error {
-		request := p.keboolaAPIClient.
+		request := p.keboolaProjectAPI.
 			ListTablesRequest(keboola.WithBuckets(), keboola.WithColumns()).
 			WithOnSuccess(func(_ context.Context, apiTables *[]*keboola.Table) error {
 				tables = append(tables, *apiTables...)
@@ -187,7 +187,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		// Files metadata are not atomic, wait a moment.
 		// The creation/deletion of the file does not take effect immediately.
 		time.Sleep(100 * time.Millisecond)
-		return p.keboolaAPIClient.
+		return p.keboolaProjectAPI.
 			ListFilesRequest().
 			WithOnSuccess(func(_ context.Context, apiFiles *[]*keboola.File) error {
 				files = *apiFiles

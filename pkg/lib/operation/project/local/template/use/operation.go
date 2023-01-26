@@ -50,7 +50,7 @@ func (v newObjects) Log(logger log.Logger, tmpl *template.Template) {
 
 type dependencies interface {
 	Components() *model.ComponentsMap
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	StorageAPIHost() string
 	StorageAPITokenID() string
 	Logger() log.Logger

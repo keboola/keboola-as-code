@@ -14,7 +14,7 @@ import (
 type public struct {
 	base             Base
 	components       Lazy[*model.ComponentsProvider]
-	keboolaAPIClient *keboola.API
+	keboolaPublicAPI *keboola.API
 	stackFeatures    keboola.FeaturesMap
 	stackServices    keboola.ServicesMap
 	storageAPIHost   string
@@ -54,30 +54,30 @@ func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 	v := &public{
 		base:             base,
 		storageAPIHost:   storageAPIHost,
-		keboolaAPIClient: keboola.NewAPI(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient)),
+		keboolaPublicAPI: keboola.NewAPI(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient)),
 	}
 	// Set values derived from the index
-	v.stackFeatures = v.keboolaAPIClient.Features().ToMap()
-	v.stackServices = v.keboolaAPIClient.Services().ToMap()
+	v.stackFeatures = v.keboolaPublicAPI.Index().Features.ToMap()
+	v.stackServices = v.keboolaPublicAPI.Index().Services.ToMap()
 
 	if c.preloadComponents {
-		indexWithComponents, err := storageAPIIndexWithComponents(ctx, base, v.keboolaAPIClient)
+		indexWithComponents, err := storageAPIIndexWithComponents(ctx, base, v.keboolaPublicAPI)
 		if err != nil {
 			return nil, err
 		}
-		v.components.Set(model.NewComponentsProvider(indexWithComponents, v.base.Logger(), v.KeboolaAPIPublicClient()))
+		v.components.Set(model.NewComponentsProvider(indexWithComponents, v.base.Logger(), v.KeboolaPublicAPI()))
 	}
 
 	return v, nil
 }
 
-func storageAPIIndexWithComponents(ctx context.Context, d Base, keboolaAPIClient *keboola.API) (index *keboola.IndexComponents, err error) {
+func storageAPIIndexWithComponents(ctx context.Context, d Base, keboolaPublicAPI *keboola.API) (index *keboola.IndexComponents, err error) {
 	startTime := time.Now()
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.dependencies.public.storageApiIndexWithComponents")
 	span.SetAttributes(telemetry.KeepSpan())
 	defer telemetry.EndSpan(span, &err)
 
-	index, err = keboolaAPIClient.IndexComponentsRequest().Send(ctx)
+	index, err = keboolaPublicAPI.IndexComponentsRequest().Send(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -89,8 +89,8 @@ func (v *public) StorageAPIHost() string {
 	return v.storageAPIHost
 }
 
-func (v *public) KeboolaAPIPublicClient() *keboola.API {
-	return v.keboolaAPIClient
+func (v *public) KeboolaPublicAPI() *keboola.API {
+	return v.keboolaPublicAPI
 }
 
 func (v *public) StackFeatures() keboola.FeaturesMap {
@@ -107,14 +107,14 @@ func (v *public) Components() *model.ComponentsMap {
 
 func (v *public) ComponentsProvider() *model.ComponentsProvider {
 	return v.components.MustInitAndGet(func() *model.ComponentsProvider {
-		index, err := storageAPIIndexWithComponents(context.Background(), v.base, v.keboolaAPIClient)
+		index, err := storageAPIIndexWithComponents(context.Background(), v.base, v.keboolaPublicAPI)
 		if err != nil {
 			panic(err)
 		}
-		return model.NewComponentsProvider(index, v.base.Logger(), v.KeboolaAPIPublicClient())
+		return model.NewComponentsProvider(index, v.base.Logger(), v.KeboolaPublicAPI())
 	})
 }
 
-func (v *public) KeboolaAPIClient() *keboola.API {
-	return v.keboolaAPIClient
+func (v *public) KeboolaProjectAPI() *keboola.API {
+	return v.keboolaPublicAPI
 }

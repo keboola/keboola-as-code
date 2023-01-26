@@ -16,7 +16,7 @@ import (
 )
 
 type dependencies interface {
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Tracer() trace.Tracer
@@ -40,7 +40,7 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 		}
 	}
 
-	tablesList, err := d.KeboolaAPIClient().ListTablesRequest(keboola.WithBuckets()).Send(ctx)
+	tablesList, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithBuckets()).Send(ctx)
 	if err != nil {
 		return err
 	}

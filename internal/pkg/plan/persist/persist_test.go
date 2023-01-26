@@ -965,7 +965,7 @@ func (tc *testCase) run(t *testing.T) {
 	// Invoke
 	plan, err = NewPlan(projectState.State()) // plan with callbacks
 	assert.NoError(t, err)
-	assert.NoError(t, plan.Invoke(context.Background(), d.Logger(), d.KeboolaAPIClient(), projectState.State()))
+	assert.NoError(t, plan.Invoke(context.Background(), d.Logger(), d.KeboolaProjectAPI(), projectState.State()))
 
 	// Assert new IDs requests count
 	assert.Equal(t, tc.expectedNewIds, d.MockedHTTPTransport().GetCallCountInfo()["POST =~/storage/tickets"])

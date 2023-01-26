@@ -22,7 +22,7 @@ type Options struct {
 
 type dependencies interface {
 	Components() *model.ComponentsMap
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Tracer() trace.Tracer
 }

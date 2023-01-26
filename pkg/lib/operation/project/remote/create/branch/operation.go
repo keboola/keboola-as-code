@@ -18,7 +18,7 @@ type Options struct {
 }
 
 type dependencies interface {
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Tracer() trace.Tracer
 }
@@ -31,7 +31,7 @@ func Run(ctx context.Context, o Options, d dependencies) (branch *keboola.Branch
 
 	// Create branch by API
 	branch = &keboola.Branch{Name: o.Name}
-	if _, err := d.KeboolaAPIClient().CreateBranchRequest(branch).Send(ctx); err != nil {
+	if _, err := d.KeboolaProjectAPI().CreateBranchRequest(branch).Send(ctx); err != nil {
 		return nil, errors.Errorf(`cannot create branch: %w`, err)
 	}
 

@@ -237,15 +237,15 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	}
 
 	// Run the mainConfig job
-	apiClient := testPrj.KeboolaAPIClient()
-	job, err := apiClient.CreateQueueJobRequest(tmplInst.MainConfig.ComponentID, tmplInst.MainConfig.ConfigID).Send(ctx)
+	api := testPrj.KeboolaProjectAPI()
+	job, err := api.CreateQueueJobRequest(tmplInst.MainConfig.ComponentID, tmplInst.MainConfig.ConfigID).Send(ctx)
 	if err != nil {
 		return err
 	}
 
 	timeoutCtx, cancelFn := context.WithTimeout(ctx, time.Minute*10)
 	defer cancelFn()
-	return apiClient.WaitForQueueJob(timeoutCtx, job)
+	return api.WaitForQueueJob(timeoutCtx, job)
 }
 
 func reloadPrjState(ctx context.Context, prjState *project.State) error {

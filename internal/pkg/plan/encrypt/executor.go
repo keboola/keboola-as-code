@@ -16,23 +16,23 @@ import (
 
 type executor struct {
 	*Plan
-	ctx       context.Context
-	projectID int
-	logger    log.Logger
-	apiClient *keboola.API
-	uow       *local.UnitOfWork
-	errors    errors.MultiError
+	ctx               context.Context
+	projectID         int
+	logger            log.Logger
+	keboolaProjectAPI *keboola.API
+	uow               *local.UnitOfWork
+	errors            errors.MultiError
 }
 
-func newExecutor(ctx context.Context, projectID int, logger log.Logger, apiClient *keboola.API, state *state.State, plan *Plan) *executor {
+func newExecutor(ctx context.Context, projectID int, logger log.Logger, keboolaProjectAPI *keboola.API, state *state.State, plan *Plan) *executor {
 	return &executor{
-		Plan:      plan,
-		ctx:       ctx,
-		projectID: projectID,
-		logger:    logger,
-		apiClient: apiClient,
-		uow:       state.LocalManager().NewUnitOfWork(ctx),
-		errors:    errors.NewMultiError(),
+		Plan:              plan,
+		ctx:               ctx,
+		projectID:         projectID,
+		logger:            logger,
+		keboolaProjectAPI: keboolaProjectAPI,
+		uow:               state.LocalManager().NewUnitOfWork(ctx),
+		errors:            errors.NewMultiError(),
 	}
 }
 
@@ -67,7 +67,7 @@ func (e *executor) encryptRequest(action *action) client.Sendable {
 	}
 
 	// Prepare request
-	return e.apiClient.
+	return e.keboolaProjectAPI.
 		EncryptRequest(e.projectID, object.GetComponentID(), data).
 		WithOnSuccess(func(ctx context.Context, results *map[string]string) error {
 			for key, encrypted := range *results {

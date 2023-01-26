@@ -19,7 +19,7 @@ type CreateOptions struct {
 }
 
 type dependencies interface {
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Tracer() trace.Tracer
 }
@@ -30,7 +30,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 
 	logger := d.Logger()
 
-	branch, err := d.KeboolaAPIClient().GetDefaultBranchRequest().Send(ctx)
+	branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(ctx)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 
 	logger.Info(`Creating a new workspace, please wait.`)
 	// Create workspace by API
-	w, err := d.KeboolaAPIClient().CreateWorkspace(
+	w, err := d.KeboolaProjectAPI().CreateWorkspace(
 		ctx,
 		branch.ID,
 		o.Name,

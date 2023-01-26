@@ -16,16 +16,16 @@ import (
 )
 
 type Manager struct {
-	keboolaAPI *keboola.API
+	keboolaProjectAPI *keboola.API
 
 	lock               *sync.Mutex
 	singleGetBucket    *singleflight.Group
 	singleCreateBucket *singleflight.Group
 }
 
-func NewManager(keboolaAPI *keboola.API) *Manager {
+func NewManager(keboolaProjectAPI *keboola.API) *Manager {
 	return &Manager{
-		keboolaAPI:         keboolaAPI,
+		keboolaProjectAPI:  keboolaProjectAPI,
 		lock:               &sync.Mutex{},
 		singleGetBucket:    &singleflight.Group{},
 		singleCreateBucket: &singleflight.Group{},
@@ -33,10 +33,10 @@ func NewManager(keboolaAPI *keboola.API) *Manager {
 }
 
 func (m *Manager) ImportFile(ctx context.Context, file model.File) (err error) {
-	r := m.keboolaAPI.
+	r := m.keboolaProjectAPI.
 		LoadDataFromFileRequest(file.Mapping.TableID, file.StorageResource.ID, keboola.WithIncrementalLoad(file.Mapping.Incremental), keboola.WithoutHeader(true)).
 		WithOnSuccess(func(ctx context.Context, job *keboola.StorageJob) error {
-			return m.keboolaAPI.WaitForStorageJob(ctx, job)
+			return m.keboolaProjectAPI.WaitForStorageJob(ctx, job)
 		})
 	return r.SendOrErr(ctx)
 }
@@ -64,17 +64,17 @@ func (m *Manager) EnsureTableExists(ctx context.Context, rb rollback.Builder, ex
 	columns := export.Mapping.Columns.Names()
 	primaryKey := export.Mapping.Columns.PrimaryKey()
 
-	table, err := m.keboolaAPI.GetTableRequest(tableID).Send(ctx)
+	table, err := m.keboolaProjectAPI.GetTableRequest(tableID).Send(ctx)
 	var apiErr *keboola.StorageError
 	if errors.As(err, &apiErr) && apiErr.ErrCode == "storage.tables.notFound" {
 		// Table doesn't exist -> create it
-		if req, err := m.keboolaAPI.CreateTableDeprecatedSyncRequest(tableID, columns, keboola.WithPrimaryKey(primaryKey)); err != nil {
+		if req, err := m.keboolaProjectAPI.CreateTableDeprecatedSyncRequest(tableID, columns, keboola.WithPrimaryKey(primaryKey)); err != nil {
 			return err
 		} else if table, err = req.Send(ctx); err != nil {
 			return err
 		}
 		rb.Add(func(ctx context.Context) error {
-			_, err := m.keboolaAPI.DeleteTableRequest(tableID).Send(ctx)
+			_, err := m.keboolaProjectAPI.DeleteTableRequest(tableID).Send(ctx)
 			return err
 		})
 	} else if err != nil {
@@ -136,7 +136,7 @@ func (m *Manager) EnsureBucketExists(ctx context.Context, rb rollback.Builder, b
 
 func (m *Manager) getBucket(ctx context.Context, bucketID keboola.BucketID) (*keboola.Bucket, error) {
 	bucket, err, _ := m.singleGetBucket.Do(bucketID.String(), func() (any, error) {
-		return m.keboolaAPI.GetBucketRequest(bucketID).Send(ctx)
+		return m.keboolaProjectAPI.GetBucketRequest(bucketID).Send(ctx)
 	})
 	return bucket.(*keboola.Bucket), err
 }
@@ -144,11 +144,11 @@ func (m *Manager) getBucket(ctx context.Context, bucketID keboola.BucketID) (*ke
 func (m *Manager) createBucket(ctx context.Context, rb rollback.Builder, bucketID keboola.BucketID) (*keboola.Bucket, error) {
 	bucket, err, _ := m.singleCreateBucket.Do(bucketID.String(), func() (any, error) {
 		bucket := &keboola.Bucket{ID: bucketID}
-		if _, err := m.keboolaAPI.CreateBucketRequest(bucket).Send(ctx); err != nil {
+		if _, err := m.keboolaProjectAPI.CreateBucketRequest(bucket).Send(ctx); err != nil {
 			return nil, err
 		}
 		rb.Add(func(ctx context.Context) error {
-			_, err := m.keboolaAPI.DeleteBucketRequest(bucketID).Send(ctx)
+			_, err := m.keboolaProjectAPI.DeleteBucketRequest(bucketID).Send(ctx)
 			return err
 		})
 		return bucket, nil

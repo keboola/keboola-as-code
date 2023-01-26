@@ -29,10 +29,10 @@ func (m *schedulerMapper) AfterRemoteOperation(ctx context.Context, changes *mod
 
 	if len(saved) > 0 || len(deleted) > 0 {
 		// Get Scheduler API - only if it is needed
-		apiClient := m.KeboolaAPIClient()
+		keboolaProjectAPI := m.KeboolaProjectAPI()
 
 		// Create requests pool
-		grp := client.NewRunGroup(ctx, apiClient.Client())
+		grp := client.NewRunGroup(ctx, keboolaProjectAPI.Client())
 
 		// Activate saved configs
 		for _, o := range saved {

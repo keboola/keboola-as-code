@@ -32,12 +32,12 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 
 			defer func() { d.EventSender().SendCmdEvent(d.CommandCtx(), start, cmdErr, "remote-list-workspace") }()
 
-			branch, err := d.KeboolaAPIClient().GetDefaultBranchRequest().Send(d.CommandCtx())
+			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(d.CommandCtx())
 			if err != nil {
 				return errors.Errorf("cannot find default branch: %w", err)
 			}
 
-			allWorkspaces, err := d.KeboolaAPIClient().ListWorkspaces(d.CommandCtx(), branch.ID)
+			allWorkspaces, err := d.KeboolaProjectAPI().ListWorkspaces(d.CommandCtx(), branch.ID)
 			if err != nil {
 				return err
 			}

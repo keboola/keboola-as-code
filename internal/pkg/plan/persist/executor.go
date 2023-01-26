@@ -21,12 +21,12 @@ type executor struct {
 	errors  errors.MultiError
 }
 
-func newExecutor(ctx context.Context, logger log.Logger, apiClient *keboola.API, projectState *state.State, plan *Plan) *executor {
+func newExecutor(ctx context.Context, logger log.Logger, keboolaProjectAPI *keboola.API, projectState *state.State, plan *Plan) *executor {
 	return &executor{
 		Plan:    plan,
 		State:   projectState,
 		logger:  logger,
-		tickets: keboola.NewTicketProvider(ctx, apiClient),
+		tickets: keboola.NewTicketProvider(ctx, keboolaProjectAPI),
 		uow:     projectState.LocalManager().NewUnitOfWork(context.Background()),
 		errors:  errors.NewMultiError(),
 	}

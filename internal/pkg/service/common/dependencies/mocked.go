@@ -61,8 +61,8 @@ type MockedConfig struct {
 	storageAPIToken           keboola.Token
 	multipleTokenVerification bool
 
-	useRealAPIs      bool
-	keboolaAPIClient *keboola.API
+	useRealAPIs       bool
+	keboolaProjectAPI *keboola.API
 }
 
 type MockedOption func(c *MockedConfig)
@@ -113,7 +113,7 @@ func WithTestProject(project *testproject.Project) MockedOption {
 		c.storageAPIToken = *project.StorageAPIToken()
 
 		c.useRealAPIs = true
-		c.keboolaAPIClient = project.KeboolaAPIClient()
+		c.keboolaProjectAPI = project.KeboolaProjectAPI()
 	}
 }
 
@@ -244,8 +244,8 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 
 	// Use real APIs
 	if c.useRealAPIs {
-		publicDeps.keboolaAPIClient = c.keboolaAPIClient
-		projectDeps.keboolaAPIClient = c.keboolaAPIClient
+		publicDeps.keboolaPublicAPI = c.keboolaProjectAPI
+		projectDeps.keboolaProjectAPI = c.keboolaProjectAPI
 		mockedHTTPTransport = nil
 		baseDeps.httpClient = client.NewTestClient()
 	}
@@ -367,6 +367,6 @@ func (v *mocked) EtcdClient() *etcd.Client {
 	return v.etcdClient
 }
 
-func (v *mocked) KeboolaAPIClient() *keboola.API {
-	return v.project.keboolaAPIClient
+func (v *mocked) KeboolaProjectAPI() *keboola.API {
+	return v.project.keboolaProjectAPI
 }

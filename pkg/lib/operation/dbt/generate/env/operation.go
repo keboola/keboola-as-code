@@ -18,7 +18,7 @@ type GenerateEnvOptions struct {
 }
 
 type dependencies interface {
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Tracer() trace.Tracer
@@ -33,7 +33,7 @@ func Run(ctx context.Context, opts GenerateEnvOptions, d dependencies) (err erro
 		return err
 	}
 
-	workspace, err := d.KeboolaAPIClient().GetWorkspaceInstanceRequest(opts.Workspace.ID).Send(ctx)
+	workspace, err := d.KeboolaProjectAPI().GetWorkspaceInstanceRequest(opts.Workspace.ID).Send(ctx)
 	if err != nil {
 		return err
 	}

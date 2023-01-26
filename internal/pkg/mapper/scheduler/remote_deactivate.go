@@ -8,5 +8,5 @@ import (
 
 // onRemoteDelete deactivates scheduler by Scheduler API when scheduler configuration is deleted.
 func (m *schedulerMapper) onRemoteDelete(grp *client.RunGroup, configState *model.ConfigState) {
-	grp.Add(m.KeboolaAPIClient().DeleteSchedulesForConfigurationRequest(configState.ID))
+	grp.Add(m.KeboolaProjectAPI().DeleteSchedulesForConfigurationRequest(configState.ID))
 }

@@ -21,7 +21,7 @@ type Options struct {
 }
 
 type dependencies interface {
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Tracer() trace.Tracer
 }
@@ -33,7 +33,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	logger := d.Logger()
 
 	// Get Storage API
-	apiClient := d.KeboolaAPIClient()
+	api := d.KeboolaProjectAPI()
 
 	// Get plan
 	plan, err := persist.NewPlan(projectState.State())
@@ -52,7 +52,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		}
 
 		// Invoke
-		if err := plan.Invoke(ctx, logger, apiClient, projectState.State()); err != nil {
+		if err := plan.Invoke(ctx, logger, api, projectState.State()); err != nil {
 			return errors.PrefixError(err, "cannot persist objects")
 		}
 

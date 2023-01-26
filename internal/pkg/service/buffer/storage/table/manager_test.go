@@ -22,9 +22,9 @@ func TestManager_EnsureBucketExists(t *testing.T) {
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
-	m := NewManager(d.KeboolaAPIClient())
+	m := NewManager(d.KeboolaProjectAPI())
 	rb := rollback.New(d.Logger())
-	client := p.KeboolaAPIClient()
+	client := p.KeboolaProjectAPI()
 
 	bucketID := keboola.BucketID{
 		Stage:      keboola.BucketStageIn,
@@ -57,9 +57,9 @@ func TestManager_EnsureTableExists(t *testing.T) {
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
-	m := NewManager(d.KeboolaAPIClient())
+	m := NewManager(d.KeboolaProjectAPI())
 	rb := rollback.New(d.Logger())
-	client := p.KeboolaAPIClient()
+	client := p.KeboolaProjectAPI()
 
 	tableID := keboola.TableID{
 		BucketID: keboola.BucketID{

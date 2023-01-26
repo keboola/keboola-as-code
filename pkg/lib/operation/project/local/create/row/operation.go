@@ -23,7 +23,7 @@ type Options struct {
 }
 
 type dependencies interface {
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Tracer() trace.Tracer
 }
@@ -35,7 +35,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	logger := d.Logger()
 
 	// Get Storage API
-	apiClient := d.KeboolaAPIClient()
+	api := d.KeboolaProjectAPI()
 
 	// Config row key
 	key := model.ConfigRowKey{
@@ -45,7 +45,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Generate unique ID
-	ticketProvider := keboola.NewTicketProvider(ctx, apiClient)
+	ticketProvider := keboola.NewTicketProvider(ctx, api)
 	ticketProvider.Request(func(ticket *keboola.Ticket) {
 		key.ID = keboola.RowID(ticket.ID)
 	})

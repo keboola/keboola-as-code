@@ -83,7 +83,7 @@ type Base interface {
 type Public interface {
 	Components() *model.ComponentsMap
 	ComponentsProvider() *model.ComponentsProvider
-	KeboolaAPIPublicClient() *keboola.API
+	KeboolaPublicAPI() *keboola.API
 	StackFeatures() keboola.FeaturesMap
 	StackServices() keboola.ServicesMap
 	StorageAPIHost() string
@@ -91,7 +91,7 @@ type Public interface {
 
 // Project dependencies require authentication / Storage API token.
 type Project interface {
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() int
 	ProjectName() string

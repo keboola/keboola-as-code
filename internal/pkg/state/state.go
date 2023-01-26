@@ -61,7 +61,7 @@ type ObjectsContainer interface {
 
 type dependencies interface {
 	Components() *model.ComponentsMap
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Tracer() trace.Tracer
 }
@@ -73,7 +73,7 @@ func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *St
 	// Get dependencies
 	logger := d.Logger()
 	m := container.Manifest()
-	apiClient := d.KeboolaAPIClient()
+	api := d.KeboolaProjectAPI()
 	components := d.Components()
 
 	// Create mapper
@@ -109,7 +109,7 @@ func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *St
 	s.localManager = local.NewManager(s.logger, s.validator, container.ObjectsRoot(), s.fileLoader, m, s.namingGenerator, s.Registry, s.mapper)
 
 	// Remote manager for API operations
-	s.remoteManager = remote.NewManager(s.localManager, apiClient, s.Registry, s.mapper)
+	s.remoteManager = remote.NewManager(s.localManager, api, s.Registry, s.mapper)
 
 	// Create mappers
 	mappers, err := container.MappersFor(s)

@@ -12,7 +12,7 @@ import (
 )
 
 type dependencies interface {
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Tracer() trace.Tracer
 }
@@ -23,7 +23,7 @@ func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err er
 
 	logger := d.Logger()
 
-	branch, err := d.KeboolaAPIClient().GetDefaultBranchRequest().Send(ctx)
+	branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(ctx)
 	if err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err er
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	workspace, err := d.KeboolaAPIClient().GetWorkspace(ctx, branch.ID, configID)
+	workspace, err := d.KeboolaProjectAPI().GetWorkspace(ctx, branch.ID, configID)
 	if err != nil {
 		return err
 	}

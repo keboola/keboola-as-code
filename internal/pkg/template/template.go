@@ -111,7 +111,7 @@ func ParseInputValue(value interface{}, inputDef *templateInput.Input, isFilled 
 
 type dependencies interface {
 	Components() *model.ComponentsMap
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Tracer() trace.Tracer
 }

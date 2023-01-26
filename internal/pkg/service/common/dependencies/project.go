@@ -11,18 +11,18 @@ import (
 
 // project dependencies container implements Project interface.
 type project struct {
-	base             Base
-	public           Public
-	token            keboola.Token
-	projectFeatures  keboola.FeaturesMap
-	keboolaAPIClient *keboola.API
+	base              Base
+	public            Public
+	token             keboola.Token
+	projectFeatures   keboola.FeaturesMap
+	keboolaProjectAPI *keboola.API
 }
 
 func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr string) (v Project, err error) {
 	ctx, span := base.Tracer().Start(ctx, "kac.lib.dependencies.NewProjectDeps")
 	defer telemetry.EndSpan(span, &err)
 
-	token, err := public.KeboolaAPIPublicClient().VerifyTokenRequest(tokenStr).Send(ctx)
+	token, err := public.KeboolaPublicAPI().VerifyTokenRequest(tokenStr).Send(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -40,11 +40,11 @@ func newProjectDeps(ctx context.Context, base Base, public Public, token keboola
 
 	httpClient := base.HTTPClient()
 	v := &project{
-		base:             base,
-		public:           public,
-		token:            token,
-		projectFeatures:  token.Owner.Features.ToMap(),
-		keboolaAPIClient: keboola.NewAPI(ctx, public.StorageAPIHost(), keboola.WithClient(&httpClient), keboola.WithToken(token.Token)),
+		base:              base,
+		public:            public,
+		token:             token,
+		projectFeatures:   token.Owner.Features.ToMap(),
+		keboolaProjectAPI: keboola.NewAPI(ctx, public.StorageAPIHost(), keboola.WithClient(&httpClient), keboola.WithToken(token.Token)),
 	}
 
 	return v, nil
@@ -70,13 +70,13 @@ func (v project) StorageAPITokenID() string {
 	return v.token.ID
 }
 
-func (v project) KeboolaAPIClient() *keboola.API {
-	return v.keboolaAPIClient
+func (v project) KeboolaProjectAPI() *keboola.API {
+	return v.keboolaProjectAPI
 }
 
 func (v project) ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider {
 	return func(ctx context.Context) *keboola.TicketProvider {
-		return keboola.NewTicketProvider(ctx, v.KeboolaAPIClient())
+		return keboola.NewTicketProvider(ctx, v.KeboolaProjectAPI())
 	}
 }
 

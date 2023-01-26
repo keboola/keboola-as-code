@@ -28,7 +28,7 @@ type branchesDialog struct {
 }
 
 type branchesDialogDeps interface {
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	Options() *options.Options
 }
 
@@ -38,10 +38,10 @@ func (p *Dialogs) AskAllowedBranches(ctx context.Context, deps branchesDialogDep
 
 func (d *branchesDialog) ask(ctx context.Context) (model.AllowedBranches, error) {
 	// Get Storage API
-	apiClient := d.deps.KeboolaAPIClient()
+	api := d.deps.KeboolaProjectAPI()
 
 	// List all branches
-	if v, err := apiClient.ListBranchesRequest().Send(ctx); err == nil {
+	if v, err := api.ListBranchesRequest().Send(ctx); err == nil {
 		for _, apiBranch := range *v {
 			d.allBranches = append(d.allBranches, model.NewBranch(apiBranch))
 		}

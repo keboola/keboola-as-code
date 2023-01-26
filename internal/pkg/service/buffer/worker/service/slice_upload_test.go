@@ -52,7 +52,7 @@ func TestSliceUploadTask(t *testing.T) {
 		Name:     "slice-upload-task-test",
 		IsSliced: true,
 	}
-	if _, err := project.KeboolaAPIClient().CreateFileResourceRequest(file).Send(ctx); err != nil {
+	if _, err := project.KeboolaProjectAPI().CreateFileResourceRequest(file).Send(ctx); err != nil {
 		assert.Fail(t, err.Error())
 	}
 

@@ -8,5 +8,5 @@ import (
 
 // onRemoteSave activates scheduler by Scheduler API when scheduler configuration is created/updated.
 func (m *schedulerMapper) onRemoteSave(grp *client.RunGroup, configState *model.ConfigState) {
-	grp.Add(m.KeboolaAPIClient().ActivateScheduleRequest(configState.ID, ""))
+	grp.Add(m.KeboolaProjectAPI().ActivateScheduleRequest(configState.ID, ""))
 }

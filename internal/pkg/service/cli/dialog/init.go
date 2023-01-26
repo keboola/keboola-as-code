@@ -17,7 +17,7 @@ import (
 
 type initDeps interface {
 	Options() *options.Options
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 }
 
 type hostAndTokenDependencies interface {

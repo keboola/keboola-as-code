@@ -105,7 +105,7 @@ func TestUploadAndImportE2E(t *testing.T) {
 	logger.Truncate()
 
 	// Check the target table
-	table, err := project.KeboolaAPIClient().
+	table, err := project.KeboolaProjectAPI().
 		GetTableRequest(keboola.MustParseTableID(export.Mapping.TableID)).
 		Send(ctx)
 	assert.NoError(t, err)

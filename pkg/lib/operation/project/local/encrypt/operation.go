@@ -18,7 +18,7 @@ type Options struct {
 }
 
 type dependencies interface {
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	ProjectID() int
 	Tracer() trace.Tracer
@@ -31,7 +31,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	logger := d.Logger()
 
 	// Get API
-	apiClient := d.KeboolaAPIClient()
+	api := d.KeboolaProjectAPI()
 
 	// Get plan
 	plan := encrypt.NewPlan(projectState)
@@ -49,7 +49,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		}
 
 		// Invoke
-		if err := plan.Invoke(ctx, d.ProjectID(), logger, apiClient, projectState.State()); err != nil {
+		if err := plan.Invoke(ctx, d.ProjectID(), logger, api, projectState.State()); err != nil {
 			return err
 		}
 

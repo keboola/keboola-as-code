@@ -22,13 +22,13 @@ const (
 )
 
 type Manager struct {
-	clock     clock.Clock
-	client    *keboola.API
-	transport http.RoundTripper
+	clock             clock.Clock
+	keboolaProjectAPI *keboola.API
+	transport         http.RoundTripper
 }
 
 func NewManager(clk clock.Clock, client *keboola.API, transport http.RoundTripper) *Manager {
-	return &Manager{clock: clk, client: client, transport: transport}
+	return &Manager{clock: clk, keboolaProjectAPI: client, transport: transport}
 }
 
 func (m *Manager) CreateFilesForReceiver(ctx context.Context, rb rollback.Builder, receiver *model.Receiver) error {
@@ -107,7 +107,7 @@ func (m *Manager) createFile(ctx context.Context, rb rollback.Builder, mapping m
 	fileName := file.Filename()
 	slice := model.NewSlice(file.FileKey, now, mapping, 1, nil)
 
-	resource, err := m.client.
+	resource, err := m.keboolaProjectAPI.
 		CreateFileResourceRequest(&keboola.File{
 			Name:        fileName,
 			IsSliced:    true,
@@ -120,7 +120,7 @@ func (m *Manager) createFile(ctx context.Context, rb rollback.Builder, mapping m
 	}
 
 	rb.Add(func(ctx context.Context) error {
-		_, err = m.client.DeleteFileRequest(resource.ID).Send(ctx)
+		_, err = m.keboolaProjectAPI.DeleteFileRequest(resource.ID).Send(ctx)
 		return nil
 	})
 

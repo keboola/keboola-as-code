@@ -184,8 +184,8 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 		logger:           logger,
 	}
 	d.tokenManager = token.NewManager(d)
-	d.tableManager = table.NewManager(d.KeboolaAPIClient())
-	d.fileManager = file.NewManager(d.Clock(), d.KeboolaAPIClient(), nil)
+	d.tableManager = table.NewManager(d.KeboolaProjectAPI())
+	d.fileManager = file.NewManager(d.Clock(), d.KeboolaProjectAPI(), nil)
 	return d, nil
 }
 
@@ -237,6 +237,6 @@ func (v *forProjectRequest) FileManager() *file.Manager {
 	return v.fileManager
 }
 
-func (v *forProjectRequest) KeboolaAPIClient() *keboola.API {
-	return v.Project.KeboolaAPIClient()
+func (v *forProjectRequest) KeboolaProjectAPI() *keboola.API {
+	return v.Project.KeboolaProjectAPI()
 }

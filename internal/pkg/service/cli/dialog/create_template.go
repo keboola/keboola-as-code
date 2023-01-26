@@ -20,7 +20,7 @@ import (
 
 type createTmplDialogDeps interface {
 	Components() *model.ComponentsMap
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Options() *options.Options
 }
@@ -58,11 +58,11 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 	}
 
 	// Get Storage API
-	apiClient := d.deps.KeboolaAPIClient()
+	api := d.deps.KeboolaProjectAPI()
 
 	// Load branches
 	var allBranches []*model.Branch
-	if result, err := apiClient.ListBranchesRequest().Send(ctx); err == nil {
+	if result, err := api.ListBranchesRequest().Send(ctx); err == nil {
 		for _, apiBranch := range *result {
 			allBranches = append(allBranches, model.NewBranch(apiBranch))
 		}
@@ -110,7 +110,7 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 
 	// Load configs
 	branchKey := keboola.BranchKey{ID: d.selectedBranch.ID}
-	if result, err := apiClient.ListConfigsAndRowsFrom(branchKey).Send(ctx); err == nil {
+	if result, err := api.ListConfigsAndRowsFrom(branchKey).Send(ctx); err == nil {
 		for _, component := range *result {
 			for _, apiConfig := range component.Configs {
 				d.allConfigs = append(d.allConfigs, model.NewConfigWithRows(apiConfig))

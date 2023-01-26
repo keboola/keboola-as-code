@@ -22,7 +22,7 @@ type DbtInitOptions struct {
 }
 
 type dependencies interface {
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Tracer() trace.Tracer
@@ -37,7 +37,7 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 		return err
 	}
 
-	branch, err := d.KeboolaAPIClient().GetDefaultBranchRequest().Send(ctx)
+	branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(ctx)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 
 	d.Logger().Info(`Creating a new workspace, please wait.`)
 	// Create workspace
-	w, err := d.KeboolaAPIClient().CreateWorkspace(
+	w, err := d.KeboolaProjectAPI().CreateWorkspace(
 		ctx,
 		branch.ID,
 		opts.WorkspaceName,

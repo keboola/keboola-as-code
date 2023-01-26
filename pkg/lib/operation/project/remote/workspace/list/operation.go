@@ -13,7 +13,7 @@ import (
 )
 
 type dependencies interface {
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Tracer() trace.Tracer
 }
@@ -24,13 +24,13 @@ func Run(ctx context.Context, d dependencies) (err error) {
 
 	logger := d.Logger()
 
-	branch, err := d.KeboolaAPIClient().GetDefaultBranchRequest().Send(ctx)
+	branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(ctx)
 	if err != nil {
 		return errors.Errorf("cannot find default branch: %w", err)
 	}
 
 	logger.Info("Loading workspaces, please wait.")
-	workspaces, err := d.KeboolaAPIClient().ListWorkspaces(ctx, branch.ID)
+	workspaces, err := d.KeboolaProjectAPI().ListWorkspaces(ctx, branch.ID)
 	if err != nil {
 		return err
 	}

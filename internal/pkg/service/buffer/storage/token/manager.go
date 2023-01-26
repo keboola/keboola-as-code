@@ -15,15 +15,15 @@ import (
 )
 
 type Manager struct {
-	keboolaAPI *keboola.API
+	keboolaProjectAPI *keboola.API
 }
 
 type dependencies interface {
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 }
 
 func NewManager(d dependencies) *Manager {
-	return &Manager{keboolaAPI: d.KeboolaAPIClient()}
+	return &Manager{keboolaProjectAPI: d.KeboolaProjectAPI()}
 }
 
 func (m *Manager) CreateTokens(ctx context.Context, rb rollback.Builder, receiver *model.Receiver) error {
@@ -52,7 +52,7 @@ func (m *Manager) CreateToken(ctx context.Context, rb rollback.Builder, export *
 	}
 
 	rb.Add(func(ctx context.Context) error {
-		_, err := m.keboolaAPI.DeleteTokenRequest(token.ID).Send(ctx)
+		_, err := m.keboolaProjectAPI.DeleteTokenRequest(token.ID).Send(ctx)
 		return err
 	})
 
@@ -80,7 +80,7 @@ func (m *Manager) RefreshTokens(ctx context.Context, rb rollback.Builder, tokens
 
 func (m *Manager) RefreshToken(ctx context.Context, rb rollback.Builder, token *model.Token) error {
 	// Try refresh token
-	newToken, err := m.keboolaAPI.RefreshTokenRequest(token.ID).Send(ctx)
+	newToken, err := m.keboolaProjectAPI.RefreshTokenRequest(token.ID).Send(ctx)
 
 	// Create a new token, if it doesn't exist
 	var apiErr *keboola.StorageError
@@ -88,7 +88,7 @@ func (m *Manager) RefreshToken(ctx context.Context, rb rollback.Builder, token *
 		newToken, err = m.createTokenRequest(token.ExportKey, token.BucketPermissions).Send(ctx)
 		if err == nil {
 			rb.Add(func(ctx context.Context) error {
-				_, err := m.keboolaAPI.DeleteTokenRequest(newToken.ID).Send(ctx)
+				_, err := m.keboolaProjectAPI.DeleteTokenRequest(newToken.ID).Send(ctx)
 				return err
 			})
 		}
@@ -104,7 +104,7 @@ func (m *Manager) RefreshToken(ctx context.Context, rb rollback.Builder, token *
 }
 
 func (m *Manager) createTokenRequest(exportKey key.ExportKey, permissions keboola.BucketPermissions) client.APIRequest[*keboola.Token] {
-	return m.keboolaAPI.
+	return m.keboolaProjectAPI.
 		CreateTokenRequest(
 			keboola.WithDescription(
 				// Max length of description is 255 characters,

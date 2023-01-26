@@ -15,7 +15,7 @@ type configMetadataMapper struct {
 }
 
 type dependencies interface {
-	KeboolaAPIClient() *keboola.API
+	KeboolaProjectAPI() *keboola.API
 }
 
 func NewMapper(s *state.State, d dependencies) *configMetadataMapper {
