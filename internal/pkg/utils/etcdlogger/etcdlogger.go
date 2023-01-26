@@ -1,4 +1,4 @@
-package etcdhelper
+package etcdlogger
 
 import (
 	"bufio"

@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
@@ -120,7 +121,7 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespac
 
 	// Add operations logger
 	if verbose {
-		etcdClient.KV = KVLogWrapper(etcdClient.KV, os.Stdout)
+		etcdClient.KV = etcdlogger.KVLogWrapper(etcdClient.KV, os.Stdout)
 	}
 
 	// Cleanup namespace after the test

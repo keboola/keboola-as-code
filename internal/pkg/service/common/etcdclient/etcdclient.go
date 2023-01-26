@@ -17,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
 
 const (
@@ -193,7 +193,7 @@ func New(ctx context.Context, proc *servicectx.Process, tracer trace.Tracer, end
 
 	// Log each KV operation as a debug message, if enabled
 	if conf.debugOpLogs {
-		c.KV = etcdhelper.KVLogWrapper(c.KV, logger.DebugWriter())
+		c.KV = etcdlogger.KVLogWrapper(c.KV, logger.DebugWriter())
 	}
 
 	// Sync endpoints list from cluster, it is used also as a connection check.
