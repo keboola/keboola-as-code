@@ -42,7 +42,6 @@ func main() {
 	// Start DataDog tracer.
 	if envs.Get("DATADOG_ENABLED") != "false" {
 		tracer.Start(
-			tracer.WithServiceName("buffer-service"),
 			tracer.WithLogger(telemetry.NewDDLogger(logger)),
 			tracer.WithRuntimeMetrics(),
 			tracer.WithAnalytics(true),
