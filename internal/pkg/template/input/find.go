@@ -5,8 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/encryptionapi"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/umisama/go-regexpcache"
@@ -26,7 +25,7 @@ type ObjectField struct {
 }
 
 // Find potential user inputs in config or config row.
-func Find(objectKey model.Key, component *storageapi.Component, content *orderedmap.OrderedMap) []ObjectField {
+func Find(objectKey model.Key, component *keboola.Component, content *orderedmap.OrderedMap) []ObjectField {
 	var out []ObjectField
 	content.VisitAllRecursive(func(fieldPath orderedmap.Path, value interface{}, parent interface{}) {
 		// Root key must be "parameters"
@@ -48,7 +47,7 @@ func Find(objectKey model.Key, component *storageapi.Component, content *ordered
 		var inputKind Kind
 		var inputOptions Options
 		var defaultValue interface{}
-		isSecret := encryptionapi.IsKeyToEncrypt(string(fieldKey))
+		isSecret := keboola.IsKeyToEncrypt(string(fieldKey))
 		valRef := reflect.ValueOf(value)
 		switch valRef.Kind() {
 		case reflect.String:

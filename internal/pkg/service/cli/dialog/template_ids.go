@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -68,7 +68,7 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 				errs.Append(errors.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
 				continue
 			}
-			key = model.ConfigKey{BranchID: d.branch.ID, ComponentID: storageapi.ComponentID(m[1]), ID: storageapi.ConfigID(m[2])}
+			key = model.ConfigKey{BranchID: d.branch.ID, ComponentID: keboola.ComponentID(m[1]), ID: keboola.ConfigID(m[2])}
 		case strings.HasPrefix(line, `### Row`):
 			// Row ID definition
 			m := regexpcache.MustCompile(` ([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+):([a-zA-Z0-9\.\-]+)$`).FindStringSubmatch(line)
@@ -76,7 +76,7 @@ func (d *templateIdsDialog) parse(result string) ([]create.ConfigDef, error) {
 				errs.Append(errors.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
 				continue
 			}
-			key = model.ConfigRowKey{BranchID: d.branch.ID, ComponentID: storageapi.ComponentID(m[1]), ConfigID: storageapi.ConfigID(m[2]), ID: storageapi.RowID(m[3])}
+			key = model.ConfigRowKey{BranchID: d.branch.ID, ComponentID: keboola.ComponentID(m[1]), ConfigID: keboola.ConfigID(m[2]), ID: keboola.RowID(m[3])}
 		default:
 			errs.Append(errors.Errorf(`line %d: cannot parse "%s"`, lineNum, line))
 			continue

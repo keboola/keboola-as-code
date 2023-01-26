@@ -11,7 +11,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -145,7 +145,7 @@ func TestRemoteLoadMapper(t *testing.T) {
 	httpTransport.RegisterResponder(
 		resty.MethodGet,
 		`=~storage/branch/123/metadata`,
-		httpmock.NewJsonResponderOrPanic(200, []storageapi.MetadataDetail{
+		httpmock.NewJsonResponderOrPanic(200, []keboola.MetadataDetail{
 			{
 				ID:        "1",
 				Key:       "KBC.KaC.branch-meta",
@@ -159,7 +159,7 @@ func TestRemoteLoadMapper(t *testing.T) {
 	httpTransport.RegisterResponder(
 		resty.MethodGet,
 		`=~storage/branch/123/search/component-configurations`,
-		httpmock.NewJsonResponderOrPanic(200, []storageapi.ConfigMetadataItem{}).Once(),
+		httpmock.NewJsonResponderOrPanic(200, []keboola.ConfigMetadataItem{}).Once(),
 	)
 
 	// Mocked response: components + configs
@@ -227,7 +227,7 @@ func TestLoadConfigMetadata(t *testing.T) {
 	httpTransport.RegisterResponder(
 		resty.MethodGet,
 		`=~storage/branch/123/metadata`,
-		httpmock.NewJsonResponderOrPanic(200, storageapi.MetadataDetails{
+		httpmock.NewJsonResponderOrPanic(200, keboola.MetadataDetails{
 			{
 				ID:        "1",
 				Key:       "KBC.KaC.branch-meta",
@@ -240,11 +240,11 @@ func TestLoadConfigMetadata(t *testing.T) {
 	// Mocked response: config metadata
 	httpTransport.RegisterResponder(
 		"GET", `=~/storage/branch/123/search/component-configurations`,
-		httpmock.NewJsonResponderOrPanic(200, []storageapi.ConfigMetadataItem{
+		httpmock.NewJsonResponderOrPanic(200, []keboola.ConfigMetadataItem{
 			{
 				ComponentID: "foo.bar",
 				ConfigID:    "456",
-				Metadata: storageapi.MetadataDetails{
+				Metadata: keboola.MetadataDetails{
 					{
 						ID:        "1",
 						Key:       "KBC.KaC.Meta",
@@ -330,7 +330,7 @@ func TestSaveConfigMetadata_Create(t *testing.T) {
 	httpTransport.RegisterResponder(resty.MethodPost, `=~/storage/branch/123/components/foo.bar/configs/456/metadata$`,
 		func(req *http.Request) (*http.Response, error) {
 			httpRequest = req
-			response := storageapi.MetadataDetails{
+			response := keboola.MetadataDetails{
 				{ID: "1", Key: "KBC-KaC-meta1", Value: "val1", Timestamp: "xxx"},
 			}
 			return httpmock.NewStringResponse(200, json.MustEncodeString(response, true)), nil
@@ -402,7 +402,7 @@ func TestSaveConfigMetadata_Update(t *testing.T) {
 	httpTransport.RegisterResponder(resty.MethodPost, `=~/storage/branch/123/components/foo.bar/configs/456/metadata$`,
 		func(req *http.Request) (*http.Response, error) {
 			httpRequest = req
-			response := storageapi.MetadataDetails{
+			response := keboola.MetadataDetails{
 				{ID: "1", Key: "KBC-KaC-meta1", Value: "val1", Timestamp: "xxx"},
 			}
 			return httpmock.NewStringResponse(200, json.MustEncodeString(response, true)), nil

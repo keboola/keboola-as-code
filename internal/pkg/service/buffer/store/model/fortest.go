@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -44,8 +44,9 @@ func ExportForTest(receiverKey key.ReceiverKey, exportID, tableID string, column
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: key.ExportID(exportID)}
 	fileKey := key.FileKey{ExportKey: exportKey, FileID: key.FileID(now)}
 	sliceKey := key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(now)}
+
 	mapping := MappingForTest(exportKey)
-	mapping.TableID = storageapi.MustParseTableID(tableID)
+	mapping.TableID = keboola.MustParseTableID(tableID)
 	mapping.Columns = columns
 	return Export{
 		ExportBase: ExportBase{
@@ -56,19 +57,19 @@ func ExportForTest(receiverKey key.ReceiverKey, exportID, tableID string, column
 		Mapping: mapping,
 		Token: Token{
 			ExportKey:    exportKey,
-			StorageToken: storageapi.Token{Token: "my-token", ID: "1234"},
+			StorageToken: keboola.Token{Token: "my-token", ID: "1234"},
 		},
 		OpenedFile: File{
 			FileKey:         fileKey,
 			State:           filestate.Opened,
 			Mapping:         mapping,
-			StorageResource: &storageapi.File{},
+			StorageResource: &keboola.File{},
 		},
 		OpenedSlice: Slice{
 			SliceKey:        sliceKey,
 			State:           slicestate.Writing,
 			Mapping:         mapping,
-			StorageResource: &storageapi.File{},
+			StorageResource: &keboola.File{},
 			Number:          1,
 		},
 	}
@@ -77,7 +78,7 @@ func ExportForTest(receiverKey key.ReceiverKey, exportID, tableID string, column
 func MappingForTest(exportKey key.ExportKey) Mapping {
 	return Mapping{
 		MappingKey: key.MappingKey{ExportKey: exportKey, RevisionID: 1},
-		TableID:    storageapi.MustParseTableID("in.c-table.table1"),
+		TableID:    keboola.MustParseTableID("in.c-table.table1"),
 		Columns:    []column.Column{column.ID{Name: "id"}},
 	}
 }

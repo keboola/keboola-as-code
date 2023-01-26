@@ -3,7 +3,7 @@ package naming
 import (
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -64,7 +64,7 @@ func (g Generator) BranchPath(branch *Branch) AbsPath {
 	return g.registry.ensureUniquePath(branch.Key(), p)
 }
 
-func (g Generator) ConfigPath(parentPath string, component *storageapi.Component, config *Config) AbsPath {
+func (g Generator) ConfigPath(parentPath string, component *keboola.Component, config *Config) AbsPath {
 	// Get parent in the local filesystem
 	parentKey, err := config.ParentKey()
 	if err != nil {
@@ -94,7 +94,7 @@ func (g Generator) ConfigPath(parentPath string, component *storageapi.Component
 	case parentKind.IsConfig() && component.IsVariables():
 		// Regular component with variables
 		template = string(g.template.VariablesConfig)
-	case parentKind.IsConfigRow() && component.IsVariables() && parentKey.(ConfigRowKey).ComponentID == storageapi.SharedCodeComponentID:
+	case parentKind.IsConfigRow() && component.IsVariables() && parentKey.(ConfigRowKey).ComponentID == keboola.SharedCodeComponentID:
 		// Shared code is config row and can have variables
 		template = string(g.template.VariablesConfig)
 	case parentKind.IsEmpty() || parentKind.IsBranch():
@@ -116,7 +116,7 @@ func (g Generator) ConfigPath(parentPath string, component *storageapi.Component
 	return g.registry.ensureUniquePath(config.Key(), p)
 }
 
-func (g Generator) ConfigRowPath(parentPath string, component *storageapi.Component, row *ConfigRow) AbsPath {
+func (g Generator) ConfigRowPath(parentPath string, component *keboola.Component, row *ConfigRow) AbsPath {
 	if len(parentPath) == 0 {
 		panic(errors.Errorf(`config row "%s" parent path cannot be empty"`, row))
 	}
@@ -198,11 +198,11 @@ func (g Generator) CodeFilePath(code *Code) string {
 	return filesystem.Join(code.Path(), code.CodeFileName)
 }
 
-func (g Generator) SharedCodeFilePath(parentPath string, targetComponentID storageapi.ComponentID) string {
+func (g Generator) SharedCodeFilePath(parentPath string, targetComponentID keboola.ComponentID) string {
 	return filesystem.Join(parentPath, g.CodeFileName(targetComponentID))
 }
 
-func (g Generator) CodeFileName(componentID storageapi.ComponentID) string {
+func (g Generator) CodeFileName(componentID keboola.ComponentID) string {
 	return CodeFileName + "." + CodeFileExt(componentID)
 }
 

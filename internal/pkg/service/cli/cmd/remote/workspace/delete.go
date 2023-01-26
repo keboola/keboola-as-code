@@ -3,8 +3,7 @@ package workspace
 import (
 	"time"
 
-	"github.com/keboola/go-client/pkg/sandboxesapi"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
@@ -34,12 +33,12 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 
 			defer func() { d.EventSender().SendCmdEvent(d.CommandCtx(), start, cmdErr, "remote-list-workspace") }()
 
-			branch, err := storageapi.GetDefaultBranchRequest().Send(d.CommandCtx(), d.StorageAPIClient())
+			branch, err := keboola.GetDefaultBranchRequest().Send(d.CommandCtx(), d.KeboolaAPIClient())
 			if err != nil {
 				return errors.Errorf("cannot find default branch: %w", err)
 			}
 
-			allWorkspaces, err := sandboxesapi.List(d.CommandCtx(), d.StorageAPIClient(), d.SandboxesAPIClient(), branch.ID)
+			allWorkspaces, err := keboola.ListWorkspaces(d.CommandCtx(), d.KeboolaAPIClient(), d.SandboxesAPIClient(), branch.ID)
 			if err != nil {
 				return err
 			}

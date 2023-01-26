@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -57,7 +57,7 @@ func (m *schedulerMapper) isSchedulerConfigFromMainBranch(objectState model.Obje
 		return false
 	}
 
-	if configState.ComponentID != storageapi.SchedulerComponentID {
+	if configState.ComponentID != keboola.SchedulerComponentID {
 		return false
 	}
 

@@ -3,7 +3,7 @@ package links_test
 import (
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -156,8 +156,8 @@ func createRemoteTranWithSharedCode(t *testing.T, sharedCodeKey model.ConfigKey,
 
 	key := model.ConfigKey{
 		BranchID:    sharedCodeKey.BranchID,
-		ComponentID: storageapi.ComponentID("keboola.python-transformation-v2"),
-		ID:          storageapi.ConfigID("001"),
+		ComponentID: keboola.ComponentID("keboola.python-transformation-v2"),
+		ID:          keboola.ConfigID("001"),
 	}
 
 	transformation := &model.ConfigState{

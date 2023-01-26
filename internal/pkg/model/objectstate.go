@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -53,17 +53,17 @@ type ConfigRowState struct {
 
 // ToAPIObjectKey ...
 func (b *BranchState) ToAPIObjectKey() any {
-	return storageapi.BranchKey{ID: b.ID}
+	return keboola.BranchKey{ID: b.ID}
 }
 
 // ToAPIObjectKey ...
 func (c *ConfigState) ToAPIObjectKey() any {
-	return storageapi.ConfigKey{BranchID: c.BranchID, ComponentID: c.ComponentID, ID: c.ID}
+	return keboola.ConfigKey{BranchID: c.BranchID, ComponentID: c.ComponentID, ID: c.ID}
 }
 
 // ToAPIObjectKey ...
 func (r *ConfigRowState) ToAPIObjectKey() any {
-	return storageapi.ConfigRowKey{BranchID: r.BranchID, ComponentID: r.ComponentID, ConfigID: r.ConfigID, ID: r.ID}
+	return keboola.ConfigRowKey{BranchID: r.BranchID, ComponentID: r.ComponentID, ConfigID: r.ConfigID, ID: r.ID}
 }
 
 func (b *BranchState) HasState(stateType StateType) bool {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,7 +27,7 @@ func TestSharedCodeLinksMatchId(t *testing.T) {
 	}
 	idUtils := newIDUtils()
 	for i, c := range cases {
-		assert.Equal(t, storageapi.RowID(c.expected), idUtils.match(c.input), fmt.Sprintf(`Case "%d"`, i))
+		assert.Equal(t, keboola.RowID(c.expected), idUtils.match(c.input), fmt.Sprintf(`Case "%d"`, i))
 	}
 }
 

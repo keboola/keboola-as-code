@@ -3,7 +3,7 @@ package orchestrator
 import (
 	"strconv"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 
@@ -76,7 +76,7 @@ func (p *taskParser) phaseID() (int, error) {
 	return int(value), nil
 }
 
-func (p *taskParser) componentID() (storageapi.ComponentID, error) {
+func (p *taskParser) componentID() (keboola.ComponentID, error) {
 	taskRaw, found := p.content.Get(`task`)
 	if !found {
 		return "", errors.New(`missing "task" key`)
@@ -98,7 +98,7 @@ func (p *taskParser) componentID() (storageapi.ComponentID, error) {
 	}
 	task.Delete(`componentId`)
 	p.content.Set(`task`, task)
-	return storageapi.ComponentID(value), nil
+	return keboola.ComponentID(value), nil
 }
 
 func (p *taskParser) hasConfigID() bool {
@@ -114,7 +114,7 @@ func (p *taskParser) hasConfigID() bool {
 	return found && value != ""
 }
 
-func (p *taskParser) configID() (storageapi.ConfigID, error) {
+func (p *taskParser) configID() (keboola.ConfigID, error) {
 	taskRaw, found := p.content.Get(`task`)
 	if !found {
 		return "", errors.New(`missing "task" key`)
@@ -136,7 +136,7 @@ func (p *taskParser) configID() (storageapi.ConfigID, error) {
 	}
 	task.Delete(`configId`)
 	p.content.Set(`task`, task)
-	return storageapi.ConfigID(value), nil
+	return keboola.ConfigID(value), nil
 }
 
 func (p *taskParser) hasConfigPath() bool {

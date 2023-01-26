@@ -3,7 +3,7 @@ package ignore
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -60,7 +60,7 @@ func (m *ignoreMapper) isIgnored(object model.Object) bool {
 // isIgnoredConfig ignores all variables configs which are not attached to a config.
 func (m *ignoreMapper) isIgnoredConfig(config *model.Config) bool {
 	// Variables config
-	if config.ComponentID == storageapi.VariablesComponentID {
+	if config.ComponentID == keboola.VariablesComponentID {
 		// Without target config
 		if !config.Relations.Has(model.VariablesForRelType) && !config.Relations.Has(model.SharedCodeVariablesForRelType) {
 			m.logger.Debugf("Ignored unattached variables %s", config.Desc())
@@ -70,7 +70,7 @@ func (m *ignoreMapper) isIgnoredConfig(config *model.Config) bool {
 	}
 
 	// Scheduler config
-	if config.ComponentID == storageapi.SchedulerComponentID {
+	if config.ComponentID == keboola.SchedulerComponentID {
 		relationRaw, err := config.Relations.GetOneByType(model.SchedulerForRelType)
 		if err != nil || relationRaw == nil {
 			// Relation is missing or invalid, scheduler is ignored

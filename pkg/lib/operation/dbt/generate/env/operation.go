@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/sandboxesapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
@@ -15,7 +15,7 @@ import (
 
 type GenerateEnvOptions struct {
 	TargetName string
-	Workspace  *sandboxesapi.Sandbox
+	Workspace  *keboola.Workspace
 }
 
 type dependencies interface {
@@ -34,7 +34,7 @@ func Run(ctx context.Context, opts GenerateEnvOptions, d dependencies) (err erro
 		return err
 	}
 
-	workspace, err := sandboxesapi.GetInstanceRequest(opts.Workspace.ID).Send(ctx, d.SandboxesAPIClient())
+	workspace, err := keboola.GetWorkspaceInstanceRequest(opts.Workspace.ID).Send(ctx, d.SandboxesAPIClient())
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func Run(ctx context.Context, opts GenerateEnvOptions, d dependencies) (err erro
 	d.Logger().Infof(`  export DBT_KBC_%s_WAREHOUSE=%s`, targetUpper, workspace.Details.Connection.Warehouse)
 	d.Logger().Infof(`  export DBT_KBC_%s_DATABASE=%s`, targetUpper, workspace.Details.Connection.Database)
 	host := workspace.Host
-	if workspace.Type == sandboxesapi.TypeSnowflake {
+	if workspace.Type == keboola.WorkspaceTypeSnowflake {
 		host = strings.Replace(host, ".snowflakecomputing.com", "", 1)
 	}
 	d.Logger().Infof(`  export DBT_KBC_%s_ACCOUNT=%s`, targetUpper, host)

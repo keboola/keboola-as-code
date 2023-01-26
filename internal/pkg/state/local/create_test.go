@@ -4,7 +4,7 @@ import (
 	jsonlib "encoding/json"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -30,7 +30,7 @@ func TestLocalCreateConfigDefaultContent(t *testing.T) {
 	component.Schema = getTestSchema()
 
 	// Create
-	manager := newTestLocalManager(t, []*storageapi.Component{component})
+	manager := newTestLocalManager(t, []*keboola.Component{component})
 	key := model.ConfigKey{
 		BranchID:    123,
 		ComponentID: `keboola.foo`,
@@ -66,7 +66,7 @@ func TestLocalCreateConfigRowDefaultContent(t *testing.T) {
 	component.Schema = getTestSchema()
 
 	// Create
-	manager := newTestLocalManager(t, []*storageapi.Component{component})
+	manager := newTestLocalManager(t, []*keboola.Component{component})
 	key := model.ConfigRowKey{
 		BranchID:    123,
 		ComponentID: `keboola.foo`,
@@ -94,7 +94,7 @@ func TestLocalCreateConfigContentFromSchema(t *testing.T) {
 	component.Schema = getTestSchema()
 
 	// Create
-	manager := newTestLocalManager(t, []*storageapi.Component{component})
+	manager := newTestLocalManager(t, []*keboola.Component{component})
 	key := model.ConfigKey{
 		BranchID:    123,
 		ComponentID: `keboola.foo`,
@@ -121,7 +121,7 @@ func TestLocalCreateConfigRowContentFromSchema(t *testing.T) {
 	component.SchemaRow = getTestSchema()
 
 	// Create
-	manager := newTestLocalManager(t, []*storageapi.Component{component})
+	manager := newTestLocalManager(t, []*keboola.Component{component})
 	key := model.ConfigRowKey{
 		BranchID:    123,
 		ComponentID: `keboola.foo`,
@@ -145,7 +145,7 @@ func TestLocalCreateConfigEmptyContent(t *testing.T) {
 	component := getTestComponent()
 
 	// Create
-	manager := newTestLocalManager(t, []*storageapi.Component{component})
+	manager := newTestLocalManager(t, []*keboola.Component{component})
 	key := model.ConfigKey{
 		BranchID:    123,
 		ComponentID: `keboola.foo`,
@@ -169,7 +169,7 @@ func TestLocalCreateConfigRowEmptyContent(t *testing.T) {
 	component := getTestComponent()
 
 	// Create
-	manager := newTestLocalManager(t, []*storageapi.Component{component})
+	manager := newTestLocalManager(t, []*keboola.Component{component})
 	key := model.ConfigRowKey{
 		BranchID:    123,
 		ComponentID: `keboola.foo`,
@@ -187,9 +187,9 @@ func TestLocalCreateConfigRowEmptyContent(t *testing.T) {
 	assert.Equal(t, expectedContent, json.MustEncodeString(row.Content, false))
 }
 
-func getTestComponent() *storageapi.Component {
-	return &storageapi.Component{
-		ComponentKey:   storageapi.ComponentKey{ID: `keboola.foo`},
+func getTestComponent() *keboola.Component {
+	return &keboola.Component{
+		ComponentKey:   keboola.ComponentKey{ID: `keboola.foo`},
 		Type:           `other`,
 		EmptyConfig:    orderedmap.New(),
 		EmptyConfigRow: orderedmap.New(),

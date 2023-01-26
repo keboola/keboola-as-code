@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
@@ -72,12 +72,12 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 	branches := make(map[model.BranchKey]*model.Branch)
 	configs := make([]*model.ConfigWithRows, 0)
 	configsLock := &sync.Mutex{}
-	configsMetadata := make(map[model.ConfigKey]storageapi.Metadata)
+	configsMetadata := make(map[model.ConfigKey]keboola.Metadata)
 	configsMetadataLock := &sync.Mutex{}
 
-	req := storageapi.
+	req := keboola.
 		ListBranchesRequest().
-		WithOnSuccess(func(ctx context.Context, sender client.Sender, apiBranches *[]*storageapi.Branch) error {
+		WithOnSuccess(func(ctx context.Context, sender client.Sender, apiBranches *[]*keboola.Branch) error {
 			wg := client.NewWaitGroup(ctx, sender)
 			for _, apiBranch := range *apiBranches {
 				branch := model.NewBranch(apiBranch)
@@ -91,18 +91,18 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 				branches[branch.BranchKey] = branch
 
 				// Load branch metadata
-				wg.Send(storageapi.
+				wg.Send(keboola.
 					ListBranchMetadataRequest(apiBranch.BranchKey).
-					WithOnSuccess(func(_ context.Context, _ client.Sender, metadata *storageapi.MetadataDetails) error {
+					WithOnSuccess(func(_ context.Context, _ client.Sender, metadata *keboola.MetadataDetails) error {
 						branch.Metadata = model.BranchMetadata(metadata.ToMap())
 						return nil
 					}),
 				)
 
 				// Load configs and rows
-				wg.Send(storageapi.
+				wg.Send(keboola.
 					ListConfigsAndRowsFrom(apiBranch.BranchKey).
-					WithOnSuccess(func(_ context.Context, _ client.Sender, components *[]*storageapi.ComponentWithConfigs) error {
+					WithOnSuccess(func(_ context.Context, _ client.Sender, components *[]*keboola.ComponentWithConfigs) error {
 						// Save component, it contains all configs and rows
 						for _, apiComponent := range *components {
 							// Configs
@@ -138,9 +138,9 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 				)
 
 				// Load configs metadata
-				wg.Send(storageapi.
+				wg.Send(keboola.
 					ListConfigMetadataRequest(apiBranch.ID).
-					WithOnSuccess(func(_ context.Context, _ client.Sender, metadata *storageapi.ConfigsMetadata) error {
+					WithOnSuccess(func(_ context.Context, _ client.Sender, metadata *keboola.ConfigsMetadata) error {
 						for _, item := range *metadata {
 							configKey := model.ConfigKey{BranchID: item.BranchID, ComponentID: item.ComponentID, ID: item.ConfigID}
 							configsMetadataLock.Lock()
@@ -306,7 +306,7 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 			metadataRequestLevel = object.Level() + 1
 		}
 		changedFields.Remove("metadata")
-		u.runGroupFor(metadataRequestLevel).Add(storageapi.AppendMetadataRequest(v.ToAPIObjectKey(), v.ToAPIMetadata()))
+		u.runGroupFor(metadataRequestLevel).Add(keboola.AppendMetadataRequest(v.ToAPIObjectKey(), v.ToAPIMetadata()))
 	}
 
 	// Create or update
@@ -319,11 +319,11 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 	}
 }
 
-func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe) client.APIRequest[storageapi.Object] {
+func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe) client.APIRequest[keboola.Object] {
 	apiObject, _ := recipe.Object.(model.ToAPIObject).ToAPIObject(u.changeDescription, nil)
-	request := storageapi.
+	request := keboola.
 		CreateRequest(apiObject).
-		WithOnSuccess(func(_ context.Context, _ client.Sender, apiObject storageapi.Object) error {
+		WithOnSuccess(func(_ context.Context, _ client.Sender, apiObject keboola.Object) error {
 			// Update internal state
 			object.SetObjectID(apiObject.ObjectId())
 			objectState.SetRemoteState(object)
@@ -331,7 +331,7 @@ func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.O
 			return nil
 		}).
 		WithOnError(func(ctx context.Context, sender client.Sender, err error) error {
-			var storageAPIErr *storageapi.Error
+			var storageAPIErr *keboola.Error
 			if errors.As(err, &storageAPIErr) {
 				if storageAPIErr.ErrCode == "configurationAlreadyExists" || storageAPIErr.ErrCode == "configurationRowAlreadyExists" {
 					// Object exists -> update instead of create
@@ -349,7 +349,7 @@ func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.O
 			WithBefore(func(ctx context.Context, _ client.Sender) error {
 				return u.branchesSem.Acquire(ctx, 1)
 			}).
-			WithOnComplete(func(_ context.Context, _ client.Sender, _ storageapi.Object, err error) error {
+			WithOnComplete(func(_ context.Context, _ client.Sender, _ keboola.Object, err error) error {
 				u.branchesSem.Release(1)
 				return err
 			})
@@ -358,11 +358,11 @@ func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.O
 	return request
 }
 
-func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) client.APIRequest[storageapi.Object] {
+func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) client.APIRequest[keboola.Object] {
 	apiObject, apiChangedFields := recipe.Object.(model.ToAPIObject).ToAPIObject(u.changeDescription, changedFields)
-	return storageapi.
+	return keboola.
 		UpdateRequest(apiObject, apiChangedFields).
-		WithOnSuccess(func(_ context.Context, _ client.Sender, apiObject storageapi.Object) error {
+		WithOnSuccess(func(_ context.Context, _ client.Sender, apiObject keboola.Object) error {
 			// Update internal state
 			objectState.SetRemoteState(object)
 			u.changes.AddUpdated(objectState)
@@ -371,7 +371,7 @@ func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.O
 }
 
 func (u *UnitOfWork) delete(objectState model.ObjectState) {
-	request := storageapi.
+	request := keboola.
 		DeleteRequest(objectState.(model.ToAPIObjectKey).ToAPIObjectKey()).
 		WithOnSuccess(func(_ context.Context, _ client.Sender, _ client.NoResult) error {
 			u.Manifest().Delete(objectState)

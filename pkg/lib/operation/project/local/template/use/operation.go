@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
@@ -55,11 +55,11 @@ type dependencies interface {
 	ProjectID() int
 	StorageAPIHost() string
 	StorageAPITokenID() string
-	StorageAPIClient() client.Sender
+	KeboolaAPIClient() client.Sender
 	SchedulerAPIClient() client.Sender
 	Components() *model.ComponentsMap
 	EncryptionAPIClient() client.Sender
-	ObjectIDGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider
+	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 }
 
 func LoadTemplateOptions() loadState.Options {

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -27,7 +27,7 @@ func (p *storageEnvTicketProvider) MustGet(key string) string {
 	key = strings.Trim(key, "%")
 	nameRegexp := regexpcache.MustCompile(`^TEST_NEW_TICKET_\d+$`)
 	if _, found := p.envs.Lookup(key); !found && nameRegexp.MatchString(key) {
-		ticket, err := storageapi.GenerateIDRequest().Send(p.ctx, p.storageAPIClient)
+		ticket, err := keboola.GenerateIDRequest().Send(p.ctx, p.storageAPIClient)
 		if err != nil {
 			panic(err)
 		}

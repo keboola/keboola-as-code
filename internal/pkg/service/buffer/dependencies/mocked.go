@@ -152,7 +152,7 @@ func (v *mocked) StatsCacheNode() *statistics.CacheNode {
 
 func (v *mocked) EventSender() *event.Sender {
 	if v.eventSender == nil {
-		v.eventSender = event.NewSender(v.Logger(), v.StorageAPIClient())
+		v.eventSender = event.NewSender(v.Logger(), v.KeboolaAPIClient())
 	}
 	return v.eventSender
 }

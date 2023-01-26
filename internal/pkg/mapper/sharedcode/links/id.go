@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -29,16 +29,16 @@ func newIDUtils() *idUtils {
 	return &idUtils{re: re}
 }
 
-func (v *idUtils) match(script string) storageapi.RowID {
+func (v *idUtils) match(script string) keboola.RowID {
 	script = strings.TrimSpace(script)
 	match := v.re.FindStringSubmatch(script)
 	if len(match) > 0 {
-		return storageapi.RowID(match[1])
+		return keboola.RowID(match[1])
 	}
 	return ""
 }
 
-func (v *idUtils) format(id storageapi.RowID) string {
+func (v *idUtils) format(id keboola.RowID) string {
 	placeholder := strings.ReplaceAll(IDFormat, `<ID>`, id.String())
 	if ok := v.re.MatchString(placeholder); !ok {
 		panic(errors.Errorf(`shared code id "%s" is invalid`, id))

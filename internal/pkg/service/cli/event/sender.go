@@ -6,14 +6,14 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-const componentID = storageapi.ComponentID("keboola.keboola-as-code")
+const componentID = keboola.ComponentID("keboola.keboola-as-code")
 
 type Sender struct {
 	logger    log.Logger
@@ -58,7 +58,7 @@ func (s Sender) sendCmdSuccessfulEvent(ctx context.Context, cmdStart time.Time, 
 	results := map[string]interface{}{
 		"projectId": s.projectID,
 	}
-	event, err := storageapi.CreatEventRequest(&storageapi.Event{
+	event, err := keboola.CreatEventRequest(&keboola.Event{
 		ComponentID: componentID,
 		Type:        "info",
 		Message:     msg,
@@ -83,7 +83,7 @@ func (s Sender) sendCmdFailedEvent(ctx context.Context, cmdStart time.Time, err 
 		"projectId": s.projectID,
 		"error":     fmt.Sprintf("%s", err),
 	}
-	event, err := storageapi.CreatEventRequest(&storageapi.Event{
+	event, err := keboola.CreatEventRequest(&keboola.Event{
 		ComponentID: componentID,
 		Type:        "error",
 		Message:     msg,

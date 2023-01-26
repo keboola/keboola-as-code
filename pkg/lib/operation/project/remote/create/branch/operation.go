@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -21,18 +21,18 @@ type Options struct {
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageAPIClient() client.Sender
+	KeboolaAPIClient() client.Sender
 }
 
-func Run(ctx context.Context, o Options, d dependencies) (branch *storageapi.Branch, err error) {
+func Run(ctx context.Context, o Options, d dependencies) (branch *keboola.Branch, err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.create.branch")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()
 
 	// Create branch by API
-	branch = &storageapi.Branch{Name: o.Name}
-	if _, err := storageapi.CreateBranchRequest(branch).Send(ctx, d.StorageAPIClient()); err != nil {
+	branch = &keboola.Branch{Name: o.Name}
+	if _, err := keboola.CreateBranchRequest(branch).Send(ctx, d.KeboolaAPIClient()); err != nil {
 		return nil, errors.Errorf(`cannot create branch: %w`, err)
 	}
 

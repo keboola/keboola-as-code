@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 
@@ -59,7 +59,7 @@ func ValidateObjects(logger log.Logger, objects model.ObjectStates) error {
 	return errs.ErrorOrNil()
 }
 
-func ValidateConfig(component *storageapi.Component, config *model.Config) error {
+func ValidateConfig(component *keboola.Component, config *model.Config) error {
 	// Skip deprecated component
 	if component.IsDeprecated() {
 		return nil
@@ -67,7 +67,7 @@ func ValidateConfig(component *storageapi.Component, config *model.Config) error
 	return ValidateContent(component.Schema, config.Content)
 }
 
-func ValidateConfigRow(component *storageapi.Component, configRow *model.ConfigRow) error {
+func ValidateConfigRow(component *keboola.Component, configRow *model.ConfigRow) error {
 	// Skip deprecated component
 	if component.IsDeprecated() {
 		return nil

@@ -3,7 +3,7 @@ package dialog
 import (
 	"strings"
 
-	"github.com/keboola/go-client/pkg/sandboxesapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
@@ -54,7 +54,7 @@ func validateTargetName(val interface{}) error {
 	return nil
 }
 
-func (p *Dialogs) AskGenerateEnv(d targetNameDialogDeps, allWorkspaces []*sandboxesapi.SandboxWithConfig) (env.GenerateEnvOptions, error) {
+func (p *Dialogs) AskGenerateEnv(d targetNameDialogDeps, allWorkspaces []*keboola.WorkspaceWithConfig) (env.GenerateEnvOptions, error) {
 	targetName, err := p.AskTargetName(d)
 	if err != nil {
 		return env.GenerateEnvOptions{}, err

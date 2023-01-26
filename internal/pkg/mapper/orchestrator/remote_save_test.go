@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -20,13 +20,13 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 
 	phase1Key := model.PhaseKey{
 		BranchID:    123,
-		ComponentID: storageapi.OrchestratorComponentID,
+		ComponentID: keboola.OrchestratorComponentID,
 		ConfigID:    `456`,
 		Index:       0,
 	}
 	phase2Key := model.PhaseKey{
 		BranchID:    123,
-		ComponentID: storageapi.OrchestratorComponentID,
+		ComponentID: keboola.OrchestratorComponentID,
 		ConfigID:    `456`,
 		Index:       1,
 	}
@@ -120,7 +120,7 @@ func TestMapBeforeRemoteSave(t *testing.T) {
 
 	key := model.ConfigKey{
 		BranchID:    123,
-		ComponentID: storageapi.OrchestratorComponentID,
+		ComponentID: keboola.OrchestratorComponentID,
 		ID:          `456`,
 	}
 	manifest := &model.ConfigManifest{ConfigKey: key}

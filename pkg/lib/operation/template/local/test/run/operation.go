@@ -6,8 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/keboola/go-client/pkg/jobsqueueapi"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"go.opentelemetry.io/otel/trace"
 
@@ -120,7 +119,7 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 	// Use template
 	tmplOpts := useTemplate.Options{
 		InstanceName: "test",
-		TargetBranch: model.BranchKey{ID: storageapi.BranchID(branchID)},
+		TargetBranch: model.BranchKey{ID: keboola.BranchID(branchID)},
 		Inputs:       inputValues,
 		InstanceID:   template.InstanceIDForTest,
 		SkipEncrypt:  true,
@@ -239,14 +238,14 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 
 	// Run the mainConfig job
 	queueClient := testPrj.JobsQueueAPIClient()
-	job, err := jobsqueueapi.CreateJobRequest(tmplInst.MainConfig.ComponentID, tmplInst.MainConfig.ConfigID).Send(ctx, queueClient)
+	job, err := keboola.CreateJobRequest(tmplInst.MainConfig.ComponentID, tmplInst.MainConfig.ConfigID).Send(ctx, queueClient)
 	if err != nil {
 		return err
 	}
 
 	timeoutCtx, cancelFn := context.WithTimeout(ctx, time.Minute*10)
 	defer cancelFn()
-	return jobsqueueapi.WaitForJob(timeoutCtx, queueClient, job)
+	return keboola.WaitForJob(timeoutCtx, queueClient, job)
 }
 
 func reloadPrjState(ctx context.Context, prjState *project.State) error {

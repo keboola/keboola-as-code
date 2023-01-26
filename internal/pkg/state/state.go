@@ -63,7 +63,7 @@ type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
 	Components() *model.ComponentsMap
-	StorageAPIClient() client.Sender
+	KeboolaAPIClient() client.Sender
 }
 
 func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *State, err error) {
@@ -73,7 +73,7 @@ func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *St
 	// Get dependencies
 	logger := d.Logger()
 	m := container.Manifest()
-	storageAPI := d.StorageAPIClient()
+	storageAPI := d.KeboolaAPIClient()
 	components := d.Components()
 
 	// Create mapper

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
@@ -26,29 +26,29 @@ func TestManager_EnsureBucketExists(t *testing.T) {
 	rb := rollback.New(d.Logger())
 	client := p.StorageAPIClient()
 
-	bucketID := storageapi.BucketID{
-		Stage:      storageapi.BucketStageIn,
+	bucketID := keboola.BucketID{
+		Stage:      keboola.BucketStageIn,
 		BucketName: "my-bucket",
 	}
 
 	// Create bucket
 	assert.NoError(t, m.EnsureBucketExists(ctx, rb, bucketID))
-	bucket, err := storageapi.GetBucketRequest(bucketID).Send(ctx, p.StorageAPIClient())
+	bucket, err := keboola.GetBucketRequest(bucketID).Send(ctx, p.StorageAPIClient())
 	assert.NoError(t, err)
 	assert.Equal(t, "in.c-my-bucket", bucket.ID.String())
 
 	// No operation, bucket exists
 	assert.NoError(t, m.EnsureBucketExists(ctx, rb, bucketID))
-	bucket, err = storageapi.GetBucketRequest(bucketID).Send(ctx, p.StorageAPIClient())
+	bucket, err = keboola.GetBucketRequest(bucketID).Send(ctx, p.StorageAPIClient())
 	assert.NoError(t, err)
 	assert.Equal(t, "in.c-my-bucket", bucket.ID.String())
 
 	// Test rollback, new bucket is deleted
 	rb.Invoke(ctx)
 	assert.Empty(t, d.DebugLogger().WarnMessages())
-	_, err = storageapi.GetBucketRequest(bucketID).Send(ctx, client)
+	_, err = keboola.GetBucketRequest(bucketID).Send(ctx, client)
 	assert.Error(t, err)
-	assert.Equal(t, "storage.buckets.notFound", err.(*storageapi.Error).ErrCode)
+	assert.Equal(t, "storage.buckets.notFound", err.(*keboola.Error).ErrCode)
 }
 
 func TestManager_EnsureTableExists(t *testing.T) {
@@ -61,9 +61,9 @@ func TestManager_EnsureTableExists(t *testing.T) {
 	rb := rollback.New(d.Logger())
 	client := p.StorageAPIClient()
 
-	tableID := storageapi.TableID{
-		BucketID: storageapi.BucketID{
-			Stage:      storageapi.BucketStageIn,
+	tableID := keboola.TableID{
+		BucketID: keboola.BucketID{
+			Stage:      keboola.BucketStageIn,
 			BucketName: "my-bucket",
 		},
 		TableName: "my-table",
@@ -83,13 +83,13 @@ func TestManager_EnsureTableExists(t *testing.T) {
 
 	// Create table
 	assert.NoError(t, m.EnsureTableExists(ctx, rb, export))
-	table, err := storageapi.GetTableRequest(tableID).Send(ctx, p.StorageAPIClient())
+	table, err := keboola.GetTableRequest(tableID).Send(ctx, p.StorageAPIClient())
 	assert.NoError(t, err)
 	assert.Equal(t, "in.c-my-bucket.my-table", table.ID.String())
 
 	// No operation, table exists
 	assert.NoError(t, m.EnsureTableExists(ctx, rb, export))
-	table, err = storageapi.GetTableRequest(tableID).Send(ctx, client)
+	table, err = keboola.GetTableRequest(tableID).Send(ctx, client)
 	assert.NoError(t, err)
 	assert.Equal(t, "in.c-my-bucket.my-table", table.ID.String())
 
@@ -114,10 +114,10 @@ func TestManager_EnsureTableExists(t *testing.T) {
 	// Test rollback, new bucket and table are deleted
 	rb.Invoke(ctx)
 	assert.Empty(t, d.DebugLogger().WarnMessages())
-	_, err = storageapi.GetTableRequest(tableID).Send(ctx, client)
+	_, err = keboola.GetTableRequest(tableID).Send(ctx, client)
 	assert.Error(t, err)
-	assert.Equal(t, "storage.tables.notFound", err.(*storageapi.Error).ErrCode)
-	_, err = storageapi.GetBucketRequest(tableID.BucketID).Send(ctx, client)
+	assert.Equal(t, "storage.tables.notFound", err.(*keboola.Error).ErrCode)
+	_, err = keboola.GetBucketRequest(tableID.BucketID).Send(ctx, client)
 	assert.Error(t, err)
-	assert.Equal(t, "storage.buckets.notFound", err.(*storageapi.Error).ErrCode)
+	assert.Equal(t, "storage.buckets.notFound", err.(*keboola.Error).ErrCode)
 }

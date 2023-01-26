@@ -32,7 +32,7 @@ type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
 	Components() *model.ComponentsMap
-	StorageAPIClient() client.Sender
+	KeboolaAPIClient() client.Sender
 	SchedulerAPIClient() client.Sender
 }
 

@@ -183,8 +183,8 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 		logger:           logger,
 	}
 	d.tokenManager = token.NewManager(d)
-	d.tableManager = table.NewManager(d.StorageAPIClient())
-	d.fileManager = file.NewManager(d.Clock(), d.StorageAPIClient(), nil)
+	d.tableManager = table.NewManager(d.KeboolaAPIClient())
+	d.fileManager = file.NewManager(d.Clock(), d.KeboolaAPIClient(), nil)
 	return d, nil
 }
 

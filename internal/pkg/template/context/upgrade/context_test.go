@@ -8,7 +8,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +28,7 @@ func TestContext(t *testing.T) {
 
 	// Mocked ticket provider
 	storageAPIClient, httpTransport := client.NewMockedClient()
-	tickets := storageapi.NewTicketProvider(context.Background(), storageAPIClient)
+	tickets := keboola.NewTicketProvider(context.Background(), storageAPIClient)
 
 	// Mocked tickets
 	var ticketResponses []*http.Response

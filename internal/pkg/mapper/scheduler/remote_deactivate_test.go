@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -36,7 +36,7 @@ func TestSchedulerMapperRemoteDeactivate(t *testing.T) {
 	// Scheduler config
 	schedulerKey := model.ConfigKey{
 		BranchID:    123,
-		ComponentID: storageapi.SchedulerComponentID,
+		ComponentID: keboola.SchedulerComponentID,
 		ID:          `456`,
 	}
 	schedulerConfigState := &model.ConfigState{

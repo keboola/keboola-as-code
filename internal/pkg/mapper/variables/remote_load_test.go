@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -32,10 +32,10 @@ func TestVariablesMapAfterRemoteLoad(t *testing.T) {
 	// Internal object has new relation + content without variables ID
 	assert.Equal(t, model.Relations{
 		&model.VariablesFromRelation{
-			VariablesID: storageapi.ConfigID(variablesConfigID),
+			VariablesID: keboola.ConfigID(variablesConfigID),
 		},
 		&model.VariablesValuesFromRelation{
-			VariablesValuesID: storageapi.RowID(valuesConfigRowID),
+			VariablesValuesID: keboola.RowID(valuesConfigRowID),
 		},
 	}, object.Relations)
 	_, found := object.Content.Get(model.VariablesIDContentKey)

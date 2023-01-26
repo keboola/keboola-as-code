@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -92,7 +92,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
 		BranchID:    123,
-		ComponentID: storageapi.OrchestratorComponentID,
+		ComponentID: keboola.OrchestratorComponentID,
 		ID:          `456`,
 	}
 	configManifest := &model.ConfigManifest{
@@ -131,13 +131,13 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 	// Assert orchestration
 	phase1Key := model.PhaseKey{
 		BranchID:    123,
-		ComponentID: storageapi.OrchestratorComponentID,
+		ComponentID: keboola.OrchestratorComponentID,
 		ConfigID:    `456`,
 		Index:       0,
 	}
 	phase2Key := model.PhaseKey{
 		BranchID:    123,
-		ComponentID: storageapi.OrchestratorComponentID,
+		ComponentID: keboola.OrchestratorComponentID,
 		ConfigID:    `456`,
 		Index:       1,
 	}
@@ -195,7 +195,7 @@ func TestOrchestratorMapAfterRemoteLoad(t *testing.T) {
 				DependsOn: []model.PhaseKey{
 					{
 						BranchID:    123,
-						ComponentID: storageapi.OrchestratorComponentID,
+						ComponentID: keboola.OrchestratorComponentID,
 						ConfigID:    `456`,
 						Index:       0,
 					},
@@ -295,7 +295,7 @@ func TestMapAfterRemoteLoadWarnings(t *testing.T) {
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
 		BranchID:    123,
-		ComponentID: storageapi.OrchestratorComponentID,
+		ComponentID: keboola.OrchestratorComponentID,
 		ID:          `456`,
 	}
 	configManifest := &model.ConfigManifest{
@@ -340,7 +340,7 @@ WARN  Warning:
 			{
 				PhaseKey: model.PhaseKey{
 					BranchID:    123,
-					ComponentID: storageapi.OrchestratorComponentID,
+					ComponentID: keboola.OrchestratorComponentID,
 					ConfigID:    `456`,
 					Index:       0,
 				},
@@ -352,7 +352,7 @@ WARN  Warning:
 						TaskKey: model.TaskKey{
 							PhaseKey: model.PhaseKey{
 								BranchID:    123,
-								ComponentID: storageapi.OrchestratorComponentID,
+								ComponentID: keboola.OrchestratorComponentID,
 								ConfigID:    `456`,
 								Index:       0,
 							},
@@ -420,7 +420,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
 		BranchID:    123,
-		ComponentID: storageapi.OrchestratorComponentID,
+		ComponentID: keboola.OrchestratorComponentID,
 		ID:          `456`,
 	}
 	configManifest := &model.ConfigManifest{
@@ -446,7 +446,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 			{
 				PhaseKey: model.PhaseKey{
 					BranchID:    123,
-					ComponentID: storageapi.OrchestratorComponentID,
+					ComponentID: keboola.OrchestratorComponentID,
 					ConfigID:    `456`,
 					Index:       0,
 				},
@@ -457,14 +457,14 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 			{
 				PhaseKey: model.PhaseKey{
 					BranchID:    123,
-					ComponentID: storageapi.OrchestratorComponentID,
+					ComponentID: keboola.OrchestratorComponentID,
 					ConfigID:    `456`,
 					Index:       1,
 				},
 				DependsOn: []model.PhaseKey{
 					{
 						BranchID:    123,
-						ComponentID: storageapi.OrchestratorComponentID,
+						ComponentID: keboola.OrchestratorComponentID,
 						ConfigID:    `456`,
 						Index:       0,
 					},
@@ -475,7 +475,7 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 			{
 				PhaseKey: model.PhaseKey{
 					BranchID:    123,
-					ComponentID: storageapi.OrchestratorComponentID,
+					ComponentID: keboola.OrchestratorComponentID,
 					ConfigID:    `456`,
 					Index:       2,
 				},
@@ -486,20 +486,20 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 			{
 				PhaseKey: model.PhaseKey{
 					BranchID:    123,
-					ComponentID: storageapi.OrchestratorComponentID,
+					ComponentID: keboola.OrchestratorComponentID,
 					ConfigID:    `456`,
 					Index:       3,
 				},
 				DependsOn: []model.PhaseKey{
 					{
 						BranchID:    123,
-						ComponentID: storageapi.OrchestratorComponentID,
+						ComponentID: keboola.OrchestratorComponentID,
 						ConfigID:    `456`,
 						Index:       0,
 					},
 					{
 						BranchID:    123,
-						ComponentID: storageapi.OrchestratorComponentID,
+						ComponentID: keboola.OrchestratorComponentID,
 						ConfigID:    `456`,
 						Index:       2,
 					},
@@ -510,26 +510,26 @@ func TestMapAfterRemoteLoadSortByDeps(t *testing.T) {
 			{
 				PhaseKey: model.PhaseKey{
 					BranchID:    123,
-					ComponentID: storageapi.OrchestratorComponentID,
+					ComponentID: keboola.OrchestratorComponentID,
 					ConfigID:    `456`,
 					Index:       4,
 				},
 				DependsOn: []model.PhaseKey{
 					{
 						BranchID:    123,
-						ComponentID: storageapi.OrchestratorComponentID,
+						ComponentID: keboola.OrchestratorComponentID,
 						ConfigID:    `456`,
 						Index:       0,
 					},
 					{
 						BranchID:    123,
-						ComponentID: storageapi.OrchestratorComponentID,
+						ComponentID: keboola.OrchestratorComponentID,
 						ConfigID:    `456`,
 						Index:       1,
 					},
 					{
 						BranchID:    123,
-						ComponentID: storageapi.OrchestratorComponentID,
+						ComponentID: keboola.OrchestratorComponentID,
 						ConfigID:    `456`,
 						Index:       3,
 					},
@@ -598,7 +598,7 @@ func TestMapAfterRemoteLoadDepsCycles(t *testing.T) {
 	json.MustDecodeString(contentStr, content)
 	configKey := model.ConfigKey{
 		BranchID:    123,
-		ComponentID: storageapi.OrchestratorComponentID,
+		ComponentID: keboola.OrchestratorComponentID,
 		ID:          `456`,
 	}
 	configManifest := &model.ConfigManifest{

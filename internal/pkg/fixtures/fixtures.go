@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -52,20 +52,20 @@ type Sandbox struct {
 }
 
 type Bucket struct {
-	ID          storageapi.BucketID `json:"id"`
-	URI         string              `json:"uri"`
-	DisplayName string              `json:"displayName"`
-	Description string              `json:"description"`
-	Tables      []*Table            `json:"tables"`
+	ID          keboola.BucketID `json:"id"`
+	URI         string           `json:"uri"`
+	DisplayName string           `json:"displayName"`
+	Description string           `json:"description"`
+	Tables      []*Table         `json:"tables"`
 }
 
 type Table struct {
-	ID          storageapi.TableID `json:"id"`
-	URI         string             `json:"uri"`
-	Name        string             `json:"name"`
-	DisplayName string             `json:"displayName"`
-	PrimaryKey  []string           `json:"primaryKey"`
-	Columns     []string           `json:"columns"`
+	ID          keboola.TableID `json:"id"`
+	URI         string          `json:"uri"`
+	Name        string          `json:"name"`
+	DisplayName string          `json:"displayName"`
+	PrimaryKey  []string        `json:"primaryKey"`
+	Columns     []string        `json:"columns"`
 }
 
 type File struct {
@@ -77,7 +77,7 @@ type File struct {
 }
 
 type Config struct {
-	ComponentID       storageapi.ComponentID `json:"componentId" validate:"required"`
+	ComponentID       keboola.ComponentID    `json:"componentId" validate:"required"`
 	Name              string                 `json:"name" validate:"required"`
 	Description       string                 `json:"description"`
 	ChangeDescription string                 `json:"changeDescription,omitempty"`
@@ -104,8 +104,8 @@ type StateFile struct {
 }
 
 // ToAPI maps fixture to model.Branch.
-func (b *Branch) ToAPI() *storageapi.Branch {
-	branch := &storageapi.Branch{}
+func (b *Branch) ToAPI() *keboola.Branch {
+	branch := &keboola.Branch{}
 	branch.Name = b.Name
 	branch.Description = b.Description
 	branch.IsDefault = b.IsDefault
@@ -113,8 +113,8 @@ func (b *Branch) ToAPI() *storageapi.Branch {
 }
 
 // ToAPI maps fixture to model.Config.
-func (c *Config) ToAPI() *storageapi.ConfigWithRows {
-	config := &storageapi.ConfigWithRows{Config: &storageapi.Config{}}
+func (c *Config) ToAPI() *keboola.ConfigWithRows {
+	config := &keboola.ConfigWithRows{Config: &keboola.Config{}}
 	config.ComponentID = c.ComponentID
 	config.Name = c.Name
 	config.Description = "test fixture"
@@ -130,8 +130,8 @@ func (c *Config) ToAPI() *storageapi.ConfigWithRows {
 }
 
 // ToAPI maps fixture to model.Config.
-func (r *ConfigRow) ToAPI() *storageapi.ConfigRow {
-	row := &storageapi.ConfigRow{}
+func (r *ConfigRow) ToAPI() *keboola.ConfigRow {
+	row := &keboola.ConfigRow{}
 	row.Name = r.Name
 	row.Description = "test fixture"
 	row.ChangeDescription = "created by test"

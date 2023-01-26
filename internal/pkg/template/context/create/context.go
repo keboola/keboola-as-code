@@ -4,7 +4,7 @@ package create
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
@@ -95,7 +95,7 @@ func replacementsForCreate(sourceBranch model.BranchKey, configs []ConfigDef) *r
 
 	// Configs
 	for _, config := range configs {
-		newConfigID := storageapi.ConfigID(jsonnet.ConfigIDPlaceholder(config.TemplateID))
+		newConfigID := keboola.ConfigID(jsonnet.ConfigIDPlaceholder(config.TemplateID))
 		newConfigKey := config.Key
 		newConfigKey.BranchID = 0
 		newConfigKey.ID = newConfigID
@@ -108,7 +108,7 @@ func replacementsForCreate(sourceBranch model.BranchKey, configs []ConfigDef) *r
 
 		// Rows
 		for _, row := range config.Rows {
-			newRowID := storageapi.RowID(jsonnet.ConfigRowIDPlaceholder(row.TemplateID))
+			newRowID := keboola.RowID(jsonnet.ConfigRowIDPlaceholder(row.TemplateID))
 			newRowKey := row.Key
 			newRowKey.BranchID = 0
 			newRowKey.ConfigID = newConfigID

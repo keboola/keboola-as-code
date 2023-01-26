@@ -23,7 +23,7 @@ type Options struct {
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageAPIClient() client.Sender
+	KeboolaAPIClient() client.Sender
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -33,7 +33,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	logger := d.Logger()
 
 	// Get Storage API
-	storageAPIClient := d.StorageAPIClient()
+	storageAPIClient := d.KeboolaAPIClient()
 
 	// Get plan
 	plan, err := persist.NewPlan(projectState.State())

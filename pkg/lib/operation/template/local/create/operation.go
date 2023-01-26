@@ -37,7 +37,7 @@ type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
 	Components() *model.ComponentsMap
-	StorageAPIClient() client.Sender
+	KeboolaAPIClient() client.Sender
 	SchedulerAPIClient() client.Sender
 	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
 	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)

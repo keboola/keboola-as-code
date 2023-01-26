@@ -15,7 +15,7 @@ type branchMetadataMapper struct {
 }
 
 type dependencies interface {
-	StorageAPIClient() client.Sender
+	KeboolaAPIClient() client.Sender
 }
 
 func NewMapper(s *state.State, d dependencies) *branchMetadataMapper {

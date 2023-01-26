@@ -3,7 +3,6 @@ package model_test
 import (
 	"testing"
 
-	"github.com/keboola/go-client/pkg/sandboxesapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
@@ -95,7 +94,7 @@ func TestAlwaysIgnoredComponents(t *testing.T) {
 	t.Parallel()
 	m := NoFilter()
 	assert.True(t, m.IsObjectIgnored(
-		&Config{ConfigKey: ConfigKey{ComponentID: sandboxesapi.Component}},
+		&Config{ConfigKey: ConfigKey{ComponentID: keboola.WorkspacesComponent}},
 	))
 }
 

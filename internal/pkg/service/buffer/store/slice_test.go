@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
@@ -177,9 +177,9 @@ func TestStore_ListUploadedSlices(t *testing.T) {
 			ExportKey:  exportKey,
 			RevisionID: 1,
 		},
-		TableID: storageapi.TableID{
-			BucketID: storageapi.BucketID{
-				Stage:      storageapi.BucketStageIn,
+		TableID: keboola.TableID{
+			BucketID: keboola.BucketID{
+				Stage:      keboola.BucketStageIn,
 				BucketName: "bucket",
 			},
 			TableName: "table",
@@ -282,9 +282,9 @@ func sliceForTest() model.Slice {
 			ExportKey:  exportKey,
 			RevisionID: 1,
 		},
-		TableID: storageapi.TableID{
-			BucketID: storageapi.BucketID{
-				Stage:      storageapi.BucketStageIn,
+		TableID: keboola.TableID{
+			BucketID: keboola.BucketID{
+				Stage:      keboola.BucketStageIn,
 				BucketName: "bucket",
 			},
 			TableName: "table",

@@ -5,8 +5,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/sandboxesapi"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -16,17 +15,17 @@ import (
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageAPIClient() client.Sender
+	KeboolaAPIClient() client.Sender
 	SandboxesAPIClient() client.Sender
 }
 
-func Run(ctx context.Context, d dependencies, configID sandboxesapi.ConfigID) (err error) {
+func Run(ctx context.Context, d dependencies, configID keboola.WorkspaceConfigID) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.workspace.create")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()
 
-	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageAPIClient())
+	branch, err := keboola.GetDefaultBranchRequest().Send(ctx, d.KeboolaAPIClient())
 	if err != nil {
 		return err
 	}
@@ -34,7 +33,7 @@ func Run(ctx context.Context, d dependencies, configID sandboxesapi.ConfigID) (e
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	sandbox, err := sandboxesapi.Get(ctx, d.StorageAPIClient(), d.SandboxesAPIClient(), branch.ID, configID)
+	sandbox, err := keboola.GetWorkspace(ctx, d.KeboolaAPIClient(), d.SandboxesAPIClient(), branch.ID, configID)
 	if err != nil {
 		return err
 	}
@@ -42,12 +41,12 @@ func Run(ctx context.Context, d dependencies, configID sandboxesapi.ConfigID) (e
 	c, s := sandbox.Config, sandbox.Sandbox
 
 	logger.Infof("Workspace \"%s\"\nID: %s\nType: %s", c.Name, c.ID, s.Type)
-	if sandboxesapi.SupportsSizes(s.Type) {
+	if keboola.WorkspaceSupportsSizes(s.Type) {
 		logger.Infof(`Size: %s`, s.Size)
 	}
 
 	switch s.Type {
-	case sandboxesapi.TypeSnowflake:
+	case keboola.WorkspaceTypeSnowflake:
 		logger.Infof(
 			"Credentials:\n  Host: %s\n  User: %s\n  Password: %s\n  Database: %s\n  Schema: %s\n  Warehouse: %s",
 			s.Host,
@@ -57,9 +56,9 @@ func Run(ctx context.Context, d dependencies, configID sandboxesapi.ConfigID) (e
 			s.Details.Connection.Schema,
 			s.Details.Connection.Warehouse,
 		)
-	case sandboxesapi.TypePython:
+	case keboola.WorkspaceTypePython:
 		fallthrough
-	case sandboxesapi.TypeR:
+	case keboola.WorkspaceTypeR:
 		logger.Infof(
 			"Credentials:\n  Host: %s\n  Password: %s",
 			s.Host,

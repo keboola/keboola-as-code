@@ -3,7 +3,7 @@ package variables
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -23,7 +23,7 @@ func (m *mapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.RemoteLoa
 
 	// Create relation
 	object.AddRelation(&model.SharedCodeVariablesFromRelation{
-		VariablesID: storageapi.ConfigID(variablesID),
+		VariablesID: keboola.ConfigID(variablesID),
 	})
 
 	// Remove variables ID from configuration content

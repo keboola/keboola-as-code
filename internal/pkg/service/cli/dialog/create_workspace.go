@@ -3,7 +3,7 @@ package dialog
 import (
 	"strings"
 
-	"github.com/keboola/go-client/pkg/sandboxesapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
@@ -30,7 +30,7 @@ func (p *Dialogs) AskCreateWorkspace(d createWorkspaceDeps) (create.CreateOption
 	}
 	opts.Type = typ
 
-	if sandboxesapi.SupportsSizes(typ) {
+	if keboola.WorkspaceSupportsSizes(typ) {
 		size, err := p.askWorkspaceSize(d)
 		if err != nil {
 			return opts, err
@@ -59,14 +59,14 @@ func (p *Dialogs) askWorkspaceName(d createWorkspaceDeps) (string, error) {
 func (p *Dialogs) askWorkspaceType(d createWorkspaceDeps) (string, error) {
 	if d.Options().IsSet("type") {
 		typ := d.Options().GetString("type")
-		if !sandboxesapi.TypesMap()[typ] {
-			return "", errors.Errorf("invalid workspace type, must be one of: %s", strings.Join(sandboxesapi.TypesOrdered(), ", "))
+		if !keboola.WorkspaceTypesMap()[typ] {
+			return "", errors.Errorf("invalid workspace type, must be one of: %s", strings.Join(keboola.WorkspaceTypesOrdered(), ", "))
 		}
 		return typ, nil
 	} else {
 		v, ok := p.Select(&prompt.Select{
 			Label:   "Select a type for the new workspace",
-			Options: sandboxesapi.TypesOrdered(),
+			Options: keboola.WorkspaceTypesOrdered(),
 		})
 		if !ok {
 			return "", errors.New("missing workspace type, please specify it")
@@ -78,14 +78,14 @@ func (p *Dialogs) askWorkspaceType(d createWorkspaceDeps) (string, error) {
 func (p *Dialogs) askWorkspaceSize(d createWorkspaceDeps) (string, error) {
 	if d.Options().IsSet("size") {
 		size := d.Options().GetString("size")
-		if !sandboxesapi.SizesMap()[size] {
-			return "", errors.Errorf("invalid workspace size, must be one of: %s", strings.Join(sandboxesapi.SizesOrdered(), ", "))
+		if !keboola.WorksoaceSizesMap()[size] {
+			return "", errors.Errorf("invalid workspace size, must be one of: %s", strings.Join(keboola.WorkspaceSizesOrdered(), ", "))
 		}
 		return size, nil
 	} else {
 		v, ok := p.Select(&prompt.Select{
 			Label:   "Select a size for the new workspace",
-			Options: sandboxesapi.SizesOrdered(),
+			Options: keboola.WorkspaceSizesOrdered(),
 		})
 		if !ok {
 			return "", errors.New("missing workspace size, please specify it")

@@ -5,8 +5,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/sandboxesapi"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -23,7 +22,7 @@ type CreateOptions struct {
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageAPIClient() client.Sender
+	KeboolaAPIClient() client.Sender
 	JobsQueueAPIClient() client.Sender
 	SandboxesAPIClient() client.Sender
 }
@@ -34,7 +33,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 
 	logger := d.Logger()
 
-	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageAPIClient())
+	branch, err := keboola.GetDefaultBranchRequest().Send(ctx, d.KeboolaAPIClient())
 	if err != nil {
 		return err
 	}
@@ -42,18 +41,16 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	opts := make([]sandboxesapi.Option, 0)
+	opts := make([]keboola.CreateWorkspaceOption, 0)
 	if len(o.Size) > 0 {
-		opts = append(opts, sandboxesapi.WithSize(o.Size))
+		opts = append(opts, keboola.WithSize(o.Size))
 	}
 
 	logger.Info(`Creating a new workspace, please wait.`)
 	// Create workspace by API
-	s, err := sandboxesapi.Create(
+	s, err := keboola.CreateWorkspace(
 		ctx,
-		d.StorageAPIClient(),
-		d.JobsQueueAPIClient(),
-		d.SandboxesAPIClient(),
+		d.KeboolaAPIClient(),
 		branch.ID,
 		o.Name,
 		o.Type,
@@ -67,7 +64,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 
 	logger.Infof(`Created the new workspace "%s" (%s).`, o.Name, s.Config.ID)
 	switch sandbox.Type {
-	case sandboxesapi.TypeSnowflake:
+	case keboola.WorkspaceTypeSnowflake:
 		logger.Infof(
 			"Credentials:\n  Host: %s\n  User: %s\n  Password: %s\n  Database: %s\n  Schema: %s\n  Warehouse: %s",
 			sandbox.Host,
@@ -77,9 +74,9 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 			sandbox.Details.Connection.Schema,
 			sandbox.Details.Connection.Warehouse,
 		)
-	case sandboxesapi.TypePython:
+	case keboola.WorkspaceTypePython:
 		fallthrough
-	case sandboxesapi.TypeR:
+	case keboola.WorkspaceTypeR:
 		logger.Infof(
 			"Credentials:\n  Host: %s\n  Password: %s",
 			sandbox.Host,

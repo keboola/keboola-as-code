@@ -5,8 +5,7 @@ import (
 	"sort"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/sandboxesapi"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -17,7 +16,7 @@ import (
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageAPIClient() client.Sender
+	KeboolaAPIClient() client.Sender
 	SandboxesAPIClient() client.Sender
 }
 
@@ -27,13 +26,13 @@ func Run(ctx context.Context, d dependencies) (err error) {
 
 	logger := d.Logger()
 
-	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageAPIClient())
+	branch, err := keboola.GetDefaultBranchRequest().Send(ctx, d.KeboolaAPIClient())
 	if err != nil {
 		return errors.Errorf("cannot find default branch: %w", err)
 	}
 
 	logger.Info("Loading workspaces, please wait.")
-	sandboxes, err := sandboxesapi.List(ctx, d.StorageAPIClient(), d.SandboxesAPIClient(), branch.ID)
+	sandboxes, err := keboola.ListWorkspaces(ctx, d.KeboolaAPIClient(), d.SandboxesAPIClient(), branch.ID)
 	if err != nil {
 		return err
 	}
@@ -41,7 +40,7 @@ func Run(ctx context.Context, d dependencies) (err error) {
 
 	logger.Info("Found workspaces:")
 	for _, sandbox := range sandboxes {
-		if sandboxesapi.SupportsSizes(sandbox.Sandbox.Type) {
+		if keboola.WorkspaceSupportsSizes(sandbox.Sandbox.Type) {
 			logger.Infof("  %s (ID: %s, Type: %s, Size: %s)", sandbox.Config.Name, sandbox.Config.ID, sandbox.Sandbox.Type, sandbox.Sandbox.Size)
 		} else {
 			logger.Infof("  %s (ID: %s, Type: %s)", sandbox.Config.Name, sandbox.Config.ID, sandbox.Sandbox.Type)

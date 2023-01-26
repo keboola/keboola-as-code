@@ -34,7 +34,7 @@ type dependencies interface {
 	Components() *model.ComponentsMap
 	StorageAPIHost() string
 	ProjectID() int
-	StorageAPIClient() client.Sender
+	KeboolaAPIClient() client.Sender
 	SchedulerAPIClient() client.Sender
 	EncryptionAPIClient() client.Sender
 	EmptyDir() (filesystem.Fs, error)

@@ -56,7 +56,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 
@@ -83,8 +83,8 @@ type Base interface {
 type Public interface {
 	StorageAPIHost() string
 	StorageAPIPublicClient() client.Sender
-	StackFeatures() storageapi.FeaturesMap
-	StackServices() storageapi.ServicesMap
+	StackFeatures() keboola.FeaturesMap
+	StackServices() keboola.ServicesMap
 	Components() *model.ComponentsMap
 	ComponentsProvider() *model.ComponentsProvider
 	EncryptionAPIClient() client.Sender
@@ -94,14 +94,14 @@ type Public interface {
 type Project interface {
 	ProjectID() int
 	ProjectName() string
-	ProjectFeatures() storageapi.FeaturesMap
-	StorageAPIToken() storageapi.Token
+	ProjectFeatures() keboola.FeaturesMap
+	StorageAPIToken() keboola.Token
 	StorageAPITokenID() string
-	StorageAPIClient() client.Sender
+	KeboolaAPIClient() client.Sender
 	SchedulerAPIClient() client.Sender
 	JobsQueueAPIClient() client.Sender
 	SandboxesAPIClient() client.Sender
-	ObjectIDGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider
+	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 }
 
 // Mocked dependencies for tests.

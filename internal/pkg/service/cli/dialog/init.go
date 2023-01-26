@@ -17,7 +17,7 @@ import (
 
 type initDeps interface {
 	Options() *options.Options
-	StorageAPIClient() client.Sender
+	KeboolaAPIClient() client.Sender
 }
 
 type hostAndTokenDependencies interface {

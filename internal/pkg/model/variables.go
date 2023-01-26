@@ -3,20 +3,20 @@ package model
 import (
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // VariablesForRelation - variables for target configuration.
 type VariablesForRelation struct {
-	ComponentID storageapi.ComponentID `json:"componentId" validate:"required"`
-	ConfigID    storageapi.ConfigID    `json:"configId" validate:"required"`
+	ComponentID keboola.ComponentID `json:"componentId" validate:"required"`
+	ConfigID    keboola.ConfigID    `json:"configId" validate:"required"`
 }
 
 // VariablesFromRelation - variables from source configuration.
 type VariablesFromRelation struct {
-	VariablesID storageapi.ConfigID `json:"variablesId" validate:"required"`
+	VariablesID keboola.ConfigID `json:"variablesId" validate:"required"`
 }
 
 // VariablesValuesForRelation - variables default values for target configuration.
@@ -29,7 +29,7 @@ type VariablesValuesForRelation struct {
 
 // VariablesValuesFromRelation - variables default values from source config row.
 type VariablesValuesFromRelation struct {
-	VariablesValuesID storageapi.RowID `json:"variablesValuesId" validate:"required" `
+	VariablesValuesID keboola.RowID `json:"variablesValuesId" validate:"required" `
 }
 
 func (t *VariablesForRelation) Type() RelationType {
@@ -85,8 +85,8 @@ func (t *VariablesForRelation) checkDefinedOn(relationDefinedOn Key) (ConfigKey,
 	if !ok {
 		return variables, errors.Errorf(`relation "%s" must be defined on config, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
-	if variables.ComponentID != storageapi.VariablesComponentID {
-		return variables, errors.Errorf(`relation "%s" must be defined on config of the "%s" component`, t.Type(), storageapi.VariablesComponentID)
+	if variables.ComponentID != keboola.VariablesComponentID {
+		return variables, errors.Errorf(`relation "%s" must be defined on config of the "%s" component`, t.Type(), keboola.VariablesComponentID)
 	}
 	return variables, nil
 }
@@ -122,7 +122,7 @@ func (t *VariablesFromRelation) NewOtherSideRelation(relationDefinedOn Object, _
 	}
 	otherSide := ConfigKey{
 		BranchID:    config.BranchID,
-		ComponentID: storageapi.VariablesComponentID,
+		ComponentID: keboola.VariablesComponentID,
 		ID:          t.VariablesID,
 	}
 	otherSideRelation := &VariablesForRelation{
@@ -206,8 +206,8 @@ func (t *VariablesValuesForRelation) checkDefinedOn(relationDefinedOn Key) (Conf
 	if !ok {
 		return values, errors.Errorf(`relation "%s" must be defined on config row, found %s`, t.Type(), relationDefinedOn.Desc())
 	}
-	if values.ComponentID != storageapi.VariablesComponentID {
-		return values, errors.Errorf(`relation "%s" must be defined on config of the "%s" component`, t.Type(), storageapi.VariablesComponentID)
+	if values.ComponentID != keboola.VariablesComponentID {
+		return values, errors.Errorf(`relation "%s" must be defined on config of the "%s" component`, t.Type(), keboola.VariablesComponentID)
 	}
 	return values, nil
 }
@@ -255,7 +255,7 @@ func (t *VariablesValuesFromRelation) NewOtherSideRelation(relationDefinedOn Obj
 
 	otherSideKey := ConfigRowKey{
 		BranchID:    config.BranchID,
-		ComponentID: storageapi.VariablesComponentID,
+		ComponentID: keboola.VariablesComponentID,
 		ConfigID:    variablesFromRel.(*VariablesFromRelation).VariablesID,
 		ID:          t.VariablesValuesID,
 	}

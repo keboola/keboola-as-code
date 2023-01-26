@@ -8,7 +8,7 @@ import (
 
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +31,7 @@ func TestContext(t *testing.T) {
 
 	// Mocked ticket provider
 	storageAPIClient, httpTransport := client.NewMockedClient()
-	tickets := storageapi.NewTicketProvider(context.Background(), storageAPIClient)
+	tickets := keboola.NewTicketProvider(context.Background(), storageAPIClient)
 
 	// Mocked tickets
 	var ticketResponses []*http.Response
@@ -175,8 +175,8 @@ func TestComponentsFunctions(t *testing.T) {
 
 	// Mocked ticket provider
 	storageAPIClient, _ := client.NewMockedClient()
-	tickets := storageapi.NewTicketProvider(context.Background(), storageAPIClient)
-	components := model.NewComponentsMap(storageapi.Components{})
+	tickets := keboola.NewTicketProvider(context.Background(), storageAPIClient)
+	components := model.NewComponentsMap(keboola.Components{})
 	targetBranch := model.BranchKey{ID: 123}
 	inputsValues := template.InputsValues{}
 	inputs := map[string]*template.Input{}
@@ -207,8 +207,8 @@ func TestComponentsFunctions(t *testing.T) {
 	assert.Equal(t, expected, output)
 
 	// Case 2: Only AWS Snowflake Writer
-	components = model.NewComponentsMap(storageapi.Components{
-		{ComponentKey: storageapi.ComponentKey{ID: function.SnowflakeWriterIDAws}},
+	components = model.NewComponentsMap(keboola.Components{
+		{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDAws}},
 	})
 	expected = `
 {
@@ -222,8 +222,8 @@ func TestComponentsFunctions(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
 	// Case 3: Only Azure Snowflake Writer
-	components = model.NewComponentsMap(storageapi.Components{
-		{ComponentKey: storageapi.ComponentKey{ID: function.SnowflakeWriterIDAzure}},
+	components = model.NewComponentsMap(keboola.Components{
+		{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDAzure}},
 	})
 	expected = `
 {
@@ -237,9 +237,9 @@ func TestComponentsFunctions(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
 	// Case 4: Both AWS and Azure Snowflake Writer
-	components = model.NewComponentsMap(storageapi.Components{
-		{ComponentKey: storageapi.ComponentKey{ID: function.SnowflakeWriterIDAws}},
-		{ComponentKey: storageapi.ComponentKey{ID: function.SnowflakeWriterIDAzure}},
+	components = model.NewComponentsMap(keboola.Components{
+		{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDAws}},
+		{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDAzure}},
 	})
 	expected = `
 {

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/encryptionapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -67,7 +67,7 @@ func (e *executor) encryptRequest(action *action) client.Sendable {
 	}
 
 	// Prepare request
-	return encryptionapi.
+	return keboola.
 		EncryptRequest(e.projectID, object.GetComponentID(), data).
 		WithOnSuccess(func(ctx context.Context, sender client.Sender, results *map[string]string) error {
 			for key, encrypted := range *results {

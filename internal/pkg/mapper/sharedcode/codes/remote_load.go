@@ -3,7 +3,7 @@ package codes
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -53,7 +53,7 @@ func (m *mapper) onConfigRemoteLoad(config *model.Config) error {
 	}
 
 	// Store target component ID to struct
-	config.SharedCode = &model.SharedCodeConfig{Target: storageapi.ComponentID(target)}
+	config.SharedCode = &model.SharedCodeConfig{Target: keboola.ComponentID(target)}
 
 	errs := errors.NewMultiError()
 	for _, row := range m.state.RemoteObjects().ConfigRowsFrom(config.ConfigKey) {
