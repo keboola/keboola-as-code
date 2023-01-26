@@ -67,7 +67,10 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 				}
 
 				// Create file manager
-				api := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
+				api, err := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
+				if err != nil {
+					return "", err
+				}
 				files := file.NewManager(d.Clock(), api, s.config.uploadTransport)
 
 				// Upload slice, set statistics

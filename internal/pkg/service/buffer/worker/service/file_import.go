@@ -60,7 +60,10 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 				}
 
 				// Create table manager
-				api := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
+				api, err := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
+				if err != nil {
+					return "", err
+				}
 				tables := table.NewManager(api)
 
 				// Import file

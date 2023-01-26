@@ -207,12 +207,16 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 	)
 
 	httpClient := publicDeps.HTTPClient()
+	api, err := keboola.NewAPI(ctx, publicDeps.StorageAPIHost(), keboola.WithClient(&httpClient), keboola.WithToken(projectDeps.StorageAPIToken().Token))
+	if err != nil {
+		return nil, err
+	}
 	return &forProjectRequest{
 		logger:            logger,
 		Project:           projectDeps,
 		ForPublicRequest:  publicDeps,
 		repositories:      make(map[string]*repositoryManager.CachedRepository),
-		keboolaProjectAPI: keboola.NewAPI(ctx, publicDeps.StorageAPIHost(), keboola.WithClient(&httpClient), keboola.WithToken(projectDeps.StorageAPIToken().Token)),
+		keboolaProjectAPI: api,
 	}, nil
 }
 

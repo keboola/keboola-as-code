@@ -39,12 +39,16 @@ func newProjectDeps(ctx context.Context, base Base, public Public, token keboola
 	}
 
 	httpClient := base.HTTPClient()
+	api, err := keboola.NewAPI(ctx, public.StorageAPIHost(), keboola.WithClient(&httpClient), keboola.WithToken(token.Token))
+	if err != nil {
+		return nil, err
+	}
 	v := &project{
 		base:              base,
 		public:            public,
 		token:             token,
 		projectFeatures:   token.Owner.Features.ToMap(),
-		keboolaProjectAPI: keboola.NewAPI(ctx, public.StorageAPIHost(), keboola.WithClient(&httpClient), keboola.WithToken(token.Token), keboola.WithIndex(public.KeboolaPublicAPI().Index())),
+		keboolaProjectAPI: api,
 	}
 
 	return v, nil

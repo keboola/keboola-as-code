@@ -230,7 +230,10 @@ func (c *checker) closeFile(ctx context.Context, fileKey key.FileKey, reason str
 			return "", errors.Errorf(`cannot close file "%s": unexpected export opened slice "%s"`, fileKey.String(), oldFile.FileKey)
 		}
 
-		api := keboola.NewAPI(ctx, c.storageAPIHost, keboola.WithClient(&c.httpClient), keboola.WithToken(export.Token.Token))
+		api, err := keboola.NewAPI(ctx, c.storageAPIHost, keboola.WithClient(&c.httpClient), keboola.WithToken(export.Token.Token))
+		if err != nil {
+			return "", err
+		}
 		files := file.NewManager(c.clock, api, nil)
 
 		if err := files.CreateFileForExport(ctx, rb, &export); err != nil {

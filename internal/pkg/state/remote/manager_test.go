@@ -473,7 +473,8 @@ func newTestRemoteUOW(t *testing.T, mappers ...interface{}) (*remote.UnitOfWork,
 		}`),
 	)
 
-	api := keboola.NewAPI(context.Background(), "https://connection.keboola.com", keboola.WithClient(&c))
+	api, err := keboola.NewAPI(context.Background(), "https://connection.keboola.com", keboola.WithClient(&c))
+	assert.NoError(t, err)
 	localManager, projectState := newTestLocalManager(t, mappers)
 	mapperInst := mapper.New().AddMapper(mappers...)
 

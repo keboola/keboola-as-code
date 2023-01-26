@@ -35,7 +35,8 @@ func TestContext(t *testing.T) {
 			"features": []
 		}`),
 	)
-	api := keboola.NewAPI(context.Background(), "https://connection.keboola.com", keboola.WithClient(&c))
+	api, err := keboola.NewAPI(context.Background(), "https://connection.keboola.com", keboola.WithClient(&c))
+	assert.NoError(t, err)
 	tickets := keboola.NewTicketProvider(context.Background(), api)
 
 	// Mocked tickets

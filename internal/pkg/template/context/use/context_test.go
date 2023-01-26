@@ -39,7 +39,8 @@ func TestContext(t *testing.T) {
 		}`),
 	)
 	ctx := context.Background()
-	api := keboola.NewAPI(ctx, "https://connection.keboola.com", keboola.WithClient(&c))
+	api, err := keboola.NewAPI(ctx, "https://connection.keboola.com", keboola.WithClient(&c))
+	assert.NoError(t, err)
 	tickets := keboola.NewTicketProvider(ctx, api)
 
 	// Mocked tickets
@@ -191,7 +192,8 @@ func TestComponentsFunctions(t *testing.T) {
 		}`),
 	)
 	ctx := context.Background()
-	api := keboola.NewAPI(ctx, "https://connection.keboola.com", keboola.WithClient(&c))
+	api, err := keboola.NewAPI(ctx, "https://connection.keboola.com", keboola.WithClient(&c))
+	assert.NoError(t, err)
 	tickets := keboola.NewTicketProvider(context.Background(), api)
 	components := model.NewComponentsMap(keboola.Components{})
 	targetBranch := model.BranchKey{ID: 123}
