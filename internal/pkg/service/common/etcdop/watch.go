@@ -171,14 +171,14 @@ func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpO
 			if err := rawResp.Err(); err != nil {
 				if init {
 					// Pass initialization error
-					resp.InitErr = err
+					resp.InitErr = errors.Errorf(`watch init error: %w`, err)
 					outCh <- resp
 
 					// Stop watching
 					return
 				} else {
 					// Pass other error
-					resp.Err = err
+					resp.Err = errors.Errorf(`watch error: %w`, err)
 					outCh <- resp
 
 					// If the error is fatal, then the rawCh will be closed in the next iteration.
@@ -211,14 +211,12 @@ func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpO
 			// Map event type
 			for _, rawEvent := range rawResp.Events {
 				var typ EventType
-				switch rawEvent.Type {
-				case mvccpb.PUT:
-					if rawEvent.Kv.CreateRevision == rawEvent.Kv.ModRevision {
-						typ = CreateEvent
-					} else {
-						typ = UpdateEvent
-					}
-				case mvccpb.DELETE:
+				switch {
+				case rawEvent.IsCreate():
+					typ = CreateEvent
+				case rawEvent.IsModify():
+					typ = UpdateEvent
+				case rawEvent.Type == mvccpb.DELETE:
 					typ = DeleteEvent
 				default:
 					panic(errors.Errorf(`unexpected event type "%s"`, rawEvent.Type.String()))
@@ -236,9 +234,9 @@ func (v Prefix) Watch(ctx context.Context, client etcd.Watcher, opts ...etcd.OpO
 		}
 
 		// Send init error, if the context has been cancelled before the "Created" event
-		if init {
+		if err := ctx.Err(); err != nil && init {
 			resp := WatchResponse{}
-			resp.InitErr = ctx.Err()
+			resp.InitErr = errors.Errorf(`watch cancelled: %w`, err)
 			outCh <- resp
 		}
 	}()
@@ -328,7 +326,7 @@ func wrapWatchWithRestart(ctx context.Context, channelFactory func(ctx context.C
 			// Emit "restarted" event
 			resp := WatchResponse{}
 			resp.Restarted = true
-			resp.RestartReason = fmt.Sprintf(`restarted after %s, reason: %s`, delay, lastErr)
+			resp.RestartReason = fmt.Sprintf(`restarted, backoff delay %s, reason: %s`, delay, lastErr)
 			resp.RestartDelay = delay
 			outCh <- resp
 		}

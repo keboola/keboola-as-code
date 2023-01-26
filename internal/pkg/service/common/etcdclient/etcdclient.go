@@ -17,7 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
 
 const (
@@ -41,6 +41,12 @@ type config struct {
 }
 
 type Option func(c *config)
+
+func UseNamespace(c *etcd.Client, prefix string) {
+	c.KV = etcdNamespace.NewKV(c.KV, prefix)
+	c.Watcher = NewWatcher(c, prefix)
+	c.Lease = etcdNamespace.NewLease(c.Lease, prefix)
+}
 
 func WithUsername(v string) Option {
 	return func(c *config) {
@@ -187,13 +193,11 @@ func New(ctx context.Context, proc *servicectx.Process, tracer trace.Tracer, end
 	}
 
 	// Prefix client by namespace
-	c.KV = etcdNamespace.NewKV(c.KV, namespace)
-	c.Watcher = etcdNamespace.NewWatcher(c.Watcher, namespace)
-	c.Lease = etcdNamespace.NewLease(c.Lease, namespace)
+	UseNamespace(c, namespace)
 
 	// Log each KV operation as a debug message, if enabled
 	if conf.debugOpLogs {
-		c.KV = etcdhelper.KVLogWrapper(c.KV, logger.DebugWriter())
+		c.KV = etcdlogger.KVLogWrapper(c.KV, logger.DebugWriter())
 	}
 
 	// Sync endpoints list from cluster, it is used also as a connection check.

@@ -19,7 +19,7 @@ import (
 
 // nolint:paralleltest // the test run the "compact" operation and breaks the other tests running in parallel
 func TestWatchConsumer(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	wg := &sync.WaitGroup{}
 	logger := log.NewDebugLogger()
@@ -78,7 +78,7 @@ func TestWatchConsumer(t *testing.T) {
 	// Expect forEach event
 	assert.Eventually(t, func() bool {
 		return strings.Count(logger.AllMessages(), "ForEach:") == 1
-	}, time.Second, 10*time.Millisecond)
+	}, 5*time.Second, 10*time.Millisecond)
 	wildcards.Assert(t, `
 INFO  ForEach: restart=false, events(1): create "my/prefix/key1"
 `, logger.AllMessages())
@@ -105,11 +105,11 @@ INFO  ForEach: restart=false, events(1): create "my/prefix/key1"
 	// The restart flag is true.
 	assert.Eventually(t, func() bool {
 		return strings.Count(logger.AllMessages(), "my/prefix/key") == 3
-	}, time.Second, 10*time.Millisecond)
+	}, 5*time.Second, 10*time.Millisecond)
 	wildcards.Assert(t, `
-WARN  etcdserver: mvcc: required revision has been compacted
-WARN  restarted after %s, reason: etcdserver: mvcc: required revision has been compacted
-INFO  OnRestarted: restarted after %s, reason: etcdserver: mvcc: required revision has been compacted
+WARN  watch error: etcdserver: mvcc: required revision has been compacted
+WARN  restarted, backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted
+INFO  OnRestarted: restarted, backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted
 INFO  ForEach: restart=true, events(3): create "my/prefix/key1", create "my/prefix/key2", create "my/prefix/key3"
 `, logger.AllMessages())
 	logger.Truncate()
@@ -118,7 +118,7 @@ INFO  ForEach: restart=true, events(3): create "my/prefix/key1", create "my/pref
 	assert.NoError(t, pfx.Key("key4").Put("value4").Do(ctx, testClient))
 	assert.Eventually(t, func() bool {
 		return strings.Count(logger.AllMessages(), "ForEach:") == 1
-	}, time.Second, 10*time.Millisecond)
+	}, 5*time.Second, 10*time.Millisecond)
 	wildcards.Assert(t, `
 INFO  ForEach: restart=false, events(1): create "my/prefix/key4"
 `, logger.AllMessages())

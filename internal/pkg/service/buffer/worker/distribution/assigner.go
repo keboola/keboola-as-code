@@ -8,7 +8,7 @@ import (
 )
 
 // Assigner locally assigns the owner for the task, see NodeFor and IsOwner methods.
-// It is part of the Node and is used as an argument in the ExecutorWork callback.
+// It is part of the Node and is used as an argument in the DistributedWork callback.
 //
 // The consistent hashing (hash ring) approach is used to make the assigment,
 // it is provided by the "consistent" package.

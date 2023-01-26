@@ -9,7 +9,6 @@ import (
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/client/v3/namespace"
 	"go.uber.org/zap"         //nolint: depguard
 	"go.uber.org/zap/zapcore" //nolint: depguard
 	"google.golang.org/grpc"
@@ -18,6 +17,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
@@ -54,7 +55,7 @@ func ClientForTestWithNamespace(t testOrBenchmark, namespaceStr string, dialOpts
 	return ClientForTestFrom(t, endpoint, username, password, namespaceStr, dialOpts...)
 }
 
-func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespaceStr string, dialOpts ...grpc.DialOption) *etcd.Client {
+func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespace string, dialOpts ...grpc.DialOption) *etcd.Client {
 	ctx, cancel := context.WithCancel(context.Background())
 	if endpoint == "" {
 		t.Fatalf(`etcd endpoint is not set`)
@@ -113,21 +114,19 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespac
 	}
 
 	// Create namespace
-	originalClient := etcdClient // not namespaced client for the cleanup
-	etcdClient.KV = namespace.NewKV(etcdClient.KV, namespaceStr)
-	etcdClient.Lease = namespace.NewLease(etcdClient.Lease, namespaceStr)
-	etcdClient.Watcher = namespace.NewWatcher(etcdClient.Watcher, namespaceStr)
+	originalClient := etcdClient.KV // not namespaced client for the cleanup
+	etcdclient.UseNamespace(etcdClient, namespace)
 
 	// Add operations logger
 	if verbose {
-		etcdClient.KV = KVLogWrapper(etcdClient.KV, os.Stdout)
+		etcdClient.KV = etcdlogger.KVLogWrapper(etcdClient.KV, os.Stdout)
 	}
 
 	// Cleanup namespace after the test
 	t.Cleanup(func() {
-		_, err := originalClient.Delete(ctx, namespaceStr, etcd.WithPrefix())
+		_, err := originalClient.Delete(ctx, namespace, etcd.WithPrefix())
 		if err != nil {
-			t.Fatalf(`cannot clear etcd namespace "%s" after test: %s`, namespaceStr, err)
+			t.Fatalf(`cannot clear etcd namespace "%s" after test: %s`, namespace, err)
 		}
 
 		// Close context after second, so running request can finish.
