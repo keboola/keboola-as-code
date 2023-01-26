@@ -1,5 +1,3 @@
-// Package task provides a task abstraction for long-running operations in the Worker node.
-// It is guaranteed that the task will run at most once, as well as resistance to outages.
 package task
 
 import (
@@ -25,6 +23,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// Node represents a cluster Worker node on which tasks are run.
+// See comments in the StartTask method.
 type Node struct {
 	ctx              context.Context
 	wg               *sync.WaitGroup
@@ -101,8 +101,8 @@ func (n *Node) TasksCount() int64 {
 	return n.tasksCount.Load()
 }
 
-// StartTask backed by the lock, so the task run at most once.
-// The context will be passed to the operation callback and must contain timeout/deadline.
+// StartTask backed by local lock and etcd transaction, so the task run at most once.
+// The context will be passed to the operation callback.
 func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, typ, lock string, operation Task) (*model.Task, error) {
 	taskKey := key.TaskKey{ExportKey: exportKey, Type: typ, CreatedAt: key.UTCTime(n.clock.Now()), RandomSuffix: gonanoid.Must(5)}
 
@@ -194,6 +194,8 @@ func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, typ, lock
 	return &task, nil
 }
 
+// lockTask guarantees that the task runs at most once on the Worker node.
+// Uniqueness within the cluster is guaranteed by the etcd transaction, see StartTask method.
 func (n *Node) lockTask(taskKey key.TaskKey) (ok bool, unlock func()) {
 	n.runningTasksLock.Lock()
 	defer n.runningTasksLock.Unlock()
