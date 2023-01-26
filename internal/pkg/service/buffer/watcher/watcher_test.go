@@ -196,7 +196,7 @@ func updateExport(t *testing.T, ctx context.Context, client *etcd.Client, str *s
 				SliceKey:        sliceKey2,
 				State:           slicestate.Writing,
 				Mapping:         newMapping,
-				StorageResource: &storageapi.File{},
+				StorageResource: &keboola.File{},
 				Number:          1,
 			}
 			return export, nil

@@ -182,18 +182,18 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	})
 
 	// Storage Files
-	var files []*storageapi.File
+	var files []*keboola.File
 	grp.Go(func() error {
 		// Files metadata are not atomic, wait a moment.
 		// The creation/deletion of the file does not take effect immediately.
 		time.Sleep(100 * time.Millisecond)
-		return storageapi.
+		return p.keboolaAPIClient.
 			ListFilesRequest().
-			WithOnSuccess(func(_ context.Context, _ client.Sender, apiFiles *[]*storageapi.File) error {
+			WithOnSuccess(func(_ context.Context, apiFiles *[]*keboola.File) error {
 				files = *apiFiles
 				return nil
 			}).
-			SendOrErr(ctx, p.storageAPIClient)
+			SendOrErr(ctx)
 	})
 
 	// Wait for requests

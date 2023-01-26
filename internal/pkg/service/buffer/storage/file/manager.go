@@ -63,7 +63,6 @@ func (m *Manager) CreateFileForExport(ctx context.Context, rb rollback.Builder, 
 func (m *Manager) UploadSlice(ctx context.Context, s *model.Slice, recordsReader io.Reader) error {
 	// Create slice writer
 	sliceWr, err := keboola.NewUploadSliceWriter(ctx, s.StorageResource, s.Filename(), keboola.WithUploadTransport(m.transport))
-
 	if err != nil {
 		return err
 	}

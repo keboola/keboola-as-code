@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
@@ -39,8 +39,8 @@ func TestActiveSlicesWatcher(t *testing.T) {
 	sliceKey1 := key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(clk.Now().Add(1 * time.Second))}
 	sliceKey2 := key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(clk.Now().Add(2 * time.Second))}
 	mapping := model.MappingForTest(exportKey)
-	slice1 := model.Slice{SliceKey: sliceKey1, State: slicestate.Writing, Mapping: mapping, StorageResource: &storageapi.File{}, Number: 1}
-	slice2 := model.Slice{SliceKey: sliceKey2, State: slicestate.Closing, Mapping: mapping, StorageResource: &storageapi.File{}, Number: 2}
+	slice1 := model.Slice{SliceKey: sliceKey1, State: slicestate.Writing, Mapping: mapping, StorageResource: &keboola.File{}, Number: 1}
+	slice2 := model.Slice{SliceKey: sliceKey2, State: slicestate.Closing, Mapping: mapping, StorageResource: &keboola.File{}, Number: 2}
 	str := d.Store()
 	assert.NoError(t, str.CreateSlice(ctx, slice1))
 	assert.NoError(t, str.CreateSlice(ctx, slice2))

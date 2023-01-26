@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
@@ -105,9 +105,9 @@ func TestUploadAndImportE2E(t *testing.T) {
 	logger.Truncate()
 
 	// Check the target table
-	table, err := storageapi.
-		GetTableRequest(storageapi.MustParseTableID(export.Mapping.TableID)).
-		Send(ctx, project.StorageAPIClient())
+	table, err := project.KeboolaAPIClient().
+		GetTableRequest(keboola.MustParseTableID(export.Mapping.TableID)).
+		Send(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(10), table.RowsCount)
 
