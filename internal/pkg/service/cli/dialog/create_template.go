@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -20,10 +19,10 @@ import (
 )
 
 type createTmplDialogDeps interface {
+	Components() *model.ComponentsMap
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Options() *options.Options
-	Components() *model.ComponentsMap
-	StorageAPIClient() client.Sender
 }
 
 type createTmplDialog struct {
@@ -59,11 +58,11 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 	}
 
 	// Get Storage API
-	storageAPIClient := d.deps.StorageAPIClient()
+	api := d.deps.KeboolaProjectAPI()
 
 	// Load branches
 	var allBranches []*model.Branch
-	if result, err := storageapi.ListBranchesRequest().Send(ctx, storageAPIClient); err == nil {
+	if result, err := api.ListBranchesRequest().Send(ctx); err == nil {
 		for _, apiBranch := range *result {
 			allBranches = append(allBranches, model.NewBranch(apiBranch))
 		}
@@ -110,8 +109,8 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 	d.out.SourceBranch = d.selectedBranch.BranchKey
 
 	// Load configs
-	branchKey := storageapi.BranchKey{ID: d.selectedBranch.ID}
-	if result, err := storageapi.ListConfigsAndRowsFrom(branchKey).Send(ctx, storageAPIClient); err == nil {
+	branchKey := keboola.BranchKey{ID: d.selectedBranch.ID}
+	if result, err := api.ListConfigsAndRowsFrom(branchKey).Send(ctx); err == nil {
 		for _, component := range *result {
 			for _, apiConfig := range component.Configs {
 				d.allConfigs = append(d.allConfigs, model.NewConfigWithRows(apiConfig))
@@ -156,7 +155,7 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 	return d.out, nil
 }
 
-func (d *createTmplDialog) askComponents(all []*storageapi.Component) []string {
+func (d *createTmplDialog) askComponents(all []*keboola.Component) []string {
 	opts := make([]string, 0)
 	for _, c := range all {
 		opts = append(opts, fmt.Sprintf("%s (%s)", c.Name, c.ID))

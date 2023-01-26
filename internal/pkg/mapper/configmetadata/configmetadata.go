@@ -1,7 +1,7 @@
 package configmetadata
 
 import (
-	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -15,7 +15,7 @@ type configMetadataMapper struct {
 }
 
 type dependencies interface {
-	StorageAPIClient() client.Sender
+	KeboolaProjectAPI() *keboola.API
 }
 
 func NewMapper(s *state.State, d dependencies) *configMetadataMapper {

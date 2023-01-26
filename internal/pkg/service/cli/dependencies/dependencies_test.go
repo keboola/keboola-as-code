@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -38,12 +39,18 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	httpClient, httpTransport := client.NewMockedClient()
 
 	// Mock API index
+	httpTransport.RegisterResponder(resty.MethodGet, `=~storage/?exclude=components`,
+		httpmock.NewStringResponder(200, `{
+			"services": [],
+			"features": []
+		}`),
+	)
 	httpTransport.RegisterResponder(
 		http.MethodGet,
 		"https://mocked.transport.http/v2/storage/",
-		httpmock.NewJsonResponderOrPanic(200, &storageapi.IndexComponents{
-			Index: storageapi.Index{
-				Services: storageapi.Services{
+		httpmock.NewJsonResponderOrPanic(200, &keboola.IndexComponents{
+			Index: keboola.Index{
+				Services: keboola.Services{
 					{ID: "encryption", URL: "https://encryption.mocked.transport.http"},
 					{ID: "scheduler", URL: "https://scheduler.mocked.transport.http"},
 					{ID: "queue", URL: "https://queue.mocked.transport.http"},
@@ -58,7 +65,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	httpTransport.RegisterResponder(
 		http.MethodGet,
 		"https://mocked.transport.http/v2/storage/tokens/verify",
-		httpmock.NewJsonResponderOrPanic(200, storageapi.Token{IsMaster: true, Owner: storageapi.TokenOwner{ID: 12345}}),
+		httpmock.NewJsonResponderOrPanic(200, keboola.Token{IsMaster: true, Owner: keboola.TokenOwner{ID: 12345}}),
 	)
 
 	// Assert

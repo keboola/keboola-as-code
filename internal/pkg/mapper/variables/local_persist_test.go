@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -23,7 +23,7 @@ func TestVariablesMapBeforePersist(t *testing.T) {
 	configManifest := &model.ConfigManifest{
 		ConfigKey: model.ConfigKey{
 			BranchID:    123,
-			ComponentID: storageapi.VariablesComponentID,
+			ComponentID: keboola.VariablesComponentID,
 			ID:          `678`,
 		},
 	}
@@ -56,7 +56,7 @@ func TestVariablesValuesPersistDefaultInName(t *testing.T) {
 	// Get objects
 	rowKey := model.ConfigRowKey{
 		BranchID:    123,
-		ComponentID: storageapi.VariablesComponentID,
+		ComponentID: keboola.VariablesComponentID,
 		ConfigID:    `456`,
 	}
 	row1Key := rowKey
@@ -107,7 +107,7 @@ func TestVariablesValuesPersistFirstRowIsDefault(t *testing.T) {
 	// Get objects
 	rowKey := model.ConfigRowKey{
 		BranchID:    123,
-		ComponentID: storageapi.VariablesComponentID,
+		ComponentID: keboola.VariablesComponentID,
 		ConfigID:    `456`,
 	}
 	row1Key := rowKey

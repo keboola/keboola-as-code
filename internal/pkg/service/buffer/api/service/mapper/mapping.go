@@ -1,7 +1,7 @@
 package mapper
 
 import (
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -38,7 +38,7 @@ func (m Mapper) MappingPayload(model model.Mapping) buffer.Mapping {
 
 func (m Mapper) CreateMappingModel(exportKey key.ExportKey, revisionID key.RevisionID, payload buffer.Mapping) (model.Mapping, error) {
 	// mapping
-	tableID, err := storageapi.ParseTableID(payload.TableID)
+	tableID, err := keboola.ParseTableID(payload.TableID)
 	if err != nil {
 		return model.Mapping{}, err
 	}

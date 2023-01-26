@@ -3,7 +3,7 @@ package workspace
 import (
 	"time"
 
-	"github.com/keboola/go-client/pkg/sandboxesapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
@@ -37,7 +37,7 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			err = detail.Run(d.CommandCtx(), d, sandboxesapi.ConfigID(id))
+			err = detail.Run(d.CommandCtx(), d, keboola.ConfigID(id))
 			if err != nil {
 				return err
 			}

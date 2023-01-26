@@ -15,13 +15,13 @@ import (
 )
 
 type dependencies interface {
-	Tracer() trace.Tracer
-	Logger() log.Logger
 	Fs() filesystem.Fs
 	LocalProject(ignoreErrors bool) (*project.Project, bool, error)
 	LocalTemplate(ctx context.Context) (*template.Template, bool, error)
 	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
+	Logger() log.Logger
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, d dependencies) (err error) {

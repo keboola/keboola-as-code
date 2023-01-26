@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -30,7 +30,7 @@ func newPathUtils() *pathUtils {
 	return &pathUtils{re: re}
 }
 
-func (v *pathUtils) match(script string, componentID storageapi.ComponentID) string {
+func (v *pathUtils) match(script string, componentID keboola.ComponentID) string {
 	comment := naming.CodeFileComment(naming.CodeFileExt(componentID))
 	script = strings.TrimSpace(script)
 	script = strings.TrimPrefix(script, comment)
@@ -42,7 +42,7 @@ func (v *pathUtils) match(script string, componentID storageapi.ComponentID) str
 	return ""
 }
 
-func (v *pathUtils) format(path string, componentID storageapi.ComponentID) string {
+func (v *pathUtils) format(path string, componentID keboola.ComponentID) string {
 	placeholder := strings.ReplaceAll(PathFormat, `<PATH>`, path)
 	if ok := v.re.MatchString(placeholder); !ok {
 		panic(errors.Errorf(`shared code path "%s" is invalid`, path))

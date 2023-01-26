@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
@@ -34,6 +34,6 @@ func (p *Plan) Log(logger log.Logger) {
 	}
 }
 
-func (p *Plan) Invoke(ctx context.Context, logger log.Logger, storageAPIClient client.Sender, projectState *state.State) error {
-	return newExecutor(ctx, logger, storageAPIClient, projectState, p).invoke()
+func (p *Plan) Invoke(ctx context.Context, logger log.Logger, keboolaProjectAPI *keboola.API, projectState *state.State) error {
+	return newExecutor(ctx, logger, keboolaProjectAPI, projectState, p).invoke()
 }

@@ -7,8 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -20,15 +19,15 @@ const ComponentsUpdateTimeout = 20 * time.Second
 type ComponentsProvider struct {
 	updateLock       *sync.RWMutex
 	logger           log.Logger
-	storageAPIClient client.Sender
+	keboolaPublicAPI *keboola.API
 	value            *ComponentsMap
 }
 
-func NewComponentsProvider(index *storageapi.IndexComponents, logger log.Logger, storageAPIClient client.Sender) *ComponentsProvider {
+func NewComponentsProvider(index *keboola.IndexComponents, logger log.Logger, keboolaPublicAPI *keboola.API) *ComponentsProvider {
 	return &ComponentsProvider{
 		updateLock:       &sync.RWMutex{},
 		logger:           logger,
-		storageAPIClient: storageAPIClient,
+		keboolaPublicAPI: keboolaPublicAPI,
 		value:            NewComponentsMap(index.Components),
 	}
 }
@@ -67,29 +66,29 @@ func (p *ComponentsProvider) Update(ctx context.Context) error {
 	return nil
 }
 
-func (p *ComponentsProvider) index(ctx context.Context) (*storageapi.IndexComponents, error) {
-	return storageapi.IndexComponentsRequest().Send(ctx, p.storageAPIClient)
+func (p *ComponentsProvider) index(ctx context.Context) (*keboola.IndexComponents, error) {
+	return p.keboolaPublicAPI.IndexComponentsRequest().Send(ctx)
 }
 
 type (
-	componentsMap = storageapi.ComponentsMap
+	componentsMap = keboola.ComponentsMap
 	ComponentsMap struct {
 		componentsMap
-		components                  storageapi.Components
-		defaultBucketsByComponentID map[storageapi.ComponentID]string
-		defaultBucketsByPrefix      map[string]storageapi.ComponentID
+		components                  keboola.Components
+		defaultBucketsByComponentID map[keboola.ComponentID]string
+		defaultBucketsByPrefix      map[string]keboola.ComponentID
 		usedLock                    *sync.Mutex
-		used                        map[storageapi.ComponentID]bool
+		used                        map[keboola.ComponentID]bool
 	}
 )
 
-func NewComponentsMap(components storageapi.Components) *ComponentsMap {
+func NewComponentsMap(components keboola.Components) *ComponentsMap {
 	v := &ComponentsMap{
 		componentsMap:               components.ToMap(),
 		components:                  components,
-		defaultBucketsByComponentID: make(map[storageapi.ComponentID]string),
-		defaultBucketsByPrefix:      make(map[string]storageapi.ComponentID),
-		used:                        make(map[storageapi.ComponentID]bool),
+		defaultBucketsByComponentID: make(map[keboola.ComponentID]string),
+		defaultBucketsByPrefix:      make(map[string]keboola.ComponentID),
+		used:                        make(map[keboola.ComponentID]bool),
 		usedLock:                    &sync.Mutex{},
 	}
 
@@ -103,15 +102,15 @@ func NewComponentsMap(components storageapi.Components) *ComponentsMap {
 	return v
 }
 
-func (m ComponentsMap) NewComponentList() storageapi.Components {
+func (m ComponentsMap) NewComponentList() keboola.Components {
 	return m.components.NewComponentList()
 }
 
-func (m ComponentsMap) All() storageapi.Components {
+func (m ComponentsMap) All() keboola.Components {
 	return m.components
 }
 
-func (m ComponentsMap) Get(id storageapi.ComponentID) (*storageapi.Component, bool) {
+func (m ComponentsMap) Get(id keboola.ComponentID) (*keboola.Component, bool) {
 	v, ok := m.componentsMap.Get(id)
 	if ok {
 		m.usedLock.Lock()
@@ -121,7 +120,7 @@ func (m ComponentsMap) Get(id storageapi.ComponentID) (*storageapi.Component, bo
 	return v, ok
 }
 
-func (m ComponentsMap) GetOrErr(id storageapi.ComponentID) (*storageapi.Component, error) {
+func (m ComponentsMap) GetOrErr(id keboola.ComponentID) (*keboola.Component, error) {
 	v, ok := m.Get(id)
 	if !ok {
 		return nil, errors.Errorf(`component "%s" not found`, id)
@@ -129,17 +128,17 @@ func (m ComponentsMap) GetOrErr(id storageapi.ComponentID) (*storageapi.Componen
 	return v, nil
 }
 
-func (m ComponentsMap) Used() storageapi.Components {
-	out := make(storageapi.Components, 0)
+func (m ComponentsMap) Used() keboola.Components {
+	out := make(keboola.Components, 0)
 	for id := range m.used {
 		component, _ := m.Get(id)
 		out = append(out, component)
 	}
-	storageapi.SortComponents(out)
+	keboola.SortComponents(out)
 	return out
 }
 
-func (m ComponentsMap) GetDefaultBucketByTableID(tableID string) (storageapi.ComponentID, storageapi.ConfigID, bool) {
+func (m ComponentsMap) GetDefaultBucketByTableID(tableID string) (keboola.ComponentID, keboola.ConfigID, bool) {
 	dotIndex := strings.LastIndex(tableID, ".")
 	if dotIndex < 1 {
 		return "", "", false
@@ -151,7 +150,7 @@ func (m ComponentsMap) GetDefaultBucketByTableID(tableID string) (storageapi.Com
 	}
 
 	bucketPrefix := bucketID[0 : strings.LastIndex(bucketID, "-")+1]
-	configID := storageapi.ConfigID(bucketID[strings.LastIndex(bucketID, "-")+1:])
+	configID := keboola.ConfigID(bucketID[strings.LastIndex(bucketID, "-")+1:])
 
 	componentID, found := m.defaultBucketsByPrefix[bucketPrefix]
 	if !found {
@@ -161,7 +160,7 @@ func (m ComponentsMap) GetDefaultBucketByTableID(tableID string) (storageapi.Com
 	return componentID, configID, len(componentID) > 0 && len(configID) > 0
 }
 
-func (m ComponentsMap) GetDefaultBucketByComponentID(componentID storageapi.ComponentID, configID storageapi.ConfigID) (string, bool) {
+func (m ComponentsMap) GetDefaultBucketByComponentID(componentID keboola.ComponentID, configID keboola.ConfigID) (string, bool) {
 	defaultBucketPrefix, found := m.defaultBucketsByComponentID[componentID]
 	if !found {
 		return "", false
@@ -169,7 +168,7 @@ func (m ComponentsMap) GetDefaultBucketByComponentID(componentID storageapi.Comp
 	return fmt.Sprintf("%s%s", defaultBucketPrefix, configID), true
 }
 
-func (m ComponentsMap) addDefaultBucketPrefix(component *storageapi.Component) {
+func (m ComponentsMap) addDefaultBucketPrefix(component *keboola.Component) {
 	r := regexpcache.MustCompile(`(?i)[^a-zA-Z0-9-]`)
 	bucketPrefix := fmt.Sprintf(`%s.c-%s-`, component.Data.DefaultBucketStage, r.ReplaceAllString(component.ID.String(), `-`))
 	m.defaultBucketsByComponentID[component.ID] = bucketPrefix

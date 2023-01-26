@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -26,7 +26,7 @@ import (
 const receiverSecret = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
 // createExport creates receiver,export,mapping,file and slice.
-func createExport(t *testing.T, receiverID, exportID string, ctx context.Context, clk clock.Clock, client *etcd.Client, str *store.Store, fileRes *storageapi.File) key.SliceKey {
+func createExport(t *testing.T, receiverID, exportID string, ctx context.Context, clk clock.Clock, client *etcd.Client, str *store.Store, fileRes *keboola.File) key.SliceKey {
 	t.Helper()
 	receiver := model.ReceiverForTest(receiverID, 0, clk.Now())
 	columns := []column.Column{

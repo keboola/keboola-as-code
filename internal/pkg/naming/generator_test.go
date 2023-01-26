@@ -3,7 +3,7 @@ package naming
 import (
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -16,7 +16,7 @@ func TestUniquePathSameObjectType(t *testing.T) {
 	g.template.Branch = "{branch_name}"
 	g.template.Config = "{component_type}/{component_id}/{config_name}"
 	g.template.ConfigRow = "rows/{config_row_name}"
-	component := &storageapi.Component{ComponentKey: storageapi.ComponentKey{ID: "foo"}, Type: "writer"}
+	component := &keboola.Component{ComponentKey: keboola.ComponentKey{ID: "foo"}, Type: "writer"}
 
 	// Default branch
 	assert.Equal(t, "main", g.BranchPath(&Branch{BranchKey: BranchKey{ID: 12}, Name: "a", IsDefault: true}).Path())
@@ -41,7 +41,7 @@ func TestUniquePathDifferentObjects(t *testing.T) {
 	g.template.Branch = "prefix"
 	g.template.Config = "prefix"
 	g.template.ConfigRow = "prefix"
-	component := &storageapi.Component{ComponentKey: storageapi.ComponentKey{ID: "foo"}, Type: "writer"}
+	component := &keboola.Component{ComponentKey: keboola.ComponentKey{ID: "foo"}, Type: "writer"}
 	rowWithName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "name", Value: "my-name"}})
 	rowWithoutName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}})
 	parentPath := "foo"
@@ -60,7 +60,7 @@ func TestNamingEmptyTemplate(t *testing.T) {
 	g.template.Branch = ""
 	g.template.Config = ""
 	g.template.ConfigRow = ""
-	component := &storageapi.Component{ComponentKey: storageapi.ComponentKey{ID: "foo"}, Type: "writer"}
+	component := &keboola.Component{ComponentKey: keboola.ComponentKey{ID: "foo"}, Type: "writer"}
 	rowWithName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "name", Value: "my-name"}})
 	rowWithoutName := orderedmap.FromPairs([]orderedmap.Pair{{Key: "foo", Value: "bar"}})
 	parentPath := "foo"
@@ -97,8 +97,8 @@ func TestNamingDefaultTemplate(t *testing.T) {
 		"my-branch/extractor/keboola.ex-foo-bar/456-my-production-config",
 		g.ConfigPath(
 			"my-branch",
-			&storageapi.Component{
-				ComponentKey: storageapi.ComponentKey{
+			&keboola.Component{
+				ComponentKey: keboola.ComponentKey{
 					ID: "keboola.ex-foo-bar",
 				},
 				Type: "extractor",
@@ -119,8 +119,8 @@ func TestNamingDefaultTemplate(t *testing.T) {
 		"my-branch/my-row/rows/789-row-ab-c",
 		g.ConfigRowPath(
 			"my-branch/my-row",
-			&storageapi.Component{
-				ComponentKey: storageapi.ComponentKey{ID: "keboola.ex-foo-bar"},
+			&keboola.Component{
+				ComponentKey: keboola.ComponentKey{ID: "keboola.ex-foo-bar"},
 			},
 			&ConfigRow{
 				ConfigRowKey: ConfigRowKey{
@@ -139,16 +139,16 @@ func TestNamingDefaultTemplate(t *testing.T) {
 		"my-branch/_shared/keboola.python-transformation-v2",
 		g.ConfigPath(
 			"my-branch",
-			&storageapi.Component{
-				ComponentKey: storageapi.ComponentKey{
-					ID: storageapi.SharedCodeComponentID,
+			&keboola.Component{
+				ComponentKey: keboola.ComponentKey{
+					ID: keboola.SharedCodeComponentID,
 				},
 				Type: "other",
 			},
 			&Config{
 				ConfigKey: ConfigKey{
 					BranchID:    1234,
-					ComponentID: storageapi.SharedCodeComponentID,
+					ComponentID: keboola.SharedCodeComponentID,
 					ID:          "456",
 				},
 				Name:    "MySharedCode",
@@ -165,13 +165,13 @@ func TestNamingDefaultTemplate(t *testing.T) {
 		"my-branch/my-config/schedules/456-schedule-1",
 		g.ConfigPath(
 			"my-branch/my-config",
-			&storageapi.Component{
-				ComponentKey: storageapi.ComponentKey{ID: storageapi.SchedulerComponentID},
+			&keboola.Component{
+				ComponentKey: keboola.ComponentKey{ID: keboola.SchedulerComponentID},
 			},
 			&Config{
 				ConfigKey: ConfigKey{
 					BranchID:    1234,
-					ComponentID: storageapi.SchedulerComponentID,
+					ComponentID: keboola.SchedulerComponentID,
 					ID:          "456",
 				},
 				Relations: Relations{
@@ -191,13 +191,13 @@ func TestNamingDefaultTemplate(t *testing.T) {
 		"my-branch/shared/codes/789-code-ab-c",
 		g.ConfigRowPath(
 			"my-branch/shared",
-			&storageapi.Component{
-				ComponentKey: storageapi.ComponentKey{ID: storageapi.SharedCodeComponentID},
+			&keboola.Component{
+				ComponentKey: keboola.ComponentKey{ID: keboola.SharedCodeComponentID},
 			},
 			&ConfigRow{
 				ConfigRowKey: ConfigRowKey{
 					BranchID:    1234,
-					ComponentID: storageapi.SharedCodeComponentID,
+					ComponentID: keboola.SharedCodeComponentID,
 					ConfigID:    "456",
 					ID:          "789",
 				},
@@ -211,13 +211,13 @@ func TestNamingDefaultTemplate(t *testing.T) {
 		"my-branch/my-config/variables",
 		g.ConfigPath(
 			"my-branch/my-config",
-			&storageapi.Component{
-				ComponentKey: storageapi.ComponentKey{ID: storageapi.VariablesComponentID},
+			&keboola.Component{
+				ComponentKey: keboola.ComponentKey{ID: keboola.VariablesComponentID},
 			},
 			&Config{
 				ConfigKey: ConfigKey{
 					BranchID:    1234,
-					ComponentID: storageapi.VariablesComponentID,
+					ComponentID: keboola.VariablesComponentID,
 					ID:          "456",
 				},
 				Relations: Relations{
@@ -237,13 +237,13 @@ func TestNamingDefaultTemplate(t *testing.T) {
 		"my-branch/my-config/variables/values/789-default-values",
 		g.ConfigRowPath(
 			"my-branch/my-config/variables",
-			&storageapi.Component{
-				ComponentKey: storageapi.ComponentKey{ID: storageapi.VariablesComponentID},
+			&keboola.Component{
+				ComponentKey: keboola.ComponentKey{ID: keboola.VariablesComponentID},
 			},
 			&ConfigRow{
 				ConfigRowKey: ConfigRowKey{
 					BranchID:    1234,
-					ComponentID: storageapi.VariablesComponentID,
+					ComponentID: keboola.VariablesComponentID,
 					ConfigID:    "456",
 					ID:          "789",
 				},

@@ -3,7 +3,7 @@ package variables
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -35,7 +35,7 @@ func (m *variablesMapper) loadVariables(object *model.Config) {
 
 	// Create relation
 	object.AddRelation(&model.VariablesFromRelation{
-		VariablesID: storageapi.ConfigID(variablesID),
+		VariablesID: keboola.ConfigID(variablesID),
 	})
 
 	// Remove variables ID from configuration content
@@ -63,7 +63,7 @@ func (m *variablesMapper) loadVariablesValues(object *model.Config) {
 
 	// Create relation
 	object.AddRelation(&model.VariablesValuesFromRelation{
-		VariablesValuesID: storageapi.RowID(valuesID),
+		VariablesValuesID: keboola.RowID(valuesID),
 	})
 
 	// Remove variables ID from configuration content

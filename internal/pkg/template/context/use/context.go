@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	jsonnetLib "github.com/google/go-jsonnet"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
@@ -52,7 +52,7 @@ type Context struct {
 	jsonnetCtx        *jsonnet.Context
 	replacements      *replacevalues.Values
 	inputsValues      map[string]template.InputValue
-	tickets           *storageapi.TicketProvider
+	tickets           *keboola.TicketProvider
 	components        *model.ComponentsMap
 	placeholdersCount int
 	ticketsResolved   bool
@@ -89,7 +89,7 @@ const (
 	instanceIDShortLength = 8
 )
 
-func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceID string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefsMap map[string]*template.Input, tickets *storageapi.TicketProvider, components *model.ComponentsMap) *Context {
+func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot filesystem.Fs, instanceID string, targetBranch model.BranchKey, inputsValues template.InputsValues, inputsDefsMap map[string]*template.Input, tickets *keboola.TicketProvider, components *model.ComponentsMap) *Context {
 	ctx = template.NewContext(ctx)
 	c := &Context{
 		_context:        ctx,
@@ -175,10 +175,10 @@ func (c *Context) RegisterPlaceholder(oldID interface{}, fn PlaceholderResolver)
 
 		// Convert string to an ID value
 		switch oldID.(type) {
-		case storageapi.ConfigID:
-			p.asValue = storageapi.ConfigID(p.asString)
-		case storageapi.RowID:
-			p.asValue = storageapi.RowID(p.asString)
+		case keboola.ConfigID:
+			p.asValue = keboola.ConfigID(p.asString)
+		case keboola.RowID:
+			p.asValue = keboola.RowID(p.asString)
 		default:
 			panic(errors.New("unexpected ID type"))
 		}
@@ -212,12 +212,12 @@ func (c *Context) mapID(oldID interface{}) string {
 	p := c.RegisterPlaceholder(oldID, func(p Placeholder, cb ResolveCallback) {
 		// Placeholder -> new ID
 		var newID interface{}
-		c.tickets.Request(func(ticket *storageapi.Ticket) {
+		c.tickets.Request(func(ticket *keboola.Ticket) {
 			switch p.asValue.(type) {
-			case storageapi.ConfigID:
-				newID = storageapi.ConfigID(ticket.ID)
-			case storageapi.RowID:
-				newID = storageapi.RowID(ticket.ID)
+			case keboola.ConfigID:
+				newID = keboola.ConfigID(ticket.ID)
+			case keboola.RowID:
+				newID = keboola.RowID(ticket.ID)
 			default:
 				panic(errors.New("unexpected ID type"))
 			}

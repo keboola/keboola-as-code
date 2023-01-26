@@ -3,7 +3,7 @@ package orchestrator
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -37,7 +37,7 @@ func (m *orchestratorMapper) onObjectsRename(renamed []model.RenameAction, allOb
 					relation := relationRaw.(*model.UsedInOrchestratorRelation)
 					orchestratorKey := model.ConfigKey{
 						BranchID:    localConfig.BranchID,
-						ComponentID: storageapi.OrchestratorComponentID,
+						ComponentID: keboola.OrchestratorComponentID,
 						ID:          relation.ConfigID,
 					}
 					orchestratorsToUpdate[orchestratorKey.String()] = orchestratorKey

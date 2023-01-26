@@ -10,7 +10,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -54,17 +54,15 @@ type MockedConfig struct {
 
 	etcdNamespace string
 
-	services                  storageapi.Services
-	features                  storageapi.Features
-	components                storageapi.Components
+	services                  keboola.Services
+	features                  keboola.Features
+	components                keboola.Components
 	storageAPIHost            string
-	storageAPIToken           storageapi.Token
+	storageAPIToken           keboola.Token
 	multipleTokenVerification bool
 
-	useRealAPIs         bool
-	storageAPIClient    client.Client
-	encryptionAPIClient client.Client
-	schedulerAPIClient  client.Client
+	useRealAPIs       bool
+	keboolaProjectAPI *keboola.API
 }
 
 type MockedOption func(c *MockedConfig)
@@ -115,25 +113,23 @@ func WithTestProject(project *testproject.Project) MockedOption {
 		c.storageAPIToken = *project.StorageAPIToken()
 
 		c.useRealAPIs = true
-		c.storageAPIClient = project.StorageAPIClient()
-		c.encryptionAPIClient = project.EncryptionAPIClient()
-		c.schedulerAPIClient = project.SchedulerAPIClient()
+		c.keboolaProjectAPI = project.KeboolaProjectAPI()
 	}
 }
 
-func WithMockedServices(services storageapi.Services) MockedOption {
+func WithMockedServices(services keboola.Services) MockedOption {
 	return func(c *MockedConfig) {
 		c.services = services
 	}
 }
 
-func WithMockedFeatures(features storageapi.Features) MockedOption {
+func WithMockedFeatures(features keboola.Features) MockedOption {
 	return func(c *MockedConfig) {
 		c.features = features
 	}
 }
 
-func WithMockedComponents(components storageapi.Components) MockedOption {
+func WithMockedComponents(components keboola.Components) MockedOption {
 	return func(c *MockedConfig) {
 		c.components = components
 	}
@@ -145,7 +141,7 @@ func WithMockedStorageAPIHost(host string) MockedOption {
 	}
 }
 
-func WithMockedStorageAPIToken(token storageapi.Token) MockedOption {
+func WithMockedStorageAPIToken(token keboola.Token) MockedOption {
 	return func(c *MockedConfig) {
 		c.storageAPIToken = token
 	}
@@ -168,23 +164,23 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 		clock:         clock.New(),
 		etcdNamespace: etcdhelper.NamespaceForTest(),
 		useRealAPIs:   false,
-		services: storageapi.Services{
+		services: keboola.Services{
 			{ID: "encryption", URL: "https://encryption.mocked.transport.http"},
 			{ID: "scheduler", URL: "https://scheduler.mocked.transport.http"},
 			{ID: "queue", URL: "https://queue.mocked.transport.http"},
 			{ID: "sandboxes", URL: "https://sandboxes.mocked.transport.http"},
 		},
-		features:       storageapi.Features{"FeatureA", "FeatureB"},
+		features:       keboola.Features{"FeatureA", "FeatureB"},
 		components:     testapi.MockedComponents(),
 		storageAPIHost: "mocked.transport.http",
-		storageAPIToken: storageapi.Token{
+		storageAPIToken: keboola.Token{
 			ID:       "token-12345-id",
 			Token:    "my-secret",
 			IsMaster: true,
-			Owner: storageapi.TokenOwner{
+			Owner: keboola.TokenOwner{
 				ID:       12345,
 				Name:     "Project 12345",
-				Features: storageapi.Features{"my-feature"},
+				Features: keboola.Features{"my-feature"},
 			},
 		},
 		multipleTokenVerification: false,
@@ -212,9 +208,16 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
 		fmt.Sprintf("https://%s/v2/storage/", c.storageAPIHost),
-		httpmock.NewJsonResponderOrPanic(200, &storageapi.IndexComponents{
-			Index: storageapi.Index{Services: c.services, Features: c.features}, Components: c.components,
+		httpmock.NewJsonResponderOrPanic(200, &keboola.IndexComponents{
+			Index: keboola.Index{Services: c.services, Features: c.features}, Components: c.components,
 		}).Once(),
+	)
+	mockedHTTPTransport.RegisterResponder(
+		http.MethodGet,
+		fmt.Sprintf("https://%s/v2/storage/?exclude=components", c.storageAPIHost),
+		httpmock.NewJsonResponderOrPanic(200, &keboola.IndexComponents{
+			Index: keboola.Index{Services: c.services, Features: c.features}, Components: keboola.Components{},
+		}),
 	)
 
 	// Mocked token verification
@@ -234,17 +237,15 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 	if err != nil {
 		panic(err)
 	}
-	projectDeps, err := newProjectDeps(baseDeps, publicDeps, c.storageAPIToken)
+	projectDeps, err := newProjectDeps(c.ctx, baseDeps, publicDeps, c.storageAPIToken)
 	if err != nil {
 		panic(err)
 	}
 
 	// Use real APIs
 	if c.useRealAPIs {
-		publicDeps.storageAPIClient = c.storageAPIClient
-		projectDeps.storageAPIClient = c.storageAPIClient
-		publicDeps.encryptionAPIClient = c.encryptionAPIClient
-		projectDeps.schedulerAPIClient = c.schedulerAPIClient
+		publicDeps.keboolaPublicAPI = c.keboolaProjectAPI
+		projectDeps.keboolaProjectAPI = c.keboolaProjectAPI
 		mockedHTTPTransport = nil
 		baseDeps.httpClient = client.NewTestClient()
 	}
@@ -364,4 +365,8 @@ func (v *mocked) EtcdClient() *etcd.Client {
 		v.etcdClient = etcdhelper.ClientForTestWithNamespace(v.t, v.config.etcdNamespace)
 	}
 	return v.etcdClient
+}
+
+func (v *mocked) KeboolaProjectAPI() *keboola.API {
+	return v.project.keboolaProjectAPI
 }

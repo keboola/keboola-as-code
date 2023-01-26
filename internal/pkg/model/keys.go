@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cast"
 )
 
@@ -39,42 +39,42 @@ type WithKey interface {
 }
 
 type BranchKey struct {
-	ID storageapi.BranchID `json:"id" validate:"required"`
+	ID keboola.BranchID `json:"id" validate:"required"`
 }
 
 type ConfigKey struct {
-	BranchID    storageapi.BranchID    `json:"branchId,omitempty" validate:"required_in_project"`
-	ComponentID storageapi.ComponentID `json:"componentId" validate:"required"`
-	ID          storageapi.ConfigID    `json:"id" validate:"required"`
+	BranchID    keboola.BranchID    `json:"branchId,omitempty" validate:"required_in_project"`
+	ComponentID keboola.ComponentID `json:"componentId" validate:"required"`
+	ID          keboola.ConfigID    `json:"id" validate:"required"`
 }
 
 type ConfigRowKey struct {
-	BranchID    storageapi.BranchID    `json:"-" validate:"required_in_project"`
-	ComponentID storageapi.ComponentID `json:"-" validate:"required"`
-	ConfigID    storageapi.ConfigID    `json:"-" validate:"required"`
-	ID          storageapi.RowID       `json:"id" validate:"required" `
+	BranchID    keboola.BranchID    `json:"-" validate:"required_in_project"`
+	ComponentID keboola.ComponentID `json:"-" validate:"required"`
+	ConfigID    keboola.ConfigID    `json:"-" validate:"required"`
+	ID          keboola.RowID       `json:"id" validate:"required" `
 }
 
 type BlockKey struct {
-	BranchID    storageapi.BranchID    `json:"-" validate:"required_in_project" `
-	ComponentID storageapi.ComponentID `json:"-" validate:"required" `
-	ConfigID    storageapi.ConfigID    `json:"-" validate:"required" `
-	Index       int                    `json:"-" validate:"min=0" `
+	BranchID    keboola.BranchID    `json:"-" validate:"required_in_project" `
+	ComponentID keboola.ComponentID `json:"-" validate:"required" `
+	ConfigID    keboola.ConfigID    `json:"-" validate:"required" `
+	Index       int                 `json:"-" validate:"min=0" `
 }
 
 type CodeKey struct {
-	BranchID    storageapi.BranchID    `json:"-" validate:"required_in_project" `
-	ComponentID storageapi.ComponentID `json:"-" validate:"required" `
-	ConfigID    storageapi.ConfigID    `json:"-" validate:"required" `
-	BlockIndex  int                    `json:"-" validate:"min=0" `
-	Index       int                    `json:"-" validate:"min=0" `
+	BranchID    keboola.BranchID    `json:"-" validate:"required_in_project" `
+	ComponentID keboola.ComponentID `json:"-" validate:"required" `
+	ConfigID    keboola.ConfigID    `json:"-" validate:"required" `
+	BlockIndex  int                 `json:"-" validate:"min=0" `
+	Index       int                 `json:"-" validate:"min=0" `
 }
 
 type PhaseKey struct {
-	BranchID    storageapi.BranchID    `json:"-" validate:"required_in_project" `
-	ComponentID storageapi.ComponentID `json:"-" validate:"required" `
-	ConfigID    storageapi.ConfigID    `json:"-" validate:"required" `
-	Index       int                    `json:"-" validate:"min=0" `
+	BranchID    keboola.BranchID    `json:"-" validate:"required_in_project" `
+	ComponentID keboola.ComponentID `json:"-" validate:"required" `
+	ConfigID    keboola.ConfigID    `json:"-" validate:"required" `
+	Index       int                 `json:"-" validate:"min=0" `
 }
 
 type TaskKey struct {
@@ -348,10 +348,10 @@ func (k TaskKey) ParentKey() (Key, error) {
 }
 
 type ConfigIDMetadata struct {
-	IDInTemplate storageapi.ConfigID `json:"idInTemplate"`
+	IDInTemplate keboola.ConfigID `json:"idInTemplate"`
 }
 
 type RowIDMetadata struct {
-	IDInProject  storageapi.RowID `json:"idInProject"`
-	IDInTemplate storageapi.RowID `json:"idInTemplate"`
+	IDInProject  keboola.RowID `json:"idInProject"`
+	IDInTemplate keboola.RowID `json:"idInTemplate"`
 }

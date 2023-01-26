@@ -5,8 +5,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -29,8 +28,8 @@ type branchesDialog struct {
 }
 
 type branchesDialogDeps interface {
+	KeboolaProjectAPI() *keboola.API
 	Options() *options.Options
-	StorageAPIClient() client.Sender
 }
 
 func (p *Dialogs) AskAllowedBranches(ctx context.Context, deps branchesDialogDeps) (model.AllowedBranches, error) {
@@ -39,10 +38,10 @@ func (p *Dialogs) AskAllowedBranches(ctx context.Context, deps branchesDialogDep
 
 func (d *branchesDialog) ask(ctx context.Context) (model.AllowedBranches, error) {
 	// Get Storage API
-	storageAPIClient := d.deps.StorageAPIClient()
+	api := d.deps.KeboolaProjectAPI()
 
 	// List all branches
-	if v, err := storageapi.ListBranchesRequest().Send(ctx, storageAPIClient); err == nil {
+	if v, err := api.ListBranchesRequest().Send(ctx); err == nil {
 		for _, apiBranch := range *v {
 			d.allBranches = append(d.allBranches, model.NewBranch(apiBranch))
 		}

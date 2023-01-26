@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/yaml.v3"
 
@@ -17,10 +16,10 @@ import (
 )
 
 type dependencies interface {
+	KeboolaProjectAPI() *keboola.API
+	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Tracer() trace.Tracer
-	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
-	StorageAPIClient() client.Sender
 }
 
 func Run(ctx context.Context, targetName string, d dependencies) (err error) {
@@ -41,7 +40,7 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 		}
 	}
 
-	tablesList, err := storageapi.ListTablesRequest(storageapi.WithBuckets()).Send(ctx, d.StorageAPIClient())
+	tablesList, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithBuckets()).Send(ctx)
 	if err != nil {
 		return err
 	}
@@ -63,12 +62,12 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 	return nil
 }
 
-func tablesByBucketsMap(tablesList []*storageapi.Table) map[storageapi.BucketID][]*storageapi.Table {
-	tablesByBuckets := make(map[storageapi.BucketID][]*storageapi.Table)
+func tablesByBucketsMap(tablesList []*keboola.Table) map[keboola.BucketID][]*keboola.Table {
+	tablesByBuckets := make(map[keboola.BucketID][]*keboola.Table)
 	for _, table := range tablesList {
 		bucket, ok := tablesByBuckets[table.Bucket.ID]
 		if !ok {
-			bucket = make([]*storageapi.Table, 0)
+			bucket = make([]*keboola.Table, 0)
 		}
 		bucket = append(bucket, table)
 		tablesByBuckets[table.Bucket.ID] = bucket
@@ -76,7 +75,7 @@ func tablesByBucketsMap(tablesList []*storageapi.Table) map[storageapi.BucketID]
 	return tablesByBuckets
 }
 
-func generateSourcesDefinition(targetName string, bucketID storageapi.BucketID, tablesList []*storageapi.Table) dbt.SourceFile {
+func generateSourcesDefinition(targetName string, bucketID keboola.BucketID, tablesList []*keboola.Table) dbt.SourceFile {
 	sourceTables := make([]dbt.SourceTable, 0)
 	for _, table := range tablesList {
 		sourceTable := dbt.SourceTable{

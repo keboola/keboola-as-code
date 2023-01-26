@@ -1,7 +1,7 @@
 package encrypt
 
 import (
-	"github.com/keboola/go-client/pkg/encryptionapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -39,7 +39,7 @@ func (b *encryptPlanBuilder) processObject(objectState model.ObjectState) {
 		var values []*UnencryptedValue
 		o.GetContent().VisitAllRecursive(func(path orderedmap.Path, value interface{}, parent interface{}) {
 			if v, ok := value.(string); ok {
-				if key, ok := path.Last().(orderedmap.MapStep); ok && encryptionapi.IsKeyToEncrypt(key.Key()) && !encryptionapi.IsEncrypted(v) {
+				if key, ok := path.Last().(orderedmap.MapStep); ok && keboola.IsKeyToEncrypt(key.Key()) && !keboola.IsEncrypted(v) {
 					values = append(values, &UnencryptedValue{path: path, value: v})
 				}
 			}

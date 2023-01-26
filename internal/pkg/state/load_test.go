@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
@@ -60,7 +60,7 @@ func TestLoadState(t *testing.T) {
 		{
 			Remote: &model.Branch{
 				BranchKey: model.BranchKey{
-					ID: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					ID: keboola.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 				},
 				Name:        "Main",
 				Description: "Main branch",
@@ -69,7 +69,7 @@ func TestLoadState(t *testing.T) {
 			},
 			Local: &model.Branch{
 				BranchKey: model.BranchKey{
-					ID: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					ID: keboola.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 				},
 				Name:        "Main",
 				Description: "Main branch",
@@ -81,7 +81,7 @@ func TestLoadState(t *testing.T) {
 					Persisted: true,
 				},
 				BranchKey: model.BranchKey{
-					ID: storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					ID: keboola.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(
@@ -97,9 +97,9 @@ func TestLoadState(t *testing.T) {
 		{
 			Remote: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					BranchID:    keboola.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 					ComponentID: "ex-generic-v2",
-					ID:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
+					ID:          keboola.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Name:        "empty",
 				Description: "test fixture",
@@ -108,9 +108,9 @@ func TestLoadState(t *testing.T) {
 			},
 			Local: &model.Config{
 				ConfigKey: model.ConfigKey{
-					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					BranchID:    keboola.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 					ComponentID: "ex-generic-v2",
-					ID:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
+					ID:          keboola.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Name:        "todos",
 				Description: "todos config",
@@ -137,9 +137,9 @@ func TestLoadState(t *testing.T) {
 					Persisted: true,
 				},
 				ConfigKey: model.ConfigKey{
-					BranchID:    storageapi.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
+					BranchID:    keboola.BranchID(cast.ToInt(envs.MustGet(`TEST_BRANCH_MAIN_ID`))),
 					ComponentID: "ex-generic-v2",
-					ID:          storageapi.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
+					ID:          keboola.ConfigID(envs.MustGet(`TEST_BRANCH_ALL_CONFIG_EMPTY_ID`)),
 				},
 				Paths: model.Paths{
 					AbsPath: model.NewAbsPath(

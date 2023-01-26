@@ -6,22 +6,22 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-const componentID = storageapi.ComponentID("keboola.keboola-as-code")
+const componentID = keboola.ComponentID("keboola.keboola-as-code")
 
 type Sender struct {
 	logger    log.Logger
-	client    client.Sender
+	client    *keboola.API
 	projectID int
 }
 
-func NewSender(logger log.Logger, client client.Sender, projectID int) Sender {
+func NewSender(logger log.Logger, client *keboola.API, projectID int) Sender {
 	return Sender{logger: logger, client: client, projectID: projectID}
 }
 
@@ -58,14 +58,14 @@ func (s Sender) sendCmdSuccessfulEvent(ctx context.Context, cmdStart time.Time, 
 	results := map[string]interface{}{
 		"projectId": s.projectID,
 	}
-	event, err := storageapi.CreatEventRequest(&storageapi.Event{
+	event, err := s.client.CreateEventRequest(&keboola.Event{
 		ComponentID: componentID,
 		Type:        "info",
 		Message:     msg,
 		Duration:    client.DurationSeconds(duration),
 		Params:      params,
 		Results:     results,
-	}).Send(ctx, s.client)
+	}).Send(ctx)
 	if err == nil {
 		s.logger.Debugf("Sent \"%s\" successful event id: \"%s\"", cmd, event.ID)
 	} else {
@@ -83,14 +83,14 @@ func (s Sender) sendCmdFailedEvent(ctx context.Context, cmdStart time.Time, err 
 		"projectId": s.projectID,
 		"error":     fmt.Sprintf("%s", err),
 	}
-	event, err := storageapi.CreatEventRequest(&storageapi.Event{
+	event, err := s.client.CreateEventRequest(&keboola.Event{
 		ComponentID: componentID,
 		Type:        "error",
 		Message:     msg,
 		Duration:    client.DurationSeconds(duration),
 		Params:      params,
 		Results:     results,
-	}).Send(ctx, s.client)
+	}).Send(ctx)
 	if err == nil {
 		s.logger.Debugf("Sent \"%s\" failed event id: \"%s\"", cmd, event.ID)
 	} else {

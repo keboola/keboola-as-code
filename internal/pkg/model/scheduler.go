@@ -3,15 +3,15 @@ package model
 import (
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // SchedulerForRelation - scheduler for a configuration.
 type SchedulerForRelation struct {
-	ComponentID storageapi.ComponentID `json:"componentId" validate:"required"`
-	ConfigID    storageapi.ConfigID    `json:"configId" validate:"required"`
+	ComponentID keboola.ComponentID `json:"componentId" validate:"required"`
+	ConfigID    keboola.ConfigID    `json:"configId" validate:"required"`
 }
 
 func (t *SchedulerForRelation) Type() RelationType {

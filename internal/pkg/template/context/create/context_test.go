@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/replacevalues"
@@ -76,8 +76,8 @@ func TestCreateContext(t *testing.T) {
 			Replace: model.BranchKey{ID: 0},
 		},
 		{
-			Search:  storageapi.BranchID(123),
-			Replace: storageapi.BranchID(0),
+			Search:  keboola.BranchID(123),
+			Replace: keboola.BranchID(0),
 		},
 		{
 			Search: model.ConfigKey{
@@ -92,8 +92,8 @@ func TestCreateContext(t *testing.T) {
 			},
 		},
 		{
-			Search:  storageapi.ConfigID("123"),
-			Replace: storageapi.ConfigID(`<<~~func:ConfigId:["my-first-config"]~~>>`),
+			Search:  keboola.ConfigID("123"),
+			Replace: keboola.ConfigID(`<<~~func:ConfigId:["my-first-config"]~~>>`),
 		},
 		{
 			Search:  replacevalues.SubString("123"),
@@ -112,8 +112,8 @@ func TestCreateContext(t *testing.T) {
 			},
 		},
 		{
-			Search:  storageapi.ConfigID("345"),
-			Replace: storageapi.ConfigID(`<<~~func:ConfigId:["my-second-config"]~~>>`),
+			Search:  keboola.ConfigID("345"),
+			Replace: keboola.ConfigID(`<<~~func:ConfigId:["my-second-config"]~~>>`),
 		},
 		{
 			Search:  replacevalues.SubString("345"),
@@ -134,8 +134,8 @@ func TestCreateContext(t *testing.T) {
 			},
 		},
 		{
-			Search:  storageapi.RowID("789"),
-			Replace: storageapi.RowID(`<<~~func:ConfigRowId:["my-row"]~~>>`),
+			Search:  keboola.RowID("789"),
+			Replace: keboola.RowID(`<<~~func:ConfigRowId:["my-row"]~~>>`),
 		},
 		{
 			Search:  replacevalues.SubString("789"),

@@ -3,7 +3,7 @@ package helper_test
 import (
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
@@ -55,7 +55,7 @@ func TestGetSharedCodeRowByPath(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Equal(t, model.ConfigRowKey{
 		BranchID:    123,
-		ComponentID: storageapi.SharedCodeComponentID,
+		ComponentID: keboola.SharedCodeComponentID,
 		ConfigID:    `456`,
 		ID:          `1234`,
 	}, result.Key())
@@ -78,13 +78,13 @@ func TestGetSharedCodeVariablesId(t *testing.T) {
 
 	sharedCodeRow1 := mockedState.MustGet(model.ConfigRowKey{
 		BranchID:    123,
-		ComponentID: storageapi.SharedCodeComponentID,
+		ComponentID: keboola.SharedCodeComponentID,
 		ConfigID:    `456`,
 		ID:          `1234`,
 	}).(*model.ConfigRowState)
 	sharedCodeRow2 := mockedState.MustGet(model.ConfigRowKey{
 		BranchID:    123,
-		ComponentID: storageapi.SharedCodeComponentID,
+		ComponentID: keboola.SharedCodeComponentID,
 		ConfigID:    `456`,
 		ID:          `5678`,
 	}).(*model.ConfigRowState)

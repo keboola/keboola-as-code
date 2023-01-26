@@ -6,9 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
@@ -30,8 +31,17 @@ func TestContext(t *testing.T) {
 	t.Parallel()
 
 	// Mocked ticket provider
-	storageAPIClient, httpTransport := client.NewMockedClient()
-	tickets := storageapi.NewTicketProvider(context.Background(), storageAPIClient)
+	c, httpTransport := client.NewMockedClient()
+	httpTransport.RegisterResponder(resty.MethodGet, `/v2/storage/?exclude=components`,
+		httpmock.NewStringResponder(200, `{
+			"services": [],
+			"features": []
+		}`),
+	)
+	ctx := context.Background()
+	api, err := keboola.NewAPI(ctx, "https://connection.keboola.com", keboola.WithClient(&c))
+	assert.NoError(t, err)
+	tickets := keboola.NewTicketProvider(ctx, api)
 
 	// Mocked tickets
 	var ticketResponses []*http.Response
@@ -78,10 +88,10 @@ func TestContext(t *testing.T) {
 	fileDef := filesystem.NewFileDef("foo.bar")
 	fileDef.AddMetadata(filesystem.ObjectKeyMetadata, objectKey)
 	fileDef.AddTag(model.FileKindObjectConfig)
-	ctx := context.WithValue(context.Background(), jsonnetfiles.FileDefCtxKey, fileDef)
+	ctxWithVal := context.WithValue(context.Background(), jsonnetfiles.FileDefCtxKey, fileDef)
 
 	// Create template use context
-	useCtx := NewContext(ctx, templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap())
+	useCtx := NewContext(ctxWithVal, templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap())
 
 	// Check Jsonnet functions
 	code := `
@@ -174,16 +184,24 @@ func TestComponentsFunctions(t *testing.T) {
 	t.Parallel()
 
 	// Mocked ticket provider
-	storageAPIClient, _ := client.NewMockedClient()
-	tickets := storageapi.NewTicketProvider(context.Background(), storageAPIClient)
-	components := model.NewComponentsMap(storageapi.Components{})
+	c, httpTransport := client.NewMockedClient()
+	httpTransport.RegisterResponder(resty.MethodGet, `/v2/storage/?exclude=components`,
+		httpmock.NewStringResponder(200, `{
+			"services": [],
+			"features": []
+		}`),
+	)
+	ctx := context.Background()
+	api, err := keboola.NewAPI(ctx, "https://connection.keboola.com", keboola.WithClient(&c))
+	assert.NoError(t, err)
+	tickets := keboola.NewTicketProvider(context.Background(), api)
+	components := model.NewComponentsMap(keboola.Components{})
 	targetBranch := model.BranchKey{ID: 123}
 	inputsValues := template.InputsValues{}
 	inputs := map[string]*template.Input{}
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
 	instanceID := "my-instance"
 	fs := aferofs.NewMemoryFs()
-	ctx := context.Background()
 
 	// Context factory for template use operation
 	newUseCtx := func() *Context {
@@ -207,8 +225,8 @@ func TestComponentsFunctions(t *testing.T) {
 	assert.Equal(t, expected, output)
 
 	// Case 2: Only AWS Snowflake Writer
-	components = model.NewComponentsMap(storageapi.Components{
-		{ComponentKey: storageapi.ComponentKey{ID: function.SnowflakeWriterIDAws}},
+	components = model.NewComponentsMap(keboola.Components{
+		{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDAws}},
 	})
 	expected = `
 {
@@ -222,8 +240,8 @@ func TestComponentsFunctions(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
 	// Case 3: Only Azure Snowflake Writer
-	components = model.NewComponentsMap(storageapi.Components{
-		{ComponentKey: storageapi.ComponentKey{ID: function.SnowflakeWriterIDAzure}},
+	components = model.NewComponentsMap(keboola.Components{
+		{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDAzure}},
 	})
 	expected = `
 {
@@ -237,9 +255,9 @@ func TestComponentsFunctions(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(output))
 
 	// Case 4: Both AWS and Azure Snowflake Writer
-	components = model.NewComponentsMap(storageapi.Components{
-		{ComponentKey: storageapi.ComponentKey{ID: function.SnowflakeWriterIDAws}},
-		{ComponentKey: storageapi.ComponentKey{ID: function.SnowflakeWriterIDAzure}},
+	components = model.NewComponentsMap(keboola.Components{
+		{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDAws}},
+		{ComponentKey: keboola.ComponentKey{ID: function.SnowflakeWriterIDAzure}},
 	})
 	expected = `
 {

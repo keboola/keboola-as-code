@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
@@ -22,7 +22,7 @@ type Slice struct {
 	State           slicestate.State `json:"state" validate:"required,oneof=active/opened/writing active/opened/closing active/closed/uploading active/closed/uploaded active/closed/failed archived/successful/imported"`
 	IsEmpty         bool             `json:"isEmpty,omitempty"`
 	Mapping         Mapping          `json:"mapping" validate:"required,dive"`
-	StorageResource *storageapi.File `json:"storageResource" validate:"required"`
+	StorageResource *keboola.File    `json:"storageResource" validate:"required"`
 	Number          int              `json:"sliceNumber" validate:"required"`
 	ClosingAt       *UTCTime         `json:"closingAt,omitempty"`
 	UploadingAt     *UTCTime         `json:"uploadingAt,omitempty"`
@@ -42,7 +42,7 @@ type SliceIDRange struct {
 	Count uint64 `json:"count" validate:"required"`
 }
 
-func NewSlice(fileKey key.FileKey, now time.Time, mapping Mapping, number int, resource *storageapi.File) Slice {
+func NewSlice(fileKey key.FileKey, now time.Time, mapping Mapping, number int, resource *keboola.File) Slice {
 	return Slice{
 		SliceKey:        key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(now)},
 		State:           slicestate.Writing,

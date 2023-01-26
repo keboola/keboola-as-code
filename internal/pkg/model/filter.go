@@ -3,8 +3,7 @@ package model
 import (
 	"strings"
 
-	"github.com/keboola/go-client/pkg/sandboxesapi"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cast"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -30,7 +29,7 @@ type AllowedBranch string
 
 type AllowedBranches []AllowedBranch
 
-type ComponentIDs []storageapi.ComponentID
+type ComponentIDs []keboola.ComponentID
 
 // ObjectsFilter filters objects by allowed keys, allowed branches and ignored components.
 type ObjectsFilter struct {
@@ -46,7 +45,7 @@ type ObjectIsIgnoredError struct {
 
 // nolint: gochecknoglobals
 var alwaysIgnoredComponents = map[string]bool{
-	sandboxesapi.Component: true,
+	keboola.WorkspacesComponent: true,
 }
 
 func DefaultAllowedBranches() AllowedBranches {
@@ -196,7 +195,7 @@ func (v ComponentIDs) String() string {
 	return `"` + strings.Join(items, `", "`) + `"`
 }
 
-func (v ComponentIDs) Contains(componentID storageapi.ComponentID) bool {
+func (v ComponentIDs) Contains(componentID keboola.ComponentID) bool {
 	for _, id := range v {
 		if id == componentID {
 			return true

@@ -3,7 +3,7 @@ package local
 import (
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
@@ -18,7 +18,7 @@ import (
 	validatorPkg "github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-func newTestLocalManager(t *testing.T, components []*storageapi.Component) *Manager {
+func newTestLocalManager(t *testing.T, components []*keboola.Component) *Manager {
 	t.Helper()
 
 	logger := log.NewDebugLogger()

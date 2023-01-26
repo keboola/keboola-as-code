@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -22,7 +22,7 @@ func TestConfigMetadataMapper_MapBeforeLocalSave(t *testing.T) {
 
 	configKey := model.ConfigKey{
 		BranchID:    123,
-		ComponentID: storageapi.ComponentID("keboola.snowflake-transformation"),
+		ComponentID: keboola.ComponentID("keboola.snowflake-transformation"),
 		ID:          `456`,
 	}
 	configState := &model.ConfigState{

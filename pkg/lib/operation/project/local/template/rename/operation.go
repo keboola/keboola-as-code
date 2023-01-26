@@ -21,9 +21,9 @@ type Options struct {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
 	Logger() log.Logger
 	StorageAPITokenID() string
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {

@@ -3,7 +3,7 @@ package scheduler
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -63,8 +63,8 @@ func (m *schedulerMapper) MapAfterRemoteLoad(ctx context.Context, recipe *model.
 
 	// Create relation
 	object.AddRelation(&model.SchedulerForRelation{
-		ComponentID: storageapi.ComponentID(componentID),
-		ConfigID:    storageapi.ConfigID(configurationID),
+		ComponentID: keboola.ComponentID(componentID),
+		ConfigID:    keboola.ConfigID(configurationID),
 	})
 
 	// Remove component and configuration ID

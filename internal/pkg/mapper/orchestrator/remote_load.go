@@ -3,7 +3,7 @@ package orchestrator
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
 
@@ -265,7 +265,7 @@ func (l *remoteLoader) parseTask(taskRaw interface{}) error {
 	return errs.ErrorOrNil()
 }
 
-func (l *remoteLoader) getTargetConfig(componentID storageapi.ComponentID, configID storageapi.ConfigID) (*model.Config, error) {
+func (l *remoteLoader) getTargetConfig(componentID keboola.ComponentID, configID keboola.ConfigID) (*model.Config, error) {
 	if len(componentID) == 0 || len(configID) == 0 {
 		return nil, nil
 	}

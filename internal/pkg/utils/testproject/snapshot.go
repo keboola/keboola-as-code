@@ -8,9 +8,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/sandboxesapi"
-	"github.com/keboola/go-client/pkg/schedulerapi"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
@@ -21,8 +19,8 @@ import (
 func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	lock := &sync.Mutex{}
 	snapshot := &fixtures.ProjectSnapshot{}
-	configsMap := make(map[storageapi.ConfigKey]*fixtures.Config)
-	configsMetadataMap := make(map[storageapi.ConfigKey]storageapi.Metadata)
+	configsMap := make(map[keboola.ConfigKey]*fixtures.Config)
+	configsMetadataMap := make(map[keboola.ConfigKey]keboola.Metadata)
 
 	ctx, cancelFn := context.WithCancel(p.ctx)
 	grp, ctx := errgroup.WithContext(ctx)
@@ -30,10 +28,10 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	// Branches
 	grp.Go(func() error {
-		request := storageapi.
+		request := p.keboolaProjectAPI.
 			ListBranchesRequest().
-			WithOnSuccess(func(ctx context.Context, sender client.Sender, apiBranches *[]*storageapi.Branch) error {
-				wg := client.NewWaitGroup(ctx, sender)
+			WithOnSuccess(func(ctx context.Context, apiBranches *[]*keboola.Branch) error {
+				wg := client.NewWaitGroup(ctx)
 				for _, apiBranch := range *apiBranches {
 					apiBranch := apiBranch
 					branch := &fixtures.BranchWithConfigs{Branch: &fixtures.Branch{}, Configs: make([]*fixtures.Config, 0)}
@@ -44,18 +42,18 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 					snapshot.Branches = append(snapshot.Branches, branch)
 
 					// Load branch metadata
-					wg.Send(storageapi.
+					wg.Send(p.keboolaProjectAPI.
 						ListBranchMetadataRequest(apiBranch.BranchKey).
-						WithOnSuccess(func(_ context.Context, _ client.Sender, metadata *storageapi.MetadataDetails) error {
+						WithOnSuccess(func(_ context.Context, metadata *keboola.MetadataDetails) error {
 							branch.Metadata = metadata.ToMap()
 							return nil
 						}),
 					)
 
 					// Load configs and rows
-					wg.Send(storageapi.
+					wg.Send(p.keboolaProjectAPI.
 						ListConfigsAndRowsFrom(apiBranch.BranchKey).
-						WithOnSuccess(func(ctx context.Context, sender client.Sender, components *[]*storageapi.ComponentWithConfigs) error {
+						WithOnSuccess(func(ctx context.Context, components *[]*keboola.ComponentWithConfigs) error {
 							for _, component := range *components {
 								for _, apiConfig := range component.Configs {
 									config := &fixtures.Config{Rows: make([]*fixtures.ConfigRow, 0)}
@@ -67,7 +65,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 									// Do not snapshot configs which are later joined into a different resource.
 									// The component must still exist in `configsMap` so it can be joined later.
-									if component.ID != sandboxesapi.Component {
+									if component.ID != keboola.WorkspacesComponent {
 										branch.Configs = append(branch.Configs, config)
 									}
 
@@ -91,11 +89,11 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 					)
 
 					// Load configs metadata
-					wg.Send(storageapi.
+					wg.Send(p.keboolaProjectAPI.
 						ListConfigMetadataRequest(apiBranch.ID).
-						WithOnSuccess(func(_ context.Context, _ client.Sender, metadata *storageapi.ConfigsMetadata) error {
+						WithOnSuccess(func(_ context.Context, metadata *keboola.ConfigsMetadata) error {
 							for _, item := range *metadata {
-								configKey := storageapi.ConfigKey{BranchID: item.BranchID, ComponentID: item.ComponentID, ID: item.ConfigID}
+								configKey := keboola.ConfigKey{BranchID: item.BranchID, ComponentID: item.ComponentID, ID: item.ConfigID}
 								value := item.Metadata.ToMap()
 
 								lock.Lock()
@@ -117,50 +115,50 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 					if metadata, found := configsMetadataMap[key]; found {
 						config.Metadata = metadata
 					} else {
-						config.Metadata = make(storageapi.Metadata)
+						config.Metadata = make(keboola.Metadata)
 					}
 				}
 
 				return nil
 			})
-		return request.SendOrErr(ctx, p.storageAPIClient)
+		return request.SendOrErr(ctx)
 	})
 
 	// Schedules for main branch
-	var schedules []*schedulerapi.Schedule
+	var schedules []*keboola.Schedule
 	grp.Go(func() error {
-		request := schedulerapi.
+		request := p.keboolaProjectAPI.
 			ListSchedulesRequest().
-			WithOnSuccess(func(_ context.Context, _ client.Sender, apiSchedules *[]*schedulerapi.Schedule) error {
+			WithOnSuccess(func(_ context.Context, apiSchedules *[]*keboola.Schedule) error {
 				schedules = append(schedules, *apiSchedules...)
 				return nil
 			})
-		return request.SendOrErr(ctx, p.schedulerAPIClient)
+		return request.SendOrErr(ctx)
 	})
 
-	sandboxesMap := make(map[string]*sandboxesapi.Sandbox)
+	workspacesMap := make(map[string]*keboola.Workspace)
 	grp.Go(func() error {
-		request := sandboxesapi.
-			ListInstancesRequest().
-			WithOnSuccess(func(ctx context.Context, sender client.Sender, result *[]*sandboxesapi.Sandbox) error {
+		request := p.keboolaProjectAPI.
+			ListWorkspaceInstancesRequest().
+			WithOnSuccess(func(ctx context.Context, result *[]*keboola.Workspace) error {
 				for _, sandbox := range *result {
-					sandboxesMap[sandbox.ID.String()] = sandbox
+					workspacesMap[sandbox.ID.String()] = sandbox
 				}
 				return nil
 			})
-		return request.SendOrErr(ctx, p.sandboxesAPIClient)
+		return request.SendOrErr(ctx)
 	})
 
 	// Storage Buckets
-	bucketsMap := map[storageapi.BucketID]*fixtures.Bucket{}
+	bucketsMap := map[keboola.BucketID]*fixtures.Bucket{}
 	grp.Go(func() error {
-		request := storageapi.
+		request := p.keboolaProjectAPI.
 			ListBucketsRequest().
-			WithOnSuccess(func(_ context.Context, _ client.Sender, apiBuckets *[]*storageapi.Bucket) error {
+			WithOnSuccess(func(_ context.Context, apiBuckets *[]*keboola.Bucket) error {
 				for _, b := range *apiBuckets {
 					bucketsMap[b.ID] = &fixtures.Bucket{
 						ID:          b.ID,
-						URI:         b.Uri,
+						URI:         b.URI,
 						DisplayName: b.DisplayName,
 						Description: b.Description,
 						Tables:      make([]*fixtures.Table, 0),
@@ -168,34 +166,34 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 				}
 				return nil
 			})
-		return request.SendOrErr(ctx, p.storageAPIClient)
+		return request.SendOrErr(ctx)
 	})
 
 	// Storage Tables
-	var tables []*storageapi.Table
+	var tables []*keboola.Table
 	grp.Go(func() error {
-		request := storageapi.
-			ListTablesRequest(storageapi.WithBuckets(), storageapi.WithColumns()).
-			WithOnSuccess(func(_ context.Context, _ client.Sender, apiTables *[]*storageapi.Table) error {
+		request := p.keboolaProjectAPI.
+			ListTablesRequest(keboola.WithBuckets(), keboola.WithColumns()).
+			WithOnSuccess(func(_ context.Context, apiTables *[]*keboola.Table) error {
 				tables = append(tables, *apiTables...)
 				return nil
 			})
-		return request.SendOrErr(ctx, p.storageAPIClient)
+		return request.SendOrErr(ctx)
 	})
 
 	// Storage Files
-	var files []*storageapi.File
+	var files []*keboola.File
 	grp.Go(func() error {
 		// Files metadata are not atomic, wait a moment.
 		// The creation/deletion of the file does not take effect immediately.
 		time.Sleep(100 * time.Millisecond)
-		return storageapi.
+		return p.keboolaProjectAPI.
 			ListFilesRequest().
-			WithOnSuccess(func(_ context.Context, _ client.Sender, apiFiles *[]*storageapi.File) error {
+			WithOnSuccess(func(_ context.Context, apiFiles *[]*keboola.File) error {
 				files = *apiFiles
 				return nil
 			}).
-			SendOrErr(ctx, p.storageAPIClient)
+			SendOrErr(ctx)
 	})
 
 	// Wait for requests
@@ -208,7 +206,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		b := bucketsMap[t.ID.BucketID]
 		b.Tables = append(b.Tables, &fixtures.Table{
 			ID:          t.ID,
-			URI:         t.Uri,
+			URI:         t.URI,
 			Name:        t.Name,
 			DisplayName: t.DisplayName,
 			PrimaryKey:  t.PrimaryKey,
@@ -249,7 +247,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	// Join schedules with config name
 	for _, schedule := range schedules {
-		configKey := storageapi.ConfigKey{BranchID: defBranch.ID, ComponentID: storageapi.SchedulerComponentID, ID: schedule.ConfigID}
+		configKey := keboola.ConfigKey{BranchID: defBranch.ID, ComponentID: keboola.SchedulerComponentID, ID: schedule.ConfigID}
 		if scheduleConfig, found := configsMap[configKey]; found {
 			snapshot.Schedules = append(snapshot.Schedules, &fixtures.Schedule{Name: scheduleConfig.Name})
 		} else {
@@ -259,14 +257,14 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	// Join sandbox instances with config name
 	for _, config := range configsMap {
-		if config.ComponentID == sandboxesapi.Component {
-			sandboxID, err := sandboxesapi.GetSandboxID(config.ToAPI().Config)
+		if config.ComponentID == keboola.WorkspacesComponent {
+			sandboxID, err := keboola.GetWorkspaceID(config.ToAPI().Config)
 			if err != nil {
 				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: "SANDBOX INSTANCE ID NOT SET"})
 				continue
 			}
 
-			if sandbox, found := sandboxesMap[sandboxID.String()]; found {
+			if sandbox, found := workspacesMap[sandboxID.String()]; found {
 				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: config.Name, Type: sandbox.Type, Size: sandbox.Size})
 			} else {
 				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: "SANDBOX INSTANCE NOT FOUND"})

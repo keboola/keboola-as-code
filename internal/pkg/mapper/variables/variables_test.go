@@ -3,7 +3,7 @@ package variables_test
 import (
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/variables"
@@ -26,7 +26,7 @@ func createTestObjectForPersist(t *testing.T, state model.ObjectStates) {
 	// Config
 	configKey := model.ConfigKey{
 		BranchID:    123,
-		ComponentID: storageapi.VariablesComponentID,
+		ComponentID: keboola.VariablesComponentID,
 		ID:          `456`,
 	}
 	configRelations := model.Relations{
@@ -50,7 +50,7 @@ func createTestObjectForPersist(t *testing.T, state model.ObjectStates) {
 	// Row 1
 	row1Key := model.ConfigRowKey{
 		BranchID:    123,
-		ComponentID: storageapi.VariablesComponentID,
+		ComponentID: keboola.VariablesComponentID,
 		ConfigID:    `456`,
 		ID:          `1`,
 	}
@@ -68,7 +68,7 @@ func createTestObjectForPersist(t *testing.T, state model.ObjectStates) {
 	// Row 2
 	row2Key := model.ConfigRowKey{
 		BranchID:    123,
-		ComponentID: storageapi.VariablesComponentID,
+		ComponentID: keboola.VariablesComponentID,
 		ConfigID:    `456`,
 		ID:          `2`,
 	}
@@ -86,7 +86,7 @@ func createTestObjectForPersist(t *testing.T, state model.ObjectStates) {
 	// Row 3
 	row3Key := model.ConfigRowKey{
 		BranchID:    123,
-		ComponentID: storageapi.VariablesComponentID,
+		ComponentID: keboola.VariablesComponentID,
 		ConfigID:    `456`,
 		ID:          `3`,
 	}

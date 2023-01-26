@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/table"
@@ -60,8 +60,11 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 				}
 
 				// Create table manager
-				apiClient := storageapi.ClientWithHostAndToken(s.httpClient, s.storageAPIHost, token.Token)
-				tables := table.NewManager(apiClient)
+				api, err := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
+				if err != nil {
+					return "", err
+				}
+				tables := table.NewManager(api)
 
 				// Import file
 				if err := tables.ImportFile(ctx, fileRes); err != nil {

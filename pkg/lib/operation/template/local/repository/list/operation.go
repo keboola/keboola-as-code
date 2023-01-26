@@ -11,8 +11,8 @@ import (
 )
 
 type dependencies interface {
-	Tracer() trace.Tracer
 	Logger() log.Logger
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, repo *repository.Repository, d dependencies) (err error) {

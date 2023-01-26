@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -46,7 +46,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	// Run use template operation
 	tmplOpts := useTemplate.Options{
 		InstanceName:          "test",
-		TargetBranch:          model.BranchKey{ID: storageapi.BranchID(branchID)},
+		TargetBranch:          model.BranchKey{ID: keboola.BranchID(branchID)},
 		Inputs:                o.Inputs,
 		InstanceID:            template.InstanceIDForTest,
 		SkipEncrypt:           true,

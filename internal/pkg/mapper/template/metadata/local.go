@@ -3,7 +3,7 @@ package metadata
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -21,7 +21,7 @@ func (m *metadataMapper) AfterLocalOperation(_ context.Context, changes *model.L
 			config.Metadata.SetTemplateInstance(m.templateRef.Repository().Name, m.templateRef.TemplateID(), m.instanceID)
 			// Store original object ID
 			if idInTemplate, found := m.objectIds.IDInTemplate(v.ID); found {
-				config.Metadata.SetConfigTemplateID(idInTemplate.(storageapi.ConfigID))
+				config.Metadata.SetConfigTemplateID(idInTemplate.(keboola.ConfigID))
 			}
 			// Store inputs usage
 			if inputsUsage, ok := m.inputsUsage.Values[config.Key()]; ok {
@@ -34,7 +34,7 @@ func (m *metadataMapper) AfterLocalOperation(_ context.Context, changes *model.L
 			config := m.state.MustGet(v.ConfigKey()).(*model.ConfigState).Local
 			// Store original object ID
 			if idInTemplate, found := m.objectIds.IDInTemplate(v.ID); found {
-				config.Metadata.AddRowTemplateID(v.ID, idInTemplate.(storageapi.RowID))
+				config.Metadata.AddRowTemplateID(v.ID, idInTemplate.(keboola.RowID))
 			}
 			// Store inputs usage
 			if inputsUsage, ok := m.inputsUsage.Values[v.Key()]; ok {

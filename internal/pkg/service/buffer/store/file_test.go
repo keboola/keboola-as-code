@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
@@ -176,9 +176,9 @@ func newFileForTest() model.File {
 			ExportKey:  exportKey,
 			RevisionID: 1,
 		},
-		TableID: storageapi.TableID{
-			BucketID: storageapi.BucketID{
-				Stage:      storageapi.BucketStageIn,
+		TableID: keboola.TableID{
+			BucketID: keboola.BucketID{
+				Stage:      keboola.BucketStageIn,
 				BucketName: "bucket",
 			},
 			TableName: "table",
@@ -188,6 +188,6 @@ func newFileForTest() model.File {
 			column.Body{Name: "body"},
 		},
 	}
-	resource := &storageapi.File{ID: 1, Name: "file1"}
+	resource := &keboola.File{ID: 1, Name: "file1"}
 	return model.NewFile(exportKey, now, mapping, resource)
 }

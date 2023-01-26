@@ -4,9 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/sandboxesapi"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -16,12 +14,10 @@ import (
 type dependencies interface {
 	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageAPIClient() client.Sender
-	SandboxesAPIClient() client.Sender
-	JobsQueueAPIClient() client.Sender
+	KeboolaProjectAPI() *keboola.API
 }
 
-func Run(ctx context.Context, d dependencies, branchID storageapi.BranchID, sandbox *sandboxesapi.SandboxWithConfig) (err error) {
+func Run(ctx context.Context, d dependencies, branchID keboola.BranchID, workspace *keboola.WorkspaceWithConfig) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.workspace.delete")
 	defer telemetry.EndSpan(span, &err)
 
@@ -30,14 +26,12 @@ func Run(ctx context.Context, d dependencies, branchID storageapi.BranchID, sand
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	logger.Infof(`Deleting the workspace "%s" (%s), please wait.`, sandbox.Config.Name, sandbox.Config.ID)
-	err = sandboxesapi.Delete(
+	logger.Infof(`Deleting the workspace "%s" (%s), please wait.`, workspace.Config.Name, workspace.Config.ID)
+	err = d.KeboolaProjectAPI().DeleteWorkspace(
 		ctx,
-		d.StorageAPIClient(),
-		d.JobsQueueAPIClient(),
 		branchID,
-		sandbox.Config.ID,
-		sandbox.Sandbox.ID,
+		workspace.Config.ID,
+		workspace.Workspace.ID,
 	)
 	if err != nil {
 		return err

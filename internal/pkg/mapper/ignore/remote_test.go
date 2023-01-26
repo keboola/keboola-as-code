@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -24,7 +24,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Variables(t *testing.T) {
 	assert.NoError(t, state.Set(targetConfig))
 
 	// Variables for target
-	targetVarsKey := model.ConfigKey{BranchID: 1, ComponentID: storageapi.VariablesComponentID, ID: "2"}
+	targetVarsKey := model.ConfigKey{BranchID: 1, ComponentID: keboola.VariablesComponentID, ID: "2"}
 	targetVars := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: targetVarsKey},
 		Remote: &model.Config{
@@ -40,7 +40,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Variables(t *testing.T) {
 	assert.NoError(t, state.Set(targetVars))
 
 	// Unattached variables
-	unattachedVarsKey := model.ConfigKey{BranchID: 1, ComponentID: storageapi.VariablesComponentID, ID: "3"}
+	unattachedVarsKey := model.ConfigKey{BranchID: 1, ComponentID: keboola.VariablesComponentID, ID: "3"}
 	unattachedVars := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: unattachedVarsKey},
 		Remote:         &model.Config{ConfigKey: unattachedVarsKey},
@@ -76,7 +76,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Scheduler(t *testing.T) {
 	assert.NoError(t, state.Set(targetConfig))
 
 	// Valid scheduler
-	validSchedulerKey := model.ConfigKey{BranchID: 1, ComponentID: storageapi.SchedulerComponentID, ID: "2"}
+	validSchedulerKey := model.ConfigKey{BranchID: 1, ComponentID: keboola.SchedulerComponentID, ID: "2"}
 	validScheduler := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: validSchedulerKey},
 		Remote: &model.Config{
@@ -93,7 +93,7 @@ func TestIgnoreMapper_AfterRemoteOperation_Scheduler(t *testing.T) {
 
 	// Ignored scheduler
 	missingTargetKey := model.ConfigKey{BranchID: 1, ComponentID: "keboola.foo-bar", ID: "789"}
-	ignoredSchedulerKey := model.ConfigKey{BranchID: 1, ComponentID: storageapi.SchedulerComponentID, ID: "3"}
+	ignoredSchedulerKey := model.ConfigKey{BranchID: 1, ComponentID: keboola.SchedulerComponentID, ID: "3"}
 	ignoredScheduler := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: ignoredSchedulerKey},
 		Remote: &model.Config{

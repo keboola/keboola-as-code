@@ -4,7 +4,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
@@ -47,7 +47,7 @@ type Object interface {
 }
 
 type ToAPIObject interface {
-	ToAPIObject(changeDescription string, changedFields ChangedFields) (apiObject storageapi.Object, apiChangedFields []string)
+	ToAPIObject(changeDescription string, changedFields ChangedFields) (apiObject keboola.Object, apiChangedFields []string)
 }
 
 type ToAPIObjectKey interface {
@@ -56,12 +56,12 @@ type ToAPIObjectKey interface {
 
 type ToAPIMetadata interface {
 	ToAPIObjectKey
-	ToAPIMetadata() storageapi.Metadata
+	ToAPIMetadata() keboola.Metadata
 }
 
 type ObjectWithContent interface {
 	Object
-	GetComponentID() storageapi.ComponentID
+	GetComponentID() keboola.ComponentID
 	GetContent() *orderedmap.OrderedMap
 }
 
@@ -130,12 +130,12 @@ type ChangedByRecord struct {
 }
 
 type TemplateMainConfig struct {
-	ConfigID    storageapi.ConfigID    `json:"configId"`
-	ComponentID storageapi.ComponentID `json:"componentId"`
+	ConfigID    keboola.ConfigID    `json:"configId"`
+	ComponentID keboola.ComponentID `json:"componentId"`
 }
 
 // NewBranch creates branch model from API values.
-func NewBranch(apiValue *storageapi.Branch) *Branch {
+func NewBranch(apiValue *keboola.Branch) *Branch {
 	out := &Branch{}
 	out.ID = apiValue.ID
 	out.Name = apiValue.Name
@@ -145,7 +145,7 @@ func NewBranch(apiValue *storageapi.Branch) *Branch {
 }
 
 // NewConfig creates config model from API values.
-func NewConfig(apiValue *storageapi.Config) *Config {
+func NewConfig(apiValue *keboola.Config) *Config {
 	out := &Config{}
 	out.BranchID = apiValue.BranchID
 	out.ComponentID = apiValue.ComponentID
@@ -158,7 +158,7 @@ func NewConfig(apiValue *storageapi.Config) *Config {
 }
 
 // NewConfigWithRows creates config model from API values.
-func NewConfigWithRows(apiValue *storageapi.ConfigWithRows) *ConfigWithRows {
+func NewConfigWithRows(apiValue *keboola.ConfigWithRows) *ConfigWithRows {
 	out := &ConfigWithRows{Config: &Config{}}
 	out.BranchID = apiValue.BranchID
 	out.ComponentID = apiValue.ComponentID
@@ -174,7 +174,7 @@ func NewConfigWithRows(apiValue *storageapi.ConfigWithRows) *ConfigWithRows {
 }
 
 // NewConfigRow creates config row model from API values.
-func NewConfigRow(apiValue *storageapi.ConfigRow) *ConfigRow {
+func NewConfigRow(apiValue *keboola.ConfigRow) *ConfigRow {
 	out := &ConfigRow{}
 	out.BranchID = apiValue.BranchID
 	out.ComponentID = apiValue.ComponentID
@@ -188,8 +188,8 @@ func NewConfigRow(apiValue *storageapi.ConfigRow) *ConfigRow {
 }
 
 // ToAPIObject ...
-func (b *Branch) ToAPIObject(_ string, changedFields ChangedFields) (storageapi.Object, []string) {
-	out := &storageapi.Branch{}
+func (b *Branch) ToAPIObject(_ string, changedFields ChangedFields) (keboola.Object, []string) {
+	out := &keboola.Branch{}
 	out.ID = b.ID
 	out.Name = b.Name
 	out.Description = b.Description
@@ -198,8 +198,8 @@ func (b *Branch) ToAPIObject(_ string, changedFields ChangedFields) (storageapi.
 }
 
 // ToAPIObject ...
-func (c *Config) ToAPIObject(changeDescription string, changedFields ChangedFields) (storageapi.Object, []string) {
-	out := &storageapi.Config{}
+func (c *Config) ToAPIObject(changeDescription string, changedFields ChangedFields) (keboola.Object, []string) {
+	out := &keboola.Config{}
 	out.ChangeDescription = changeDescription
 	out.BranchID = c.BranchID
 	out.ComponentID = c.ComponentID
@@ -212,8 +212,8 @@ func (c *Config) ToAPIObject(changeDescription string, changedFields ChangedFiel
 }
 
 // ToAPIObject ...
-func (r *ConfigRow) ToAPIObject(changeDescription string, changedFields ChangedFields) (storageapi.Object, []string) {
-	out := &storageapi.ConfigRow{}
+func (r *ConfigRow) ToAPIObject(changeDescription string, changedFields ChangedFields) (keboola.Object, []string) {
+	out := &keboola.ConfigRow{}
 	out.ChangeDescription = changeDescription
 	out.BranchID = r.BranchID
 	out.ComponentID = r.ComponentID
@@ -228,27 +228,27 @@ func (r *ConfigRow) ToAPIObject(changeDescription string, changedFields ChangedF
 
 // ToAPIObjectKey ...
 func (b *Branch) ToAPIObjectKey() any {
-	return storageapi.BranchKey{ID: b.ID}
+	return keboola.BranchKey{ID: b.ID}
 }
 
 // ToAPIObjectKey ...
 func (c *Config) ToAPIObjectKey() any {
-	return storageapi.ConfigKey{BranchID: c.BranchID, ComponentID: c.ComponentID, ID: c.ID}
+	return keboola.ConfigKey{BranchID: c.BranchID, ComponentID: c.ComponentID, ID: c.ID}
 }
 
 // ToAPIObjectKey ...
 func (r *ConfigRow) ToAPIObjectKey() any {
-	return storageapi.ConfigRowKey{BranchID: r.BranchID, ComponentID: r.ComponentID, ConfigID: r.ConfigID, ID: r.ID}
+	return keboola.ConfigRowKey{BranchID: r.BranchID, ComponentID: r.ComponentID, ConfigID: r.ConfigID, ID: r.ID}
 }
 
 // ToAPIMetadata ...
-func (b *Branch) ToAPIMetadata() storageapi.Metadata {
-	return storageapi.Metadata(b.Metadata)
+func (b *Branch) ToAPIMetadata() keboola.Metadata {
+	return keboola.Metadata(b.Metadata)
 }
 
 // ToAPIMetadata ...
-func (c *Config) ToAPIMetadata() storageapi.Metadata {
-	return storageapi.Metadata(c.Metadata)
+func (c *Config) ToAPIMetadata() keboola.Metadata {
+	return keboola.Metadata(c.Metadata)
 }
 
 func (m BranchMetadata) saveTemplateUsages(instances TemplatesInstances) error {
@@ -372,13 +372,13 @@ type ConfigInputUsage struct {
 }
 
 type RowInputUsage struct {
-	RowID      storageapi.RowID `json:"rowId"`
-	Input      string           `json:"input"`
-	JSONKey    string           `json:"key"`
-	ObjectKeys []string         `json:"objectKeys,omitempty"` // list of object keys generated from the input (empty = all)
+	RowID      keboola.RowID `json:"rowId"`
+	Input      string        `json:"input"`
+	JSONKey    string        `json:"key"`
+	ObjectKeys []string      `json:"objectKeys,omitempty"` // list of object keys generated from the input (empty = all)
 }
 
-func (m ConfigMetadata) SetConfigTemplateID(templateObjectID storageapi.ConfigID) {
+func (m ConfigMetadata) SetConfigTemplateID(templateObjectID keboola.ConfigID) {
 	m[configIDMetadataKey] = json.MustEncodeString(ConfigIDMetadata{
 		IDInTemplate: templateObjectID,
 	}, false)
@@ -408,7 +408,7 @@ func (m ConfigMetadata) AddInputUsage(inputName string, jsonKey orderedmap.Path,
 	}), false)
 }
 
-func (m ConfigMetadata) AddRowTemplateID(projectObjectID, templateObjectID storageapi.RowID) {
+func (m ConfigMetadata) AddRowTemplateID(projectObjectID, templateObjectID keboola.RowID) {
 	items := append(m.RowsTemplateIds(), RowIDMetadata{
 		IDInProject:  projectObjectID,
 		IDInTemplate: templateObjectID,
@@ -430,7 +430,7 @@ func (m ConfigMetadata) RowsInputsUsage() []RowInputUsage {
 	return out
 }
 
-func (m ConfigMetadata) AddRowInputUsage(rowID storageapi.RowID, inputName string, jsonKey orderedmap.Path, objectKeys []string) {
+func (m ConfigMetadata) AddRowInputUsage(rowID keboola.RowID, inputName string, jsonKey orderedmap.Path, objectKeys []string) {
 	sort.Strings(objectKeys)
 	values := append(m.RowsInputsUsage(), RowInputUsage{
 		RowID:      rowID,
@@ -519,29 +519,29 @@ func (r *ConfigRow) ObjectName() string {
 }
 
 func (b *Branch) SetObjectID(id any) {
-	b.ID = id.(storageapi.BranchID)
+	b.ID = id.(keboola.BranchID)
 }
 
 func (c *Config) SetObjectID(id any) {
-	c.ID = id.(storageapi.ConfigID)
+	c.ID = id.(keboola.ConfigID)
 }
 
 func (c *ConfigWithRows) SetObjectID(id any) {
-	c.ID = id.(storageapi.ConfigID)
+	c.ID = id.(keboola.ConfigID)
 	for _, row := range c.Rows {
 		row.ConfigID = c.ID
 	}
 }
 
 func (r *ConfigRow) SetObjectID(id any) {
-	r.ID = id.(storageapi.RowID)
+	r.ID = id.(keboola.RowID)
 }
 
-func (c *Config) GetComponentID() storageapi.ComponentID {
+func (c *Config) GetComponentID() keboola.ComponentID {
 	return c.ComponentID
 }
 
-func (r *ConfigRow) GetComponentID() storageapi.ComponentID {
+func (r *ConfigRow) GetComponentID() keboola.ComponentID {
 	return r.ComponentID
 }
 

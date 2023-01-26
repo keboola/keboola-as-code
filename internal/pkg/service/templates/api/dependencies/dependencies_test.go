@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
@@ -33,11 +33,11 @@ func TestForPublicRequest_Components_Cached(t *testing.T) {
 	t.Parallel()
 
 	// Mocked components
-	components1 := storageapi.Components{
-		{ComponentKey: storageapi.ComponentKey{ID: "foo1.bar1"}, Type: "other", Name: "Foo1 Bar1"},
+	components1 := keboola.Components{
+		{ComponentKey: keboola.ComponentKey{ID: "foo1.bar1"}, Type: "other", Name: "Foo1 Bar1"},
 	}
-	components2 := storageapi.Components{
-		{ComponentKey: storageapi.ComponentKey{ID: "foo2.bar2"}, Type: "other", Name: "Foo2 Bar2"},
+	components2 := keboola.Components{
+		{ComponentKey: keboola.ComponentKey{ID: "foo2.bar2"}, Type: "other", Name: "Foo2 Bar2"},
 	}
 	assert.NotEqual(t, components1, components2)
 
@@ -54,7 +54,7 @@ func TestForPublicRequest_Components_Cached(t *testing.T) {
 	mockedDeps.MockedHTTPTransport().RegisterResponder(
 		http.MethodGet,
 		fmt.Sprintf("https://%s/v2/storage/", mockedDeps.StorageAPIHost()),
-		httpmock.NewJsonResponderOrPanic(200, &storageapi.IndexComponents{
+		httpmock.NewJsonResponderOrPanic(200, &keboola.IndexComponents{
 			Components: components2,
 		}).Once(),
 	)

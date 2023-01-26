@@ -20,10 +20,10 @@ type Options struct {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
 	Logger() log.Logger
-	StorageAPIHost() string
 	ProjectID() int
+	StorageAPIHost() string
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, fs filesystem.Fs, o Options, d dependencies) (m *project.Manifest, err error) {

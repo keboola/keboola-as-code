@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	testproject2 "github.com/keboola/go-utils/pkg/testproject"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	gonanoid "github.com/matoous/go-nanoid/v2"
@@ -48,11 +48,11 @@ func TestSliceUploadTask(t *testing.T) {
 	}
 
 	// Create file
-	file := &storageapi.File{
+	file := &keboola.File{
 		Name:     "slice-upload-task-test",
 		IsSliced: true,
 	}
-	if _, err := storageapi.CreateFileResourceRequest(file).Send(ctx, project.StorageAPIClient()); err != nil {
+	if _, err := project.KeboolaProjectAPI().CreateFileResourceRequest(file).Send(ctx); err != nil {
 		assert.Fail(t, err.Error())
 	}
 
@@ -723,7 +723,7 @@ task/00000123/my-receiver-2/my-export-2/slice.upload/%s
 `)
 }
 
-func AssertUploadedSlice(t *testing.T, ctx context.Context, file *storageapi.File, slice model.Slice, project *testproject.Project, expected string) {
+func AssertUploadedSlice(t *testing.T, ctx context.Context, file *keboola.File, slice model.Slice, project *testproject.Project, expected string) {
 	t.Helper()
 
 	// There is currently no way to load a slice from Keboola S3, neither via HTTP nor the S3 client:
@@ -734,7 +734,7 @@ func AssertUploadedSlice(t *testing.T, ctx context.Context, file *storageapi.Fil
 	}
 
 	// Get file content
-	sliceURL := strings.ReplaceAll(file.Url, file.Name+"manifest", file.Name+slice.Filename())
+	sliceURL := strings.ReplaceAll(file.URL, file.Name+"manifest", file.Name+slice.Filename())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sliceURL, nil)
 	assert.NoError(t, err)
 	resp, err := http.DefaultClient.Do(req)
@@ -753,11 +753,11 @@ func AssertUploadedSlice(t *testing.T, ctx context.Context, file *storageapi.Fil
 	assert.Equal(t, expected, string(data))
 }
 
-func AssertUploadedManifest(t *testing.T, ctx context.Context, file *storageapi.File, expected string) {
+func AssertUploadedManifest(t *testing.T, ctx context.Context, file *keboola.File, expected string) {
 	t.Helper()
 
 	// Get file content
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, file.Url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, file.URL, nil)
 	assert.NoError(t, err)
 	resp, err := http.DefaultClient.Do(req)
 	assert.NoError(t, err)

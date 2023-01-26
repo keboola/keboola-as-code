@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
@@ -25,11 +25,11 @@ func TestManager_CreateToken(t *testing.T) {
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
 	m := NewManager(d)
 	rb := rollback.New(d.Logger())
-	client := p.StorageAPIClient()
+	client := p.KeboolaProjectAPI()
 
 	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(123), ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export"}
-	tableID := storageapi.MustParseTableID("in.c-bucket.table")
+	tableID := keboola.MustParseTableID("in.c-bucket.table")
 	export := model.Export{
 		ExportBase: model.ExportBase{
 			ExportKey: exportKey,
@@ -43,22 +43,22 @@ func TestManager_CreateToken(t *testing.T) {
 	}
 
 	// Create bucket
-	_, err := storageapi.CreateBucketRequest(&storageapi.Bucket{ID: tableID.BucketID}).Send(ctx, client)
+	_, err := client.CreateBucketRequest(&keboola.Bucket{ID: tableID.BucketID}).Send(ctx)
 	assert.NoError(t, err)
 
 	// Create token for the export
 	assert.NoError(t, m.CreateToken(ctx, rb, &export))
 
 	// Check token exists
-	_, err = storageapi.VerifyTokenRequest(export.Token.Token).Send(ctx, client)
+	_, err = client.VerifyTokenRequest(export.Token.Token).Send(ctx)
 	assert.NoError(t, err)
 
 	// Test rollback
 	rb.Invoke(ctx)
 	assert.Empty(t, d.DebugLogger().WarnMessages())
-	_, err = storageapi.VerifyTokenRequest(export.Token.Token).Send(ctx, client)
+	_, err = client.VerifyTokenRequest(export.Token.Token).Send(ctx)
 	assert.Error(t, err)
-	assert.Equal(t, "storage.tokenInvalid", err.(*storageapi.Error).ErrCode)
+	assert.Equal(t, "storage.tokenInvalid", err.(*keboola.StorageError).ErrCode)
 }
 
 func TestManager_RefreshToken_TokenExists(t *testing.T) {
@@ -69,11 +69,11 @@ func TestManager_RefreshToken_TokenExists(t *testing.T) {
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
 	m := NewManager(d)
 	rb := rollback.New(d.Logger())
-	client := p.StorageAPIClient()
+	client := p.KeboolaProjectAPI()
 
 	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(123), ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export"}
-	tableID := storageapi.MustParseTableID("in.c-bucket.table")
+	tableID := keboola.MustParseTableID("in.c-bucket.table")
 	export := model.Export{
 		ExportBase: model.ExportBase{
 			ExportKey: exportKey,
@@ -87,7 +87,7 @@ func TestManager_RefreshToken_TokenExists(t *testing.T) {
 	}
 
 	// Create bucket
-	_, err := storageapi.CreateBucketRequest(&storageapi.Bucket{ID: tableID.BucketID}).Send(ctx, client)
+	_, err := client.CreateBucketRequest(&keboola.Bucket{ID: tableID.BucketID}).Send(ctx)
 	assert.NoError(t, err)
 
 	// Create token for the export
@@ -98,7 +98,7 @@ func TestManager_RefreshToken_TokenExists(t *testing.T) {
 	assert.NoError(t, m.RefreshToken(ctx, rb, &export.Token))
 
 	// Token exists
-	_, err = storageapi.VerifyTokenRequest(export.Token.Token).Send(ctx, client)
+	_, err = client.VerifyTokenRequest(export.Token.Token).Send(ctx)
 	assert.NoError(t, err)
 
 	// Token differs
@@ -107,7 +107,7 @@ func TestManager_RefreshToken_TokenExists(t *testing.T) {
 	// Test rollback - no operation
 	rb.Invoke(ctx)
 	assert.Empty(t, d.DebugLogger().WarnMessages())
-	_, err = storageapi.VerifyTokenRequest(export.Token.Token).Send(ctx, client)
+	_, err = client.VerifyTokenRequest(export.Token.Token).Send(ctx)
 	assert.NoError(t, err)
 }
 
@@ -119,34 +119,34 @@ func TestManager_RefreshToken_TokenMissing(t *testing.T) {
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
 	m := NewManager(d)
 	rb := rollback.New(d.Logger())
-	client := p.StorageAPIClient()
+	client := p.KeboolaProjectAPI()
 
 	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(123), ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export"}
-	tableID := storageapi.MustParseTableID("in.c-bucket.table")
+	tableID := keboola.MustParseTableID("in.c-bucket.table")
 	token := model.Token{
 		ExportKey: exportKey,
-		StorageToken: storageapi.Token{
+		StorageToken: keboola.Token{
 			ID:    "1",
 			Token: "some-missing-token",
 		},
 	}
 
 	// Create bucket
-	_, err := storageapi.CreateBucketRequest(&storageapi.Bucket{ID: tableID.BucketID}).Send(ctx, client)
+	_, err := client.CreateBucketRequest(&keboola.Bucket{ID: tableID.BucketID}).Send(ctx)
 	assert.NoError(t, err)
 
 	// Refresh token
 	assert.NoError(t, m.RefreshToken(ctx, rb, &token))
 
 	// Token exists
-	_, err = storageapi.VerifyTokenRequest(token.Token).Send(ctx, client)
+	_, err = client.VerifyTokenRequest(token.Token).Send(ctx)
 	assert.NoError(t, err)
 
 	// Test rollback
 	rb.Invoke(ctx)
 	assert.Empty(t, d.DebugLogger().WarnMessages())
-	_, err = storageapi.VerifyTokenRequest(token.Token).Send(ctx, client)
+	_, err = client.VerifyTokenRequest(token.Token).Send(ctx)
 	assert.Error(t, err)
-	assert.Equal(t, "storage.tokenInvalid", err.(*storageapi.Error).ErrCode)
+	assert.Equal(t, "storage.tokenInvalid", err.(*keboola.StorageError).ErrCode)
 }

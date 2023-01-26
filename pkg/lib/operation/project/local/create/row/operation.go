@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -17,16 +16,16 @@ import (
 )
 
 type Options struct {
-	BranchID    storageapi.BranchID
-	ComponentID storageapi.ComponentID
-	ConfigID    storageapi.ConfigID
+	BranchID    keboola.BranchID
+	ComponentID keboola.ComponentID
+	ConfigID    keboola.ConfigID
 	Name        string
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
-	StorageAPIClient() client.Sender
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -36,7 +35,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	logger := d.Logger()
 
 	// Get Storage API
-	storageAPIClient := d.StorageAPIClient()
+	api := d.KeboolaProjectAPI()
 
 	// Config row key
 	key := model.ConfigRowKey{
@@ -46,9 +45,9 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Generate unique ID
-	ticketProvider := storageapi.NewTicketProvider(ctx, storageAPIClient)
-	ticketProvider.Request(func(ticket *storageapi.Ticket) {
-		key.ID = storageapi.RowID(ticket.ID)
+	ticketProvider := keboola.NewTicketProvider(ctx, api)
+	ticketProvider.Request(func(ticket *keboola.Ticket) {
+		key.ID = keboola.RowID(ticket.ID)
 	})
 	if err := ticketProvider.Resolve(); err != nil {
 		return errors.Errorf(`cannot generate new ID: %w`, err)

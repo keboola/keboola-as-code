@@ -23,8 +23,8 @@ func (o Options) Enabled() bool {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
 	Logger() log.Logger
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, fs filesystem.Fs, o Options, d dependencies) (err error) {

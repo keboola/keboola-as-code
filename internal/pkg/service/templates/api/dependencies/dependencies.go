@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 
@@ -108,6 +109,7 @@ type forPublicRequest struct {
 type forProjectRequest struct {
 	dependencies.Project
 	ForPublicRequest
+	keboolaProjectAPI   *keboola.API
 	logger              log.Logger
 	repositories        map[string]*repositoryManager.CachedRepository
 	projectRepositories dependencies.Lazy[*model.TemplateRepositories]
@@ -204,11 +206,17 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 		fmt.Sprintf("[project=%d][token=%s]", projectDeps.ProjectID(), projectDeps.StorageAPITokenID()),
 	)
 
+	httpClient := publicDeps.HTTPClient()
+	api, err := keboola.NewAPI(ctx, publicDeps.StorageAPIHost(), keboola.WithClient(&httpClient), keboola.WithToken(projectDeps.StorageAPIToken().Token))
+	if err != nil {
+		return nil, err
+	}
 	return &forProjectRequest{
-		logger:           logger,
-		Project:          projectDeps,
-		ForPublicRequest: publicDeps,
-		repositories:     make(map[string]*repositoryManager.CachedRepository),
+		logger:            logger,
+		Project:           projectDeps,
+		ForPublicRequest:  publicDeps,
+		repositories:      make(map[string]*repositoryManager.CachedRepository),
+		keboolaProjectAPI: api,
 	}, nil
 }
 
@@ -280,6 +288,10 @@ func (v *forPublicRequest) Components() *model.ComponentsMap {
 
 func (v *forProjectRequest) Logger() log.Logger {
 	return v.logger
+}
+
+func (v *forProjectRequest) KeboolaProjectAPI() *keboola.API {
+	return v.keboolaProjectAPI
 }
 
 func (v *forProjectRequest) ProjectRepositories() *model.TemplateRepositories {

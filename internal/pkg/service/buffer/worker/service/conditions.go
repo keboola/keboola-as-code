@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -230,8 +230,11 @@ func (c *checker) closeFile(ctx context.Context, fileKey key.FileKey, reason str
 			return "", errors.Errorf(`cannot close file "%s": unexpected export opened slice "%s"`, fileKey.String(), oldFile.FileKey)
 		}
 
-		apiClient := storageapi.ClientWithHostAndToken(c.httpClient, c.storageAPIHost, export.Token.Token)
-		files := file.NewManager(c.clock, apiClient, nil)
+		api, err := keboola.NewAPI(ctx, c.storageAPIHost, keboola.WithClient(&c.httpClient), keboola.WithToken(export.Token.Token))
+		if err != nil {
+			return "", err
+		}
+		files := file.NewManager(c.clock, api, nil)
 
 		if err := files.CreateFileForExport(ctx, rb, &export); err != nil {
 			return "", errors.Errorf(`cannot close file "%s": cannot create new file: %w`, fileKey.String(), err)

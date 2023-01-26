@@ -3,7 +3,7 @@ package codes_test
 import (
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -23,13 +23,13 @@ func createStateWithMapper(t *testing.T) (*state.State, dependencies.Mocked) {
 
 func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
-	targetComponentID := storageapi.ComponentID(`keboola.snowflake-transformation`)
+	targetComponentID := keboola.ComponentID(`keboola.snowflake-transformation`)
 
 	// Config
 	configKey := model.ConfigKey{
 		BranchID:    789,
 		ID:          `123`,
-		ComponentID: storageapi.SharedCodeComponentID,
+		ComponentID: keboola.SharedCodeComponentID,
 	}
 	configContent := orderedmap.New()
 	configContent.Set(model.ShareCodeTargetComponentKey, targetComponentID.String())
@@ -55,7 +55,7 @@ func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigStat
 		BranchID:    789,
 		ConfigID:    `123`,
 		ID:          `456`,
-		ComponentID: storageapi.SharedCodeComponentID,
+		ComponentID: keboola.SharedCodeComponentID,
 	}
 	rowState := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{
@@ -77,14 +77,14 @@ func createRemoteSharedCode(t *testing.T, state *state.State) (*model.ConfigStat
 	return configState, rowState
 }
 
-func createLocalSharedCode(t *testing.T, targetComponentID storageapi.ComponentID, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
+func createLocalSharedCode(t *testing.T, targetComponentID keboola.ComponentID, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
 	// Config
 	configKey := model.ConfigKey{
 		BranchID:    789,
 		ID:          `123`,
-		ComponentID: storageapi.SharedCodeComponentID,
+		ComponentID: keboola.SharedCodeComponentID,
 	}
 	configContent := orderedmap.New()
 	configContent.Set(model.ShareCodeTargetComponentKey, targetComponentID.String())
@@ -110,7 +110,7 @@ func createLocalSharedCode(t *testing.T, targetComponentID storageapi.ComponentI
 		BranchID:    789,
 		ConfigID:    `123`,
 		ID:          `456`,
-		ComponentID: storageapi.SharedCodeComponentID,
+		ComponentID: keboola.SharedCodeComponentID,
 	}
 	rowState := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{
@@ -133,14 +133,14 @@ func createLocalSharedCode(t *testing.T, targetComponentID storageapi.ComponentI
 }
 
 // nolint: unparam
-func createInternalSharedCode(t *testing.T, targetComponentID storageapi.ComponentID, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
+func createInternalSharedCode(t *testing.T, targetComponentID keboola.ComponentID, state *state.State) (*model.ConfigState, *model.ConfigRowState) {
 	t.Helper()
 
 	// Config
 	configKey := model.ConfigKey{
 		BranchID:    789,
 		ID:          `123`,
-		ComponentID: storageapi.SharedCodeComponentID,
+		ComponentID: keboola.SharedCodeComponentID,
 	}
 	configState := &model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{
@@ -174,7 +174,7 @@ func createInternalSharedCode(t *testing.T, targetComponentID storageapi.Compone
 		BranchID:    789,
 		ConfigID:    `123`,
 		ID:          `456`,
-		ComponentID: storageapi.SharedCodeComponentID,
+		ComponentID: keboola.SharedCodeComponentID,
 	}
 	rowState := &model.ConfigRowState{
 		ConfigRowManifest: &model.ConfigRowManifest{

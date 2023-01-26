@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
@@ -190,13 +190,13 @@ func updateExport(t *testing.T, ctx context.Context, client *etcd.Client, str *s
 				FileKey:         fileKey2,
 				State:           filestate.Opened,
 				Mapping:         newMapping,
-				StorageResource: &storageapi.File{},
+				StorageResource: &keboola.File{},
 			}
 			export.OpenedSlice = model.Slice{
 				SliceKey:        sliceKey2,
 				State:           slicestate.Writing,
 				Mapping:         newMapping,
-				StorageResource: &storageapi.File{},
+				StorageResource: &keboola.File{},
 				Number:          1,
 			}
 			return export, nil

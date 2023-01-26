@@ -3,7 +3,7 @@ package load
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
@@ -109,10 +109,10 @@ func LocalOperationOptions() Options {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
-	Logger() log.Logger
 	Components() *model.ComponentsMap
-	StorageAPIClient() client.Sender
+	KeboolaProjectAPI() *keboola.API
+	Logger() log.Logger
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, container state.ObjectsContainer, o OptionsWithFilter, d dependencies) (s *state.State, err error) {

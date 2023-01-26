@@ -4,9 +4,7 @@ import (
 	"context"
 	"sort"
 
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/sandboxesapi"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -15,10 +13,9 @@ import (
 )
 
 type dependencies interface {
-	Tracer() trace.Tracer
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
-	StorageAPIClient() client.Sender
-	SandboxesAPIClient() client.Sender
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, d dependencies) (err error) {
@@ -27,24 +24,24 @@ func Run(ctx context.Context, d dependencies) (err error) {
 
 	logger := d.Logger()
 
-	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageAPIClient())
+	branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(ctx)
 	if err != nil {
 		return errors.Errorf("cannot find default branch: %w", err)
 	}
 
 	logger.Info("Loading workspaces, please wait.")
-	sandboxes, err := sandboxesapi.List(ctx, d.StorageAPIClient(), d.SandboxesAPIClient(), branch.ID)
+	workspaces, err := d.KeboolaProjectAPI().ListWorkspaces(ctx, branch.ID)
 	if err != nil {
 		return err
 	}
-	sort.Slice(sandboxes, func(i, j int) bool { return sandboxes[i].Config.Name < sandboxes[j].Config.Name })
+	sort.Slice(workspaces, func(i, j int) bool { return workspaces[i].Config.Name < workspaces[j].Config.Name })
 
 	logger.Info("Found workspaces:")
-	for _, sandbox := range sandboxes {
-		if sandboxesapi.SupportsSizes(sandbox.Sandbox.Type) {
-			logger.Infof("  %s (ID: %s, Type: %s, Size: %s)", sandbox.Config.Name, sandbox.Config.ID, sandbox.Sandbox.Type, sandbox.Sandbox.Size)
+	for _, workspace := range workspaces {
+		if keboola.WorkspaceSupportsSizes(workspace.Workspace.Type) {
+			logger.Infof("  %s (ID: %s, Type: %s, Size: %s)", workspace.Config.Name, workspace.Config.ID, workspace.Workspace.Type, workspace.Workspace.Size)
 		} else {
-			logger.Infof("  %s (ID: %s, Type: %s)", sandbox.Config.Name, sandbox.Config.ID, sandbox.Sandbox.Type)
+			logger.Infof("  %s (ID: %s, Type: %s)", workspace.Config.Name, workspace.Config.ID, workspace.Workspace.Type)
 		}
 	}
 

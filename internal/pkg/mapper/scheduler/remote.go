@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -29,10 +29,10 @@ func (m *schedulerMapper) AfterRemoteOperation(ctx context.Context, changes *mod
 
 	if len(saved) > 0 || len(deleted) > 0 {
 		// Get Scheduler API - only if it is needed
-		apiClient := m.SchedulerAPIClient()
+		keboolaProjectAPI := m.KeboolaProjectAPI()
 
 		// Create requests pool
-		grp := client.NewRunGroup(ctx, apiClient)
+		grp := client.NewRunGroup(ctx, keboolaProjectAPI.Client())
 
 		// Activate saved configs
 		for _, o := range saved {
@@ -57,7 +57,7 @@ func (m *schedulerMapper) isSchedulerConfigFromMainBranch(objectState model.Obje
 		return false
 	}
 
-	if configState.ComponentID != storageapi.SchedulerComponentID {
+	if configState.ComponentID != keboola.SchedulerComponentID {
 		return false
 	}
 

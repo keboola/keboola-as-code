@@ -3,7 +3,7 @@ package dependencies
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	projectManifest "github.com/keboola/keboola-as-code/internal/pkg/project/manifest"
@@ -31,7 +31,7 @@ func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand) (*remote
 	// Create common remote dependencies (includes API authentication)
 	projectDeps, err := dependencies.NewProjectDeps(ctx, cmdPublicDeps, cmdPublicDeps, token)
 	if err != nil {
-		var storageAPIErr *storageapi.Error
+		var storageAPIErr *keboola.StorageError
 		if errors.As(err, &storageAPIErr) && storageAPIErr.ErrCode == "storage.tokenInvalid" {
 			return nil, ErrInvalidStorageAPIToken
 		}
@@ -47,7 +47,7 @@ func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand) (*remote
 		}
 	}
 
-	eventSender := event.NewSender(cmdPublicDeps.Logger(), projectDeps.StorageAPIClient(), projectDeps.ProjectID())
+	eventSender := event.NewSender(cmdPublicDeps.Logger(), projectDeps.KeboolaProjectAPI(), projectDeps.ProjectID())
 
 	// Compose all together
 	return &remote{

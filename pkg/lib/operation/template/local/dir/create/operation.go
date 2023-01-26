@@ -15,8 +15,8 @@ type Options struct {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
 	Logger() log.Logger
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, repositoryDir filesystem.Fs, o Options, d dependencies) (fs filesystem.Fs, err error) {

@@ -8,7 +8,7 @@ package function
 
 import (
 	"github.com/google/go-jsonnet/ast"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	SnowflakeWriterIDAws   = storageapi.ComponentID("keboola.wr-db-snowflake")
-	SnowflakeWriterIDAzure = storageapi.ComponentID("keboola.wr-snowflake-blob-storage")
+	SnowflakeWriterIDAws   = keboola.ComponentID("keboola.wr-db-snowflake")
+	SnowflakeWriterIDAzure = keboola.ComponentID("keboola.wr-snowflake-blob-storage")
 )
 
 // ConfigID Jsonnet function maps configuration ID used in the template
@@ -33,7 +33,7 @@ func ConfigID(idMapper func(id interface{}) string) *jsonnet.NativeFunction {
 			} else if id, ok := params[0].(string); !ok {
 				return nil, errors.New("parameter must be a string")
 			} else {
-				return idMapper(storageapi.ConfigID(id)), nil
+				return idMapper(keboola.ConfigID(id)), nil
 			}
 		},
 	}
@@ -51,7 +51,7 @@ func ConfigRowID(idMapper func(id interface{}) string) *jsonnet.NativeFunction {
 			} else if id, ok := params[0].(string); !ok {
 				return nil, errors.New("parameter must be a string")
 			} else {
-				return idMapper(storageapi.RowID(id)), nil
+				return idMapper(keboola.RowID(id)), nil
 			}
 		},
 	}
@@ -133,7 +133,7 @@ func ComponentIsAvailable(components *model.ComponentsMap) *jsonnet.NativeFuncti
 			} else if componentID, ok := params[0].(string); !ok {
 				return nil, errors.New("parameter must be a string")
 			} else {
-				_, found := components.Get(storageapi.ComponentID(componentID))
+				_, found := components.Get(keboola.ComponentID(componentID))
 				return found, nil
 			}
 		},

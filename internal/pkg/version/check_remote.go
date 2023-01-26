@@ -79,10 +79,10 @@ func (c *checker) getLatestVersion() (string, error) {
 	// The last release may be without assets (build in progress), so we load the last 5 releases.
 	result := make([]interface{}, 0)
 	_, _, err := client.
-		NewHTTPRequest().
+		NewHTTPRequest(c.client).
 		WithGet("repos/keboola/keboola-as-code/releases?per_page=5").
 		WithResult(&result).
-		Send(c.ctx, c.client)
+		Send(c.ctx)
 	if err != nil {
 		return "", err
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
 	"go.opentelemetry.io/otel/trace"
 
@@ -110,11 +110,10 @@ func ParseInputValue(value interface{}, inputDef *templateInput.Input, isFilled 
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
-	Logger() log.Logger
 	Components() *model.ComponentsMap
-	StorageAPIClient() client.Sender
-	SchedulerAPIClient() client.Sender
+	KeboolaProjectAPI() *keboola.API
+	Logger() log.Logger
+	Tracer() trace.Tracer
 }
 
 type _reference = model.TemplateRef

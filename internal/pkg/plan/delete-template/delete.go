@@ -1,7 +1,7 @@
 package delete_template
 
 import (
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
@@ -24,7 +24,7 @@ type planBuilder struct {
 }
 
 func (b *planBuilder) build(branchKey model.BranchKey, instanceID string) ([]DeleteAction, error) {
-	configsMap := map[storageapi.ConfigID]bool{}
+	configsMap := map[keboola.ConfigID]bool{}
 	for _, config := range search.ConfigsForTemplateInstance(b.State.LocalObjects().ConfigsWithRowsFrom(branchKey), instanceID) {
 		configState := b.MustGet(config.Key())
 		action := DeleteAction{

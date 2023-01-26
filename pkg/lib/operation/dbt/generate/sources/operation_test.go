@@ -3,7 +3,7 @@ package sources
 import (
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/relvacode/iso8601"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
@@ -14,9 +14,9 @@ import (
 func TestTablesByBucketsMap(t *testing.T) {
 	t.Parallel()
 
-	mainBucket := &storageapi.Bucket{
-		ID:             storageapi.MustParseBucketID("out.c-main"),
-		Uri:            "/uri",
+	mainBucket := &keboola.Bucket{
+		ID:             keboola.MustParseBucketID("out.c-main"),
+		URI:            "/uri",
 		DisplayName:    "main",
 		Description:    "",
 		Created:        iso8601.Time{},
@@ -25,9 +25,9 @@ func TestTablesByBucketsMap(t *testing.T) {
 		DataSizeBytes:  0,
 		RowsCount:      0,
 	}
-	secondBucket := &storageapi.Bucket{
-		ID:             storageapi.MustParseBucketID("out.c-second"),
-		Uri:            "/uri",
+	secondBucket := &keboola.Bucket{
+		ID:             keboola.MustParseBucketID("out.c-second"),
+		URI:            "/uri",
 		DisplayName:    "second",
 		Description:    "",
 		Created:        iso8601.Time{},
@@ -36,9 +36,9 @@ func TestTablesByBucketsMap(t *testing.T) {
 		DataSizeBytes:  0,
 		RowsCount:      0,
 	}
-	mainTable1 := &storageapi.Table{
-		ID:             storageapi.MustParseTableID("out.c-main.products"),
-		Uri:            "/uri",
+	mainTable1 := &keboola.Table{
+		ID:             keboola.MustParseTableID("out.c-main.products"),
+		URI:            "/uri",
 		Name:           "products",
 		DisplayName:    "Products",
 		PrimaryKey:     nil,
@@ -52,9 +52,9 @@ func TestTablesByBucketsMap(t *testing.T) {
 		ColumnMetadata: nil,
 		Bucket:         mainBucket,
 	}
-	mainTable2 := &storageapi.Table{
-		ID:             storageapi.MustParseTableID("out.c-main.categories"),
-		Uri:            "/uri",
+	mainTable2 := &keboola.Table{
+		ID:             keboola.MustParseTableID("out.c-main.categories"),
+		URI:            "/uri",
 		Name:           "categories",
 		DisplayName:    "Categories",
 		PrimaryKey:     nil,
@@ -68,9 +68,9 @@ func TestTablesByBucketsMap(t *testing.T) {
 		ColumnMetadata: nil,
 		Bucket:         mainBucket,
 	}
-	secTable1 := &storageapi.Table{
-		ID:             storageapi.MustParseTableID("out.c-second.products"),
-		Uri:            "/uri",
+	secTable1 := &keboola.Table{
+		ID:             keboola.MustParseTableID("out.c-second.products"),
+		URI:            "/uri",
 		Name:           "products",
 		DisplayName:    "Products",
 		PrimaryKey:     nil,
@@ -84,9 +84,9 @@ func TestTablesByBucketsMap(t *testing.T) {
 		ColumnMetadata: nil,
 		Bucket:         secondBucket,
 	}
-	secTable2 := &storageapi.Table{
-		ID:             storageapi.MustParseTableID("out.c-second.third"),
-		Uri:            "/uri",
+	secTable2 := &keboola.Table{
+		ID:             keboola.MustParseTableID("out.c-second.third"),
+		URI:            "/uri",
 		Name:           "third",
 		DisplayName:    "Third",
 		PrimaryKey:     nil,
@@ -100,21 +100,21 @@ func TestTablesByBucketsMap(t *testing.T) {
 		ColumnMetadata: nil,
 		Bucket:         secondBucket,
 	}
-	in := []*storageapi.Table{mainTable1, secTable1, mainTable2, secTable2}
+	in := []*keboola.Table{mainTable1, secTable1, mainTable2, secTable2}
 
 	res := tablesByBucketsMap(in)
-	assert.Equal(t, map[storageapi.BucketID][]*storageapi.Table{
-		storageapi.MustParseBucketID("out.c-main"):   {mainTable1, mainTable2},
-		storageapi.MustParseBucketID("out.c-second"): {secTable1, secTable2},
+	assert.Equal(t, map[keboola.BucketID][]*keboola.Table{
+		keboola.MustParseBucketID("out.c-main"):   {mainTable1, mainTable2},
+		keboola.MustParseBucketID("out.c-second"): {secTable1, secTable2},
 	}, res)
 }
 
 func TestGenerateSourcesDefinition(t *testing.T) {
 	t.Parallel()
 
-	mainBucket := &storageapi.Bucket{
-		ID:             storageapi.MustParseBucketID("out.c-main"),
-		Uri:            "/uri",
+	mainBucket := &keboola.Bucket{
+		ID:             keboola.MustParseBucketID("out.c-main"),
+		URI:            "/uri",
 		DisplayName:    "main",
 		Description:    "",
 		Created:        iso8601.Time{},
@@ -123,9 +123,9 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 		DataSizeBytes:  0,
 		RowsCount:      0,
 	}
-	mainTable1 := &storageapi.Table{
-		ID:             storageapi.MustParseTableID("out.c-main.products"),
-		Uri:            "/uri",
+	mainTable1 := &keboola.Table{
+		ID:             keboola.MustParseTableID("out.c-main.products"),
+		URI:            "/uri",
 		Name:           "products",
 		DisplayName:    "Products",
 		PrimaryKey:     []string{"primary1", "primary2"},
@@ -139,9 +139,9 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 		ColumnMetadata: nil,
 		Bucket:         mainBucket,
 	}
-	mainTable2 := &storageapi.Table{
-		ID:             storageapi.MustParseTableID("out.c-main.categories"),
-		Uri:            "/uri",
+	mainTable2 := &keboola.Table{
+		ID:             keboola.MustParseTableID("out.c-main.categories"),
+		URI:            "/uri",
 		Name:           "categories",
 		DisplayName:    "Categories",
 		PrimaryKey:     nil,
@@ -156,7 +156,7 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 		Bucket:         mainBucket,
 	}
 
-	res := generateSourcesDefinition("target1", storageapi.MustParseBucketID("out.c-main"), []*storageapi.Table{mainTable1, mainTable2})
+	res := generateSourcesDefinition("target1", keboola.MustParseBucketID("out.c-main"), []*keboola.Table{mainTable1, mainTable2})
 	assert.Equal(t, dbt.SourceFile{
 		Version: 2,
 		Sources: []dbt.Source{

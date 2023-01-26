@@ -3,7 +3,7 @@ package input
 import (
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -14,8 +14,8 @@ import (
 func TestFind(t *testing.T) {
 	t.Parallel()
 	objectKey := model.ConfigKey{BranchID: 123, ComponentID: "keboola.foo-bar", ID: "456"}
-	component := &storageapi.Component{
-		ComponentKey: storageapi.ComponentKey{ID: "keboola.foo-bar"},
+	component := &keboola.Component{
+		ComponentKey: keboola.ComponentKey{ID: "keboola.foo-bar"},
 	}
 	contentJSON := `
 {
@@ -139,8 +139,8 @@ func TestFind_ComponentSchema(t *testing.T) {
 }`
 
 	objectKey := model.ConfigKey{BranchID: 123, ComponentID: "keboola.foo-bar", ID: "456"}
-	component := &storageapi.Component{
-		ComponentKey: storageapi.ComponentKey{ID: "keboola.foo-bar"},
+	component := &keboola.Component{
+		ComponentKey: keboola.ComponentKey{ID: "keboola.foo-bar"},
 		Schema:       json.RawMessage(schema),
 	}
 	contentJSON := `

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -124,12 +124,12 @@ func (p *Dialogs) askObjectName(d createDeps, desc string) (string, error) {
 	return name, nil
 }
 
-func (p *Dialogs) askComponentID(d createDeps) (storageapi.ComponentID, error) {
-	componentID := storageapi.ComponentID("")
+func (p *Dialogs) askComponentID(d createDeps) (keboola.ComponentID, error) {
+	componentID := keboola.ComponentID("")
 	components := d.Components()
 
 	if d.Options().IsSet(`component-id`) {
-		componentID = storageapi.ComponentID(strings.TrimSpace(d.Options().GetString(`component-id`)))
+		componentID = keboola.ComponentID(strings.TrimSpace(d.Options().GetString(`component-id`)))
 	} else {
 		// Make select
 		selectOpts := make([]string, 0)

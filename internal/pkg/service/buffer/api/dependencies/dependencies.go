@@ -29,6 +29,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -183,8 +184,8 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 		logger:           logger,
 	}
 	d.tokenManager = token.NewManager(d)
-	d.tableManager = table.NewManager(d.StorageAPIClient())
-	d.fileManager = file.NewManager(d.Clock(), d.StorageAPIClient(), nil)
+	d.tableManager = table.NewManager(d.KeboolaProjectAPI())
+	d.fileManager = file.NewManager(d.Clock(), d.KeboolaProjectAPI(), nil)
 	return d, nil
 }
 
@@ -234,4 +235,8 @@ func (v *forProjectRequest) TableManager() *table.Manager {
 
 func (v *forProjectRequest) FileManager() *file.Manager {
 	return v.fileManager
+}
+
+func (v *forProjectRequest) KeboolaProjectAPI() *keboola.API {
+	return v.Project.KeboolaProjectAPI()
 }

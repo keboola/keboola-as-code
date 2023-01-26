@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -17,19 +17,19 @@ func TestMetadataMapper_AfterLocalOperation(t *testing.T) {
 	templateRef := model.NewTemplateRef(model.TemplateRepository{Name: "my-repository"}, "my-template", "v0.0.1")
 	instanceID := "my-instance"
 	objectIds := metadata.ObjectIdsMap{}
-	objectIds[storageapi.ConfigID("456")] = storageapi.ConfigID("my-config")
-	objectIds[storageapi.RowID("789")] = storageapi.RowID("my-row")
+	objectIds[keboola.ConfigID("456")] = keboola.ConfigID("my-config")
+	objectIds[keboola.RowID("789")] = keboola.RowID("my-row")
 	inputsUsage := metadata.NewInputsUsage()
 	mockedState, _ := createStateWithMapper(t, templateRef, instanceID, objectIds, inputsUsage)
 
 	configKey := model.ConfigKey{
 		BranchID:    123,
-		ComponentID: storageapi.ComponentID("keboola.foo-bar"),
+		ComponentID: keboola.ComponentID("keboola.foo-bar"),
 		ID:          `456`,
 	}
 	configRowKey := model.ConfigRowKey{
 		BranchID:    123,
-		ComponentID: storageapi.ComponentID("keboola.foo-bar"),
+		ComponentID: keboola.ComponentID("keboola.foo-bar"),
 		ConfigID:    `456`,
 		ID:          `789`,
 	}

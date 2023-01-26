@@ -1,7 +1,7 @@
 package naming
 
 import (
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -15,12 +15,12 @@ func NewPathMatcher(template Template) *PathMatcher {
 	return &PathMatcher{template: template}
 }
 
-func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentID storageapi.ComponentID, err error) {
+func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentID keboola.ComponentID, err error) {
 	parent := parentKey.Kind()
 	if parent.IsBranch() {
 		// Shared code
 		if matched, _ := m.template.SharedCodeConfig.MatchPath(path.GetRelativePath()); matched {
-			return storageapi.SharedCodeComponentID, nil
+			return keboola.SharedCodeComponentID, nil
 		}
 
 		// Ordinary config
@@ -30,7 +30,7 @@ func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentID s
 			if !ok || componentID == "" {
 				return "", errors.Errorf(`config'm component id cannot be determined, path: "%s", path template: "%s"`, path.Path(), m.template.Config)
 			}
-			return storageapi.ComponentID(componentID), nil
+			return keboola.ComponentID(componentID), nil
 		}
 	}
 
@@ -38,25 +38,25 @@ func (m PathMatcher) MatchConfigPath(parentKey Key, path AbsPath) (componentID s
 	if parent.IsConfig() {
 		// Variables
 		if matched, _ := m.template.VariablesConfig.MatchPath(path.GetRelativePath()); matched {
-			return storageapi.VariablesComponentID, nil
+			return keboola.VariablesComponentID, nil
 		}
 		// Scheduler
 		if matched, _ := m.template.SchedulerConfig.MatchPath(path.GetRelativePath()); matched {
-			return storageapi.SchedulerComponentID, nil
+			return keboola.SchedulerComponentID, nil
 		}
 	}
 
 	// Shared code variables, parent is config row
-	if parent.IsConfigRow() && parentKey.(ConfigRowKey).ComponentID == storageapi.SharedCodeComponentID {
+	if parent.IsConfigRow() && parentKey.(ConfigRowKey).ComponentID == keboola.SharedCodeComponentID {
 		if matched, _ := m.template.VariablesConfig.MatchPath(path.GetRelativePath()); matched {
-			return storageapi.VariablesComponentID, nil
+			return keboola.VariablesComponentID, nil
 		}
 	}
 
 	return "", nil
 }
 
-func (m PathMatcher) MatchConfigRowPath(component *storageapi.Component, path AbsPath) bool {
+func (m PathMatcher) MatchConfigRowPath(component *keboola.Component, path AbsPath) bool {
 	// Shared code
 	if component.IsSharedCode() {
 		matched, _ := m.template.SharedCodeConfigRow.MatchPath(path.GetRelativePath())

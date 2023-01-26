@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -29,7 +29,7 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
-		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
+		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
 	d.Options().SetDefault(`branches`, `*`)
 	d.Options().Set(`branches`, `foo, bar`)
@@ -49,7 +49,7 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
-		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
+		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
 	d.Options().SetDefault(`branches`, `*`)
 
@@ -67,7 +67,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
-		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
+		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
 
 	// Interaction
@@ -98,7 +98,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
-		[]*storageapi.Branch{{BranchKey: storageapi.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
+		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
 
 	// Interaction
@@ -129,11 +129,11 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
-		[]*storageapi.Branch{
-			{BranchKey: storageapi.BranchKey{ID: 10}, Name: "Main", IsDefault: true},
-			{BranchKey: storageapi.BranchKey{ID: 20}, Name: "foo", IsDefault: false},
-			{BranchKey: storageapi.BranchKey{ID: 30}, Name: "bar", IsDefault: false},
-			{BranchKey: storageapi.BranchKey{ID: 40}, Name: "baz", IsDefault: false},
+		[]*keboola.Branch{
+			{BranchKey: keboola.BranchKey{ID: 10}, Name: "Main", IsDefault: true},
+			{BranchKey: keboola.BranchKey{ID: 20}, Name: "foo", IsDefault: false},
+			{BranchKey: keboola.BranchKey{ID: 30}, Name: "bar", IsDefault: false},
+			{BranchKey: keboola.BranchKey{ID: 40}, Name: "baz", IsDefault: false},
 		},
 	)
 
@@ -181,11 +181,11 @@ func TestAskAllowedBranchesTypeList(t *testing.T) {
 	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
-		[]*storageapi.Branch{
-			{BranchKey: storageapi.BranchKey{ID: 10}, Name: "Main", IsDefault: true},
-			{BranchKey: storageapi.BranchKey{ID: 20}, Name: "foo", IsDefault: false},
-			{BranchKey: storageapi.BranchKey{ID: 30}, Name: "bar", IsDefault: false},
-			{BranchKey: storageapi.BranchKey{ID: 40}, Name: "baz", IsDefault: false},
+		[]*keboola.Branch{
+			{BranchKey: keboola.BranchKey{ID: 10}, Name: "Main", IsDefault: true},
+			{BranchKey: keboola.BranchKey{ID: 20}, Name: "foo", IsDefault: false},
+			{BranchKey: keboola.BranchKey{ID: 30}, Name: "bar", IsDefault: false},
+			{BranchKey: keboola.BranchKey{ID: 40}, Name: "baz", IsDefault: false},
 		},
 	)
 

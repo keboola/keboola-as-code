@@ -152,7 +152,7 @@ func (v *mocked) StatsCacheNode() *statistics.CacheNode {
 
 func (v *mocked) EventSender() *event.Sender {
 	if v.eventSender == nil {
-		v.eventSender = event.NewSender(v.Logger(), v.StorageAPIClient())
+		v.eventSender = event.NewSender(v.Logger(), v.KeboolaProjectAPI())
 	}
 	return v.eventSender
 }
@@ -166,14 +166,14 @@ func (v *mocked) TokenManager() *token.Manager {
 
 func (v *mocked) TableManager() *table.Manager {
 	if v.tableManager == nil {
-		v.tableManager = table.NewManager(v.StorageAPIClient())
+		v.tableManager = table.NewManager(v.KeboolaProjectAPI())
 	}
 	return v.tableManager
 }
 
 func (v *mocked) FileManager() *file.Manager {
 	if v.fileManager == nil {
-		v.fileManager = file.NewManager(v.Clock(), v.StorageAPIClient(), nil)
+		v.fileManager = file.NewManager(v.Clock(), v.KeboolaProjectAPI(), nil)
 	}
 	return v.fileManager
 }

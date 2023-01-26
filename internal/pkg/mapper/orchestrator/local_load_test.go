@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
@@ -98,13 +98,13 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/002-task-5/t
 	// Orchestration
 	phase1Key := model.PhaseKey{
 		BranchID:    123,
-		ComponentID: storageapi.OrchestratorComponentID,
+		ComponentID: keboola.OrchestratorComponentID,
 		ConfigID:    `456`,
 		Index:       0,
 	}
 	phase2Key := model.PhaseKey{
 		BranchID:    123,
-		ComponentID: storageapi.OrchestratorComponentID,
+		ComponentID: keboola.OrchestratorComponentID,
 		ConfigID:    `456`,
 		Index:       1,
 	}
@@ -179,7 +179,7 @@ DEBUG  Loaded "branch/other/orchestrator/phases/002-phase-with-deps/002-task-5/t
 				DependsOn: []model.PhaseKey{
 					{
 						BranchID:    123,
-						ComponentID: storageapi.OrchestratorComponentID,
+						ComponentID: keboola.OrchestratorComponentID,
 						ConfigID:    `456`,
 						Index:       0,
 					},

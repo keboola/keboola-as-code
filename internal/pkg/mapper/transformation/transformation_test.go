@@ -3,7 +3,7 @@ package transformation_test
 import (
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/transformation"
@@ -25,7 +25,7 @@ func createTestFixtures(t *testing.T, componentID string) *model.ConfigState {
 
 	configKey := model.ConfigKey{
 		BranchID:    123,
-		ComponentID: storageapi.ComponentID(componentID),
+		ComponentID: keboola.ComponentID(componentID),
 		ID:          `456`,
 	}
 	configState := &model.ConfigState{

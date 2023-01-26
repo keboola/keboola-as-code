@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -21,9 +21,9 @@ func TestStore_Mapping_Ops(t *testing.T) {
 
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "receiver1"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "export1"}
-	tableID := storageapi.TableID{
-		BucketID: storageapi.BucketID{
-			Stage:      storageapi.BucketStageIn,
+	tableID := keboola.TableID{
+		BucketID: keboola.BucketID{
+			Stage:      keboola.BucketStageIn,
 			BucketName: "main",
 		},
 		TableName: "table1",
@@ -150,9 +150,9 @@ func TestStore_DeleteReceiverMappingsOp(t *testing.T) {
 
 	export1 := key.ExportKey{ReceiverKey: key.ReceiverKey{ProjectID: 1000, ReceiverID: "receiver1"}, ExportID: "export1"}
 	export0 := key.ExportKey{ReceiverKey: key.ReceiverKey{ProjectID: 1000, ReceiverID: "receiver0"}, ExportID: "export0"}
-	tableID := storageapi.TableID{
-		BucketID: storageapi.BucketID{
-			Stage:      storageapi.BucketStageIn,
+	tableID := keboola.TableID{
+		BucketID: keboola.BucketID{
+			Stage:      keboola.BucketStageIn,
 			BucketName: "main",
 		},
 		TableName: "table1",

@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -15,15 +15,15 @@ import (
 )
 
 type Manager struct {
-	client client.Sender
+	keboolaProjectAPI *keboola.API
 }
 
 type dependencies interface {
-	StorageAPIClient() client.Sender
+	KeboolaProjectAPI() *keboola.API
 }
 
 func NewManager(d dependencies) *Manager {
-	return &Manager{client: d.StorageAPIClient()}
+	return &Manager{keboolaProjectAPI: d.KeboolaProjectAPI()}
 }
 
 func (m *Manager) CreateTokens(ctx context.Context, rb rollback.Builder, receiver *model.Receiver) error {
@@ -45,14 +45,14 @@ func (m *Manager) CreateTokens(ctx context.Context, rb rollback.Builder, receive
 }
 
 func (m *Manager) CreateToken(ctx context.Context, rb rollback.Builder, export *model.Export) error {
-	permissions := storageapi.BucketPermissions{export.Mapping.TableID.BucketID: storageapi.BucketPermissionWrite}
-	token, err := m.createTokenRequest(export.ExportKey, permissions).Send(ctx, m.client)
+	permissions := keboola.BucketPermissions{export.Mapping.TableID.BucketID: keboola.BucketPermissionWrite}
+	token, err := m.createTokenRequest(export.ExportKey, permissions).Send(ctx)
 	if err != nil {
 		return err
 	}
 
 	rb.Add(func(ctx context.Context) error {
-		_, err := storageapi.DeleteTokenRequest(token.ID).Send(ctx, m.client)
+		_, err := m.keboolaProjectAPI.DeleteTokenRequest(token.ID).Send(ctx)
 		return err
 	})
 
@@ -80,15 +80,15 @@ func (m *Manager) RefreshTokens(ctx context.Context, rb rollback.Builder, tokens
 
 func (m *Manager) RefreshToken(ctx context.Context, rb rollback.Builder, token *model.Token) error {
 	// Try refresh token
-	newToken, err := storageapi.RefreshTokenRequest(token.ID).Send(ctx, m.client)
+	newToken, err := m.keboolaProjectAPI.RefreshTokenRequest(token.ID).Send(ctx)
 
 	// Create a new token, if it doesn't exist
-	var apiErr *storageapi.Error
+	var apiErr *keboola.StorageError
 	if errors.As(err, &apiErr) && apiErr.ErrCode == "storage.tokens.notFound" {
-		newToken, err = m.createTokenRequest(token.ExportKey, token.BucketPermissions).Send(ctx, m.client)
+		newToken, err = m.createTokenRequest(token.ExportKey, token.BucketPermissions).Send(ctx)
 		if err == nil {
 			rb.Add(func(ctx context.Context) error {
-				_, err := storageapi.DeleteTokenRequest(newToken.ID).Send(ctx, m.client)
+				_, err := m.keboolaProjectAPI.DeleteTokenRequest(newToken.ID).Send(ctx)
 				return err
 			})
 		}
@@ -103,15 +103,15 @@ func (m *Manager) RefreshToken(ctx context.Context, rb rollback.Builder, token *
 	return nil
 }
 
-func (m *Manager) createTokenRequest(exportKey key.ExportKey, permissions storageapi.BucketPermissions) client.APIRequest[*storageapi.Token] {
-	return storageapi.
+func (m *Manager) createTokenRequest(exportKey key.ExportKey, permissions keboola.BucketPermissions) client.APIRequest[*keboola.Token] {
+	return m.keboolaProjectAPI.
 		CreateTokenRequest(
-			storageapi.WithDescription(
+			keboola.WithDescription(
 				// Max length of description is 255 characters,
 				// this will be at most receiverId (48) + exportId (48) + extra chars (40) = 136 characters.
 				fmt.Sprintf("[_internal] Buffer Export %s for Receiver %s", exportKey.ReceiverID, exportKey.ExportID),
 			),
-			storageapi.WithBucketPermissions(permissions),
-			storageapi.WithCanReadAllFileUploads(true),
+			keboola.WithBucketPermissions(permissions),
+			keboola.WithCanReadAllFileUploads(true),
 		)
 }

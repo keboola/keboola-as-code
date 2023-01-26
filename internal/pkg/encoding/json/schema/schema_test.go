@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -125,13 +125,13 @@ func TestValidateObjects_InvalidSchema_Warning(t *testing.T) {
 	t.Parallel()
 	invalidSchema := []byte(`{"properties": {"key1": {"properties": true}}}`)
 
-	componentID := storageapi.ComponentID("foo.bar")
-	components := model.NewComponentsMap(storageapi.Components{
+	componentID := keboola.ComponentID("foo.bar")
+	components := model.NewComponentsMap(keboola.Components{
 		{
-			ComponentKey: storageapi.ComponentKey{ID: componentID},
+			ComponentKey: keboola.ComponentKey{ID: componentID},
 			Type:         "other",
 			Name:         "Foo Bar",
-			Data:         storageapi.ComponentData{},
+			Data:         keboola.ComponentData{},
 			Schema:       invalidSchema,
 			SchemaRow:    invalidSchema,
 		},

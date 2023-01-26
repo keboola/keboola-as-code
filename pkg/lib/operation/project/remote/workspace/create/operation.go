@@ -4,9 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/sandboxesapi"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -21,11 +19,9 @@ type CreateOptions struct {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
-	StorageAPIClient() client.Sender
-	JobsQueueAPIClient() client.Sender
-	SandboxesAPIClient() client.Sender
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
@@ -34,7 +30,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 
 	logger := d.Logger()
 
-	branch, err := storageapi.GetDefaultBranchRequest().Send(ctx, d.StorageAPIClient())
+	branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(ctx)
 	if err != nil {
 		return err
 	}
@@ -42,18 +38,15 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	opts := make([]sandboxesapi.Option, 0)
+	opts := make([]keboola.CreateWorkspaceOption, 0)
 	if len(o.Size) > 0 {
-		opts = append(opts, sandboxesapi.WithSize(o.Size))
+		opts = append(opts, keboola.WithSize(o.Size))
 	}
 
 	logger.Info(`Creating a new workspace, please wait.`)
 	// Create workspace by API
-	s, err := sandboxesapi.Create(
+	w, err := d.KeboolaProjectAPI().CreateWorkspace(
 		ctx,
-		d.StorageAPIClient(),
-		d.JobsQueueAPIClient(),
-		d.SandboxesAPIClient(),
 		branch.ID,
 		o.Name,
 		o.Type,
@@ -63,27 +56,27 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 		return errors.Errorf("cannot create workspace: %w", err)
 	}
 
-	sandbox := s.Sandbox
+	workspace := w.Workspace
 
-	logger.Infof(`Created the new workspace "%s" (%s).`, o.Name, s.Config.ID)
-	switch sandbox.Type {
-	case sandboxesapi.TypeSnowflake:
+	logger.Infof(`Created the new workspace "%s" (%s).`, o.Name, w.Config.ID)
+	switch workspace.Type {
+	case keboola.WorkspaceTypeSnowflake:
 		logger.Infof(
 			"Credentials:\n  Host: %s\n  User: %s\n  Password: %s\n  Database: %s\n  Schema: %s\n  Warehouse: %s",
-			sandbox.Host,
-			sandbox.User,
-			sandbox.Password,
-			sandbox.Details.Connection.Database,
-			sandbox.Details.Connection.Schema,
-			sandbox.Details.Connection.Warehouse,
+			workspace.Host,
+			workspace.User,
+			workspace.Password,
+			workspace.Details.Connection.Database,
+			workspace.Details.Connection.Schema,
+			workspace.Details.Connection.Warehouse,
 		)
-	case sandboxesapi.TypePython:
+	case keboola.WorkspaceTypePython:
 		fallthrough
-	case sandboxesapi.TypeR:
+	case keboola.WorkspaceTypeR:
 		logger.Infof(
 			"Credentials:\n  Host: %s\n  Password: %s",
-			sandbox.Host,
-			sandbox.Password,
+			workspace.Host,
+			workspace.Password,
 		)
 	}
 

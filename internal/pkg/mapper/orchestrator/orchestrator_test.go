@@ -3,7 +3,7 @@ package orchestrator_test
 import (
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -104,7 +104,7 @@ func createLocalLoadFixtures(t *testing.T, state *state.State) *model.ConfigStat
 	// Orchestrator config
 	configKey := model.ConfigKey{
 		BranchID:    123,
-		ComponentID: storageapi.OrchestratorComponentID,
+		ComponentID: keboola.OrchestratorComponentID,
 		ID:          `456`,
 	}
 	configState := &model.ConfigState{
@@ -126,13 +126,13 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 
 	phase1Key := model.PhaseKey{
 		BranchID:    123,
-		ComponentID: storageapi.OrchestratorComponentID,
+		ComponentID: keboola.OrchestratorComponentID,
 		ConfigID:    `456`,
 		Index:       0,
 	}
 	phase2Key := model.PhaseKey{
 		BranchID:    123,
-		ComponentID: storageapi.OrchestratorComponentID,
+		ComponentID: keboola.OrchestratorComponentID,
 		ConfigID:    `456`,
 		Index:       1,
 	}
@@ -266,7 +266,7 @@ func createLocalSaveFixtures(t *testing.T, state *state.State, createTargets boo
 	// Orchestrator config
 	configKey := model.ConfigKey{
 		BranchID:    123,
-		ComponentID: storageapi.OrchestratorComponentID,
+		ComponentID: keboola.OrchestratorComponentID,
 		ID:          `456`,
 	}
 	configState := &model.ConfigState{

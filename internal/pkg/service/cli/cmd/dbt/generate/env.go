@@ -1,8 +1,7 @@
 package generate
 
 import (
-	"github.com/keboola/go-client/pkg/sandboxesapi"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
@@ -34,19 +33,19 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			branch, err := storageapi.GetDefaultBranchRequest().Send(d.CommandCtx(), d.StorageAPIClient())
+			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(d.CommandCtx())
 			if err != nil {
 				return errors.Errorf("cannot find default branch: %w", err)
 			}
 
 			// Get all Snowflake workspaces for the dialog
-			allWorkspaces, err := sandboxesapi.List(d.CommandCtx(), d.StorageAPIClient(), d.SandboxesAPIClient(), branch.ID)
+			allWorkspaces, err := d.KeboolaProjectAPI().ListWorkspaces(d.CommandCtx(), branch.ID)
 			if err != nil {
 				return err
 			}
-			snowflakeWorkspaces := make([]*sandboxesapi.SandboxWithConfig, 0)
+			snowflakeWorkspaces := make([]*keboola.WorkspaceWithConfig, 0)
 			for _, w := range allWorkspaces {
-				if w.Sandbox.Type == sandboxesapi.TypeSnowflake {
+				if w.Workspace.Type == keboola.WorkspaceTypeSnowflake {
 					snowflakeWorkspaces = append(snowflakeWorkspaces, w)
 				}
 			}

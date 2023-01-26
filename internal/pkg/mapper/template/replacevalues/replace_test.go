@@ -3,7 +3,7 @@ package replacevalues
 import (
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -54,16 +54,16 @@ func TestValues_AddKey(t *testing.T) {
 			Replace: model.BranchKey{ID: 0},
 		},
 		{
-			Search:  storageapi.BranchID(123),
-			Replace: storageapi.BranchID(0),
+			Search:  keboola.BranchID(123),
+			Replace: keboola.BranchID(0),
 		},
 		{
 			Search:  model.ConfigKey{BranchID: 1, ComponentID: "foo.bar", ID: "12"},
 			Replace: model.ConfigKey{BranchID: 1, ComponentID: "foo.bar", ID: "23"},
 		},
 		{
-			Search:  storageapi.ConfigID("12"),
-			Replace: storageapi.ConfigID("23"),
+			Search:  keboola.ConfigID("12"),
+			Replace: keboola.ConfigID("23"),
 		},
 		{
 			Search:  SubString("12"),
@@ -74,8 +74,8 @@ func TestValues_AddKey(t *testing.T) {
 			Replace: model.ConfigRowKey{BranchID: 1, ComponentID: "foo.bar", ConfigID: "23", ID: "67"},
 		},
 		{
-			Search:  storageapi.RowID("45"),
-			Replace: storageapi.RowID("67"),
+			Search:  keboola.RowID("45"),
+			Replace: keboola.RowID("67"),
 		},
 		{
 			Search:  SubString("45"),
@@ -88,21 +88,21 @@ func TestValues_AddID(t *testing.T) {
 	t.Parallel()
 
 	replacements := NewValues()
-	replacements.AddID(storageapi.ConfigID("old1"), storageapi.ConfigID("new1"))
-	replacements.AddID(storageapi.RowID("old2"), storageapi.RowID("new2"))
+	replacements.AddID(keboola.ConfigID("old1"), keboola.ConfigID("new1"))
+	replacements.AddID(keboola.RowID("old2"), keboola.RowID("new2"))
 
 	assert.Equal(t, []Value{
 		{
-			Search:  storageapi.ConfigID("old1"),
-			Replace: storageapi.ConfigID("new1"),
+			Search:  keboola.ConfigID("old1"),
+			Replace: keboola.ConfigID("new1"),
 		},
 		{
 			Search:  SubString("old1"),
 			Replace: "new1",
 		},
 		{
-			Search:  storageapi.RowID("old2"),
-			Replace: storageapi.RowID("new2"),
+			Search:  keboola.RowID("old2"),
+			Replace: keboola.RowID("new2"),
 		},
 		{
 			Search:  SubString("old2"),
@@ -234,7 +234,7 @@ func TestValues_Replace(t *testing.T) {
 					ID:          `12`,
 				},
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
-					{Key: `some-row-id`, Value: storageapi.RowID(`34`)},
+					{Key: `some-row-id`, Value: keboola.RowID(`34`)},
 					{Key: "key1", Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "key2", Value: 123},
 					})},
@@ -281,7 +281,7 @@ func TestValues_Replace(t *testing.T) {
 					ID:          `config-in-template`,
 				},
 				Content: orderedmap.FromPairs([]orderedmap.Pair{
-					{Key: `some-row-id`, Value: storageapi.RowID(`row-in-template`)},
+					{Key: `some-row-id`, Value: keboola.RowID(`row-in-template`)},
 					{Key: "key1", Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{Key: "key2", Value: "new value in config"},
 					})},

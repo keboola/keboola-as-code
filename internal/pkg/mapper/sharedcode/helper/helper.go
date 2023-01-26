@@ -1,7 +1,7 @@
 package helper
 
 import (
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -92,7 +92,7 @@ func (h *SharedCodeHelper) GetSharedCodeByPath(parentPath, codePath string) (*mo
 	}
 
 	// Shared code?
-	if configState.ComponentID != storageapi.SharedCodeComponentID {
+	if configState.ComponentID != keboola.SharedCodeComponentID {
 		return nil, errors.Errorf(`config "%s" is not shared code`, codePath)
 	}
 

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
 
@@ -47,12 +47,12 @@ func TestCacheNode(t *testing.T) {
 	fileKey := key.FileKey{ExportKey: exportKey, FileID: key.FileID(clk.Now())}
 	slice1Key := key.SliceKey{SliceID: key.SliceID(clk.Now()), FileKey: fileKey}
 	slice2Key := key.SliceKey{SliceID: key.SliceID(clk.Now().Add(time.Second)), FileKey: fileKey}
-	tableID := storageapi.MustParseTableID("in.c-bucket.table")
+	tableID := keboola.MustParseTableID("in.c-bucket.table")
 	columns := []column.Column{column.ID{Name: "col1"}, column.Body{Name: "col2"}}
 	mappingKey := key.MappingKey{ExportKey: exportKey, RevisionID: 1}
 	mapping := model.Mapping{MappingKey: mappingKey, TableID: tableID, Columns: columns}
-	slice1 := model.Slice{SliceKey: slice1Key, State: slicestate.Writing, Mapping: mapping, StorageResource: &storageapi.File{}, Number: 1}
-	slice2 := model.Slice{SliceKey: slice2Key, State: slicestate.Writing, Mapping: mapping, StorageResource: &storageapi.File{}, Number: 1}
+	slice1 := model.Slice{SliceKey: slice1Key, State: slicestate.Writing, Mapping: mapping, StorageResource: &keboola.File{}, Number: 1}
+	slice2 := model.Slice{SliceKey: slice2Key, State: slicestate.Writing, Mapping: mapping, StorageResource: &keboola.File{}, Number: 1}
 
 	// Create records for the sliceS1
 	assert.NoError(t, str.CreateSlice(ctx, slice1))

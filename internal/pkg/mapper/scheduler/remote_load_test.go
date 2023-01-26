@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -18,7 +18,7 @@ func TestSchedulerMapAfterRemoteLoad(t *testing.T) {
 	logger := d.DebugLogger()
 
 	// Create api and internal object
-	key := model.ConfigKey{BranchID: 1, ComponentID: storageapi.SchedulerComponentID, ID: `123`}
+	key := model.ConfigKey{BranchID: 1, ComponentID: keboola.SchedulerComponentID, ID: `123`}
 	object := &model.Config{ConfigKey: key, Content: orderedmap.New()}
 	contentStr := `{
   "target": {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -18,11 +18,11 @@ func TestSharedCodeMapBeforeRemoteSave(t *testing.T) {
 
 	variablesConfigID := `123456`
 	object := &model.ConfigRow{
-		ConfigRowKey: model.ConfigRowKey{ComponentID: storageapi.SharedCodeComponentID},
+		ConfigRowKey: model.ConfigRowKey{ComponentID: keboola.SharedCodeComponentID},
 		Content:      orderedmap.New(),
 	}
 	object.AddRelation(&model.SharedCodeVariablesFromRelation{
-		VariablesID: storageapi.ConfigID(variablesConfigID),
+		VariablesID: keboola.ConfigID(variablesConfigID),
 	})
 	recipe := model.NewRemoteSaveRecipe(&model.ConfigManifest{}, object, model.NewChangedFields())
 

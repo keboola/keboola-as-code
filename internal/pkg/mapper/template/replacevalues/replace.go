@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
@@ -70,16 +70,16 @@ func (v *Values) AddKey(oldKey, newKey model.Key) {
 // AddID replaces id with id.
 func (v *Values) AddID(oldID, newID interface{}) {
 	switch old := oldID.(type) {
-	case storageapi.BranchID:
-		v.AddValue(old, newID.(storageapi.BranchID))
-	case storageapi.ConfigID:
-		v.AddValue(old, newID.(storageapi.ConfigID))
+	case keboola.BranchID:
+		v.AddValue(old, newID.(keboola.BranchID))
+	case keboola.ConfigID:
+		v.AddValue(old, newID.(keboola.ConfigID))
 		// ConfigID in strings
-		v.AddValue(SubString(old), string(newID.(storageapi.ConfigID)))
-	case storageapi.RowID:
-		v.AddValue(old, newID.(storageapi.RowID))
+		v.AddValue(SubString(old), string(newID.(keboola.ConfigID)))
+	case keboola.RowID:
+		v.AddValue(old, newID.(keboola.RowID))
 		// ConfigRowId in strings
-		v.AddValue(SubString(old), string(newID.(storageapi.RowID)))
+		v.AddValue(SubString(old), string(newID.(keboola.RowID)))
 	default:
 		panic(errors.Errorf(`unexpected ID type "%T"`, old))
 	}
@@ -138,8 +138,8 @@ func (v *Values) validate() error {
 	valuesMap := make(map[string]int)
 	for _, item := range v.values {
 		value := item.Search
-		_, ok1 := value.(storageapi.ConfigID)
-		_, ok2 := value.(storageapi.RowID)
+		_, ok1 := value.(keboola.ConfigID)
+		_, ok2 := value.(keboola.RowID)
 		if ok1 || ok2 {
 			valuesMap[cast.ToString(value)] += 1
 		}
@@ -154,8 +154,8 @@ func (v *Values) validate() error {
 	valuesMap = make(map[string]int)
 	for _, item := range v.values {
 		value := item.Replace
-		_, ok1 := value.(storageapi.ConfigID)
-		_, ok2 := value.(storageapi.RowID)
+		_, ok1 := value.(keboola.ConfigID)
+		_, ok2 := value.(keboola.RowID)
 		if ok1 || ok2 {
 			valuesMap[cast.ToString(value)] += 1
 		}

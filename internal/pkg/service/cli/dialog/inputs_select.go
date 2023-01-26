@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -78,7 +78,7 @@ func (d *inputsSelectDialog) parse(result string) error {
 				invalidObject = true
 				continue
 			}
-			key := model.ConfigKey{BranchID: d.branch.ID, ComponentID: storageapi.ComponentID(m[1]), ID: storageapi.ConfigID(m[2])}
+			key := model.ConfigKey{BranchID: d.branch.ID, ComponentID: keboola.ComponentID(m[1]), ID: keboola.ConfigID(m[2])}
 			if _, found := d.objectFields[key]; !found {
 				errs.Append(errors.Errorf(`line %d: config "%s:%s" not found`, lineNum, m[1], m[2]))
 				invalidObject = true
@@ -94,7 +94,7 @@ func (d *inputsSelectDialog) parse(result string) error {
 				invalidObject = true
 				continue
 			}
-			key := model.ConfigRowKey{BranchID: d.branch.ID, ComponentID: storageapi.ComponentID(m[1]), ConfigID: storageapi.ConfigID(m[2]), ID: storageapi.RowID(m[3])}
+			key := model.ConfigRowKey{BranchID: d.branch.ID, ComponentID: keboola.ComponentID(m[1]), ConfigID: keboola.ConfigID(m[2]), ID: keboola.RowID(m[3])}
 			if _, found := d.objectFields[key]; !found {
 				errs.Append(errors.Errorf(`line %d: config row "%s:%s:%s" not found`, lineNum, m[1], m[2], m[3]))
 				invalidObject = true

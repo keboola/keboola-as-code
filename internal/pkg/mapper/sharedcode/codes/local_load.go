@@ -3,7 +3,7 @@ package codes
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -60,7 +60,7 @@ func (m *mapper) onConfigLocalLoad(config *model.Config) error {
 	}
 
 	// Store target component ID to struct
-	config.SharedCode = &model.SharedCodeConfig{Target: storageapi.ComponentID(target)}
+	config.SharedCode = &model.SharedCodeConfig{Target: keboola.ComponentID(target)}
 	return nil
 }
 

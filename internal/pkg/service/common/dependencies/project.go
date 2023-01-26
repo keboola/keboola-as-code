@@ -4,73 +4,51 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/jobsqueueapi"
-	"github.com/keboola/go-client/pkg/sandboxesapi"
-	"github.com/keboola/go-client/pkg/schedulerapi"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // project dependencies container implements Project interface.
 type project struct {
-	base               Base
-	public             Public
-	token              storageapi.Token
-	projectFeatures    storageapi.FeaturesMap
-	storageAPIClient   client.Client
-	schedulerAPIClient client.Client
-	jobsQueueAPIClient client.Client
-	sandboxesAPIClient client.Client
+	base              Base
+	public            Public
+	token             keboola.Token
+	projectFeatures   keboola.FeaturesMap
+	keboolaProjectAPI *keboola.API
 }
 
 func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr string) (v Project, err error) {
 	ctx, span := base.Tracer().Start(ctx, "kac.lib.dependencies.NewProjectDeps")
 	defer telemetry.EndSpan(span, &err)
 
-	token, err := storageapi.VerifyTokenRequest(tokenStr).Send(ctx, public.StorageAPIPublicClient())
+	token, err := public.KeboolaPublicAPI().VerifyTokenRequest(tokenStr).Send(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	base.Logger().Debugf("Storage API token is valid.")
 	base.Logger().Debugf(`Project id: "%d", project name: "%s".`, token.ProjectID(), token.ProjectName())
-	return newProjectDeps(base, public, *token)
+	return newProjectDeps(ctx, base, public, *token)
 }
 
-func newProjectDeps(base Base, public Public, token storageapi.Token) (*project, error) {
+func newProjectDeps(ctx context.Context, base Base, public Public, token keboola.Token) (*project, error) {
 	// Require master token
 	if !token.IsMaster {
 		return nil, MasterTokenRequiredError{}
 	}
 
+	httpClient := base.HTTPClient()
+	api, err := keboola.NewAPI(ctx, public.StorageAPIHost(), keboola.WithClient(&httpClient), keboola.WithToken(token.Token))
+	if err != nil {
+		return nil, err
+	}
 	v := &project{
-		base:             base,
-		public:           public,
-		token:            token,
-		projectFeatures:  token.Owner.Features.ToMap(),
-		storageAPIClient: storageapi.ClientWithHostAndToken(base.HTTPClient(), public.StorageAPIHost(), token.Token),
-	}
-
-	// Setup Scheduler API
-	if schedulerHost, found := v.public.StackServices().URLByID("scheduler"); !found {
-		return nil, errors.New("scheduler host not found")
-	} else {
-		v.schedulerAPIClient = schedulerapi.ClientWithHostAndToken(v.base.HTTPClient(), schedulerHost.String(), v.token.Token)
-	}
-
-	if queueHost, found := v.public.StackServices().URLByID("queue"); !found {
-		return nil, errors.New("queue host not found")
-	} else {
-		v.jobsQueueAPIClient = jobsqueueapi.ClientWithHostAndToken(v.base.HTTPClient(), queueHost.String(), v.token.Token)
-	}
-
-	if sandboxesHost, found := v.public.StackServices().URLByID("sandboxes"); !found {
-		return nil, errors.New("sandboxes host not found")
-	} else {
-		v.sandboxesAPIClient = sandboxesapi.ClientWithHostAndToken(v.base.HTTPClient(), sandboxesHost.String(), v.token.Token)
+		base:              base,
+		public:            public,
+		token:             token,
+		projectFeatures:   token.Owner.Features.ToMap(),
+		keboolaProjectAPI: api,
 	}
 
 	return v, nil
@@ -84,11 +62,11 @@ func (v project) ProjectName() string {
 	return v.token.ProjectName()
 }
 
-func (v project) ProjectFeatures() storageapi.FeaturesMap {
+func (v project) ProjectFeatures() keboola.FeaturesMap {
 	return v.projectFeatures
 }
 
-func (v project) StorageAPIToken() storageapi.Token {
+func (v project) StorageAPIToken() keboola.Token {
 	return v.token
 }
 
@@ -96,25 +74,13 @@ func (v project) StorageAPITokenID() string {
 	return v.token.ID
 }
 
-func (v project) StorageAPIClient() client.Sender {
-	return v.storageAPIClient
+func (v project) KeboolaProjectAPI() *keboola.API {
+	return v.keboolaProjectAPI
 }
 
-func (v project) SchedulerAPIClient() client.Sender {
-	return v.schedulerAPIClient
-}
-
-func (v project) JobsQueueAPIClient() client.Sender {
-	return v.jobsQueueAPIClient
-}
-
-func (v project) SandboxesAPIClient() client.Sender {
-	return v.sandboxesAPIClient
-}
-
-func (v project) ObjectIDGeneratorFactory() func(ctx context.Context) *storageapi.TicketProvider {
-	return func(ctx context.Context) *storageapi.TicketProvider {
-		return storageapi.NewTicketProvider(ctx, v.StorageAPIClient())
+func (v project) ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider {
+	return func(ctx context.Context) *keboola.TicketProvider {
+		return keboola.NewTicketProvider(ctx, v.KeboolaProjectAPI())
 	}
 }
 

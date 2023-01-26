@@ -1,7 +1,7 @@
 package naming
 
 import (
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 )
 
 const (
@@ -17,7 +17,7 @@ const (
 	TxtComment   = `//`
 )
 
-func CodeFileExt(componentID storageapi.ComponentID) string {
+func CodeFileExt(componentID keboola.ComponentID) string {
 	switch componentID {
 	case `keboola.snowflake-transformation`:
 		return SQLExt

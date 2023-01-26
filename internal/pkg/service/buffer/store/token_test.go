@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -21,7 +21,7 @@ func TestStore_GetTokenOp(t *testing.T) {
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "receiver1"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "export1"}
 
-	input := model.Token{ExportKey: exportKey, StorageToken: storageapi.Token{Token: "test"}}
+	input := model.Token{ExportKey: exportKey, StorageToken: keboola.Token{Token: "test"}}
 
 	_, err := store.createTokenOp(ctx, input).Do(ctx, store.client)
 	assert.NoError(t, err)
@@ -70,7 +70,7 @@ func TestStore_DeleteExportTokenOp(t *testing.T) {
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "receiver1"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "export1"}
 
-	input := model.Token{ExportKey: exportKey, StorageToken: storageapi.Token{Token: "test"}}
+	input := model.Token{ExportKey: exportKey, StorageToken: keboola.Token{Token: "test"}}
 
 	_, err := store.createTokenOp(ctx, input).Do(ctx, store.client)
 	assert.NoError(t, err)
@@ -126,11 +126,11 @@ func TestStore_DeleteReceiverTokensOp(t *testing.T) {
 	input := []model.Token{
 		{
 			ExportKey:    key.ExportKey{ReceiverKey: receiverKey, ExportID: "export0"},
-			StorageToken: storageapi.Token{Token: "test0"},
+			StorageToken: keboola.Token{Token: "test0"},
 		},
 		{
 			ExportKey:    key.ExportKey{ReceiverKey: receiverKey, ExportID: "export1"},
-			StorageToken: storageapi.Token{Token: "test1"},
+			StorageToken: keboola.Token{Token: "test1"},
 		},
 	}
 

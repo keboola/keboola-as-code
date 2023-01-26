@@ -3,7 +3,7 @@ package dialog
 import (
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/sandboxesapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
@@ -12,8 +12,8 @@ import (
 
 func (p *Dialogs) AskWorkspace(
 	d *options.Options,
-	allWorkspaces []*sandboxesapi.SandboxWithConfig,
-) (*sandboxesapi.SandboxWithConfig, error) {
+	allWorkspaces []*keboola.WorkspaceWithConfig,
+) (*keboola.WorkspaceWithConfig, error) {
 	if d.IsSet(`workspace-id`) {
 		workspaceID := d.GetString(`workspace-id`)
 		for _, w := range allWorkspaces {

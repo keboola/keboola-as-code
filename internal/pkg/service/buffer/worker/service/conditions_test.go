@@ -7,7 +7,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
@@ -50,14 +50,14 @@ func TestConditionsChecker(t *testing.T) {
 	apiStats := apiDeps.StatsCollector()
 	str := apiDeps.Store()
 	importConditions1 := model.Conditions{Count: 100, Size: 200 * datasize.KB, Time: time.Hour}
-	file1 := &storageapi.File{Name: "file 1", IsSliced: true}
+	file1 := &keboola.File{Name: "file 1", IsSliced: true}
 	clk.Add(time.Second)
 	importConditions2 := model.Conditions{Count: 1000, Size: 20 * datasize.MB, Time: 5 * time.Hour}
-	file2 := &storageapi.File{Name: "file 1", IsSliced: true}
-	if _, err := storageapi.CreateFileResourceRequest(file1).Send(ctx, project.StorageAPIClient()); err != nil {
+	file2 := &keboola.File{Name: "file 1", IsSliced: true}
+	if _, err := project.KeboolaProjectAPI().CreateFileResourceRequest(file1).Send(ctx); err != nil {
 		assert.Fail(t, err.Error())
 	}
-	if _, err := storageapi.CreateFileResourceRequest(file2).Send(ctx, project.StorageAPIClient()); err != nil {
+	if _, err := project.KeboolaProjectAPI().CreateFileResourceRequest(file2).Send(ctx); err != nil {
 		assert.Fail(t, err.Error())
 	}
 	sliceKey1 := createExport2(t, "my-receiver-A", "my-export-1", ctx, clk, client, str, file1, importConditions1, project.StorageAPIToken().Token)
@@ -317,7 +317,7 @@ task/00000123/my-receiver-B/my-export-2/slice.swap/%s
 }
 
 // createExport creates receiver,export,mapping,file and slice.
-func createExport2(t *testing.T, receiverID, exportID string, ctx context.Context, clk clock.Clock, client *etcd.Client, str *store.Store, fileRes *storageapi.File, importConditions model.Conditions, token string) key.SliceKey {
+func createExport2(t *testing.T, receiverID, exportID string, ctx context.Context, clk clock.Clock, client *etcd.Client, str *store.Store, fileRes *keboola.File, importConditions model.Conditions, token string) key.SliceKey {
 	t.Helper()
 	receiver := model.ReceiverForTest(receiverID, 0, clk.Now())
 	columns := []column.Column{

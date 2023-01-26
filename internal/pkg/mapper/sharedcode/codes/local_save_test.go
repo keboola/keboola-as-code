@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -13,7 +13,7 @@ import (
 
 func TestSharedCodeLocalSave(t *testing.T) {
 	t.Parallel()
-	targetComponentID := storageapi.ComponentID(`keboola.python-transformation-v2`)
+	targetComponentID := keboola.ComponentID(`keboola.python-transformation-v2`)
 
 	state, d := createStateWithMapper(t)
 	logger := d.DebugLogger()

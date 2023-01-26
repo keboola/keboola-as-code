@@ -6,21 +6,21 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const componentID = storageapi.ComponentID("keboola.keboola-buffer")
+const componentID = keboola.ComponentID("keboola.keboola-buffer")
 
 type Sender struct {
 	logger log.Logger
-	client client.Sender
+	client *keboola.API
 }
 
-func NewSender(logger log.Logger, client client.Sender) *Sender {
+func NewSender(logger log.Logger, client *keboola.API) *Sender {
 	return &Sender{logger: logger, client: client}
 }
 
@@ -121,7 +121,7 @@ Error:
 */
 
 func (s *Sender) sendEvent(ctx context.Context, start time.Time, err error, task string, msg func(error) string, params EventParams) {
-	event := &storageapi.Event{
+	event := &keboola.Event{
 		ComponentID: componentID,
 		Message:     msg(err),
 		Type:        "info",
@@ -149,7 +149,7 @@ func (s *Sender) sendEvent(ctx context.Context, start time.Time, err error, task
 		}
 	}
 
-	event, err = storageapi.CreatEventRequest(event).Send(ctx, s.client)
+	event, err = s.client.CreateEventRequest(event).Send(ctx)
 	if err == nil {
 		s.logger.Debugf("Sent \"%s\" event id: \"%s\"", task, event.ID)
 	} else {

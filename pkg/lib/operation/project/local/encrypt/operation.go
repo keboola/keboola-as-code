@@ -3,7 +3,7 @@ package encrypt
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -18,10 +18,10 @@ type Options struct {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
+	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	ProjectID() int
-	EncryptionAPIClient() client.Sender
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -30,8 +30,8 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 
 	logger := d.Logger()
 
-	// Get Encryption API
-	encryptionAPIClient := d.EncryptionAPIClient()
+	// Get API
+	api := d.KeboolaProjectAPI()
 
 	// Get plan
 	plan := encrypt.NewPlan(projectState)
@@ -49,7 +49,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		}
 
 		// Invoke
-		if err := plan.Invoke(ctx, d.ProjectID(), logger, encryptionAPIClient, projectState.State()); err != nil {
+		if err := plan.Invoke(ctx, d.ProjectID(), logger, api, projectState.State()); err != nil {
 			return err
 		}
 

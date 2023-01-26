@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/assert"
 
@@ -43,10 +43,10 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 					Key: "foo", Value: "bar",
 				},
 				{
-					Key: "link to config", Value: storageapi.ConfigID("456"),
+					Key: "link to config", Value: keboola.ConfigID("456"),
 				},
 				{
-					Key: "link to row", Value: storageapi.RowID("789"),
+					Key: "link to row", Value: keboola.RowID("789"),
 				},
 			}),
 		},
@@ -93,10 +93,10 @@ func TestReplaceKeysMapper_OnRemoteChange(t *testing.T) {
 						Key: "foo", Value: "bar",
 					},
 					{
-						Key: "link to config", Value: storageapi.ConfigID("my-config"),
+						Key: "link to config", Value: keboola.ConfigID("my-config"),
 					},
 					{
-						Key: "link to row", Value: storageapi.RowID("my-row"),
+						Key: "link to row", Value: keboola.RowID("my-row"),
 					},
 				}),
 			},

@@ -9,8 +9,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	gzip "github.com/klauspost/pgzip"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -23,13 +22,13 @@ const (
 )
 
 type Manager struct {
-	clock     clock.Clock
-	client    client.Sender
-	transport http.RoundTripper
+	clock             clock.Clock
+	keboolaProjectAPI *keboola.API
+	transport         http.RoundTripper
 }
 
-func NewManager(clk clock.Clock, client client.Sender, transport http.RoundTripper) *Manager {
-	return &Manager{clock: clk, client: client, transport: transport}
+func NewManager(clk clock.Clock, client *keboola.API, transport http.RoundTripper) *Manager {
+	return &Manager{clock: clk, keboolaProjectAPI: client, transport: transport}
 }
 
 func (m *Manager) CreateFilesForReceiver(ctx context.Context, rb rollback.Builder, receiver *model.Receiver) error {
@@ -63,7 +62,7 @@ func (m *Manager) CreateFileForExport(ctx context.Context, rb rollback.Builder, 
 
 func (m *Manager) UploadSlice(ctx context.Context, s *model.Slice, recordsReader io.Reader) error {
 	// Create slice writer
-	sliceWr, err := storageapi.NewUploadSliceWriter(ctx, s.StorageResource, s.Filename(), storageapi.WithUploadTransport(m.transport))
+	sliceWr, err := keboola.NewUploadSliceWriter(ctx, s.StorageResource, s.Filename(), keboola.WithUploadTransport(m.transport))
 	if err != nil {
 		return err
 	}
@@ -93,12 +92,12 @@ func (m *Manager) UploadSlice(ctx context.Context, s *model.Slice, recordsReader
 	return err
 }
 
-func (m *Manager) UploadManifest(ctx context.Context, resource *storageapi.File, slices []model.Slice) error {
+func (m *Manager) UploadManifest(ctx context.Context, resource *keboola.File, slices []model.Slice) error {
 	sliceFiles := make([]string, 0)
 	for _, s := range slices {
 		sliceFiles = append(sliceFiles, s.Filename())
 	}
-	_, err := storageapi.UploadSlicedFileManifest(ctx, resource, sliceFiles)
+	_, err := keboola.UploadSlicedFileManifest(ctx, resource, sliceFiles)
 	return err
 }
 
@@ -108,20 +107,20 @@ func (m *Manager) createFile(ctx context.Context, rb rollback.Builder, mapping m
 	fileName := file.Filename()
 	slice := model.NewSlice(file.FileKey, now, mapping, 1, nil)
 
-	resource, err := storageapi.
-		CreateFileResourceRequest(&storageapi.File{
+	resource, err := m.keboolaProjectAPI.
+		CreateFileResourceRequest(&keboola.File{
 			Name:        fileName,
 			IsSliced:    true,
 			IsEncrypted: true,
 			Tags:        []string{fmt.Sprintf("buffer.exportID=%s", mapping.ExportID.String()), fmt.Sprintf("buffer.receiverID=%s", mapping.ReceiverID.String())},
 		}).
-		Send(ctx, m.client)
+		Send(ctx)
 	if err != nil {
 		return model.File{}, model.Slice{}, err
 	}
 
 	rb.Add(func(ctx context.Context) error {
-		_, err = storageapi.DeleteFileRequest(resource.ID).Send(ctx, m.client)
+		_, err = m.keboolaProjectAPI.DeleteFileRequest(resource.ID).Send(ctx)
 		return nil
 	})
 

@@ -3,8 +3,7 @@ package persist
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -17,17 +16,17 @@ type executor struct {
 	*Plan
 	*state.State
 	logger  log.Logger
-	tickets *storageapi.TicketProvider
+	tickets *keboola.TicketProvider
 	uow     *local.UnitOfWork
 	errors  errors.MultiError
 }
 
-func newExecutor(ctx context.Context, logger log.Logger, storageAPIClient client.Sender, projectState *state.State, plan *Plan) *executor {
+func newExecutor(ctx context.Context, logger log.Logger, keboolaProjectAPI *keboola.API, projectState *state.State, plan *Plan) *executor {
 	return &executor{
 		Plan:    plan,
 		State:   projectState,
 		logger:  logger,
-		tickets: storageapi.NewTicketProvider(ctx, storageAPIClient),
+		tickets: keboola.NewTicketProvider(ctx, keboolaProjectAPI),
 		uow:     projectState.LocalManager().NewUnitOfWork(context.Background()),
 		errors:  errors.NewMultiError(),
 	}
@@ -61,16 +60,16 @@ func (e *executor) invoke() error {
 
 func (e *executor) persistNewObject(action *newObjectAction) {
 	// Generate unique ID
-	e.tickets.Request(func(ticket *storageapi.Ticket) {
+	e.tickets.Request(func(ticket *keboola.Ticket) {
 		key := action.Key
 
 		// Set new id to the key
 		switch k := key.(type) {
 		case model.ConfigKey:
-			k.ID = storageapi.ConfigID(ticket.ID)
+			k.ID = keboola.ConfigID(ticket.ID)
 			key = k
 		case model.ConfigRowKey:
-			k.ID = storageapi.RowID(ticket.ID)
+			k.ID = keboola.RowID(ticket.ID)
 			key = k
 		default:
 			panic(errors.Errorf(`unexpected type "%s" of the persisted object "%s"`, key.Kind(), key.Desc()))

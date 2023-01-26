@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
@@ -177,9 +177,9 @@ func TestStore_ListUploadedSlices(t *testing.T) {
 			ExportKey:  exportKey,
 			RevisionID: 1,
 		},
-		TableID: storageapi.TableID{
-			BucketID: storageapi.BucketID{
-				Stage:      storageapi.BucketStageIn,
+		TableID: keboola.TableID{
+			BucketID: keboola.BucketID{
+				Stage:      keboola.BucketStageIn,
 				BucketName: "bucket",
 			},
 			TableName: "table",
@@ -189,9 +189,9 @@ func TestStore_ListUploadedSlices(t *testing.T) {
 			column.Body{Name: "body"},
 		},
 	}
-	slice1 := model.NewSlice(fileKey, time2, mapping, 1, &storageapi.File{})
+	slice1 := model.NewSlice(fileKey, time2, mapping, 1, &keboola.File{})
 	slice1.State = slicestate.Uploaded
-	slice2 := model.NewSlice(fileKey, time3, mapping, 2, &storageapi.File{})
+	slice2 := model.NewSlice(fileKey, time3, mapping, 2, &keboola.File{})
 	slice2.State = slicestate.Uploaded
 	input := []model.Slice{slice1, slice2}
 
@@ -282,9 +282,9 @@ func sliceForTest() model.Slice {
 			ExportKey:  exportKey,
 			RevisionID: 1,
 		},
-		TableID: storageapi.TableID{
-			BucketID: storageapi.BucketID{
-				Stage:      storageapi.BucketStageIn,
+		TableID: keboola.TableID{
+			BucketID: keboola.BucketID{
+				Stage:      keboola.BucketStageIn,
 				BucketName: "bucket",
 			},
 			TableName: "table",
@@ -294,5 +294,5 @@ func sliceForTest() model.Slice {
 			column.Body{Name: "body"},
 		},
 	}
-	return model.NewSlice(fileKey, time2, mapping, 1, &storageapi.File{})
+	return model.NewSlice(fileKey, time2, mapping, 1, &keboola.File{})
 }

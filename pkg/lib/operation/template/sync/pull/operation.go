@@ -3,7 +3,7 @@ package pull
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -21,11 +21,10 @@ type Options struct {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
-	Logger() log.Logger
 	Components() *model.ComponentsMap
-	StorageAPIClient() client.Sender
-	SchedulerAPIClient() client.Sender
+	KeboolaProjectAPI() *keboola.API
+	Logger() log.Logger
+	Tracer() trace.Tracer
 }
 
 func LoadStateOptions() loadState.Options {
