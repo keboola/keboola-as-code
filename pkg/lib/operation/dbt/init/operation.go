@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
@@ -23,12 +22,10 @@ type DbtInitOptions struct {
 }
 
 type dependencies interface {
-	JobsQueueAPIClient() client.Sender
+	KeboolaAPIClient() *keboola.API
+	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Tracer() trace.Tracer
-	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
-	SandboxesAPIClient() client.Sender
-	KeboolaAPIClient() client.Sender
 }
 
 func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
@@ -40,7 +37,7 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 		return err
 	}
 
-	branch, err := keboola.GetDefaultBranchRequest().Send(ctx, d.KeboolaAPIClient())
+	branch, err := d.KeboolaAPIClient().GetDefaultBranchRequest().Send(ctx)
 	if err != nil {
 		return err
 	}
@@ -50,9 +47,8 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 
 	d.Logger().Info(`Creating a new workspace, please wait.`)
 	// Create workspace
-	s, err := keboola.Create(
+	w, err := d.KeboolaAPIClient().CreateWorkspace(
 		ctx,
-		d.KeboolaAPIClient(),
 		branch.ID,
 		opts.WorkspaceName,
 		keboola.WorkspaceTypeSnowflake,
@@ -62,7 +58,7 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 	}
 	d.Logger().Infof(`Created the new workspace "%s".`, opts.WorkspaceName)
 
-	workspace := s.Sandbox
+	workspace := w.Workspace
 
 	// Generate profile
 	err = profile.Run(ctx, opts.TargetName, d)

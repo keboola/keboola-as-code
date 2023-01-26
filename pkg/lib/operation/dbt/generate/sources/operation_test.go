@@ -16,7 +16,7 @@ func TestTablesByBucketsMap(t *testing.T) {
 
 	mainBucket := &keboola.Bucket{
 		ID:             keboola.MustParseBucketID("out.c-main"),
-		Uri:            "/uri",
+		URI:            "/uri",
 		DisplayName:    "main",
 		Description:    "",
 		Created:        iso8601.Time{},
@@ -27,7 +27,7 @@ func TestTablesByBucketsMap(t *testing.T) {
 	}
 	secondBucket := &keboola.Bucket{
 		ID:             keboola.MustParseBucketID("out.c-second"),
-		Uri:            "/uri",
+		URI:            "/uri",
 		DisplayName:    "second",
 		Description:    "",
 		Created:        iso8601.Time{},
@@ -38,7 +38,7 @@ func TestTablesByBucketsMap(t *testing.T) {
 	}
 	mainTable1 := &keboola.Table{
 		ID:             keboola.MustParseTableID("out.c-main.products"),
-		Uri:            "/uri",
+		URI:            "/uri",
 		Name:           "products",
 		DisplayName:    "Products",
 		PrimaryKey:     nil,
@@ -54,7 +54,7 @@ func TestTablesByBucketsMap(t *testing.T) {
 	}
 	mainTable2 := &keboola.Table{
 		ID:             keboola.MustParseTableID("out.c-main.categories"),
-		Uri:            "/uri",
+		URI:            "/uri",
 		Name:           "categories",
 		DisplayName:    "Categories",
 		PrimaryKey:     nil,
@@ -70,7 +70,7 @@ func TestTablesByBucketsMap(t *testing.T) {
 	}
 	secTable1 := &keboola.Table{
 		ID:             keboola.MustParseTableID("out.c-second.products"),
-		Uri:            "/uri",
+		URI:            "/uri",
 		Name:           "products",
 		DisplayName:    "Products",
 		PrimaryKey:     nil,
@@ -86,7 +86,7 @@ func TestTablesByBucketsMap(t *testing.T) {
 	}
 	secTable2 := &keboola.Table{
 		ID:             keboola.MustParseTableID("out.c-second.third"),
-		Uri:            "/uri",
+		URI:            "/uri",
 		Name:           "third",
 		DisplayName:    "Third",
 		PrimaryKey:     nil,
@@ -114,7 +114,7 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 
 	mainBucket := &keboola.Bucket{
 		ID:             keboola.MustParseBucketID("out.c-main"),
-		Uri:            "/uri",
+		URI:            "/uri",
 		DisplayName:    "main",
 		Description:    "",
 		Created:        iso8601.Time{},
@@ -125,7 +125,7 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 	}
 	mainTable1 := &keboola.Table{
 		ID:             keboola.MustParseTableID("out.c-main.products"),
-		Uri:            "/uri",
+		URI:            "/uri",
 		Name:           "products",
 		DisplayName:    "Products",
 		PrimaryKey:     []string{"primary1", "primary2"},
@@ -141,7 +141,7 @@ func TestGenerateSourcesDefinition(t *testing.T) {
 	}
 	mainTable2 := &keboola.Table{
 		ID:             keboola.MustParseTableID("out.c-main.categories"),
-		Uri:            "/uri",
+		URI:            "/uri",
 		Name:           "categories",
 		DisplayName:    "Categories",
 		PrimaryKey:     nil,

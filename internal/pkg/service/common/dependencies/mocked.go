@@ -61,10 +61,8 @@ type MockedConfig struct {
 	storageAPIToken           keboola.Token
 	multipleTokenVerification bool
 
-	useRealAPIs         bool
-	storageAPIClient    client.Client
-	encryptionAPIClient client.Client
-	schedulerAPIClient  client.Client
+	useRealAPIs      bool
+	keboolaAPIClient *keboola.API
 }
 
 type MockedOption func(c *MockedConfig)
@@ -115,9 +113,7 @@ func WithTestProject(project *testproject.Project) MockedOption {
 		c.storageAPIToken = *project.StorageAPIToken()
 
 		c.useRealAPIs = true
-		c.storageAPIClient = project.StorageAPIClient()
-		c.encryptionAPIClient = project.EncryptionAPIClient()
-		c.schedulerAPIClient = project.SchedulerAPIClient()
+		c.keboolaAPIClient = project.KeboolaAPIClient()
 	}
 }
 
@@ -216,6 +212,13 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 			Index: keboola.Index{Services: c.services, Features: c.features}, Components: c.components,
 		}).Once(),
 	)
+	mockedHTTPTransport.RegisterResponder(
+		http.MethodGet,
+		fmt.Sprintf("https://%s/v2/storage/?exclude=components", c.storageAPIHost),
+		httpmock.NewJsonResponderOrPanic(200, &keboola.IndexComponents{
+			Index: keboola.Index{Services: c.services, Features: c.features}, Components: keboola.Components{},
+		}).Once(),
+	)
 
 	// Mocked token verification
 	verificationResponder := httpmock.NewJsonResponderOrPanic(200, c.storageAPIToken)
@@ -241,10 +244,8 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 
 	// Use real APIs
 	if c.useRealAPIs {
-		publicDeps.storageAPIClient = c.storageAPIClient
-		projectDeps.storageAPIClient = c.storageAPIClient
-		publicDeps.encryptionAPIClient = c.encryptionAPIClient
-		projectDeps.schedulerAPIClient = c.schedulerAPIClient
+		publicDeps.keboolaAPIClient = c.keboolaAPIClient
+		projectDeps.keboolaAPIClient = c.keboolaAPIClient
 		mockedHTTPTransport = nil
 		baseDeps.httpClient = client.NewTestClient()
 	}
@@ -364,4 +365,8 @@ func (v *mocked) EtcdClient() *etcd.Client {
 		v.etcdClient = etcdhelper.ClientForTestWithNamespace(v.t, v.config.etcdNamespace)
 	}
 	return v.etcdClient
+}
+
+func (v *mocked) KeboolaAPIClient() *keboola.API {
+	return v.project.keboolaAPIClient
 }

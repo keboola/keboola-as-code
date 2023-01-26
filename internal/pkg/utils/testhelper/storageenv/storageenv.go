@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
 
@@ -13,21 +12,21 @@ import (
 )
 
 type storageEnvTicketProvider struct {
-	ctx              context.Context
-	storageAPIClient client.Sender
-	envs             *env.Map
+	ctx       context.Context
+	apiClient *keboola.API
+	envs      *env.Map
 }
 
 // CreateStorageEnvTicketProvider allows you to generate new unique IDs via an ENV variable in the test.
-func CreateStorageEnvTicketProvider(ctx context.Context, storageAPIClient client.Sender, envs *env.Map) testhelper.EnvProvider {
-	return &storageEnvTicketProvider{ctx: ctx, storageAPIClient: storageAPIClient, envs: envs}
+func CreateStorageEnvTicketProvider(ctx context.Context, apiClient *keboola.API, envs *env.Map) testhelper.EnvProvider {
+	return &storageEnvTicketProvider{ctx: ctx, apiClient: apiClient, envs: envs}
 }
 
 func (p *storageEnvTicketProvider) MustGet(key string) string {
 	key = strings.Trim(key, "%")
 	nameRegexp := regexpcache.MustCompile(`^TEST_NEW_TICKET_\d+$`)
 	if _, found := p.envs.Lookup(key); !found && nameRegexp.MatchString(key) {
-		ticket, err := keboola.GenerateIDRequest().Send(p.ctx, p.storageAPIClient)
+		ticket, err := p.apiClient.GenerateIDRequest().Send(p.ctx)
 		if err != nil {
 			panic(err)
 		}

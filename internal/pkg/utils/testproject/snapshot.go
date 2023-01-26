@@ -28,10 +28,10 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	// Branches
 	grp.Go(func() error {
-		request := keboola.
+		request := p.keboolaAPIClient.
 			ListBranchesRequest().
-			WithOnSuccess(func(ctx context.Context, sender client.Sender, apiBranches *[]*keboola.Branch) error {
-				wg := client.NewWaitGroup(ctx, sender)
+			WithOnSuccess(func(ctx context.Context, apiBranches *[]*keboola.Branch) error {
+				wg := client.NewWaitGroup(ctx)
 				for _, apiBranch := range *apiBranches {
 					apiBranch := apiBranch
 					branch := &fixtures.BranchWithConfigs{Branch: &fixtures.Branch{}, Configs: make([]*fixtures.Config, 0)}
@@ -42,18 +42,18 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 					snapshot.Branches = append(snapshot.Branches, branch)
 
 					// Load branch metadata
-					wg.Send(keboola.
+					wg.Send(p.keboolaAPIClient.
 						ListBranchMetadataRequest(apiBranch.BranchKey).
-						WithOnSuccess(func(_ context.Context, _ client.Sender, metadata *keboola.MetadataDetails) error {
+						WithOnSuccess(func(_ context.Context, metadata *keboola.MetadataDetails) error {
 							branch.Metadata = metadata.ToMap()
 							return nil
 						}),
 					)
 
 					// Load configs and rows
-					wg.Send(keboola.
+					wg.Send(p.keboolaAPIClient.
 						ListConfigsAndRowsFrom(apiBranch.BranchKey).
-						WithOnSuccess(func(ctx context.Context, sender client.Sender, components *[]*keboola.ComponentWithConfigs) error {
+						WithOnSuccess(func(ctx context.Context, components *[]*keboola.ComponentWithConfigs) error {
 							for _, component := range *components {
 								for _, apiConfig := range component.Configs {
 									config := &fixtures.Config{Rows: make([]*fixtures.ConfigRow, 0)}
@@ -65,7 +65,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 									// Do not snapshot configs which are later joined into a different resource.
 									// The component must still exist in `configsMap` so it can be joined later.
-									if component.ID != keboola.WorkspaceComponent {
+									if component.ID != keboola.WorkspacesComponent {
 										branch.Configs = append(branch.Configs, config)
 									}
 
@@ -89,9 +89,9 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 					)
 
 					// Load configs metadata
-					wg.Send(keboola.
+					wg.Send(p.keboolaAPIClient.
 						ListConfigMetadataRequest(apiBranch.ID).
-						WithOnSuccess(func(_ context.Context, _ client.Sender, metadata *keboola.ConfigsMetadata) error {
+						WithOnSuccess(func(_ context.Context, metadata *keboola.ConfigsMetadata) error {
 							for _, item := range *metadata {
 								configKey := keboola.ConfigKey{BranchID: item.BranchID, ComponentID: item.ComponentID, ID: item.ConfigID}
 								value := item.Metadata.ToMap()
@@ -121,44 +121,44 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 				return nil
 			})
-		return request.SendOrErr(ctx, p.storageAPIClient)
+		return request.SendOrErr(ctx)
 	})
 
 	// Schedules for main branch
 	var schedules []*keboola.Schedule
 	grp.Go(func() error {
-		request := keboola.
+		request := p.keboolaAPIClient.
 			ListSchedulesRequest().
-			WithOnSuccess(func(_ context.Context, _ client.Sender, apiSchedules *[]*keboola.Schedule) error {
+			WithOnSuccess(func(_ context.Context, apiSchedules *[]*keboola.Schedule) error {
 				schedules = append(schedules, *apiSchedules...)
 				return nil
 			})
-		return request.SendOrErr(ctx, p.schedulerAPIClient)
+		return request.SendOrErr(ctx)
 	})
 
-	sandboxesMap := make(map[string]*keboola.Workspace)
+	workspacesMap := make(map[string]*keboola.Workspace)
 	grp.Go(func() error {
-		request := keboola.
-			ListInstancesRequest().
-			WithOnSuccess(func(ctx context.Context, sender client.Sender, result *[]*keboola.Workspace) error {
+		request := p.keboolaAPIClient.
+			ListWorkspaceInstancesRequest().
+			WithOnSuccess(func(ctx context.Context, result *[]*keboola.Workspace) error {
 				for _, sandbox := range *result {
-					sandboxesMap[sandbox.ID.String()] = sandbox
+					workspacesMap[sandbox.ID.String()] = sandbox
 				}
 				return nil
 			})
-		return request.SendOrErr(ctx, p.sandboxesAPIClient)
+		return request.SendOrErr(ctx)
 	})
 
 	// Storage Buckets
 	bucketsMap := map[keboola.BucketID]*fixtures.Bucket{}
 	grp.Go(func() error {
-		request := keboola.
+		request := p.keboolaAPIClient.
 			ListBucketsRequest().
-			WithOnSuccess(func(_ context.Context, _ client.Sender, apiBuckets *[]*keboola.Bucket) error {
+			WithOnSuccess(func(_ context.Context, apiBuckets *[]*keboola.Bucket) error {
 				for _, b := range *apiBuckets {
 					bucketsMap[b.ID] = &fixtures.Bucket{
 						ID:          b.ID,
-						URI:         b.Uri,
+						URI:         b.URI,
 						DisplayName: b.DisplayName,
 						Description: b.Description,
 						Tables:      make([]*fixtures.Table, 0),
@@ -166,19 +166,19 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 				}
 				return nil
 			})
-		return request.SendOrErr(ctx, p.storageAPIClient)
+		return request.SendOrErr(ctx)
 	})
 
 	// Storage Tables
 	var tables []*keboola.Table
 	grp.Go(func() error {
-		request := keboola.
+		request := p.keboolaAPIClient.
 			ListTablesRequest(keboola.WithBuckets(), keboola.WithColumns()).
-			WithOnSuccess(func(_ context.Context, _ client.Sender, apiTables *[]*keboola.Table) error {
+			WithOnSuccess(func(_ context.Context, apiTables *[]*keboola.Table) error {
 				tables = append(tables, *apiTables...)
 				return nil
 			})
-		return request.SendOrErr(ctx, p.storageAPIClient)
+		return request.SendOrErr(ctx)
 	})
 
 	// Storage Files
@@ -206,7 +206,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 		b := bucketsMap[t.ID.BucketID]
 		b.Tables = append(b.Tables, &fixtures.Table{
 			ID:          t.ID,
-			URI:         t.Uri,
+			URI:         t.URI,
 			Name:        t.Name,
 			DisplayName: t.DisplayName,
 			PrimaryKey:  t.PrimaryKey,
@@ -257,14 +257,14 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	// Join sandbox instances with config name
 	for _, config := range configsMap {
-		if config.ComponentID == keboola.WorkspaceComponent {
+		if config.ComponentID == keboola.WorkspacesComponent {
 			sandboxID, err := keboola.GetWorkspaceID(config.ToAPI().Config)
 			if err != nil {
 				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: "SANDBOX INSTANCE ID NOT SET"})
 				continue
 			}
 
-			if sandbox, found := sandboxesMap[sandboxID.String()]; found {
+			if sandbox, found := workspacesMap[sandboxID.String()]; found {
 				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: config.Name, Type: sandbox.Type, Size: sandbox.Size})
 			} else {
 				snapshot.Sandboxes = append(snapshot.Sandboxes, &fixtures.Sandbox{Name: "SANDBOX INSTANCE NOT FOUND"})

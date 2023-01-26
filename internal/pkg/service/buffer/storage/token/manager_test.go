@@ -25,7 +25,7 @@ func TestManager_CreateToken(t *testing.T) {
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
 	m := NewManager(d)
 	rb := rollback.New(d.Logger())
-	client := p.StorageAPIClient()
+	client := p.KeboolaAPIClient()
 
 	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(123), ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export"}
@@ -43,22 +43,22 @@ func TestManager_CreateToken(t *testing.T) {
 	}
 
 	// Create bucket
-	_, err := keboola.CreateBucketRequest(&keboola.Bucket{ID: tableID.BucketID}).Send(ctx, client)
+	_, err := client.CreateBucketRequest(&keboola.Bucket{ID: tableID.BucketID}).Send(ctx)
 	assert.NoError(t, err)
 
 	// Create token for the export
 	assert.NoError(t, m.CreateToken(ctx, rb, &export))
 
 	// Check token exists
-	_, err = keboola.VerifyTokenRequest(export.Token.Token).Send(ctx, client)
+	_, err = client.VerifyTokenRequest(export.Token.Token).Send(ctx)
 	assert.NoError(t, err)
 
 	// Test rollback
 	rb.Invoke(ctx)
 	assert.Empty(t, d.DebugLogger().WarnMessages())
-	_, err = keboola.VerifyTokenRequest(export.Token.Token).Send(ctx, client)
+	_, err = client.VerifyTokenRequest(export.Token.Token).Send(ctx)
 	assert.Error(t, err)
-	assert.Equal(t, "storage.tokenInvalid", err.(*keboola.Error).ErrCode)
+	assert.Equal(t, "storage.tokenInvalid", err.(*keboola.StorageError).ErrCode)
 }
 
 func TestManager_RefreshToken_TokenExists(t *testing.T) {
@@ -69,7 +69,7 @@ func TestManager_RefreshToken_TokenExists(t *testing.T) {
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
 	m := NewManager(d)
 	rb := rollback.New(d.Logger())
-	client := p.StorageAPIClient()
+	client := p.KeboolaAPIClient()
 
 	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(123), ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export"}
@@ -87,7 +87,7 @@ func TestManager_RefreshToken_TokenExists(t *testing.T) {
 	}
 
 	// Create bucket
-	_, err := keboola.CreateBucketRequest(&keboola.Bucket{ID: tableID.BucketID}).Send(ctx, client)
+	_, err := client.CreateBucketRequest(&keboola.Bucket{ID: tableID.BucketID}).Send(ctx)
 	assert.NoError(t, err)
 
 	// Create token for the export
@@ -98,7 +98,7 @@ func TestManager_RefreshToken_TokenExists(t *testing.T) {
 	assert.NoError(t, m.RefreshToken(ctx, rb, &export.Token))
 
 	// Token exists
-	_, err = keboola.VerifyTokenRequest(export.Token.Token).Send(ctx, client)
+	_, err = client.VerifyTokenRequest(export.Token.Token).Send(ctx)
 	assert.NoError(t, err)
 
 	// Token differs
@@ -107,7 +107,7 @@ func TestManager_RefreshToken_TokenExists(t *testing.T) {
 	// Test rollback - no operation
 	rb.Invoke(ctx)
 	assert.Empty(t, d.DebugLogger().WarnMessages())
-	_, err = keboola.VerifyTokenRequest(export.Token.Token).Send(ctx, client)
+	_, err = client.VerifyTokenRequest(export.Token.Token).Send(ctx)
 	assert.NoError(t, err)
 }
 
@@ -119,7 +119,7 @@ func TestManager_RefreshToken_TokenMissing(t *testing.T) {
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
 	m := NewManager(d)
 	rb := rollback.New(d.Logger())
-	client := p.StorageAPIClient()
+	client := p.KeboolaAPIClient()
 
 	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(123), ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export"}
@@ -133,20 +133,20 @@ func TestManager_RefreshToken_TokenMissing(t *testing.T) {
 	}
 
 	// Create bucket
-	_, err := keboola.CreateBucketRequest(&keboola.Bucket{ID: tableID.BucketID}).Send(ctx, client)
+	_, err := client.CreateBucketRequest(&keboola.Bucket{ID: tableID.BucketID}).Send(ctx)
 	assert.NoError(t, err)
 
 	// Refresh token
 	assert.NoError(t, m.RefreshToken(ctx, rb, &token))
 
 	// Token exists
-	_, err = keboola.VerifyTokenRequest(token.Token).Send(ctx, client)
+	_, err = client.VerifyTokenRequest(token.Token).Send(ctx)
 	assert.NoError(t, err)
 
 	// Test rollback
 	rb.Invoke(ctx)
 	assert.Empty(t, d.DebugLogger().WarnMessages())
-	_, err = keboola.VerifyTokenRequest(token.Token).Send(ctx, client)
+	_, err = client.VerifyTokenRequest(token.Token).Send(ctx)
 	assert.Error(t, err)
-	assert.Equal(t, "storage.tokenInvalid", err.(*keboola.Error).ErrCode)
+	assert.Equal(t, "storage.tokenInvalid", err.(*keboola.StorageError).ErrCode)
 }

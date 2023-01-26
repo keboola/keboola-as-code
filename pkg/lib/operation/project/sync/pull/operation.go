@@ -23,8 +23,8 @@ type Options struct {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
 	Logger() log.Logger
+	Tracer() trace.Tracer
 }
 
 func LoadStateOptions(force bool) loadState.Options {

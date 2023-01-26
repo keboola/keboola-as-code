@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/yaml.v3"
@@ -17,10 +16,10 @@ import (
 )
 
 type dependencies interface {
+	KeboolaAPIClient() *keboola.API
+	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Tracer() trace.Tracer
-	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
-	KeboolaAPIClient() client.Sender
 }
 
 func Run(ctx context.Context, targetName string, d dependencies) (err error) {
@@ -41,7 +40,7 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 		}
 	}
 
-	tablesList, err := keboola.ListTablesRequest(keboola.WithBuckets()).Send(ctx, d.KeboolaAPIClient())
+	tablesList, err := d.KeboolaAPIClient().ListTablesRequest(keboola.WithBuckets()).Send(ctx)
 	if err != nil {
 		return err
 	}

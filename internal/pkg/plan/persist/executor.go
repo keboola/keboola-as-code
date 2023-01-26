@@ -3,7 +3,6 @@ package persist
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -22,12 +21,12 @@ type executor struct {
 	errors  errors.MultiError
 }
 
-func newExecutor(ctx context.Context, logger log.Logger, storageAPIClient client.Sender, projectState *state.State, plan *Plan) *executor {
+func newExecutor(ctx context.Context, logger log.Logger, apiClient *keboola.API, projectState *state.State, plan *Plan) *executor {
 	return &executor{
 		Plan:    plan,
 		State:   projectState,
 		logger:  logger,
-		tickets: keboola.NewTicketProvider(ctx, storageAPIClient),
+		tickets: keboola.NewTicketProvider(ctx, apiClient),
 		uow:     projectState.LocalManager().NewUnitOfWork(context.Background()),
 		errors:  errors.NewMultiError(),
 	}

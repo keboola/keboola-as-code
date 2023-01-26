@@ -166,14 +166,14 @@ func (v *mocked) TokenManager() *token.Manager {
 
 func (v *mocked) TableManager() *table.Manager {
 	if v.tableManager == nil {
-		v.tableManager = table.NewManager(v.StorageAPIClient())
+		v.tableManager = table.NewManager(v.KeboolaAPIClient())
 	}
 	return v.tableManager
 }
 
 func (v *mocked) FileManager() *file.Manager {
 	if v.fileManager == nil {
-		v.fileManager = file.NewManager(v.Clock(), v.StorageAPIClient(), nil)
+		v.fileManager = file.NewManager(v.Clock(), v.KeboolaAPIClient(), nil)
 	}
 	return v.fileManager
 }

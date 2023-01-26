@@ -87,7 +87,7 @@ func RunTest(t *testing.T, testDir, workingDir string, binary string) {
 	// Get test project
 	project := testproject.GetTestProjectForTest(t)
 	envs := project.Env()
-	api := project.StorageAPIClient()
+	api := project.KeboolaAPIClient()
 
 	// Setup project state
 	projectStateFile := "initial-state.json"

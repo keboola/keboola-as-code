@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
@@ -23,9 +22,9 @@ type Options struct {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
+	KeboolaAPIClient() *keboola.API
 	Logger() log.Logger
-	KeboolaAPIClient() client.Sender
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -35,7 +34,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	logger := d.Logger()
 
 	// Get Storage API
-	storageAPIClient := d.KeboolaAPIClient()
+	apiClient := d.KeboolaAPIClient()
 
 	// Config key
 	key := model.ConfigKey{
@@ -44,7 +43,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	}
 
 	// Generate unique ID
-	ticketProvider := keboola.NewTicketProvider(ctx, storageAPIClient)
+	ticketProvider := keboola.NewTicketProvider(ctx, apiClient)
 	ticketProvider.Request(func(ticket *keboola.Ticket) {
 		key.ID = keboola.ConfigID(ticket.ID)
 	})

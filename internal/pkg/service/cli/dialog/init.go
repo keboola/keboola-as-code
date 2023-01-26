@@ -3,7 +3,7 @@ package dialog
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
@@ -17,7 +17,7 @@ import (
 
 type initDeps interface {
 	Options() *options.Options
-	KeboolaAPIClient() client.Sender
+	KeboolaAPIClient() *keboola.API
 }
 
 type hostAndTokenDependencies interface {

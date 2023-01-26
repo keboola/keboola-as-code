@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
@@ -13,19 +12,18 @@ import (
 )
 
 type dependencies interface {
-	Tracer() trace.Tracer
+	KeboolaAPIClient() *keboola.API
 	Logger() log.Logger
-	KeboolaAPIClient() client.Sender
-	SandboxesAPIClient() client.Sender
+	Tracer() trace.Tracer
 }
 
-func Run(ctx context.Context, d dependencies, configID keboola.WorkspaceConfigID) (err error) {
+func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.workspace.create")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()
 
-	branch, err := keboola.GetDefaultBranchRequest().Send(ctx, d.KeboolaAPIClient())
+	branch, err := d.KeboolaAPIClient().GetDefaultBranchRequest().Send(ctx)
 	if err != nil {
 		return err
 	}
@@ -33,36 +31,36 @@ func Run(ctx context.Context, d dependencies, configID keboola.WorkspaceConfigID
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	sandbox, err := keboola.GetWorkspace(ctx, d.KeboolaAPIClient(), d.SandboxesAPIClient(), branch.ID, configID)
+	workspace, err := d.KeboolaAPIClient().GetWorkspace(ctx, branch.ID, configID)
 	if err != nil {
 		return err
 	}
 
-	c, s := sandbox.Config, sandbox.Sandbox
+	c, w := workspace.Config, workspace.Workspace
 
-	logger.Infof("Workspace \"%s\"\nID: %s\nType: %s", c.Name, c.ID, s.Type)
-	if keboola.WorkspaceSupportsSizes(s.Type) {
-		logger.Infof(`Size: %s`, s.Size)
+	logger.Infof("Workspace \"%s\"\nID: %s\nType: %s", c.Name, c.ID, w.Type)
+	if keboola.WorkspaceSupportsSizes(w.Type) {
+		logger.Infof(`Size: %s`, w.Size)
 	}
 
-	switch s.Type {
+	switch w.Type {
 	case keboola.WorkspaceTypeSnowflake:
 		logger.Infof(
 			"Credentials:\n  Host: %s\n  User: %s\n  Password: %s\n  Database: %s\n  Schema: %s\n  Warehouse: %s",
-			s.Host,
-			s.User,
-			s.Password,
-			s.Details.Connection.Database,
-			s.Details.Connection.Schema,
-			s.Details.Connection.Warehouse,
+			w.Host,
+			w.User,
+			w.Password,
+			w.Details.Connection.Database,
+			w.Details.Connection.Schema,
+			w.Details.Connection.Warehouse,
 		)
 	case keboola.WorkspaceTypePython:
 		fallthrough
 	case keboola.WorkspaceTypeR:
 		logger.Infof(
 			"Credentials:\n  Host: %s\n  Password: %s",
-			s.Host,
-			s.Password,
+			w.Host,
+			w.Password,
 		)
 	}
 

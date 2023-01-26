@@ -4,23 +4,20 @@ import (
 	"context"
 	"time"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // public dependencies container implements Public interface.
 type public struct {
-	base                Base
-	storageAPIHost      string
-	storageAPIClient    client.Client
-	encryptionAPIClient client.Client
-	stackFeatures       keboola.FeaturesMap
-	stackServices       keboola.ServicesMap
-	components          Lazy[*model.ComponentsProvider]
+	base             Base
+	components       Lazy[*model.ComponentsProvider]
+	keboolaAPIClient *keboola.API
+	stackFeatures    keboola.FeaturesMap
+	stackServices    keboola.ServicesMap
+	storageAPIHost   string
 }
 
 type PublicDepsOption func(*publicDepsConfig)
@@ -53,23 +50,24 @@ func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 		o(&c)
 	}
 
+	baseHTTPClient := base.HTTPClient()
 	v := &public{
 		base:             base,
 		storageAPIHost:   storageAPIHost,
-		storageAPIClient: keboola.ClientWithHost(base.HTTPClient(), storageAPIHost),
+		keboolaAPIClient: keboola.NewAPI(storageAPIHost, keboola.WithClient(&baseHTTPClient)),
 	}
 
 	// Load API index (stack services, stack features, components)
 	var index *keboola.Index
 	if c.preloadComponents {
-		indexWithComponents, err := storageAPIIndexWithComponents(ctx, base, v.storageAPIClient)
+		indexWithComponents, err := storageAPIIndexWithComponents(ctx, base, v.keboolaAPIClient)
 		if err != nil {
 			return nil, err
 		}
-		v.components.Set(model.NewComponentsProvider(indexWithComponents, v.base.Logger(), v.StorageAPIPublicClient()))
+		v.components.Set(model.NewComponentsProvider(indexWithComponents, v.base.Logger(), v.KeboolaAPIPublicClient()))
 		index = &indexWithComponents.Index
 	} else {
-		idx, err := storageAPIIndex(ctx, base, v.storageAPIClient)
+		idx, err := storageAPIIndex(ctx, base, v.keboolaAPIClient)
 		if err != nil {
 			return nil, err
 		}
@@ -80,23 +78,16 @@ func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 	v.stackFeatures = index.Features.ToMap()
 	v.stackServices = index.Services.ToMap()
 
-	// Setup Encryption API
-	if encryptionHost, found := v.stackServices.URLByID("encryption"); !found {
-		return nil, errors.New("encryption host not found")
-	} else {
-		v.encryptionAPIClient = keboola.ClientWithHost(v.base.HTTPClient(), encryptionHost.String())
-	}
-
 	return v, nil
 }
 
-func storageAPIIndexWithComponents(ctx context.Context, d Base, storageAPIClient client.Client) (index *keboola.IndexComponents, err error) {
+func storageAPIIndexWithComponents(ctx context.Context, d Base, keboolaAPIClient *keboola.API) (index *keboola.IndexComponents, err error) {
 	startTime := time.Now()
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.dependencies.public.storageApiIndexWithComponents")
 	span.SetAttributes(telemetry.KeepSpan())
 	defer telemetry.EndSpan(span, &err)
 
-	index, err = keboola.IndexComponentsRequest().Send(ctx, storageAPIClient)
+	index, err = keboolaAPIClient.IndexComponentsRequest().Send(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -104,13 +95,13 @@ func storageAPIIndexWithComponents(ctx context.Context, d Base, storageAPIClient
 	return index, nil
 }
 
-func storageAPIIndex(ctx context.Context, d Base, storageAPIClient client.Client) (index *keboola.Index, err error) {
+func storageAPIIndex(ctx context.Context, d Base, apiClient *keboola.API) (index *keboola.Index, err error) {
 	startTime := time.Now()
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.dependencies.public.storageApiIndex")
 	span.SetAttributes(telemetry.KeepSpan())
 	defer telemetry.EndSpan(span, &err)
 
-	index, err = keboola.IndexRequest().Send(ctx, storageAPIClient)
+	index, err = apiClient.IndexRequest().Send(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -122,8 +113,8 @@ func (v *public) StorageAPIHost() string {
 	return v.storageAPIHost
 }
 
-func (v *public) StorageAPIPublicClient() client.Sender {
-	return v.storageAPIClient
+func (v *public) KeboolaAPIPublicClient() *keboola.API {
+	return v.keboolaAPIClient
 }
 
 func (v *public) StackFeatures() keboola.FeaturesMap {
@@ -140,14 +131,14 @@ func (v *public) Components() *model.ComponentsMap {
 
 func (v *public) ComponentsProvider() *model.ComponentsProvider {
 	return v.components.MustInitAndGet(func() *model.ComponentsProvider {
-		index, err := storageAPIIndexWithComponents(context.Background(), v.base, v.storageAPIClient)
+		index, err := storageAPIIndexWithComponents(context.Background(), v.base, v.keboolaAPIClient)
 		if err != nil {
 			panic(err)
 		}
-		return model.NewComponentsProvider(index, v.base.Logger(), v.StorageAPIPublicClient())
+		return model.NewComponentsProvider(index, v.base.Logger(), v.KeboolaAPIPublicClient())
 	})
 }
 
-func (v *public) EncryptionAPIClient() client.Sender {
-	return v.encryptionAPIClient
+func (v *public) KeboolaAPIClient() *keboola.API {
+	return v.keboolaAPIClient
 }

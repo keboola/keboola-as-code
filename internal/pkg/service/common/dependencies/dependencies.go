@@ -72,36 +72,32 @@ import (
 
 // Base contains basic dependencies.
 type Base interface {
-	Envs() env.Provider
-	Tracer() trace.Tracer
-	Logger() log.Logger
 	Clock() clock.Clock
+	Envs() env.Provider
 	HTTPClient() client.Client
+	Logger() log.Logger
+	Tracer() trace.Tracer
 }
 
 // Public dependencies are available from the Storage API and other sources without authentication / Storage API token.
 type Public interface {
-	StorageAPIHost() string
-	StorageAPIPublicClient() client.Sender
-	StackFeatures() keboola.FeaturesMap
-	StackServices() keboola.ServicesMap
 	Components() *model.ComponentsMap
 	ComponentsProvider() *model.ComponentsProvider
-	EncryptionAPIClient() client.Sender
+	KeboolaAPIPublicClient() *keboola.API
+	StackFeatures() keboola.FeaturesMap
+	StackServices() keboola.ServicesMap
+	StorageAPIHost() string
 }
 
 // Project dependencies require authentication / Storage API token.
 type Project interface {
+	KeboolaAPIClient() *keboola.API
+	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() int
 	ProjectName() string
 	ProjectFeatures() keboola.FeaturesMap
 	StorageAPIToken() keboola.Token
 	StorageAPITokenID() string
-	KeboolaAPIClient() client.Sender
-	SchedulerAPIClient() client.Sender
-	JobsQueueAPIClient() client.Sender
-	SandboxesAPIClient() client.Sender
-	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 }
 
 // Mocked dependencies for tests.
@@ -112,19 +108,19 @@ type Mocked interface {
 	Public
 	Project
 
-	EnvsMutable() *env.Map
-	Options() *options.Options
 	DebugLogger() log.DebugLogger
-	MockedState() *state.State
-	MockedProject(fs filesystem.Fs) *projectPkg.Project
-	MockedHTTPTransport() *httpmock.MockTransport
+	EnvsMutable() *env.Map
 	EtcdClient() *etcd.Client
+	MockedHTTPTransport() *httpmock.MockTransport
+	MockedProject(fs filesystem.Fs) *projectPkg.Project
+	MockedState() *state.State
+	Options() *options.Options
 
 	Process() *servicectx.Process
 
+	RequestClientIP() net.IP
 	RequestCtx() context.Context
-	RequestID() string
 	RequestHeader() http.Header
 	RequestHeaderMutable() http.Header
-	RequestClientIP() net.IP
+	RequestID() string
 }

@@ -17,8 +17,8 @@ import (
 const Timeout = 30 * time.Second
 
 type dependencies interface {
-	Tracer() trace.Tracer
 	Logger() log.Logger
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, def model.TemplateRepository, d dependencies) (repo *git.RemoteRepository, err error) {

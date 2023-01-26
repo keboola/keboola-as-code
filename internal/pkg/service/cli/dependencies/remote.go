@@ -31,7 +31,7 @@ func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand) (*remote
 	// Create common remote dependencies (includes API authentication)
 	projectDeps, err := dependencies.NewProjectDeps(ctx, cmdPublicDeps, cmdPublicDeps, token)
 	if err != nil {
-		var storageAPIErr *keboola.Error
+		var storageAPIErr *keboola.StorageError
 		if errors.As(err, &storageAPIErr) && storageAPIErr.ErrCode == "storage.tokenInvalid" {
 			return nil, ErrInvalidStorageAPIToken
 		}

@@ -30,8 +30,9 @@ func TestContext(t *testing.T) {
 	t.Parallel()
 
 	// Mocked ticket provider
-	storageAPIClient, httpTransport := client.NewMockedClient()
-	tickets := keboola.NewTicketProvider(context.Background(), storageAPIClient)
+	c, httpTransport := client.NewMockedClient()
+	api := keboola.NewAPI("https://connection.keboola.com", keboola.WithClient(&c))
+	tickets := keboola.NewTicketProvider(context.Background(), api)
 
 	// Mocked tickets
 	var ticketResponses []*http.Response
@@ -174,8 +175,9 @@ func TestComponentsFunctions(t *testing.T) {
 	t.Parallel()
 
 	// Mocked ticket provider
-	storageAPIClient, _ := client.NewMockedClient()
-	tickets := keboola.NewTicketProvider(context.Background(), storageAPIClient)
+	c, _ := client.NewMockedClient()
+	api := keboola.NewAPI("https://connection.keboola.com", keboola.WithClient(&c))
+	tickets := keboola.NewTicketProvider(context.Background(), api)
 	components := model.NewComponentsMap(keboola.Components{})
 	targetBranch := model.BranchKey{ID: 123}
 	inputsValues := template.InputsValues{}

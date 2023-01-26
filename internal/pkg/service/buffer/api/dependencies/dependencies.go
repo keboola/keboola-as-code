@@ -29,6 +29,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -234,4 +235,8 @@ func (v *forProjectRequest) TableManager() *table.Manager {
 
 func (v *forProjectRequest) FileManager() *file.Manager {
 	return v.fileManager
+}
+
+func (v *forProjectRequest) KeboolaAPIClient() *keboola.API {
+	return v.Project.KeboolaAPIClient()
 }

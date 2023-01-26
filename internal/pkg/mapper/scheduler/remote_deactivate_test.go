@@ -51,6 +51,19 @@ func TestSchedulerMapperRemoteDeactivate(t *testing.T) {
 
 	// Expected HTTP call
 	var httpRequest *http.Request
+	d.MockedHTTPTransport().RegisterResponder("GET", `/v2/storage/?exclude=components`,
+		func(req *http.Request) (*http.Response, error) {
+			return httpmock.NewStringResponse(200, `{
+				"services": [
+					{
+						"id": "scheduler",
+						"url": "https://scheduler.connection.test"
+					}
+				],
+				"features": []
+			}`), nil
+		},
+	)
 	d.MockedHTTPTransport().RegisterResponder(resty.MethodDelete, `=~configurations/456`,
 		func(req *http.Request) (*http.Response, error) {
 			httpRequest = req

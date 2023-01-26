@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
@@ -19,10 +18,10 @@ type GenerateEnvOptions struct {
 }
 
 type dependencies interface {
-	Logger() log.Logger
-	SandboxesAPIClient() client.Sender
-	Tracer() trace.Tracer
+	KeboolaAPIClient() *keboola.API
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
+	Logger() log.Logger
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, opts GenerateEnvOptions, d dependencies) (err error) {
@@ -34,7 +33,7 @@ func Run(ctx context.Context, opts GenerateEnvOptions, d dependencies) (err erro
 		return err
 	}
 
-	workspace, err := keboola.GetWorkspaceInstanceRequest(opts.Workspace.ID).Send(ctx, d.SandboxesAPIClient())
+	workspace, err := d.KeboolaAPIClient().GetWorkspaceInstanceRequest(opts.Workspace.ID).Send(ctx)
 	if err != nil {
 		return err
 	}

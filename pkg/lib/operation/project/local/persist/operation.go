@@ -3,7 +3,7 @@ package persist
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -21,9 +21,9 @@ type Options struct {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
+	KeboolaAPIClient() *keboola.API
 	Logger() log.Logger
-	KeboolaAPIClient() client.Sender
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
@@ -33,7 +33,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 	logger := d.Logger()
 
 	// Get Storage API
-	storageAPIClient := d.KeboolaAPIClient()
+	apiClient := d.KeboolaAPIClient()
 
 	// Get plan
 	plan, err := persist.NewPlan(projectState.State())
@@ -52,7 +52,7 @@ func Run(ctx context.Context, projectState *project.State, o Options, d dependen
 		}
 
 		// Invoke
-		if err := plan.Invoke(ctx, logger, storageAPIClient, projectState.State()); err != nil {
+		if err := plan.Invoke(ctx, logger, apiClient, projectState.State()); err != nil {
 			return errors.PrefixError(err, "cannot persist objects")
 		}
 

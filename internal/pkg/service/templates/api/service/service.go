@@ -505,27 +505,27 @@ func getTemplateVersion(d dependencies.ForProjectRequest, repoName, templateID, 
 }
 
 func getBranch(d dependencies.ForProjectRequest, branchDef string) (model.BranchKey, error) {
-	// Get Storage API
-	storageAPIClient := d.KeboolaAPIClient()
+	// Get Keboola API
+	apiClient := d.KeboolaAPIClient()
 
 	// Parse branch ID
 	var targetBranch model.BranchKey
 	if branchDef == "default" {
 		// Use main branch
-		if v, err := keboola.GetDefaultBranchRequest().Send(d.RequestCtx(), storageAPIClient); err != nil {
+		if v, err := apiClient.GetDefaultBranchRequest().Send(d.RequestCtx()); err != nil {
 			return targetBranch, err
 		} else {
 			targetBranch.ID = v.ID
 		}
-	} else if branchId, err := strconv.Atoi(branchDef); err != nil {
+	} else if branchID, err := strconv.Atoi(branchDef); err != nil {
 		// Branch ID must be numeric
 		return targetBranch, NewBadRequestError(errors.Errorf(`branch ID "%s" is not numeric`, branchDef))
-	} else if _, err := keboola.GetBranchRequest(keboola.BranchKey{ID: keboola.BranchID(branchId)}).Send(d.RequestCtx(), storageAPIClient); err != nil {
+	} else if _, err := apiClient.GetBranchRequest(keboola.BranchKey{ID: keboola.BranchID(branchID)}).Send(d.RequestCtx()); err != nil {
 		// Branch not found
-		return targetBranch, NewResourceNotFoundError("branch", strconv.Itoa(branchId), "project")
+		return targetBranch, NewResourceNotFoundError("branch", strconv.Itoa(branchID), "project")
 	} else {
 		// Branch found
-		targetBranch.ID = keboola.BranchID(branchId)
+		targetBranch.ID = keboola.BranchID(branchID)
 	}
 
 	return targetBranch, nil

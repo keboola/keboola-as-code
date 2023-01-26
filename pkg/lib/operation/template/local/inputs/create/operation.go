@@ -13,8 +13,8 @@ import (
 )
 
 type dependencies interface {
-	Tracer() trace.Tracer
 	Logger() log.Logger
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (inputs *template.StepsGroups, err error) {

@@ -78,7 +78,7 @@ func (p *Dialogs) askWorkspaceType(d createWorkspaceDeps) (string, error) {
 func (p *Dialogs) askWorkspaceSize(d createWorkspaceDeps) (string, error) {
 	if d.Options().IsSet("size") {
 		size := d.Options().GetString("size")
-		if !keboola.WorksoaceSizesMap()[size] {
+		if !keboola.WorkspaceSizesMap()[size] {
 			return "", errors.Errorf("invalid workspace size, must be one of: %s", strings.Join(keboola.WorkspaceSizesOrdered(), ", "))
 		}
 		return size, nil

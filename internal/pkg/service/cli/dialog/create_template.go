@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
 
@@ -20,10 +19,10 @@ import (
 )
 
 type createTmplDialogDeps interface {
+	Components() *model.ComponentsMap
+	KeboolaAPIClient() *keboola.API
 	Logger() log.Logger
 	Options() *options.Options
-	Components() *model.ComponentsMap
-	KeboolaAPIClient() client.Sender
 }
 
 type createTmplDialog struct {
@@ -59,11 +58,11 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 	}
 
 	// Get Storage API
-	storageAPIClient := d.deps.KeboolaAPIClient()
+	apiClient := d.deps.KeboolaAPIClient()
 
 	// Load branches
 	var allBranches []*model.Branch
-	if result, err := keboola.ListBranchesRequest().Send(ctx, storageAPIClient); err == nil {
+	if result, err := apiClient.ListBranchesRequest().Send(ctx); err == nil {
 		for _, apiBranch := range *result {
 			allBranches = append(allBranches, model.NewBranch(apiBranch))
 		}
@@ -111,7 +110,7 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 
 	// Load configs
 	branchKey := keboola.BranchKey{ID: d.selectedBranch.ID}
-	if result, err := keboola.ListConfigsAndRowsFrom(branchKey).Send(ctx, storageAPIClient); err == nil {
+	if result, err := apiClient.ListConfigsAndRowsFrom(branchKey).Send(ctx); err == nil {
 		for _, component := range *result {
 			for _, apiConfig := range component.Configs {
 				d.allConfigs = append(d.allConfigs, model.NewConfigWithRows(apiConfig))

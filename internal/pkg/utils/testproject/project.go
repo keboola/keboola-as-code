@@ -13,7 +13,6 @@ import (
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
-
 	"github.com/keboola/go-utils/pkg/testproject"
 	"github.com/spf13/cast"
 	"golang.org/x/sync/errgroup"
@@ -29,21 +28,17 @@ import (
 
 type Project struct {
 	*testproject.Project
-	initStartedAt       time.Time
-	ctx                 context.Context
-	storageAPIToken     *keboola.Token
-	storageAPIClient    client.Client
-	encryptionAPIClient client.Client
-	jobsQueueAPIClient  client.Client
-	schedulerAPIClient  client.Client
-	sandboxesAPIClient  client.Client
-	defaultBranch       *keboola.Branch
-	envs                *env.Map
-	mapsLock            *sync.Mutex
-	stateFilePath       string
-	branchesByID        map[keboola.BranchID]*keboola.Branch
-	branchesByName      map[string]*keboola.Branch
-	logFn               func(format string, a ...interface{})
+	initStartedAt    time.Time
+	ctx              context.Context
+	storageAPIToken  *keboola.Token
+	keboolaAPIClient *keboola.API
+	defaultBranch    *keboola.Branch
+	envs             *env.Map
+	mapsLock         *sync.Mutex
+	stateFilePath    string
+	branchesByID     map[keboola.BranchID]*keboola.Branch
+	branchesByName   map[string]*keboola.Branch
+	logFn            func(format string, a ...interface{})
 }
 
 type UnlockFn func()
@@ -86,54 +81,8 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	}
 
 	// Init storage API
-	p.storageAPIClient = keboola.ClientWithHostAndToken(client.NewTestClient(), p.StorageAPIHost(), p.Project.StorageAPIToken())
-
-	// Load services
-	index, err := keboola.IndexRequest().Send(p.ctx, p.storageAPIClient)
-	if err != nil {
-		cleanupFn()
-		return nil, nil, errors.Errorf("cannot get services: %w", err)
-	}
-	services := index.Services.ToMap()
-
-	// Get encryption service host
-	encryptionHost, found := services.URLByID("encryption")
-	if !found {
-		cleanupFn()
-		return nil, nil, errors.New("encryption service not found")
-	}
-
-	// Init Encryption API
-	p.encryptionAPIClient = keboola.ClientWithHost(client.NewTestClient(), encryptionHost.String())
-
-	// Get encryption service host
-	queueHost, found := services.URLByID("queue")
-	if !found {
-		cleanupFn()
-		return nil, nil, errors.New("queue service not found")
-	}
-
-	// Init Queue API
-	p.jobsQueueAPIClient = keboola.ClientWithHostAndToken(client.NewTestClient(), queueHost.String(), p.Project.StorageAPIToken())
-
-	// Get scheduler service host
-	schedulerHost, found := services.URLByID("scheduler")
-	if !found {
-		cleanupFn()
-		return nil, nil, errors.New("missing scheduler service")
-	}
-
-	// Init Scheduler API
-	p.schedulerAPIClient = keboola.ClientWithHostAndToken(client.NewTestClient(), schedulerHost.String(), p.Project.StorageAPIToken())
-
-	// Get sandboxes service host
-	sandboxesHost, found := services.URLByID("sandboxes")
-	if !found {
-		cleanupFn()
-		return nil, nil, errors.New("missing sandboxes service")
-	}
-
-	p.sandboxesAPIClient = keboola.ClientWithHostAndToken(client.NewTestClient(), sandboxesHost.String(), p.Project.StorageAPIToken())
+	httpClient := client.NewTestClient()
+	p.keboolaAPIClient = keboola.NewAPI(p.StorageAPIHost(), keboola.WithClient(&httpClient), keboola.WithToken(p.Project.StorageAPIToken()))
 
 	// Check token/project ID
 	errs := errors.NewMultiError()
@@ -141,7 +90,7 @@ func GetTestProject(envs *env.Map) (*Project, UnlockFn, error) {
 	initWg.Add(1)
 	go func() {
 		defer initWg.Done()
-		if token, err := keboola.VerifyTokenRequest(p.Project.StorageAPIToken()).Send(p.ctx, p.storageAPIClient); err != nil {
+		if token, err := p.keboolaAPIClient.VerifyTokenRequest(p.Project.StorageAPIToken()).Send(p.ctx); err != nil {
 			errs.Append(errors.Errorf("invalid token for project %d: %w", p.ID(), err))
 		} else if p.ID() != token.ProjectID() {
 			errs.Append(errors.New("test project id and token project id are different"))
@@ -178,7 +127,7 @@ func (p *Project) Env() *env.Map {
 
 func (p *Project) DefaultBranch() (*keboola.Branch, error) {
 	if p.defaultBranch == nil {
-		if v, err := keboola.GetDefaultBranchRequest().Send(p.ctx, p.storageAPIClient); err == nil {
+		if v, err := p.keboolaAPIClient.GetDefaultBranchRequest().Send(p.ctx); err == nil {
 			p.defaultBranch = v
 		} else {
 			return nil, errors.Errorf("cannot get default branch: %w", err)
@@ -191,24 +140,8 @@ func (p *Project) StorageAPIToken() *keboola.Token {
 	return p.storageAPIToken
 }
 
-func (p *Project) StorageAPIClient() client.Client {
-	return p.storageAPIClient
-}
-
-func (p *Project) EncryptionAPIClient() client.Client {
-	return p.encryptionAPIClient
-}
-
-func (p *Project) JobsQueueAPIClient() client.Client {
-	return p.jobsQueueAPIClient
-}
-
-func (p *Project) SchedulerAPIClient() client.Client {
-	return p.schedulerAPIClient
-}
-
-func (p *Project) SandboxesAPIClient() client.Client {
-	return p.sandboxesAPIClient
+func (p *Project) KeboolaAPIClient() *keboola.API {
+	return p.keboolaAPIClient
 }
 
 // Clean method deletes all project branches (except default), all configurations, all schedules, and all sandboxes.
@@ -220,11 +153,11 @@ func (p *Project) Clean() error {
 	defer cancel()
 
 	// Clean whole project - configs, buckets, schedules, sandbox instances, etc.
-	if err := keboola.CleanProject(ctx, p.storageAPIClient, p.schedulerAPIClient, p.jobsQueueAPIClient, p.sandboxesAPIClient); err != nil {
+	if err := keboola.CleanProject(ctx, p.keboolaAPIClient); err != nil {
 		return errors.Errorf(`cannot clean project "%d": %w`, p.ID(), err)
 	}
 
-	defaultBranch, err := keboola.GetDefaultBranchRequest().Send(ctx, p.storageAPIClient)
+	defaultBranch, err := p.keboolaAPIClient.GetDefaultBranchRequest().Send(ctx)
 	if err != nil {
 		return errors.Errorf(`cannot fetch default branch in project "%d": %w`, p.ID(), err)
 	}
@@ -310,7 +243,7 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) error {
 	createBranchSem := semaphore.NewWeighted(1)
 
 	// Create branches
-	grp := client.NewWaitGroup(ctx, p.storageAPIClient)
+	grp := client.NewWaitGroup(ctx)
 	for _, fixture := range branches {
 		fixture := fixture
 		grp.Send(p.createBranchRequest(fixture, createBranchSem))
@@ -328,24 +261,24 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 	defer cancelFn()
 
 	// Create buckets and tables
-	grp := client.NewWaitGroup(ctx, p.storageAPIClient)
+	grp := client.NewWaitGroup(ctx)
 	for _, b := range buckets {
-		req := keboola.
+		req := p.keboolaAPIClient.
 			CreateBucketRequest(&keboola.Bucket{
 				ID:          b.ID,
 				Description: b.Description,
 			}).
-			WithBefore(func(ctx context.Context, sender client.Sender) error {
+			WithBefore(func(ctx context.Context) error {
 				p.logf("▶ Bucket \"%s.c-%s\"...", b.ID.Stage, b.ID.BucketName)
 				return nil
 			}).
-			WithOnComplete(func(ctx context.Context, sender client.Sender, apiBucket *keboola.Bucket, err error) error {
+			WithOnComplete(func(ctx context.Context, apiBucket *keboola.Bucket, err error) error {
 				if err == nil {
 					p.logf("✔️ Bucket \"%s\".", apiBucket.ID)
 
 					for _, t := range b.Tables {
 						p.logf("▶ Table \"%s\"...", t.Name)
-						_, err = keboola.CreateTable(ctx, sender, t.ID, t.Columns, keboola.WithPrimaryKey(t.PrimaryKey))
+						_, err = p.keboolaAPIClient.CreateTable(ctx, t.ID, t.Columns, keboola.WithPrimaryKey(t.PrimaryKey))
 						if err != nil {
 							return err
 						}
@@ -386,9 +319,8 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 			}
 
 			p.logf("▶ Sandbox \"%s\"...", fixture.Name)
-			sandbox, err := keboola.CreateWorkspace(
+			sandbox, err := p.keboolaAPIClient.CreateWorkspace(
 				ctx,
-				p.storageAPIClient,
 				defaultBranchID,
 				fixture.Name,
 				fixture.Type,
@@ -419,15 +351,15 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 		// Reset default branch description (default branch cannot be created/deleted)
 		request = client.NewNoOperationAPIRequest(p.defaultBranch) // default branch already exists
 		if p.defaultBranch.Description != fixture.Description {
-			request = request.WithOnSuccess(func(ctx context.Context, sender client.Sender, branch *keboola.Branch) error {
+			request = request.WithOnSuccess(func(ctx context.Context, branch *keboola.Branch) error {
 				branch.Description = fixture.Description
-				return keboola.
+				return p.keboolaAPIClient.
 					UpdateBranchRequest(branch, []string{"description"}).
-					WithBefore(func(ctx context.Context, sender client.Sender) error {
+					WithBefore(func(ctx context.Context) error {
 						p.logf("▶ Default branch description ...")
 						return nil
 					}).
-					WithOnComplete(func(ctx context.Context, sender client.Sender, _ *keboola.Branch, err error) error {
+					WithOnComplete(func(ctx context.Context, _ *keboola.Branch, err error) error {
 						if err == nil {
 							p.logf("✔️ Default branch description.")
 							return nil
@@ -435,18 +367,18 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 							return errors.Errorf("cannot set default branch description: %w", err)
 						}
 					}).
-					SendOrErr(ctx, sender)
+					SendOrErr(ctx)
 			})
 		}
 	} else {
 		// Create a new branch
-		request = keboola.
+		request = p.keboolaAPIClient.
 			CreateBranchRequest(fixture.ToAPI()).
-			WithBefore(func(ctx context.Context, _ client.Sender) error {
+			WithBefore(func(ctx context.Context) error {
 				p.logf("▶ Branch \"%s\"...", fixture.Name)
 				return createBranchSem.Acquire(ctx, 1)
 			}).
-			WithOnComplete(func(ctx context.Context, sender client.Sender, branch *keboola.Branch, err error) error {
+			WithOnComplete(func(ctx context.Context, branch *keboola.Branch, err error) error {
 				createBranchSem.Release(1)
 				if err == nil {
 					p.logf("✔️ Branch \"%s\"(%s).", fixture.Name, branch.ID)
@@ -458,20 +390,20 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 	}
 
 	// Branch is ready
-	request = request.WithOnSuccess(func(ctx context.Context, sender client.Sender, branch *keboola.Branch) error {
+	request = request.WithOnSuccess(func(ctx context.Context, branch *keboola.Branch) error {
 		p.addBranch(branch)
 		return nil
 	})
 
 	// Set branch metadata
-	request = request.WithOnSuccess(func(ctx context.Context, sender client.Sender, branch *keboola.Branch) error {
-		return keboola.
+	request = request.WithOnSuccess(func(ctx context.Context, branch *keboola.Branch) error {
+		return p.keboolaAPIClient.
 			AppendBranchMetadataRequest(branch.BranchKey, fixture.Metadata).
-			WithBefore(func(ctx context.Context, sender client.Sender) error {
+			WithBefore(func(ctx context.Context) error {
 				p.logf("▶ Branch metadata \"%s\"...", fixture.Name)
 				return nil
 			}).
-			WithOnComplete(func(ctx context.Context, sender client.Sender, _ client.NoResult, err error) error {
+			WithOnComplete(func(ctx context.Context, _ client.NoResult, err error) error {
 				if err == nil {
 					p.logf("✔️ Branch metadata \"%s\".", fixture.Name)
 					return nil
@@ -479,7 +411,7 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 					return errors.Errorf(`cannot set branch metadata: %w`, err)
 				}
 			}).
-			SendOrErr(ctx, sender)
+			SendOrErr(ctx)
 	})
 	return request
 }
@@ -488,7 +420,7 @@ func (p *Project) createConfigsInDefaultBranch(configs []string) error {
 	ctx, cancelFn := context.WithCancel(p.ctx)
 	defer cancelFn()
 
-	tickets := keboola.NewTicketProvider(ctx, p.storageAPIClient)
+	tickets := keboola.NewTicketProvider(ctx, p.keboolaAPIClient)
 	grp, ctx := errgroup.WithContext(ctx) // group for all parallel requests
 	sendReady := make(chan struct{})      // block requests until IDs and ENVs will be ready
 
@@ -513,7 +445,7 @@ func (p *Project) createConfigs(branches []*fixtures.BranchState, additionalEnvs
 	ctx, cancelFn := context.WithCancel(p.ctx)
 	defer cancelFn()
 
-	tickets := keboola.NewTicketProvider(ctx, p.storageAPIClient)
+	tickets := keboola.NewTicketProvider(ctx, p.keboolaAPIClient)
 	grp, ctx := errgroup.WithContext(ctx) // group for all parallel requests
 	sendReady := make(chan struct{})      // block requests until IDs and ENVs will be ready
 
@@ -593,31 +525,31 @@ func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, sendR
 			}
 
 			// Send request
-			_, err := keboola.
+			_, err := p.keboolaAPIClient.
 				CreateConfigRequest(configWithRows).
-				WithBefore(func(ctx context.Context, sender client.Sender) error {
+				WithBefore(func(ctx context.Context) error {
 					p.logf("▶ Config \"%s/%s/%s\"...", branch.Name, configFixture.ComponentID, configFixture.Name)
 					return nil
 				}).
-				WithOnSuccess(func(ctx context.Context, sender client.Sender, _ *keboola.ConfigWithRows) error {
+				WithOnSuccess(func(ctx context.Context, _ *keboola.ConfigWithRows) error {
 					p.logf("✔️️ Config \"%s/%s/%s\"...", branch.Name, configFixture.ComponentID, configFixture.Name)
 					if len(configFixture.Metadata) > 0 {
-						_, err := keboola.
+						_, err := p.keboolaAPIClient.
 							AppendConfigMetadataRequest(configWithRows.ConfigKey, configFixture.Metadata).
-							WithBefore(func(ctx context.Context, sender client.Sender) error {
+							WithBefore(func(ctx context.Context) error {
 								p.logf("▶ Config metadata \"%s\"...", configDesc)
 								return nil
 							}).
-							WithOnSuccess(func(_ context.Context, _ client.Sender, _ client.NoResult) error {
+							WithOnSuccess(func(_ context.Context, _ client.NoResult) error {
 								p.logf("✔️️ Config metadata \"%s\".", configDesc)
 								return nil
 							}).
-							Send(ctx, sender)
+							Send(ctx)
 						return err
 					}
 					return nil
 				}).
-				Send(ctx, p.storageAPIClient)
+				Send(ctx)
 			return err
 		})
 	}

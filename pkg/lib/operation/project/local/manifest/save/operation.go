@@ -12,8 +12,8 @@ import (
 )
 
 type Dependencies interface {
-	Tracer() trace.Tracer
 	Logger() log.Logger
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, m *project.Manifest, fs filesystem.Fs, d Dependencies) (changed bool, err error) {

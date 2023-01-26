@@ -31,7 +31,7 @@ func TestManager_CreateFile(t *testing.T) {
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithClock(clk), dependencies.WithTestProject(p))
 	m := NewManager(d.Clock(), d.KeboolaAPIClient(), nil)
 	rb := rollback.New(d.Logger())
-	client := p.StorageAPIClient()
+	client := p.KeboolaAPIClient()
 
 	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(123), ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export"}
@@ -54,13 +54,13 @@ func TestManager_CreateFile(t *testing.T) {
 	assert.Equal(t, "my_receiver_my_export_20060101080405", export.OpenedFile.StorageResource.Name)
 
 	// Check file exists
-	_, err := keboola.GetFileRequest(export.OpenedFile.StorageResource.ID).Send(ctx, client)
+	_, err := client.GetFileRequest(export.OpenedFile.StorageResource.ID).Send(ctx)
 	assert.NoError(t, err)
 
 	// Test rollback
 	rb.Invoke(ctx)
 	assert.Empty(t, d.DebugLogger().WarnMessages())
-	_, err = keboola.GetFileRequest(export.OpenedFile.StorageResource.ID).Send(ctx, client)
+	_, err = client.GetFileRequest(export.OpenedFile.StorageResource.ID).Send(ctx)
 	assert.Error(t, err)
-	assert.Equal(t, "storage.files.notFound", err.(*keboola.Error).ErrCode)
+	assert.Equal(t, "storage.files.notFound", err.(*keboola.StorageError).ErrCode)
 }

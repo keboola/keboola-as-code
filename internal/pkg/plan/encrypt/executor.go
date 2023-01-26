@@ -16,29 +16,29 @@ import (
 
 type executor struct {
 	*Plan
-	ctx                 context.Context
-	projectID           int
-	logger              log.Logger
-	encryptionAPIClient client.Sender
-	uow                 *local.UnitOfWork
-	errors              errors.MultiError
+	ctx       context.Context
+	projectID int
+	logger    log.Logger
+	apiClient *keboola.API
+	uow       *local.UnitOfWork
+	errors    errors.MultiError
 }
 
-func newExecutor(ctx context.Context, projectID int, logger log.Logger, encryptionAPIClient client.Sender, state *state.State, plan *Plan) *executor {
+func newExecutor(ctx context.Context, projectID int, logger log.Logger, apiClient *keboola.API, state *state.State, plan *Plan) *executor {
 	return &executor{
-		Plan:                plan,
-		ctx:                 ctx,
-		projectID:           projectID,
-		logger:              logger,
-		encryptionAPIClient: encryptionAPIClient,
-		uow:                 state.LocalManager().NewUnitOfWork(ctx),
-		errors:              errors.NewMultiError(),
+		Plan:      plan,
+		ctx:       ctx,
+		projectID: projectID,
+		logger:    logger,
+		apiClient: apiClient,
+		uow:       state.LocalManager().NewUnitOfWork(ctx),
+		errors:    errors.NewMultiError(),
 	}
 }
 
 func (e *executor) invoke() error {
 	// Encrypt values
-	wg := client.NewWaitGroup(e.ctx, e.encryptionAPIClient)
+	wg := client.NewWaitGroup(e.ctx)
 	for _, action := range e.actions {
 		wg.Send(e.encryptRequest(action))
 	}
@@ -67,9 +67,9 @@ func (e *executor) encryptRequest(action *action) client.Sendable {
 	}
 
 	// Prepare request
-	return keboola.
+	return e.apiClient.
 		EncryptRequest(e.projectID, object.GetComponentID(), data).
-		WithOnSuccess(func(ctx context.Context, sender client.Sender, results *map[string]string) error {
+		WithOnSuccess(func(ctx context.Context, results *map[string]string) error {
 			for key, encrypted := range *results {
 				path := keyToPath[key]
 				if err := object.GetContent().SetNestedPath(path, encrypted); err != nil {

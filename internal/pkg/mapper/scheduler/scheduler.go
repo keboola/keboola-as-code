@@ -1,13 +1,13 @@
 package scheduler
 
 import (
-	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
 
 type dependencies interface {
-	SchedulerAPIClient() client.Sender
+	KeboolaAPIClient() *keboola.API
 }
 
 type schedulerMapper struct {

@@ -6,7 +6,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
@@ -50,16 +49,14 @@ func (v newObjects) Log(logger log.Logger, tmpl *template.Template) {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
-	Logger() log.Logger
-	ProjectID() int
+	Components() *model.ComponentsMap
+	KeboolaAPIClient() *keboola.API
 	StorageAPIHost() string
 	StorageAPITokenID() string
-	KeboolaAPIClient() client.Sender
-	SchedulerAPIClient() client.Sender
-	Components() *model.ComponentsMap
-	EncryptionAPIClient() client.Sender
+	Logger() log.Logger
 	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
+	ProjectID() int
+	Tracer() trace.Tracer
 }
 
 func LoadTemplateOptions() loadState.Options {

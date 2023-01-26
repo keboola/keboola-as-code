@@ -67,7 +67,7 @@ func (p *Dialogs) AskGenerateEnv(d targetNameDialogDeps, allWorkspaces []*kebool
 
 	return env.GenerateEnvOptions{
 		TargetName: targetName,
-		Workspace:  workspace.Sandbox,
+		Workspace:  workspace.Workspace,
 	}, nil
 }
 

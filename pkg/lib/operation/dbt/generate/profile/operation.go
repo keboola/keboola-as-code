@@ -15,9 +15,9 @@ import (
 )
 
 type dependencies interface {
+	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
 	Tracer() trace.Tracer
-	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }
 
 const profilePath = "profiles.yml"

@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
 
@@ -20,15 +19,15 @@ const ComponentsUpdateTimeout = 20 * time.Second
 type ComponentsProvider struct {
 	updateLock       *sync.RWMutex
 	logger           log.Logger
-	storageAPIClient client.Sender
+	keboolaAPIClient *keboola.API
 	value            *ComponentsMap
 }
 
-func NewComponentsProvider(index *keboola.IndexComponents, logger log.Logger, storageAPIClient client.Sender) *ComponentsProvider {
+func NewComponentsProvider(index *keboola.IndexComponents, logger log.Logger, keboolaAPIClient *keboola.API) *ComponentsProvider {
 	return &ComponentsProvider{
 		updateLock:       &sync.RWMutex{},
 		logger:           logger,
-		storageAPIClient: storageAPIClient,
+		keboolaAPIClient: keboolaAPIClient,
 		value:            NewComponentsMap(index.Components),
 	}
 }
@@ -68,7 +67,7 @@ func (p *ComponentsProvider) Update(ctx context.Context) error {
 }
 
 func (p *ComponentsProvider) index(ctx context.Context) (*keboola.IndexComponents, error) {
-	return keboola.IndexComponentsRequest().Send(ctx, p.storageAPIClient)
+	return p.keboolaAPIClient.IndexComponentsRequest().Send(ctx)
 }
 
 type (

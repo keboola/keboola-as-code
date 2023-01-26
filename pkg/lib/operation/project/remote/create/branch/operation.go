@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
@@ -19,9 +18,9 @@ type Options struct {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
+	KeboolaAPIClient() *keboola.API
 	Logger() log.Logger
-	KeboolaAPIClient() client.Sender
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (branch *keboola.Branch, err error) {
@@ -32,7 +31,7 @@ func Run(ctx context.Context, o Options, d dependencies) (branch *keboola.Branch
 
 	// Create branch by API
 	branch = &keboola.Branch{Name: o.Name}
-	if _, err := keboola.CreateBranchRequest(branch).Send(ctx, d.KeboolaAPIClient()); err != nil {
+	if _, err := d.KeboolaAPIClient().CreateBranchRequest(branch).Send(ctx); err != nil {
 		return nil, errors.Errorf(`cannot create branch: %w`, err)
 	}
 

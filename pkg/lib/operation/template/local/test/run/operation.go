@@ -33,8 +33,8 @@ type Options struct {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
 	Logger() log.Logger
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies) (err error) {
@@ -237,15 +237,15 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	}
 
 	// Run the mainConfig job
-	queueClient := testPrj.JobsQueueAPIClient()
-	job, err := keboola.CreateJobRequest(tmplInst.MainConfig.ComponentID, tmplInst.MainConfig.ConfigID).Send(ctx, queueClient)
+	apiClient := testPrj.KeboolaAPIClient()
+	job, err := apiClient.CreateQueueJobRequest(tmplInst.MainConfig.ComponentID, tmplInst.MainConfig.ConfigID).Send(ctx)
 	if err != nil {
 		return err
 	}
 
 	timeoutCtx, cancelFn := context.WithTimeout(ctx, time.Minute*10)
 	defer cancelFn()
-	return keboola.WaitForJob(timeoutCtx, queueClient, job)
+	return apiClient.WaitForQueueJob(timeoutCtx, job)
 }
 
 func reloadPrjState(ctx context.Context, prjState *project.State) error {

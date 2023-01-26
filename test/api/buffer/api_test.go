@@ -100,7 +100,7 @@ func RunE2ETest(t *testing.T, testDir, workingDir string, binary string) {
 	project := testproject.GetTestProjectForTest(t)
 	envs := project.Env()
 	envs.Set("TEST_KBC_PROJECT_ID_8DIG", fmt.Sprintf("%08d", cast.ToInt(envs.Get("TEST_KBC_PROJECT_ID"))))
-	api := project.StorageAPIClient()
+	api := project.KeboolaAPIClient()
 
 	// Setup project state
 	projectStateFile := "initial-state.json"

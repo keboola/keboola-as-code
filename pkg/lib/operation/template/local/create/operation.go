@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -34,13 +34,12 @@ type Options struct {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
-	Logger() log.Logger
 	Components() *model.ComponentsMap
-	KeboolaAPIClient() client.Sender
-	SchedulerAPIClient() client.Sender
-	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
+	KeboolaAPIClient() *keboola.API
 	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)
+	Logger() log.Logger
+	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
+	Tracer() trace.Tracer
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {

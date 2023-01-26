@@ -33,19 +33,19 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			branch, err := keboola.GetDefaultBranchRequest().Send(d.CommandCtx(), d.KeboolaAPIClient())
+			branch, err := d.KeboolaAPIClient().GetDefaultBranchRequest().Send(d.CommandCtx())
 			if err != nil {
 				return errors.Errorf("cannot find default branch: %w", err)
 			}
 
 			// Get all Snowflake workspaces for the dialog
-			allWorkspaces, err := keboola.ListWorkspaces(d.CommandCtx(), d.KeboolaAPIClient(), d.SandboxesAPIClient(), branch.ID)
+			allWorkspaces, err := d.KeboolaAPIClient().ListWorkspaces(d.CommandCtx(), branch.ID)
 			if err != nil {
 				return err
 			}
 			snowflakeWorkspaces := make([]*keboola.WorkspaceWithConfig, 0)
 			for _, w := range allWorkspaces {
-				if w.Sandbox.Type == keboola.WorkspaceTypeSnowflake {
+				if w.Workspace.Type == keboola.WorkspaceTypeSnowflake {
 					snowflakeWorkspaces = append(snowflakeWorkspaces, w)
 				}
 			}
