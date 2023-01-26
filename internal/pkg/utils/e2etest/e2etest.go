@@ -1,4 +1,7 @@
 //nolint:forbidigo
+/**
+ * Temporary unification of common parts of E2E tests
+ */
 package e2etest
 
 import (
@@ -9,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -22,14 +24,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
-)
-
-const (
-	TestEnvFile = "env"
 )
 
 func PrepareOutputDir(t *testing.T, rootDir string) string {
@@ -49,42 +46,6 @@ func PrepareWorkingDir(t *testing.T, workingDir string) {
 	assert.NoError(t, os.Chdir(workingDir))
 }
 
-// CompileBinary compiles component to binary used in the test.
-func CompileBinary(
-	t *testing.T,
-	cmdDir string,
-	tempDir string,
-	binaryName string,
-	binaryPathEnvName string,
-	makeCommand string,
-) string {
-	t.Helper()
-
-	binaryPath := filepath.Join(tempDir, "/"+binaryName)
-	if runtime.GOOS == "windows" {
-		binaryPath += `.exe`
-	}
-
-	// Envs
-	envs, err := env.FromOs()
-	assert.NoError(t, err)
-	envs.Set(binaryPathEnvName, binaryPath)
-	envs.Set("SKIP_API_CODE_REGENERATION", "1")
-
-	// Build binary
-	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("make", makeCommand)
-	cmd.Dir = cmdDir
-	cmd.Env = envs.ToSlice()
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("Compilation failed: %s\n%s\n%s\n", err, stdout.Bytes(), stderr.Bytes())
-	}
-
-	return binaryPath
-}
-
 func SetInitialProjectState(t *testing.T, testDir string, testDirFS filesystem.Fs, project *testproject.Project) {
 	t.Helper()
 
@@ -92,39 +53,6 @@ func SetInitialProjectState(t *testing.T, testDir string, testDirFS filesystem.F
 	if testDirFS.IsFile(projectStateFile) {
 		err := project.SetState(filepath.Join(testDir, projectStateFile))
 		assert.NoError(t, err)
-	}
-}
-
-func CopyInToRuntime(t *testing.T, testDir string, testDirFS filesystem.Fs, workingDirFS filesystem.Fs) {
-	t.Helper()
-
-	inDir := `in`
-	if !testDirFS.IsDir(inDir) {
-		t.Fatalf(`Missing directory "%s" in "%s".`, inDir, testDir)
-	}
-	assert.NoError(t, aferofs.CopyFs2Fs(testDirFS, inDir, workingDirFS, `/`))
-}
-
-func AddEnvVars(t *testing.T, testDirFS filesystem.Fs, envs *env.Map, envProvider testhelper.EnvProvider) {
-	t.Helper()
-
-	if testDirFS.Exists(TestEnvFile) {
-		envFile, err := testDirFS.ReadFile(filesystem.NewFileDef(TestEnvFile))
-		if err != nil {
-			t.Fatalf(`Cannot load "env" file %s`, err)
-		}
-
-		// Replace all %%ENV_VAR%% in "env" file
-		envFileContent := testhelper.MustReplaceEnvsString(envFile.Content, envProvider)
-
-		// Parse "env" file
-		envsFromFile, err := env.LoadEnvString(envFileContent)
-		if err != nil {
-			t.Fatalf(`Cannot load "env" file: %s`, err)
-		}
-
-		// Merge
-		envs.Merge(envsFromFile, true)
 	}
 }
 
@@ -276,7 +204,7 @@ func waitForAPI(cmdErrCh <-chan error, apiURL string) error {
 
 	serverStartTimeout := 45 * time.Second
 	timeout := time.After(serverStartTimeout)
-	tick := time.Tick(200 * time.Millisecond) //nolint:statickcheck
+	tick := time.Tick(200 * time.Millisecond) // nolint:staticcheck
 	// Keep trying until we're timed out or got a result or got an error
 	for {
 		select {

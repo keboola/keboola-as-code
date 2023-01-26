@@ -26,6 +26,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/e2etest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/runner"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/storageenv"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -44,17 +45,22 @@ func TestTemplatesApiE2E(t *testing.T) {
 	}
 
 	_, testFile, _, _ := runtime.Caller(0)
-	rootDir, tempDir := filepath.Dir(testFile), t.TempDir()
+	testsDir := filepath.Dir(testFile)
+	rootDir := filepath.Join(testsDir, "..", "..", "..")
 
-	// Compile binary, it will be run in the tests
-	binaryPath := e2etest.CompileBinary(t, filepath.Join(rootDir, "..", "..", ".."), tempDir, "build-templates-api", "TEMPLATES_API_BUILD_TARGET_PATH", "build-templates-api")
+	r := runner.NewRunner(t, testsDir)
+	binaryPath := r.CompileBinary(
+		rootDir,
+		"templates-api",
+		"TEMPLATES_API_BUILD_TARGET_PATH",
+		"build-templates-api",
+	)
 
-	testOutputDir := e2etest.PrepareOutputDir(t, rootDir)
+	testOutputDir := e2etest.PrepareOutputDir(t, testsDir)
 
 	// Run test for each directory
-	//nolint:paralleltest
-	for _, testDirRel := range testhelper.GetTestDirs(t, rootDir) {
-		testDir := filepath.Join(rootDir, testDirRel)
+	for _, testDirRel := range testhelper.GetTestDirs(t, testsDir) {
+		testDir := filepath.Join(testsDir, testDirRel)
 		workingDir := filepath.Join(testOutputDir, testDirRel)
 		t.Run(testDirRel, func(t *testing.T) {
 			t.Parallel()
@@ -64,7 +70,7 @@ func TestTemplatesApiE2E(t *testing.T) {
 }
 
 // RunTest runs one E2E test defined by a testDir.
-func RunTest(t *testing.T, testDir, workingDir string, binary string) {
+func RunTest(t *testing.T, testDir string, workingDir string, binary string) {
 	t.Helper()
 
 	e2etest.PrepareWorkingDir(t, workingDir)
