@@ -58,11 +58,11 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 
 	workspace := w.Workspace
 
-	logger.Infof(`Created new workspace "%w" (%w).`, o.Name, w.Config.ID)
+	logger.Infof(`Created the new workspace "%s" (%s).`, o.Name, w.Config.ID)
 	switch workspace.Type {
 	case keboola.WorkspaceTypeSnowflake:
 		logger.Infof(
-			"Credentials:\n  Host: %w\n  User: %w\n  Password: %w\n  Database: %w\n  Schema: %w\n  Warehouse: %w",
+			"Credentials:\n  Host: %s\n  User: %s\n  Password: %s\n  Database: %s\n  Schema: %s\n  Warehouse: %s",
 			workspace.Host,
 			workspace.User,
 			workspace.Password,
@@ -74,7 +74,7 @@ func Run(ctx context.Context, o CreateOptions, d dependencies) (err error) {
 		fallthrough
 	case keboola.WorkspaceTypeR:
 		logger.Infof(
-			"Credentials:\n  Host: %w\n  Password: %w",
+			"Credentials:\n  Host: %s\n  Password: %s",
 			workspace.Host,
 			workspace.Password,
 		)
