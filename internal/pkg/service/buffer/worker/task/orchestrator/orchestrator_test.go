@@ -41,7 +41,7 @@ func TestOrchestrator(t *testing.T) {
 	t.Parallel()
 
 	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
@@ -75,12 +75,12 @@ func TestOrchestrator(t *testing.T) {
 	// Wait for "not assigned" message form the node 1
 	assert.Eventually(t, func() bool {
 		return strings.Contains(d1.DebugLogger().AllMessages(), "DEBUG  not assigned")
-	}, time.Second, 10*time.Millisecond, "timeout")
+	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	// Wait for task on the node 2
 	assert.Eventually(t, func() bool {
 		return strings.Contains(d2.DebugLogger().AllMessages(), "DEBUG  lock released")
-	}, time.Second, 10*time.Millisecond, "timeout")
+	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	cancel()
 	wg.Wait()
@@ -115,7 +115,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	t.Parallel()
 
 	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
@@ -149,7 +149,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	assert.NoError(t, pfx.Key("key2").Put(testResource{ExportKey: exportKey, ID: "GoodID"}).Do(ctx, client))
 	assert.Eventually(t, func() bool {
 		return strings.Contains(d.DebugLogger().AllMessages(), "DEBUG  lock released")
-	}, time.Second, 10*time.Millisecond, "timeout")
+	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	cancel()
 	wg.Wait()

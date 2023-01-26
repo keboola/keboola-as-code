@@ -249,7 +249,8 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	pfx := prefixForTest()
 	ch := pfx.GetAllAndWatch(ctx, watchClient)
 	receive := func(expectedLen int) WatchResponse {
-		resp := <-ch
+		resp, ok := <-ch
+		assert.True(t, ok)
 		assert.False(t, resp.Created)
 		assert.False(t, resp.Restarted)
 		assert.NoError(t, resp.InitErr)
@@ -289,12 +290,12 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	// Expect ErrCompacted, all the keys were merged into one revision, it is not possible to load only the missing ones
 	resp = <-ch
 	assert.Error(t, resp.Err)
-	assert.Equal(t, "etcdserver: mvcc: required revision has been compacted", resp.Err.Error())
+	assert.Equal(t, "watch error: etcdserver: mvcc: required revision has been compacted", resp.Err.Error())
 
 	// Expect "restarted" event
 	resp = <-ch
 	assert.True(t, resp.Restarted)
-	wildcards.Assert(t, "restarted after %s, reason: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
+	wildcards.Assert(t, "restarted, backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
 
 	// Read keys, watcher was restarted, it is now in the GetAll phase,
 	// so all keys are received at once
@@ -321,10 +322,10 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	dialerLock.Unlock()
 	resp = <-ch
 	assert.Error(t, resp.Err)
-	assert.Equal(t, "etcdserver: mvcc: required revision has been compacted", resp.Err.Error())
+	assert.Equal(t, "watch error: etcdserver: mvcc: required revision has been compacted", resp.Err.Error())
 	resp = <-ch
 	assert.True(t, resp.Restarted)
-	wildcards.Assert(t, "restarted after %s, reason: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
+	wildcards.Assert(t, "restarted, backoff delay %s, reason: watch error: etcdserver: mvcc: required revision has been compacted", resp.RestartReason)
 	resp = receive(6)
 	assert.Equal(t, []byte("my/prefix/key01"), resp.Events[0].Kv.Key)
 	assert.Equal(t, []byte("my/prefix/key02"), resp.Events[1].Kv.Key)
