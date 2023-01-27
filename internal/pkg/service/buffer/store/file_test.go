@@ -179,7 +179,7 @@ func newFileForTest() model.File {
 		TableID: keboola.TableID{
 			BucketID: keboola.BucketID{
 				Stage:      keboola.BucketStageIn,
-				BucketName: "bucket",
+				BucketName: "c-bucket",
 			},
 			TableName: "table",
 		},

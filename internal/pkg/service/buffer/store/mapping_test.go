@@ -24,7 +24,7 @@ func TestStore_Mapping_Ops(t *testing.T) {
 	tableID := keboola.TableID{
 		BucketID: keboola.BucketID{
 			Stage:      keboola.BucketStageIn,
-			BucketName: "main",
+			BucketName: "c-main",
 		},
 		TableName: "table1",
 	}
@@ -153,7 +153,7 @@ func TestStore_DeleteReceiverMappingsOp(t *testing.T) {
 	tableID := keboola.TableID{
 		BucketID: keboola.BucketID{
 			Stage:      keboola.BucketStageIn,
-			BucketName: "main",
+			BucketName: "c-main",
 		},
 		TableName: "table1",
 	}

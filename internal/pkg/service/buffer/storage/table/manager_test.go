@@ -28,7 +28,7 @@ func TestManager_EnsureBucketExists(t *testing.T) {
 
 	bucketID := keboola.BucketID{
 		Stage:      keboola.BucketStageIn,
-		BucketName: "my-bucket",
+		BucketName: "c-my-bucket",
 	}
 
 	// Create bucket
@@ -64,7 +64,7 @@ func TestManager_EnsureTableExists(t *testing.T) {
 	tableID := keboola.TableID{
 		BucketID: keboola.BucketID{
 			Stage:      keboola.BucketStageIn,
-			BucketName: "my-bucket",
+			BucketName: "c-my-bucket",
 		},
 		TableName: "my-table",
 	}
