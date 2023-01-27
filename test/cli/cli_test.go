@@ -30,7 +30,7 @@ func TestCliE2E(t *testing.T) {
 		runner.WithInitProjectState(),
 		runner.WithAddEnvVarsFromFile(),
 		runner.WithLoadArgsFile(),
-		runner.WithRunBinary(binaryPath),
+		runner.WithRunCLIBinary(binaryPath),
 		runner.WithAssertProjectState(),
 		runner.WithAssertDirContent(),
 	)

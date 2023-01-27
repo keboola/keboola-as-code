@@ -1,12 +1,24 @@
 package runner
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"net/http/httputil"
+	"os"
 	"os/exec"
 	"strings"
+	"sync"
+	"syscall"
 	"testing"
+	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/google/shlex"
+	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
@@ -18,15 +30,21 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 const (
 	argsFileName         = `args`
+	dumpDirCtxKey        = ctxKey("dumpDir")
 	envFileName          = "env"
 	expectedStatePath    = "expected-state.json"
+	expectedStdoutPath   = "expected-server-stdout"
+	expectedStderrPath   = "expected-server-stderr"
 	inDirName            = `in`
 	initialStateFileName = "initial-state.json"
 )
+
+type ctxKey string
 
 type Options func(c *runConfig)
 
@@ -34,10 +52,11 @@ type runConfig struct {
 	addEnvVarsFromFile bool
 	assertDirContent   bool
 	assertProjectState bool
-	binaryPath         string
+	cliBinaryPath      string
 	copyInToWorkingDir bool
 	initProjectState   bool
 	loadArgsFile       bool
+	runAPIServerConfig runAPIServerConfig
 }
 
 func WithAddEnvVarsFromFile() Options {
@@ -76,14 +95,24 @@ func WithLoadArgsFile() Options {
 	}
 }
 
-func WithRunBinary(path string) Options {
+func WithRunAPIServerAndRequests(path string, setupServerFn func(*Test) ([]string, map[string]string), cleanupFn func()) Options {
 	return func(c *runConfig) {
-		c.binaryPath = path
+		c.runAPIServerConfig = runAPIServerConfig{
+			path:          path,
+			setupServerFn: setupServerFn,
+			cleanupFn:     cleanupFn,
+		}
+	}
+}
+
+func WithRunCLIBinary(path string) Options {
+	return func(c *runConfig) {
+		c.cliBinaryPath = path
 	}
 }
 
 type results struct {
-	binaryArgs []string
+	cliBinaryArgs []string
 }
 
 type Test struct {
@@ -97,6 +126,10 @@ type Test struct {
 	testDirFS    filesystem.Fs
 	workingDir   string
 	workingDirFS filesystem.Fs
+}
+
+func (t *Test) TestDirFS() filesystem.Fs {
+	return t.testDirFS
 }
 
 func (t *Test) Run(opts ...Options) {
@@ -129,12 +162,21 @@ func (t *Test) Run(opts ...Options) {
 
 	if c.loadArgsFile {
 		// Load file with additional command arguments
-		res.binaryArgs = t.loadArgsFile()
+		res.cliBinaryArgs = t.loadArgsFile()
 	}
 
-	if c.binaryPath != "" {
-		// Run a binary
-		t.runBinary(c.binaryPath, res.binaryArgs)
+	if c.cliBinaryPath != "" {
+		// Run a CLI binary
+		t.runCLIBinary(c.cliBinaryPath, res.cliBinaryArgs)
+	}
+
+	if c.runAPIServerConfig.path != "" {
+		// Run an API server binary
+		t.runAPIServer(
+			c.runAPIServerConfig.path,
+			c.runAPIServerConfig.setupServerFn,
+			c.runAPIServerConfig.cleanupFn,
+		)
 	}
 
 	if c.assertDirContent {
@@ -198,7 +240,7 @@ func (t *Test) loadArgsFile() []string {
 	return args
 }
 
-func (t *Test) runBinary(path string, args []string) {
+func (t *Test) runCLIBinary(path string, args []string) {
 	// Prepare command
 	cmd := exec.CommandContext(t.ctx, path, args...) // nolint:gosec
 	cmd.Env = t.env.ToSlice()
@@ -262,6 +304,187 @@ func (t *Test) runBinary(path string, args []string) {
 	wildcards.Assert(t.t, expectedStderr, stderr, "Unexpected STDERR.")
 }
 
+type runAPIServerConfig struct {
+	path          string
+	setupServerFn func(*Test) ([]string, map[string]string)
+	cleanupFn     func()
+}
+
+func (t *Test) runAPIServer(path string, setupServerFn func(*Test) ([]string, map[string]string), cleanupFn func()) {
+	// Get a free port
+	port, err := getFreePort()
+	if err != nil {
+		t.t.Fatalf("Could not receive a free port: %s", err)
+	}
+	apiURL := fmt.Sprintf("http://localhost:%d", port)
+
+	addArgs, addEnvs := setupServerFn(t)
+	args := append([]string{fmt.Sprintf("--http-port=%d", port)}, addArgs...)
+
+	// Envs
+	envs := env.Empty()
+	envs.Set("PATH", os.Getenv("PATH")) // nolint:forbidigo
+	envs.Set("KBC_STORAGE_API_HOST", t.project.StorageAPIHost())
+	envs.Set("DATADOG_ENABLED", "false")
+	for k, v := range addEnvs {
+		envs.Set(k, v)
+	}
+
+	// Start API server
+	stdout := newCmdOut()
+	stderr := newCmdOut()
+	cmd := exec.Command(path, args...)
+	cmd.Env = envs.ToSlice()
+	cmd.Stdout = io.MultiWriter(stdout, testhelper.VerboseStdout())
+	cmd.Stderr = io.MultiWriter(stderr, testhelper.VerboseStderr())
+	if err := cmd.Start(); err != nil {
+		t.t.Fatalf("Server failed to start: %s", err)
+	}
+
+	cmdWaitCh := make(chan error, 1)
+	go func() {
+		cmdWaitCh <- cmd.Wait()
+		close(cmdWaitCh)
+	}()
+
+	// Kill API server after test
+	t.t.Cleanup(func() {
+		_ = cmd.Process.Kill()
+		cleanupFn()
+	})
+
+	// Wait for API server
+	if err = waitForAPI(cmdWaitCh, apiURL); err != nil {
+		t.t.Fatalf(
+			"Unexpected error while waiting for API: %s\n\nServer STDERR:%s\n\nServer STDOUT:%s\n",
+			err,
+			stderr.String(),
+			stdout.String(),
+		)
+	}
+
+	// Run the requests
+	requestsOk := t.runRequests(apiURL)
+
+	// Shutdown API server
+	_ = cmd.Process.Signal(syscall.SIGTERM)
+	select {
+	case <-time.After(10 * time.Second):
+		t.t.Fatalf("timeout while waiting for server shutdown")
+	case <-cmdWaitCh:
+		// continue
+	}
+
+	// Dump process stdout/stderr
+	assert.NoError(t.t, t.workingDirFS.WriteFile(filesystem.NewRawFile("process-stdout.txt", stdout.String())))
+	assert.NoError(t.t, t.workingDirFS.WriteFile(filesystem.NewRawFile("process-stderr.txt", stderr.String())))
+
+	// Check API server stdout/stderr
+	if requestsOk {
+		if t.testDirFS.IsFile(expectedStdoutPath) || t.testDirFS.IsFile(expectedStderrPath) {
+			// Wait a while the server logs everything for previous requests.
+			time.Sleep(100 * time.Millisecond)
+		}
+		if t.testDirFS.IsFile(expectedStdoutPath) {
+			expected := t.readFileFromTestDir(expectedStdoutPath)
+			wildcards.Assert(t.t, expected, stdout.String(), "Unexpected STDOUT.")
+		}
+		if t.testDirFS.IsFile(expectedStderrPath) {
+			expected := t.readFileFromTestDir(expectedStderrPath)
+			wildcards.Assert(t.t, expected, stderr.String(), "Unexpected STDERR.")
+		}
+	}
+}
+
+type apiRequest struct {
+	Path   string      `json:"path" validate:"required"`
+	Method string      `json:"method" validate:"required,oneof=DELETE GET PATCH POST PUT"`
+	Body   interface{} `json:"body"`
+}
+
+func (t *Test) runRequests(apiURL string) bool {
+	client := resty.New()
+	client.SetBaseURL(apiURL)
+
+	// Dump raw HTTP request
+	client.SetPreRequestHook(func(client *resty.Client, request *http.Request) error {
+		if dumpDir, ok := request.Context().Value(dumpDirCtxKey).(string); ok {
+			reqDump, err := httputil.DumpRequest(request, true)
+			assert.NoError(t.t, err)
+			assert.NoError(t.t, t.workingDirFS.WriteFile(filesystem.NewRawFile(filesystem.Join(dumpDir, "request.txt"), string(reqDump))))
+		}
+		return nil
+	})
+
+	// Request folders should be named e.g. 001-request1, 002-request2
+	dirs, err := t.testDirFS.Glob("[0-9][0-9][0-9]-*")
+	assert.NoError(t.t, err)
+	for _, requestDir := range dirs {
+		// Read the request file
+		requestFileStr := t.readFileFromTestDir(filesystem.Join(requestDir, "request.json"))
+		assert.NoError(t.t, err)
+
+		request := &apiRequest{}
+		err = json.DecodeString(requestFileStr, request)
+		assert.NoError(t.t, err)
+		err = validator.New().Validate(context.Background(), request)
+		assert.NoError(t.t, err)
+
+		// Send the request
+		r := client.R()
+		if request.Body != nil {
+			r.SetBody(request.Body)
+		}
+		r.SetHeader("X-StorageApi-Token", t.envProvider.MustGet("TEST_KBC_STORAGE_API_TOKEN"))
+
+		// Send request
+		r.SetContext(context.WithValue(r.Context(), dumpDirCtxKey, requestDir))
+		resp, err := r.Execute(request.Method, request.Path)
+		assert.NoError(t.t, err)
+
+		// Dump raw HTTP response
+		if err == nil {
+			respDump, err := httputil.DumpResponse(resp.RawResponse, false)
+			assert.NoError(t.t, err)
+			assert.NoError(t.t, t.workingDirFS.WriteFile(filesystem.NewRawFile(filesystem.Join(requestDir, "response.txt"), string(respDump)+string(resp.Body()))))
+		}
+
+		// Compare response body
+		expectedRespBody := t.readFileFromTestDir(filesystem.Join(requestDir, "expected-response.json"))
+
+		// Decode && encode json to unite indentation of the response with expected-response.json
+		respMap := orderedmap.New()
+		if resp.String() != "" {
+			err = json.DecodeString(resp.String(), &respMap)
+		}
+		assert.NoError(t.t, err)
+		respBody, err := json.EncodeString(respMap, true)
+		assert.NoError(t.t, err)
+
+		// Compare response status code
+		expectedCode := cast.ToInt(t.readFileFromTestDir(filesystem.Join(requestDir, "expected-http-code")))
+		ok1 := assert.Equal(
+			t.t,
+			expectedCode,
+			resp.StatusCode(),
+			"Unexpected status code for request \"%s\".\nRESPONSE:\n%s\n\n",
+			requestDir,
+			resp.String(),
+		)
+
+		// Assert response body
+		ok2 := wildcards.Assert(t.t, expectedRespBody, respBody, fmt.Sprintf("Unexpected response for request %s.", requestDir))
+
+		// If the request failed, skip other requests
+		if !ok1 || !ok2 {
+			t.t.Errorf(`request "%s" failed, skipping the other requests`, requestDir)
+			return false
+		}
+	}
+
+	return true
+}
+
 func (t *Test) readFileFromTestDir(path string) string {
 	file, err := t.testDirFS.ReadFile(filesystem.NewFileDef(path))
 	assert.NoError(t.t, err)
@@ -303,4 +526,72 @@ func (t *Test) assertProjectState() {
 			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir.`,
 		)
 	}
+}
+
+func getFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+func waitForAPI(cmdErrCh <-chan error, apiURL string) error {
+	client := resty.New()
+
+	serverStartTimeout := 45 * time.Second
+	timeout := time.After(serverStartTimeout)
+	tick := time.Tick(200 * time.Millisecond) // nolint:staticcheck
+	// Keep trying until we're timed out or got a result or got an error
+	for {
+		select {
+		// Handle timeout
+		case <-timeout:
+			return errors.Errorf("server didn't start within %s", serverStartTimeout)
+		// Handle server termination
+		case err := <-cmdErrCh:
+			if err == nil {
+				return errors.New("the server was terminated unexpectedly")
+			} else {
+				return errors.Errorf("the server was terminated unexpectedly with error: %w", err)
+			}
+		// Periodically test health check endpoint
+		case <-tick:
+			resp, err := client.R().Get(fmt.Sprintf("%s/health-check", apiURL))
+			if err != nil && !strings.Contains(err.Error(), "connection refused") {
+				return err
+			}
+			if resp.StatusCode() == 200 {
+				return nil
+			}
+		}
+	}
+}
+
+// cmdOut is used to prevent race conditions, see https://hackmysql.com/post/reading-os-exec-cmd-output-without-race-conditions/
+type cmdOut struct {
+	buf  *bytes.Buffer
+	lock *sync.Mutex
+}
+
+func newCmdOut() *cmdOut {
+	return &cmdOut{buf: &bytes.Buffer{}, lock: &sync.Mutex{}}
+}
+
+func (o *cmdOut) Write(p []byte) (int, error) {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+	return o.buf.Write(p)
+}
+
+func (o *cmdOut) String() string {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+	return o.buf.String()
 }
