@@ -1,26 +1,27 @@
-# Keboola as Code
-
-A monorepo written in Go, represents [Keboola Connection](https://www.keboola.com/product/overview) project as definition files.
+# Keboola Go Monorepo
 
 ## Overview
 
-### CLI
+### Keboola as Code 
 
-- Bidirectional synchronization of a local directory and [Keboola Connection](https://www.keboola.com/product/overview) project:
-  - Push / pull operations.
-  - Calls [Keboola Storage API](https://developers.keboola.com/integrate/storage/api/).
-  - Local directory can be easly versioned by [Git](https://git-scm.com/) or a similar tool.
-- Configurations are represented as JSON files.
-- Transformations are represented as native files, for example SQL, Python, etc.
-- Read more in the [Documentation](https://developers.keboola.com/cli/).
-- CLI entrypoint: [cmd/kbc/main.go](https://github.com/keboola/keboola-as-code/blob/main/cmd/kbc/main.go)
+#### CLI
 
-### Templates
+- Provides a representation of [Keboola](https://www.keboola.com/product/overview) project in a local directory and its bidirectional synchronization.
+- Supports direct operations on the remote project.
+- See [user documentation](https://developers.keboola.com/cli/).
+- See **[architecture overview](./docs/cli/overview.md)** for more details.
 
-- To create a template from an existing [Keboola Connection](https://www.keboola.com/product/overview) project.
-- To apply template to some other [Keboola Connection](https://www.keboola.com/product/overview) project.
-- The [Jsonnet](https://jsonnet.org/) language is used to define the JSON files.
-- In experimental phase, available via CLI.
+#### Templates Service
+
+- Provides CLI commands and API for creating templates from existing [Keboola](https://www.keboola.com/product/overview) project and their usage in other projects.
+- See [user documentation](https://developers.keboola.com/cli/templates/).
+- See **[architecture overview](./docs/templates/overview.md)** for more details.
+
+### Buffer Service
+
+- A Proxy API to buffer collected data and their import to Storage tables in batches.
+- See **[architecture overview](./docs/buffer/overview.md)** for more details.
+
 
 ## Development
 
@@ -28,7 +29,11 @@ A monorepo written in Go, represents [Keboola Connection](https://www.keboola.co
 - Suggestions for improvements and new features can be submitted at:  
   https://www.keboola.com/resources/roadmap.
 - You can also send PR directly, but we do not guarantee that it will be accepted.
-- See the [developer's guide](./docs/DEVELOPMENT.md).
+
+## Other Links 
+- [Developers' guide](./docs/DEVELOPMENT.md)
+- [Release process](./docs/RELEASE.md)
+- [E2E tests](./docs/e2etests.md)
 
 ## License
 
