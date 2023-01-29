@@ -397,9 +397,10 @@ func (t *Test) runAPIServer(path string, setupServerFn func(*Test) ([]string, ma
 }
 
 type apiRequest struct {
-	Path   string      `json:"path" validate:"required"`
-	Method string      `json:"method" validate:"required,oneof=DELETE GET PATCH POST PUT"`
-	Body   interface{} `json:"body"`
+	Path    string            `json:"path" validate:"required"`
+	Method  string            `json:"method" validate:"required,oneof=DELETE GET PATCH POST PUT"`
+	Body    interface{}       `json:"body"`
+	Headers map[string]string `json:"headers"`
 }
 
 func (t *Test) runRequests(apiURL string) bool {
@@ -433,9 +434,15 @@ func (t *Test) runRequests(apiURL string) bool {
 		// Send the request
 		r := client.R()
 		if request.Body != nil {
-			r.SetBody(request.Body)
+			if v, ok := request.Body.(string); ok {
+				r.SetBody(v)
+			} else if v, ok := request.Body.(map[string]any); ok && resty.IsJSONType(request.Headers["Content-Type"]) {
+				r.SetBody(v)
+			} else {
+				assert.FailNow(t.t, fmt.Sprintf("request.json for request %s is malformed, body must be JSON for proper JSON content type or string otherwise", requestDir))
+			}
 		}
-		r.SetHeader("X-StorageApi-Token", t.envProvider.MustGet("TEST_KBC_STORAGE_API_TOKEN"))
+		r.SetHeaders(request.Headers)
 
 		// Send request
 		r.SetContext(context.WithValue(r.Context(), dumpDirCtxKey, requestDir))

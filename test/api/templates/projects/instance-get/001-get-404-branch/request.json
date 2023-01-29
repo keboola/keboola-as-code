@@ -1,5 +1,9 @@
 {
   "path": "/v1/project/0/instances/inst-001",
   "method": "GET",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
   "body": {}
 }
