@@ -104,13 +104,33 @@ func TestUploadAndImportE2E(t *testing.T) {
 	}, 60*time.Second, 100*time.Millisecond, logger.AllMessages())
 	logger.Truncate()
 
-	// Check the target table
-	table, err := project.KeboolaProjectAPI().
-		GetTableRequest(keboola.MustParseTableID(export.Mapping.TableID)).
-		Send(ctx)
+	// Check the target table: records count
+	tableID := keboola.MustParseTableID(export.Mapping.TableID)
+	table, err := project.KeboolaProjectAPI().GetTableRequest(tableID).Send(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(10), table.RowsCount)
 
+	// Check the target table: data preview
+	preview, err := project.KeboolaProjectAPI().PreviewTableRequest(tableID, keboola.WithLimitRows(20), keboola.WithOrderBy("bodyCol", keboola.OrderAsc)).Send(ctx)
+	for i := range preview.Rows {
+		preview.Rows[i][1] = "<date>"
+	}
+	assert.NoError(t, err)
+	assert.Equal(t, &keboola.TablePreview{
+		Columns: []string{"idCol", "dateCol", "bodyCol"},
+		Rows: [][]string{
+			{"1", "<date>", "payload001"},
+			{"2", "<date>", "payload002"},
+			{"3", "<date>", "payload003"},
+			{"4", "<date>", "payload004"},
+			{"5", "<date>", "payload005"},
+			{"6", "<date>", "payload006"},
+			{"7", "<date>", "payload007"},
+			{"8", "<date>", "payload008"},
+			{"9", "<date>", "payload009"},
+			{"10", "<date>", "payload010"},
+		},
+	}, preview)
 
 	// Change the mapping, it triggers the closing of the empty slice/file
 	_, err = api.UpdateExport(apiDeps, &buffer.UpdateExportPayload{
