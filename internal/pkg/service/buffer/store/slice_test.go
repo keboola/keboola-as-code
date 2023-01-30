@@ -180,7 +180,7 @@ func TestStore_ListUploadedSlices(t *testing.T) {
 		TableID: keboola.TableID{
 			BucketID: keboola.BucketID{
 				Stage:      keboola.BucketStageIn,
-				BucketName: "bucket",
+				BucketName: "c-bucket",
 			},
 			TableName: "table",
 		},
@@ -285,7 +285,7 @@ func sliceForTest() model.Slice {
 		TableID: keboola.TableID{
 			BucketID: keboola.BucketID{
 				Stage:      keboola.BucketStageIn,
-				BucketName: "bucket",
+				BucketName: "c-bucket",
 			},
 			TableName: "table",
 		},

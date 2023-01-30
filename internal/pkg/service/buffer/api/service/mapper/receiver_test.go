@@ -92,7 +92,7 @@ func TestReceiverModel(t *testing.T) {
 					TableID: keboola.TableID{
 						BucketID: keboola.BucketID{
 							Stage:      keboola.BucketStageIn,
-							BucketName: "bucket",
+							BucketName: "c-bucket",
 						},
 						TableName: "table",
 					},
@@ -155,7 +155,7 @@ func TestReceiverPayload(t *testing.T) {
 					TableID: keboola.TableID{
 						BucketID: keboola.BucketID{
 							Stage:      keboola.BucketStageIn,
-							BucketName: "bucket",
+							BucketName: "c-bucket",
 						},
 						TableName: "table",
 					},

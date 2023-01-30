@@ -116,12 +116,11 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	workerDeps.Process().WaitForShutdown()
 
 	// Orchestrator logs
+	assert.Contains(t, workerDeps.DebugLogger().AllMessages(), "[orchestrator][slice.retry.check]INFO  assigned")
 	wildcards.Assert(t, `
-%A
-[orchestrator][slice.retry.check]DEBUG  restart: periodical
-[orchestrator][slice.retry.check]INFO  assigned "%s"
-%A
-`, strhelper.FilterLines(`^(\[orchestrator\]\[slice.retry.check\])`, workerDeps.DebugLogger().AllMessages()))
+[orchestrator][slice.retry.check]INFO  assigned "00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z"
+[orchestrator][slice.retry.check]INFO  stopped
+`, strhelper.FilterLines(`^(\[orchestrator\]\[slice.retry.check\])`, workerDeps.DebugLogger().InfoMessages()))
 
 	// Retry check task
 	wildcards.Assert(t, `

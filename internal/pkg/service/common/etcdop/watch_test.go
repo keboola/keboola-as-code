@@ -2,17 +2,17 @@ package etcdop
 
 import (
 	"context"
-	"net"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/keboola/go-utils/pkg/wildcards"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
 	"go.etcd.io/etcd/api/v3/mvccpb"
-	"google.golang.org/grpc"
+	"go.etcd.io/etcd/tests/v3/integration"
+	"google.golang.org/grpc/connectivity"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -222,28 +222,23 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	assert.False(t, ok)
 }
 
-// nolint:paralleltest // the test run the "compact" operation and breaks the other tests running in parallel
+// nolint:paralleltest // etcd integration tests cannot run in parallel, see integration.BeforeTestExternal
 func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf(`etcd compact tests are tested only on Linux`)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	// Both clients must use same namespace
-	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
-
-	// Create client for the test
-	testClient := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-
-	// Create watcher client with custom dialer
-	var conn net.Conn
-	dialerLock := &sync.Mutex{}
-	dialer := func(ctx context.Context, s string) (net.Conn, error) {
-		dialerLock.Lock()
-		defer dialerLock.Unlock()
-		var err error
-		conn, err = (&net.Dialer{}).DialContext(ctx, "tcp", s)
-		return conn, err
-	}
-	watchClient := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace, grpc.WithContextDialer(dialer))
+	// Create etcd cluster for test
+	integration.BeforeTestExternal(t)
+	cluster := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 3, UseBridge: true})
+	defer cluster.Terminate(t)
+	cluster.WaitLeader(t)
+	testClient := cluster.Client(1)
+	watchMember := cluster.Members[2]
+	watchClient := cluster.Client(2)
 
 	// Create watcher
 	pfx := prefixForTest()
@@ -271,8 +266,11 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	assert.Equal(t, []byte("my/prefix/key01"), receive(1).Events[0].Kv.Key)
 
 	// Close watcher connection and block a new one
-	dialerLock.Lock()
-	assert.NoError(t, conn.Close())
+	watchMember.Bridge().PauseConnections()
+	watchMember.Bridge().DropConnections()
+	assert.Eventually(t, func() bool {
+		return watchClient.ActiveConnection().GetState() == connectivity.Connecting
+	}, 5*time.Second, 100*time.Millisecond)
 
 	// Add some other keys, during the watcher is disconnected
 	assert.NoError(t, pfx.Key("key02").Put(value).Do(ctx, testClient))
@@ -285,7 +283,7 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Unblock dialer, watcher will be reconnected
-	dialerLock.Unlock()
+	watchMember.Bridge().UnpauseConnections()
 
 	// Expect ErrCompacted, all the keys were merged into one revision, it is not possible to load only the missing ones
 	resp = <-ch
@@ -311,15 +309,18 @@ func TestPrefix_GetAllAndWatch_ErrCompacted(t *testing.T) {
 	assert.Equal(t, []byte("my/prefix/key04"), receive(1).Events[0].Kv.Key)
 
 	// And let's try compact operation again, in the same way
-	dialerLock.Lock()
-	assert.NoError(t, conn.Close())
+	watchMember.Bridge().PauseConnections()
+	watchMember.Bridge().DropConnections()
+	assert.Eventually(t, func() bool {
+		return watchClient.ActiveConnection().GetState() == connectivity.Connecting
+	}, 5*time.Second, 100*time.Millisecond)
 	assert.NoError(t, pfx.Key("key05").Put(value).Do(ctx, testClient))
 	assert.NoError(t, pfx.Key("key06").Put(value).Do(ctx, testClient))
 	status, err = testClient.Status(ctx, testClient.Endpoints()[0])
 	assert.NoError(t, err)
 	_, err = testClient.Compact(ctx, status.Header.Revision)
 	assert.NoError(t, err)
-	dialerLock.Unlock()
+	watchMember.Bridge().UnpauseConnections()
 	resp = <-ch
 	assert.Error(t, resp.Err)
 	assert.Equal(t, "watch error: etcdserver: mvcc: required revision has been compacted", resp.Err.Error())

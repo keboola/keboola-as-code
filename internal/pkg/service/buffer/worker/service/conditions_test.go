@@ -64,6 +64,8 @@ func TestConditionsChecker(t *testing.T) {
 	sliceKey2 := createExport2(t, "my-receiver-B", "my-export-2", ctx, clk, client, str, file2, importConditions2, project.StorageAPIToken().Token)
 
 	// Create nodes
+	uploadInterval := 1 * time.Second
+	checkCondInterval := 2 * time.Second
 	workerDeps1 := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("worker-node-1"))...)
 	workerDeps2 := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("worker-node-2"))...)
 	workerDeps1.DebugLogger().ConnectTo(testhelper.VerboseStdout())
@@ -76,6 +78,8 @@ func TestConditionsChecker(t *testing.T) {
 		service.WithCloseFiles(false),
 		service.WithImportFiles(false),
 		service.WithRetryFailedFiles(false),
+		service.WithUploadConditions(model.Conditions{Count: 1000, Size: 1 * datasize.MB, Time: uploadInterval}),
+		service.WithCheckConditionsInterval(checkCondInterval),
 	}
 	_, err := service.New(workerDeps1, serviceOps...)
 	assert.NoError(t, err)
@@ -83,18 +87,18 @@ func TestConditionsChecker(t *testing.T) {
 	assert.NoError(t, err)
 
 	time.Sleep(time.Second)
-	clk.Add(service.DefaultCheckConditionsInterval)
+	clk.Add(checkCondInterval)
 	apiStats.Notify(sliceKey1, 100*datasize.KB, 300*datasize.KB)
 	<-apiStats.Sync(ctx)
 	time.Sleep(time.Second)
-	clk.Add(service.DefaultCheckConditionsInterval)
+	clk.Add(checkCondInterval)
 	apiStats.Notify(sliceKey1, 150*datasize.KB, 300*datasize.KB)
 	apiStats.Notify(sliceKey2, 10*datasize.KB, 10*datasize.KB)
 	<-apiStats.Sync(ctx)
 	time.Sleep(time.Second)
-	clk.Add(service.DefaultCheckConditionsInterval)
+	clk.Add(checkCondInterval)
 	time.Sleep(time.Second)
-	clk.Add(service.DefaultCheckConditionsInterval)
+	clk.Add(checkCondInterval)
 
 	// Shutdown
 	time.Sleep(2 * time.Second)
@@ -108,12 +112,12 @@ func TestConditionsChecker(t *testing.T) {
 	// Check conditions checker logs
 	wildcards.Assert(t, `
 %A
-[service][conditions]INFO  closing slice "00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z": time threshold met, opened at: 0001-01-01T00:00:02.000Z, passed: 1m30s threshold: 1m0s
+[service][conditions]INFO  closing slice "00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z": time threshold met, opened at: 0001-01-01T00:00:02.000Z, passed: 6s threshold: 1s
 %A
 `, strhelper.FilterLines(`^(\[service\]\[conditions\])`, workerDeps1.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
 %A
-[service][conditions]INFO  closing slice "00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z": time threshold met, opened at: 0001-01-01T00:00:02.000Z, passed: 1m0s threshold: 1m0s
+[service][conditions]INFO  closing slice "00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z": time threshold met, opened at: 0001-01-01T00:00:02.000Z, passed: 4s threshold: 1s
 %A
 `, strhelper.FilterLines(`^(\[service\]\[conditions\])`, workerDeps2.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
@@ -229,13 +233,13 @@ slice/active/opened/closing/00000123/my-receiver-A/my-export-1/0001-01-01T00:00:
 >>>>>
 
 <<<<<
-slice/active/opened/closing/00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/0001-01-01T00:01:02.000Z
+slice/active/opened/closing/00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/%s
 -----
 %A
 >>>>>
 
 <<<<<
-slice/active/opened/closing/00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z
+slice/active/opened/closing/00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/%s
 -----
 %A
 >>>>>
