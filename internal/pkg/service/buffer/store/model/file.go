@@ -29,6 +29,9 @@ type File struct {
 	LastError       string          `json:"lastError,omitempty"`
 	RetryAttempt    int             `json:"retryAttempt,omitempty"`
 	RetryAfter      *UTCTime        `json:"retryAfter,omitempty"`
+	// Statistics are set by the "file close" operation, the value is nil, if there is no record.
+	Statistics *Stats `json:"statistics,omitempty"`
+	IsEmpty    bool   `json:"isEmpty,omitempty"`
 }
 
 func NewFile(exportKey key.ExportKey, now time.Time, mapping Mapping, resource *keboola.File) File {

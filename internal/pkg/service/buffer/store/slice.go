@@ -108,7 +108,7 @@ func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) 
 		Read(func() op.Op {
 			return op.MergeToTxn(
 				assertAllPrevSlicesClosed(s.schema, k),
-				sumStatsOp(statsPfx.PrefixT().GetAll(), &stats),
+				sumStatsOp(statsPfx.GetAll(), &stats),
 				s.countRecordsOp(k, &recordsCount),
 				s.loadExportRecordsCounter(k.ExportKey, &recordLastID),
 			)

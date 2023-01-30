@@ -155,11 +155,41 @@ func (s *Store) ScheduleFileForRetry(ctx context.Context, file *model.File) (err
 func (s *Store) CloseFile(ctx context.Context, file *model.File) (err error) {
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CloseFile")
 	defer telemetry.EndSpan(span, &err)
-	swapOp, err := s.setFileStateOp(ctx, s.clock.Now(), file, filestate.Importing)
-	if err != nil {
-		return err
-	}
-	return swapOp.DoOrErr(ctx, s.client)
+
+	var stats model.Stats
+	return op.
+		Atomic().
+		Read(func() op.Op {
+			return op.MergeToTxn(
+				sumStatsOp(s.schema.Slices().Uploaded().InFile(file.FileKey).GetAll(), &stats),
+			)
+		}).
+		WriteOrErr(func() (op.Op, error) {
+			var ops []op.Op
+
+			// Copy slice and do modifications
+			modFile := *file
+			if stats.RecordsCount > 0 {
+				modFile.Statistics = &stats
+			} else {
+				modFile.IsEmpty = true
+			}
+
+			// Set file state from "closing" to "importing"
+			// This also saves the changes.
+			if v, err := s.setFileStateOp(ctx, s.clock.Now(), &modFile, filestate.Importing); err != nil {
+				return nil, err
+			} else {
+				ops = append(ops, v)
+			}
+
+			return op.
+				MergeToTxn(ops...).
+				WithOnResult(func(result op.TxnResult) {
+					*file = modFile
+				}), nil
+		}).
+		Do(ctx, s.client)
 }
 
 // SwapFile closes the old slice and creates the new one, in the same file.
