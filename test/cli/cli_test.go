@@ -25,13 +25,15 @@ func TestCliE2E(t *testing.T) {
 		"build-local",
 	)
 
-	r.ForEachTest(
-		runner.WithCopyInToWorkingDir(),
-		runner.WithInitProjectState(),
-		runner.WithAddEnvVarsFromFile(),
-		runner.WithLoadArgsFile(),
-		runner.WithRunCLIBinary(binaryPath),
-		runner.WithAssertProjectState(),
-		runner.WithAssertDirContent(),
-	)
+	r.ForEachTest(func(test *runner.Test) {
+		test.Run(
+			runner.WithCopyInToWorkingDir(),
+			runner.WithInitProjectState(),
+			runner.WithAddEnvVarsFromFile(),
+			runner.WithLoadArgsFile(),
+			runner.WithRunCLIBinary(binaryPath),
+			runner.WithAssertProjectState(),
+			runner.WithAssertDirContent(),
+		)
+	})
 }

@@ -51,6 +51,7 @@ type Options func(c *runConfig)
 type runConfig struct {
 	addEnvVarsFromFile bool
 	assertDirContent   bool
+	assertEtcdState    bool
 	assertProjectState bool
 	cliBinaryPath      string
 	copyInToWorkingDir bool
@@ -68,6 +69,12 @@ func WithAddEnvVarsFromFile() Options {
 func WithAssertDirContent() Options {
 	return func(c *runConfig) {
 		c.assertDirContent = true
+	}
+}
+
+func WithAssertEtcdState() Options {
+	return func(c *runConfig) {
+		c.assertEtcdState = true
 	}
 }
 
@@ -95,12 +102,18 @@ func WithLoadArgsFile() Options {
 	}
 }
 
-func WithRunAPIServerAndRequests(path string, setupServerFn func(*Test) ([]string, map[string]string), cleanupFn func()) Options {
+func WithRunAPIServerAndRequests(
+	path string,
+	setupServerFn func(*Test) ([]string, map[string]string),
+	cleanupFn func(),
+	updateRequestPathFn func(string) string,
+) Options {
 	return func(c *runConfig) {
 		c.runAPIServerConfig = runAPIServerConfig{
-			path:          path,
-			setupServerFn: setupServerFn,
-			cleanupFn:     cleanupFn,
+			path:                path,
+			setupServerFn:       setupServerFn,
+			cleanupFn:           cleanupFn,
+			updateRequestPathFn: updateRequestPathFn,
 		}
 	}
 }
@@ -128,8 +141,16 @@ type Test struct {
 	workingDirFS filesystem.Fs
 }
 
+func (t *Test) T() *testing.T {
+	return t.t
+}
+
 func (t *Test) TestDirFS() filesystem.Fs {
 	return t.testDirFS
+}
+
+func (t *Test) WorkingDirFS() filesystem.Fs {
+	return t.workingDirFS
 }
 
 func (t *Test) Run(opts ...Options) {
@@ -176,6 +197,7 @@ func (t *Test) Run(opts ...Options) {
 			c.runAPIServerConfig.path,
 			c.runAPIServerConfig.setupServerFn,
 			c.runAPIServerConfig.cleanupFn,
+			c.runAPIServerConfig.updateRequestPathFn,
 		)
 	}
 
@@ -287,7 +309,7 @@ func (t *Test) runCLIBinary(path string, args []string) {
 	stdout := cmdInOut.StdoutString()
 	stderr := cmdInOut.StderrString()
 
-	expectedCode := cast.ToInt(t.readFileFromTestDir("expected-code"))
+	expectedCode := cast.ToInt(t.ReadFileFromTestDir("expected-code"))
 	assert.Equal(
 		t.t,
 		expectedCode,
@@ -297,20 +319,26 @@ func (t *Test) runCLIBinary(path string, args []string) {
 		stderr,
 	)
 
-	expectedStdout := t.readFileFromTestDir("expected-stdout")
+	expectedStdout := t.ReadFileFromTestDir("expected-stdout")
 	wildcards.Assert(t.t, expectedStdout, stdout, "Unexpected STDOUT.")
 
-	expectedStderr := t.readFileFromTestDir("expected-stderr")
+	expectedStderr := t.ReadFileFromTestDir("expected-stderr")
 	wildcards.Assert(t.t, expectedStderr, stderr, "Unexpected STDERR.")
 }
 
 type runAPIServerConfig struct {
-	path          string
-	setupServerFn func(*Test) ([]string, map[string]string)
-	cleanupFn     func()
+	path                string
+	setupServerFn       func(*Test) ([]string, map[string]string)
+	cleanupFn           func()
+	updateRequestPathFn func(string) string
 }
 
-func (t *Test) runAPIServer(path string, setupServerFn func(*Test) ([]string, map[string]string), cleanupFn func()) {
+func (t *Test) runAPIServer(
+	path string,
+	setupServerFn func(*Test) ([]string, map[string]string),
+	cleanupFn func(),
+	updateRequestPathFn func(string) string,
+) {
 	// Get a free port
 	port, err := getFreePort()
 	if err != nil {
@@ -364,7 +392,7 @@ func (t *Test) runAPIServer(path string, setupServerFn func(*Test) ([]string, ma
 	}
 
 	// Run the requests
-	requestsOk := t.runRequests(apiURL)
+	requestsOk := t.runRequests(apiURL, updateRequestPathFn)
 
 	// Shutdown API server
 	_ = cmd.Process.Signal(syscall.SIGTERM)
@@ -386,11 +414,11 @@ func (t *Test) runAPIServer(path string, setupServerFn func(*Test) ([]string, ma
 			time.Sleep(100 * time.Millisecond)
 		}
 		if t.testDirFS.IsFile(expectedStdoutPath) {
-			expected := t.readFileFromTestDir(expectedStdoutPath)
+			expected := t.ReadFileFromTestDir(expectedStdoutPath)
 			wildcards.Assert(t.t, expected, stdout.String(), "Unexpected STDOUT.")
 		}
 		if t.testDirFS.IsFile(expectedStderrPath) {
-			expected := t.readFileFromTestDir(expectedStderrPath)
+			expected := t.ReadFileFromTestDir(expectedStderrPath)
 			wildcards.Assert(t.t, expected, stderr.String(), "Unexpected STDERR.")
 		}
 	}
@@ -403,7 +431,7 @@ type apiRequest struct {
 	Headers map[string]string `json:"headers"`
 }
 
-func (t *Test) runRequests(apiURL string) bool {
+func (t *Test) runRequests(apiURL string, updateRequestPathFn func(string) string) bool {
 	client := resty.New()
 	client.SetBaseURL(apiURL)
 
@@ -422,7 +450,7 @@ func (t *Test) runRequests(apiURL string) bool {
 	assert.NoError(t.t, err)
 	for _, requestDir := range dirs {
 		// Read the request file
-		requestFileStr := t.readFileFromTestDir(filesystem.Join(requestDir, "request.json"))
+		requestFileStr := t.ReadFileFromTestDir(filesystem.Join(requestDir, "request.json"))
 		assert.NoError(t.t, err)
 
 		request := &apiRequest{}
@@ -444,9 +472,11 @@ func (t *Test) runRequests(apiURL string) bool {
 		}
 		r.SetHeaders(request.Headers)
 
+		path := updateRequestPathFn(request.Path)
+
 		// Send request
 		r.SetContext(context.WithValue(r.Context(), dumpDirCtxKey, requestDir))
-		resp, err := r.Execute(request.Method, request.Path)
+		resp, err := r.Execute(request.Method, path)
 		assert.NoError(t.t, err)
 
 		// Dump raw HTTP response
@@ -457,7 +487,7 @@ func (t *Test) runRequests(apiURL string) bool {
 		}
 
 		// Compare response body
-		expectedRespBody := t.readFileFromTestDir(filesystem.Join(requestDir, "expected-response.json"))
+		expectedRespBody := t.ReadFileFromTestDir(filesystem.Join(requestDir, "expected-response.json"))
 
 		// Decode && encode json to unite indentation of the response with expected-response.json
 		respMap := orderedmap.New()
@@ -469,7 +499,7 @@ func (t *Test) runRequests(apiURL string) bool {
 		assert.NoError(t.t, err)
 
 		// Compare response status code
-		expectedCode := cast.ToInt(t.readFileFromTestDir(filesystem.Join(requestDir, "expected-http-code")))
+		expectedCode := cast.ToInt(t.ReadFileFromTestDir(filesystem.Join(requestDir, "expected-http-code")))
 		ok1 := assert.Equal(
 			t.t,
 			expectedCode,
@@ -492,7 +522,7 @@ func (t *Test) runRequests(apiURL string) bool {
 	return true
 }
 
-func (t *Test) readFileFromTestDir(path string) string {
+func (t *Test) ReadFileFromTestDir(path string) string {
 	file, err := t.testDirFS.ReadFile(filesystem.NewFileDef(path))
 	assert.NoError(t.t, err)
 	return testhelper.MustReplaceEnvsString(strings.TrimSpace(file.Content), t.envProvider)
@@ -515,7 +545,7 @@ func (t *Test) assertDirContent() {
 
 func (t *Test) assertProjectState() {
 	if t.testDirFS.IsFile(expectedStatePath) {
-		expectedState := t.readFileFromTestDir(expectedStatePath)
+		expectedState := t.ReadFileFromTestDir(expectedStatePath)
 
 		// Load actual state
 		actualState, err := t.project.NewSnapshot()

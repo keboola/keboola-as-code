@@ -52,9 +52,16 @@ func TestTemplatesApiE2E(t *testing.T) {
 		return addArgs, addEnvs
 	}
 
-	r.ForEachTest(
-		runner.WithInitProjectState(),
-		runner.WithRunAPIServerAndRequests(binaryPath, setupAPIServerFn, func() {}),
-		runner.WithAssertProjectState(),
-	)
+	r.ForEachTest(func(test *runner.Test) {
+		test.Run(
+			runner.WithInitProjectState(),
+			runner.WithRunAPIServerAndRequests(
+				binaryPath,
+				setupAPIServerFn,
+				func() {},
+				func(s string) string { return s },
+			),
+			runner.WithAssertProjectState(),
+		)
+	})
 }

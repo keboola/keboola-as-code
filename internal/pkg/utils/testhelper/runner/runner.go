@@ -5,6 +5,7 @@ package runner
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -70,6 +72,7 @@ func (r *Runner) NewTest(t *testing.T, testDirName string) (*Test, context.Cance
 	envMap.Set(`KBC_TEMPLATES_PRIVATE_BETA`, `true`)
 	// Disable version check
 	envMap.Set(`KBC_VERSION_CHECK`, `false`)
+	envMap.Set("TEST_KBC_PROJECT_ID_8DIG", fmt.Sprintf("%08d", cast.ToInt(envMap.Get("TEST_KBC_PROJECT_ID"))))
 
 	return &Test{
 		Runner:       *r,
@@ -86,7 +89,7 @@ func (r *Runner) NewTest(t *testing.T, testDirName string) (*Test, context.Cance
 }
 
 // ForEachTest loops through all dirs within `runner.testsDir` and runs the test in it.
-func (r *Runner) ForEachTest(opts ...Options) {
+func (r *Runner) ForEachTest(runFn func(test *Test)) {
 	r.t.Helper()
 
 	// Run test for each directory
@@ -97,7 +100,7 @@ func (r *Runner) ForEachTest(opts ...Options) {
 
 			test, cancelFn := r.NewTest(t, testName)
 			defer cancelFn()
-			test.Run(opts...)
+			runFn(test)
 		})
 	}
 }
