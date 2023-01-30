@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/google/shlex"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/spf13/cast"
@@ -34,7 +33,6 @@ import (
 )
 
 const (
-	argsFileName         = `args`
 	dumpDirCtxKey        = ctxKey("dumpDir")
 	envFileName          = "env"
 	expectedStatePath    = "expected-state.json"
@@ -53,10 +51,10 @@ type runConfig struct {
 	assertDirContent   bool
 	assertEtcdState    bool
 	assertProjectState bool
+	cliArgsFn          func(*Test) []string
 	cliBinaryPath      string
 	copyInToWorkingDir bool
 	initProjectState   bool
-	loadArgsFile       bool
 	runAPIServerConfig runAPIServerConfig
 }
 
@@ -96,12 +94,6 @@ func WithInitProjectState() Options {
 	}
 }
 
-func WithLoadArgsFile() Options {
-	return func(c *runConfig) {
-		c.loadArgsFile = true
-	}
-}
-
 func WithRunAPIServerAndRequests(
 	path string,
 	setupServerFn func(*Test) ([]string, map[string]string),
@@ -118,14 +110,11 @@ func WithRunAPIServerAndRequests(
 	}
 }
 
-func WithRunCLIBinary(path string) Options {
+func WithRunCLIBinary(path string, loadArgsFn func(*Test) []string) Options {
 	return func(c *runConfig) {
 		c.cliBinaryPath = path
+		c.cliArgsFn = loadArgsFn
 	}
-}
-
-type results struct {
-	cliBinaryArgs []string
 }
 
 type Test struct {
@@ -139,6 +128,10 @@ type Test struct {
 	testDirFS    filesystem.Fs
 	workingDir   string
 	workingDirFS filesystem.Fs
+}
+
+func (t *Test) EnvProvider() testhelper.EnvProvider {
+	return t.envProvider
 }
 
 func (t *Test) T() *testing.T {
@@ -161,8 +154,6 @@ func (t *Test) Run(opts ...Options) {
 		o(&c)
 	}
 
-	res := results{}
-
 	if c.copyInToWorkingDir {
 		// Copy .in to the working dir of the current test.
 		t.copyInToWorkingDir()
@@ -181,14 +172,9 @@ func (t *Test) Run(opts ...Options) {
 	// Replace all %%ENV_VAR%% in all files of the working directory.
 	testhelper.MustReplaceEnvsDir(t.workingDirFS, `/`, t.envProvider)
 
-	if c.loadArgsFile {
-		// Load file with additional command arguments
-		res.cliBinaryArgs = t.loadArgsFile()
-	}
-
 	if c.cliBinaryPath != "" {
 		// Run a CLI binary
-		t.runCLIBinary(c.cliBinaryPath, res.cliBinaryArgs)
+		t.runCLIBinary(c.cliBinaryPath, c.cliArgsFn)
 	}
 
 	if c.runAPIServerConfig.path != "" {
@@ -245,25 +231,9 @@ func (t *Test) addEnvVarsFromFile() {
 	}
 }
 
-func (t *Test) loadArgsFile() []string {
-	// Load command arguments from file
-	argsFile, err := t.testDirFS.ReadFile(filesystem.NewFileDef(argsFileName))
-	if err != nil {
-		t.t.Fatalf(`cannot open "%s" test file %s`, argsFileName, err)
-	}
-
-	// Load and parse command arguments
-	argsStr := strings.TrimSpace(argsFile.Content)
-	argsStr = testhelper.MustReplaceEnvsString(argsStr, t.envProvider)
-	args, err := shlex.Split(argsStr)
-	if err != nil {
-		t.t.Fatalf(`Cannot parse args "%s": %s`, argsStr, err)
-	}
-	return args
-}
-
-func (t *Test) runCLIBinary(path string, args []string) {
+func (t *Test) runCLIBinary(path string, setupArgsFn func(*Test) []string) {
 	// Prepare command
+	args := setupArgsFn(t)
 	cmd := exec.CommandContext(t.ctx, path, args...) // nolint:gosec
 	cmd.Env = t.env.ToSlice()
 	cmd.Dir = t.workingDir

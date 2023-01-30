@@ -32,10 +32,10 @@ func TestTemplatesApiE2E(t *testing.T) {
 		"build-templates-api",
 	)
 
-	setupAPIServerFn := func(t *runner.Test) ([]string, map[string]string) {
+	setupAPIServerFn := func(test *runner.Test) ([]string, map[string]string) {
 		var repositories string
-		if t.TestDirFS().Exists("repository") {
-			repositories = fmt.Sprintf("keboola|file://%s", filepath.Join(t.TestDirFS().BasePath(), "repository"))
+		if test.TestDirFS().Exists("repository") {
+			repositories = fmt.Sprintf("keboola|file://%s", filepath.Join(test.TestDirFS().BasePath(), "repository"))
 		} else {
 			repositories = "keboola|https://github.com/keboola/keboola-as-code-templates.git|main"
 		}
