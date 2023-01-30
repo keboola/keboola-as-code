@@ -67,17 +67,14 @@ func TestBufferApiE2E(t *testing.T) {
 			assert.NoError(test.T(), err)
 		}
 
-		setupAPIServerFn := func(t *runner.Test) ([]string, map[string]string) {
-			addEnvs := map[string]string{
-				"KBC_BUFFER_API_HOST":   "buffer.keboola.local",
-				"BUFFER_ETCD_NAMESPACE": etcdNamespace,
-				"BUFFER_ETCD_ENDPOINT":  etcdEndpoint,
-				"BUFFER_ETCD_USERNAME":  etcdUsername,
-				"BUFFER_ETCD_PASSWORD":  etcdPassword,
-			}
-
-			return []string{}, addEnvs
+		addEnvs := map[string]string{
+			"KBC_BUFFER_API_HOST":   "buffer.keboola.local",
+			"BUFFER_ETCD_NAMESPACE": etcdNamespace,
+			"BUFFER_ETCD_ENDPOINT":  etcdEndpoint,
+			"BUFFER_ETCD_USERNAME":  etcdUsername,
+			"BUFFER_ETCD_PASSWORD":  etcdPassword,
 		}
+
 		updateRequestPathFn := func(path string) string {
 			// Replace placeholder by secret loaded from the etcd.
 			if strings.Contains(path, receiverSecretPlaceholder) {
@@ -102,7 +99,8 @@ func TestBufferApiE2E(t *testing.T) {
 			runner.WithInitProjectState(),
 			runner.WithRunAPIServerAndRequests(
 				binaryPath,
-				setupAPIServerFn,
+				[]string{},
+				addEnvs,
 				updateRequestPathFn,
 			),
 			runner.WithAssertProjectState(),

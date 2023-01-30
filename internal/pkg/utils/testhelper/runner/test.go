@@ -96,13 +96,15 @@ func WithInitProjectState() Options {
 
 func WithRunAPIServerAndRequests(
 	path string,
-	setupServerFn func(*Test) ([]string, map[string]string),
+	args []string,
+	envs map[string]string,
 	updateRequestPathFn func(string) string,
 ) Options {
 	return func(c *runConfig) {
 		c.runAPIServerConfig = runAPIServerConfig{
 			path:                path,
-			setupServerFn:       setupServerFn,
+			args:                args,
+			envs:                envs,
 			updateRequestPathFn: updateRequestPathFn,
 		}
 	}
@@ -179,7 +181,8 @@ func (t *Test) Run(opts ...Options) {
 		// Run an API server binary
 		t.runAPIServer(
 			c.runAPIServerConfig.path,
-			c.runAPIServerConfig.setupServerFn,
+			c.runAPIServerConfig.args,
+			c.runAPIServerConfig.envs,
 			c.runAPIServerConfig.updateRequestPathFn,
 		)
 	}
@@ -295,13 +298,15 @@ func (t *Test) runCLIBinary(path string, setupArgsFn func(*Test) []string) {
 
 type runAPIServerConfig struct {
 	path                string
-	setupServerFn       func(*Test) ([]string, map[string]string)
+	args                []string
+	envs                map[string]string
 	updateRequestPathFn func(string) string
 }
 
 func (t *Test) runAPIServer(
 	path string,
-	setupServerFn func(*Test) ([]string, map[string]string),
+	addArgs []string,
+	addEnvs map[string]string,
 	updateRequestPathFn func(string) string,
 ) {
 	// Get a free port
@@ -311,7 +316,6 @@ func (t *Test) runAPIServer(
 	}
 	apiURL := fmt.Sprintf("http://localhost:%d", port)
 
-	addArgs, addEnvs := setupServerFn(t)
 	args := append([]string{fmt.Sprintf("--http-port=%d", port)}, addArgs...)
 
 	// Envs

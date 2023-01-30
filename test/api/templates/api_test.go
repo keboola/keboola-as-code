@@ -32,7 +32,7 @@ func TestTemplatesApiE2E(t *testing.T) {
 		"build-templates-api",
 	)
 
-	setupAPIServerFn := func(test *runner.Test) ([]string, map[string]string) {
+	r.ForEachTest(func(test *runner.Test) {
 		var repositories string
 		if test.TestDirFS().Exists("repository") {
 			repositories = fmt.Sprintf("keboola|file://%s", filepath.Join(test.TestDirFS().BasePath(), "repository"))
@@ -49,15 +49,12 @@ func TestTemplatesApiE2E(t *testing.T) {
 			"TEMPLATES_API_ETCD_PASSWORD":  os.Getenv("TEMPLATES_API_ETCD_PASSWORD"),
 		}
 
-		return addArgs, addEnvs
-	}
-
-	r.ForEachTest(func(test *runner.Test) {
 		test.Run(
 			runner.WithInitProjectState(),
 			runner.WithRunAPIServerAndRequests(
 				binaryPath,
-				setupAPIServerFn,
+				addArgs,
+				addEnvs,
 				func(s string) string { return s },
 			),
 			runner.WithAssertProjectState(),
