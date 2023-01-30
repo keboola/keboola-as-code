@@ -2,50 +2,44 @@ package etcdop
 
 import (
 	"context"
-	"net"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
+	"go.etcd.io/etcd/tests/v3/integration"
+	"google.golang.org/grpc/connectivity"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-// nolint:paralleltest // the test run the "compact" operation and breaks the other tests running in parallel
+// nolint:paralleltest // etcd integration tests cannot run in parallel, see integration.BeforeTestExternal
 func TestWatchConsumer(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf(`etcd compact tests are tested only on Linux`)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	wg := &sync.WaitGroup{}
 	logger := log.NewDebugLogger()
 
-	// Both clients must use same namespace
-	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
-
-	// Create client for the test
-	testClient := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-
-	// Create watcher client with custom dialer
-	var conn net.Conn
-	dialerLock := &sync.Mutex{}
-	dialer := func(ctx context.Context, s string) (net.Conn, error) {
-		dialerLock.Lock()
-		defer dialerLock.Unlock()
-		var err error
-		conn, err = (&net.Dialer{}).DialContext(ctx, "tcp", s)
-		return conn, err
-	}
-	c := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace, grpc.WithContextDialer(dialer))
+	// Create etcd cluster for test
+	integration.BeforeTestExternal(t)
+	cluster := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 3, UseBridge: true})
+	defer cluster.Terminate(t)
+	cluster.WaitLeader(t)
+	testClient := cluster.Client(1)
+	watchMember := cluster.Members[2]
+	watchClient := cluster.Client(2)
 
 	// Create consumer
 	pfx := prefixForTest()
 	init := pfx.
-		GetAllAndWatch(ctx, c).
+		GetAllAndWatch(ctx, watchClient).
 		SetupConsumer(logger).
 		WithOnCreated(func(header *Header) {
 			logger.Infof(`OnCreated: created (rev %v)`, header.Revision)
@@ -73,7 +67,7 @@ func TestWatchConsumer(t *testing.T) {
 	logger.Truncate()
 
 	// Put some key
-	assert.NoError(t, pfx.Key("key1").Put("value1").Do(ctx, c))
+	assert.NoError(t, pfx.Key("key1").Put("value1").Do(ctx, watchClient))
 
 	// Expect forEach event
 	assert.Eventually(t, func() bool {
@@ -85,21 +79,24 @@ INFO  ForEach: restart=false, events(1): create "my/prefix/key1"
 	logger.Truncate()
 
 	// Close watcher connection and block a new one
-	dialerLock.Lock()
-	assert.NoError(t, conn.Close())
+	watchMember.Bridge().PauseConnections()
+	watchMember.Bridge().DropConnections()
+	assert.Eventually(t, func() bool {
+		return watchClient.ActiveConnection().GetState() == connectivity.Connecting
+	}, 5*time.Second, 100*time.Millisecond)
 
 	// Add some other keys, during the watcher is disconnected
 	assert.NoError(t, pfx.Key("key2").Put("value2").Do(ctx, testClient))
 	assert.NoError(t, pfx.Key("key3").Put("value3").Do(ctx, testClient))
 
 	// Compact, during the watcher is disconnected
-	status, err := testClient.Status(ctx, c.Endpoints()[0])
+	status, err := testClient.Status(ctx, testClient.Endpoints()[0])
 	assert.NoError(t, err)
 	_, err = testClient.Compact(ctx, status.Header.Revision)
 	assert.NoError(t, err)
 
 	// Unblock dialer, watcher will be reconnected
-	dialerLock.Unlock()
+	watchMember.Bridge().UnpauseConnections()
 
 	// Expect restart event, followed with all 3 keys.
 	// The restart flag is true.
