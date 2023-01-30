@@ -78,19 +78,6 @@ func TestBufferApiE2E(t *testing.T) {
 
 			return []string{}, addEnvs
 		}
-		cleanupServerFn := func() {
-			// delete etcd namespace
-			ctx := context.Background()
-			client, err := etcd.New(etcd.Config{
-				Context:   ctx,
-				Endpoints: []string{etcdEndpoint},
-				Username:  etcdUsername,
-				Password:  etcdPassword,
-			})
-			assert.NoError(t, err)
-			_, err = client.KV.Delete(ctx, etcdNamespace, etcd.WithPrefix())
-			assert.NoError(t, err)
-		}
 		updateRequestPathFn := func(path string) string {
 			// Replace placeholder by secret loaded from the etcd.
 			if strings.Contains(path, receiverSecretPlaceholder) {
@@ -104,13 +91,18 @@ func TestBufferApiE2E(t *testing.T) {
 			return path
 		}
 
+		defer func() {
+			// Cleanup etcd - delete the whole namespace
+			_, err := etcdClient.KV.Delete(context.Background(), etcdNamespace, etcd.WithPrefix())
+			assert.NoError(t, err)
+		}()
+
 		// Run the test
 		test.Run(
 			runner.WithInitProjectState(),
 			runner.WithRunAPIServerAndRequests(
 				binaryPath,
 				setupAPIServerFn,
-				cleanupServerFn,
 				updateRequestPathFn,
 			),
 			runner.WithAssertProjectState(),

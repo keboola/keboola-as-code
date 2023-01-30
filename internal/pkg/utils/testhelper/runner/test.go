@@ -97,14 +97,12 @@ func WithInitProjectState() Options {
 func WithRunAPIServerAndRequests(
 	path string,
 	setupServerFn func(*Test) ([]string, map[string]string),
-	cleanupFn func(),
 	updateRequestPathFn func(string) string,
 ) Options {
 	return func(c *runConfig) {
 		c.runAPIServerConfig = runAPIServerConfig{
 			path:                path,
 			setupServerFn:       setupServerFn,
-			cleanupFn:           cleanupFn,
 			updateRequestPathFn: updateRequestPathFn,
 		}
 	}
@@ -182,7 +180,6 @@ func (t *Test) Run(opts ...Options) {
 		t.runAPIServer(
 			c.runAPIServerConfig.path,
 			c.runAPIServerConfig.setupServerFn,
-			c.runAPIServerConfig.cleanupFn,
 			c.runAPIServerConfig.updateRequestPathFn,
 		)
 	}
@@ -299,14 +296,12 @@ func (t *Test) runCLIBinary(path string, setupArgsFn func(*Test) []string) {
 type runAPIServerConfig struct {
 	path                string
 	setupServerFn       func(*Test) ([]string, map[string]string)
-	cleanupFn           func()
 	updateRequestPathFn func(string) string
 }
 
 func (t *Test) runAPIServer(
 	path string,
 	setupServerFn func(*Test) ([]string, map[string]string),
-	cleanupFn func(),
 	updateRequestPathFn func(string) string,
 ) {
 	// Get a free port
@@ -348,7 +343,6 @@ func (t *Test) runAPIServer(
 	// Kill API server after test
 	t.t.Cleanup(func() {
 		_ = cmd.Process.Kill()
-		cleanupFn()
 	})
 
 	// Wait for API server

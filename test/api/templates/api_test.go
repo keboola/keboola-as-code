@@ -58,7 +58,6 @@ func TestTemplatesApiE2E(t *testing.T) {
 			runner.WithRunAPIServerAndRequests(
 				binaryPath,
 				setupAPIServerFn,
-				func() {},
 				func(s string) string { return s },
 			),
 			runner.WithAssertProjectState(),
