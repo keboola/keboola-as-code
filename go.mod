@@ -17,8 +17,8 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/fatih/color v1.14.1
 	github.com/go-playground/locales v0.14.1
-	github.com/go-playground/universal-translator v0.18.0
-	github.com/go-playground/validator/v10 v10.11.1
+	github.com/go-playground/universal-translator v0.18.1
+	github.com/go-playground/validator/v10 v10.11.2
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-jsonnet v0.19.1
@@ -34,7 +34,7 @@ require (
 	github.com/lestrrat-go/strftime v1.0.6
 	github.com/qmuntal/stateless v1.6.1
 	github.com/relvacode/iso8601 v1.3.0
-	github.com/santhosh-tekuri/jsonschema/v5 v5.1.1
+	github.com/santhosh-tekuri/jsonschema/v5 v5.2.0
 	github.com/spf13/afero v1.9.3
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.6.1
@@ -47,8 +47,8 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.7
 	go.etcd.io/etcd/tests/v3 v3.5.7
 	go.nhat.io/aferocopy/v2 v2.0.1
-	go.opentelemetry.io/otel v1.11.2
-	go.opentelemetry.io/otel/trace v1.11.2
+	go.opentelemetry.io/otel v1.12.0
+	go.opentelemetry.io/otel/trace v1.12.0
 	go.uber.org/zap v1.24.0
 	goa.design/goa/v3 v3.11.0
 	goa.design/plugins/v3 v3.11.0
@@ -95,7 +95,7 @@ require (
 	github.com/zach-klippenstein/goregen v0.0.0-20160303162051-795b5e3961ea // indirect
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/crypto v0.1.0 // indirect
+	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/sys v0.4.0 // indirect
