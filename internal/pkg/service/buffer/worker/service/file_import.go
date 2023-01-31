@@ -8,7 +8,9 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/table"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task/orchestrator"
@@ -51,7 +53,47 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 					}
 				}()
 
-				// Skip empty?
+				// TEMPORARY: Fix old empty files without statistics/isEmpty fields
+				// ------------------------------
+				if fileRes.Statistics == nil && !fileRes.IsEmpty {
+					stats := model.Stats{}
+					err := store.SumStats(ctx, s.etcdClient, s.schema.Slices().Uploaded().InFile(fileRes.FileKey).GetAll(), &stats)
+					if err != nil {
+						return "", errors.Errorf(`cannot get stats: %w`, err)
+					}
+					if stats.RecordsCount == 0 {
+						fileRes.IsEmpty = true
+					}
+				}
+				// ------------------------------
+
+				// Skip empty
+				if fileRes.IsEmpty {
+					// Load token
+					token, err := s.store.GetToken(ctx, fileRes.ExportKey)
+					if err != nil {
+						return "", errors.Errorf(`cannot load token for export "%s": %w`, fileRes.ExportKey, err)
+					}
+
+					// Create file manager
+					api, err := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
+					if err != nil {
+						return "", err
+					}
+					files := file.NewManager(d.Clock(), api, s.config.uploadTransport)
+
+					// Delete the empty file resource
+					if err := files.DeleteFile(ctx, fileRes); err != nil {
+						// The error is not critical
+						s.logger.Error(errors.Errorf(`cannot delete empty file "%v/%v": %w`, fileRes.FileID, fileRes.StorageResource.ID, err))
+					}
+
+					// Mark file imported
+					if err := s.store.MarkFileImported(ctx, &fileRes); err != nil {
+						return "", err
+					}
+					return "skipped import of the empty file", nil
+				}
 
 				// Load token
 				token, err := s.store.GetToken(ctx, fileRes.ExportKey)

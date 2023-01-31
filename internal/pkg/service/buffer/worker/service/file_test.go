@@ -104,12 +104,51 @@ func TestUploadAndImportE2E(t *testing.T) {
 	}, 60*time.Second, 100*time.Millisecond, logger.AllMessages())
 	logger.Truncate()
 
-	// Check the target table
-	table, err := project.KeboolaProjectAPI().
-		GetTableRequest(keboola.MustParseTableID(export.Mapping.TableID)).
-		Send(ctx)
+	// Check the target table: records count
+	tableID := keboola.MustParseTableID(export.Mapping.TableID)
+	table, err := project.KeboolaProjectAPI().GetTableRequest(tableID).Send(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(10), table.RowsCount)
+
+	// Check the target table: data preview
+	preview, err := project.KeboolaProjectAPI().PreviewTableRequest(tableID, keboola.WithLimitRows(20), keboola.WithOrderBy("bodyCol", keboola.OrderAsc)).Send(ctx)
+	for i := range preview.Rows {
+		preview.Rows[i][1] = "<date>"
+	}
+	assert.NoError(t, err)
+	assert.Equal(t, &keboola.TablePreview{
+		Columns: []string{"idCol", "dateCol", "bodyCol"},
+		Rows: [][]string{
+			{"1", "<date>", "payload001"},
+			{"2", "<date>", "payload002"},
+			{"3", "<date>", "payload003"},
+			{"4", "<date>", "payload004"},
+			{"5", "<date>", "payload005"},
+			{"6", "<date>", "payload006"},
+			{"7", "<date>", "payload007"},
+			{"8", "<date>", "payload008"},
+			{"9", "<date>", "payload009"},
+			{"10", "<date>", "payload010"},
+		},
+	}, preview)
+
+	// Change the mapping, it triggers the closing of the empty slice/file
+	_, err = api.UpdateExport(apiDeps, &buffer.UpdateExportPayload{
+		ReceiverID: export.ReceiverID,
+		ExportID:   export.ID,
+		Mapping: &buffer.Mapping{
+			TableID: "in.c-bucket.new-table",
+			Columns: export.Mapping.Columns,
+		},
+	})
+	assert.NoError(t, err)
+	assert.Eventually(t, func() bool {
+		logs := logger.AllMessages()
+		sliceOk := wildcards.Compare("%A[task][slice.upload/%s]INFO  task succeeded (%s): skipped upload of the empty slice%A", strhelper.FilterLines(`\[task\]\[slice.upload`, logs)) == nil
+		fileOk := wildcards.Compare("%A[task][file.import/%s]INFO  task succeeded (%s): skipped import of the empty file%A", strhelper.FilterLines(`\[task\]\[file.import`, logs)) == nil
+		return sliceOk && fileOk
+	}, 60*time.Second, 100*time.Millisecond, logger.AllMessages())
+	logger.Truncate()
 
 	// Check etcd state
 	assertStateAfterImport(t, client)
@@ -137,6 +176,12 @@ config/mapping/revision/%s/my-receiver/my-export/00000001
 >>>>>
 
 <<<<<
+config/mapping/revision/%s/my-receiver/my-export/00000002
+-----
+%A
+>>>>>
+
+<<<<<
 config/receiver/%s/my-receiver
 -----
 %A
@@ -159,7 +204,37 @@ file/imported/%s/my-receiver/my-export/%s
   },
   "closingAt": "%s",
   "importingAt": "%s",
-  "importedAt": "%s"
+  "importedAt": "%s",
+  "statistics": {
+    "lastRecordAt": "%s",
+    "recordsCount": 10,
+    "recordsSize": "470B",
+    "bodySize": "100B",
+    "fileSize": "381B",
+    "fileGZipSize": "%s"
+  }
+}
+>>>>>
+
+<<<<<
+file/imported/%s/my-receiver/my-export/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "fileId": "%A",
+  "state": "imported",
+  "mapping": {
+%A
+  },
+  "storageResource": {
+%A
+  },
+  "closingAt": "%s",
+  "importingAt": "%s",
+  "importedAt": "%s",
+  "isEmpty": true
 }
 >>>>>
 
@@ -298,6 +373,49 @@ slice/archived/successful/imported/%s/my-receiver/my-export/%s/%s
 >>>>>
 
 <<<<<
+slice/archived/successful/imported/%s/my-receiver/my-export/%s/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "state": "archived/successful/imported",
+  "mapping": {
+%A
+  },
+  "storageResource": {
+%A
+  },
+  "sliceNumber": 1,
+  "closingAt": "%s",
+  "uploadingAt": "%s",
+  "uploadedAt": "%s",
+  "importedAt": "%s",
+  "isEmpty": true
+}
+>>>>>
+
+<<<<<
+task/%s/my-receiver/my-export/file.close/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "type": "file.close",
+  "createdAt": "%s",
+  "randomId": "%s",
+  "finishedAt": "%s",
+  "workerNode": "worker-node",
+  "lock": "file.close/%s",
+  "result": "file closed",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
 task/%s/my-receiver/my-export/file.close/%s
 -----
 {
@@ -334,6 +452,24 @@ task/%s/my-receiver/my-export/file.import/%s
 >>>>>
 
 <<<<<
+task/%s/my-receiver/my-export/file.import/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "type": "file.import",
+  "createdAt": "%s",
+  "randomId": "%s",
+  "finishedAt": "%s",
+  "workerNode": "worker-node",
+  "lock": "file.import/%s",
+  "result": "skipped import of the empty file",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
 task/%s/my-receiver/my-export/file.swap/%s
 -----
 {
@@ -347,6 +483,24 @@ task/%s/my-receiver/my-export/file.swap/%s
   "workerNode": "worker-node",
   "lock": "file.swap/%s",
   "result": "new file created, the old is closing",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
+task/%s/my-receiver/my-export/slice.close/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "type": "slice.close",
+  "createdAt": "%s",
+  "randomId": "%s",
+  "finishedAt": "%s",
+  "workerNode": "worker-node",
+  "lock": "slice.close/%s",
+  "result": "slice closed",
   "duration": %d
 }
 >>>>>
@@ -437,6 +591,24 @@ task/%s/my-receiver/my-export/slice.upload/%s
   "workerNode": "worker-node",
   "lock": "slice.upload/%s",
   "result": "slice uploaded",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
+task/%s/my-receiver/my-export/slice.upload/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "exportId": "my-export",
+  "type": "slice.upload",
+  "createdAt": "%s",
+  "randomId": "%s",
+  "finishedAt": "%s",
+  "workerNode": "worker-node",
+  "lock": "slice.upload/%s",
+  "result": "skipped upload of the empty slice",
   "duration": %d
 }
 >>>>>

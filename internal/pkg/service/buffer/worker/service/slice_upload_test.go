@@ -489,7 +489,6 @@ slice/active/closed/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00
   "fileId": "0001-01-01T00:00:01.000Z",
   "sliceId": "0001-01-01T00:00:01.000Z",
   "state": "active/closed/uploaded",
-  "isEmpty": true,
   "mapping": {
 %A
   },
@@ -499,7 +498,8 @@ slice/active/closed/uploaded/00000123/my-receiver-1/my-export-1/0001-01-01T00:00
   "sliceNumber": 1,
   "closingAt": "%s",
   "uploadingAt": "%s",
-  "uploadedAt": "%s"
+  "uploadedAt": "%s",
+  "isEmpty": true
 }
 >>>>>
 

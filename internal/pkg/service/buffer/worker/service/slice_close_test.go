@@ -272,11 +272,11 @@ slice/active/closed/uploading/00000123/my-receiver-1/my-export-1/0001-01-01T00:0
 {
 %A
   "state": "active/closed/uploading",
-  "isEmpty": true,
 %A
   "sliceNumber": 1,
   "closingAt": "0001-01-01T00:03:04.000Z",
-  "uploadingAt": "0001-01-01T00:03:34.000Z"
+  "uploadingAt": "0001-01-01T00:03:34.000Z",
+  "isEmpty": true
 %A
 >>>>>
 

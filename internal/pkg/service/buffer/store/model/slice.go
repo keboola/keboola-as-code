@@ -20,7 +20,6 @@ const (
 type Slice struct {
 	key.SliceKey
 	State           slicestate.State `json:"state" validate:"required,oneof=active/opened/writing active/opened/closing active/closed/uploading active/closed/uploaded active/closed/failed archived/successful/imported"`
-	IsEmpty         bool             `json:"isEmpty,omitempty"`
 	Mapping         Mapping          `json:"mapping" validate:"required,dive"`
 	StorageResource *keboola.File    `json:"storageResource" validate:"required"`
 	Number          int              `json:"sliceNumber" validate:"required"`
@@ -33,8 +32,10 @@ type Slice struct {
 	RetryAttempt    int              `json:"retryAttempt,omitempty"`
 	RetryAfter      *UTCTime         `json:"retryAfter,omitempty"`
 	// Statistics are set by the "slice close" operation, the value is nil, if there is no record.
-	Statistics *Stats        `json:"statistics,omitempty"`
-	IDRange    *SliceIDRange `json:"idRange,omitempty"`
+	Statistics *Stats `json:"statistics,omitempty"`
+	IsEmpty    bool   `json:"isEmpty,omitempty"`
+	// IDRange is assigned during the "slice close" operation, it defines the assigned auto-increment value.
+	IDRange *SliceIDRange `json:"idRange,omitempty"`
 }
 
 type SliceIDRange struct {
