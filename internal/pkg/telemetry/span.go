@@ -7,15 +7,16 @@ import (
 	ddext "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 )
 
-const (
-	HTTPMethod = ddext.HTTPMethod
-	HTTPURL    = ddext.HTTPURL
-	SampleRate = ddext.EventSampleRate
-)
+func SampleRate(v float64) attribute.KeyValue {
+	return attribute.Float64(ddext.EventSampleRate, v)
+}
 
-// KeepSpan by tracer retention policy.
 func KeepSpan() attribute.KeyValue {
-	return attribute.Float64(SampleRate, 1.0)
+	return attribute.Bool(ddext.ManualKeep, true)
+}
+
+func DropSpan() attribute.KeyValue {
+	return attribute.Bool(ddext.ManualDrop, true)
 }
 
 func EndSpan(span trace.Span, errPtr *error) {
