@@ -3,6 +3,7 @@ package service_test
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -108,8 +109,12 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	workerDeps.DebugLogger().Truncate()
 	clk.Add(3 * time.Minute)
 
+	// Wait for failed upload and the retry
+	assert.Eventually(t, func() bool {
+		return strings.Count(workerDeps.DebugLogger().WarnMessages(), "WARN  task failed") == 1
+	}, 10*time.Second, 100*time.Millisecond)
+
 	// Shutdown
-	time.Sleep(time.Second)
 	apiDeps1.Process().Shutdown(errors.New("bye bye API 1"))
 	apiDeps1.Process().WaitForShutdown()
 	workerDeps.Process().Shutdown(errors.New("bye bye Worker"))
@@ -132,10 +137,8 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 
 	// Retried upload
 	wildcards.Assert(t, `
-%A
 [task][slice.upload/%s]WARN  task failed (%s): slice upload failed: %s some network error, upload will be retried after "0001-01-01T00:%s" %s
-%A
-`, strhelper.FilterLines(`^(\[task\]\[slice.upload\/)|(\[orchestrator\]\[slice.upload\])`, workerDeps.DebugLogger().AllMessages()))
+`, strhelper.FilterLines(`^\[task\]\[slice.upload\/`, workerDeps.DebugLogger().WarnMessages()))
 
 	// Check etcd state
 	assertStateAfterRetry(t, client)

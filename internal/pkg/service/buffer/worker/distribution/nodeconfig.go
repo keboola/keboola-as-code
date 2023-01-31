@@ -7,7 +7,7 @@ import (
 const (
 	DefaultSessionTTL          = 15               // seconds, see WithTTL
 	DefaultStartupTimeout      = 60 * time.Second // timeout for registration, PUT operation
-	DefaultShutdownTimeout     = 5 * time.Second  // timeout for un-registration, DELETE operation
+	DefaultShutdownTimeout     = 10 * time.Second // timeout for un-registration, DELETE operation
 	DefaultEventsGroupInterval = 5 * time.Second  // all changes in the interval are grouped together, so that updates do not occur too often
 )
 

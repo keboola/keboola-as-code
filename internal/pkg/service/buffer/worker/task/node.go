@@ -11,6 +11,8 @@ import (
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -20,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -28,6 +31,7 @@ import (
 type Node struct {
 	ctx              context.Context
 	wg               *sync.WaitGroup
+	tracer           trace.Tracer
 	clock            clock.Clock
 	logger           log.Logger
 	schema           *schema.Schema
@@ -45,6 +49,7 @@ type Result = string
 type Task func(ctx context.Context, logger log.Logger) (Result, error)
 
 type dependencies interface {
+	Tracer() trace.Tracer
 	Clock() clock.Clock
 	Logger() log.Logger
 	Process() *servicectx.Process
@@ -62,6 +67,7 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 	proc := d.Process()
 
 	n := &Node{
+		tracer:           d.Tracer(),
 		clock:            d.Clock(),
 		logger:           d.Logger().AddPrefix("[task]"),
 		schema:           d.Schema(),
@@ -103,7 +109,7 @@ func (n *Node) TasksCount() int64 {
 
 // StartTask backed by local lock and etcd transaction, so the task run at most once.
 // The context will be passed to the operation callback.
-func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, typ, lock string, operation Task) (*model.Task, error) {
+func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, typ, lock string, operation Task) (t *model.Task, err error) {
 	taskKey := key.TaskKey{ExportKey: exportKey, Type: typ, CreatedAt: key.UTCTime(n.clock.Now()), RandomSuffix: gonanoid.Must(5)}
 
 	// Lock task locally for periodical re-syncs,
@@ -134,8 +140,21 @@ func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, typ, lock
 		logger.Infof(`task ignored, the lock "%s" is in use`, lockEtcdKey.Key())
 		return nil, nil
 	}
+
 	logger.Infof(`started task "%s"`, taskKey)
 	logger.Debugf(`lock acquired "%s"`, lockEtcdKey.Key())
+
+	_, span := n.tracer.Start(ctx, "keboola.go.buffer.task."+task.Type)
+	defer telemetry.EndSpan(span, &err)
+	span.SetAttributes(
+		telemetry.KeepSpan(),
+		attribute.String("projectId", task.ProjectID.String()),
+		attribute.String("receiverId", task.ReceiverID.String()),
+		attribute.String("exportId", task.ExportID.String()),
+		attribute.String("lock", task.Lock),
+		attribute.String("worker", task.WorkerNode),
+		attribute.String("createdAt", task.CreatedAt.String()),
+	)
 
 	// Run operation in the background
 	go func() {
@@ -168,6 +187,11 @@ func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, typ, lock
 				task.Error = err.Error()
 				logger.Warnf(`task failed (%s): %s`, duration, errors.Format(err, errors.FormatWithStack()))
 			}
+			span.SetAttributes(
+				attribute.Float64("duration", task.Duration.Seconds()),
+				attribute.String("result", task.Result),
+				attribute.String("finishedAt", task.FinishedAt.String()),
+			)
 
 			// If release of the lock takes longer than the ttl, lease is expired anyway
 			opCtx, cancel := context.WithTimeout(context.Background(), time.Duration(n.config.ttlSeconds)*time.Second)
