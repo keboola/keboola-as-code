@@ -31,21 +31,21 @@ func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint g
 			endpointName, _ := ctx.Value(goa.MethodKey).(string)
 			resourceName := fmt.Sprintf("%s.%s", serviceName, endpointName)
 
+			opts := []tracer.StartSpanOption{
+				tracer.SpanType(ext.SpanTypeWeb),
+				tracer.ResourceName(resourceName),
+			}
+
 			// Trace all endpoints except health check
-			analyticRate := 1.0
 			if strings.Contains(resourceName, "HealthCheck") {
-				analyticRate = 0.0
+				opts = append(opts, tracer.AnalyticsRate(0.0), tracer.Tag(ext.ManualDrop, true))
+			} else {
+				opts = append(opts, tracer.AnalyticsRate(1.0), tracer.Tag(ext.ManualKeep, true))
 			}
 
 			// Create endpoint span
 			var span tracer.Span
-			span, ctx = tracer.StartSpanFromContext(
-				ctx,
-				"endpoint.request",
-				tracer.SpanType(ext.SpanTypeWeb),
-				tracer.ResourceName(resourceName),
-				tracer.AnalyticsRate(analyticRate),
-			)
+			span, ctx = tracer.StartSpanFromContext(ctx, "endpoint.request", opts...)
 
 			// Track info
 			span.SetTag("kac.http.request.id", requestId)
