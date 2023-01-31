@@ -1,5 +1,9 @@
 {
   "path": "/foo/bar",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
   "method": "GET",
   "body": {}
 }

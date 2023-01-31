@@ -1,5 +1,9 @@
 {
   "path": "/v1/project/%%TEST_BRANCH_MAIN_ID%%/instances/inst-001/upgrade/3.0.0/inputs",
   "method": "GET",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
   "body": {}
 }
