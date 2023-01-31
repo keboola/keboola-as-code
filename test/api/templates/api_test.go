@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/runner"
 )
@@ -41,13 +42,13 @@ func TestTemplatesApiE2E(t *testing.T) {
 		}
 		addArgs := []string{fmt.Sprintf("--repositories=%s", repositories)}
 
-		addEnvs := map[string]string{
+		addEnvs := env.FromMap(map[string]string{
 			"TEMPLATES_API_ETCD_ENABLED":   "true",
 			"TEMPLATES_API_ETCD_NAMESPACE": idgenerator.EtcdNamespaceForTest(),
 			"TEMPLATES_API_ETCD_ENDPOINT":  os.Getenv("TEMPLATES_API_ETCD_ENDPOINT"),
 			"TEMPLATES_API_ETCD_USERNAME":  os.Getenv("TEMPLATES_API_ETCD_USERNAME"),
 			"TEMPLATES_API_ETCD_PASSWORD":  os.Getenv("TEMPLATES_API_ETCD_PASSWORD"),
-		}
+		})
 
 		test.Run(
 			runner.WithInitProjectState(),
@@ -55,7 +56,7 @@ func TestTemplatesApiE2E(t *testing.T) {
 				binaryPath,
 				addArgs,
 				addEnvs,
-				func(s string) string { return s },
+				func(request *runner.APIRequest) {},
 			),
 			runner.WithAssertProjectState(),
 		)

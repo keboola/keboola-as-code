@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/google/shlex"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/spf13/cast"
@@ -51,11 +52,10 @@ type runConfig struct {
 	assertDirContent   bool
 	assertEtcdState    bool
 	assertProjectState bool
-	cliArgsFn          func(*Test) []string
 	cliBinaryPath      string
 	copyInToWorkingDir bool
 	initProjectState   bool
-	runAPIServerConfig runAPIServerConfig
+	apiServerConfig    apiServerConfig
 }
 
 func WithAddEnvVarsFromFile() Options {
@@ -97,23 +97,22 @@ func WithInitProjectState() Options {
 func WithRunAPIServerAndRequests(
 	path string,
 	args []string,
-	envs map[string]string,
-	updateRequestPathFn func(string) string,
+	envs *env.Map,
+	requestDecoratorFn func(request *APIRequest),
 ) Options {
 	return func(c *runConfig) {
-		c.runAPIServerConfig = runAPIServerConfig{
-			path:                path,
-			args:                args,
-			envs:                envs,
-			updateRequestPathFn: updateRequestPathFn,
+		c.apiServerConfig = apiServerConfig{
+			path:               path,
+			args:               args,
+			envs:               envs,
+			requestDecoratorFn: requestDecoratorFn,
 		}
 	}
 }
 
-func WithRunCLIBinary(path string, loadArgsFn func(*Test) []string) Options {
+func WithRunCLIBinary(path string) Options {
 	return func(c *runConfig) {
 		c.cliBinaryPath = path
-		c.cliArgsFn = loadArgsFn
 	}
 }
 
@@ -174,16 +173,16 @@ func (t *Test) Run(opts ...Options) {
 
 	if c.cliBinaryPath != "" {
 		// Run a CLI binary
-		t.runCLIBinary(c.cliBinaryPath, c.cliArgsFn)
+		t.runCLIBinary(c.cliBinaryPath)
 	}
 
-	if c.runAPIServerConfig.path != "" {
+	if c.apiServerConfig.path != "" {
 		// Run an API server binary
 		t.runAPIServer(
-			c.runAPIServerConfig.path,
-			c.runAPIServerConfig.args,
-			c.runAPIServerConfig.envs,
-			c.runAPIServerConfig.updateRequestPathFn,
+			c.apiServerConfig.path,
+			c.apiServerConfig.args,
+			c.apiServerConfig.envs,
+			c.apiServerConfig.requestDecoratorFn,
 		)
 	}
 
@@ -231,15 +230,27 @@ func (t *Test) addEnvVarsFromFile() {
 	}
 }
 
-func (t *Test) runCLIBinary(path string, setupArgsFn func(*Test) []string) {
+func (t *Test) runCLIBinary(path string) {
+	// Load command arguments from file
+	argsFile, err := t.TestDirFS().ReadFile(filesystem.NewFileDef("args"))
+	if err != nil {
+		t.T().Fatalf(`cannot open "%s" test file %s`, "args", err)
+	}
+
+	// Load and parse command arguments
+	argsStr := strings.TrimSpace(argsFile.Content)
+	argsStr = testhelper.MustReplaceEnvsString(argsStr, t.EnvProvider())
+	args, err := shlex.Split(argsStr)
+	if err != nil {
+		t.T().Fatalf(`Cannot parse args "%s": %s`, argsStr, err)
+	}
+
 	// Prepare command
-	args := setupArgsFn(t)
 	cmd := exec.CommandContext(t.ctx, path, args...) // nolint:gosec
 	cmd.Env = t.env.ToSlice()
 	cmd.Dir = t.workingDir
 
 	// Setup command input/output
-	var err error
 	cmdInOut, err := setupCmdInOut(t.t, t.envProvider, t.testDirFS, cmd)
 	if err != nil {
 		t.t.Fatal(err.Error())
@@ -296,18 +307,18 @@ func (t *Test) runCLIBinary(path string, setupArgsFn func(*Test) []string) {
 	wildcards.Assert(t.t, expectedStderr, stderr, "Unexpected STDERR.")
 }
 
-type runAPIServerConfig struct {
-	path                string
-	args                []string
-	envs                map[string]string
-	updateRequestPathFn func(string) string
+type apiServerConfig struct {
+	path               string
+	args               []string
+	envs               *env.Map
+	requestDecoratorFn func(request *APIRequest)
 }
 
 func (t *Test) runAPIServer(
 	path string,
 	addArgs []string,
-	addEnvs map[string]string,
-	updateRequestPathFn func(string) string,
+	addEnvs *env.Map,
+	requestDecoratorFn func(request *APIRequest),
 ) {
 	// Get a free port
 	port, err := getFreePort()
@@ -323,9 +334,7 @@ func (t *Test) runAPIServer(
 	envs.Set("PATH", os.Getenv("PATH")) // nolint:forbidigo
 	envs.Set("KBC_STORAGE_API_HOST", t.project.StorageAPIHost())
 	envs.Set("DATADOG_ENABLED", "false")
-	for k, v := range addEnvs {
-		envs.Set(k, v)
-	}
+	envs.Merge(addEnvs, false)
 
 	// Start API server
 	stdout := newCmdOut()
@@ -360,7 +369,7 @@ func (t *Test) runAPIServer(
 	}
 
 	// Run the requests
-	requestsOk := t.runRequests(apiURL, updateRequestPathFn)
+	requestsOk := t.runRequests(apiURL, requestDecoratorFn)
 
 	// Shutdown API server
 	_ = cmd.Process.Signal(syscall.SIGTERM)
@@ -377,10 +386,6 @@ func (t *Test) runAPIServer(
 
 	// Check API server stdout/stderr
 	if requestsOk {
-		if t.testDirFS.IsFile(expectedStdoutPath) || t.testDirFS.IsFile(expectedStderrPath) {
-			// Wait a while the server logs everything for previous requests.
-			time.Sleep(100 * time.Millisecond)
-		}
 		if t.testDirFS.IsFile(expectedStdoutPath) {
 			expected := t.ReadFileFromTestDir(expectedStdoutPath)
 			wildcards.Assert(t.t, expected, stdout.String(), "Unexpected STDOUT.")
@@ -392,14 +397,14 @@ func (t *Test) runAPIServer(
 	}
 }
 
-type apiRequest struct {
+type APIRequest struct {
 	Path    string            `json:"path" validate:"required"`
 	Method  string            `json:"method" validate:"required,oneof=DELETE GET PATCH POST PUT"`
 	Body    interface{}       `json:"body"`
 	Headers map[string]string `json:"headers"`
 }
 
-func (t *Test) runRequests(apiURL string, updateRequestPathFn func(string) string) bool {
+func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequest)) bool {
 	client := resty.New()
 	client.SetBaseURL(apiURL)
 
@@ -421,7 +426,7 @@ func (t *Test) runRequests(apiURL string, updateRequestPathFn func(string) strin
 		requestFileStr := t.ReadFileFromTestDir(filesystem.Join(requestDir, "request.json"))
 		assert.NoError(t.t, err)
 
-		request := &apiRequest{}
+		request := &APIRequest{}
 		err = json.DecodeString(requestFileStr, request)
 		assert.NoError(t.t, err)
 		err = validator.New().Validate(context.Background(), request)
@@ -440,11 +445,12 @@ func (t *Test) runRequests(apiURL string, updateRequestPathFn func(string) strin
 		}
 		r.SetHeaders(request.Headers)
 
-		path := updateRequestPathFn(request.Path)
+		// Decorate the request
+		requestDecoratorFn(request)
 
 		// Send request
 		r.SetContext(context.WithValue(r.Context(), dumpDirCtxKey, requestDir))
-		resp, err := r.Execute(request.Method, path)
+		resp, err := r.Execute(request.Method, request.Path)
 		assert.NoError(t.t, err)
 
 		// Dump raw HTTP response

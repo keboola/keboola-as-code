@@ -14,6 +14,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -67,25 +68,24 @@ func TestBufferApiE2E(t *testing.T) {
 			assert.NoError(test.T(), err)
 		}
 
-		addEnvs := map[string]string{
+		addEnvs := env.FromMap(map[string]string{
 			"KBC_BUFFER_API_HOST":   "buffer.keboola.local",
 			"BUFFER_ETCD_NAMESPACE": etcdNamespace,
 			"BUFFER_ETCD_ENDPOINT":  etcdEndpoint,
 			"BUFFER_ETCD_USERNAME":  etcdUsername,
 			"BUFFER_ETCD_PASSWORD":  etcdPassword,
-		}
+		})
 
-		updateRequestPathFn := func(path string) string {
+		requestDecoratorFn := func(request *runner.APIRequest) {
 			// Replace placeholder by secret loaded from the etcd.
-			if strings.Contains(path, receiverSecretPlaceholder) {
+			if strings.Contains(request.Path, receiverSecretPlaceholder) {
 				resp, err := etcdClient.Get(context.Background(), "/config/receiver/", etcd.WithPrefix())
 				if assert.NoError(t, err) && assert.Len(t, resp.Kvs, 1) {
 					receiver := make(map[string]any)
 					json.MustDecode(resp.Kvs[0].Value, &receiver)
-					path = strings.ReplaceAll(path, receiverSecretPlaceholder, receiver["secret"].(string))
+					request.Path = strings.ReplaceAll(request.Path, receiverSecretPlaceholder, receiver["secret"].(string))
 				}
 			}
-			return path
 		}
 
 		defer func() {
@@ -101,7 +101,7 @@ func TestBufferApiE2E(t *testing.T) {
 				binaryPath,
 				[]string{},
 				addEnvs,
-				updateRequestPathFn,
+				requestDecoratorFn,
 			),
 			runner.WithAssertProjectState(),
 			runner.WithAssertEtcdState(),
