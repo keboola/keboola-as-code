@@ -130,6 +130,12 @@ func (s *span) SetName(name string) {
 func (s *span) SetAttributes(kv ...attribute.KeyValue) {
 	for _, pair := range kv {
 		s.ddSpan.SetTag(string(pair.Key), pair.Value.AsInterface())
+		if string(pair.Key) == ext.ManualKeep {
+			s.ddSpan.SetTag(ext.EventSampleRate, 1.0)
+		}
+		if string(pair.Key) == ext.ManualDrop {
+			s.ddSpan.SetTag(ext.EventSampleRate, 0.0)
+		}
 	}
 }
 
