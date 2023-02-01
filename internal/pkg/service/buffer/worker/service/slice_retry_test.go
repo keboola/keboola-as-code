@@ -103,13 +103,18 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 		return count == 1
 	}, 10*time.Second, 100*time.Millisecond)
 
+	// Wait for failed upload
+	assert.Eventually(t, func() bool {
+		return strings.Count(workerDeps.DebugLogger().WarnMessages(), "WARN  task failed") == 1
+	}, 10*time.Second, 100*time.Millisecond)
+	workerDeps.DebugLogger().Truncate()
+
 	// 3 minutes later:
 	// - triggers service.FailedSlicesCheckInterval
 	// - unblock the first backoff1 interval
-	workerDeps.DebugLogger().Truncate()
 	clk.Add(3 * time.Minute)
 
-	// Wait for failed upload and the retry
+	// Wait for retry
 	assert.Eventually(t, func() bool {
 		return strings.Count(workerDeps.DebugLogger().WarnMessages(), "WARN  task failed") == 1
 	}, 10*time.Second, 100*time.Millisecond)
