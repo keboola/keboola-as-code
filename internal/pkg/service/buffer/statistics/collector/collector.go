@@ -111,12 +111,12 @@ func (m *Node) Sync(ctx context.Context) <-chan struct{} {
 	done := make(chan struct{})
 	if len(stats) > 0 {
 		go func() {
+			defer close(done)
 			m.logger.Debugf("syncing %d records", len(stats))
 			if err := m.store.UpdateSliceReceivedStats(ctx, m.nodeID, stats); err != nil {
 				m.logger.Errorf("cannot update stats in etcd: %s", err.Error())
 			}
 			m.logger.Debug("sync done")
-			close(done)
 		}()
 	} else {
 		close(done)
