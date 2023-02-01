@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
@@ -131,6 +132,16 @@ func TestSliceCloseTask(t *testing.T) {
 	workerDeps.Process().Shutdown(errors.New("bye bye Worker"))
 	workerDeps.Process().WaitForShutdown()
 
+	// Get tasks
+	export1Tasks, err := workerDeps.Schema().Tasks().InExport(emptySliceKey.ExportKey).GetAll().Do(ctx, client).All()
+	assert.NoError(t, err)
+	assert.Len(t, export1Tasks, 1)
+	export2Tasks, err := workerDeps.Schema().Tasks().InExport(notEmptySlice.ExportKey).GetAll().Do(ctx, client).All()
+	assert.NoError(t, err)
+	assert.Len(t, export2Tasks, 1)
+	task1 := export1Tasks[0].Value
+	task2 := export2Tasks[0].Value
+
 	// Check API logs
 	wildcards.Assert(t, `
 [api][watcher]INFO  locked revision "%s"
@@ -155,20 +166,22 @@ INFO  exited
 	// Check worker logs
 	wildcards.Assert(t, `
 INFO  ---> locked
-[orchestrator][slice.close]INFO  assigned "00000123/my-receiver-1/my-export-1/%s"
-[task][%s]INFO  started task "00000123/my-receiver-1/my-export-1/slice.close/%s"
-[task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-1/my-export-1/slice.close/%s"
-[task][%s]INFO  waiting until all API nodes switch to a revision >= %s
-[orchestrator][slice.close]INFO  assigned "00000123/my-receiver-2/my-export-2/%s"
-[task][%s]INFO  started task "00000123/my-receiver-2/my-export-2/slice.close/%s"
-[task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.close/%s"
-[task][%s]INFO  waiting until all API nodes switch to a revision >= %s
+[task][slice.close/%s]INFO  started task "00000123/my-receiver-1/my-export-1/slice.close/%s"
+[task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-1/my-export-1/slice.close/%s"
+[task][slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %d
 INFO  ---> unlocked
-[watcher][worker]INFO  revision updated to "%s", unblocked "2" listeners
-[task][%s]INFO  task succeeded (30s): %A
-[task][%s]INFO  task succeeded (30s): %A
-INFO  exited
-`, workerDeps.DebugLogger().AllMessages())
+[task][slice.close/%s]INFO  task succeeded (30s): slice closed
+[task][slice.close/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-1/my-export-1/slice.close/%s"
+`, strhelper.FilterLines(`^(INFO  --->)|(\[task\]\[`+task1.ID()+`\])`, workerDeps.DebugLogger().AllMessages()))
+	wildcards.Assert(t, `
+INFO  ---> locked
+[task][slice.close/%a]INFO  started task "00000123/my-receiver-2/my-export-2/slice.close/%s"
+[task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.close/%s"
+[task][slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %d
+INFO  ---> unlocked
+[task][slice.close/%s]INFO  task succeeded (30s): slice closed
+[task][slice.close/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.close/%s"
+`, strhelper.FilterLines(`^(INFO  --->)|(\[task\]\[`+task2.ID()+`\])`, workerDeps.DebugLogger().AllMessages()))
 
 	// Check etcd state
 	assertStateAfterClose(t, client)
