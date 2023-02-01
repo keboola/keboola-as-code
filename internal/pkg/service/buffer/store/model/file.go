@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -45,4 +46,18 @@ func NewFile(exportKey key.ExportKey, now time.Time, mapping Mapping, resource *
 
 func (v *File) Filename() string {
 	return fmt.Sprintf(`%s_%s_%s`, v.ReceiverID, v.ExportID, v.OpenedAt().Format(FileNameDateFormat))
+}
+
+func (v File) GetStats() Stats {
+	if v.State == filestate.Opened || v.State == filestate.Closing {
+		panic(errors.Errorf(
+			`file "%s" in the state "%s" doesn't contain statistics, the state must be importing, failed or imported`,
+			v.FileKey, v.State,
+		))
+	}
+	// Statistics are not set for an empty file.
+	if v.Statistics == nil {
+		return Stats{}
+	}
+	return *v.Statistics
 }

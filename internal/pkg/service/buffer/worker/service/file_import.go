@@ -39,6 +39,9 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 				// Get file
 				fileRes := event.Value
 
+				// Create event in the Storage API
+				defer s.events.SendFileImportEvent(ctx, time.Now(), &err, fileRes)
+
 				// Handle error
 				defer func() {
 					if err != nil {
