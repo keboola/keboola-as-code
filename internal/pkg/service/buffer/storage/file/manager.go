@@ -112,12 +112,14 @@ func (m *Manager) createFile(ctx context.Context, rb rollback.Builder, mapping m
 	slice := model.NewSlice(file.FileKey, now, mapping, 1, nil)
 
 	resource, err := m.keboolaProjectAPI.
-		CreateFileResourceRequest(&keboola.File{
-			Name:        fileName,
-			IsSliced:    true,
-			IsEncrypted: true,
-			Tags:        []string{fmt.Sprintf("buffer.exportID=%s", mapping.ExportID.String()), fmt.Sprintf("buffer.receiverID=%s", mapping.ReceiverID.String())},
-		}).
+		CreateFileResourceRequest(
+			fileName,
+			keboola.WithIsSliced(true),
+			keboola.WithTags(
+				fmt.Sprintf("buffer.exportID=%s", mapping.ExportID.String()),
+				fmt.Sprintf("buffer.receiverID=%s", mapping.ReceiverID.String()),
+			),
+		).
 		Send(ctx)
 	if err != nil {
 		return model.File{}, model.Slice{}, err

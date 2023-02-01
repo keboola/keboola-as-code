@@ -51,14 +51,14 @@ func TestConditionsChecker(t *testing.T) {
 	apiStats := apiDeps.StatsCollector()
 	str := apiDeps.Store()
 	importConditions1 := model.Conditions{Count: 100, Size: 200 * datasize.KB, Time: time.Hour}
-	file1 := &keboola.File{Name: "file 1", IsSliced: true}
 	clk.Add(time.Second)
 	importConditions2 := model.Conditions{Count: 1000, Size: 20 * datasize.MB, Time: 5 * time.Hour}
-	file2 := &keboola.File{Name: "file 1", IsSliced: true}
-	if _, err := project.KeboolaProjectAPI().CreateFileResourceRequest(file1).Send(ctx); err != nil {
+	file1, err := project.KeboolaProjectAPI().CreateFileResourceRequest("file 1", keboola.WithIsSliced(true)).Send(ctx)
+	if err != nil {
 		assert.Fail(t, err.Error())
 	}
-	if _, err := project.KeboolaProjectAPI().CreateFileResourceRequest(file2).Send(ctx); err != nil {
+	file2, err := project.KeboolaProjectAPI().CreateFileResourceRequest("file 2", keboola.WithIsSliced(true)).Send(ctx)
+	if err != nil {
 		assert.Fail(t, err.Error())
 	}
 	sliceKey1 := createExport2(t, "my-receiver-A", "my-export-1", ctx, clk, client, str, file1, importConditions1, project.StorageAPIToken().Token)
@@ -82,7 +82,7 @@ func TestConditionsChecker(t *testing.T) {
 		service.WithUploadConditions(model.Conditions{Count: 1000, Size: 1 * datasize.MB, Time: uploadInterval}),
 		service.WithCheckConditionsInterval(checkCondInterval),
 	}
-	_, err := service.New(workerDeps1, serviceOps...)
+	_, err = service.New(workerDeps1, serviceOps...)
 	assert.NoError(t, err)
 	_, err = service.New(workerDeps2, serviceOps...)
 	assert.NoError(t, err)

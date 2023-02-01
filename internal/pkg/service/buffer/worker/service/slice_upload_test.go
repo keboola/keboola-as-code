@@ -49,11 +49,8 @@ func TestSliceUploadTask(t *testing.T) {
 	}
 
 	// Create file
-	file := &keboola.File{
-		Name:     "slice-upload-task-test",
-		IsSliced: true,
-	}
-	if _, err := project.KeboolaProjectAPI().CreateFileResourceRequest(file).Send(ctx); err != nil {
+	file, err := project.KeboolaProjectAPI().CreateFileResourceRequest("slice-upload-task-test", keboola.WithIsSliced(true)).Send(ctx)
+	if err != nil {
 		assert.Fail(t, err.Error())
 	}
 
@@ -79,7 +76,7 @@ func TestSliceUploadTask(t *testing.T) {
 	// Start worker node
 	workerDeps := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("my-worker"))...)
 	workerDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
-	_, err := service.New(
+	_, err = service.New(
 		workerDeps,
 		service.WithCheckConditions(false),
 		service.WithCloseSlices(true),
