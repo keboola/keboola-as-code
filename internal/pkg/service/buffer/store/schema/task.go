@@ -36,8 +36,8 @@ func (v TasksRoot) InReceiver(k key.ReceiverKey) TasksByReceiver {
 	return TasksByReceiver{tasks: v.tasks.Add(k.String())}
 }
 
-func (v TasksRoot) InExport(k key.ExportKey) TasksByReceiver {
-	return TasksByReceiver{tasks: v.tasks.Add(k.String())}
+func (v TasksRoot) InExport(k key.ExportKey) TasksByExport {
+	return TasksByExport{tasks: v.tasks.Add(k.String())}
 }
 
 func (v TasksRoot) ByKey(k key.TaskKey) KeyT[model.Task] {
