@@ -10,7 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/table"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task/orchestrator"
@@ -55,20 +54,6 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 						}
 					}
 				}()
-
-				// TEMPORARY: Fix old empty files without statistics/isEmpty fields
-				// ------------------------------
-				if fileRes.Statistics == nil && !fileRes.IsEmpty {
-					stats := model.Stats{}
-					err := store.SumStats(ctx, s.etcdClient, s.schema.Slices().Uploaded().InFile(fileRes.FileKey).GetAll(), &stats)
-					if err != nil {
-						return "", errors.Errorf(`cannot get stats: %w`, err)
-					}
-					if stats.RecordsCount == 0 {
-						fileRes.IsEmpty = true
-					}
-				}
-				// ------------------------------
 
 				// Skip empty
 				if fileRes.IsEmpty {
