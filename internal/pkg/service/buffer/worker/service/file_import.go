@@ -48,7 +48,7 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 						retryAfter := model.UTCTime(RetryAt(NewRetryBackoff(), s.clock.Now(), attempt))
 						fileRes.RetryAttempt = attempt
 						fileRes.RetryAfter = &retryAfter
-						err = errors.Errorf(`file import failed: %w, upload will be retried after "%s"`, err, fileRes.RetryAfter)
+						err = errors.Errorf(`file import failed: %w, import will be retried after "%s"`, err, fileRes.RetryAfter)
 						if err := s.store.MarkFileImportFailed(ctx, &fileRes); err != nil {
 							s.logger.Errorf(`cannot mark the file "%s" as failed: %s`, fileRes.FileKey, err)
 						}
