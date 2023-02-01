@@ -19,7 +19,6 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`sync/pull/short`),
 		Long:  helpmsg.Read(`sync/pull/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			start := time.Now()
 			publicDeps, err := p.DependenciesForLocalCommand()
 			if err != nil {
 				return err
@@ -61,7 +60,7 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer func() { prjDeps.EventSender().SendCmdEvent(prjDeps.CommandCtx(), start, cmdErr, "sync-pull") }()
+			defer prjDeps.EventSender().SendCmdEvent(prjDeps.CommandCtx(), time.Now(), &cmdErr, "sync-pull")
 
 			// Pull
 			return pull.Run(prjDeps.CommandCtx(), projectState, options, prjDeps)

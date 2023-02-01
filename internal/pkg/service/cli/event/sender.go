@@ -26,7 +26,13 @@ func NewSender(logger log.Logger, client *keboola.API, projectID int) Sender {
 }
 
 // SendCmdEvent sends failed event if an error occurred, otherwise it sends successful event.
-func (s Sender) SendCmdEvent(ctx context.Context, cmdStart time.Time, err error, cmd string) {
+func (s Sender) SendCmdEvent(ctx context.Context, cmdStart time.Time, errPtr *error, cmd string) {
+	// Get error
+	var err error
+	if errPtr != nil {
+		err = *errPtr
+	}
+
 	// Catch panic
 	panicErr := recover()
 	if panicErr != nil {

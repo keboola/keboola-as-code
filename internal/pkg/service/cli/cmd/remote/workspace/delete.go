@@ -30,7 +30,7 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			defer func() { d.EventSender().SendCmdEvent(d.CommandCtx(), start, cmdErr, "remote-list-workspace") }()
+			defer d.EventSender().SendCmdEvent(d.CommandCtx(), start, &cmdErr, "remote-list-workspace")
 
 			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(d.CommandCtx())
 			if err != nil {

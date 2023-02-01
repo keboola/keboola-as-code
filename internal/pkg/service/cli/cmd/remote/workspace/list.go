@@ -16,8 +16,6 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/workspace/list/short`),
 		Long:  helpmsg.Read(`remote/workspace/list/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			start := time.Now()
-
 			// Ask for host and token if needed
 			baseDeps := p.BaseDependencies()
 			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
@@ -29,7 +27,7 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			defer func() { d.EventSender().SendCmdEvent(d.CommandCtx(), start, cmdErr, "remote-list-workspace") }()
+			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-list-workspace")
 
 			err = list.Run(d.CommandCtx(), d)
 			if err != nil {
