@@ -50,6 +50,10 @@ func (w *AtomicWriter) WriteString(s string) (n int, err error) {
 	return w.Write([]byte(s))
 }
 
+func (w *AtomicWriter) Sync() (err error) {
+	return w.Flush()
+}
+
 func (w *AtomicWriter) Flush() (err error) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
