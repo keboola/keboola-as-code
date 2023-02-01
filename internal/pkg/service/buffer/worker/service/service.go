@@ -9,6 +9,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
@@ -31,6 +32,7 @@ type Service struct {
 	dist           *distribution.Node
 	stats          *statistics.CacheNode
 	tasks          *task.Node
+	events         *event.Sender
 	config         config
 }
 
@@ -47,6 +49,7 @@ type dependencies interface {
 	DistributionWorkerNode() *distribution.Node
 	StatsCacheNode() *statistics.CacheNode
 	TaskWorkerNode() *task.Node
+	EventSender() *event.Sender
 }
 
 func New(d dependencies, ops ...Option) (*Service, error) {
@@ -58,6 +61,7 @@ func New(d dependencies, ops ...Option) (*Service, error) {
 		httpClient:     d.HTTPClient(),
 		storageAPIHost: d.StorageAPIHost(),
 		schema:         d.Schema(),
+		events:         d.EventSender(),
 		config:         newConfig(ops),
 	}
 

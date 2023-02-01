@@ -47,7 +47,6 @@ func CreateBranchCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/create/branch/short`),
 		Long:  helpmsg.Read(`remote/create/branch/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			start := time.Now()
 			d, err := p.DependenciesForRemoteCommand()
 			if err != nil {
 				return err
@@ -60,7 +59,7 @@ func CreateBranchCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer func() { d.EventSender().SendCmdEvent(d.CommandCtx(), start, cmdErr, "remote-create-branch") }()
+			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-create-branch")
 
 			// Create branch
 			branch, err := createBranch.Run(d.CommandCtx(), options, d)

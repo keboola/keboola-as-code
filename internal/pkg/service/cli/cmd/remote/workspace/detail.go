@@ -17,8 +17,6 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/workspace/detail/short`),
 		Long:  helpmsg.Read(`remote/workspace/detail/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			start := time.Now()
-
 			// Ask for host and token if needed
 			baseDeps := p.BaseDependencies()
 			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
@@ -30,7 +28,7 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			defer func() { d.EventSender().SendCmdEvent(d.CommandCtx(), start, cmdErr, "remote-detail-workspace") }()
+			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-detail-workspace")
 
 			id, err := d.Dialogs().AskWorkspaceID(d.Options())
 			if err != nil {

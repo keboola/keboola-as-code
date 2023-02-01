@@ -65,6 +65,7 @@ func TestUploadAndImportE2E(t *testing.T) {
 
 	// Create 6 records - trigger the slice upload (>=5)
 	for i := 1; i <= 6; i++ {
+		time.Sleep(time.Millisecond)
 		assert.NoError(t, api.Import(apiDeps, &buffer.ImportPayload{
 			ProjectID:  buffer.ProjectID(project.ID()),
 			ReceiverID: receiver.ID,
@@ -84,6 +85,7 @@ func TestUploadAndImportE2E(t *testing.T) {
 
 	// Create next 4 records - trigger the file import (>=10)
 	for i := 7; i <= 10; i++ {
+		time.Sleep(time.Millisecond)
 		assert.NoError(t, api.Import(apiDeps, &buffer.ImportPayload{
 			ProjectID:  buffer.ProjectID(project.ID()),
 			ReceiverID: receiver.ID,

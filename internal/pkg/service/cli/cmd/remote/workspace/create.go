@@ -16,8 +16,6 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/workspace/create/short`),
 		Long:  helpmsg.Read(`remote/workspace/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			start := time.Now()
-
 			// Ask for host and token if needed
 			baseDeps := p.BaseDependencies()
 			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
@@ -37,7 +35,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer func() { d.EventSender().SendCmdEvent(d.CommandCtx(), start, cmdErr, "remote-create-workspace") }()
+			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-create-workspace")
 
 			// Run operation
 			err = create.Run(d.CommandCtx(), options, d)

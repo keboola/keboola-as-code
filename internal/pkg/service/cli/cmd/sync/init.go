@@ -17,8 +17,6 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`sync/init/short`),
 		Long:  helpmsg.Read(`sync/init/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			start := time.Now()
-
 			// Require empty dir
 			baseDeps := p.BaseDependencies()
 			if _, err := baseDeps.EmptyDir(); err != nil {
@@ -43,7 +41,7 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Send cmd successful/failed event
-			defer func() { projectDeps.EventSender().SendCmdEvent(projectDeps.CommandCtx(), start, cmdErr, "sync-init") }()
+			defer projectDeps.EventSender().SendCmdEvent(projectDeps.CommandCtx(), time.Now(), &cmdErr, "sync-init")
 
 			// Init
 			return initOp.Run(projectDeps.CommandCtx(), options, projectDeps)

@@ -38,6 +38,9 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 				// Get slice
 				slice := event.Value
 
+				// Create event in the Storage API
+				defer s.events.SendSliceUploadEvent(ctx, time.Now(), &err, slice)
+
 				// Handle error
 				defer func() {
 					if err != nil {

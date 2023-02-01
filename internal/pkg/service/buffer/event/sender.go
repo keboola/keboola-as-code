@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -24,14 +25,20 @@ func NewSender(logger log.Logger, client *keboola.API) *Sender {
 	return &Sender{logger: logger, client: client}
 }
 
-type EventParams struct {
-	ProjectID  int
-	ReceiverID string
-	ExportID   string
-	Stats      *model.Stats
+type Params struct {
+	ProjectID  key.ProjectID
+	ReceiverID key.ReceiverID
+	ExportID   key.ExportID
+	Stats      model.Stats
 }
 
-func (s *Sender) SendSliceUploadEvent(ctx context.Context, start time.Time, err error, params EventParams) {
+func (s *Sender) SendSliceUploadEvent(ctx context.Context, start time.Time, errPtr *error, slice model.Slice) {
+	// Get error
+	var err error
+	if errPtr != nil {
+		err = *errPtr
+	}
+
 	// Catch panic
 	panicErr := recover()
 	if panicErr != nil {
@@ -46,7 +53,12 @@ func (s *Sender) SendSliceUploadEvent(ctx context.Context, start time.Time, err 
 		}
 	}
 
-	s.sendEvent(ctx, start, err, "upload-slice", formatMsg, params)
+	s.sendEvent(ctx, start, err, "upload-slice", formatMsg, Params{
+		ProjectID:  slice.ProjectID,
+		ReceiverID: slice.ReceiverID,
+		ExportID:   slice.ExportID,
+		Stats:      slice.GetStats(),
+	})
 
 	// Throw panic
 	if panicErr != nil {
@@ -54,7 +66,13 @@ func (s *Sender) SendSliceUploadEvent(ctx context.Context, start time.Time, err 
 	}
 }
 
-func (s *Sender) SendFileImportEvent(ctx context.Context, start time.Time, err error, params EventParams) {
+func (s *Sender) SendFileImportEvent(ctx context.Context, start time.Time, errPtr *error, file model.File) {
+	// Get error
+	var err error
+	if errPtr != nil {
+		err = *errPtr
+	}
+
 	// Catch panic
 	panicErr := recover()
 	if panicErr != nil {
@@ -69,7 +87,12 @@ func (s *Sender) SendFileImportEvent(ctx context.Context, start time.Time, err e
 		}
 	}
 
-	s.sendEvent(ctx, start, err, "file-import", formatMsg, params)
+	s.sendEvent(ctx, start, err, "file-import", formatMsg, Params{
+		ProjectID:  file.ProjectID,
+		ReceiverID: file.ReceiverID,
+		ExportID:   file.ExportID,
+		Stats:      file.GetStats(),
+	})
 
 	// Throw panic
 	if panicErr != nil {
@@ -120,7 +143,7 @@ Error:
 }
 */
 
-func (s *Sender) sendEvent(ctx context.Context, start time.Time, err error, task string, msg func(error) string, params EventParams) {
+func (s *Sender) sendEvent(ctx context.Context, start time.Time, err error, task string, msg func(error) string, params Params) {
 	event := &keboola.Event{
 		ComponentID: componentID,
 		Message:     msg(err),
