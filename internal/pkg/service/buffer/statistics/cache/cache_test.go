@@ -107,9 +107,25 @@ func TestCacheNode(t *testing.T) {
 		return false
 	}, time.Second, 100*time.Millisecond)
 
+	// Test slice in "failed" state
+	assert.NoError(t, str.MarkSliceUploadFailed(ctx, &slice1))
+	assert.Eventually(t, func() bool {
+		if v := cache.SliceStats(slice1Key); v.Uploading.RecordsCount == 2 {
+			assert.Equal(t, model.StatsByType{
+				Total:     model.Stats{LastRecordAt: model.UTCTime(clk.Now()), RecordsCount: 2, RecordsSize: 30, BodySize: 33},
+				Buffered:  model.Stats{},
+				Uploading: model.Stats{LastRecordAt: model.UTCTime(clk.Now()), RecordsCount: 2, RecordsSize: 30, BodySize: 33},
+				Uploaded:  model.Stats{},
+			}, v)
+			return true
+		}
+		return false
+	}, time.Second, 100*time.Millisecond)
+
 	// Test slice in "uploaded" state
 	slice1.Statistics.FileSize = 44
 	slice1.Statistics.FileGZipSize = 4
+	assert.NoError(t, str.ScheduleSliceForRetry(ctx, &slice1))
 	assert.NoError(t, str.MarkSliceUploaded(ctx, &slice1))
 	assert.Eventually(t, func() bool {
 		if v := cache.SliceStats(slice1Key); v.Uploaded.RecordsCount == 2 {

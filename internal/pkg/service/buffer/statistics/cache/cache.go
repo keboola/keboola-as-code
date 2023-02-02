@@ -27,6 +27,8 @@ const (
 	prefixBuffered = "buffered/"
 	// prefixUploading contains cached stats about records in the process of uploading from the etcd to the file storage.
 	prefixUploading = "uploading/"
+	// prefixUploading contains cached stats about records in a slice that.
+	prefixFailed = "failed/"
 	// prefixUploaded contains cached stats about uploaded records.
 	prefixUploaded = "uploaded/"
 )
@@ -100,6 +102,11 @@ func (n *Node) statsFor(prefix string) (out model.StatsByType) {
 			return false
 		})
 		t.WalkPrefix(prefixUploading+prefix, func(_ string, v model.Stats) bool {
+			out.Total = out.Total.Add(v)
+			out.Uploading = out.Uploading.Add(v)
+			return false
+		})
+		t.WalkPrefix(prefixFailed+prefix, func(_ string, v model.Stats) bool {
 			out.Total = out.Total.Add(v)
 			out.Uploading = out.Uploading.Add(v)
 			return false
@@ -195,9 +202,12 @@ func prefixForActiveStats(v key.SliceKey) string {
 
 func keyForClosedSlice(v model.Slice) string {
 	switch v.State {
-	case slicestate.Uploading, slicestate.Failed:
+	case slicestate.Uploading:
 		// uploading/<sliceKey>
 		return prefixUploading + v.SliceKey.String()
+	case slicestate.Failed:
+		// failed/<sliceKey>
+		return prefixFailed + v.SliceKey.String()
 	case slicestate.Uploaded:
 		// uploaded/<sliceKey>
 		return prefixUploaded + v.SliceKey.String()
