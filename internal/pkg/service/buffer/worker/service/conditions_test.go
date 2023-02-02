@@ -29,6 +29,8 @@ import (
 
 func TestConditionsChecker(t *testing.T) {
 	t.Parallel()
+
+	project := testproject.GetTestProjectForTest(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -38,7 +40,6 @@ func TestConditionsChecker(t *testing.T) {
 	clk.Add(time.Second)
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-	project := testproject.GetTestProjectForTest(t)
 	opts := []dependencies.MockedOption{
 		dependencies.WithClock(clk),
 		dependencies.WithEtcdNamespace(etcdNamespace),
