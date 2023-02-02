@@ -141,6 +141,7 @@ func (c *checker) watchImportConditions(ctx context.Context, wg *sync.WaitGroup)
 				export := event.Value
 				if !c.assigner.MustCheckIsOwner(export.ReceiverKey.String()) {
 					// Another worker node handles the resource.
+					delete(c.importConditions, export.ExportKey)
 					continue
 				}
 
@@ -169,6 +170,7 @@ func (c *checker) watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup) <-c
 				slice := event.Value
 				if !c.assigner.MustCheckIsOwner(slice.ReceiverKey.String()) {
 					// Another worker node handles the resource.
+					delete(c.openedSlices, slice.SliceKey)
 					continue
 				}
 
