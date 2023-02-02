@@ -1,0 +1,16 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true,
+        "metadata": {
+          "KBC.KAC.templates.instances": "[{\"instanceId\":\"%s\",\"instanceName\":\"inst-001\",\"templateId\":\"my-template-id\",\"repositoryName\":\"keboola\",\"version\":\"1.2.3\",\"created\":{\"date\":\"%s\",\"tokenId\":\"%s\"},\"updated\":{\"date\":\"%s\",\"tokenId\":\"%s\"}}]"
+        }
+      },
+      "configs": []
+    }
+  ]
+}
+
