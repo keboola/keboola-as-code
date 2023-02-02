@@ -191,7 +191,7 @@ jobs:
       - release
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
-    runs-on: windows-latest
+    runs-on: windows-2019
     permissions:
       id-token: write
       contents: read
@@ -384,7 +384,7 @@ jobs:
       - release-msi-windows
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
@@ -521,7 +521,7 @@ jobs:
       - update-repositories
     env:
       VERSION: ${{ needs.version.outputs.VERSION }}
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
       - name: Download MSI
         shell: bash

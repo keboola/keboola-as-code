@@ -59,7 +59,7 @@ jobs:
             os: macos-latest
             projects: TEST_PROJECTS_MACOS
           - name: windows
-            os: windows-latest
+            os: windows-2019
             projects: TEST_PROJECTS_WINDOWS
     runs-on: ${{ matrix.os }}
     steps:
@@ -89,4 +89,3 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
           TEST_KBC_PROJECTS: ${{ env[matrix.projects] }}
-
