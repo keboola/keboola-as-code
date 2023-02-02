@@ -12,12 +12,13 @@ const DefaultCheckConditionsInterval = 30 * time.Second
 
 type config struct {
 	checkConditions         bool
-	closeSlices             bool
-	uploadSlices            bool
-	retryFailedSlices       bool
+	cleanup                 bool
 	closeFiles              bool
+	closeSlices             bool
 	importFiles             bool
 	retryFailedFiles        bool
+	retryFailedSlices       bool
+	uploadSlices            bool
 	uploadTransport         http.RoundTripper
 	checkConditionsInterval time.Duration
 	uploadConditions        model.Conditions
@@ -28,12 +29,13 @@ type Option func(c *config)
 func newConfig(ops []Option) config {
 	c := config{
 		checkConditions:         true,
-		closeSlices:             true,
-		uploadSlices:            true,
-		retryFailedSlices:       true,
+		cleanup:                 true,
 		closeFiles:              true,
+		closeSlices:             true,
 		importFiles:             true,
 		retryFailedFiles:        true,
+		retryFailedSlices:       true,
+		uploadSlices:            true,
 		checkConditionsInterval: DefaultCheckConditionsInterval,
 		uploadConditions:        model.DefaultUploadConditions(),
 	}
@@ -59,6 +61,13 @@ func WithUploadConditions(v model.Conditions) Option {
 func WithCheckConditions(v bool) Option {
 	return func(c *config) {
 		c.checkConditions = v
+	}
+}
+
+// WithCleanup enables/disables etcd cleanup task.
+func WithCleanup(v bool) Option {
+	return func(c *config) {
+		c.cleanup = v
 	}
 }
 

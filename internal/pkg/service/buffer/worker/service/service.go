@@ -103,6 +103,9 @@ func New(d dependencies, ops ...Option) (*Service, error) {
 	if s.config.retryFailedFiles {
 		init = append(init, s.retryFailedImports(ctx, wg, d))
 	}
+	if s.config.cleanup {
+		init = append(init, s.cleanup(ctx, wg, d))
+	}
 
 	// Check initialization
 	errs := errors.NewMultiError()
