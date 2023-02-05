@@ -14,12 +14,10 @@ type cleanup struct {
 	logger   log.Logger
 	assigner *distribution.Assigner
 
-	lock             *sync.RWMutex
-	importConditions cachedConditions
-	openedSlices     cachedSlices
+	lock *sync.RWMutex
 }
 
-func (s *Service) cleanup(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
+func (s *Service) cleanup(ctx context.Context, wg *sync.WaitGroup, _ dependencies) <-chan error {
 	return s.dist.StartWork(ctx, wg, s.logger, func(ctx context.Context, assigner *distribution.Assigner) (initDone <-chan error) {
 		return startCleanup(ctx, wg, s, assigner)
 	})
@@ -85,9 +83,13 @@ func (c *cleanup) check(ctx context.Context) {
 		default:
 		}
 
-		// TODO CLEANUP
+		err := c.store.Cleanup(ctx, receiver)
+		if err != nil {
+			c.logger.Error(err)
+		}
 
 		time.Sleep(100 * time.Millisecond)
 	}
-	c.logger.Infof(`checked "%d" opened slices | %s`, len(c.openedSlices), c.clock.Since(now))
+
+	c.logger.Infof(`finished | %s`, c.clock.Since(now))
 }
