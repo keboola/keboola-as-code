@@ -2482,8 +2482,8 @@ google.golang.org/protobuf v1.28.0/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqw
 google.golang.org/protobuf v1.28.1 h1:d0NfwRgPtno5B1Wa6L2DAG+KivqkdutMf1UhdNx175w=
 google.golang.org/protobuf v1.28.1/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
 gopkg.in/DATA-DOG/go-sqlmock.v1 v1.3.0/go.mod h1:OdE7CF6DbADk7lN8LIKRzRJTTZXIjtWgA5THM5lhBAw=
-gopkg.in/DataDog/dd-trace-go.v1 v1.46.1 h1:ovyaxbICb6FJK5VvkFqZyB7PPoUV+kKGXK2JEk+C0mU=
-gopkg.in/DataDog/dd-trace-go.v1 v1.46.1/go.mod h1:kaa8caaECrtY0V/MUtPQAh1lx/euFzPJwrY1taTx3O4=
+gopkg.in/DataDog/dd-trace-go.v1 v1.47.0 h1:w3mHEgOR1o52mkyCbkTM+El8DG732+Fnug4FAGhIpsk=
+gopkg.in/DataDog/dd-trace-go.v1 v1.47.0/go.mod h1:aHb6c4hPRANXnB64LDAKyfWotKgfRjlHv23MnahM8AI=
 gopkg.in/Knetic/govaluate.v3 v3.0.0 h1:18mUyIt4ZlRlFZAAfVetz4/rzlJs9yhN+U02F4u1AOc=
 gopkg.in/Knetic/govaluate.v3 v3.0.0/go.mod h1:csKLBORsPbafmSCGTEh3U7Ozmsuq8ZSIlKk1bcqph0E=
 gopkg.in/airbrake/gobrake.v2 v2.0.9/go.mod h1:/h5ZAUhDkGaJfjzjKLSjv6zCL6O0LLBxU4K+aSYdM/U=

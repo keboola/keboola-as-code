@@ -54,7 +54,7 @@ require (
 	goa.design/plugins/v3 v3.11.0
 	golang.org/x/sync v0.1.0
 	google.golang.org/grpc v1.52.3
-	gopkg.in/DataDog/dd-trace-go.v1 v1.46.1
+	gopkg.in/DataDog/dd-trace-go.v1 v1.47.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
 	v.io/x/lib v0.1.12
 )
