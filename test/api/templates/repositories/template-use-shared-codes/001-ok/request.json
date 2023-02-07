@@ -1,5 +1,5 @@
 {
-  "path": "/v1/repositories/keboola/templates/shared-codes-test/default/use",
+  "path": "/v1/repositories/keboola/templates/tmpl/default/use",
   "method": "POST",
   "headers": {
     "Content-Type": "application/json",

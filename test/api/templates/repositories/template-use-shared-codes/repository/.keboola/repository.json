@@ -6,10 +6,10 @@
   },
   "templates": [
     {
-      "id": "shared-codes-test",
+      "id": "tmpl",
       "name": "shared-codes-test",
       "description": "Shared Codes duplication test",
-      "path": "shared-codes-test",
+      "path": "tmpl",
       "versions": [
         {
           "version": "0.0.1",
