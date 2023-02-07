@@ -51,7 +51,7 @@ func TestStore_Cleanup(t *testing.T) {
 		},
 	}
 
-	// Add task without a finishedAt timestamp - will be ignored
+	// Add task without a finishedAt timestamp but too old - will be deleted
 	time1, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
 	taskKey1 := key.TaskKey{ExportKey: exportKey1, Type: "some.task", CreatedAt: key.UTCTime(time1), RandomSuffix: "abcdef"}
 	task1 := model.Task{
@@ -130,7 +130,7 @@ func TestStore_Cleanup(t *testing.T) {
 	err = store.schema.Files().InState(filestate.Opened).ByKey(fileKey2).Put(file2).Do(ctx, store.client)
 	assert.NoError(t, err)
 
-	// Add file with an Opened state and created in the past - will be deleted
+	// Add slice for the cleaned-up file - will be deleted
 	sliceKey1 := key.SliceKey{FileKey: fileKey1, SliceID: key.SliceID(time1)}
 	slice1 := model.Slice{
 		SliceKey: sliceKey1,
@@ -147,7 +147,7 @@ func TestStore_Cleanup(t *testing.T) {
 	err = store.schema.Slices().InState(slicestate.Imported).ByKey(sliceKey1).Put(slice1).Do(ctx, store.client)
 	assert.NoError(t, err)
 
-	// Add file with an Opened state and created recently - will be ignored
+	// Add slice for the ignored file - will be ignored
 	sliceKey2 := key.SliceKey{FileKey: fileKey2, SliceID: key.SliceID(time3)}
 	slice2 := model.Slice{
 		SliceKey: sliceKey2,
@@ -162,6 +162,16 @@ func TestStore_Cleanup(t *testing.T) {
 		StorageResource: &keboola.File{ID: 123, Name: "file1.csv"},
 	}
 	err = store.schema.Slices().InState(slicestate.Imported).ByKey(sliceKey2).Put(slice2).Do(ctx, store.client)
+	assert.NoError(t, err)
+
+	// Add record for the cleaned-up slice - will be deleted
+	recordKey1 := key.RecordKey{SliceKey: sliceKey1, ReceivedAt: key.ReceivedAt(time1), RandomSuffix: "abcd"}
+	err = store.schema.Records().ByKey(recordKey1).Put("rec").Do(ctx, store.client)
+	assert.NoError(t, err)
+
+	// Add record for the ignored slice - will be ignored
+	recordKey2 := key.RecordKey{SliceKey: sliceKey2, ReceivedAt: key.ReceivedAt(time3), RandomSuffix: "efgh"}
+	err = store.schema.Records().ByKey(recordKey2).Put("rec").Do(ctx, store.client)
 	assert.NoError(t, err)
 
 	// Run the cleanup
@@ -206,6 +216,12 @@ file/opened/00001000/github/third/%s
 >>>>>
 
 <<<<<
+record/00001000/github/third/%s_efgh
+-----
+rec
+>>>>>
+
+<<<<<
 slice/archived/successful/imported/00001000/github/third/%s/%s
 -----
 {
@@ -239,22 +255,6 @@ slice/archived/successful/imported/00001000/github/third/%s/%s
     "maxAgeDays": 0
   },
   "sliceNumber": 1
-}
->>>>>
-
-<<<<<
-task/00001000/github/first/some.task/2006-01-02T08:04:05.000Z_abcdef
------
-{
-  "projectId": 1000,
-  "receiverId": "github",
-  "exportId": "first",
-  "type": "some.task",
-  "createdAt": "2006-01-02T08:04:05.000Z",
-  "randomId": "abcdef",
-  "workerNode": "node1",
-  "lock": "lock1",
-  "error": "err"
 }
 >>>>>
 
