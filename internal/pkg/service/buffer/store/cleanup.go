@@ -18,29 +18,25 @@ func (s *Store) Cleanup(ctx context.Context, receiver model.Receiver) (err error
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.Cleanup")
 	defer telemetry.EndSpan(span, &err)
 
-	now := time.Now()
+	s.cleanupTasks(ctx, receiver.ReceiverKey)
 
-	// Delete all old tasks.
-	tasks, err := s.schema.Tasks().InReceiver(receiver.ReceiverKey).GetAll().Do(ctx, s.client).All()
+	for _, e := range receiver.Exports {
+		s.cleanupFiles(ctx, e.ExportKey)
+		s.cleanupSlices(ctx, e.ExportKey)
+	}
+
+	return nil
+}
+
+func (s *Store) cleanupTasks(ctx context.Context, receiverKey key.ReceiverKey) {
+	tasks, err := s.schema.Tasks().InReceiver(receiverKey).GetAll().Do(ctx, s.client).All()
 	if err != nil {
-		return err
+		s.logger.Error(err)
+		return
 	}
 	for _, t := range tasks {
-		if t.Value.FinishedAt == nil {
+		if !t.Value.IsForCleanup() {
 			continue
-		}
-
-		taskAge := now.Sub(t.Value.FinishedAt.Time())
-		if t.Value.Error == "" {
-			if taskAge < 1*time.Hour {
-				continue
-			}
-			// Delete finished tasks older than 1 hour.
-		} else {
-			if taskAge < 24*time.Hour {
-				continue
-			}
-			// Delete failed tasks older than 24 hours.
 		}
 
 		_, err = s.schema.Tasks().ByKey(t.Value.TaskKey).Delete().Do(ctx, s.client)
@@ -49,26 +45,30 @@ func (s *Store) Cleanup(ctx context.Context, receiver model.Receiver) (err error
 		}
 		s.logger.Infof(`deleting task "%s"`, t.Value.TaskKey.String())
 	}
+}
 
-	// Delete all old files.
+func (s *Store) cleanupFiles(ctx context.Context, exportKey key.ExportKey) {
+	now := time.Now()
 	boundaryTime := now.AddDate(0, 0, -14)
-	for _, e := range receiver.Exports {
-		// TODO: iterate for all file states??
-		fileBoundPrefix := s.schema.Files().InState(filestate.Opened).InExport(e.ExportKey).Prefix()
+	for _, state := range filestate.All() {
+		fileBoundPrefix := s.schema.Files().InState(state).InExport(exportKey).Prefix()
 		fileBoundKey := fileBoundPrefix + key.UTCTime(boundaryTime).String()
-		_, err = s.client.Delete(ctx, fileBoundPrefix, clientv3.WithRange(fileBoundKey))
-		if err != nil {
-			s.logger.Error(err)
-		}
-
-		// TODO: iterate for all slice states??
-		sliceBoundPrefix := s.schema.Slices().InState(slicestate.Imported).InExport(e.ExportKey).Prefix()
-		sliceBoundKey := sliceBoundPrefix + key.UTCTime(boundaryTime).String()
-		_, err = s.client.Delete(ctx, sliceBoundPrefix, clientv3.WithRange(sliceBoundKey))
+		_, err := s.client.Delete(ctx, fileBoundPrefix, clientv3.WithRange(fileBoundKey))
 		if err != nil {
 			s.logger.Error(err)
 		}
 	}
+}
 
-	return nil
+func (s *Store) cleanupSlices(ctx context.Context, exportKey key.ExportKey) {
+	now := time.Now()
+	boundaryTime := now.AddDate(0, 0, -14)
+	for _, state := range slicestate.All() {
+		sliceBoundPrefix := s.schema.Slices().InState(state).InExport(exportKey).Prefix()
+		sliceBoundKey := sliceBoundPrefix + key.UTCTime(boundaryTime).String()
+		_, err := s.client.Delete(ctx, sliceBoundPrefix, clientv3.WithRange(sliceBoundKey))
+		if err != nil {
+			s.logger.Error(err)
+		}
+	}
 }
