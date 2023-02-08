@@ -17,7 +17,7 @@ type cleanup struct {
 	lock *sync.RWMutex
 }
 
-func (s *Service) cleanup(ctx context.Context, wg *sync.WaitGroup, _ dependencies) <-chan error {
+func (s *Service) cleanup(ctx context.Context, wg *sync.WaitGroup) <-chan error {
 	return s.dist.StartWork(ctx, wg, s.logger, func(ctx context.Context, assigner *distribution.Assigner) (initDone <-chan error) {
 		return startCleanup(ctx, wg, s, assigner)
 	})
@@ -31,17 +31,12 @@ func startCleanup(ctx context.Context, wg *sync.WaitGroup, s *Service, assigner 
 		lock:     &sync.RWMutex{},
 	}
 
-	// Start watchers and ticker
+	// Start ticker
+	startTime := c.clock.Now()
+	c.startTicker(ctx, wg)
+	c.logger.Infof(`initialized | %s`, c.clock.Since(startTime))
 	initDone := make(chan error, 1)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer close(initDone)
-		startTime := c.clock.Now()
-
-		c.startTicker(ctx, wg)
-		c.logger.Infof(`initialized | %s`, c.clock.Since(startTime))
-	}()
+	defer close(initDone)
 	return initDone
 }
 
@@ -51,7 +46,7 @@ func (c *cleanup) startTicker(ctx context.Context, wg *sync.WaitGroup) {
 	go func() {
 		defer wg.Done()
 
-		ticker := c.clock.Ticker(c.config.checkConditionsInterval)
+		ticker := c.clock.Ticker(c.config.cleanupInterval)
 		defer ticker.Stop()
 
 		for {
@@ -83,7 +78,7 @@ func (c *cleanup) check(ctx context.Context) {
 		default:
 		}
 
-		err := c.store.Cleanup(ctx, receiver)
+		err := c.store.Cleanup(ctx, receiver, c.logger)
 		if err != nil {
 			c.logger.Error(err)
 		}

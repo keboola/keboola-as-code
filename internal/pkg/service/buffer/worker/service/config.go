@@ -8,7 +8,10 @@ import (
 )
 
 // DefaultCheckConditionsInterval defines how often it will be checked upload and import conditions.
-const DefaultCheckConditionsInterval = 30 * time.Second
+const (
+	DefaultCheckConditionsInterval = 30 * time.Second
+	DefaultCleanupInterval         = 1 * time.Hour
+)
 
 type config struct {
 	checkConditions         bool
@@ -21,6 +24,7 @@ type config struct {
 	uploadSlices            bool
 	uploadTransport         http.RoundTripper
 	checkConditionsInterval time.Duration
+	cleanupInterval         time.Duration
 	uploadConditions        model.Conditions
 }
 
@@ -37,12 +41,19 @@ func newConfig(ops []Option) config {
 		retryFailedSlices:       true,
 		uploadSlices:            true,
 		checkConditionsInterval: DefaultCheckConditionsInterval,
+		cleanupInterval:         DefaultCleanupInterval,
 		uploadConditions:        model.DefaultUploadConditions(),
 	}
 	for _, o := range ops {
 		o(&c)
 	}
 	return c
+}
+
+func WithCleanupInterval(v time.Duration) Option {
+	return func(c *config) {
+		c.cleanupInterval = v
+	}
 }
 
 func WithCheckConditionsInterval(v time.Duration) Option {

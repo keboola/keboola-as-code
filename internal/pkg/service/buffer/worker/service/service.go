@@ -78,8 +78,10 @@ func New(d dependencies, ops ...Option) (*Service, error) {
 
 	// Create orchestrators
 	var init []<-chan error
-	if s.config.checkConditions {
+	if s.config.checkConditions || s.config.cleanup {
 		s.dist = d.DistributionWorkerNode()
+	}
+	if s.config.checkConditions {
 		s.stats = d.StatsCacheNode()
 		s.tasks = d.TaskWorkerNode()
 		init = append(init, s.checkConditions(ctx, wg))
@@ -104,7 +106,7 @@ func New(d dependencies, ops ...Option) (*Service, error) {
 		init = append(init, s.retryFailedImports(ctx, wg, d))
 	}
 	if s.config.cleanup {
-		init = append(init, s.cleanup(ctx, wg, d))
+		init = append(init, s.cleanup(ctx, wg))
 	}
 
 	// Check initialization

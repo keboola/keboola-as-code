@@ -8,6 +8,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -175,7 +176,7 @@ func TestStore_Cleanup(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Run the cleanup
-	err = store.Cleanup(ctx, receiver)
+	err = store.Cleanup(ctx, receiver, log.NewNopLogger())
 	assert.NoError(t, err)
 
 	// Check keys
