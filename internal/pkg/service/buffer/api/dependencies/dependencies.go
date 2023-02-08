@@ -39,6 +39,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -81,6 +82,7 @@ type ForProjectRequest interface {
 	dependencies.Project
 	TokenManager() *token.Manager
 	TableManager() *table.Manager
+	TaskNode() *task.Node
 	FileManager() *file.Manager
 }
 
@@ -108,6 +110,7 @@ type forProjectRequest struct {
 	logger       log.Logger
 	tokenManager *token.Manager
 	tableManager *table.Manager
+	taskNode     *task.Node
 	fileManager  *file.Manager
 }
 
@@ -186,6 +189,10 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 	d.tokenManager = token.NewManager(d)
 	d.tableManager = table.NewManager(d.KeboolaProjectAPI())
 	d.fileManager = file.NewManager(d.Clock(), d.KeboolaProjectAPI(), nil)
+	d.taskNode, err = task.NewNode(d)
+	if err != nil {
+		return nil, err
+	}
 	return d, nil
 }
 
@@ -231,6 +238,10 @@ func (v *forProjectRequest) TokenManager() *token.Manager {
 
 func (v *forProjectRequest) TableManager() *table.Manager {
 	return v.tableManager
+}
+
+func (v *forProjectRequest) TaskNode() *task.Node {
+	return v.taskNode
 }
 
 func (v *forProjectRequest) FileManager() *file.Manager {
