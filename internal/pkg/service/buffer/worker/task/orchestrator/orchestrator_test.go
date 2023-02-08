@@ -25,16 +25,16 @@ import (
 )
 
 type testResource struct {
-	ExportKey key.ExportKey
-	ID        string
+	ReceiverKey key.ReceiverKey
+	ID          string
 }
 
-func (v testResource) GetExportKey() key.ExportKey {
-	return v.ExportKey
+func (v testResource) GetReceiverKey() key.ReceiverKey {
+	return v.ReceiverKey
 }
 
 func (v testResource) String() string {
-	return v.ExportKey.String() + "/" + v.ID
+	return v.ReceiverKey.String() + "/" + v.ID
 }
 
 func TestOrchestrator(t *testing.T) {
@@ -49,7 +49,7 @@ func TestOrchestrator(t *testing.T) {
 	d1 := bufferDependencies.NewMockedDeps(t, dependencies.WithCtx(ctx), dependencies.WithEtcdNamespace(etcdNamespace), dependencies.WithUniqueID("node1"))
 	d2 := bufferDependencies.NewMockedDeps(t, dependencies.WithCtx(ctx), dependencies.WithEtcdNamespace(etcdNamespace), dependencies.WithUniqueID("node2"))
 
-	exportKey := key.ExportKey{ReceiverKey: key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}, ExportID: "my-export"}
+	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
 
 	// Orchestrator config
@@ -70,16 +70,16 @@ func TestOrchestrator(t *testing.T) {
 	assert.NoError(t, <-orchestrator.Start(ctx, wg, d2, config))
 
 	// Put some key to trigger the task
-	assert.NoError(t, pfx.Key("key1").Put(testResource{ExportKey: exportKey, ID: "ResourceID"}).Do(ctx, client))
+	assert.NoError(t, pfx.Key("key1").Put(testResource{ReceiverKey: receiverKey, ID: "ResourceID"}).Do(ctx, client))
 
-	// Wait for "not assigned" message form the node 1
+	// Wait for task on the node 1
 	assert.Eventually(t, func() bool {
-		return strings.Contains(d1.DebugLogger().AllMessages(), "DEBUG  not assigned")
+		return strings.Contains(d1.DebugLogger().AllMessages(), "DEBUG  lock released")
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
-	// Wait for task on the node 2
+	// Wait for  "not assigned" message form the node 2
 	assert.Eventually(t, func() bool {
-		return strings.Contains(d2.DebugLogger().AllMessages(), "DEBUG  lock released")
+		return strings.Contains(d2.DebugLogger().AllMessages(), "DEBUG  not assigned")
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	cancel()
@@ -94,19 +94,19 @@ func TestOrchestrator(t *testing.T) {
 [orchestrator][some.task]INFO  ready
 [distribution]INFO  found a new node "node2"
 [orchestrator][some.task]INFO  restart: distribution changed: found a new node "node2"
-[orchestrator][some.task]DEBUG  not assigned "00001000/my-receiver/my-export/ResourceID"
+[orchestrator][some.task]INFO  assigned "00001000/my-receiver/ResourceID"
+[task][%s]INFO  started task "00001000/my-receiver/some.task/%s"
+[task][%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/some.task/ResourceID"
+[task][%s]INFO  message from the task
+[task][%s]INFO  task succeeded (%s): ResourceID
+[task][%s]DEBUG  lock released "runtime/lock/task/00001000/my-receiver/some.task/ResourceID"
 %A
 `, d1.DebugLogger().AllMessages())
 
 	wildcards.Assert(t, `
 %A
 [orchestrator][some.task]INFO  ready
-[orchestrator][some.task]INFO  assigned "00001000/my-receiver/my-export/ResourceID"
-[task][%s]INFO  started task "00001000/my-receiver/my-export/some.task/%s"
-[task][%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/my-export/some.task/ResourceID"
-[task][%s]INFO  message from the task
-[task][%s]INFO  task succeeded (%s): ResourceID
-[task][%s]DEBUG  lock released "runtime/lock/task/00001000/my-receiver/my-export/some.task/ResourceID"
+[orchestrator][some.task]DEBUG  not assigned "00001000/my-receiver/ResourceID"
 %A
 `, d2.DebugLogger().AllMessages())
 }
@@ -122,7 +122,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithCtx(ctx), dependencies.WithEtcdNamespace(etcdNamespace), dependencies.WithUniqueID("node1"))
 
-	exportKey := key.ExportKey{ReceiverKey: key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}, ExportID: "my-export"}
+	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
 
 	// Orchestrator config
@@ -145,8 +145,8 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	}
 
 	assert.NoError(t, <-orchestrator.Start(ctx, wg, d, config))
-	assert.NoError(t, pfx.Key("key1").Put(testResource{ExportKey: exportKey, ID: "BadID"}).Do(ctx, client))
-	assert.NoError(t, pfx.Key("key2").Put(testResource{ExportKey: exportKey, ID: "GoodID"}).Do(ctx, client))
+	assert.NoError(t, pfx.Key("key1").Put(testResource{ReceiverKey: receiverKey, ID: "BadID"}).Do(ctx, client))
+	assert.NoError(t, pfx.Key("key2").Put(testResource{ReceiverKey: receiverKey, ID: "GoodID"}).Do(ctx, client))
 	assert.Eventually(t, func() bool {
 		return strings.Contains(d.DebugLogger().AllMessages(), "DEBUG  lock released")
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
@@ -159,13 +159,13 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	wildcards.Assert(t, `
 %A
 [orchestrator][some.task]INFO  ready
-[orchestrator][some.task]DEBUG  skipped "00001000/my-receiver/my-export/BadID", StartTaskIf condition evaluated as false
-[orchestrator][some.task]INFO  assigned "00001000/my-receiver/my-export/GoodID"
-[task][some.task/%s]INFO  started task "00001000/my-receiver/my-export/some.task/%s"
-[task][some.task/%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/my-export/some.task/GoodID"
+[orchestrator][some.task]DEBUG  skipped "00001000/my-receiver/BadID", StartTaskIf condition evaluated as false
+[orchestrator][some.task]INFO  assigned "00001000/my-receiver/GoodID"
+[task][some.task/%s]INFO  started task "00001000/my-receiver/some.task/%s"
+[task][some.task/%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/some.task/GoodID"
 [task][some.task/%sINFO  message from the task
 [task][some.task/%s]INFO  task succeeded (%s): GoodID
-[task][some.task/%s]DEBUG  lock released "runtime/lock/task/00001000/my-receiver/my-export/some.task/GoodID"
+[task][some.task/%s]DEBUG  lock released "runtime/lock/task/00001000/my-receiver/some.task/GoodID"
 %A
 `, d.DebugLogger().AllMessages())
 }

@@ -30,7 +30,7 @@ func TestSchema(t *testing.T) {
 	fileKey := key.FileKey{ExportKey: exportKey, FileID: key.FileID(time1)}
 	sliceKey := key.SliceKey{SliceID: key.SliceID(time2), FileKey: fileKey}
 	recordKey := key.RecordKey{SliceKey: sliceKey, ReceivedAt: key.ReceivedAt(time2.Add(time.Hour)), RandomSuffix: "abcdef"}
-	taskKey := key.TaskKey{ExportKey: exportKey, Type: "some.task", CreatedAt: key.UTCTime(time1), RandomSuffix: "abcdef"}
+	taskKey := key.TaskKey{ReceiverKey: receiverKey, Type: "some.task", CreatedAt: key.UTCTime(time1), RandomSuffix: "abcdef"}
 
 	cases := []keyTestCase{
 		{
@@ -251,12 +251,12 @@ func TestSchema(t *testing.T) {
 			"runtime/lock/task/",
 		},
 		{
-			s.Runtime().Lock().Task().InExport(exportKey).Prefix(),
-			"runtime/lock/task/00000123/my-receiver/my-export/",
+			s.Runtime().Lock().Task().InReceiver(exportKey.ReceiverKey).Prefix(),
+			"runtime/lock/task/00000123/my-receiver/",
 		},
 		{
-			s.Runtime().Lock().Task().InExport(exportKey).Key("my-lock").Key(),
-			"runtime/lock/task/00000123/my-receiver/my-export/my-lock",
+			s.Runtime().Lock().Task().InReceiver(exportKey.ReceiverKey).Key("my-lock").Key(),
+			"runtime/lock/task/00000123/my-receiver/my-lock",
 		},
 		{
 			s.Runtime().LastRecordID().Prefix(),
@@ -283,12 +283,8 @@ func TestSchema(t *testing.T) {
 			"task/00000123/my-receiver/",
 		},
 		{
-			s.Tasks().InExport(exportKey).Prefix(),
-			"task/00000123/my-receiver/my-export/",
-		},
-		{
 			s.Tasks().ByKey(taskKey).Key(),
-			"task/00000123/my-receiver/my-export/some.task/2006-01-02T08:04:05.000Z_abcdef",
+			"task/00000123/my-receiver/some.task/2006-01-02T08:04:05.000Z_abcdef",
 		},
 		{
 			s.ReceivedStats().InReceiver(receiverKey).Prefix(),

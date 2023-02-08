@@ -134,10 +134,10 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 
 	// Retry check task
 	wildcards.Assert(t, `
-[task][slice.retry.check/%s]INFO  started task "00000123/my-receiver-1/my-export-1/slice.retry.check/%s"
-[task][slice.retry.check/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-1/my-export-1/slice.retry.check/%s"
+[task][slice.retry.check/%s]INFO  started task "00000123/my-receiver-1/slice.retry.check/%s"
+[task][slice.retry.check/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-1/slice.retry.check/%s"
 [task][slice.retry.check/%s]INFO  task succeeded (%s): slice scheduled for retry
-[task][slice.retry.check/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-1/my-export-1/slice.retry.check/%s"
+[task][slice.retry.check/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-1/slice.retry.check/%s"
 `, strhelper.FilterLines(`^(\[task\]\[slice.retry.check\/)`, workerDeps.DebugLogger().AllMessages()))
 
 	// Retried upload
@@ -251,72 +251,68 @@ slice/active/closed/failed/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:0
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-1/my-export-1/slice.close/%s
+task/00000123/my-receiver-1/slice.close/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver-1",
-  "exportId": "my-export-1",
   "type": "slice.close",
   "createdAt": "%s",
   "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
-  "lock": "slice.close/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
+  "lock": "slice.close/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
   "result": "slice closed",
   "duration": 0
 }
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-1/my-export-1/slice.retry.check/%s
+task/00000123/my-receiver-1/slice.retry.check/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver-1",
-  "exportId": "my-export-1",
   "type": "slice.retry.check",
   "createdAt": "%s",
   "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
-  "lock": "slice.retry.check/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
+  "lock": "slice.retry.check/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
   "result": "slice scheduled for retry",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-1/my-export-1/slice.upload/%s
+task/00000123/my-receiver-1/slice.upload/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver-1",
-  "exportId": "my-export-1",
   "type": "slice.upload",
   "createdAt": "%s",
   "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
-  "lock": "slice.upload/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
+  "lock": "slice.upload/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
   "error": "slice upload failed: %s some network error, upload will be retried after \"%s\"",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-1/my-export-1/slice.upload/%s
+task/00000123/my-receiver-1/slice.upload/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver-1",
-  "exportId": "my-export-1",
   "type": "slice.upload",
   "createdAt": "%s",
   "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
-  "lock": "slice.upload/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
+  "lock": "slice.upload/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
   "error": "slice upload failed: %s some network error, upload will be retried after \"%s\"",
   "duration": %d
 }

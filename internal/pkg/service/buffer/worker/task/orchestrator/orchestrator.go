@@ -24,7 +24,7 @@ import (
 // The orchestrator watches for all PUT events in the etcd Prefix.
 // For each event, the TaskFactory is invoked.
 //
-// The TaskFactory is invoked only if the event ExportKey is assigned to the orchestrator.Node.
+// The TaskFactory is invoked only if the event ReceiverKey is assigned to the orchestrator.Node.
 // All events are received by all nodes, but each node decides
 // whether the resource is assigned to it and task should be started or not.
 //
@@ -37,7 +37,7 @@ import (
 // Task duplication is prevented by the task lock.
 //
 // The TaskFactory may return nil, then the event will be ignored.
-type Config[R ExportResource] struct {
+type Config[R ReceiverResource] struct {
 	Prefix         etcdop.PrefixT[R]
 	ReSyncInterval time.Duration
 	TaskType       string
@@ -49,7 +49,7 @@ type Config[R ExportResource] struct {
 // Orchestrator creates a task for each watch event, but only on one worker node in the cluster.
 // Decision is made by the distribution.Assigner.
 // See documentation of: distribution.Node, task.Node, Config[R].
-type orchestrator[R ExportResource] struct {
+type orchestrator[R ReceiverResource] struct {
 	logger log.Logger
 	client *etcd.Client
 	dist   *distribution.Node
@@ -57,12 +57,12 @@ type orchestrator[R ExportResource] struct {
 	config Config[R]
 }
 
-type ExportResource interface {
+type ReceiverResource interface {
 	String() string
-	GetExportKey() key.ExportKey
+	GetReceiverKey() key.ReceiverKey
 }
 
-type TaskFactory[T ExportResource] func(event etcdop.WatchEventT[T]) task.Task
+type TaskFactory[T ReceiverResource] func(event etcdop.WatchEventT[T]) task.Task
 
 type dependencies interface {
 	Logger() log.Logger
@@ -71,7 +71,7 @@ type dependencies interface {
 	TaskWorkerNode() *task.Node
 }
 
-func Start[R ExportResource](ctx context.Context, wg *sync.WaitGroup, d dependencies, config Config[R]) <-chan error {
+func Start[R ReceiverResource](ctx context.Context, wg *sync.WaitGroup, d dependencies, config Config[R]) <-chan error {
 	// Validate the config
 	if config.ReSyncInterval <= 0 {
 		panic(errors.New("re-sync interval must be configured"))
@@ -128,10 +128,10 @@ func (w orchestrator[R]) startTask(ctx context.Context, assigner *distribution.A
 	}
 
 	// Compose lock name.
-	// Task and task lock are bounded to the ExportKey, so the ExportKey part is stripped.
+	// Task and task lock are bounded to the ReceiverKey, so the ReceiverKey part is stripped.
 	value := event.Value
-	exportKey := value.GetExportKey()
-	resourceID := strings.Trim(strings.TrimPrefix(value.String(), exportKey.String()), "/")
+	receiverKey := value.GetReceiverKey()
+	resourceID := strings.Trim(strings.TrimPrefix(value.String(), receiverKey.String()), "/")
 	lock := w.config.TaskType + "/" + resourceID
 
 	// Create task
@@ -143,7 +143,7 @@ func (w orchestrator[R]) startTask(ctx context.Context, assigner *distribution.A
 
 	// Run task in the background
 	w.logger.Infof(`assigned "%s"`, resourceKey)
-	if _, err := w.tasks.StartTask(ctx, exportKey, w.config.TaskType, lock, taskFn); err != nil {
+	if _, err := w.tasks.StartTask(ctx, receiverKey, w.config.TaskType, lock, taskFn); err != nil {
 		w.logger.Error(err)
 	}
 }

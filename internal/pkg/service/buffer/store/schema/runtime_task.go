@@ -13,7 +13,7 @@ type TaskLocks struct {
 	prefix
 }
 
-type TaskLocksInExport struct {
+type TaskLocksInReceiver struct {
 	prefix
 }
 
@@ -25,10 +25,10 @@ func (v Locks) Task() TaskLocks {
 	return TaskLocks{prefix: v.prefix.Add("task")}
 }
 
-func (v TaskLocks) InExport(exportKey key.ExportKey) TaskLocksInExport {
-	return TaskLocksInExport{prefix: v.prefix.Add(exportKey.String())}
+func (v TaskLocks) InReceiver(receiverKey key.ReceiverKey) TaskLocksInReceiver {
+	return TaskLocksInReceiver{prefix: v.prefix.Add(receiverKey.String())}
 }
 
-func (v TaskLocksInExport) LockKey(lockName string) etcdop.Key {
+func (v TaskLocksInReceiver) LockKey(lockName string) etcdop.Key {
 	return v.prefix.Key(lockName)
 }

@@ -130,22 +130,22 @@ func TestConditionsChecker(t *testing.T) {
 	// Check conditions checker logs
 	wildcards.Assert(t, `
 %A
-[task][slice.swap/%s]INFO  started task "00000123/my-receiver-B/my-export-2/slice.swap/%s"
-[task][slice.swap/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-B/my-export-2/slice.swap/%s"
+[task][slice.swap/%s]INFO  started task "00000123/my-receiver-B/slice.swap/%s"
+[task][slice.swap/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-B/slice.swap/%s"
 [task][slice.swap/%s]INFO  task succeeded (%s): new slice created, the old is closing
-[task][slice.swap/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-B/my-export-2/slice.swap/%s"
+[task][slice.swap/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-B/slice.swap/%s"
 %A
 `, strhelper.FilterLines(`^(\[task\])`, workerDeps1.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
 %A
-[task][slice.swap/%s]INFO  started task "00000123/my-receiver-A/my-export-1/slice.swap/%s"
-[task][slice.swap/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-A/my-export-1/slice.swap/%s"
+[task][slice.swap/%s]INFO  started task "00000123/my-receiver-A/slice.swap/%s"
+[task][slice.swap/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-A/slice.swap/%s"
 [task][slice.swap/%s]INFO  task succeeded (%s): new slice created, the old is closing
-[task][slice.swap/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-A/my-export-1/slice.swap/%s"
-[task][file.swap/%s]INFO  started task "00000123/my-receiver-A/my-export-1/file.swap/%s"
-[task][file.swap/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-A/my-export-1/file.swap/%s"
+[task][slice.swap/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-A/slice.swap/%s"
+[task][file.swap/%s]INFO  started task "00000123/my-receiver-A/file.swap/%s"
+[task][file.swap/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-A/file.swap/%s"
 [task][file.swap/%s]INFO  task succeeded (%s): new file created, the old is closing
-[task][file.swap/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-A/my-export-1/file.swap/%s"
+[task][file.swap/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-A/file.swap/%s"
 %A
 `, strhelper.FilterLines(`^(\[task\])`, workerDeps2.DebugLogger().AllMessages()))
 
@@ -266,12 +266,11 @@ stats/received/00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/0001-
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-A/my-export-1/file.swap/%s
+task/00000123/my-receiver-A/file.swap/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver-A",
-  "exportId": "my-export-1",
   "type": "file.swap",
   "createdAt": "%s",
   "randomId": "%s",
@@ -284,12 +283,11 @@ task/00000123/my-receiver-A/my-export-1/file.swap/%s
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-A/my-export-1/slice.swap/%s
+task/00000123/my-receiver-A/slice.swap/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver-A",
-  "exportId": "my-export-1",
   "type": "slice.swap",
   "createdAt": "%s",
   "randomId": "%s",
@@ -302,12 +300,11 @@ task/00000123/my-receiver-A/my-export-1/slice.swap/%s
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-B/my-export-2/slice.swap/%s
+task/00000123/my-receiver-B/slice.swap/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver-B",
-  "exportId": "my-export-2",
   "type": "slice.swap",
   "createdAt": "%s",
   "randomId": "%s",

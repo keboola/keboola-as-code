@@ -401,12 +401,11 @@ slice/archived/successful/imported/%s/my-receiver/my-export/%s/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/my-export/file.close/%s
+task/%s/my-receiver/file.close/%s
 -----
 {
   "projectId": %d,
   "receiverId": "my-receiver",
-  "exportId": "my-export",
   "type": "file.close",
   "createdAt": "%s",
   "randomId": "%s",
@@ -419,12 +418,11 @@ task/%s/my-receiver/my-export/file.close/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/my-export/file.close/%s
+task/%s/my-receiver/file.close/%s
 -----
 {
   "projectId": %d,
   "receiverId": "my-receiver",
-  "exportId": "my-export",
   "type": "file.close",
   "createdAt": "%s",
   "randomId": "%s",
@@ -437,12 +435,11 @@ task/%s/my-receiver/my-export/file.close/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/my-export/file.import/%s
+task/%s/my-receiver/file.import/%s
 -----
 {
   "projectId": %d,
   "receiverId": "my-receiver",
-  "exportId": "my-export",
   "type": "file.import",
   "createdAt": "%s",
   "randomId": "%s",
@@ -455,12 +452,11 @@ task/%s/my-receiver/my-export/file.import/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/my-export/file.import/%s
+task/%s/my-receiver/file.import/%s
 -----
 {
   "projectId": %d,
   "receiverId": "my-receiver",
-  "exportId": "my-export",
   "type": "file.import",
   "createdAt": "%s",
   "randomId": "%s",
@@ -473,12 +469,11 @@ task/%s/my-receiver/my-export/file.import/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/my-export/file.swap/%s
+task/%s/my-receiver/file.swap/%s
 -----
 {
   "projectId": %d,
   "receiverId": "my-receiver",
-  "exportId": "my-export",
   "type": "file.swap",
   "createdAt": "%s",
   "randomId": "%s",
@@ -491,12 +486,11 @@ task/%s/my-receiver/my-export/file.swap/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/my-export/slice.close/%s
+task/%s/my-receiver/slice.close/%s
 -----
 {
   "projectId": %d,
   "receiverId": "my-receiver",
-  "exportId": "my-export",
   "type": "slice.close",
   "createdAt": "%s",
   "randomId": "%s",
@@ -509,12 +503,11 @@ task/%s/my-receiver/my-export/slice.close/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/my-export/slice.close/%s
+task/%s/my-receiver/slice.close/%s
 -----
 {
   "projectId": %d,
   "receiverId": "my-receiver",
-  "exportId": "my-export",
   "type": "slice.close",
   "createdAt": "%s",
   "randomId": "%s",
@@ -527,12 +520,11 @@ task/%s/my-receiver/my-export/slice.close/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/my-export/slice.close/%s
+task/%s/my-receiver/slice.close/%s
 -----
 {
   "projectId": %d,
   "receiverId": "my-receiver",
-  "exportId": "my-export",
   "type": "slice.close",
   "createdAt": "%s",
   "randomId": "%s",
@@ -545,12 +537,11 @@ task/%s/my-receiver/my-export/slice.close/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/my-export/slice.swap/%s
+task/%s/my-receiver/slice.swap/%s
 -----
 {
   "projectId": %d,
   "receiverId": "my-receiver",
-  "exportId": "my-export",
   "type": "slice.swap",
   "createdAt": "%s",
   "randomId": "%s",
@@ -563,12 +554,11 @@ task/%s/my-receiver/my-export/slice.swap/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/my-export/slice.upload/%s
+task/%s/my-receiver/slice.upload/%s
 -----
 {
   "projectId": %d,
   "receiverId": "my-receiver",
-  "exportId": "my-export",
   "type": "slice.upload",
   "createdAt": "%s",
   "randomId": "%s",
@@ -581,12 +571,11 @@ task/%s/my-receiver/my-export/slice.upload/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/my-export/slice.upload/%s
+task/%s/my-receiver/slice.upload/%s
 -----
 {
   "projectId": %d,
   "receiverId": "my-receiver",
-  "exportId": "my-export",
   "type": "slice.upload",
   "createdAt": "%s",
   "randomId": "%s",
@@ -599,12 +588,11 @@ task/%s/my-receiver/my-export/slice.upload/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/my-export/slice.upload/%s
+task/%s/my-receiver/slice.upload/%s
 -----
 {
   "projectId": %d,
   "receiverId": "my-receiver",
-  "exportId": "my-export",
   "type": "slice.upload",
   "createdAt": "%s",
   "randomId": "%s",

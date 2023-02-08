@@ -133,14 +133,14 @@ func TestSliceCloseTask(t *testing.T) {
 	workerDeps.Process().WaitForShutdown()
 
 	// Get tasks
-	export1Tasks, err := workerDeps.Schema().Tasks().InExport(emptySliceKey.ExportKey).GetAll().Do(ctx, client).All()
+	receiver1Tasks, err := workerDeps.Schema().Tasks().InReceiver(emptySliceKey.ReceiverKey).GetAll().Do(ctx, client).All()
 	assert.NoError(t, err)
-	assert.Len(t, export1Tasks, 1)
-	export2Tasks, err := workerDeps.Schema().Tasks().InExport(notEmptySlice.ExportKey).GetAll().Do(ctx, client).All()
+	assert.Len(t, receiver1Tasks, 1)
+	receiver2Tasks, err := workerDeps.Schema().Tasks().InReceiver(notEmptySlice.ReceiverKey).GetAll().Do(ctx, client).All()
 	assert.NoError(t, err)
-	assert.Len(t, export2Tasks, 1)
-	task1 := export1Tasks[0].Value
-	task2 := export2Tasks[0].Value
+	assert.Len(t, receiver2Tasks, 1)
+	task1 := receiver1Tasks[0].Value
+	task2 := receiver2Tasks[0].Value
 
 	// Check API logs
 	wildcards.Assert(t, `
@@ -166,21 +166,21 @@ INFO  exited
 	// Check worker logs
 	wildcards.Assert(t, `
 INFO  ---> locked
-[task][slice.close/%s]INFO  started task "00000123/my-receiver-1/my-export-1/slice.close/%s"
-[task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-1/my-export-1/slice.close/%s"
+[task][slice.close/%s]INFO  started task "00000123/my-receiver-1/slice.close/%s"
+[task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-1/slice.close/%s"
 [task][slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %d
 INFO  ---> unlocked
 [task][slice.close/%s]INFO  task succeeded (30s): slice closed
-[task][slice.close/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-1/my-export-1/slice.close/%s"
+[task][slice.close/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-1/slice.close/%s"
 `, strhelper.FilterLines(`^(INFO  --->)|(\[task\]\[`+task1.ID()+`\])`, workerDeps.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
 INFO  ---> locked
-[task][slice.close/%a]INFO  started task "00000123/my-receiver-2/my-export-2/slice.close/%s"
-[task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.close/%s"
+[task][slice.close/%a]INFO  started task "00000123/my-receiver-2/slice.close/%s"
+[task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-2/slice.close/%s"
 [task][slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %d
 INFO  ---> unlocked
 [task][slice.close/%s]INFO  task succeeded (30s): slice closed
-[task][slice.close/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-2/my-export-2/slice.close/%s"
+[task][slice.close/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-2/slice.close/%s"
 `, strhelper.FilterLines(`^(INFO  --->)|(\[task\]\[`+task2.ID()+`\])`, workerDeps.DebugLogger().AllMessages()))
 
 	// Check etcd state
