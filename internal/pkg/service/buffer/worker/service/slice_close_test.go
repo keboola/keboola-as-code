@@ -123,7 +123,7 @@ func TestSliceCloseTask(t *testing.T) {
 	unlockR3()
 	clk.Add(time.Minute) // sync revision from API nodes
 	assert.Eventually(t, func() bool {
-		return workerDeps.TaskWorkerNode().TasksCount() == 0
+		return workerDeps.TaskNode().TasksCount() == 0
 	}, time.Second, 10*time.Millisecond, "timeout")
 
 	// Shutdown API node and worker

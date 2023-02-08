@@ -9,8 +9,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task/orchestrator"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 )
 

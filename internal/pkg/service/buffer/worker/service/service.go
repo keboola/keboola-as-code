@@ -13,9 +13,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -48,7 +48,7 @@ type dependencies interface {
 	WatcherWorkerNode() *watcher.WorkerNode
 	DistributionWorkerNode() *distribution.Node
 	StatsCacheNode() *statistics.CacheNode
-	TaskWorkerNode() *task.Node
+	TaskNode() *task.Node
 	EventSender() *event.Sender
 }
 
@@ -83,7 +83,7 @@ func New(d dependencies, ops ...Option) (*Service, error) {
 	}
 	if s.config.checkConditions {
 		s.stats = d.StatsCacheNode()
-		s.tasks = d.TaskWorkerNode()
+		s.tasks = d.TaskNode()
 		init = append(init, s.checkConditions(ctx, wg))
 	}
 	if s.config.closeSlices {

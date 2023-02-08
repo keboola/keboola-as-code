@@ -12,8 +12,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -67,7 +67,7 @@ type dependencies interface {
 	Logger() log.Logger
 	EtcdClient() *etcd.Client
 	DistributionWorkerNode() *distribution.Node
-	TaskWorkerNode() *task.Node
+	TaskNode() *task.Node
 }
 
 func Start[R ReceiverResource](ctx context.Context, wg *sync.WaitGroup, d dependencies, config Config[R]) <-chan error {
@@ -86,7 +86,7 @@ func Start[R ReceiverResource](ctx context.Context, wg *sync.WaitGroup, d depend
 		logger: d.Logger().AddPrefix(fmt.Sprintf("[orchestrator][%s]", config.TaskType)),
 		client: d.EtcdClient(),
 		dist:   d.DistributionWorkerNode(),
-		tasks:  d.TaskWorkerNode(),
+		tasks:  d.TaskNode(),
 		config: config,
 	}
 
