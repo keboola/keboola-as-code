@@ -167,20 +167,20 @@ INFO  exited
 	wildcards.Assert(t, `
 INFO  ---> locked
 [task][slice.close/%s]INFO  started task "00000123/my-receiver-1/slice.close/%s"
-[task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-1/slice.close/%s"
+[task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/slice.close/00000123/my-receiver-1/%s"
 [task][slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %d
 INFO  ---> unlocked
 [task][slice.close/%s]INFO  task succeeded (30s): slice closed
-[task][slice.close/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-1/slice.close/%s"
+[task][slice.close/%s]DEBUG  lock released "runtime/lock/task/slice.close/00000123/my-receiver-1/%s"
 `, strhelper.FilterLines(`^(INFO  --->)|(\[task\]\[`+task1.ID()+`\])`, workerDeps.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
 INFO  ---> locked
 [task][slice.close/%a]INFO  started task "00000123/my-receiver-2/slice.close/%s"
-[task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-2/slice.close/%s"
+[task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/slice.close/00000123/my-receiver-2/%s"
 [task][slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %d
 INFO  ---> unlocked
 [task][slice.close/%s]INFO  task succeeded (30s): slice closed
-[task][slice.close/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-2/slice.close/%s"
+[task][slice.close/%s]DEBUG  lock released "runtime/lock/task/slice.close/00000123/my-receiver-2/%s"
 `, strhelper.FilterLines(`^(INFO  --->)|(\[task\]\[`+task2.ID()+`\])`, workerDeps.DebugLogger().AllMessages()))
 
 	// Check etcd state

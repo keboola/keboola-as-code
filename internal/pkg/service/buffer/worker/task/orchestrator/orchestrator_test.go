@@ -96,10 +96,10 @@ func TestOrchestrator(t *testing.T) {
 [orchestrator][some.task]INFO  restart: distribution changed: found a new node "node2"
 [orchestrator][some.task]INFO  assigned "00001000/my-receiver/ResourceID"
 [task][%s]INFO  started task "00001000/my-receiver/some.task/%s"
-[task][%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/some.task/ResourceID"
+[task][%s]DEBUG  lock acquired "runtime/lock/task/some.task/00001000/my-receiver/ResourceID"
 [task][%s]INFO  message from the task
 [task][%s]INFO  task succeeded (%s): ResourceID
-[task][%s]DEBUG  lock released "runtime/lock/task/00001000/my-receiver/some.task/ResourceID"
+[task][%s]DEBUG  lock released "runtime/lock/task/some.task/00001000/my-receiver/ResourceID"
 %A
 `, d1.DebugLogger().AllMessages())
 
@@ -162,10 +162,10 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 [orchestrator][some.task]DEBUG  skipped "00001000/my-receiver/BadID", StartTaskIf condition evaluated as false
 [orchestrator][some.task]INFO  assigned "00001000/my-receiver/GoodID"
 [task][some.task/%s]INFO  started task "00001000/my-receiver/some.task/%s"
-[task][some.task/%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/some.task/GoodID"
+[task][some.task/%s]DEBUG  lock acquired "runtime/lock/task/some.task/00001000/my-receiver/GoodID"
 [task][some.task/%sINFO  message from the task
 [task][some.task/%s]INFO  task succeeded (%s): GoodID
-[task][some.task/%s]DEBUG  lock released "runtime/lock/task/00001000/my-receiver/some.task/GoodID"
+[task][some.task/%s]DEBUG  lock released "runtime/lock/task/some.task/00001000/my-receiver/GoodID"
 %A
 `, d.DebugLogger().AllMessages())
 }

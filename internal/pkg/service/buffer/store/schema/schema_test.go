@@ -251,12 +251,12 @@ func TestSchema(t *testing.T) {
 			"runtime/lock/task/",
 		},
 		{
-			s.Runtime().Lock().Task().InReceiver(exportKey.ReceiverKey).Prefix(),
-			"runtime/lock/task/00000123/my-receiver/",
+			s.Runtime().Lock().Task().Prefix(),
+			"runtime/lock/task/",
 		},
 		{
-			s.Runtime().Lock().Task().InReceiver(exportKey.ReceiverKey).Key("my-lock").Key(),
-			"runtime/lock/task/00000123/my-receiver/my-lock",
+			s.Runtime().Lock().Task().Key("my-lock").Key(),
+			"runtime/lock/task/my-lock",
 		},
 		{
 			s.Runtime().LastRecordID().Prefix(),

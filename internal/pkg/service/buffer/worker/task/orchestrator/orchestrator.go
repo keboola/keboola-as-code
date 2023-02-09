@@ -5,7 +5,6 @@ package orchestrator
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -131,8 +130,7 @@ func (w orchestrator[R]) startTask(ctx context.Context, assigner *distribution.A
 	// Task and task lock are bounded to the ReceiverKey, so the ReceiverKey part is stripped.
 	value := event.Value
 	receiverKey := value.GetReceiverKey()
-	resourceID := strings.Trim(strings.TrimPrefix(value.String(), receiverKey.String()), "/")
-	lock := w.config.TaskType + "/" + resourceID
+	lock := w.config.TaskType + "/" + value.String()
 
 	// Create task
 	taskFn := w.config.TaskFactory(event)

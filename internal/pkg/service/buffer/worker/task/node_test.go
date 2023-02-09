@@ -60,7 +60,7 @@ func TestSuccessfulTask(t *testing.T) {
 	// Check etcd state during task
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-runtime/lock/task/00000123/my-receiver/my-lock (lease=%s)
+runtime/lock/task/my-lock (lease=%s)
 -----
 node1
 >>>>>
@@ -156,17 +156,17 @@ task/00000123/my-receiver/%s
 
 	// Check logs
 	wildcards.Assert(t, `
-[node1][task][%s]INFO  started task "00000123/my-receiver/some.task/%s"
-[node1][task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver/my-lock"
-[node2][task][%s]INFO  task ignored, the lock "runtime/lock/task/00000123/my-receiver/my-lock" is in use
-[node1][task][%s]INFO  some message from the task (1)
-[node1][task][%s]INFO  task succeeded (%s): some result (1)
-[node1][task][%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver/my-lock"
-[node2][task][%s]INFO  started task "00000123/my-receiver/some.task/%s"
-[node2][task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver/my-lock"
-[node2][task][%s]INFO  some message from the task (2)
-[node2][task][%s]INFO  task succeeded (%s): some result (2)
-[node2][task][%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver/my-lock"
+[node1][task][some.task/%s]INFO  started task "00000123/my-receiver/some.task/%s"
+[node1][task][some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
+[node2][task][some.task/%s]INFO  task ignored, the lock "runtime/lock/task/my-lock/00000123/my-receiver" is in use
+[node1][task][some.task/%s]INFO  some message from the task (1)
+[node1][task][some.task/%s]INFO  task succeeded (%s): some result (1)
+[node1][task][some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
+[node2][task][some.task/%s]INFO  started task "00000123/my-receiver/some.task/%s"
+[node2][task][some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
+[node2][task][some.task/%s]INFO  some message from the task (2)
+[node2][task][some.task/%s]INFO  task succeeded (%s): some result (2)
+[node2][task][some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
 `, logs.String())
 }
 
@@ -207,7 +207,7 @@ func TestFailedTask(t *testing.T) {
 	// Check etcd state during task
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-runtime/lock/task/00000123/my-receiver/my-lock (lease=%s)
+runtime/lock/task/my-lock (lease=%s)
 -----
 node1
 >>>>>
@@ -303,17 +303,17 @@ task/00000123/my-receiver/%s
 
 	// Check logs
 	wildcards.Assert(t, `
-[node1][task][%s]INFO  started task "00000123/my-receiver/some.task/%s"
-[node1][task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver/my-lock"
-[node2][task][%s]INFO  task ignored, the lock "runtime/lock/task/00000123/my-receiver/my-lock" is in use
-[node1][task][%s]INFO  some message from the task (1)
-[node1][task][%s]WARN  task failed (%s): some error (1) [%s]
-[node1][task][%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver/my-lock"
-[node2][task][%s]INFO  started task "00000123/my-receiver/some.task/%s"
-[node2][task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver/my-lock"
-[node2][task][%s]INFO  some message from the task (2)
-[node2][task][%s]WARN  task failed (%s): some error (2) [%s]
-[node2][task][%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver/my-lock"
+[node1][task][some.task/%s]INFO  started task "00000123/my-receiver/some.task/%s"
+[node1][task][some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
+[node2][task][some.task/%s]INFO  task ignored, the lock "runtime/lock/my-lock/task" is in use
+[node1][task][some.task/%s]INFO  some message from the task (1)
+[node1][task][some.task/%s]WARN  task failed (%s): some error (1) [%s]
+[node1][task][some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
+[node2][task][some.task/%s]INFO  started task "00000123/my-receiver/some.task/%s"
+[node2][task][some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
+[node2][task][some.task/%s]INFO  some message from the task (2)
+[node2][task][some.task/%s]WARN  task failed (%s): some error (2) [%s]
+[node2][task][some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
 `, logs.String())
 }
 
@@ -389,13 +389,13 @@ task/00000123/my-receiver/%s
 	// Check logs
 	wildcards.Assert(t, `
 [node1][task][%s]INFO  started task "00000123/my-receiver/some.task/%s"
-[node1][task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver/my-lock"
+[node1][task][%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
 [node1]INFO  exiting (some reason)
 [node1][task]INFO  received shutdown request
 [node1][task]INFO  waiting for "1" tasks to be finished
 [node1][task][%s]INFO  some message from the task
 [node1][task][%s]INFO  task succeeded (%s): some result
-[node1][task][%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver/my-lock"
+[node1][task][%s]DEBUG  lock released "runtime/lock/task/my-lock"
 [node1][task]INFO  shutdown done
 [node1][task][etcd-session]INFO  closing etcd session
 [node1][task][etcd-session]INFO  closed etcd session | %s

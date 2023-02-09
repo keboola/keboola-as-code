@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 )
 
@@ -25,10 +24,6 @@ func (v Locks) Task() TaskLocks {
 	return TaskLocks{prefix: v.prefix.Add("task")}
 }
 
-func (v TaskLocks) InReceiver(receiverKey key.ReceiverKey) TaskLocksInReceiver {
-	return TaskLocksInReceiver{prefix: v.prefix.Add(receiverKey.String())}
-}
-
-func (v TaskLocksInReceiver) LockKey(lockName string) etcdop.Key {
+func (v TaskLocks) LockKey(lockName string) etcdop.Key {
 	return v.prefix.Key(lockName)
 }

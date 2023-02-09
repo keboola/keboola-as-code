@@ -126,7 +126,7 @@ func (n *Node) StartTask(ctx context.Context, receiverKey key.ReceiverKey, typ, 
 	// Atomicity: If the lock key already exists, the then the transaction fails and task is ignored.
 	// Resistance to outages: If the Worker node fails, the lock is released automatically by the lease, after the session TTL seconds.
 	taskEtcdKey := n.schema.Tasks().ByKey(task.TaskKey)
-	lockEtcdKey := n.schema.Runtime().Lock().Task().InReceiver(receiverKey).LockKey(task.Lock)
+	lockEtcdKey := n.schema.Runtime().Lock().Task().LockKey(task.Lock)
 	logger := n.logger.AddPrefix(fmt.Sprintf("[%s]", taskKey.ID()))
 	createTaskOp := op.MergeToTxn(
 		taskEtcdKey.Put(task),
