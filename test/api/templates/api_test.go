@@ -6,11 +6,18 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/runner"
+)
+
+const (
+	instanceIDPlaceholder = "<<INSTANCE_ID>>"
 )
 
 // TestTemplatesApiE2E runs one Templates API functional test per each subdirectory.
@@ -50,13 +57,32 @@ func TestTemplatesApiE2E(t *testing.T) {
 			"TEMPLATES_API_ETCD_PASSWORD":  os.Getenv("TEMPLATES_API_ETCD_PASSWORD"),
 		})
 
+		requestDecoratorFn := func(request *runner.APIRequest) {
+			// Replace placeholder by instance ID.
+			if strings.Contains(request.Path, instanceIDPlaceholder) {
+				result := make(map[string]any)
+				_, err := test.
+					APIClient().
+					R().
+					SetResult(&result).
+					SetHeader("X-StorageApi-Token", test.TestProject().StorageAPIToken().Token).
+					Get("/v1/project/default/instances")
+
+				instances := result["instances"].([]any)
+				if assert.NoError(t, err) && assert.Equal(t, 1, len(instances)) {
+					instanceId := instances[0].(map[string]any)["instanceId"].(string)
+					request.Path = strings.ReplaceAll(request.Path, instanceIDPlaceholder, instanceId)
+				}
+			}
+		}
+
 		test.Run(
 			runner.WithInitProjectState(),
 			runner.WithRunAPIServerAndRequests(
 				binaryPath,
 				addArgs,
 				addEnvs,
-				func(request *runner.APIRequest) {},
+				requestDecoratorFn,
 			),
 			runner.WithAssertProjectState(),
 		)
