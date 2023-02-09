@@ -56,14 +56,14 @@ func UpgradeCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Use template
-			warnings, err := upgradeOp.Run(d.CommandCtx(), projectState, template, options, d)
+			opResult, err := upgradeOp.Run(d.CommandCtx(), projectState, template, options, d)
 			if err != nil {
 				return err
 			}
 
-			if len(warnings) > 0 {
-				for _, w := range warnings {
-					d.Logger().Warnf(w)
+			if len(opResult.Warnings) > 0 {
+				for _, w := range opResult.Warnings {
+					d.Logger().Warn(w)
 				}
 			}
 

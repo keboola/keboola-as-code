@@ -12,8 +12,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/metadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
+	"github.com/keboola/keboola-as-code/internal/pkg/search"
+	"github.com/keboola/keboola-as-code/internal/pkg/state/local"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/use"
@@ -32,20 +35,6 @@ type Options struct {
 	InstanceID            string
 	SkipEncrypt           bool
 	SkipSecretsValidation bool
-}
-
-type newObjects []model.ObjectState
-
-func (v newObjects) Log(logger log.Logger, tmpl *template.Template) {
-	sort.SliceStable(v, func(i, j int) bool {
-		return v[i].Path() < v[j].Path()
-	})
-
-	writer := logger.InfoWriter()
-	writer.WriteString(fmt.Sprintf(`New objects from "%s" template:`, tmpl.FullName()))
-	for _, o := range v {
-		writer.WriteStringIndent(1, fmt.Sprintf("%s %s %s", diff.AddMark, o.Kind().Abbr, o.Path()))
-	}
 }
 
 type dependencies interface {
@@ -68,130 +57,253 @@ func LoadTemplateOptions() loadState.Options {
 	}
 }
 
-func Run(ctx context.Context, projectState *project.State, tmpl *template.Template, o Options, d dependencies) (instanceID string, warnings []string, err error) {
+func Run(ctx context.Context, projectState *project.State, tmpl *template.Template, o Options, d dependencies) (result *Result, err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.template.use")
 	defer telemetry.EndSpan(span, &err)
-
-	logger := d.Logger()
-
-	// Get Storage API
-	storageAPIHost := d.StorageAPIHost()
-	tokenID := d.StorageAPITokenID()
 
 	// Create tickets provider, to generate new IDS
 	tickets := d.ObjectIDGeneratorFactory()(ctx)
 
-	if o.InstanceID != "" {
-		// Get instance ID from Options
-		instanceID = o.InstanceID
-	} else {
+	if o.InstanceID == "" {
 		// Generate ID for the template instance
-		instanceID = idgenerator.TemplateInstanceID()
+		o.InstanceID = idgenerator.TemplateInstanceID()
 	}
 
-	// Load template
-	tmplCtx := use.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), instanceID, o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components())
-	templateState, err := tmpl.LoadState(tmplCtx, loadState.LocalOperationOptions(), d)
+	// Prepare template
+	tmplCtx := use.NewContext(ctx, tmpl.Reference(), tmpl.ObjectsRoot(), o.InstanceID, o.TargetBranch, o.Inputs, tmpl.Inputs().InputsMap(), tickets, d.Components(), projectState.State())
+	plan, err := PrepareTemplate(ctx, d, ExtendedOptions{
+		TargetBranch:          o.TargetBranch,
+		Inputs:                o.Inputs,
+		InstanceID:            o.InstanceID,
+		InstanceName:          o.InstanceName,
+		ProjectState:          projectState,
+		Template:              tmpl,
+		TemplateCtx:           tmplCtx,
+		Upgrade:               false,
+		SkipEncrypt:           o.SkipEncrypt,
+		SkipSecretsValidation: o.SkipSecretsValidation,
+	})
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
-	// Get manager
-	manager := projectState.LocalManager()
+	return plan.Invoke(ctx)
+}
 
-	// Prepare operations
-	objects := make(newObjects, 0)
+type ExtendedOptions struct {
+	TargetBranch          model.BranchKey
+	Inputs                template.InputsValues
+	InstanceID            string
+	InstanceName          string
+	ProjectState          *project.State
+	Template              *template.Template
+	TemplateCtx           template.Context
+	Upgrade               bool
+	SkipEncrypt           bool
+	SkipSecretsValidation bool
+}
+
+type TemplatePlan struct {
+	options       ExtendedOptions
+	deps          dependencies
+	templateState *template.State
+	renameOp      *local.PathsGenerator
+	saveOp        *local.UnitOfWork
+	modified      ModifiedObjects
+}
+
+type Result struct {
+	InstanceID string
+	Warnings   []string
+}
+
+func PrepareTemplate(ctx context.Context, d dependencies, o ExtendedOptions) (plan *TemplatePlan, err error) {
 	errs := errors.NewMultiError()
-	renameOp := manager.NewPathsGenerator(true)
-	saveOp := manager.NewUnitOfWork(ctx)
+	existingObjects := make(map[model.Key]bool)
+	manager := o.ProjectState.LocalManager()
+	plan = &TemplatePlan{
+		options:  o,
+		deps:     d,
+		renameOp: manager.NewPathsGenerator(true),
+		saveOp:   manager.NewUnitOfWork(ctx),
+	}
 
-	// Store template information in branch metadata
-	branchState := projectState.GetOrNil(o.TargetBranch).(*model.BranchState)
+	// Load template state
+	plan.templateState, err = o.Template.LoadState(o.TemplateCtx, LoadTemplateOptions(), d)
+	if err != nil {
+		return nil, err
+	}
 
 	// Get main config
-	mainConfig, err := templateState.MainConfig()
+	mainConfig, err := plan.templateState.MainConfig()
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
-	if err := branchState.Local.Metadata.UpsertTemplateInstance(time.Now(), instanceID, o.InstanceName, tmpl.TemplateID(), tmpl.Repository().Name, tmpl.Version(), tokenID, mainConfig); err != nil {
+	// Load existing shared codes
+	sharedCodes := make(map[keboola.ComponentID]*model.ConfigState)
+	for _, config := range o.ProjectState.ConfigsFrom(o.TargetBranch) {
+		if config.ComponentID == keboola.SharedCodeComponentID {
+			sharedCodes[config.Local.SharedCode.Target] = config
+			existingObjects[config.Key()] = true
+		}
+	}
+
+	// Update instance metadata
+	branchState := o.ProjectState.GetOrNil(o.TargetBranch).(*model.BranchState)
+	if err := branchState.Local.Metadata.UpsertTemplateInstance(time.Now(), o.InstanceID, o.InstanceName, o.Template.TemplateID(), o.Template.Repository().Name, o.Template.Version(), d.StorageAPITokenID(), mainConfig); err != nil {
 		errs.Append(err)
 	}
-	saveOp.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())
+	plan.saveOp.SaveObject(branchState, branchState.LocalState(), model.NewChangedFields())
 
-	// Rename and save all objects
-	for _, objectState := range templateState.All() {
+	// Save all objects
+	for _, tmplObjectState := range plan.templateState.All() {
 		// Skip branch - it is already processed
-		if objectState.Kind().IsBranch() {
+		if tmplObjectState.Kind().IsBranch() {
 			continue
 		}
 
-		// Clear path
-		objectState.Manifest().SetParentPath("")
-		objectState.Manifest().SetRelativePath("")
+		// Create or update the object
+		var opMark string
+		var objectState model.ObjectState
+		if v, found := o.ProjectState.Get(tmplObjectState.Key()); found {
+			opMark = diff.ChangeMark
+			objectState = v
+			objectState.SetLocalState(tmplObjectState.LocalState())
 
-		// Copy objects from template to project
-		if err := projectState.Set(objectState); err != nil {
-			errs.Append(err)
-			continue
+			// Clear path
+			objectState.Manifest().SetParentPath("")
+			objectState.Manifest().SetRelativePath("")
+			plan.renameOp.Add(objectState)
+		} else {
+			opMark = diff.AddMark
+			objectState = tmplObjectState
+
+			// Clear path
+			objectState.Manifest().SetParentPath("")
+			objectState.Manifest().SetRelativePath("")
+
+			// Copy state from template to project
+			if err := o.ProjectState.Set(objectState); err != nil {
+				errs.Append(err)
+				continue
+			}
+
+			// Generate path
+			plan.renameOp.Add(objectState)
 		}
-		objects = append(objects, objectState)
-
-		// Rename
-		renameOp.Add(objectState)
+		existingObjects[objectState.Key()] = true
+		plan.modified = append(plan.modified, ModifiedObject{ObjectState: objectState, OpMark: opMark})
 
 		// Save to filesystem
-		saveOp.SaveObject(objectState, objectState.LocalState(), model.NewChangedFields())
+		plan.saveOp.SaveObject(objectState, objectState.LocalState(), model.NewChangedFields())
 	}
 
-	if errs.Len() > 0 {
-		return "", nil, errs
+	// Delete
+	if o.Upgrade {
+		var toDelete []model.Key
+		configs := search.ConfigsForTemplateInstance(o.ProjectState.LocalObjects().ConfigsWithRowsFrom(o.TargetBranch), o.InstanceID)
+		for _, config := range configs {
+			if !existingObjects[config.Key()] {
+				toDelete = append(toDelete, config.Key())
+			}
+			for _, row := range config.Rows {
+				if !existingObjects[row.Key()] {
+					toDelete = append(toDelete, row.Key())
+				}
+			}
+		}
+		for _, key := range toDelete {
+			objectState := o.ProjectState.MustGet(key)
+			plan.saveOp.DeleteObject(objectState, objectState.Manifest())
+			plan.modified = append(plan.modified, ModifiedObject{ObjectState: objectState, OpMark: diff.DeleteMark})
+		}
 	}
 
-	if err := renameOp.Invoke(); err != nil {
-		return "", nil, err
+	return plan, errs.ErrorOrNil()
+}
+
+func (p *TemplatePlan) Invoke(ctx context.Context) (*Result, error) {
+	logger := p.deps.Logger()
+
+	if err := p.renameOp.Invoke(); err != nil {
+		return nil, err
 	}
-	if err := saveOp.Invoke(); err != nil {
-		return "", nil, err
+
+	if err := p.saveOp.Invoke(); err != nil {
+		return nil, err
 	}
 
 	// Encrypt values
-	if !o.SkipEncrypt {
-		if err := encrypt.Run(ctx, projectState, encrypt.Options{DryRun: false, LogEmpty: false}, d); err != nil {
-			return "", nil, err
+	if !p.options.SkipEncrypt {
+		if err := encrypt.Run(ctx, p.options.ProjectState, encrypt.Options{DryRun: false, LogEmpty: false}, p.deps); err != nil {
+			return nil, err
 		}
 	}
 
 	// Save manifest
-	if _, err := saveProjectManifest.Run(ctx, projectState.ProjectManifest(), projectState.Fs(), d); err != nil {
-		return "", nil, err
+	if _, err := saveProjectManifest.Run(ctx, p.options.ProjectState.ProjectManifest(), p.options.ProjectState.Fs(), p.deps); err != nil {
+		return nil, err
 	}
 
 	// Log new objects
-	objects.Log(logger, tmpl)
+	p.modified.Log(logger, p.options.Template)
 
 	// Normalize paths
-	if _, err := rename.Run(ctx, projectState, rename.Options{DryRun: false, LogEmpty: false}, d); err != nil {
-		return "", nil, err
+	if _, err := rename.Run(ctx, p.options.ProjectState, rename.Options{DryRun: false, LogEmpty: false}, p.deps); err != nil {
+		return nil, err
 	}
 
 	// Validate schemas and encryption
-	if err := validate.Run(ctx, projectState, validate.Options{ValidateSecrets: !o.SkipSecretsValidation, ValidateJSONSchema: true}, d); err != nil {
+	if err := validate.Run(ctx, p.options.ProjectState, validate.Options{ValidateSecrets: !p.options.SkipSecretsValidation, ValidateJSONSchema: true}, p.deps); err != nil {
 		logger.Warn(errors.Format(errors.PrefixError(err, "warning"), errors.FormatAsSentences()))
 		logger.Warn()
 		logger.Warnf(`Please correct the problems listed above.`)
 		logger.Warnf(`Push operation is only possible when project is valid.`)
 	}
 
+	result := &Result{InstanceID: p.options.InstanceID}
+
 	// Return urls to oauth configurations
-	warnings = make([]string, 0)
-	for _, cKey := range tmplCtx.InputsUsage().OAuthConfigsMap() {
-		warnings = append(warnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", storageAPIHost, d.ProjectID(), cKey.ComponentID, cKey.ID))
-	}
-	if len(warnings) > 0 {
-		warnings = append([]string{"The template generated configurations that need oAuth authorization. Please follow the links and complete the setup:"}, warnings...)
+	if tmplCtx, ok := p.options.TemplateCtx.(interface{ InputsUsage() *metadata.InputsUsage }); ok {
+		var oauthWarnings []string
+		inputValuesMap := p.options.Inputs.ToMap()
+		for inputName, cKey := range tmplCtx.InputsUsage().OAuthConfigsMap() {
+			if len(inputValuesMap[inputName].Value.(map[string]interface{})) == 0 {
+				oauthWarnings = append(oauthWarnings, fmt.Sprintf("- https://%s/admin/projects/%d/components/%s/%s", p.deps.StorageAPIHost(), p.deps.ProjectID(), cKey.ComponentID, cKey.ID))
+			}
+		}
+		if len(oauthWarnings) > 0 {
+			result.Warnings = append([]string{"The template generated configurations that need oAuth authorization. Please follow the links and complete the setup:"}, oauthWarnings...)
+		}
 	}
 
-	logger.Info(fmt.Sprintf(`Template "%s" has been applied, instance ID: %s`, tmpl.FullName(), instanceID))
-	return instanceID, warnings, nil
+	// Log success
+	if p.options.Upgrade {
+		logger.Info(fmt.Sprintf(`Template instance "%s" has been upgraded to "%s".`, p.options.InstanceID, p.options.Template.FullName()))
+	} else {
+		logger.Info(fmt.Sprintf(`Template "%s" has been applied, instance ID: %s`, p.options.Template.FullName(), p.options.InstanceID))
+	}
+
+	return result, nil
+}
+
+// ModifiedObject for logs.
+type ModifiedObject struct {
+	model.ObjectState
+	OpMark string
+}
+
+type ModifiedObjects []ModifiedObject
+
+func (v ModifiedObjects) Log(logger log.Logger, tmpl *template.Template) {
+	sort.SliceStable(v, func(i, j int) bool {
+		return v[i].Path() < v[j].Path()
+	})
+
+	writer := logger.InfoWriter()
+	writer.WriteString(fmt.Sprintf(`Objects from "%s" template:`, tmpl.FullName()))
+	for _, o := range v {
+		writer.WriteStringIndent(1, fmt.Sprintf("%s %s %s", o.OpMark, o.Kind().Abbr, o.Path()))
+	}
 }

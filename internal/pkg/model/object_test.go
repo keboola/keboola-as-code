@@ -72,6 +72,15 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, TemplatesInstances{
 		{
+			InstanceID:     "inst2",
+			InstanceName:   "Instance 2",
+			TemplateID:     "tmpl2",
+			RepositoryName: "repo",
+			Version:        "2.0.0",
+			Created:        ChangedByRecord{Date: now, TokenID: "789"},
+			Updated:        ChangedByRecord{Date: now, TokenID: "789"},
+		},
+		{
 			InstanceID:     "inst1",
 			InstanceName:   "Modified Instance 1",
 			TemplateID:     "tmpl1",
@@ -80,15 +89,6 @@ func TestBranchMetadata_UpsertTemplateInstance_New(t *testing.T) {
 			Created:        ChangedByRecord{Date: now, TokenID: "12345"},
 			Updated:        ChangedByRecord{Date: now, TokenID: "789"},
 			MainConfig:     &TemplateMainConfig{ConfigID: "7890", ComponentID: "foo.bar"},
-		},
-		{
-			InstanceID:     "inst2",
-			InstanceName:   "Instance 2",
-			TemplateID:     "tmpl2",
-			RepositoryName: "repo",
-			Version:        "2.0.0",
-			Created:        ChangedByRecord{Date: now, TokenID: "789"},
-			Updated:        ChangedByRecord{Date: now, TokenID: "789"},
 		},
 	}, usages)
 }

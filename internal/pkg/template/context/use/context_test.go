@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/jsonnetfiles"
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper/template/metadata"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	dependenciesPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	. "github.com/keboola/keboola-as-code/internal/pkg/template/context/use"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/jsonnet/function"
@@ -91,7 +92,9 @@ func TestContext(t *testing.T) {
 	ctxWithVal := context.WithValue(context.Background(), jsonnetfiles.FileDefCtxKey, fileDef)
 
 	// Create template use context
-	useCtx := NewContext(ctxWithVal, templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap())
+	d := dependenciesPkg.NewMockedDeps(t)
+	projectState := d.MockedState()
+	useCtx := NewContext(ctxWithVal, templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState)
 
 	// Check Jsonnet functions
 	code := `
@@ -194,6 +197,9 @@ func TestComponentsFunctions(t *testing.T) {
 	ctx := context.Background()
 	api, err := keboola.NewAPI(ctx, "https://connection.keboola.com", keboola.WithClient(&c))
 	assert.NoError(t, err)
+
+	d := dependenciesPkg.NewMockedDeps(t)
+	projectState := d.MockedState()
 	tickets := keboola.NewTicketProvider(context.Background(), api)
 	components := model.NewComponentsMap(keboola.Components{})
 	targetBranch := model.BranchKey{ID: 123}
@@ -205,7 +211,7 @@ func TestComponentsFunctions(t *testing.T) {
 
 	// Context factory for template use operation
 	newUseCtx := func() *Context {
-		return NewContext(ctx, templateRef, fs, instanceID, targetBranch, inputsValues, inputs, tickets, components)
+		return NewContext(ctx, templateRef, fs, instanceID, targetBranch, inputsValues, inputs, tickets, components, projectState)
 	}
 
 	// Jsonnet template
