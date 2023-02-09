@@ -2,6 +2,7 @@ package model
 
 import (
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -253,6 +254,12 @@ func (c *Config) ToAPIMetadata() keboola.Metadata {
 
 func (m BranchMetadata) saveTemplateUsages(instances TemplatesInstances) error {
 	sort.SliceStable(instances, func(i, j int) bool {
+		if v := strings.Compare(instances[i].RepositoryName, instances[j].RepositoryName); v != 0 {
+			return v == -1
+		}
+		if v := strings.Compare(instances[i].InstanceName, instances[j].InstanceName); v != 0 {
+			return v == -1
+		}
 		return instances[i].InstanceID < instances[j].InstanceID
 	})
 	encoded, err := json.EncodeString(instances, false)
