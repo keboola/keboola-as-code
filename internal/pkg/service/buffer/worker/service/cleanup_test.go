@@ -89,9 +89,7 @@ func TestCleanup(t *testing.T) {
 
 	// Check cleanup logs
 	wildcards.Assert(t, `
-[service][cleanup]INFO  initialized | 0s
 [service][cleanup]INFO  deleting file "00001000/github/first/%s"
-[service][cleanup]INFO  finished | 0s
 	`, strhelper.FilterLines(`^(\[service\]\[cleanup\])`, workerDeps.DebugLogger().AllMessages()))
 
 	etcdhelper.AssertKVs(t, client, `

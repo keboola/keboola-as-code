@@ -54,7 +54,7 @@ func TestStore_Cleanup(t *testing.T) {
 
 	// Add task without a finishedAt timestamp but too old - will be deleted
 	time1, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
-	taskKey1 := key.TaskKey{ExportKey: exportKey1, Type: "some.task", CreatedAt: key.UTCTime(time1), RandomSuffix: "abcdef"}
+	taskKey1 := key.TaskKey{ReceiverKey: receiverKey, Type: "some.task", CreatedAt: key.UTCTime(time1), RandomSuffix: "abcdef"}
 	task1 := model.Task{
 		TaskKey:    taskKey1,
 		FinishedAt: nil,
@@ -70,7 +70,7 @@ func TestStore_Cleanup(t *testing.T) {
 	// Add task with a finishedAt timestamp in the past - will be deleted
 	time2, _ := time.Parse(time.RFC3339, "2008-01-02T15:04:05+07:00")
 	time2Key := key.UTCTime(time2)
-	taskKey2 := key.TaskKey{ExportKey: exportKey2, Type: "other.task", CreatedAt: key.UTCTime(time1), RandomSuffix: "ghijkl"}
+	taskKey2 := key.TaskKey{ReceiverKey: receiverKey, Type: "other.task", CreatedAt: key.UTCTime(time1), RandomSuffix: "ghijkl"}
 	task2 := model.Task{
 		TaskKey:    taskKey2,
 		FinishedAt: &time2Key,
@@ -86,7 +86,7 @@ func TestStore_Cleanup(t *testing.T) {
 	// Add task with a finishedAt timestamp before a moment - will be ignored
 	time3 := time.Now()
 	time3Key := key.UTCTime(time3)
-	taskKey3 := key.TaskKey{ExportKey: exportKey3, Type: "other.task", CreatedAt: key.UTCTime(time1), RandomSuffix: "ghijkl"}
+	taskKey3 := key.TaskKey{ReceiverKey: receiverKey, Type: "other.task", CreatedAt: key.UTCTime(time1), RandomSuffix: "ghijkl"}
 	task3 := model.Task{
 		TaskKey:    taskKey3,
 		FinishedAt: &time3Key,
@@ -260,12 +260,11 @@ slice/archived/successful/imported/00001000/github/third/%s/%s
 >>>>>
 
 <<<<<
-task/00001000/github/third/other.task/2006-01-02T08:04:05.000Z_ghijkl
+task/00001000/github/other.task/2006-01-02T08:04:05.000Z_ghijkl
 -----
 {
   "projectId": 1000,
   "receiverId": "github",
-  "exportId": "third",
   "type": "other.task",
   "createdAt": "2006-01-02T08:04:05.000Z",
   "randomId": "ghijkl",

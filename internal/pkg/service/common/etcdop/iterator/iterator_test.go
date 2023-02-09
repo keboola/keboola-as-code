@@ -274,8 +274,8 @@ func TestIterator_End(t *testing.T) {
 	assert.NoError(t, prefix.Key("foo001").Put("bar001").Do(ctx, client))
 	assert.NoError(t, prefix.Key("foo002").Put("bar002").Do(ctx, client))
 	assert.NoError(t, prefix.Key("foo003").Put("bar003").Do(ctx, client))
+	assert.NoError(t, prefix.Key("foo004").Put("bar004").Do(ctx, client))
 	assert.NoError(t, prefix.Key("foo005").Put("bar005").Do(ctx, client))
-	assert.NoError(t, prefix.Key("foo006").Put("bar006").Do(ctx, client))
 
 	// Get all WithEnd, so only the first 3 keys are loaded
 	var actual []result
