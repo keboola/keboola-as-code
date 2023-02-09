@@ -6,7 +6,7 @@
         "description": "",
         "isDefault": true,
         "metadata": {
-          "KBC.KAC.templates.instances": "[{\"instanceId\":\"%s\",\"instanceName\":\"inst-001\",\"templateId\":\"tmpl\",\"repositoryName\":\"keboola\",\"version\":\"0.0.1\",\"created\":{\"date\":\"%s\",\"tokenId\":\"%s\"},\"updated\":{\"date\":\"%s\",\"tokenId\":\"%s\"}},{\"instanceId\":\"%s\",\"instanceName\":\"inst-002\",\"templateId\":\"tmpl\",\"repositoryName\":\"keboola\",\"version\":\"1.2.3\",\"created\":{\"date\":\"%s\",\"tokenId\":\"%s\"},\"updated\":{\"date\":\"%s\",\"tokenId\":\"%s\"}}]"
+          "KBC.KAC.templates.instances": "[{\"instanceId\":\"%s\",\"instanceName\":\"inst-001\",\"templateId\":\"tmpl\",\"repositoryName\":\"keboola\",\"version\":\"1.2.3\",\"created\":{\"date\":\"%s\",\"tokenId\":\"%s\"},\"updated\":{\"date\":\"%s\",\"tokenId\":\"%s\"}}]"
         }
       },
       "configs": [
@@ -14,7 +14,7 @@
           "componentId": "keboola.shared-code",
           "name": "Shared Code",
           "description": "",
-          "changeDescription": "From template keboola/tmpl/1.2.3",
+          "changeDescription": "Upgraded from template keboola/tmpl/1.2.3",
           "configuration": {
             "componentId": "keboola.snowflake-transformation"
           },
@@ -22,7 +22,7 @@
             {
               "name": "example",
               "description": "",
-              "changeDescription": "From template keboola/tmpl/1.2.3",
+              "changeDescription": "Upgraded from template keboola/tmpl/1.2.3",
               "isDisabled": false,
               "configuration": {
                 "code_content": [
@@ -41,41 +41,6 @@
           "name": "use shared codes",
           "description": "",
           "changeDescription": "From template keboola/tmpl/0.0.1",
-          "configuration": {
-            "parameters": {
-              "blocks": [
-                {
-                  "name": "Block 1",
-                  "codes": [
-                    {
-                      "name": "Shared Code",
-                      "script": [
-                        "{{%s}}"
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            "shared_code_id": "%s",
-            "shared_code_row_ids": [
-              "%s"
-            ]
-          },
-          "rows": [],
-          "metadata": {
-            "KBC.KAC.templates.configId": "{\"idInTemplate\":\"use-shared-codes\"}",
-            "KBC.KAC.templates.instanceId": "%s",
-            "KBC.KAC.templates.repository": "keboola",
-            "KBC.KAC.templates.templateId": "tmpl"
-          },
-          "isDisabled": false
-        },
-        {
-          "componentId": "keboola.snowflake-transformation",
-          "name": "use shared codes",
-          "description": "",
-          "changeDescription": "From template keboola/tmpl/1.2.3",
           "configuration": {
             "parameters": {
               "blocks": [
