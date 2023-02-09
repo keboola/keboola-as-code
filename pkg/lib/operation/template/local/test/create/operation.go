@@ -52,13 +52,13 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 		SkipEncrypt:           true,
 		SkipSecretsValidation: true,
 	}
-	tmplInst, _, err := useTemplate.Run(ctx, prjState, tmpl, tmplOpts, testDeps)
+	opResult, err := useTemplate.Run(ctx, prjState, tmpl, tmplOpts, testDeps)
 	if err != nil {
 		return err
 	}
 
 	// Create test files
-	err = tmpl.CreateTest(o.TestName, o.Inputs, prjState, tmplInst)
+	err = tmpl.CreateTest(o.TestName, o.Inputs, prjState, opResult.InstanceID)
 	if err != nil {
 		return err
 	}

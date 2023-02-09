@@ -124,7 +124,7 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 		InstanceID:   template.InstanceIDForTest,
 		SkipEncrypt:  true,
 	}
-	_, _, err = useTemplate.Run(ctx, prjState, tmpl, tmplOpts, testDeps)
+	_, err = useTemplate.Run(ctx, prjState, tmpl, tmplOpts, testDeps)
 	if err != nil {
 		return err
 	}
@@ -187,7 +187,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 		TargetBranch: branchKey,
 		Inputs:       inputValues,
 	}
-	tmplInstID, _, err := useTemplate.Run(ctx, prjState, tmpl, tmplOpts, testDeps)
+	opResult, err := useTemplate.Run(ctx, prjState, tmpl, tmplOpts, testDeps)
 	if err != nil {
 		return err
 	}
@@ -231,7 +231,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 	if err != nil {
 		return err
 	}
-	tmplInst, err := findTmplInst(prjState, branchKey, tmplInstID)
+	tmplInst, err := findTmplInst(prjState, branchKey, opResult.InstanceID)
 	if err != nil {
 		return err
 	}

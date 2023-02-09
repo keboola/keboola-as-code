@@ -184,7 +184,7 @@ func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *
 	}
 
 	// Use template
-	instanceId, _, err := useTemplate.Run(d.RequestCtx(), prjState, tmpl, options, d)
+	opResult, err := useTemplate.Run(d.RequestCtx(), prjState, tmpl, options, d)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *
 		return nil, err
 	}
 
-	return &UseTemplateResult{InstanceID: instanceId}, nil
+	return &UseTemplateResult{InstanceID: opResult.InstanceID}, nil
 }
 
 func (s *service) InstancesIndex(d dependencies.ForProjectRequest, payload *InstancesIndexPayload) (res *Instances, err error) {
