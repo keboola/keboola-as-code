@@ -85,6 +85,18 @@ func (c *cleanup) check(ctx context.Context) {
 
 		time.Sleep(100 * time.Millisecond)
 	}
+	for _, receiver := range receivers {
+		err := c.store.Cleanup(ctx, receiver, c.logger)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			c.logger.Error(err)
+		}
 
+		select {
+		case <-ctx.Done():
+			return
+                case <- c.clock.TimeAfter(100 * time.Millisecond):
+                        // let's wait a while to not overload etcd database
+		}
+	}
 	c.logger.Infof(`finished | %s`, c.clock.Since(now))
 }
