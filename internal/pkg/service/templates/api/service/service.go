@@ -161,8 +161,8 @@ func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *
 	// Create fake manifest
 	m := project.NewManifest(123, "foo")
 
-	// Load only target branch
-	m.Filter().SetAllowedKeys([]model.Key{branchKey})
+	// Load all from the target branch, we need shared codes
+	m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.ID))})
 	prj := project.NewWithManifest(d.RequestCtx(), fs, m)
 
 	// Load project state

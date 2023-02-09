@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "author": {
+    "name": "Example Author",
+    "url": "https://example.com"
+  },
+  "templates": [
+    {
+      "id": "tmpl",
+      "name": "shared-codes-test",
+      "description": "Shared Codes duplication test",
+      "path": "tmpl",
+      "versions": [
+        {
+          "version": "1.2.3",
+          "description": "",
+          "stable": false,
+          "components": [
+            "keboola.shared-code",
+            "keboola.snowflake-transformation"
+          ],
+          "path": "v1"
+        },
+        {
+          "version": "0.0.1",
+          "description": "",
+          "stable": false,
+          "components": [
+            "keboola.shared-code",
+            "keboola.snowflake-transformation"
+          ],
+          "path": "v0"
+        }
+      ]
+    }
+  ]
+}

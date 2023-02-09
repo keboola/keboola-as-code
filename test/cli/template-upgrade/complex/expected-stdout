@@ -3,7 +3,6 @@ Plan for "encrypt" operation:
     parameters.db.#password
 Encrypt done.
 Objects from "keboola/my-template-id/1.2.3" template:
-  * C main/_shared/keboola.python-transformation-v2
   * R main/_shared/keboola.python-transformation-v2/codes/code-with-variables
   * C main/_shared/keboola.python-transformation-v2/codes/code-with-variables/variables
   * R main/_shared/keboola.python-transformation-v2/codes/my-code-1

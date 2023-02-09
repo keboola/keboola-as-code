@@ -88,12 +88,6 @@ func TestBufferApiE2E(t *testing.T) {
 			}
 		}
 
-		defer func() {
-			// Cleanup etcd - delete the whole namespace
-			_, err := etcdClient.KV.Delete(context.Background(), etcdNamespace, etcd.WithPrefix())
-			assert.NoError(t, err)
-		}()
-
 		// Run the test
 		test.Run(
 			runner.WithInitProjectState(),

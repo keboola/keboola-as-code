@@ -123,6 +123,21 @@ func NewContext(ctx context.Context, templateRef model.TemplateRef, objectsRoot 
 	// Let's see where the inputs were used
 	c.registerInputsUsageNotifier()
 
+	// Register IDs of shaded codes, each shared code is one row.
+	for _, config := range projectState.LocalObjects().ConfigsWithRowsFrom(targetBranch) {
+		rowsIdsMap := make(map[keboola.RowID]model.RowIDMetadata)
+		for _, v := range config.Metadata.RowsTemplateIds() {
+			rowsIdsMap[v.IDInProject] = v
+		}
+		if config.ComponentID == keboola.SharedCodeComponentID {
+			for _, row := range config.Rows {
+				if meta, found := rowsIdsMap[row.ID]; found {
+					c.RegisterPlaceholder(meta.IDInTemplate, func(_ Placeholder, cb ResolveCallback) { cb(row.ID) })
+				}
+			}
+		}
+	}
+
 	return c
 }
 

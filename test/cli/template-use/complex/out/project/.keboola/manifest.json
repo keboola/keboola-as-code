@@ -45,11 +45,7 @@
       "id": "%s",
       "path": "_shared/keboola.python-transformation-v2",
       "metadata": {
-        "KBC.KAC.templates.configId": "{\"idInTemplate\":\"shared-codes\"}",
-        "KBC.KAC.templates.instanceId": "%s",
-        "KBC.KAC.templates.repository": "keboola",
-        "KBC.KAC.templates.rowsIds": "[{\"idInProject\":\"%s\",\"idInTemplate\":\"code-with-variables\"},{\"idInProject\":\"%s\",\"idInTemplate\":\"my-code-1\"},{\"idInProject\":\"%s\",\"idInTemplate\":\"my-code-2\"}]",
-        "KBC.KAC.templates.templateId": "my-template-id"
+        "KBC.KAC.templates.rowsIds": "[{\"idInProject\":\"%s\",\"idInTemplate\":\"code-with-variables\"},{\"idInProject\":\"%s\",\"idInTemplate\":\"my-code-1\"},{\"idInProject\":\"%s\",\"idInTemplate\":\"my-code-2\"}]"
       },
       "rows": [
         {

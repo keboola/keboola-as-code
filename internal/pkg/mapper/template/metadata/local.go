@@ -17,6 +17,14 @@ func (m *metadataMapper) AfterLocalOperation(_ context.Context, changes *model.L
 		switch v := objectState.(type) {
 		case *model.ConfigState:
 			config := v.Local
+
+			// Skip shared code config.
+			// It may already exist, or it was created by the template,
+			// it doesn't matter, it is not related to the template, it is container for shared codes.
+			if config.SharedCode != nil {
+				continue
+			}
+
 			// Store instance metadata
 			config.Metadata.SetTemplateInstance(m.templateRef.Repository().Name, m.templateRef.TemplateID(), m.instanceID)
 			// Store original object ID

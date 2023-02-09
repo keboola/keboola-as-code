@@ -127,6 +127,7 @@ type Test struct {
 	testDirFS    filesystem.Fs
 	workingDir   string
 	workingDirFS filesystem.Fs
+	apiClient    *resty.Client
 }
 
 func (t *Test) EnvProvider() testhelper.EnvProvider {
@@ -143,6 +144,17 @@ func (t *Test) TestDirFS() filesystem.Fs {
 
 func (t *Test) WorkingDirFS() filesystem.Fs {
 	return t.workingDirFS
+}
+
+func (t *Test) TestProject() *testproject.Project {
+	return t.project
+}
+
+func (t *Test) APIClient() *resty.Client {
+	if t.apiClient == nil {
+		panic(errors.New("API client is available only after the test has been started"))
+	}
+	return t.apiClient
 }
 
 func (t *Test) Run(opts ...Options) {
@@ -405,11 +417,11 @@ type APIRequest struct {
 }
 
 func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequest)) bool {
-	client := resty.New()
-	client.SetBaseURL(apiURL)
+	t.apiClient = resty.New()
+	t.apiClient.SetBaseURL(apiURL)
 
 	// Dump raw HTTP request
-	client.SetPreRequestHook(func(client *resty.Client, request *http.Request) error {
+	t.apiClient.SetPreRequestHook(func(client *resty.Client, request *http.Request) error {
 		if dumpDir, ok := request.Context().Value(dumpDirCtxKey).(string); ok {
 			reqDump, err := httputil.DumpRequest(request, true)
 			assert.NoError(t.t, err)
@@ -433,7 +445,7 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequest)) 
 		assert.NoError(t.t, err)
 
 		// Send the request
-		r := client.R()
+		r := t.apiClient.R()
 		if request.Body != nil {
 			if v, ok := request.Body.(string); ok {
 				r.SetBody(v)

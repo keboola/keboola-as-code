@@ -31,14 +31,13 @@ func NewMapper(s *state.State) *mapper {
 func (m *mapper) linkToIDPlaceholder(code *model.Code, link model.Script) (model.Script, error) {
 	if link, ok := link.(model.LinkScript); ok {
 		row, ok := m.state.GetOrNil(link.Target).(*model.ConfigRowState)
-		script := model.StaticScript{Value: m.id.format(row.ID)}
 		if !ok {
-			return script, errors.NewNestedError(
+			return model.StaticScript{}, errors.NewNestedError(
 				errors.Errorf(`missing shared code "%s"`, link.Target.Desc()),
 				errors.Errorf(`referenced from %s`, code.Path()),
 			)
 		}
-		return script, nil
+		return model.StaticScript{Value: m.id.format(row.ID)}, nil
 	}
 	return nil, nil
 }

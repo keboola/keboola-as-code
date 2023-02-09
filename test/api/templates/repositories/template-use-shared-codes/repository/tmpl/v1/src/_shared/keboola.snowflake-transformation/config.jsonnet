@@ -1,0 +1,3 @@
+{
+  componentId: "keboola.snowflake-transformation",
+}

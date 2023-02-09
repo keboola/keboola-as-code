@@ -1,0 +1,19 @@
+{
+  "path": "/v1/project/%%TEST_BRANCH_MAIN_ID%%/instances/<<INSTANCE_ID>>/upgrade/1.2.3",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {
+    "branch": "default",
+    "name": "inst-002",
+    "steps": [
+      {
+        "id": "g01-s01",
+        "inputs": []
+      }
+    ]
+  }
+}
+

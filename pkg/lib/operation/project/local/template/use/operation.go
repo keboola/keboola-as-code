@@ -163,6 +163,10 @@ func PrepareTemplate(ctx context.Context, d dependencies, o ExtendedOptions) (pl
 			continue
 		}
 
+		if mergeSharedCodes(tmplObjectState, plan, sharedCodes) {
+			continue
+		}
+
 		// Create or update the object
 		var opMark string
 		var objectState model.ObjectState
@@ -286,6 +290,64 @@ func (p *TemplatePlan) Invoke(ctx context.Context) (*Result, error) {
 	}
 
 	return result, nil
+}
+
+func mergeSharedCodes(object model.ObjectState, plan *TemplatePlan, sharedCodes map[keboola.ComponentID]*model.ConfigState) (skip bool) {
+	switch v := object.(type) {
+	case *model.ConfigState:
+		if v.Local.SharedCode != nil {
+			if sharedCodeConfig, exists := sharedCodes[v.Local.SharedCode.Target]; exists {
+				// Shared code config already exists, merge metadata
+				for k, v := range v.Local.Metadata {
+					if _, found := sharedCodeConfig.Local.Metadata[k]; !found {
+						sharedCodeConfig.Local.Metadata[k] = v
+					}
+				}
+				return true
+			}
+		}
+		if v.Local.Transformation != nil && v.Local.Transformation.LinkToSharedCode != nil {
+			if sharedCodeConfig, exists := sharedCodes[v.Local.ComponentID]; exists {
+				// Update references to shared codes in the transformation
+				v.Local.Transformation.LinkToSharedCode.Config = sharedCodeConfig.ConfigKey
+				for i := range v.Local.Transformation.LinkToSharedCode.Rows {
+					v.Local.Transformation.LinkToSharedCode.Rows[i].ConfigID = sharedCodeConfig.ID
+				}
+				for _, block := range v.Local.Transformation.Blocks {
+					for _, code := range block.Codes {
+						for i, script := range code.Scripts {
+							if v, ok := script.(model.LinkScript); ok {
+								v.Target.ConfigID = sharedCodeConfig.ID
+								code.Scripts[i] = v
+							}
+						}
+					}
+				}
+			}
+		}
+		if v.ComponentID == keboola.VariablesComponentID {
+			for i := range v.Local.Relations {
+				rel := v.Local.Relations[i]
+				if rel, ok := rel.(*model.SharedCodeVariablesForRelation); ok {
+					// Update references in the variables config
+					varUsedInKey := model.ConfigKey{BranchID: v.BranchID, ComponentID: keboola.SharedCodeComponentID, ID: rel.ConfigID}
+					varUsedIn := plan.templateState.MustGet(varUsedInKey).(*model.ConfigState)
+					if sharedCodeConfig, exists := sharedCodes[varUsedIn.Local.SharedCode.Target]; exists {
+						rel.ConfigID = sharedCodeConfig.ID
+					}
+				}
+			}
+		}
+	case *model.ConfigRowState:
+		if v.ComponentID == keboola.SharedCodeComponentID {
+			if sharedCodeConfig, exists := sharedCodes[v.Local.SharedCode.Target]; exists {
+				// Attach the config row to the existing shared code
+				v.ConfigID = sharedCodeConfig.ConfigKey.ID
+				v.Local.ConfigID = sharedCodeConfig.ConfigKey.ID
+			}
+		}
+	}
+	return false
 }
 
 // ModifiedObject for logs.
