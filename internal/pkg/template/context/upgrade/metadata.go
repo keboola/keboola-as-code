@@ -13,11 +13,14 @@ type (
 
 func iterateTmplMetadata(configs []*model.ConfigWithRows, c configFn, r rowFn) {
 	for _, config := range configs {
-		// Config must exist and corresponding ID in template must be defined
-		if v := config.Metadata.ConfigTemplateID(); v != nil {
-			c(config.Config, v.IDInTemplate, config.Metadata.InputsUsage())
-		} else {
-			continue
+		// Always include config rows from a shared code config
+		if config.ComponentID != keboola.SharedCodeComponentID {
+			// Config must exist and corresponding ID in template must be defined
+			if v := config.Metadata.ConfigTemplateID(); v != nil {
+				c(config.Config, v.IDInTemplate, config.Metadata.InputsUsage())
+			} else {
+				continue
+			}
 		}
 
 		// Convert slices to maps
