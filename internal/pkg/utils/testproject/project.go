@@ -280,7 +280,7 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 
 					for _, t := range b.Tables {
 						p.logf("▶ Table \"%s\"...", t.Name)
-						_, err = p.keboolaProjectAPI.CreateTable(ctx, t.ID, t.Columns, keboola.WithPrimaryKey(t.PrimaryKey))
+						_, err = p.keboolaProjectAPI.CreateTableRequest(t.ID, t.Columns, keboola.WithPrimaryKey(t.PrimaryKey)).Send(ctx)
 						if err != nil {
 							return err
 						}

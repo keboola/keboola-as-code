@@ -68,9 +68,7 @@ func (m *Manager) EnsureTableExists(ctx context.Context, rb rollback.Builder, ex
 	var apiErr *keboola.StorageError
 	if errors.As(err, &apiErr) && apiErr.ErrCode == "storage.tables.notFound" {
 		// Table doesn't exist -> create it
-		if req, err := m.keboolaProjectAPI.CreateTableDeprecatedSyncRequest(tableID, columns, keboola.WithPrimaryKey(primaryKey)); err != nil {
-			return err
-		} else if table, err = req.Send(ctx); err != nil {
+		if table, err = m.keboolaProjectAPI.CreateTableRequest(tableID, columns, keboola.WithPrimaryKey(primaryKey)).Send(ctx); err != nil {
 			return err
 		}
 		rb.Add(func(ctx context.Context) error {
