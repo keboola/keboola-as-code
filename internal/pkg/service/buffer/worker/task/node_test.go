@@ -158,7 +158,7 @@ task/00000123/my-receiver/%s
 	wildcards.Assert(t, `
 [node1][task][some.task/%s]INFO  started task "00000123/my-receiver/some.task/%s"
 [node1][task][some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
-[node2][task][some.task/%s]INFO  task ignored, the lock "runtime/lock/task/my-lock/00000123/my-receiver" is in use
+[node2][task][some.task/%s]INFO  task ignored, the lock "runtime/lock/task/my-lock" is in use
 [node1][task][some.task/%s]INFO  some message from the task (1)
 [node1][task][some.task/%s]INFO  task succeeded (%s): some result (1)
 [node1][task][some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
@@ -305,7 +305,7 @@ task/00000123/my-receiver/%s
 	wildcards.Assert(t, `
 [node1][task][some.task/%s]INFO  started task "00000123/my-receiver/some.task/%s"
 [node1][task][some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
-[node2][task][some.task/%s]INFO  task ignored, the lock "runtime/lock/my-lock/task" is in use
+[node2][task][some.task/%s]INFO  task ignored, the lock "runtime/lock/task/my-lock" is in use
 [node1][task][some.task/%s]INFO  some message from the task (1)
 [node1][task][some.task/%s]WARN  task failed (%s): some error (1) [%s]
 [node1][task][some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
