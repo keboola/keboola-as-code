@@ -109,8 +109,8 @@ func (n *Node) TasksCount() int64 {
 
 // StartTask backed by local lock and etcd transaction, so the task run at most once.
 // The context will be passed to the operation callback.
-func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, typ, lock string, operation Task) (t *model.Task, err error) {
-	taskKey := key.TaskKey{ExportKey: exportKey, Type: typ, CreatedAt: key.UTCTime(n.clock.Now()), RandomSuffix: gonanoid.Must(5)}
+func (n *Node) StartTask(ctx context.Context, receiverKey key.ReceiverKey, typ, lock string, operation Task) (t *model.Task, err error) {
+	taskKey := key.TaskKey{ReceiverKey: receiverKey, Type: typ, CreatedAt: key.UTCTime(n.clock.Now()), RandomSuffix: gonanoid.Must(5)}
 
 	// Lock task locally for periodical re-syncs,
 	// so locally can be determined that the task is already running.
@@ -126,7 +126,7 @@ func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, typ, lock
 	// Atomicity: If the lock key already exists, the then the transaction fails and task is ignored.
 	// Resistance to outages: If the Worker node fails, the lock is released automatically by the lease, after the session TTL seconds.
 	taskEtcdKey := n.schema.Tasks().ByKey(task.TaskKey)
-	lockEtcdKey := n.schema.Runtime().Lock().Task().InExport(exportKey).LockKey(task.Lock)
+	lockEtcdKey := n.schema.Runtime().Lock().Task().LockKey(task.Lock)
 	logger := n.logger.AddPrefix(fmt.Sprintf("[%s]", taskKey.ID()))
 	createTaskOp := op.MergeToTxn(
 		taskEtcdKey.Put(task),
@@ -150,7 +150,6 @@ func (n *Node) StartTask(ctx context.Context, exportKey key.ExportKey, typ, lock
 		telemetry.KeepSpan(),
 		attribute.String("projectId", task.ProjectID.String()),
 		attribute.String("receiverId", task.ReceiverID.String()),
-		attribute.String("exportId", task.ExportID.String()),
 		attribute.String("lock", task.Lock),
 		attribute.String("worker", task.WorkerNode),
 		attribute.String("createdAt", task.CreatedAt.String()),

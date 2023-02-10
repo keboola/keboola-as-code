@@ -29,7 +29,7 @@ func TestSuccessfulTask(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	exportKey := exportKeyForTest()
+	receiverKey := receiverKeyForTest()
 	lockName := "my-lock"
 
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
@@ -44,14 +44,14 @@ func TestSuccessfulTask(t *testing.T) {
 	// Start a task
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
-	_, err := node1.StartTask(ctx, exportKey, "some.task", lockName, func(ctx context.Context, logger log.Logger) (task.Result, error) {
+	_, err := node1.StartTask(ctx, receiverKey, "some.task", lockName, func(ctx context.Context, logger log.Logger) (task.Result, error) {
 		defer close(taskDone)
 		<-taskWork
 		logger.Info("some message from the task (1)")
 		return "some result (1)", nil
 	})
 	assert.NoError(t, err)
-	_, err = node2.StartTask(ctx, exportKey, "some.task", lockName, func(ctx context.Context, logger log.Logger) (task.Result, error) {
+	_, err = node2.StartTask(ctx, receiverKey, "some.task", lockName, func(ctx context.Context, logger log.Logger) (task.Result, error) {
 		assert.Fail(t, "should not be called")
 		return "", nil
 	})
@@ -60,18 +60,17 @@ func TestSuccessfulTask(t *testing.T) {
 	// Check etcd state during task
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-runtime/lock/task/00000123/my-receiver/my-export-1/my-lock (lease=%s)
+runtime/lock/task/my-lock (lease=%s)
 -----
 node1
 >>>>>
 
 <<<<<
-task/00000123/my-receiver/my-export-1/%s
+task/00000123/my-receiver/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver",
-  "exportId": "my-export-1",
   "type": "some.task",
   "createdAt": "%s",
   "randomId": "%s",
@@ -87,12 +86,11 @@ task/00000123/my-receiver/my-export-1/%s
 	// Check etcd state after task
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-task/00000123/my-receiver/my-export-1/%s
+task/00000123/my-receiver/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver",
-  "exportId": "my-export-1",
   "type": "some.task",
   "createdAt": "%s",
   "randomId": "%s",
@@ -108,7 +106,7 @@ task/00000123/my-receiver/my-export-1/%s
 	// Start another task with the same lock (lock is free)
 	taskWork = make(chan struct{})
 	taskDone = make(chan struct{})
-	_, err = node2.StartTask(ctx, exportKey, "some.task", lockName, func(ctx context.Context, logger log.Logger) (string, error) {
+	_, err = node2.StartTask(ctx, receiverKey, "some.task", lockName, func(ctx context.Context, logger log.Logger) (string, error) {
 		defer close(taskDone)
 		<-taskWork
 		logger.Info("some message from the task (2)")
@@ -122,12 +120,11 @@ task/00000123/my-receiver/my-export-1/%s
 	// Check etcd state after second task
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-task/00000123/my-receiver/my-export-1/%s
+task/00000123/my-receiver/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver",
-  "exportId": "my-export-1",
   "type": "some.task",
   "createdAt": "%s",
   "randomId": "%s",
@@ -140,12 +137,11 @@ task/00000123/my-receiver/my-export-1/%s
 >>>>>
 
 <<<<<
-task/00000123/my-receiver/my-export-1/%s
+task/00000123/my-receiver/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver",
-  "exportId": "my-export-1",
   "type": "some.task",
   "createdAt": "%s",
   "randomId": "%s",
@@ -160,17 +156,17 @@ task/00000123/my-receiver/my-export-1/%s
 
 	// Check logs
 	wildcards.Assert(t, `
-[node1][task][%s]INFO  started task "00000123/my-receiver/my-export-1/some.task/%s"
-[node1][task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver/my-export-1/my-lock"
-[node2][task][%s]INFO  task ignored, the lock "runtime/lock/task/00000123/my-receiver/my-export-1/my-lock" is in use
-[node1][task][%s]INFO  some message from the task (1)
-[node1][task][%s]INFO  task succeeded (%s): some result (1)
-[node1][task][%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver/my-export-1/my-lock"
-[node2][task][%s]INFO  started task "00000123/my-receiver/my-export-1/some.task/%s"
-[node2][task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver/my-export-1/my-lock"
-[node2][task][%s]INFO  some message from the task (2)
-[node2][task][%s]INFO  task succeeded (%s): some result (2)
-[node2][task][%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver/my-export-1/my-lock"
+[node1][task][some.task/%s]INFO  started task "00000123/my-receiver/some.task/%s"
+[node1][task][some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
+[node2][task][some.task/%s]INFO  task ignored, the lock "runtime/lock/task/my-lock" is in use
+[node1][task][some.task/%s]INFO  some message from the task (1)
+[node1][task][some.task/%s]INFO  task succeeded (%s): some result (1)
+[node1][task][some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
+[node2][task][some.task/%s]INFO  started task "00000123/my-receiver/some.task/%s"
+[node2][task][some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
+[node2][task][some.task/%s]INFO  some message from the task (2)
+[node2][task][some.task/%s]INFO  task succeeded (%s): some result (2)
+[node2][task][some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
 `, logs.String())
 }
 
@@ -180,7 +176,7 @@ func TestFailedTask(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	exportKey := exportKeyForTest()
+	receiverKey := receiverKeyForTest()
 	lockName := "my-lock"
 
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
@@ -195,14 +191,14 @@ func TestFailedTask(t *testing.T) {
 	// Start a task
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
-	_, err := node1.StartTask(ctx, exportKey, "some.task", lockName, func(ctx context.Context, logger log.Logger) (string, error) {
+	_, err := node1.StartTask(ctx, receiverKey, "some.task", lockName, func(ctx context.Context, logger log.Logger) (string, error) {
 		defer close(taskDone)
 		<-taskWork
 		logger.Info("some message from the task (1)")
 		return "", errors.New("some error (1)")
 	})
 	assert.NoError(t, err)
-	_, err = node2.StartTask(ctx, exportKey, "some.task", lockName, func(ctx context.Context, logger log.Logger) (string, error) {
+	_, err = node2.StartTask(ctx, receiverKey, "some.task", lockName, func(ctx context.Context, logger log.Logger) (string, error) {
 		assert.Fail(t, "should not be called")
 		return "", nil
 	})
@@ -211,18 +207,17 @@ func TestFailedTask(t *testing.T) {
 	// Check etcd state during task
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-runtime/lock/task/00000123/my-receiver/my-export-1/my-lock (lease=%s)
+runtime/lock/task/my-lock (lease=%s)
 -----
 node1
 >>>>>
 
 <<<<<
-task/00000123/my-receiver/my-export-1/%s
+task/00000123/my-receiver/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver",
-  "exportId": "my-export-1",
   "type": "some.task",
   "createdAt": "%s",
   "randomId": "%s",
@@ -238,12 +233,11 @@ task/00000123/my-receiver/my-export-1/%s
 	// Check etcd state after task
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-task/00000123/my-receiver/my-export-1/%s
+task/00000123/my-receiver/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver",
-  "exportId": "my-export-1",
   "type": "some.task",
   "createdAt": "%s",
   "randomId": "%s",
@@ -259,7 +253,7 @@ task/00000123/my-receiver/my-export-1/%s
 	// Start another task with the same lock (lock is free)
 	taskWork = make(chan struct{})
 	taskDone = make(chan struct{})
-	_, err = node2.StartTask(ctx, exportKey, "some.task", lockName, func(ctx context.Context, logger log.Logger) (string, error) {
+	_, err = node2.StartTask(ctx, receiverKey, "some.task", lockName, func(ctx context.Context, logger log.Logger) (string, error) {
 		defer close(taskDone)
 		<-taskWork
 		logger.Info("some message from the task (2)")
@@ -273,12 +267,11 @@ task/00000123/my-receiver/my-export-1/%s
 	// Check etcd state after second task
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-task/00000123/my-receiver/my-export-1/%s
+task/00000123/my-receiver/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver",
-  "exportId": "my-export-1",
   "type": "some.task",
   "createdAt": "%s",
   "randomId": "%s",
@@ -291,12 +284,11 @@ task/00000123/my-receiver/my-export-1/%s
 >>>>>
 
 <<<<<
-task/00000123/my-receiver/my-export-1/%s
+task/00000123/my-receiver/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver",
-  "exportId": "my-export-1",
   "type": "some.task",
   "createdAt": "%s",
   "randomId": "%s",
@@ -311,17 +303,17 @@ task/00000123/my-receiver/my-export-1/%s
 
 	// Check logs
 	wildcards.Assert(t, `
-[node1][task][%s]INFO  started task "00000123/my-receiver/my-export-1/some.task/%s"
-[node1][task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver/my-export-1/my-lock"
-[node2][task][%s]INFO  task ignored, the lock "runtime/lock/task/00000123/my-receiver/my-export-1/my-lock" is in use
-[node1][task][%s]INFO  some message from the task (1)
-[node1][task][%s]WARN  task failed (%s): some error (1) [%s]
-[node1][task][%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver/my-export-1/my-lock"
-[node2][task][%s]INFO  started task "00000123/my-receiver/my-export-1/some.task/%s"
-[node2][task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver/my-export-1/my-lock"
-[node2][task][%s]INFO  some message from the task (2)
-[node2][task][%s]WARN  task failed (%s): some error (2) [%s]
-[node2][task][%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver/my-export-1/my-lock"
+[node1][task][some.task/%s]INFO  started task "00000123/my-receiver/some.task/%s"
+[node1][task][some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
+[node2][task][some.task/%s]INFO  task ignored, the lock "runtime/lock/task/my-lock" is in use
+[node1][task][some.task/%s]INFO  some message from the task (1)
+[node1][task][some.task/%s]WARN  task failed (%s): some error (1) [%s]
+[node1][task][some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
+[node2][task][some.task/%s]INFO  started task "00000123/my-receiver/some.task/%s"
+[node2][task][some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
+[node2][task][some.task/%s]INFO  some message from the task (2)
+[node2][task][some.task/%s]WARN  task failed (%s): some error (2) [%s]
+[node2][task][some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
 `, logs.String())
 }
 
@@ -331,7 +323,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	exportKey := exportKeyForTest()
+	receiverKey := receiverKeyForTest()
 	lockName := "my-lock"
 
 	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
@@ -346,7 +338,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
 	etcdhelper.ExpectModification(t, client, func() {
-		_, err := node1.StartTask(ctx, exportKey, "some.task", lockName, func(ctx context.Context, logger log.Logger) (string, error) {
+		_, err := node1.StartTask(ctx, receiverKey, "some.task", lockName, func(ctx context.Context, logger log.Logger) (string, error) {
 			defer close(taskDone)
 			<-taskWork
 			logger.Info("some message from the task")
@@ -377,12 +369,11 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	// Check etcd state
 	etcdhelper.AssertKVs(t, client, `
 <<<<<
-task/00000123/my-receiver/my-export-1/%s
+task/00000123/my-receiver/%s
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver",
-  "exportId": "my-export-1",
   "type": "some.task",
   "createdAt": "%s",
   "randomId": "%s",
@@ -397,14 +388,14 @@ task/00000123/my-receiver/my-export-1/%s
 
 	// Check logs
 	wildcards.Assert(t, `
-[node1][task][%s]INFO  started task "00000123/my-receiver/my-export-1/some.task/%s"
-[node1][task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver/my-export-1/my-lock"
+[node1][task][%s]INFO  started task "00000123/my-receiver/some.task/%s"
+[node1][task][%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
 [node1]INFO  exiting (some reason)
 [node1][task]INFO  received shutdown request
 [node1][task]INFO  waiting for "1" tasks to be finished
 [node1][task][%s]INFO  some message from the task
 [node1][task][%s]INFO  task succeeded (%s): some result
-[node1][task][%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver/my-export-1/my-lock"
+[node1][task][%s]DEBUG  lock released "runtime/lock/task/my-lock"
 [node1][task]INFO  shutdown done
 [node1][task][etcd-session]INFO  closing etcd session
 [node1][task][etcd-session]INFO  closed etcd session | %s
@@ -412,10 +403,8 @@ task/00000123/my-receiver/my-export-1/%s
 `, logs.String())
 }
 
-func exportKeyForTest() key.ExportKey {
-	receiverKey := key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}
-	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: "my-export-1"}
-	return exportKey
+func receiverKeyForTest() key.ReceiverKey {
+	return key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}
 }
 
 func createNode(t *testing.T, etcdNamespace string, logs io.Writer, nodeName string) (*task.Node, dependencies.Mocked) {

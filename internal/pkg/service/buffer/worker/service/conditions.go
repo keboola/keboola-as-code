@@ -210,8 +210,8 @@ func (c *checker) startTicker(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (c *checker) closeFile(ctx context.Context, fileKey key.FileKey, reason string) (err error) {
-	lock := "file.swap/" + fileKey.FileID.String()
-	_, err = c.tasks.StartTask(ctx, fileKey.ExportKey, "file.swap", lock, func(ctx context.Context, logger log.Logger) (task.Result, error) {
+	lock := "file.swap/" + fileKey.String()
+	_, err = c.tasks.StartTask(ctx, fileKey.ReceiverKey, "file.swap", lock, func(ctx context.Context, logger log.Logger) (task.Result, error) {
 		c.logger.Infof(`closing file "%s": %s`, fileKey, reason)
 		rb := rollback.New(c.logger)
 		defer rb.InvokeIfErr(ctx, &err)
@@ -252,8 +252,8 @@ func (c *checker) closeFile(ctx context.Context, fileKey key.FileKey, reason str
 }
 
 func (c *checker) closeSlice(ctx context.Context, sliceKey key.SliceKey, reason string) (err error) {
-	lock := "slice.swap/" + sliceKey.SliceID.String()
-	_, err = c.tasks.StartTask(ctx, sliceKey.ExportKey, "slice.swap", lock, func(ctx context.Context, logger log.Logger) (task.Result, error) {
+	lock := "slice.swap/" + sliceKey.String()
+	_, err = c.tasks.StartTask(ctx, sliceKey.ReceiverKey, "slice.swap", lock, func(ctx context.Context, logger log.Logger) (task.Result, error) {
 		c.logger.Infof(`closing slice "%s": %s`, sliceKey, reason)
 		rb := rollback.New(c.logger)
 		defer rb.InvokeIfErr(ctx, &err)

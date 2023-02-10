@@ -46,7 +46,7 @@ type RecordKey struct {
 }
 
 type TaskKey struct {
-	ExportKey
+	ReceiverKey
 	Type         string  `json:"type" validate:"required"`
 	CreatedAt    UTCTime `json:"createdAt" validate:"required"`
 	RandomSuffix string  `json:"randomId" validate:"required"`
@@ -60,7 +60,7 @@ func NewRecordKey(sliceKey SliceKey, now time.Time) RecordKey {
 	return RecordKey{SliceKey: sliceKey, ReceivedAt: ReceivedAt(now)}
 }
 
-func (v ExportKey) GetExportKey() ExportKey {
+func (v ReceiverKey) GetReceiverKey() ReceiverKey {
 	return v
 }
 
@@ -111,7 +111,7 @@ func (v RecordKey) ID() string {
 }
 
 func (v TaskKey) String() string {
-	return fmt.Sprintf("%s/%s", v.ExportKey.String(), v.ID())
+	return fmt.Sprintf("%s/%s", v.ReceiverKey.String(), v.ID())
 }
 
 func (v TaskKey) ID() string {
