@@ -97,6 +97,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	// Switch slice to the closing state
 	clk.Add(time.Minute)
 	assert.NoError(t, str.SetSliceState(ctx, &slice, slicestate.Closing))
+	clk.Add(time.Minute) // sync revision from API nodes
 	assert.Eventually(t, func() bool {
 		count, err := apiDeps1.Schema().Slices().Failed().Count().Do(ctx, client)
 		assert.NoError(t, err)
@@ -263,7 +264,7 @@ task/00000123/my-receiver-1/slice.close/%s
   "workerNode": "my-worker",
   "lock": "slice.close/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
   "result": "slice closed",
-  "duration": 0
+  "duration": %d
 }
 >>>>>
 
