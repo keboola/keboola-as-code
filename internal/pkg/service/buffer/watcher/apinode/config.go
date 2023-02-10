@@ -2,6 +2,8 @@ package apinode
 
 import (
 	"time"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
@@ -23,6 +25,9 @@ func defaultConfig() config {
 // WithSyncInterval defines how often will the revision be synchronized to etcd.
 // Synchronization occurs only if the value has changed.
 func WithSyncInterval(v time.Duration) Option {
+	if v <= 0 {
+		panic(errors.New("sync interval value ust be positive"))
+	}
 	return func(c *config) {
 		c.syncInterval = v
 	}
@@ -31,6 +36,9 @@ func WithSyncInterval(v time.Duration) Option {
 // WithTTL defines time after the session is canceled if the client is unavailable.
 // Client sends periodic keep-alive requests.
 func WithTTL(v int) Option {
+	if v <= 0 {
+		panic(errors.New("ttl seconds value must be positive"))
+	}
 	return func(c *config) {
 		c.ttlSeconds = v
 	}

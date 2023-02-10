@@ -189,9 +189,9 @@ node3
 [node1][distribution]INFO  received shutdown request
 [node1][distribution]INFO  unregistering the node "node1"
 [node1][distribution]INFO  the node "node1" unregistered | %s
-[node1][distribution]INFO  shutdown done
 [node1][distribution][etcd-session]INFO  closing etcd session
 [node1][distribution][etcd-session]INFO  closed etcd session | %s
+[node1][distribution]INFO  shutdown done
 [node1]INFO  exited
 `, loggers[0].AllMessages())
 	wildcards.Assert(t, `
@@ -211,9 +211,9 @@ node3
 [node2][distribution]INFO  received shutdown request
 [node2][distribution]INFO  unregistering the node "node2"
 [node2][distribution]INFO  the node "node2" unregistered | %s
-[node2][distribution]INFO  shutdown done
 [node2][distribution][etcd-session]INFO  closing etcd session
 [node2][distribution][etcd-session]INFO  closed etcd session | %s
+[node2][distribution]INFO  shutdown done
 [node2]INFO  exited
 `, loggers[1].AllMessages())
 	wildcards.Assert(t, `
@@ -234,9 +234,9 @@ node3
 [node3][distribution]INFO  received shutdown request
 [node3][distribution]INFO  unregistering the node "node3"
 [node3][distribution]INFO  the node "node3" unregistered | %s
-[node3][distribution]INFO  shutdown done
 [node3][distribution][etcd-session]INFO  closing etcd session
 [node3][distribution][etcd-session]INFO  closed etcd session | %s
+[node3][distribution]INFO  shutdown done
 [node3]INFO  exited
 `, loggers[2].AllMessages())
 
@@ -275,9 +275,9 @@ node4
 [node4][distribution]INFO  received shutdown request
 [node4][distribution]INFO  unregistering the node "node4"
 [node4][distribution]INFO  the node "node4" unregistered | %s
-[node4][distribution]INFO  shutdown done
 [node4][distribution][etcd-session]INFO  closing etcd session
 [node4][distribution][etcd-session]INFO  closed etcd session | %s
+[node4][distribution]INFO  shutdown done
 [node4]INFO  exited
 `, d4.DebugLogger().AllMessages())
 }

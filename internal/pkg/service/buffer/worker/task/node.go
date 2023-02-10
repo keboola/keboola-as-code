@@ -19,7 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -29,14 +29,17 @@ import (
 // Node represents a cluster Worker node on which tasks are run.
 // See comments in the StartTask method.
 type Node struct {
-	ctx              context.Context
-	wg               *sync.WaitGroup
-	tracer           trace.Tracer
-	clock            clock.Clock
-	logger           log.Logger
-	schema           *schema.Schema
-	client           *etcd.Client
-	session          *concurrency.Session
+	tracer   trace.Tracer
+	clock    clock.Clock
+	logger   log.Logger
+	schema   *schema.Schema
+	client   *etcd.Client
+	tasksCtx context.Context
+	tasksWg  *sync.WaitGroup
+
+	sessionLock *sync.RWMutex
+	session     *concurrency.Session
+
 	nodeID           string
 	config           config
 	tasksCount       *atomic.Int64
@@ -79,26 +82,36 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 		runningTasks:     make(map[key.TaskKey]bool),
 	}
 
-	// Create etcd session
-	var err error
-	n.session, err = etcdclient.CreateConcurrencySession(n.logger, proc, n.client, c.ttlSeconds)
-	if err != nil {
-		return nil, err
-	}
-
 	// Graceful shutdown
-	var cancel context.CancelFunc
-	n.wg = &sync.WaitGroup{}
-	n.ctx, cancel = context.WithCancel(context.Background())
+	var cancelTasks context.CancelFunc
+	n.tasksWg = &sync.WaitGroup{}
+	n.tasksCtx, cancelTasks = context.WithCancel(context.Background())
+	sessionWg := &sync.WaitGroup{}
+	sessionCtx, cancelSession := context.WithCancel(context.Background())
 	proc.OnShutdown(func() {
 		n.logger.Info("received shutdown request")
 		if c := n.tasksCount.Load(); c > 0 {
 			n.logger.Infof(`waiting for "%d" tasks to be finished`, c)
 		}
-		cancel()
-		n.wg.Wait()
+		cancelTasks()
+		n.tasksWg.Wait()
+		cancelSession()
+		sessionWg.Wait()
 		n.logger.Info("shutdown done")
 	})
+
+	// Create etcd session
+	n.sessionLock = &sync.RWMutex{}
+	sessionInit := etcdop.ResistantSession(sessionCtx, sessionWg, n.logger, n.client, c.ttlSeconds, func(session *concurrency.Session) error {
+		n.sessionLock.Lock()
+		n.session = session
+		n.sessionLock.Unlock()
+		return nil
+	})
+
+	if err := <-sessionInit; err != nil {
+		return nil, err
+	}
 
 	return n, nil
 }
@@ -122,6 +135,11 @@ func (n *Node) StartTask(ctx context.Context, receiverKey key.ReceiverKey, typ, 
 	// Create task model
 	task := model.Task{TaskKey: taskKey, WorkerNode: n.nodeID, Lock: lock}
 
+	// Get session
+	n.sessionLock.RLock()
+	session := n.session
+	n.sessionLock.RUnlock()
+
 	// Create task and lock in etcd
 	// Atomicity: If the lock key already exists, the then the transaction fails and task is ignored.
 	// Resistance to outages: If the Worker node fails, the lock is released automatically by the lease, after the session TTL seconds.
@@ -130,9 +148,9 @@ func (n *Node) StartTask(ctx context.Context, receiverKey key.ReceiverKey, typ, 
 	logger := n.logger.AddPrefix(fmt.Sprintf("[%s]", taskKey.ID()))
 	createTaskOp := op.MergeToTxn(
 		taskEtcdKey.Put(task),
-		lockEtcdKey.PutIfNotExists(task.WorkerNode, etcd.WithLease(n.session.Lease())),
+		lockEtcdKey.PutIfNotExists(task.WorkerNode, etcd.WithLease(session.Lease())),
 	)
-	if resp, err := createTaskOp.Do(n.ctx, n.client); err != nil {
+	if resp, err := createTaskOp.Do(n.tasksCtx, n.client); err != nil {
 		unlock()
 		return nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, err)
 	} else if !resp.Succeeded {
@@ -226,7 +244,7 @@ func (n *Node) lockTask(taskKey key.TaskKey) (ok bool, unlock func()) {
 		return false, nil
 	}
 
-	n.wg.Add(1)
+	n.tasksWg.Add(1)
 	n.tasksCount.Inc()
 	n.runningTasks[taskKey] = true
 
@@ -235,6 +253,6 @@ func (n *Node) lockTask(taskKey key.TaskKey) (ok bool, unlock func()) {
 		defer n.runningTasksLock.Unlock()
 		delete(n.runningTasks, taskKey)
 		n.tasksCount.Dec()
-		n.wg.Done()
+		n.tasksWg.Done()
 	}
 }

@@ -39,17 +39,11 @@ import (
 // - The value is incremented by the Lock method and decremented by the unlock callback.
 // - The minimum version that is currently in use is regularly synchronized to the etcd, see sync method.
 type RevisionSyncer struct {
-	ctx          context.Context
-	wg           *sync.WaitGroup
-	logger       log.Logger
-	stats        StatsSyncer
-	targetKey    etcdop.Key
-	syncInterval time.Duration
-
-	// session ensures that when an outage occurs,
-	// the key is automatically deleted after TTL seconds,
-	// so an unavailable API node does not block Worker nodes.
-	session *concurrency.Session
+	ctx       context.Context
+	wg        *sync.WaitGroup
+	logger    log.Logger
+	stats     StatsSyncer
+	targetKey etcdop.Key
 
 	lock *sync.Mutex
 	// currentRev is version of the cached state, it is set by the Notify method
@@ -66,51 +60,53 @@ type StatsSyncer interface {
 
 type UnlockFn func()
 
-func newSyncer(ctx context.Context, wg *sync.WaitGroup, clk clock.Clock, logger log.Logger, stats StatsSyncer, sess *concurrency.Session, targetKey etcdop.Key, syncInterval time.Duration) (*RevisionSyncer, error) {
+func newSyncer(ctx context.Context, wg *sync.WaitGroup, clk clock.Clock, logger log.Logger, stats StatsSyncer, client *etcd.Client, targetKey etcdop.Key, ttlSeconds int, syncInterval time.Duration) (*RevisionSyncer, error) {
 	// Create
 	s := &RevisionSyncer{
-		ctx:          ctx,
-		wg:           wg,
-		logger:       logger,
-		stats:        stats,
-		targetKey:    targetKey,
-		syncInterval: syncInterval,
-		session:      sess,
-		lock:         &sync.Mutex{},
-		currentRev:   1,
-		syncedRev:    0,
-		revInUse:     make(map[int64]int),
+		ctx:        ctx,
+		wg:         wg,
+		logger:     logger,
+		stats:      stats,
+		targetKey:  targetKey,
+		lock:       &sync.Mutex{},
+		currentRev: 1,
+		syncedRev:  0,
+		revInUse:   make(map[int64]int),
 	}
 
-	// Initial sync
-	if err := s.sync(); err != nil {
+	sessionInit := etcdop.ResistantSession(ctx, wg, logger, client, ttlSeconds, func(session *concurrency.Session) error {
+		// Initial sync
+		if err := s.sync(session); err != nil {
+			return err
+		}
+
+		// Periodical sync
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			ticker := clk.Ticker(syncInterval)
+			defer ticker.Stop()
+
+			for {
+				select {
+				case <-session.Done():
+					return
+				case <-ticker.C:
+					if err := s.sync(session); err != nil {
+						if !errors.Is(err, context.Canceled) {
+							s.logger.Errorf(`sync error: %s`, err)
+						}
+					}
+				}
+			}
+		}()
+		return nil
+	})
+
+	if err := <-sessionInit; err != nil {
 		return nil, err
 	}
-
-	// Periodical sync
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
-
-		// If the interval > 0, then sync is not triggered immediately on change, but periodically.
-		// Otherwise, trigger is called immediately, see Notify and unlockRevision methods.
-		var tickerC <-chan time.Time
-		if s.syncInterval > 0 {
-			ticker := clk.Ticker(s.syncInterval)
-			defer ticker.Stop()
-			tickerC = ticker.C
-		}
-
-		for {
-			select {
-			case <-s.ctx.Done():
-				return
-			case <-tickerC:
-				// Sync error is logged
-				_ = s.sync()
-			}
-		}
-	}()
 
 	return s, nil
 }
@@ -122,12 +118,6 @@ func (s *RevisionSyncer) Notify(v int64) {
 	s.lock.Lock()
 	s.currentRev = v
 	s.lock.Unlock()
-
-	// Sync immediately, if there is no interval configured.
-	// Error is logged.
-	if s.syncInterval == 0 {
-		_ = s.sync()
-	}
 }
 
 // StateRev returns current revision of the cached state.
@@ -185,17 +175,11 @@ func (s *RevisionSyncer) unlockRevision(rev int64) {
 		s.logger.Infof(`unlocked revision "%v"`, rev)
 	}
 	s.lock.Unlock()
-
-	// Sync immediately, if there is no interval configured.
-	// Error is logged.
-	if s.syncInterval == 0 {
-		_ = s.sync()
-	}
 }
 
 // sync the minimal revision currently in use to the etcd.
 // Using this mechanism, worker nodes can safely determine when a revision is synchronized on all API nodes.
-func (s *RevisionSyncer) sync() error {
+func (s *RevisionSyncer) sync(session *concurrency.Session) error {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
@@ -212,11 +196,8 @@ func (s *RevisionSyncer) sync() error {
 	<-s.stats.Sync(s.ctx)
 
 	// Update etcd key
-	updateOp := s.targetKey.Put(cast.ToString(minRevInUse), etcd.WithLease(s.session.Lease()))
-	if err := updateOp.Do(s.ctx, s.session.Client()); err != nil {
-		if !errors.Is(err, context.Canceled) {
-			s.logger.Errorf(`sync error: %s`, err)
-		}
+	updateOp := s.targetKey.Put(cast.ToString(minRevInUse), etcd.WithLease(session.Lease()))
+	if err := updateOp.Do(s.ctx, session.Client()); err != nil {
 		return err
 	}
 

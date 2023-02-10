@@ -17,7 +17,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/prefixtree"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -75,12 +74,6 @@ func New(d Dependencies, opts ...Option) (*Node, error) {
 		stats:  d.StatsCollector(),
 	}
 
-	// Create etcd session
-	sess, err := etcdclient.CreateConcurrencySession(n.logger, proc, d.EtcdClient(), c.ttlSeconds)
-	if err != nil {
-		return nil, err
-	}
-
 	// Graceful shutdown
 	var cancel context.CancelFunc
 	n.ctx, cancel = context.WithCancel(context.Background())
@@ -93,9 +86,10 @@ func New(d Dependencies, opts ...Option) (*Node, error) {
 	})
 
 	// Sync slices revision to Worker nodes
+	var err error
 	nodeID := d.Process().UniqueID()
 	revisionKey := sm.Runtime().APINodes().Watchers().Revision().Node(nodeID)
-	n.revision, err = newSyncer(n.ctx, n.wg, n.clock, n.logger, n.stats, sess, revisionKey, c.syncInterval)
+	n.revision, err = newSyncer(n.ctx, n.wg, n.clock, n.logger, n.stats, d.EtcdClient(), revisionKey, c.ttlSeconds, c.syncInterval)
 	if err != nil {
 		return nil, err
 	}

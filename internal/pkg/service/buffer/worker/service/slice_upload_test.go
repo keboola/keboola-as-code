@@ -69,8 +69,7 @@ func TestSliceUploadTask(t *testing.T) {
 		assert.NoError(t, err)
 		return count == 7
 	}, time.Second, 10*time.Millisecond)
-	<-apiDeps1.StatsCollector().Sync(ctx)
-	<-apiDeps2.StatsCollector().Sync(ctx)
+	clk.Add(time.Minute) // trigger API nodes sync
 	assertStateBeforeUpload(t, client)
 
 	// Start worker node
@@ -98,6 +97,7 @@ func TestSliceUploadTask(t *testing.T) {
 	// Close the empty slice (a new slice is created)
 	clk.Add(10 * time.Second)
 	_, err = str.SwapSlice(ctx, &emptySlice)
+	clk.Add(time.Minute) // trigger API nodes sync
 	assert.NoError(t, err)
 	assert.Eventually(t, func() bool {
 		count, err := apiDeps1.Schema().Slices().Uploaded().Count().Do(ctx, client)
@@ -108,6 +108,7 @@ func TestSliceUploadTask(t *testing.T) {
 
 	// Close the slice1 (slice 2 is created)
 	slice2, err := str.SwapSlice(ctx, &slice1)
+	clk.Add(time.Minute) // trigger API nodes sync
 	assert.NoError(t, err)
 	assert.Eventually(t, func() bool {
 		count, err := apiDeps1.Schema().Slices().Uploaded().Count().Do(ctx, client)
@@ -138,6 +139,7 @@ func TestSliceUploadTask(t *testing.T) {
 
 	// Close the slice2 (a new slice is created)
 	_, err = str.SwapSlice(ctx, &slice2)
+	clk.Add(time.Minute) // trigger API nodes sync
 	assert.NoError(t, err)
 	assert.Eventually(t, func() bool {
 		count, err := apiDeps1.Schema().Slices().Uploaded().Count().Do(ctx, client)
@@ -149,12 +151,12 @@ func TestSliceUploadTask(t *testing.T) {
 	AssertUploadedSlice(t, ctx, file, slice2, project, strings.TrimLeft(`
 8,0001-01-01T00:03:29.000Z,1.2.3.4,"{""key"":""value008""}","{""Content-Type"":""application/json""}","""---value008---"""
 9,0001-01-01T00:03:30.000Z,1.2.3.4,"{""key"":""value009""}","{""Content-Type"":""application/json""}","""---value009---"""
-10,0001-01-01T00:03:31.000Z,1.2.3.4,"{""key"":""value010""}","{""Content-Type"":""application/json""}","""---value010---"""
+10,0001-01-01T00:06:31.000Z,1.2.3.4,"{""key"":""value010""}","{""Content-Type"":""application/json""}","""---value010---"""
 `, "\n"))
 
 	// Check content of the uploaded manifest
 	AssertUploadedManifest(t, ctx, file, `
-{"entries":[{"url":"%s00010101000101.gz"},{"url":"%s00010101000228.gz"}]}
+{"entries":[{"url":"%s.gz"},{"url":"%s.gz"}]}
 `)
 
 	// Shutdown
@@ -175,21 +177,21 @@ func TestSliceUploadTask(t *testing.T) {
 [task][slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %s
 [task][slice.close/%s]INFO  task succeeded (%s): slice closed
 [task][slice.close/%s]DEBUG  lock released "runtime/lock/task/slice.close/00000123/my-receiver-1/%s"
-`, strhelper.FilterLines(`^\[task\]\[slice.close\/0001-01-01T00:02:18.000Z_`, workerDeps.DebugLogger().AllMessages()))
+`, strhelper.FilterLines(`^\[task\]\[slice.close\/0001-01-01T00:03:`, workerDeps.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
 [task][slice.close/%s]INFO  started task "00000123/my-receiver-2/slice.close/%s"
 [task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/slice.close/00000123/my-receiver-2/%s"
 [task][slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %s
 [task][slice.close/%s]INFO  task succeeded (%s): slice closed
 [task][slice.close/%s]DEBUG  lock released "runtime/lock/task/slice.close/00000123/my-receiver-2/%s"
-`, strhelper.FilterLines(`^\[task\]\[slice.close\/0001-01-01T00:02:28.000Z_`, workerDeps.DebugLogger().AllMessages()))
+`, strhelper.FilterLines(`^\[task\]\[slice.close\/0001-01-01T00:04:`, workerDeps.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
 [task][slice.close/%s]INFO  started task "00000123/my-receiver-2/slice.close/%s"
 [task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/slice.close/00000123/my-receiver-2/%s"
 [task][slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %s
 [task][slice.close/%s]INFO  task succeeded (%s): slice closed
 [task][slice.close/%s]DEBUG  lock released "runtime/lock/task/slice.close/00000123/my-receiver-2/%s"
-`, strhelper.FilterLines(`^\[task\]\[slice.close\/0001-01-01T00:03:31.000Z_`, workerDeps.DebugLogger().AllMessages()))
+`, strhelper.FilterLines(`^\[task\]\[slice.close\/0001-01-01T00:06:`, workerDeps.DebugLogger().AllMessages()))
 
 	// Check "upload slice" logs
 	wildcards.Assert(t, `
@@ -197,19 +199,19 @@ func TestSliceUploadTask(t *testing.T) {
 [task][slice.upload/%s]DEBUG  lock acquired "runtime/lock/task/slice.upload/00000123/my-receiver-1/%s"
 [task][slice.upload/%s]INFO  task succeeded (%s): skipped upload of the empty slice
 [task][slice.upload/%s]DEBUG  lock released "runtime/lock/task/slice.upload/00000123/my-receiver-1/%s"
-`, strhelper.FilterLines(`^\[task\]\[slice.upload\/0001-01-01T00:02:18.000Z_`, workerDeps.DebugLogger().AllMessages()))
+`, strhelper.FilterLines(`^\[task\]\[slice.upload\/0001-01-01T00:03:`, workerDeps.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
 [task][slice.upload/%s]INFO  started task "00000123/my-receiver-2/slice.upload/%s"
 [task][slice.upload/%s]DEBUG  lock acquired "runtime/lock/task/slice.upload/00000123/my-receiver-2/%s"
 [task][slice.upload/%s]INFO  task succeeded (%s): slice uploaded
 [task][slice.upload/%s]DEBUG  lock released "runtime/lock/task/slice.upload/00000123/my-receiver-2/%s"
-`, strhelper.FilterLines(`^\[task\]\[slice.upload\/0001-01-01T00:02:28.000Z_`, workerDeps.DebugLogger().AllMessages()))
+`, strhelper.FilterLines(`^\[task\]\[slice.upload\/0001-01-01T00:04:`, workerDeps.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
 [task][slice.upload/%s]INFO  started task "00000123/my-receiver-2/slice.upload/%s"
 [task][slice.upload/%s]DEBUG  lock acquired "runtime/lock/task/slice.upload/00000123/my-receiver-2/%s"
 [task][slice.upload/%s]INFO  task succeeded (%s): slice uploaded
 [task][slice.upload/%s]DEBUG  lock released "runtime/lock/task/slice.upload/00000123/my-receiver-2/%s"
-`, strhelper.FilterLines(`^\[task\]\[slice.upload\/0001-01-01T00:03:31.000Z_`, workerDeps.DebugLogger().AllMessages()))
+`, strhelper.FilterLines(`^\[task\]\[slice.upload\/0001-01-01T00:06:`, workerDeps.DebugLogger().AllMessages()))
 }
 
 func assertStateBeforeUpload(t *testing.T, client *etcd.Client) {
@@ -534,14 +536,14 @@ slice/active/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01
 >>>>>
 
 <<<<<
-slice/active/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z
+slice/active/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:04:28.000Z
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver-2",
   "exportId": "my-export-2",
   "fileId": "0001-01-01T00:01:01.000Z",
-  "sliceId": "0001-01-01T00:02:28.000Z",
+  "sliceId": "0001-01-01T00:04:28.000Z",
   "state": "active/closed/uploaded",
   "mapping": {
 %A
@@ -554,7 +556,7 @@ slice/active/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01
   "uploadingAt": "%s",
   "uploadedAt": "%s",
   "statistics": {
-    "lastRecordAt": "0001-01-01T00:03:31.000Z",
+    "lastRecordAt": "0001-01-01T00:06:31.000Z",
     "recordsCount": 3,
     "recordsSize": "396B",
     "bodySize": "54B",
@@ -569,14 +571,14 @@ slice/active/closed/uploaded/00000123/my-receiver-2/my-export-2/0001-01-01T00:01
 >>>>>
 
 <<<<<
-slice/active/opened/writing/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:02:18.000Z
+slice/active/opened/writing/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:03:18.000Z
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver-1",
   "exportId": "my-export-1",
   "fileId": "0001-01-01T00:00:01.000Z",
-  "sliceId": "0001-01-01T00:02:18.000Z",
+  "sliceId": "0001-01-01T00:03:18.000Z",
   "state": "active/opened/writing",
   "mapping": {
 %A
@@ -589,14 +591,14 @@ slice/active/opened/writing/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:
 >>>>>
 
 <<<<<
-slice/active/opened/writing/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:03:31.000Z
+slice/active/opened/writing/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:06:31.000Z
 -----
 {
   "projectId": 123,
   "receiverId": "my-receiver-2",
   "exportId": "my-export-2",
   "fileId": "0001-01-01T00:01:01.000Z",
-  "sliceId": "0001-01-01T00:03:31.000Z",
+  "sliceId": "0001-01-01T00:06:31.000Z",
   "state": "active/opened/writing",
   "mapping": {
 %A
@@ -621,7 +623,7 @@ task/00000123/my-receiver-1/slice.close/%s
   "workerNode": "my-worker",
   "lock": "slice.close/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
   "result": "slice closed",
-  "duration": %s
+  "duration": %d
 }
 >>>>>
 
@@ -638,7 +640,7 @@ task/00000123/my-receiver-1/slice.upload/%s
   "workerNode": "my-worker",
   "lock": "slice.upload/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
   "result": "skipped upload of the empty slice",
-  "duration": %s
+  "duration": %d
 }
 >>>>>
 
@@ -655,7 +657,7 @@ task/00000123/my-receiver-2/slice.close/%s
   "workerNode": "my-worker",
   "lock": "slice.close/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z",
   "result": "slice closed",
-  "duration": %s
+  "duration": %d
 }
 >>>>>
 
@@ -670,9 +672,9 @@ task/00000123/my-receiver-2/slice.close/%s
   "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
-  "lock": "slice.close/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z",
+  "lock": "slice.close/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:04:28.000Z",
   "result": "slice closed",
-  "duration": %s
+  "duration": %d
 }
 >>>>>
 
@@ -689,7 +691,7 @@ task/00000123/my-receiver-2/slice.upload/%s
   "workerNode": "my-worker",
   "lock": "slice.upload/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z",
   "result": "slice uploaded",
-  "duration": %s
+  "duration": %d
 }
 >>>>>
 
@@ -704,9 +706,9 @@ task/00000123/my-receiver-2/slice.upload/%s
   "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
-  "lock": "slice.upload/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:02:28.000Z",
+  "lock": "slice.upload/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:04:28.000Z",
   "result": "slice uploaded",
-  "duration": %s
+  "duration": %d
 }
 >>>>>
 `)

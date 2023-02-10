@@ -393,12 +393,12 @@ task/00000123/my-receiver/%s
 [node1]INFO  exiting (some reason)
 [node1][task]INFO  received shutdown request
 [node1][task]INFO  waiting for "1" tasks to be finished
-[node1][task][%s]INFO  some message from the task
-[node1][task][%s]INFO  task succeeded (%s): some result
-[node1][task][%s]DEBUG  lock released "runtime/lock/task/my-lock"
-[node1][task]INFO  shutdown done
+[node1][task][some.task/%s]INFO  some message from the task
+[node1][task][some.task/%s]INFO  task succeeded (%s): some result
+[node1][task][some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
 [node1][task][etcd-session]INFO  closing etcd session
 [node1][task][etcd-session]INFO  closed etcd session | %s
+[node1][task]INFO  shutdown done
 [node1]INFO  exited
 `, logs.String())
 }
