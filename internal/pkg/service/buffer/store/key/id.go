@@ -10,6 +10,7 @@ type (
 	ProjectID  int
 	ReceiverID string
 	ExportID   string
+	TaskID     string
 	RevisionID int
 	FileID     UTCTime
 	SliceID    UTCTime
@@ -32,6 +33,13 @@ func (v ReceiverID) String() string {
 func (v ExportID) String() string {
 	if v == "" {
 		panic(errors.New("exportID cannot be empty"))
+	}
+	return string(v)
+}
+
+func (v TaskID) String() string {
+	if v == "" {
+		panic(errors.New("taskID cannot be empty"))
 	}
 	return string(v)
 }
