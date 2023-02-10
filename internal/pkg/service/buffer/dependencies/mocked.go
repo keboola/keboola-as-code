@@ -91,16 +91,8 @@ func (v *mocked) StatsCollector() *statistics.CollectorNode {
 
 func (v *mocked) WatcherAPINode() *watcher.APINode {
 	if v.watcherAPINode == nil {
-		// Speedup tests with real clock,
-		// and disable sync interval in tests with mocked clocks,
-		// events will be processed immediately.
-		syncInterval := 10 * time.Millisecond
-		if _, ok := v.Clock().(*clock.Mock); ok {
-			syncInterval = 0
-		}
-
 		var err error
-		v.watcherAPINode, err = watcher.NewAPINode(v, apinode.WithSyncInterval(syncInterval))
+		v.watcherAPINode, err = watcher.NewAPINode(v, apinode.WithSyncInterval(500*time.Millisecond))
 		assert.NoError(v.t, err)
 	}
 	return v.watcherAPINode
