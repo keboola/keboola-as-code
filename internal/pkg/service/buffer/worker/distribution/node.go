@@ -12,7 +12,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -33,7 +32,6 @@ type Node struct {
 	proc      *servicectx.Process
 	schema    *schema.Schema
 	client    *etcd.Client
-	session   *concurrency.Session
 	config    nodeConfig
 	listeners *listeners
 }
@@ -66,34 +64,32 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 		config:   c,
 	}
 
-	// Create etcd session
-	var err error
-	n.session, err = etcdclient.CreateConcurrencySession(n.logger, n.proc, n.client, c.ttlSeconds)
-	if err != nil {
-		return nil, err
-	}
-
-	// Register node
-	if err := n.register(c.startupTimeout); err != nil {
-		return nil, err
-	}
-
 	// Graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
+	watchCtx, watchCancel := context.WithCancel(context.Background())
+	sessionCtx, sessionCancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 	n.proc.OnShutdown(func() {
 		n.logger.Info("received shutdown request")
-		cancel()
-		wg.Wait()
+		watchCancel()
 		n.unregister(c.shutdownTimeout)
+		sessionCancel()
+		wg.Wait()
 		n.logger.Info("shutdown done")
 	})
+
+	sessionInit := etcdop.ResistantSession(sessionCtx, wg, n.logger, n.client, c.ttlSeconds, func(session *concurrency.Session) error {
+		// Register node
+		return n.register(session, c.startupTimeout)
+	})
+	if err := <-sessionInit; err != nil {
+		return nil, err
+	}
 
 	// Create listeners handler
 	n.listeners = newListeners(n)
 
 	// Watch for nodes
-	if err := n.watch(ctx, wg); err != nil {
+	if err := n.watch(watchCtx, wg); err != nil {
 		return nil, err
 	}
 
@@ -116,7 +112,7 @@ func (n *Node) CloneAssigner() *Assigner {
 
 // register node in the etcd prefix,
 // Deregistration is ensured double: by OnShutdown callback and by the lease.
-func (n *Node) register(timeout time.Duration) error {
+func (n *Node) register(session *concurrency.Session, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(n.client.Ctx(), timeout)
 	defer cancel()
 
@@ -124,7 +120,7 @@ func (n *Node) register(timeout time.Duration) error {
 	n.logger.Infof(`registering the node "%s"`, n.nodeID)
 
 	key := n.schema.Runtime().WorkerNodes().Active().IDs().Node(n.nodeID)
-	if err := key.Put(n.nodeID, etcd.WithLease(n.session.Lease())).Do(ctx, n.client); err != nil {
+	if err := key.Put(n.nodeID, etcd.WithLease(session.Lease())).Do(ctx, session.Client()); err != nil {
 		return errors.Errorf(`cannot register the node "%s": %w`, n.nodeID, err)
 	}
 
