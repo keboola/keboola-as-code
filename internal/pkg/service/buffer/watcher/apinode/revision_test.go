@@ -9,7 +9,6 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
-	"go.etcd.io/etcd/client/v3/concurrency"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -37,12 +36,11 @@ func TestRevisionSyncer(t *testing.T) {
 	clk := clock.NewMock()
 	logger := log.NewDebugLogger()
 	client := etcdhelper.ClientForTest(t)
-	session, err := concurrency.NewSession(client)
-	assert.NoError(t, err)
 
 	// Create revision syncer.
+	ttl := 15
 	interval := 1 * time.Second
-	s, err := newSyncer(ctx, wg, clk, logger, &statsSyncer{logger: logger}, session, "my/revision", interval)
+	s, err := newSyncer(ctx, wg, clk, logger, &statsSyncer{logger: logger}, client, "my/revision", ttl, interval)
 	doSync := func() {
 		clk.Add(interval)
 	}
@@ -151,12 +149,14 @@ my/revision (lease=%s)
 `)
 
 	// Etcd key should be deleted (by lease), when the API node is turned off
-	logger.Info("close session")
-	assert.NoError(t, session.Close())
+	cancel()
+	wg.Wait()
 	etcdhelper.AssertKVs(t, client, "")
 
 	// Check logs - no unexpected syncs
 	wildcards.Assert(t, `
+[etcd-session]INFO  creating etcd session
+[etcd-session]INFO  created etcd session | %s
 DEBUG  >>> statistics sync
 INFO  reported revision "1"
 DEBUG  >>> statistics sync
@@ -169,6 +169,7 @@ INFO  reported revision "50"
 INFO  unlocked revision "50"
 DEBUG  >>> statistics sync
 INFO  reported revision "70"
-INFO  close session
+[etcd-session]INFO  closing etcd session
+[etcd-session]INFO  closed etcd session | %s
 `, logger.AllMessages())
 }
