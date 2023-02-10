@@ -30,7 +30,9 @@ func TestSchema(t *testing.T) {
 	fileKey := key.FileKey{ExportKey: exportKey, FileID: key.FileID(time1)}
 	sliceKey := key.SliceKey{SliceID: key.SliceID(time2), FileKey: fileKey}
 	recordKey := key.RecordKey{SliceKey: sliceKey, ReceivedAt: key.ReceivedAt(time2.Add(time.Hour)), RandomSuffix: "abcdef"}
-	taskKey := key.TaskKey{ReceiverKey: receiverKey, Type: "some.task", CreatedAt: key.UTCTime(time1), RandomSuffix: "abcdef"}
+	createdAt := key.UTCTime(time1)
+	taskID := key.TaskID(fmt.Sprintf("%s_%s", createdAt.String(), "abcdef"))
+	taskKey := key.TaskKey{ReceiverKey: receiverKey, Type: "some.task", TaskID: taskID}
 
 	cases := []keyTestCase{
 		{

@@ -123,7 +123,9 @@ func (n *Node) TasksCount() int64 {
 // StartTask backed by local lock and etcd transaction, so the task run at most once.
 // The context will be passed to the operation callback.
 func (n *Node) StartTask(ctx context.Context, receiverKey key.ReceiverKey, typ, lock string, operation Task) (t *model.Task, err error) {
-	taskKey := key.TaskKey{ReceiverKey: receiverKey, Type: typ, CreatedAt: key.UTCTime(n.clock.Now()), RandomSuffix: gonanoid.Must(5)}
+	createdAt := key.UTCTime(n.clock.Now())
+	taskID := key.TaskID(fmt.Sprintf("%s_%s", createdAt.String(), gonanoid.Must(5)))
+	taskKey := key.TaskKey{ReceiverKey: receiverKey, Type: typ, TaskID: taskID}
 
 	// Lock task locally for periodical re-syncs,
 	// so locally can be determined that the task is already running.
@@ -133,7 +135,7 @@ func (n *Node) StartTask(ctx context.Context, receiverKey key.ReceiverKey, typ, 
 	}
 
 	// Create task model
-	task := model.Task{TaskKey: taskKey, WorkerNode: n.nodeID, Lock: lock}
+	task := model.Task{TaskKey: taskKey, CreatedAt: createdAt, WorkerNode: n.nodeID, Lock: lock}
 
 	// Get session
 	n.sessionLock.RLock()

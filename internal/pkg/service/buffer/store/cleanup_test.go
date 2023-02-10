@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -53,10 +54,12 @@ func TestStore_Cleanup(t *testing.T) {
 	}
 
 	// Add task without a finishedAt timestamp but too old - will be deleted
-	time1, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
-	taskKey1 := key.TaskKey{ReceiverKey: receiverKey, Type: "some.task", CreatedAt: key.UTCTime(time1), RandomSuffix: "abcdef"}
+	createdAtRaw, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
+	createdAt := model.UTCTime(createdAtRaw)
+	taskKey1 := key.TaskKey{ReceiverKey: receiverKey, Type: "some.task", TaskID: key.TaskID(fmt.Sprintf("%s_%s", createdAt.String(), "abcdef"))}
 	task1 := model.Task{
 		TaskKey:    taskKey1,
+		CreatedAt:  createdAt,
 		FinishedAt: nil,
 		WorkerNode: "node1",
 		Lock:       "lock1",
@@ -70,9 +73,10 @@ func TestStore_Cleanup(t *testing.T) {
 	// Add task with a finishedAt timestamp in the past - will be deleted
 	time2, _ := time.Parse(time.RFC3339, "2008-01-02T15:04:05+07:00")
 	time2Key := key.UTCTime(time2)
-	taskKey2 := key.TaskKey{ReceiverKey: receiverKey, Type: "other.task", CreatedAt: key.UTCTime(time1), RandomSuffix: "ghijkl"}
+	taskKey2 := key.TaskKey{ReceiverKey: receiverKey, Type: "other.task", TaskID: key.TaskID(fmt.Sprintf("%s_%s", createdAt.String(), "ghijkl"))}
 	task2 := model.Task{
 		TaskKey:    taskKey2,
+		CreatedAt:  createdAt,
 		FinishedAt: &time2Key,
 		WorkerNode: "node2",
 		Lock:       "lock2",
@@ -86,9 +90,10 @@ func TestStore_Cleanup(t *testing.T) {
 	// Add task with a finishedAt timestamp before a moment - will be ignored
 	time3 := time.Now()
 	time3Key := key.UTCTime(time3)
-	taskKey3 := key.TaskKey{ReceiverKey: receiverKey, Type: "other.task", CreatedAt: key.UTCTime(time1), RandomSuffix: "ghijkl"}
+	taskKey3 := key.TaskKey{ReceiverKey: receiverKey, Type: "other.task", TaskID: key.TaskID(fmt.Sprintf("%s_%s", createdAt.String(), "ghijkl"))}
 	task3 := model.Task{
 		TaskKey:    taskKey3,
+		CreatedAt:  createdAt,
 		FinishedAt: &time3Key,
 		WorkerNode: "node2",
 		Lock:       "lock2",
@@ -100,7 +105,7 @@ func TestStore_Cleanup(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Add file with an Opened state and created in the past - will be deleted
-	fileKey1 := key.FileKey{ExportKey: exportKey1, FileID: key.FileID(time1)}
+	fileKey1 := key.FileKey{ExportKey: exportKey1, FileID: key.FileID(createdAt)}
 	file1 := model.File{
 		FileKey: fileKey1,
 		State:   filestate.Opened,
@@ -132,7 +137,7 @@ func TestStore_Cleanup(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Add slice for the cleaned-up file - will be deleted
-	sliceKey1 := key.SliceKey{FileKey: fileKey1, SliceID: key.SliceID(time1)}
+	sliceKey1 := key.SliceKey{FileKey: fileKey1, SliceID: key.SliceID(createdAt)}
 	slice1 := model.Slice{
 		SliceKey: sliceKey1,
 		Number:   1,
@@ -166,7 +171,7 @@ func TestStore_Cleanup(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Add record for the cleaned-up slice - will be deleted
-	recordKey1 := key.RecordKey{SliceKey: sliceKey1, ReceivedAt: key.ReceivedAt(time1), RandomSuffix: "abcd"}
+	recordKey1 := key.RecordKey{SliceKey: sliceKey1, ReceivedAt: key.ReceivedAt(createdAt), RandomSuffix: "abcd"}
 	err = store.schema.Records().ByKey(recordKey1).Put("rec").Do(ctx, store.client)
 	assert.NoError(t, err)
 
@@ -266,8 +271,8 @@ task/00001000/github/other.task/2006-01-02T08:04:05.000Z_ghijkl
   "projectId": 1000,
   "receiverId": "github",
   "type": "other.task",
+  "taskId": "2006-01-02T08:04:05.000Z_ghijkl",
   "createdAt": "2006-01-02T08:04:05.000Z",
-  "randomId": "ghijkl",
   "finishedAt": "%s",
   "workerNode": "node2",
   "lock": "lock2",

@@ -13,55 +13,61 @@ func TestTask_ForCleanup(t *testing.T) {
 	t.Parallel()
 
 	// Unfinished task, too recent
-	age := key.UTCTime(time.Now().Add(-1 * time.Hour))
+	createdAt := key.UTCTime(time.Now().Add(-1 * time.Hour))
 	task := &Task{
-		TaskKey:    key.TaskKey{CreatedAt: age},
+		TaskKey:    key.TaskKey{},
+		CreatedAt:  createdAt,
 		FinishedAt: nil,
 		Error:      "",
 	}
 	assert.False(t, task.IsForCleanup())
 
 	// Unfinished task, too old
-	age = key.UTCTime(time.Now().Add(-30 * 24 * time.Hour))
+	createdAt = key.UTCTime(time.Now().Add(-30 * 24 * time.Hour))
 	task = &Task{
-		TaskKey:    key.TaskKey{CreatedAt: age},
+		TaskKey:    key.TaskKey{},
+		CreatedAt:  createdAt,
 		FinishedAt: nil,
 		Error:      "",
 	}
 	assert.True(t, task.IsForCleanup())
 
 	// Finished task, successful, too recent
-	age = key.UTCTime(time.Now().Add(-1 * time.Minute))
+	createdAt = key.UTCTime(time.Now().Add(-1 * time.Minute))
 	task = &Task{
-		TaskKey:    key.TaskKey{CreatedAt: age},
-		FinishedAt: &age,
+		TaskKey:    key.TaskKey{},
+		CreatedAt:  createdAt,
+		FinishedAt: &createdAt,
 		Error:      "",
 	}
 	assert.False(t, task.IsForCleanup())
 
 	// Finished task, successful, too old
-	age = key.UTCTime(time.Now().Add(-2 * time.Hour))
+	createdAt = key.UTCTime(time.Now().Add(-2 * time.Hour))
 	task = &Task{
-		TaskKey:    key.TaskKey{CreatedAt: age},
-		FinishedAt: &age,
+		TaskKey:    key.TaskKey{},
+		CreatedAt:  createdAt,
+		FinishedAt: &createdAt,
 		Error:      "",
 	}
 	assert.True(t, task.IsForCleanup())
 
 	// Finished task, error, too recent
-	age = key.UTCTime(time.Now().Add(-2 * time.Hour))
+	createdAt = key.UTCTime(time.Now().Add(-2 * time.Hour))
 	task = &Task{
-		TaskKey:    key.TaskKey{CreatedAt: age},
-		FinishedAt: &age,
+		TaskKey:    key.TaskKey{},
+		CreatedAt:  createdAt,
+		FinishedAt: &createdAt,
 		Error:      "error",
 	}
 	assert.False(t, task.IsForCleanup())
 
 	// Finished task, successful, too old
-	age = key.UTCTime(time.Now().Add(-48 * time.Hour))
+	createdAt = key.UTCTime(time.Now().Add(-48 * time.Hour))
 	task = &Task{
-		TaskKey:    key.TaskKey{CreatedAt: age},
-		FinishedAt: &age,
+		TaskKey:    key.TaskKey{},
+		CreatedAt:  createdAt,
+		FinishedAt: &createdAt,
 		Error:      "error",
 	}
 	assert.True(t, task.IsForCleanup())
