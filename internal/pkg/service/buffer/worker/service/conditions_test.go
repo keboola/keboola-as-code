@@ -79,6 +79,7 @@ func TestConditionsChecker(t *testing.T) {
 		service.WithCloseFiles(false),
 		service.WithImportFiles(false),
 		service.WithRetryFailedFiles(false),
+		service.WithCleanup(false),
 		service.WithUploadConditions(model.Conditions{Count: 1000, Size: 1 * datasize.MB, Time: uploadInterval}),
 		service.WithCheckConditionsInterval(checkCondInterval),
 	}

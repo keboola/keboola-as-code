@@ -59,6 +59,7 @@ func TestUploadAndImportE2E(t *testing.T) {
 	logger := workerDeps.DebugLogger()
 	_, err := service.New(
 		workerDeps,
+		service.WithCleanup(false),
 		service.WithCheckConditionsInterval(500*time.Millisecond),
 		service.WithUploadConditions(model.Conditions{Count: 5, Size: datasize.MB, Time: time.Hour}),
 	)

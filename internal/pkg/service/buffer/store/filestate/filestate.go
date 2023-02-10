@@ -74,3 +74,7 @@ func (v *STM) permit(from, to State) {
 func (v State) String() string {
 	return string(v)
 }
+
+func All() []State {
+	return []State{Opened, Closing, Importing, Imported, Failed}
+}

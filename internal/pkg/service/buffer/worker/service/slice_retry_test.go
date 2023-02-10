@@ -81,6 +81,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 		workerDeps,
 		service.WithUploadTransport(uploadTransport),
 		service.WithCheckConditions(false),
+		service.WithCleanup(false),
 		service.WithCloseSlices(true),
 		service.WithUploadSlices(true),
 		service.WithRetryFailedSlices(true),

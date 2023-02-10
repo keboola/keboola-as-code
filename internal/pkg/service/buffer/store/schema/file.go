@@ -57,6 +57,10 @@ func (v Files) Failed() FilesInAState {
 	return v.InState(filestate.Failed)
 }
 
+func (v Files) InReceiver(k storeKey.ReceiverKey) FilesInReceiver {
+	return FilesInReceiver{files: v.files.Add(k.String())}
+}
+
 func (v FilesInAState) ByKey(k storeKey.FileKey) KeyT[model.File] {
 	return v.Key(k.String())
 }

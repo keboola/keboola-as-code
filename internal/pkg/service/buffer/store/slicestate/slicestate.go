@@ -118,3 +118,14 @@ func (v State) StateShort() string {
 func (v StateGroup) String() string {
 	return string(v)
 }
+
+func All() []State {
+	return []State{
+		Writing,
+		Closing,
+		Uploading,
+		Uploaded,
+		Failed,
+		Imported,
+	}
+}

@@ -173,6 +173,36 @@ func (s *Store) receiversIterator(_ context.Context, projectID key.ProjectID) it
 	return s.schema.Configs().Receivers().InProject(projectID).GetAll()
 }
 
+// ListAllReceivers from the store.
+func (s *Store) ListAllReceivers(ctx context.Context) (receivers []model.Receiver, err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.ListAllReceivers")
+	defer telemetry.EndSpan(span, &err)
+
+	err = s.
+		allReceiversIterator(ctx).Do(ctx, s.client).
+		ForEachValue(func(receiverBase model.ReceiverBase, header *iterator.Header) error {
+			exports, err := s.ListExports(ctx, receiverBase.ReceiverKey, iterator.WithRev(header.Revision))
+			if err != nil {
+				return err
+			}
+			receivers = append(receivers, model.Receiver{
+				ReceiverBase: receiverBase,
+				Exports:      exports,
+			})
+			return nil
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return receivers, nil
+}
+
+func (s *Store) allReceiversIterator(_ context.Context) iterator.DefinitionT[model.ReceiverBase] {
+	return s.schema.Configs().Receivers().GetAll()
+}
+
 // DeleteReceiver deletes a receiver from the store.
 // Logic errors:
 // - ResourceNotFoundError.

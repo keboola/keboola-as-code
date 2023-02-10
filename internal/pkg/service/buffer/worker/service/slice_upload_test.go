@@ -79,6 +79,7 @@ func TestSliceUploadTask(t *testing.T) {
 	_, err = service.New(
 		workerDeps,
 		service.WithCheckConditions(false),
+		service.WithCleanup(false),
 		service.WithCloseSlices(true),
 		service.WithUploadSlices(true),
 		service.WithRetryFailedSlices(false),

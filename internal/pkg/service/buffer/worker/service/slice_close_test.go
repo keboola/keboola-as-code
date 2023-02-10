@@ -49,6 +49,7 @@ func TestSliceCloseTask(t *testing.T) {
 	_, err := service.New(
 		workerDeps,
 		service.WithCheckConditions(false),
+		service.WithCleanup(false),
 		service.WithCloseSlices(true),
 		service.WithUploadSlices(false),
 		service.WithRetryFailedSlices(false),
