@@ -2,6 +2,7 @@ package etcdop
 
 import (
 	"context"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -17,6 +18,9 @@ import (
 
 func TestResistantSession(t *testing.T) {
 	t.Parallel()
+	if runtime.GOOS != "linux" {
+		t.Skipf(`etcd session is tested only on Linux`)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
