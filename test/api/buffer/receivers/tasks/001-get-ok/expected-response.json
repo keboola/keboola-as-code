@@ -1,0 +1,12 @@
+{
+  "id": "2023-01-01T08:02:06.000Z_abcdef",
+  "receiverId": "my-receiver",
+  "url": "https://%s/v1/receivers/my-receiver/tasks/receiver.create/2023-01-01T08:02:06.000Z_abcdef",
+  "type": "receiver.create",
+  "createdAt": "2023-01-01T08:02:06.000Z",
+  "finishedAt": "2023-01-01T09:02:06.000Z",
+  "isFinished": true,
+  "duration": 3,
+  "result": "receiver created",
+  "error": ""
+}
