@@ -15,7 +15,8 @@ func TestTask_ForCleanup(t *testing.T) {
 	// Unfinished task, too recent
 	age := key.UTCTime(time.Now().Add(-1 * time.Hour))
 	task := &Task{
-		TaskKey:    key.TaskKey{CreatedAt: age},
+		TaskKey:    key.TaskKey{},
+		CreatedAt:  age,
 		FinishedAt: nil,
 		Error:      "",
 	}
@@ -24,7 +25,8 @@ func TestTask_ForCleanup(t *testing.T) {
 	// Unfinished task, too old
 	age = key.UTCTime(time.Now().Add(-30 * 24 * time.Hour))
 	task = &Task{
-		TaskKey:    key.TaskKey{CreatedAt: age},
+		TaskKey:    key.TaskKey{},
+		CreatedAt:  age,
 		FinishedAt: nil,
 		Error:      "",
 	}
@@ -33,7 +35,8 @@ func TestTask_ForCleanup(t *testing.T) {
 	// Finished task, successful, too recent
 	age = key.UTCTime(time.Now().Add(-1 * time.Minute))
 	task = &Task{
-		TaskKey:    key.TaskKey{CreatedAt: age},
+		TaskKey:    key.TaskKey{},
+		CreatedAt:  age,
 		FinishedAt: &age,
 		Error:      "",
 	}
@@ -42,7 +45,8 @@ func TestTask_ForCleanup(t *testing.T) {
 	// Finished task, successful, too old
 	age = key.UTCTime(time.Now().Add(-2 * time.Hour))
 	task = &Task{
-		TaskKey:    key.TaskKey{CreatedAt: age},
+		TaskKey:    key.TaskKey{},
+		CreatedAt:  age,
 		FinishedAt: &age,
 		Error:      "",
 	}
@@ -51,7 +55,8 @@ func TestTask_ForCleanup(t *testing.T) {
 	// Finished task, error, too recent
 	age = key.UTCTime(time.Now().Add(-2 * time.Hour))
 	task = &Task{
-		TaskKey:    key.TaskKey{CreatedAt: age},
+		TaskKey:    key.TaskKey{},
+		CreatedAt:  age,
 		FinishedAt: &age,
 		Error:      "error",
 	}
@@ -60,7 +65,8 @@ func TestTask_ForCleanup(t *testing.T) {
 	// Finished task, successful, too old
 	age = key.UTCTime(time.Now().Add(-48 * time.Hour))
 	task = &Task{
-		TaskKey:    key.TaskKey{CreatedAt: age},
+		TaskKey:    key.TaskKey{},
+		CreatedAt:  age,
 		FinishedAt: &age,
 		Error:      "error",
 	}
