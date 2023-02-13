@@ -1,0 +1,67 @@
+name: "Check licenses"
+
+on:
+  workflow_call:
+
+env:
+  GO_VERSION: 1.19.3
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Load Go cache
+        uses: ./.github/actions/go-cache
+        with:
+          key: lint
+
+      - name: Install tools
+        run: ./scripts/tools.sh
+        shell: bash
+
+      #####################
+      ### License Types ###
+      #####################
+      # Forbidden (Non Commercial)
+      #     https://github.com/google/licenseclassifier/blob/842c0d70d7027215932deb13801890992c9ba364/license_type.go#L323
+      #     Licenses that are forbidden to be used.
+      #
+      # Restricted
+      #     https://github.com/google/licenseclassifier/blob/842c0d70d7027215932deb13801890992c9ba364/license_type.go#L176
+      #     Licenses in this category require mandatory source
+      #	    distribution if we ship a product that includes third-party code
+      #	    protected by such a license.
+      #
+      # Reciprocal, Notice, Permissive, Unencumbered
+      #     Packages with these licenses are safe to use.
+      #     Some of them restrict changes,
+      #     but this is not an issue when we use them as libraries without changes.
+      - name: Run license checker
+        # Ignored:
+        #    - github.com/eliukblau/pixterm, license detection failed (Reciprocal - MPL-2.0)
+        run: |
+          make prepare
+          go-licenses check ./... --disallowed_types forbidden,restricted,unknown \
+            --ignore github.com/eliukblau/pixterm
+        shell: bash
+
+      - name: Save licenses report
+        if: always()
+        run: mkdir -p /tmp/go-licenses; go-licenses csv > /tmp/go-licenses/go-licenses.csv ./...
+        shell: bash
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: go-licenses
+          path: /tmp/go-licenses/go-licenses.csv

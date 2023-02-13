@@ -9,6 +9,9 @@ set -o pipefail         # Use last non-zero exit code in a pipeline
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 cd "$SCRIPT_DIR"
 
+# go-licenses
+go install github.com/google/go-licenses@latest
+
 # gotestsum
 if ! command -v gotestsum &> /dev/null
 then

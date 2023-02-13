@@ -7,6 +7,11 @@ on:
       - "*"
 
 jobs:
+  check-license:
+    name: "Check licenses"
+    secrets: inherit
+    uses: ./.github/workflows/check-licenses.yml
+
   test-lint:
     name: "Lint"
     secrets: inherit
