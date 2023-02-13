@@ -12,7 +12,7 @@ import (
 
 func RunCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   `run`,
+		Use:   `run [branch/]component/config`,
 		Short: helpmsg.Read(`remote/job/run/short`),
 		Long:  helpmsg.Read(`remote/job/run/long`),
 		Args:  cobra.MinimumNArgs(1),

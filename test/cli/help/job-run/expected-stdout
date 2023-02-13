@@ -1,7 +1,12 @@
-Run a job.
+Run one or multiple jobs.
 
 Usage:
-  kbc remote job run [flags]
+  kbc remote job run [branch/]component/config [flags]
+
+Flags:
+      --async                     do not wait for job to finish
+  -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
+      --timeout string            how long to wait for job to finish (default "2m")
 
 Global Flags:
   -h, --help                       print help for command

@@ -1,1 +1,1 @@
-Run a job.
+Run one or multiple jobs.
