@@ -4,14 +4,12 @@ import (
 	"compress/gzip"
 	"context"
 	"io"
-	"net/http"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
-	testproject2 "github.com/keboola/go-utils/pkg/testproject"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
@@ -48,19 +46,21 @@ func TestSliceUploadTask(t *testing.T) {
 		dependencies.WithTestProject(project),
 	}
 
-	// Create file
-	file, err := project.KeboolaProjectAPI().CreateFileResourceRequest("slice-upload-task-test", keboola.WithIsSliced(true)).Send(ctx)
+	// Create file, download credentials are used to verify file content
+	uploadCredentials, err := project.KeboolaProjectAPI().CreateFileResourceRequest("slice-upload-task-test", keboola.WithIsSliced(true)).Send(ctx)
 	if err != nil {
 		assert.Fail(t, err.Error())
 	}
+	downloadCredentials, err := project.KeboolaProjectAPI().GetFileWithCredentialsRequest(uploadCredentials.ID).Send(ctx)
+	assert.NoError(t, err)
 
 	// Create receivers, exports and records
 	apiDeps1 := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("api-node-1"))...)
 	apiDeps2 := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("api-node-2"))...)
 	str := apiDeps1.Store()
-	emptySliceKey := createExport(t, "my-receiver-1", "my-export-1", ctx, clk, client, str, file)
+	emptySliceKey := createExport(t, "my-receiver-1", "my-export-1", ctx, clk, client, str, uploadCredentials)
 	clk.Add(time.Minute)
-	slice1Key := createExport(t, "my-receiver-2", "my-export-2", ctx, clk, client, str, file)
+	slice1Key := createExport(t, "my-receiver-2", "my-export-2", ctx, clk, client, str, uploadCredentials)
 	clk.Add(time.Minute)
 	createRecords(t, ctx, clk, apiDeps1, slice1Key.ReceiverKey, 1, 3)
 	createRecords(t, ctx, clk, apiDeps2, slice1Key.ReceiverKey, 4, 4)
@@ -117,7 +117,7 @@ func TestSliceUploadTask(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond)
 
 	// Check content of the uploaded slice
-	AssertUploadedSlice(t, ctx, file, slice1, project, strings.TrimLeft(`
+	AssertUploadedSlice(t, ctx, downloadCredentials, slice1, strings.TrimLeft(`
 1,0001-01-01T00:02:02.000Z,1.2.3.4,"{""key"":""value001""}","{""Content-Type"":""application/json""}","""---value001---"""
 2,0001-01-01T00:02:03.000Z,1.2.3.4,"{""key"":""value002""}","{""Content-Type"":""application/json""}","""---value002---"""
 3,0001-01-01T00:02:04.000Z,1.2.3.4,"{""key"":""value003""}","{""Content-Type"":""application/json""}","""---value003---"""
@@ -128,7 +128,7 @@ func TestSliceUploadTask(t *testing.T) {
 `, "\n"))
 
 	// Check content of the uploaded manifest
-	AssertUploadedManifest(t, ctx, file, `
+	AssertUploadedManifest(t, ctx, downloadCredentials, `
 {"entries":[{"url":"%s00010101000101.gz"}]}
 `)
 
@@ -148,14 +148,14 @@ func TestSliceUploadTask(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond)
 
 	// Check content of the uploaded slice
-	AssertUploadedSlice(t, ctx, file, slice2, project, strings.TrimLeft(`
-8,0001-01-01T00:03:29.000Z,1.2.3.4,"{""key"":""value008""}","{""Content-Type"":""application/json""}","""---value008---"""
-9,0001-01-01T00:03:30.000Z,1.2.3.4,"{""key"":""value009""}","{""Content-Type"":""application/json""}","""---value009---"""
+	AssertUploadedSlice(t, ctx, downloadCredentials, slice2, strings.TrimLeft(`
+8,0001-01-01T00:06:29.000Z,1.2.3.4,"{""key"":""value008""}","{""Content-Type"":""application/json""}","""---value008---"""
+9,0001-01-01T00:06:30.000Z,1.2.3.4,"{""key"":""value009""}","{""Content-Type"":""application/json""}","""---value009---"""
 10,0001-01-01T00:06:31.000Z,1.2.3.4,"{""key"":""value010""}","{""Content-Type"":""application/json""}","""---value010---"""
 `, "\n"))
 
 	// Check content of the uploaded manifest
-	AssertUploadedManifest(t, ctx, file, `
+	AssertUploadedManifest(t, ctx, downloadCredentials, `
 {"entries":[{"url":"%s.gz"},{"url":"%s.gz"}]}
 `)
 
@@ -617,8 +617,8 @@ task/00000123/my-receiver-1/slice.close/%s
   "projectId": 123,
   "receiverId": "my-receiver-1",
   "type": "slice.close",
+  "taskId": "%s",
   "createdAt": "%s",
-  "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
   "lock": "slice.close/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
@@ -634,8 +634,8 @@ task/00000123/my-receiver-1/slice.upload/%s
   "projectId": 123,
   "receiverId": "my-receiver-1",
   "type": "slice.upload",
+  "taskId": "%s",
   "createdAt": "%s",
-  "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
   "lock": "slice.upload/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
@@ -651,8 +651,8 @@ task/00000123/my-receiver-2/slice.close/%s
   "projectId": 123,
   "receiverId": "my-receiver-2",
   "type": "slice.close",
+  "taskId": "%s",
   "createdAt": "%s",
-  "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
   "lock": "slice.close/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z",
@@ -668,8 +668,8 @@ task/00000123/my-receiver-2/slice.close/%s
   "projectId": 123,
   "receiverId": "my-receiver-2",
   "type": "slice.close",
+  "taskId": "%s",
   "createdAt": "%s",
-  "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
   "lock": "slice.close/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:04:28.000Z",
@@ -685,8 +685,8 @@ task/00000123/my-receiver-2/slice.upload/%s
   "projectId": 123,
   "receiverId": "my-receiver-2",
   "type": "slice.upload",
+  "taskId": "%s",
   "createdAt": "%s",
-  "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
   "lock": "slice.upload/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z",
@@ -702,8 +702,8 @@ task/00000123/my-receiver-2/slice.upload/%s
   "projectId": 123,
   "receiverId": "my-receiver-2",
   "type": "slice.upload",
+  "taskId": "%s",
   "createdAt": "%s",
-  "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
   "lock": "slice.upload/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:04:28.000Z",
@@ -714,50 +714,32 @@ task/00000123/my-receiver-2/slice.upload/%s
 `)
 }
 
-func AssertUploadedSlice(t *testing.T, ctx context.Context, file *keboola.File, slice model.Slice, project *testproject.Project, expected string) {
+func AssertUploadedSlice(t *testing.T, ctx context.Context, file *keboola.FileDownloadCredentials, slice model.Slice, expected string) {
 	t.Helper()
 
-	// There is currently no way to load a slice from Keboola S3, neither via HTTP nor the S3 client:
-	// https://github.com/keboola/go-client/pull/65
-	if project.StagingStorage() == testproject2.StagingStorageS3 {
-		t.Logf(`skipped AssertUploadedSlice, it is not possible to download a slice from S3, insufficient permissions`)
-		return
-	}
-
-	// Get file content
-	sliceURL := strings.ReplaceAll(file.URL, file.Name+"manifest", file.Name+slice.Filename())
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sliceURL, nil)
-	assert.NoError(t, err)
-	resp, err := http.DefaultClient.Do(req)
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-
 	// Read file content
-	gz, err := gzip.NewReader(resp.Body)
+	r, err := keboola.DownloadSliceReader(ctx, file, slice.Filename())
+	assert.NoError(t, err)
+	gz, err := gzip.NewReader(r)
 	assert.NoError(t, err)
 	data, err := io.ReadAll(gz)
-	assert.NoError(t, resp.Body.Close())
-	assert.NoError(t, gz.Close())
 	assert.NoError(t, err)
+	assert.NoError(t, r.Close())
+	assert.NoError(t, gz.Close())
 
 	// Compare
 	assert.Equal(t, expected, string(data))
 }
 
-func AssertUploadedManifest(t *testing.T, ctx context.Context, file *keboola.File, expected string) {
+func AssertUploadedManifest(t *testing.T, ctx context.Context, file *keboola.FileDownloadCredentials, expected string) {
 	t.Helper()
 
-	// Get file content
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, file.URL, nil)
-	assert.NoError(t, err)
-	resp, err := http.DefaultClient.Do(req)
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-
 	// Read file content
-	data, err := io.ReadAll(resp.Body)
+	r, err := keboola.DownloadSliceReader(ctx, file, keboola.ManifestFileName)
 	assert.NoError(t, err)
-	assert.NoError(t, resp.Body.Close())
+	data, err := io.ReadAll(r)
+	assert.NoError(t, err)
+	assert.NoError(t, r.Close())
 
 	// Compare
 	wildcards.Assert(t, expected, string(data))

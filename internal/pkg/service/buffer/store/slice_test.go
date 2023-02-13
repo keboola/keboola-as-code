@@ -189,9 +189,9 @@ func TestStore_ListUploadedSlices(t *testing.T) {
 			column.Body{Name: "body"},
 		},
 	}
-	slice1 := model.NewSlice(fileKey, time2, mapping, 1, &keboola.File{})
+	slice1 := model.NewSlice(fileKey, time2, mapping, 1, &keboola.FileUploadCredentials{})
 	slice1.State = slicestate.Uploaded
-	slice2 := model.NewSlice(fileKey, time3, mapping, 2, &keboola.File{})
+	slice2 := model.NewSlice(fileKey, time3, mapping, 2, &keboola.FileUploadCredentials{})
 	slice2.State = slicestate.Uploaded
 	input := []model.Slice{slice1, slice2}
 
@@ -294,5 +294,5 @@ func sliceForTest() model.Slice {
 			column.Body{Name: "body"},
 		},
 	}
-	return model.NewSlice(fileKey, time2, mapping, 1, &keboola.File{})
+	return model.NewSlice(fileKey, time2, mapping, 1, &keboola.FileUploadCredentials{})
 }

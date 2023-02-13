@@ -273,8 +273,8 @@ task/00000123/my-receiver-A/file.swap/%s
   "projectId": 123,
   "receiverId": "my-receiver-A",
   "type": "file.swap",
+  "taskId": "%s",
   "createdAt": "%s",
-  "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node-2",
   "lock": "file.swap/00000123/my-receiver-A/my-export-1/%s",
@@ -290,8 +290,8 @@ task/00000123/my-receiver-A/slice.swap/%s
   "projectId": 123,
   "receiverId": "my-receiver-A",
   "type": "slice.swap",
+  "taskId": "%s",
   "createdAt": "%s",
-  "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node-2",
   "lock": "slice.swap/00000123/my-receiver-A/my-export-1/%s",
@@ -307,8 +307,8 @@ task/00000123/my-receiver-B/slice.swap/%s
   "projectId": 123,
   "receiverId": "my-receiver-B",
   "type": "slice.swap",
+  "taskId": "%s",
   "createdAt": "%s",
-  "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node-1",
   "lock": "slice.swap/00000123/my-receiver-B/my-export-2/%s",
@@ -320,7 +320,7 @@ task/00000123/my-receiver-B/slice.swap/%s
 }
 
 // createExport creates receiver,export,mapping,file and slice.
-func createExport2(t *testing.T, receiverID, exportID string, ctx context.Context, clk clock.Clock, client *etcd.Client, str *store.Store, fileRes *keboola.File, importConditions model.Conditions, token string) key.SliceKey {
+func createExport2(t *testing.T, receiverID, exportID string, ctx context.Context, clk clock.Clock, client *etcd.Client, str *store.Store, fileRes *keboola.FileUploadCredentials, importConditions model.Conditions, token string) key.SliceKey {
 	t.Helper()
 	receiver := model.ReceiverForTest(receiverID, 0, clk.Now())
 	columns := []column.Column{

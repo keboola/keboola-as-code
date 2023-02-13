@@ -190,13 +190,13 @@ func updateExport(t *testing.T, ctx context.Context, client *etcd.Client, str *s
 				FileKey:         fileKey2,
 				State:           filestate.Opened,
 				Mapping:         newMapping,
-				StorageResource: &keboola.File{},
+				StorageResource: &keboola.FileUploadCredentials{},
 			}
 			export.OpenedSlice = model.Slice{
 				SliceKey:        sliceKey2,
 				State:           slicestate.Writing,
 				Mapping:         newMapping,
-				StorageResource: &keboola.File{},
+				StorageResource: &keboola.FileUploadCredentials{},
 				Number:          1,
 			}
 			return export, nil

@@ -96,7 +96,7 @@ func (m *Manager) UploadSlice(ctx context.Context, s *model.Slice, recordsReader
 	return err
 }
 
-func (m *Manager) UploadManifest(ctx context.Context, resource *keboola.File, slices []model.Slice) error {
+func (m *Manager) UploadManifest(ctx context.Context, resource *keboola.FileUploadCredentials, slices []model.Slice) error {
 	sliceFiles := make([]string, 0)
 	for _, s := range slices {
 		sliceFiles = append(sliceFiles, s.Filename())

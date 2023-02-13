@@ -63,13 +63,13 @@ func ExportForTest(receiverKey key.ReceiverKey, exportID, tableID string, column
 			FileKey:         fileKey,
 			State:           filestate.Opened,
 			Mapping:         mapping,
-			StorageResource: &keboola.File{},
+			StorageResource: &keboola.FileUploadCredentials{},
 		},
 		OpenedSlice: Slice{
 			SliceKey:        sliceKey,
 			State:           slicestate.Writing,
 			Mapping:         mapping,
-			StorageResource: &keboola.File{},
+			StorageResource: &keboola.FileUploadCredentials{},
 			Number:          1,
 		},
 	}

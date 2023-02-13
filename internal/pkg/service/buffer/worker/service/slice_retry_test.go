@@ -53,12 +53,14 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	}
 
 	// Create file
-	file := &keboola.File{
-		Name:           "slice-upload-task-test",
-		IsSliced:       true,
-		Provider:       s3.Provider,
-		Region:         "us‑east‑2",
-		S3UploadParams: &s3.UploadParams{Key: "foo", Bucket: "bar"},
+	file := &keboola.FileUploadCredentials{
+		File: keboola.File{
+			Name:     "slice-upload-task-test",
+			IsSliced: true,
+			Provider: s3.Provider,
+			Region:   "us‑east‑2",
+		},
+		S3UploadParams: &s3.UploadParams{Path: s3.Path{Key: "foo", Bucket: "bar"}},
 	}
 
 	// Create receivers, exports and records
@@ -259,8 +261,8 @@ task/00000123/my-receiver-1/slice.close/%s
   "projectId": 123,
   "receiverId": "my-receiver-1",
   "type": "slice.close",
+  "taskId": "%s",
   "createdAt": "%s",
-  "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
   "lock": "slice.close/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
@@ -276,8 +278,8 @@ task/00000123/my-receiver-1/slice.retry.check/%s
   "projectId": 123,
   "receiverId": "my-receiver-1",
   "type": "slice.retry.check",
+  "taskId": "%s",
   "createdAt": "%s",
-  "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
   "lock": "slice.retry.check/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
@@ -293,8 +295,8 @@ task/00000123/my-receiver-1/slice.upload/%s
   "projectId": 123,
   "receiverId": "my-receiver-1",
   "type": "slice.upload",
+  "taskId": "%s",
   "createdAt": "%s",
-  "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
   "lock": "slice.upload/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
@@ -310,8 +312,8 @@ task/00000123/my-receiver-1/slice.upload/%s
   "projectId": 123,
   "receiverId": "my-receiver-1",
   "type": "slice.upload",
+  "taskId": "%s",
   "createdAt": "%s",
-  "randomId": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
   "lock": "slice.upload/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z",
