@@ -1,7 +1,13 @@
-Run one or multiple jobs.
+Command "remote job run"
+
+Run one or multiple jobs. The command will wait until all of
+the jobs are done, regardless of whether or not they are successful.
+Jobs may be run asynchronously, in which case the command will only
+wait until all the jobs have been started.
+Terminating the command early does not cause the jobs to stop.
 
 Usage:
-  kbc remote job run [branch/]component/config [flags]
+  kbc remote job run [branch1/]component1/config1 [branch2/]component2/config2 ... [flags]
 
 Flags:
       --async                     do not wait for job to finish

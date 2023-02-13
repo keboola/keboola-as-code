@@ -1,4 +1,4 @@
-Manage jobs in your project.
+Commands from the "job" context can be used to manage jobs in the project.
 
 Usage:
   kbc remote job [command]
