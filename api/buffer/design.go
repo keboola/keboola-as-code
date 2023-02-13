@@ -558,12 +558,12 @@ var Task = Type("Task", func() {
 	Attribute("createdAt", String, func() {
 		Description("Date and time of the task creation.")
 		Format(FormatDateTime)
-		Example("2022-04-28T14:20:04+00:00")
+		Example("2022-04-28T14:20:04.000Z")
 	})
 	Attribute("finishedAt", String, func() {
 		Description("Date and time of the task end.")
 		Format(FormatDateTime)
-		Example("2022-04-28T14:20:04+00:00")
+		Example("2022-04-28T14:20:04.000Z")
 	})
 	Attribute("isFinished", Boolean)
 	Attribute("duration", Int64, func() {
@@ -572,7 +572,7 @@ var Task = Type("Task", func() {
 	})
 	Attribute("result", String)
 	Attribute("error", String)
-	Required("id", "receiverId", "url", "type", "createdAt", "finishedAt", "isFinished", "duration", "result", "error")
+	Required("id", "receiverId", "url", "type", "createdAt", "isFinished", "duration", "result")
 	Example(ExampleTask())
 })
 

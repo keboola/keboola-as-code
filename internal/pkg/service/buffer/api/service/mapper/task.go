@@ -16,10 +16,10 @@ func (m Mapper) TaskPayload(model *model.Task) (r *buffer.Task) {
 		URL:        formatTaskURL(m.bufferAPIHost, model.TaskKey),
 		Type:       model.Type,
 		CreatedAt:  model.CreatedAt.String(),
-		FinishedAt: finishedAt,
+		FinishedAt: &finishedAt,
 		Duration:   model.Duration.Milliseconds(),
 		IsFinished: model.IsFinished(),
 		Result:     model.Result,
-		Error:      model.Error,
+		Error:      &model.Error,
 	}
 }
