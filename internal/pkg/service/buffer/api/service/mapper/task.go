@@ -10,6 +10,10 @@ func (m Mapper) TaskPayload(model *model.Task) (r *buffer.Task) {
 	if model.FinishedAt != nil {
 		finishedAt = model.FinishedAt.String()
 	}
+	var durationMs int64 = 0
+	if model.Duration != nil {
+		durationMs = model.Duration.Milliseconds()
+	}
 	return &buffer.Task{
 		ID:         model.TaskID,
 		ReceiverID: model.ReceiverID,
@@ -17,7 +21,7 @@ func (m Mapper) TaskPayload(model *model.Task) (r *buffer.Task) {
 		Type:       model.Type,
 		CreatedAt:  model.CreatedAt.String(),
 		FinishedAt: &finishedAt,
-		Duration:   model.Duration.Milliseconds(),
+		Duration:   durationMs,
 		IsFinished: model.IsFinished(),
 		Result:     model.Result,
 		Error:      &model.Error,
