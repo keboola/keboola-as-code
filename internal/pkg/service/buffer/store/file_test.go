@@ -176,7 +176,7 @@ func TestStore_ListFilesInStateWithEnd(t *testing.T) {
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
 	mapping := mappingForTest(exportKey)
-	resource := &keboola.File{ID: 1, Name: "file1"}
+	resource := &keboola.FileUploadCredentials{File: keboola.File{ID: 1, Name: "file1"}}
 	now := time.Now()
 
 	// Create a file before the boundary time in the right state - will be listed
@@ -220,7 +220,7 @@ func newFileForTest() model.File {
 	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
 	now, _ := time.Parse(time.RFC3339, "2006-01-01T08:04:05.000Z")
 	mapping := mappingForTest(exportKey)
-	resource := &keboola.File{ID: 1, Name: "file1"}
+	resource := &keboola.FileUploadCredentials{File: keboola.File{ID: 1, Name: "file1"}}
 	return model.NewFile(exportKey, now, mapping, resource)
 }
 

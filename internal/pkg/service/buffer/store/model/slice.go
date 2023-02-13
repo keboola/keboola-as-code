@@ -19,18 +19,18 @@ const (
 // A change in the mapping causes a new file and slice to be created so the mapping is immutable.
 type Slice struct {
 	key.SliceKey
-	State           slicestate.State `json:"state" validate:"required,oneof=active/opened/writing active/opened/closing active/closed/uploading active/closed/uploaded active/closed/failed archived/successful/imported"`
-	Mapping         Mapping          `json:"mapping" validate:"required,dive"`
-	StorageResource *keboola.File    `json:"storageResource" validate:"required"`
-	Number          int              `json:"sliceNumber" validate:"required"`
-	ClosingAt       *UTCTime         `json:"closingAt,omitempty"`
-	UploadingAt     *UTCTime         `json:"uploadingAt,omitempty"`
-	UploadedAt      *UTCTime         `json:"uploadedAt,omitempty"`
-	FailedAt        *UTCTime         `json:"failedAt,omitempty"`
-	ImportedAt      *UTCTime         `json:"importedAt,omitempty"`
-	LastError       string           `json:"lastError,omitempty"`
-	RetryAttempt    int              `json:"retryAttempt,omitempty"`
-	RetryAfter      *UTCTime         `json:"retryAfter,omitempty"`
+	State           slicestate.State               `json:"state" validate:"required,oneof=active/opened/writing active/opened/closing active/closed/uploading active/closed/uploaded active/closed/failed archived/successful/imported"`
+	Mapping         Mapping                        `json:"mapping" validate:"required,dive"`
+	StorageResource *keboola.FileUploadCredentials `json:"storageResource" validate:"required"`
+	Number          int                            `json:"sliceNumber" validate:"required"`
+	ClosingAt       *UTCTime                       `json:"closingAt,omitempty"`
+	UploadingAt     *UTCTime                       `json:"uploadingAt,omitempty"`
+	UploadedAt      *UTCTime                       `json:"uploadedAt,omitempty"`
+	FailedAt        *UTCTime                       `json:"failedAt,omitempty"`
+	ImportedAt      *UTCTime                       `json:"importedAt,omitempty"`
+	LastError       string                         `json:"lastError,omitempty"`
+	RetryAttempt    int                            `json:"retryAttempt,omitempty"`
+	RetryAfter      *UTCTime                       `json:"retryAfter,omitempty"`
 	// Statistics are set by the "slice close" operation, the value is nil, if there is no record.
 	Statistics *Stats `json:"statistics,omitempty"`
 	IsEmpty    bool   `json:"isEmpty,omitempty"`
@@ -43,7 +43,7 @@ type SliceIDRange struct {
 	Count uint64 `json:"count" validate:"required"`
 }
 
-func NewSlice(fileKey key.FileKey, now time.Time, mapping Mapping, number int, resource *keboola.File) Slice {
+func NewSlice(fileKey key.FileKey, now time.Time, mapping Mapping, number int, resource *keboola.FileUploadCredentials) Slice {
 	return Slice{
 		SliceKey:        key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(now)},
 		State:           slicestate.Writing,

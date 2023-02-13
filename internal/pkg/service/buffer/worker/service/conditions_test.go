@@ -320,7 +320,7 @@ task/00000123/my-receiver-B/slice.swap/%s
 }
 
 // createExport creates receiver,export,mapping,file and slice.
-func createExport2(t *testing.T, receiverID, exportID string, ctx context.Context, clk clock.Clock, client *etcd.Client, str *store.Store, fileRes *keboola.File, importConditions model.Conditions, token string) key.SliceKey {
+func createExport2(t *testing.T, receiverID, exportID string, ctx context.Context, clk clock.Clock, client *etcd.Client, str *store.Store, fileRes *keboola.FileUploadCredentials, importConditions model.Conditions, token string) key.SliceKey {
 	t.Helper()
 	receiver := model.ReceiverForTest(receiverID, 0, clk.Now())
 	columns := []column.Column{

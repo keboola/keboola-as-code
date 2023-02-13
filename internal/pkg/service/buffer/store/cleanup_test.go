@@ -115,7 +115,7 @@ func TestStore_Cleanup(t *testing.T) {
 			Incremental: false,
 			Columns:     []column.Column{column.ID{Name: "id", PrimaryKey: false}},
 		},
-		StorageResource: &keboola.File{ID: 123, Name: "file1.csv"},
+		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
 	err = store.schema.Files().InState(filestate.Opened).ByKey(fileKey1).Put(file1).Do(ctx, store.client)
 	assert.NoError(t, err)
@@ -131,7 +131,7 @@ func TestStore_Cleanup(t *testing.T) {
 			Incremental: false,
 			Columns:     []column.Column{column.ID{Name: "id", PrimaryKey: false}},
 		},
-		StorageResource: &keboola.File{ID: 123, Name: "file1.csv"},
+		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
 	err = store.schema.Files().InState(filestate.Opened).ByKey(fileKey2).Put(file2).Do(ctx, store.client)
 	assert.NoError(t, err)
@@ -148,7 +148,7 @@ func TestStore_Cleanup(t *testing.T) {
 			Incremental: false,
 			Columns:     []column.Column{column.ID{Name: "id", PrimaryKey: false}},
 		},
-		StorageResource: &keboola.File{ID: 123, Name: "file1.csv"},
+		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
 	err = store.schema.Slices().InState(slicestate.Imported).ByKey(sliceKey1).Put(slice1).Do(ctx, store.client)
 	assert.NoError(t, err)
@@ -165,7 +165,7 @@ func TestStore_Cleanup(t *testing.T) {
 			Incremental: false,
 			Columns:     []column.Column{column.ID{Name: "id", PrimaryKey: false}},
 		},
-		StorageResource: &keboola.File{ID: 123, Name: "file1.csv"},
+		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
 	err = store.schema.Slices().InState(slicestate.Imported).ByKey(sliceKey2).Put(slice2).Do(ctx, store.client)
 	assert.NoError(t, err)

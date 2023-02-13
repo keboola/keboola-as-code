@@ -53,12 +53,14 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	}
 
 	// Create file
-	file := &keboola.File{
-		Name:           "slice-upload-task-test",
-		IsSliced:       true,
-		Provider:       s3.Provider,
-		Region:         "us‑east‑2",
-		S3UploadParams: &s3.UploadParams{Key: "foo", Bucket: "bar"},
+	file := &keboola.FileUploadCredentials{
+		File: keboola.File{
+			Name:     "slice-upload-task-test",
+			IsSliced: true,
+			Provider: s3.Provider,
+			Region:   "us‑east‑2",
+		},
+		S3UploadParams: &s3.UploadParams{Path: s3.Path{Key: "foo", Bucket: "bar"}},
 	}
 
 	// Create receivers, exports and records

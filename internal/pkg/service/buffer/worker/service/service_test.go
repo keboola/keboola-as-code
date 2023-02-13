@@ -26,7 +26,7 @@ import (
 const receiverSecret = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
 // createExport creates receiver,export,mapping,file and slice.
-func createExport(t *testing.T, receiverID, exportID string, ctx context.Context, clk clock.Clock, client *etcd.Client, str *store.Store, fileRes *keboola.File) key.SliceKey {
+func createExport(t *testing.T, receiverID, exportID string, ctx context.Context, clk clock.Clock, client *etcd.Client, str *store.Store, fileRes *keboola.FileUploadCredentials) key.SliceKey {
 	t.Helper()
 	receiver := model.ReceiverForTest(receiverID, 0, clk.Now())
 	columns := []column.Column{
