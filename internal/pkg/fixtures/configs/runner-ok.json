@@ -1,0 +1,12 @@
+{
+  "componentId": "keboola.runner-config-test",
+  "name": "Runner Ok",
+  "configuration": {
+    "parameters": {
+      "operation": "sleep",
+      "timeout": 6
+    }
+  },
+  "rows": null
+}
+

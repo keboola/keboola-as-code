@@ -1,0 +1,11 @@
+{
+  "componentId": "keboola.runner-config-test",
+  "name": "Runner Fail",
+  "configuration": {
+    "parameters": {
+      "operation": "user-error"
+    }
+  },
+  "rows": null
+}
+
