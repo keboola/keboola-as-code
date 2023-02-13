@@ -144,12 +144,14 @@ func (o *RunJob) Run(ctx context.Context, api *keboola.API) error {
 			}
 		}
 	} else {
+		// nolint: staticcheck
 		job, err := api.CreateOldQueueJobRequest(o.ComponentID, o.ConfigID, keboola.WithBranchID(o.BranchID)).Send(ctx)
 		if err != nil {
 			return err
 		}
 
 		if !o.Async {
+			// nolint: staticcheck
 			err = api.WaitForOldQueueJob(ctx, job.ID)
 			if err != nil {
 				return err
