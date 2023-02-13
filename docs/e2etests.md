@@ -66,6 +66,7 @@ Contain a snapshot of a project before or after the operations run in the test.
 - `buckets` - List of all buckets and their tables in the project.
 - `sandboxes` - List of all workspaces.
 - `schedules` - List of all schedules.
+- `branches/.../configs` - List of all configs (by name) available in a branch. They are created from fixtures defined in [internal/pkg/fixtures/configs](https://github.com/keboola/keboola-as-code/tree/main/internal/pkg/fixtures/configs).
 
 Example:
 
