@@ -1,2 +1,3 @@
 Some jobs failed, see below.
-Error: Job "%s" failed: This is a user error.
+Error:
+- Job "%s/keboola.runner-config-test/%s" failed: job "%s" failed: This is a user error.
