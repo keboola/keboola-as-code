@@ -8,17 +8,24 @@ import (
 func (m Mapper) TaskPayload(model *model.Task) (r *buffer.Task) {
 	var finishedAtPtr *string
 	if model.FinishedAt != nil {
-		finishedAtStr := model.FinishedAt.String()
-		finishedAtPtr = &finishedAtStr
+		v := model.FinishedAt.String()
+		finishedAtPtr = &v
 	}
-	var durationMs int64 = 0
+
+	var resultPtr *string
+	var errorPtr *string
+	if model.Error == "" {
+		resultPtr = &model.Result
+	} else {
+		errorPtr = &model.Error
+	}
+
+	var durationMsPtr *int64
 	if model.Duration != nil {
-		durationMs = model.Duration.Milliseconds()
+		v := model.Duration.Milliseconds()
+		durationMsPtr = &v
 	}
-	var errPtr *string
-	if model.Error != "" {
-		errPtr = &model.Error
-	}
+
 	return &buffer.Task{
 		ID:         model.TaskID,
 		ReceiverID: model.ReceiverID,
@@ -26,9 +33,9 @@ func (m Mapper) TaskPayload(model *model.Task) (r *buffer.Task) {
 		Type:       model.Type,
 		CreatedAt:  model.CreatedAt.String(),
 		FinishedAt: finishedAtPtr,
-		Duration:   durationMs,
+		Duration:   durationMsPtr,
 		IsFinished: model.IsFinished(),
-		Result:     model.Result,
-		Error:      errPtr,
+		Result:     resultPtr,
+		Error:      errorPtr,
 	}
 }
