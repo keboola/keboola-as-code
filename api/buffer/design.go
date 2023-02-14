@@ -298,6 +298,19 @@ var _ = Service("buffer", func() {
 			PayloadTooLargeError()
 		})
 	})
+
+	Method("GetTask", func() {
+		Meta("openapi:summary", "Get task")
+		Description("Get details of a task.")
+		Result(Task)
+		Payload(GetTaskRequest)
+		HTTP(func() {
+			GET("/receivers/{receiverId}/tasks/{type}/{taskId}")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			TaskNotFoundError()
+		})
+	})
 })
 
 // Common attributes
@@ -526,6 +539,50 @@ var ImportConditions = Type("Conditions", func() {
 	Example(ExampleConditions())
 })
 
+// Task --------------------------------------------------------------------------------------------------------------
+
+var TaskID = Type("TaskID", String, func() {
+	Meta("struct:field:type", "= key.TaskID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key")
+	Description("Unique ID of the task.")
+	Example("task_1234")
+})
+
+var Task = Type("Task", func() {
+	Description("An asynchronous task.")
+	Attribute("id", TaskID)
+	Attribute("receiverId", ReceiverID)
+	Attribute("url", String, func() {
+		Description("URL of the task.")
+	})
+	Attribute("type", String)
+	Attribute("createdAt", String, func() {
+		Description("Date and time of the task creation.")
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("finishedAt", String, func() {
+		Description("Date and time of the task end.")
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("isFinished", Boolean)
+	Attribute("duration", Int64, func() {
+		Description("Duration of the task in milliseconds.")
+		Example(123456789)
+	})
+	Attribute("result", String)
+	Attribute("error", String)
+	Required("id", "receiverId", "url", "type", "createdAt", "isFinished")
+	Example(ExampleTask())
+})
+
+var GetTaskRequest = Type("GetTaskRequest", func() {
+	Attribute("receiverId", ReceiverID)
+	Attribute("type", String)
+	Attribute("taskId", TaskID)
+	Required("receiverId", "type", "taskId")
+})
+
 // Errors ------------------------------------------------------------------------------------------------------------
 
 var GenericErrorType = Type("GenericError", func() {
@@ -586,6 +643,10 @@ func ResourceCountLimitReachedError() {
 	GenericError(StatusUnprocessableEntity, "buffer.resourceLimitReached", "Resource limit reached.", `Maximum number of receivers per project is 100.`)
 }
 
+func TaskNotFoundError() {
+	GenericError(StatusNotFound, "buffer.taskNotFound", "Task not found error.", `Task "001" not found.`)
+}
+
 // Examples ------------------------------------------------------------------------------------------------------------
 
 type ExampleErrorDef struct {
@@ -638,6 +699,19 @@ type ExampleConditionsDef struct {
 	Count int    `json:"count" yaml:"count"`
 	Size  string `json:"size" yaml:"size"`
 	Time  string `json:"time" yaml:"time"`
+}
+
+type ExampleTaskDef struct {
+	ID         string `json:"id" yaml:"id"`
+	ReceiverID string `json:"receiverId" yaml:"receiverId"`
+	URL        string `json:"url" yaml:"url"`
+	Type       string `json:"type" yaml:"type"`
+	CreatedAt  string `json:"createdAt" yaml:"createdAt"`
+	FinishedAt string `json:"finishedAt" yaml:"finishedAt"`
+	IsFinished bool   `json:"isFinished" yaml:"isFinished"`
+	Duration   int    `json:"duration" yaml:"duration"`
+	Result     string `json:"result" yaml:"result"`
+	Error      string `json:"error" yaml:"error"`
 }
 
 func ExampleReceiver() ExampleReceiverDef {
@@ -729,5 +803,20 @@ func ExampleColumnTypeTemplate() ExampleColumnDef {
 		Type:     "template",
 		Name:     "column6",
 		Template: ExampleTemplate(),
+	}
+}
+
+func ExampleTask() ExampleTaskDef {
+	return ExampleTaskDef{
+		ID:         "task-1",
+		ReceiverID: "receiver-1",
+		URL:        "https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_task-1",
+		Type:       "export",
+		CreatedAt:  "2018-01-01T00:00:00.000Z",
+		FinishedAt: "2018-01-01T00:00:00.000Z",
+		IsFinished: true,
+		Duration:   123,
+		Result:     "success",
+		Error:      "",
 	}
 }

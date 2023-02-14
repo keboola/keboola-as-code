@@ -1,0 +1,10 @@
+{
+  "id": "2023-02-01T08:02:06.000Z_ghijkl",
+  "receiverId": "my-receiver",
+  "url": "https://%s/v1/receivers/my-receiver/tasks/receiver.create/2023-02-01T08:02:06.000Z_ghijkl",
+  "type": "receiver.create",
+  "createdAt": "2023-02-01T08:02:06.000Z",
+  "isFinished": false,
+  "duration": 0,
+  "result": "receiver created"
+}
