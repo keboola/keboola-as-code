@@ -572,7 +572,7 @@ var Task = Type("Task", func() {
 	})
 	Attribute("result", String)
 	Attribute("error", String)
-	Required("id", "receiverId", "url", "type", "createdAt", "isFinished", "duration", "result")
+	Required("id", "receiverId", "url", "type", "createdAt", "isFinished")
 	Example(ExampleTask())
 })
 
