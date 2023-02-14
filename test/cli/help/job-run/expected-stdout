@@ -1,0 +1,23 @@
+Command "remote job run"
+
+Run one or multiple jobs. The command will wait until all of
+the jobs are done, regardless of whether or not they are successful.
+Jobs may be run asynchronously, in which case the command will only
+wait until all the jobs have been started.
+Terminating the command early does not cause the jobs to stop.
+
+Usage:
+  kbc remote job run [branch1/]component1/config1 [branch2/]component2/config2 ... [flags]
+
+Flags:
+      --async                     do not wait for job to finish
+  -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
+      --timeout string            how long to wait for job to finish (default "2m")
+
+Global Flags:
+  -h, --help                       print help for command
+  -l, --log-file string            path to a log file for details
+  -t, --storage-api-token string   storage API token from your project
+  -v, --verbose                    print details
+      --verbose-api                log each API request and response
+  -d, --working-dir string         use other working directory
