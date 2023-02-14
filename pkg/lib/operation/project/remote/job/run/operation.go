@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -22,7 +23,7 @@ type dependencies interface {
 }
 
 type RunOptions struct {
-	Jobs    []Job
+	Jobs    []*Job
 	Async   bool
 	Timeout time.Duration
 }
@@ -31,8 +32,6 @@ func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.job.run")
 	defer telemetry.EndSpan(span, &err)
 
-	logger := d.Logger()
-	api := d.KeboolaProjectAPI()
 	timeoutCtx, cancel := context.WithTimeout(ctx, o.Timeout)
 	defer cancel()
 
@@ -40,7 +39,8 @@ func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
 		async:          o.Async,
 		hasQueueV2:     d.ProjectFeatures().Has("queuev2"),
 		ctx:            timeoutCtx,
-		api:            api,
+		api:            d.KeboolaProjectAPI(),
+		logger:         d.Logger(),
 		wg:             &sync.WaitGroup{},
 		err:            errors.NewMultiError(),
 		remaining:      map[string]bool{},
@@ -49,29 +49,28 @@ func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
 	}
 
 	if len(o.Jobs) > 1 {
-		logger.Infof("Starting %d jobs.", len(o.Jobs))
+		queue.logger.Infof("Starting %d jobs.", len(o.Jobs))
 	} else {
-		logger.Info("Starting job.")
+		queue.logger.Info("Starting job.")
 	}
 
 	// dispatch jobs in parallel
 	for _, job := range o.Jobs {
-		job := job
-		queue.dispatch(&job)
+		queue.dispatch(job)
 	}
 
-	queue.startLogRemaining(logger)
+	queue.startLogRemaining()
 	err = queue.wait()
 	queue.stopLogRemaining()
 
 	if err != nil {
-		logger.Error("Some jobs failed, see below.")
+		queue.logger.Error("Some jobs failed, see below.")
 		return err
 	} else {
 		if !o.Async {
-			logger.Info("Finished running all jobs.")
+			queue.logger.Info("Finished running all jobs.")
 		} else {
-			logger.Info("Started all jobs.")
+			queue.logger.Info("Started all jobs.")
 		}
 		return nil
 	}
@@ -81,8 +80,9 @@ type JobQueue struct {
 	async      bool
 	hasQueueV2 bool
 
-	ctx context.Context
-	api *keboola.API
+	ctx    context.Context
+	api    *keboola.API
+	logger log.Logger
 
 	wg  *sync.WaitGroup
 	err errors.MultiError
@@ -93,7 +93,7 @@ type JobQueue struct {
 	done chan struct{}
 }
 
-func (q *JobQueue) startLogRemaining(logger log.Logger) {
+func (q *JobQueue) startLogRemaining() {
 	go func() {
 		for {
 			select {
@@ -102,7 +102,7 @@ func (q *JobQueue) startLogRemaining(logger log.Logger) {
 			case <-q.done:
 				break
 			case <-time.After(time.Second * 5):
-				logger.Infof("Waiting for %s", strings.Join(q.getRemainingJobs(), ", "))
+				q.logger.Infof("Waiting for %s", strings.Join(q.getRemainingJobs(), ", "))
 			}
 		}
 	}()
@@ -124,20 +124,41 @@ func (q *JobQueue) getRemainingJobs() []string {
 	return remainingJobs
 }
 
+func (q *JobQueue) started(job *Job) {
+	q.logger.Infof("Started job \"%s\" using config \"%s\"", job.id, job.Key())
+
+	q.remainingMutex.Lock()
+	q.remaining[string(job.id)] = true
+	q.remainingMutex.Unlock()
+}
+
+func (q *JobQueue) finished(job *Job) {
+	q.remainingMutex.Lock()
+	q.remaining[string(job.id)] = false
+	q.remainingMutex.Unlock()
+
+	q.logger.Infof("Finished job \"%s\"", job.id)
+}
+
 func (q *JobQueue) dispatch(job *Job) {
-	q.remaining[job.Key] = true
 	q.wg.Add(1)
 
 	go func() {
 		defer q.wg.Done()
 
-		if e := job.Run(q.ctx, q.api, q.async, q.hasQueueV2); e != nil {
-			q.err.Append(e)
+		if err := job.Start(q.ctx, q.api, q.async, q.hasQueueV2); err != nil {
+			q.err.Append(errors.Errorf("job \"%s\" failed to start: %s", job.Key(), err))
+			return
 		}
 
-		q.remainingMutex.Lock()
-		q.remaining[job.Key] = false
-		q.remainingMutex.Unlock()
+		if !q.async {
+			q.started(job)
+			if err := job.Wait(); err != nil {
+				q.err.Append(errors.Errorf("job \"%s\" failed: %s", job.Key(), err))
+			}
+			q.finished(job)
+		}
+
 	}()
 }
 
@@ -147,24 +168,43 @@ func (q *JobQueue) wait() error {
 }
 
 type Job struct {
-	Key         string
 	BranchID    keboola.BranchID
 	ComponentID keboola.ComponentID
 	ConfigID    keboola.ConfigID
+
+	id   keboola.JobID
+	wait func() error
 }
 
-func (o *Job) Run(ctx context.Context, api *keboola.API, async bool, hasQueueV2 bool) error {
+func NewJob(branchID keboola.BranchID, componentID keboola.ComponentID, configID keboola.ConfigID) *Job {
+	return &Job{
+		BranchID:    branchID,
+		ComponentID: componentID,
+		ConfigID:    configID,
+	}
+}
+
+func (o *Job) Key() string {
+	if o.BranchID > 0 {
+		return fmt.Sprintf("%d/%s/%s", o.BranchID, o.ComponentID, o.ConfigID)
+	}
+	return fmt.Sprintf("%s/%s", o.ComponentID, o.ConfigID)
+}
+
+func (o *Job) Start(ctx context.Context, api *keboola.API, async bool, hasQueueV2 bool) error {
 	if hasQueueV2 {
 		job, err := api.CreateQueueJobRequest(o.ComponentID, o.ConfigID).Send(ctx)
 		if err != nil {
 			return err
 		}
 
-		if !async {
-			err = api.WaitForQueueJob(ctx, job)
+		o.id = job.ID
+		o.wait = func() error {
+			err := api.WaitForQueueJob(ctx, job)
 			if err != nil {
 				return err
 			}
+			return nil
 		}
 	} else {
 		// nolint: staticcheck
@@ -173,13 +213,19 @@ func (o *Job) Run(ctx context.Context, api *keboola.API, async bool, hasQueueV2 
 			return err
 		}
 
-		if !async {
+		o.id = job.ID
+		o.wait = func() error {
 			// nolint: staticcheck
-			err = api.WaitForOldQueueJob(ctx, job.ID)
+			err := api.WaitForOldQueueJob(ctx, job.ID)
 			if err != nil {
 				return err
 			}
+			return nil
 		}
 	}
 	return nil
+}
+
+func (o *Job) Wait() error {
+	return o.wait()
 }

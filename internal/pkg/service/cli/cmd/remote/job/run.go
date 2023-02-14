@@ -1,7 +1,6 @@
 package job
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -70,7 +69,6 @@ func parseJobRunOptions(opts *options.Options, args []string) (run.RunOptions, e
 	}
 	o.Timeout = timeout
 
-	jobIndex := map[string]int{}
 	invalidArgs := errors.NewMultiError()
 	for _, arg := range args {
 		// parse [branchID]/componentID/configID
@@ -93,19 +91,7 @@ func parseJobRunOptions(opts *options.Options, args []string) (run.RunOptions, e
 		componentID := keboola.ComponentID(parts[len(parts)-2])
 		configID := keboola.ConfigID(parts[len(parts)-1])
 
-		index, ok := jobIndex[arg]
-		if !ok {
-			jobIndex[arg] = 1
-			index = 0
-		} else {
-			jobIndex[arg] += 1
-		}
-		o.Jobs = append(o.Jobs, run.Job{
-			Key:         arg + fmt.Sprintf(" (%d)", index),
-			BranchID:    branchID,
-			ComponentID: componentID,
-			ConfigID:    configID,
-		})
+		o.Jobs = append(o.Jobs, run.NewJob(branchID, componentID, configID))
 	}
 
 	err = invalidArgs.ErrorOrNil()

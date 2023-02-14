@@ -21,27 +21,23 @@ func TestParseJobRunOptions(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t,
 		run.RunOptions{
-			Jobs: []run.Job{
+			Jobs: []*run.Job{
 				{
-					Key:         "1234/component1/config1 (0)",
 					BranchID:    1234,
 					ComponentID: "component1",
 					ConfigID:    "config1",
 				},
 				{
-					Key:         "1234/component1/config1 (1)",
 					BranchID:    1234,
 					ComponentID: "component1",
 					ConfigID:    "config1",
 				},
 				{
-					Key:         "4321/component2/config2 (0)",
 					BranchID:    4321,
 					ComponentID: "component2",
 					ConfigID:    "config2",
 				},
 				{
-					Key:         "component3/config3 (0)",
 					BranchID:    0,
 					ComponentID: "component3",
 					ConfigID:    "config3",
