@@ -158,7 +158,6 @@ func (q *JobQueue) dispatch(job *Job) {
 			}
 			q.finished(job)
 		}
-
 	}()
 }
 
