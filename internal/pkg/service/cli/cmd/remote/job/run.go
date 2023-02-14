@@ -23,6 +23,17 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/job/run/long`),
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
+			// Parse options
+			localDeps, err := p.DependenciesForLocalCommand()
+			if err != nil {
+				return err
+			}
+
+			options, err := parseJobRunOptions(localDeps.Options(), args)
+			if err != nil {
+				return err
+			}
+
 			// Ask for host and token if needed
 			baseDeps := p.BaseDependencies()
 			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
@@ -31,11 +42,6 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 
 			// Get dependencies
 			d, err := p.DependenciesForRemoteCommand()
-			if err != nil {
-				return err
-			}
-
-			options, err := parseJobRunOptions(d.Options(), args)
 			if err != nil {
 				return err
 			}
