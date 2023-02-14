@@ -6,13 +6,18 @@ import (
 )
 
 func (m Mapper) TaskPayload(model *model.Task) (r *buffer.Task) {
-	finishedAt := ""
+	var finishedAtPtr *string
 	if model.FinishedAt != nil {
-		finishedAt = model.FinishedAt.String()
+		finishedAtStr := model.FinishedAt.String()
+		finishedAtPtr = &finishedAtStr
 	}
 	var durationMs int64 = 0
 	if model.Duration != nil {
 		durationMs = model.Duration.Milliseconds()
+	}
+	var errPtr *string
+	if model.Error != "" {
+		errPtr = &model.Error
 	}
 	return &buffer.Task{
 		ID:         model.TaskID,
@@ -20,10 +25,10 @@ func (m Mapper) TaskPayload(model *model.Task) (r *buffer.Task) {
 		URL:        formatTaskURL(m.bufferAPIHost, model.TaskKey),
 		Type:       model.Type,
 		CreatedAt:  model.CreatedAt.String(),
-		FinishedAt: &finishedAt,
+		FinishedAt: finishedAtPtr,
 		Duration:   durationMs,
 		IsFinished: model.IsFinished(),
 		Result:     model.Result,
-		Error:      &model.Error,
+		Error:      errPtr,
 	}
 }
