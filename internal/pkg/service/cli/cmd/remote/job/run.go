@@ -99,7 +99,6 @@ func parseJobRunOptions(opts *options.Options, args []string) (run.RunOptions, e
 			BranchID:    branchID,
 			ComponentID: componentID,
 			ConfigID:    configID,
-			Async:       o.Async,
 		})
 	}
 

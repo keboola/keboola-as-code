@@ -37,6 +37,7 @@ func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
 	defer cancel()
 
 	queue := &JobQueue{
+		async:          o.Async,
 		hasQueueV2:     d.ProjectFeatures().Has("queuev2"),
 		ctx:            timeoutCtx,
 		api:            api,
@@ -77,6 +78,7 @@ func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
 }
 
 type JobQueue struct {
+	async      bool
 	hasQueueV2 bool
 
 	ctx context.Context
@@ -129,7 +131,7 @@ func (q *JobQueue) dispatch(job *Job) {
 	go func() {
 		defer q.wg.Done()
 
-		if e := job.Run(q.ctx, q.api, q.hasQueueV2); e != nil {
+		if e := job.Run(q.ctx, q.api, q.async, q.hasQueueV2); e != nil {
 			q.err.Append(e)
 		}
 
@@ -149,17 +151,16 @@ type Job struct {
 	BranchID    keboola.BranchID
 	ComponentID keboola.ComponentID
 	ConfigID    keboola.ConfigID
-	Async       bool
 }
 
-func (o *Job) Run(ctx context.Context, api *keboola.API, hasQueueV2 bool) error {
+func (o *Job) Run(ctx context.Context, api *keboola.API, async bool, hasQueueV2 bool) error {
 	if hasQueueV2 {
 		job, err := api.CreateQueueJobRequest(o.ComponentID, o.ConfigID).Send(ctx)
 		if err != nil {
 			return err
 		}
 
-		if !o.Async {
+		if !async {
 			err = api.WaitForQueueJob(ctx, job)
 			if err != nil {
 				return err
@@ -172,7 +173,7 @@ func (o *Job) Run(ctx context.Context, api *keboola.API, hasQueueV2 bool) error 
 			return err
 		}
 
-		if !o.Async {
+		if !async {
 			// nolint: staticcheck
 			err = api.WaitForOldQueueJob(ctx, job.ID)
 			if err != nil {
