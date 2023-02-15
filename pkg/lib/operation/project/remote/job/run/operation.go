@@ -170,16 +170,18 @@ type Job struct {
 	BranchID    keboola.BranchID
 	ComponentID keboola.ComponentID
 	ConfigID    keboola.ConfigID
+	Tag         string
 
 	id   keboola.JobID
 	wait func() error
 }
 
-func NewJob(branchID keboola.BranchID, componentID keboola.ComponentID, configID keboola.ConfigID) *Job {
+func NewJob(branchID keboola.BranchID, componentID keboola.ComponentID, configID keboola.ConfigID, tag string) *Job {
 	return &Job{
 		BranchID:    branchID,
 		ComponentID: componentID,
 		ConfigID:    configID,
+		Tag:         tag,
 	}
 }
 
@@ -192,7 +194,11 @@ func (o *Job) Key() string {
 
 func (o *Job) Start(ctx context.Context, api *keboola.API, async bool, hasQueueV2 bool) error {
 	if hasQueueV2 {
-		job, err := api.NewCreateJobRequest(o.ComponentID).WithConfig(o.ConfigID).WithBranch(o.BranchID).Send(ctx)
+		job, err := api.NewCreateJobRequest(o.ComponentID).
+			WithConfig(o.ConfigID).
+			WithBranch(o.BranchID).
+			WithTag(o.Tag).
+			Send(ctx)
 		if err != nil {
 			return err
 		}
@@ -207,7 +213,12 @@ func (o *Job) Start(ctx context.Context, api *keboola.API, async bool, hasQueueV
 		}
 	} else {
 		// nolint: staticcheck
-		job, err := api.CreateOldQueueJobRequest(o.ComponentID, o.ConfigID, keboola.WithBranchID(o.BranchID)).Send(ctx)
+		job, err := api.CreateOldQueueJobRequest(
+			o.ComponentID,
+			o.ConfigID,
+			keboola.WithBranchID(o.BranchID),
+			keboola.WithImageTag(o.Tag),
+		).Send(ctx)
 		if err != nil {
 			return err
 		}
