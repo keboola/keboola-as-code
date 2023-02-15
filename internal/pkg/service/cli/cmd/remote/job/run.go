@@ -17,7 +17,7 @@ import (
 
 func RunCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   `run [branch1/]component1/config1 [branch2/]component2/config2 ...`,
+		Use:   `run [branch1/]component1/config1[@tag] [branch2/]component2/config2[@tag] ...`,
 		Short: helpmsg.Read(`remote/job/run/short`),
 		Long:  helpmsg.Read(`remote/job/run/long`),
 		Args:  cobra.MinimumNArgs(1),

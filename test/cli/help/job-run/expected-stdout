@@ -7,7 +7,7 @@ wait until all the jobs have been started.
 Terminating the command early does not cause the jobs to stop.
 
 Usage:
-  kbc remote job run [branch1/]component1/config1 [branch2/]component2/config2 ... [flags]
+  kbc remote job run [branch1/]component1/config1[@tag] [branch2/]component2/config2[@tag] ... [flags]
 
 Flags:
       --async                     do not wait for job to finish
