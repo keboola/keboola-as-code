@@ -68,7 +68,7 @@ func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
 		return err
 	} else {
 		if !o.Async {
-			queue.logger.Info("Finished running all jobs.")
+			queue.logger.Info("Finished all jobs.")
 		} else {
 			queue.logger.Info("Started all jobs.")
 		}
