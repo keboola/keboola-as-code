@@ -68,7 +68,7 @@ func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
 		return err
 	} else {
 		if !o.Async {
-			queue.logger.Info("Finished running all jobs.")
+			queue.logger.Info("Finished all jobs.")
 		} else {
 			queue.logger.Info("Started all jobs.")
 		}
@@ -170,29 +170,40 @@ type Job struct {
 	BranchID    keboola.BranchID
 	ComponentID keboola.ComponentID
 	ConfigID    keboola.ConfigID
+	Tag         string
 
 	id   keboola.JobID
 	wait func() error
 }
 
-func NewJob(branchID keboola.BranchID, componentID keboola.ComponentID, configID keboola.ConfigID) *Job {
+func NewJob(branchID keboola.BranchID, componentID keboola.ComponentID, configID keboola.ConfigID, tag string) *Job {
 	return &Job{
 		BranchID:    branchID,
 		ComponentID: componentID,
 		ConfigID:    configID,
+		Tag:         tag,
 	}
 }
 
 func (o *Job) Key() string {
+	out := ""
 	if o.BranchID > 0 {
-		return fmt.Sprintf("%d/%s/%s", o.BranchID, o.ComponentID, o.ConfigID)
+		out += fmt.Sprintf("%d/", o.BranchID)
 	}
-	return fmt.Sprintf("%s/%s", o.ComponentID, o.ConfigID)
+	out += fmt.Sprintf("%s/%s", o.ComponentID, o.ConfigID)
+	if len(o.Tag) > 0 {
+		out += fmt.Sprintf("@%s", o.Tag)
+	}
+	return out
 }
 
 func (o *Job) Start(ctx context.Context, api *keboola.API, async bool, hasQueueV2 bool) error {
 	if hasQueueV2 {
-		job, err := api.NewCreateJobRequest(o.ComponentID).WithConfig(o.ConfigID).WithBranch(o.BranchID).Send(ctx)
+		job, err := api.NewCreateJobRequest(o.ComponentID).
+			WithConfig(o.ConfigID).
+			WithBranch(o.BranchID).
+			WithTag(o.Tag).
+			Send(ctx)
 		if err != nil {
 			return err
 		}
@@ -207,7 +218,12 @@ func (o *Job) Start(ctx context.Context, api *keboola.API, async bool, hasQueueV
 		}
 	} else {
 		// nolint: staticcheck
-		job, err := api.CreateOldQueueJobRequest(o.ComponentID, o.ConfigID, keboola.WithBranchID(o.BranchID)).Send(ctx)
+		job, err := api.CreateOldQueueJobRequest(
+			o.ComponentID,
+			o.ConfigID,
+			keboola.WithBranchID(o.BranchID),
+			keboola.WithImageTag(o.Tag),
+		).Send(ctx)
 		if err != nil {
 			return err
 		}

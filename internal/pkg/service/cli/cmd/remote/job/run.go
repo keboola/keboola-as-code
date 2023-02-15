@@ -17,7 +17,7 @@ import (
 
 func RunCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   `run [branch1/]component1/config1 [branch2/]component2/config2 ...`,
+		Use:   `run [branch1/]component1/config1[@tag] [branch2/]component2/config2[@tag] ...`,
 		Short: helpmsg.Read(`remote/job/run/short`),
 		Long:  helpmsg.Read(`remote/job/run/long`),
 		Args:  cobra.MinimumNArgs(1),
@@ -71,7 +71,11 @@ func parseJobRunOptions(opts *options.Options, args []string) (run.RunOptions, e
 
 	invalidArgs := errors.NewMultiError()
 	for _, arg := range args {
-		// parse [branchID]/componentID/configID
+		// parse [branchID]/componentID/configID[@tag]
+		var branchID keboola.BranchID
+		var componentID keboola.ComponentID
+		var configID keboola.ConfigID
+		var tag string
 
 		parts := strings.Split(arg, "/")
 		if len(parts) < 2 || len(parts) > 3 {
@@ -79,7 +83,6 @@ func parseJobRunOptions(opts *options.Options, args []string) (run.RunOptions, e
 			continue
 		}
 
-		var branchID keboola.BranchID
 		if len(parts) == 3 {
 			value, err := strconv.Atoi(parts[0])
 			if err != nil {
@@ -88,10 +91,16 @@ func parseJobRunOptions(opts *options.Options, args []string) (run.RunOptions, e
 			}
 			branchID = keboola.BranchID(value)
 		}
-		componentID := keboola.ComponentID(parts[len(parts)-2])
-		configID := keboola.ConfigID(parts[len(parts)-1])
 
-		o.Jobs = append(o.Jobs, run.NewJob(branchID, componentID, configID))
+		componentID = keboola.ComponentID(parts[len(parts)-2])
+
+		configAndTag := strings.Split(parts[len(parts)-1], "@")
+		configID = keboola.ConfigID(configAndTag[0])
+		if len(configAndTag) > 1 {
+			tag = configAndTag[1]
+		}
+
+		o.Jobs = append(o.Jobs, run.NewJob(branchID, componentID, configID, tag))
 	}
 
 	err = invalidArgs.ErrorOrNil()
