@@ -186,10 +186,15 @@ func NewJob(branchID keboola.BranchID, componentID keboola.ComponentID, configID
 }
 
 func (o *Job) Key() string {
+	out := ""
 	if o.BranchID > 0 {
-		return fmt.Sprintf("%d/%s/%s", o.BranchID, o.ComponentID, o.ConfigID)
+		out += fmt.Sprintf("%d/", o.BranchID)
 	}
-	return fmt.Sprintf("%s/%s", o.ComponentID, o.ConfigID)
+	out += fmt.Sprintf("%s/%s", o.ComponentID, o.ConfigID)
+	if len(o.Tag) > 0 {
+		out += fmt.Sprintf("@%s", o.Tag)
+	}
+	return out
 }
 
 func (o *Job) Start(ctx context.Context, api *keboola.API, async bool, hasQueueV2 bool) error {
