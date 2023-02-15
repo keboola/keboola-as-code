@@ -4,6 +4,8 @@
   "url": "%s",
   "type": "receiver.create",
   "createdAt": "%s",
-  "isFinished": false,
-  "result": ""
+  "finishedAt": "%s",
+  "isFinished": true,
+  "duration": %d,
+  "result": "receiver created"
 }
