@@ -76,7 +76,7 @@ func TestBufferApiE2E(t *testing.T) {
 			"BUFFER_ETCD_PASSWORD":  etcdPassword,
 		})
 
-		requestDecoratorFn := func(request *runner.APIRequest) {
+		requestDecoratorFn := func(request *runner.APIRequestDef) {
 			// Replace placeholder by secret loaded from the etcd.
 			if strings.Contains(request.Path, receiverSecretPlaceholder) {
 				resp, err := etcdClient.Get(context.Background(), "/config/receiver/", etcd.WithPrefix())

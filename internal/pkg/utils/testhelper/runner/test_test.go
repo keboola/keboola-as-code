@@ -1,0 +1,39 @@
+package runner
+
+import (
+	"testing"
+
+	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestProcessPathReference(t *testing.T) {
+	t.Parallel()
+
+	resp := orderedmap.New()
+	resp.Set("url", "https://buffer.keboola.local/v1/receivers/my-receiver/tasks/receiver.create/2023-02-14T12:49:07.026Z_M6C_a")
+	requests := map[string]*APIRequest{
+		"req1": {
+			Definition: APIRequestDef{},
+			Response:   resp,
+		},
+	}
+
+	// No reference
+	res, err := processPathReference("/foo/bar", requests)
+	assert.NoError(t, err)
+	assert.Equal(t, "/foo/bar", res)
+
+	// Correct reference
+	res, err = processPathReference("<<req1:response.url>>", requests)
+	assert.NoError(t, err)
+	assert.Equal(t, "/v1/receivers/my-receiver/tasks/receiver.create/2023-02-14T12:49:07.026Z_M6C_a", res)
+
+	// Incorrect referenced request name
+	_, err = processPathReference("<<req2:response.url>>", requests)
+	assert.ErrorContains(t, err, "invalid request reference in the request path")
+
+	// Incorrect reference path
+	_, err = processPathReference("<<req1:response.invalid>>", requests)
+	assert.ErrorContains(t, err, `path "invalid" not found`)
+}

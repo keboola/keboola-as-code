@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -22,6 +23,8 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"github.com/umisama/go-regexpcache"
+	goValuate "gopkg.in/Knetic/govaluate.v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -98,7 +101,7 @@ func WithRunAPIServerAndRequests(
 	path string,
 	args []string,
 	envs *env.Map,
-	requestDecoratorFn func(request *APIRequest),
+	requestDecoratorFn func(request *APIRequestDef),
 ) Options {
 	return func(c *runConfig) {
 		c.apiServerConfig = apiServerConfig{
@@ -323,14 +326,14 @@ type apiServerConfig struct {
 	path               string
 	args               []string
 	envs               *env.Map
-	requestDecoratorFn func(request *APIRequest)
+	requestDecoratorFn func(request *APIRequestDef)
 }
 
 func (t *Test) runAPIServer(
 	path string,
 	addArgs []string,
 	addEnvs *env.Map,
-	requestDecoratorFn func(request *APIRequest),
+	requestDecoratorFn func(request *APIRequestDef),
 ) {
 	// Get a free port
 	port, err := getFreePort()
@@ -410,13 +413,25 @@ func (t *Test) runAPIServer(
 }
 
 type APIRequest struct {
+	Definition APIRequestDef          `json:"request" validate:"required"`
+	Response   *orderedmap.OrderedMap `json:"response" validate:"required"`
+}
+
+type APIRequestDef struct {
 	Path    string            `json:"path" validate:"required"`
 	Method  string            `json:"method" validate:"required,oneof=DELETE GET PATCH POST PUT"`
 	Body    interface{}       `json:"body"`
 	Headers map[string]string `json:"headers"`
+	Repeat  APIRequestRepeat  `json:"repeat,omitempty" validate:"omitempty"`
 }
 
-func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequest)) bool {
+type APIRequestRepeat struct {
+	Timeout int    `json:"timeout,omitempty"`
+	Until   string `json:"until,omitempty"`
+	Wait    int    `json:"wait,omitempty"`
+}
+
+func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequestDef)) bool {
 	t.apiClient = resty.New()
 	t.apiClient.SetBaseURL(apiURL)
 
@@ -432,17 +447,18 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequest)) 
 
 	// Request folders should be named e.g. 001-request1, 002-request2
 	dirs, err := t.testDirFS.Glob("[0-9][0-9][0-9]-*")
-	assert.NoError(t.t, err)
+	requests := make(map[string]*APIRequest, 0)
 	for _, requestDir := range dirs {
 		// Read the request file
 		requestFileStr := t.ReadFileFromTestDir(filesystem.Join(requestDir, "request.json"))
 		assert.NoError(t.t, err)
 
-		request := &APIRequest{}
+		request := &APIRequestDef{}
 		err = json.DecodeString(requestFileStr, request)
 		assert.NoError(t.t, err)
 		err = validator.New().Validate(context.Background(), request)
 		assert.NoError(t.t, err)
+		requests[requestDir] = &APIRequest{Definition: *request}
 
 		// Send the request
 		r := t.apiClient.R()
@@ -460,27 +476,68 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequest)) 
 		// Decorate the request
 		requestDecoratorFn(request)
 
-		// Send request
-		r.SetContext(context.WithValue(r.Context(), dumpDirCtxKey, requestDir))
-		resp, err := r.Execute(request.Method, request.Path)
-		assert.NoError(t.t, err)
-
-		// Dump raw HTTP response
-		if err == nil {
-			respDump, err := httputil.DumpResponse(resp.RawResponse, false)
-			assert.NoError(t.t, err)
-			assert.NoError(t.t, t.workingDirFS.WriteFile(filesystem.NewRawFile(filesystem.Join(requestDir, "response.txt"), string(respDump)+string(resp.Body()))))
+		// Find and replace references to other requests in the request path
+		reqPath, err := processPathReference(request.Path, requests)
+		if err != nil {
+			t.t.Fatal(err)
 		}
 
-		// Compare response body
-		expectedRespBody := t.ReadFileFromTestDir(filesystem.Join(requestDir, "expected-response.json"))
+		// Set repeat requests timeout
+		reqsTimeout := 60 * time.Second
+		if request.Repeat.Timeout > 0 {
+			reqsTimeout = time.Duration(request.Repeat.Timeout) * time.Second
+		}
 
-		// Decode && encode json to unite indentation of the response with expected-response.json
+		// Set repeat requests wait
+		reqsWait := 3 * time.Second
+		if request.Repeat.Wait > 0 {
+			reqsWait = time.Duration(request.Repeat.Wait) * time.Second
+		}
+
+		var resp *resty.Response
 		respMap := orderedmap.New()
-		if resp.String() != "" {
-			err = json.DecodeString(resp.String(), &respMap)
+		// Allow repeating the request until a condition is met
+		for start := time.Now(); time.Since(start) < reqsTimeout; {
+			// Send request
+			r.SetContext(context.WithValue(r.Context(), dumpDirCtxKey, requestDir))
+			resp, err = r.Execute(request.Method, reqPath)
+			assert.NoError(t.t, err)
+
+			// Dump raw HTTP response
+			if err == nil {
+				respDump, err := httputil.DumpResponse(resp.RawResponse, false)
+				assert.NoError(t.t, err)
+				assert.NoError(t.t, t.workingDirFS.WriteFile(filesystem.NewRawFile(filesystem.Join(requestDir, "response.txt"), string(respDump)+string(resp.Body()))))
+			}
+
+			// Get the response body
+			// Decode && encode json to unite indentation of the response with expected-response.json
+			if resp.String() != "" {
+				err = json.DecodeString(resp.String(), &respMap)
+			}
+			requests[requestDir].Response = respMap
+			assert.NoError(t.t, err)
+
+			// Run only once if there is no repeat until condition
+			if request.Repeat.Until == "" {
+				break
+			}
+
+			// Evaluate repeat until condition
+			repeatUntilExp, err := goValuate.NewEvaluableExpression(request.Repeat.Until)
+			if err != nil {
+				t.t.Fatal(errors.Errorf("cannot compile repeat until expression: %w", err))
+			}
+			repeatUntilVal, err := repeatUntilExp.Evaluate(respMap.ToMap())
+			if err != nil {
+				t.t.Fatal(errors.Errorf("cannot evaluate repeat until expression: %w", err))
+			}
+			if repeatUntilVal.(bool) {
+				break
+			}
+			time.Sleep(reqsWait)
 		}
-		assert.NoError(t.t, err)
+
 		respBody, err := json.EncodeString(respMap, true)
 		assert.NoError(t.t, err)
 
@@ -495,6 +552,9 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequest)) 
 			resp.String(),
 		)
 
+		// Compare response body
+		expectedRespBody := t.ReadFileFromTestDir(filesystem.Join(requestDir, "expected-response.json"))
+
 		// Assert response body
 		ok2 := wildcards.Assert(t.t, expectedRespBody, respBody, fmt.Sprintf("Unexpected response for request %s.", requestDir))
 
@@ -506,6 +566,36 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequest)) 
 	}
 
 	return true
+}
+
+func processPathReference(path string, requests map[string]*APIRequest) (string, error) {
+	regexPath, err := regexpcache.Compile("<<(.+):response.(.+)>>")
+	if err != nil {
+		return "", err
+	}
+	regexPathRes := regexPath.FindStringSubmatch(path)
+	if regexPathRes != nil {
+		if len(regexPathRes) != 3 {
+			return "", errors.Errorf("invalid reference in the request path: %s", path)
+		}
+		refReq, ok := requests[regexPathRes[1]]
+		if !ok || refReq.Response == nil {
+			return "", errors.Errorf("invalid request reference in the request path: %s", path)
+		}
+		refReqURL, found, err := refReq.Response.GetNested(regexPathRes[2])
+		if err != nil {
+			return "", err
+		}
+		if !found {
+			return "", errors.Errorf("invalid response reference in the request path: %s", path)
+		}
+		refURLParsed, err := url.Parse(refReqURL.(string))
+		if err != nil {
+			return "", errors.Errorf(`invalid referenced url "%s": %s`, refReqURL, err.Error())
+		}
+		return refURLParsed.Path, nil
+	}
+	return path, nil
 }
 
 func (t *Test) ReadFileFromTestDir(path string) string {
