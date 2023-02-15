@@ -192,14 +192,14 @@ func (o *Job) Key() string {
 
 func (o *Job) Start(ctx context.Context, api *keboola.API, async bool, hasQueueV2 bool) error {
 	if hasQueueV2 {
-		job, err := api.CreateQueueJobRequest(o.ComponentID, o.ConfigID).Send(ctx)
+		job, err := api.NewCreateJobRequest(o.ComponentID).WithConfig(o.ConfigID).WithBranch(o.BranchID).Send(ctx)
 		if err != nil {
 			return err
 		}
 
 		o.id = job.ID
 		o.wait = func() error {
-			err := api.WaitForQueueJob(ctx, job)
+			err := api.WaitForQueueJob(ctx, job.ID)
 			if err != nil {
 				return err
 			}
