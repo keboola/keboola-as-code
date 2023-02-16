@@ -174,6 +174,7 @@ func (n *Node) StartTask(ctx context.Context, receiverKey key.ReceiverKey, typ, 
 		attribute.String("worker", task.WorkerNode),
 		attribute.String("createdAt", task.CreatedAt.String()),
 	)
+	createdTask := task
 
 	// Run operation in the background
 	go func() {
@@ -234,7 +235,7 @@ func (n *Node) StartTask(ctx context.Context, receiverKey key.ReceiverKey, typ, 
 		// Do operation
 		result, err = operation(ctx, logger)
 	}()
-	return &task, nil
+	return &createdTask, nil
 }
 
 // lockTask guarantees that the task runs at most once on the Worker node.
