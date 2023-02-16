@@ -479,7 +479,7 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequestDef
 		// Find and replace references to other requests in the request path
 		reqPath, err := processPathReference(request.Path, requests)
 		if err != nil {
-			t.t.Fatal(err)
+			t.t.Fatal(errors.Errorf(`path reference of request "%s" failed: %w`, requestDir, err))
 		}
 
 		// Set repeat requests timeout

@@ -1,0 +1,26 @@
+{
+  "id": "export-b",
+  "receiverId": "my-receiver",
+  "name": "Export B",
+  "mapping": {
+    "tableId": "in.c-bucket.table-b",
+    "incremental": false,
+    "columns": [
+      {
+        "primaryKey": false,
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "primaryKey": false,
+        "type": "body",
+        "name": "body"
+      }
+    ]
+  },
+  "conditions": {
+    "count": 500,
+    "size": "100KB",
+    "time": "1m0s"
+  }
+}

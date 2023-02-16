@@ -1,0 +1,11 @@
+{
+  "path": "<<004-create-export-a:response.url>>",
+  "method": "GET",
+  "headers": {
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "repeat": {
+    "until": "isFinished == true",
+    "timeout": 60
+  }
+}

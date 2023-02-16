@@ -1,0 +1,27 @@
+<<<<<
+/config/receiver/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "name": "My Receiver",
+  "secret": "%s"
+}
+>>>>>
+
+<<<<<
+/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export.create/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "type": "export.create",
+  "taskId": "%s",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "workerNode": "%s",
+  "lock": "export.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1",
+  "result": "export created",
+  "duration": %d
+}
+>>>>>

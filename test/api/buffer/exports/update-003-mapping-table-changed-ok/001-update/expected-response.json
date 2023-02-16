@@ -1,0 +1,9 @@
+{
+  "id": "%s",
+  "receiverId": "my-receiver",
+  "url": "https://buffer.keboola.local/v1/receivers/my-receiver/tasks/export.update/%s",
+  "type": "export.update",
+  "createdAt": "%s",
+  "isFinished": false,
+  "result": ""
+}

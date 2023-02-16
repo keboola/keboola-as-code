@@ -1,0 +1,52 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    }
+  ],
+  "buckets": [
+    {
+      "id": "in.c-bucket2",
+      "uri": "%s/v2/storage/buckets/in.c-bucket2",
+      "displayName": "bucket2",
+      "description": "",
+      "tables": [
+        {
+          "id": "in.c-bucket2.table1",
+          "uri": "%s/v2/storage/tables/in.c-bucket2.table1",
+          "name": "table1",
+          "displayName": "table1",
+          "primaryKey": [],
+          "columns": [
+            "id",
+            "body"
+          ]
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "my_receiver_export_1_%s",
+      "tags": [
+        "buffer.exportID=export-1",
+        "buffer.receiverID=my-receiver"
+      ],
+      "isSliced": true,
+      "isEncrypted": true,
+      "isPermanent": false
+    },
+    {
+      "name": "table1",
+      "tags": [],
+      "isSliced": false,
+      "isEncrypted": true,
+      "isPermanent": false
+    }
+  ]
+}
