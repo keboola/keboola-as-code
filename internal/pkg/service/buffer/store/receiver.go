@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // CreateReceiver puts a receiver into the store.
@@ -29,23 +30,27 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 	return op.Atomic().
 		// Check receivers count
 		Read(func() op.Op {
-			return s.schema.
-				Configs().
-				Receivers().
-				InProject(receiver.ProjectID).
-				Count().
-				WithOnResultOrErr(func(count int64) error {
-					if count >= MaxReceiversPerProject {
-						return serviceError.NewCountLimitReachedError("receiver", MaxReceiversPerProject, "project")
-					}
-					return nil
-				})
+			return s.checkReceiversCountOp(receiver.ProjectID)
 		}).
 		// Create receiver and exports
 		Write(func() op.Op {
 			return s.createReceiverOp(ctx, receiver)
 		}).
 		Do(ctx, s.client)
+}
+
+func (s *Store) checkReceiversCountOp(projectID key.ProjectID) op.Op {
+	return s.schema.
+		Configs().
+		Receivers().
+		InProject(projectID).
+		Count().
+		WithOnResultOrErr(func(count int64) error {
+			if count >= MaxReceiversPerProject {
+				return serviceError.NewCountLimitReachedError("receiver", MaxReceiversPerProject, "project")
+			}
+			return nil
+		})
 }
 
 func (s *Store) createReceiverOp(ctx context.Context, receiver model.Receiver) op.Op {
@@ -73,6 +78,25 @@ func (s *Store) createReceiverBaseOp(_ context.Context, receiver model.ReceiverB
 			}
 			return ok, err
 		})
+}
+
+// CheckCreateReceiver checks if a receiver can be created.
+// Logic errors:
+// - CountLimitReachedError.
+// - ResourceAlreadyExistsError.
+func (s *Store) CheckCreateReceiver(ctx context.Context, receiverKey key.ReceiverKey) (err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CheckCreateReceiver")
+	defer telemetry.EndSpan(span, &err)
+
+	err = s.getReceiverBaseOp(ctx, receiverKey).DoOrErr(ctx, s.client)
+	if err == nil {
+		return serviceError.NewResourceAlreadyExistsError("receiver", receiverKey.ReceiverID.String(), "project")
+	}
+	if !errors.Is(err, serviceError.NewResourceNotFoundError("receiver", receiverKey.ReceiverID.String(), "project")) {
+		return err
+	}
+
+	return s.checkReceiversCountOp(receiverKey.ProjectID).DoOrErr(ctx, s.client)
 }
 
 // GetReceiver fetches a receiver from the store.

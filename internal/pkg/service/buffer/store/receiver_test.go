@@ -78,6 +78,24 @@ func TestStore_CreateReceiverOp_MaxExportsCount(t *testing.T) {
 	assert.Equal(t, "export count limit reached in the receiver, the maximum is 20", err.Error())
 }
 
+func TestStore_CheckCreateReceiver_Exists(t *testing.T) {
+	t.Parallel()
+
+	store := newStoreForTest(t)
+	receiver := model.ReceiverForTest("my-receiver", 1, time.Time{})
+
+	// Check passes because there is no such receiver in the store.
+	err := store.CheckCreateReceiver(context.Background(), receiver.ReceiverKey)
+	assert.NoError(t, err)
+
+	err = store.CreateReceiver(context.Background(), receiver)
+	assert.NoError(t, err)
+
+	// Check fails because there already is the same receiver in the store.
+	err = store.CheckCreateReceiver(context.Background(), receiver.ReceiverKey)
+	assert.Equal(t, `receiver "my-receiver" already exists in the project`, err.Error())
+}
+
 func TestStore_CreateReceiverBaseOp(t *testing.T) {
 	t.Parallel()
 

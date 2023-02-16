@@ -67,12 +67,26 @@ func createRecords(t *testing.T, ctx context.Context, clk *clock.Mock, d bufferD
 
 func createReceiverAndExportViaAPI(t *testing.T, d bufferDependencies.Mocked, api buffer.Service) (*buffer.Receiver, string, *buffer.Export) {
 	t.Helper()
-	receiver, err := api.CreateReceiver(d, &buffer.CreateReceiverPayload{
+	task, err := api.CreateReceiver(d, &buffer.CreateReceiverPayload{
 		Name: "my-receiver",
 	})
 	assert.NoError(t, err)
+	assert.Eventually(t, func() bool {
+		task, err := api.GetTask(d, &buffer.GetTaskPayload{
+			ReceiverID: task.ReceiverID,
+			Type:       task.Type,
+			TaskID:     task.ID,
+		})
+		assert.NoError(t, err)
+		return task.IsFinished
+	}, 10*time.Second, 100*time.Millisecond)
 
-	export, err := api.CreateExport(d, &buffer.CreateExportPayload{
+	receiver, err := api.GetReceiver(d, &buffer.GetReceiverPayload{
+		ReceiverID: "my-receiver",
+	})
+	assert.NoError(t, err)
+
+	task, err = api.CreateExport(d, &buffer.CreateExportPayload{
 		ReceiverID: receiver.ID,
 		Name:       "my-export",
 		Mapping: &buffer.Mapping{
@@ -89,6 +103,22 @@ func createReceiverAndExportViaAPI(t *testing.T, d bufferDependencies.Mocked, ap
 			Time:  "1h",
 		},
 	})
+	assert.NoError(t, err)
+	assert.Eventually(t, func() bool {
+		task, err := api.GetTask(d, &buffer.GetTaskPayload{
+			ReceiverID: task.ReceiverID,
+			Type:       task.Type,
+			TaskID:     task.ID,
+		})
+		assert.NoError(t, err)
+		return task.IsFinished
+	}, 10*time.Second, 100*time.Millisecond)
+
+	export, err := api.GetExport(d, &buffer.GetExportPayload{
+		ReceiverID: "my-receiver",
+		ExportID:   "my-export",
+	})
+	assert.NoError(t, err)
 
 	assert.NoError(t, err)
 	secret := receiver.URL[strings.LastIndex(receiver.URL, "/")+1:]

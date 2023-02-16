@@ -50,9 +50,6 @@ func TestUploadAndImportE2E(t *testing.T) {
 	apiDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
 	api := service2.New(apiDeps)
 
-	// Create receiver and export
-	receiver, secret, export := createReceiverAndExportViaAPI(t, apiDeps, api)
-
 	// Start worker node
 	workerDeps := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("worker-node"))...)
 	workerDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
@@ -64,6 +61,9 @@ func TestUploadAndImportE2E(t *testing.T) {
 		service.WithUploadConditions(model.Conditions{Count: 5, Size: datasize.MB, Time: time.Hour}),
 	)
 	assert.NoError(t, err)
+
+	// Create receiver and export
+	receiver, secret, export := createReceiverAndExportViaAPI(t, apiDeps, api)
 
 	// Create 6 records - trigger the slice upload (>=5)
 	for i := 1; i <= 6; i++ {
@@ -402,6 +402,40 @@ slice/archived/successful/imported/%s/my-receiver/my-export/%s/%s
 >>>>>
 
 <<<<<
+task/%s/my-receiver/export.create/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "type": "export.create",
+  "taskId": "%s",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "workerNode": "api-node",
+  "lock": "export.create/%s/my-receiver/my-export",
+  "result": "export created",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
+task/%s/my-receiver/export.update/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "type": "export.update",
+  "taskId": "%s",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "workerNode": "api-node",
+  "lock": "export.update/%s/my-receiver/my-export",
+  "result": "export updated",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
 task/%s/my-receiver/file.close/%s
 -----
 {
@@ -482,6 +516,23 @@ task/%s/my-receiver/file.swap/%s
   "workerNode": "worker-node",
   "lock": "file.swap/%s",
   "result": "new file created, the old is closing",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
+task/%s/my-receiver/receiver.create/%s
+-----
+{
+  "projectId": %d,
+  "receiverId": "my-receiver",
+  "type": "receiver.create",
+  "taskId": "%s",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "workerNode": "api-node",
+  "lock": "receiver.create/%s/my-receiver",
+  "result": "receiver created",
   "duration": %d
 }
 >>>>>

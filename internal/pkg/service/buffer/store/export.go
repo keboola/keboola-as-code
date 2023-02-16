@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // CreateExport puts an export into the store.
@@ -24,21 +25,29 @@ func (s *Store) CreateExport(ctx context.Context, export model.Export) (err erro
 	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CreateExport")
 	defer telemetry.EndSpan(span, &err)
 
-	exports := s.schema.Configs().Exports().InReceiver(export.ReceiverKey)
 	return op.
 		Atomic().
 		Read(func() op.Op {
-			return exports.Count().WithOnResultOrErr(func(count int64) error {
-				if count >= MaxExportsPerReceiver {
-					return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
-				}
-				return nil
-			})
+			return s.checkExportsCountOp(export.ReceiverKey)
 		}).
 		Write(func() op.Op {
 			return s.createExportOp(ctx, export)
 		}).
 		Do(ctx, s.client)
+}
+
+func (s *Store) checkExportsCountOp(receiverKey key.ReceiverKey) op.Op {
+	return s.schema.
+		Configs().
+		Exports().
+		InReceiver(receiverKey).
+		Count().
+		WithOnResultOrErr(func(count int64) error {
+			if count >= MaxExportsPerReceiver {
+				return serviceError.NewCountLimitReachedError("export", MaxExportsPerReceiver, "receiver")
+			}
+			return nil
+		})
 }
 
 func (s *Store) createExportOp(ctx context.Context, export model.Export) *op.TxnOpDef {
@@ -122,6 +131,25 @@ func (s *Store) updateExportBaseOp(_ context.Context, export model.ExportBase) o
 		Exports().
 		ByKey(export.ExportKey).
 		Put(export)
+}
+
+// CheckCreateExport checks if an export can be created.
+// Logic errors:
+// - CountLimitReachedError.
+// - ResourceAlreadyExistsError.
+func (s *Store) CheckCreateExport(ctx context.Context, exportKey key.ExportKey) (err error) {
+	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CheckCreateExport")
+	defer telemetry.EndSpan(span, &err)
+
+	err = s.getExportBaseOp(ctx, exportKey).DoOrErr(ctx, s.client)
+	if err == nil {
+		return serviceError.NewResourceAlreadyExistsError("export", exportKey.ExportID.String(), "receiver")
+	}
+	if !errors.Is(err, serviceError.NewResourceNotFoundError("export", exportKey.ExportID.String(), "receiver")) {
+		return err
+	}
+
+	return s.checkExportsCountOp(exportKey.ReceiverKey).DoOrErr(ctx, s.client)
 }
 
 // GetExport fetches an export from the store.
