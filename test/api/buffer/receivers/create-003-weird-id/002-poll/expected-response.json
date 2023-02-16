@@ -1,0 +1,11 @@
+{
+  "id": "%s",
+  "receiverId": "weird-id",
+  "url": "%s",
+  "type": "receiver.create",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "isFinished": true,
+  "duration": %d,
+  "result": "receiver created"
+}

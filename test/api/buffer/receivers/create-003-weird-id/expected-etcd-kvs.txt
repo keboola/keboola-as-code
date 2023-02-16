@@ -1,0 +1,27 @@
+<<<<<
+/config/receiver/%%TEST_KBC_PROJECT_ID_8DIG%%/weird-id
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "weird-id",
+  "name": "My Receiver",
+  "secret": "%s"
+}
+>>>>>
+
+<<<<<
+/task/%%TEST_KBC_PROJECT_ID_8DIG%%/weird-id/receiver.create/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "weird-id",
+  "type": "receiver.create",
+  "taskId": "%s",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "workerNode": "%s",
+  "lock": "receiver.create/%%TEST_KBC_PROJECT_ID_8DIG%%/weird-id",
+  "result": "receiver created",
+  "duration": %d
+}
+>>>>>

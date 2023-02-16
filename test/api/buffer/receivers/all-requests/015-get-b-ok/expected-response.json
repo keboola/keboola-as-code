@@ -1,0 +1,33 @@
+{
+  "id": "receiver-b",
+  "url": "https://buffer.keboola.local/v1/import/%%TEST_KBC_PROJECT_ID%%/receiver-b/%s",
+  "name": "Receiver B Updated",
+  "exports": [
+    {
+      "id": "export-1",
+      "receiverId": "receiver-b",
+      "name": "Export 1",
+      "mapping": {
+        "tableId": "in.c-bucket.table",
+        "incremental": false,
+        "columns": [
+          {
+            "primaryKey": false,
+            "type": "id",
+            "name": "id"
+          },
+          {
+            "primaryKey": false,
+            "type": "body",
+            "name": "body"
+          }
+        ]
+      },
+      "conditions": {
+        "count": 123,
+        "size": "456B",
+        "time": "30s"
+      }
+    }
+  ]
+}
