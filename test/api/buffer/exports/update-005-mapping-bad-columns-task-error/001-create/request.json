@@ -1,14 +1,16 @@
 {
-  "path": "/v1/receivers/my-receiver/exports/export-1",
-  "method": "PATCH",
+  "path": "/v1/receivers/my-receiver/exports",
+  "method": "POST",
   "headers": {
     "Content-Type": "application/json",
     "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
   },
   "body": {
+    "exportId": "my-export-1",
+    "name": "My Export 1",
     "mapping": {
       "tableId": "in.c-bucket.table",
-      "incremental": true,
+      "incremental": false,
       "columns": [
         {
           "primaryKey": false,
@@ -17,10 +19,15 @@
         },
         {
           "primaryKey": false,
-          "type": "ip",
-          "name": "ip"
+          "type": "body",
+          "name": "body"
         }
       ]
+    },
+    "conditions": {
+      "count": 500,
+      "size": "100kB",
+      "time": "1m"
     }
   }
 }
