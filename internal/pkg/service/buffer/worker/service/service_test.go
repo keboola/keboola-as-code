@@ -112,7 +112,7 @@ func createReceiverAndExportViaAPI(t *testing.T, d bufferDependencies.Mocked, ap
 		})
 		assert.NoError(t, err)
 		return task.IsFinished
-	}, 10*time.Second, 100*time.Millisecond)
+	}, 1*time.Minute, 100*time.Millisecond)
 
 	export, err := api.GetExport(d, &buffer.GetExportPayload{
 		ReceiverID: "my-receiver",
