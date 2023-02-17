@@ -4,20 +4,20 @@ import (
 	"context"
 	"reflect"
 	"sync"
+	"time"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer.CreateExportPayload) (res *buffer.Export, err error) {
+func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer.CreateExportPayload) (res *buffer.Task, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
-
-	rb := rollback.New(s.logger)
-	defer rb.InvokeIfErr(ctx, &err)
 
 	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
 	export, err := s.mapper.CreateExportModel(
@@ -33,46 +33,74 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 		return nil, err
 	}
 
-	if err := s.createResourcesForExport(ctx, d, rb, &export); err != nil {
-		return nil, err
-	}
-
-	if err := str.CreateExport(ctx, export); err != nil {
-		return nil, err
-	}
-
-	return s.GetExport(d, &buffer.GetExportPayload{ReceiverID: export.ReceiverID, ExportID: export.ExportID})
-}
-
-func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer.UpdateExportPayload) (res *buffer.Export, err error) {
-	ctx, str := d.RequestCtx(), d.Store()
-
-	rb := rollback.New(s.logger)
-	defer rb.InvokeIfErr(ctx, &err)
-
-	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
-	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
-	err = str.UpdateExport(ctx, exportKey, func(export model.Export) (model.Export, error) {
-		oldMapping := export.Mapping
-		if err := s.mapper.UpdateExportModel(&export, payload); err != nil {
-			return export, err
-		}
-
-		// Create resources for the modified mapping
-		if !reflect.DeepEqual(oldMapping, export.Mapping) {
-			if err := s.createResourcesForExport(ctx, d, rb, &export); err != nil {
-				return export, err
-			}
-		}
-
-		return export, nil
-	})
-
+	// Check if export does not exist and the exports count limit is not reached.
+	err = str.CheckCreateExport(ctx, export.ExportKey)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.GetExport(d, &buffer.GetExportPayload{ReceiverID: exportKey.ReceiverID, ExportID: exportKey.ExportID})
+	lock := "export.create/" + export.ExportKey.String()
+	t, err := d.TaskNode().StartTask(ctx, receiverKey, "export.create", lock, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+
+		rb := rollback.New(s.logger)
+		defer rb.InvokeIfErr(ctx, &err)
+
+		if err := s.createResourcesForExport(ctx, d, rb, &export); err != nil {
+			return "", err
+		}
+
+		if err := str.CreateExport(ctx, export); err != nil {
+			return "", err
+		}
+		return "export created", nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return s.mapper.TaskPayload(t), nil
+}
+
+func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer.UpdateExportPayload) (res *buffer.Task, err error) {
+	ctx, str := d.RequestCtx(), d.Store()
+
+	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
+	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
+
+	lock := "export.update/" + exportKey.String()
+	t, err := d.TaskNode().StartTask(ctx, receiverKey, "export.update", lock, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+
+		rb := rollback.New(s.logger)
+		defer rb.InvokeIfErr(ctx, &err)
+
+		err = str.UpdateExport(ctx, exportKey, func(export model.Export) (model.Export, error) {
+			oldMapping := export.Mapping
+			if err := s.mapper.UpdateExportModel(&export, payload); err != nil {
+				return export, err
+			}
+
+			// Create resources for the modified mapping
+			if !reflect.DeepEqual(oldMapping, export.Mapping) {
+				if err := s.createResourcesForExport(ctx, d, rb, &export); err != nil {
+					return export, err
+				}
+			}
+
+			return export, nil
+		})
+
+		if err != nil {
+			return "", err
+		}
+		return "export updated", nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return s.mapper.TaskPayload(t), nil
 }
 
 func (s *service) GetExport(d dependencies.ForProjectRequest, payload *buffer.GetExportPayload) (r *buffer.Export, err error) {
@@ -109,7 +137,7 @@ func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer
 }
 
 func (s *service) createResourcesForExport(ctx context.Context, d dependencies.ForProjectRequest, rb rollback.Builder, export *model.Export) error {
-	// Buket is required by token and table
+	// Bucket is required by token and table
 	if err := d.TableManager().EnsureBucketExists(ctx, rb, export.Mapping.TableID.BucketID); err != nil {
 		return err
 	}

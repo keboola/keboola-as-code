@@ -1,6 +1,0 @@
-{
-  "statusCode": 400,
-  "error": "buffer.badRequest",
-  "message": "Columns of the table \"in.c-bucket.table2\" do not match expected [\"id\",\"ip\"], found [\"id\",\"body\"]"
-}
-

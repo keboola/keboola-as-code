@@ -57,7 +57,7 @@ func TestTemplatesApiE2E(t *testing.T) {
 			"TEMPLATES_API_ETCD_PASSWORD":  os.Getenv("TEMPLATES_API_ETCD_PASSWORD"),
 		})
 
-		requestDecoratorFn := func(request *runner.APIRequest) {
+		requestDecoratorFn := func(request *runner.APIRequestDef) {
 			// Replace placeholder by instance ID.
 			if strings.Contains(request.Path, instanceIDPlaceholder) {
 				result := make(map[string]any)

@@ -1,0 +1,27 @@
+<<<<<
+/config/receiver/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-custom-id
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver-custom-id",
+  "name": "My Receiver",
+  "secret": "%s"
+}
+>>>>>
+
+<<<<<
+/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-custom-id/receiver.create/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver-custom-id",
+  "type": "receiver.create",
+  "taskId": "%s",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "workerNode": "%s",
+  "lock": "receiver.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-custom-id",
+  "result": "receiver created",
+  "duration": %d
+}
+>>>>>

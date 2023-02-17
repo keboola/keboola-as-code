@@ -1,0 +1,5 @@
+{
+  "statusCode": 409,
+  "error": "buffer.exportAlreadyExists",
+  "message": "Export \"my-export-1\" already exists in the receiver."
+}

@@ -1,0 +1,7 @@
+{
+  "path": "/v1/receivers/my-receiver",
+  "method": "DELETE",
+  "headers": {
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  }
+}

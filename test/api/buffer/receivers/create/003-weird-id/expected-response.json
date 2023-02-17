@@ -1,7 +1,0 @@
-{
-  "id": "weird-id",
-  "url": "https://buffer.keboola.local/v1/import/%%TEST_KBC_PROJECT_ID%%/weird-id/%s",
-  "name": "Custom Name",
-  "exports": []
-}
-

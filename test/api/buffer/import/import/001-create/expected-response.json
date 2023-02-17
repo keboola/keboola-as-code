@@ -1,57 +1,9 @@
 {
-  "id": "receiver-1",
-  "url": "https://buffer.keboola.local/v1/import/%%TEST_KBC_PROJECT_ID%%/receiver-1/%s",
-  "name": "Receiver 1",
-  "exports": [
-    {
-      "id": "export-1",
-      "receiverId": "receiver-1",
-      "name": "Export 1",
-      "mapping": {
-        "tableId": "in.c-bucket.table",
-        "incremental": true,
-        "columns": [
-          {
-            "primaryKey": false,
-            "type": "id",
-            "name": "id"
-          },
-          {
-            "primaryKey": false,
-            "type": "body",
-            "name": "body"
-          },
-          {
-            "primaryKey": false,
-            "type": "headers",
-            "name": "headers"
-          },
-          {
-            "primaryKey": false,
-            "type": "ip",
-            "name": "ip"
-          },
-          {
-            "primaryKey": false,
-            "type": "datetime",
-            "name": "datetime"
-          },
-          {
-            "primaryKey": false,
-            "type": "template",
-            "name": "template",
-            "template": {
-              "language": "jsonnet",
-              "content": "Body('col1')+\":\"+Body('col2')"
-            }
-          }
-        ]
-      },
-      "conditions": {
-        "count": 10000,
-        "size": "5MB",
-        "time": "5m0s"
-      }
-    }
-  ]
+  "id": "%s",
+  "receiverId": "receiver-1",
+  "url": "%s",
+  "type": "receiver.create",
+  "createdAt": "%s",
+  "isFinished": false,
+  "result": ""
 }

@@ -100,6 +100,36 @@ func TestStore_CreateExport_MaxCount(t *testing.T) {
 	}
 }
 
+func TestStore_CheckCreateExport_Exists(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := newStoreForTest(t)
+
+	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "github"}
+	exportKey := key.ExportKey{ExportID: "github-issues", ReceiverKey: receiverKey}
+	export := model.ExportBase{
+		ExportKey: exportKey,
+		Name:      "Github Issues",
+		ImportConditions: model.Conditions{
+			Count: 5,
+			Size:  datasize.MustParseString("50kB"),
+			Time:  30 * time.Minute,
+		},
+	}
+
+	// Check passes because there is no such export in the store.
+	err := store.CheckCreateExport(context.Background(), exportKey)
+	assert.NoError(t, err)
+
+	_, err = store.createExportBaseOp(ctx, export).Do(ctx, store.client)
+	assert.NoError(t, err)
+
+	// Check fails because there already is the same export in the store.
+	err = store.CheckCreateExport(context.Background(), exportKey)
+	assert.Equal(t, err.Error(), `export "github-issues" already exists in the receiver`)
+}
+
 func TestStore_GetExportBaseOp(t *testing.T) {
 	t.Parallel()
 

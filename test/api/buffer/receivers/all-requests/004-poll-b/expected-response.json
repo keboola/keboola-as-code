@@ -1,0 +1,11 @@
+{
+  "id": "%s",
+  "receiverId": "receiver-b",
+  "url": "%s",
+  "type": "receiver.create",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "isFinished": true,
+  "duration": %d,
+  "result": "receiver created"
+}

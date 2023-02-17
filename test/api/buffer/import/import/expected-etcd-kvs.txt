@@ -230,3 +230,20 @@
   "bodySize": "48B"
 }
 >>>>>
+
+<<<<<
+/task/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-1/receiver.create/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "receiver-1",
+  "type": "receiver.create",
+  "taskId": "%s",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "workerNode": "%s",
+  "lock": "receiver.create/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-1",
+  "result": "receiver created",
+  "duration": %d
+}
+>>>>>

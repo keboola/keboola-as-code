@@ -14,10 +14,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
 	bufferStore "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	bufferSchema "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher/apinode"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -31,7 +31,7 @@ type Mocked interface {
 	WatcherAPINode() *watcher.APINode
 	DistributionWorkerNode() *distribution.Node
 	WatcherWorkerNode() *watcher.WorkerNode
-	TaskWorkerNode() *task.Node
+	TaskNode() *task.Node
 	StatsCacheNode() *statistics.CacheNode
 	EventSender() *event.Sender
 
@@ -124,7 +124,7 @@ func (v *mocked) WatcherWorkerNode() *watcher.WorkerNode {
 	return v.watcherWatcherNode
 }
 
-func (v *mocked) TaskWorkerNode() *task.Node {
+func (v *mocked) TaskNode() *task.Node {
 	if v.taskWorkerNode == nil {
 		var err error
 		v.taskWorkerNode, err = task.NewNode(v)

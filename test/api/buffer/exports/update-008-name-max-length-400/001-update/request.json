@@ -1,0 +1,11 @@
+{
+  "path": "/v1/receivers/my-receiver/exports/my-export-1",
+  "method": "PATCH",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {
+    "name": "123456789-123456789-123456789-123456789-1"
+  }
+}

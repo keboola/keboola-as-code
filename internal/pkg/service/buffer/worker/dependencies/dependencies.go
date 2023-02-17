@@ -16,9 +16,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	serviceDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -29,7 +29,7 @@ type ForWorker interface {
 	serviceDependencies.ForService
 	DistributionWorkerNode() *distribution.Node
 	WatcherWorkerNode() *watcher.WorkerNode
-	TaskWorkerNode() *task.Node
+	TaskNode() *task.Node
 	EventSender() *event.Sender
 }
 
@@ -91,7 +91,7 @@ func (v *forWorker) WatcherWorkerNode() *watcher.WorkerNode {
 	return v.watcherNode
 }
 
-func (v *forWorker) TaskWorkerNode() *task.Node {
+func (v *forWorker) TaskNode() *task.Node {
 	return v.taskNode
 }
 

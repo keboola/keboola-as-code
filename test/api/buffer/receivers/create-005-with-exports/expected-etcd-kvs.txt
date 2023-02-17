@@ -1,0 +1,150 @@
+<<<<<
+/config/export/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-with-exports/my-export-1
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver-with-exports",
+  "exportId": "my-export-1",
+  "name": "My Export 1",
+  "importConditions": {
+    "count": 500,
+    "size": "100KB",
+    "time": 60000000000
+  }
+}
+>>>>>
+
+<<<<<
+/config/mapping/revision/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-with-exports/my-export-1/00000001
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver-with-exports",
+  "exportId": "my-export-1",
+  "revisionId": 1,
+  "tableId": "in.c-bucket.table",
+  "incremental": true,
+  "columns": [
+    {
+      "type": "id",
+      "name": "id"
+    },
+    {
+      "type": "template",
+      "name": "template",
+      "language": "jsonnet",
+      "content": "body.key+\":\"+body.value"
+    }
+  ]
+}
+>>>>>
+
+<<<<<
+/config/receiver/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-with-exports
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver-with-exports",
+  "name": "My Receiver With Exports",
+  "secret": "%s"
+}
+>>>>>
+
+<<<<<
+/file/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-with-exports/my-export-1/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver-with-exports",
+  "exportId": "my-export-1",
+  "fileId": "%s",
+  "state": "opened",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "my-receiver-with-exports",
+    "exportId": "my-export-1",
+    "revisionId": 1,
+    "tableId": "in.c-bucket.table",
+    "incremental": true,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "template",
+        "name": "template",
+        "language": "jsonnet",
+        "content": "body.key+\":\"+body.value"
+      }
+    ]
+  },
+  "storageResource": {
+    "id": %d,
+    "created": "%s",
+    "isSliced": true,
+    "isEncrypted": true,
+    %A
+  }
+}
+>>>>>
+
+<<<<<
+/secret/export/token/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-with-exports/my-export-1
+-----
+%A
+>>>>>
+
+<<<<<
+/slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-with-exports/my-export-1/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver-with-exports",
+  "exportId": "my-export-1",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "state": "active/opened/writing",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "my-receiver-with-exports",
+    "exportId": "my-export-1",
+    "revisionId": 1,
+    "tableId": "in.c-bucket.table",
+    "incremental": true,
+    "columns": [
+      {
+        "type": "id",
+        "name": "id"
+      },
+      {
+        "type": "template",
+        "name": "template",
+        "language": "jsonnet",
+        "content": "body.key+\":\"+body.value"
+      }
+    ]
+  },
+  "storageResource": {
+    %A
+  },
+  "sliceNumber": 1
+}
+>>>>>
+
+<<<<<
+/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-with-exports/receiver.create/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver-with-exports",
+  "type": "receiver.create",
+  "taskId": "%s",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "workerNode": "%s",
+  "lock": "receiver.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-with-exports",
+  "result": "receiver created",
+  "duration": %d
+}
+>>>>>

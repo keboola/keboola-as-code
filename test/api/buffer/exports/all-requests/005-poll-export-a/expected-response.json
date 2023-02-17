@@ -1,0 +1,11 @@
+{
+  "id": "%s",
+  "receiverId": "my-receiver",
+  "url": "%s",
+  "type": "export.create",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "isFinished": true,
+  "duration": %d,
+  "result": "export created"
+}

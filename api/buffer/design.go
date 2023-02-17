@@ -128,12 +128,12 @@ var _ = Service("buffer", func() {
 	Method("CreateReceiver", func() {
 		Meta("openapi:summary", "Create receiver")
 		Description("Create a new receiver for a given project")
-		Result(Receiver)
+		Result(Task)
 		Payload(CreateReceiverRequest)
 		HTTP(func() {
 			POST("/receivers")
 			Meta("openapi:tag:configuration")
-			Response(StatusOK)
+			Response(StatusAccepted)
 			ReceiverAlreadyExistsError()
 			ResourceCountLimitReachedError()
 		})
@@ -204,12 +204,12 @@ var _ = Service("buffer", func() {
 	Method("CreateExport", func() {
 		Meta("openapi:summary", "Create export")
 		Description("Create a new export for an existing receiver.")
-		Result(Export)
+		Result(Task)
 		Payload(CreateExportRequest)
 		HTTP(func() {
 			POST("/receivers/{receiverId}/exports")
 			Meta("openapi:tag:configuration")
-			Response(StatusOK)
+			Response(StatusAccepted)
 			ReceiverNotFoundError()
 			ExportAlreadyExistsError()
 			ResourceCountLimitReachedError()
@@ -246,7 +246,7 @@ var _ = Service("buffer", func() {
 	Method("UpdateExport", func() {
 		Meta("openapi:summary", "Update export")
 		Description("Update a receiver export.")
-		Result(Export)
+		Result(Task)
 		Payload(UpdateExportRequest)
 		HTTP(func() {
 			PATCH("/receivers/{receiverId}/exports/{exportId}")

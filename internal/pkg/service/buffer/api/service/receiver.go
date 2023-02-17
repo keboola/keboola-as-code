@@ -3,36 +3,54 @@ package service
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.Receiver, err error) {
+func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.Task, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
-
-	rb := rollback.New(s.logger)
-	defer rb.InvokeIfErr(ctx, &err)
 
 	receiver, err := s.mapper.CreateReceiverModel(key.ProjectID(d.ProjectID()), idgenerator.ReceiverSecret(), *payload)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.createResourcesForReceiver(ctx, d, rb, &receiver); err != nil {
+	// Check if receiver does not exist and the receivers count limit is not reached.
+	err = str.CheckCreateReceiver(ctx, receiver.ReceiverKey)
+	if err != nil {
 		return nil, err
 	}
 
-	if err := str.CreateReceiver(ctx, receiver); err != nil {
+	lock := "receiver.create/" + receiver.ReceiverKey.String()
+	t, err := d.TaskNode().StartTask(ctx, receiver.ReceiverKey, "receiver.create", lock, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+
+		rb := rollback.New(s.logger)
+		defer rb.InvokeIfErr(ctx, &err)
+
+		if err := s.createResourcesForReceiver(ctx, d, rb, &receiver); err != nil {
+			return "", err
+		}
+
+		if err := str.CreateReceiver(ctx, receiver); err != nil {
+			return "", err
+		}
+		return "receiver created", nil
+	})
+	if err != nil {
 		return nil, err
 	}
-
-	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: receiver.ReceiverID})
+	return s.mapper.TaskPayload(t), nil
 }
 
 func (s *service) UpdateReceiver(d dependencies.ForProjectRequest, payload *buffer.UpdateReceiverPayload) (res *buffer.Receiver, err error) {
