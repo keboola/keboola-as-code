@@ -18,7 +18,19 @@ type project struct {
 	keboolaProjectAPI *keboola.API
 }
 
-func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr string) (v Project, err error) {
+type projectDepsConfig struct {
+	withoutMasterToken bool
+}
+
+type ProjectDepsOption func(c *projectDepsConfig)
+
+func WithoutMasterToken() ProjectDepsOption {
+	return func(c *projectDepsConfig) {
+		c.withoutMasterToken = true
+	}
+}
+
+func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr string, opts ...ProjectDepsOption) (v Project, err error) {
 	ctx, span := base.Tracer().Start(ctx, "kac.lib.dependencies.NewProjectDeps")
 	defer telemetry.EndSpan(span, &err)
 
@@ -27,14 +39,19 @@ func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr stri
 		return nil, err
 	}
 
+	config := &projectDepsConfig{}
+	for _, opt := range opts {
+		opt(config)
+	}
+
 	base.Logger().Debugf("Storage API token is valid.")
 	base.Logger().Debugf(`Project id: "%d", project name: "%s".`, token.ProjectID(), token.ProjectName())
-	return newProjectDeps(ctx, base, public, *token)
+	return newProjectDeps(ctx, base, public, *token, config)
 }
 
-func newProjectDeps(ctx context.Context, base Base, public Public, token keboola.Token) (*project, error) {
+func newProjectDeps(ctx context.Context, base Base, public Public, token keboola.Token, config *projectDepsConfig) (*project, error) {
 	// Require master token
-	if !token.IsMaster {
+	if !config.withoutMasterToken && !token.IsMaster {
 		return nil, MasterTokenRequiredError{}
 	}
 

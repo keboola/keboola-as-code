@@ -21,7 +21,7 @@ type remote struct {
 	eventSender event.Sender
 }
 
-func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand) (*remote, error) {
+func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand, opts ...dependencies.ProjectDepsOption) (*remote, error) {
 	// Get Storage API token
 	token := cmdPublicDeps.Options().GetString(options.StorageAPITokenOpt)
 	if token == "" {
@@ -29,7 +29,7 @@ func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand) (*remote
 	}
 
 	// Create common remote dependencies (includes API authentication)
-	projectDeps, err := dependencies.NewProjectDeps(ctx, cmdPublicDeps, cmdPublicDeps, token)
+	projectDeps, err := dependencies.NewProjectDeps(ctx, cmdPublicDeps, cmdPublicDeps, token, opts...)
 	if err != nil {
 		var storageAPIErr *keboola.StorageError
 		if errors.As(err, &storageAPIErr) && storageAPIErr.ErrCode == "storage.tokenInvalid" {

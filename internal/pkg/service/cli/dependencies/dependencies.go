@@ -73,7 +73,7 @@ type ForRemoteCommand interface {
 type Provider interface {
 	BaseDependencies() Base
 	DependenciesForLocalCommand() (ForLocalCommand, error)
-	DependenciesForRemoteCommand() (ForRemoteCommand, error)
+	DependenciesForRemoteCommand(opts ...dependencies.ProjectDepsOption) (ForRemoteCommand, error)
 	// LocalProject method can be used by a CLI command that must be run in the local project directory.
 	// First, the local project is loaded, and then the authentication is performed,
 	// so the error that we are not in a project directory takes precedence over an invalid/missing token.

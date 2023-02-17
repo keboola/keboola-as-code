@@ -237,7 +237,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 	if err != nil {
 		panic(err)
 	}
-	projectDeps, err := newProjectDeps(c.ctx, baseDeps, publicDeps, c.storageAPIToken)
+	projectDeps, err := newProjectDeps(c.ctx, baseDeps, publicDeps, c.storageAPIToken, &projectDepsConfig{})
 	if err != nil {
 		panic(err)
 	}

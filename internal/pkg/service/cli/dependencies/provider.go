@@ -74,14 +74,14 @@ func (v *provider) DependenciesForLocalCommand() (ForLocalCommand, error) {
 	})
 }
 
-func (v *provider) DependenciesForRemoteCommand() (ForRemoteCommand, error) {
+func (v *provider) DependenciesForRemoteCommand(opts ...dependencies.ProjectDepsOption) (ForRemoteCommand, error) {
 	return v.projectDeps.InitAndGet(func() (*remote, error) {
 		publicDeps, err := v.DependenciesForLocalCommand()
 		if err != nil {
 			return nil, err
 		}
 
-		projectDeps, err := newProjectDeps(publicDeps.CommandCtx(), publicDeps)
+		projectDeps, err := newProjectDeps(publicDeps.CommandCtx(), publicDeps, opts...)
 		if err != nil {
 			return nil, err
 		}
