@@ -6,11 +6,11 @@ import (
 	"go/format"
 	"os"
 	"path/filepath"
-	"sort"
 
 	"entgo.io/ent/entc"
 	"entgo.io/ent/entc/gen"
 	"entgo.io/ent/entc/load"
+	"golang.org/x/tools/imports"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -59,15 +59,14 @@ func generateKey(targetDir string, schema *load.Schema, pkAnnotation PKAnnotatio
 	for _, field := range pkAnnotation.Fields {
 		importsMap[field.GoType.PkgPath] = struct{}{}
 	}
-	var imports []string
+	var importPkg []string
 	for pkgPath := range importsMap {
-		imports = append(imports, pkgPath)
+		importPkg = append(importPkg, pkgPath)
 	}
-	sort.Strings(imports)
 
 	// Data is in the template accessible by $ variable
 	data := map[string]any{
-		"Imports":   imports,
+		"Imports":   importPkg,
 		"Fields":    pkAnnotation.Fields,
 		"KeyStruct": keyStructName(schema.Name),
 	}
@@ -86,13 +85,17 @@ func generateKey(targetDir string, schema *load.Schema, pkAnnotation PKAnnotatio
 	}
 
 	// Format code
+	filePath := filepath.Join(targetDir, strhelper.FirstLower(schema.Name)+"Key.go")
 	code, err := format.Source(buf.Bytes())
+	if err != nil {
+		return err
+	}
+	code, err = imports.Process(filePath, code, nil)
 	if err != nil {
 		return err
 	}
 
 	// Write file
-	filePath := filepath.Join(targetDir, strhelper.FirstLower(schema.Name)+"Key.go")
 	return os.WriteFile(filePath, code, 0644)
 }
 
