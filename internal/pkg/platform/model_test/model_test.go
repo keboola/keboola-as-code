@@ -1,3 +1,4 @@
+//nolint:forbidigo
 package model_test
 
 import (
@@ -41,8 +42,8 @@ func TestModelDump(t *testing.T) {
 
 	// Dump
 	assert.NoError(t, os.RemoveAll(".out"))
-	assert.NoError(t, os.MkdirAll(".out", 0755))
-	assert.NoError(t, os.WriteFile(filepath.Join(".out", "model_actual.hcl"), hclBytes, 0644))
+	assert.NoError(t, os.MkdirAll(".out", 0o755))
+	assert.NoError(t, os.WriteFile(filepath.Join(".out", "model_actual.hcl"), hclBytes, 0o644))
 
 	// Compare
 	expected, err := os.ReadFile("expected/model_expected.hcl")

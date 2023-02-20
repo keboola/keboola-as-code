@@ -31,7 +31,7 @@ func TestUpdate(t *testing.T) {
 	assert.Equal(t, true, row.IsDisabled)
 
 	// Update
-	row, err = row.Update().SetName("new-name").SetDescription("New Description").SetIsDisabled(false).Save(ctx)
+	_, err = row.Update().SetName("new-name").SetDescription("New Description").SetIsDisabled(false).Save(ctx)
 	assert.NoError(t, err)
 
 	// Query again

@@ -2,7 +2,6 @@ package primarykey
 
 import (
 	"bytes"
-	"fmt"
 	"go/format"
 	"os"
 	"path/filepath"
@@ -24,12 +23,12 @@ func GenerateKeys(config *gen.Config) error {
 	// Load schema definitions
 	graph, err := entc.LoadGraph(config.Schema, config)
 	if err != nil {
-		return fmt.Errorf("cannot load schema: %w", err)
+		return errors.Errorf("cannot load schema: %w", err)
 	}
 
 	// Create target dir
 	targetDir := filepath.Join(graph.Target, keyPgkName)
-	if err := os.Mkdir(targetDir, 0744); err != nil {
+	if err := os.Mkdir(targetDir, 0o744); err != nil {
 		return err
 	}
 
@@ -96,7 +95,7 @@ func generateKey(targetDir string, schema *load.Schema, pkAnnotation PKAnnotatio
 	}
 
 	// Write file
-	return os.WriteFile(filePath, code, 0644)
+	return os.WriteFile(filePath, code, 0o644)
 }
 
 func keyStructName(schemaName string) string {

@@ -17,7 +17,6 @@ require (
 	github.com/benbjohnson/clock v1.3.0
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/cenkalti/backoff/v4 v4.2.0
-	github.com/davecgh/go-spew v1.1.1
 	github.com/fatih/color v1.14.1
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
@@ -26,7 +25,6 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-jsonnet v0.19.1
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
-	github.com/hedwigz/entviz v0.0.0-20221011080911-9d47f6f1d818
 	github.com/jarcoal/httpmock v1.3.0
 	github.com/joho/godotenv v1.4.0
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
@@ -62,7 +60,6 @@ require (
 	google.golang.org/grpc v1.53.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.47.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
-	rsc.io/tmp v0.0.0-20221223214843-e3dea045e16e
 	v.io/x/lib v0.1.13
 )
 
@@ -95,7 +92,7 @@ require (
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/philhofer/fwd v1.1.1 // indirect
-	github.com/sergi/go-diff v1.3.1
+	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/tinylib/msgp v1.1.6 // indirect
@@ -161,6 +158,7 @@ require (
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.4.0 // indirect
 	github.com/creack/pty v1.1.18 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/dlclark/regexp2 v1.7.0 // indirect
 	github.com/eliukblau/pixterm/pkg/ansimage v0.0.0-20191210081756-9fb6cf8c2f75 // indirect

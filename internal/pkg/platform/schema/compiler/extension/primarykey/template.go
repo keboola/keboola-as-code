@@ -2,7 +2,7 @@ package primarykey
 
 import (
 	"embed"
-	"path/filepath"
+	"path"
 	"text/template"
 
 	"entgo.io/ent/entc/gen"
@@ -17,7 +17,7 @@ func loadTemplate(file string, funcs template.FuncMap) (*gen.Template, error) {
 	tmpl, err := gen.
 		NewTemplate(file).
 		Funcs(funcs).
-		ParseFS(templateFs, filepath.Join("template", file))
+		ParseFS(templateFs, path.Join("template", file))
 	if err != nil {
 		return nil, errors.Errorf(`cannot load template "%s": %w`, file, err)
 	}

@@ -43,8 +43,8 @@ func TestGenerateKeys(t *testing.T) {
 
 	// Assert files content
 	assert.Len(t, files, 2)
-	assert.Equal(t, expectedChildKeyGo(t), files["key/childKey.go"])
-	assert.Equal(t, expectedSubChildKeyGo(t), files["key/subChildKey.go"])
+	assert.Equal(t, expectedChildKeyGo(t), files[filepath.Join("key", "childKey.go")])
+	assert.Equal(t, expectedSubChildKeyGo(t), files[filepath.Join("key", "subChildKey.go")])
 }
 
 func expectedChildKeyGo(t *testing.T) string {

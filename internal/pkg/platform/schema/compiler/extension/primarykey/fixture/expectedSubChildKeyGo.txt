@@ -5,9 +5,10 @@ package key
 import (
 	"database/sql/driver"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/platform/schema/compiler/extension/primarykey/fixture"
 	"strconv"
 	"strings"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/platform/schema/compiler/extension/primarykey/fixture"
 )
 
 type SubChildKey struct {

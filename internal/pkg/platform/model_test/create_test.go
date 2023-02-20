@@ -6,9 +6,8 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/stretchr/testify/assert"
-
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/enttest"

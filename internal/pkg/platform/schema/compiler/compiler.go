@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -39,7 +38,7 @@ func main() {
 }
 
 func clearDir(dir string) error {
-	items, err := ioutil.ReadDir(dir)
+	items, err := os.ReadDir(dir)
 	if err != nil {
 		return err
 	}
