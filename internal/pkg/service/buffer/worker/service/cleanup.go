@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	cleanupPkg "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/cleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -61,7 +62,8 @@ func (c *cleanup) check(ctx context.Context) {
 			continue
 		}
 
-		err := c.store.Cleanup(ctx, receiver, c.logger)
+		cleanup := cleanupPkg.New(c.etcdClient, c.clock, c.logger, c.schema, c.store)
+		err := cleanup.Run(ctx, receiver)
 		if err != nil && !errors.Is(err, context.Canceled) {
 			c.logger.Error(err)
 		}
