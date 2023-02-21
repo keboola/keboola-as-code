@@ -1,4 +1,4 @@
-package store
+package cleanup
 
 import (
 	"context"
@@ -7,22 +7,31 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func TestStore_Cleanup(t *testing.T) {
+func Test_Cleanup(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	store := newStoreForTest(t)
+
+	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
+	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
+	d := bufferDependencies.NewMockedDeps(t, dependencies.WithEtcdNamespace(etcdNamespace))
+	str := d.Store()
+	schema := d.Schema()
+
+	cleanup := New(client, d.Clock(), d.Logger(), schema, str)
 
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "github"}
 	exportKey1 := key.ExportKey{ExportID: "first", ReceiverKey: receiverKey}
@@ -67,7 +76,7 @@ func TestStore_Cleanup(t *testing.T) {
 		Error:      "err",
 		Duration:   nil,
 	}
-	err := store.schema.Tasks().ByKey(taskKey1).Put(task1).Do(ctx, store.client)
+	err := schema.Tasks().ByKey(taskKey1).Put(task1).Do(ctx, client)
 	assert.NoError(t, err)
 
 	// Add task with a finishedAt timestamp in the past - will be deleted
@@ -84,7 +93,7 @@ func TestStore_Cleanup(t *testing.T) {
 		Error:      "",
 		Duration:   nil,
 	}
-	err = store.schema.Tasks().ByKey(taskKey2).Put(task2).Do(ctx, store.client)
+	err = schema.Tasks().ByKey(taskKey2).Put(task2).Do(ctx, client)
 	assert.NoError(t, err)
 
 	// Add task with a finishedAt timestamp before a moment - will be ignored
@@ -101,7 +110,7 @@ func TestStore_Cleanup(t *testing.T) {
 		Error:      "",
 		Duration:   nil,
 	}
-	err = store.schema.Tasks().ByKey(taskKey3).Put(task3).Do(ctx, store.client)
+	err = schema.Tasks().ByKey(taskKey3).Put(task3).Do(ctx, client)
 	assert.NoError(t, err)
 
 	// Add file with an Opened state and created in the past - will be deleted
@@ -117,7 +126,7 @@ func TestStore_Cleanup(t *testing.T) {
 		},
 		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
-	err = store.schema.Files().InState(filestate.Opened).ByKey(fileKey1).Put(file1).Do(ctx, store.client)
+	err = schema.Files().InState(filestate.Opened).ByKey(fileKey1).Put(file1).Do(ctx, client)
 	assert.NoError(t, err)
 
 	// Add file with an Opened state and created recently - will be ignored
@@ -133,7 +142,7 @@ func TestStore_Cleanup(t *testing.T) {
 		},
 		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
-	err = store.schema.Files().InState(filestate.Opened).ByKey(fileKey2).Put(file2).Do(ctx, store.client)
+	err = schema.Files().InState(filestate.Opened).ByKey(fileKey2).Put(file2).Do(ctx, client)
 	assert.NoError(t, err)
 
 	// Add slice for the cleaned-up file - will be deleted
@@ -150,7 +159,7 @@ func TestStore_Cleanup(t *testing.T) {
 		},
 		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
-	err = store.schema.Slices().InState(slicestate.Imported).ByKey(sliceKey1).Put(slice1).Do(ctx, store.client)
+	err = schema.Slices().InState(slicestate.Imported).ByKey(sliceKey1).Put(slice1).Do(ctx, client)
 	assert.NoError(t, err)
 
 	// Add slice for the ignored file - will be ignored
@@ -167,25 +176,25 @@ func TestStore_Cleanup(t *testing.T) {
 		},
 		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
-	err = store.schema.Slices().InState(slicestate.Imported).ByKey(sliceKey2).Put(slice2).Do(ctx, store.client)
+	err = schema.Slices().InState(slicestate.Imported).ByKey(sliceKey2).Put(slice2).Do(ctx, client)
 	assert.NoError(t, err)
 
 	// Add record for the cleaned-up slice - will be deleted
 	recordKey1 := key.RecordKey{SliceKey: sliceKey1, ReceivedAt: key.ReceivedAt(createdAt), RandomSuffix: "abcd"}
-	err = store.schema.Records().ByKey(recordKey1).Put("rec").Do(ctx, store.client)
+	err = schema.Records().ByKey(recordKey1).Put("rec").Do(ctx, client)
 	assert.NoError(t, err)
 
 	// Add record for the ignored slice - will be ignored
 	recordKey2 := key.RecordKey{SliceKey: sliceKey2, ReceivedAt: key.ReceivedAt(time3), RandomSuffix: "efgh"}
-	err = store.schema.Records().ByKey(recordKey2).Put("rec").Do(ctx, store.client)
+	err = schema.Records().ByKey(recordKey2).Put("rec").Do(ctx, client)
 	assert.NoError(t, err)
 
 	// Run the cleanup
-	err = store.Cleanup(ctx, receiver, log.NewNopLogger())
+	err = cleanup.Run(ctx, receiver)
 	assert.NoError(t, err)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVs(t, client, `
 <<<<<
 file/opened/00001000/github/third/%s
 -----
