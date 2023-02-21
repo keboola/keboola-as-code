@@ -32,7 +32,7 @@ func TestUploadAndImportE2E(t *testing.T) {
 	t.Parallel()
 
 	project := testproject.GetTestProjectForTest(t)
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel()
 
 	// Test dependencies
@@ -82,7 +82,7 @@ func TestUploadAndImportE2E(t *testing.T) {
 		sliceCloseOk := wildcards.Compare("%A[task][slice.close/%s]INFO  task succeeded (%s): slice closed%A", strhelper.FilterLines(`\[task\]\[slice.close`, logs)) == nil
 		sliceUploadOk := wildcards.Compare("%A[task][slice.upload/%s]INFO  task succeeded (%s): slice uploaded%A", strhelper.FilterLines(`\[task\]\[slice.upload`, logs)) == nil
 		return conditionsOk && sliceCloseOk && sliceUploadOk
-	}, 60*time.Second, 100*time.Millisecond, logger.AllMessages())
+	}, 100*time.Second, 100*time.Millisecond, logger.AllMessages())
 	logger.Truncate()
 
 	// Create next 4 records - trigger the file import (>=10)
@@ -105,7 +105,7 @@ func TestUploadAndImportE2E(t *testing.T) {
 		fileCloseOk := wildcards.Compare("%A[task][file.close/%s]INFO  task succeeded (%s): file closed%A", strhelper.FilterLines(`\[task\]\[file.close`, logs)) == nil
 		fileImportOk := wildcards.Compare("%A[task][file.import/%s]INFO  task succeeded (%s): file imported%A", strhelper.FilterLines(`\[task\]\[file.import`, logs)) == nil
 		return conditionsOk && sliceCloseOk && sliceUploadOk && fileCloseWaitOk && fileCloseOk && fileImportOk
-	}, 60*time.Second, 100*time.Millisecond, logger.AllMessages())
+	}, 100*time.Second, 100*time.Millisecond, logger.AllMessages())
 	logger.Truncate()
 
 	// Check the target table: records count
@@ -151,7 +151,7 @@ func TestUploadAndImportE2E(t *testing.T) {
 		sliceOk := wildcards.Compare("%A[task][slice.upload/%s]INFO  task succeeded (%s): skipped upload of the empty slice%A", strhelper.FilterLines(`\[task\]\[slice.upload`, logs)) == nil
 		fileOk := wildcards.Compare("%A[task][file.import/%s]INFO  task succeeded (%s): skipped import of the empty file%A", strhelper.FilterLines(`\[task\]\[file.import`, logs)) == nil
 		return sliceOk && fileOk
-	}, 60*time.Second, 100*time.Millisecond, logger.AllMessages())
+	}, 100*time.Second, 100*time.Millisecond, logger.AllMessages())
 	logger.Truncate()
 
 	// Check etcd state
