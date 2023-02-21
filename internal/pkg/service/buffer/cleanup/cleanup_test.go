@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -25,7 +25,7 @@ func Test_Cleanup(t *testing.T) {
 
 	ctx := context.Background()
 
-	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
+	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithEtcdNamespace(etcdNamespace))
 	str := d.Store()

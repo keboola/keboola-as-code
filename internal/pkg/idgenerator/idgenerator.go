@@ -13,22 +13,23 @@ const (
 // alphabet used in ID generation.
 var alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
+func Random(length int) string {
+	// nolint: forbidigo
+	return gonanoid.MustGenerate(alphabet, length)
+}
+
 func RequestID() string {
-	return gonanoid.MustGenerate(alphabet, RequestIDLength)
+	return Random(RequestIDLength)
 }
 
 func TemplateInstanceID() string {
-	return gonanoid.MustGenerate(alphabet, TemplateInstanceIDLength)
+	return Random(TemplateInstanceIDLength)
 }
 
 func EtcdNamespaceForTest() string {
-	return gonanoid.MustGenerate(alphabet, EtcdNamespaceForE2ETestLength)
+	return Random(EtcdNamespaceForE2ETestLength)
 }
 
 func ReceiverSecret() string {
-	return gonanoid.MustGenerate(alphabet, ReceiverSecretLength)
-}
-
-func Random(length int) string {
-	return gonanoid.MustGenerate(alphabet, length)
+	return Random(ReceiverSecretLength)
 }

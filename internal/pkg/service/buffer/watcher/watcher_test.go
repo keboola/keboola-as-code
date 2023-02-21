@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
@@ -33,7 +33,7 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 	defer cancel()
 
 	logger := log.NewDebugLogger()
-	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
+	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithEtcdNamespace(etcdNamespace))

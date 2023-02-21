@@ -49,6 +49,8 @@ linters-settings:
       - ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$(# Os ENVs singleton is forbidden, use env\.Map instead)?
       # No errors.Errorf, use errors.Errorf instead to include stack trace
       - ^fmt\.Errorf$(# Use errors\.Errorf instead to include stack trace)?
+      # No "gonanoid" package, use "internal/pkg/idgenerator" package instead
+      - ^gonanoid\..*$(# Use "internal/pkg/idgenerator" package instead)?
   depguard:
     list-type: denylist
     include-go-root: true
@@ -59,7 +61,7 @@ linters-settings:
   stylecheck:
     checks:
       - all
-      - '-ST1001' # Disable dot imports style check
+      - "-ST1001" # Disable dot imports style check
 
 # https://golangci-lint.run/usage/linters
 linters:
@@ -133,13 +135,13 @@ issues:
 
   # List of regexps of issue texts to exclude
   exclude:
-    - 'G306: Expect WriteFile permissions to be 0600 or less'
-    - 'string `keboola.*` has .* occurrences, make it a constant'
-    - 'string `true` has .* occurrences, make it a constant'
-    - 'string `false` has .* occurrences, make it a constant'
-    - 'ineffectual assignment to ctx'
-    - 'should not use underscores in package names'
-    - 'this value of `ctx` is never use'
+    - "G306: Expect WriteFile permissions to be 0600 or less"
+    - "string `keboola.*` has .* occurrences, make it a constant"
+    - "string `true` has .* occurrences, make it a constant"
+    - "string `false` has .* occurrences, make it a constant"
+    - "ineffectual assignment to ctx"
+    - "should not use underscores in package names"
+    - "this value of `ctx` is never use"
 
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
@@ -165,7 +167,7 @@ issues:
       linters:
         - depguard
     - path: internal/pkg/utils/errors/.*
-      text: 'use of `fmt.Errorf` forbidden'
+      text: "use of `fmt.Errorf` forbidden"
       linters:
         - forbidigo
     # Allow Zap logger in internal log package
@@ -181,3 +183,4 @@ issues:
     - path: api/.*
       linters:
         - stylecheck
+

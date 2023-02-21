@@ -7,9 +7,9 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/keboola"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -28,7 +28,7 @@ func TestCacheNode(t *testing.T) {
 	clk := clock.NewMock()
 	clk.Set(time.Time{})
 	clk.Add(time.Second)
-	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
+	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	opts := []dependencies.MockedOption{dependencies.WithClock(clk), dependencies.WithEtcdNamespace(etcdNamespace)}
 	apiDeps1 := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("api-node-1"))...)
 	apiDeps2 := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("api-node-2"))...)
