@@ -11,10 +11,10 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-utils/pkg/wildcards"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -30,7 +30,7 @@ func TestDistributedWork(t *testing.T) {
 
 	clk := clock.NewMock()
 
-	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
+	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 
 	logsPerNode := make(map[string]*ioutil.AtomicWriter)

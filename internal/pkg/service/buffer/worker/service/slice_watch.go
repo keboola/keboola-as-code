@@ -4,9 +4,9 @@ import (
 	"context"
 	"sync"
 
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -119,7 +119,7 @@ func (w *activeSlicesWatcher) countSlices(fileKey key.FileKey) int {
 }
 
 func (w *activeSlicesWatcher) onAllUploaded(fileKey key.FileKey) (ch <-chan struct{}, stopFn func()) {
-	id := listenerID(gonanoid.Must(10))
+	id := listenerID(idgenerator.Random(10))
 	l := &listener{
 		fileKey: fileKey,
 		ch:      make(chan struct{}),

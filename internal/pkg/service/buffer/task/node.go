@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -124,7 +124,7 @@ func (n *Node) TasksCount() int64 {
 // The context will be passed to the operation callback.
 func (n *Node) StartTask(ctx context.Context, receiverKey key.ReceiverKey, typ, lock string, operation Task) (t *model.Task, err error) {
 	createdAt := key.UTCTime(n.clock.Now())
-	taskID := key.TaskID(fmt.Sprintf("%s_%s", createdAt.String(), gonanoid.Must(5)))
+	taskID := key.TaskID(fmt.Sprintf("%s_%s", createdAt.String(), idgenerator.Random(5)))
 	taskKey := key.TaskKey{ReceiverKey: receiverKey, Type: typ, TaskID: taskID}
 
 	// Lock task locally for periodical re-syncs,

@@ -12,10 +12,10 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-client/pkg/keboola/storage_file_upload/s3"
 	"github.com/keboola/go-utils/pkg/wildcards"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
@@ -45,7 +45,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	defer cancel()
 	clk := clock.NewMock()
 	clk.Set(time.Time{}.Add(time.Second))
-	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
+	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	opts := []dependencies.MockedOption{
 		dependencies.WithClock(clk),

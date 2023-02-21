@@ -15,11 +15,11 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/wildcards"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
@@ -89,7 +89,7 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 	assert.NoError(t, err)
 	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, logger: log.NewNopLogger(), repositoryManager: manager}
 	requestDepsFactory := func(ctx context.Context) (ForProjectRequest, error) {
-		requestId := gonanoid.Must(8)
+		requestId := idgenerator.Random(8)
 		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, ctx, requestId), ctx, mockedDeps.StorageAPITokenID())
 	}
 
@@ -214,7 +214,7 @@ func TestForProjectRequest_Template_Cached(t *testing.T) {
 	assert.NoError(t, err)
 	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, logger: log.NewNopLogger(), repositoryManager: manager}
 	requestDepsFactory := func(ctx context.Context) (ForProjectRequest, error) {
-		requestId := gonanoid.Must(8)
+		requestId := idgenerator.Random(8)
 		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, ctx, requestId), ctx, mockedDeps.StorageAPITokenID())
 	}
 

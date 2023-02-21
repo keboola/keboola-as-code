@@ -9,9 +9,9 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-utils/pkg/wildcards"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -29,7 +29,7 @@ func TestOnChangeListener(t *testing.T) {
 	var d1, d2, d3, d4 bufferDependencies.Mocked
 
 	listenerLogs := ioutil.NewAtomicWriter()
-	etcdNamespace := "unit-" + t.Name() + "-" + gonanoid.Must(8)
+	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 
 	// Create node with a listener
 	node1, d1 = createNode(t, clk, nil, etcdNamespace, "node1")

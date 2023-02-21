@@ -14,10 +14,10 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -297,7 +297,7 @@ func (r *RemoteRepository) copyWorkingToStableDir(ctx context.Context) (err erro
 	if err != nil {
 		return err
 	}
-	stableDir := filepath.Join(r.baseDirPath, commitHash+"-"+gonanoid.Must(8))
+	stableDir := filepath.Join(r.baseDirPath, commitHash+"-"+idgenerator.Random(8))
 	if err := os.Mkdir(stableDir, 0o700); err != nil {
 		return errors.Errorf("cannot create stable dir for git repository: %w", err)
 	}

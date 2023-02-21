@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	gonanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 )
 
 // Listener listens for distribution changes, when a node is added or removed.
@@ -126,7 +126,7 @@ func (v *listeners) add() *Listener {
 		cancel: cancel,
 		wg:     &sync.WaitGroup{},
 		all:    v,
-		id:     listenerID(gonanoid.Must(10)),
+		id:     listenerID(idgenerator.Random(10)),
 		C:      make(chan Events),
 	}
 	v.lock.Lock()

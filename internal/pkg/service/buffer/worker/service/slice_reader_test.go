@@ -8,9 +8,9 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -28,7 +28,7 @@ func TestRecordsReader(t *testing.T) {
 
 	recordsCount := 5
 	recordSize := datasize.MB
-	value := gonanoid.Must(int(recordSize))
+	value := idgenerator.Random(int(recordSize))
 
 	clk := clock.NewMock()
 	clk.Set(time.Time{}.Add(time.Second))

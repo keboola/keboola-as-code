@@ -4,9 +4,9 @@ import (
 	"context"
 	"sync"
 
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"go.uber.org/atomic"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
@@ -74,7 +74,7 @@ func (l *listeners) waitForRevision(requestedRev int64, currentRev *atomic.Int64
 	}
 
 	// Check again the next time, see onChange method
-	out := &Listener{all: l, id: listenerID(gonanoid.Must(10)), rev: requestedRev, C: make(chan struct{})}
+	out := &Listener{all: l, id: listenerID(idgenerator.Random(10)), rev: requestedRev, C: make(chan struct{})}
 	l.wg.Add(1)
 	l.listeners[out.id] = out
 	return out
