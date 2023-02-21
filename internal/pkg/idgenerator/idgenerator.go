@@ -14,6 +14,7 @@ const (
 var alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func Random(length int) string {
+	// nolint: forbidigo
 	return gonanoid.MustGenerate(alphabet, length)
 }
 
