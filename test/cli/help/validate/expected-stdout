@@ -3,8 +3,16 @@ Command "local validate"
 Validate existence and contents of all files in the local project dir.
 For components with a JSON schema, the content must match the schema.
 
+If you do not want to validate the entire local directory,
+you can use one of the sub-commands to validate a single file.
+
 Usage:
-  %s local validate [flags]
+  %s local validate [command]
+
+Available Commands:
+  local validate config  Validate a configuration JSON file.
+  local validate row     Validate a configuration row JSON file.
+  local validate schema  Validate a configuration/row JSON file by a JSON schema file.
 
 Global Flags:
 %A
