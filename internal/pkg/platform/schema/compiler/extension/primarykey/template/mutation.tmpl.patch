@@ -1,0 +1,80 @@
+diff --git
+--- a/mutation.tmpl
++++ b/mutation.tmpl
+@@ -154,7 +154,36 @@ // SetID sets the value of the id field. Note that this
+ 		// operation is only accepted on creation of {{ $n.Name }} entities.
+ 		func (m *{{ $mutation }}) SetID(id {{ $n.ID.Type }}) {
+ 			m.{{ $n.ID.BuilderField }} = &id
++			{{- with PKFields $n.ID.Annotations }}
++				// Added by "primarykey" ent extension
++				// ------------------------------------
++				// Update also primary key fields
++				{{- range . }}
++					m.Set{{ .PublicName }}(id.{{ .PublicName }})
++				{{- end }}
++				// Set parent
++				{{- with $e := ParentEdge $n }}
++					{{- with $f := ParentEdgePKFields $e }}
++						m.SetParentID({{ KeyStruct $e.Type }}{
++						{{- range $f }}
++							{{ .PublicName }}: id.{{ .PublicName }},
++						{{- end }}
++						})
++					{{- end }}
++				{{- end }}
++				// ------------------------------------
++			{{ end }}
+ 		}
+@@ -194,12 +213,31 @@ // {{ $func }} sets the "{{ $f.Name }}" field.
+ 	func (m *{{ $mutation }}) {{ $func }}({{ $p }} {{ $f.Type }}) {
+ 		m.{{ $f.BuilderField }} = &{{ $p }}
+ 		{{- /* Setting numeric type override previous calls to Add. */}}
+ 		{{- if $f.SupportsMutationAdd }}
+ 			m.add{{ $f.BuilderField }} = nil
+ 		{{- end }}
+ 		{{- /* Setting JSON type override previous calls to Append. */}}
+ 		{{- if $f.SupportsMutationAppend }}
+ 			m.append{{ $f.BuilderField }} = nil
+ 		{{- end }}
++		{{- with $pk := PKField $f }}
++			// Added by "primarykey" ent extension
++			// ------------------------------------
++			// Update also part of the primary key
++			if m.id == nil {
++				m.id = &{{ KeyStruct $n }}{}
++			}
++			m.id.{{ .PublicName }} = ki
++			{{- with $e := ParentEdge $n }}
++				{{- if HasField $e.Type $f }}
++					// Update also part of edge to the parent
++					if m.parent == nil {
++						m.parent = &{{ KeyStruct $e.Type }}{}
++					}
++					m.parent.{{ $pk.PublicName }} = ki
++				{{- end }}
++			{{- end }}
++			// ------------------------------------
++		{{- end }}
+ 	}
+@@ -316,30 +354,39 @@ // {{ $idsFunc }} {{ $op }}s the "{{ $e.Name }}" edge to the {{ $e.Type.Name }} entity by id{{ if not $e.Unique }}s{{ end }}.
+ 		func (m *{{ $mutation }}) {{ $idsFunc }}({{ if $e.Unique }}id{{ else }}ids ...{{ end }} {{ $e.Type.ID.Type }}) {
+ 			{{- if $e.Unique }}
+ 				m.{{ $e.BuilderField }} = &id
++				{{- with ParentEdgePKFields $e }}
++					// Added by "primarykey" ent extension
++					// ------------------------------------
++					// Update also part of the primary key
++					{{- range . }}
++						m.Set{{ .PublicName }}(id.{{ .PublicName }})
++					{{- end }}
++					// ------------------------------------
++				{{ end}}
+ 			{{- else }}
+ 				if m.{{ $e.BuilderField }} == nil {
+ 					m.{{ $e.BuilderField }} = make(map[{{ $e.Type.ID.Type }}]struct{})
+ 				}
+ 				for i := range ids {
+ 					m.{{ $e.BuilderField }}[ids[i]] = struct{}{}
+ 				}
+ 			{{- end }}
+ 		}

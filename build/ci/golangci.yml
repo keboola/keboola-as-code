@@ -2,7 +2,7 @@ run:
   timeout: 5m
   concurrency: 8
   tests: true # check test files
-  skip-files: []
+  skip-files: [ ]
   skip-dirs:
     - build
     - docs
@@ -183,4 +183,12 @@ issues:
     - path: api/.*
       linters:
         - stylecheck
-
+    # Allow direct file operations in code generator
+    - path: internal/pkg/platform/schema/compiler/.*
+      text: "os."
+      linters:
+        - forbidigo
+    - path: internal/pkg/platform/schema/compiler/.*
+      text: "filepath."
+      linters:
+        - forbidigo

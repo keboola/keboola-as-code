@@ -101,8 +101,8 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespac
 	etcdClient, err := etcd.New(etcd.Config{
 		Context:              ctx,
 		Endpoints:            []string{endpoint},
-		DialTimeout:          2 * time.Second,
-		DialKeepAliveTimeout: 2 * time.Second,
+		DialTimeout:          10 * time.Second,
+		DialKeepAliveTimeout: 5 * time.Second,
 		DialKeepAliveTime:    10 * time.Second,
 		Username:             username, // optional
 		Password:             password, // optional

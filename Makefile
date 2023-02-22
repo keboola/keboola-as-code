@@ -5,6 +5,9 @@ tools:
 
 prepare: generate-templates-api generate-buffer-api
 
+generate-model:
+	./scripts/generate-model.sh
+
 generate-templates-api:
 	if [ ! -d "internal/pkg/service/templates/api/gen/http" ] || [ -z $(SKIP_API_CODE_REGENERATION) ]; then SERVICE_NAME=templates bash ./scripts/generate-api.sh; fi
 

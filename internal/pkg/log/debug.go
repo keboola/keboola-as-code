@@ -123,7 +123,7 @@ func debugCore(writer *ioutil.AtomicWriter, level zapcore.LevelEnabler) zapcore.
 	}
 	return zapcore.NewCore(
 		newPrefixEncoder(zapcore.NewConsoleEncoder(encoderConfig)),
-		zapcore.Lock(writer),
+		writer,
 		level,
 	)
 }
