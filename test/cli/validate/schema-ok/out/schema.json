@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "title": "Parameters",
+  "required": [
+    "subscriptionId"
+  ],
+  "properties": {
+    "subscriptionId": {
+      "type": "string",
+      "title": "Subscription ID",
+      "default": "",
+      "minLength": 1,
+      "description": "ID of the Azure subscription.",
+      "propertyOrder": 1
+    }
+  }
+}
