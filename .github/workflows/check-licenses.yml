@@ -49,7 +49,6 @@ jobs:
         # Ignored:
         #    - github.com/eliukblau/pixterm, license detection failed (Reciprocal - MPL-2.0)
         run: |
-          make prepare
           go-licenses check ./... --disallowed_types forbidden,restricted,unknown \
             --ignore github.com/eliukblau/pixterm
         shell: bash
