@@ -1,0 +1,1 @@
+Validate a configuration/row JSON file by a JSON schema file.
