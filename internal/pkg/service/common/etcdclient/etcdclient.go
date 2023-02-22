@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	defaultConnectionTimeout = 2 * time.Second
-	defaultKeepAliveTimeout  = 2 * time.Second
+	defaultConnectionTimeout = 10 * time.Second
+	defaultKeepAliveTimeout  = 5 * time.Second
 	defaultKeepAliveInterval = 10 * time.Second
 	defaultAutoSyncInterval  = 1 * time.Minute
 )
