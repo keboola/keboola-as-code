@@ -1,0 +1,13 @@
+Command "local validate config"
+
+Validate content of the specified JSON file against
+the current configuration JSON schema of the component.
+
+The component configuration JSON schema
+contains a schema for the "parameters" key.
+
+Usage:
+  %s local validate config component.id config.json [flags]
+
+Global Flags:
+%A

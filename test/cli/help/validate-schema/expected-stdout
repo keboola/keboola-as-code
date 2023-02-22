@@ -1,0 +1,13 @@
+Command "local validate schema"
+
+Validate content of the specified JSON file
+against the specified JSON schema file.
+
+The JSON schema should contain a schema for the "parameters" key,
+just like in a component definition.
+
+Usage:
+  %s local validate schema schema.json config.json [flags]
+
+Global Flags:
+%A

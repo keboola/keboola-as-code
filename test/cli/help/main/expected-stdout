@@ -32,6 +32,9 @@ Available Commands:
   local persist                  Detect new/deleted configurations and rows.
   local encrypt                  Encrypt all unencrypted secrets.
   local validate                 Validate the local directory.
+  local validate config          Validate a configuration JSON file.
+  local validate row             Validate a configuration row JSON file.
+  local validate schema          Validate a configuration/row JSON file by a JSON schema file.
   local fix-paths                Ensure that all paths match configured naming.
   local template                 Manage templates in the local directory.
   local template list            List template instances in the project.

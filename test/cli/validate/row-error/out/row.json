@@ -1,0 +1,14 @@
+{
+  "parameters": {
+    "export": {
+      "destination": "table-1",
+      "granularity": "Daily",
+      "groupingDimensions": "***should be array***",
+      "incremental": true,
+      "timeDimension": {
+        "timeFrame": "WeekToDate"
+      },
+      "type": "ActualCost"
+    }
+  }
+}

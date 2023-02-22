@@ -1,0 +1,1 @@
+local validate config keboola.ex-azure-cost-management config.json

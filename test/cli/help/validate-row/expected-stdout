@@ -1,0 +1,13 @@
+Command "local validate row"
+
+Validate content of the specified JSON file against
+the current configuration row JSON schema of the component.
+
+The component configuration row JSON schema
+contains a schema for the "parameters" key.
+
+Usage:
+  %s local validate row component.id row.json [flags]
+
+Global Flags:
+%A
