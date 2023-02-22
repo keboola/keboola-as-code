@@ -4,7 +4,7 @@ Validate existence and contents of all files in the local project dir.
 For components with a JSON schema, the content must match the schema.
 
 Usage:
-  %s validate [flags]
+  %s local validate [flags]
 
 Global Flags:
 %A
