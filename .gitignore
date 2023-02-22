@@ -31,11 +31,6 @@ target
 /.env
 /scripts/k6/.env
 
-# Generated code
-/**/gen/*
-/**/openapi/*
-!/**/openapi/fs.go
-
 # Integration tests output
 /src/tests/**/.out/*
 
