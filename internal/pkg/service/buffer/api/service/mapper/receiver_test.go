@@ -44,7 +44,7 @@ func TestReceiverModel(t *testing.T) {
 							Name: "template",
 							Template: &buffer.Template{
 								Language: "jsonnet",
-								Content:  `a+":"+b`,
+								Content:  `Body("a")+":"+Body("a")`,
 							},
 						},
 					},
@@ -102,7 +102,7 @@ func TestReceiverModel(t *testing.T) {
 						column.Template{
 							Name:     "template",
 							Language: "jsonnet",
-							Content:  `a+":"+b`,
+							Content:  `Body("a")+":"+Body("a")`,
 						},
 					},
 				},
@@ -165,7 +165,7 @@ func TestReceiverPayload(t *testing.T) {
 						column.Template{
 							Name:     "template",
 							Language: "jsonnet",
-							Content:  `a+":"+b`,
+							Content:  `Body("a")+":"+Body("a")`,
 						},
 					},
 				},
@@ -195,7 +195,7 @@ func TestReceiverPayload(t *testing.T) {
 							Name: "template",
 							Template: &buffer.Template{
 								Language: "jsonnet",
-								Content:  "a+\":\"+b",
+								Content:  `Body("a")+":"+Body("a")`,
 							},
 						},
 					},
