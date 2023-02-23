@@ -10,9 +10,9 @@ import (
 func TestValidate_Simple(t *testing.T) {
 	t.Parallel()
 
-	ctx := NewContext()
+	ctx := NewContext().WithFilePath("code")
 
-	err := ctx.Validate("{a: test()}", "code")
+	err := ctx.Validate("{a: test()}")
 	assert.EqualError(t, err, "code:1:5-9 Unknown variable: test")
 
 	ctx.NativeFunctionWithAlias(&NativeFunction{
@@ -21,16 +21,16 @@ func TestValidate_Simple(t *testing.T) {
 		Params: []ast.Identifier{},
 	})
 
-	err = ctx.Validate("{a: test()}", "code")
+	err = ctx.Validate("{a: test()}")
 	assert.NoError(t, err)
 }
 
 func TestValidate_ShadowedGlobal(t *testing.T) {
 	t.Parallel()
 
-	ctx := NewContext()
+	ctx := NewContext().WithFilePath("code")
 
-	err := ctx.Validate("local test = 0; {a: test()}", "code")
+	err := ctx.Validate("local test = 0; {a: test()}")
 	assert.NoError(t, err)
 
 	ctx.NativeFunctionWithAlias(&NativeFunction{
@@ -39,6 +39,6 @@ func TestValidate_ShadowedGlobal(t *testing.T) {
 		Params: []ast.Identifier{},
 	})
 
-	err = ctx.Validate("local test = 0; {a: test()}", "code")
+	err = ctx.Validate("local test = 0; {a: test()}")
 	assert.NoError(t, err)
 }

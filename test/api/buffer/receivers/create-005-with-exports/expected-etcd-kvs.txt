@@ -33,7 +33,7 @@
       "type": "template",
       "name": "template",
       "language": "jsonnet",
-      "content": "body.key+\":\"+body.value"
+      "content": "Body(\"key\")+\":\"+Body(\"value\")"
     }
   ]
 }
@@ -75,7 +75,7 @@
         "type": "template",
         "name": "template",
         "language": "jsonnet",
-        "content": "body.key+\":\"+body.value"
+        "content": "Body(\"key\")+\":\"+Body(\"value\")"
       }
     ]
   },
@@ -121,7 +121,7 @@
         "type": "template",
         "name": "template",
         "language": "jsonnet",
-        "content": "body.key+\":\"+body.value"
+        "content": "Body(\"key\")+\":\"+Body(\"value\")"
       }
     ]
   },

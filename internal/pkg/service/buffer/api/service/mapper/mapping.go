@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
+
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -54,6 +55,9 @@ func (m Mapper) CreateMappingModel(exportKey key.ExportKey, revisionID key.Revis
 			}
 			v.Name = c.ColumnName()
 			v.Language = data.Template.Language
+			if err := m.templateValidator.Validate(data.Template.Content); err != nil {
+				return model.Mapping{}, serviceError.NewBadRequestError(errors.Errorf(`column "%s" template is invalid: %w`, err))
+			}
 			v.Content = data.Template.Content
 			c = v
 		}

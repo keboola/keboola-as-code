@@ -53,6 +53,22 @@ func Evaluate(reqCtx *receivectx.Context, template string) (string, error) {
 	return out, err
 }
 
+type Validator struct {
+	ctx *jsonnet.Context
+}
+
+func NewValidator() *Validator {
+	ctx := jsonnet.NewContext()
+	// we don't actually call these functions, we only register them for enumeration later,
+	// so the context can be empty, because it will never be used.
+	RegisterFunctions(ctx, &receivectx.Context{})
+	return &Validator{ctx}
+}
+
+func (v *Validator) Validate(template string) error {
+	return v.ctx.Validate(template)
+}
+
 func RegisterFunctions(c *jsonnet.Context, reqCtx *receivectx.Context) {
 	// Global functions
 	c.NativeFunctionWithAlias(ipFn("Ip", reqCtx))

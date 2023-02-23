@@ -26,7 +26,7 @@
               "name": "template",
               "template": {
                 "language": "jsonnet",
-                "content": "body.key+\":\"+body.value"
+                "content": "Body(\"key\")+\":\"+Body(\"value\")"
               }
             }
           ]
@@ -40,3 +40,4 @@
     ]
   }
 }
+
