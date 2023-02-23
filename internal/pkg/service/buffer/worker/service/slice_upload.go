@@ -38,9 +38,6 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 				// Get slice
 				slice := event.Value
 
-				// Create event in the Storage API
-				defer s.events.SendSliceUploadEvent(ctx, time.Now(), &err, slice)
-
 				// Handle error
 				defer func() {
 					if err != nil {
@@ -69,11 +66,14 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 					return "", errors.Errorf(`cannot load token for export "%s": %w`, slice.ExportKey, err)
 				}
 
-				// Create file manager
 				api, err := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
 				if err != nil {
 					return "", err
 				}
+
+				defer s.events.SendSliceUploadEvent(ctx, api, time.Now(), &err, slice)
+
+				// Create file manager
 				files := file.NewManager(d.Clock(), api, s.config.uploadTransport)
 
 				// Upload slice, set statistics

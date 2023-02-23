@@ -38,9 +38,6 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 				// Get file
 				fileRes := event.Value
 
-				// Create event in the Storage API
-				defer s.events.SendFileImportEvent(ctx, time.Now(), &err, fileRes)
-
 				// Handle error
 				defer func() {
 					if err != nil {
@@ -55,19 +52,22 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 					}
 				}()
 
+				// Load token
+				token, err := s.store.GetToken(ctx, fileRes.ExportKey)
+				if err != nil {
+					return "", errors.Errorf(`cannot load token for export "%s": %w`, fileRes.ExportKey, err)
+				}
+
+				api, err := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
+				if err != nil {
+					return "", err
+				}
+
+				defer s.events.SendFileImportEvent(ctx, api, time.Now(), &err, fileRes)
+
 				// Skip empty
 				if fileRes.IsEmpty {
-					// Load token
-					token, err := s.store.GetToken(ctx, fileRes.ExportKey)
-					if err != nil {
-						return "", errors.Errorf(`cannot load token for export "%s": %w`, fileRes.ExportKey, err)
-					}
-
 					// Create file manager
-					api, err := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
-					if err != nil {
-						return "", err
-					}
 					files := file.NewManager(d.Clock(), api, s.config.uploadTransport)
 
 					// Delete the empty file resource
@@ -81,32 +81,22 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 						return "", err
 					}
 					return "skipped import of the empty file", nil
-				}
+				} else {
+					// Create table manager
+					tables := table.NewManager(api)
 
-				// Load token
-				token, err := s.store.GetToken(ctx, fileRes.ExportKey)
-				if err != nil {
-					return "", errors.Errorf(`cannot load token for export "%s": %w`, fileRes.ExportKey, err)
-				}
+					// Import file
+					if err := tables.ImportFile(ctx, fileRes); err != nil {
+						return "", err
+					}
 
-				// Create table manager
-				api, err := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
-				if err != nil {
-					return "", err
-				}
-				tables := table.NewManager(api)
+					// Mark file imported
+					if err := s.store.MarkFileImported(ctx, &fileRes); err != nil {
+						return "", err
+					}
 
-				// Import file
-				if err := tables.ImportFile(ctx, fileRes); err != nil {
-					return "", err
+					return "file imported", nil
 				}
-
-				// Mark file imported
-				if err := s.store.MarkFileImported(ctx, &fileRes); err != nil {
-					return "", err
-				}
-
-				return "file imported", nil
 			}
 		},
 	})
