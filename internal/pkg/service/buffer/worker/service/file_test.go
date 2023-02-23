@@ -216,6 +216,9 @@ file/imported/%s/my-receiver/my-export/%s
     "bodySize": "100B",
     "fileSize": "381B",
     "fileGZipSize": "%s"
+  },
+  "storageJob": {
+%A
   }
 }
 >>>>>

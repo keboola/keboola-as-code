@@ -32,6 +32,16 @@ func NewManager(keboolaProjectAPI *keboola.API) *Manager {
 	}
 }
 
+func (m *Manager) SendLoadDataRequest(ctx context.Context, file model.File) (job *keboola.StorageJob, err error) {
+	return m.keboolaProjectAPI.
+		LoadDataFromFileRequest(file.Mapping.TableID, file.StorageResource.ID, keboola.WithIncrementalLoad(file.Mapping.Incremental), keboola.WithoutHeader(true)).
+		Send(ctx)
+}
+
+func (m *Manager) WaitForJob(ctx context.Context, job *keboola.StorageJob) (err error) {
+	return m.keboolaProjectAPI.WaitForStorageJob(ctx, job)
+}
+
 func (m *Manager) ImportFile(ctx context.Context, file model.File) (err error) {
 	r := m.keboolaProjectAPI.
 		LoadDataFromFileRequest(file.Mapping.TableID, file.StorageResource.ID, keboola.WithIncrementalLoad(file.Mapping.Incremental), keboola.WithoutHeader(true)).

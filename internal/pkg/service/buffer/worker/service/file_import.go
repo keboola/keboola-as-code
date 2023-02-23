@@ -97,7 +97,19 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 				tables := table.NewManager(api)
 
 				// Import file
-				if err := tables.ImportFile(ctx, fileRes); err != nil {
+				job, err := tables.SendLoadDataRequest(ctx, fileRes)
+				if err != nil {
+					return "", err
+				}
+
+				// Store job
+				fileRes.StorageJob = job
+				if err := s.store.UpdateFile(ctx, fileRes); err != nil {
+					return "", err
+				}
+
+				// Wait for job
+				if err := tables.WaitForJob(ctx, job); err != nil {
 					return "", err
 				}
 
