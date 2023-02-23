@@ -106,6 +106,10 @@ func TestUploadAndImportE2E(t *testing.T) {
 		fileImportOk := wildcards.Compare("%A[task][file.import/%s]INFO  task succeeded (%s): file imported%A", strhelper.FilterLines(`\[task\]\[file.import`, logs)) == nil
 		return conditionsOk && sliceCloseOk && sliceUploadOk && fileCloseWaitOk && fileCloseOk && fileImportOk
 	}, 100*time.Second, 100*time.Millisecond, logger.AllMessages())
+
+	// Check for failed upload warnings
+	assert.Len(t, logger.WarnMessages(), 0)
+
 	logger.Truncate()
 
 	// Check the target table: records count

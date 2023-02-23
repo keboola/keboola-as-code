@@ -212,6 +212,9 @@ func TestSliceUploadTask(t *testing.T) {
 [task][slice.upload/%s]INFO  task succeeded (%s): slice uploaded
 [task][slice.upload/%s]DEBUG  lock released "runtime/lock/task/slice.upload/00000123/my-receiver-2/%s"
 `, strhelper.FilterLines(`^\[task\]\[slice.upload\/0001-01-01T00:06:`, workerDeps.DebugLogger().AllMessages()))
+
+	// Check for failed upload warnings
+	assert.Len(t, workerDeps.DebugLogger().WarnMessages(), 0)
 }
 
 func assertStateBeforeUpload(t *testing.T, client *etcd.Client) {
