@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "buffer.badRequest",
+  "message": "Column \"template\" template is invalid: 1:1-8 Unknown variable: invalid."
+}

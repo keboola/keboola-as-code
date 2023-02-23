@@ -54,6 +54,9 @@ func (m Mapper) CreateMappingModel(exportKey key.ExportKey, revisionID key.Revis
 			}
 			v.Name = c.ColumnName()
 			v.Language = data.Template.Language
+			if err := m.templateValidator.Validate(data.Template.Content); err != nil {
+				return model.Mapping{}, serviceError.NewBadRequestError(errors.Errorf(`column "%s" template is invalid: %w`, data.Name, err))
+			}
 			v.Content = data.Template.Content
 			c = v
 		}
