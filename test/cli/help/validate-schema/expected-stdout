@@ -1,10 +1,14 @@
 Command "local validate schema"
 
-Validate content of the specified JSON file
+Validate the content of the specifiedJSON file
 against the specified JSON schema file.
 
-The JSON schema should contain a schema for the "parameters" key,
-just like in a component definition.
+The JSON schema should contain a schema for the parameters key,
+just like the configuration/row schema in a component definition.
+
+The main purpose of this command is to test a new JSON schema
+before it is changed in a component definition. It can be used
+both in a project local directory and also separately.
 
 Usage:
   %s local validate schema schema.json config.json [flags]

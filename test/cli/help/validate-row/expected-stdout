@@ -1,10 +1,11 @@
 Command "local validate row"
 
-Validate content of the specified JSON file against
-the current configuration row JSON schema of the component.
+Each component definition optionally contains
+a schema of the configuration row parameters key.
 
-The component configuration row JSON schema
-contains a schema for the "parameters" key.
+The command validates the content of the specified
+JSON file against the schema. It can be used both
+in a project local directory and also separately.
 
 Usage:
   %s local validate row component.id row.json [flags]
