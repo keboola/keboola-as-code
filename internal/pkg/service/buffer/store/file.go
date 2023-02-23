@@ -295,3 +295,11 @@ func (s *Store) setFileStateOp(ctx context.Context, now time.Time, file *model.F
 		})
 	return txn, nil
 }
+
+func (s *Store) UpdateFile(ctx context.Context, file model.File) error {
+	return s.schema.
+		Files().
+		InState(file.State).
+		ByKey(file.FileKey).
+		Put(file).Do(ctx, s.client)
+}
