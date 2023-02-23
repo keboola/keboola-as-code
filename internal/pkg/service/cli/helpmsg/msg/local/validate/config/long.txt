@@ -1,7 +1,8 @@
 Command "local validate config"
 
-Validate content of the specified JSON file against
-the current configuration JSON schema of the component.
+Each component definition optionally contains
+a schema of the configuration parameters key.
 
-The component configuration JSON schema
-contains a schema for the "parameters" key.
+The command validates the content of the specified
+JSON file against the schema. It can be used both
+in a project local directory and also separately.
