@@ -102,7 +102,7 @@ func (q *JobQueue) startLogRemaining() {
 			case <-q.done:
 				break
 			case <-time.After(time.Second * 5):
-				q.logger.Infof("Waiting for %s", strings.Join(q.getRemainingJobs(), ", "))
+				q.logger.Infof(`Waiting for "%s"`, strings.Join(q.getRemainingJobs(), `", "`))
 			}
 		}
 	}()
