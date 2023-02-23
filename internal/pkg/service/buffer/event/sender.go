@@ -18,11 +18,10 @@ const componentID = keboola.ComponentID("keboola.keboola-buffer")
 
 type Sender struct {
 	logger log.Logger
-	client *keboola.API
 }
 
-func NewSender(logger log.Logger, client *keboola.API) *Sender {
-	return &Sender{logger: logger, client: client}
+func NewSender(logger log.Logger) *Sender {
+	return &Sender{logger: logger}
 }
 
 type Params struct {
@@ -32,7 +31,7 @@ type Params struct {
 	Stats      model.Stats
 }
 
-func (s *Sender) SendSliceUploadEvent(ctx context.Context, start time.Time, errPtr *error, slice model.Slice) {
+func (s *Sender) SendSliceUploadEvent(ctx context.Context, api *keboola.API, start time.Time, errPtr *error, slice model.Slice) {
 	// Get error
 	var err error
 	if errPtr != nil {
@@ -53,7 +52,7 @@ func (s *Sender) SendSliceUploadEvent(ctx context.Context, start time.Time, errP
 		}
 	}
 
-	s.sendEvent(ctx, start, err, "upload-slice", formatMsg, Params{
+	s.sendEvent(ctx, api, start, err, "upload-slice", formatMsg, Params{
 		ProjectID:  slice.ProjectID,
 		ReceiverID: slice.ReceiverID,
 		ExportID:   slice.ExportID,
@@ -66,7 +65,7 @@ func (s *Sender) SendSliceUploadEvent(ctx context.Context, start time.Time, errP
 	}
 }
 
-func (s *Sender) SendFileImportEvent(ctx context.Context, start time.Time, errPtr *error, file model.File) {
+func (s *Sender) SendFileImportEvent(ctx context.Context, api *keboola.API, start time.Time, errPtr *error, file model.File) {
 	// Get error
 	var err error
 	if errPtr != nil {
@@ -87,7 +86,7 @@ func (s *Sender) SendFileImportEvent(ctx context.Context, start time.Time, errPt
 		}
 	}
 
-	s.sendEvent(ctx, start, err, "file-import", formatMsg, Params{
+	s.sendEvent(ctx, api, start, err, "file-import", formatMsg, Params{
 		ProjectID:  file.ProjectID,
 		ReceiverID: file.ReceiverID,
 		ExportID:   file.ExportID,
@@ -143,7 +142,7 @@ Error:
 }
 */
 
-func (s *Sender) sendEvent(ctx context.Context, start time.Time, err error, task string, msg func(error) string, params Params) {
+func (s *Sender) sendEvent(ctx context.Context, api *keboola.API, start time.Time, err error, task string, msg func(error) string, params Params) {
 	event := &keboola.Event{
 		ComponentID: componentID,
 		Message:     msg(err),
@@ -172,7 +171,7 @@ func (s *Sender) sendEvent(ctx context.Context, start time.Time, err error, task
 		}
 	}
 
-	event, err = s.client.CreateEventRequest(event).Send(ctx)
+	event, err = api.CreateEventRequest(event).Send(ctx)
 	if err == nil {
 		s.logger.Debugf("Sent \"%s\" event id: \"%s\"", task, event.ID)
 	} else {
