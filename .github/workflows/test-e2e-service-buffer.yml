@@ -60,3 +60,8 @@ jobs:
           BUFFER_ETCD_PASSWORD: toor
           BUFFER_ETCD_NAMESPACE: buffer
 
+      - name: Validate OpenAPI3 definition
+        uses: char0n/swagger-editor-validate@v1
+        with:
+          definition-file: internal/pkg/service/buffer/api/openapi/openapi3.yaml
+

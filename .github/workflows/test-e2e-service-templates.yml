@@ -61,3 +61,7 @@ jobs:
           TEMPLATES_API_ETCD_PASSWORD: toor
           TEMPLATES_API_ETCD_NAMESPACE: templates-api
 
+      - name: Validate OpenAPI3 definition
+        uses: char0n/swagger-editor-validate@v1
+        with:
+          definition-file: internal/pkg/service/templates/api/openapi/openapi3.yaml
