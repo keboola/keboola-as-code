@@ -4,9 +4,10 @@ ENV HOME=/my-home
 ENV GOMEMLIMIT=512MiB
 ENV GOCACHE=/tmp/cache/go
 ENV GOMODCACHE=/tmp/cache/go-mod
+ENV GOBIN=$GOPATH/bin
 ENV GOFLAGS="-mod=mod"
 ENV GOLANGCI_LINT_CACHE=/tmp/cache/golangci-lint
-ENV PATH="$PATH:$GOPATH/bin"
+ENV PATH="$PATH:$GOBIN"
 
 # Install editor
 RUN apt-get update && apt-get install -y nano
