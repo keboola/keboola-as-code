@@ -374,8 +374,7 @@ var ProjectLockedErrorType = Type("ProjectLockedError", func() {
 		Example("The project is locked, another operation is in progress, please try again later.")
 	})
 	Attribute("retryAfter", String, "Indicates how long the user agent should wait before making a follow-up request.", func() {
-		Example("<http-date>")
-		Example("<delay-seconds>")
+		Example("<http-date>/<delay-seconds>")
 		Docs(func() {
 			URL("https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After")
 		})
@@ -422,8 +421,7 @@ func ProjectLockedError() {
 	// Add response to the HTTP method definition
 	Response(name, StatusServiceUnavailable, func() {
 		Header("retryAfter:Retry-After", String, "Indicates how long the user agent should wait before making a follow-up request.", func() {
-			Example("<http-date>")
-			Example("<delay-seconds>")
+			Example("<http-date>/<delay-seconds>")
 			Docs(func() {
 				URL("https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After")
 			})

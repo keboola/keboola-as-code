@@ -213,12 +213,8 @@ paths:
                             schema:
                                 type: string
                                 description: Indicates how long the user agent should wait before making a follow-up request.
-                                example: <delay-seconds>
-                            example: <delay-seconds>
-                            examples:
-                                default:
-                                    summary: default
-                                    value: <delay-seconds>
+                                example: <http-date>/<delay-seconds>
+                            example: <http-date>/<delay-seconds>
                     content:
                         application/json:
                             schema:
@@ -390,12 +386,8 @@ paths:
                             schema:
                                 type: string
                                 description: Indicates how long the user agent should wait before making a follow-up request.
-                                example: <delay-seconds>
-                            example: <delay-seconds>
-                            examples:
-                                default:
-                                    summary: default
-                                    value: <delay-seconds>
+                                example: <http-date>/<delay-seconds>
+                            example: <http-date>/<delay-seconds>
                     content:
                         application/json:
                             schema:
@@ -480,12 +472,8 @@ paths:
                             schema:
                                 type: string
                                 description: Indicates how long the user agent should wait before making a follow-up request.
-                                example: <delay-seconds>
-                            example: <delay-seconds>
-                            examples:
-                                default:
-                                    summary: default
-                                    value: <delay-seconds>
+                                example: <http-date>/<delay-seconds>
+                            example: <http-date>/<delay-seconds>
                     content:
                         application/json:
                             schema:
@@ -1502,12 +1490,8 @@ paths:
                             schema:
                                 type: string
                                 description: Indicates how long the user agent should wait before making a follow-up request.
-                                example: <delay-seconds>
-                            example: <delay-seconds>
-                            examples:
-                                default:
-                                    summary: default
-                                    value: <delay-seconds>
+                                example: <http-date>/<delay-seconds>
+                            example: <http-date>/<delay-seconds>
                     content:
                         application/json:
                             schema:
