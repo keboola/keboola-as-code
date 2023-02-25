@@ -1,0 +1,3 @@
+Command "remote file download"
+
+Download a file from Keboola staging storage and save it to a local file or output to stdout.
