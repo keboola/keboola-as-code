@@ -1,7 +1,7 @@
 {
   "repository": {
     "name": "keboola",
-    "url": "%s/test/api/templates/repositories/template-version/repository",
+    "url": "%s/test/templates/api/repositories/template-version/repository",
     "ref": "",
     "author": {
       "name": "Example Author",
