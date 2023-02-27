@@ -248,21 +248,25 @@ slice/active/opened/closing/00000123/my-receiver-B/my-export-2/0001-01-01T00:00:
 
 <<<<<
 slice/active/opened/writing/00000123/my-receiver-A/my-export-1/%s
+-----
 %A
 >>>>>
 
 <<<<<
 slice/active/opened/writing/00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/%s
+-----
 %A
 >>>>>
 
 <<<<<
 stats/received/00000123/my-receiver-A/my-export-1/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z/api-node-1
+-----
 %A
 >>>>>
 
 <<<<<
 stats/received/00000123/my-receiver-B/my-export-2/0001-01-01T00:00:02.000Z/0001-01-01T00:00:02.000Z/api-node-1
+-----
 %A
 >>>>>
 

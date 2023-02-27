@@ -3,7 +3,6 @@ package etcdhelper
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -34,7 +33,7 @@ func DumpAllToString(ctx context.Context, client etcd.KV) (string, error) {
 		// Dump key
 		b.WriteString(kv.Key)
 		if kv.Lease > 0 {
-			b.WriteString(fmt.Sprintf(" (lease)", kv.Lease))
+			b.WriteString(" (lease)")
 		}
 		b.WriteByte('\n')
 

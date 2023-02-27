@@ -317,5 +317,17 @@ slice/active/closed/uploading/00000123/my-receiver-2/my-export-2/0001-01-01T00:0
   }
 %A
 >>>>>
+
+<<<<<
+task/00000123/my-receiver-1/slice.close/0001-01-01T00:03:04.000Z_%s
+-----
+%A
+>>>>>
+
+<<<<<
+task/00000123/my-receiver-2/slice.close/0001-01-01T00:03:04.000Z_%s
+-----
+%A
+>>>>>
 `)
 }
