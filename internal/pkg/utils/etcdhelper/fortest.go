@@ -19,7 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 type testOrBenchmark interface {
@@ -67,9 +66,6 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespac
 	// Should be logger enabled?
 	verboseStr, found := os.LookupEnv("ETCD_VERBOSE")
 	verbose := found && strings.ToLower(verboseStr) == "true"
-	if !found {
-		verbose = testhelper.TestIsVerbose()
-	}
 
 	// Enable logger
 	if verbose {

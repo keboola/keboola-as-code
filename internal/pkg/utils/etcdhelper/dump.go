@@ -12,15 +12,19 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 )
 
-func DumpAll(ctx context.Context, client etcd.KV) (string, error) {
-	r, err := client.Get(ctx, "", etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
+func DumpAllToString(ctx context.Context, client etcd.KV) (string, error) {
+	_, err := client.Get(ctx, "", etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
+	if err != nil {
+		return "", err
+	}
+
+	kvs, err := DumpAll(ctx, client)
 	if err != nil {
 		return "", err
 	}
 
 	var b strings.Builder
-
-	for i, kv := range r.Kvs {
+	for i, kv := range kvs {
 		// Start
 		if i != 0 {
 			b.WriteString("\n")
@@ -28,7 +32,7 @@ func DumpAll(ctx context.Context, client etcd.KV) (string, error) {
 		b.WriteString("<<<<<\n")
 
 		// Dump key
-		b.Write(kv.Key)
+		b.WriteString(kv.Key)
 		if kv.Lease > 0 {
 			b.WriteString(fmt.Sprintf(" (lease=%d)", kv.Lease))
 		}
@@ -37,17 +41,9 @@ func DumpAll(ctx context.Context, client etcd.KV) (string, error) {
 		// Separator
 		b.WriteString("-----\n")
 
-		// Try format value as a JSON
-		val := kv.Value
-		if bytes.HasPrefix(val, []byte{'{'}) {
-			target := orderedmap.New()
-			if err := json.Decode(val, target); err == nil {
-				val = json.MustEncode(target, true)
-			}
-		}
-
 		// Dump value
-		b.Write(val)
+		val := kv.Value
+		b.WriteString(val)
 		if len(val) == 0 || val[len(val)-1] != '\n' {
 			b.WriteByte('\n')
 		}
@@ -57,4 +53,25 @@ func DumpAll(ctx context.Context, client etcd.KV) (string, error) {
 	}
 
 	return b.String(), nil
+}
+
+func DumpAll(ctx context.Context, client etcd.KV) (out []KV, err error) {
+	r, err := client.Get(ctx, "", etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, kv := range r.Kvs {
+		// Try format value as a JSON
+		val := kv.Value
+		if bytes.HasPrefix(val, []byte{'{'}) {
+			target := orderedmap.New()
+			if err := json.Decode(val, target); err == nil {
+				val = json.MustEncode(target, true)
+			}
+		}
+
+		out = append(out, KV{Key: string(kv.Key), Value: string(val), Lease: kv.Lease})
+	}
+	return out, nil
 }
