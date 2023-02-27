@@ -34,7 +34,7 @@ func DumpAllToString(ctx context.Context, client etcd.KV) (string, error) {
 		// Dump key
 		b.WriteString(kv.Key)
 		if kv.Lease > 0 {
-			b.WriteString(fmt.Sprintf(" (lease=%d)", kv.Lease))
+			b.WriteString(fmt.Sprintf(" (lease)", kv.Lease))
 		}
 		b.WriteByte('\n')
 

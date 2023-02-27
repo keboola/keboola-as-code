@@ -49,7 +49,7 @@ func TestRevisionSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-my/revision (lease=%s)
+my/revision (lease)
 -----
 1
 >>>>>
@@ -66,7 +66,7 @@ my/revision (lease=%s)
 	})
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-my/revision (lease=%s)
+my/revision (lease)
 -----
 30
 >>>>>
@@ -83,7 +83,7 @@ my/revision (lease=%s)
 	doSync()
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-my/revision (lease=%s)
+my/revision (lease)
 -----
 30
 >>>>>
@@ -95,7 +95,7 @@ my/revision (lease=%s)
 	doSync()
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-my/revision (lease=%s)
+my/revision (lease)
 -----
 30
 >>>>>
@@ -117,7 +117,7 @@ my/revision (lease=%s)
 	})
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-my/revision (lease=%s)
+my/revision (lease)
 -----
 50
 >>>>>
@@ -128,7 +128,7 @@ my/revision (lease=%s)
 	doSync()
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-my/revision (lease=%s)
+my/revision (lease)
 -----
 50
 >>>>>
@@ -142,7 +142,7 @@ my/revision (lease=%s)
 	})
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-my/revision (lease=%s)
+my/revision (lease)
 -----
 70
 >>>>>

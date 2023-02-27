@@ -60,7 +60,7 @@ func TestSuccessfulTask(t *testing.T) {
 	// Check etcd state during task
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-runtime/lock/task/my-lock (lease=%s)
+runtime/lock/task/my-lock (lease)
 -----
 node1
 >>>>>
@@ -207,7 +207,7 @@ func TestFailedTask(t *testing.T) {
 	// Check etcd state during task
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-runtime/lock/task/my-lock (lease=%s)
+runtime/lock/task/my-lock (lease)
 -----
 node1
 >>>>>
