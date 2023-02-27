@@ -191,12 +191,12 @@ INFO  ---> unlocked
 	// After deleting the receivers, the database should remain empty
 	assert.NoError(t, str.DeleteReceiver(ctx, emptySlice.ReceiverKey))
 	assert.NoError(t, str.DeleteReceiver(ctx, notEmptySlice.ReceiverKey))
-	etcdhelper.AssertKVs(t, client, "")
+	etcdhelper.AssertKVsString(t, client, "")
 }
 
 func assertStateAfterClose(t *testing.T, client *etcd.Client) {
 	t.Helper()
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 config/export/00000123/my-receiver-1/my-export-1
 -----

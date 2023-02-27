@@ -29,7 +29,7 @@ func TestStore_CreateSlice(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 slice/active/opened/writing/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
@@ -78,7 +78,7 @@ func TestStore_GetSliceOp(t *testing.T) {
 	assert.Equal(t, slice, kv.Value)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 slice/active/opened/writing/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
@@ -149,7 +149,7 @@ slice/<FULL_STATE>/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-
 `
 		expected = strings.ReplaceAll(expected, "<FULL_STATE>", tc.to.String())
 		expected = strings.ReplaceAll(expected, "<SHORT_STATE>", tc.to.StateShort())
-		etcdhelper.AssertKVs(t, store.client, expected)
+		etcdhelper.AssertKVsString(t, store.client, expected)
 
 		// Test duplicated transition -> nop
 		slice.State = tc.from
@@ -206,7 +206,7 @@ func TestStore_ListUploadedSlices(t *testing.T) {
 	assert.Equal(t, input, slices)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 slice/active/closed/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----

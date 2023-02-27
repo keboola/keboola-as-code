@@ -77,7 +77,7 @@ func TestStore_Mapping_Ops(t *testing.T) {
 	assert.Equal(t, input[2], mapping)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 config/mapping/revision/00001000/receiver1/export1/00000001
 -----
@@ -139,7 +139,7 @@ config/mapping/revision/00001000/receiver1/export1/00000010
 	_, err = store.deleteExportMappingsOp(ctx, exportKey).Do(ctx, store.client)
 	assert.NoError(t, err)
 
-	etcdhelper.AssertKVs(t, store.client, ``)
+	etcdhelper.AssertKVsString(t, store.client, ``)
 }
 
 func TestStore_DeleteReceiverMappingsOp(t *testing.T) {
@@ -179,7 +179,7 @@ func TestStore_DeleteReceiverMappingsOp(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 config/mapping/revision/00001000/receiver0/export0/00000001
 -----
@@ -222,7 +222,7 @@ config/mapping/revision/00001000/receiver1/export1/00000002
 	_, err := store.deleteReceiverMappingsOp(ctx, export0.ReceiverKey).Do(ctx, store.client)
 	assert.NoError(t, err)
 
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 config/mapping/revision/00001000/receiver1/export1/00000002
 -----
@@ -246,5 +246,5 @@ config/mapping/revision/00001000/receiver1/export1/00000002
 	_, err = store.deleteReceiverMappingsOp(ctx, export1.ReceiverKey).Do(ctx, store.client)
 	assert.NoError(t, err)
 
-	etcdhelper.AssertKVs(t, store.client, ``)
+	etcdhelper.AssertKVsString(t, store.client, ``)
 }

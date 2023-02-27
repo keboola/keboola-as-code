@@ -155,7 +155,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 
 func assertStateAfterRetry(t *testing.T, client *etcd.Client) {
 	t.Helper()
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 config/export/00000123/my-receiver-1/my-export-1
 -----

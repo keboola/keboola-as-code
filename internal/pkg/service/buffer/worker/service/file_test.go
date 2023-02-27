@@ -166,7 +166,7 @@ func TestUploadAndImportE2E(t *testing.T) {
 
 func assertStateAfterImport(t *testing.T, client *etcd.Client) {
 	t.Helper()
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 config/export/%s/my-receiver/my-export
 -----

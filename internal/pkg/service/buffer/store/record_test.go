@@ -21,7 +21,7 @@ func TestStore_CreateRecord(t *testing.T) {
 	assert.NoError(t, store.CreateRecord(ctx, recordKey, `one,two,"th""ree"`))
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 record/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:10.000Z_%c%c%c%c%c
 -----

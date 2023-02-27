@@ -343,7 +343,7 @@ shouldBeMissing2
 bar
 >>>>>
 `
-	dump, err := etcdhelper.DumpAll(ctx, client)
+	dump, err := etcdhelper.DumpAllToString(ctx, client)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), dump)
 
@@ -389,7 +389,7 @@ foo3
 bar3
 >>>>>
 `
-	dump, err = etcdhelper.DumpAll(ctx, client)
+	dump, err = etcdhelper.DumpAllToString(ctx, client)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), dump)
 }

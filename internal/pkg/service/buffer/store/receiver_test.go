@@ -115,7 +115,7 @@ func TestStore_CreateReceiverBaseOp(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 config/receiver/00001000/github-pull-requests
 -----
@@ -150,7 +150,7 @@ func TestStore_GetReceiverBaseOp(t *testing.T) {
 	assert.Equal(t, input, receiver.Value)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 config/receiver/00001000/github-pull-requests
 -----
@@ -202,7 +202,7 @@ func TestStore_ListReceiversBaseOp(t *testing.T) {
 	assert.Equal(t, input, receivers.Values())
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 config/receiver/00001000/github-issues
 -----
@@ -248,7 +248,7 @@ func TestStore_DeleteReceiverBaseOp(t *testing.T) {
 	assert.Equal(t, input, receiver.Value)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 config/receiver/00001000/github-pull-requests
 -----

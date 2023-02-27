@@ -47,7 +47,7 @@ func TestRevisionSyncer(t *testing.T) {
 
 	// Check initial sync.
 	assert.NoError(t, err)
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 my/revision (lease=%s)
 -----
@@ -64,7 +64,7 @@ my/revision (lease=%s)
 	etcdhelper.ExpectModification(t, client, func() {
 		doSync()
 	})
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 my/revision (lease=%s)
 -----
@@ -81,7 +81,7 @@ my/revision (lease=%s)
 	s.Notify(40)
 	s.Notify(50)
 	doSync()
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 my/revision (lease=%s)
 -----
@@ -93,7 +93,7 @@ my/revision (lease=%s)
 	// No sync.
 	unlockRev30Lock2()
 	doSync()
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 my/revision (lease=%s)
 -----
@@ -115,7 +115,7 @@ my/revision (lease=%s)
 		unlockRev30Lock1()
 		doSync()
 	})
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 my/revision (lease=%s)
 -----
@@ -126,7 +126,7 @@ my/revision (lease=%s)
 	// Unlock "rev50Lock1", no sync, revision "50" is still locked by the "rev50Lock2"
 	unlockRev50Lock1()
 	doSync()
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 my/revision (lease=%s)
 -----
@@ -140,7 +140,7 @@ my/revision (lease=%s)
 		unlockRev50Lock2()
 		doSync()
 	})
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 my/revision (lease=%s)
 -----
@@ -151,7 +151,7 @@ my/revision (lease=%s)
 	// Etcd key should be deleted (by lease), when the API node is turned off
 	cancel()
 	wg.Wait()
-	etcdhelper.AssertKVs(t, client, "")
+	etcdhelper.AssertKVsString(t, client, "")
 
 	// Check logs - no unexpected syncs
 	wildcards.Assert(t, `

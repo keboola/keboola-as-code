@@ -29,7 +29,7 @@ func TestStore_CreateFile(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 file/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z
 -----
@@ -82,7 +82,7 @@ func TestStore_GetFileOp(t *testing.T) {
 	assert.Equal(t, file, kv.Value)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 file/opened/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z
 -----
@@ -157,7 +157,7 @@ file/<STATE>/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z
   "<STATE>At": "2009-12-31T18:01:01.000Z"%A
 >>>>>
 `
-		etcdhelper.AssertKVs(t, store.client, strings.ReplaceAll(expected, "<STATE>", tc.to.String()))
+		etcdhelper.AssertKVsString(t, store.client, strings.ReplaceAll(expected, "<STATE>", tc.to.String()))
 
 		// Test duplicated transition -> nop
 		file.State = tc.from

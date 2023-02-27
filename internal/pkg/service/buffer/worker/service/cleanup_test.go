@@ -92,7 +92,7 @@ func TestCleanup(t *testing.T) {
 [service][cleanup]INFO  deleting file "00001000/github/first/%s"
 	`, strhelper.FilterLines(`^(\[service\]\[cleanup\])`, workerDeps.DebugLogger().AllMessages()))
 
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 config/export/00001000/github/another
 -----

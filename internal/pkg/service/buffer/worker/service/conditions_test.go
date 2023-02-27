@@ -156,12 +156,12 @@ func TestConditionsChecker(t *testing.T) {
 	// After deleting the receivers, the database should remain empty
 	assert.NoError(t, str.DeleteReceiver(ctx, sliceKey1.ReceiverKey))
 	assert.NoError(t, str.DeleteReceiver(ctx, sliceKey2.ReceiverKey))
-	etcdhelper.AssertKVs(t, client, "")
+	etcdhelper.AssertKVsString(t, client, "")
 }
 
 func assertStateAfterTest(t *testing.T, client *etcd.Client) {
 	t.Helper()
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 config/export/00000123/my-receiver-A/my-export-1
 -----
