@@ -4,10 +4,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cobra"
 	"github.com/umisama/go-regexpcache"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
@@ -70,6 +70,7 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 	return cmd
 }
 
+// nolint: gochecknoglobals
 var previewFormats = map[string]bool{
 	"pretty": true,
 	"csv":    true,

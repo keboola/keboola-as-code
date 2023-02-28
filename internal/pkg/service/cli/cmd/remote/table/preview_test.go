@@ -3,8 +3,9 @@ package table
 import (
 	"testing"
 
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/preview"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/preview"
 )
 
 func TestParseWhereFilter(t *testing.T) {

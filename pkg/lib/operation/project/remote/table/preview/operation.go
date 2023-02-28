@@ -69,7 +69,5 @@ func Run(ctx context.Context, o PreviewOptions, d dependencies) (err error) {
 		return err
 	} */
 
-	// TODO: use preview
-
 	return errors.Errorf("unimplemented")
 }
