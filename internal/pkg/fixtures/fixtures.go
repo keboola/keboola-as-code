@@ -69,11 +69,13 @@ type Table struct {
 }
 
 type File struct {
-	Name        string   `json:"name"`
-	Tags        []string `json:"tags"`
-	IsSliced    bool     `json:"isSliced"`
-	IsEncrypted bool     `json:"isEncrypted"`
-	IsPermanent bool     `json:"isPermanent"`
+	Name        string            `json:"name"`
+	Content     string            `json:"content,omitempty"`
+	Tags        []string          `json:"tags"`
+	IsSliced    bool              `json:"isSliced"`
+	IsEncrypted bool              `json:"isEncrypted"`
+	IsPermanent bool              `json:"isPermanent"`
+	Slices      map[string]string `json:"slices,omitempty"`
 }
 
 type Config struct {
@@ -100,6 +102,7 @@ type StateFile struct {
 	Branches           []*BranchState    `json:"branches" validate:"required"`
 	Buckets            []*Bucket         `json:"buckets,omitempty"`
 	Sandboxes          []*Sandbox        `json:"sandboxes,omitempty"`
+	Files              []*File           `json:"files,omitempty"`
 	Envs               map[string]string `json:"envs,omitempty"` // additional ENVs
 }
 
