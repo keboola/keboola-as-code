@@ -80,7 +80,7 @@ valueB
 	wildcards.Assert(t, strings.TrimSpace(`
 %AValue of the actual key
 	            	"key1"
-	            	doesn't match to the expected key
+	            	doesn't match the expected key
 	            	"key1":
 	            	Diff:
 	            	-----
@@ -99,7 +99,7 @@ valueB
 
 %AValue of the actual key
 	            	"key2"
-	            	doesn't match to the expected key
+	            	doesn't match the expected key
 	            	"key2":
 	            	Diff:
 	            	-----

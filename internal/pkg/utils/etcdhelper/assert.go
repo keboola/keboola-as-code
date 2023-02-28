@@ -50,7 +50,7 @@ func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV) {
 					}
 					break
 				} else {
-					assert.Fail(t, fmt.Sprintf("Value of the actual key\n\"%s\"\ndoesn't match to the expected key\n\"%s\":\n%s", actual.Key, expected.Key, err))
+					assert.Fail(t, fmt.Sprintf("Value of the actual key\n\"%s\"\ndoesn't match the expected key\n\"%s\":\n%s", actual.Key, expected.Key, err))
 				}
 			}
 		}
