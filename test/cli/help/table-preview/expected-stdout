@@ -1,0 +1,29 @@
+Command "remote table preview"
+
+Preview a table's data. Using this command, you can
+display up to 1000 rows from a table in your project.
+The rows can be filtered and ordered, and written to
+either your terminal or a file in one of the supported
+formats.
+
+Usage:
+  kbc remote table preview [table] [flags]
+
+Flags:
+      --changed-since string      only export rows imported after this date
+      --changed-until string      only export rows imported before this date
+      --columns strings           comma-separated list of columns to export
+      --format string             order by one or more columns (default "pretty")
+      --limit uint                limit the number of exported rows (default 100)
+      --order string              order by one or more columns
+      --out string                export table a file
+  -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
+      --where string              filter columns by value
+
+Global Flags:
+  -h, --help                       print help for command
+  -l, --log-file string            path to a log file for details
+  -t, --storage-api-token string   storage API token from your project
+  -v, --verbose                    print details
+      --verbose-api                log each API request and response
+  -d, --working-dir string         use other working directory
