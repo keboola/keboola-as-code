@@ -107,6 +107,14 @@ func (m *Map) Get(key string) string {
 	return m.data[strings.ToUpper(key)]
 }
 
+func (m *Map) GetOrErr(key string) (string, error) {
+	value := m.Get(key)
+	if len(value) == 0 {
+		return "", errors.Errorf("missing ENV variable \"%s\"", strings.ToUpper(key))
+	}
+	return value, nil
+}
+
 func (m *Map) MustGet(key string) string {
 	value := m.Get(key)
 	if len(value) == 0 {

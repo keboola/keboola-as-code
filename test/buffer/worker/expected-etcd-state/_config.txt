@@ -1,0 +1,100 @@
+<<<<<
+config/export/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "name": "my-export-1",
+  "importConditions": {
+    "count": 10,
+    "size": "1MB",
+    "time": 3600000000000
+  }
+}
+>>>>>
+
+<<<<<
+config/export/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-2",
+  "name": "my-export-2",
+  "importConditions": {
+    "count": 10,
+    "size": "1MB",
+    "time": 3600000000000
+  }
+}
+>>>>>
+
+<<<<<
+config/mapping/revision/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/00000001
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "revisionId": 1,
+  "tableId": "in.c-bucket.my-export-1",
+  "incremental": true,
+  "columns": [
+    {
+      "type": "id",
+      "name": "idCol",
+      "primaryKey": true
+    },
+    {
+      "type": "datetime",
+      "name": "dateCol"
+    },
+    {
+      "type": "body",
+      "name": "bodyCol"
+    },
+    {
+      "type": "headers",
+      "name": "headersCol"
+    }
+  ]
+}
+>>>>>
+
+<<<<<
+config/mapping/revision/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/00000001
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-2",
+  "revisionId": 1,
+  "tableId": "in.c-bucket.my-export-2",
+  "incremental": true,
+  "columns": [
+    {
+      "type": "datetime",
+      "name": "dateCol",
+      "primaryKey": true
+    },
+    {
+      "type": "template",
+      "name": "keyCol",
+      "language": "jsonnet",
+      "content": "\"---\" + Body(\"key\") + \"---\""
+    }
+  ]
+}
+>>>>>
+
+<<<<<
+config/receiver/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "name": "my-receiver",
+  "secret": "%s"
+}
+>>>>>

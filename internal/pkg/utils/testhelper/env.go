@@ -16,10 +16,10 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/testtemplateinputs"
 )
 
 type EnvProvider interface {
+	GetOrErr(key string) (string, error)
 	MustGet(key string) string
 }
 
@@ -35,12 +35,12 @@ func MustReplaceEnvsStringWithSeparator(str string, provider EnvProvider, envSep
 }
 
 // ReplaceEnvsStringWithSeparator replaces ENVs in given string with chosen separator.
-func ReplaceEnvsStringWithSeparator(str string, provider testtemplateinputs.EnvProvider, envSeparator string) (string, error) {
+func ReplaceEnvsStringWithSeparator(str string, provider EnvProvider, envSeparator string) (string, error) {
 	errs := errors.NewMultiError()
 	res := regexp.
 		MustCompile(fmt.Sprintf(envPlaceholderTemplate, envSeparator, envSeparator)).
 		ReplaceAllStringFunc(str, func(s string) string {
-			res, err := provider.Get(strings.Trim(s, envSeparator))
+			res, err := provider.GetOrErr(strings.Trim(s, envSeparator))
 			if err != nil {
 				errs.Append(err)
 				return s
@@ -151,7 +151,7 @@ func (w *stripAnsiWriter) Write(p []byte) (int, error) {
 func (w *stripAnsiWriter) Close() error {
 	w.lock.Lock()
 	defer w.lock.Unlock()
-	
+
 	if err := w.writeBuffer(); err != nil {
 		return err
 	}

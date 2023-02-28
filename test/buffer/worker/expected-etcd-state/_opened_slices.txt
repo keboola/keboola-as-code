@@ -1,0 +1,77 @@
+<<<<<
+slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "state": "active/opened/writing",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "my-receiver",
+    "exportId": "my-export-1",
+    "revisionId": 1,
+    "tableId": "in.c-bucket.my-export-1",
+    "incremental": true,
+    "columns": [
+      {
+        "type": "id",
+        "name": "idCol",
+        "primaryKey": true
+      },
+      {
+        "type": "datetime",
+        "name": "dateCol"
+      },
+      {
+        "type": "body",
+        "name": "bodyCol"
+      },
+      {
+        "type": "headers",
+        "name": "headersCol"
+      }
+    ]
+  },
+  "storageResource": {%A},
+  "sliceNumber": %d
+}
+>>>>>
+
+<<<<<
+slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-2",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "state": "active/opened/writing",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "my-receiver",
+    "exportId": "my-export-2",
+    "revisionId": 1,
+    "tableId": "in.c-bucket.my-export-2",
+    "incremental": true,
+    "columns": [
+      {
+        "type": "datetime",
+        "name": "dateCol",
+        "primaryKey": true
+      },
+      {
+        "type": "template",
+        "name": "keyCol",
+        "language": "jsonnet",
+        "content": "\"---\" + Body(\"key\") + \"---\""
+      }
+    ]
+  },
+  "storageResource": {%A},
+  "sliceNumber": %d
+}
+>>>>>

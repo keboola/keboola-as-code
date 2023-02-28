@@ -25,7 +25,7 @@ import (
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/testtemplateinputs"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
@@ -440,7 +440,7 @@ func (t *Test) ExpectedOutDir() (filesystem.Fs, error) {
 	return copyFs, nil
 }
 
-func (t *Test) Inputs(provider *testtemplateinputs.EnvProvider, replaceEnvsFn func(string, testtemplateinputs.EnvProvider, string) (string, error), envSeparator string) (map[string]interface{}, error) {
+func (t *Test) Inputs(provider testhelper.EnvProvider, replaceEnvsFn func(string, testhelper.EnvProvider, string) (string, error), envSeparator string) (map[string]interface{}, error) {
 	// Read inputs file
 	file, err := t.fs.ReadFile(filesystem.NewFileDef(InputsFile).SetDescription("template inputs"))
 	if err != nil {
@@ -450,7 +450,7 @@ func (t *Test) Inputs(provider *testtemplateinputs.EnvProvider, replaceEnvsFn fu
 	// Replace envs
 	inputs := map[string]interface{}{}
 	if replaceEnvsFn != nil {
-		file.Content, err = replaceEnvsFn(file.Content, *provider, envSeparator)
+		file.Content, err = replaceEnvsFn(file.Content, provider, envSeparator)
 		if err != nil {
 			return nil, err
 		}
