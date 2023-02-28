@@ -1,6 +1,7 @@
 package file
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -24,6 +25,11 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			output, err := baseDeps.Dialogs().AskFileOutput(baseDeps.Options())
+			if err != nil {
+				return err
+			}
+
 			// Get dependencies
 			d, err := p.DependenciesForRemoteCommand(common.WithoutMasterToken())
 			if err != nil {
@@ -32,12 +38,30 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 
 			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-file-download")
 
-			/* id, err := d.Dialogs().AskFile(d.Options())
+			var fileID int
+			if len(args) == 0 {
+				allRecentFiles, err := d.KeboolaProjectAPI().ListFilesRequest().Send(d.CommandCtx())
+				if err != nil {
+					return err
+				}
+				file, err := d.Dialogs().AskFile(*allRecentFiles)
+				if err != nil {
+					return err
+				}
+				fileID = file.ID
+			} else {
+				fileID, err = strconv.Atoi(args[0])
+				if err != nil {
+					return err
+				}
+			}
+
+			file, err := d.KeboolaProjectAPI().GetFileWithCredentialsRequest(fileID).Send(d.CommandCtx())
 			if err != nil {
 				return err
-			} */
+			}
 
-			return download.Run(d.CommandCtx(), download.Options{}, d)
+			return download.Run(d.CommandCtx(), download.Options{File: file, Output: output}, d)
 		},
 	}
 
