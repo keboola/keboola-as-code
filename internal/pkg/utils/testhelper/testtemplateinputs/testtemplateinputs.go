@@ -26,7 +26,7 @@ func (p *EnvProvider) MustGet(key string) string {
 	return p.envs.MustGet(key)
 }
 
-func (p *EnvProvider) Get(key string) (string, error) {
+func (p *EnvProvider) GetOrErr(key string) (string, error) {
 	val := p.envs.Get(key)
 	if len(val) == 0 {
 		return "", errors.Errorf("missing ENV variable \"%s\"", strings.ToUpper(key))

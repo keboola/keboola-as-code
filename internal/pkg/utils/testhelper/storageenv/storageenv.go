@@ -22,7 +22,21 @@ func CreateStorageEnvTicketProvider(ctx context.Context, keboolaProjectAPI *kebo
 	return &storageEnvTicketProvider{ctx: ctx, keboolaProjectAPI: keboolaProjectAPI, envs: envs}
 }
 
+func (p *storageEnvTicketProvider) GetOrErr(key string) (string, error) {
+	if v := p.getForTicket(key); v != "" {
+		return v, nil
+	}
+	return p.envs.GetOrErr(key)
+}
+
 func (p *storageEnvTicketProvider) MustGet(key string) string {
+	if v := p.getForTicket(key); v != "" {
+		return v
+	}
+	return p.envs.MustGet(key)
+}
+
+func (p *storageEnvTicketProvider) getForTicket(key string) string {
 	key = strings.Trim(key, "%")
 	nameRegexp := regexpcache.MustCompile(`^TEST_NEW_TICKET_\d+$`)
 	if _, found := p.envs.Lookup(key); !found && nameRegexp.MatchString(key) {
@@ -34,6 +48,5 @@ func (p *storageEnvTicketProvider) MustGet(key string) string {
 		p.envs.Set(key, ticket.ID)
 		return ticket.ID
 	}
-
-	return p.envs.MustGet(key)
+	return ""
 }
