@@ -32,14 +32,14 @@ func TestStatsManager(t *testing.T) {
 
 	// no notify -> wait 1 second -> no sync
 	clk.Add(SyncInterval)
-	etcdhelper.AssertKVs(t, client, "")
+	etcdhelper.AssertKVsString(t, client, "")
 
 	// notify -> wait 1 second -> sync
 	node.Notify(sliceKey, 1000, 1100)
 	etcdhelper.ExpectModification(t, client, func() {
 		clk.Add(SyncInterval)
 	})
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
 -----
@@ -60,7 +60,7 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
 
 	// no notify -> wait 1 second -> no sync
 	clk.Add(SyncInterval)
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
 -----
@@ -84,7 +84,7 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
 	etcdhelper.ExpectModification(t, client, func() {
 		clk.Add(SyncInterval)
 	})
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
 -----
@@ -105,7 +105,7 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
 
 	// no notify -> wait 1 second -> no sync
 	clk.Add(SyncInterval)
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
 -----
@@ -132,7 +132,7 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
 	})
 
 	// shutdown triggered sync
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
 -----

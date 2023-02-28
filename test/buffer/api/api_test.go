@@ -102,7 +102,7 @@ func TestBufferApiE2E(t *testing.T) {
 		)
 
 		// Write current etcd KVs
-		etcdDump, err := etcdhelper.DumpAll(context.Background(), etcdClient)
+		etcdDump, err := etcdhelper.DumpAllToString(context.Background(), etcdClient)
 		assert.NoError(test.T(), err)
 		assert.NoError(test.T(), test.WorkingDirFS().WriteFile(filesystem.NewRawFile("actual-etcd-kvs.txt", etcdDump)))
 

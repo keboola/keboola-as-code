@@ -166,7 +166,7 @@ func TestUploadAndImportE2E(t *testing.T) {
 
 func assertStateAfterImport(t *testing.T, client *etcd.Client) {
 	t.Helper()
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 config/export/%s/my-receiver/my-export
 -----
@@ -261,7 +261,7 @@ file/opened/%s/my-receiver/my-export/%s
 >>>>>
 
 <<<<<
-runtime/api/node/watcher/cached/revision/api-node (lease=%d)
+runtime/api/node/watcher/cached/revision/api-node (lease)
 -----
 %d
 >>>>>
@@ -273,7 +273,7 @@ runtime/last/record/id/%s/my-receiver/my-export
 >>>>>
 
 <<<<<
-runtime/worker/node/active/id/worker-node (lease=%d)
+runtime/worker/node/active/id/worker-node (lease)
 -----
 worker-node
 >>>>>

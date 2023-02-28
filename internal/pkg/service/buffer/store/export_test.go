@@ -38,7 +38,7 @@ func TestStore_CreateExportBaseOp(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 config/export/00001000/github/github-issues
 -----
@@ -155,7 +155,7 @@ func TestStore_GetExportBaseOp(t *testing.T) {
 	assert.Equal(t, input, kv.Value)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 config/export/00001000/github/github-issues
 -----
@@ -215,7 +215,7 @@ func TestStore_ListExportsBaseOp(t *testing.T) {
 	assert.Equal(t, input, kvs.Values())
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 config/export/00001000/receiver1/export-1
 -----
@@ -271,7 +271,7 @@ func TestStore_DeleteExportBaseOp(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 config/export/00001000/github/github-issues
 -----
@@ -293,5 +293,5 @@ config/export/00001000/github/github-issues
 	assert.NoError(t, err)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, store.client, ``)
+	etcdhelper.AssertKVsString(t, store.client, ``)
 }

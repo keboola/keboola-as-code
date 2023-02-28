@@ -84,21 +84,21 @@ func TestNodesDiscovery(t *testing.T) {
 	assert.False(t, nodes[2].MustCheckIsOwner("foo1"))
 
 	// Check etcd state
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-runtime/worker/node/active/id/node1 (lease=%d)
+runtime/worker/node/active/id/node1 (lease)
 -----
 node1
 >>>>>
 
 <<<<<
-runtime/worker/node/active/id/node2 (lease=%d)
+runtime/worker/node/active/id/node2 (lease)
 -----
 node2
 >>>>>
 
 <<<<<
-runtime/worker/node/active/id/node3 (lease=%d)
+runtime/worker/node/active/id/node3 (lease)
 -----
 node3
 >>>>>
@@ -115,15 +115,15 @@ node3
 	}, time.Second, 10*time.Millisecond)
 
 	// Check etcd state
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-runtime/worker/node/active/id/node2 (lease=%d)
+runtime/worker/node/active/id/node2 (lease)
 -----
 node2
 >>>>>
 
 <<<<<
-runtime/worker/node/active/id/node3 (lease=%d)
+runtime/worker/node/active/id/node3 (lease)
 -----
 node3
 >>>>>
@@ -149,9 +149,9 @@ node3
 	}, time.Second, 10*time.Millisecond)
 
 	// Check etcd state
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-runtime/worker/node/active/id/node3 (lease=%d)
+runtime/worker/node/active/id/node3 (lease)
 -----
 node3
 >>>>>
@@ -170,7 +170,7 @@ node3
 	// Shutdown node3
 	processes[2].Shutdown(errors.New("bye bye 3"))
 	processes[2].WaitForShutdown()
-	etcdhelper.AssertKVs(t, client, "")
+	etcdhelper.AssertKVsString(t, client, "")
 
 	// Logs differs in number of "the node ... gone" messages
 	wildcards.Assert(t, `
@@ -249,9 +249,9 @@ node3
 	}, time.Second, 10*time.Millisecond)
 
 	// Check etcd state
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-runtime/worker/node/active/id/node4 (lease=%d)
+runtime/worker/node/active/id/node4 (lease)
 -----
 node4
 >>>>>
@@ -259,7 +259,7 @@ node4
 	// Shutdown node 4
 	process4.Shutdown(errors.New("bye bye 4"))
 	process4.WaitForShutdown()
-	etcdhelper.AssertKVs(t, client, "")
+	etcdhelper.AssertKVsString(t, client, "")
 
 	wildcards.Assert(t, `
 [node4]INFO  process unique id "node4"

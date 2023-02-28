@@ -30,7 +30,7 @@ func TestStore_GetTokenOp(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, input, token.Value)
 
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 secret/export/token/00001000/receiver1/export1
 -----
@@ -79,7 +79,7 @@ func TestStore_DeleteExportTokenOp(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, input, token.Value)
 
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 secret/export/token/00001000/receiver1/export1
 -----
@@ -112,7 +112,7 @@ secret/export/token/00001000/receiver1/export1
 	_, err = store.deleteExportTokenOp(ctx, exportKey).Do(ctx, store.client)
 	assert.NoError(t, err)
 
-	etcdhelper.AssertKVs(t, store.client, ``)
+	etcdhelper.AssertKVsString(t, store.client, ``)
 }
 
 func TestStore_DeleteReceiverTokensOp(t *testing.T) {
@@ -147,7 +147,7 @@ func TestStore_DeleteReceiverTokensOp(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, input[1], token.Value)
 
-	etcdhelper.AssertKVs(t, store.client, `
+	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
 secret/export/token/00001000/receiver1/export0
 -----
@@ -208,5 +208,5 @@ secret/export/token/00001000/receiver1/export1
 	_, err = store.deleteReceiverTokensOp(ctx, receiverKey).Do(ctx, store.client)
 	assert.NoError(t, err)
 
-	etcdhelper.AssertKVs(t, store.client, ``)
+	etcdhelper.AssertKVsString(t, store.client, ``)
 }

@@ -58,9 +58,9 @@ func TestSuccessfulTask(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check etcd state during task
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-runtime/lock/task/my-lock (lease=%s)
+runtime/lock/task/my-lock (lease)
 -----
 node1
 >>>>>
@@ -84,7 +84,7 @@ task/00000123/my-receiver/%s
 	finishTaskAndWait(t, client, taskWork, taskDone)
 
 	// Check etcd state after task
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 task/00000123/my-receiver/%s
 -----
@@ -118,7 +118,7 @@ task/00000123/my-receiver/%s
 	finishTaskAndWait(t, client, taskWork, taskDone)
 
 	// Check etcd state after second task
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 task/00000123/my-receiver/%s
 -----
@@ -205,9 +205,9 @@ func TestFailedTask(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check etcd state during task
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-runtime/lock/task/my-lock (lease=%s)
+runtime/lock/task/my-lock (lease)
 -----
 node1
 >>>>>
@@ -231,7 +231,7 @@ task/00000123/my-receiver/%s
 	finishTaskAndWait(t, client, taskWork, taskDone)
 
 	// Check etcd state after task
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 task/00000123/my-receiver/%s
 -----
@@ -265,7 +265,7 @@ task/00000123/my-receiver/%s
 	finishTaskAndWait(t, client, taskWork, taskDone)
 
 	// Check etcd state after second task
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 task/00000123/my-receiver/%s
 -----
@@ -367,7 +367,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	}
 
 	// Check etcd state
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 task/00000123/my-receiver/%s
 -----

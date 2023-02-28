@@ -194,7 +194,7 @@ func Test_Cleanup(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check keys
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 file/opened/00001000/github/third/%s
 -----

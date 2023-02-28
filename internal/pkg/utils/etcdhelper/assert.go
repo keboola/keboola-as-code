@@ -2,6 +2,7 @@ package etcdhelper
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -12,15 +13,68 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 )
 
-// AssertKVs dumps all KVs from an etcd database and compares them with the expected string.
+// AssertKVsString dumps all KVs from an etcd database and compares them with the expected string.
 // In the expected string, a wildcards can be used, see the wildcards package.
-func AssertKVs(t *testing.T, client etcd.KV, expected string) {
-	t.Helper()
-	dump, err := DumpAll(context.Background(), client)
+func AssertKVsString(t assert.TestingT, client etcd.KV, expected string) {
+	AssertKVs(t, client, ParseDump(expected))
+}
+
+// AssertKVs dumps all KVs from an etcd database and compares them with the expected KVs.
+// In the expected key/value string, a wildcards can be used, see the wildcards package.
+func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV) {
+	actualKVs, err := DumpAll(context.Background(), client)
 	if err != nil {
-		t.Fatalf(`cannot dump etcd KVs: %s`, err)
+		t.Errorf(`cannot dump etcd KVs: %s`, err)
+		return
 	}
-	wildcards.Assert(t, strings.TrimSpace(expected), strings.TrimSpace(dump), `unexpected etcd state`)
+
+	// Compare expected and actual KVs
+	matchedExpected := make(map[int]bool)
+	matchedActual := make(map[int]bool)
+	for e, expected := range expectedKVs {
+		for a, actual := range actualKVs {
+			// Each actual key can be used only once
+			if matchedActual[a] {
+				continue
+			}
+
+			if wildcards.Compare(expected.Key, actual.Key) == nil {
+				matchedExpected[e] = true
+				matchedActual[a] = true
+				if err := wildcards.Compare(expected.Value, actual.Value); err == nil {
+					// Value matched, check lease presence.
+					if expected.Lease == 1 && actual.Lease == 0 {
+						assert.Fail(t, fmt.Sprintf(`The key "%s" is not supposed to have a lease, but it was found.`, actual.Key))
+					} else if expected.Lease == 0 && actual.Lease > 0 {
+						assert.Fail(t, fmt.Sprintf(`The key "%s" is supposed to have lease, but it was not found.`, actual.Key))
+					}
+					break
+				} else {
+					assert.Fail(t, fmt.Sprintf("Value of the actual key\n\"%s\"\ndoesn't match the expected key\n\"%s\":\n%s", actual.Key, expected.Key, err))
+				}
+			}
+		}
+	}
+
+	var unmatchedExpected []string
+	for e, expected := range expectedKVs {
+		if !matchedExpected[e] {
+			unmatchedExpected = append(unmatchedExpected, fmt.Sprintf(`[%03d] %s`, e, expected.Key))
+		}
+	}
+	if len(unmatchedExpected) > 0 {
+		assert.Fail(t, fmt.Sprintf("These keys are in expected but not actual ectd state:\n%s", strings.Join(unmatchedExpected, "\n")))
+	}
+
+	var unmatchedActual []string
+	for a, actual := range actualKVs {
+		if !matchedActual[a] {
+			unmatchedActual = append(unmatchedActual, fmt.Sprintf(`[%03d] %s`, a, actual.Key))
+		}
+	}
+	if len(unmatchedActual) > 0 {
+		assert.Fail(t, fmt.Sprintf("These keys are in actual but not expected ectd state:\n%s", strings.Join(unmatchedActual, "\n")))
+	}
 }
 
 // ExpectModification waits until the operation makes some change in etcd or a timeout occurs.

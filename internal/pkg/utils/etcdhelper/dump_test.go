@@ -1,4 +1,4 @@
-package etcdhelper
+package etcdhelper_test
 
 import (
 	"context"
@@ -6,11 +6,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
 func TestDumpAll(t *testing.T) {
 	t.Parallel()
-	client := ClientForTest(t)
+	client := etcdhelper.ClientForTest(t)
 
 	// Put keys
 	_, err := client.Put(context.Background(), "key1", "value1")
@@ -21,7 +23,7 @@ func TestDumpAll(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Dump
-	dump, err := DumpAll(context.Background(), client)
+	dump, err := etcdhelper.DumpAllToString(context.Background(), client)
 	assert.NoError(t, err)
 
 	expected := `

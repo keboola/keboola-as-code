@@ -216,7 +216,7 @@ func TestSliceUploadTask(t *testing.T) {
 
 func assertStateBeforeUpload(t *testing.T, client *etcd.Client) {
 	t.Helper()
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 config/export/00000123/my-receiver-1/my-export-1
 -----
@@ -308,13 +308,13 @@ record/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00
 >>>>>
 
 <<<<<
-runtime/api/node/watcher/cached/revision/api-node-1 (lease=%s)
+runtime/api/node/watcher/cached/revision/api-node-1 (lease)
 -----
 %A
 >>>>>
 
 <<<<<
-runtime/api/node/watcher/cached/revision/api-node-2 (lease=%s)
+runtime/api/node/watcher/cached/revision/api-node-2 (lease)
 -----
 %A
 >>>>>
@@ -409,7 +409,7 @@ stats/received/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-
 
 func assertStateAfterUpload(t *testing.T, client *etcd.Client) {
 	t.Helper()
-	etcdhelper.AssertKVs(t, client, `
+	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 config/export/00000123/my-receiver-1/my-export-1
 -----
