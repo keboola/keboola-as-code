@@ -344,13 +344,13 @@ func (p *Project) createFiles(files []*fixtures.File) error {
 
 			if len(fixture.Slices) > 0 {
 				slices := make([]string, 0, len(fixture.Slices))
-				for name, slice := range fixture.Slices {
-					_, err = keboola.UploadSlice(ctx, file, name, strings.NewReader(slice))
+				for _, slice := range fixture.Slices {
+					_, err = keboola.UploadSlice(ctx, file, slice.Name, strings.NewReader(slice.Content))
 					if err != nil {
-						errs.Append(errors.Errorf("could not upload file \"%s\" slice \"%s\": %w", fixture.Name, name, err))
+						errs.Append(errors.Errorf("could not upload file \"%s\" slice \"%s\": %w", fixture.Name, slice.Name, err))
 						return
 					}
-					slices = append(slices, name)
+					slices = append(slices, slice.Name)
 				}
 				_, err = keboola.UploadSlicedFileManifest(ctx, file, slices)
 				if err != nil {

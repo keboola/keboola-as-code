@@ -69,13 +69,18 @@ type Table struct {
 }
 
 type File struct {
-	Name        string            `json:"name"`
-	Content     string            `json:"content,omitempty"`
-	Tags        []string          `json:"tags"`
-	IsSliced    bool              `json:"isSliced"`
-	IsEncrypted bool              `json:"isEncrypted"`
-	IsPermanent bool              `json:"isPermanent"`
-	Slices      map[string]string `json:"slices,omitempty"`
+	Name        string      `json:"name"`
+	Content     string      `json:"content,omitempty"`
+	Tags        []string    `json:"tags"`
+	IsSliced    bool        `json:"isSliced"`
+	IsEncrypted bool        `json:"isEncrypted"`
+	IsPermanent bool        `json:"isPermanent"`
+	Slices      []FileSlice `json:"slices,omitempty"`
+}
+
+type FileSlice struct {
+	Name    string `json:"name"`
+	Content string `json:"content"`
 }
 
 type Config struct {
