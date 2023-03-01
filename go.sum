@@ -1104,8 +1104,8 @@ github.com/karrick/godirwalk v1.8.0/go.mod h1:H5KPZjojv4lE+QYImBI8xVtrBRgYrIVsaR
 github.com/karrick/godirwalk v1.10.3/go.mod h1:RoGL9dQei4vP9ilrpETWE8CLOZ1kiN0LhBygSwrAsHA=
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 h1:Z9n2FFNUXsshfwJMBgNA0RU6/i7WVaAegv3PtuIHPMs=
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51/go.mod h1:CzGEWj7cYgsdH8dAjBGEr58BoE7ScuLd+fwFZ44+/x8=
-github.com/keboola/go-client v1.5.0 h1:Ux7HyOJwg26TU6iF7O5psOlvrxbXgRe4lVgSf2yEKKY=
-github.com/keboola/go-client v1.5.0/go.mod h1:xMWisErTi+ABvbS8hGpRtvoYdkxtCNvJNIufsToyHp8=
+github.com/keboola/go-client v1.7.0 h1:7kZc0iFQmJcADNkStQsB9V/aKOe2ySxm6FuoUMPeL+g=
+github.com/keboola/go-client v1.7.0/go.mod h1:xMWisErTi+ABvbS8hGpRtvoYdkxtCNvJNIufsToyHp8=
 github.com/keboola/go-jsonnet v0.19.1 h1:vdWv6lKNX2WdZl4R8PCOnOWINIjdcwmLqNssU7OUv+Y=
 github.com/keboola/go-jsonnet v0.19.1/go.mod h1:pSOb2+VoKZjVbIB4z58am8q15yWO/VTEp6n1GxW3x0I=
 github.com/keboola/go-utils v0.8.1 h1:nkTiAX9Me9NHvEkopm762BKV+iMNDqWyXmBsOTVDmyE=
