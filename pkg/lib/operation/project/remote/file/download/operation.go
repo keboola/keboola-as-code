@@ -1,5 +1,4 @@
 // Package download contains the implementation of the "kbc project remote file download" command.
-// nolint: forbidigo
 package download
 
 import (
@@ -32,8 +31,8 @@ func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 
 	if opts.File.IsSliced {
 		if opts.Output != "-" {
-			err = os.Mkdir(opts.Output, 0o755)
-			if err != nil && !os.IsExist(err) {
+			err = os.Mkdir(opts.Output, 0o755)  // nolint: forbidigo
+			if err != nil && !os.IsExist(err) { // nolint: forbidigo
 				return errors.Errorf("cannot create directory %s: %w", opts.Output, err)
 			}
 		}
@@ -80,9 +79,9 @@ func download(r io.ReadCloser, output string) (err error) {
 
 	var dst io.WriteCloser
 	if output == "-" {
-		dst = os.Stdout
+		dst = os.Stdout // nolint: forbidigo
 	} else {
-		dst, err = os.Create(output)
+		dst, err = os.Create(output) // nolint: forbidigo
 		if err != nil {
 			return err
 		}
