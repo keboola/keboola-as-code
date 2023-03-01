@@ -28,7 +28,7 @@ require (
 	github.com/jarcoal/httpmock v1.3.0
 	github.com/joho/godotenv v1.4.0
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
-	github.com/keboola/go-client v1.7.0
+	github.com/keboola/go-client v1.8.0
 	github.com/keboola/go-utils v0.8.1
 	github.com/klauspost/pgzip v1.2.5
 	github.com/kylelemons/godebug v1.1.0
@@ -38,6 +38,7 @@ require (
 	github.com/qmuntal/stateless v1.6.2
 	github.com/relvacode/iso8601 v1.3.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.2.0
+	github.com/schollz/progressbar/v3 v3.13.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/afero v1.9.3
 	github.com/spf13/cast v1.5.0
@@ -191,6 +192,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
+	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -202,7 +204,7 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
-	github.com/rivo/uniseg v0.4.2 // indirect
+	github.com/rivo/uniseg v0.4.3 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802 // indirect
