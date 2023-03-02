@@ -42,11 +42,12 @@ type Node struct {
 	sessionLock *sync.RWMutex
 	session     *concurrency.Session
 
-	nodeID           string
-	config           config
-	tasksCount       *atomic.Int64
-	runningTasksLock *sync.Mutex
-	runningTasks     map[key.TaskKey]bool
+	nodeID     string
+	config     nodeConfig
+	tasksCount *atomic.Int64
+
+	taskLocksMutex *sync.Mutex
+	taskLocks      map[string]bool
 }
 
 type Result = string
@@ -62,9 +63,9 @@ type dependencies interface {
 	EtcdClient() *etcd.Client
 }
 
-func NewNode(d dependencies, opts ...Option) (*Node, error) {
+func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 	// Apply options
-	c := defaultConfig()
+	c := defaultNodeConfig()
 	for _, o := range opts {
 		o(&c)
 	}
@@ -72,16 +73,16 @@ func NewNode(d dependencies, opts ...Option) (*Node, error) {
 	proc := d.Process()
 
 	n := &Node{
-		tracer:           d.Tracer(),
-		clock:            d.Clock(),
-		logger:           d.Logger().AddPrefix("[task]"),
-		schema:           d.Schema(),
-		client:           d.EtcdClient(),
-		nodeID:           proc.UniqueID(),
-		config:           c,
-		tasksCount:       atomic.NewInt64(0),
-		runningTasksLock: &sync.Mutex{},
-		runningTasks:     make(map[key.TaskKey]bool),
+		tracer:         d.Tracer(),
+		clock:          d.Clock(),
+		logger:         d.Logger().AddPrefix("[task]"),
+		schema:         d.Schema(),
+		client:         d.EtcdClient(),
+		nodeID:         proc.UniqueID(),
+		config:         c,
+		tasksCount:     atomic.NewInt64(0),
+		taskLocksMutex: &sync.Mutex{},
+		taskLocks:      make(map[string]bool),
 	}
 
 	// Graceful shutdown
@@ -124,20 +125,35 @@ func (n *Node) TasksCount() int64 {
 
 // StartTask backed by local lock and etcd transaction, so the task run at most once.
 // The context will be passed to the operation callback.
-func (n *Node) StartTask(ctx context.Context, receiverKey key.ReceiverKey, typ, lock string, operation Task) (t *model.Task, err error) {
-	createdAt := key.UTCTime(n.clock.Now())
-	taskID := key.TaskID(fmt.Sprintf("%s_%s", createdAt.String(), idgenerator.Random(5)))
-	taskKey := key.TaskKey{ReceiverKey: receiverKey, Type: typ, TaskID: taskID}
+func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, operation Task, ops ...Option) (t *model.Task, err error) {
+	// Apply options
+	c := defaultTaskConfig()
+	for _, o := range ops {
+		o(&c)
+	}
+
+	// Generate lock name if it is not set
+	if c.lock == "" {
+		c.lock = taskKey.String()
+	}
+
+	// Lock etcd key
+	lock := LockEtcdPrefix.Key(c.lock)
+
+	// Append datetime and a random suffix to the task ID
+	createdAt := model.UTCTime(n.clock.Now())
+	taskKey.TaskID = key.TaskID(string(taskKey.TaskID) + "/" + createdAt.String() + "_" + idgenerator.Random(5))
+	taskEtcdKey := n.schema.Tasks().ByKey(taskKey)
 
 	// Lock task locally for periodical re-syncs,
 	// so locally can be determined that the task is already running.
-	ok, unlock := n.lockTask(taskKey)
+	ok, unlock := n.lockTaskLocally(lock.Key())
 	if !ok {
 		return nil, nil
 	}
 
 	// Create task model
-	task := model.Task{TaskKey: taskKey, CreatedAt: createdAt, WorkerNode: n.nodeID, Lock: lock}
+	task := model.Task{TaskKey: taskKey, CreatedAt: createdAt, WorkerNode: n.nodeID, Lock: lock.Key()}
 
 	// Get session
 	n.sessionLock.RLock()
@@ -147,31 +163,29 @@ func (n *Node) StartTask(ctx context.Context, receiverKey key.ReceiverKey, typ, 
 	// Create task and lock in etcd
 	// Atomicity: If the lock key already exists, the then the transaction fails and task is ignored.
 	// Resistance to outages: If the Worker node fails, the lock is released automatically by the lease, after the session TTL seconds.
-	taskEtcdKey := n.schema.Tasks().ByKey(task.TaskKey)
-	lockEtcdKey := n.schema.Runtime().Lock().Task().LockKey(task.Lock)
-	logger := n.logger.AddPrefix(fmt.Sprintf("[%s]", taskKey.ID()))
+	logger := n.logger.AddPrefix(fmt.Sprintf("[%s]", taskKey.String()))
 	createTaskOp := op.MergeToTxn(
 		taskEtcdKey.Put(task),
-		lockEtcdKey.PutIfNotExists(task.WorkerNode, etcd.WithLease(session.Lease())),
+		lock.PutIfNotExists(task.WorkerNode, etcd.WithLease(session.Lease())),
 	)
 	if resp, err := createTaskOp.Do(n.tasksCtx, n.client); err != nil {
 		unlock()
 		return nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, err)
 	} else if !resp.Succeeded {
 		unlock()
-		logger.Infof(`task ignored, the lock "%s" is in use`, lockEtcdKey.Key())
+		logger.Infof(`task ignored, the lock "%s" is in use`, lock.Key())
 		return nil, nil
 	}
 
-	logger.Infof(`started task "%s"`, taskKey)
-	logger.Debugf(`lock acquired "%s"`, lockEtcdKey.Key())
+	logger.Infof(`started task`)
+	logger.Debugf(`lock acquired "%s"`, lock.Key())
 
-	_, span := n.tracer.Start(ctx, "keboola.go.buffer.task."+task.Type)
+	_, span := n.tracer.Start(ctx, "keboola.go.buffer.task")
 	defer telemetry.EndSpan(span, &err)
 	span.SetAttributes(
 		telemetry.KeepSpan(),
 		attribute.String("projectId", task.ProjectID.String()),
-		attribute.String("receiverId", task.ReceiverID.String()),
+		attribute.String("taskId", task.TaskID.String()),
 		attribute.String("lock", task.Lock),
 		attribute.String("worker", task.WorkerNode),
 		attribute.String("createdAt", task.CreatedAt.String()),
@@ -222,16 +236,16 @@ func (n *Node) StartTask(ctx context.Context, receiverKey key.ReceiverKey, typ, 
 			// Update task and release lock in etcd
 			finishTaskOp := op.MergeToTxn(
 				taskEtcdKey.Put(task),
-				lockEtcdKey.DeleteIfExists(),
+				lock.DeleteIfExists(),
 			)
 			if resp, err := finishTaskOp.Do(opCtx, n.client); err != nil {
 				logger.Errorf(`cannot update task and release lock: %s`, err)
 				return
 			} else if !resp.Succeeded {
-				logger.Errorf(`cannot release task lock "%s", not found`, lockEtcdKey.Key())
+				logger.Errorf(`cannot release task lock "%s", not found`, lock.Key())
 				return
 			}
-			logger.Debugf(`lock released "%s"`, lockEtcdKey.Key())
+			logger.Debugf(`lock released "%s"`, lock.Key())
 		}()
 
 		// Do operation
@@ -240,23 +254,23 @@ func (n *Node) StartTask(ctx context.Context, receiverKey key.ReceiverKey, typ, 
 	return &createdTask, nil
 }
 
-// lockTask guarantees that the task runs at most once on the Worker node.
+// lockTaskLocally guarantees that the task runs at most once on the Worker node.
 // Uniqueness within the cluster is guaranteed by the etcd transaction, see StartTask method.
-func (n *Node) lockTask(taskKey key.TaskKey) (ok bool, unlock func()) {
-	n.runningTasksLock.Lock()
-	defer n.runningTasksLock.Unlock()
-	if n.runningTasks[taskKey] {
+func (n *Node) lockTaskLocally(lock string) (ok bool, unlock func()) {
+	n.taskLocksMutex.Lock()
+	defer n.taskLocksMutex.Unlock()
+	if n.taskLocks[lock] {
 		return false, nil
 	}
 
 	n.tasksWg.Add(1)
 	n.tasksCount.Inc()
-	n.runningTasks[taskKey] = true
+	n.taskLocks[lock] = true
 
 	return true, func() {
-		n.runningTasksLock.Lock()
-		defer n.runningTasksLock.Unlock()
-		delete(n.runningTasks, taskKey)
+		n.taskLocksMutex.Lock()
+		defer n.taskLocksMutex.Unlock()
+		delete(n.taskLocks, lock)
 		n.tasksCount.Dec()
 		n.tasksWg.Done()
 	}
