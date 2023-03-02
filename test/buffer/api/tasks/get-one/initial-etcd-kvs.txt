@@ -1,0 +1,52 @@
+<<<<<
+/config/receiver/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "name": "My Receiver",
+  "secret": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+}
+>>>>>
+
+<<<<<
+/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-a/receiver.create/2023-01-01T08:02:06.000Z_abcdef
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "taskId": "my-receiver-a/receiver.create/2023-01-01T08:02:06.000Z_abcdef",
+  "createdAt": "2023-01-01T08:02:06.000Z",
+  "finishedAt": "2023-01-01T09:02:06.000Z",
+  "workerNode": "worker-node-1",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-a/receiver.create",
+  "result": "receiver created",
+  "duration": 3600000
+}
+>>>>>
+
+<<<<<
+/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-b/receiver.create/2023-01-01T08:02:06.000Z_ghjkl
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "taskId": "my-receiver-b/receiver.create/2023-01-01T08:02:06.000Z_ghjkl",
+  "createdAt": "2023-01-01T08:02:06.000Z",
+  "finishedAt": "2023-01-01T09:02:06.000Z",
+  "workerNode": "worker-node-1",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-b/receiver.create",
+  "error": "some error",
+  "duration": 3600000
+}
+>>>>>
+
+<<<<<
+/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-c/receiver.create/2023-02-01T08:02:06.000Z_xyzww
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "taskId": "my-receiver-c/receiver.create/2023-02-01T08:02:06.000Z_xyzww",
+  "createdAt": "2023-02-01T08:02:06.000Z",
+  "workerNode": "worker-node-1",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-c/receiver.create"
+}
+>>>>>
