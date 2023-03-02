@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
@@ -17,18 +19,42 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// UploadingSlicesCheckInterval defines how often it will be checked
-// that each slice in the "uploading" state has a running "slice.upload" task.
-// This re-check mechanism provides retries for failed tasks or failed worker nodes.
-// In normal operation, switch to the "uploading" state is processed immediately, we are notified via the Watch API.
-const UploadingSlicesCheckInterval = time.Minute
+const (
+	// UploadingSlicesCheckInterval defines how often it will be checked
+	// that each slice in the "uploading" state has a running "slice.upload" task.
+	// This re-check mechanism provides retries for failed tasks or failed worker nodes.
+	// In normal operation, switch to the "uploading" state is processed immediately, we are notified via the Watch API.
+	UploadingSlicesCheckInterval = time.Minute
+
+	sliceUploadTaskType = "slice.upload"
+)
 
 // uploadSlices watches for slices switched to the uploading state.
 func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
-		Prefix:         s.schema.Slices().Uploading().PrefixT(),
-		ReSyncInterval: UploadingSlicesCheckInterval,
-		TaskType:       "slice.upload",
+		Name: sliceUploadTaskType,
+		Source: orchestrator.Source[model.Slice]{
+			WatchPrefix:    s.schema.Slices().Uploading().PrefixT(),
+			WatchEvents:    []etcdop.EventType{etcdop.CreateEvent},
+			ReSyncInterval: UploadingSlicesCheckInterval,
+		},
+		DistributionKey: func(event etcdop.WatchEventT[model.Slice]) string {
+			slice := event.Value
+			return slice.ReceiverKey.String()
+		},
+		TaskKey: func(event etcdop.WatchEventT[model.Slice]) key.TaskKey {
+			slice := event.Value
+			return key.TaskKey{
+				ProjectID: slice.ProjectID,
+				TaskID: key.TaskID(strings.Join([]string{
+					slice.ReceiverID.String(),
+					slice.ExportID.String(),
+					slice.FileID.String(),
+					slice.SliceID.String(),
+					sliceUploadTaskType,
+				}, "/")),
+			}
+		},
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Task {
 			return func(_ context.Context, logger log.Logger) (result string, err error) {
 				// Don't cancel upload on the shutdown, but wait for timeout

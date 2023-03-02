@@ -2,28 +2,54 @@ package service
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 )
 
-// ClosingSlicesCheckInterval defines how often it will be checked
-// that each slice in the "closing" state has a running "slice.close" task.
-// This re-check mechanism provides retries for failed tasks or failed worker nodes.
-// In normal operation, switch to the "closing" state is processed immediately, we are notified via the Watch API.
-const ClosingSlicesCheckInterval = time.Minute
+const (
+	// ClosingSlicesCheckInterval defines how often it will be checked
+	// that each slice in the "closing" state has a running "slice.close" task.
+	// This re-check mechanism provides retries for failed tasks or failed worker nodes.
+	// In normal operation, switch to the "closing" state is processed immediately, we are notified via the Watch API.
+	ClosingSlicesCheckInterval = time.Minute
+
+	sliceCloseTaskType = "slice.close"
+)
 
 // closeSlices watches for slices switched to the closing state.
 func (s *Service) closeSlices(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
-		Prefix:         s.schema.Slices().Closing().PrefixT(),
-		ReSyncInterval: ClosingSlicesCheckInterval,
-		TaskType:       "slice.close",
+		Name: sliceCloseTaskType,
+		Source: orchestrator.Source[model.Slice]{
+			WatchPrefix:    s.schema.Slices().Closing().PrefixT(),
+			WatchEvents:    []etcdop.EventType{etcdop.CreateEvent},
+			ReSyncInterval: ClosingSlicesCheckInterval,
+		},
+		DistributionKey: func(event etcdop.WatchEventT[model.Slice]) string {
+			slice := event.Value
+			return slice.ReceiverKey.String()
+		},
+		TaskKey: func(event etcdop.WatchEventT[model.Slice]) key.TaskKey {
+			slice := event.Value
+			return key.TaskKey{
+				ProjectID: slice.ProjectID,
+				TaskID: key.TaskID(strings.Join([]string{
+					slice.ReceiverID.String(),
+					slice.ExportID.String(),
+					slice.FileID.String(),
+					slice.SliceID.String(),
+					sliceCloseTaskType,
+				}, "/")),
+			}
+		},
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Task {
 			return func(ctx context.Context, logger log.Logger) (string, error) {
 				// On shutdown, the task is stopped immediately, because it is connected to the Service ctx.

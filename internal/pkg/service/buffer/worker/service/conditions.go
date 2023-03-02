@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -20,8 +21,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// MinimalCredentialsExpiration which triggers the import.
-const MinimalCredentialsExpiration = time.Hour
+const (
+	// MinimalCredentialsExpiration which triggers the import.
+	MinimalCredentialsExpiration = time.Hour
+
+	fileSwapTaskType  = "file.swap"
+	sliceSwapTaskType = "slice.swap"
+)
 
 type checker struct {
 	*Service
@@ -99,7 +105,7 @@ func (c *checker) check(ctx context.Context) {
 		// Check credentials expiration
 		if slice.expiration.Sub(now) <= MinimalCredentialsExpiration {
 			reason := fmt.Sprintf("upload credentials will expire soon, at %s", slice.expiration.UTC().String())
-			if err := c.closeFile(ctx, sliceKey.FileKey, reason); err != nil {
+			if err := c.swapFile(ctx, sliceKey.FileKey, reason); err != nil {
 				c.logger.Error(err)
 			}
 			continue
@@ -113,7 +119,7 @@ func (c *checker) check(ctx context.Context) {
 
 		// Check import conditions
 		if met, reason := cdn.Evaluate(now, sliceKey.FileKey.OpenedAt(), c.stats.FileStats(sliceKey.FileKey).Total); met {
-			if err := c.closeFile(ctx, sliceKey.FileKey, reason); err != nil {
+			if err := c.swapFile(ctx, sliceKey.FileKey, reason); err != nil {
 				c.logger.Error(err)
 			}
 			continue
@@ -121,7 +127,7 @@ func (c *checker) check(ctx context.Context) {
 
 		// Check upload conditions
 		if met, reason := c.config.uploadConditions.Evaluate(now, sliceKey.OpenedAt(), c.stats.SliceStats(sliceKey).Total); met {
-			if err := c.closeSlice(ctx, sliceKey, reason); err != nil {
+			if err := c.swapSlice(ctx, sliceKey, reason); err != nil {
 				c.logger.Error(err)
 			}
 			continue
@@ -209,9 +215,18 @@ func (c *checker) startTicker(ctx context.Context, wg *sync.WaitGroup) {
 	}()
 }
 
-func (c *checker) closeFile(ctx context.Context, fileKey key.FileKey, reason string) (err error) {
-	lock := "file.swap/" + fileKey.String()
-	_, err = c.tasks.StartTask(ctx, fileKey.ReceiverKey, "file.swap", lock, func(ctx context.Context, logger log.Logger) (task.Result, error) {
+func (c *checker) swapFile(ctx context.Context, fileKey key.FileKey, reason string) (err error) {
+	taskKey := key.TaskKey{
+		ProjectID: fileKey.ProjectID,
+		TaskID: key.TaskID(strings.Join([]string{
+			fileKey.ReceiverID.String(),
+			fileKey.ExportID.String(),
+			fileKey.FileID.String(),
+			fileSwapTaskType,
+		}, "/")),
+	}
+
+	_, err = c.tasks.StartTask(ctx, taskKey, func(ctx context.Context, logger log.Logger) (task.Result, error) {
 		c.logger.Infof(`closing file "%s": %s`, fileKey, reason)
 		rb := rollback.New(c.logger)
 		defer rb.InvokeIfErr(ctx, &err)
@@ -251,9 +266,19 @@ func (c *checker) closeFile(ctx context.Context, fileKey key.FileKey, reason str
 	return err
 }
 
-func (c *checker) closeSlice(ctx context.Context, sliceKey key.SliceKey, reason string) (err error) {
-	lock := "slice.swap/" + sliceKey.String()
-	_, err = c.tasks.StartTask(ctx, sliceKey.ReceiverKey, "slice.swap", lock, func(ctx context.Context, logger log.Logger) (task.Result, error) {
+func (c *checker) swapSlice(ctx context.Context, sliceKey key.SliceKey, reason string) (err error) {
+	taskKey := key.TaskKey{
+		ProjectID: sliceKey.ProjectID,
+		TaskID: key.TaskID(strings.Join([]string{
+			sliceKey.ReceiverID.String(),
+			sliceKey.ExportID.String(),
+			sliceKey.FileID.String(),
+			sliceKey.SliceID.String(),
+			sliceSwapTaskType,
+		}, "/")),
+	}
+
+	_, err = c.tasks.StartTask(ctx, taskKey, func(ctx context.Context, logger log.Logger) (task.Result, error) {
 		c.logger.Infof(`closing slice "%s": %s`, sliceKey, reason)
 		rb := rollback.New(c.logger)
 		defer rb.InvokeIfErr(ctx, &err)

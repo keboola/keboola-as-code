@@ -2,21 +2,27 @@ package service
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 )
 
-// ClosingFilesCheckInterval defines how often it will be checked
-// that each file in the "closing" state has a running "file.close" task.
-// This re-check mechanism provides retries for failed tasks or failed worker nodes.
-// In normal operation, switch to the "closing" state is processed immediately, on event from the Watch API.
-const ClosingFilesCheckInterval = time.Minute
+const (
+	// ClosingFilesCheckInterval defines how often it will be checked
+	// that each file in the "closing" state has a running "file.close" task.
+	// This re-check mechanism provides retries for failed tasks or failed worker nodes.
+	// In normal operation, switch to the "closing" state is processed immediately, on event from the Watch API.
+	ClosingFilesCheckInterval = time.Minute
+
+	fileCloseTaskType = "file.close"
+)
 
 // closeFiles watches for files switched to the closing state.
 func (s *Service) closeFiles(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
@@ -25,9 +31,28 @@ func (s *Service) closeFiles(ctx context.Context, wg *sync.WaitGroup, d dependen
 
 	// Watch files in closing state
 	initDone2 := orchestrator.Start(ctx, wg, d, orchestrator.Config[model.File]{
-		Prefix:         s.schema.Files().Closing().PrefixT(),
-		ReSyncInterval: ClosingFilesCheckInterval,
-		TaskType:       "file.close",
+		Name: fileCloseTaskType,
+		Source: orchestrator.Source[model.File]{
+			WatchPrefix:    s.schema.Files().Closing().PrefixT(),
+			WatchEvents:    []etcdop.EventType{etcdop.CreateEvent},
+			ReSyncInterval: ClosingFilesCheckInterval,
+		},
+		DistributionKey: func(event etcdop.WatchEventT[model.File]) string {
+			file := event.Value
+			return file.ReceiverKey.String()
+		},
+		TaskKey: func(event etcdop.WatchEventT[model.File]) key.TaskKey {
+			file := event.Value
+			return key.TaskKey{
+				ProjectID: file.ProjectID,
+				TaskID: key.TaskID(strings.Join([]string{
+					file.ReceiverID.String(),
+					file.ExportID.String(),
+					file.FileID.String(),
+					fileCloseTaskType,
+				}, "/")),
+			}
+		},
 		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Task {
 			return func(ctx context.Context, logger log.Logger) (string, error) {
 				// On shutdown, the task is stopped immediately, because it is connected to the Service ctx.
