@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 type dependencies interface {
@@ -37,8 +38,8 @@ func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 
 	if opts.File.IsSliced {
 		if !opts.ToStdOut() {
-			err = os.Mkdir(opts.Output, 0o755)  // nolint: forbidigo
-			if err != nil && !os.IsExist(err) { // nolint: forbidigo
+			err = os.MkdirAll(opts.Output, 0o755) // nolint: forbidigo
+			if err != nil && !os.IsExist(err) {   // nolint: forbidigo
 				return errors.Errorf("cannot create directory %s: %w", opts.Output, err)
 			}
 		}
@@ -58,7 +59,7 @@ func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 			if err != nil {
 				return errors.Errorf("cannot get slice attributes %s: %w", slice, err)
 			}
-			bar := progressbar.DefaultBytes(attrs.Size, fmt.Sprintf("downloading slice %d/%d", i+1, len(slices)))
+			bar := progressbar.DefaultBytes(attrs.Size, fmt.Sprintf(`downloading slice "%s" %d/%d`, strhelper.Truncate(slice, 20, "..."), i+1, len(slices)))
 
 			err = download(r, output, bar)
 			if err != nil {
