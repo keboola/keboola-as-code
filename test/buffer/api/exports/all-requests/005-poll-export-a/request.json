@@ -5,7 +5,7 @@
     "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
   },
   "repeat": {
-    "until": "isFinished == true",
+    "until": "status != 'processing'",
     "timeout": 60
   }
 }

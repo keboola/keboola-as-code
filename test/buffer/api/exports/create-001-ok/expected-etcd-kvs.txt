@@ -133,17 +133,15 @@
 >>>>>
 
 <<<<<
-/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export.create/%s
+/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/export.create/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "my-receiver",
-  "type": "export.create",
-  "taskId": "%s",
+  "taskId": "my-receiver/my-export-1/export.create/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",
-  "lock": "export.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/export.create",
   "result": "export created",
   "duration": %d
 }

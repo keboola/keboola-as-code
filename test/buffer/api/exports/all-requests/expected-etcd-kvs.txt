@@ -216,68 +216,30 @@
 >>>>>
 
 <<<<<
-/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export.create/%s
+/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export-b/export.create/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "my-receiver",
-  "type": "export.create",
-  "taskId": "%s",
+  "taskId": "my-receiver/export-b/export.create/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",
-  "lock": "export.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export-a",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export-b/export.create",
   "result": "export created",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export.create/%s
+/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export-b/export.update/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "my-receiver",
-  "type": "export.create",
-  "taskId": "%s",
+  "taskId": "my-receiver/export-b/export.update/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",
-  "lock": "export.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export-b",
-  "result": "export created",
-  "duration": %d
-}
->>>>>
-
-<<<<<
-/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export.create/%s
------
-{
-  "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "my-receiver",
-  "type": "export.create",
-  "taskId": "%s",
-  "createdAt": "%s",
-  "finishedAt": "%s",
-  "workerNode": "%s",
-  "lock": "export.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export-c",
-  "result": "export created",
-  "duration": %d
-}
->>>>>
-
-<<<<<
-/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export.update/%s
------
-{
-  "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "my-receiver",
-  "type": "export.update",
-  "taskId": "%s",
-  "createdAt": "%s",
-  "finishedAt": "%s",
-  "workerNode": "%s",
-  "lock": "export.update/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export-b",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export-b/export.update",
   "result": "export updated",
   "duration": %d
 }
@@ -288,13 +250,11 @@
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "my-receiver",
-  "type": "receiver.create",
-  "taskId": "%s",
+  "taskId": "my-receiver/receiver.create/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",
-  "lock": "receiver.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/receiver.create",
   "result": "receiver created",
   "duration": %d
 }

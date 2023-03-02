@@ -8,20 +8,3 @@
   "secret": "kQU45mKXenSndxyxk4DohbkXS610B0oKYvyWGixGgMUJpbAr"
 }
 >>>>>
-
-<<<<<
-/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/receiver.create/2023-02-15T10:48:56.342Z_1-ozS
------
-{
-  "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "my-receiver",
-  "type": "receiver.create",
-  "taskId": "2023-02-15T10:48:56.342Z_1-ozS",
-  "createdAt": "2023-02-15T10:48:56.342Z",
-  "finishedAt": "2023-02-15T10:49:05.541Z",
-  "workerNode": "abb42d82c9d6-03763",
-  "lock": "receiver.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver",
-  "result": "receiver created",
-  "duration": 9201912879
-}
->>>>>
