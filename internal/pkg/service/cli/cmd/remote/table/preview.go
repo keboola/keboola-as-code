@@ -94,7 +94,7 @@ func parsePreviewOptions(options *options.Options, fs filesystem.Fs, tableID keb
 
 	o.Out = options.GetString("out")
 	if fs.Exists(o.Out) && !options.GetBool("force") {
-		e.Append(errors.Errorf(`file "%s" already exists, use the "--force" flag to overwrite it`))
+		e.Append(errors.Errorf(`file "%s" already exists, use the "--force" flag to overwrite it`, o.Out))
 	}
 
 	whereString := options.GetString("where")

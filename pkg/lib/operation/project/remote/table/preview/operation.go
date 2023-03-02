@@ -80,7 +80,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 func getPreviewOptions(o *Options) []keboola.PreviewOption {
 	opts := []keboola.PreviewOption{}
 	if o.Limit > 0 {
-		opts = append(opts, keboola.WithLimitRows(uint(o.Limit)))
+		opts = append(opts, keboola.WithLimitRows(o.Limit))
 	}
 	if len(o.ChangedSince) > 0 {
 		opts = append(opts, keboola.WithChangedSince(o.ChangedSince))

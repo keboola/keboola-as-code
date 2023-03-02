@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -52,9 +53,8 @@ func renderJSON(table *keboola.TablePreview) string {
 func renderCSV(table *keboola.TablePreview) string {
 	b := &strings.Builder{}
 	w := csv.NewWriter(b)
-	w.Write(table.Columns)
-	w.WriteAll(table.Rows)
-
+	_ = w.Write(table.Columns)
+	_ = w.WriteAll(table.Rows)
 	return b.String()
 }
 
