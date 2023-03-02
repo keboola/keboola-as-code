@@ -9,23 +9,58 @@ import (
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"github.com/umisama/go-regexpcache"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	etcd "go.etcd.io/etcd/client/v3"
 )
 
+type AssertOption func(*assertConfig)
+
+type assertConfig struct {
+	ignoredKeyPatterns []string
+}
+
+func WithIgnoredKeyPattern(v string) AssertOption {
+	return func(c *assertConfig) {
+		c.ignoredKeyPatterns = append(c.ignoredKeyPatterns, v)
+	}
+}
+
 // AssertKVsString dumps all KVs from an etcd database and compares them with the expected string.
 // In the expected string, a wildcards can be used, see the wildcards package.
-func AssertKVsString(t assert.TestingT, client etcd.KV, expected string) {
-	AssertKVs(t, client, ParseDump(expected))
+func AssertKVsString(t assert.TestingT, client etcd.KV, expected string, ops ...AssertOption) {
+	AssertKVs(t, client, ParseDump(expected), ops...)
 }
 
 // AssertKVs dumps all KVs from an etcd database and compares them with the expected KVs.
 // In the expected key/value string, a wildcards can be used, see the wildcards package.
-func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV) {
-	actualKVs, err := DumpAll(context.Background(), client)
+func AssertKVs(t assert.TestingT, client etcd.KV, expectedKVs []KV, ops ...AssertOption) {
+	// Process options
+	c := assertConfig{}
+	for _, o := range ops {
+		o(&c)
+	}
+
+	// Dump actual state
+	actualKVsRaw, err := DumpAll(context.Background(), client)
 	if err != nil {
 		t.Errorf(`cannot dump etcd KVs: %s`, err)
 		return
+	}
+
+	// Filter out ignored keys
+	var actualKVs []KV
+	for _, kv := range actualKVsRaw {
+		ignored := false
+		for _, pattern := range c.ignoredKeyPatterns {
+			if regexpcache.MustCompile(pattern).MatchString(kv.Key) {
+				ignored = true
+				break
+			}
+		}
+		if !ignored {
+			actualKVs = append(actualKVs, kv)
+		}
 	}
 
 	// Compare expected and actual KVs
