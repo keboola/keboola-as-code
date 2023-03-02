@@ -53,7 +53,6 @@ type Options func(c *runConfig)
 type runConfig struct {
 	addEnvVarsFromFile bool
 	assertDirContent   bool
-	assertEtcdState    bool
 	assertProjectState bool
 	cliBinaryPath      string
 	copyInToWorkingDir bool
@@ -70,12 +69,6 @@ func WithAddEnvVarsFromFile() Options {
 func WithAssertDirContent() Options {
 	return func(c *runConfig) {
 		c.assertDirContent = true
-	}
-}
-
-func WithAssertEtcdState() Options {
-	return func(c *runConfig) {
-		c.assertEtcdState = true
 	}
 }
 
