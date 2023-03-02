@@ -68,6 +68,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		if err != nil {
 			return err
 		}
+		d.Logger().Info("Write done.")
 	} else {
 		// write to stdout
 		d.Logger().Infof("\n%s", rendered)
