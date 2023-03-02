@@ -2,6 +2,7 @@ package orchestrator_test
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -54,9 +55,27 @@ func TestOrchestrator(t *testing.T) {
 
 	// Orchestrator config
 	config := orchestrator.Config[testResource]{
-		Prefix:         pfx,
-		ReSyncInterval: time.Minute,
-		TaskType:       "some.task",
+		Name: "some.task",
+		Source: orchestrator.Source[testResource]{
+			WatchPrefix:    pfx,
+			WatchEvents:    []etcdop.EventType{etcdop.CreateEvent},
+			ReSyncInterval: time.Minute,
+		},
+		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
+			return event.Value.ReceiverKey.String()
+		},
+		Lock: func(event etcdop.WatchEventT[testResource]) string {
+			// Define a custom lock name
+			resource := event.Value
+			return fmt.Sprintf(`%s/%s`, resource.ReceiverKey.String(), resource.ID)
+		},
+		TaskKey: func(event etcdop.WatchEventT[testResource]) key.TaskKey {
+			resource := event.Value
+			return key.TaskKey{
+				ProjectID: resource.ReceiverKey.ProjectID,
+				TaskID:    key.TaskID("my-receiver/some.task/" + resource.ID),
+			}
+		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Task {
 			return func(_ context.Context, logger log.Logger) (task.Result, error) {
 				logger.Info("message from the task")
@@ -94,19 +113,19 @@ func TestOrchestrator(t *testing.T) {
 [orchestrator][some.task]INFO  ready
 [distribution]INFO  found a new node "node2"
 [orchestrator][some.task]INFO  restart: distribution changed: found a new node "node2"
-[orchestrator][some.task]INFO  assigned "00001000/my-receiver/ResourceID"
-[task][%s]INFO  started task "00001000/my-receiver/some.task/%s"
-[task][%s]DEBUG  lock acquired "runtime/lock/task/some.task/00001000/my-receiver/ResourceID"
+[orchestrator][some.task]INFO  assigned "00001000/my-receiver/some.task/ResourceID"
+[task][%s]INFO  started task
+[task][%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/ResourceID"
 [task][%s]INFO  message from the task
 [task][%s]INFO  task succeeded (%s): ResourceID
-[task][%s]DEBUG  lock released "runtime/lock/task/some.task/00001000/my-receiver/ResourceID"
+[task][%s]DEBUG  lock released "runtime/lock/task/00001000/my-receiver/ResourceID"
 %A
 `, d1.DebugLogger().AllMessages())
 
 	wildcards.Assert(t, `
 %A
 [orchestrator][some.task]INFO  ready
-[orchestrator][some.task]DEBUG  not assigned "00001000/my-receiver/ResourceID"
+[orchestrator][some.task]DEBUG  not assigned "00001000/my-receiver/some.task/ResourceID", distribution key "00001000/my-receiver"
 %A
 `, d2.DebugLogger().AllMessages())
 }
@@ -127,9 +146,22 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 
 	// Orchestrator config
 	config := orchestrator.Config[testResource]{
-		Prefix:         pfx,
-		ReSyncInterval: time.Minute,
-		TaskType:       "some.task",
+		Name: "some.task",
+		Source: orchestrator.Source[testResource]{
+			WatchPrefix:    pfx,
+			WatchEvents:    []etcdop.EventType{etcdop.CreateEvent},
+			ReSyncInterval: time.Minute,
+		},
+		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
+			return event.Value.ReceiverKey.String()
+		},
+		TaskKey: func(event etcdop.WatchEventT[testResource]) key.TaskKey {
+			resource := event.Value
+			return key.TaskKey{
+				ProjectID: resource.ReceiverKey.ProjectID,
+				TaskID:    key.TaskID("my-receiver/some.task/" + resource.ID),
+			}
+		},
 		StartTaskIf: func(event etcdop.WatchEventT[testResource]) (string, bool) {
 			if event.Value.ID == "GoodID" { // <<<<<<<<<<<<<<<<<<<<
 				return "", true
@@ -159,13 +191,13 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	wildcards.Assert(t, `
 %A
 [orchestrator][some.task]INFO  ready
-[orchestrator][some.task]DEBUG  skipped "00001000/my-receiver/BadID", StartTaskIf condition evaluated as false
-[orchestrator][some.task]INFO  assigned "00001000/my-receiver/GoodID"
-[task][some.task/%s]INFO  started task "00001000/my-receiver/some.task/%s"
-[task][some.task/%s]DEBUG  lock acquired "runtime/lock/task/some.task/00001000/my-receiver/GoodID"
-[task][some.task/%sINFO  message from the task
-[task][some.task/%s]INFO  task succeeded (%s): GoodID
-[task][some.task/%s]DEBUG  lock released "runtime/lock/task/some.task/00001000/my-receiver/GoodID"
+[orchestrator][some.task]DEBUG  skipped "00001000/my-receiver/some.task/BadID", StartTaskIf condition evaluated as false
+[orchestrator][some.task]INFO  assigned "00001000/my-receiver/some.task/GoodID"
+[task][00001000/my-receiver/some.task/GoodID/%s]INFO  started task
+[task][00001000/my-receiver/some.task/GoodID/%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/some.task/GoodID"
+[task][00001000/my-receiver/some.task/GoodID/%sINFO  message from the task
+[task][00001000/my-receiver/some.task/GoodID/%s]INFO  task succeeded (%s): GoodID
+[task][00001000/my-receiver/some.task/GoodID/%s]DEBUG  lock released "runtime/lock/task/00001000/my-receiver/some.task/GoodID"
 %A
 `, d.DebugLogger().AllMessages())
 }
