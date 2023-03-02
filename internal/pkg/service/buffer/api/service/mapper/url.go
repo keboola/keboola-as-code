@@ -11,5 +11,5 @@ func formatReceiverURL(bufferAPIHost string, k key.ReceiverKey, secret string) s
 }
 
 func formatTaskURL(bufferAPIHost string, k key.TaskKey) string {
-	return fmt.Sprintf("https://%s/v1/receivers/%s/tasks/%s/%s", bufferAPIHost, k.ReceiverID, k.Type, k.TaskID)
+	return fmt.Sprintf("https://%s/v1/tasks/%s", bufferAPIHost, k.TaskID)
 }

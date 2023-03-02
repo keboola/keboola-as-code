@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -39,8 +40,16 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 		return nil, err
 	}
 
-	lock := "export.create/" + export.ExportKey.String()
-	t, err := d.TaskNode().StartTask(ctx, receiverKey, "export.create", lock, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
+	taskKey := key.TaskKey{
+		ProjectID: receiverKey.ProjectID,
+		TaskID: key.TaskID(strings.Join([]string{
+			export.ReceiverID.String(),
+			export.ExportID.String(),
+			"export.create",
+		}, "/")),
+	}
+
+	t, err := d.TaskNode().StartTask(ctx, taskKey, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 
@@ -67,9 +76,16 @@ func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer
 
 	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
+	taskKey := key.TaskKey{
+		ProjectID: receiverKey.ProjectID,
+		TaskID: key.TaskID(strings.Join([]string{
+			exportKey.ReceiverID.String(),
+			exportKey.ExportID.String(),
+			"export.update",
+		}, "/")),
+	}
 
-	lock := "export.update/" + exportKey.String()
-	t, err := d.TaskNode().StartTask(ctx, receiverKey, "export.update", lock, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
+	t, err := d.TaskNode().StartTask(ctx, taskKey, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 

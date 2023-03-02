@@ -8,12 +8,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/receive"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 )
 
 type service struct {
 	deps     dependencies.ForServer
 	clock    clock.Clock
 	logger   log.Logger
+	schema   *schema.Schema
 	mapper   *mapper.Mapper
 	importer *receive.Importer
 }
@@ -23,6 +25,7 @@ func New(d dependencies.ForServer) buffer.Service {
 		deps:     d,
 		clock:    d.Clock(),
 		logger:   d.Logger(),
+		schema:   d.Schema(),
 		mapper:   mapper.NewMapper(d),
 		importer: receive.NewImporter(d),
 	}
