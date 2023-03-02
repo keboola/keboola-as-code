@@ -1,7 +1,9 @@
 package testproject
 
 import (
+	"bytes"
 	"context"
+	"encoding/csv"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -286,12 +288,48 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 					p.logf("✔️ Bucket \"%s\".", apiBucket.ID)
 
 					for _, t := range b.Tables {
-						p.logf("▶ Table \"%s\"...", t.Name)
-						_, err = p.keboolaProjectAPI.CreateTableRequest(t.ID, t.Columns, keboola.WithPrimaryKey(t.PrimaryKey)).Send(ctx)
-						if err != nil {
-							return err
+						if len(t.Rows) > 0 {
+							p.logf("▶ Table (with rows) \"%s\"...", t.Name)
+
+							fileName := fmt.Sprintf("%s.data", t.ID)
+							p.logf("▶ Table \"%s\" file resource \"%s\"...", t.Name, fileName)
+							file, err := p.keboolaProjectAPI.CreateFileResourceRequest(fileName).Send(ctx)
+							if err != nil {
+								return err
+							}
+							p.logf("✔️ Table \"%s\" file resource \"%s\".", t.Name, fileName)
+
+							p.logf("▶ Upload file \"%s\"...", fileName)
+							buf := bytes.NewBuffer([]byte{})
+							w := csv.NewWriter(buf)
+							err = w.Write(t.Columns)
+							if err != nil {
+								return err
+							}
+							err = w.WriteAll(t.Rows)
+							if err != nil {
+								return err
+							}
+							_, err = keboola.Upload(ctx, file, buf)
+							if err != nil {
+								return err
+							}
+							p.logf("✔️ Upload file \"%s\".", fileName)
+
+							p.logf("▶ Table \"%s\" from file resource \"%s\"...", t.Name, fileName)
+							_, err = p.keboolaProjectAPI.CreateTableFromFileRequest(t.ID, file.ID, keboola.WithPrimaryKey(t.PrimaryKey)).Send(ctx)
+							if err != nil {
+								return err
+							}
+							p.logf("✔️ Table (with rows) \"%s\"(%s).", t.Name, t.ID)
+						} else {
+							p.logf("▶ Table \"%s\"...", t.Name)
+							_, err = p.keboolaProjectAPI.CreateTableRequest(t.ID, t.Columns, keboola.WithPrimaryKey(t.PrimaryKey)).Send(ctx)
+							if err != nil {
+								return err
+							}
+							p.logf("✔️ Table \"%s\"(%s).", t.Name, t.ID)
 						}
-						p.logf("✔️ Table \"%s\"(%s).", t.Name, t.ID)
 					}
 
 					return nil
