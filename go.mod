@@ -35,7 +35,7 @@ require (
 	github.com/lafikl/consistent v0.0.0-20220512074542-bdd3606bfc3e
 	github.com/lestrrat-go/strftime v1.0.6
 	github.com/mattn/go-sqlite3 v1.14.16
-	github.com/qmuntal/stateless v1.6.2
+	github.com/qmuntal/stateless v1.6.3
 	github.com/relvacode/iso8601 v1.3.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.2.0
 	github.com/schollz/progressbar/v3 v3.13.0
