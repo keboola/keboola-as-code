@@ -3,9 +3,9 @@ package table
 import (
 	"testing"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/preview"
 )
 
