@@ -109,16 +109,7 @@ func (cru *ConfigurationRowUpdate) sqlSave(ctx context.Context) (n int, err erro
 	if err := cru.check(); err != nil {
 		return n, err
 	}
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   configurationrow.Table,
-			Columns: configurationrow.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: configurationrow.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(configurationrow.Table, configurationrow.Columns, sqlgraph.NewFieldSpec(configurationrow.FieldID, field.TypeString))
 	if ps := cru.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -195,6 +186,12 @@ func (cruo *ConfigurationRowUpdateOne) Mutation() *ConfigurationRowMutation {
 	return cruo.mutation
 }
 
+// Where appends a list predicates to the ConfigurationRowUpdate builder.
+func (cruo *ConfigurationRowUpdateOne) Where(ps ...predicate.ConfigurationRow) *ConfigurationRowUpdateOne {
+	cruo.mutation.Where(ps...)
+	return cruo
+}
+
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
 func (cruo *ConfigurationRowUpdateOne) Select(field string, fields ...string) *ConfigurationRowUpdateOne {
@@ -246,16 +243,7 @@ func (cruo *ConfigurationRowUpdateOne) sqlSave(ctx context.Context) (_node *Conf
 	if err := cruo.check(); err != nil {
 		return _node, err
 	}
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   configurationrow.Table,
-			Columns: configurationrow.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: configurationrow.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(configurationrow.Table, configurationrow.Columns, sqlgraph.NewFieldSpec(configurationrow.FieldID, field.TypeString))
 	id, ok := cruo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`model: missing "ConfigurationRow.id" for update`)}

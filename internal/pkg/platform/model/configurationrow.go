@@ -221,9 +221,3 @@ func (cr *ConfigurationRow) String() string {
 
 // ConfigurationRows is a parsable slice of ConfigurationRow.
 type ConfigurationRows []*ConfigurationRow
-
-func (cr ConfigurationRows) config(cfg config) {
-	for _i := range cr {
-		cr[_i].config = cfg
-	}
-}

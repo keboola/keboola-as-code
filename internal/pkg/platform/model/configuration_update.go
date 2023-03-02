@@ -109,16 +109,7 @@ func (cu *ConfigurationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := cu.check(); err != nil {
 		return n, err
 	}
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   configuration.Table,
-			Columns: configuration.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: configuration.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(configuration.Table, configuration.Columns, sqlgraph.NewFieldSpec(configuration.FieldID, field.TypeString))
 	if ps := cu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -195,6 +186,12 @@ func (cuo *ConfigurationUpdateOne) Mutation() *ConfigurationMutation {
 	return cuo.mutation
 }
 
+// Where appends a list predicates to the ConfigurationUpdate builder.
+func (cuo *ConfigurationUpdateOne) Where(ps ...predicate.Configuration) *ConfigurationUpdateOne {
+	cuo.mutation.Where(ps...)
+	return cuo
+}
+
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
 func (cuo *ConfigurationUpdateOne) Select(field string, fields ...string) *ConfigurationUpdateOne {
@@ -246,16 +243,7 @@ func (cuo *ConfigurationUpdateOne) sqlSave(ctx context.Context) (_node *Configur
 	if err := cuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   configuration.Table,
-			Columns: configuration.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: configuration.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(configuration.Table, configuration.Columns, sqlgraph.NewFieldSpec(configuration.FieldID, field.TypeString))
 	id, ok := cuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`model: missing "Configuration.id" for update`)}

@@ -210,9 +210,3 @@ func (c *Configuration) String() string {
 
 // Configurations is a parsable slice of Configuration.
 type Configurations []*Configuration
-
-func (c Configurations) config(cfg config) {
-	for _i := range c {
-		c[_i].config = cfg
-	}
-}

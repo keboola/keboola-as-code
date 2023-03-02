@@ -157,13 +157,7 @@ func (bc *BranchCreate) sqlSave(ctx context.Context) (*Branch, error) {
 func (bc *BranchCreate) createSpec() (*Branch, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Branch{config: bc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: branch.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: branch.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(branch.Table, sqlgraph.NewFieldSpec(branch.FieldID, field.TypeString))
 	)
 	if id, ok := bc.mutation.ID(); ok {
 		_node.ID = id

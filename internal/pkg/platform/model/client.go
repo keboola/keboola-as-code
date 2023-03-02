@@ -11,13 +11,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/migrate"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/branch"
-	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/configuration"
-	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/configurationrow"
-
+	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/branch"
+	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/configuration"
+	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/configurationrow"
 )
 
 // Client is the client that holds all ent builders.
@@ -47,6 +47,55 @@ func (c *Client) init() {
 	c.Branch = NewBranchClient(c.config)
 	c.Configuration = NewConfigurationClient(c.config)
 	c.ConfigurationRow = NewConfigurationRowClient(c.config)
+}
+
+type (
+	// config is the configuration for the client and its builder.
+	config struct {
+		// driver used for executing database requests.
+		driver dialect.Driver
+		// debug enable a debug logging.
+		debug bool
+		// log used for logging on debug mode.
+		log func(...any)
+		// hooks to execute on mutations.
+		hooks *hooks
+		// interceptors to execute on queries.
+		inters *inters
+	}
+	// Option function to configure the client.
+	Option func(*config)
+)
+
+// options applies the options on the config object.
+func (c *config) options(opts ...Option) {
+	for _, opt := range opts {
+		opt(c)
+	}
+	if c.debug {
+		c.driver = dialect.Debug(c.driver, c.log)
+	}
+}
+
+// Debug enables debug logging on the ent.Driver.
+func Debug() Option {
+	return func(c *config) {
+		c.debug = true
+	}
+}
+
+// Log sets the logging function for debug mode.
+func Log(fn func(...any)) Option {
+	return func(c *config) {
+		c.log = fn
+	}
+}
+
+// Driver configures the client driver.
+func Driver(driver dialect.Driver) Option {
+	return func(c *config) {
+		c.driver = driver
+	}
 }
 
 // Open opens a database/sql.DB specified by the driver name and
@@ -176,7 +225,7 @@ func (c *BranchClient) Use(hooks ...Hook) {
 	c.hooks.Branch = append(c.hooks.Branch, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `branch.Intercept(f(g(h())))`.
 func (c *BranchClient) Intercept(interceptors ...Interceptor) {
 	c.inters.Branch = append(c.inters.Branch, interceptors...)
@@ -310,7 +359,7 @@ func (c *ConfigurationClient) Use(hooks ...Hook) {
 	c.hooks.Configuration = append(c.hooks.Configuration, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `configuration.Intercept(f(g(h())))`.
 func (c *ConfigurationClient) Intercept(interceptors ...Interceptor) {
 	c.inters.Configuration = append(c.inters.Configuration, interceptors...)
@@ -444,7 +493,7 @@ func (c *ConfigurationRowClient) Use(hooks ...Hook) {
 	c.hooks.ConfigurationRow = append(c.hooks.ConfigurationRow, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `configurationrow.Intercept(f(g(h())))`.
 func (c *ConfigurationRowClient) Intercept(interceptors ...Interceptor) {
 	c.inters.ConfigurationRow = append(c.inters.ConfigurationRow, interceptors...)
@@ -561,3 +610,13 @@ func (c *ConfigurationRowClient) mutate(ctx context.Context, m *ConfigurationRow
 		return nil, fmt.Errorf("model: unknown ConfigurationRow mutation op: %q", m.Op())
 	}
 }
+
+// hooks and interceptors per client, for fast access.
+type (
+	hooks struct {
+		Branch, Configuration, ConfigurationRow []ent.Hook
+	}
+	inters struct {
+		Branch, Configuration, ConfigurationRow []ent.Interceptor
+	}
+)

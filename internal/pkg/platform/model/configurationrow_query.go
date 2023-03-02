@@ -203,10 +203,12 @@ func (crq *ConfigurationRowQuery) AllX(ctx context.Context) []*ConfigurationRow 
 }
 
 // IDs executes the query and returns a list of ConfigurationRow IDs.
-func (crq *ConfigurationRowQuery) IDs(ctx context.Context) ([]key.ConfigurationRowKey, error) {
-	var ids []key.ConfigurationRowKey
+func (crq *ConfigurationRowQuery) IDs(ctx context.Context) (ids []key.ConfigurationRowKey, err error) {
+	if crq.ctx.Unique == nil && crq.path != nil {
+		crq.Unique(true)
+	}
 	ctx = setContextOp(ctx, crq.ctx, "IDs")
-	if err := crq.Select(configurationrow.FieldID).Scan(ctx, &ids); err != nil {
+	if err = crq.Select(configurationrow.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -450,20 +452,12 @@ func (crq *ConfigurationRowQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (crq *ConfigurationRowQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   configurationrow.Table,
-			Columns: configurationrow.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: configurationrow.FieldID,
-			},
-		},
-		From:   crq.sql,
-		Unique: true,
-	}
+	_spec := sqlgraph.NewQuerySpec(configurationrow.Table, configurationrow.Columns, sqlgraph.NewFieldSpec(configurationrow.FieldID, field.TypeString))
+	_spec.From = crq.sql
 	if unique := crq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if crq.path != nil {
+		_spec.Unique = true
 	}
 	if fields := crq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))

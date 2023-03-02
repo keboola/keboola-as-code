@@ -225,13 +225,7 @@ func (crc *ConfigurationRowCreate) sqlSave(ctx context.Context) (*ConfigurationR
 func (crc *ConfigurationRowCreate) createSpec() (*ConfigurationRow, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ConfigurationRow{config: crc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: configurationrow.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: configurationrow.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(configurationrow.Table, sqlgraph.NewFieldSpec(configurationrow.FieldID, field.TypeString))
 	)
 	if id, ok := crc.mutation.ID(); ok {
 		_node.ID = id
