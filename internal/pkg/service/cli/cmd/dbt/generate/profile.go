@@ -31,7 +31,7 @@ func ProfileCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			return profile.Run(d.CommandCtx(), targetName, d)
+			return profile.Run(d.CommandCtx(), profile.Options{TargetName: targetName}, d)
 		},
 	}
 

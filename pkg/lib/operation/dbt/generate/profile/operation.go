@@ -14,6 +14,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
+type Options struct {
+	TargetName string
+}
+
 type dependencies interface {
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
@@ -22,7 +26,7 @@ type dependencies interface {
 
 const profilePath = "profiles.yml"
 
-func Run(ctx context.Context, targetName string, d dependencies) (err error) {
+func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.dbt.generate.profile")
 	defer telemetry.EndSpan(span, &err)
 
@@ -48,17 +52,17 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 	}
 
 	// Set profile
-	targetUpper := strings.ToUpper(targetName)
+	targetUpper := strings.ToUpper(o.TargetName)
 	profilesFile.Set(project.Profile(), orderedmap.FromPairs([]orderedmap.Pair{
 		{
 			Key:   "target",
-			Value: targetName,
+			Value: o.TargetName,
 		},
 		{
 			Key: "outputs",
 			Value: orderedmap.FromPairs([]orderedmap.Pair{
 				{
-					Key: targetName,
+					Key: o.TargetName,
 					Value: orderedmap.FromPairs([]orderedmap.Pair{
 						{
 							Key:   "account",

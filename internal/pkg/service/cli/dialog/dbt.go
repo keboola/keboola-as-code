@@ -54,18 +54,18 @@ func validateTargetName(val interface{}) error {
 	return nil
 }
 
-func (p *Dialogs) AskGenerateEnv(d targetNameDialogDeps, allWorkspaces []*keboola.WorkspaceWithConfig) (env.GenerateEnvOptions, error) {
+func (p *Dialogs) AskGenerateEnv(d targetNameDialogDeps, allWorkspaces []*keboola.WorkspaceWithConfig) (env.Options, error) {
 	targetName, err := p.AskTargetName(d)
 	if err != nil {
-		return env.GenerateEnvOptions{}, err
+		return env.Options{}, err
 	}
 
 	workspace, err := p.AskWorkspace(d.Options(), allWorkspaces)
 	if err != nil {
-		return env.GenerateEnvOptions{}, err
+		return env.Options{}, err
 	}
 
-	return env.GenerateEnvOptions{
+	return env.Options{
 		TargetName: targetName,
 		Workspace:  workspace.Workspace,
 	}, nil
