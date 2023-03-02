@@ -5,8 +5,8 @@ go 1.19
 replace github.com/google/go-jsonnet v0.19.1 => github.com/keboola/go-jsonnet v0.19.1
 
 require (
-	ariga.io/atlas v0.9.1-0.20230119145809-92243f7c55cb
-	entgo.io/ent v0.11.7
+	ariga.io/atlas v0.9.1
+	entgo.io/ent v0.11.9
 	github.com/ActiveState/vt10x v1.3.1
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/Masterminds/semver v1.5.0
@@ -35,33 +35,33 @@ require (
 	github.com/lafikl/consistent v0.0.0-20220512074542-bdd3606bfc3e
 	github.com/lestrrat-go/strftime v1.0.6
 	github.com/mattn/go-sqlite3 v1.14.16
-	github.com/qmuntal/stateless v1.6.2
+	github.com/qmuntal/stateless v1.6.3
 	github.com/relvacode/iso8601 v1.3.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.2.0
 	github.com/schollz/progressbar/v3 v3.13.0
-	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/afero v1.9.3
+	github.com/sirupsen/logrus v1.9.0
+	github.com/spf13/afero v1.9.4
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.15.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
 	github.com/writeas/go-strip-markdown v2.0.1+incompatible
 	go.etcd.io/etcd/api/v3 v3.5.7
 	go.etcd.io/etcd/client/v3 v3.5.7
 	go.etcd.io/etcd/tests/v3 v3.5.7
 	go.nhat.io/aferocopy/v2 v2.0.1
-	go.opentelemetry.io/otel v1.13.0
-	go.opentelemetry.io/otel/trace v1.13.0
+	go.opentelemetry.io/otel v1.14.0
+	go.opentelemetry.io/otel/trace v1.14.0
 	go.uber.org/zap v1.24.0
-	goa.design/goa/v3 v3.11.0
-	goa.design/plugins/v3 v3.11.0
+	goa.design/goa/v3 v3.11.1
+	goa.design/plugins/v3 v3.11.1
 	golang.org/x/sync v0.1.0
 	google.golang.org/grpc v1.53.0
-	gopkg.in/DataDog/dd-trace-go.v1 v1.47.0
+	gopkg.in/DataDog/dd-trace-go.v1 v1.48.0
 	gopkg.in/Knetic/govaluate.v3 v3.0.0
-	v.io/x/lib v0.1.13
+	v.io/x/lib v0.1.14
 )
 
 require (
@@ -100,14 +100,14 @@ require (
 	github.com/zach-klippenstein/goregen v0.0.0-20160303162051-795b5e3961ea // indirect
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/crypto v0.5.0 // indirect
-	golang.org/x/mod v0.7.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
-	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/term v0.4.0 // indirect
+	golang.org/x/crypto v0.6.0 // indirect
+	golang.org/x/mod v0.8.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/text v0.7.0
 	golang.org/x/time v0.1.0 // indirect
-	golang.org/x/tools v0.5.0
+	golang.org/x/tools v0.6.1-0.20230222164832-25d2519c8696
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
