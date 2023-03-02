@@ -107,7 +107,7 @@ func New(
 			{"UpdateExport", "PATCH", "/v1/receivers/{receiverId}/exports/{exportId}"},
 			{"DeleteExport", "DELETE", "/v1/receivers/{receiverId}/exports/{exportId}"},
 			{"Import", "POST", "/v1/import/{projectId}/{receiverId}/{secret}"},
-			{"GetTask", "GET", "/v1/receivers/{receiverId}/tasks/{type}/{taskId}"},
+			{"GetTask", "GET", "/v1/tasks/{*taskId}"},
 			{"CORS", "OPTIONS", "/"},
 			{"CORS", "OPTIONS", "/v1"},
 			{"CORS", "OPTIONS", "/health-check"},
@@ -117,7 +117,7 @@ func New(
 			{"CORS", "OPTIONS", "/v1/receivers/{receiverId}/exports"},
 			{"CORS", "OPTIONS", "/v1/receivers/{receiverId}/exports/{exportId}"},
 			{"CORS", "OPTIONS", "/v1/import/{projectId}/{receiverId}/{secret}"},
-			{"CORS", "OPTIONS", "/v1/receivers/{receiverId}/tasks/{type}/{taskId}"},
+			{"CORS", "OPTIONS", "/v1/tasks/{*taskId}"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.json"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.yaml"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi3.json"},
@@ -952,7 +952,7 @@ func MountGetTaskHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("GET", "/v1/receivers/{receiverId}/tasks/{type}/{taskId}", f)
+	mux.Handle("GET", "/v1/tasks/{*taskId}", f)
 }
 
 // NewGetTaskHandler creates a HTTP handler which loads the HTTP request and
@@ -1038,7 +1038,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/v1/receivers/{receiverId}/exports", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/receivers/{receiverId}/exports/{exportId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/import/{projectId}/{receiverId}/{secret}", h.ServeHTTP)
-	mux.Handle("OPTIONS", "/v1/receivers/{receiverId}/tasks/{type}/{taskId}", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/tasks/{*taskId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.json", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.yaml", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi3.json", h.ServeHTTP)

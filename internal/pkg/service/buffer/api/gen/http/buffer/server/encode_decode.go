@@ -1135,22 +1135,12 @@ func EncodeGetTaskResponse(encoder func(context.Context, http.ResponseWriter) go
 func DecodeGetTaskRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
 	return func(r *http.Request) (interface{}, error) {
 		var (
-			receiverID      string
-			type_           string
 			taskID          string
 			storageAPIToken string
 			err             error
 
 			params = mux.Vars(r)
 		)
-		receiverID = params["receiverId"]
-		if utf8.RuneCountInString(receiverID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("receiverID", receiverID, utf8.RuneCountInString(receiverID), 1, true))
-		}
-		if utf8.RuneCountInString(receiverID) > 48 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("receiverID", receiverID, utf8.RuneCountInString(receiverID), 48, false))
-		}
-		type_ = params["type"]
 		taskID = params["taskId"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
@@ -1159,7 +1149,7 @@ func DecodeGetTaskRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp
 		if err != nil {
 			return nil, err
 		}
-		payload := NewGetTaskPayload(receiverID, type_, taskID, storageAPIToken)
+		payload := NewGetTaskPayload(taskID, storageAPIToken)
 		if strings.Contains(payload.StorageAPIToken, " ") {
 			// Remove authorization scheme prefix (e.g. "Bearer")
 			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]

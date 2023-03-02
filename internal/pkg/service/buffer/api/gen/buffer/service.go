@@ -197,8 +197,6 @@ type GetReceiverPayload struct {
 // GetTaskPayload is the payload type of the buffer service GetTask method.
 type GetTaskPayload struct {
 	StorageAPIToken string
-	ReceiverID      ReceiverID
-	Type            string
 	TaskID          TaskID
 }
 
@@ -274,16 +272,15 @@ type ServiceDetail struct {
 
 // Task is the result type of the buffer service CreateReceiver method.
 type Task struct {
-	ID         TaskID
-	ReceiverID ReceiverID
+	ID TaskID
 	// URL of the task.
-	URL  string
-	Type string
+	URL string
+	// Task status, one of: processing, success, error
+	Status string
 	// Date and time of the task creation.
 	CreatedAt string
 	// Date and time of the task end.
 	FinishedAt *string
-	IsFinished bool
 	// Duration of the task in milliseconds.
 	Duration *int64
 	Result   *string
