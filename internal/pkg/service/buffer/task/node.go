@@ -26,6 +26,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+const LockEtcdPrefix = etcdop.Prefix("runtime/lock/task")
+
 // Node represents a cluster Worker node on which tasks are run.
 // See comments in the StartTask method.
 type Node struct {
