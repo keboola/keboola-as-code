@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/preview"
 )
 
@@ -21,7 +22,7 @@ func TestParseWhereFilter(t *testing.T) {
 			input: "my_column=a",
 			expected: preview.WhereFilter{
 				Column:   "my_column",
-				Operator: "=",
+				Operator: keboola.CompareEq,
 				Values:   []string{"a"},
 			},
 		},
@@ -29,7 +30,7 @@ func TestParseWhereFilter(t *testing.T) {
 			input: "my_column!=a",
 			expected: preview.WhereFilter{
 				Column:   "my_column",
-				Operator: "!=",
+				Operator: keboola.CompareNe,
 				Values:   []string{"a"},
 			},
 		},
@@ -37,7 +38,7 @@ func TestParseWhereFilter(t *testing.T) {
 			input: "my_column>=a",
 			expected: preview.WhereFilter{
 				Column:   "my_column",
-				Operator: ">=",
+				Operator: keboola.CompareGe,
 				Values:   []string{"a"},
 			},
 		},
@@ -45,13 +46,17 @@ func TestParseWhereFilter(t *testing.T) {
 			input: "my_column<=a",
 			expected: preview.WhereFilter{
 				Column:   "my_column",
-				Operator: "<=",
+				Operator: keboola.CompareLe,
 				Values:   []string{"a"},
 			},
 		},
 		{
-			input:    "my_column=a,b,c",
-			expected: preview.WhereFilter{Column: "my_column", Operator: "=", Values: []string{"a", "b", "c"}},
+			input: "my_column=a,b,c",
+			expected: preview.WhereFilter{
+				Column:   "my_column",
+				Operator: keboola.CompareEq,
+				Values:   []string{"a", "b", "c"},
+			},
 		},
 	}
 
@@ -90,15 +95,15 @@ func TestParseColumnOrder(t *testing.T) {
 	cases := []testCase{
 		{
 			input:    "my_column=asc",
-			expected: preview.ColumnOrder{Column: "my_column", Order: "asc"},
+			expected: preview.ColumnOrder{Column: "my_column", Order: keboola.OrderAsc},
 		},
 		{
 			input:    "my_column=desc",
-			expected: preview.ColumnOrder{Column: "my_column", Order: "desc"},
+			expected: preview.ColumnOrder{Column: "my_column", Order: keboola.OrderDesc},
 		},
 		{
 			input:    "my_column",
-			expected: preview.ColumnOrder{Column: "my_column", Order: "asc"},
+			expected: preview.ColumnOrder{Column: "my_column", Order: keboola.OrderAsc},
 		},
 	}
 
