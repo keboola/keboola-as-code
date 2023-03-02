@@ -31,13 +31,13 @@ type PreviewOptions struct {
 
 type WhereFilter struct {
 	Column   string
-	Operator string
+	Operator keboola.CompareOp
 	Values   []string
 }
 
 type ColumnOrder struct {
 	Column string
-	Order  string
+	Order  keboola.ColumnOrder
 }
 
 func Run(ctx context.Context, o PreviewOptions, d dependencies) (err error) {

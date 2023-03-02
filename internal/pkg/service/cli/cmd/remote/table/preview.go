@@ -128,7 +128,10 @@ func parseWhereFilter(s string) (preview.WhereFilter, error) {
 	}
 
 	column := m[1]
-	operator := m[2]
+	operator, err := keboola.ParseCompareOp(m[2])
+	if err != nil {
+		return preview.WhereFilter{}, err
+	}
 	values := strings.Split(m[3], ",")
 
 	return preview.WhereFilter{
@@ -144,9 +147,14 @@ func parseColumnOrder(s string) (preview.ColumnOrder, error) {
 		return preview.ColumnOrder{}, errors.Errorf(`invalid column order "%s"`, s)
 	}
 
-	column, order := m[1], m[2]
-	if len(order) == 0 {
-		order = "asc"
+	column := m[1]
+	orderString := m[2]
+	if len(orderString) == 0 {
+		orderString = "asc"
+	}
+	order, err := keboola.ParseColumnOrder(orderString)
+	if err != nil {
+		return preview.ColumnOrder{}, err
 	}
 
 	return preview.ColumnOrder{Column: column, Order: order}, nil
