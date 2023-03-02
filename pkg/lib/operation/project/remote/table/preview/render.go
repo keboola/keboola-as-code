@@ -1,6 +1,7 @@
 package preview
 
 import (
+	"encoding/csv"
 	"fmt"
 	"strings"
 
@@ -49,29 +50,10 @@ func renderJSON(table *keboola.TablePreview) string {
 }
 
 func renderCSV(table *keboola.TablePreview) string {
-	var b strings.Builder
-
-	for _, col := range table.Columns[:len(table.Columns)-1] {
-		b.WriteString(col)
-		b.WriteString(",")
-	}
-	b.WriteString(table.Columns[len(table.Columns)-1])
-	b.WriteString("\n")
-
-	for _, row := range table.Rows[:len(table.Rows)-1] {
-		for _, col := range row[:len(row)-1] {
-			b.WriteString(col)
-			b.WriteString(",")
-		}
-		b.WriteString(row[len(row)-1])
-		b.WriteString("\n")
-	}
-	lastRow := table.Rows[len(table.Rows)-1]
-	for _, col := range lastRow[:len(lastRow)-1] {
-		b.WriteString(col)
-		b.WriteString(",")
-	}
-	b.WriteString(lastRow[len(lastRow)-1])
+	b := &strings.Builder{}
+	w := csv.NewWriter(b)
+	w.Write(table.Columns)
+	w.WriteAll(table.Rows)
 
 	return b.String()
 }
