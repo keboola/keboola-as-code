@@ -236,13 +236,11 @@
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "receiver-1",
-  "type": "receiver.create",
-  "taskId": "%s",
+  "taskId": "receiver-1/receiver.create/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",
-  "lock": "receiver.create/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-1",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-1/receiver.create",
   "result": "receiver created",
   "duration": %d
 }
