@@ -14,13 +14,11 @@
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "my-receiver",
-  "type": "receiver.create",
-  "taskId": "%s",
+  "taskId": "my-receiver/receiver.create/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",
-  "lock": "receiver.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/receiver.create",
   "result": "receiver created",
   "duration": %d
 }

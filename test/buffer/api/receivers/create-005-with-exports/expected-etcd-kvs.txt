@@ -137,13 +137,11 @@
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "my-receiver-with-exports",
-  "type": "receiver.create",
-  "taskId": "%s",
+  "taskId": "my-receiver-with-exports/receiver.create/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",
-  "lock": "receiver.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-with-exports",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-with-exports/receiver.create",
   "result": "receiver created",
   "duration": %d
 }
