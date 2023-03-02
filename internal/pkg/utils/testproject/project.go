@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -224,6 +225,12 @@ func (p *Project) SetState(stateFilePath string) error {
 		return err
 	}
 
+	// Create files
+	err = p.createFiles(stateFile.Files)
+	if err != nil {
+		return err
+	}
+
 	// Create sandboxes in default branch
 	err = p.createSandboxes(p.defaultBranch.ID, stateFile.Sandboxes)
 	if err != nil {
@@ -296,6 +303,70 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 	}
 	if err := grp.Wait(); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (p *Project) createFiles(files []*fixtures.File) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	wg := &sync.WaitGroup{}
+	errs := errors.NewMultiError()
+
+	for _, fixture := range files {
+		fixture := fixture
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			opts := make([]keboola.CreateFileOption, 0)
+			opts = append(opts, keboola.WithIsPermanent(fixture.IsPermanent))
+			opts = append(opts, keboola.WithIsSliced(fixture.IsSliced))
+			opts = append(opts, keboola.WithTags(fixture.Tags...))
+
+			p.logf("▶ File \"%s\"...", fixture.Name)
+			file, err := p.keboolaProjectAPI.CreateFileResourceRequest(fixture.Name, opts...).Send(ctx)
+			if err != nil {
+				errs.Append(errors.Errorf("could not create file \"%s\": %w", fixture.Name, err))
+				return
+			}
+
+			if fixture.Content != "" {
+				_, err = keboola.Upload(ctx, file, strings.NewReader(fixture.Content))
+				if err != nil {
+					errs.Append(errors.Errorf("could not upload file \"%s\" content: %w", fixture.Name, err))
+					return
+				}
+			}
+
+			if len(fixture.Slices) > 0 {
+				slices := make([]string, 0, len(fixture.Slices))
+				for _, slice := range fixture.Slices {
+					_, err = keboola.UploadSlice(ctx, file, slice.Name, strings.NewReader(slice.Content))
+					if err != nil {
+						errs.Append(errors.Errorf("could not upload file \"%s\" slice \"%s\": %w", fixture.Name, slice.Name, err))
+						return
+					}
+					slices = append(slices, slice.Name)
+				}
+				_, err = keboola.UploadSlicedFileManifest(ctx, file, slices)
+				if err != nil {
+					errs.Append(errors.Errorf("could not upload file \"%s\" manifest: %w", fixture.Name, err))
+					return
+				}
+			}
+
+			p.logf("✔️ File \"%s\"(%s).", file.Name, file.ID)
+			p.setEnv(fmt.Sprintf("TEST_FILE_%s_ID", fixture.Name), strconv.Itoa(file.ID))
+		}()
+	}
+
+	wg.Wait()
+	if errs.Len() > 0 {
+		return errs
 	}
 
 	return nil

@@ -46,13 +46,15 @@ Available Commands:
   remote                         Operations performed directly in the project.
   remote create                  Create an object in the project.
   remote create branch           Create a new branch from the main branch.
+  remote file                    Manage files in your project.
+  remote file download           Download file from Keboola Staging Storage.
+  remote job                     Manage jobs in your project.
+  remote job run                 Run one or multiple jobs.
   remote workspace               Manage workspaces in the project.
   remote workspace create        Create workspaces in the project.
   remote workspace list          List workspaces in the project.
   remote workspace delete        Delete workspaces in the project.
   remote workspace detail        Print workspace details and credentials.
-  remote job                     Manage jobs in your project.
-  remote job run                 Run one or multiple jobs.
 
   dbt                            Work with dbt inside your repository.
   dbt init                       Initialize profiles, sources, and environment variables for use with dbt.
