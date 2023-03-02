@@ -100,6 +100,8 @@ type TemplateIndexResponseBody struct {
 	ID string `form:"id" json:"id" xml:"id"`
 	// Template name.
 	Name string `form:"name" json:"name" xml:"name"`
+	// List of categories the template belongs to.
+	Categories []string `form:"categories" json:"categories" xml:"categories"`
 	// List of components used in the template.
 	Components []string            `form:"components" json:"components" xml:"components"`
 	Author     *AuthorResponseBody `form:"author" json:"author" xml:"author"`
@@ -772,6 +774,8 @@ type TemplateResponseBody struct {
 	ID string `form:"id" json:"id" xml:"id"`
 	// Template name.
 	Name string `form:"name" json:"name" xml:"name"`
+	// List of categories the template belongs to.
+	Categories []string `form:"categories" json:"categories" xml:"categories"`
 	// List of components used in the template.
 	Components []string            `form:"components" json:"components" xml:"components"`
 	Author     *AuthorResponseBody `form:"author" json:"author" xml:"author"`
@@ -1043,6 +1047,12 @@ func NewTemplateIndexResponseBody(res *templates.TemplateDetail) *TemplateIndexR
 	}
 	if res.Repository != nil {
 		body.Repository = marshalTemplatesRepositoryToRepositoryResponseBody(res.Repository)
+	}
+	if res.Categories != nil {
+		body.Categories = make([]string, len(res.Categories))
+		for i, val := range res.Categories {
+			body.Categories[i] = val
+		}
 	}
 	if res.Components != nil {
 		body.Components = make([]string, len(res.Components))

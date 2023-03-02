@@ -1630,6 +1630,12 @@ func marshalTemplatesTemplateToTemplateResponseBody(v *templates.Template) *Temp
 		Description:    v.Description,
 		DefaultVersion: v.DefaultVersion,
 	}
+	if v.Categories != nil {
+		res.Categories = make([]string, len(v.Categories))
+		for i, val := range v.Categories {
+			res.Categories[i] = val
+		}
+	}
 	if v.Components != nil {
 		res.Components = make([]string, len(v.Components))
 		for i, val := range v.Components {

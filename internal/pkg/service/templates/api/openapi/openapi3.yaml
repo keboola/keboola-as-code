@@ -935,6 +935,10 @@ paths:
                                 templates:
                                     - id: my-template
                                       name: My Template
+                                      categories:
+                                        - E-commerce
+                                        - Other
+                                        - Social Media
                                       components:
                                         - ex-generic-v2
                                         - keboola.snowflake-transformation
@@ -958,6 +962,10 @@ paths:
                                           description: Experimental support for new API.
                                     - id: maximum-length-template-id-dolor-sit-an
                                       name: Maximum length template name ipsum dolo
+                                      categories:
+                                        - E-commerce
+                                        - Other
+                                        - Social Media
                                       components:
                                         - ex-generic-v2
                                         - keboola.snowflake-transformation
@@ -1015,6 +1023,10 @@ paths:
                                 exampletemplatedata:
                                     id: my-template
                                     name: My Template
+                                    categories:
+                                        - E-commerce
+                                        - Other
+                                        - Social Media
                                     components:
                                         - ex-generic-v2
                                         - keboola.snowflake-transformation
@@ -1114,6 +1126,10 @@ paths:
                                 template:
                                     id: my-template
                                     name: My Template
+                                    categories:
+                                        - E-commerce
+                                        - Other
+                                        - Social Media
                                     components:
                                         - ex-generic-v2
                                         - keboola.snowflake-transformation
@@ -2331,6 +2347,9 @@ components:
                         - componentId: keboola.ex-db-mysql
                           configId: "7954825835"
                           name: My Extractor
+                        - componentId: keboola.ex-db-mysql
+                          configId: "7954825835"
+                          name: My Extractor
                 created:
                     $ref: '#/components/schemas/ChangeInfo'
                 instanceId:
@@ -2362,6 +2381,9 @@ components:
             example:
                 branch: "5876"
                 configurations:
+                    - componentId: keboola.ex-db-mysql
+                      configId: "7954825835"
+                      name: My Extractor
                     - componentId: keboola.ex-db-mysql
                       configId: "7954825835"
                       name: My Extractor
@@ -2411,21 +2433,6 @@ components:
                         $ref: '#/components/schemas/Instance'
                     description: All instances found in branch.
                     example:
-                        - branch: "5876"
-                          created:
-                            date: "2022-04-28T14:20:04+00:00"
-                            tokenId: "245941"
-                          instanceId: V1StGXR8IZ5jdHi6BAmyT
-                          mainConfig:
-                            componentId: keboola.orchestrator
-                            configId: "7954825835"
-                          name: My Instance
-                          repositoryName: keboola
-                          templateId: my-template
-                          updated:
-                            date: "2022-04-28T14:20:04+00:00"
-                            tokenId: "245941"
-                          version: v1.1.0
                         - branch: "5876"
                           created:
                             date: "2022-04-28T14:20:04+00:00"
@@ -3033,6 +3040,16 @@ components:
                               id: api-token
                               visible: true
                           valid: true
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
                 valid:
                     type: boolean
                     description: True if the required number of steps is configured and all inputs are valid.
@@ -3042,16 +3059,6 @@ components:
                 error: All steps must be configured.
                 id: g01
                 steps:
-                    - configured: false
-                      id: g01-s01
-                      inputs:
-                        - error: API token cannot be empty.
-                          id: api-token
-                          visible: true
-                        - error: API token cannot be empty.
-                          id: api-token
-                          visible: true
-                      valid: true
                     - configured: false
                       id: g01-s01
                       inputs:
@@ -3112,7 +3119,7 @@ components:
                 configured:
                     type: boolean
                     description: True if the step was part of the sent payload.
-                    example: true
+                    example: false
                 id:
                     type: string
                     description: Step ID.
@@ -3129,10 +3136,13 @@ components:
                         - error: API token cannot be empty.
                           id: api-token
                           visible: true
+                        - error: API token cannot be empty.
+                          id: api-token
+                          visible: true
                 valid:
                     type: boolean
                     description: True if all inputs in the step are valid.
-                    example: true
+                    example: false
             description: Validation Detail of the step.
             example:
                 configured: true
@@ -3150,7 +3160,7 @@ components:
                     - error: API token cannot be empty.
                       id: api-token
                       visible: true
-                valid: true
+                valid: false
             required:
                 - id
                 - configured
@@ -3161,11 +3171,21 @@ components:
             properties:
                 author:
                     $ref: '#/components/schemas/Author'
+                categories:
+                    type: array
+                    items:
+                        type: string
+                        example: Vel et esse ipsum minima.
+                    description: List of categories the template belongs to.
+                    example:
+                        - E-commerce
+                        - Other
+                        - Social Media
                 components:
                     type: array
                     items:
                         type: string
-                        example: Itaque sed in numquam nesciunt quia iste.
+                        example: Ut sunt perferendis exercitationem.
                     description: List of components used in the template.
                     example:
                         - ex-generic-v2
@@ -3217,6 +3237,10 @@ components:
                 author:
                     name: Keboola
                     url: https://www.keboola.com
+                categories:
+                    - E-commerce
+                    - Other
+                    - Social Media
                 components:
                     - ex-generic-v2
                     - keboola.snowflake-transformation
@@ -3240,6 +3264,7 @@ components:
             required:
                 - id
                 - name
+                - categories
                 - components
                 - author
                 - description
@@ -3250,11 +3275,21 @@ components:
             properties:
                 author:
                     $ref: '#/components/schemas/Author'
+                categories:
+                    type: array
+                    items:
+                        type: string
+                        example: At quia delectus.
+                    description: List of categories the template belongs to.
+                    example:
+                        - E-commerce
+                        - Other
+                        - Social Media
                 components:
                     type: array
                     items:
                         type: string
-                        example: Voluptatem aut est qui qui vel.
+                        example: Sunt occaecati veritatis distinctio nulla alias explicabo.
                     description: List of components used in the template.
                     example:
                         - ex-generic-v2
@@ -3307,6 +3342,10 @@ components:
                 exampletemplatedata:
                     id: my-template
                     name: My Template
+                    categories:
+                        - E-commerce
+                        - Other
+                        - Social Media
                     components:
                         - ex-generic-v2
                         - keboola.snowflake-transformation
@@ -3339,6 +3378,7 @@ components:
                 - repository
                 - id
                 - name
+                - categories
                 - components
                 - author
                 - description
@@ -3358,6 +3398,10 @@ components:
                         - author:
                             name: Keboola
                             url: https://www.keboola.com
+                          categories:
+                            - E-commerce
+                            - Other
+                            - Social Media
                           components:
                             - ex-generic-v2
                             - keboola.snowflake-transformation
@@ -3381,6 +3425,64 @@ components:
                         - author:
                             name: Keboola
                             url: https://www.keboola.com
+                          categories:
+                            - E-commerce
+                            - Other
+                            - Social Media
+                          components:
+                            - ex-generic-v2
+                            - keboola.snowflake-transformation
+                          defaultVersion: v1.2.3
+                          description: Full workflow to load all user accounts from the Service.
+                          id: my-template
+                          name: My Template
+                          versions:
+                            - version: v0.1.1
+                              stable: false
+                              description: Initial version.
+                            - version: v1.1.1
+                              stable: true
+                              description: ""
+                            - version: v1.2.3
+                              stable: true
+                              description: ""
+                            - version: v2.0.0
+                              stable: false
+                              description: Experimental support for new API.
+                        - author:
+                            name: Keboola
+                            url: https://www.keboola.com
+                          categories:
+                            - E-commerce
+                            - Other
+                            - Social Media
+                          components:
+                            - ex-generic-v2
+                            - keboola.snowflake-transformation
+                          defaultVersion: v1.2.3
+                          description: Full workflow to load all user accounts from the Service.
+                          id: my-template
+                          name: My Template
+                          versions:
+                            - version: v0.1.1
+                              stable: false
+                              description: Initial version.
+                            - version: v1.1.1
+                              stable: true
+                              description: ""
+                            - version: v1.2.3
+                              stable: true
+                              description: ""
+                            - version: v2.0.0
+                              stable: false
+                              description: Experimental support for new API.
+                        - author:
+                            name: Keboola
+                            url: https://www.keboola.com
+                          categories:
+                            - E-commerce
+                            - Other
+                            - Social Media
                           components:
                             - ex-generic-v2
                             - keboola.snowflake-transformation
@@ -3412,6 +3514,10 @@ components:
                 templates:
                     - id: my-template
                       name: My Template
+                      categories:
+                        - E-commerce
+                        - Other
+                        - Social Media
                       components:
                         - ex-generic-v2
                         - keboola.snowflake-transformation
@@ -3435,6 +3541,10 @@ components:
                           description: Experimental support for new API.
                     - id: maximum-length-template-id-dolor-sit-an
                       name: Maximum length template name ipsum dolo
+                      categories:
+                        - E-commerce
+                        - Other
+                        - Social Media
                       components:
                         - ex-generic-v2
                         - keboola.snowflake-transformation
@@ -3668,30 +3778,6 @@ components:
                                   visible: true
                               valid: true
                           valid: false
-                        - error: All steps must be configured.
-                          id: g01
-                          steps:
-                            - configured: false
-                              id: g01-s01
-                              inputs:
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                              valid: true
-                            - configured: false
-                              id: g01-s01
-                              inputs:
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                                - error: API token cannot be empty.
-                                  id: api-token
-                                  visible: true
-                              valid: true
-                          valid: false
                 valid:
                     type: boolean
                     description: True if all groups and inputs are valid.
@@ -3767,7 +3853,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Occaecati veritatis distinctio.
+                        example: Dolorem perspiciatis suscipit esse.
                     description: List of components used in the template version.
                     example:
                         - ex-generic-v2
@@ -3822,7 +3908,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Esse ipsum.
+                        example: Provident dolorum totam ullam.
                     description: List of components used in the template version.
                     example:
                         - ex-generic-v2
@@ -3878,6 +3964,10 @@ components:
                 template:
                     id: my-template
                     name: My Template
+                    categories:
+                        - E-commerce
+                        - Other
+                        - Social Media
                     components:
                         - ex-generic-v2
                         - keboola.snowflake-transformation
