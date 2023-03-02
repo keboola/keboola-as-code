@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/umisama/go-regexpcache"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
@@ -21,7 +22,7 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 		Use:   `preview [table]`,
 		Short: helpmsg.Read(`remote/table/preview/short`),
 		Long:  helpmsg.Read(`remote/table/preview/long`),
-		Args:  cobra.MinimumNArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Ask for host and token if needed
 			baseDeps := p.BaseDependencies()
@@ -38,17 +39,27 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 			// Send cmd successful/failed event
 			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-preview")
 
-			allTables, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithColumns()).Send(d.CommandCtx())
-			if err != nil {
-				return err
+			var tableID keboola.TableID
+			if len(args) == 0 {
+				allTables, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithColumns()).Send(d.CommandCtx())
+				if err != nil {
+					return err
+				}
+
+				table, err := d.Dialogs().AskTable(d.Options(), *allTables)
+				if err != nil {
+					return err
+				}
+				tableID = table.ID
+			} else {
+				id, err := keboola.ParseTableID(args[0])
+				if err != nil {
+					return err
+				}
+				tableID = id
 			}
 
-			table, err := d.Dialogs().AskTable(d.Options(), *allTables)
-			if err != nil {
-				return err
-			}
-
-			options, err := parsePreviewOptions(d.Options(), table.ID)
+			options, err := parsePreviewOptions(d.Options(), d.Fs(), tableID)
 			if err != nil {
 				return err
 			}
@@ -64,29 +75,27 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 	cmd.Flags().Uint("limit", 100, "limit the number of exported rows")
 	cmd.Flags().String("where", "", "filter columns by value")
 	cmd.Flags().String("order", "", "order by one or more columns")
-	cmd.Flags().String("format", "pretty", "order by one or more columns")
-	cmd.Flags().String("out", "", "export table a file")
+	cmd.Flags().String("format", preview.TableFormatPretty, "order by one or more columns")
+	cmd.Flags().StringP("out", "o", "", "export table a file")
+	cmd.Flags().Bool("force", false, "overwrite the output file")
 
 	return cmd
 }
 
-// nolint: gochecknoglobals
-var previewFormats = map[string]bool{
-	"pretty": true,
-	"csv":    true,
-	"json":   true,
-}
-
-func parsePreviewOptions(options *options.Options, tableID keboola.TableID) (preview.PreviewOptions, error) {
-	o := preview.PreviewOptions{TableID: tableID}
+func parsePreviewOptions(options *options.Options, fs filesystem.Fs, tableID keboola.TableID) (preview.Options, error) {
+	o := preview.Options{TableID: tableID}
 
 	o.ChangedSince = options.GetString("changed-since")
 	o.ChangedUntil = options.GetString("changed-until")
 	o.Columns = options.GetStringSlice("columns")
 	o.Limit = options.GetUint("limit")
-	o.Out = options.GetString("out")
 
 	e := errors.NewMultiError()
+
+	o.Out = options.GetString("out")
+	if fs.Exists(o.Out) && !options.GetBool("force") {
+		e.Append(errors.Errorf(`file "%s" already exists, use the "--force" flag to overwrite it`))
+	}
 
 	whereString := options.GetString("where")
 	if len(whereString) > 0 {
@@ -113,8 +122,8 @@ func parsePreviewOptions(options *options.Options, tableID keboola.TableID) (pre
 	}
 
 	format := options.GetString("format")
-	if !previewFormats[format] {
-		return preview.PreviewOptions{}, errors.Errorf(`invalid output format "%s"`, format)
+	if !preview.IsValidFormat(format) {
+		return preview.Options{}, errors.Errorf(`invalid output format "%s"`, format)
 	}
 	o.Format = format
 

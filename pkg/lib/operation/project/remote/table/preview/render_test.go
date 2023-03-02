@@ -13,7 +13,7 @@ type testCase struct {
 	expected string
 }
 
-func TestRenderJson(t *testing.T) {
+func TestRenderJSON(t *testing.T) {
 	t.Parallel()
 
 	cases := []testCase{
@@ -32,12 +32,12 @@ func TestRenderJson(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		actual := renderJson(c.input)
+		actual := renderJSON(c.input)
 		assert.Equal(t, c.expected, actual)
 	}
 }
 
-func TestRenderCsv(t *testing.T) {
+func TestRenderCSV(t *testing.T) {
 	t.Parallel()
 
 	cases := []testCase{
@@ -60,13 +60,13 @@ fffe0e30b4a34f01063330a4b908fde5,Super Saver Foods,Global,Active,2015-02-06
 	}
 
 	for _, c := range cases {
-		actual := renderCsv(c.input)
+		actual := renderCSV(c.input)
 		// using `expected` without normalizing, because the output should not have an empty line at the end
 		assert.Equal(t, c.expected, actual)
 	}
 }
 
-func TestRenderTable(t *testing.T) {
+func TestRenderPretty(t *testing.T) {
 	t.Parallel()
 
 	cases := []testCase{
@@ -94,7 +94,7 @@ func TestRenderTable(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		actual := normalizeTable(renderTable(c.input))
+		actual := normalizeTable(renderPretty(c.input))
 		expected := normalizeTable(c.expected)
 
 		assert.Equal(t, expected, actual)

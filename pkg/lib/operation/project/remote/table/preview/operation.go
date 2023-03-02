@@ -6,18 +6,19 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type dependencies interface {
 	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Tracer() trace.Tracer
+	Fs() filesystem.Fs
 }
 
-type PreviewOptions struct {
+type Options struct {
 	TableID      keboola.TableID
 	ChangedSince string
 	ChangedUntil string
@@ -40,11 +41,43 @@ type ColumnOrder struct {
 	Order  keboola.ColumnOrder
 }
 
-func Run(ctx context.Context, o PreviewOptions, d dependencies) (err error) {
+func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.job.run")
 	defer telemetry.EndSpan(span, &err)
 
-	/* opts := []keboola.PreviewOption{}
+	d.Logger().Infof(`Fetching table "%s", please wait.`, o.TableID.String())
+
+	table, err := d.KeboolaProjectAPI().PreviewTableRequest(o.TableID, getPreviewOptions(&o)...).Send(ctx)
+	if err != nil {
+		return err
+	}
+
+	rendered, err := renderTable(table, o.Format)
+	if err != nil {
+		return err
+	}
+
+	if len(o.Out) > 0 {
+		d.Logger().Infof(`Writing table "%s" to file "%s"`, o.TableID, o.Out)
+		// write to file
+		file, err := d.Fs().Create(o.Out)
+		if err != nil {
+			return err
+		}
+		_, err = file.WriteString(rendered)
+		if err != nil {
+			return err
+		}
+	} else {
+		// write to stdout
+		d.Logger().Infof("\n%s", rendered)
+	}
+
+	return nil
+}
+
+func getPreviewOptions(o *Options) []keboola.PreviewOption {
+	opts := []keboola.PreviewOption{}
 	if o.Limit > 0 {
 		opts = append(opts, keboola.WithLimitRows(uint(o.Limit)))
 	}
@@ -63,11 +96,5 @@ func Run(ctx context.Context, o PreviewOptions, d dependencies) (err error) {
 	for _, ord := range o.Order {
 		opts = append(opts, keboola.WithOrderBy(ord.Column, ord.Order))
 	}
-
-	preview, err := d.KeboolaProjectAPI().PreviewTableRequest(o.TableID, opts...).Send(ctx)
-	if err != nil {
-		return err
-	} */
-
-	return errors.Errorf("unimplemented")
+	return opts
 }

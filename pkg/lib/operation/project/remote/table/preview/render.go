@@ -6,9 +6,38 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func renderJson(table *keboola.TablePreview) string {
+const (
+	TableFormatPretty = "pretty"
+	TableFormatCSV    = "csv"
+	TableFormatJSON   = "json"
+)
+
+func IsValidFormat(format string) bool {
+	switch format {
+	case TableFormatJSON, TableFormatCSV, TableFormatPretty:
+		return true
+	default:
+		return false
+	}
+}
+
+func renderTable(table *keboola.TablePreview, format string) (string, error) {
+	switch format {
+	case TableFormatJSON:
+		return renderJSON(table), nil
+	case TableFormatCSV:
+		return renderCSV(table), nil
+	case TableFormatPretty:
+		return renderPretty(table), nil
+	default:
+		return "", errors.Errorf("invalid table format %s", format)
+	}
+}
+
+func renderJSON(table *keboola.TablePreview) string {
 	type output struct {
 		Columns []string   `json:"columns"`
 		Rows    [][]string `json:"rows"`
@@ -19,7 +48,7 @@ func renderJson(table *keboola.TablePreview) string {
 	return json.MustEncodeString(o, false)
 }
 
-func renderCsv(table *keboola.TablePreview) string {
+func renderCSV(table *keboola.TablePreview) string {
 	var b strings.Builder
 
 	for _, col := range table.Columns[:len(table.Columns)-1] {
@@ -61,7 +90,7 @@ const (
 	boxC  = "╋"
 )
 
-func renderTable(table *keboola.TablePreview) string {
+func renderPretty(table *keboola.TablePreview) string {
 	widths := measureColumns(table)
 
 	var b strings.Builder
