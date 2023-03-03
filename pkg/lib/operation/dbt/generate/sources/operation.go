@@ -3,7 +3,6 @@ package sources
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
@@ -13,7 +12,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/listbuckets"
 )
+
+type Options struct {
+	TargetName string
+	Buckets    []listbuckets.Bucket // optional, set if the buckets have been loaded in a parent command
+}
 
 type dependencies interface {
 	KeboolaProjectAPI() *keboola.API
@@ -22,7 +28,7 @@ type dependencies interface {
 	Tracer() trace.Tracer
 }
 
-func Run(ctx context.Context, targetName string, d dependencies) (err error) {
+func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.dbt.generate.sources")
 	defer telemetry.EndSpan(span, &err)
 
@@ -33,6 +39,12 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 	}
 	fs := project.Fs()
 
+	// List bucket, if not set
+	o.Buckets, err = listbuckets.Run(ctx, listbuckets.Options{TargetName: o.TargetName}, d)
+	if err != nil {
+		return errors.Errorf("could not list buckets: %w", err)
+	}
+
 	if !fs.Exists(dbt.SourcesPath) {
 		err = fs.Mkdir(dbt.SourcesPath)
 		if err != nil {
@@ -40,19 +52,16 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 		}
 	}
 
-	tablesList, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithBuckets()).Send(ctx)
-	if err != nil {
-		return err
-	}
-	tablesByBuckets := tablesByBucketsMap(*tablesList)
+	// Group tables by bucket and write file
+	for _, bucket := range o.Buckets {
+		sourcesDef := generateSourcesDefinition(bucket)
 
-	for bucketID, tables := range tablesByBuckets {
-		sourcesDef := generateSourcesDefinition(targetName, bucketID, tables)
 		yamlEnc, err := yaml.Marshal(&sourcesDef)
 		if err != nil {
 			return err
 		}
-		err = fs.WriteFile(filesystem.NewRawFile(fmt.Sprintf("%s/%s.yml", dbt.SourcesPath, bucketID), string(yamlEnc)))
+
+		err = fs.WriteFile(filesystem.NewRawFile(fmt.Sprintf("%s/%s.yml", dbt.SourcesPath, bucket.SourceName), string(yamlEnc)))
 		if err != nil {
 			return err
 		}
@@ -60,60 +69,4 @@ func Run(ctx context.Context, targetName string, d dependencies) (err error) {
 
 	d.Logger().Infof(`Sources stored in "%s" directory.`, dbt.SourcesPath)
 	return nil
-}
-
-func tablesByBucketsMap(tablesList []*keboola.Table) map[keboola.BucketID][]*keboola.Table {
-	tablesByBuckets := make(map[keboola.BucketID][]*keboola.Table)
-	for _, table := range tablesList {
-		bucket, ok := tablesByBuckets[table.Bucket.ID]
-		if !ok {
-			bucket = make([]*keboola.Table, 0)
-		}
-		bucket = append(bucket, table)
-		tablesByBuckets[table.Bucket.ID] = bucket
-	}
-	return tablesByBuckets
-}
-
-func generateSourcesDefinition(targetName string, bucketID keboola.BucketID, tablesList []*keboola.Table) dbt.SourceFile {
-	sourceTables := make([]dbt.SourceTable, 0)
-	for _, table := range tablesList {
-		sourceTable := dbt.SourceTable{
-			Name: table.Name,
-			Quoting: dbt.SourceTableQuoting{
-				Database:   true,
-				Schema:     true,
-				Identifier: true,
-			},
-		}
-		if len(table.PrimaryKey) > 0 {
-			sourceColumns := make([]dbt.SourceTableColumn, 0)
-			for _, primaryKey := range table.PrimaryKey {
-				sourceColumns = append(sourceColumns, dbt.SourceTableColumn{
-					Name:  fmt.Sprintf(`"%s"`, primaryKey),
-					Tests: []string{"unique", "not_null"},
-				})
-			}
-			sourceTable.Columns = sourceColumns
-		}
-		sourceTables = append(sourceTables, sourceTable)
-	}
-	return dbt.SourceFile{
-		Version: 2,
-		Sources: []dbt.Source{
-			{
-				Name: bucketID.String(),
-				Freshness: dbt.SourceFreshness{
-					WarnAfter: dbt.SourceFreshnessWarnAfter{
-						Count:  1,
-						Period: "day",
-					},
-				},
-				Database:      fmt.Sprintf("{{ env_var(\"DBT_KBC_%s_DATABASE\") }}", strings.ToUpper(targetName)),
-				Schema:        bucketID.String(),
-				LoadedAtField: `"_timestamp"`,
-				Tables:        sourceTables,
-			},
-		},
-	}
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/profile"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/sources"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/listbuckets"
 )
 
 type DbtInitOptions struct {
@@ -28,7 +29,7 @@ type dependencies interface {
 	Tracer() trace.Tracer
 }
 
-func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
+func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.dbt.init")
 	defer telemetry.EndSpan(span, &err)
 
@@ -45,37 +46,50 @@ func Run(ctx context.Context, opts DbtInitOptions, d dependencies) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	d.Logger().Info(`Creating a new workspace, please wait.`)
 	// Create workspace
+	d.Logger().Info(`Creating a new workspace, please wait.`)
 	w, err := d.KeboolaProjectAPI().CreateWorkspace(
 		ctx,
 		branch.ID,
-		opts.WorkspaceName,
+		o.WorkspaceName,
 		keboola.WorkspaceTypeSnowflake,
 	)
 	if err != nil {
 		return errors.Errorf("cannot create workspace: %w", err)
 	}
-	d.Logger().Infof(`Created the new workspace "%s".`, opts.WorkspaceName)
-
+	d.Logger().Infof(`Created the new workspace "%s".`, o.WorkspaceName)
 	workspace := w.Workspace
 
+	// List buckets
+	buckets, err := listbuckets.Run(ctx, listbuckets.Options{
+		TargetName: o.TargetName,
+	}, d)
+	if err != nil {
+		return errors.Errorf("could not list buckets: %w", err)
+	}
+
 	// Generate profile
-	err = profile.Run(ctx, opts.TargetName, d)
+	err = profile.Run(ctx, profile.Options{
+		TargetName: o.TargetName,
+	}, d)
 	if err != nil {
 		return errors.Errorf("could not generate profile: %w", err)
 	}
 
 	// Generate sources
-	err = sources.Run(ctx, opts.TargetName, d)
+	err = sources.Run(ctx, sources.Options{
+		TargetName: o.TargetName,
+		Buckets:    buckets,
+	}, d)
 	if err != nil {
 		return errors.Errorf("could not generate sources: %w", err)
 	}
 
 	// Generate env
-	err = env.Run(ctx, env.GenerateEnvOptions{
-		TargetName: opts.TargetName,
+	err = env.Run(ctx, env.Options{
+		TargetName: o.TargetName,
 		Workspace:  workspace,
+		Buckets:    buckets,
 	}, d)
 	if err != nil {
 		return errors.Errorf("could not generate env: %w", err)

@@ -37,7 +37,7 @@ func SourcesCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			return sources.Run(d.CommandCtx(), targetName, d)
+			return sources.Run(d.CommandCtx(), sources.Options{TargetName: targetName}, d)
 		},
 	}
 
