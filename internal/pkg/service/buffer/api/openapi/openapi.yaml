@@ -185,6 +185,7 @@ paths:
                             - id
                             - url
                             - status
+                            - isFinished
                             - createdAt
                 "409":
                     description: Conflict response.
@@ -368,6 +369,7 @@ paths:
                             - id
                             - url
                             - status
+                            - isFinished
                             - createdAt
                 "404":
                     description: Not Found response.
@@ -501,6 +503,7 @@ paths:
                             - id
                             - url
                             - status
+                            - isFinished
                             - createdAt
                 "404":
                     description: Not Found response.
@@ -571,6 +574,7 @@ paths:
                             - id
                             - url
                             - status
+                            - isFinished
                             - createdAt
                 "404":
                     description: Not Found response.
@@ -690,7 +694,7 @@ definitions:
             id:
                 type: string
                 description: Optional ID, if not filled in, it will be generated from name. Cannot be changed later.
-                example: i
+                example: uy
                 minLength: 1
                 maxLength: 48
             mapping:
@@ -706,7 +710,7 @@ definitions:
                 count: 100
                 size: 12kB
                 time: 1m10s
-            id: o
+            id: ymc
             mapping:
                 tableId: in.c-github.changes
                 incremental: true
@@ -756,7 +760,7 @@ definitions:
                 format: int64
             error:
                 type: string
-                example: Occaecati animi tempore minus non soluta et.
+                example: Quidem molestiae enim ut.
             finishedAt:
                 type: string
                 description: Date and time of the task end.
@@ -764,10 +768,14 @@ definitions:
                 format: date-time
             id:
                 type: string
-                example: Commodi magnam ducimus consequatur nisi quae.
+                example: In mollitia veniam sint.
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: true
             result:
                 type: string
-                example: Occaecati consequuntur ut assumenda quidem molestiae enim.
+                example: Consequuntur ut.
             status:
                 type: string
                 description: 'Task status, one of: processing, success, error'
@@ -779,7 +787,7 @@ definitions:
             url:
                 type: string
                 description: URL of the task.
-                example: Mollitia veniam sint corrupti aut laborum necessitatibus.
+                example: Aut laborum necessitatibus.
         example:
             id: task-1
             receiverId: receiver-1
@@ -795,6 +803,7 @@ definitions:
             - id
             - url
             - status
+            - isFinished
             - createdAt
     BufferCreateReceiverBufferReceiverAlreadyExistsResponseBody:
         title: BufferCreateReceiverBufferReceiverAlreadyExistsResponseBody
@@ -966,7 +975,7 @@ definitions:
             id:
                 type: string
                 description: Optional ID, if not filled in, it will be generated from name. Cannot be changed later.
-                example: ug
+                example: h
                 minLength: 1
                 maxLength: 48
             name:
@@ -1082,7 +1091,42 @@ definitions:
                             language: jsonnet
                             content: body.foo + "-" + body.bar
                   name: Raw Data Export
-            id: 0zg
+                - conditions:
+                    count: 100
+                    size: 12kB
+                    time: 1m10s
+                  id: "4"
+                  mapping:
+                    tableId: in.c-github.changes
+                    incremental: true
+                    columns:
+                        - type: id
+                          name: column1
+                          template:
+                            language: ""
+                            content: ""
+                        - type: datetime
+                          name: column2
+                          template:
+                            language: ""
+                            content: ""
+                        - type: ip
+                          name: column3
+                          template:
+                            language: ""
+                            content: ""
+                        - type: headers
+                          name: column5
+                          template:
+                            language: ""
+                            content: ""
+                        - type: template
+                          name: column6
+                          template:
+                            language: jsonnet
+                            content: body.foo + "-" + body.bar
+                  name: Raw Data Export
+            id: lb
             name: Github Webhook Receiver
         required:
             - name
@@ -1102,7 +1146,7 @@ definitions:
                 format: int64
             error:
                 type: string
-                example: Quidem fuga quidem.
+                example: Fuga quidem sint numquam magnam ut nesciunt.
             finishedAt:
                 type: string
                 description: Date and time of the task end.
@@ -1111,9 +1155,13 @@ definitions:
             id:
                 type: string
                 example: Laudantium est eaque.
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: true
             result:
                 type: string
-                example: Ratione dolorem.
+                example: Dolorem qui.
             status:
                 type: string
                 description: 'Task status, one of: processing, success, error'
@@ -1141,6 +1189,7 @@ definitions:
             - id
             - url
             - status
+            - isFinished
             - createdAt
     BufferDeleteExportBufferExportNotFoundResponseBody:
         title: BufferDeleteExportBufferExportNotFoundResponseBody
@@ -1280,7 +1329,7 @@ definitions:
                 $ref: '#/definitions/ConditionsResponseBody'
             id:
                 type: string
-                example: v9
+                example: i
                 minLength: 1
                 maxLength: 48
             mapping:
@@ -1293,7 +1342,7 @@ definitions:
                 maxLength: 40
             receiverId:
                 type: string
-                example: u2t
+                example: o
                 minLength: 1
                 maxLength: 48
         example:
@@ -1413,7 +1462,7 @@ definitions:
                         time: 1m10s
             id:
                 type: string
-                example: f46
+                example: pp7
                 minLength: 1
                 maxLength: 48
             name:
@@ -1425,7 +1474,7 @@ definitions:
             url:
                 type: string
                 description: URL of the receiver. Contains secret used for authentication.
-                example: Rerum dolorum minus.
+                example: Optio ut delectus maxime qui sint facilis.
         example:
             id: github-pull-requests
             url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
@@ -1514,7 +1563,7 @@ definitions:
                 format: int64
             error:
                 type: string
-                example: Id et molestiae animi at.
+                example: Dolorum ipsam nulla laboriosam ad.
             finishedAt:
                 type: string
                 description: Date and time of the task end.
@@ -1522,10 +1571,14 @@ definitions:
                 format: date-time
             id:
                 type: string
-                example: Itaque provident dolorum suscipit.
+                example: Quos beatae.
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: true
             result:
                 type: string
-                example: Laboriosam ad earum in qui.
+                example: Eveniet sequi itaque provident dolorum suscipit aut.
             status:
                 type: string
                 description: 'Task status, one of: processing, success, error'
@@ -1537,7 +1590,7 @@ definitions:
             url:
                 type: string
                 description: URL of the task.
-                example: Est dolorum.
+                example: Eaque eum possimus ut qui aut.
         example:
             id: task-1
             receiverId: receiver-1
@@ -1553,6 +1606,7 @@ definitions:
             - id
             - url
             - status
+            - isFinished
             - createdAt
     BufferImportBufferPayloadTooLargeResponseBody:
         title: BufferImportBufferPayloadTooLargeResponseBody
@@ -1884,7 +1938,7 @@ definitions:
                         time: 1m10s
             id:
                 type: string
-                example: pp7
+                example: y6
                 minLength: 1
                 maxLength: 48
             name:
@@ -1896,7 +1950,7 @@ definitions:
             url:
                 type: string
                 description: URL of the receiver. Contains secret used for authentication.
-                example: Optio ut delectus maxime qui sint facilis.
+                example: Consequatur nisi.
         example:
             id: github-pull-requests
             url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
@@ -2060,7 +2114,7 @@ definitions:
                 format: int64
             error:
                 type: string
-                example: Corrupti nihil voluptatem eveniet.
+                example: Porro ut adipisci molestias quo.
             finishedAt:
                 type: string
                 description: Date and time of the task end.
@@ -2068,14 +2122,18 @@ definitions:
                 format: date-time
             id:
                 type: string
-                example: Veritatis blanditiis non esse.
+                example: Tenetur molestiae.
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: true
             result:
                 type: string
-                example: Beatae facere eaque eum possimus ut qui.
+                example: Non esse aut dolores.
             status:
                 type: string
                 description: 'Task status, one of: processing, success, error'
-                example: success
+                example: error
                 enum:
                     - processing
                     - success
@@ -2083,7 +2141,7 @@ definitions:
             url:
                 type: string
                 description: URL of the task.
-                example: Dolores est porro ut adipisci molestias quo.
+                example: Dolorem voluptas aut.
         example:
             id: task-1
             receiverId: receiver-1
@@ -2099,6 +2157,7 @@ definitions:
             - id
             - url
             - status
+            - isFinished
             - createdAt
     BufferUpdateReceiverBufferReceiverNotFoundResponseBody:
         title: BufferUpdateReceiverBufferReceiverNotFoundResponseBody
@@ -2186,7 +2245,7 @@ definitions:
                         time: 1m10s
             id:
                 type: string
-                example: b
+                example: mzk
                 minLength: 1
                 maxLength: 48
             name:
@@ -2198,7 +2257,7 @@ definitions:
             url:
                 type: string
                 description: URL of the receiver. Contains secret used for authentication.
-                example: Tempora deserunt rerum voluptas expedita.
+                example: Doloribus quia officiis.
         example:
             id: github-pull-requests
             url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
@@ -2252,18 +2311,18 @@ definitions:
             name:
                 type: string
                 description: Column name.
-                example: Consectetur voluptatibus dicta.
+                example: Voluptatibus dicta ex voluptas error maxime natus.
             primaryKey:
                 type: boolean
                 description: Sets this column as a part of the primary key of the destination table.
                 default: false
-                example: true
+                example: false
             template:
                 $ref: '#/definitions/TemplateRequestBody'
             type:
                 type: string
                 description: Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).
-                example: body
+                example: template
                 enum:
                     - id
                     - datetime
@@ -2288,7 +2347,7 @@ definitions:
             name:
                 type: string
                 description: Column name.
-                example: Dolorem nihil dolores a blanditiis.
+                example: Veritatis sunt voluptatem voluptatem.
             primaryKey:
                 type: boolean
                 description: Sets this column as a part of the primary key of the destination table.
@@ -2299,7 +2358,7 @@ definitions:
             type:
                 type: string
                 description: Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).
-                example: datetime
+                example: body
                 enum:
                     - id
                     - datetime
@@ -2325,19 +2384,19 @@ definitions:
                 type: integer
                 description: Maximum import buffer size in number of records.
                 default: 10000
-                example: 2462113
+                example: 7392344
                 minimum: 1
                 maximum: 1e+07
             size:
                 type: string
                 description: 'Maximum import buffer size in bytes. Units: B, KB, MB.'
                 default: 5MB
-                example: Qui ut qui.
+                example: Sit qui repellendus et voluptas ex.
             time:
                 type: string
                 description: 'Minimum import interval. Units: [s]econd,[m]inute,[h]our.'
                 default: 5m0s
-                example: Qui sit qui repellendus et voluptas.
+                example: Laborum quod.
         description: Table import triggers.
         example:
             count: 100
@@ -2351,19 +2410,19 @@ definitions:
                 type: integer
                 description: Maximum import buffer size in number of records.
                 default: 10000
-                example: 4085996
+                example: 2812913
                 minimum: 1
                 maximum: 1e+07
             size:
                 type: string
                 description: 'Maximum import buffer size in bytes. Units: B, KB, MB.'
                 default: 5MB
-                example: Maiores quod commodi iure.
+                example: Vel ratione fugiat omnis cupiditate.
             time:
                 type: string
                 description: 'Minimum import interval. Units: [s]econd,[m]inute,[h]our.'
                 default: 5m0s
-                example: Inventore ut vel ratione fugiat omnis cupiditate.
+                example: Ut quis voluptatem inventore totam aliquam.
         description: Table import triggers.
         example:
             count: 100
@@ -2378,7 +2437,7 @@ definitions:
             id:
                 type: string
                 description: Optional ID, if not filled in, it will be generated from name. Cannot be changed later.
-                example: trh
+                example: 5qn
                 minLength: 1
                 maxLength: 48
             mapping:
@@ -2394,7 +2453,7 @@ definitions:
                 count: 100
                 size: 12kB
                 time: 1m10s
-            id: "0"
+            id: z
             mapping:
                 tableId: in.c-github.changes
                 incremental: true
@@ -2436,7 +2495,7 @@ definitions:
                 $ref: '#/definitions/ConditionsResponseBody'
             id:
                 type: string
-                example: f
+                example: ss
                 minLength: 1
                 maxLength: 48
             mapping:
@@ -2449,7 +2508,7 @@ definitions:
                 maxLength: 40
             receiverId:
                 type: string
-                example: "4"
+                example: pic
                 minLength: 1
                 maxLength: 48
         description: A mapping from imported data to a destination table.
@@ -2518,7 +2577,7 @@ definitions:
             tableId:
                 type: string
                 description: Destination table ID.
-                example: Ut deleniti ut et culpa.
+                example: Culpa laudantium.
         description: Export column mapping.
         example:
             tableId: in.c-github.changes
@@ -2574,7 +2633,7 @@ definitions:
             tableId:
                 type: string
                 description: Destination table ID.
-                example: Et ab error earum.
+                example: Sunt in dolorem nihil dolores.
         description: Export column mapping.
         example:
             tableId: in.c-github.changes
@@ -2656,7 +2715,7 @@ definitions:
                         time: 1m10s
             id:
                 type: string
-                example: t
+                example: f46
                 minLength: 1
                 maxLength: 48
             name:
@@ -2668,7 +2727,7 @@ definitions:
             url:
                 type: string
                 description: URL of the receiver. Contains secret used for authentication.
-                example: Voluptatem inventore totam aliquam.
+                example: Rerum dolorum minus.
         description: An endpoint for importing data, max 100 receivers per a project.
         example:
             id: github-pull-requests
@@ -2722,7 +2781,7 @@ definitions:
         properties:
             content:
                 type: string
-                example: i
+                example: "y"
                 minLength: 1
                 maxLength: 4096
             language:
@@ -2742,7 +2801,7 @@ definitions:
         properties:
             content:
                 type: string
-                example: di
+                example: ubi
                 minLength: 1
                 maxLength: 4096
             language:

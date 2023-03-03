@@ -77,6 +77,8 @@ type CreateReceiverResponseBody struct {
 	URL string `form:"url" json:"url" xml:"url"`
 	// Task status, one of: processing, success, error
 	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
 	// Date and time of the task creation.
 	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
 	// Date and time of the task end.
@@ -137,6 +139,8 @@ type CreateExportResponseBody struct {
 	URL string `form:"url" json:"url" xml:"url"`
 	// Task status, one of: processing, success, error
 	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
 	// Date and time of the task creation.
 	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
 	// Date and time of the task end.
@@ -174,6 +178,8 @@ type UpdateExportResponseBody struct {
 	URL string `form:"url" json:"url" xml:"url"`
 	// Task status, one of: processing, success, error
 	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
 	// Date and time of the task creation.
 	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
 	// Date and time of the task end.
@@ -192,6 +198,8 @@ type GetTaskResponseBody struct {
 	URL string `form:"url" json:"url" xml:"url"`
 	// Task status, one of: processing, success, error
 	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
 	// Date and time of the task creation.
 	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
 	// Date and time of the task end.
@@ -558,6 +566,7 @@ func NewCreateReceiverResponseBody(res *buffer.Task) *CreateReceiverResponseBody
 		ID:         string(res.ID),
 		URL:        res.URL,
 		Status:     res.Status,
+		IsFinished: res.IsFinished,
 		CreatedAt:  res.CreatedAt,
 		FinishedAt: res.FinishedAt,
 		Duration:   res.Duration,
@@ -638,6 +647,7 @@ func NewCreateExportResponseBody(res *buffer.Task) *CreateExportResponseBody {
 		ID:         string(res.ID),
 		URL:        res.URL,
 		Status:     res.Status,
+		IsFinished: res.IsFinished,
 		CreatedAt:  res.CreatedAt,
 		FinishedAt: res.FinishedAt,
 		Duration:   res.Duration,
@@ -684,6 +694,7 @@ func NewUpdateExportResponseBody(res *buffer.Task) *UpdateExportResponseBody {
 		ID:         string(res.ID),
 		URL:        res.URL,
 		Status:     res.Status,
+		IsFinished: res.IsFinished,
 		CreatedAt:  res.CreatedAt,
 		FinishedAt: res.FinishedAt,
 		Duration:   res.Duration,
@@ -700,6 +711,7 @@ func NewGetTaskResponseBody(res *buffer.Task) *GetTaskResponseBody {
 		ID:         string(res.ID),
 		URL:        res.URL,
 		Status:     res.Status,
+		IsFinished: res.IsFinished,
 		CreatedAt:  res.CreatedAt,
 		FinishedAt: res.FinishedAt,
 		Duration:   res.Duration,
