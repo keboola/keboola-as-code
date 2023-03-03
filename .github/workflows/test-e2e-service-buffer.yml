@@ -51,8 +51,8 @@ jobs:
           docker-compose run -d --rm --publish 2379:2379 etcd
           sudo echo "127.0.0.1 etcd" | sudo tee -a /etc/hosts
 
-      - name: Run tests
-        run: make tests-buffer-api
+      - name: Run API and Worker tests
+        run: make tests-buffer-service
         shell: bash
         env:
           BUFFER_ETCD_ENDPOINT: etcd:2379

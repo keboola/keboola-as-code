@@ -100,15 +100,29 @@ func startCluster(t *testing.T, ctx context.Context, testDir string, project *te
 		workerNodes: make([]*workerNode, workerNodesCount),
 	}
 
+	// Setup logger
 	out.logger = log.NewDebugLogger()
 	out.logger.ConnectTo(testhelper.VerboseStdout())
 
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	out.etcdClient = etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
+	// Connect to the etcd
+	etcdNamespace := idgenerator.EtcdNamespaceForTest()
+	etcdEndpoint := os.Getenv("BUFFER_ETCD_ENDPOINT")
+	etcdUsername := os.Getenv("BUFFER_ETCD_USERNAME")
+	etcdPassword := os.Getenv("BUFFER_ETCD_PASSWORD")
+	out.etcdClient = etcdhelper.ClientForTestFrom(
+		t,
+		etcdEndpoint,
+		etcdUsername,
+		etcdPassword,
+		etcdNamespace,
+	)
 
 	opts := []dependencies.MockedOption{
 		dependencies.WithCtx(ctx),
 		dependencies.WithDebugLogger(out.logger),
+		dependencies.WithEtcdEndpoint(etcdEndpoint),
+		dependencies.WithEtcdUsername(etcdUsername),
+		dependencies.WithEtcdPassword(etcdPassword),
 		dependencies.WithEtcdNamespace(etcdNamespace),
 		dependencies.WithTestProject(project),
 	}
