@@ -21,10 +21,6 @@ file/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s
         "primaryKey": true
       },
       {
-        "type": "datetime",
-        "name": "dateCol"
-      },
-      {
         "type": "body",
         "name": "bodyCol"
       },
@@ -59,12 +55,12 @@ file/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s
     "columns": [
       {
         "type": "datetime",
-        "name": "dateCol",
+        "name": "idCol",
         "primaryKey": true
       },
       {
         "type": "template",
-        "name": "keyCol",
+        "name": "keyValueCol",
         "language": "jsonnet",
         "content": "\"---\" + Body(\"key\") + \"---\""
       }

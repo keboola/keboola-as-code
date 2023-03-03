@@ -1,0 +1,91 @@
+<<<<<
+file/imported/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-1",
+  "fileId": "%s",
+  "state": "imported",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "my-receiver",
+    "exportId": "my-export-1",
+    "revisionId": 1,
+    "tableId": "in.c-bucket.my-export-1",
+    "incremental": true,
+    "columns": [
+      {
+        "type": "id",
+        "name": "idCol",
+        "primaryKey": true
+      },
+      {
+        "type": "body",
+        "name": "bodyCol"
+      },
+      {
+        "type": "headers",
+        "name": "headersCol"
+      }
+    ]
+  },
+  "storageResource": {%A},
+  "closingAt": "%s",
+  "importingAt": "%s",
+  "importedAt": "%s",
+  "statistics": {
+    "lastRecordAt": "%s",
+    "recordsCount": 10,
+    "recordsSize": "%s",
+    "bodySize": "%s",
+    "fileSize": "%s",
+    "fileGZipSize": "%s"
+  }
+}
+>>>>>
+
+<<<<<
+file/imported/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "exportId": "my-export-2",
+  "fileId": "%s",
+  "state": "imported",
+  "mapping": {
+    "projectId": %%TEST_KBC_PROJECT_ID%%,
+    "receiverId": "my-receiver",
+    "exportId": "my-export-2",
+    "revisionId": 1,
+    "tableId": "in.c-bucket.my-export-2",
+    "incremental": true,
+    "columns": [
+      {
+        "type": "datetime",
+        "name": "idCol",
+        "primaryKey": true
+      },
+      {
+        "type": "template",
+        "name": "keyValueCol",
+        "language": "jsonnet",
+        "content": "\"---\" + Body(\"key\") + \"---\""
+      }
+    ]
+  },
+  "storageResource": {%A},
+  "closingAt": "%s",
+  "importingAt": "%s",
+  "importedAt": "%s",
+  "statistics": {
+    "lastRecordAt": "%s",
+    "recordsCount": 10,
+    "recordsSize": "%s",
+    "bodySize": "%s",
+    "fileSize": "%s",
+    "fileGZipSize": "%s"
+  }
+}
+>>>>>

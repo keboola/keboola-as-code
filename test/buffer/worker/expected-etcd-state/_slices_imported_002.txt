@@ -1,5 +1,5 @@
 <<<<<
-slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s
+slice/archived/successful/imported/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -7,7 +7,7 @@ slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1
   "exportId": "my-export-1",
   "fileId": "%s",
   "sliceId": "%s",
-  "state": "active/opened/writing",
+  "state": "archived/successful/imported",
   "mapping": {
     "projectId": %%TEST_KBC_PROJECT_ID%%,
     "receiverId": "my-receiver",
@@ -22,10 +22,6 @@ slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1
         "primaryKey": true
       },
       {
-        "type": "datetime",
-        "name": "dateCol"
-      },
-      {
         "type": "body",
         "name": "bodyCol"
       },
@@ -36,12 +32,28 @@ slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1
     ]
   },
   "storageResource": {%A},
-  "sliceNumber": %d
+  "sliceNumber": 2,
+  "closingAt": "%s",
+  "uploadingAt": "%s",
+  "uploadedAt": "%s",
+  "importedAt": "%s",
+  "statistics": {
+    "lastRecordAt": "%s",
+    "recordsCount": 4,
+    "recordsSize": "%s",
+    "bodySize": "%s",
+    "fileSize": "%s",
+    "fileGZipSize": "%s"
+  },
+  "idRange": {
+    "start": 7,
+    "count": 4
+  }
 }
 >>>>>
 
 <<<<<
-slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s
+slice/archived/successful/imported/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -49,7 +61,7 @@ slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2
   "exportId": "my-export-2",
   "fileId": "%s",
   "sliceId": "%s",
-  "state": "active/opened/writing",
+  "state": "archived/successful/imported",
   "mapping": {
     "projectId": %%TEST_KBC_PROJECT_ID%%,
     "receiverId": "my-receiver",
@@ -60,18 +72,34 @@ slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2
     "columns": [
       {
         "type": "datetime",
-        "name": "dateCol",
+        "name": "idCol",
         "primaryKey": true
       },
       {
         "type": "template",
-        "name": "keyCol",
+        "name": "keyValueCol",
         "language": "jsonnet",
         "content": "\"---\" + Body(\"key\") + \"---\""
       }
     ]
   },
   "storageResource": {%A},
-  "sliceNumber": %d
+  "sliceNumber": 2,
+  "closingAt": "%s",
+  "uploadingAt": "%s",
+  "uploadedAt": "%s",
+  "importedAt": "%s",
+  "statistics": {
+    "lastRecordAt": "%s",
+    "recordsCount": 4,
+    "recordsSize": "%s",
+    "bodySize": "%s",
+    "fileSize": "%s",
+    "fileGZipSize": "%s"
+  },
+  "idRange": {
+    "start": 7,
+    "count": 4
+  }
 }
 >>>>>

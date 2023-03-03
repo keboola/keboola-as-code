@@ -10,10 +10,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 )
 
-func (c *cluster) CreateReceiver(t *testing.T, name string) *buffer.Receiver {
+func (ts *testSuite) CreateReceiver(t *testing.T, name string) *buffer.Receiver {
 	t.Helper()
 
-	n := c.RandomAPINode()
+	n := ts.RandomAPINode()
 	d := n.Dependencies
 	svc := n.Service
 

@@ -11,10 +11,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
-func (c *cluster) CreateExport(t *testing.T, receiver *buffer.Receiver, name string, columns ...*buffer.Column) *buffer.Export {
+func (ts *testSuite) CreateExport(t *testing.T, receiver *buffer.Receiver, name string, columns ...*buffer.Column) *buffer.Export {
 	t.Helper()
 
-	n := c.RandomAPINode()
+	n := ts.RandomAPINode()
 	d := n.Dependencies
 	svc := n.Service
 
@@ -27,7 +27,7 @@ func (c *cluster) CreateExport(t *testing.T, receiver *buffer.Receiver, name str
 			Columns: columns,
 		},
 		Conditions: &buffer.Conditions{
-			Count: 10,
+			Count: importCountThreshold,
 			Size:  "1MB",
 			Time:  "1h",
 		},

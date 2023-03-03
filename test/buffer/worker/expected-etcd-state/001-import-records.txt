@@ -1,0 +1,54 @@
+<include _runtime>
+<include _config>
+<include _secrets>
+<include _tasks_setup>
+<include _files_opened>
+<include _slices_opened>
+
+<<<<<
+record/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s
+-----
+<<~~id~~>>,"{""key"": ""payload001""}","{""Content-Type"":""application/json""}"
+>>>>>
+
+<<<<<
+record/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s
+-----
+<<~~id~~>>,"{""key"": ""payload002""}","{""Content-Type"":""application/json""}"
+>>>>>
+
+<<<<<
+record/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s
+-----
+<<~~id~~>>,"{""key"": ""payload003""}","{""Content-Type"":""application/json""}"
+>>>>>
+
+<<<<<
+record/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s
+-----
+<<~~id~~>>,"{""key"": ""payload004""}","{""Content-Type"":""application/json""}"
+>>>>>
+
+<<<<<
+record/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s
+-----
+%s,"""---payload001---"""
+>>>>>
+
+<<<<<
+record/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s
+-----
+%s,"""---payload002---"""
+>>>>>
+
+<<<<<
+record/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s
+-----
+%s,"""---payload003---"""
+>>>>>
+
+<<<<<
+record/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s
+-----
+%s,"""---payload004---"""
+>>>>>

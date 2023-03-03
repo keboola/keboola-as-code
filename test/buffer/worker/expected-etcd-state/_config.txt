@@ -47,10 +47,6 @@ config/mapping/revision/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/000
       "primaryKey": true
     },
     {
-      "type": "datetime",
-      "name": "dateCol"
-    },
-    {
       "type": "body",
       "name": "bodyCol"
     },
@@ -75,12 +71,12 @@ config/mapping/revision/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/000
   "columns": [
     {
       "type": "datetime",
-      "name": "dateCol",
+      "name": "idCol",
       "primaryKey": true
     },
     {
       "type": "template",
-      "name": "keyCol",
+      "name": "keyValueCol",
       "language": "jsonnet",
       "content": "\"---\" + Body(\"key\") + \"---\""
     }
