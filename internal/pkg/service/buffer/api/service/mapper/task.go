@@ -29,9 +29,11 @@ func (m Mapper) TaskPayload(model *model.Task) (r *buffer.Task) {
 		out.Status = bufferDesign.TaskStatusProcessing
 	case model.IsSuccessful():
 		out.Status = bufferDesign.TaskStatusSuccess
+		out.IsFinished = true
 		out.Result = &model.Result
 	case model.IsFailed():
 		out.Status = bufferDesign.TaskStatusError
+		out.IsFinished = true
 		out.Error = &model.Error
 	default:
 		panic(errors.New("unexpected task status"))

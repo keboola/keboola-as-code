@@ -277,6 +277,8 @@ type Task struct {
 	URL string
 	// Task status, one of: processing, success, error
 	Status string
+	// Shortcut for status != "processing".
+	IsFinished bool
 	// Date and time of the task creation.
 	CreatedAt string
 	// Date and time of the task end.
