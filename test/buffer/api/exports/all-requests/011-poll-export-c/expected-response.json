@@ -2,6 +2,7 @@
   "id": "my-receiver/export-c/export.create/%s",
   "url": "https://buffer.keboola.local/v1/tasks/my-receiver/export-c/export.create/%s",
   "status": "success",
+  "isFinished": true,
   "createdAt": "%s",
   "finishedAt": "%s",
   "duration": %d,

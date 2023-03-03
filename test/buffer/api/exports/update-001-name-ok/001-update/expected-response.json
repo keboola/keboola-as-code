@@ -2,5 +2,6 @@
   "id": "my-receiver/export-1/export.update/%s",
   "url": "https://buffer.keboola.local/v1/tasks/my-receiver/export-1/export.update/%s",
   "status": "processing",
+  "isFinished": false,
   "createdAt": "%s"
 }

@@ -2,5 +2,6 @@
   "id": "receiver-with-empty-exports/receiver.create/%s",
   "url": "https://buffer.keboola.local/v1/tasks/receiver-with-empty-exports/receiver.create/%s",
   "status": "processing",
+  "isFinished": false,
   "createdAt": "%s"
 }

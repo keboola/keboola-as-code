@@ -2,5 +2,6 @@
   "id": "receiver-c/receiver.create/%s",
   "url": "https://buffer.keboola.local/v1/tasks/receiver-c/receiver.create/%s",
   "status": "processing",
+  "isFinished": false,
   "createdAt": "%s"
 }
