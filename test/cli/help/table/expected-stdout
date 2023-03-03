@@ -1,0 +1,17 @@
+Commands from the "table" context can be used to manage tables in the project.
+
+Usage:
+  kbc remote table [command]
+
+Available Commands:
+  remote table preview  Preview a table's data.
+
+Global Flags:
+  -h, --help                       print help for command
+  -l, --log-file string            path to a log file for details
+  -t, --storage-api-token string   storage API token from your project
+  -v, --verbose                    print details
+      --verbose-api                log each API request and response
+  -d, --working-dir string         use other working directory
+
+Use "kbc remote table [command] --help" for more information about a command.

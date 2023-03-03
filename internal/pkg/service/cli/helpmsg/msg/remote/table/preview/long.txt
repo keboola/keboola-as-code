@@ -1,0 +1,7 @@
+Command "remote table preview"
+
+Preview a table's data. Using this command, you can
+display up to 1000 rows from a table in your project.
+The rows can be filtered and ordered, and written to
+either your terminal or a file in one of the supported
+formats.

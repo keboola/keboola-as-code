@@ -6,6 +6,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/job"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/remote/workspace"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
@@ -22,6 +23,7 @@ func Commands(p dependencies.Provider, envs *env.Map) *cobra.Command {
 		file.Commands(p),
 		job.Commands(p),
 		workspace.Commands(p),
+		table.Commands(p),
 	)
 
 	return cmd

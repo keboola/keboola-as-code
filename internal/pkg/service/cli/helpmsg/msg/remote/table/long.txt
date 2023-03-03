@@ -1,0 +1,1 @@
+Commands from the "table" context can be used to manage tables in the project.

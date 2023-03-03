@@ -66,6 +66,7 @@ type Table struct {
 	DisplayName string          `json:"displayName"`
 	PrimaryKey  []string        `json:"primaryKey"`
 	Columns     []string        `json:"columns"`
+	Rows        [][]string      `json:"rows,omitempty"`
 }
 
 type File struct {
