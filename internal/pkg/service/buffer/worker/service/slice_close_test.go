@@ -168,22 +168,22 @@ INFO  exited
 	// Check worker logs
 	wildcards.Assert(t, `
 INFO  ---> locked
-[task][slice.close/%s]INFO  started task "00000123/my-receiver-1/slice.close/%s"
-[task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/slice.close/00000123/my-receiver-1/my-export-1/%s"
-[task][slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %d
+[task][00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.close/%s]INFO  started task
+[task][00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.close/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.close"
+[task][00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %d
 INFO  ---> unlocked
-[task][slice.close/%s]INFO  task succeeded (%s): slice closed
-[task][slice.close/%s]DEBUG  lock released "runtime/lock/task/slice.close/00000123/my-receiver-1/%s"
-`, strhelper.FilterLines(`^(INFO  --->)|(\[task\]\[`+task1.ID()+`\])`, workerDeps.DebugLogger().AllMessages()))
+[task][00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.close/%s]INFO  task succeeded (%s): slice closed
+[task][00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.close/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.close"
+`, strhelper.FilterLines(`^(INFO  --->)|(\[task\]\[`+task1.String()+`\])`, workerDeps.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
 INFO  ---> locked
-[task][slice.close/%a]INFO  started task "00000123/my-receiver-2/slice.close/%s"
-[task][slice.close/%s]DEBUG  lock acquired "runtime/lock/task/slice.close/00000123/my-receiver-2/my-export-2/%s"
-[task][slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %d
+[task][00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z/slice.close/%s]INFO  started task
+[task][00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z/slice.close/%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z/slice.close"
+[task][00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z/slice.close/%s]INFO  waiting until all API nodes switch to a revision >= %d
 INFO  ---> unlocked
-[task][slice.close/%s]INFO  task succeeded (%s): slice closed
-[task][slice.close/%s]DEBUG  lock released "runtime/lock/task/slice.close/00000123/my-receiver-2/%s"
-`, strhelper.FilterLines(`^(INFO  --->)|(\[task\]\[`+task2.ID()+`\])`, workerDeps.DebugLogger().AllMessages()))
+[task][00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z/slice.close/%s]INFO  task succeeded (%s): slice closed
+[task][00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z/slice.close/%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z/slice.close"
+`, strhelper.FilterLines(`^(INFO  --->)|(\[task\]\[`+task2.String()+`\])`, workerDeps.DebugLogger().AllMessages()))
 
 	// Check etcd state
 	assertStateAfterClose(t, client)
@@ -319,13 +319,13 @@ slice/active/closed/uploading/00000123/my-receiver-2/my-export-2/0001-01-01T00:0
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-1/slice.close/0001-01-01T00:03:04.000Z_%s
+task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.close/0001-01-01T00:03:04.000Z_%s
 -----
 %A
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-2/slice.close/0001-01-01T00:03:04.000Z_%s
+task/00000123/my-receiver-2/my-export-2/0001-01-01T00:01:01.000Z/0001-01-01T00:01:01.000Z/slice.close/0001-01-01T00:03:04.000Z_%s
 -----
 %A
 >>>>>

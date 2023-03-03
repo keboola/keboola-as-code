@@ -49,10 +49,11 @@ type MockedConfig struct {
 	ctx          context.Context
 	clock        clock.Clock
 	loggerPrefix string
-	logger       log.DebugLogger
+	debugLogger  log.DebugLogger
 	procOpts     []servicectx.Option
 
 	etcdNamespace string
+	requestHeader http.Header
 
 	services                  keboola.Services
 	features                  keboola.Features
@@ -81,7 +82,7 @@ func WithClock(v clock.Clock) MockedOption {
 
 func WithDebugLogger(v log.DebugLogger) MockedOption {
 	return func(c *MockedConfig) {
-		c.logger = v
+		c.debugLogger = v
 	}
 }
 
@@ -94,6 +95,12 @@ func WithLoggerPrefix(v string) MockedOption {
 func WithEtcdNamespace(v string) MockedOption {
 	return func(c *MockedConfig) {
 		c.etcdNamespace = v
+	}
+}
+
+func WithRequestHeader(v http.Header) MockedOption {
+	return func(c *MockedConfig) {
+		c.requestHeader = v
 	}
 }
 
@@ -163,6 +170,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 		ctx:           context.Background(),
 		clock:         clock.New(),
 		etcdNamespace: etcdhelper.NamespaceForTest(),
+		requestHeader: make(http.Header),
 		useRealAPIs:   false,
 		services: keboola.Services{
 			{ID: "encryption", URL: "https://encryption.mocked.transport.http"},
@@ -192,8 +200,15 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 	}
 
 	// Default logger
-	if c.logger == nil {
-		c.logger = log.NewDebugLoggerWithPrefix(c.loggerPrefix)
+	if c.debugLogger == nil {
+		c.debugLogger = log.NewDebugLogger()
+	}
+
+	var logger log.Logger
+	if c.loggerPrefix != "" {
+		logger = c.debugLogger.AddPrefix(c.loggerPrefix)
+	} else {
+		logger = c.debugLogger
 	}
 
 	// Cancel context after the test
@@ -232,7 +247,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 	)
 
 	// Create base, public and project dependencies
-	baseDeps := newBaseDeps(envs, nil, c.logger, c.clock, httpClient)
+	baseDeps := newBaseDeps(envs, nil, logger, c.clock, httpClient)
 	publicDeps, err := newPublicDeps(c.ctx, baseDeps, c.storageAPIHost, WithPreloadComponents(true))
 	if err != nil {
 		panic(err)
@@ -251,10 +266,10 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 	}
 
 	// Clear logs
-	c.logger.Truncate()
+	c.debugLogger.Truncate()
 
 	// Create service process context
-	c.procOpts = append([]servicectx.Option{servicectx.WithLogger(c.logger)}, c.procOpts...)
+	c.procOpts = append([]servicectx.Option{servicectx.WithLogger(logger)}, c.procOpts...)
 
 	return &mocked{
 		config:              c,
@@ -265,7 +280,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 		envs:                envs,
 		options:             options.New(),
 		mockedHTTPTransport: mockedHTTPTransport,
-		requestHeader:       make(http.Header),
+		requestHeader:       c.requestHeader,
 	}
 }
 
@@ -278,7 +293,7 @@ func (v *mocked) Options() *options.Options {
 }
 
 func (v *mocked) DebugLogger() log.DebugLogger {
-	return v.config.logger
+	return v.config.debugLogger
 }
 
 func (v *mocked) MockedHTTPTransport() *httpmock.MockTransport {

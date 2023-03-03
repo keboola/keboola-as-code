@@ -1,11 +1,10 @@
 {
-  "id": "%s",
-  "receiverId": "my-receiver",
-  "url": "https://buffer.keboola.local/v1/receivers/my-receiver/tasks/export.update/%s",
-  "type": "export.update",
+  "id": "my-receiver/export-1/export.update/%s",
+  "url": "https://buffer.keboola.local/v1/tasks/my-receiver/export-1/export.update/%s",
+  "status": "success",
+  "isFinished": true,
   "createdAt": "%s",
   "finishedAt": "%s",
-  "isFinished": true,
   "duration": %d,
   "result": "export updated"
 }

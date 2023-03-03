@@ -127,35 +127,16 @@
 >>>>>
 
 <<<<<
-/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export.update/%s
+/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export-1/export.update/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "my-receiver",
-  "type": "export.update",
-  "taskId": "%s",
+  "taskId": "my-receiver/export-1/export.update/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",
-  "lock": "export.update/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export-1",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export-1/export.update",
   "result": "export updated",
-  "duration": %d
-}
->>>>>
-
-<<<<<
-/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/receiver.create/%s
------
-{
-  "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "my-receiver",
-  "type": "receiver.create",
-  "taskId": "%s",
-  "createdAt": "%s",
-  "finishedAt": "%s",
-  "workerNode": "%s",
-  "lock": "receiver.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver",
-  "result": "receiver created",
   "duration": %d
 }
 >>>>>

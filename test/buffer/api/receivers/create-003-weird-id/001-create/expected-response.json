@@ -1,9 +1,7 @@
 {
-  "id": "%s",
-  "receiverId": "weird-id",
-  "url": "%s",
-  "type": "receiver.create",
-  "createdAt": "%s",
+  "id": "weird-id/receiver.create/%s",
+  "url": "https://buffer.keboola.local/v1/tasks/weird-id/receiver.create/%s",
+  "status": "processing",
   "isFinished": false,
-  "result": ""
+  "createdAt": "%s"
 }

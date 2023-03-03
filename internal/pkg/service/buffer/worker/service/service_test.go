@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
+	bufferDesign "github.com/keboola/keboola-as-code/api/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/receive"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
@@ -72,14 +73,11 @@ func createReceiverAndExportViaAPI(t *testing.T, d bufferDependencies.Mocked, ap
 	})
 	assert.NoError(t, err)
 	assert.Eventually(t, func() bool {
-		task, err := api.GetTask(d, &buffer.GetTaskPayload{
-			ReceiverID: task.ReceiverID,
-			Type:       task.Type,
-			TaskID:     task.ID,
-		})
+		task, err = api.GetTask(d, &buffer.GetTaskPayload{TaskID: task.ID})
 		assert.NoError(t, err)
-		return task.IsFinished
+		return task.Status != bufferDesign.TaskStatusProcessing
 	}, 10*time.Second, 100*time.Millisecond)
+	assert.Empty(t, task.Error)
 
 	receiver, err := api.GetReceiver(d, &buffer.GetReceiverPayload{
 		ReceiverID: "my-receiver",
@@ -105,14 +103,11 @@ func createReceiverAndExportViaAPI(t *testing.T, d bufferDependencies.Mocked, ap
 	})
 	assert.NoError(t, err)
 	assert.Eventually(t, func() bool {
-		task, err := api.GetTask(d, &buffer.GetTaskPayload{
-			ReceiverID: task.ReceiverID,
-			Type:       task.Type,
-			TaskID:     task.ID,
-		})
+		task, err = api.GetTask(d, &buffer.GetTaskPayload{TaskID: task.ID})
 		assert.NoError(t, err)
-		return task.IsFinished
+		return task.Status != bufferDesign.TaskStatusProcessing
 	}, 1*time.Minute, 100*time.Millisecond)
+	assert.Empty(t, task.Error)
 
 	export, err := api.GetExport(d, &buffer.GetExportPayload{
 		ReceiverID: "my-receiver",

@@ -30,7 +30,7 @@ func (s *Store) getTaskOp(_ context.Context, taskKey key.TaskKey) op.ForType[*op
 		Get().
 		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[model.Task], err error) (*op.KeyValueT[model.Task], error) {
 			if kv == nil && err == nil {
-				return nil, serviceError.NewResourceNotFoundError("task", taskKey.TaskID.String(), "receiver")
+				return nil, serviceError.NewResourceNotFoundError("task", taskKey.TaskID.String(), "project")
 			}
 			return kv, err
 		})

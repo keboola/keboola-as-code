@@ -1,9 +1,7 @@
 {
-  "id": "%s",
-  "receiverId": "receiver-b",
-  "url": "%s",
-  "type": "receiver.create",
-  "createdAt": "%s",
+  "id": "receiver-b/receiver.create/%s",
+  "url": "https://buffer.keboola.local/v1/tasks/receiver-b/receiver.create/%s",
+  "status": "processing",
   "isFinished": false,
-  "result": ""
+  "createdAt": "%s"
 }

@@ -81,6 +81,8 @@ func (w *AtomicWriter) Truncate() {
 	if err := w.Flush(); err != nil {
 		panic(errors.New("cannot flush utils log writer"))
 	}
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
 	w.buffer.Truncate(0)
 }
 

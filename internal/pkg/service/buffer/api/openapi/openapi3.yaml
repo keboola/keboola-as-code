@@ -212,7 +212,7 @@ paths:
                                     count: 100
                                     size: 12kB
                                     time: 1m10s
-                                  id: x
+                                  id: "4"
                                   mapping:
                                     tableId: in.c-github.changes
                                     incremental: true
@@ -247,7 +247,7 @@ paths:
                                     count: 100
                                     size: 12kB
                                     time: 1m10s
-                                  id: x
+                                  id: "4"
                                   mapping:
                                     tableId: in.c-github.changes
                                     incremental: true
@@ -278,7 +278,7 @@ paths:
                                             language: jsonnet
                                             content: body.foo + "-" + body.bar
                                   name: Raw Data Export
-                            id: "4"
+                            id: 74h
                             name: Github Webhook Receiver
             responses:
                 "202":
@@ -864,63 +864,6 @@ paths:
                                 $ref: '#/components/schemas/GenericError'
             security:
                 - storage-api-token: []
-    /v1/receivers/{receiverId}/tasks/{type}/{taskId}:
-        get:
-            tags:
-                - configuration
-            summary: Get task
-            description: Get details of a task.
-            operationId: GetTask
-            parameters:
-                - name: receiverId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                    example: github-webhook-receiver
-                    minLength: 1
-                    maxLength: 48
-                  example: github-webhook-receiver
-                - name: type
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                    example: Fuga nisi cumque id.
-                  example: Et rem et.
-                - name: taskId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                    example: task_1234
-                  example: task_1234
-            responses:
-                "200":
-                    description: OK response.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Task'
-                            example:
-                                id: task-1
-                                receiverId: receiver-1
-                                url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_task-1
-                                type: export
-                                createdAt: "2018-01-01T00:00:00.000Z"
-                                finishedAt: "2018-01-01T00:00:00.000Z"
-                                isFinished: true
-                                duration: 123
-                                result: success
-                                error: ""
-                "404":
-                    description: 'buffer.taskNotFound: Task not found error.'
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GenericError'
-            security:
-                - storage-api-token: []
     /v1/receivers/{receiverId}/tokens/refresh:
         post:
             tags:
@@ -994,6 +937,47 @@ paths:
                                 $ref: '#/components/schemas/GenericError'
             security:
                 - storage-api-token: []
+    /v1/tasks/{taskId}:
+        get:
+            tags:
+                - configuration
+            summary: Get task
+            description: Get details of a task.
+            operationId: GetTask
+            parameters:
+                - name: taskId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    example: task_1234
+                  example: task_1234
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                id: task-1
+                                receiverId: receiver-1
+                                url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_task-1
+                                type: export
+                                createdAt: "2018-01-01T00:00:00.000Z"
+                                finishedAt: "2018-01-01T00:00:00.000Z"
+                                isFinished: true
+                                duration: 123
+                                result: success
+                                error: ""
+                "404":
+                    description: 'buffer.taskNotFound: Task not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+            security:
+                - storage-api-token: []
 components:
     schemas:
         Column:
@@ -1002,7 +986,7 @@ components:
                 name:
                     type: string
                     description: Column name.
-                    example: Ipsa placeat.
+                    example: Aut corporis quis.
                 primaryKey:
                     type: boolean
                     description: Sets this column as a part of the primary key of the destination table.
@@ -1013,7 +997,7 @@ components:
                 type:
                     type: string
                     description: Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).
-                    example: datetime
+                    example: headers
                     enum:
                         - id
                         - datetime
@@ -1038,19 +1022,19 @@ components:
                     type: integer
                     description: Maximum import buffer size in number of records.
                     default: 10000
-                    example: 4370353
+                    example: 1669624
                     minimum: 1
                     maximum: 1e+07
                 size:
                     type: string
                     description: 'Maximum import buffer size in bytes. Units: B, KB, MB.'
                     default: 5MB
-                    example: Odit ea officia eos ut doloremque sed.
+                    example: Pariatur molestiae.
                 time:
                     type: string
                     description: 'Minimum import interval. Units: [s]econd,[m]inute,[h]our.'
                     default: 5m0s
-                    example: Ipsam odio beatae.
+                    example: Doloribus quod ut sapiente.
             description: Table import triggers.
             example:
                 count: 100
@@ -1064,7 +1048,7 @@ components:
                 id:
                     type: string
                     description: Optional ID, if not filled in, it will be generated from name. Cannot be changed later.
-                    example: u1g
+                    example: ff
                     minLength: 1
                     maxLength: 48
                 mapping:
@@ -1080,7 +1064,7 @@ components:
                     count: 100
                     size: 12kB
                     time: 1m10s
-                id: c
+                id: g
                 mapping:
                     tableId: in.c-github.changes
                     incremental: true
@@ -1127,7 +1111,7 @@ components:
                             count: 100
                             size: 12kB
                             time: 1m10s
-                          id: x
+                          id: "4"
                           mapping:
                             tableId: in.c-github.changes
                             incremental: true
@@ -1162,7 +1146,7 @@ components:
                             count: 100
                             size: 12kB
                             time: 1m10s
-                          id: x
+                          id: "4"
                           mapping:
                             tableId: in.c-github.changes
                             incremental: true
@@ -1197,7 +1181,7 @@ components:
                             count: 100
                             size: 12kB
                             time: 1m10s
-                          id: x
+                          id: "4"
                           mapping:
                             tableId: in.c-github.changes
                             incremental: true
@@ -1231,7 +1215,7 @@ components:
                 id:
                     type: string
                     description: Optional ID, if not filled in, it will be generated from name. Cannot be changed later.
-                    example: i2
+                    example: j
                     minLength: 1
                     maxLength: 48
                 name:
@@ -1246,7 +1230,7 @@ components:
                         count: 100
                         size: 12kB
                         time: 1m10s
-                      id: x
+                      id: "4"
                       mapping:
                         tableId: in.c-github.changes
                         incremental: true
@@ -1281,7 +1265,7 @@ components:
                         count: 100
                         size: 12kB
                         time: 1m10s
-                      id: x
+                      id: "4"
                       mapping:
                         tableId: in.c-github.changes
                         incremental: true
@@ -1316,7 +1300,7 @@ components:
                         count: 100
                         size: 12kB
                         time: 1m10s
-                      id: x
+                      id: "4"
                       mapping:
                         tableId: in.c-github.changes
                         incremental: true
@@ -1347,7 +1331,7 @@ components:
                                 language: jsonnet
                                 content: body.foo + "-" + body.bar
                       name: Raw Data Export
-                id: "n"
+                id: ohk
                 name: Github Webhook Receiver
             required:
                 - name
@@ -1358,7 +1342,7 @@ components:
                     $ref: '#/components/schemas/Conditions'
                 id:
                     type: string
-                    example: dex
+                    example: d8
                     minLength: 1
                     maxLength: 48
                 mapping:
@@ -1371,7 +1355,7 @@ components:
                     maxLength: 40
                 receiverId:
                     type: string
-                    example: z
+                    example: f
                     minLength: 1
                     maxLength: 48
             description: A mapping from imported data to a destination table.
@@ -1544,11 +1528,11 @@ components:
                 incremental:
                     type: boolean
                     description: Enables incremental loading to the table.
-                    example: false
+                    example: true
                 tableId:
                     type: string
                     description: Destination table ID.
-                    example: Voluptas dolor.
+                    example: Molestiae animi.
             description: Export column mapping.
             example:
                 tableId: in.c-github.changes
@@ -1629,7 +1613,7 @@ components:
                             time: 1m10s
                 id:
                     type: string
-                    example: h5
+                    example: f5
                     minLength: 1
                     maxLength: 48
                 name:
@@ -1641,7 +1625,7 @@ components:
                 url:
                     type: string
                     description: URL of the receiver. Contains secret used for authentication.
-                    example: Voluptatum enim.
+                    example: Doloribus non velit consequatur ipsa placeat qui.
             example:
                 id: github-pull-requests
                 url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
@@ -1812,7 +1796,7 @@ components:
                     format: int64
                 error:
                     type: string
-                    example: Qui perspiciatis vel optio quis ut earum.
+                    example: Fuga sed inventore.
                 finishedAt:
                     type: string
                     description: Date and time of the task end.
@@ -1820,25 +1804,26 @@ components:
                     format: date-time
                 id:
                     type: string
-                    example: Assumenda possimus.
+                    example: Et nihil veniam.
                 isFinished:
                     type: boolean
+                    description: Shortcut for status != "processing".
                     example: false
-                receiverId:
-                    type: string
-                    example: k
-                    minLength: 1
-                    maxLength: 48
                 result:
                     type: string
-                    example: Vitae quis laborum qui.
-                type:
+                    example: Sed est.
+                status:
                     type: string
-                    example: Sequi quia quia.
+                    description: 'Task status, one of: processing, success, error'
+                    example: success
+                    enum:
+                        - processing
+                        - success
+                        - error
                 url:
                     type: string
                     description: URL of the task.
-                    example: Enim voluptatem.
+                    example: Eius iusto placeat illo repellendus eius dolorum.
             example:
                 id: task-1
                 receiverId: receiver-1
@@ -1852,17 +1837,16 @@ components:
                 error: ""
             required:
                 - id
-                - receiverId
                 - url
-                - type
-                - createdAt
+                - status
                 - isFinished
+                - createdAt
         Template:
             type: object
             properties:
                 content:
                     type: string
-                    example: d8
+                    example: 5bq
                     minLength: 1
                     maxLength: 4096
                 language:

@@ -92,7 +92,7 @@
 >>>>>
 
 <<<<<
-/slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-b/export-1/%s
+/slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-b/export-1/%s/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -131,13 +131,11 @@
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "receiver-b",
-  "type": "receiver.create",
-  "taskId": "%s",
+  "taskId": "receiver-b/receiver.create/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",
-  "lock": "receiver.create/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-b",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-b/receiver.create",
   "result": "receiver created",
   "duration": %d
 }

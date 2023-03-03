@@ -14,13 +14,11 @@
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "receiver-with-empty-exports",
-  "type": "receiver.create",
-  "taskId": "%s",
+  "taskId": "receiver-with-empty-exports/receiver.create/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",
-  "lock": "receiver.create/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-with-empty-exports",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-with-empty-exports/receiver.create",
   "result": "receiver created",
   "duration": %d
 }

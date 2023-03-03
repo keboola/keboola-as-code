@@ -65,7 +65,7 @@ func Test_Cleanup(t *testing.T) {
 	// Add task without a finishedAt timestamp but too old - will be deleted
 	createdAtRaw, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
 	createdAt := model.UTCTime(createdAtRaw)
-	taskKey1 := key.TaskKey{ReceiverKey: receiverKey, Type: "some.task", TaskID: key.TaskID(fmt.Sprintf("%s_%s", createdAt.String(), "abcdef"))}
+	taskKey1 := key.TaskKey{ProjectID: receiverKey.ProjectID, TaskID: key.TaskID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "some.task", createdAt.String(), "abcdef"))}
 	task1 := model.Task{
 		TaskKey:    taskKey1,
 		CreatedAt:  createdAt,
@@ -82,7 +82,7 @@ func Test_Cleanup(t *testing.T) {
 	// Add task with a finishedAt timestamp in the past - will be deleted
 	time2, _ := time.Parse(time.RFC3339, "2008-01-02T15:04:05+07:00")
 	time2Key := key.UTCTime(time2)
-	taskKey2 := key.TaskKey{ReceiverKey: receiverKey, Type: "other.task", TaskID: key.TaskID(fmt.Sprintf("%s_%s", createdAt.String(), "ghijkl"))}
+	taskKey2 := key.TaskKey{ProjectID: receiverKey.ProjectID, TaskID: key.TaskID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
 	task2 := model.Task{
 		TaskKey:    taskKey2,
 		CreatedAt:  createdAt,
@@ -99,7 +99,7 @@ func Test_Cleanup(t *testing.T) {
 	// Add task with a finishedAt timestamp before a moment - will be ignored
 	time3 := time.Now()
 	time3Key := key.UTCTime(time3)
-	taskKey3 := key.TaskKey{ReceiverKey: receiverKey, Type: "other.task", TaskID: key.TaskID(fmt.Sprintf("%s_%s", createdAt.String(), "ghijkl"))}
+	taskKey3 := key.TaskKey{ProjectID: receiverKey.ProjectID, TaskID: key.TaskID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
 	task3 := model.Task{
 		TaskKey:    taskKey3,
 		CreatedAt:  createdAt,
@@ -278,9 +278,7 @@ task/00001000/github/other.task/2006-01-02T08:04:05.000Z_ghijkl
 -----
 {
   "projectId": 1000,
-  "receiverId": "github",
-  "type": "other.task",
-  "taskId": "2006-01-02T08:04:05.000Z_ghijkl",
+  "taskId": "github/other.task/2006-01-02T08:04:05.000Z_ghijkl",
   "createdAt": "2006-01-02T08:04:05.000Z",
   "finishedAt": "%s",
   "workerNode": "node2",

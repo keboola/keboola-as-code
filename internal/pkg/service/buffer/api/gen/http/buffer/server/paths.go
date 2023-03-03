@@ -88,6 +88,6 @@ func ImportBufferPath(projectID int, receiverID string, secret string) string {
 }
 
 // GetTaskBufferPath returns the URL path to the buffer service GetTask HTTP endpoint.
-func GetTaskBufferPath(receiverID string, type_ string, taskID string) string {
-	return fmt.Sprintf("/v1/receivers/%v/tasks/%v/%v", receiverID, type_, taskID)
+func GetTaskBufferPath(taskID string) string {
+	return fmt.Sprintf("/v1/tasks/%v", taskID)
 }

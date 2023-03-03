@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,8 +31,15 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 		return nil, err
 	}
 
-	lock := "receiver.create/" + receiver.ReceiverKey.String()
-	t, err := d.TaskNode().StartTask(ctx, receiver.ReceiverKey, "receiver.create", lock, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
+	taskKey := key.TaskKey{
+		ProjectID: receiver.ProjectID,
+		TaskID: key.TaskID(strings.Join([]string{
+			receiver.ReceiverID.String(),
+			"receiver.create",
+		}, "/")),
+	}
+
+	t, err := d.TaskNode().StartTask(ctx, taskKey, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 

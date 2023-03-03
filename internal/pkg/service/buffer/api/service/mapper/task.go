@@ -1,41 +1,43 @@
 package mapper
 
 import (
+	bufferDesign "github.com/keboola/keboola-as-code/api/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (m Mapper) TaskPayload(model *model.Task) (r *buffer.Task) {
-	var finishedAtPtr *string
+	out := &buffer.Task{
+		ID:        model.TaskID,
+		URL:       formatTaskURL(m.bufferAPIHost, model.TaskKey),
+		CreatedAt: model.CreatedAt.String(),
+	}
+
 	if model.FinishedAt != nil {
 		v := model.FinishedAt.String()
-		finishedAtPtr = &v
+		out.FinishedAt = &v
 	}
 
-	var resultPtr *string
-	var errorPtr *string
-	if model.Error == "" {
-		resultPtr = &model.Result
-	} else {
-		errorPtr = &model.Error
-	}
-
-	var durationMsPtr *int64
 	if model.Duration != nil {
 		v := model.Duration.Milliseconds()
-		durationMsPtr = &v
+		out.Duration = &v
 	}
 
-	return &buffer.Task{
-		ID:         model.TaskID,
-		ReceiverID: model.ReceiverID,
-		URL:        formatTaskURL(m.bufferAPIHost, model.TaskKey),
-		Type:       model.Type,
-		CreatedAt:  model.CreatedAt.String(),
-		FinishedAt: finishedAtPtr,
-		Duration:   durationMsPtr,
-		IsFinished: model.IsFinished(),
-		Result:     resultPtr,
-		Error:      errorPtr,
+	switch {
+	case model.IsProcessing():
+		out.Status = bufferDesign.TaskStatusProcessing
+	case model.IsSuccessful():
+		out.Status = bufferDesign.TaskStatusSuccess
+		out.IsFinished = true
+		out.Result = &model.Result
+	case model.IsFailed():
+		out.Status = bufferDesign.TaskStatusError
+		out.IsFinished = true
+		out.Error = &model.Error
+	default:
+		panic(errors.New("unexpected task status"))
 	}
+
+	return out
 }

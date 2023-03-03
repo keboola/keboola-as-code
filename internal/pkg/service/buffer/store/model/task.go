@@ -17,17 +17,21 @@ type Task struct {
 	Duration   *time.Duration `json:"duration,omitempty"`
 }
 
-func (t *Task) IsFinished() bool {
-	return t.FinishedAt != nil
+func (t *Task) IsProcessing() bool {
+	return t.FinishedAt == nil
 }
 
 func (t *Task) IsSuccessful() bool {
-	return t.Error == ""
+	return !t.IsProcessing() && t.Error == ""
+}
+
+func (t *Task) IsFailed() bool {
+	return !t.IsProcessing() && t.Error != ""
 }
 
 func (t *Task) IsForCleanup() bool {
 	now := time.Now()
-	if !t.IsFinished() {
+	if t.IsProcessing() {
 		taskAge := now.Sub(t.CreatedAt.Time())
 		if taskAge < 14*24*time.Hour {
 			return false

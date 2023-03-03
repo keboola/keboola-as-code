@@ -2,6 +2,10 @@
 package buffer
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/spf13/cast"
 	_ "goa.design/goa/v3/codegen/generator"
 	. "goa.design/goa/v3/dsl"
 	"goa.design/goa/v3/eval"
@@ -15,6 +19,12 @@ import (
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/operationid"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/token"
+)
+
+const (
+	TaskStatusProcessing = "processing"
+	TaskStatusSuccess    = "success"
+	TaskStatusError      = "error"
 )
 
 // API definition
@@ -305,7 +315,7 @@ var _ = Service("buffer", func() {
 		Result(Task)
 		Payload(GetTaskRequest)
 		HTTP(func() {
-			GET("/receivers/{receiverId}/tasks/{type}/{taskId}")
+			GET("/tasks/{*taskId}")
 			Meta("openapi:tag:configuration")
 			Response(StatusOK)
 			TaskNotFoundError()
@@ -550,11 +560,17 @@ var TaskID = Type("TaskID", String, func() {
 var Task = Type("Task", func() {
 	Description("An asynchronous task.")
 	Attribute("id", TaskID)
-	Attribute("receiverId", ReceiverID)
 	Attribute("url", String, func() {
 		Description("URL of the task.")
 	})
-	Attribute("type", String)
+	Attribute("status", String, func() {
+		values := []any{TaskStatusProcessing, TaskStatusSuccess, TaskStatusError}
+		Description(fmt.Sprintf("Task status, one of: %s", strings.Join(cast.ToStringSlice(values), ", ")))
+		Enum(values...)
+	})
+	Attribute("isFinished", Boolean, func() {
+		Description("Shortcut for status != \"processing\".")
+	})
 	Attribute("createdAt", String, func() {
 		Description("Date and time of the task creation.")
 		Format(FormatDateTime)
@@ -565,22 +581,19 @@ var Task = Type("Task", func() {
 		Format(FormatDateTime)
 		Example("2022-04-28T14:20:04.000Z")
 	})
-	Attribute("isFinished", Boolean)
 	Attribute("duration", Int64, func() {
 		Description("Duration of the task in milliseconds.")
 		Example(123456789)
 	})
 	Attribute("result", String)
 	Attribute("error", String)
-	Required("id", "receiverId", "url", "type", "createdAt", "isFinished")
+	Required("id", "url", "status", "isFinished", "createdAt")
 	Example(ExampleTask())
 })
 
 var GetTaskRequest = Type("GetTaskRequest", func() {
-	Attribute("receiverId", ReceiverID)
-	Attribute("type", String)
 	Attribute("taskId", TaskID)
-	Required("receiverId", "type", "taskId")
+	Required("taskId")
 })
 
 // Errors ------------------------------------------------------------------------------------------------------------

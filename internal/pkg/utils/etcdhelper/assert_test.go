@@ -50,6 +50,27 @@ value2
 `)
 }
 
+func TestAssertKVsString_Equal_WithIgnoredKeyPattern(t *testing.T) {
+	t.Parallel()
+	client := etcdhelper.ClientForTest(t)
+
+	// Put keys
+	ctx := context.Background()
+	_, err := client.Put(ctx, "key1", "value1")
+	assert.NoError(t, err)
+	_, err = client.Put(ctx, "foo123", "bar")
+	assert.NoError(t, err)
+
+	// No error is expected
+	etcdhelper.AssertKVsString(t, client, `
+<<<<<
+key1
+-----
+value1
+>>>>>
+`, etcdhelper.WithIgnoredKeyPattern(`^foo.+`))
+}
+
 func TestAssertKVsString_Difference(t *testing.T) {
 	t.Parallel()
 	client := etcdhelper.ClientForTest(t)

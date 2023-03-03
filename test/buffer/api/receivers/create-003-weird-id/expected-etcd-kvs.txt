@@ -14,13 +14,11 @@
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "weird-id",
-  "type": "receiver.create",
-  "taskId": "%s",
+  "taskId": "weird-id/receiver.create/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",
-  "lock": "receiver.create/%%TEST_KBC_PROJECT_ID_8DIG%%/weird-id",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/weird-id/receiver.create",
   "result": "receiver created",
   "duration": %d
 }

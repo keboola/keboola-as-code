@@ -72,16 +72,17 @@ type APIVersionIndexResponseBody struct {
 // CreateReceiverResponseBody is the type of the "buffer" service
 // "CreateReceiver" endpoint HTTP response body.
 type CreateReceiverResponseBody struct {
-	ID         string `form:"id" json:"id" xml:"id"`
-	ReceiverID string `form:"receiverId" json:"receiverId" xml:"receiverId"`
+	ID string `form:"id" json:"id" xml:"id"`
 	// URL of the task.
-	URL  string `form:"url" json:"url" xml:"url"`
-	Type string `form:"type" json:"type" xml:"type"`
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
 	// Date and time of the task creation.
 	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
 	// Date and time of the task end.
 	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
-	IsFinished bool    `form:"isFinished" json:"isFinished" xml:"isFinished"`
 	// Duration of the task in milliseconds.
 	Duration *int64  `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
 	Result   *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
@@ -133,16 +134,17 @@ type RefreshReceiverTokensResponseBody struct {
 // CreateExportResponseBody is the type of the "buffer" service "CreateExport"
 // endpoint HTTP response body.
 type CreateExportResponseBody struct {
-	ID         string `form:"id" json:"id" xml:"id"`
-	ReceiverID string `form:"receiverId" json:"receiverId" xml:"receiverId"`
+	ID string `form:"id" json:"id" xml:"id"`
 	// URL of the task.
-	URL  string `form:"url" json:"url" xml:"url"`
-	Type string `form:"type" json:"type" xml:"type"`
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
 	// Date and time of the task creation.
 	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
 	// Date and time of the task end.
 	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
-	IsFinished bool    `form:"isFinished" json:"isFinished" xml:"isFinished"`
 	// Duration of the task in milliseconds.
 	Duration *int64  `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
 	Result   *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
@@ -171,16 +173,17 @@ type ListExportsResponseBody struct {
 // UpdateExportResponseBody is the type of the "buffer" service "UpdateExport"
 // endpoint HTTP response body.
 type UpdateExportResponseBody struct {
-	ID         string `form:"id" json:"id" xml:"id"`
-	ReceiverID string `form:"receiverId" json:"receiverId" xml:"receiverId"`
+	ID string `form:"id" json:"id" xml:"id"`
 	// URL of the task.
-	URL  string `form:"url" json:"url" xml:"url"`
-	Type string `form:"type" json:"type" xml:"type"`
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
 	// Date and time of the task creation.
 	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
 	// Date and time of the task end.
 	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
-	IsFinished bool    `form:"isFinished" json:"isFinished" xml:"isFinished"`
 	// Duration of the task in milliseconds.
 	Duration *int64  `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
 	Result   *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
@@ -190,16 +193,17 @@ type UpdateExportResponseBody struct {
 // GetTaskResponseBody is the type of the "buffer" service "GetTask" endpoint
 // HTTP response body.
 type GetTaskResponseBody struct {
-	ID         string `form:"id" json:"id" xml:"id"`
-	ReceiverID string `form:"receiverId" json:"receiverId" xml:"receiverId"`
+	ID string `form:"id" json:"id" xml:"id"`
 	// URL of the task.
-	URL  string `form:"url" json:"url" xml:"url"`
-	Type string `form:"type" json:"type" xml:"type"`
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
 	// Date and time of the task creation.
 	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
 	// Date and time of the task end.
 	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
-	IsFinished bool    `form:"isFinished" json:"isFinished" xml:"isFinished"`
 	// Duration of the task in milliseconds.
 	Duration *int64  `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
 	Result   *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
@@ -560,12 +564,11 @@ func NewAPIVersionIndexResponseBody(res *buffer.ServiceDetail) *APIVersionIndexR
 func NewCreateReceiverResponseBody(res *buffer.Task) *CreateReceiverResponseBody {
 	body := &CreateReceiverResponseBody{
 		ID:         string(res.ID),
-		ReceiverID: string(res.ReceiverID),
 		URL:        res.URL,
-		Type:       res.Type,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
 		CreatedAt:  res.CreatedAt,
 		FinishedAt: res.FinishedAt,
-		IsFinished: res.IsFinished,
 		Duration:   res.Duration,
 		Result:     res.Result,
 		Error:      res.Error,
@@ -642,12 +645,11 @@ func NewRefreshReceiverTokensResponseBody(res *buffer.Receiver) *RefreshReceiver
 func NewCreateExportResponseBody(res *buffer.Task) *CreateExportResponseBody {
 	body := &CreateExportResponseBody{
 		ID:         string(res.ID),
-		ReceiverID: string(res.ReceiverID),
 		URL:        res.URL,
-		Type:       res.Type,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
 		CreatedAt:  res.CreatedAt,
 		FinishedAt: res.FinishedAt,
-		IsFinished: res.IsFinished,
 		Duration:   res.Duration,
 		Result:     res.Result,
 		Error:      res.Error,
@@ -690,12 +692,11 @@ func NewListExportsResponseBody(res *buffer.ExportsList) *ListExportsResponseBod
 func NewUpdateExportResponseBody(res *buffer.Task) *UpdateExportResponseBody {
 	body := &UpdateExportResponseBody{
 		ID:         string(res.ID),
-		ReceiverID: string(res.ReceiverID),
 		URL:        res.URL,
-		Type:       res.Type,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
 		CreatedAt:  res.CreatedAt,
 		FinishedAt: res.FinishedAt,
-		IsFinished: res.IsFinished,
 		Duration:   res.Duration,
 		Result:     res.Result,
 		Error:      res.Error,
@@ -708,12 +709,11 @@ func NewUpdateExportResponseBody(res *buffer.Task) *UpdateExportResponseBody {
 func NewGetTaskResponseBody(res *buffer.Task) *GetTaskResponseBody {
 	body := &GetTaskResponseBody{
 		ID:         string(res.ID),
-		ReceiverID: string(res.ReceiverID),
 		URL:        res.URL,
-		Type:       res.Type,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
 		CreatedAt:  res.CreatedAt,
 		FinishedAt: res.FinishedAt,
-		IsFinished: res.IsFinished,
 		Duration:   res.Duration,
 		Result:     res.Result,
 		Error:      res.Error,
@@ -1086,10 +1086,8 @@ func NewImportPayload(projectID int, receiverID string, secret string, contentTy
 }
 
 // NewGetTaskPayload builds a buffer service GetTask endpoint payload.
-func NewGetTaskPayload(receiverID string, type_ string, taskID string, storageAPIToken string) *buffer.GetTaskPayload {
+func NewGetTaskPayload(taskID string, storageAPIToken string) *buffer.GetTaskPayload {
 	v := &buffer.GetTaskPayload{}
-	v.ReceiverID = buffer.ReceiverID(receiverID)
-	v.Type = type_
 	v.TaskID = buffer.TaskID(taskID)
 	v.StorageAPIToken = storageAPIToken
 

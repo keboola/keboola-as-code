@@ -9,13 +9,10 @@ import (
 func (s *service) GetTask(d dependencies.ForProjectRequest, payload *buffer.GetTaskPayload) (res *buffer.Task, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
-	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
-	taskKey := key.TaskKey{
-		ReceiverKey: receiverKey,
-		Type:        payload.Type,
-		TaskID:      payload.TaskID,
-	}
-	t, err := str.GetTask(ctx, taskKey)
+	t, err := str.GetTask(ctx, key.TaskKey{
+		ProjectID: key.ProjectID(d.ProjectID()),
+		TaskID:    payload.TaskID,
+	})
 	if err != nil {
 		return nil, err
 	}

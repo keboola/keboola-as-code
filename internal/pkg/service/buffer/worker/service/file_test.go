@@ -79,8 +79,8 @@ func TestUploadAndImportE2E(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		logs := logger.AllMessages()
 		conditionsOk := wildcards.Compare("%A[service][conditions]INFO  closing slice \"%s\": count threshold met, received: 6 rows, threshold: 5 rows%A", strhelper.FilterLines(`\[service\]\[conditions\]`, logs)) == nil
-		sliceCloseOk := wildcards.Compare("%A[task][slice.close/%s]INFO  task succeeded (%s): slice closed%A", strhelper.FilterLines(`\[task\]\[slice.close`, logs)) == nil
-		sliceUploadOk := wildcards.Compare("%A[task][slice.upload/%s]INFO  task succeeded (%s): slice uploaded%A", strhelper.FilterLines(`\[task\]\[slice.upload`, logs)) == nil
+		sliceCloseOk := wildcards.Compare("%A[task][%s/slice.close/%s]INFO  task succeeded (%s): slice closed%A", strhelper.FilterLines(`\[task\]\[.+\/slice.close`, logs)) == nil
+		sliceUploadOk := wildcards.Compare("%A[task][%s/slice.upload/%s]INFO  task succeeded (%s): slice uploaded%A", strhelper.FilterLines(`\[task\]\[.+\/slice.upload`, logs)) == nil
 		return conditionsOk && sliceCloseOk && sliceUploadOk
 	}, 100*time.Second, 100*time.Millisecond, logger.AllMessages())
 	logger.Truncate()
@@ -99,11 +99,11 @@ func TestUploadAndImportE2E(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		logs := logger.AllMessages()
 		conditionsOk := wildcards.Compare("%A[service][conditions]INFO  closing file \"%s\": count threshold met, received: 10 rows, threshold: 10 rows%A", strhelper.FilterLines(`\[service\]\[conditions\]`, logs)) == nil
-		sliceCloseOk := wildcards.Compare("%A[task][slice.close/%s]INFO  task succeeded (%s): slice closed%A", strhelper.FilterLines(`\[task\]\[slice.close`, logs)) == nil
-		sliceUploadOk := wildcards.Compare("%A[task][slice.upload/%s]INFO  task succeeded (%s): slice uploaded%A", strhelper.FilterLines(`\[task\]\[slice.upload`, logs)) == nil
-		fileCloseWaitOk := wildcards.Compare("%A[task][file.close/%s]INFO  waiting for \"1\" slices to be uploaded%A", strhelper.FilterLines(`\[task\]\[file.close`, logs)) == nil
-		fileCloseOk := wildcards.Compare("%A[task][file.close/%s]INFO  task succeeded (%s): file closed%A", strhelper.FilterLines(`\[task\]\[file.close`, logs)) == nil
-		fileImportOk := wildcards.Compare("%A[task][file.import/%s]INFO  task succeeded (%s): file imported%A", strhelper.FilterLines(`\[task\]\[file.import`, logs)) == nil
+		sliceCloseOk := wildcards.Compare("%A[task][%s/slice.close/%s]INFO  task succeeded (%s): slice closed%A", strhelper.FilterLines(`\[task\]\[.+\/slice.close`, logs)) == nil
+		sliceUploadOk := wildcards.Compare("%A[task][%s/slice.upload/%s]INFO  task succeeded (%s): slice uploaded%A", strhelper.FilterLines(`\[task\]\[.+\/slice.upload`, logs)) == nil
+		fileCloseWaitOk := wildcards.Compare("%A[task][%s/file.close/%s]INFO  waiting for \"1\" slices to be uploaded%A", strhelper.FilterLines(`\[task\]\[.+\/file.close`, logs)) == nil
+		fileCloseOk := wildcards.Compare("%A[task][%s/file.close/%s]INFO  task succeeded (%s): file closed%A", strhelper.FilterLines(`\[task\]\[.+\/file.close`, logs)) == nil
+		fileImportOk := wildcards.Compare("%A[task][%s/file.import/%s]INFO  task succeeded (%s): file imported%A", strhelper.FilterLines(`\[task\]\[.+\/file.import`, logs)) == nil
 		return conditionsOk && sliceCloseOk && sliceUploadOk && fileCloseWaitOk && fileCloseOk && fileImportOk
 	}, 100*time.Second, 100*time.Millisecond, logger.AllMessages())
 	logger.Truncate()
@@ -148,8 +148,8 @@ func TestUploadAndImportE2E(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Eventually(t, func() bool {
 		logs := logger.AllMessages()
-		sliceOk := wildcards.Compare("%A[task][slice.upload/%s]INFO  task succeeded (%s): skipped upload of the empty slice%A", strhelper.FilterLines(`\[task\]\[slice.upload`, logs)) == nil
-		fileOk := wildcards.Compare("%A[task][file.import/%s]INFO  task succeeded (%s): skipped import of the empty file%A", strhelper.FilterLines(`\[task\]\[file.import`, logs)) == nil
+		sliceOk := wildcards.Compare("%A[task][%s/slice.upload/%s]INFO  task succeeded (%s): skipped upload of the empty slice%A", strhelper.FilterLines(`\[task\]\[.+\/slice.upload`, logs)) == nil
+		fileOk := wildcards.Compare("%A[task][%s/file.import/%s]INFO  task succeeded (%s): skipped import of the empty file%A", strhelper.FilterLines(`\[task\]\[.+\/file.import`, logs)) == nil
 		return sliceOk && fileOk
 	}, 100*time.Second, 100*time.Millisecond, logger.AllMessages())
 	logger.Truncate()
@@ -402,119 +402,105 @@ slice/archived/successful/imported/%s/my-receiver/my-export/%s/%s
 >>>>>
 
 <<<<<
-task/%s/my-receiver/export.create/%s
+task/%s/my-receiver/my-export/export.create/%s
 -----
 {
   "projectId": %d,
-  "receiverId": "my-receiver",
-  "type": "export.create",
-  "taskId": "%s",
+  "taskId": "my-receiver/my-export/export.create/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "api-node",
-  "lock": "export.create/%s/my-receiver/my-export",
+  "lock": "%s/my-receiver/my-export/export.create",
   "result": "export created",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%s/my-receiver/export.update/%s
+task/%s/my-receiver/my-export/export.update/%s
 -----
 {
   "projectId": %d,
-  "receiverId": "my-receiver",
-  "type": "export.update",
-  "taskId": "%s",
+  "taskId": "my-receiver/my-export/export.update/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "api-node",
-  "lock": "export.update/%s/my-receiver/my-export",
+  "lock": "%s/my-receiver/my-export/export.update",
   "result": "export updated",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%s/my-receiver/file.close/%s
+task/%s/my-receiver/my-export/%s/file.close/%s
 -----
 {
   "projectId": %d,
-  "receiverId": "my-receiver",
-  "type": "file.close",
-  "taskId": "%s",
+  "taskId": "my-receiver/my-export/%s/file.close/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node",
-  "lock": "file.close/%s",
+  "lock": "%s/my-receiver/my-export/%s/file.close",
   "result": "file closed",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%s/my-receiver/file.close/%s
+task/%s/my-receiver/my-export/%s/file.close/%s
 -----
 {
   "projectId": %d,
-  "receiverId": "my-receiver",
-  "type": "file.close",
-  "taskId": "%s",
+  "taskId": "my-receiver/my-export/%s/file.close/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node",
-  "lock": "file.close/%s",
+  "lock": "%s/my-receiver/my-export/%s/file.close",
   "result": "file closed",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%s/my-receiver/file.import/%s
+task/%s/my-receiver/my-export/%s/file.import/%s
 -----
 {
   "projectId": %d,
-  "receiverId": "my-receiver",
-  "type": "file.import",
-  "taskId": "%s",
+  "taskId": "my-receiver/my-export/%s/file.import/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node",
-  "lock": "file.import/%s",
+  "lock": "runtime/lock/task/%s/my-receiver/my-export/%s/file.import",
   "result": "file imported",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%s/my-receiver/file.import/%s
+task/%s/my-receiver/my-export/%s/file.import/%s
 -----
 {
   "projectId": %d,
-  "receiverId": "my-receiver",
-  "type": "file.import",
-  "taskId": "%s",
+  "taskId": "my-receiver/my-export/%s/file.import/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node",
-  "lock": "file.import/%s",
+  "lock": "runtime/lock/task/%s/my-receiver/my-export/%s/file.import",
   "result": "skipped import of the empty file",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%s/my-receiver/file.swap/%s
+task/%s/my-receiver/my-export/%s/file.swap/%s
 -----
 {
   "projectId": %d,
-  "receiverId": "my-receiver",
-  "type": "file.swap",
-  "taskId": "%s",
+  "taskId": "my-receiver/my-export/%s/file.swap/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node",
-  "lock": "file.swap/%s",
+  "lock": "runtime/lock/task/%s/my-receiver/my-export/%s/file.swap",
   "result": "new file created, the old is closing",
   "duration": %d
 }
@@ -525,132 +511,116 @@ task/%s/my-receiver/receiver.create/%s
 -----
 {
   "projectId": %d,
-  "receiverId": "my-receiver",
-  "type": "receiver.create",
-  "taskId": "%s",
+  "taskId": "my-receiver/receiver.create/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "api-node",
-  "lock": "receiver.create/%s/my-receiver",
+  "lock": "runtime/lock/task/%s/my-receiver/receiver.create",
   "result": "receiver created",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%s/my-receiver/slice.close/%s
+task/%s/my-receiver/my-export/%s/%s/slice.close/%s
 -----
 {
   "projectId": %d,
-  "receiverId": "my-receiver",
-  "type": "slice.close",
-  "taskId": "%s",
+  "taskId": "my-receiver/my-export/%s/%s/slice.close/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node",
-  "lock": "slice.close/%s",
+  "lock": "runtime/lock/task/%s/my-receiver/my-export/%s/%s/slice.close",
   "result": "slice closed",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%s/my-receiver/slice.close/%s
+task/%s/my-receiver/my-export/%s/%s/slice.close/%s
 -----
 {
   "projectId": %d,
-  "receiverId": "my-receiver",
-  "type": "slice.close",
-  "taskId": "%s",
+  "taskId": "my-receiver/my-export/%s/%s/slice.close/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node",
-  "lock": "slice.close/%s",
+  "lock": "runtime/lock/task/%s/my-receiver/my-export/%s/%s/slice.close",
   "result": "slice closed",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%s/my-receiver/slice.close/%s
+task/%s/my-receiver/my-export/%s/%s/slice.close/%s
 -----
 {
   "projectId": %d,
-  "receiverId": "my-receiver",
-  "type": "slice.close",
-  "taskId": "%s",
+  "taskId": "my-receiver/my-export/%s/%s/slice.close/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node",
-  "lock": "slice.close/%s",
+  "lock": "runtime/lock/task/%s/my-receiver/my-export/%s/%s/slice.close",
   "result": "slice closed",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%s/my-receiver/slice.swap/%s
+task/%s/my-receiver/my-export/%s/%s/slice.swap/%s
 -----
 {
   "projectId": %d,
-  "receiverId": "my-receiver",
-  "type": "slice.swap",
-  "taskId": "%s",
+  "taskId": "my-receiver/my-export/%s/%s/slice.swap/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node",
-  "lock": "slice.swap/%s",
+  "lock": "runtime/lock/task/%s/my-receiver/my-export/%s/%s/slice.swap",
   "result": "new slice created, the old is closing",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%s/my-receiver/slice.upload/%s
+task/%s/my-receiver/my-export/%s/%s/slice.upload/%s
 -----
 {
   "projectId": %d,
-  "receiverId": "my-receiver",
-  "type": "slice.upload",
-  "taskId": "%s",
+  "taskId": "my-receiver/my-export/%s/%s/slice.upload/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node",
-  "lock": "slice.upload/%s",
+  "lock": "runtime/lock/task/%s/my-receiver/my-export/%s/%s/slice.upload",
   "result": "slice uploaded",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%s/my-receiver/slice.upload/%s
+task/%s/my-receiver/my-export/%s/%s/slice.upload/%s
 -----
 {
   "projectId": %d,
-  "receiverId": "my-receiver",
-  "type": "slice.upload",
-  "taskId": "%s",
+  "taskId": "my-receiver/my-export/%s/%s/slice.upload/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node",
-  "lock": "slice.upload/%s",
+  "lock": "runtime/lock/task/%s/my-receiver/my-export/%s/%s/slice.upload",
   "result": "slice uploaded",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%s/my-receiver/slice.upload/%s
+task/%s/my-receiver/my-export/%s/%s/slice.upload/%s
 -----
 {
   "projectId": %d,
-  "receiverId": "my-receiver",
-  "type": "slice.upload",
-  "taskId": "%s",
+  "taskId": "my-receiver/my-export/%s/%s/slice.upload/%s",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node",
-  "lock": "slice.upload/%s",
+  "lock": "runtime/lock/task/%s/my-receiver/my-export/%s/%s/slice.upload",
   "result": "skipped upload of the empty slice",
   "duration": %d
 }

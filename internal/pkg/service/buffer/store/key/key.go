@@ -46,9 +46,8 @@ type RecordKey struct {
 }
 
 type TaskKey struct {
-	ReceiverKey
-	Type   string `json:"type" validate:"required"`
-	TaskID TaskID `json:"taskId"` // validate:"required"
+	ProjectID ProjectID `json:"projectId" validate:"required"`
+	TaskID    TaskID    `json:"taskId"` // validate:"required"
 }
 
 func FormatTime(t time.Time) string {
@@ -110,12 +109,5 @@ func (v RecordKey) ID() string {
 }
 
 func (v TaskKey) String() string {
-	return fmt.Sprintf("%s/%s", v.ReceiverKey.String(), v.ID())
-}
-
-func (v TaskKey) ID() string {
-	if v.Type == "" {
-		panic(errors.New("type cannot be empty"))
-	}
-	return fmt.Sprintf("%s/%s", v.Type, v.TaskID.String())
+	return fmt.Sprintf("%s/%s", v.ProjectID.String(), v.TaskID.String())
 }

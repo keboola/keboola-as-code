@@ -98,7 +98,6 @@ func TestBufferApiE2E(t *testing.T) {
 				requestDecoratorFn,
 			),
 			runner.WithAssertProjectState(),
-			runner.WithAssertEtcdState(),
 		)
 
 		// Write current etcd KVs
