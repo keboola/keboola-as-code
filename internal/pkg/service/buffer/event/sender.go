@@ -164,10 +164,10 @@ func (s *Sender) sendEvent(ctx context.Context, api *keboola.API, start time.Tim
 		event.Results["statistics"] = map[string]any{
 			"lastRecordAt": params.Stats.LastRecordAt.String(),
 			"recordsCount": params.Stats.RecordsCount,
-			"recordsSize":  params.Stats.RecordsSize,
-			"bodySize":     params.Stats.BodySize,
-			"fileSize":     params.Stats.FileSize,
-			"fileGZipSize": params.Stats.FileGZipSize,
+			"recordsSize":  params.Stats.RecordsSize.Bytes(),
+			"bodySize":     params.Stats.BodySize.Bytes(),
+			"fileSize":     params.Stats.FileSize.Bytes(),
+			"fileGZipSize": params.Stats.FileGZipSize.Bytes(),
 		}
 	}
 
