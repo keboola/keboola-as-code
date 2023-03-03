@@ -568,6 +568,9 @@ var Task = Type("Task", func() {
 		Description(fmt.Sprintf("Task status, one of: %s", strings.Join(cast.ToStringSlice(values), ", ")))
 		Enum(values...)
 	})
+	Attribute("isFinished", Boolean, func() {
+		Description("Shortcut for status != \"processing\".")
+	})
 	Attribute("createdAt", String, func() {
 		Description("Date and time of the task creation.")
 		Format(FormatDateTime)
@@ -584,7 +587,7 @@ var Task = Type("Task", func() {
 	})
 	Attribute("result", String)
 	Attribute("error", String)
-	Required("id", "url", "status", "createdAt")
+	Required("id", "url", "status", "isFinished", "createdAt")
 	Example(ExampleTask())
 })
 
