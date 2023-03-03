@@ -52,7 +52,7 @@ func (s *Sender) SendSliceUploadEvent(ctx context.Context, api *keboola.API, sta
 		}
 	}
 
-	s.sendEvent(ctx, api, start, err, "upload-slice", formatMsg, Params{
+	s.sendEvent(ctx, api, start, err, "slice-upload", formatMsg, Params{
 		ProjectID:  slice.ProjectID,
 		ReceiverID: slice.ReceiverID,
 		ExportID:   slice.ExportID,
