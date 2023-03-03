@@ -123,16 +123,7 @@ func (bu *BranchUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := bu.check(); err != nil {
 		return n, err
 	}
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   branch.Table,
-			Columns: branch.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: branch.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(branch.Table, branch.Columns, sqlgraph.NewFieldSpec(branch.FieldID, field.TypeString))
 	if ps := bu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -273,6 +264,12 @@ func (buo *BranchUpdateOne) RemoveConfigurations(c ...*Configuration) *BranchUpd
 	return buo.RemoveConfigurationIDs(ids...)
 }
 
+// Where appends a list predicates to the BranchUpdate builder.
+func (buo *BranchUpdateOne) Where(ps ...predicate.Branch) *BranchUpdateOne {
+	buo.mutation.Where(ps...)
+	return buo
+}
+
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
 func (buo *BranchUpdateOne) Select(field string, fields ...string) *BranchUpdateOne {
@@ -321,16 +318,7 @@ func (buo *BranchUpdateOne) sqlSave(ctx context.Context) (_node *Branch, err err
 	if err := buo.check(); err != nil {
 		return _node, err
 	}
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   branch.Table,
-			Columns: branch.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: branch.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(branch.Table, branch.Columns, sqlgraph.NewFieldSpec(branch.FieldID, field.TypeString))
 	id, ok := buo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`model: missing "Branch.id" for update`)}

@@ -156,9 +156,3 @@ func (b *Branch) String() string {
 
 // Branches is a parsable slice of Branch.
 type Branches []*Branch
-
-func (b Branches) config(cfg config) {
-	for _i := range b {
-		b[_i].config = cfg
-	}
-}
