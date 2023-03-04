@@ -13,8 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
-	bufferDesign "github.com/keboola/keboola-as-code/api/buffer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/receive"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
@@ -64,58 +62,4 @@ func createRecords(t *testing.T, ctx context.Context, clk *clock.Mock, d bufferD
 		body := io.NopCloser(strings.NewReader(fmt.Sprintf(`{"key":"value%03d"}`, i)))
 		assert.NoError(t, importer.CreateRecord(ctx, d, key, receiverSecret, body))
 	}
-}
-
-func createReceiverAndExportViaAPI(t *testing.T, d bufferDependencies.Mocked, api buffer.Service) (*buffer.Receiver, string, *buffer.Export) {
-	t.Helper()
-	task, err := api.CreateReceiver(d, &buffer.CreateReceiverPayload{
-		Name: "my-receiver",
-	})
-	assert.NoError(t, err)
-	assert.Eventually(t, func() bool {
-		task, err = api.GetTask(d, &buffer.GetTaskPayload{TaskID: task.ID})
-		assert.NoError(t, err)
-		return task.Status != bufferDesign.TaskStatusProcessing
-	}, 10*time.Second, 100*time.Millisecond)
-	assert.Empty(t, task.Error)
-
-	receiver, err := api.GetReceiver(d, &buffer.GetReceiverPayload{
-		ReceiverID: "my-receiver",
-	})
-	assert.NoError(t, err)
-
-	task, err = api.CreateExport(d, &buffer.CreateExportPayload{
-		ReceiverID: receiver.ID,
-		Name:       "my-export",
-		Mapping: &buffer.Mapping{
-			TableID: "in.c-bucket.table",
-			Columns: []*buffer.Column{
-				{Name: "idCol", Type: "id", PrimaryKey: true},
-				{Name: "dateCol", Type: "datetime", PrimaryKey: true},
-				{Name: "bodyCol", Type: "body"},
-			},
-		},
-		Conditions: &buffer.Conditions{
-			Count: 10,
-			Size:  "1MB",
-			Time:  "1h",
-		},
-	})
-	assert.NoError(t, err)
-	assert.Eventually(t, func() bool {
-		task, err = api.GetTask(d, &buffer.GetTaskPayload{TaskID: task.ID})
-		assert.NoError(t, err)
-		return task.Status != bufferDesign.TaskStatusProcessing
-	}, 1*time.Minute, 100*time.Millisecond)
-	assert.Empty(t, task.Error)
-
-	export, err := api.GetExport(d, &buffer.GetExportPayload{
-		ReceiverID: "my-receiver",
-		ExportID:   "my-export",
-	})
-	assert.NoError(t, err)
-
-	assert.NoError(t, err)
-	secret := receiver.URL[strings.LastIndex(receiver.URL, "/")+1:]
-	return receiver, secret, export
 }
