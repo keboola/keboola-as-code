@@ -114,6 +114,7 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 					// Create table manager
 					tables := table.NewManager(api)
 
+					// StorageJob may exist if the previous worker unexpectedly failed
 					if fileRes.StorageJob == nil {
 						// Import file
 						job, err := tables.SendLoadDataRequest(ctx, fileRes)
