@@ -1,1 +1,0 @@
-remote table preview --storage-api-host %%TEST_KBC_STORAGE_API_HOST%% --storage-api-token %%TEST_KBC_STORAGE_API_TOKEN%% --format json --out accounts.json in.c-test.accounts
