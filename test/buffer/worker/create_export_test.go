@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	bufferDesign "github.com/keboola/keboola-as-code/api/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
@@ -47,9 +48,6 @@ func (ts *testSuite) CreateExport(t *testing.T, receiver *buffer.Receiver, name 
 		ReceiverID: receiver.ID,
 		ExportID:   buffer.ExportID(strhelper.NormalizeName(name)),
 	})
-	if err != nil {
-		assert.Fail(t, err.Error())
-	}
-
+	require.NoError(ts.t, err)
 	return export
 }

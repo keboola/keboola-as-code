@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/umisama/go-regexpcache"
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -214,28 +215,35 @@ func (ts *testSuite) Import(id int) {
 //nolint:forbidigo
 func (ts *testSuite) AssertEtcdState(expectedFile string) {
 	dump, err := etcdhelper.DumpAllToString(ts.ctx, ts.etcdClient)
-	assert.NoError(ts.t, err)
+	require.NoError(ts.t, err)
 
 	// Write actual state
-	assert.NoError(ts.t, os.WriteFile(filepath.Join(ts.outDir, fmt.Sprintf(`actual-%s.txt`, expectedFile)), []byte(dump), 0o644))
+	require.NoError(ts.t, os.WriteFile(filepath.Join(ts.outDir, fmt.Sprintf(`actual-%s.txt`, expectedFile)), []byte(dump), 0o644))
 
 	// Load expected state
 	content, err := os.ReadFile(filepath.Join(ts.testDir, "expected-etcd-state", fmt.Sprintf("%s.txt", expectedFile)))
-	assert.NoError(ts.t, err)
+	require.NoError(ts.t, err)
 	expected := string(content)
 
 	// Process includes
-	expected = regexpcache.MustCompile(`(?mU)^<include [^<>\n]+>$`).ReplaceAllStringFunc(expected, func(s string) string {
-		s = strings.TrimPrefix(s, "<include ")
-		s = strings.TrimSuffix(s, ">")
-		s = strings.TrimSpace(s)
-		path := fmt.Sprintf("%s.txt", s)
-		subContent, err := os.ReadFile(filepath.Join(ts.testDir, "expected-etcd-state", path))
-		if err != nil {
-			assert.Fail(ts.t, fmt.Sprintf(`cannot load included file "%s"`, path))
+	for {
+		found := false
+		expected = regexpcache.MustCompile(`(?mU)^<include [^<>\n]+>$`).ReplaceAllStringFunc(expected, func(s string) string {
+			found = true
+			s = strings.TrimPrefix(s, "<include ")
+			s = strings.TrimSuffix(s, ">")
+			s = strings.TrimSpace(s)
+			path := fmt.Sprintf("%s.txt", s)
+			subContent, err := os.ReadFile(filepath.Join(ts.testDir, "expected-etcd-state", path))
+			if err != nil {
+				assert.Fail(ts.t, fmt.Sprintf(`cannot load included file "%s"`, path))
+			}
+			return "\n" + string(subContent) + "\n"
+		})
+		if !found {
+			break
 		}
-		return "\n" + string(subContent) + "\n"
-	})
+	}
 
 	var expectedKVs []etcdhelper.KV
 	for _, kv := range etcdhelper.ParseDump(expected) {

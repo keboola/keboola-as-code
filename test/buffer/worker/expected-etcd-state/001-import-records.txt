@@ -1,9 +1,9 @@
 <include _runtime>
-<include _config>
+<include _config_001>
 <include _secrets>
 <include _tasks_setup>
-<include _files_opened>
-<include _slices_opened>
+<include _files_opened_001>
+<include _slices_opened_001>
 
 <<<<<
 record/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s

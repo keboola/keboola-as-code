@@ -1,10 +1,10 @@
 <include _runtime>
-<include _config>
+<include _config_001>
 <include _secrets>
 <include _tasks_setup>
-<include _files_opened>
-<include _slices_opened>
-<include _slices_uploaded>
+<include _files_opened_001>
+<include _slices_opened_001>
+<include _slices_uploaded_001>
 <include _tasks_slices_upload_001>
 <include _tasks_slices_swap_001>
 
