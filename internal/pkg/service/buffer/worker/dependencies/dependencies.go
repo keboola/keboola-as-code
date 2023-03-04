@@ -78,7 +78,7 @@ func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 		return nil, err
 	}
 
-	d.eventSender = event.NewSender(logger, d.KeboolaPublicAPI())
+	d.eventSender = event.NewSender(logger)
 
 	return d, nil
 }
