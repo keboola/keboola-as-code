@@ -6,6 +6,12 @@ import (
 
 // test002SliceUpload imports 2 more records; 6 >= 5 (uploadCountThreshold) - upload is triggered.
 func (ts *testSuite) test002SliceUpload() {
+	// Run imports immediately after the last check to prevent the check during imports.
+	ts.WaitForLogMessages(10*time.Second, `
+[worker-node-%s][service][conditions]INFO  checked "2" opened slices
+	`)
+
+	// Import records
 	for i := 5; i <= 6; i++ {
 		ts.Import(i)
 	}

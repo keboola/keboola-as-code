@@ -9,6 +9,11 @@ import (
 
 // test003FileImport imports 4 more records; 10 >= 10 (importCountThreshold) - import is triggered.
 func (ts *testSuite) test003FileImport() {
+	// Run imports immediately after the last check to prevent the check during imports.
+	ts.WaitForLogMessages(10*time.Second, `
+[worker-node-%s][service][conditions]INFO  checked "2" opened slices
+	`)
+
 	// Import records
 	for i := 7; i <= 10; i++ {
 		ts.Import(i)
