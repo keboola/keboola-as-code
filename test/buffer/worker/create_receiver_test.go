@@ -5,15 +5,16 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	bufferDesign "github.com/keboola/keboola-as-code/api/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 )
 
-func (c *cluster) CreateReceiver(t *testing.T, name string) *buffer.Receiver {
+func (ts *testSuite) CreateReceiver(t *testing.T, name string) *buffer.Receiver {
 	t.Helper()
 
-	n := c.RandomAPINode()
+	n := ts.RandomAPINode()
 	d := n.Dependencies
 	svc := n.Service
 
@@ -33,9 +34,6 @@ func (c *cluster) CreateReceiver(t *testing.T, name string) *buffer.Receiver {
 	receiver, err := svc.GetReceiver(d, &buffer.GetReceiverPayload{
 		ReceiverID: "my-receiver",
 	})
-	if err != nil {
-		assert.Fail(t, err.Error())
-	}
-
+	require.NoError(ts.t, err)
 	return receiver
 }

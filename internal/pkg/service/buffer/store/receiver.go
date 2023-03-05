@@ -250,6 +250,7 @@ func (s *Store) DeleteReceiver(ctx context.Context, receiverKey key.ReceiverKey)
 		s.schema.Slices().Uploading().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Slices().Uploaded().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Slices().Failed().InReceiver(receiverKey).DeleteAll(),
+		s.schema.Slices().Imported().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Records().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Tasks().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Runtime().LastRecordID().InReceiver(receiverKey).DeleteAll(),

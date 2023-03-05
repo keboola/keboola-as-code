@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/benbjohnson/clock"
@@ -37,7 +38,6 @@ type mocked struct {
 	*project
 	config              MockedConfig
 	t                   *testing.T
-	envs                *env.Map
 	options             *options.Options
 	mockedHTTPTransport *httpmock.MockTransport
 	proc                *servicectx.Process
@@ -47,12 +47,17 @@ type mocked struct {
 
 type MockedConfig struct {
 	ctx          context.Context
+	envs         *env.Map
 	clock        clock.Clock
 	loggerPrefix string
 	debugLogger  log.DebugLogger
 	procOpts     []servicectx.Option
 
+	etcdEndpoint  string
+	etcdUsername  string
+	etcdPassword  string
 	etcdNamespace string
+
 	requestHeader http.Header
 
 	services                  keboola.Services
@@ -74,6 +79,12 @@ func WithCtx(v context.Context) MockedOption {
 	}
 }
 
+func WithEnvs(v *env.Map) MockedOption {
+	return func(c *MockedConfig) {
+		c.envs = v
+	}
+}
+
 func WithClock(v clock.Clock) MockedOption {
 	return func(c *MockedConfig) {
 		c.clock = v
@@ -89,6 +100,24 @@ func WithDebugLogger(v log.DebugLogger) MockedOption {
 func WithLoggerPrefix(v string) MockedOption {
 	return func(c *MockedConfig) {
 		c.loggerPrefix = v
+	}
+}
+
+func WithEtcdEndpoint(v string) MockedOption {
+	return func(c *MockedConfig) {
+		c.etcdEndpoint = v
+	}
+}
+
+func WithEtcdUsername(v string) MockedOption {
+	return func(c *MockedConfig) {
+		c.etcdUsername = v
+	}
+}
+
+func WithEtcdPassword(v string) MockedOption {
+	return func(c *MockedConfig) {
+		c.etcdPassword = v
 	}
 }
 
@@ -163,12 +192,20 @@ func WithMultipleTokenVerification(v bool) MockedOption {
 
 func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 	t.Helper()
-	envs := env.Empty()
+
+	osEnvs, err := env.FromOs()
+	if err != nil {
+		t.Fatalf("cannot get envs: %s", err)
+	}
 
 	// Default values
 	c := MockedConfig{
 		ctx:           context.Background(),
+		envs:          env.Empty(),
 		clock:         clock.New(),
+		etcdEndpoint:  osEnvs.Get("UNIT_ETCD_ENDPOINT"),
+		etcdUsername:  osEnvs.Get("UNIT_ETCD_USERNAME"),
+		etcdPassword:  osEnvs.Get("UNIT_ETCD_PASSWORD"),
 		etcdNamespace: etcdhelper.NamespaceForTest(),
 		requestHeader: make(http.Header),
 		useRealAPIs:   false,
@@ -247,7 +284,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 	)
 
 	// Create base, public and project dependencies
-	baseDeps := newBaseDeps(envs, nil, logger, c.clock, httpClient)
+	baseDeps := newBaseDeps(c.envs, nil, logger, c.clock, httpClient)
 	publicDeps, err := newPublicDeps(c.ctx, baseDeps, c.storageAPIHost, WithPreloadComponents(true))
 	if err != nil {
 		panic(err)
@@ -277,7 +314,6 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 		base:                baseDeps,
 		public:              publicDeps,
 		project:             projectDeps,
-		envs:                envs,
 		options:             options.New(),
 		mockedHTTPTransport: mockedHTTPTransport,
 		requestHeader:       c.requestHeader,
@@ -285,7 +321,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 }
 
 func (v *mocked) EnvsMutable() *env.Map {
-	return v.envs
+	return v.config.envs
 }
 
 func (v *mocked) Options() *options.Options {
@@ -377,7 +413,16 @@ func (c *ObjectsContainer) MappersFor(_ *state.State) (mapper.Mappers, error) {
 
 func (v *mocked) EtcdClient() *etcd.Client {
 	if v.etcdClient == nil {
-		v.etcdClient = etcdhelper.ClientForTestWithNamespace(v.t, v.config.etcdNamespace)
+		if os.Getenv("UNIT_ETCD_ENABLED") == "false" { // nolint:forbidigo
+			v.t.Skipf("etcd test is disabled by UNIT_ETCD_ENABLED=false")
+		}
+		v.etcdClient = etcdhelper.ClientForTestFrom(
+			v.t,
+			v.config.etcdEndpoint,
+			v.config.etcdUsername,
+			v.config.etcdPassword,
+			v.config.etcdNamespace,
+		)
 	}
 	return v.etcdClient
 }

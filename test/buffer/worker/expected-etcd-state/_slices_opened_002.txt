@@ -1,18 +1,19 @@
 <<<<<
-file/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s
+slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "receiverId": "my-receiver",
   "exportId": "my-export-1",
   "fileId": "%s",
-  "state": "opened",
+  "sliceId": "%s",
+  "state": "active/opened/writing",
   "mapping": {
     "projectId": %%TEST_KBC_PROJECT_ID%%,
     "receiverId": "my-receiver",
     "exportId": "my-export-1",
-    "revisionId": 1,
-    "tableId": "in.c-bucket.my-export-1",
+    "revisionId": 2,
+    "tableId": "in.c-bucket.my-export-1-v2",
     "incremental": true,
     "columns": [
       {
@@ -21,34 +22,26 @@ file/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s
         "primaryKey": true
       },
       {
-        "type": "datetime",
-        "name": "dateCol"
-      },
-      {
         "type": "body",
         "name": "bodyCol"
-      },
-      {
-        "type": "headers",
-        "name": "headersCol"
       }
     ]
   },
-  "storageResource": {
-    %A
-  }
+  "storageResource": {%A},
+  "sliceNumber": %d
 }
 >>>>>
 
 <<<<<
-file/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s
+slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "receiverId": "my-receiver",
   "exportId": "my-export-2",
   "fileId": "%s",
-  "state": "opened",
+  "sliceId": "%s",
+  "state": "active/opened/writing",
   "mapping": {
     "projectId": %%TEST_KBC_PROJECT_ID%%,
     "receiverId": "my-receiver",
@@ -59,19 +52,18 @@ file/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s
     "columns": [
       {
         "type": "datetime",
-        "name": "dateCol",
+        "name": "idCol",
         "primaryKey": true
       },
       {
         "type": "template",
-        "name": "keyCol",
+        "name": "keyValueCol",
         "language": "jsonnet",
         "content": "\"---\" + Body(\"key\") + \"---\""
       }
     ]
   },
-  "storageResource": {
-    %A
-  }
+  "storageResource": {%A},
+  "sliceNumber": %d
 }
 >>>>>

@@ -73,9 +73,10 @@ func NewActiveSlicesWatcher(ctx context.Context, wg *sync.WaitGroup, logger log.
 			// Trigger change listeners
 			if len(events) > 0 {
 				w.lock.Lock()
-				for _, l := range w.listeners {
+				for id, l := range w.listeners {
 					if w.countSlices(l.fileKey) == 0 {
 						close(l.ch)
+						delete(w.listeners, id)
 					}
 				}
 				w.lock.Unlock()

@@ -61,7 +61,7 @@ tests-unit-verbose:
 	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./internal/pkg... bash ./scripts/tests.sh
 
 tests-cli:
-	TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh -run TestCliE2E
+	TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh
 
 tests-cli-verbose:
 	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/cli/... bash ./scripts/tests.sh
@@ -70,13 +70,25 @@ tests-templates-api:
 	TEST_PACKAGE=./test/templates/api/... bash ./scripts/tests.sh
 
 tests-templates-api-verbose:
-	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/api/templates/... bash ./scripts/tests.sh -run TestTemplatesApiE2E
+	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/api/templates/... bash ./scripts/tests.sh
+
+tests-buffer-service:
+	TEST_PACKAGE=./test/buffer/... bash ./scripts/tests.sh
+
+tests-buffer-service-verbose:
+	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/buffer/... bash ./scripts/tests.sh
 
 tests-buffer-api:
 	TEST_PACKAGE=./test/buffer/api/... bash ./scripts/tests.sh
 
 tests-buffer-api-verbose:
-	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/api/buffer/... bash ./scripts/tests.sh -run TestBufferApiE2E
+	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/buffer/api/... bash ./scripts/tests.sh
+
+tests-buffer-worker:
+	TEST_PACKAGE=./test/buffer/worker/... bash ./scripts/tests.sh
+
+tests-buffer-worker-verbose:
+	TEST_VERBOSE=true TEST_LOG_FORMAT=standard-verbose TEST_PARALLELISM=1 TEST_PARALLELISM_PKG=1 TEST_PACKAGE=./test/buffer/worker/... bash ./scripts/tests.sh
 
 mod:
 	bash ./scripts/mod.sh

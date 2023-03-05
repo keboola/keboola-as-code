@@ -1,0 +1,26 @@
+<include _runtime>
+<include _config_001>
+<include _secrets>
+<include _tasks_setup>
+<include _files_opened_001>
+<include _files_imported_001>
+<include _slices_opened_001>
+<include _slices_imported_001>
+<include _slices_imported_002>
+<include _tasks_slices_swap_001>
+<include _tasks_slices_upload_001>
+<include _tasks_slices_upload_002>
+<include _tasks_files_swap_001>
+<include _tasks_files_import_001>
+
+<<<<<
+runtime/last/record/id/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1
+-----
+10
+>>>>>
+
+<<<<<
+runtime/last/record/id/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2
+-----
+10
+>>>>>

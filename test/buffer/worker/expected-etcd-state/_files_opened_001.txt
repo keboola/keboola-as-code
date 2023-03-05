@@ -1,13 +1,12 @@
 <<<<<
-slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s
+file/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "receiverId": "my-receiver",
   "exportId": "my-export-1",
   "fileId": "%s",
-  "sliceId": "%s",
-  "state": "active/opened/writing",
+  "state": "opened",
   "mapping": {
     "projectId": %%TEST_KBC_PROJECT_ID%%,
     "receiverId": "my-receiver",
@@ -22,10 +21,6 @@ slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1
         "primaryKey": true
       },
       {
-        "type": "datetime",
-        "name": "dateCol"
-      },
-      {
         "type": "body",
         "name": "bodyCol"
       },
@@ -35,21 +30,21 @@ slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1
       }
     ]
   },
-  "storageResource": {%A},
-  "sliceNumber": %d
+  "storageResource": {
+    %A
+  }
 }
 >>>>>
 
 <<<<<
-slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s
+file/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "receiverId": "my-receiver",
   "exportId": "my-export-2",
   "fileId": "%s",
-  "sliceId": "%s",
-  "state": "active/opened/writing",
+  "state": "opened",
   "mapping": {
     "projectId": %%TEST_KBC_PROJECT_ID%%,
     "receiverId": "my-receiver",
@@ -60,18 +55,19 @@ slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2
     "columns": [
       {
         "type": "datetime",
-        "name": "dateCol",
+        "name": "idCol",
         "primaryKey": true
       },
       {
         "type": "template",
-        "name": "keyCol",
+        "name": "keyValueCol",
         "language": "jsonnet",
         "content": "\"---\" + Body(\"key\") + \"---\""
       }
     ]
   },
-  "storageResource": {%A},
-  "sliceNumber": %d
+  "storageResource": {
+    %A
+  }
 }
 >>>>>
