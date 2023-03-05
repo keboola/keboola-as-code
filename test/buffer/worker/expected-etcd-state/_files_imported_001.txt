@@ -41,6 +41,28 @@ file/imported/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s
     "bodySize": "%s",
     "fileSize": "%s",
     "fileGZipSize": "%s"
+  },
+  "storageJob": {
+    "id": %d,
+    "status": "success",
+    "url": "%s",
+    "operationName": "tableImport",
+    "operationParams": {%A},
+    "results": {
+      "importedColumns": [
+        "idCol",
+        "bodyCol",
+        "headersCol"
+      ],
+      "newColumns": [],
+      "totalDataSizeBytes": %d,
+      "totalRowsCount": 10,
+      "transaction": null,
+      "warnings": []
+    },
+    "createdTime": "%s",
+    "startTime": "%s",
+    "endTime": "%s"
   }
 }
 >>>>>
@@ -86,6 +108,27 @@ file/imported/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s
     "bodySize": "%s",
     "fileSize": "%s",
     "fileGZipSize": "%s"
+  },
+  "storageJob": {
+    "id": %d,
+    "status": "success",
+    "url": "%s",
+    "operationName": "tableImport",
+    "operationParams": {%A},
+    "results": {
+      "importedColumns": [
+        "idCol",
+        "keyValueCol"
+      ],
+      "newColumns": [],
+      "totalDataSizeBytes": %d,
+      "totalRowsCount": 10,
+      "transaction": null,
+      "warnings": []
+    },
+    "createdTime": "%s",
+    "startTime": "%s",
+    "endTime": "%s"
   }
 }
 >>>>>
