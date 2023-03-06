@@ -104,7 +104,7 @@ require (
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/term v0.6.0
-	golang.org/x/text v0.7.0
+	golang.org/x/text v0.8.0
 	golang.org/x/time v0.1.0 // indirect
 	golang.org/x/tools v0.6.1-0.20230222164832-25d2519c8696
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
