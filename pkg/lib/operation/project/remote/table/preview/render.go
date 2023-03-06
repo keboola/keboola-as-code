@@ -83,7 +83,7 @@ func renderPretty(table *keboola.TablePreview, adaptWidth bool) string {
 	var b strings.Builder
 
 	truncate := func(s string, max int) string {
-		if !adaptWidth || len(s) < 3 || len(s) <= max-3 {
+		if !adaptWidth || len(s) <= max {
 			return s
 		}
 		return fmt.Sprintf("%s...", s[:max-3])
@@ -107,10 +107,10 @@ func renderPretty(table *keboola.TablePreview, adaptWidth bool) string {
 		b.WriteString(boxV)
 		cols, last := widths[:len(widths)-1], widths[len(widths)-1]
 		for i, w := range cols {
-			fmt.Fprintf(&b, " %-*s ", w, truncate(data[i], w-2))
+			fmt.Fprintf(&b, " %-*s ", w, truncate(data[i], w))
 			b.WriteString(boxV)
 		}
-		fmt.Fprintf(&b, " %-*s ", last, truncate(data[len(data)-1], last-2))
+		fmt.Fprintf(&b, " %-*s ", last, truncate(data[len(data)-1], last))
 		b.WriteString(boxV)
 		b.WriteString("\n")
 	}
