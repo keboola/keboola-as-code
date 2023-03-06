@@ -1,4 +1,4 @@
-FROM debian:bullseye
+FROM debian:11
 
 ENV HOME=/opt
 RUN echo 'PS1="\w > "' > ~/.bashrc && chmod 0777 -R ~
