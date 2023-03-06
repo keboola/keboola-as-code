@@ -75,9 +75,9 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 	cmd.Flags().Uint("limit", 100, "limit the number of exported rows")
 	cmd.Flags().String("where", "", "filter columns by value")
 	cmd.Flags().String("order", "", "order by one or more columns")
-	cmd.Flags().String("format", preview.TableFormatPretty, "order by one or more columns")
-	cmd.Flags().StringP("out", "o", "", "export table a file")
-	cmd.Flags().Bool("force", false, "overwrite the output file")
+	cmd.Flags().String("format", preview.TableFormatPretty, "output format (json/csv/pretty)")
+	cmd.Flags().StringP("out", "o", "", "export table to a file")
+	cmd.Flags().Bool("force", false, "overwrite the output file if it already exists")
 
 	return cmd
 }
