@@ -11,6 +11,9 @@
   "template": {
     "id": "my-template-id",
     "name": "My Template",
+    "categories": [
+      "Other"
+    ],
     "components": [
       "keboola.wr-%s",
       "keboola.ex-aws-s3",

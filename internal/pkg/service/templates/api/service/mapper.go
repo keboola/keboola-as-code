@@ -82,6 +82,7 @@ func TemplateResponse(ctx context.Context, d dependencies.ForProjectRequest, tmp
 	out = &Template{
 		ID:             tmpl.ID,
 		Name:           tmpl.Name,
+		Categories:     CategoriesResponse(tmpl.Categories),
 		Components:     ComponentsResponse(d, defaultVersion.Components),
 		Description:    tmpl.Description,
 		DefaultVersion: defaultVersion.Version.String(),
@@ -110,6 +111,7 @@ func TemplateDetailResponse(ctx context.Context, d dependencies.ForProjectReques
 		Repository:     repoResponse,
 		ID:             tmpl.ID,
 		Name:           tmpl.Name,
+		Categories:     CategoriesResponse(tmpl.Categories),
 		Components:     ComponentsResponse(d, defaultVersion.Components),
 		Description:    tmpl.Description,
 		DefaultVersion: defaultVersion.Version.String(),
@@ -165,6 +167,14 @@ func VersionDetailExtendedResponse(ctx context.Context, d dependencies.ForProjec
 		LongDescription: template.LongDesc(),
 		Readme:          template.Readme(),
 	}, nil
+}
+
+// CategoriesResponse returns default "Other" category if the list is empty.
+func CategoriesResponse(in []string) []string {
+	if len(in) == 0 {
+		return []string{"Other"}
+	}
+	return in
 }
 
 // ComponentsResponse replaces placeholder in components list.
