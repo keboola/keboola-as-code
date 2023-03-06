@@ -396,6 +396,8 @@ type Template struct {
 	ID string
 	// Template name.
 	Name string
+	// List of categories the template belongs to.
+	Categories []string
 	// List of components used in the template.
 	Components []string
 	Author     *Author
@@ -416,6 +418,8 @@ type TemplateDetail struct {
 	ID string
 	// Template name.
 	Name string
+	// List of categories the template belongs to.
+	Categories []string
 	// List of components used in the template.
 	Components []string
 	Author     *Author

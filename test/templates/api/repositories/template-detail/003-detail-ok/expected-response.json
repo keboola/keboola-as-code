@@ -10,6 +10,10 @@
   },
   "id": "my-template-id",
   "name": "My Template",
+  "categories": [
+    "Data Extraction",
+    "E-commerce"
+  ],
   "components": [
     "keboola.ex-aws-s3"
   ],

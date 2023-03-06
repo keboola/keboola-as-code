@@ -12,6 +12,9 @@
     {
       "id": "my-template-id",
       "name": "My Template",
+      "categories": [
+        "Other"
+      ],
       "components": [
         "keboola.wr-%s",
         "foo.bar"

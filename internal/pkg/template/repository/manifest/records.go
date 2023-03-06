@@ -10,9 +10,10 @@ import (
 )
 
 type TemplateRecord struct {
-	ID            string `json:"id" validate:"required,alphanumdash,min=1,max=40"`
-	Name          string `json:"name" validate:"required,min=1,max=40"`
-	Description   string `json:"description" validate:"required,min=1,max=200"`
+	ID            string   `json:"id" validate:"required,alphanumdash,min=1,max=40"`
+	Name          string   `json:"name" validate:"required,min=1,max=40"`
+	Description   string   `json:"description" validate:"required,min=1,max=200"`
+	Categories    []string `json:"categories,omitempty"`
 	model.AbsPath `validate:"dive"`
 	Versions      []VersionRecord `json:"versions" validate:"required,min=1,dive"`
 }

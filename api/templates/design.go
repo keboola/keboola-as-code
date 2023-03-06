@@ -667,6 +667,9 @@ var Template = Type("Template", func() {
 		MaxLength(40)
 		Example("My Template")
 	})
+	Attribute("categories", ArrayOf(String), "List of categories the template belongs to.", func() {
+		Example([]string{"E-commerce", "Other", "Social Media"})
+	})
 	Attribute("components", ArrayOf(String), "List of components used in the template.", func() {
 		Example([]string{"ex-generic-v2", "keboola.snowflake-transformation"})
 	})
@@ -686,7 +689,7 @@ var Template = Type("Template", func() {
 	Attribute("versions", ArrayOf(TemplateVersion), "All available versions of the template.", func() {
 		Example(ExampleVersions1())
 	})
-	Required("id", "name", "components", "author", "description", "defaultVersion", "versions")
+	Required("id", "name", "categories", "components", "author", "description", "defaultVersion", "versions")
 })
 
 var VersionDetail = Type("VersionDetail", func() {
@@ -1054,6 +1057,7 @@ type ExampleAuthorData struct {
 type ExampleTemplateData struct {
 	ID             string               `json:"id" yaml:"id"`
 	Name           string               `json:"name" yaml:"name"`
+	Categories     []string             `json:"categories" yaml:"categories"`
 	Components     []string             `json:"components" yaml:"components"`
 	Author         ExampleAuthorData    `json:"author" yaml:"author"`
 	Description    string               `json:"description" yaml:"description"`
@@ -1185,6 +1189,7 @@ func ExampleTemplate1() ExampleTemplateData {
 	return ExampleTemplateData{
 		ID:             "my-template",
 		Name:           "My Template",
+		Categories:     ExampleCategories(),
 		Components:     ExampleComponents(),
 		Author:         ExampleAuthor(),
 		Description:    "Full workflow to load all user accounts from the Service.",
@@ -1197,6 +1202,7 @@ func ExampleTemplate2() ExampleTemplateData {
 	return ExampleTemplateData{
 		ID:             "maximum-length-template-id-dolor-sit-an",
 		Name:           "Maximum length template name ipsum dolo",
+		Categories:     ExampleCategories(),
 		Components:     ExampleComponents(),
 		Author:         ExampleAuthor(),
 		Description:    "Maximum length template description dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascet.",
@@ -1251,6 +1257,10 @@ func ExampleVersions2() []ExampleVersionData {
 	return []ExampleVersionData{
 		{Version: "v4.5.6", Stable: true, Description: "Maximum length version description abc."},
 	}
+}
+
+func ExampleCategories() []string {
+	return []string{"E-commerce", "Other", "Social Media"}
 }
 
 func ExampleComponents() []string {
