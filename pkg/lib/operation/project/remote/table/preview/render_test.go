@@ -94,7 +94,7 @@ func TestRenderPretty(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		actual := normalizeTable(renderPretty(c.input))
+		actual := normalizeTable(renderPretty(c.input, false))
 		expected := normalizeTable(c.expected)
 
 		assert.Equal(t, expected, actual)

@@ -3,9 +3,11 @@ package preview
 import (
 	"encoding/csv"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"golang.org/x/term"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -33,7 +35,7 @@ func renderTable(table *keboola.TablePreview, format string) (string, error) {
 	case TableFormatCSV:
 		return renderCSV(table), nil
 	case TableFormatPretty:
-		return renderPretty(table), nil
+		return renderPretty(table, true), nil
 	default:
 		return "", errors.Errorf("invalid table format %s", format)
 	}
@@ -55,7 +57,9 @@ func renderCSV(table *keboola.TablePreview) string {
 	w := csv.NewWriter(b)
 	_ = w.Write(table.Columns)
 	_ = w.WriteAll(table.Rows)
-	return b.String()
+	out := b.String()
+	out = strings.TrimRight(out, "\n")
+	return out
 }
 
 const (
@@ -72,11 +76,18 @@ const (
 	boxC  = "╋"
 )
 
-func renderPretty(table *keboola.TablePreview) string {
-	widths := measureColumns(table)
+func renderPretty(table *keboola.TablePreview, adaptWidth bool) string {
+	// try to calculate max width of each column using terminal size
+	widths := measureColumns(table, adaptWidth)
 
 	var b strings.Builder
 
+	truncate := func(s string, max int) string {
+		if !adaptWidth || len(s) <= max {
+			return s
+		}
+		return fmt.Sprintf("%s...", s[:max-3])
+	}
 	// draws a "border" line, e.g. `┏━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┓`
 	border := func(left, middle, right string, lf bool) {
 		b.WriteString(left)
@@ -96,10 +107,10 @@ func renderPretty(table *keboola.TablePreview) string {
 		b.WriteString(boxV)
 		cols, last := widths[:len(widths)-1], widths[len(widths)-1]
 		for i, w := range cols {
-			fmt.Fprintf(&b, " %-*s ", w, data[i])
+			fmt.Fprintf(&b, " %-*s ", w, truncate(data[i], w))
 			b.WriteString(boxV)
 		}
-		fmt.Fprintf(&b, " %-*s ", last, data[len(data)-1])
+		fmt.Fprintf(&b, " %-*s ", last, truncate(data[len(data)-1], last))
 		b.WriteString(boxV)
 		b.WriteString("\n")
 	}
@@ -115,7 +126,15 @@ func renderPretty(table *keboola.TablePreview) string {
 	return b.String()
 }
 
-func measureColumns(table *keboola.TablePreview) []int {
+func measureColumns(table *keboola.TablePreview, adaptWidth bool) []int {
+	maxWidth := math.MaxInt
+	if adaptWidth && term.IsTerminal(0) {
+		maxWidth, _, _ = term.GetSize(0)
+		// account for borders+padding
+		maxWidth -= 1 + len(table.Columns)*3
+	}
+
+	// each column requests its width based on the maximum width of its content
 	widths := make([]int, len(table.Columns))
 	for i, col := range table.Columns {
 		widths[i] = len(col)
@@ -127,5 +146,27 @@ func measureColumns(table *keboola.TablePreview) []int {
 			}
 		}
 	}
+
+	// then we attempt to fit all of that content on the user's screen
+	// by truncating content as necessary to fit `maxWidth`
+	if adaptWidth {
+		totalWidth := 0
+		for _, width := range widths {
+			totalWidth += width
+		}
+		if totalWidth > maxWidth {
+			remainingWidth := maxWidth
+			for i, width := range widths {
+				maxColumnWidth := remainingWidth / (len(table.Columns) - i)
+				if width <= maxColumnWidth {
+					remainingWidth -= width
+				} else {
+					remainingWidth -= maxColumnWidth
+					widths[i] = maxColumnWidth
+				}
+			}
+		}
+	}
+
 	return widths
 }
