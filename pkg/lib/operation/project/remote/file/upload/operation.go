@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/schollz/progressbar/v3"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -32,6 +33,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	defer telemetry.EndSpan(span, &err)
 
 	var reader io.Reader
+	var bar *progressbar.ProgressBar
 	if o.Input == "-" {
 		reader = bufio.NewReader(os.Stdin)
 	} else {
@@ -42,6 +44,11 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 			}
 			return errors.Errorf(`error reading file "%s": %w`, o.Input, err)
 		}
+		fi, err := file.Stat()
+		if err != nil {
+			return errors.Errorf(`error reading file "%s": %w`, o.Input, err)
+		}
+		bar = progressbar.DefaultBytes(fi.Size(), "uploading")
 		reader = bufio.NewReader(file)
 	}
 
@@ -55,7 +62,20 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		return errors.Errorf(`error creating file resource: %w`, err)
 	}
 
-	_, err = keboola.Upload(ctx, file, reader)
+	blobWriter, err := keboola.NewUploadWriter(ctx, file)
+	defer func() {
+		err = blobWriter.Close()
+	}()
+	if err != nil {
+		return errors.Errorf(`error uploading file "%s": %w`, o.Input, err)
+	}
+	var writer io.Writer
+	if bar != nil {
+		writer = io.MultiWriter(blobWriter, bar)
+	} else {
+		writer = blobWriter
+	}
+	_, err = io.Copy(writer, reader)
 	if err != nil {
 		return errors.Errorf(`error uploading file "%s": %w`, o.Input, err)
 	}
