@@ -17,6 +17,9 @@ type dependencies interface {
 }
 
 type Options struct {
+	Input string
+	Name  string
+	Tags  []string
 }
 
 func Run(_ context.Context, _ Options, _ dependencies) (err error) {

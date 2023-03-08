@@ -23,6 +23,11 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			opts, err := baseDeps.Dialogs().AskUploadFile(baseDeps.Options())
+			if err != nil {
+				return err
+			}
+
 			// Get dependencies
 			d, err := p.DependenciesForRemoteCommand(common.WithoutMasterToken())
 			if err != nil {
@@ -31,7 +36,7 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 
 			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-file-upload")
 
-			return upload.Run(d.CommandCtx(), upload.Options{}, d)
+			return upload.Run(d.CommandCtx(), opts, d)
 		},
 	}
 
