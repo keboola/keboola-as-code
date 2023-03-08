@@ -15,6 +15,7 @@ func Commands(p dependencies.Provider) *cobra.Command {
 	}
 	cmd.AddCommand(
 		DownloadCommand(p),
+		UploadCommand(p),
 	)
 
 	return cmd

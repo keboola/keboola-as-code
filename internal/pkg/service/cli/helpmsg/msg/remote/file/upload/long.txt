@@ -1,0 +1,3 @@
+Command "remote file upload"
+
+Upload a file to Keboola staging storage from a local file or standard input.
