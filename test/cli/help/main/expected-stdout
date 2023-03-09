@@ -92,6 +92,7 @@ Aliases:
   local template use   use
   template             t
   template repository  r, repo
+  remote table         table
 
 Flags:
   -h, --help                       print help for command
