@@ -205,6 +205,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	root.addAlias(`persist`, `local persist`)
 	root.addAlias(`create`, `local create`)
 	root.addAlias(`encrypt`, `local encrypt`)
+	root.addAlias(`table`, `remote table`)
 
 	// Templates are in private beta, can be enabled by ENV
 	if envs.Get(`KBC_TEMPLATES_PRIVATE_BETA`) == `true` {
