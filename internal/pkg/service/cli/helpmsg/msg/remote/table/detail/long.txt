@@ -1,0 +1,4 @@
+Command "remote table detail"
+
+Print details of a table, such as its current name,
+columns, primary key, and more.

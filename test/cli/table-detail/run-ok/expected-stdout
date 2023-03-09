@@ -1,0 +1,9 @@
+Table "in.c-test.accounts":
+  Name: accounts
+  Primary key: Id, Name
+  Columns: Id, Name, Region, Status, First_Order
+  Rows: 4
+  Size: 2.6 kB
+  Created at: %s
+  Last import at: %s
+  Last changed at: %s

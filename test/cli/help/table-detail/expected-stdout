@@ -1,11 +1,14 @@
-Commands from the "table" context can be used to manage tables in the project.
+
+Command "remote table detail"
+
+Print details of a table, such as its current name,
+columns, primary key, and more.
 
 Usage:
-  kbc remote table [command]
+  kbc remote table detail [table] [flags]
 
-Available Commands:
-  remote table preview  Preview a table's data.
-  remote table detail   Print details of a table.
+Flags:
+  -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
 
 Global Flags:
   -h, --help                       print help for command
@@ -14,5 +17,3 @@ Global Flags:
   -v, --verbose                    print details
       --verbose-api                log each API request and response
   -d, --working-dir string         use other working directory
-
-Use "kbc remote table [command] --help" for more information about a command.

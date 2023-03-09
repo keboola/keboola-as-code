@@ -214,6 +214,8 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		root.addAlias(`repo`, `template repository`)
 	}
 
+	root.addAlias(`table`, `remote table`)
+
 	// Add aliases to usage template
 	root.Cmd.Annotations = map[string]string{`aliases`: root.listAliases()}
 

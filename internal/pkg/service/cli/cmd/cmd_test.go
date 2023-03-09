@@ -81,6 +81,7 @@ func TestCliSubCommandsAndAliases(t *testing.T) {
 		"t",
 		"r",
 		"repo",
+		"table",
 	}, names)
 }
 

@@ -1,0 +1,1 @@
+Print details of a table.
