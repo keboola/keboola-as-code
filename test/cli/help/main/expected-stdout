@@ -57,6 +57,7 @@ Available Commands:
   remote workspace detail        Print workspace details and credentials.
   remote table                   Manage tables in your project.
   remote table preview           Preview a table's data.
+  remote table detail            Print details of a table.
 
   dbt                            Work with dbt inside your repository.
   dbt init                       Initialize profiles, sources, and environment variables for use with dbt.

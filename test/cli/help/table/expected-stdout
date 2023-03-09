@@ -5,6 +5,7 @@ Usage:
 
 Available Commands:
   remote table preview  Preview a table's data.
+  remote table detail   Print details of a table.
 
 Global Flags:
   -h, --help                       print help for command
