@@ -1,8 +1,10 @@
 package table
 
 import (
+	"strconv"
 	"time"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
@@ -32,7 +34,50 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 
 			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-import")
 
-			return tableImport.Run(d.CommandCtx(), tableImport.Options{}, d)
+			var tableID keboola.TableID
+			if len(args) == 0 {
+				allTables, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithColumns()).Send(d.CommandCtx())
+				if err != nil {
+					return err
+				}
+
+				table, err := d.Dialogs().AskTable(d.Options(), *allTables)
+				if err != nil {
+					return err
+				}
+				tableID = table.ID
+			} else {
+				id, err := keboola.ParseTableID(args[0])
+				if err != nil {
+					return err
+				}
+				tableID = id
+			}
+
+			var fileID int
+			if len(args) < 2 {
+				allRecentFiles, err := d.KeboolaProjectAPI().ListFilesRequest().Send(d.CommandCtx())
+				if err != nil {
+					return err
+				}
+				file, err := d.Dialogs().AskFile(*allRecentFiles)
+				if err != nil {
+					return err
+				}
+				fileID = file.ID
+			} else {
+				fileID, err = strconv.Atoi(args[1])
+				if err != nil {
+					return err
+				}
+			}
+
+			opts := tableImport.Options{FileID: fileID, TableID: tableID}
+			opts.Columns = d.Options().GetStringSlice("columns")
+			opts.IncrementalLoad = d.Options().GetBool("incremental-load")
+			opts.WithoutHeaders = d.Options().GetBool("without-headers")
+
+			return tableImport.Run(d.CommandCtx(), opts, d)
 		},
 	}
 
