@@ -211,6 +211,7 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 			DisplayName: t.DisplayName,
 			PrimaryKey:  t.PrimaryKey,
 			Columns:     t.Columns,
+			RowsCount:   t.RowsCount,
 		})
 	}
 
