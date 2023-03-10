@@ -1,0 +1,3 @@
+Command "remote table import"
+
+Imports a file in the Staging Storage to an existing table.

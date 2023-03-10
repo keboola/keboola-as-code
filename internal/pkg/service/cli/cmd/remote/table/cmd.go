@@ -14,8 +14,9 @@ func Commands(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/table/long`),
 	}
 	cmd.AddCommand(
-		PreviewCommand(p),
 		DetailCommand(p),
+		ImportCommand(p),
+		PreviewCommand(p),
 	)
 
 	return cmd
