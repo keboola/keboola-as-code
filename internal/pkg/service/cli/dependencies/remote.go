@@ -60,7 +60,7 @@ func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand, opts ...
 func storageAPIHost(fs filesystem.Fs, opts *options.Options) (string, error) {
 	var host string
 	if fs.IsFile(projectManifest.Path()) {
-		// Get host from remote manifest
+		// Get host from manifest
 		m, err := projectManifest.Load(fs, true)
 		if err != nil {
 			return "", err
