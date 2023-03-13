@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/benbjohnson/clock"
@@ -145,7 +146,12 @@ func WithProcessOptions(opts ...servicectx.Option) MockedOption {
 
 func WithTestProject(project *testproject.Project) MockedOption {
 	return func(c *MockedConfig) {
-		c.storageAPIHost = project.StorageAPIHost()
+		host := project.StorageAPIHost()
+		if !strings.HasPrefix(host, "http://") && !strings.HasPrefix(host, "https://") {
+			host = "https://" + host
+		}
+
+		c.storageAPIHost = host
 		c.storageAPIToken = *project.StorageAPIToken()
 
 		c.useRealAPIs = true
@@ -217,7 +223,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 		},
 		features:       keboola.Features{"FeatureA", "FeatureB"},
 		components:     testapi.MockedComponents(),
-		storageAPIHost: "mocked.transport.http",
+		storageAPIHost: "https://mocked.transport.http",
 		storageAPIToken: keboola.Token{
 			ID:       "token-12345-id",
 			Token:    "my-secret",
@@ -259,14 +265,14 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 	httpClient, mockedHTTPTransport := client.NewMockedClient()
 	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/v2/storage/", c.storageAPIHost),
+		fmt.Sprintf("%s/v2/storage/", c.storageAPIHost),
 		httpmock.NewJsonResponderOrPanic(200, &keboola.IndexComponents{
 			Index: keboola.Index{Services: c.services, Features: c.features}, Components: c.components,
 		}).Once(),
 	)
 	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/v2/storage/?exclude=components", c.storageAPIHost),
+		fmt.Sprintf("%s/v2/storage/?exclude=components", c.storageAPIHost),
 		httpmock.NewJsonResponderOrPanic(200, &keboola.IndexComponents{
 			Index: keboola.Index{Services: c.services, Features: c.features}, Components: keboola.Components{},
 		}),
@@ -279,7 +285,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 	}
 	mockedHTTPTransport.RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/v2/storage/tokens/verify", c.storageAPIHost),
+		fmt.Sprintf("%s/v2/storage/tokens/verify", c.storageAPIHost),
 		verificationResponder,
 	)
 

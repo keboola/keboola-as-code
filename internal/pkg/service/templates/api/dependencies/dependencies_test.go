@@ -53,7 +53,7 @@ func TestForPublicRequest_Components_Cached(t *testing.T) {
 	// Components are updated to "components2"
 	mockedDeps.MockedHTTPTransport().RegisterResponder(
 		http.MethodGet,
-		fmt.Sprintf("https://%s/v2/storage/", mockedDeps.StorageAPIHost()),
+		fmt.Sprintf("%s/v2/storage/", mockedDeps.StorageAPIHost()),
 		httpmock.NewJsonResponderOrPanic(200, &keboola.IndexComponents{
 			Components: components2,
 		}).Once(),
