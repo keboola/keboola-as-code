@@ -1,6 +1,8 @@
 package manifest
 
 import (
+	"strings"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
@@ -36,10 +38,13 @@ type Manifest struct {
 
 type Project struct {
 	ID      int    `json:"id" validate:"required"`
-	APIHost string `json:"apiHost" validate:"required,hostname"`
+	APIHost string `json:"apiHost" validate:"required"`
 }
 
 func New(projectID int, apiHost string) *Manifest {
+	// The "http://" protocol can be used in the API host
+	// Default HTTPS protocol is stripped, to keep backward compatibility.
+	apiHost = strings.TrimPrefix(apiHost, "https://")
 	return &Manifest{
 		records:      manifest.NewRecords(model.SortByID),
 		project:      Project{ID: projectID, APIHost: apiHost},
