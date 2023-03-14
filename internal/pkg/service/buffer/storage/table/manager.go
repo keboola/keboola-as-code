@@ -161,5 +161,8 @@ func (m *Manager) createBucket(ctx context.Context, rb rollback.Builder, bucketI
 		})
 		return bucket, nil
 	})
-	return bucket.(*keboola.Bucket), err
+	if err != nil {
+		return nil, err
+	}
+	return bucket.(*keboola.Bucket), nil
 }
