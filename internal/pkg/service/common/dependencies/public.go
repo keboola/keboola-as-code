@@ -56,25 +56,35 @@ func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 	}
 
 	baseHTTPClient := base.HTTPClient()
-	if c.preloadComponents {
-		indexComponents, err := keboola.APIIndexWithComponents(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient))
-		if err != nil {
-			return nil, err
-		}
 
-		v.keboolaPublicAPI = keboola.NewAPIFromIndex(storageAPIHost, &indexComponents.Index, keboola.WithClient(&baseHTTPClient))
-		v.components.Set(model.NewComponentsProvider(indexComponents, v.base.Logger(), v.keboolaPublicAPI))
-	} else {
-		index, err := keboola.APIIndex(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient))
+	// Load API index
+	var err error
+	var index *keboola.Index
+	var indexWithComponents *keboola.IndexComponents
+	if c.preloadComponents {
+		indexWithComponents, err = keboola.APIIndexWithComponents(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient))
 		if err != nil {
 			return nil, err
 		}
-		v.keboolaPublicAPI = keboola.NewAPIFromIndex(storageAPIHost, index, keboola.WithClient(&baseHTTPClient))
+		index = &indexWithComponents.Index
+	} else {
+		index, err = keboola.APIIndex(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Create API
+	v.keboolaPublicAPI = keboola.NewAPIFromIndex(storageAPIHost, index, keboola.WithClient(&baseHTTPClient))
+
+	// Cache components list if it has been loaded
+	if indexWithComponents != nil {
+		v.components.Set(model.NewComponentsProvider(indexWithComponents, v.base.Logger(), v.keboolaPublicAPI))
 	}
 
 	// Set values derived from the index
-	v.stackFeatures = v.keboolaPublicAPI.Index().Features.ToMap()
-	v.stackServices = v.keboolaPublicAPI.Index().Services.ToMap()
+	v.stackFeatures = index.Features.ToMap()
+	v.stackServices = index.Services.ToMap()
 
 	return v, nil
 }
