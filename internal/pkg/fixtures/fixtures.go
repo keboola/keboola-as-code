@@ -67,6 +67,7 @@ type Table struct {
 	PrimaryKey  []string        `json:"primaryKey"`
 	Columns     []string        `json:"columns"`
 	Rows        [][]string      `json:"rows,omitempty"`
+	RowsCount   uint64          `json:"rowsCount,omitempty"`
 }
 
 type File struct {
