@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/upload"
 )
 
 func (p *Dialogs) AskFile(allFiles []*keboola.File) (*keboola.File, error) {
@@ -38,4 +39,64 @@ func (p *Dialogs) AskFileOutput(opts *options.Options) (string, error) {
 	output = strings.TrimSpace(output)
 	opts.Set(`output`, output)
 	return output, nil
+}
+
+func (p *Dialogs) AskUploadFile(opts *options.Options) (upload.Options, error) {
+	res := upload.Options{}
+
+	name, err := p.askFileName(opts)
+	if err != nil {
+		return res, err
+	}
+	res.Name = name
+
+	res.Input = p.askFileInput(opts)
+
+	res.Tags = p.askFileTags(opts)
+
+	return res, nil
+}
+
+func (p *Dialogs) askFileInput(opts *options.Options) string {
+	input := opts.GetString(`data`)
+	if len(input) == 0 {
+		input, _ = p.Ask(&prompt.Question{
+			Label:       "File",
+			Description: "Enter a path for the file input or - to read from standard input.",
+		})
+	}
+
+	input = strings.TrimSpace(input)
+	opts.Set(`input`, input)
+	return input
+}
+
+func (p *Dialogs) askFileName(opts *options.Options) (string, error) {
+	if opts.IsSet("name") {
+		return opts.GetString("name"), nil
+	} else {
+		name, ok := p.Ask(&prompt.Question{
+			Label:     "Enter a name for the file",
+			Validator: prompt.ValueRequired,
+		})
+		if !ok || len(name) == 0 {
+			return "", errors.New("missing name, please specify it")
+		}
+		return name, nil
+	}
+}
+
+func (p *Dialogs) askFileTags(opts *options.Options) []string {
+	tagsStr := opts.GetString(`tags`)
+	if len(tagsStr) == 0 {
+		tagsStr, _ = p.Ask(&prompt.Question{
+			Label:       "Tags",
+			Description: "Enter a comma-separated list of tags.",
+		})
+	}
+
+	tagsStr = strings.TrimSpace(tagsStr)
+	tags := strings.Split(tagsStr, ",")
+	opts.Set(`input`, tags)
+	return tags
 }

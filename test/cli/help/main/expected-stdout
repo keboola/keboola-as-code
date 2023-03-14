@@ -48,6 +48,7 @@ Available Commands:
   remote create branch           Create a new branch from the main branch.
   remote file                    Manage files in your project.
   remote file download           Download file from Keboola Staging Storage.
+  remote file upload             Upload file to Keboola Staging Storage.
   remote job                     Manage jobs in your project.
   remote job run                 Run one or multiple jobs.
   remote workspace               Manage workspaces in the project.
