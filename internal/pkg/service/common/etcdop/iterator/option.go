@@ -69,7 +69,7 @@ func WithFromSameRev(v bool) Option {
 	}
 }
 
-// WithEnd defines end of the iteration, all keys from the range [prefix, end) will be loaded.
+// WithEnd defines end of the iteration, all keys from the range [prefix/, prefix/end) will be loaded.
 func WithEnd(v string) Option {
 	return func(c *config) {
 		c.end = c.prefix + v

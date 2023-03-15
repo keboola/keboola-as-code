@@ -22,7 +22,7 @@ func newWorkConfig(opts []WorkOption) workConfig {
 	return c
 }
 
-// WithResetInterval defines periodical reset interval of the ExecutorWork.
+// WithResetInterval defines periodical reset interval of the DistributedWork.
 func WithResetInterval(v time.Duration) WorkOption {
 	return func(c *workConfig) {
 		c.restartInterval = v

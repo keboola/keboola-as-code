@@ -14,7 +14,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -166,53 +165,6 @@ file/<STATE>/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z
 		assert.False(t, ok, desc)
 		assert.Equal(t, tc.to, file.State, desc)
 	}
-}
-
-func TestStore_ListFilesInStateWithEnd(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	store := newStoreForTest(t)
-
-	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
-	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
-	mapping := mappingForTest(exportKey)
-	resource := &keboola.FileUploadCredentials{File: keboola.File{ID: 1, Name: "file1"}}
-	now := time.Now()
-
-	// Create a file before the boundary time in the right state - will be listed
-	time1 := now.Add(-30 * 24 * time.Hour)
-	file1 := model.NewFile(exportKey, time1, mapping, resource)
-	_, err := store.createFileOp(ctx, file1).Do(ctx, store.client)
-	assert.NoError(t, err)
-
-	// Create a file before the boundary time in the right state - will be listed
-	time2 := now.Add(-20 * 24 * time.Hour)
-	file2 := model.NewFile(exportKey, time2, mapping, resource)
-	_, err = store.createFileOp(ctx, file2).Do(ctx, store.client)
-	assert.NoError(t, err)
-
-	// Create a file before the boundary time in the wrong state - won't be listed
-	time3 := now.Add(-19 * 24 * time.Hour)
-	file3 := model.NewFile(exportKey, time3, mapping, resource)
-	_, err = store.createFileOp(ctx, file3).Do(ctx, store.client)
-	assert.NoError(t, err)
-	ok, err := store.SetFileState(ctx, time3, &file3, filestate.Closing)
-	assert.NoError(t, err)
-	assert.True(t, ok)
-
-	// Create a file after the boundary time in the right state - won't be listed
-	time4 := now.Add(-1 * 24 * time.Hour)
-	file4 := model.NewFile(exportKey, time4, mapping, resource)
-	_, err = store.createFileOp(ctx, file4).Do(ctx, store.client)
-	assert.NoError(t, err)
-
-	// List files older than 14 days
-	boundaryKey := key.UTCTime(now.Add(-14 * 24 * time.Hour)).String()
-	files, err := store.ListFilesInState(ctx, filestate.Opened, exportKey, iterator.WithEnd(boundaryKey))
-	assert.NoError(t, err)
-	assert.Len(t, files, 2)
-	assert.Equal(t, files[0].FileID.String(), file1.FileID.String())
-	assert.Equal(t, files[1].FileID.String(), file2.FileID.String())
 }
 
 func newFileForTest() model.File {

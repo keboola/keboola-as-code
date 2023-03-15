@@ -8,7 +8,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// DistributedWork is a callback used by the Node.StartWork method.
+// DistributedWork defines a long-running operation
+// that should be reset if the distribution of nodes in the cluster changes.
+// It is a callback that is used by the Node.StartWork method.
 //
 // The responsibility of the callback is to start all tasks
 // that are assigned to the worker node according to the current distribution.
@@ -19,7 +21,10 @@ import (
 // The DistributedWork callback is called:
 //   - On initialization, after the Node.StartWork method is called.
 //   - On distribution change.
-//   - Periodically, according to the executorConfig.restartInterval.
+//   - Periodically, according to the workConfig.restartInterval.
+//
+// Before each invocation of the callback, for the reasons listed above, the previous context is canceled.
+// So invocation of the callback can be understood as a reset event, because the previous work is terminated.
 type DistributedWork func(ctx context.Context, assigner *Assigner) (initDone <-chan error)
 
 // StartWork starts the DistributedWork, see documentation there.
