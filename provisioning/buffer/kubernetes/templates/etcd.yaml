@@ -4,9 +4,9 @@
 resources:
   requests:
     cpu: "200m"
-    memory: "768Mi"
+    memory: "2000Mi"
   limits:
-    memory: "768Mi"
+    memory: "2000Mi"
 
 # Run defragmentation each 2 hours
 defragmentation:
