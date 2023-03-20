@@ -18,7 +18,7 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 		Use:   `import [table] [file]`,
 		Short: helpmsg.Read(`remote/table/import/short`),
 		Long:  helpmsg.Read(`remote/table/import/long`),
-		Args:  cobra.MinimumNArgs(2),
+		Args:  cobra.MaximumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Ask for host and token if needed
 			baseDeps := p.BaseDependencies()
