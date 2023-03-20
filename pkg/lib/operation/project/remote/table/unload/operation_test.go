@@ -31,5 +31,4 @@ func TestParseUnloadFormat(t *testing.T) {
 	v, err = ParseFormat("JSON")
 	assert.NoError(t, err)
 	assert.Equal(t, keboola.UnloadFormatJSON, v)
-
 }
