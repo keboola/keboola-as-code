@@ -17,7 +17,7 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 		Use:   `download [file]`,
 		Short: helpmsg.Read(`remote/file/download/short`),
 		Long:  helpmsg.Read(`remote/file/download/long`),
-		Args:  cobra.MinimumNArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Ask for host and token if needed
 			baseDeps := p.BaseDependencies()
