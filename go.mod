@@ -5,8 +5,8 @@ go 1.19
 replace github.com/google/go-jsonnet v0.19.1 => github.com/keboola/go-jsonnet v0.19.1
 
 require (
-	ariga.io/atlas v0.9.1
-	entgo.io/ent v0.11.9
+	ariga.io/atlas v0.9.2-0.20230303073438-03a4779a6338
+	entgo.io/ent v0.11.10
 	github.com/ActiveState/vt10x v1.3.1
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/Masterminds/semver v1.5.0
