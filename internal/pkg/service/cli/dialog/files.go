@@ -88,7 +88,7 @@ func (p *Dialogs) askFileName(opts *options.Options) (string, error) {
 
 func (p *Dialogs) askFileTags(opts *options.Options) []string {
 	tagsStr := opts.GetString(`tags`)
-	if len(tagsStr) == 0 {
+	if !opts.IsSet(`tags`) {
 		tagsStr, _ = p.Ask(&prompt.Question{
 			Label:       "Tags",
 			Description: "Enter a comma-separated list of tags.",
