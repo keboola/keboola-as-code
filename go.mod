@@ -37,7 +37,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/qmuntal/stateless v1.6.3
 	github.com/santhosh-tekuri/jsonschema/v5 v5.2.0
-	github.com/schollz/progressbar/v3 v3.13.0
+	github.com/schollz/progressbar/v3 v3.13.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/afero v1.9.5
 	github.com/spf13/cast v1.5.0
