@@ -7,6 +7,7 @@ Available Commands:
   remote table detail   Print details of a table.
   remote table import   Import data to a table.
   remote table preview  Preview a table's data.
+  remote table unload   Export a table's data into file storage.
 
 Global Flags:
   -h, --help                       print help for command
