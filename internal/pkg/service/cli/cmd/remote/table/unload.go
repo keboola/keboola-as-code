@@ -73,7 +73,7 @@ func UnloadCommand(p dependencies.Provider) *cobra.Command {
 	cmd.Flags().Uint("limit", 100, "limit the number of exported rows")
 	cmd.Flags().String("where", "", "filter columns by value")
 	cmd.Flags().String("order", "", "order by one or more columns")
-	cmd.Flags().String("format", string(keboola.UnloadFormatCSV), "output format (json/csv)")
+	cmd.Flags().String("format", "csv", "output format (json/csv)")
 	cmd.Flags().Bool("async", false, "do not wait for unload to finish")
 	cmd.Flags().String("timeout", "2m", "how long to wait for job to finish")
 
