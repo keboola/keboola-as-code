@@ -68,7 +68,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		if err != nil {
 			return errors.Errorf("failed to start unload job: %w", err)
 		}
-		d.Logger().Info(`Table storage job started successfully with ID "%d".`, job.ID)
+		d.Logger().Info(`Storage job started successfully with ID "%d".`, job.ID)
 	} else {
 		d.Logger().Info("Unloading table, please wait.")
 		file, err := request.SendAndWait(ctx, o.Timeout)
