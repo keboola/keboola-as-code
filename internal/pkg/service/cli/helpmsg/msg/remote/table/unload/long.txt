@@ -1,0 +1,3 @@
+Command "remote table preview"
+
+Export a table's data into file storage.

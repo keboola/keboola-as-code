@@ -1,0 +1,58 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    }
+  ],
+  "buckets": [
+    {
+      "id": "in.c-test",
+      "uri": "%s/v2/storage/buckets/in.c-test",
+      "displayName": "test",
+      "description": "",
+      "tables": [
+        {
+          "id": "in.c-test.accounts",
+          "uri": "%s/v2/storage/tables/in.c-test.accounts",
+          "name": "accounts",
+          "displayName": "accounts",
+          "primaryKey": [
+            "Id",
+            "Name"
+          ],
+          "columns": [
+            "Id",
+            "Name",
+            "Region",
+            "Status",
+            "First_Order"
+          ],
+          "rowsCount": 4
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "in.c-test.accounts.csv",
+      "tags": [
+        "table-export"
+      ],
+      "isSliced": true,
+      "isEncrypted": true,
+      "isPermanent": false
+    },
+    {
+      "name": "in.c_test.accounts.data",
+      "tags": [],
+      "isSliced": false,
+      "isEncrypted": true,
+      "isPermanent": false
+    }
+  ]
+}
