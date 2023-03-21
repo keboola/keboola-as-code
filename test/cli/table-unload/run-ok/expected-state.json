@@ -12,13 +12,13 @@
   "buckets": [
     {
       "id": "in.c-test",
-      "uri": "https://connection.keboola.com/v2/storage/buckets/in.c-test",
+      "uri": "%s/v2/storage/buckets/in.c-test",
       "displayName": "test",
       "description": "",
       "tables": [
         {
           "id": "in.c-test.accounts",
-          "uri": "https://connection.keboola.com/v2/storage/tables/in.c-test.accounts",
+          "uri": "%s/v2/storage/tables/in.c-test.accounts",
           "name": "accounts",
           "displayName": "accounts",
           "primaryKey": [
@@ -56,4 +56,3 @@
     }
   ]
 }
-
