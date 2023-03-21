@@ -12,6 +12,14 @@ import (
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/upload"
 )
 
+func (p *Dialogs) AskFileInput() string {
+	v, _ := p.Ask(&prompt.Question{
+		Label:       "File",
+		Description: "Enter a path for the file input.",
+	})
+	return v
+}
+
 func (p *Dialogs) AskFile(allFiles []*keboola.File) (*keboola.File, error) {
 	selectOpts := make([]string, 0)
 	for _, w := range allFiles {

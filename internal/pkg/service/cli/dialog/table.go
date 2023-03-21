@@ -10,6 +10,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+func (p *Dialogs) AskTableID() string {
+	v, _ := p.Ask(&prompt.Question{
+		Label:       "Table",
+		Description: "Enter the destination table ID",
+	})
+	return v
+}
+
 func (p *Dialogs) AskTable(
 	d *options.Options,
 	allTables []*keboola.Table,
