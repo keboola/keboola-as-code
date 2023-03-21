@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,7 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
@@ -79,19 +79,34 @@ func TestCleanup(t *testing.T) {
 	_, err = service.New(workerDeps, serviceOps...)
 	assert.NoError(t, err)
 
-	time.Sleep(time.Second)
+	// Trigger cleanup
 	clk.Add(cleanupInterval)
 
+	// Wait for the cleanup task
+	assert.Eventually(t, func() bool {
+		return strings.Contains(workerDeps.DebugLogger().AllMessages(), "task succeeded")
+	}, 10*time.Second, 100*time.Millisecond)
+
 	// Shutdown
-	time.Sleep(2 * time.Second)
 	workerDeps.Process().Shutdown(errors.New("bye bye Worker 1"))
 	workerDeps.Process().WaitForShutdown()
 
-	// Check cleanup logs
+	// Check logs
 	wildcards.Assert(t, `
-[service][cleanup]INFO  deleting file "00001000/github/first/%s"
-	`, strhelper.FilterLines(`^(\[service\]\[cleanup\])`, workerDeps.DebugLogger().AllMessages()))
+%A
+[task][00001000/github/receiver.cleanup/%s]INFO  started task
+[task][00001000/github/receiver.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/00001000/github/receiver.cleanup"
+[service][cleanup]INFO  started "1" receiver cleanup tasks
+[task][00001000/github/receiver.cleanup/%s]INFO  deleted "0" tasks
+[task][00001000/github/receiver.cleanup/%s]INFO  deleted slice "00001000/github/first/%s"
+[task][00001000/github/receiver.cleanup/%s]INFO  deleted file "00001000/github/first/%s"
+[task][00001000/github/receiver.cleanup/%s]INFO  deleted "1" files, "1" slices, "0" records
+[task][00001000/github/receiver.cleanup/%s]INFO  task succeeded (%s): receiver "00001000/github" has been cleaned
+[task][00001000/github/receiver.cleanup/%s]DEBUG  lock released "runtime/lock/task/00001000/github/receiver.cleanup"
+%A
+	`, workerDeps.DebugLogger().AllMessages())
 
+	// Check etcd state
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 config/export/00001000/github/another
@@ -145,5 +160,21 @@ secret/export/token/00001000/github/first
 slice/active/opened/writing/00001000/github/another/%s
 -----
 %A
->>>>>`)
+>>>>>
+
+<<<<<
+task/00001000/github/receiver.cleanup/%s
+-----
+{
+  "projectId": 1000,
+  "taskId": "github/receiver.cleanup/%s",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "workerNode": "%s",
+  "lock": "runtime/lock/task/00001000/github/receiver.cleanup",
+  "result": "receiver \"00001000/github\" has been cleaned",
+  "duration": %d
+}
+>>>>>
+`)
 }

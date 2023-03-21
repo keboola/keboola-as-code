@@ -1,4 +1,4 @@
-package cleanup
+package cleanup_test
 
 import (
 	"context"
@@ -7,9 +7,11 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/cleanup"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -17,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -28,39 +31,39 @@ func Test_Cleanup(t *testing.T) {
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	d := bufferDependencies.NewMockedDeps(t, dependencies.WithEtcdNamespace(etcdNamespace))
-	str := d.Store()
 	schema := d.Schema()
 
-	cleanup := New(client, d.Clock(), d.Logger(), schema, str)
+	node := cleanup.NewNode(d, d.Logger().AddPrefix("[cleanup]"))
 
+	// Create receiver and 3 exports
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "github"}
 	exportKey1 := key.ExportKey{ExportID: "first", ReceiverKey: receiverKey}
-	exportKey2 := key.ExportKey{ExportID: "another", ReceiverKey: receiverKey}
+	exportKey2 := key.ExportKey{ExportID: "second", ReceiverKey: receiverKey}
 	exportKey3 := key.ExportKey{ExportID: "third", ReceiverKey: receiverKey}
-	receiver := model.Receiver{
-		ReceiverBase: model.ReceiverBase{
-			ReceiverKey: receiverKey,
-			Name:        "rec1",
-			Secret:      "sec1",
-		},
-		Exports: []model.Export{
-			{
-				ExportBase: model.ExportBase{
-					ExportKey: exportKey1,
-				},
-			},
-			{
-				ExportBase: model.ExportBase{
-					ExportKey: exportKey2,
-				},
-			},
-			{
-				ExportBase: model.ExportBase{
-					ExportKey: exportKey3,
-				},
-			},
-		},
+	receiver := model.ReceiverBase{
+		ReceiverKey: receiverKey,
+		Name:        "rec1",
+		Secret:      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
 	}
+	export1 := model.ExportBase{
+		ExportKey:        exportKey1,
+		Name:             "First Export",
+		ImportConditions: model.DefaultImportConditions(),
+	}
+	export2 := model.ExportBase{
+		ExportKey:        exportKey2,
+		Name:             "Second Export",
+		ImportConditions: model.DefaultImportConditions(),
+	}
+	export3 := model.ExportBase{
+		ExportKey:        exportKey3,
+		Name:             "Third Export",
+		ImportConditions: model.DefaultImportConditions(),
+	}
+	assert.NoError(t, schema.Configs().Receivers().ByKey(receiver.ReceiverKey).Put(receiver).Do(ctx, client))
+	assert.NoError(t, schema.Configs().Exports().ByKey(exportKey1).Put(export1).Do(ctx, client))
+	assert.NoError(t, schema.Configs().Exports().ByKey(exportKey2).Put(export2).Do(ctx, client))
+	assert.NoError(t, schema.Configs().Exports().ByKey(exportKey3).Put(export3).Do(ctx, client))
 
 	// Add task without a finishedAt timestamp but too old - will be deleted
 	createdAtRaw, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
@@ -190,11 +193,56 @@ func Test_Cleanup(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Run the cleanup
-	err = cleanup.Run(ctx, receiver)
+	err = node.Check(ctx)
 	assert.NoError(t, err)
+
+	// Shutdown - wait for tasks
+	d.Process().Shutdown(errors.New("bye bye"))
+	d.Process().WaitForShutdown()
+
+	// Check logs
+	wildcards.Assert(t, `
+%A
+[task][00001000/github/receiver.cleanup/%s]INFO  started task
+[task][00001000/github/receiver.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/00001000/github/receiver.cleanup"
+[cleanup]INFO  started "1" receiver cleanup tasks
+%A
+[task][00001000/github/receiver.cleanup/%s]INFO  deleted task "00001000/github/some.task/2006-01-02T08:04:05.000Z_abcdef"
+[task][00001000/github/receiver.cleanup/%s]INFO  deleted "1" tasks
+[task][00001000/github/receiver.cleanup/%s]INFO  deleted slice "00001000/github/first/2006-01-02T08:04:05.000Z"
+[task][00001000/github/receiver.cleanup/%s]INFO  deleted file "00001000/github/first/2006-01-02T08:04:05.000Z"
+[task][00001000/github/receiver.cleanup/%s]INFO  deleted "1" files, "1" slices, "1" records
+[task][00001000/github/receiver.cleanup/%s]INFO  task succeeded (%s): receiver "00001000/github" has been cleaned
+[task][00001000/github/receiver.cleanup/%s]DEBUG  lock released "runtime/lock/task/00001000/github/receiver.cleanup"
+%A
+`, d.DebugLogger().AllMessages())
 
 	// Check keys
 	etcdhelper.AssertKVsString(t, client, `
+<<<<<
+config/receiver/00001000/github
+-----
+%A
+>>>>>
+
+<<<<<
+config/export/00001000/github/first
+-----
+%A
+>>>>>
+
+<<<<<
+config/export/00001000/github/second
+-----
+%A
+>>>>>
+
+<<<<<
+config/export/00001000/github/third
+-----
+%A
+>>>>>
+
 <<<<<
 file/opened/00001000/github/third/%s
 -----
@@ -284,6 +332,21 @@ task/00001000/github/other.task/2006-01-02T08:04:05.000Z_ghijkl
   "workerNode": "node2",
   "lock": "lock2",
   "result": "res"
+}
+>>>>>
+
+<<<<<
+task/00001000/github/receiver.cleanup/%s
+-----
+{
+  "projectId": 1000,
+  "taskId": "github/receiver.cleanup/%s",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "workerNode": "%s",
+  "lock": "runtime/lock/task/00001000/github/receiver.cleanup",
+  "result": "receiver \"00001000/github\" has been cleaned",
+  "duration": %d
 }
 >>>>>
 `)

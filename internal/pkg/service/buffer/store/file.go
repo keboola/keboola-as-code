@@ -11,7 +11,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -69,31 +68,6 @@ func (s *Store) getFileOp(_ context.Context, fileKey key.FileKey) op.ForType[*op
 			}
 			return kv, err
 		})
-}
-
-func (s *Store) ListFilesInState(ctx context.Context, state filestate.State, exportKey key.ExportKey, ops ...iterator.Option) (files []model.File, err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.ListFilesInState")
-	defer telemetry.EndSpan(span, &err)
-
-	files = make([]model.File, 0)
-	err = s.fileInStateIterator(ctx, state, exportKey, ops...).Do(ctx, s.client).
-		ForEachValue(func(file model.File, header *iterator.Header) error {
-			files = append(files, file)
-			return nil
-		})
-
-	if err != nil {
-		return nil, err
-	}
-	return files, nil
-}
-
-func (s *Store) fileInStateIterator(_ context.Context, state filestate.State, exportKey key.ExportKey, ops ...iterator.Option) iterator.DefinitionT[model.File] {
-	return s.schema.
-		Files().
-		InState(state).
-		InExport(exportKey).
-		GetAll(ops...)
 }
 
 // SetFileState method atomically changes the state of the file.

@@ -3,77 +3,37 @@ package service
 import (
 	"context"
 	"sync"
-	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	cleanupPkg "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/cleanup"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-type cleanup struct {
-	*Service
-	logger   log.Logger
-	assigner *distribution.Assigner
-}
+func (s *Service) cleanup(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
+	logger := s.logger.AddPrefix("[cleanup]")
+	node := cleanupPkg.NewNode(d, logger)
 
-func (s *Service) cleanup(ctx context.Context, wg *sync.WaitGroup) <-chan error {
-	return s.dist.StartWork(ctx, wg, s.logger, func(ctx context.Context, assigner *distribution.Assigner) <-chan error {
-		c := &cleanup{
-			Service:  s,
-			logger:   s.logger.AddPrefix("[cleanup]"),
-			assigner: assigner,
-		}
+	initDone := make(chan error)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		ticker := s.clock.Ticker(s.config.cleanupInterval)
+		defer ticker.Stop()
 
-			ticker := c.clock.Ticker(c.config.cleanupInterval)
-			defer ticker.Stop()
+		logger.Infof("ready")
+		close(initDone) // no error expected
 
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-ticker.C:
-					c.check(ctx)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := node.Check(ctx); err != nil && !errors.Is(err, context.Canceled) {
+					logger.Error(err)
 				}
 			}
-		}()
-
-		initDone := make(chan error)
-		defer close(initDone)
-		return initDone
-	})
-}
-
-func (c *cleanup) check(ctx context.Context) {
-	now := c.clock.Now()
-	receivers, err := c.store.ListAllReceivers(ctx)
-	if err != nil {
-		c.logger.Error(err)
-		return
-	}
-
-	for _, receiver := range receivers {
-		if !c.assigner.MustCheckIsOwner(receiver.ReceiverKey.String()) {
-			// Another worker node handles the resource.
-			continue
 		}
+	}()
 
-		cleanup := cleanupPkg.New(c.etcdClient, c.clock, c.logger, c.schema, c.store)
-		err := cleanup.Run(ctx, receiver)
-		if err != nil && !errors.Is(err, context.Canceled) {
-			c.logger.Error(err)
-		}
-
-		select {
-		case <-ctx.Done():
-			return
-		case <-c.clock.After(100 * time.Millisecond):
-			// let's wait a moment to not overload etcd database
-		}
-	}
-	c.logger.Infof(`finished | %s`, c.clock.Since(now))
+	return initDone
 }
