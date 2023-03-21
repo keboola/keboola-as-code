@@ -53,6 +53,10 @@ removeMemberOnContainerTermination: false
 extraEnvVars:
   - name: ETCD_DISABLE_STORE_MEMBER_ID
     value: "yes"
+  # Optimize memory usage, see: https://etcd.io/docs/v3.5/tuning/#snapshots
+  # Default value in etcd v3.2+ is "100 000": https://etcd.io/docs/v3.5/op-guide/maintenance/#raft-log-retention
+  - name: ETCD_SNAPSHOT_COUNT
+    value: "10000"
 
 # The root password is used for authentication, the client gets a JWT token with short expiration.
 auth:
