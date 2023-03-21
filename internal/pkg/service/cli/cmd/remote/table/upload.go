@@ -1,14 +1,12 @@
 package table
 
 import (
-	"fmt"
 	"path"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cobra"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
@@ -97,7 +95,7 @@ func parseUploadOptions(options *options.Options, filePath string, tableID keboo
 	if path.Base(o.FilePath) == "." || path.Base(o.FilePath) == "/" {
 		return upload.Options{}, errors.Errorf(`invalid file path "%s"`, o.FilePath)
 	}
-	o.FileName = fmt.Sprintf("%s_%s", idgenerator.Random(10), path.Base(o.FilePath))
+	o.FileName = path.Base(o.FilePath)
 	o.IncrementalLoad = options.GetBool("incremental-load")
 
 	return o, nil

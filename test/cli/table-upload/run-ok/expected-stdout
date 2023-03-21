@@ -1,0 +1,7 @@
+Checking for bucket "in.c-my-bucket".
+Bucket "in.c-my-bucket" does not exist, creating it.
+Bucket "in.c-my-bucket" exists.
+Uploading file "data.csv".
+File "data.csv" uploaded with file id "%d".
+Loading file "data.csv" into table "in.c-my-bucket.data".
+Uploaded "data.csv" to table "in.c-my-bucket.data".

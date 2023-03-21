@@ -8,6 +8,7 @@ Available Commands:
   remote table import   Import data to a table.
   remote table preview  Preview a table's data.
   remote table unload   Export a table's data into file storage.
+  remote table upload   Upload file to Keboola Staging Storage.
 
 Global Flags:
   -h, --help                       print help for command
