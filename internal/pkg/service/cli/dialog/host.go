@@ -3,8 +3,8 @@ package dialog
 import (
 	"net/url"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
@@ -20,7 +20,7 @@ func (p *Dialogs) AskStorageAPIHost(d hostAndTokenDependencies) (string, error) 
 			Description: "Please enter Keboola Storage API host, eg. \"connection.keboola.com\".",
 			Validator:   StorageAPIHostValidator,
 		})
-	} else if opts.KeySetBy("storage-api-host") == options.SetByEnv {
+	} else if opts.KeySetBy("storage-api-host") == cliconfig.SetByEnv {
 		d.Logger().Infof(`Storage API host "%s" set from ENV.`, host)
 	}
 

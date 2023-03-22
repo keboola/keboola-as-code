@@ -3,8 +3,8 @@ package dialog
 import (
 	"strings"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -20,7 +20,7 @@ func (p *Dialogs) AskStorageAPIToken(d hostAndTokenDependencies) (string, error)
 			Hidden:      true,
 			Validator:   prompt.ValueRequired,
 		})
-	} else if opts.KeySetBy("storage-api-token") == options.SetByEnv {
+	} else if opts.KeySetBy("storage-api-token") == cliconfig.SetByEnv {
 		d.Logger().Infof(`Storage API token set from ENV.`)
 	}
 
