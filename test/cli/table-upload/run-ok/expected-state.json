@@ -37,7 +37,9 @@
   "files": [
     {
       "name": "data.csv",
-      "tags": [],
+      "tags": [
+        "test"
+      ],
       "isSliced": false,
       "isEncrypted": true,
       "isPermanent": false

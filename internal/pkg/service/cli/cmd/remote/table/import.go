@@ -61,7 +61,7 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 					primaryKey = d.Dialogs().AskPrimaryKey(d.Options())
 				}
 			} else {
-				id, err := keboola.ParseTableID(args[1])
+				id, err := keboola.ParseTableID(args[0])
 				if err != nil {
 					return err
 				}

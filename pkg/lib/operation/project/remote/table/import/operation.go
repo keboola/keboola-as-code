@@ -49,7 +49,6 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 		d.Logger().Infof(`Created new table "%s" from file with id "%d".`, o.TableID, o.FileID)
 	} else {
-		d.Logger().Infof(`Table "%s" exists, loading data into it.`, o.TableID)
 		job, err := d.KeboolaProjectAPI().LoadDataFromFileRequest(o.TableID, o.FileID, getLoadOptions(&o)...).Send(ctx)
 		if err != nil {
 			return err
@@ -62,7 +61,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		if err != nil {
 			return err
 		}
-		d.Logger().Infof(`Loaded table "%s" with data from file "%d".`, o.TableID, o.FileID)
+		d.Logger().Infof(`Loaded data from file "%d" into table "%s".`, o.FileID, o.TableID)
 	}
 
 	return nil
