@@ -12,7 +12,6 @@ import (
 )
 
 func (p *Dialogs) AskPrimaryKey(o *options.Options) []string {
-
 	pkStr := o.GetString(`primary-key`)
 	if !o.IsSet(`primary-key`) {
 		pkStr, _ = p.Ask(&prompt.Question{
