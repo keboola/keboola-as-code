@@ -1,18 +1,17 @@
 package table
 
 import (
-	"path"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	common "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/upload"
+	fileUpload "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/upload"
+	tableImport "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/import"
 )
 
 func UploadCommand(p dependencies.Provider) *cobra.Command {
@@ -28,75 +27,82 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
+			var inputFile string
+			if len(args) > 0 {
+				inputFile = args[0]
+			}
+
+			fileUploadOpts, err := baseDeps.Dialogs().AskUploadFile(baseDeps.Options(), inputFile)
+			if err != nil {
+				return err
+			}
+
 			// Get dependencies
 			d, err := p.DependenciesForRemoteCommand(common.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
 
-			var filePath string
-			if len(args) < 1 {
-				filePath = d.Dialogs().AskFileInput()
-			} else {
-				filePath = args[0]
-			}
-			if !d.Fs().Exists(filePath) {
-				return errors.Errorf(`file "%s" not found`, filePath)
-			}
-
 			var tableID keboola.TableID
+			var primaryKey []string
 			if len(args) < 2 {
-				if d.Options().IsSet("incremental-load") {
-					allTables, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithColumns()).Send(d.CommandCtx())
-					if err != nil {
-						return err
-					}
-					table, err := d.Dialogs().AskTable(d.Options(), *allTables)
-					if err != nil {
-						return err
-					}
+				allTables, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithColumns()).Send(d.CommandCtx())
+				if err != nil {
+					return err
+				}
+
+				table, err := d.Dialogs().AskTable(d.Options(), *allTables, dialog.WithAllowCreateNewTable())
+				if err != nil {
+					return err
+				}
+
+				if table != nil {
+					// user selected table
 					tableID = table.ID
 				} else {
+					// user asked to create new table
 					tableID, err = keboola.ParseTableID(d.Dialogs().AskTableID())
 					if err != nil {
 						return err
 					}
+
+					primaryKey = d.Dialogs().AskPrimaryKey(d.Options())
 				}
 			} else {
-				tableID, err = keboola.ParseTableID(args[1])
+				id, err := keboola.ParseTableID(args[1])
 				if err != nil {
 					return err
 				}
-			}
-
-			opts, err := parseUploadOptions(d.Options(), filePath, tableID)
-			if err != nil {
-				return err
+				tableID = id
 			}
 
 			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-upload")
 
-			return upload.Run(d.CommandCtx(), opts, d)
+			file, err := fileUpload.Run(d.CommandCtx(), fileUploadOpts, d)
+			if err != nil {
+				return err
+			}
+
+			tableImportOpts := tableImport.Options{
+				FileID:          file.ID,
+				TableID:         tableID,
+				Columns:         d.Options().GetStringSlice("columns"),
+				IncrementalLoad: d.Options().GetBool("incremental-load"),
+				WithoutHeaders:  d.Options().GetBool("without-headers"),
+				PrimaryKey:      primaryKey,
+			}
+
+			return tableImport.Run(d.CommandCtx(), tableImportOpts, d)
 		},
 	}
 
 	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
+	cmd.Flags().String("columns", "", "comma separated list of column names. If present, the first row in the CSV file is not treated as a header")
 	cmd.Flags().Bool("incremental-load", false, "data are either added to existing data in the table or replace the existing data")
+	cmd.Flags().Bool("without-headers", false, "states if the CSV file contains headers on the first row or not")
+	cmd.Flags().StringSlice("primary-key", nil, "primary key for the newly created table if the table doesn't exist")
+	cmd.Flags().String("name", "", "name of the file to be created")
+	cmd.Flags().String("tags", "", "comma-separated list of tags")
 
 	return cmd
-}
-
-func parseUploadOptions(options *options.Options, filePath string, tableID keboola.TableID) (upload.Options, error) {
-	o := upload.Options{}
-
-	o.TableID = tableID
-	o.FilePath = filePath
-
-	if path.Base(o.FilePath) == "." || path.Base(o.FilePath) == "/" {
-		return upload.Options{}, errors.Errorf(`invalid file path "%s"`, o.FilePath)
-	}
-	o.FileName = path.Base(o.FilePath)
-	o.IncrementalLoad = options.GetBool("incremental-load")
-
-	return o, nil
 }
