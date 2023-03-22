@@ -6,22 +6,23 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const Prefix = "KBC_"
-
-type NamingConvention struct{}
-
-func NewNamingConvention() *NamingConvention {
-	return &NamingConvention{}
+type NamingConvention struct {
+	prefix   string
+	replacer *strings.Replacer
 }
 
-// Replace converts flag name to ENV variable name
+func NewNamingConvention(prefix string) *NamingConvention {
+	return &NamingConvention{prefix: prefix, replacer: strings.NewReplacer("-", "_", ".", "_")}
+}
+
+// FlagToEnv converts flag name to ENV variable name
 // for example "storage-api-host" -> "KBC_STORAGE_API_HOST".
-func (*NamingConvention) Replace(flagName string) string {
+func (n *NamingConvention) FlagToEnv(flagName string) string {
 	if len(flagName) == 0 {
 		panic(errors.New("flag name cannot be empty"))
 	}
 
-	return Prefix + strings.ToUpper(strings.ReplaceAll(flagName, "-", "_"))
+	return n.prefix + strings.ToUpper(n.replacer.Replace(flagName))
 }
 
 func Files() []string {

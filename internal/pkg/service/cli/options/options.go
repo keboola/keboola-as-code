@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 )
 
 const (
@@ -20,14 +21,8 @@ const (
 
 type parser = viper.Viper
 
-type SetBy int
-
 const (
-	SetByUnknown SetBy = iota
-	SetByFlag
-	SetByFlagDefault
-	SetByEnv
-	SetManually
+	EnvPrefix = "KBC_"
 )
 
 // Options manages parsed flags, ENV files and ENV variables.
@@ -35,17 +30,17 @@ type Options struct {
 	*parser
 	envNaming   *env.NamingConvention
 	envs        *env.Map
-	setBy       map[string]SetBy
+	setBy       map[string]cliconfig.SetBy
 	Verbose     bool   // verbose mode, print details to console
 	VerboseAPI  bool   // log each API request and response
 	LogFilePath string // path to the log file
 }
 
 func New() *Options {
-	envNaming := env.NewNamingConvention()
+	envNaming := env.NewNamingConvention(EnvPrefix)
 	return &Options{
 		envNaming: envNaming,
-		setBy:     make(map[string]SetBy),
+		setBy:     make(map[string]cliconfig.SetBy),
 		parser:    viper.New(),
 	}
 }
@@ -55,8 +50,12 @@ func (o *Options) Load(logger log.Logger, osEnvs *env.Map, fs filesystem.Fs, fla
 	o.envs = o.loadEnvFiles(logger, osEnvs, fs)
 
 	// Bind all flags and corresponding ENVs
-	if err := o.bindFlagsAndEnvs(flags); err != nil {
+	if setBy, err := cliconfig.BindFlagsAndEnvToViper(o.parser, flags, o.envs, o.envNaming); err != nil {
 		return err
+	} else {
+		for k, v := range setBy {
+			o.setBy[k] = v
+		}
 	}
 
 	// Load global options
@@ -67,41 +66,17 @@ func (o *Options) Load(logger log.Logger, osEnvs *env.Map, fs filesystem.Fs, fla
 }
 
 func (o *Options) GetEnvName(flagName string) string {
-	return o.envNaming.Replace(flagName)
+	return o.envNaming.FlagToEnv(flagName)
 }
 
 func (o *Options) Set(key string, value any) {
 	o.parser.Set(key, value)
-	o.setBy[key] = SetManually
+	o.setBy[key] = cliconfig.SetManually
 }
 
 // KeySetBy method informs how the value of the key was set.
-func (o *Options) KeySetBy(key string) SetBy {
+func (o *Options) KeySetBy(key string) cliconfig.SetBy {
 	return o.setBy[key]
-}
-
-func (o *Options) bindFlagsAndEnvs(flags *pflag.FlagSet) error {
-	if err := o.BindPFlags(flags); err != nil {
-		return err
-	}
-
-	// For each know flag -> search for ENV
-	envs := make(map[string]interface{})
-	flags.VisitAll(func(flag *pflag.Flag) {
-		envName := o.envNaming.Replace(flag.Name)
-		if flag.Changed {
-			o.setBy[flag.Name] = SetByFlag
-		} else if v, found := o.envs.Lookup(envName); found {
-			envs[flag.Name] = v
-			o.setBy[flag.Name] = SetByEnv
-		} else {
-			o.setBy[flag.Name] = SetByFlagDefault
-		}
-	})
-
-	// Set config, it has < priority as flag.
-	// ... so flag value is used if set, otherwise ENV is used.
-	return o.MergeConfigMap(envs)
 }
 
 func (o *Options) loadEnvFiles(logger log.Logger, osEnvs *env.Map, fs filesystem.Fs) *env.Map {
