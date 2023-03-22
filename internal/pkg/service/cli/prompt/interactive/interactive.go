@@ -7,11 +7,9 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
-	"github.com/mattn/go-isatty"
 	"github.com/umisama/go-regexpcache"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
@@ -30,18 +28,12 @@ func init() {
 	survey.MultilineQuestionTemplate += `{{"\n"}}`
 }
 
-func New(stdinRaw io.Reader, stdoutRaw io.Writer, stderr io.Writer) prompt.Prompt {
-	stdin, ok1 := stdinRaw.(terminal.FileReader)
-	stdout, ok2 := stdoutRaw.(terminal.FileWriter)
-	if ok1 && ok2 && isatty.IsTerminal(stdin.Fd()) && isatty.IsTerminal(stdout.Fd()) {
-		return &Prompt{
-			stdin:  stdin,
-			stdout: stdout,
-			stderr: stderr,
-		}
+func New(stdin terminal.FileReader, stdout terminal.FileWriter, stderr io.Writer) *Prompt {
+	return &Prompt{
+		stdin:  stdin,
+		stdout: stdout,
+		stderr: stderr,
 	}
-
-	return nop.New()
 }
 
 func (p *Prompt) SetEditor(editor string) {

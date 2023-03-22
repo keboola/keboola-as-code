@@ -5,13 +5,13 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/clifs"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd"
-	interactivePrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
 )
 
 func main() {
 	// Interactive prompt
-	prompt := interactivePrompt.New(os.Stdin, os.Stdout, os.Stderr)
+	p := cli.NewPrompt(os.Stdin, os.Stdout, os.Stderr)
 
 	// Load Os Envs
 	osEnvs, err := env.FromOs()
@@ -20,6 +20,6 @@ func main() {
 	}
 
 	// Run command
-	rootCmd := cmd.NewRootCommand(os.Stdin, os.Stdout, os.Stderr, prompt, osEnvs, clifs.New)
+	rootCmd := cmd.NewRootCommand(os.Stdin, os.Stdout, os.Stderr, p, osEnvs, clifs.New)
 	os.Exit(rootCmd.Execute())
 }
