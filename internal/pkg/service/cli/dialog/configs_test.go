@@ -75,6 +75,25 @@ func TestSelectConfigByFlag(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestSelectConfigNonInteractive(t *testing.T) {
+	t.Parallel()
+
+	// Dependencies
+	dialog, _ := createDialogs(t, false)
+	o := options.New()
+	o.Set(`non-interactive`, `true`)
+
+	// All configs
+	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: `foo.bar`, ID: "1"}, Name: `Config 1`}}
+	config2 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: `foo.bar`, ID: "2"}, Name: `Config 2`}}
+	config3 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: `foo.bar`, ID: "3"}, Name: `Config 3`}}
+	allConfigs := []*model.ConfigWithRows{config1, config2, config3}
+
+	// Run
+	_, err := dialog.SelectConfig(o, allConfigs, `LABEL`)
+	assert.ErrorContains(t, err, "please specify config")
+}
+
 func TestSelectConfigMissing(t *testing.T) {
 	t.Parallel()
 

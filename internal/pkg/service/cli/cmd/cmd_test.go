@@ -13,7 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
@@ -225,5 +224,5 @@ func newTestRootCommand(fs filesystem.Fs) (*RootCommand, *ioutil.AtomicWriter) {
 	envs := env.Empty()
 	envs.Set("KBC_TEMPLATES_PRIVATE_BETA", "true")
 
-	return NewRootCommand(in, out, out, nopPrompt.New(), envs, fsFactory), out
+	return NewRootCommand(in, out, out, envs, fsFactory), out
 }

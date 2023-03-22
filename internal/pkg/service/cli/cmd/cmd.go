@@ -24,7 +24,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -86,7 +85,7 @@ type RootCommand struct {
 }
 
 // NewRootCommand creates parent of all sub-commands.
-func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt prompt.Prompt, envs *env.Map, fsFactory filesystem.Factory) *RootCommand {
+func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *env.Map, fsFactory filesystem.Factory) *RootCommand {
 	// Command definition
 	root := &RootCommand{
 		options:   options.New(),
@@ -151,6 +150,9 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 		root.setupLogger()
 		root.fs.SetLogger(root.logger)
 		root.logger.Debug(`Working dir: `, filesystem.Join(root.fs.BasePath(), root.fs.WorkingDir()))
+
+		// Interactive prompt
+		prompt := cli.NewPrompt(os.Stdin, os.Stdout, os.Stderr, root.options.GetBool(options.NonInteractiveOpt))
 
 		// Create dependencies provider
 		p.Set(dependencies.NewProvider(cmd.Context(), envs, root.logger, root.fs, dialog.New(prompt), root.options))

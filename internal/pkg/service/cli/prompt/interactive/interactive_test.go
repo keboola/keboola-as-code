@@ -17,7 +17,7 @@ func TestPrompt_Select(t *testing.T) {
 	// Create virtual console
 	console, err := terminal.New(t)
 	assert.NoError(t, err)
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty())
+	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -54,7 +54,7 @@ func TestPrompt_SelectIndex(t *testing.T) {
 	// Create virtual console
 	console, err := terminal.New(t)
 	assert.NoError(t, err)
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty())
+	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -91,7 +91,7 @@ func TestPrompt_MultiSelect(t *testing.T) {
 	// Create virtual console
 	console, err := terminal.New(t)
 	assert.NoError(t, err)
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty())
+	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -127,7 +127,7 @@ func TestPrompt_MultiSelectIndex(t *testing.T) {
 	// Create virtual console
 	console, err := terminal.New(t)
 	assert.NoError(t, err)
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty())
+	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -163,7 +163,7 @@ func TestPrompt_ShowLeaveBlank(t *testing.T) {
 	// Create virtual console
 	console, err := terminal.New(t)
 	assert.NoError(t, err)
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty())
+	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -203,7 +203,7 @@ func TestPrompt_HideLeaveBlank(t *testing.T) {
 	// Create virtual console
 	console, err := terminal.New(t)
 	assert.NoError(t, err)
-	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty())
+	p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
 
 	// Interaction
 	wg := sync.WaitGroup{}

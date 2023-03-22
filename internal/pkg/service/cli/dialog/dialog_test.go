@@ -29,7 +29,7 @@ func createDialogs(t *testing.T, interactive bool) (*dialog.Dialogs, terminal.Co
 		assert.NoError(t, err)
 
 		// Create prompt
-		p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty())
+		p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
 
 		// Create dialogs
 		return dialog.New(p), console
