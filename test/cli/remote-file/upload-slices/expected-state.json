@@ -1,0 +1,24 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    }
+  ],
+  "files": [
+    {
+      "name": "file1",
+      "tags": [
+        "t1",
+        "t2"
+      ],
+      "isSliced": true,
+      "isEncrypted": true,
+      "isPermanent": false
+    }
+  ]
+}
