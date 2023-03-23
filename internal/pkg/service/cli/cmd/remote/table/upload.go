@@ -17,8 +17,8 @@ import (
 func UploadCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `upload [file] [table]`,
-		Short: helpmsg.Read(`remote/file/upload/short`),
-		Long:  helpmsg.Read(`remote/file/upload/long`),
+		Short: helpmsg.Read(`remote/table/upload/short`),
+		Long:  helpmsg.Read(`remote/table/upload/long`),
 		Args:  cobra.MaximumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Ask for host and token if needed
