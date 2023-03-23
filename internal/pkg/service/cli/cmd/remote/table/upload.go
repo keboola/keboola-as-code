@@ -1,7 +1,6 @@
 package table
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -11,19 +10,30 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	common "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	fileUpload "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/upload"
 	tableImport "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/import"
 )
 
-func ImportCommand(p dependencies.Provider) *cobra.Command {
+func UploadCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   `import [table] [file]`,
-		Short: helpmsg.Read(`remote/table/import/short`),
-		Long:  helpmsg.Read(`remote/table/import/long`),
+		Use:   `upload [file] [table]`,
+		Short: helpmsg.Read(`remote/table/upload/short`),
+		Long:  helpmsg.Read(`remote/table/upload/long`),
 		Args:  cobra.MaximumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Ask for host and token if needed
 			baseDeps := p.BaseDependencies()
 			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
+				return err
+			}
+
+			var inputFile string
+			if len(args) > 0 {
+				inputFile = args[0]
+			}
+
+			fileUploadOpts, err := baseDeps.Dialogs().AskUploadFile(baseDeps.Options(), inputFile)
+			if err != nil {
 				return err
 			}
 
@@ -33,11 +43,9 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-import")
-
 			var tableID keboola.TableID
 			var primaryKey []string
-			if len(args) < 1 {
+			if len(args) < 2 {
 				allTables, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithColumns()).Send(d.CommandCtx())
 				if err != nil {
 					return err
@@ -61,33 +69,22 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 					primaryKey = d.Dialogs().AskPrimaryKey(d.Options())
 				}
 			} else {
-				id, err := keboola.ParseTableID(args[0])
+				id, err := keboola.ParseTableID(args[1])
 				if err != nil {
 					return err
 				}
 				tableID = id
 			}
 
-			var fileID int
-			if len(args) < 2 {
-				allRecentFiles, err := d.KeboolaProjectAPI().ListFilesRequest().Send(d.CommandCtx())
-				if err != nil {
-					return err
-				}
-				file, err := d.Dialogs().AskFile(*allRecentFiles)
-				if err != nil {
-					return err
-				}
-				fileID = file.ID
-			} else {
-				fileID, err = strconv.Atoi(args[1])
-				if err != nil {
-					return err
-				}
+			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-upload")
+
+			file, err := fileUpload.Run(d.CommandCtx(), fileUploadOpts, d)
+			if err != nil {
+				return err
 			}
 
-			opts := tableImport.Options{
-				FileID:          fileID,
+			tableImportOpts := tableImport.Options{
+				FileID:          file.ID,
 				TableID:         tableID,
 				Columns:         d.Options().GetStringSlice("columns"),
 				IncrementalLoad: d.Options().GetBool("incremental-load"),
@@ -95,7 +92,7 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 				PrimaryKey:      primaryKey,
 			}
 
-			return tableImport.Run(d.CommandCtx(), opts, d)
+			return tableImport.Run(d.CommandCtx(), tableImportOpts, d)
 		},
 	}
 
@@ -104,6 +101,8 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 	cmd.Flags().Bool("incremental-load", false, "data are either added to existing data in the table or replace the existing data")
 	cmd.Flags().Bool("without-headers", false, "states if the CSV file contains headers on the first row or not")
 	cmd.Flags().StringSlice("primary-key", nil, "primary key for the newly created table if the table doesn't exist")
+	cmd.Flags().String("name", "", "name of the file to be created")
+	cmd.Flags().String("tags", "", "comma-separated list of tags")
 
 	return cmd
 }

@@ -41,7 +41,7 @@ func (p *Dialogs) AskFileOutput(opts *options.Options) (string, error) {
 	return output, nil
 }
 
-func (p *Dialogs) AskUploadFile(opts *options.Options) (upload.Options, error) {
+func (p *Dialogs) AskUploadFile(opts *options.Options, input string) (upload.Options, error) {
 	res := upload.Options{}
 
 	name, err := p.askFileName(opts)
@@ -50,7 +50,11 @@ func (p *Dialogs) AskUploadFile(opts *options.Options) (upload.Options, error) {
 	}
 	res.Name = name
 
-	res.Input = p.askFileInput(opts)
+	if len(input) > 0 {
+		res.Input = input
+	} else {
+		res.Input = p.askFileInput(opts)
+	}
 
 	res.Tags = p.askFileTags(opts)
 
@@ -91,7 +95,7 @@ func (p *Dialogs) askFileTags(opts *options.Options) []string {
 	if !opts.IsSet(`tags`) {
 		tagsStr, _ = p.Ask(&prompt.Question{
 			Label:       "Tags",
-			Description: "Enter a comma-separated list of tags.",
+			Description: "Enter a comma-separated list of tags, or enter to skip.",
 		})
 	}
 

@@ -1,0 +1,3 @@
+Command "remote table upload"
+
+Upload data from a file to a storage table.

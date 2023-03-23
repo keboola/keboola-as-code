@@ -1,0 +1,24 @@
+Command "remote table upload"
+
+Upload data from a file to a storage table.
+
+Usage:
+  kbc remote table upload [file] [table] [flags]
+
+Flags:
+      --columns string            comma separated list of column names. If present, the first row in the CSV file is not treated as a header
+      --incremental-load          data are either added to existing data in the table or replace the existing data
+      --name string               name of the file to be created
+      --primary-key strings       primary key for the newly created table if the table doesn't exist
+  -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
+      --tags string               comma-separated list of tags
+      --without-headers           states if the CSV file contains headers on the first row or not
+
+Global Flags:
+  -h, --help                       print help for command
+  -l, --log-file string            path to a log file for details
+      --non-interactive            disable interactive dialogs
+  -t, --storage-api-token string   storage API token from your project
+  -v, --verbose                    print details
+      --verbose-api                log each API request and response
+  -d, --working-dir string         use other working directory
