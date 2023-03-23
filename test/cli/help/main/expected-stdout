@@ -100,6 +100,7 @@ Aliases:
 Flags:
   -h, --help                       print help for command
   -l, --log-file string            path to a log file for details
+      --non-interactive            disable user interaction
   -t, --storage-api-token string   storage API token from your project
   -v, --verbose                    print details
       --verbose-api                log each API request and response

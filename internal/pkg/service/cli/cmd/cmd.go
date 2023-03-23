@@ -121,6 +121,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, prompt 
 	flags.SortFlags = true
 	flags.BoolP("help", "h", false, "print help for command")
 	flags.StringP("log-file", "l", "", "path to a log file for details")
+	flags.Bool("non-interactive", false, "disable user interaction")
 	flags.StringP("working-dir", "d", "", "use other working directory")
 	flags.StringP("storage-api-token", "t", "", "storage API token from your project")
 	flags.BoolP("verbose", "v", false, "print details")
