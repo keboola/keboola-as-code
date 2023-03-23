@@ -4,6 +4,7 @@ package upload
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"os"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 type dependencies interface {
@@ -32,29 +34,40 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.file.upload")
 	defer telemetry.EndSpan(span, &err)
 
-	var reader io.Reader
-	var bar *progressbar.ProgressBar
-	if o.Input == "-" {
-		reader = bufio.NewReader(os.Stdin)
-	} else {
-		file, err := os.Open(o.Input) // nolint: forbidigo
+	opts := make([]keboola.CreateFileOption, 0)
+	if len(o.Tags) > 0 {
+		opts = append(opts, keboola.WithTags(o.Tags...))
+	}
+
+	// Check files existence
+	var fr *os.File
+	var fi os.FileInfo
+	if o.Input != "-" {
+		fr, err = os.Open(o.Input) // nolint: forbidigo
 		if err != nil {
 			if os.IsNotExist(err) {
 				return errors.Errorf("file %s not found", o.Input)
 			}
 			return errors.Errorf(`error reading file "%s": %w`, o.Input, err)
 		}
-		fi, err := file.Stat()
+		fi, err = fr.Stat()
 		if err != nil {
 			return errors.Errorf(`error reading file "%s": %w`, o.Input, err)
 		}
-		bar = progressbar.DefaultBytes(fi.Size(), "uploading")
-		reader = bufio.NewReader(file)
-	}
 
-	opts := make([]keboola.CreateFileOption, 0)
-	if len(o.Tags) > 0 {
-		opts = append(opts, keboola.WithTags(o.Tags...))
+		if fi.IsDir() {
+			files, err := os.ReadDir(o.Input)
+			if err != nil {
+				return errors.Errorf(`error reading files in folder "%s": %w`, o.Input, err)
+			}
+			for _, f := range files {
+				_, err := f.Info()
+				if err != nil {
+					return errors.Errorf(`error reading file "%s" in folder "%s": %w`, f.Name(), o.Input, err)
+				}
+			}
+			opts = append(opts, keboola.WithIsSliced(true))
+		}
 	}
 
 	file, err := d.KeboolaProjectAPI().CreateFileResourceRequest(o.Name, opts...).Send(ctx)
@@ -62,12 +75,60 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		return errors.Errorf(`error creating file resource: %w`, err)
 	}
 
+	// Upload from stdin
+	if o.Input == "-" {
+		err = upload(ctx, file, bufio.NewReader(os.Stdin), nil)
+		if err != nil {
+			return errors.Errorf(`error uploading file from stdin: %w`, err)
+		}
+		d.Logger().Infof(`File "%s" uploaded with file id "%d".`, o.Name, file.ID)
+		return nil
+	}
+
+	// Upload single file
+	if !fi.IsDir() {
+		bar := progressbar.DefaultBytes(fi.Size(), "uploading")
+		reader := bufio.NewReader(fr)
+		err = upload(ctx, file, reader, bar)
+		if err != nil {
+			return errors.Errorf(`error uploading file "%s": %w`, o.Input, err)
+		}
+		d.Logger().Infof(`File "%s" uploaded with file id "%d".`, o.Name, file.ID)
+		return nil
+	}
+
+	// Upload sliced file from folder
+	files, err := os.ReadDir(o.Input)
+	if err != nil {
+		return errors.Errorf(`error reading files in folder "%s": %w`, o.Input, err)
+	}
+	for i, f := range files {
+		fr, err = os.Open(fmt.Sprintf("%s/%s", o.Input, f.Name())) // nolint: forbidigo
+		if err != nil {
+			return errors.Errorf(`error reading file "%s" in folder "%s": %w`, f.Name(), o.Input, err)
+		}
+		fInfo, err := f.Info()
+		if err != nil {
+			return errors.Errorf(`error reading file "%s" in folder "%s": %w`, f.Name(), o.Input, err)
+		}
+		bar := progressbar.DefaultBytes(fInfo.Size(), fmt.Sprintf(`uploading slice "%s" %d/%d`, strhelper.Truncate(f.Name(), 20, "..."), i+1, len(files)))
+		err = upload(ctx, file, fr, bar)
+		if err != nil {
+			return errors.Errorf(`error uploading file "%s": %w`, o.Input, err)
+		}
+	}
+
+	d.Logger().Infof(`File "%s" uploaded with file id "%d".`, o.Name, file.ID)
+	return nil
+}
+
+func upload(ctx context.Context, file *keboola.FileUploadCredentials, reader io.Reader, bar *progressbar.ProgressBar) (err error) {
 	blobWriter, err := keboola.NewUploadWriter(ctx, file)
 	defer func() {
 		err = blobWriter.Close()
 	}()
 	if err != nil {
-		return errors.Errorf(`error uploading file "%s": %w`, o.Input, err)
+		return err
 	}
 	var writer io.Writer
 	if bar != nil {
@@ -77,8 +138,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	}
 	_, err = io.Copy(writer, reader)
 	if err != nil {
-		return errors.Errorf(`error uploading file "%s": %w`, o.Input, err)
+		return err
 	}
-	d.Logger().Infof(`File "%s" uploaded with file id "%d".`, o.Name, file.ID)
 	return nil
 }
