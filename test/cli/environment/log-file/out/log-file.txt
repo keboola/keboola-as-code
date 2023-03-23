@@ -8,6 +8,7 @@ DEBUG	Parsed options:
 DEBUG	  log-file = "./log-file.txt"
 DEBUG	Default options:
 DEBUG	  help = false
+DEBUG	  non-interactive = false
 DEBUG	  storage-api-token = ""
 DEBUG	  verbose = false
 DEBUG	  verbose-api = false

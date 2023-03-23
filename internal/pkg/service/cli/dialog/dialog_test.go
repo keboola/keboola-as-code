@@ -7,8 +7,8 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
-	interactivePrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/interactive"
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 )
@@ -29,10 +29,10 @@ func createDialogs(t *testing.T, interactive bool) (*dialog.Dialogs, terminal.Co
 		assert.NoError(t, err)
 
 		// Create prompt
-		prompt := interactivePrompt.New(console.Tty(), console.Tty(), console.Tty())
+		p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
 
 		// Create dialogs
-		return dialog.New(prompt), console
+		return dialog.New(p), console
 	} else {
 		return dialog.New(nopPrompt.New()), nil
 	}

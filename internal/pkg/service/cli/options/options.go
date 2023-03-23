@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	NonInteractiveOpt  = `non-interactive`
 	StorageAPIHostOpt  = `storage-api-host`
 	StorageAPITokenOpt = `storage-api-token`
 )

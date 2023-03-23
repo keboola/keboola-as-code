@@ -75,6 +75,25 @@ func TestSelectBranchByFlag(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestSelectBranchNonInteractive(t *testing.T) {
+	t.Parallel()
+
+	// Dependencies
+	dialog, _ := createDialogs(t, false)
+	o := options.New()
+	o.Set(`non-interactive`, true)
+
+	// All branches
+	branch1 := &model.Branch{BranchKey: model.BranchKey{ID: 1}, Name: `Branch 1`}
+	branch2 := &model.Branch{BranchKey: model.BranchKey{ID: 2}, Name: `Branch 2`}
+	branch3 := &model.Branch{BranchKey: model.BranchKey{ID: 3}, Name: `Branch 3`}
+	allBranches := []*model.Branch{branch1, branch2, branch3}
+
+	// Run
+	_, err := dialog.SelectBranch(o, allBranches, `LABEL`)
+	assert.ErrorContains(t, err, "please specify branch")
+}
+
 func TestSelectBranchMissing(t *testing.T) {
 	t.Parallel()
 
