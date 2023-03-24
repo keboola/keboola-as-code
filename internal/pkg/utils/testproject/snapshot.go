@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
 	"golang.org/x/sync/errgroup"
@@ -186,14 +188,26 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 	grp.Go(func() error {
 		// Files metadata are not atomic, wait a moment.
 		// The creation/deletion of the file does not take effect immediately.
-		time.Sleep(100 * time.Millisecond)
-		return p.keboolaProjectAPI.
-			ListFilesRequest().
-			WithOnSuccess(func(_ context.Context, apiFiles *[]*keboola.File) error {
-				files = *apiFiles
-				return nil
-			}).
-			SendOrErr(ctx)
+		// We accept the result if it is 10x the same.
+		for attempt := 0; attempt < 10; attempt++ {
+			time.Sleep(100 * time.Millisecond)
+			err := p.keboolaProjectAPI.
+				ListFilesRequest().
+				WithOnSuccess(func(_ context.Context, apiFiles *[]*keboola.File) error {
+					// Reset the counter, if results differs.
+					// Ignore the URL field, it may contain a random/volatile time-based signature.
+					if files != nil && !cmp.Equal(&files, apiFiles, cmpopts.IgnoreFields(keboola.File{}, "URL")) {
+						attempt = 0
+					}
+					files = *apiFiles
+					return nil
+				}).
+				SendOrErr(ctx)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 
 	// Wait for requests
