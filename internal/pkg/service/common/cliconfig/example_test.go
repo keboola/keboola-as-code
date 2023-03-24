@@ -27,17 +27,24 @@ func ExampleGenerateFlags() {
 	fmt.Print(usage)
 
 	// output:
+	//       --address string
+	//       --address-nullable string
+	//       --duration string
+	//       --duration-nullable string
+	//       --embedded string
 	//       --float float
 	//       --int int
 	//       --nested.bar int
 	//       --nested.foo-123 string
 	//       --string string               (default "default value")
 	//       --string-with-usage string   An usage text.
+	//       --url string
 }
 
-func ExampleBindFlagsAndEnvToStruct() {
+func ExampleBindToStruct() {
 	config := Config{String: "default value"}
 	flags := []string{
+		"--embedded", "embedded value",
 		"--int", "1000",
 		"--float", "78.90",
 		"--nested.foo-123", "abc",
@@ -59,7 +66,7 @@ func ExampleBindFlagsAndEnvToStruct() {
 	}
 
 	// Bind flags and environment variables to the config struct
-	err = cliconfig.BindFlagsAndEnvToStruct(&config, fs, envs, envNaming)
+	err = cliconfig.BindToStruct(&config, fs, envs, envNaming)
 	if err != nil {
 		panic(err)
 	}
@@ -68,11 +75,19 @@ func ExampleBindFlagsAndEnvToStruct() {
 
 	// output:
 	// (cliconfig_test.Config) {
+	//  Embedded: (cliconfig_test.Embedded) {
+	//   EmbeddedField: (string) (len=14) "embedded value"
+	//  },
 	//  Ignored: (string) "",
 	//  String: (string) (len=13) "default value",
 	//  Int: (int) 1000,
 	//  Float: (float64) 78.9,
 	//  StringWithUsage: (string) "",
+	//  Duration: (time.Duration) 0s,
+	//  DurationNullable: (*time.Duration)(<nil>),
+	//  URL: (*url.URL)(<nil>),
+	//  Addr: (netip.Addr) invalid IP,
+	//  AddrNullable: (*netip.Addr)(<nil>),
 	//  Nested: (cliconfig_test.Nested) {
 	//   Ignored: (string) "",
 	//   Foo: (string) (len=3) "abc",
@@ -81,9 +96,10 @@ func ExampleBindFlagsAndEnvToStruct() {
 	// }
 }
 
-func ExampleBindFlagsAndEnvToViper() {
+func ExampleBindToViper() {
 	config := Config{String: "default value"}
 	flags := []string{
+		"--embedded", "embedded value",
 		"--int", "1000",
 		"--float", "78.90",
 		"--nested.foo-123", "abc",
@@ -106,12 +122,12 @@ func ExampleBindFlagsAndEnvToViper() {
 
 	// Bind flags and environment variables to the config struct
 	v := viper.New()
-	_, err = cliconfig.BindFlagsAndEnvToViper(v, fs, envs, envNaming)
+	_, err = cliconfig.BindToViper(v, fs, envs, envNaming)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Print(v.AllSettings())
 
-	// output: map[float:78.9 int:1000 nested:map[bar:9999 foo-123:abc] string:default value string-with-usage:]
+	// output: map[address: address-nullable: duration: duration-nullable: embedded:embedded value float:78.9 int:1000 nested:map[bar:9999 foo-123:abc] string:default value string-with-usage: url:]
 }

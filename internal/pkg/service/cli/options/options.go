@@ -51,7 +51,7 @@ func (o *Options) Load(logger log.Logger, osEnvs *env.Map, fs filesystem.Fs, fla
 	o.envs = o.loadEnvFiles(logger, osEnvs, fs)
 
 	// Bind all flags and corresponding ENVs
-	if setBy, err := cliconfig.BindFlagsAndEnvToViper(o.parser, flags, o.envs, o.envNaming); err != nil {
+	if setBy, err := cliconfig.BindToViper(o.parser, flags, o.envs, o.envNaming); err != nil {
 		return err
 	} else {
 		for k, v := range setBy {

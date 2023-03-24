@@ -192,3 +192,8 @@ issues:
       text: "filepath."
       linters:
         - forbidigo
+    # Allow direct printing to the console
+    - path: internal/pkg/service/common/cliconfig/*
+      text: "fmt."
+      linters:
+        - forbidigo
