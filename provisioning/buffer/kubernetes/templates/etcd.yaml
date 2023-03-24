@@ -12,8 +12,3 @@ resources:
 defragmentation:
   cronjob:
     schedule: "0 */2 * * *"
-
-# Set disk size
-persistence:
-  enabled: true
-  size: 10Gi

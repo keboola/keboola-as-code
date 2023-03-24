@@ -53,6 +53,9 @@ removeMemberOnContainerTermination: false
 extraEnvVars:
   - name: ETCD_DISABLE_STORE_MEMBER_ID
     value: "yes"
+  # Set max DB size to 8GB, it is the recommended maximum.
+  - name: ETCD_QUOTA_BACKEND_BYTES
+    value: "8589934592"
   # Optimize memory usage, see: https://etcd.io/docs/v3.5/tuning/#snapshots
   # Default value in etcd v3.2+ is "100 000": https://etcd.io/docs/v3.5/op-guide/maintenance/#raft-log-retention
   - name: ETCD_SNAPSHOT_COUNT
@@ -88,10 +91,10 @@ networkPolicy:
           matchLabels:
             app: datadog-agent
 
-# Records are persisted
+# Set disk size
 persistence:
   enabled: true
-  size: 512Mi
+  size: 10Gi
 
 # At least 51% of the cluster must be available during rollout,
 # otherwise, the quorum is lost and the cluster will not work.

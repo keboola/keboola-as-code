@@ -33,6 +33,11 @@ kubectl apply -f ./kubernetes/deploy/namespace.yaml
 # Get etcd root password, if it is already present
 export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "$NAMESPACE" templates-api-etcd -o jsonpath="{.data.etcd-root-password}" 2>/dev/null | base64 -d)
 
+# TEMPORARY:
+# Delete StatefulSet, keep pods, to resize the PVC disks.
+kubectl delete sts --namespace "$NAMESPACE" "templates-api-etcd"
+kubectl delete pvc --namespace "$NAMESPACE" "data-templates-api-etcd-0"
+
 # Deploy etcd cluster
 helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
 helm upgrade \
