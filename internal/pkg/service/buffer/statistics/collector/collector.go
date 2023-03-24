@@ -4,23 +4,22 @@ package collector
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 )
 
-const SyncInterval = time.Second
-
 // Node collects node statistics in memory and periodically synchronizes them to the database.
 type Node struct {
 	nodeID string
+	config config.Config
 	logger log.Logger
 	clock  clock.Clock
 	store  *store.Store
@@ -38,6 +37,7 @@ type sliceStats struct {
 }
 
 type Dependencies interface {
+	APIConfig() config.Config
 	Logger() log.Logger
 	Clock() clock.Clock
 	Process() *servicectx.Process
@@ -47,6 +47,7 @@ type Dependencies interface {
 func NewNode(d Dependencies) *Node {
 	m := &Node{
 		nodeID:        d.Process().UniqueID(),
+		config:        d.APIConfig(),
 		logger:        d.Logger().AddPrefix("[stats]"),
 		clock:         d.Clock(),
 		store:         d.Store(),
@@ -69,7 +70,7 @@ func NewNode(d Dependencies) *Node {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ticker := m.clock.Ticker(SyncInterval)
+		ticker := m.clock.Ticker(m.config.StatisticsSyncInterval)
 		defer ticker.Stop()
 		for {
 			select {
