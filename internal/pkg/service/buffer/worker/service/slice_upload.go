@@ -100,7 +100,7 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 				defer s.events.SendSliceUploadEvent(ctx, api, time.Now(), &err, slice)
 
 				// Create file manager
-				files := file.NewManager(d.Clock(), api, s.config.uploadTransport)
+				files := file.NewManager(d.Clock(), api, s.config.UploadTransport)
 
 				// Upload slice, set statistics
 				reader := newRecordsReader(ctx, s.logger, s.etcdClient, s.schema, slice)

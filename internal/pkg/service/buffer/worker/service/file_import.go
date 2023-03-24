@@ -97,7 +97,7 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 					if err != nil {
 						return "", err
 					}
-					files := filePkg.NewManager(d.Clock(), api, s.config.uploadTransport)
+					files := filePkg.NewManager(d.Clock(), api, s.config.UploadTransport)
 
 					// Delete the empty file resource
 					if err := files.DeleteFile(ctx, fileRes); err != nil {

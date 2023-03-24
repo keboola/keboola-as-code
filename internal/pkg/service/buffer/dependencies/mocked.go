@@ -39,6 +39,9 @@ type Mocked interface {
 
 	APIConfig() apiConfig.Config
 	SetAPIConfigOps(ops ...apiConfig.Option)
+	WorkerConfig() workerConfig.Config
+	SetWorkerConfigOps(ops ...workerConfig.Option)
+
 	// Token based:
 
 	TokenManager() *token.Manager
@@ -58,6 +61,7 @@ type mocked struct {
 	taskWorkerNode     *task.Node
 	statsCacheNode     *statistics.CacheNode
 	apiConfig          apiConfig.Config
+	workerConfig       workerConfig.Config
 	eventSender        *event.Sender
 	tokenManager       *token.Manager
 	tableManager       *table.Manager
@@ -72,6 +76,7 @@ func NewMockedDeps(t *testing.T, opts ...dependencies.MockedOption) Mocked {
 		apiConfig: apiConfig.NewConfig().Apply(
 			apiConfig.WithPublicAddress(&url.URL{Scheme: "https", Host: "buffer.keboola.local"}),
 		),
+		workerConfig: workerConfig.NewConfig(),
 	}
 }
 
@@ -163,6 +168,15 @@ func (v *mocked) SetAPIConfigOps(ops ...apiConfig.Option) {
 func (v *mocked) APIConfig() apiConfig.Config {
 	return v.apiConfig
 }
+
+func (v *mocked) SetWorkerConfigOps(ops ...workerConfig.Option) {
+	v.workerConfig = v.workerConfig.Apply(ops...)
+}
+
+func (v *mocked) WorkerConfig() workerConfig.Config {
+	return v.workerConfig
+}
+
 func (v *mocked) TokenManager() *token.Manager {
 	if v.tokenManager == nil {
 		v.tokenManager = token.NewManager(v)

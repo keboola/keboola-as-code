@@ -126,7 +126,7 @@ func (c *checker) check(ctx context.Context) {
 		}
 
 		// Check upload conditions
-		if met, reason := c.config.uploadConditions.Evaluate(now, sliceKey.OpenedAt(), c.stats.SliceStats(sliceKey).Total); met {
+		if met, reason := c.config.UploadConditions.Evaluate(now, sliceKey.OpenedAt(), c.stats.SliceStats(sliceKey).Total); met {
 			if err := c.swapSlice(ctx, sliceKey, reason); err != nil {
 				c.logger.Error(err)
 			}
@@ -201,7 +201,7 @@ func (c *checker) startTicker(ctx context.Context, wg *sync.WaitGroup) {
 	go func() {
 		defer wg.Done()
 
-		ticker := c.clock.Ticker(c.config.checkConditionsInterval)
+		ticker := c.clock.Ticker(c.config.CheckConditionsInterval)
 		defer ticker.Stop()
 
 		for {

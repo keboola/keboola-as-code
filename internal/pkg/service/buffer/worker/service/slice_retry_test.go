@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
+	workerConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -78,19 +79,19 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 
 	// Start worker node
 	workerDeps := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("my-worker"))...)
-	workerDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
-	_, err := service.New(
-		workerDeps,
-		service.WithUploadTransport(uploadTransport),
-		service.WithCheckConditions(false),
-		service.WithCleanup(false),
-		service.WithCloseSlices(true),
-		service.WithUploadSlices(true),
-		service.WithRetryFailedSlices(true),
-		service.WithCloseFiles(false),
-		service.WithImportFiles(false),
-		service.WithRetryFailedFiles(false),
+	workerDeps.SetWorkerConfigOps(
+		workerConfig.WithUploadTransport(uploadTransport),
+		workerConfig.WithConditionsCheck(false),
+		workerConfig.WithCleanup(false),
+		workerConfig.WithCloseSlices(true),
+		workerConfig.WithUploadSlices(true),
+		workerConfig.WithRetryFailedSlices(true),
+		workerConfig.WithCloseFiles(false),
+		workerConfig.WithImportFiles(false),
+		workerConfig.WithRetryFailedFiles(false),
 	)
+	workerDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
+	_, err := service.New(workerDeps)
 	assert.NoError(t, err)
 
 	// Get slices
