@@ -28,6 +28,7 @@ func TestBufferWorkerE2E(t *testing.T) {
 	ts.test002SliceUpload()
 	ts.test003FileImport()
 	ts.test004EmptyFileAndSlice()
+	ts.test998BufferSizeOverflow()
 	ts.test999Cleanup()
 
 	// Shutdown all nodes
