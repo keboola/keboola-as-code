@@ -1,5 +1,5 @@
 import * as common from "./common.js";
-import { post } from "./common.js";
+import {checkResponse, post} from "./common.js";
 
 export const options = common.options;
 
@@ -34,6 +34,6 @@ export function teardown(data) {
 }
 
 export default function (data) {
-  post(data.receiver.url, data.payload, data.headers);
+  checkResponse(post(data.receiver.url, data.payload, data.headers));
 }
 
