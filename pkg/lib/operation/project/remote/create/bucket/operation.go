@@ -3,6 +3,7 @@ package bucket
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
@@ -30,6 +31,9 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 
 	logger := d.Logger()
 
+	if !strings.HasPrefix(o.Name, "c-") {
+		o.Name = "c-" + o.Name
+	}
 	b := &keboola.Bucket{
 		ID: keboola.BucketID{
 			Stage:      o.Stage,
@@ -42,6 +46,6 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	if err != nil {
 		return err
 	}
-	logger.Info(fmt.Sprintf(`Created new bucket "%s".`, b.ID.String()))
+	logger.Info(fmt.Sprintf(`Created bucket "%s".`, b.ID.String()))
 	return nil
 }
