@@ -334,14 +334,11 @@ func (t *Test) runAPIServer(
 		t.t.Fatalf("Could not receive a free port: %s", err)
 	}
 	apiURL := fmt.Sprintf("http://localhost:%d", port)
-
-	args := append([]string{fmt.Sprintf("--http-port=%d", port)}, addArgs...)
+	args := append([]string{fmt.Sprintf("--listen-address=%s", apiURL)}, addArgs...)
 
 	// Envs
 	envs := env.Empty()
 	envs.Set("PATH", os.Getenv("PATH")) // nolint:forbidigo
-	envs.Set("KBC_STORAGE_API_HOST", t.project.StorageAPIHost())
-	envs.Set("DATADOG_ENABLED", "false")
 	envs.Merge(addEnvs, false)
 
 	// Start API server

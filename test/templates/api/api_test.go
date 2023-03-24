@@ -50,11 +50,13 @@ func TestTemplatesApiE2E(t *testing.T) {
 		addArgs := []string{fmt.Sprintf("--repositories=%s", repositories)}
 
 		addEnvs := env.FromMap(map[string]string{
-			"TEMPLATES_API_ETCD_ENABLED":   "true",
-			"TEMPLATES_API_ETCD_NAMESPACE": idgenerator.EtcdNamespaceForTest(),
-			"TEMPLATES_API_ETCD_ENDPOINT":  os.Getenv("TEMPLATES_API_ETCD_ENDPOINT"),
-			"TEMPLATES_API_ETCD_USERNAME":  os.Getenv("TEMPLATES_API_ETCD_USERNAME"),
-			"TEMPLATES_API_ETCD_PASSWORD":  os.Getenv("TEMPLATES_API_ETCD_PASSWORD"),
+			"TEMPLATES_API_DATADOG_ENABLED":  "false",
+			"TEMPLATES_API_STORAGE_API_HOST": test.TestProject().StorageAPIHost(),
+			"TEMPLATES_API_ETCD_ENABLED":     "true",
+			"TEMPLATES_API_ETCD_NAMESPACE":   idgenerator.EtcdNamespaceForTest(),
+			"TEMPLATES_API_ETCD_ENDPOINT":    os.Getenv("TEMPLATES_API_ETCD_ENDPOINT"),
+			"TEMPLATES_API_ETCD_USERNAME":    os.Getenv("TEMPLATES_API_ETCD_USERNAME"),
+			"TEMPLATES_API_ETCD_PASSWORD":    os.Getenv("TEMPLATES_API_ETCD_PASSWORD"),
 		})
 
 		requestDecoratorFn := func(request *runner.APIRequestDef) {
