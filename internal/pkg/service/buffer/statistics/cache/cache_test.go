@@ -98,7 +98,7 @@ func TestCacheNode(t *testing.T) {
 		if v := cache.SliceStats(slice1Key); v.Uploading.RecordsCount == 2 {
 			assert.Equal(t, model.StatsByType{
 				Total:     model.Stats{LastRecordAt: model.UTCTime(clk.Now()), RecordsCount: 2, RecordsSize: 30, BodySize: 33},
-				Buffered:  model.Stats{},
+				Buffered:  model.Stats{LastRecordAt: model.UTCTime(clk.Now()), RecordsCount: 2, RecordsSize: 30, BodySize: 33},
 				Uploading: model.Stats{LastRecordAt: model.UTCTime(clk.Now()), RecordsCount: 2, RecordsSize: 30, BodySize: 33},
 				Uploaded:  model.Stats{},
 			}, v)
@@ -113,7 +113,7 @@ func TestCacheNode(t *testing.T) {
 		if v := cache.SliceStats(slice1Key); v.Uploading.RecordsCount == 2 {
 			assert.Equal(t, model.StatsByType{
 				Total:     model.Stats{LastRecordAt: model.UTCTime(clk.Now()), RecordsCount: 2, RecordsSize: 30, BodySize: 33},
-				Buffered:  model.Stats{},
+				Buffered:  model.Stats{LastRecordAt: model.UTCTime(clk.Now()), RecordsCount: 2, RecordsSize: 30, BodySize: 33},
 				Uploading: model.Stats{LastRecordAt: model.UTCTime(clk.Now()), RecordsCount: 2, RecordsSize: 30, BodySize: 33},
 				Uploaded:  model.Stats{},
 			}, v)
@@ -173,7 +173,7 @@ func TestCacheNode(t *testing.T) {
 		if v := cache.FileStats(fileKey); v.Uploading.RecordsCount == 3 {
 			assert.Equal(t, model.StatsByType{
 				Total:     model.Stats{LastRecordAt: model.UTCTime(clk.Now()), RecordsCount: 5, RecordsSize: 330, BodySize: 363, FileSize: 44, FileGZipSize: 4},
-				Buffered:  model.Stats{},
+				Buffered:  model.Stats{LastRecordAt: model.UTCTime(clk.Now()), RecordsCount: 3, RecordsSize: 300, BodySize: 330},
 				Uploading: model.Stats{LastRecordAt: model.UTCTime(clk.Now()), RecordsCount: 3, RecordsSize: 300, BodySize: 330},
 				Uploaded:  model.Stats{LastRecordAt: model.UTCTime(slice1.OpenedAt()), RecordsCount: 2, RecordsSize: 30, BodySize: 33, FileSize: 44, FileGZipSize: 4},
 			}, v)
