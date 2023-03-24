@@ -7,18 +7,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
-func Start(filePath string, logger log.Logger) (stop func()) {
+func Start(filePath string, logger log.Logger) (stop func(), err error) {
 	logger = logger.AddPrefix("[cpu-profile]")
 
 	f, err := os.Create(filePath) //nolint: forbidigo
 	if err != nil {
-		logger.Error(err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	if err := pprof.StartCPUProfile(f); err != nil {
-		logger.Error(err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	logger.Info("started")
@@ -29,5 +27,5 @@ func Start(filePath string, logger log.Logger) (stop func()) {
 			os.Exit(1)
 		}
 		logger.Info("stopped")
-	}
+	}, nil
 }

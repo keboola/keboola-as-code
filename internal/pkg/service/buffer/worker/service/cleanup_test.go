@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
+	workerConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -43,7 +44,19 @@ func TestCleanup(t *testing.T) {
 	}
 
 	// Create receivers, exports and records
+	cleanupInterval := 2 * time.Second
 	workerDeps := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("worker-node-1"))...)
+	workerDeps.SetWorkerConfigOps(
+		workerConfig.WithConditionsCheck(false),
+		workerConfig.WithCloseSlices(false),
+		workerConfig.WithUploadSlices(false),
+		workerConfig.WithRetryFailedSlices(false),
+		workerConfig.WithCloseFiles(false),
+		workerConfig.WithImportFiles(false),
+		workerConfig.WithRetryFailedFiles(false),
+		workerConfig.WithCleanup(true),
+		workerConfig.WithCleanupInterval(cleanupInterval),
+	)
 	store := workerDeps.Store()
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "github"}
 	export1 := model.ExportForTest(receiverKey, "first", "in.c-bucket.table", []column.Column{column.ID{Name: "col01"}}, clk.Now().AddDate(0, -1, 0))
@@ -63,20 +76,8 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create nodes
-	cleanupInterval := 2 * time.Second
 	workerDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
-	serviceOps := []service.Option{
-		service.WithCheckConditions(false),
-		service.WithCloseSlices(false),
-		service.WithUploadSlices(false),
-		service.WithRetryFailedSlices(false),
-		service.WithCloseFiles(false),
-		service.WithImportFiles(false),
-		service.WithRetryFailedFiles(false),
-		service.WithCleanup(true),
-		service.WithCleanupInterval(cleanupInterval),
-	}
-	_, err = service.New(workerDeps, serviceOps...)
+	_, err = service.New(workerDeps)
 	assert.NoError(t, err)
 
 	// Trigger cleanup

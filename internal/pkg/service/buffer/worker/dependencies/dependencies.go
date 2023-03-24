@@ -18,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -27,6 +28,7 @@ import (
 // The container exists during the entire run of the Worker.
 type ForWorker interface {
 	serviceDependencies.ForService
+	WorkerConfig() config.Config
 	DistributionWorkerNode() *distribution.Node
 	WatcherWorkerNode() *watcher.WorkerNode
 	TaskNode() *task.Node
@@ -36,13 +38,14 @@ type ForWorker interface {
 // forWorker implements ForWorker interface.
 type forWorker struct {
 	serviceDependencies.ForService
+	config      config.Config
 	distNode    *distribution.Node
 	watcherNode *watcher.WorkerNode
 	taskNode    *task.Node
 	eventSender *event.Sender
 }
 
-func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provider, logger log.Logger, debug, dumpHTTP bool) (v ForWorker, err error) {
+func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger) (v ForWorker, err error) {
 	// Create tracer
 	var tracer trace.Tracer = nil
 	if telemetry.IsDataDogEnabled(envs) {
@@ -56,7 +59,7 @@ func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 
 	// Create service dependencies
 	userAgent := "keboola-buffer-worker"
-	serviceDeps, err := serviceDependencies.NewServiceDeps(ctx, proc, tracer, envs, logger, debug, dumpHTTP, userAgent)
+	serviceDeps, err := serviceDependencies.NewServiceDeps(ctx, proc, tracer, cfg.ServiceConfig, envs, logger, userAgent)
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +67,7 @@ func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 	// Create worker dependencies
 	d := &forWorker{
 		ForService: serviceDeps,
+		config:     cfg,
 	}
 
 	d.distNode, err = distribution.NewNode(d)
@@ -81,6 +85,10 @@ func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 	d.eventSender = event.NewSender(logger)
 
 	return d, nil
+}
+
+func (v *forWorker) WorkerConfig() config.Config {
+	return v.config
 }
 
 func (v *forWorker) DistributionWorkerNode() *distribution.Node {

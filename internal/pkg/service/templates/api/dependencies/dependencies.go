@@ -37,12 +37,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManager "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 type ctxKey string
@@ -88,8 +88,8 @@ type ForProjectRequest interface {
 type forServer struct {
 	dependencies.Base
 	dependencies.Public
+	config            config.Config
 	proc              *servicectx.Process
-	debug             bool
 	logger            log.Logger
 	repositoryManager *repositoryManager.Manager
 	etcdClient        dependencies.Lazy[*etcd.Client]
@@ -115,7 +115,7 @@ type forProjectRequest struct {
 	projectRepositories dependencies.Lazy[*model.TemplateRepositories]
 }
 
-func NewServerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provider, logger log.Logger, defaultRepositories []model.TemplateRepository, debug, dumpHTTP bool) (v ForServer, err error) {
+func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger) (v ForServer, err error) {
 	// Create tracer
 	var tracer trace.Tracer = nil
 	if telemetry.IsDataDogEnabled(envs) {
@@ -124,21 +124,15 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 		defer telemetry.EndSpan(span, &err)
 	}
 
-	// Get Storage API host
-	storageAPIHost := strhelper.NormalizeHost(envs.MustGet("KBC_STORAGE_API_HOST"))
-	if storageAPIHost == "" {
-		return nil, errors.New("KBC_STORAGE_API_HOST environment variable is not set")
-	}
-
 	// Create base HTTP client for all API requests to other APIs
 	httpClient := httpclient.New(
 		httpclient.WithUserAgent("keboola-templates-api"),
 		httpclient.WithEnvs(envs),
 		func(c *httpclient.Config) {
-			if debug {
+			if cfg.Debug {
 				httpclient.WithDebugOutput(logger.DebugWriter())(c)
 			}
-			if dumpHTTP {
+			if cfg.DebugHTTP {
 				httpclient.WithDumpOutput(logger.DebugWriter())(c)
 			}
 		},
@@ -149,7 +143,7 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 	// Create public dependencies - load API index
 	startTime := time.Now()
 	logger.Info("loading Storage API index")
-	publicDeps, err := dependencies.NewPublicDeps(ctx, baseDeps, storageAPIHost, dependencies.WithPreloadComponents(true))
+	publicDeps, err := dependencies.NewPublicDeps(ctx, baseDeps, cfg.StorageAPIHost, dependencies.WithPreloadComponents(true))
 	if err != nil {
 		return nil, err
 	}
@@ -159,13 +153,13 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 	d := &forServer{
 		Base:   baseDeps,
 		Public: publicDeps,
+		config: cfg,
 		proc:   proc,
-		debug:  debug,
 		logger: logger,
 	}
 
 	// Create repository manager
-	if v, err := repositoryManager.New(ctx, d, defaultRepositories); err != nil {
+	if v, err := repositoryManager.New(ctx, d, cfg.Repositories); err != nil {
 		return nil, err
 	} else {
 		d.repositoryManager = v
@@ -256,7 +250,7 @@ func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
 			etcdclient.WithPassword(envs.Get("TEMPLATES_API_ETCD_PASSWORD")),
 			etcdclient.WithConnectTimeout(connectTimeout),
 			etcdclient.WithLogger(v.logger),
-			etcdclient.WithDebugOpLogs(v.debug),
+			etcdclient.WithDebugOpLogs(v.config.Debug),
 		)
 	})
 }

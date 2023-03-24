@@ -14,28 +14,35 @@ services:
       # For all
       - TEST_KBC_PROJECTS
       # For Templates API
-      - KBC_STORAGE_API_HOST
+      - TEMPLATES_API_STORAGE_API_HOST
       # For Buffer API
-      - KBC_BUFFER_API_HOST=buffer.keboola.local
+      - BUFFER_API_PUBLIC_ADDRESS=buffer.keboola.local
       # Disable DataDog integration
-      - DATADOG_ENABLED=false
+      - TEMPLATES_API_DATADOG_ENABLED=false
+      - BUFFER_API_DATADOG_ENABLED=false
+      - BUFFER_WORKER_DATADOG_ENABLED=false
       # Etcd for unit tests
       - UNIT_ETCD_ENABLED=true
       - UNIT_ETCD_ENDPOINT=etcd:2379
       - UNIT_ETCD_USERNAME=root
       - UNIT_ETCD_PASSWORD=toor
       - UNIT_ETCD_NAMESPACE=templates-api
-      # Etcd for the Templates API
+      # Etcd for the Templates API`
       - TEMPLATES_API_ETCD_ENABLED=true
       - TEMPLATES_API_ETCD_ENDPOINT=etcd:2379
       - TEMPLATES_API_ETCD_USERNAME=root
       - TEMPLATES_API_ETCD_PASSWORD=toor
       - TEMPLATES_API_ETCD_NAMESPACE=templates-api
-      # Etcd for the Buffer API and Worker
-      - BUFFER_ETCD_ENDPOINT=etcd:2379
-      - BUFFER_ETCD_USERNAME=root
-      - BUFFER_ETCD_PASSWORD=toor
-      - BUFFER_ETCD_NAMESPACE=buffer
+      # Etcd for the Buffer API
+      - BUFFER_API_ETCD_ENDPOINT=etcd:2379
+      - BUFFER_API_ETCD_USERNAME=root
+      - BUFFER_API_ETCD_PASSWORD=toor
+      - BUFFER_API_ETCD_NAMESPACE=buffer
+      # Etcd for the Buffer Worker
+      - BUFFER_WORKER_ETCD_ENDPOINT=etcd:2379
+      - BUFFER_WORKER_ETCD_USERNAME=root
+      - BUFFER_WORKER_ETCD_PASSWORD=toor
+      - BUFFER_WORKER_ETCD_NAMESPACE=buffer
     ports:
       - "8000:8000" # make run-templates-api
       - "8001:8001" # make run-buffer-api

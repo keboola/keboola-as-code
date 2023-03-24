@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
@@ -18,8 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -37,9 +36,9 @@ func NewServiceDeps(
 	ctx context.Context,
 	proc *servicectx.Process,
 	tracer trace.Tracer,
+	cfg config.Config,
 	envs env.Provider,
 	logger log.Logger,
-	debug, dumpHTTP bool,
 	userAgent string,
 ) (d ForService, err error) {
 	ctx, span := tracer.Start(ctx, "keboola.go.buffer.dependencies.NewServiceDeps")
@@ -50,20 +49,14 @@ func NewServiceDeps(
 		httpclient.WithUserAgent(userAgent),
 		httpclient.WithEnvs(envs),
 		func(c *httpclient.Config) {
-			if debug {
+			if cfg.Debug {
 				httpclient.WithDebugOutput(logger.DebugWriter())(c)
 			}
-			if dumpHTTP {
+			if cfg.DebugHTTP {
 				httpclient.WithDumpOutput(logger.DebugWriter())(c)
 			}
 		},
 	)
-
-	// Get Storage API host
-	storageAPIHost := strhelper.NormalizeHost(envs.Get("KBC_STORAGE_API_HOST"))
-	if storageAPIHost == "" {
-		return nil, errors.New("KBC_STORAGE_API_HOST environment variable is empty or not set")
-	}
 
 	// Create base dependencies
 	baseDeps := dependencies.NewBaseDeps(envs, tracer, logger, httpClient)
@@ -71,7 +64,7 @@ func NewServiceDeps(
 	// Create public dependencies - load API index
 	startTime := time.Now()
 	logger.Info("loading Storage API index")
-	publicDeps, err := dependencies.NewPublicDeps(ctx, baseDeps, storageAPIHost)
+	publicDeps, err := dependencies.NewPublicDeps(ctx, baseDeps, cfg.StorageAPIHost)
 	if err != nil {
 		return nil, err
 	}
@@ -82,13 +75,13 @@ func NewServiceDeps(
 		ctx,
 		proc,
 		tracer,
-		envs.Get("BUFFER_ETCD_ENDPOINT"),
-		envs.Get("BUFFER_ETCD_NAMESPACE"),
-		etcdclient.WithUsername(envs.Get("BUFFER_ETCD_USERNAME")),
-		etcdclient.WithPassword(envs.Get("BUFFER_ETCD_PASSWORD")),
-		etcdclient.WithConnectTimeout(30*time.Second), // longer timeout, the etcd could be started at the same time as the API/Worker
+		cfg.EtcdEndpoint,
+		cfg.EtcdNamespace,
+		etcdclient.WithUsername(cfg.EtcdUsername),
+		etcdclient.WithPassword(cfg.EtcdPassword),
+		etcdclient.WithConnectTimeout(cfg.EtcdConnectTimeout),
 		etcdclient.WithLogger(logger),
-		etcdclient.WithDebugOpLogs(debug),
+		etcdclient.WithDebugOpLogs(cfg.Debug),
 	)
 	if err != nil {
 		return nil, err

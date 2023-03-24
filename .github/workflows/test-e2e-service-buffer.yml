@@ -55,10 +55,14 @@ jobs:
         run: make tests-buffer-service
         shell: bash
         env:
-          BUFFER_ETCD_ENDPOINT: etcd:2379
-          BUFFER_ETCD_USERNAME: root
-          BUFFER_ETCD_PASSWORD: toor
-          BUFFER_ETCD_NAMESPACE: buffer
+          BUFFER_API_ETCD_ENDPOINT: etcd:2379
+          BUFFER_API_ETCD_USERNAME: root
+          BUFFER_API_ETCD_PASSWORD: toor
+          BUFFER_API_ETCD_NAMESPACE: buffer
+          BUFFER_WORKER_ETCD_ENDPOINT: etcd:2379
+          BUFFER_WORKER_ETCD_USERNAME: root
+          BUFFER_WORKER_ETCD_PASSWORD: toor
+          BUFFER_WORKER_ETCD_NAMESPACE: buffer
 
       - name: Validate OpenAPI3 definition
         uses: char0n/swagger-editor-validate@v1

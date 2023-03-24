@@ -25,4 +25,4 @@ ENV HOST 0.0.0.0
 ENV PORT 8000
 EXPOSE 8000
 
-CMD ["/app/server", "--http-host=0.0.0.0", "--http-port=8000"]
+CMD ["/app/server", "--listen-address=http://0.0.0.0:8000"]

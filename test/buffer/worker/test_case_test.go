@@ -29,6 +29,7 @@ import (
 	apiService "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	workerConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
 	workerService "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -107,9 +108,9 @@ func startCluster(t *testing.T, ctx context.Context, testDir string, project *te
 
 	// Connect to the etcd
 	etcdNamespace := idgenerator.EtcdNamespaceForTest()
-	etcdEndpoint := os.Getenv("BUFFER_ETCD_ENDPOINT")
-	etcdUsername := os.Getenv("BUFFER_ETCD_USERNAME")
-	etcdPassword := os.Getenv("BUFFER_ETCD_PASSWORD")
+	etcdEndpoint := os.Getenv("BUFFER_WORKER_ETCD_ENDPOINT")
+	etcdUsername := os.Getenv("BUFFER_WORKER_ETCD_USERNAME")
+	etcdPassword := os.Getenv("BUFFER_WORKER_ETCD_PASSWORD")
 	out.etcdClient = etcdhelper.ClientForTestFrom(
 		t,
 		etcdEndpoint,
@@ -156,12 +157,11 @@ func startCluster(t *testing.T, ctx context.Context, testDir string, project *te
 				dependencies.WithUniqueID(nodeID),
 				dependencies.WithLoggerPrefix(fmt.Sprintf(`[%s]`, nodeID)),
 			)...)
-			svc, err := workerService.New(
-				d,
-				workerService.WithCleanup(false),
-				workerService.WithCheckConditionsInterval(1000*time.Millisecond),
-				workerService.WithUploadConditions(model.Conditions{Count: uploadCountThreshold, Size: datasize.MB, Time: time.Hour}),
+			d.SetWorkerConfigOps(
+				workerConfig.WithCheckConditionsInterval(1000*time.Millisecond),
+				workerConfig.WithUploadConditions(model.Conditions{Count: uploadCountThreshold, Size: datasize.MB, Time: time.Hour}),
 			)
+			svc, err := workerService.New(d)
 			if err != nil {
 				assert.Fail(t, err.Error())
 			}

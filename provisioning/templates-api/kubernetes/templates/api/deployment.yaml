@@ -40,7 +40,7 @@ spec:
             # 80% of the resources.limits.memory
             - name: GOMEMLIMIT
               value: "550MiB"
-            - name: KBC_STORAGE_API_HOST
+            - name: TEMPLATES_API_STORAGE_API_HOST
               valueFrom:
                 configMapKeyRef:
                   name: templates-api

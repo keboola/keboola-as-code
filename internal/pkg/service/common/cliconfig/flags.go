@@ -1,8 +1,10 @@
 package cliconfig
 
 import (
+	"encoding"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/spf13/pflag"
 
@@ -26,37 +28,118 @@ func flagsFromStruct(config any, fs *pflag.FlagSet, parents []string) error {
 	}
 
 	if structValue.Kind() != reflect.Struct {
-		return errors.Errorf(`type "%s" is not a struct or a pointer to a struct, it cannot be mapped to the FlagSet`, structValue.Type().String())
+		switch {
+		case !structValue.IsValid():
+			return errors.Errorf(`found nil value "%s", it is not a struct or a pointer to a struct`, strings.Join(parents, "."))
+		case len(parents) == 0:
+			return errors.Errorf(`type "%s" is not a struct or a pointer to a struct`, structValue.Type().String())
+		default:
+			return errors.Errorf(`type "%s" (%s) is not a struct or a pointer to a struct`, structValue.Type().String(), strings.Join(parents, "."))
+		}
 	}
 
 	structType := structValue.Type()
 	for i := 0; i < structType.NumField(); i++ {
-		fieldType := structType.Field(i)
+		field := structType.Field(i)
 		fieldValue := structValue.Field(i)
 
-		partName, found := fieldType.Tag.Lookup("mapstructure")
+		// Ignore fields without the "mapstructure" tag
+		tag, found := field.Tag.Lookup("mapstructure")
 		if !found {
 			continue
 		}
 
-		fieldPath := append(parents, partName)
-		flagName := strings.Join(fieldPath, ".")
-		usage := fieldType.Tag.Get("usage")
+		parts := strings.Split(tag, ",")
+		partialName := parts[0]
 
-		switch fieldValue.Kind() {
-		case reflect.String:
-			def, _ := fieldValue.Interface().(string)
+		// Iterate a squashed/embedded struct
+		if partialName == "" {
+			if len(parts) == 2 && parts[1] == "squash" {
+				if err := flagsFromStruct(fieldValue.Interface(), fs, parents); err != nil {
+					return err
+				}
+			}
+			continue
+		}
+
+		// Get optional usage tag
+		usage := field.Tag.Get("usage")
+		fieldPath := append(parents, partialName)
+		flagName := strings.Join(fieldPath, ".")
+
+		// Dereference pointer, use zero value if the value is nil
+		if fieldValue.Kind() == reflect.Pointer {
+			fieldType := fieldValue.Type().Elem()
+			fieldValue = fieldValue.Elem()
+			if !fieldValue.IsValid() {
+				fieldValue = reflect.Zero(fieldType)
+			}
+		}
+
+		// Detect type of the field
+		switch v := fieldValue.Interface().(type) {
+		case time.Duration:
+			var def string
+			if str := v.String(); str != "0s" {
+				def = str
+			}
 			fs.String(flagName, def, usage)
-		case reflect.Int:
-			def, _ := fieldValue.Interface().(int)
-			fs.Int(flagName, def, usage)
-		case reflect.Float64:
-			def, _ := fieldValue.Interface().(float64)
-			fs.Float64(flagName, def, usage)
+		case bool:
+			fs.Bool(flagName, v, usage)
+		case string:
+			fs.String(flagName, v, usage)
+		case int:
+			fs.Int(flagName, v, usage)
+		case int32:
+			fs.Int32(flagName, v, usage)
+		case int64:
+			fs.Int64(flagName, v, usage)
+		case uint:
+			fs.Uint(flagName, v, usage)
+		case uint32:
+			fs.Uint32(flagName, v, usage)
+		case uint64:
+			fs.Uint64(flagName, v, usage)
+		case float32:
+			fs.Float32(flagName, v, usage)
+		case float64:
+			fs.Float64(flagName, v, usage)
 		default:
-			parents = append([]string{}, parents...)
-			if err := flagsFromStruct(fieldValue.Interface(), fs, fieldPath); err != nil {
-				return err
+			// Convert type to a pointer, some methods use pointer receiver
+			if fieldValue.Kind() != reflect.Pointer {
+				ptr := reflect.New(fieldValue.Type())
+				ptr.Elem().Set(fieldValue)
+				fieldValue = ptr
+			}
+
+			// Check if the struct implements an unmarshaler
+			switch v := fieldValue.Interface().(type) {
+			case encoding.TextUnmarshaler:
+				var def string
+				if v, ok := v.(encoding.TextMarshaler); ok && !fieldValue.IsZero() {
+					if bytes, err := v.MarshalText(); err == nil {
+						def = string(bytes)
+					} else {
+						return err
+					}
+				}
+				fs.String(flagName, def, usage)
+			case encoding.BinaryUnmarshaler:
+				var def string
+				if v, ok := v.(encoding.BinaryMarshaler); ok && !fieldValue.IsZero() {
+					if bytes, err := v.MarshalBinary(); err == nil {
+						def = string(bytes)
+					} else {
+						return err
+					}
+				}
+				fs.String(flagName, def, usage)
+			default:
+				// Otherwise iterate struct fields
+				parents = append([]string{}, parents...)
+				if err := flagsFromStruct(fieldValue.Interface(), fs, fieldPath); err != nil {
+					return err
+				}
 			}
 		}
 	}

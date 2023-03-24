@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -33,13 +34,14 @@ type Service struct {
 	stats          *statistics.CacheNode
 	tasks          *task.Node
 	events         *event.Sender
-	config         config
+	config         config.Config
 }
 
 type dependencies interface {
 	Clock() clock.Clock
 	Logger() log.Logger
 	Process() *servicectx.Process
+	WorkerConfig() config.Config
 	EtcdClient() *etcd.Client
 	HTTPClient() client.Client
 	StorageAPIHost() string
@@ -52,7 +54,7 @@ type dependencies interface {
 	EventSender() *event.Sender
 }
 
-func New(d dependencies, ops ...Option) (*Service, error) {
+func New(d dependencies) (*Service, error) {
 	s := &Service{
 		clock:          d.Clock(),
 		logger:         d.Logger().AddPrefix("[service]"),
@@ -62,7 +64,7 @@ func New(d dependencies, ops ...Option) (*Service, error) {
 		storageAPIHost: d.StorageAPIHost(),
 		schema:         d.Schema(),
 		events:         d.EventSender(),
-		config:         newConfig(ops),
+		config:         d.WorkerConfig(),
 	}
 
 	// Graceful shutdown
@@ -78,34 +80,34 @@ func New(d dependencies, ops ...Option) (*Service, error) {
 
 	// Create orchestrators
 	var init []<-chan error
-	if s.config.checkConditions || s.config.cleanup {
+	if s.config.ConditionsCheck || s.config.Cleanup {
 		s.dist = d.DistributionWorkerNode()
 	}
-	if s.config.checkConditions {
+	if s.config.ConditionsCheck {
 		s.stats = d.StatsCacheNode()
 		s.tasks = d.TaskNode()
 		init = append(init, s.checkConditions(ctx, wg))
 	}
-	if s.config.closeSlices {
+	if s.config.CloseSlices {
 		s.watcher = d.WatcherWorkerNode()
 		init = append(init, s.closeSlices(ctx, wg, d))
 	}
-	if s.config.uploadSlices {
+	if s.config.UploadSlices {
 		init = append(init, s.uploadSlices(ctx, wg, d))
 	}
-	if s.config.retryFailedSlices {
+	if s.config.RetryFailedSlices {
 		init = append(init, s.retryFailedUploads(ctx, wg, d))
 	}
-	if s.config.closeFiles {
+	if s.config.CloseFiles {
 		init = append(init, s.closeFiles(ctx, wg, d))
 	}
-	if s.config.importFiles {
+	if s.config.ImportFiles {
 		init = append(init, s.importFiles(ctx, wg, d))
 	}
-	if s.config.retryFailedFiles {
+	if s.config.RetryFailedFiles {
 		init = append(init, s.retryFailedImports(ctx, wg, d))
 	}
-	if s.config.cleanup {
+	if s.config.Cleanup {
 		init = append(init, s.cleanup(ctx, wg, d))
 	}
 
