@@ -61,44 +61,6 @@ func main() {
 		defer tracer.Stop()
 	}
 
-	// Parse repositories.
-	var repositories []model.TemplateRepository
-	if *repositoriesF == "" {
-		// Default value
-		repositories = []model.TemplateRepository{
-			{
-				Type: model.RepositoryTypeGit,
-				Name: "keboola",
-				URL:  "https://github.com/keboola/keboola-as-code-templates.git",
-				Ref:  "main",
-			},
-			{
-				Type: model.RepositoryTypeGit,
-				Name: "keboola-beta",
-				URL:  "https://github.com/keboola/keboola-as-code-templates.git",
-				Ref:  "beta",
-			},
-			{
-				Type: model.RepositoryTypeGit,
-				Name: "keboola-dev",
-				URL:  "https://github.com/keboola/keboola-as-code-templates.git",
-				Ref:  "dev",
-			},
-		}
-	} else {
-		repositories, err = parseRepositories(*repositoriesF)
-		if err != nil {
-			logger.Error(err.Error())
-			os.Exit(1)
-		}
-	}
-
-	// Start server.
-	if err := start(*httpHostF, *httpPortF, repositories, *debugF, *debugHTTPF, logger, envs); err != nil {
-		logger.Error(err.Error())
-		os.Exit(1)
-	}
-}
 
 func start(host, port string, repositories []model.TemplateRepository, debug, debugHTTP bool, logger log.Logger, envs *env.Map) error {
 	ctx, cancel := context.WithCancel(context.Background())
