@@ -41,26 +41,26 @@ spec:
             # 80% of the resources.limits.memory
             - name: GOMEMLIMIT
               value: "400MiB"
-            - name: KBC_STORAGE_API_HOST
+            - name: BUFFER_API_STORAGE_API_HOST
               valueFrom:
                 configMapKeyRef:
                   name: buffer-api
                   key: storageApiHost
-            - name: KBC_BUFFER_API_HOST
+            - name: BUFFER_API_PUBLIC_ADDRESS
               valueFrom:
                 configMapKeyRef:
                   name: buffer-api
                   key: bufferApiHost
-            - name: BUFFER_ETCD_ENDPOINT
+            - name: BUFFER_API_ETCD_ENDPOINT
               value: buffer-etcd-headless.buffer.svc.cluster.local:2379
-            - name: BUFFER_ETCD_USERNAME
+            - name: BUFFER_API_ETCD_USERNAME
               value: root
-            - name: BUFFER_ETCD_PASSWORD
+            - name: BUFFER_API_ETCD_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: buffer-etcd
                   key: etcd-root-password
-            - name: BUFFER_ETCD_NAMESPACE
+            - name: BUFFER_API_ETCD_NAMESPACE
               value: buffer
             - name: DD_AGENT_HOST
               valueFrom:

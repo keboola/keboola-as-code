@@ -7,6 +7,6 @@ metadata:
   labels:
     app: buffer-worker
 data:
-  storageApiHost: "connection.$HOSTNAME_SUFFIX"
+  storageApiHost: "https://connection.$HOSTNAME_SUFFIX"
   keboolaStack: "$KEBOOLA_STACK"
   keboolaRevision: "$RELEASE_ID"
