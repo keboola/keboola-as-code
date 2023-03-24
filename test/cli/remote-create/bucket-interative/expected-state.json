@@ -1,0 +1,21 @@
+{
+  "branches": [
+    {
+      "branch": {
+        "name": "Main",
+        "description": "",
+        "isDefault": true
+      },
+      "configs": []
+    }
+  ],
+  "buckets": [
+    {
+      "id": "out.c-bucket1",
+      "uri": "https://%%TEST_KBC_STORAGE_API_HOST%%/v2/storage/buckets/out.c-bucket1",
+      "displayName": "Bucket1",
+      "description": "Test description",
+      "tables": []
+    }
+  ]
+}

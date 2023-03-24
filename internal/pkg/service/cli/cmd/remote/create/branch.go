@@ -1,4 +1,4 @@
-package remote
+package create
 
 import (
 	"time"
@@ -14,34 +14,7 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-func CreateCommand(p dependencies.Provider) *cobra.Command {
-	createBranchCmd := CreateBranchCommand(p)
-	cmd := &cobra.Command{
-		Use:   `create`,
-		Short: helpmsg.Read(`remote/create/short`),
-		Long:  helpmsg.Read(`remote/create/long`),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			d, err := p.DependenciesForRemoteCommand()
-			if err != nil {
-				return err
-			}
-
-			// We ask the user what he wants to create.
-			switch d.Dialogs().AskWhatCreateRemote() {
-			case `branch`:
-				return createBranchCmd.RunE(createBranchCmd, nil)
-			default:
-				// Non-interactive terminal -> print sub-commands.
-				return cmd.Help()
-			}
-		},
-	}
-
-	cmd.AddCommand(createBranchCmd)
-	return cmd
-}
-
-func CreateBranchCommand(p dependencies.Provider) *cobra.Command {
+func BranchCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "branch",
 		Short: helpmsg.Read(`remote/create/branch/short`),

@@ -1,0 +1,3 @@
+Command "remote create bucket"
+
+Creates a new Storage bucket in the project remote state.

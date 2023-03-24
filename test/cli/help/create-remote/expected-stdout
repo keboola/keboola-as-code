@@ -1,15 +1,13 @@
-Command "remote create branch"
+Command "remote create"
 
-- Creates a new dev branch in the project remote state.
-- The new branch will be a copy of the current remote state of the main branch.
-- It is recommended to first "push" local changes in the main branch if any.
-- When the branch is created, the new state is pulled to the local directory.
+Create an object in the project.
 
 Usage:
   %s remote create [command]
 
 Available Commands:
   remote create branch  Create a new branch from the main branch.
+  remote create bucket  Create a new bucket.
 
 Global Flags:
 %A

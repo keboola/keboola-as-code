@@ -46,6 +46,7 @@ Available Commands:
   remote                         Operations performed directly in the project.
   remote create                  Create an object in the project.
   remote create branch           Create a new branch from the main branch.
+  remote create bucket           Create a new bucket.
   remote file                    Manage files in your project.
   remote file download           Download file from Keboola Staging Storage.
   remote file upload             Upload file to Keboola Staging Storage.

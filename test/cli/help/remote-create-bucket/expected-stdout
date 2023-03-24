@@ -1,0 +1,16 @@
+Command "remote create bucket"
+
+Creates a new Storage bucket in the project remote state.
+
+Usage:
+  %s create bucket [flags]
+
+Flags:
+      --description string        bucket description
+      --display-name string       display name for the UI
+      --name string               name of the bucket
+      --stage string              stage, allowed values: in, out
+  -H, --storage-api-host string   if command is run outside the project directory
+
+Global Flags:
+%A
