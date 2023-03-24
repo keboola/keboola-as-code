@@ -8,6 +8,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-utils/pkg/wildcards"
 
+	apiConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics/collector"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -19,8 +20,10 @@ import (
 func TestStatsManager(t *testing.T) {
 	t.Parallel()
 
+	syncInterval := time.Second
 	clk := clock.NewMock()
 	d := bufferDependencies.NewMockedDeps(t, dependenciesPkg.WithClock(clk), dependenciesPkg.WithUniqueID("my-node"))
+	d.SetAPIConfigOps(apiConfig.WithStatisticsSyncInterval(syncInterval))
 	client := d.EtcdClient()
 	node := NewNode(d)
 
@@ -31,13 +34,13 @@ func TestStatsManager(t *testing.T) {
 	clk.Add(time.Hour)
 
 	// no notify -> wait 1 second -> no sync
-	clk.Add(SyncInterval)
+	clk.Add(syncInterval)
 	etcdhelper.AssertKVsString(t, client, "")
 
 	// notify -> wait 1 second -> sync
 	node.Notify(sliceKey, 1000, 1100)
 	etcdhelper.ExpectModification(t, client, func() {
-		clk.Add(SyncInterval)
+		clk.Add(syncInterval)
 	})
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
@@ -59,7 +62,7 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
 `)
 
 	// no notify -> wait 1 second -> no sync
-	clk.Add(SyncInterval)
+	clk.Add(syncInterval)
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node
@@ -82,7 +85,7 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
 	// notify -> wait 1 second -> sync
 	node.Notify(sliceKey, 2000, 2200)
 	etcdhelper.ExpectModification(t, client, func() {
-		clk.Add(SyncInterval)
+		clk.Add(syncInterval)
 	})
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
@@ -104,7 +107,7 @@ stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-0
 `)
 
 	// no notify -> wait 1 second -> no sync
-	clk.Add(SyncInterval)
+	clk.Add(syncInterval)
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
 stats/received/00000123/my-receiver/my-export/1970-01-01T00:00:00.000Z/1970-01-01T00:00:00.000Z/my-node

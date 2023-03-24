@@ -29,7 +29,7 @@ type ForService interface {
 	EtcdClient() *etcd.Client
 	Schema() *schema.Schema
 	Store() *store.Store
-	StatsCacheNode() *statistics.CacheNode
+	StatsCache() *statistics.CacheNode
 }
 
 func NewServiceDeps(
@@ -132,6 +132,6 @@ func (v *forService) Store() *store.Store {
 	return v.store
 }
 
-func (v *forService) StatsCacheNode() *statistics.CacheNode {
+func (v *forService) StatsCache() *statistics.CacheNode {
 	return v.statsCache
 }

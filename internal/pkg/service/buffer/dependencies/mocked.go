@@ -34,7 +34,7 @@ type Mocked interface {
 	DistributionWorkerNode() *distribution.Node
 	WatcherWorkerNode() *watcher.WorkerNode
 	TaskNode() *task.Node
-	StatsCacheNode() *statistics.CacheNode
+	StatsCache() *statistics.CacheNode
 	EventSender() *event.Sender
 
 	APIConfig() apiConfig.Config
@@ -145,7 +145,7 @@ func (v *mocked) TaskNode() *task.Node {
 	return v.taskWorkerNode
 }
 
-func (v *mocked) StatsCacheNode() *statistics.CacheNode {
+func (v *mocked) StatsCache() *statistics.CacheNode {
 	if v.statsCacheNode == nil {
 		var err error
 		v.statsCacheNode, err = statistics.NewCacheNode(v)
