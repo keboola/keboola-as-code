@@ -1,0 +1,18 @@
+? Select a stage for the bucket:  [Use arrows to move, type to filter]
+> in
+  out
+? Select a stage for the bucket:  [Use arrows to move, type to filter]
+  in
+> out
+? Select a stage for the bucket: out
+
+
+? Enter a display name for the bucket: Bucket1? Enter a display name for the bucket: Bucket1
+
+
+? Enter a name for the bucket: (bucket1) ? Enter a name for the bucket: bucket1
+
+
+? Enter a description for the bucket: Test description? Enter a description for the bucket: Test description
+
+Created bucket "out.c-bucket1".

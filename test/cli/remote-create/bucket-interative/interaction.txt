@@ -1,0 +1,12 @@
+< Select a stage for the bucket
+> <down arrow>
+> <enter>
+
+< Enter a display name for the bucket
+> Bucket1
+
+< Enter a name for the bucket
+> <enter>
+
+< Enter a description for the bucket
+> Test description
