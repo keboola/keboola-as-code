@@ -30,7 +30,7 @@ type Stats struct {
 type StatsByType struct {
 	// Received = active + closed + uploaded
 	Total Stats
-	// Buffered = all in active state group, buffered in the etcd
+	// Buffered = all in active, closed state group, size of buffered data in the etcd
 	Buffered Stats
 	// Uploading = all in closed state group, in the process of uploading from the etcd to the file storage
 	Uploading Stats

@@ -25,6 +25,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	apiConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	apiService "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
@@ -39,10 +40,13 @@ import (
 )
 
 const (
-	apiNodesCount        = 5
-	workerNodesCount     = 5
-	uploadCountThreshold = 5
-	importCountThreshold = 10
+	apiNodesCount              = 5
+	workerNodesCount           = 5
+	uploadCountThreshold       = 5
+	importCountThreshold       = 10
+	statisticsSyncInterval     = 500 * time.Millisecond
+	receiverBufferSizeCacheTTL = 500 * time.Millisecond
+	receiverBufferSize         = 100 * datasize.KB
 )
 
 type testSuite struct {
@@ -142,6 +146,11 @@ func startCluster(t *testing.T, ctx context.Context, testDir string, project *te
 				dependencies.WithLoggerPrefix(fmt.Sprintf(`[%s]`, nodeID)),
 				dependencies.WithRequestHeader(header),
 			)...)
+			d.SetAPIConfigOps(
+				apiConfig.WithStatisticsSyncInterval(statisticsSyncInterval),
+				apiConfig.WithReceiverBufferSize(receiverBufferSize),
+				apiConfig.WithReceiverBufferSizeCacheTTL(receiverBufferSizeCacheTTL),
+			)
 			svc := apiService.New(d)
 			out.apiNodes[i] = &apiNode{Dependencies: d, Service: svc}
 		}()

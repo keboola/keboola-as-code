@@ -16,7 +16,8 @@ services:
       # For Templates API
       - TEMPLATES_API_STORAGE_API_HOST
       # For Buffer API
-      - BUFFER_API_PUBLIC_ADDRESS=buffer.keboola.local
+      - BUFFER_API_STORAGE_API_HOST
+      - BUFFER_API_PUBLIC_ADDRESS
       # Disable DataDog integration
       - TEMPLATES_API_DATADOG_ENABLED=false
       - BUFFER_API_DATADOG_ENABLED=false

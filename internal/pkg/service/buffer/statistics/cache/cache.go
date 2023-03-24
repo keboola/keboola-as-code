@@ -94,6 +94,10 @@ func (n *Node) ExportStats(k key.ExportKey) model.StatsByType {
 	return n.statsFor(k.String())
 }
 
+func (n *Node) ReceiverStats(k key.ReceiverKey) model.StatsByType {
+	return n.statsFor(k.String())
+}
+
 func (n *Node) statsFor(prefix string) (out model.StatsByType) {
 	n.cache.Atomic(func(t *prefixtree.Tree[model.Stats]) {
 		t.WalkPrefix(prefixBuffered+prefix, func(_ string, v model.Stats) bool {
@@ -103,11 +107,13 @@ func (n *Node) statsFor(prefix string) (out model.StatsByType) {
 		})
 		t.WalkPrefix(prefixUploading+prefix, func(_ string, v model.Stats) bool {
 			out.Total = out.Total.Add(v)
+			out.Buffered = out.Buffered.Add(v)
 			out.Uploading = out.Uploading.Add(v)
 			return false
 		})
 		t.WalkPrefix(prefixFailed+prefix, func(_ string, v model.Stats) bool {
 			out.Total = out.Total.Add(v)
+			out.Buffered = out.Buffered.Add(v)
 			out.Uploading = out.Uploading.Add(v)
 			return false
 		})

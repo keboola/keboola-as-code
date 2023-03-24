@@ -49,7 +49,7 @@ type dependencies interface {
 	Store() *store.Store
 	WatcherWorkerNode() *watcher.WorkerNode
 	DistributionWorkerNode() *distribution.Node
-	StatsCacheNode() *statistics.CacheNode
+	StatsCache() *statistics.CacheNode
 	TaskNode() *task.Node
 	EventSender() *event.Sender
 }
@@ -84,7 +84,7 @@ func New(d dependencies) (*Service, error) {
 		s.dist = d.DistributionWorkerNode()
 	}
 	if s.config.ConditionsCheck {
-		s.stats = d.StatsCacheNode()
+		s.stats = d.StatsCache()
 		s.tasks = d.TaskNode()
 		init = append(init, s.checkConditions(ctx, wg))
 	}

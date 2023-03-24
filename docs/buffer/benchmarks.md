@@ -2,13 +2,14 @@
 
 1. Start the server:
 ```
-export KBC_STORAGE_API_HOST=connection.keboola.com
+export BUFFER_API_PUBLIC_ADDRESS=http://localhost:10000
+export BUFFER_API_STORAGE_API_HOST=connection.keboola.com
 docker-compose run -u "$UID:$GID"  -p 10000:8000 --rm dev make run-buffer-api-once
 ```
 2. Run the benchmark:
 ```
 export API_TOKEN=<token>
-export API_HOST=http://localhost:10000
+export API_HOST=$BUFFER_API_PUBLIC_ADDRESS
 docker-compose run -u "$UID:$GID" k6 run /scripts/k6/buffer-api/<name>
 ```
 
