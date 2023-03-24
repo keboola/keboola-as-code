@@ -5,6 +5,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/bucket"
 )
 
 func BucketCommand(p dependencies.Provider) *cobra.Command {
@@ -13,12 +14,18 @@ func BucketCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/create/bucket/short`),
 		Long:  helpmsg.Read(`remote/create/bucket/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			_, err := p.DependenciesForRemoteCommand()
+			d, err := p.DependenciesForRemoteCommand()
 			if err != nil {
 				return err
 			}
 
-			return nil
+			// Options
+			opts, err := d.Dialogs().AskCreateBucket(d)
+			if err != nil {
+				return err
+			}
+
+			return bucket.Run(d.CommandCtx(), opts, d)
 		},
 	}
 
