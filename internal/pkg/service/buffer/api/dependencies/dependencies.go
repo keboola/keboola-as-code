@@ -34,6 +34,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
 	serviceDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
@@ -44,9 +45,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ip"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 type ctxKey string
@@ -60,7 +59,7 @@ const (
 // The container exists during the entire run of the API server.
 type ForServer interface {
 	serviceDependencies.ForService
-	BufferAPIHost() string
+	APIConfig() config.Config
 	StatsCollector() *statistics.CollectorNode
 	WatcherAPINode() *watcher.APINode
 }
@@ -89,9 +88,9 @@ type ForProjectRequest interface {
 // forServer implements ForServer interface.
 type forServer struct {
 	serviceDependencies.ForService
-	bufferApiHost string
-	stats         *statistics.CollectorNode
-	watcher       *watcher.APINode
+	config  config.Config
+	stats   *statistics.CollectorNode
+	watcher *watcher.APINode
 }
 
 // forPublicRequest implements ForPublicRequest interface.
@@ -114,7 +113,7 @@ type forProjectRequest struct {
 	fileManager  *file.Manager
 }
 
-func NewServerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provider, logger log.Logger, debug, dumpHTTP bool) (v ForServer, err error) {
+func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger) (v ForServer, err error) {
 	// Create tracer
 	var tracer trace.Tracer = nil
 	if telemetry.IsDataDogEnabled(envs) {
@@ -126,23 +125,17 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, envs env.Provi
 		tracer = telemetry.NewNopTracer()
 	}
 
-	// Get Buffer API host
-	bufferApiHost := strhelper.NormalizeHost(envs.Get("KBC_BUFFER_API_HOST"))
-	if bufferApiHost == "" {
-		return nil, errors.New("KBC_BUFFER_API_HOST environment variable is empty or not set")
-	}
-
 	// Create service dependencies
 	userAgent := "keboola-buffer-api"
-	serviceDeps, err := serviceDependencies.NewServiceDeps(ctx, proc, tracer, envs, logger, debug, dumpHTTP, userAgent)
+	serviceDeps, err := serviceDependencies.NewServiceDeps(ctx, proc, tracer, cfg.ServiceConfig, envs, logger, userAgent)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create server dependencies
 	d := &forServer{
-		ForService:    serviceDeps,
-		bufferApiHost: bufferApiHost,
+		ForService: serviceDeps,
+		config:     cfg,
 	}
 
 	d.stats = statistics.NewCollectorNode(d)
@@ -196,8 +189,8 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 	return d, nil
 }
 
-func (v *forServer) BufferAPIHost() string {
-	return v.bufferApiHost
+func (v *forServer) APIConfig() config.Config {
+	return v.config
 }
 
 func (v *forServer) StatsCollector() *statistics.CollectorNode {

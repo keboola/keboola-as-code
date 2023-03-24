@@ -14,6 +14,6 @@ func TestFormatReceiverURL(t *testing.T) {
 	assert.Equal(
 		t,
 		"https://buffer.keboola.local/v1/import/1000/my-receiver/my-secret",
-		formatReceiverURL("buffer.keboola.local", key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}, "my-secret"),
+		formatReceiverURL("https://buffer.keboola.local", key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}, "my-secret"),
 	)
 }

@@ -1,12 +1,14 @@
 package dependencies
 
 import (
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
 
+	apiConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
@@ -17,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher/apinode"
+	workerConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -24,7 +27,6 @@ import (
 
 type Mocked interface {
 	dependencies.Mocked
-	BufferAPIHost() string
 	Schema() *bufferSchema.Schema
 	Store() *bufferStore.Store
 	StatsCollector() *statistics.CollectorNode
@@ -35,6 +37,8 @@ type Mocked interface {
 	StatsCacheNode() *statistics.CacheNode
 	EventSender() *event.Sender
 
+	APIConfig() apiConfig.Config
+	SetAPIConfigOps(ops ...apiConfig.Option)
 	// Token based:
 
 	TokenManager() *token.Manager
@@ -53,6 +57,7 @@ type mocked struct {
 	distWorkerNode     *distribution.Node
 	taskWorkerNode     *task.Node
 	statsCacheNode     *statistics.CacheNode
+	apiConfig          apiConfig.Config
 	eventSender        *event.Sender
 	tokenManager       *token.Manager
 	tableManager       *table.Manager
@@ -61,11 +66,13 @@ type mocked struct {
 
 func NewMockedDeps(t *testing.T, opts ...dependencies.MockedOption) Mocked {
 	t.Helper()
-	return &mocked{t: t, Mocked: dependencies.NewMockedDeps(t, opts...)}
-}
-
-func (v *mocked) BufferAPIHost() string {
-	return "buffer.keboola.local"
+	return &mocked{
+		t:      t,
+		Mocked: dependencies.NewMockedDeps(t, opts...),
+		apiConfig: apiConfig.NewConfig().Apply(
+			apiConfig.WithPublicAddress(&url.URL{Scheme: "https", Host: "buffer.keboola.local"}),
+		),
+	}
 }
 
 func (v *mocked) Schema() *bufferSchema.Schema {
@@ -149,6 +156,13 @@ func (v *mocked) EventSender() *event.Sender {
 	return v.eventSender
 }
 
+func (v *mocked) SetAPIConfigOps(ops ...apiConfig.Option) {
+	v.apiConfig = v.apiConfig.Apply(ops...)
+}
+
+func (v *mocked) APIConfig() apiConfig.Config {
+	return v.apiConfig
+}
 func (v *mocked) TokenManager() *token.Manager {
 	if v.tokenManager == nil {
 		v.tokenManager = token.NewManager(v)

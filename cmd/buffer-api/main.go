@@ -2,15 +2,15 @@ package main
 
 import (
 	"context"
-	"flag"
-	"net"
-	"net/url"
+	"fmt"
 	"os"
 
+	"github.com/spf13/pflag"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	bufferGen "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	bufferHttp "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/http"
@@ -18,81 +18,80 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/cpuprofile"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func main() {
-	// Flags.
-	httpHostF := flag.String("http-host", "0.0.0.0", "HTTP host")
-	httpPortF := flag.String("http-port", "8000", "HTTP port")
-	debugF := flag.Bool("debug", false, "Enable debug log level.")
-	debugHTTPF := flag.Bool("debug-http", false, "Log HTTP client request and response bodies.")
-	cpuProf := flag.String("cpu-profile", "", "write cpu profile to `file`")
-	flag.Parse()
-
-	// Create logger.
-	logger := log.NewServiceLogger(os.Stderr, *debugF).AddPrefix("[bufferApi]")
-
-	// Start CPU profiling, if enabled.
-	if filePath := *cpuProf; filePath != "" {
-		stop := cpuprofile.Start(filePath, logger)
-		defer stop()
-	}
-
-	// Envs.
-	envs, err := env.FromOs()
-	if err != nil {
-		logger.Errorf("cannot load envs: %s", err.Error())
-		os.Exit(1)
-	}
-
-	// Start DataDog tracer.
-	if envs.Get("DATADOG_ENABLED") != "false" {
-		tracer.Start(
-			tracer.WithLogger(telemetry.NewDDLogger(logger)),
-			tracer.WithRuntimeMetrics(),
-			tracer.WithAnalytics(true),
-			tracer.WithDebugMode(envs.Get("DATADOG_DEBUG") == "true"),
-		)
-		defer tracer.Stop()
-	}
-
-	// Start server.
-	if err := start(*httpHostF, *httpPortF, *debugF, *debugHTTPF, logger, envs); err != nil {
-		logger.Error(err.Error())
+	if err := run(); err != nil {
+		fmt.Printf("fatal error: %s\n", err.Error()) // nolint:forbidigo
 		os.Exit(1)
 	}
 }
 
-func start(host, port string, debug, debugHTTP bool, logger log.Logger, envs *env.Map) error {
+func run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// Load configuration.
+	envs, err := env.FromOs()
+	if err != nil {
+		return errors.Errorf("cannot load envs: %w", err)
+	}
+	cfg, err := config.LoadFrom(os.Args, envs)
+	if errors.Is(err, pflag.ErrHelp) {
+		// Stop on --help flag
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	// Create logger.
+	logger := log.NewServiceLogger(os.Stderr, cfg.Debug).AddPrefix("[bufferApi]")
+
+	// Start CPU profiling, if enabled.
+	if cfg.CPUProfFilePath != "" {
+		stop, err := cpuprofile.Start(cfg.CPUProfFilePath, logger)
+		if err != nil {
+			return errors.Errorf(`cannot start cpu profiling: %w`, err)
+		}
+		defer stop()
+	}
+
+	// Start DataDog tracer.
+	if cfg.DatadogEnabled {
+		tracer.Start(
+			tracer.WithLogger(telemetry.NewDDLogger(logger)),
+			tracer.WithRuntimeMetrics(),
+			tracer.WithAnalytics(true),
+			tracer.WithDebugMode(cfg.DatadogDebug),
+		)
+		defer tracer.Stop()
+	}
+
+	// Create process abstraction.
 	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger))
 	if err != nil {
 		return err
 	}
 
-	logger.Infof("starting Buffer API HTTP server, host=%s, port=%s, debug=%t, debug-http=%t", host, port, debug, debugHTTP)
-
 	// Create dependencies.
-	d, err := dependencies.NewServerDeps(ctx, proc, envs, logger, debug, debugHTTP)
+	d, err := dependencies.NewServerDeps(ctx, proc, cfg, envs, logger)
 	if err != nil {
 		return err
 	}
 
 	// Create service.
+	logger.Infof("starting Buffer API HTTP server, listen-address=%s, debug=%t, debug-http=%t", cfg.ListenAddress, cfg.Debug, cfg.DebugHTTP)
 	srv := service.New(d)
 
 	// Wrap the services in endpoints that can be invoked from other services
 	// potentially running in different processes.
 	endpoints := bufferGen.NewEndpoints(srv)
 
-	// Create server URL.
-	serverURL := &url.URL{Scheme: "http", Host: net.JoinHostPort(host, port)}
-
 	// Start HTTP server.
-	bufferHttp.HandleHTTPServer(proc, d, serverURL, endpoints, debug)
+	bufferHttp.HandleHTTPServer(proc, d, cfg.ListenAddress, endpoints, cfg.Debug)
 
+	// Wait for the service shutdown.
 	proc.WaitForShutdown()
 	return nil
 }
