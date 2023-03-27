@@ -29,9 +29,6 @@ type Task struct {
 	receiverKey key.ReceiverKey
 }
 
-func StartTask(k key.ReceiverKey) {
-}
-
 func newTask(d dependencies, logger log.Logger, k key.ReceiverKey) *Task {
 	return &Task{
 		clock:       d.Clock(),
@@ -73,9 +70,7 @@ func (t *Task) deleteExpiredTasks(ctx context.Context) error {
 		ForEachKV(func(kv op.KeyValueT[model.Task], header *iterator.Header) error {
 			if kv.Value.IsForCleanup() {
 				if err := etcdop.Key(kv.Key()).Delete().DoOrErr(ctx, t.client); err == nil {
-					//nolint:godox
-					// TODO switch to Debugf
-					t.logger.Infof(`deleted task "%s"`, kv.Value.TaskKey.String())
+					t.logger.Debugf(`deleted task "%s"`, kv.Value.TaskKey.String())
 					deletedTasksCount++
 				} else {
 					errs.Append(err)
@@ -163,9 +158,7 @@ func (t *Task) deleteFile(ctx context.Context, file model.File) (slicesCount, re
 
 			// Delete the slice
 			if err := etcdop.Key(kv.Key()).Delete().DoOrErr(ctx, t.client); err == nil {
-				//nolint:godox
-				// TODO switch to Debugf
-				t.logger.Infof(`deleted slice "%s"`, file.FileKey.String())
+				t.logger.Debugf(`deleted slice "%s"`, file.FileKey.String())
 				slicesCount++
 			} else {
 				errs.Append(err)
@@ -179,8 +172,6 @@ func (t *Task) deleteFile(ctx context.Context, file model.File) (slicesCount, re
 		return 0, 0, err
 	}
 
-	//nolint:godox
-	// TODO switch to Debugf
-	t.logger.Infof(`deleted file "%s"`, file.FileKey.String())
+	t.logger.Debugf(`deleted file "%s"`, file.FileKey.String())
 	return slicesCount, recordsCount, nil
 }

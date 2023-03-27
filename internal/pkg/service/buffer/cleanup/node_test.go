@@ -23,7 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
-func Test_Cleanup(t *testing.T) {
+func TestCleanup(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -207,10 +207,10 @@ func Test_Cleanup(t *testing.T) {
 [task][00001000/github/receiver.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/00001000/github/receiver.cleanup"
 [cleanup]INFO  started "1" receiver cleanup tasks
 %A
-[task][00001000/github/receiver.cleanup/%s]INFO  deleted task "00001000/github/some.task/2006-01-02T08:04:05.000Z_abcdef"
+[task][00001000/github/receiver.cleanup/%s]DEBUG  deleted task "00001000/github/some.task/2006-01-02T08:04:05.000Z_abcdef"
 [task][00001000/github/receiver.cleanup/%s]INFO  deleted "1" tasks
-[task][00001000/github/receiver.cleanup/%s]INFO  deleted slice "00001000/github/first/2006-01-02T08:04:05.000Z"
-[task][00001000/github/receiver.cleanup/%s]INFO  deleted file "00001000/github/first/2006-01-02T08:04:05.000Z"
+[task][00001000/github/receiver.cleanup/%s]DEBUG  deleted slice "00001000/github/first/2006-01-02T08:04:05.000Z"
+[task][00001000/github/receiver.cleanup/%s]DEBUG  deleted file "00001000/github/first/2006-01-02T08:04:05.000Z"
 [task][00001000/github/receiver.cleanup/%s]INFO  deleted "1" files, "1" slices, "1" records
 [task][00001000/github/receiver.cleanup/%s]INFO  task succeeded (%s): receiver "00001000/github" has been cleaned
 [task][00001000/github/receiver.cleanup/%s]DEBUG  lock released "runtime/lock/task/00001000/github/receiver.cleanup"

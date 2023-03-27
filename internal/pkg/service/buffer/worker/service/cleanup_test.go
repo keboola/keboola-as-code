@@ -99,8 +99,8 @@ func TestCleanup(t *testing.T) {
 [task][00001000/github/receiver.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/00001000/github/receiver.cleanup"
 [service][cleanup]INFO  started "1" receiver cleanup tasks
 [task][00001000/github/receiver.cleanup/%s]INFO  deleted "0" tasks
-[task][00001000/github/receiver.cleanup/%s]INFO  deleted slice "00001000/github/first/%s"
-[task][00001000/github/receiver.cleanup/%s]INFO  deleted file "00001000/github/first/%s"
+[task][00001000/github/receiver.cleanup/%s]DEBUG  deleted slice "00001000/github/first/%s"
+[task][00001000/github/receiver.cleanup/%s]DEBUG  deleted file "00001000/github/first/%s"
 [task][00001000/github/receiver.cleanup/%s]INFO  deleted "1" files, "1" slices, "0" records
 [task][00001000/github/receiver.cleanup/%s]INFO  task succeeded (%s): receiver "00001000/github" has been cleaned
 [task][00001000/github/receiver.cleanup/%s]DEBUG  lock released "runtime/lock/task/00001000/github/receiver.cleanup"
