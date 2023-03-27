@@ -24,7 +24,6 @@ const (
 	defaultConnectionTimeout = 10 * time.Second
 	defaultKeepAliveTimeout  = 5 * time.Second
 	defaultKeepAliveInterval = 10 * time.Second
-	defaultAutoSyncInterval  = 1 * time.Minute
 )
 
 type config struct {
@@ -36,7 +35,6 @@ type config struct {
 	connectTimeout    time.Duration
 	keepAliveTimeout  time.Duration
 	keepAliveInterval time.Duration
-	autoSyncInterval  time.Duration
 	logger            log.Logger
 }
 
@@ -121,7 +119,6 @@ func New(ctx context.Context, proc *servicectx.Process, tracer trace.Tracer, end
 		connectTimeout:    defaultConnectionTimeout,
 		keepAliveTimeout:  defaultKeepAliveTimeout,
 		keepAliveInterval: defaultKeepAliveInterval,
-		autoSyncInterval:  defaultAutoSyncInterval,
 	}
 	for _, o := range opts {
 		o(&conf)
@@ -167,7 +164,6 @@ func New(ctx context.Context, proc *servicectx.Process, tracer trace.Tracer, end
 	c, err = etcd.New(etcd.Config{
 		Context:              context.Background(), // !!! a long-lived context must be used, client exists as long as the entire server
 		Endpoints:            []string{endpoint},
-		AutoSyncInterval:     conf.autoSyncInterval,
 		DialTimeout:          conf.connectTimeout,
 		DialKeepAliveTimeout: conf.keepAliveTimeout,
 		DialKeepAliveTime:    conf.keepAliveInterval,
@@ -200,10 +196,10 @@ func New(ctx context.Context, proc *servicectx.Process, tracer trace.Tracer, end
 		c.KV = etcdlogger.KVLogWrapper(c.KV, logger.DebugWriter())
 	}
 
-	// Sync endpoints list from cluster, it is used also as a connection check.
-	if err := c.Sync(connectCtx); err != nil {
+	// Connection check: get cluster members
+	if _, err := c.MemberList(connectCtx); err != nil {
 		_ = c.Close()
-		return nil, errors.Errorf("cannot create etcd client: cannot sync cluster members: %w", err)
+		return nil, errors.Errorf("cannot create etcd client: cannot get cluster members: %w", err)
 	}
 
 	// Close client when shutting down the server

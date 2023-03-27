@@ -45,7 +45,7 @@ spec:
                   name: buffer-worker
                   key: storageApiHost
             - name: BUFFER_WORKER_ETCD_ENDPOINT
-              value: buffer-etcd-headless.buffer.svc.cluster.local:2379
+              value: buffer-etcd.buffer.svc.cluster.local:2379
             - name: BUFFER_WORKER_ETCD_USERNAME
               value: root
             - name: BUFFER_WORKER_ETCD_PASSWORD

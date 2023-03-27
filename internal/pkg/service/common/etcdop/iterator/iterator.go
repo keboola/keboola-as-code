@@ -202,7 +202,7 @@ func (v *Iterator) nextPage() bool {
 	// Do with retry
 	_, raw, err := nextPageOp(v.start, v.end, v.config.pageSize, revision).DoWithRaw(v.ctx, v.client, v.opts...)
 	if err != nil {
-		v.err = errors.Errorf(`etcd iterator failed: cannot get page "%s", page=%d: %w`, v.start, v.page, err)
+		v.err = errors.Errorf(`etcd iterator failed: cannot get page "%s", page=%d, revision=%d: %w`, v.start, v.page, revision, err)
 		return false
 	}
 
@@ -251,7 +251,7 @@ func nextPageOp(start, end string, pageSize int, revision int64) op.GetManyOp {
 
 	// Ensure atomicity
 	if revision > 0 {
-		opts = append(opts, etcd.WithRev(revision))
+		opts = append(opts, etcd.WithRev(revision), etcd.WithSerializable())
 	}
 
 	return op.NewGetManyOp(
