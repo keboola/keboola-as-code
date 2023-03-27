@@ -251,7 +251,7 @@ func nextPageOp(start, end string, pageSize int, revision int64) op.GetManyOp {
 
 	// Ensure atomicity
 	if revision > 0 {
-		opts = append(opts, etcd.WithRev(revision))
+		opts = append(opts, etcd.WithRev(revision), etcd.WithSerializable())
 	}
 
 	return op.NewGetManyOp(
