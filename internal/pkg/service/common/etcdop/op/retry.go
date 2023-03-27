@@ -27,6 +27,11 @@ var retriedErrCodes = map[codes.Code]bool{
 	codes.FailedPrecondition: true,
 }
 
+// nolint: gochecknoglobals
+var retriedErrs = map[error]bool{
+	rpctypes.ErrFutureRev: true, // broken etcd instance may be frozen in some old revision
+}
+
 func DoWithRetry(ctx context.Context, client etcd.KV, op etcd.Op, opts ...Option) (etcd.OpResponse, error) {
 	var response etcd.OpResponse
 	var err error
@@ -44,7 +49,7 @@ func DoWithRetry(ctx context.Context, client etcd.KV, op etcd.Op, opts ...Option
 		}
 
 		var etcdErr rpctypes.EtcdError
-		if errors.As(err, &etcdErr) && !retriedErrCodes[etcdErr.Code()] {
+		if errors.As(err, &etcdErr) && !retriedErrCodes[etcdErr.Code()] && !retriedErrs[etcdErr] {
 			break
 		}
 
