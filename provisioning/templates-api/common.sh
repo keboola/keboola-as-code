@@ -35,8 +35,8 @@ export ETCD_ROOT_PASSWORD=$(kubectl get secret --namespace "$NAMESPACE" template
 
 # TEMPORARY:
 # Delete StatefulSet, keep pods, to resize the PVC disks.
-kubectl delete sts --namespace "$NAMESPACE" "templates-api-etcd"
-kubectl delete pvc --namespace "$NAMESPACE" "data-templates-api-etcd-0"
+kubectl delete sts --namespace "$NAMESPACE" "templates-api-etcd" || true
+kubectl delete pvc --namespace "$NAMESPACE" "data-templates-api-etcd-0" || true
 
 # Deploy etcd cluster
 helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
