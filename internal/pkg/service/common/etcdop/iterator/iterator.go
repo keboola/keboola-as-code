@@ -202,7 +202,7 @@ func (v *Iterator) nextPage() bool {
 	// Do with retry
 	_, raw, err := nextPageOp(v.start, v.end, v.config.pageSize, revision).DoWithRaw(v.ctx, v.client, v.opts...)
 	if err != nil {
-		v.err = errors.Errorf(`etcd iterator failed: cannot get page "%s", page=%d: %w`, v.start, v.page, err)
+		v.err = errors.Errorf(`etcd iterator failed: cannot get page "%s", page=%d, revision=%d: %w`, v.start, v.page, revision, err)
 		return false
 	}
 
