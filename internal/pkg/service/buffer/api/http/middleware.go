@@ -59,7 +59,10 @@ func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint g
 			if routerData := httptreemux.ContextData(ctx); routerData != nil {
 				span.SetTag("endpoint.route", routerData.Route())
 				for k, v := range routerData.Params() {
-					span.SetTag("kac.endpoint.params."+k, v)
+					// Skip the secret parameter
+					if k != "secret" {
+						span.SetTag("endpoint.params."+k, v)
+					}
 				}
 			}
 
@@ -99,9 +102,16 @@ func ContextMiddleware(serverDeps dependencies.ForServer, h http.Handler) http.H
 
 		// Update span
 		if span, ok := tracer.SpanFromContext(ctx); ok {
-			span.SetTag(ext.ResourceName, r.URL.Path)
-			span.SetTag(ext.HTTPURL, r.URL.Redacted())
-			span.SetTag("http.path", r.URL.Path)
+			// Mask the secret parameter in the url
+			url := r.URL
+			if routerData := httptreemux.ContextData(ctx); routerData != nil {
+				for k, v := range routerData.Params() {
+					if k == "secret" {
+						url.Path = strings.Replace(url.Path, v, "*****", 1)
+					}
+				}
+			}
+
 			span.SetTag(ext.ResourceName, url.Path)
 			span.SetTag(ext.HTTPURL, url.Redacted())
 			span.SetTag("keboola.storage.host", serverDeps.StorageAPIHost())
