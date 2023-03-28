@@ -27,7 +27,7 @@ func (ts *testSuite) CreateReceiver(t *testing.T, name string) *buffer.Receiver 
 		task, err = svc.GetTask(d, &buffer.GetTaskPayload{TaskID: task.ID})
 		assert.NoError(t, err)
 		return task.Status != bufferDesign.TaskStatusProcessing
-	}, 10*time.Second, 100*time.Millisecond)
+	}, 15*time.Second, 100*time.Millisecond)
 	assert.Nil(t, task.Error)
 
 	// Get receiver

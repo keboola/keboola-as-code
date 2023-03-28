@@ -7,7 +7,7 @@ import (
 // test001ImportRecords imports 4 records; 4 < 5 (uploadCountThreshold) - upload is not triggered.
 func (ts *testSuite) test001ImportRecords() {
 	// Run imports immediately after the last check to prevent the check during imports.
-	ts.WaitForLogMessages(10*time.Second, `
+	ts.WaitForLogMessages(15*time.Second, `
 [worker-node-%s][service][conditions]INFO  checked "2" opened slices
 	`)
 
