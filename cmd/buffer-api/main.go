@@ -62,7 +62,8 @@ func run() error {
 		tracer.Start(
 			tracer.WithLogger(telemetry.NewDDLogger(logger)),
 			tracer.WithRuntimeMetrics(),
-			tracer.WithAnalytics(true),
+			tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
+			tracer.WithAnalyticsRate(1.0),
 			tracer.WithDebugMode(cfg.DatadogDebug),
 		)
 		defer tracer.Stop()
