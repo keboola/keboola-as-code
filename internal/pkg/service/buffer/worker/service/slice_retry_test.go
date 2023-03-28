@@ -261,6 +261,7 @@ task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:0
 {
   "projectId": 123,
   "taskId": "my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.close/%s",
+  "type": "slice.close",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
@@ -276,6 +277,7 @@ task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:0
 {
   "projectId": 123,
   "taskId": "my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check/%s",
+  "type": "slice.retry.check",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
@@ -291,6 +293,7 @@ task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:0
 {
   "projectId": 123,
   "taskId": "my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.upload/%s",
+  "type": "slice.upload",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",
@@ -306,6 +309,7 @@ task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:0
 {
   "projectId": 123,
   "taskId": "my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.upload/%s",
+  "type": "slice.upload",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "my-worker",

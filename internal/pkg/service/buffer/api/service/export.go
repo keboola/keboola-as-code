@@ -17,6 +17,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+const (
+	exportCreateTaskType = "export.create"
+	exportUpdateTaskType = "export.update"
+)
+
 func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer.CreateExportPayload) (res *buffer.Task, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
@@ -45,11 +50,11 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 		TaskID: key.TaskID(strings.Join([]string{
 			export.ReceiverID.String(),
 			export.ExportID.String(),
-			"export.create",
+			exportCreateTaskType,
 		}, "/")),
 	}
 
-	t, err := d.TaskNode().StartTask(ctx, taskKey, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
+	t, err := d.TaskNode().StartTask(ctx, taskKey, exportCreateTaskType, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 
@@ -81,11 +86,11 @@ func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer
 		TaskID: key.TaskID(strings.Join([]string{
 			exportKey.ReceiverID.String(),
 			exportKey.ExportID.String(),
-			"export.update",
+			exportUpdateTaskType,
 		}, "/")),
 	}
 
-	t, err := d.TaskNode().StartTask(ctx, taskKey, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
+	t, err := d.TaskNode().StartTask(ctx, taskKey, exportUpdateTaskType, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 

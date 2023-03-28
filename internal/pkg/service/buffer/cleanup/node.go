@@ -24,8 +24,9 @@ const (
 	// FileExpirationDays defines how old files are to be deleted.
 	FileExpirationDays = 1
 	// MaxTasksPerNode limits number of parallel cleanup tasks per node.
-	MaxTasksPerNode        = 20
-	ReceiverCleanupTimeout = 5 * time.Minute
+	MaxTasksPerNode         = 20
+	ReceiverCleanupTimeout  = 5 * time.Minute
+	taskTypeReceiverCleanup = "receiver.cleanup"
 )
 
 type dependencies interface {
@@ -100,11 +101,11 @@ func (n *Node) startReceiverCleanupTask(ctx context.Context, k key.ReceiverKey) 
 		ProjectID: k.ProjectID,
 		TaskID: key.TaskID(strings.Join([]string{
 			k.ReceiverID.String(),
-			"receiver.cleanup",
+			taskTypeReceiverCleanup,
 		}, "/")),
 	}
 
-	return n.tasks.StartTask(ctx, taskKey, func(_ context.Context, logger log.Logger) (task.Result, error) {
+	return n.tasks.StartTask(ctx, taskKey, taskTypeReceiverCleanup, func(_ context.Context, logger log.Logger) (task.Result, error) {
 		defer n.sem.Release(1)
 
 		// Don't cancel cleanup on the shutdown, but wait for timeout

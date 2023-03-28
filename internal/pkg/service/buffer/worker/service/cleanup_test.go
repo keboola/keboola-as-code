@@ -169,6 +169,7 @@ task/00001000/github/receiver.cleanup/%s
 {
   "projectId": 1000,
   "taskId": "github/receiver.cleanup/%s",
+  "type": "receiver.cleanup",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",
