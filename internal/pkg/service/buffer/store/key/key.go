@@ -47,7 +47,7 @@ type RecordKey struct {
 
 type TaskKey struct {
 	ProjectID ProjectID `json:"projectId" validate:"required"`
-	TaskID    TaskID    `json:"taskId"` // validate:"required"
+	TaskID    TaskID    `json:"taskId" validate:"required"`
 }
 
 func FormatTime(t time.Time) string {
