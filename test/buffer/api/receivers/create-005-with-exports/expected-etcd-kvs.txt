@@ -138,6 +138,7 @@
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "taskId": "my-receiver-with-exports/receiver.create/%s",
+  "type": "receiver.create",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",

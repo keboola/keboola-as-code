@@ -15,6 +15,7 @@
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "taskId": "weird-id/receiver.create/%s",
+  "type": "receiver.create",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",

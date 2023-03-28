@@ -15,6 +15,7 @@
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "taskId": "my-receiver-a/receiver.create/2023-01-01T08:02:06.000Z_abcdef",
+  "type": "receiver.create",
   "createdAt": "2023-01-01T08:02:06.000Z",
   "finishedAt": "2023-01-01T09:02:06.000Z",
   "workerNode": "worker-node-1",
@@ -30,6 +31,7 @@
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "taskId": "my-receiver-b/receiver.create/2023-01-01T08:02:06.000Z_ghjkl",
+  "type": "receiver.create",
   "createdAt": "2023-01-01T08:02:06.000Z",
   "finishedAt": "2023-01-01T09:02:06.000Z",
   "workerNode": "worker-node-1",
@@ -45,6 +47,7 @@
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "taskId": "my-receiver-c/receiver.create/2023-02-01T08:02:06.000Z_xyzww",
+  "type": "receiver.create",
   "createdAt": "2023-02-01T08:02:06.000Z",
   "workerNode": "worker-node-1",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-c/receiver.create"

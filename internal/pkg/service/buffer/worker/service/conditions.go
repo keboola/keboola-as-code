@@ -226,7 +226,7 @@ func (c *checker) swapFile(ctx context.Context, fileKey key.FileKey, reason stri
 		}, "/")),
 	}
 
-	_, err = c.tasks.StartTask(ctx, taskKey, func(ctx context.Context, logger log.Logger) (task.Result, error) {
+	_, err = c.tasks.StartTask(ctx, taskKey, fileSwapTaskType, func(ctx context.Context, logger log.Logger) (task.Result, error) {
 		c.logger.Infof(`closing file "%s": %s`, fileKey, reason)
 		rb := rollback.New(c.logger)
 		defer rb.InvokeIfErr(ctx, &err)
@@ -278,7 +278,7 @@ func (c *checker) swapSlice(ctx context.Context, sliceKey key.SliceKey, reason s
 		}, "/")),
 	}
 
-	_, err = c.tasks.StartTask(ctx, taskKey, func(ctx context.Context, logger log.Logger) (task.Result, error) {
+	_, err = c.tasks.StartTask(ctx, taskKey, sliceSwapTaskType, func(ctx context.Context, logger log.Logger) (task.Result, error) {
 		c.logger.Infof(`closing slice "%s": %s`, sliceKey, reason)
 		rb := rollback.New(c.logger)
 		defer rb.InvokeIfErr(ctx, &err)

@@ -15,6 +15,7 @@
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "taskId": "my-receiver-custom-id/receiver.create/%s",
+  "type": "receiver.create",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",

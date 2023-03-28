@@ -186,7 +186,7 @@ func (w orchestrator[R]) startTask(ctx context.Context, assigner *distribution.A
 	// Run task in the background
 	w.logger.Infof(`assigned "%s"`, taskKey)
 
-	if _, err := w.tasks.StartTask(ctx, taskKey, taskFn, task.WithLock(lock)); err != nil {
+	if _, err := w.tasks.StartTask(ctx, taskKey, w.config.Name, taskFn, task.WithLock(lock)); err != nil {
 		w.logger.Error(err)
 	}
 }
