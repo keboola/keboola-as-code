@@ -53,6 +53,8 @@ type Config[T any] struct {
 	TaskKey func(event etcdop.WatchEventT[T]) key.TaskKey
 	// StartTaskIf, if set, it determines whether the task is started or not
 	StartTaskIf func(event etcdop.WatchEventT[T]) (skipReason string, start bool)
+	// TaskCtx must return a task context with a deadline.
+	TaskCtx func(ctx context.Context) (context.Context, context.CancelFunc)
 	// TaskFactory is a function that converts an etcd watch event to a task.
 	TaskFactory TaskFactory[T]
 }
@@ -110,6 +112,9 @@ func Start[T any](ctx context.Context, wg *sync.WaitGroup, d dependencies, confi
 	if config.TaskKey == nil {
 		panic(errors.New("task key must be configured"))
 	}
+	if config.TaskCtx == nil {
+		panic(errors.New("task ctx factory must be configured"))
+	}
 	if config.TaskFactory == nil {
 		panic(errors.New("task factory must be configured"))
 	}
@@ -129,64 +134,74 @@ func Start[T any](ctx context.Context, wg *sync.WaitGroup, d dependencies, confi
 	return w.start(ctx, wg)
 }
 
-func (w orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan error {
+func (o orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan error {
 	work := func(distCtx context.Context, assigner *distribution.Assigner) <-chan error {
-		return w.config.Source.WatchPrefix.
-			GetAllAndWatch(distCtx, w.client, w.config.Source.WatchEtcdOps...).
-			SetupConsumer(w.logger).
+		return o.config.Source.WatchPrefix.
+			GetAllAndWatch(distCtx, o.client, o.config.Source.WatchEtcdOps...).
+			SetupConsumer(o.logger).
 			WithForEach(func(events []etcdop.WatchEventT[R], header *etcdop.Header, _ bool) {
 				for _, event := range events {
-					w.startTask(ctx, assigner, event)
+					o.startTask(ctx, assigner, event)
 				}
 			}).
 			StartConsumer(wg)
 	}
-	return w.dist.StartWork(ctx, wg, w.logger, work, distribution.WithResetInterval(w.config.Source.ReSyncInterval))
+	return o.dist.StartWork(ctx, wg, o.logger, work, distribution.WithResetInterval(o.config.Source.ReSyncInterval))
 }
 
 // startTask for the event received from the watched prefix.
-func (w orchestrator[R]) startTask(ctx context.Context, assigner *distribution.Assigner, event etcdop.WatchEventT[R]) {
+func (o orchestrator[R]) startTask(ctx context.Context, assigner *distribution.Assigner, event etcdop.WatchEventT[R]) {
+	var ops []task.Option
+
 	// Check event type
-	if !w.allowedTypes[event.Type] {
+	if !o.allowedTypes[event.Type] {
 		return
 	}
 
 	// Generate keys
-	taskKey := w.config.TaskKey(event)
-	distributionKey := w.config.DistributionKey(event)
+	taskKey := o.config.TaskKey(event)
+	distributionKey := o.config.DistributionKey(event)
+
+	// Setup context factory
+	ops = append(ops, task.WithContextFactory(func(ctx context.Context) (context.Context, context.CancelFunc) {
+		ctx, cancel := o.config.TaskCtx(ctx)
+		if _, ok := ctx.Deadline(); !ok {
+			panic(errors.Errorf(`orchestrator "%s" task context must have a deadline`, o.config.Name))
+		}
+		return ctx, cancel
+	}))
 
 	// Generate lock, if empty, then the lock will be generated from TaskKey in the StartTask method
-	var lock string
-	if w.config.Lock != nil {
-		lock = w.config.Lock(event)
+	if o.config.Lock != nil {
+		ops = append(ops, task.WithLock(o.config.Lock(event)))
 	}
 
 	// Error is not expected, there is present always at least one node - self.
 	if !assigner.MustCheckIsOwner(distributionKey) {
 		// Another worker node handles the resource.
-		w.logger.Debugf(`not assigned "%s", distribution key "%s"`, taskKey.String(), distributionKey)
+		o.logger.Debugf(`not assigned "%s", distribution key "%s"`, taskKey.String(), distributionKey)
 		return
 	}
 
 	// Should be the task started?
-	if w.config.StartTaskIf != nil {
-		if skipReason, start := w.config.StartTaskIf(event); !start {
-			w.logger.Debugf(`skipped "%s", %s`, taskKey.String(), skipReason)
+	if o.config.StartTaskIf != nil {
+		if skipReason, start := o.config.StartTaskIf(event); !start {
+			o.logger.Debugf(`skipped "%s", %s`, taskKey.String(), skipReason)
 			return
 		}
 	}
 
 	// Create task
-	taskFn := w.config.TaskFactory(event)
+	taskFn := o.config.TaskFactory(event)
 	if taskFn == nil {
-		w.logger.Infof(`skipped "%s"`, taskKey)
+		o.logger.Infof(`skipped "%s"`, taskKey)
 		return
 	}
 
 	// Run task in the background
-	w.logger.Infof(`assigned "%s"`, taskKey)
+	o.logger.Infof(`assigned "%s"`, taskKey)
 
-	if _, err := w.tasks.StartTask(ctx, taskKey, taskFn, task.WithLock(lock)); err != nil {
-		w.logger.Error(err)
+	if _, err := o.tasks.StartTask(ctx, taskKey, o.config.Name, taskFn, ops...); err != nil {
+		o.logger.Error(err)
 	}
 }

@@ -1,5 +1,9 @@
 package task
 
+import (
+	"context"
+)
+
 const (
 	DefaultSessionTTL = 15 // seconds, see WithTTL
 )
@@ -23,10 +27,19 @@ func WithTTL(v int) NodeOption {
 }
 
 type config struct {
-	lock string
+	ctxFactory ContextFactory
+	lock       string
 }
 
 type Option func(*config)
+
+type ContextFactory func(ctx context.Context) (context.Context, context.CancelFunc)
+
+func WithContextFactory(v ContextFactory) Option {
+	return func(c *config) {
+		c.ctxFactory = v
+	}
+}
 
 func WithLock(v string) Option {
 	return func(c *config) {

@@ -130,18 +130,18 @@ func (n *Node) TasksCount() int64 {
 // The context will be passed to the operation callback.
 func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, taskType string, operation Task, ops ...Option) (t *model.Task, err error) {
 	// Apply options
-	c := defaultTaskConfig()
+	cfg := defaultTaskConfig()
 	for _, o := range ops {
-		o(&c)
+		o(&cfg)
 	}
 
 	// Generate lock name if it is not set
-	if c.lock == "" {
-		c.lock = taskKey.String()
+	if cfg.lock == "" {
+		cfg.lock = taskKey.String()
 	}
 
 	// Lock etcd key
-	lock := LockEtcdPrefix.Key(c.lock)
+	lock := LockEtcdPrefix.Key(cfg.lock)
 
 	// Append datetime and a random suffix to the task ID
 	createdAt := model.UTCTime(n.clock.Now())
@@ -188,6 +188,12 @@ func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, taskType stri
 	go func() {
 		defer unlock()
 
+		// Create task context
+		if cfg.ctxFactory != nil {
+			var cancel context.CancelFunc
+			ctx, cancel = cfg.ctxFactory(ctx)
+			defer cancel()
+		}
 
 		// Setup telemetry
 		ctx, span := n.tracer.Start(ctx, SpanNamePrefix+"."+taskType)

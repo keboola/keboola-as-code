@@ -59,8 +59,12 @@ func (s *Service) retryFailedImports(ctx context.Context, wg *sync.WaitGroup, d 
 				}, "/")),
 			}
 		},
+		TaskCtx: func(ctx context.Context) (context.Context, context.CancelFunc) {
+			// On shutdown, the task is not cancelled, but we wait for the timeout.
+			return context.WithTimeout(context.Background(), time.Minute)
+		},
 		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Task {
-			return func(_ context.Context, logger log.Logger) (result string, err error) {
+			return func(ctx context.Context, logger log.Logger) (result string, err error) {
 				file := event.Value
 				file.StorageJob = nil
 				if err := s.store.ScheduleFileForRetry(ctx, &file); err != nil {
