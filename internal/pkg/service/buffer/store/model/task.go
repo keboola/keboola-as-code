@@ -8,6 +8,7 @@ import (
 
 type Task struct {
 	key.TaskKey
+	Type       string         `json:"type"` // validate:"required"`
 	CreatedAt  UTCTime        `json:"createdAt" validate:"required"`
 	FinishedAt *UTCTime       `json:"finishedAt,omitempty"`
 	WorkerNode string         `json:"workerNode" validate:"required"`

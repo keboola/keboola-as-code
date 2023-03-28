@@ -125,7 +125,7 @@ func (n *Node) TasksCount() int64 {
 
 // StartTask backed by local lock and etcd transaction, so the task run at most once.
 // The context will be passed to the operation callback.
-func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, operation Task, ops ...Option) (t *model.Task, err error) {
+func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, taskType string, operation Task, ops ...Option) (t *model.Task, err error) {
 	// Apply options
 	c := defaultTaskConfig()
 	for _, o := range ops {
@@ -153,7 +153,7 @@ func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, operation Tas
 	}
 
 	// Create task model
-	task := model.Task{TaskKey: taskKey, CreatedAt: createdAt, WorkerNode: n.nodeID, Lock: lock.Key()}
+	task := model.Task{TaskKey: taskKey, Type: taskType, CreatedAt: createdAt, WorkerNode: n.nodeID, Lock: lock.Key()}
 
 	// Get session
 	n.sessionLock.RLock()
