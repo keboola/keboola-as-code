@@ -264,7 +264,7 @@ task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:0
   "type": "slice.close",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "my-worker",
+  "node": "my-worker",
   "lock": "runtime/lock/task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.close",
   "result": "slice closed",
   "duration": %d
@@ -280,7 +280,7 @@ task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:0
   "type": "slice.retry.check",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "my-worker",
+  "node": "my-worker",
   "lock": "runtime/lock/task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check",
   "result": "slice scheduled for retry",
   "duration": %d
@@ -296,7 +296,7 @@ task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:0
   "type": "slice.upload",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "my-worker",
+  "node": "my-worker",
   "lock": "runtime/lock/task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.upload",
   "error": "slice upload failed: %s some network error, upload will be retried after \"%s\"",
   "duration": %d
@@ -312,7 +312,7 @@ task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:0
   "type": "slice.upload",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "my-worker",
+  "node": "my-worker",
   "lock": "runtime/lock/task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.upload",
   "error": "slice upload failed: %s some network error, upload will be retried after \"%s\"",
   "duration": %d

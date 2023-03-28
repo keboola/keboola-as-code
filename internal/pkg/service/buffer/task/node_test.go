@@ -77,7 +77,7 @@ task/00000123/my-receiver/my-export/some.task/%s
   "taskId": "my-receiver/my-export/some.task/%s",
   "type": "some.task",
   "createdAt": "%s",
-  "workerNode": "node1",
+  "node": "node1",
   "lock": "runtime/lock/task/my-lock"
 }
 >>>>>
@@ -97,7 +97,7 @@ task/00000123/my-receiver/my-export/some.task/%s
   "type": "some.task",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "node1",
+  "node": "node1",
   "lock": "runtime/lock/task/my-lock",
   "result": "some result (1)",
   "duration": %d
@@ -130,7 +130,7 @@ task/00000123/my-receiver/my-export/some.task/%s
   "type": "some.task",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "node1",
+  "node": "node1",
   "lock": "runtime/lock/task/my-lock",
   "result": "some result (1)",
   "duration": %d
@@ -146,7 +146,7 @@ task/00000123/my-receiver/my-export/some.task/%s
   "type": "some.task",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "node2",
+  "node": "node2",
   "lock": "runtime/lock/task/my-lock",
   "result": "some result (2)",
   "duration": %d
@@ -223,7 +223,7 @@ task/00000123/my-receiver/my-export/some.task/%s
   "taskId": "my-receiver/my-export/some.task/%s",
   "type": "some.task",
   "createdAt": "%s",
-  "workerNode": "node1",
+  "node": "node1",
   "lock": "runtime/lock/task/my-lock"
 }
 >>>>>
@@ -243,7 +243,7 @@ task/00000123/my-receiver/my-export/some.task/%s
   "type": "some.task",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "node1",
+  "node": "node1",
   "lock": "runtime/lock/task/my-lock",
   "error": "some error (1)",
   "duration": %d
@@ -276,7 +276,7 @@ task/00000123/my-receiver/my-export/some.task/%s
   "type": "some.task",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "node1",
+  "node": "node1",
   "lock": "runtime/lock/task/my-lock",
   "error": "some error (1)",
   "duration": %d
@@ -292,7 +292,7 @@ task/00000123/my-receiver/my-export/some.task/%s
   "type": "some.task",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "node2",
+  "node": "node2",
   "lock": "runtime/lock/task/my-lock",
   "error": "some error (2)",
   "duration": %d
@@ -380,7 +380,7 @@ task/00000123/my-receiver/my-export/some.task/%s
   "type": "some.task",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "node1",
+  "node": "node1",
   "lock": "runtime/lock/task/my-lock",
   "result": "some result",
   "duration": %d
