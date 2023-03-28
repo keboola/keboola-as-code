@@ -26,7 +26,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const LockEtcdPrefix = etcdop.Prefix("runtime/lock/task")
+const (
+	SpanNamePrefix = "keboola.go.buffer.task"
+	LockEtcdPrefix = etcdop.Prefix("runtime/lock/task")
+)
 
 // Node represents a cluster Worker node on which tasks are run.
 // See comments in the StartTask method.
@@ -179,26 +182,30 @@ func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, taskType stri
 
 	logger.Infof(`started task`)
 	logger.Debugf(`lock acquired "%s"`, lock.Key())
-
-	_, span := n.tracer.Start(ctx, "keboola.go.buffer.task")
-	defer telemetry.EndSpan(span, &err)
-	span.SetAttributes(
-		telemetry.KeepSpan(),
-		attribute.String("projectId", task.ProjectID.String()),
-		attribute.String("taskId", task.TaskID.String()),
-		attribute.String("lock", task.Lock),
-		attribute.String("worker", task.WorkerNode),
-		attribute.String("createdAt", task.CreatedAt.String()),
-	)
 	createdTask := task
 
 	// Run operation in the background
 	go func() {
 		defer unlock()
 
+
+		// Setup telemetry
+		ctx, span := n.tracer.Start(ctx, SpanNamePrefix+"."+taskType)
+		span.SetAttributes(
+			telemetry.KeepSpan(),
+			attribute.String("projectId", task.ProjectID.String()),
+			attribute.String("taskId", task.TaskID.String()),
+			attribute.String("taskType", taskType),
+			attribute.String("lock", task.Lock),
+			attribute.String("node", task.WorkerNode),
+			attribute.String("createdAt", task.CreatedAt.String()),
+		)
+
 		// Process results, in defer, to catch panic
 		var result string
 		var err error
+		defer telemetry.EndSpan(span, &err)
+
 		startTime := n.clock.Now()
 		defer func() {
 			// Catch panic
