@@ -18,7 +18,7 @@
   "type": "receiver.create",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "%s",
+  "node": "%s",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/receiver.create",
   "result": "receiver created",
   "duration": %d

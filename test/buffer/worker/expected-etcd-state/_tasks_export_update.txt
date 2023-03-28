@@ -7,7 +7,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/export.update/%s
   "type": "export.update",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "api-node-%d",
+  "node": "api-node-%d",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/export.update",
   "result": "export updated",
   "duration": %d

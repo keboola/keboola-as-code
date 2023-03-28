@@ -7,7 +7,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/file.close/%s
   "type": "file.close",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "worker-node-%d",
+  "node": "worker-node-%d",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/file.close",
   "result": "file closed",
   "duration": %d
@@ -23,7 +23,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/file.import/%s
   "type": "file.import",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "worker-node-%d",
+  "node": "worker-node-%d",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/file.import",
   "result": "skipped import of the empty file",
   "duration": %d

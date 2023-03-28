@@ -141,7 +141,7 @@
   "type": "export.create",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "%s",
+  "node": "%s",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/export.create",
   "result": "export created",
   "duration": %d

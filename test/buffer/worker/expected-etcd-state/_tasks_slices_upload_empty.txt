@@ -7,7 +7,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s/slice.close/%s
   "type": "slice.close",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "worker-node-%d",
+  "node": "worker-node-%d",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s/slice.close",
   "result": "slice closed",
   "duration": %d
@@ -23,7 +23,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s/slice.upload/%s
   "type": "slice.upload",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "worker-node-%d",
+  "node": "worker-node-%d",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s/slice.upload",
   "result": "skipped upload of the empty slice",
   "duration": %d
