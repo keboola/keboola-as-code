@@ -44,7 +44,7 @@ func ParseFormat(format string) (keboola.UnloadFormat, error) {
 	}
 }
 
-func Run(ctx context.Context, o Options, d dependencies) (err error) {
+func Run(ctx context.Context, o Options, d dependencies) (file *keboola.UnloadedFile, err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.table.unload")
 	defer telemetry.EndSpan(span, &err)
 
@@ -66,17 +66,18 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	if o.Async {
 		job, err := request.Send(ctx)
 		if err != nil {
-			return errors.Errorf("failed to start unload job: %w", err)
+			return nil, errors.Errorf("failed to start unload job: %w", err)
 		}
 		d.Logger().Info(`Storage job started successfully with ID "%d".`, job.ID)
 	} else {
 		d.Logger().Info("Unloading table, please wait.")
-		file, err := request.SendAndWait(ctx, o.Timeout)
+		unloadedFile, err := request.SendAndWait(ctx, o.Timeout)
 		if err != nil {
-			return errors.Errorf(`failed to unload table "%s": %w`, o.TableID, err)
+			return nil, errors.Errorf(`failed to unload table "%s": %w`, o.TableID, err)
 		}
-		d.Logger().Infof(`Table "%s" unloaded to file "%d".`, o.TableID, file.File.ID)
+		d.Logger().Infof(`Table "%s" unloaded to file "%d".`, o.TableID, unloadedFile.File.ID)
+		file = &unloadedFile.File
 	}
 
-	return nil
+	return file, nil
 }

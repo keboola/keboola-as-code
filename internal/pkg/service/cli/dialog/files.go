@@ -34,6 +34,9 @@ func (p *Dialogs) AskFileOutput(opts *options.Options) (string, error) {
 			Label:       "Output",
 			Description: "Enter a path for the file destination or - to write to standard output.",
 		})
+		if len(output) == 0 {
+			return "", errors.Errorf("please specify a file")
+		}
 	}
 
 	output = strings.TrimSpace(output)
