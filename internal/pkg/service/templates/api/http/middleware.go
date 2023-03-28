@@ -31,31 +31,25 @@ func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint g
 			endpointName, _ := ctx.Value(goa.MethodKey).(string)
 			resourceName := fmt.Sprintf("%s.%s", serviceName, endpointName)
 
+			// Create endpoint span, trace all endpoints except health check
 			opts := []tracer.StartSpanOption{
 				tracer.SpanType(ext.SpanTypeWeb),
 				tracer.ResourceName(resourceName),
 			}
-
-			// Trace all endpoints except health check
 			if strings.Contains(resourceName, "HealthCheck") {
 				opts = append(opts, tracer.AnalyticsRate(0.0), tracer.Tag(ext.ManualDrop, true))
 			} else {
 				opts = append(opts, tracer.AnalyticsRate(1.0), tracer.Tag(ext.ManualKeep, true))
 			}
-
-			// Create endpoint span
-			var span tracer.Span
-			span, ctx = tracer.StartSpanFromContext(ctx, "endpoint.request", opts...)
-
-			// Track info
-			span.SetTag("kac.http.request.id", requestId)
-			span.SetTag("kac.storage.host", serverDeps.StorageAPIHost())
-			span.SetTag("kac.endpoint.service", serviceName)
-			span.SetTag("kac.endpoint.name", endpointName)
+			span, ctx := tracer.StartSpanFromContext(ctx, "endpoint.request", opts...)
+			span.SetTag("keboola.storage.host", serverDeps.StorageAPIHost())
+			span.SetTag("http.request.id", requestId)
+			span.SetTag("endpoint.service", serviceName)
+			span.SetTag("endpoint.name", endpointName)
 			if routerData := httptreemux.ContextData(ctx); routerData != nil {
-				span.SetTag("kac.endpoint.route", routerData.Route())
+				span.SetTag("endpoint.route", routerData.Route())
 				for k, v := range routerData.Params() {
-					span.SetTag("kac.endpoint.params."+k, v)
+					span.SetTag("endpoint.params."+k, v)
 				}
 			}
 
@@ -94,10 +88,10 @@ func ContextMiddleware(serverDeps dependencies.ForServer, h http.Handler) http.H
 		if span, ok := tracer.SpanFromContext(ctx); ok {
 			span.SetTag(ext.ResourceName, r.URL.Path)
 			span.SetTag(ext.HTTPURL, r.URL.Redacted())
+			span.SetTag("keboola.storage.host", serverDeps.StorageAPIHost())
 			span.SetTag("http.path", r.URL.Path)
 			span.SetTag("http.query", r.URL.Query().Encode())
-			span.SetTag("kac.http.request.id", requestId)
-			span.SetTag("kac.storage.host", serverDeps.StorageAPIHost())
+			span.SetTag("http.request.id", requestId)
 		}
 
 		// Cancel context after request + set timeout
