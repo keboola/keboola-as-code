@@ -18,7 +18,7 @@
   "type": "export.create",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "%s",
+  "node": "%s",
   "lock": "export.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1",
   "result": "export created",
   "duration": %d

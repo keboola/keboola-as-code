@@ -7,7 +7,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s/slice.swap/%s
   "type": "slice.swap",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "worker-node-%d",
+  "node": "worker-node-%d",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s/slice.swap",
   "result": "new slice created, the old is closing",
   "duration": %d
@@ -23,7 +23,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s/slice.swap/%s
   "type": "slice.swap",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "worker-node-%d",
+  "node": "worker-node-%d",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s/slice.swap",
   "result": "new slice created, the old is closing",
   "duration": %d

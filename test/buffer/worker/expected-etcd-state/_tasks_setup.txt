@@ -7,7 +7,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/receiver.create/%s
   "type": "receiver.create",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "api-node-%d",
+  "node": "api-node-%d",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/receiver.create",
   "result": "receiver created",
   "duration": %d
@@ -23,7 +23,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/export.create/%s
   "type": "export.create",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "api-node-%d",
+  "node": "api-node-%d",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/export.create",
   "result": "export created",
   "duration": %d
@@ -39,7 +39,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/export.create/%s
   "type": "export.create",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "api-node-%d",
+  "node": "api-node-%d",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/export.create",
   "result": "export created",
   "duration": %d
