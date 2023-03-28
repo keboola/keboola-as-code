@@ -48,14 +48,14 @@ func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint g
 			span, ctx = tracer.StartSpanFromContext(ctx, "endpoint.request", opts...)
 
 			// Track info
-			span.SetTag("kac.http.request.id", requestId)
-			span.SetTag("kac.storage.host", serverDeps.StorageAPIHost())
-			span.SetTag("kac.endpoint.service", serviceName)
-			span.SetTag("kac.endpoint.name", endpointName)
+			span.SetTag("keboola.storage.host", serverDeps.StorageAPIHost())
+			span.SetTag("http.request.id", requestId)
+			span.SetTag("endpoint.service", serviceName)
+			span.SetTag("endpoint.name", endpointName)
 			if routerData := httptreemux.ContextData(ctx); routerData != nil {
-				span.SetTag("kac.endpoint.route", routerData.Route())
+				span.SetTag("endpoint.route", routerData.Route())
 				for k, v := range routerData.Params() {
-					span.SetTag("kac.endpoint.params."+k, v)
+					span.SetTag("endpoint.params."+k, v)
 				}
 			}
 
@@ -94,10 +94,10 @@ func ContextMiddleware(serverDeps dependencies.ForServer, h http.Handler) http.H
 		if span, ok := tracer.SpanFromContext(ctx); ok {
 			span.SetTag(ext.ResourceName, r.URL.Path)
 			span.SetTag(ext.HTTPURL, r.URL.Redacted())
+			span.SetTag("keboola.storage.host", serverDeps.StorageAPIHost())
 			span.SetTag("http.path", r.URL.Path)
 			span.SetTag("http.query", r.URL.Query().Encode())
-			span.SetTag("kac.http.request.id", requestId)
-			span.SetTag("kac.storage.host", serverDeps.StorageAPIHost())
+			span.SetTag("http.request.id", requestId)
 		}
 
 		// Cancel context after request + set timeout
