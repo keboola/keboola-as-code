@@ -156,7 +156,7 @@ func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, taskType stri
 	}
 
 	// Create task model
-	task := model.Task{TaskKey: taskKey, Type: taskType, CreatedAt: createdAt, WorkerNode: n.nodeID, Lock: lock.Key()}
+	task := model.Task{TaskKey: taskKey, Type: taskType, CreatedAt: createdAt, Node: n.nodeID, Lock: lock.Key()}
 
 	// Get session
 	n.sessionLock.RLock()
@@ -169,7 +169,7 @@ func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, taskType stri
 	logger := n.logger.AddPrefix(fmt.Sprintf("[%s]", taskKey.String()))
 	createTaskOp := op.MergeToTxn(
 		taskEtcdKey.Put(task),
-		lock.PutIfNotExists(task.WorkerNode, etcd.WithLease(session.Lease())),
+		lock.PutIfNotExists(task.Node, etcd.WithLease(session.Lease())),
 	)
 	if resp, err := createTaskOp.Do(n.tasksCtx, n.client); err != nil {
 		unlock()
@@ -196,7 +196,7 @@ func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, taskType stri
 			attribute.String("taskId", task.TaskID.String()),
 			attribute.String("taskType", taskType),
 			attribute.String("lock", task.Lock),
-			attribute.String("node", task.WorkerNode),
+			attribute.String("node", task.Node),
 			attribute.String("createdAt", task.CreatedAt.String()),
 		)
 

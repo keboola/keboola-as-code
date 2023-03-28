@@ -11,7 +11,7 @@ type Task struct {
 	Type       string         `json:"type"` // validate:"required"`
 	CreatedAt  UTCTime        `json:"createdAt" validate:"required"`
 	FinishedAt *UTCTime       `json:"finishedAt,omitempty"`
-	WorkerNode string         `json:"workerNode" validate:"required"`
+	Node       string         `json:"node"` // validate:"required"`
 	Lock       string         `json:"lock" validate:"required"`
 	Result     string         `json:"result,omitempty"`
 	Error      string         `json:"error,omitempty"`
