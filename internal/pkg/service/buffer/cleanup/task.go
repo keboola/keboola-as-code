@@ -124,6 +124,13 @@ func (t *Task) deleteExpiredFiles(ctx context.Context) error {
 					return err
 				}
 			}
+
+			x := t.schema.ReceivedStats().InExport(v.ExportKey)
+			err := x.DeleteAll(etcd.WithRange(x.Prefix()+rangeEnd.String()+"/"+rangeEnd.String())).DoOrErr(ctx, t.client)
+			if err != nil {
+				return err
+			}
+
 			return nil
 		})
 	if err != nil {
@@ -166,11 +173,11 @@ func (t *Task) deleteFile(ctx context.Context, file model.File) (slicesCount, re
 		}
 	}
 
-	// Delete received statistics
-	err = t.schema.ReceivedStats().InFile(file.FileKey).DeleteAll().DoOrErr(ctx, t.client)
-	if err != nil {
-		return 0, 0, err
-	}
+	//// Delete received statistics
+	//err = t.schema.ReceivedStats().InFile(file.FileKey).DeleteAll().DoOrErr(ctx, t.client)
+	//if err != nil {
+	//	return 0, 0, err
+	//}
 
 	// Delete the file
 	err = t.schema.Files().InState(file.State).ByKey(file.FileKey).Delete().DoOrErr(ctx, t.client)
