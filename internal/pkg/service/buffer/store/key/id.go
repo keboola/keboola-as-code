@@ -38,9 +38,10 @@ func (v ExportID) String() string {
 }
 
 func (v TaskID) String() string {
-	if v == "" {
-		panic(errors.New("taskID cannot be empty"))
-	}
+	// TEMPORARY:
+	//if v == "" {
+	//	panic(errors.New("taskID cannot be empty"))
+	//}
 	return string(v)
 }
 
