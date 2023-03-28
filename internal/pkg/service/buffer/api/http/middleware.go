@@ -35,23 +35,37 @@ func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint g
 			endpointName, _ := ctx.Value(goa.MethodKey).(string)
 			resourceName := fmt.Sprintf("%s.%s", serviceName, endpointName)
 
+			// Mask the secret parameter in the url, in the parent http request span.
+			// Router data is not available sooner.
+			if strings.Contains(resourceName, "Import") {
+				if httpSpan, ok := tracer.SpanFromContext(ctx); ok {
+					if r, ok := request.(*http.Request); ok {
+						url := r.URL
+						if routerData := httptreemux.ContextData(ctx); routerData != nil {
+							for k, v := range routerData.Params() {
+								if k == "secret" {
+									url.Path = strings.Replace(url.Path, v, "*****", 1)
+								}
+							}
+						}
+						httpSpan.SetTag(ext.ResourceName, url.Path)
+						httpSpan.SetTag(ext.HTTPURL, url.Redacted())
+						httpSpan.SetTag("http.path", url.Path)
+					}
+				}
+			}
+
+			// Create endpoint span, trace all endpoints except health check
 			opts := []tracer.StartSpanOption{
 				tracer.SpanType(ext.SpanTypeWeb),
 				tracer.ResourceName(resourceName),
 			}
-
-			// Trace all endpoints except health check
 			if strings.Contains(resourceName, "HealthCheck") {
 				opts = append(opts, tracer.AnalyticsRate(0.0), tracer.Tag(ext.ManualDrop, true))
 			} else {
 				opts = append(opts, tracer.AnalyticsRate(1.0), tracer.Tag(ext.ManualKeep, true))
 			}
-
-			// Create endpoint span
-			var span tracer.Span
-			span, ctx = tracer.StartSpanFromContext(ctx, "endpoint.request", opts...)
-
-			// Track info
+			span, ctx := tracer.StartSpanFromContext(ctx, "endpoint.request", opts...)
 			span.SetTag("keboola.storage.host", serverDeps.StorageAPIHost())
 			span.SetTag("http.request.id", requestId)
 			span.SetTag("endpoint.service", serviceName)
@@ -59,7 +73,10 @@ func TraceEndpointsMiddleware(serverDeps dependencies.ForServer) func(endpoint g
 			if routerData := httptreemux.ContextData(ctx); routerData != nil {
 				span.SetTag("endpoint.route", routerData.Route())
 				for k, v := range routerData.Params() {
-					span.SetTag("kac.endpoint.params."+k, v)
+					// Skip the secret parameter
+					if k != "secret" {
+						span.SetTag("endpoint.params."+k, v)
+					}
 				}
 			}
 
@@ -99,9 +116,7 @@ func ContextMiddleware(serverDeps dependencies.ForServer, h http.Handler) http.H
 
 		// Update span
 		if span, ok := tracer.SpanFromContext(ctx); ok {
-			span.SetTag(ext.ResourceName, r.URL.Path)
-			span.SetTag(ext.HTTPURL, r.URL.Redacted())
-			span.SetTag("http.path", r.URL.Path)
+			url := r.URL
 			span.SetTag(ext.ResourceName, url.Path)
 			span.SetTag(ext.HTTPURL, url.Redacted())
 			span.SetTag("keboola.storage.host", serverDeps.StorageAPIHost())
