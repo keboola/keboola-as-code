@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
@@ -80,8 +81,7 @@ func TestCleanup(t *testing.T) {
 		Error:      "err",
 		Duration:   nil,
 	}
-	err := schema.Tasks().ByKey(taskKey1).Put(task1).Do(ctx, client)
-	assert.NoError(t, err)
+	assert.NoError(t, schema.Tasks().ByKey(taskKey1).Put(task1).Do(ctx, client))
 
 	// Add task with a finishedAt timestamp in the past - will be deleted
 	time2, _ := time.Parse(time.RFC3339, "2008-01-02T15:04:05+07:00")
@@ -98,8 +98,7 @@ func TestCleanup(t *testing.T) {
 		Error:      "",
 		Duration:   nil,
 	}
-	err = schema.Tasks().ByKey(taskKey2).Put(task2).Do(ctx, client)
-	assert.NoError(t, err)
+	assert.NoError(t, schema.Tasks().ByKey(taskKey2).Put(task2).Do(ctx, client))
 
 	// Add task with a finishedAt timestamp before a moment - will be ignored
 	time3 := time.Now()
@@ -116,8 +115,7 @@ func TestCleanup(t *testing.T) {
 		Error:      "",
 		Duration:   nil,
 	}
-	err = schema.Tasks().ByKey(taskKey3).Put(task3).Do(ctx, client)
-	assert.NoError(t, err)
+	assert.NoError(t, schema.Tasks().ByKey(taskKey3).Put(task3).Do(ctx, client))
 
 	// Add file with an Opened state and created in the past - will be deleted
 	fileKey1 := key.FileKey{ExportKey: exportKey1, FileID: key.FileID(createdAt)}
@@ -132,8 +130,7 @@ func TestCleanup(t *testing.T) {
 		},
 		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
-	err = schema.Files().InState(filestate.Opened).ByKey(fileKey1).Put(file1).Do(ctx, client)
-	assert.NoError(t, err)
+	assert.NoError(t, schema.Files().InState(filestate.Opened).ByKey(fileKey1).Put(file1).Do(ctx, client))
 
 	// Add file with an Opened state and created recently - will be ignored
 	fileKey2 := key.FileKey{ExportKey: exportKey3, FileID: key.FileID(time3)}
@@ -148,8 +145,7 @@ func TestCleanup(t *testing.T) {
 		},
 		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
-	err = schema.Files().InState(filestate.Opened).ByKey(fileKey2).Put(file2).Do(ctx, client)
-	assert.NoError(t, err)
+	assert.NoError(t, schema.Files().InState(filestate.Opened).ByKey(fileKey2).Put(file2).Do(ctx, client))
 
 	// Add slice for the cleaned-up file - will be deleted
 	sliceKey1 := key.SliceKey{FileKey: fileKey1, SliceID: key.SliceID(createdAt)}
@@ -165,8 +161,7 @@ func TestCleanup(t *testing.T) {
 		},
 		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
-	err = schema.Slices().InState(slicestate.Imported).ByKey(sliceKey1).Put(slice1).Do(ctx, client)
-	assert.NoError(t, err)
+	assert.NoError(t, schema.Slices().InState(slicestate.Imported).ByKey(sliceKey1).Put(slice1).Do(ctx, client))
 
 	// Add slice for the ignored file - will be ignored
 	sliceKey2 := key.SliceKey{FileKey: fileKey2, SliceID: key.SliceID(time3)}
@@ -182,22 +177,40 @@ func TestCleanup(t *testing.T) {
 		},
 		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
-	err = schema.Slices().InState(slicestate.Imported).ByKey(sliceKey2).Put(slice2).Do(ctx, client)
-	assert.NoError(t, err)
+	assert.NoError(t, schema.Slices().InState(slicestate.Imported).ByKey(sliceKey2).Put(slice2).Do(ctx, client))
 
 	// Add record for the cleaned-up slice - will be deleted
 	recordKey1 := key.RecordKey{SliceKey: sliceKey1, ReceivedAt: key.ReceivedAt(createdAt), RandomSuffix: "abcd"}
-	err = schema.Records().ByKey(recordKey1).Put("rec").Do(ctx, client)
-	assert.NoError(t, err)
+	assert.NoError(t, schema.Records().ByKey(recordKey1).Put("rec").Do(ctx, client))
 
 	// Add record for the ignored slice - will be ignored
 	recordKey2 := key.RecordKey{SliceKey: sliceKey2, ReceivedAt: key.ReceivedAt(time3), RandomSuffix: "efgh"}
-	err = schema.Records().ByKey(recordKey2).Put("rec").Do(ctx, client)
-	assert.NoError(t, err)
+	assert.NoError(t, schema.Records().ByKey(recordKey2).Put("rec").Do(ctx, client))
+
+	// Add received stats for the cleaned-up slice - will be deleted
+	assert.NoError(t, schema.ReceivedStats().InSlice(sliceKey1).ByNodeID("node-123").Put(model.SliceStats{
+		SliceNodeKey: key.SliceNodeKey{SliceKey: sliceKey1, NodeID: "node-123"},
+		Stats: model.Stats{
+			LastRecordAt: model.UTCTime(time3),
+			RecordsCount: 123,
+			RecordsSize:  1 * datasize.KB,
+			BodySize:     1 * datasize.KB,
+		},
+	}).Do(ctx, client))
+
+	// Add received stats for the ignored slice - will be ignored
+	assert.NoError(t, schema.ReceivedStats().InSlice(sliceKey2).ByNodeID("node-123").Put(model.SliceStats{
+		SliceNodeKey: key.SliceNodeKey{SliceKey: sliceKey2, NodeID: "node-123"},
+		Stats: model.Stats{
+			LastRecordAt: model.UTCTime(time3),
+			RecordsCount: 456,
+			RecordsSize:  2 * datasize.KB,
+			BodySize:     2 * datasize.KB,
+		},
+	}).Do(ctx, client))
 
 	// Run the cleanup
-	err = node.Check(ctx)
-	assert.NoError(t, err)
+	assert.NoError(t, node.Check(ctx))
 
 	// Shutdown - wait for tasks
 	d.Process().Shutdown(errors.New("bye bye"))
@@ -321,6 +334,23 @@ slice/archived/successful/imported/00001000/github/third/%s/%s
     "maxAgeDays": 0
   },
   "sliceNumber": 1
+}
+>>>>>
+
+<<<<<
+stats/received/00001000/github/third/%s/%s/node-123
+-----
+ {
+  "projectId": 1000,
+  "receiverId": "github",
+  "exportId": "third",
+  "fileId": "%s",
+  "sliceId": "%s",
+  "nodeId": "node-123",
+  "lastRecordAt": "%s",
+  "recordsCount": 456,
+  "recordsSize": "2KB",
+  "bodySize": "2KB"
 }
 >>>>>
 
