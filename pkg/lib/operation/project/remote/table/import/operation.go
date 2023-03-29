@@ -39,7 +39,7 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 		d.Logger().Infof(`Table "%s" does not exist, creating it.`, o.TableID)
 
 		rb := rollback.New(d.Logger())
-		err = ensureBucketExists(ctx, d, rb, o.TableID.BucketID)
+		err = EnsureBucketExists(ctx, d, rb, o.TableID.BucketID)
 		if err != nil {
 			return err
 		}
@@ -89,7 +89,7 @@ func getLoadOptions(o *Options) []keboola.LoadDataOption {
 	return opts
 }
 
-func ensureBucketExists(ctx context.Context, d dependencies, rb rollback.Builder, id keboola.BucketID) error {
+func EnsureBucketExists(ctx context.Context, d dependencies, rb rollback.Builder, id keboola.BucketID) error {
 	err := d.KeboolaProjectAPI().GetBucketRequest(id).SendOrErr(ctx)
 	var apiErr *keboola.StorageError
 	if errors.As(err, &apiErr) && apiErr.ErrCode == "storage.buckets.notFound" {

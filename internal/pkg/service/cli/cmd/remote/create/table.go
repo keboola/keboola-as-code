@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 
 func TableCommand(p dependencies.Provider) *cobra.Command {
@@ -38,14 +39,14 @@ func TableCommand(p dependencies.Provider) *cobra.Command {
 				}
 				allBuckets = *allBucketsPtr
 			}
-			_, err = d.Dialogs().AskCreateTable(args, d, allBuckets)
+			opts, err := d.Dialogs().AskCreateTable(args, d, allBuckets)
 			if err != nil {
 				return err
 			}
 
 			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-create-table")
 
-			return nil
+			return table.Run(d.CommandCtx(), opts, d)
 		},
 	}
 
