@@ -18,7 +18,7 @@ import (
 )
 
 func (s *Store) CreateSlice(ctx context.Context, slice model.Slice) (err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CreateSlice")
+	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CreateSlice")
 	defer telemetry.EndSpan(span, &err)
 
 	_, err = s.createSliceOp(ctx, slice).Do(ctx, s.client)
@@ -40,7 +40,7 @@ func (s *Store) createSliceOp(_ context.Context, slice model.Slice) op.BoolOp {
 }
 
 func (s *Store) GetSlice(ctx context.Context, sliceKey key.SliceKey) (r model.Slice, err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetSlice")
+	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetSlice")
 	defer telemetry.EndSpan(span, &err)
 
 	slice, err := s.getSliceOp(ctx, sliceKey).Do(ctx, s.client)
@@ -80,7 +80,7 @@ func (s *Store) getOpenedSliceOp(_ context.Context, exportKey key.ExportKey, opt
 }
 
 func (s *Store) ListUploadedSlices(ctx context.Context, fileKey key.FileKey) (r []model.Slice, err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetAllUploadedSlices")
+	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetAllUploadedSlices")
 	defer telemetry.EndSpan(span, &err)
 
 	slices, err := s.listUploadedSlicesOp(ctx, fileKey).Do(ctx, s.client).All()
@@ -96,7 +96,7 @@ func (s *Store) listUploadedSlicesOp(_ context.Context, fileKey key.FileKey) ite
 }
 
 func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) {
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CloseSlice")
+	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CloseSlice")
 	defer telemetry.EndSpan(span, &err)
 	k := slice.SliceKey
 	statsPfx := s.schema.ReceivedStats().InSlice(k)
@@ -194,7 +194,7 @@ func (s *Store) ScheduleSliceForRetry(ctx context.Context, slice *model.Slice) e
 // SetSliceState method atomically changes the state of the file.
 // False is returned, if the given file is already in the target state.
 func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slicestate.State) (err error) { //nolint:dupl
-	_, span := s.tracer.Start(ctx, "keboola.go.buffer.store.SetSliceState")
+	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.SetSliceState")
 	defer telemetry.EndSpan(span, &err)
 
 	txn, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, to)
