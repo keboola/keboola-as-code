@@ -72,13 +72,13 @@ func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 // download slices to temp directory, then copy all slices to final file.
 func runForceUnsliced(ctx context.Context, opts *Options, logger log.Logger) error {
 	tempDir := opts.Output + ".temp"
-	logger.Infof("Creating temp directory %s", tempDir)
+	logger.Infof(`Creating temp directory "%s"`, tempDir)
 	err := os.MkdirAll(tempDir, 0o755)  // nolint: forbidigo
 	if err != nil && !os.IsExist(err) { // nolint: forbidigo
 		return errors.Errorf("cannot create temporary directory %s: %w", tempDir, err)
 	}
 	defer func() {
-		logger.Infof("Deleting temp directory %s", tempDir)
+		logger.Infof(`Deleting temp directory "%s"`, tempDir)
 		os.RemoveAll(tempDir) // nolint: forbidigo
 	}()
 
@@ -88,13 +88,13 @@ func runForceUnsliced(ctx context.Context, opts *Options, logger log.Logger) err
 		return err
 	}
 
-	logger.Infof("Creating file %s", opts.Output)
+	logger.Infof(`Creating file "%s"`, opts.Output)
 	file, err := os.Create(opts.Output) // nolint: forbidigo
 	if err != nil {
-		return errors.Errorf("cannot create file %s: %w", opts.Output, err)
+		return errors.Errorf(`cannot create file "%s": %w`, opts.Output, err)
 	}
 
-	logger.Infof("Copying slices from %s to %s", tempDir, opts.Output)
+	logger.Infof(`Copying slices from "%s" to "%s"`, tempDir, opts.Output)
 	offset := int64(0)
 	for _, slice := range slices {
 		data, err := os.ReadFile(slice) // nolint: forbidigo
@@ -104,7 +104,7 @@ func runForceUnsliced(ctx context.Context, opts *Options, logger log.Logger) err
 
 		_, err = file.WriteAt(data, offset)
 		if err != nil {
-			return errors.Errorf("failed to write data to file %s: %w", opts.Output, err)
+			return errors.Errorf(`failed to write data to file "%s": %w`, opts.Output, err)
 		}
 		offset += int64(len(data))
 	}
