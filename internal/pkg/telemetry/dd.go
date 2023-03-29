@@ -15,10 +15,6 @@ import (
 
 type tracer struct{}
 
-type tracerProvider struct {
-	tracer *tracer
-}
-
 type span struct {
 	tracer     *tracer
 	ctx        context.Context
@@ -44,10 +40,6 @@ func (t *tracer) Start(ctx context.Context, spanName string, options ...trace.Sp
 	parentSpan, _ := ddtracer.SpanFromContext(ctx)
 	ddSpan := ddtracer.StartSpan(spanName, mapSpanStartOpts(parentSpan, options)...)
 	return ddtracer.ContextWithSpan(ctx, ddSpan), &span{tracer: t, ctx: ctx, ddSpan: ddSpan}
-}
-
-func (p *tracerProvider) Tracer(_ string, _ ...trace.TracerOption) trace.Tracer {
-	return p.tracer
 }
 
 // End completes the Span. The Span is considered complete and ready to be
@@ -142,7 +134,7 @@ func (s *span) SetAttributes(kv ...attribute.KeyValue) {
 // TracerProvider returns a TracerProvider that can be used to generate
 // additional Spans on the same telemetry pipeline as the current Span.
 func (s *span) TracerProvider() trace.TracerProvider {
-	return &tracerProvider{tracer: s.tracer}
+	return &TracerProvider{tracer: s.tracer}
 }
 
 func mapSpanStartOpts(parentSpan ddtracer.Span, options []trace.SpanStartOption) (out []ddtracer.StartSpanOption) {
