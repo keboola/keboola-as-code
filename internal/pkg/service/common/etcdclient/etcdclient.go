@@ -7,6 +7,7 @@ import (
 
 	etcd "go.etcd.io/etcd/client/v3"
 	etcdNamespace "go.etcd.io/etcd/client/v3/namespace"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"         //nolint: depguard
 	"go.uber.org/zap/zapcore" //nolint: depguard
@@ -161,6 +162,7 @@ func New(ctx context.Context, proc *servicectx.Process, tracer trace.Tracer, end
 	// Create client
 	startTime := time.Now()
 	logger.Infof("connecting to etcd, connectTimeout=%s, keepAliveTimeout=%s, keepAliveInterval=%s", conf.connectTimeout, conf.keepAliveTimeout, conf.keepAliveInterval)
+	tracerProvider := telemetry.NewTracerProvider(tracer)
 	c, err = etcd.New(etcd.Config{
 		Context:              context.Background(), // !!! a long-lived context must be used, client exists as long as the entire server
 		Endpoints:            []string{endpoint},
@@ -172,6 +174,8 @@ func New(ctx context.Context, proc *servicectx.Process, tracer trace.Tracer, end
 		Logger:               etcdLogger,
 		PermitWithoutStream:  true, // always send keep-alive pings
 		DialOptions: []grpc.DialOption{
+			grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor(otelgrpc.WithTracerProvider(tracerProvider))),
+			grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor(otelgrpc.WithTracerProvider(tracerProvider))),
 			grpc.WithBlock(), // wait for the connection
 			grpc.WithReturnConnectionError(),
 			grpc.WithConnectParams(grpc.ConnectParams{
