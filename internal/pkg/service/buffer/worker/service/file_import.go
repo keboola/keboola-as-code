@@ -102,7 +102,7 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 					// Delete the empty file resource
 					if err := files.DeleteFile(ctx, fileRes); err != nil {
 						// The error is not critical
-						s.logger.Error(errors.Errorf(`cannot delete empty file "%v/%v": %w`, fileRes.FileID, fileRes.StorageResource.ID, err))
+						s.logger.Error(errors.Errorf(`cannot delete empty file "%v/%v": %s`, fileRes.FileID, fileRes.StorageResource.ID, err))
 					}
 
 					// Mark file imported

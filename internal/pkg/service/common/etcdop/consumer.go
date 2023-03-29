@@ -119,7 +119,7 @@ func (c WatchConsumer[E]) StartConsumer(wg *sync.WaitGroup) (initErr <-chan erro
 				if interval := time.Since(lastErrorAt); interval > watchErrorThreshold {
 					c.logger.Warn(resp.Err)
 				} else {
-					c.logger.Error(errors.Errorf(`%w (previous error %s ago)`, resp.Err, interval))
+					c.logger.Error(errors.Errorf(`%s (previous error %s ago)`, resp.Err, interval))
 				}
 				lastErrorAt = time.Now()
 				lastError = resp.Err
