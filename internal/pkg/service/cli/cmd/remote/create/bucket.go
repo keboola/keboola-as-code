@@ -1,6 +1,8 @@
 package create
 
 import (
+	"time"
+
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
@@ -14,6 +16,12 @@ func BucketCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/create/bucket/short`),
 		Long:  helpmsg.Read(`remote/create/bucket/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
+			// Ask for host and token if needed
+			baseDeps := p.BaseDependencies()
+			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
+				return err
+			}
+
 			d, err := p.DependenciesForRemoteCommand()
 			if err != nil {
 				return err
@@ -24,6 +32,8 @@ func BucketCommand(p dependencies.Provider) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-create-bucket")
 
 			return bucket.Run(d.CommandCtx(), opts, d)
 		},
