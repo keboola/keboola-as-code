@@ -188,7 +188,6 @@ func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, taskType stri
 	go func() {
 		defer unlock()
 
-
 		// Setup telemetry
 		ctx, span := n.tracer.Start(ctx, SpanNamePrefix+"."+taskType)
 		span.SetAttributes(
