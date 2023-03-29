@@ -10,6 +10,7 @@ import (
 func Commands(p dependencies.Provider) *cobra.Command {
 	createBranchCmd := BranchCommand(p)
 	createBucketCmd := BucketCommand(p)
+	createTableCmd := TableCommand(p)
 	cmd := &cobra.Command{
 		Use:   `create`,
 		Short: helpmsg.Read(`remote/create/short`),
@@ -26,6 +27,8 @@ func Commands(p dependencies.Provider) *cobra.Command {
 				return createBranchCmd.RunE(createBranchCmd, nil)
 			case `bucket`:
 				return createBucketCmd.RunE(createBucketCmd, nil)
+			case `table`:
+				return createTableCmd.RunE(createTableCmd, nil)
 			default:
 				// Non-interactive terminal -> print sub-commands.
 				return cmd.Help()
@@ -35,5 +38,6 @@ func Commands(p dependencies.Provider) *cobra.Command {
 
 	cmd.AddCommand(createBranchCmd)
 	cmd.AddCommand(createBucketCmd)
+	cmd.AddCommand(createTableCmd)
 	return cmd
 }
