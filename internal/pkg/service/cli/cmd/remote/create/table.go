@@ -1,6 +1,9 @@
 package create
 
 import (
+	"time"
+
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
@@ -14,10 +17,33 @@ func TableCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/create/table/long`),
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			_, err := p.DependenciesForRemoteCommand()
+			// Ask for host and token if needed
+			baseDeps := p.BaseDependencies()
+			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
+				return err
+			}
+
+			d, err := p.DependenciesForRemoteCommand()
 			if err != nil {
 				return err
 			}
+
+			// Options
+			var allBuckets []*keboola.Bucket
+			if len(args) == 0 && !d.Options().IsSet("bucket") {
+				// Get buckets list for dialog select only if needed
+				allBucketsPtr, err := d.KeboolaProjectAPI().ListBucketsRequest().Send(d.CommandCtx())
+				if err != nil {
+					return err
+				}
+				allBuckets = *allBucketsPtr
+			}
+			_, err = d.Dialogs().AskCreateTable(args, d, allBuckets)
+			if err != nil {
+				return err
+			}
+
+			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-create-table")
 
 			return nil
 		},
