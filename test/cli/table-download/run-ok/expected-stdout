@@ -1,0 +1,8 @@
+Unloading table, please wait.
+Table "in.c-test.accounts" unloaded to file "%d".
+Creating temp directory "data.csv.temp"
+Downloading slices
+Creating file "data.csv"
+Copying slices from "data.csv.temp" to "data.csv"
+Deleting temp directory "data.csv.temp"
+File "%d" downloaded to "data.csv".
