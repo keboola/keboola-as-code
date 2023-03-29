@@ -1,0 +1,14 @@
+< Select a bucket
+> <enter>
+
+< Enter the table name
+> table1
+
+< Enter a comma-separated list of column names
+> col1,col2,col3
+
+< Select columns for primary key
+> <space>
+> <down arrow>
+> <space>
+> <enter>

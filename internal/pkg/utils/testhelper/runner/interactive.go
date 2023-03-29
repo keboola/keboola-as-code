@@ -31,6 +31,7 @@ const (
 	leftArrowContent     = "<left arrow>"
 	rightArrowContent    = "<right arrow>"
 	enterContent         = "<enter>"
+	spaceContent         = "<space>"
 	interactionFilePath  = "interaction.txt"
 	interactionLogPrefix = ">>> interaction.txt:line:"
 	EOFTimeout           = 30 * time.Second
@@ -230,7 +231,11 @@ func (v *cmdInputOutput) handleInteraction(lineNum int, prefix, content string) 
 			}
 		case enterContent:
 			if err := v.console.SendEnter(); err != nil {
-				return v.errorf(lineNum, "could send ender: %w", err)
+				return v.errorf(lineNum, "could send enter: %w", err)
+			}
+		case spaceContent:
+			if err := v.console.SendSpace(); err != nil {
+				return v.errorf(lineNum, "could send space: %w", err)
 			}
 		default:
 			if err := v.console.SendLine(content); err != nil {

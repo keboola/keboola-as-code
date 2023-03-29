@@ -1,0 +1,32 @@
+? Select a bucket:  [Use arrows to move, type to filter]
+> bucket (in.c-bucket)
+? Select a bucket: bucket (in.c-bucket)
+
+
+Enter the table name.
+? Table name: table1? Table name: table1
+
+
+Enter a comma-separated list of column names.
+? Columns: col1,col2,col3? Columns: col1,col2,col3
+
+
+? Select columns for primary key:  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
+> [ ]  col1
+  [ ]  col2
+  [ ]  col3
+? Select columns for primary key:  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
+> [x]  col1
+  [ ]  col2
+  [ ]  col3
+? Select columns for primary key:  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
+  [x]  col1
+> [ ]  col2
+  [ ]  col3
+? Select columns for primary key:  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]
+  [x]  col1
+> [x]  col2
+  [ ]  col3
+? Select columns for primary key: col1, col2
+
+Created table "in.c-bucket.table1".
