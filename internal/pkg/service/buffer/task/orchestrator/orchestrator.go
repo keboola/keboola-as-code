@@ -9,13 +9,19 @@ import (
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+)
+
+const (
+	SpanNamePrefix = "keboola.go.buffer.orchestrator"
 )
 
 // Config configures the orchestrator.
@@ -76,6 +82,7 @@ type Source[T any] struct {
 // See documentation of: distribution.Node, task.Node, Config[R].
 type orchestrator[T any] struct {
 	logger       log.Logger
+	tracer       trace.Tracer
 	client       *etcd.Client
 	dist         *distribution.Node
 	tasks        *task.Node
@@ -87,6 +94,7 @@ type TaskFactory[T any] func(event etcdop.WatchEventT[T]) task.Task
 
 type dependencies interface {
 	Logger() log.Logger
+	Tracer() trace.Tracer
 	EtcdClient() *etcd.Client
 	DistributionWorkerNode() *distribution.Node
 	TaskNode() *task.Node
@@ -121,6 +129,7 @@ func Start[T any](ctx context.Context, wg *sync.WaitGroup, d dependencies, confi
 
 	w := &orchestrator[T]{
 		logger:       d.Logger().AddPrefix(fmt.Sprintf("[orchestrator][%s]", config.Name)),
+		tracer:       d.Tracer(),
 		client:       d.EtcdClient(),
 		dist:         d.DistributionWorkerNode(),
 		tasks:        d.TaskNode(),
@@ -135,10 +144,14 @@ func Start[T any](ctx context.Context, wg *sync.WaitGroup, d dependencies, confi
 }
 
 func (o orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan error {
-	work := func(distCtx context.Context, assigner *distribution.Assigner) <-chan error {
+	work := func(ctx context.Context, assigner *distribution.Assigner) <-chan error {
+		ctx, span := o.tracer.Start(ctx, SpanNamePrefix+"."+o.config.Name)
 		return o.config.Source.WatchPrefix.
-			GetAllAndWatch(distCtx, o.client, o.config.Source.WatchEtcdOps...).
+			GetAllAndWatch(ctx, o.client, o.config.Source.WatchEtcdOps...).
 			SetupConsumer(o.logger).
+			WithOnClose(func(err error) {
+				telemetry.EndSpan(span, &err)
+			}).
 			WithForEach(func(events []etcdop.WatchEventT[R], header *etcdop.Header, _ bool) {
 				for _, event := range events {
 					o.startTask(ctx, assigner, event)

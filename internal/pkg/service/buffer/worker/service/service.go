@@ -7,6 +7,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/client"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
@@ -40,6 +41,7 @@ type Service struct {
 type dependencies interface {
 	Clock() clock.Clock
 	Logger() log.Logger
+	Tracer() trace.Tracer
 	Process() *servicectx.Process
 	WorkerConfig() config.Config
 	EtcdClient() *etcd.Client

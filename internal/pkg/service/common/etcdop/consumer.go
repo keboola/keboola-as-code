@@ -34,6 +34,7 @@ type WatchConsumer[E any] struct {
 	onCreated   onWatcherCreated
 	onRestarted onWatcherRestarted
 	onError     onWatcherError
+	onClose     onWatcherClose
 }
 
 type WatchStreamE[E any] <-chan WatchResponseE[E]
@@ -42,6 +43,7 @@ type (
 	onWatcherCreated   func(header *Header)
 	onWatcherRestarted func(reason string, delay time.Duration)
 	onWatcherError     func(err error)
+	onWatcherClose     func(err error)
 )
 
 func newConsumer[E any](logger log.Logger, stream <-chan WatchResponseE[E]) WatchConsumer[E] {
@@ -75,6 +77,11 @@ func (c WatchConsumer[E]) WithOnError(v onWatcherError) WatchConsumer[E] {
 	return c
 }
 
+func (c WatchConsumer[E]) WithOnClose(v onWatcherClose) WatchConsumer[E] {
+	c.onClose = v
+	return c
+}
+
 func (c WatchConsumer[E]) StartConsumer(wg *sync.WaitGroup) (initErr <-chan error) {
 	initErrCh := make(chan error, 1)
 	wg.Add(1)
@@ -86,6 +93,7 @@ func (c WatchConsumer[E]) StartConsumer(wg *sync.WaitGroup) (initErr <-chan erro
 
 		// See watchErrorThreshold
 		var lastErrorAt time.Time
+		var lastError error
 
 		// Channel is closed when the watcher context is cancelled,
 		// so the context does not have to be checked here.
@@ -114,6 +122,7 @@ func (c WatchConsumer[E]) StartConsumer(wg *sync.WaitGroup) (initErr <-chan erro
 					c.logger.Error(errors.Errorf(`%w (previous error %s ago)`, resp.Err, interval))
 				}
 				lastErrorAt = time.Now()
+				lastError = resp.Err
 				if c.onError != nil {
 					c.onError(resp.Err)
 				}
@@ -133,9 +142,14 @@ func (c WatchConsumer[E]) StartConsumer(wg *sync.WaitGroup) (initErr <-chan erro
 				}
 				close(initErrCh)
 			default:
+				lastError = nil
 				c.forEachFn(resp.Events, resp.Header, restart)
 				restart = false
 			}
+		}
+
+		if c.onClose != nil {
+			c.onClose(lastError)
 		}
 	}()
 	return initErrCh
