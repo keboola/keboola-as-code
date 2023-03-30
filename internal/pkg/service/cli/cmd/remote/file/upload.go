@@ -23,7 +23,7 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			opts, err := baseDeps.Dialogs().AskUploadFile(baseDeps.Options(), "")
+			opts, err := baseDeps.Dialogs().AskUploadFile(baseDeps.Options(), "", "")
 			if err != nil {
 				return err
 			}

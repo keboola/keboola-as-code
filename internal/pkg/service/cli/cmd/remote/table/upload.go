@@ -71,7 +71,7 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 				inputFile = args[1]
 			}
 
-			fileUploadOpts, err := baseDeps.Dialogs().AskUploadFile(baseDeps.Options(), inputFile)
+			fileUploadOpts, err := baseDeps.Dialogs().AskUploadFile(baseDeps.Options(), inputFile, tableID.String())
 			if err != nil {
 				return err
 			}
