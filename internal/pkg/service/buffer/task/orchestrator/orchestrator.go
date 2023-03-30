@@ -59,6 +59,35 @@ type Config[T any] struct {
 	TaskFactory TaskFactory[T]
 }
 
+func (c Config[T]) Validate() error {
+	errs := errors.NewMultiError()
+	if c.Name == "" {
+		errs.Append(errors.New("orchestrator name must be configured"))
+	}
+	if c.Source.WatchPrefix.Prefix() == "" {
+		errs.Append(errors.New("source watch prefix definition must be configured"))
+	}
+	if len(c.Source.WatchEvents) == 0 {
+		errs.Append(errors.New("source watch events definition must be configured"))
+	}
+	if c.Source.ReSyncInterval <= 0 {
+		errs.Append(errors.New("re-sync interval must be configured"))
+	}
+	if c.DistributionKey == nil {
+		errs.Append(errors.New("task distribution factory key factory must be configured"))
+	}
+	if c.TaskKey == nil {
+		errs.Append(errors.New("task key must be configured"))
+	}
+	if c.TaskCtx == nil {
+		errs.Append(errors.New("task ctx factory must be configured"))
+	}
+	if c.TaskFactory == nil {
+		errs.Append(errors.New("task factory must be configured"))
+	}
+	return errs.ErrorOrNil()
+}
+
 type Source[T any] struct {
 	// WatchPrefix defines an etcd prefix that is watched by GetAllAndWatch.
 	// Each event triggers new task.
@@ -93,29 +122,9 @@ type dependencies interface {
 }
 
 func Start[T any](ctx context.Context, wg *sync.WaitGroup, d dependencies, config Config[T]) <-chan error {
-	// Validate the config
-	if config.Name == "" {
-		panic(errors.New("orchestrator name must be configured"))
+	if err := config.Validate(); err != nil {
+		panic(err)
 	}
-	if config.Source.WatchPrefix.Prefix() == "" {
-		panic(errors.New("source watch prefix definition must be configured"))
-	}
-	if len(config.Source.WatchEvents) == 0 {
-		panic(errors.New("source watch events definition must be configured"))
-	}
-	if config.Source.ReSyncInterval <= 0 {
-		panic(errors.New("re-sync interval must be configured"))
-	}
-	if config.DistributionKey == nil {
-		panic(errors.New("task distribution factory key factory must be configured"))
-	}
-	if config.TaskKey == nil {
-		panic(errors.New("task key must be configured"))
-	}
-	if config.TaskFactory == nil {
-		panic(errors.New("task factory must be configured"))
-	}
-
 	w := &orchestrator[T]{
 		logger:       d.Logger().AddPrefix(fmt.Sprintf("[orchestrator][%s]", config.Name)),
 		client:       d.EtcdClient(),
