@@ -87,6 +87,9 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 				FileID:          file.ID,
 				TableID:         tableID,
 				Columns:         d.Options().GetStringSlice("columns"),
+				Delimiter:       d.Options().GetString("file-delimiter"),
+				Enclosure:       d.Options().GetString("file-enclosure"),
+				EscapedBy:       d.Options().GetString("file-escaped-by"),
 				IncrementalLoad: d.Options().GetBool("incremental-load"),
 				WithoutHeaders:  d.Options().GetBool("file-without-headers"),
 				PrimaryKey:      primaryKey,
@@ -103,6 +106,9 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 	cmd.Flags().StringSlice("primary-key", nil, "primary key for the newly created table if the table doesn't exist")
 	cmd.Flags().String("file-name", "", "name of the file to be created")
 	cmd.Flags().String("file-tags", "", "comma-separated list of file tags")
+	cmd.Flags().String("file-delimiter", ",", "field delimiter used in the CSV file")
+	cmd.Flags().String("file-enclosure", `"`, "field enclosure used in the CSV file")
+	cmd.Flags().String("file-escaped-by", "", "escape character used in the CSV file")
 
 	return cmd
 }

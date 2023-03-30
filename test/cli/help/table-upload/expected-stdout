@@ -7,6 +7,9 @@ Usage:
 
 Flags:
       --columns string            comma separated list of column names. If present, the first row in the CSV file is not treated as a header
+      --file-delimiter string     field delimiter used in the CSV file (default ",")
+      --file-enclosure string     field enclosure used in the CSV file (default "\"")
+      --file-escaped-by string    escape character used in the CSV file
       --file-name string          name of the file to be created
       --file-tags string          comma-separated list of file tags
       --file-without-headers      states if the CSV file contains headers on the first row or not
