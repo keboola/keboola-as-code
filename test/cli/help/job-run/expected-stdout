@@ -12,7 +12,7 @@ Usage:
 Flags:
       --async                     do not wait for job to finish
   -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
-      --timeout string            how long to wait for job to finish (default "2m")
+      --timeout string            how long to wait for job to finish (default "5m")
 
 Global Flags:
   -h, --help                       print help for command

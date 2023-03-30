@@ -75,7 +75,7 @@ func UnloadCommand(p dependencies.Provider) *cobra.Command {
 	cmd.Flags().String("order", "", "order by one or more columns")
 	cmd.Flags().String("format", "csv", "output format (json/csv)")
 	cmd.Flags().Bool("async", false, "do not wait for unload to finish")
-	cmd.Flags().String("timeout", "2m", "how long to wait for job to finish")
+	cmd.Flags().String("timeout", "5m", "how long to wait for job to finish")
 
 	return cmd
 }
