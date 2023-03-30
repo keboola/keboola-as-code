@@ -105,6 +105,7 @@ type Source[T any] struct {
 // See documentation of: distribution.Node, task.Node, Config[R].
 type orchestrator[T any] struct {
 	logger       log.Logger
+	tracer       trace.Tracer
 	client       *etcd.Client
 	dist         *distribution.Node
 	tasks        *task.Node
@@ -116,6 +117,7 @@ type TaskFactory[T any] func(event etcdop.WatchEventT[T]) task.Task
 
 type dependencies interface {
 	Logger() log.Logger
+	Tracer() trace.Tracer
 	EtcdClient() *etcd.Client
 	DistributionWorkerNode() *distribution.Node
 	TaskNode() *task.Node
@@ -127,6 +129,7 @@ func Start[T any](ctx context.Context, wg *sync.WaitGroup, d dependencies, confi
 	}
 	w := &orchestrator[T]{
 		logger:       d.Logger().AddPrefix(fmt.Sprintf("[orchestrator][%s]", config.Name)),
+		tracer:       d.Tracer(),
 		client:       d.EtcdClient(),
 		dist:         d.DistributionWorkerNode(),
 		tasks:        d.TaskNode(),
