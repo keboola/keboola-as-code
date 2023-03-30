@@ -216,7 +216,7 @@
   "taskId": "2023-02-15T10:48:56.342Z_1-ozS",
   "createdAt": "2023-02-15T10:48:56.342Z",
   "finishedAt": "2023-02-15T10:49:05.541Z",
-  "workerNode": "abb42d82c9d6-03763",
+  "node": "abb42d82c9d6-03763",
   "lock": "receiver.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver",
   "result": "receiver created",
   "duration": 9201912879
@@ -233,7 +233,7 @@
   "taskId": "2023-02-15T10:48:56.342Z_1-ozS",
   "createdAt": "2023-02-15T10:48:56.342Z",
   "finishedAt": "2023-02-15T10:49:05.541Z",
-  "workerNode": "abb42d82c9d6-03763",
+  "node": "abb42d82c9d6-03763",
   "lock": "receiver.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-2",
   "result": "receiver created",
   "duration": 9201912879

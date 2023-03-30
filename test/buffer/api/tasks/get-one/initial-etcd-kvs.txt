@@ -18,7 +18,7 @@
   "type": "receiver.create",
   "createdAt": "2023-01-01T08:02:06.000Z",
   "finishedAt": "2023-01-01T09:02:06.000Z",
-  "workerNode": "worker-node-1",
+  "node": "worker-node-1",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-a/receiver.create",
   "result": "receiver created",
   "duration": 3600000
@@ -34,7 +34,7 @@
   "type": "receiver.create",
   "createdAt": "2023-01-01T08:02:06.000Z",
   "finishedAt": "2023-01-01T09:02:06.000Z",
-  "workerNode": "worker-node-1",
+  "node": "worker-node-1",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-b/receiver.create",
   "error": "some error",
   "duration": 3600000
@@ -49,7 +49,7 @@
   "taskId": "my-receiver-c/receiver.create/2023-02-01T08:02:06.000Z_xyzww",
   "type": "receiver.create",
   "createdAt": "2023-02-01T08:02:06.000Z",
-  "workerNode": "worker-node-1",
+  "node": "worker-node-1",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver-c/receiver.create"
 }
 >>>>>

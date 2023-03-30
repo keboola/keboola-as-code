@@ -232,7 +232,7 @@
   "type": "export.update",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "%s",
+  "node": "%s",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export-1/export.update",
   "result": "export updated",
   "duration": %d

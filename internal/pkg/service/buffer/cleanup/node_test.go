@@ -363,7 +363,7 @@ task/00001000/github/other.task/2006-01-02T08:04:05.000Z_ghijkl
   "type": "other.task",
   "createdAt": "2006-01-02T08:04:05.000Z",
   "finishedAt": "%s",
-  "workerNode": "node2",
+  "node": "node2",
   "lock": "lock2",
   "result": "res"
 }
@@ -378,7 +378,7 @@ task/00001000/github/receiver.cleanup/%s
   "type": "receiver.cleanup",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "%s",
+  "node": "%s",
   "lock": "runtime/lock/task/00001000/github/receiver.cleanup",
   "result": "receiver \"00001000/github\" has been cleaned",
   "duration": %d

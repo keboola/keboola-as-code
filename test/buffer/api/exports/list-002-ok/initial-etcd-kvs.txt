@@ -397,7 +397,7 @@
   "taskId": "2023-02-01T13:05:41.450Z_Egafb",
   "createdAt": "2023-02-01T13:05:41.450Z",
   "finishedAt": "2023-02-01T13:05:50.658Z",
-  "workerNode": "f5c5800f9f5d-03816",
+  "node": "f5c5800f9f5d-03816",
   "lock": "export.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2",
   "result": "export created",
   "duration": 9206185796
@@ -414,7 +414,7 @@
   "taskId": "2023-02-15T13:05:41.450Z_Egafb",
   "createdAt": "2023-02-15T13:05:41.450Z",
   "finishedAt": "2023-02-15T13:05:50.658Z",
-  "workerNode": "f5c5800f9f5d-03816",
+  "node": "f5c5800f9f5d-03816",
   "lock": "export.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1",
   "result": "export created",
   "duration": 9206185796
