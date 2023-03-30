@@ -48,17 +48,33 @@ func TestSuccessfulTask(t *testing.T) {
 	// Start a task
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
-	_, err := node1.StartTask(ctx, taskKey, taskType, func(ctx context.Context, logger log.Logger) (task.Result, error) {
-		defer close(taskDone)
-		<-taskWork
-		logger.Info("some message from the task (1)")
-		return "some result (1)", nil
-	}, task.WithLock(lock))
+	_, err := node1.StartTask(task.Config{
+		Key:  taskKey,
+		Type: taskType,
+		Lock: lock,
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(ctx, time.Minute)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) (task.Result, error) {
+			defer close(taskDone)
+			<-taskWork
+			logger.Info("some message from the task (1)")
+			return "some result (1)", nil
+		},
+	})
 	assert.NoError(t, err)
-	_, err = node2.StartTask(ctx, taskKey, taskType, func(ctx context.Context, logger log.Logger) (task.Result, error) {
-		assert.Fail(t, "should not be called")
-		return "", nil
-	}, task.WithLock(lock))
+	_, err = node2.StartTask(task.Config{
+		Key:  taskKey,
+		Type: taskType,
+		Lock: lock,
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(ctx, time.Minute)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) (task.Result, error) {
+			assert.Fail(t, "should not be called")
+			return "", nil
+		},
+	})
 	assert.NoError(t, err)
 
 	// Check etcd state during task
@@ -108,12 +124,20 @@ task/00000123/my-receiver/my-export/some.task/%s
 	// Start another task with the same lock (lock is free)
 	taskWork = make(chan struct{})
 	taskDone = make(chan struct{})
-	_, err = node2.StartTask(ctx, taskKey, taskType, func(ctx context.Context, logger log.Logger) (string, error) {
-		defer close(taskDone)
-		<-taskWork
-		logger.Info("some message from the task (2)")
-		return "some result (2)", nil
-	}, task.WithLock(lock))
+	_, err = node2.StartTask(task.Config{
+		Key:  taskKey,
+		Type: taskType,
+		Lock: lock,
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(ctx, time.Minute)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) (string, error) {
+			defer close(taskDone)
+			<-taskWork
+			logger.Info("some message from the task (2)")
+			return "some result (2)", nil
+		},
+	})
 	assert.NoError(t, err)
 
 	// Wait for task to finish
@@ -194,17 +218,33 @@ func TestFailedTask(t *testing.T) {
 	// Start a task
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
-	_, err := node1.StartTask(ctx, taskKey, taskType, func(ctx context.Context, logger log.Logger) (string, error) {
-		defer close(taskDone)
-		<-taskWork
-		logger.Info("some message from the task (1)")
-		return "", errors.New("some error (1)")
-	}, task.WithLock(lock))
+	_, err := node1.StartTask(task.Config{
+		Key:  taskKey,
+		Type: taskType,
+		Lock: lock,
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(ctx, time.Minute)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) (string, error) {
+			defer close(taskDone)
+			<-taskWork
+			logger.Info("some message from the task (1)")
+			return "", errors.New("some error (1)")
+		},
+	})
 	assert.NoError(t, err)
-	_, err = node2.StartTask(ctx, taskKey, taskType, func(ctx context.Context, logger log.Logger) (string, error) {
-		assert.Fail(t, "should not be called")
-		return "", nil
-	}, task.WithLock(lock))
+	_, err = node2.StartTask(task.Config{
+		Key:  taskKey,
+		Type: taskType,
+		Lock: lock,
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(ctx, time.Minute)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) (string, error) {
+			assert.Fail(t, "should not be called")
+			return "", nil
+		},
+	})
 	assert.NoError(t, err)
 
 	// Check etcd state during task
@@ -254,12 +294,20 @@ task/00000123/my-receiver/my-export/some.task/%s
 	// Start another task with the same lock (lock is free)
 	taskWork = make(chan struct{})
 	taskDone = make(chan struct{})
-	_, err = node2.StartTask(ctx, taskKey, taskType, func(ctx context.Context, logger log.Logger) (string, error) {
-		defer close(taskDone)
-		<-taskWork
-		logger.Info("some message from the task (2)")
-		return "", errors.New("some error (2)")
-	}, task.WithLock(lock))
+	_, err = node2.StartTask(task.Config{
+		Key:  taskKey,
+		Type: taskType,
+		Lock: lock,
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(ctx, time.Minute)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) (string, error) {
+			defer close(taskDone)
+			<-taskWork
+			logger.Info("some message from the task (2)")
+			return "", errors.New("some error (2)")
+		},
+	})
 	assert.NoError(t, err)
 
 	// Wait for task to finish
@@ -341,12 +389,20 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
 	etcdhelper.ExpectModification(t, client, func() {
-		_, err := node1.StartTask(ctx, taskKey, taskType, func(ctx context.Context, logger log.Logger) (string, error) {
-			defer close(taskDone)
-			<-taskWork
-			logger.Info("some message from the task")
-			return "some result", nil
-		}, task.WithLock(lock))
+		_, err := node1.StartTask(task.Config{
+			Key:  taskKey,
+			Type: taskType,
+			Lock: lock,
+			Context: func() (context.Context, context.CancelFunc) {
+				return context.WithTimeout(ctx, time.Minute)
+			},
+			Operation: func(ctx context.Context, logger log.Logger) (string, error) {
+				defer close(taskDone)
+				<-taskWork
+				logger.Info("some message from the task")
+				return "some result", nil
+			},
+		})
 		assert.NoError(t, err)
 	})
 
@@ -380,7 +436,7 @@ task/00000123/my-receiver/my-export/some.task/%s
   "type": "some.task",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "node1",
+  "node": "node1",
   "lock": "runtime/lock/task/my-lock",
   "result": "some result",
   "duration": %d

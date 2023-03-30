@@ -29,7 +29,7 @@ type Task struct {
 	receiverKey key.ReceiverKey
 }
 
-func newTask(d dependencies, logger log.Logger, k key.ReceiverKey) *Task {
+func newCleanupTask(d dependencies, logger log.Logger, k key.ReceiverKey) *Task {
 	return &Task{
 		clock:       d.Clock(),
 		logger:      logger,
