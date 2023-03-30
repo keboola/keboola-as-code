@@ -71,6 +71,7 @@ func TestCleanup(t *testing.T) {
 	taskKey1 := key.TaskKey{ProjectID: receiverKey.ProjectID, TaskID: key.TaskID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "some.task", createdAt.String(), "abcdef"))}
 	task1 := model.Task{
 		TaskKey:    taskKey1,
+		Type:       "some.task",
 		CreatedAt:  createdAt,
 		FinishedAt: nil,
 		WorkerNode: "node1",
@@ -88,6 +89,7 @@ func TestCleanup(t *testing.T) {
 	taskKey2 := key.TaskKey{ProjectID: receiverKey.ProjectID, TaskID: key.TaskID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
 	task2 := model.Task{
 		TaskKey:    taskKey2,
+		Type:       "other.task",
 		CreatedAt:  createdAt,
 		FinishedAt: &time2Key,
 		WorkerNode: "node2",
@@ -105,6 +107,7 @@ func TestCleanup(t *testing.T) {
 	taskKey3 := key.TaskKey{ProjectID: receiverKey.ProjectID, TaskID: key.TaskID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
 	task3 := model.Task{
 		TaskKey:    taskKey3,
+		Type:       "other.task",
 		CreatedAt:  createdAt,
 		FinishedAt: &time3Key,
 		WorkerNode: "node2",
@@ -327,6 +330,7 @@ task/00001000/github/other.task/2006-01-02T08:04:05.000Z_ghijkl
 {
   "projectId": 1000,
   "taskId": "github/other.task/2006-01-02T08:04:05.000Z_ghijkl",
+  "type": "other.task",
   "createdAt": "2006-01-02T08:04:05.000Z",
   "finishedAt": "%s",
   "workerNode": "node2",
@@ -341,6 +345,7 @@ task/00001000/github/receiver.cleanup/%s
 {
   "projectId": 1000,
   "taskId": "github/receiver.cleanup/%s",
+  "type": "receiver.cleanup",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",

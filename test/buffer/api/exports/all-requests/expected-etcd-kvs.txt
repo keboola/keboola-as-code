@@ -221,6 +221,7 @@
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "taskId": "my-receiver/export-b/export.create/%s",
+  "type": "export.create",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",
@@ -236,6 +237,7 @@
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "taskId": "my-receiver/export-b/export.update/%s",
+  "type": "export.update",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",
@@ -251,6 +253,7 @@
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "taskId": "my-receiver/receiver.create/%s",
+  "type": "receiver.create",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",

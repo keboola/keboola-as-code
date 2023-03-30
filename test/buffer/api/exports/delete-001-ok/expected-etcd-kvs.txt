@@ -14,9 +14,8 @@
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "my-receiver",
-  "type": "export.create",
   "taskId": "%s",
+  "type": "export.create",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "%s",

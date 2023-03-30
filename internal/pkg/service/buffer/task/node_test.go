@@ -30,9 +30,10 @@ func TestSuccessfulTask(t *testing.T) {
 	defer cancel()
 
 	lock := "my-lock"
+	taskType := "some.task"
 	taskKey := key.TaskKey{
 		ProjectID: 123,
-		TaskID:    "my-receiver/my-export/some.task",
+		TaskID:    key.TaskID("my-receiver/my-export/" + taskType),
 	}
 
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
@@ -47,14 +48,14 @@ func TestSuccessfulTask(t *testing.T) {
 	// Start a task
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
-	_, err := node1.StartTask(ctx, taskKey, func(ctx context.Context, logger log.Logger) (task.Result, error) {
+	_, err := node1.StartTask(ctx, taskKey, taskType, func(ctx context.Context, logger log.Logger) (task.Result, error) {
 		defer close(taskDone)
 		<-taskWork
 		logger.Info("some message from the task (1)")
 		return "some result (1)", nil
 	}, task.WithLock(lock))
 	assert.NoError(t, err)
-	_, err = node2.StartTask(ctx, taskKey, func(ctx context.Context, logger log.Logger) (task.Result, error) {
+	_, err = node2.StartTask(ctx, taskKey, taskType, func(ctx context.Context, logger log.Logger) (task.Result, error) {
 		assert.Fail(t, "should not be called")
 		return "", nil
 	}, task.WithLock(lock))
@@ -74,6 +75,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 {
   "projectId": 123,
   "taskId": "my-receiver/my-export/some.task/%s",
+  "type": "some.task",
   "createdAt": "%s",
   "workerNode": "node1",
   "lock": "runtime/lock/task/my-lock"
@@ -92,6 +94,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 {
   "projectId": 123,
   "taskId": "my-receiver/my-export/some.task/%s",
+  "type": "some.task",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "node1",
@@ -105,7 +108,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 	// Start another task with the same lock (lock is free)
 	taskWork = make(chan struct{})
 	taskDone = make(chan struct{})
-	_, err = node2.StartTask(ctx, taskKey, func(ctx context.Context, logger log.Logger) (string, error) {
+	_, err = node2.StartTask(ctx, taskKey, taskType, func(ctx context.Context, logger log.Logger) (string, error) {
 		defer close(taskDone)
 		<-taskWork
 		logger.Info("some message from the task (2)")
@@ -124,6 +127,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 {
   "projectId": 123,
   "taskId": "my-receiver/my-export/some.task/%s",
+  "type": "some.task",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "node1",
@@ -139,6 +143,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 {
   "projectId": 123,
   "taskId": "my-receiver/my-export/some.task/%s",
+  "type": "some.task",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "node2",
@@ -172,9 +177,10 @@ func TestFailedTask(t *testing.T) {
 	defer cancel()
 
 	lock := "my-lock"
+	taskType := "some.task"
 	taskKey := key.TaskKey{
 		ProjectID: 123,
-		TaskID:    "my-receiver/my-export/some.task",
+		TaskID:    key.TaskID("my-receiver/my-export/" + taskType),
 	}
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
@@ -188,14 +194,14 @@ func TestFailedTask(t *testing.T) {
 	// Start a task
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
-	_, err := node1.StartTask(ctx, taskKey, func(ctx context.Context, logger log.Logger) (string, error) {
+	_, err := node1.StartTask(ctx, taskKey, taskType, func(ctx context.Context, logger log.Logger) (string, error) {
 		defer close(taskDone)
 		<-taskWork
 		logger.Info("some message from the task (1)")
 		return "", errors.New("some error (1)")
 	}, task.WithLock(lock))
 	assert.NoError(t, err)
-	_, err = node2.StartTask(ctx, taskKey, func(ctx context.Context, logger log.Logger) (string, error) {
+	_, err = node2.StartTask(ctx, taskKey, taskType, func(ctx context.Context, logger log.Logger) (string, error) {
 		assert.Fail(t, "should not be called")
 		return "", nil
 	}, task.WithLock(lock))
@@ -215,6 +221,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 {
   "projectId": 123,
   "taskId": "my-receiver/my-export/some.task/%s",
+  "type": "some.task",
   "createdAt": "%s",
   "workerNode": "node1",
   "lock": "runtime/lock/task/my-lock"
@@ -233,6 +240,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 {
   "projectId": 123,
   "taskId": "my-receiver/my-export/some.task/%s",
+  "type": "some.task",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "node1",
@@ -246,7 +254,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 	// Start another task with the same lock (lock is free)
 	taskWork = make(chan struct{})
 	taskDone = make(chan struct{})
-	_, err = node2.StartTask(ctx, taskKey, func(ctx context.Context, logger log.Logger) (string, error) {
+	_, err = node2.StartTask(ctx, taskKey, taskType, func(ctx context.Context, logger log.Logger) (string, error) {
 		defer close(taskDone)
 		<-taskWork
 		logger.Info("some message from the task (2)")
@@ -265,6 +273,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 {
   "projectId": 123,
   "taskId": "my-receiver/my-export/some.task/%s",
+  "type": "some.task",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "node1",
@@ -280,6 +289,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 {
   "projectId": 123,
   "taskId": "my-receiver/my-export/some.task/%s",
+  "type": "some.task",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "node2",
@@ -313,10 +323,12 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	defer cancel()
 
 	lock := "my-lock"
+	taskType := "some.task"
 	taskKey := key.TaskKey{
 		ProjectID: 123,
-		TaskID:    "my-receiver/my-export/some.task",
+		TaskID:    key.TaskID("my-receiver/my-export/" + taskType),
 	}
+
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	logs := ioutil.NewAtomicWriter()
@@ -329,7 +341,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
 	etcdhelper.ExpectModification(t, client, func() {
-		_, err := node1.StartTask(ctx, taskKey, func(ctx context.Context, logger log.Logger) (string, error) {
+		_, err := node1.StartTask(ctx, taskKey, taskType, func(ctx context.Context, logger log.Logger) (string, error) {
 			defer close(taskDone)
 			<-taskWork
 			logger.Info("some message from the task")
@@ -365,6 +377,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 {
   "projectId": 123,
   "taskId": "my-receiver/my-export/some.task/%s",
+  "type": "some.task",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "node1",

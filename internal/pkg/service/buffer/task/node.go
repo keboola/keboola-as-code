@@ -26,7 +26,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const LockEtcdPrefix = etcdop.Prefix("runtime/lock/task")
+const (
+	SpanNamePrefix = "keboola.go.buffer.task"
+	LockEtcdPrefix = etcdop.Prefix("runtime/lock/task")
+)
 
 // Node represents a cluster Worker node on which tasks are run.
 // See comments in the StartTask method.
@@ -125,7 +128,7 @@ func (n *Node) TasksCount() int64 {
 
 // StartTask backed by local lock and etcd transaction, so the task run at most once.
 // The context will be passed to the operation callback.
-func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, operation Task, ops ...Option) (t *model.Task, err error) {
+func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, taskType string, operation Task, ops ...Option) (t *model.Task, err error) {
 	// Apply options
 	c := defaultTaskConfig()
 	for _, o := range ops {
@@ -153,7 +156,7 @@ func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, operation Tas
 	}
 
 	// Create task model
-	task := model.Task{TaskKey: taskKey, CreatedAt: createdAt, WorkerNode: n.nodeID, Lock: lock.Key()}
+	task := model.Task{TaskKey: taskKey, Type: taskType, CreatedAt: createdAt, WorkerNode: n.nodeID, Lock: lock.Key()}
 
 	// Get session
 	n.sessionLock.RLock()
@@ -179,26 +182,29 @@ func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, operation Tas
 
 	logger.Infof(`started task`)
 	logger.Debugf(`lock acquired "%s"`, lock.Key())
-
-	_, span := n.tracer.Start(ctx, "keboola.go.buffer.task")
-	defer telemetry.EndSpan(span, &err)
-	span.SetAttributes(
-		telemetry.KeepSpan(),
-		attribute.String("projectId", task.ProjectID.String()),
-		attribute.String("taskId", task.TaskID.String()),
-		attribute.String("lock", task.Lock),
-		attribute.String("worker", task.WorkerNode),
-		attribute.String("createdAt", task.CreatedAt.String()),
-	)
 	createdTask := task
 
 	// Run operation in the background
 	go func() {
 		defer unlock()
 
+		// Setup telemetry
+		ctx, span := n.tracer.Start(ctx, SpanNamePrefix+"."+taskType)
+		span.SetAttributes(
+			telemetry.KeepSpan(),
+			attribute.String("projectId", task.ProjectID.String()),
+			attribute.String("taskId", task.TaskID.String()),
+			attribute.String("taskType", taskType),
+			attribute.String("lock", task.Lock),
+			attribute.String("node", task.WorkerNode),
+			attribute.String("createdAt", task.CreatedAt.String()),
+		)
+
 		// Process results, in defer, to catch panic
 		var result string
 		var err error
+		defer telemetry.EndSpan(span, &err)
+
 		startTime := n.clock.Now()
 		defer func() {
 			// Catch panic

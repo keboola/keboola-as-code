@@ -4,6 +4,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/file.close/%s
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "taskId": "my-receiver/my-export-1/%s/file.close/%s",
+  "type": "file.close",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node-%d",
@@ -19,6 +20,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/file.close/%s
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "taskId": "my-receiver/my-export-2/%s/file.close/%s",
+  "type": "file.close",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node-%d",
@@ -34,6 +36,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/file.import/%s
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "taskId": "my-receiver/my-export-1/%s/file.import/%s",
+  "type": "file.import",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node-%d",
@@ -49,6 +52,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/file.import/%s
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "taskId": "my-receiver/my-export-2/%s/file.import/%s",
+  "type": "file.import",
   "createdAt": "%s",
   "finishedAt": "%s",
   "workerNode": "worker-node-%d",
