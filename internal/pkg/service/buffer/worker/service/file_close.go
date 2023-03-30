@@ -53,13 +53,11 @@ func (s *Service) closeFiles(ctx context.Context, wg *sync.WaitGroup, d dependen
 				}, "/")),
 			}
 		},
+		TaskCtx: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(context.Background(), time.Minute)
+		},
 		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Task {
 			return func(ctx context.Context, logger log.Logger) (string, error) {
-				// On shutdown, the task is stopped immediately, because it is connected to the Service ctx.
-				// There is no reason to wait, because it can be started again on another node.
-				ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-				defer cancel()
-
 				// Wait until all slices are uploaded
 				file := event.Value
 				if err := w.WaitUntilAllSlicesUploaded(ctx, logger, file.FileKey); err != nil {

@@ -50,13 +50,11 @@ func (s *Service) closeSlices(ctx context.Context, wg *sync.WaitGroup, d depende
 				}, "/")),
 			}
 		},
+		TaskCtx: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(ctx, time.Minute)
+		},
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Task {
 			return func(ctx context.Context, logger log.Logger) (string, error) {
-				// On shutdown, the task is stopped immediately, because it is connected to the Service ctx.
-				// There is no reason to wait, because it can be started again on another node.
-				ctx, cancel := context.WithTimeout(ctx, time.Minute)
-				defer cancel()
-
 				// Wait until all API nodes switch to a new slice.
 				rev := event.Kv.ModRevision
 				logger.Infof(`waiting until all API nodes switch to a revision >= %v`, rev)

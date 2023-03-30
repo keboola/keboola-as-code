@@ -55,12 +55,11 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 				}, "/")),
 			}
 		},
+		TaskCtx: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(context.Background(), 5*time.Minute)
+		},
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Task {
-			return func(_ context.Context, logger log.Logger) (result string, err error) {
-				// Don't cancel upload on the shutdown, but wait for timeout
-				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-				defer cancel()
-
+			return func(ctx context.Context, logger log.Logger) (result string, err error) {
 				// Get slice
 				slice := event.Value
 

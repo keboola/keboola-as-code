@@ -54,12 +54,11 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 				}, "/")),
 			}
 		},
+		TaskCtx: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(context.Background(), 5*time.Minute)
+		},
 		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Task {
-			return func(_ context.Context, logger log.Logger) (result string, err error) {
-				// Don't cancel import on the shutdown, but wait for timeout
-				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-				defer cancel()
-
+			return func(ctx context.Context, logger log.Logger) (result string, err error) {
 				// Get file
 				fileRes := event.Value
 
@@ -102,7 +101,7 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 					// Delete the empty file resource
 					if err := files.DeleteFile(ctx, fileRes); err != nil {
 						// The error is not critical
-						s.logger.Error(errors.Errorf(`cannot delete empty file "%v/%v": %w`, fileRes.FileID, fileRes.StorageResource.ID, err))
+						s.logger.Error(errors.Errorf(`cannot delete empty file "%v/%v": %s`, fileRes.FileID, fileRes.StorageResource.ID, err))
 					}
 
 					// Mark file imported

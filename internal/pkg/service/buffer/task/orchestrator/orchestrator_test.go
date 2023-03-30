@@ -76,6 +76,9 @@ func TestOrchestrator(t *testing.T) {
 				TaskID:    key.TaskID("my-receiver/some.task/" + resource.ID),
 			}
 		},
+		TaskCtx: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(ctx, time.Minute)
+		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Task {
 			return func(_ context.Context, logger log.Logger) (task.Result, error) {
 				logger.Info("message from the task")
@@ -161,6 +164,9 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 				ProjectID: resource.ReceiverKey.ProjectID,
 				TaskID:    key.TaskID("my-receiver/some.task/" + resource.ID),
 			}
+		},
+		TaskCtx: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(ctx, time.Minute)
 		},
 		StartTaskIf: func(event etcdop.WatchEventT[testResource]) (string, bool) {
 			if event.Value.ID == "GoodID" { // <<<<<<<<<<<<<<<<<<<<
