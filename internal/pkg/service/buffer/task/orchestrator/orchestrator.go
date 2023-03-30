@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 
@@ -105,6 +106,7 @@ type Source[T any] struct {
 // Decision is made by the distribution.Assigner.
 // See documentation of: distribution.Node, task.Node, Config[R].
 type orchestrator[T any] struct {
+	clock  clock.Clock
 	logger log.Logger
 	tracer trace.Tracer
 	client *etcd.Client
@@ -116,6 +118,7 @@ type orchestrator[T any] struct {
 type TaskFactory[T any] func(event etcdop.WatchEventT[T]) task.Task
 
 type dependencies interface {
+	Clock() clock.Clock
 	Logger() log.Logger
 	Tracer() trace.Tracer
 	EtcdClient() *etcd.Client
@@ -129,6 +132,7 @@ func Start[T any](ctx context.Context, wg *sync.WaitGroup, d dependencies, confi
 	}
 
 	w := &orchestrator[T]{
+		clock:  d.Clock(),
 		logger: d.Logger().AddPrefix(fmt.Sprintf("[orchestrator][%s]", config.Name)),
 		tracer: d.Tracer(),
 		client: d.EtcdClient(),
@@ -144,26 +148,99 @@ func Start[T any](ctx context.Context, wg *sync.WaitGroup, d dependencies, confi
 }
 
 func (o orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan error {
-	work := func(ctx context.Context, assigner *distribution.Assigner) <-chan error {
-		ctx, span := o.tracer.Start(ctx, SpanNamePrefix+"."+o.config.Name)
-		return o.config.Source.WatchPrefix.
-			GetAllAndWatch(ctx, o.client, o.config.Source.WatchEtcdOps...).
-			SetupConsumer(o.logger).
-			WithOnClose(func(err error) {
-				telemetry.EndSpan(span, &err)
-			}).
-			WithForEach(func(events []etcdop.WatchEventT[R], header *etcdop.Header, _ bool) {
-				for _, event := range events {
-					o.startTask(assigner, event)
+	initDone := make(chan error, 1)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer o.logger.Info("stopped")
+
+		initDone := initDone
+		b := newRetryBackoff()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				// The watcher is periodically restarted to rescan existing keys.
+				if initDone == nil {
+					o.logger.Debug("restart")
 				}
-			}).
-			StartConsumer(wg)
+
+				// Run the watch operation for the RestartInterval.
+				err := o.watch(ctx, wg, o.config.Source.RestartInterval, func() {
+					if initDone != nil {
+						// Initialization was successful
+						o.logger.Info("ready")
+						close(initDone)
+						initDone = nil
+					}
+				})
+
+				// Handle initialization error for the watcher.
+				if err == nil {
+					// No error, reset backoff.
+					b.Reset()
+				} else {
+					if initDone != nil {
+						// Initialization error in the first iteration is fatal, e.g., connection failed, stop.
+						initDone <- err
+						close(initDone)
+						return
+					} else if errors.Is(err, context.Canceled) {
+						return
+					}
+
+					// An error occurred, wait before reset.
+					delay := b.NextBackOff()
+					o.logger.Warnf("re-creating watcher, backoff delay %s, reason: %s", delay, err.Error())
+					<-time.After(delay)
+				}
+			}
+		}
+	}()
+	return initDone
+}
+
+func (o orchestrator[R]) watch(ctx context.Context, wg *sync.WaitGroup, timeout time.Duration, onReady func()) error {
+	done := make(chan struct{})
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	ctx, span := o.tracer.Start(ctx, SpanNamePrefix+"."+o.config.Name)
+	err := <-o.config.Source.WatchPrefix.
+		GetAllAndWatch(ctx, o.client, o.config.Source.WatchEtcdOps...).
+		SetupConsumer(o.logger).
+		WithOnClose(func(err error) {
+			telemetry.EndSpan(span, &err)
+			close(done)
+		}).
+		WithForEach(func(events []etcdop.WatchEventT[R], header *etcdop.Header, _ bool) {
+			for _, event := range events {
+				o.startTask(event)
+			}
+		}).
+		StartConsumer(wg)
+
+	// Handle initialization error
+	if err != nil {
+		return err
 	}
-	return o.dist.StartWork(ctx, wg, o.logger, work, distribution.WithResetInterval(o.config.Source.RestartInterval))
+
+	// Wait for the consumer to finish.
+	onReady()
+	select {
+	case <-done:
+		return nil
+	case <-o.clock.After(timeout):
+		cancel()
+		<-done
+		return nil
+	}
 }
 
 // startTask for the event received from the watched prefix.
-func (o orchestrator[R]) startTask(assigner *distribution.Assigner, event etcdop.WatchEventT[R]) {
+func (o orchestrator[R]) startTask(event etcdop.WatchEventT[R]) {
 	// Check event type
 	if event.Type != etcdop.CreateEvent {
 		return
@@ -174,7 +251,7 @@ func (o orchestrator[R]) startTask(assigner *distribution.Assigner, event etcdop
 	distributionKey := o.config.DistributionKey(event)
 
 	// Error is not expected, there is present always at least one node - self.
-	if !assigner.MustCheckIsOwner(distributionKey) {
+	if !o.dist.MustCheckIsOwner(distributionKey) {
 		// Another worker node handles the resource.
 		o.logger.Debugf(`not assigned "%s", distribution key "%s"`, taskKey.String(), distributionKey)
 		return
