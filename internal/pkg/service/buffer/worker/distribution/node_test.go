@@ -45,7 +45,7 @@ func TestNodesDiscovery(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			node, d := createNode(t, clk, nil, etcdNamespace, fmt.Sprintf("node%d", i+1))
+			node, d := createNode(t, clk, etcdNamespace, fmt.Sprintf("node%d", i+1))
 			if node != nil {
 				lock.Lock()
 				nodes[i] = node
@@ -242,7 +242,7 @@ node3
 
 	// All node are off, start a new node
 	assert.Equal(t, 4, nodesCount+1)
-	node4, d4 := createNode(t, clk, nil, etcdNamespace, "node4")
+	node4, d4 := createNode(t, clk, etcdNamespace, "node4")
 	process4 := d4.Process()
 	assert.Eventually(t, func() bool {
 		return reflect.DeepEqual([]string{"node4"}, node4.Nodes())
@@ -332,11 +332,11 @@ func TestConsistentHashLib(t *testing.T) {
 	}, keysPerNode)
 }
 
-func createNode(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, nodeName string) (*Node, bufferDependencies.Mocked) {
+func createNode(t *testing.T, clk clock.Clock, etcdNamespace, nodeName string) (*Node, bufferDependencies.Mocked) {
 	t.Helper()
 
 	// Create dependencies
-	d := createDeps(t, clk, logs, etcdNamespace, nodeName)
+	d := createDeps(t, clk, nil, etcdNamespace, nodeName)
 
 	// Speedup tests with real clock,
 	// and disable events grouping interval in tests with mocked clocks,

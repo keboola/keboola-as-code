@@ -221,8 +221,6 @@ func (o orchestrator[R]) watch(ctx context.Context, wg *sync.WaitGroup, timeout 
 			}
 		}).
 		StartConsumer(wg)
-
-	// Handle initialization error
 	if err != nil {
 		return err
 	}
