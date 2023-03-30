@@ -15,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -31,8 +30,7 @@ const (
 
 type checker struct {
 	*Service
-	logger   log.Logger
-	assigner *distribution.Assigner
+	logger log.Logger
 
 	lock             *sync.RWMutex
 	importConditions cachedConditions
@@ -48,11 +46,10 @@ type cachedSlice struct {
 	expiration time.Time
 }
 
-func startChecker(ctx context.Context, wg *sync.WaitGroup, s *Service, assigner *distribution.Assigner) <-chan error {
+func startChecker(ctx context.Context, wg *sync.WaitGroup, s *Service) <-chan error {
 	c := &checker{
 		Service:          s,
 		logger:           s.logger.AddPrefix("[conditions]"),
-		assigner:         assigner,
 		lock:             &sync.RWMutex{},
 		importConditions: make(cachedConditions),
 		openedSlices:     make(cachedSlices),
@@ -84,10 +81,7 @@ func startChecker(ctx context.Context, wg *sync.WaitGroup, s *Service, assigner 
 
 // checkConditions periodically check file import and slice upload conditions.
 func (s *Service) checkConditions(ctx context.Context, wg *sync.WaitGroup) <-chan error {
-	// Checker is re-created on each distribution change
-	return s.dist.StartWork(ctx, wg, s.logger, func(ctx context.Context, assigner *distribution.Assigner) (initDone <-chan error) {
-		return startChecker(ctx, wg, s, assigner)
-	})
+	return startChecker(ctx, wg, s)
 }
 
 func (c *checker) check(ctx context.Context) {
@@ -145,7 +139,7 @@ func (c *checker) watchImportConditions(ctx context.Context, wg *sync.WaitGroup)
 			defer c.lock.Unlock()
 			for _, event := range events {
 				export := event.Value
-				if !c.assigner.MustCheckIsOwner(export.ReceiverKey.String()) {
+				if !c.Service.dist.MustCheckIsOwner(export.ReceiverKey.String()) {
 					// Another worker node handles the resource.
 					delete(c.importConditions, export.ExportKey)
 					continue
@@ -174,7 +168,7 @@ func (c *checker) watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup) <-c
 			defer c.lock.Unlock()
 			for _, event := range events {
 				slice := event.Value
-				if !c.assigner.MustCheckIsOwner(slice.ReceiverKey.String()) {
+				if !c.Service.dist.MustCheckIsOwner(slice.ReceiverKey.String()) {
 					// Another worker node handles the resource.
 					delete(c.openedSlices, slice.SliceKey)
 					continue
