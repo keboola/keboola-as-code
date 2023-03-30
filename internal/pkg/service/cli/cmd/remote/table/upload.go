@@ -16,7 +16,7 @@ import (
 
 func UploadCommand(p dependencies.Provider) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   `upload [file] [table]`,
+		Use:   `upload [table] [file]`,
 		Short: helpmsg.Read(`remote/table/upload/short`),
 		Long:  helpmsg.Read(`remote/table/upload/long`),
 		Args:  cobra.MaximumNArgs(2),
@@ -24,16 +24,6 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 			// Ask for host and token if needed
 			baseDeps := p.BaseDependencies()
 			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
-				return err
-			}
-
-			var inputFile string
-			if len(args) > 0 {
-				inputFile = args[0]
-			}
-
-			fileUploadOpts, err := baseDeps.Dialogs().AskUploadFile(baseDeps.Options(), inputFile)
-			if err != nil {
 				return err
 			}
 
@@ -45,7 +35,7 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 
 			var tableID keboola.TableID
 			var primaryKey []string
-			if len(args) < 2 {
+			if len(args) == 0 {
 				allTables, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithColumns()).Send(d.CommandCtx())
 				if err != nil {
 					return err
@@ -69,11 +59,21 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 					primaryKey = d.Dialogs().AskPrimaryKey(d.Options())
 				}
 			} else {
-				id, err := keboola.ParseTableID(args[1])
+				id, err := keboola.ParseTableID(args[0])
 				if err != nil {
 					return err
 				}
 				tableID = id
+			}
+
+			var inputFile string
+			if len(args) == 2 {
+				inputFile = args[1]
+			}
+
+			fileUploadOpts, err := baseDeps.Dialogs().AskUploadFile(baseDeps.Options(), inputFile)
+			if err != nil {
+				return err
 			}
 
 			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-upload")
