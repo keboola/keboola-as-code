@@ -9,12 +9,14 @@ import (
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -71,9 +73,6 @@ func (c Config[T]) Validate() error {
 	if c.Source.WatchPrefix.Prefix() == "" {
 		errs.Append(errors.New("source watch prefix definition must be configured"))
 	}
-	if len(c.Source.WatchEvents) == 0 {
-		errs.Append(errors.New("source watch events definition must be configured"))
-	}
 	if c.Source.ReSyncInterval <= 0 {
 		errs.Append(errors.New("re-sync interval must be configured"))
 	}
@@ -96,8 +95,6 @@ type Source[T any] struct {
 	// WatchPrefix defines an etcd prefix that is watched by GetAllAndWatch.
 	// Each event triggers new task.
 	WatchPrefix etcdop.PrefixT[T]
-	// WatchEvents must contain at least one of etcdop.CreateEvent, etcdop.UpdateEvent, etcdop.DeleteEvent.
-	WatchEvents []etcdop.EventType
 	// WatchEtcdOps contains additional options for the watch operation
 	WatchEtcdOps []etcd.OpOption
 	// ReSyncInterval defines the interval after all keys in the prefix are processed again.
@@ -108,13 +105,12 @@ type Source[T any] struct {
 // Decision is made by the distribution.Assigner.
 // See documentation of: distribution.Node, task.Node, Config[R].
 type orchestrator[T any] struct {
-	logger       log.Logger
-	tracer       trace.Tracer
-	client       *etcd.Client
-	dist         *distribution.Node
-	tasks        *task.Node
-	config       Config[T]
-	allowedTypes map[etcdop.EventType]bool
+	logger log.Logger
+	tracer trace.Tracer
+	client *etcd.Client
+	dist   *distribution.Node
+	tasks  *task.Node
+	config Config[T]
 }
 
 type TaskFactory[T any] func(event etcdop.WatchEventT[T]) task.Task
@@ -131,18 +127,18 @@ func Start[T any](ctx context.Context, wg *sync.WaitGroup, d dependencies, confi
 	if err := config.Validate(); err != nil {
 		panic(err)
 	}
+
 	w := &orchestrator[T]{
-		logger:       d.Logger().AddPrefix(fmt.Sprintf("[orchestrator][%s]", config.Name)),
-		tracer:       d.Tracer(),
-		client:       d.EtcdClient(),
-		dist:         d.DistributionWorkerNode(),
-		tasks:        d.TaskNode(),
-		config:       config,
-		allowedTypes: make(map[etcdop.EventType]bool),
+		logger: d.Logger().AddPrefix(fmt.Sprintf("[orchestrator][%s]", config.Name)),
+		tracer: d.Tracer(),
+		client: d.EtcdClient(),
+		dist:   d.DistributionWorkerNode(),
+		tasks:  d.TaskNode(),
+		config: config,
 	}
-	for _, eventType := range config.Source.WatchEvents {
-		w.allowedTypes[eventType] = true
-	}
+
+	// Delete events are not needed/ignored
+	w.config.Source.WatchEtcdOps = append(w.config.Source.WatchEtcdOps, etcd.WithFilterDelete())
 
 	return w.start(ctx, wg)
 }
@@ -169,7 +165,7 @@ func (o orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan e
 // startTask for the event received from the watched prefix.
 func (o orchestrator[R]) startTask(assigner *distribution.Assigner, event etcdop.WatchEventT[R]) {
 	// Check event type
-	if !o.allowedTypes[event.Type] {
+	if event.Type != etcdop.CreateEvent {
 		return
 	}
 

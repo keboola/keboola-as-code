@@ -58,7 +58,6 @@ func TestOrchestrator(t *testing.T) {
 		Name: "some.task",
 		Source: orchestrator.Source[testResource]{
 			WatchPrefix:    pfx,
-			WatchEvents:    []etcdop.EventType{etcdop.CreateEvent},
 			ReSyncInterval: time.Minute,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
@@ -152,7 +151,6 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 		Name: "some.task",
 		Source: orchestrator.Source[testResource]{
 			WatchPrefix:    pfx,
-			WatchEvents:    []etcdop.EventType{etcdop.CreateEvent},
 			ReSyncInterval: time.Minute,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {

@@ -30,7 +30,6 @@ func (s *Service) retryFailedImports(ctx context.Context, wg *sync.WaitGroup, d 
 		Name: fileRetryCheckTaskType,
 		Source: orchestrator.Source[model.File]{
 			WatchPrefix:    s.schema.Files().Failed().PrefixT(),
-			WatchEvents:    []etcdop.EventType{etcdop.CreateEvent},
 			ReSyncInterval: FailedFilesCheckInterval,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[model.File]) string {
