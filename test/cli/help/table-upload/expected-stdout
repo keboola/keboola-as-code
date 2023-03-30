@@ -7,12 +7,12 @@ Usage:
 
 Flags:
       --columns string            comma separated list of column names. If present, the first row in the CSV file is not treated as a header
+      --file-name string          name of the file to be created
+      --file-tags string          comma-separated list of file tags
+      --file-without-headers      states if the CSV file contains headers on the first row or not
       --incremental-load          data are either added to existing data in the table or replace the existing data
-      --name string               name of the file to be created
       --primary-key strings       primary key for the newly created table if the table doesn't exist
   -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
-      --tags string               comma-separated list of tags
-      --without-headers           states if the CSV file contains headers on the first row or not
 
 Global Flags:
   -h, --help                       print help for command

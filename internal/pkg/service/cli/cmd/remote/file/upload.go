@@ -43,8 +43,8 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 
 	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
 	cmd.Flags().String("data", "", "path to the file to be uploaded")
-	cmd.Flags().String("name", "", "name of the file to be created")
-	cmd.Flags().String("tags", "", "comma-separated list of tags")
+	cmd.Flags().String("file-name", "", "name of the file to be created")
+	cmd.Flags().String("file-tags", "", "comma-separated list of tags")
 
 	return cmd
 }

@@ -76,8 +76,8 @@ func (p *Dialogs) askFileInput(opts *options.Options) string {
 }
 
 func (p *Dialogs) askFileName(opts *options.Options, defaultName string) (string, error) {
-	if opts.IsSet("name") {
-		return opts.GetString("name"), nil
+	if opts.IsSet("file-name") {
+		return opts.GetString("file-name"), nil
 	} else {
 		name, ok := p.Ask(&prompt.Question{
 			Label:     "Enter a name for the file",
@@ -85,23 +85,22 @@ func (p *Dialogs) askFileName(opts *options.Options, defaultName string) (string
 			Default:   defaultName,
 		})
 		if !ok || len(name) == 0 {
-			return "", errors.New("missing name, please specify it")
+			return "", errors.New("missing file name, please specify it")
 		}
 		return name, nil
 	}
 }
 
 func (p *Dialogs) askFileTags(opts *options.Options) []string {
-	tagsStr := opts.GetString(`tags`)
-	if !opts.IsSet(`tags`) {
+	tagsStr := opts.GetString(`file-tags`)
+	if !opts.IsSet(`file-tags`) {
 		tagsStr, _ = p.Ask(&prompt.Question{
 			Label:       "Tags",
-			Description: "Enter a comma-separated list of tags, or enter to skip.",
+			Description: "Enter a comma-separated list of tags for the file, or enter to skip.",
 		})
 	}
 
 	tagsStr = strings.TrimSpace(tagsStr)
 	tags := strings.Split(tagsStr, ",")
-	opts.Set(`input`, tags)
 	return tags
 }
