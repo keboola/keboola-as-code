@@ -274,7 +274,7 @@ func (ts *testSuite) WaitForLogMessages(timeout time.Duration, lines string) {
 	expected := `%A` + strings.ReplaceAll(strings.TrimSpace(lines), "\n", "\n%A") + `%A`
 	assert.Eventually(ts.t, func() bool {
 		return wildcards.Compare(expected, ts.logger.AllMessages()) == nil
-	}, timeout, 100*time.Millisecond)
+	}, timeout, 100*time.Millisecond, ts.logger.AllMessages())
 }
 
 func (ts *testSuite) AssertNoLoggedWarning() {
