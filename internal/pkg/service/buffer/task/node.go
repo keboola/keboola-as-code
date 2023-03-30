@@ -126,6 +126,11 @@ func (n *Node) TasksCount() int64 {
 	return n.tasksCount.Load()
 }
 
+func (n *Node) StartTaskOrErr(cfg Config) error {
+	_, err := n.StartTask(cfg)
+	return err
+}
+
 // StartTask backed by local lock and etcd transaction, so the task run at most once.
 // The context will be passed to the operation callback.
 func (n *Node) StartTask(cfg Config) (t *model.Task, err error) {
