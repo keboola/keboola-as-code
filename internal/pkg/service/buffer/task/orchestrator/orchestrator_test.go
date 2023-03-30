@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
@@ -47,8 +48,16 @@ func TestOrchestrator(t *testing.T) {
 
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-	d1 := bufferDependencies.NewMockedDeps(t, dependencies.WithCtx(ctx), dependencies.WithEtcdNamespace(etcdNamespace), dependencies.WithUniqueID("node1"))
-	d2 := bufferDependencies.NewMockedDeps(t, dependencies.WithCtx(ctx), dependencies.WithEtcdNamespace(etcdNamespace), dependencies.WithUniqueID("node2"))
+	d1 := bufferDependencies.NewMockedDeps(t,
+		dependencies.WithCtx(ctx),
+		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithUniqueID("node1"),
+	)
+	d2 := bufferDependencies.NewMockedDeps(t,
+		dependencies.WithCtx(ctx),
+		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithUniqueID("node2"),
+	)
 
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
@@ -112,9 +121,6 @@ func TestOrchestrator(t *testing.T) {
 
 	wildcards.Assert(t, `
 %A
-[orchestrator][some.task]INFO  ready
-[distribution]INFO  found a new node "node2"
-[orchestrator][some.task]INFO  restart: distribution changed: found a new node "node2"
 [orchestrator][some.task]INFO  assigned "00001000/my-receiver/some.task/ResourceID"
 [task][%s]INFO  started task
 [task][%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/ResourceID"
@@ -141,7 +147,11 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-	d := bufferDependencies.NewMockedDeps(t, dependencies.WithCtx(ctx), dependencies.WithEtcdNamespace(etcdNamespace), dependencies.WithUniqueID("node1"))
+	d := bufferDependencies.NewMockedDeps(t,
+		dependencies.WithCtx(ctx),
+		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithUniqueID("node1"),
+	)
 
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
@@ -199,9 +209,97 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 [orchestrator][some.task]INFO  assigned "00001000/my-receiver/some.task/GoodID"
 [task][00001000/my-receiver/some.task/GoodID/%s]INFO  started task
 [task][00001000/my-receiver/some.task/GoodID/%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/some.task/GoodID"
-[task][00001000/my-receiver/some.task/GoodID/%sINFO  message from the task
+[task][00001000/my-receiver/some.task/GoodID/%s]INFO  message from the task
 [task][00001000/my-receiver/some.task/GoodID/%s]INFO  task succeeded (%s): GoodID
 [task][00001000/my-receiver/some.task/GoodID/%s]DEBUG  lock released "runtime/lock/task/00001000/my-receiver/some.task/GoodID"
+%A
+`, d.DebugLogger().AllMessages())
+}
+
+func TestOrchestrator_RestartInterval(t *testing.T) {
+	t.Parallel()
+
+	wg := &sync.WaitGroup{}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	restartInterval := time.Millisecond
+	clk := clock.NewMock()
+	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
+	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
+	d := bufferDependencies.NewMockedDeps(t,
+		dependencies.WithCtx(ctx),
+		dependencies.WithClock(clk),
+		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithUniqueID("node1"),
+	)
+
+	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
+	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
+
+	// Orchestrator config
+	config := orchestrator.Config[testResource]{
+		Name: "some.task",
+		Source: orchestrator.Source[testResource]{
+			WatchPrefix:     pfx,
+			RestartInterval: restartInterval,
+		},
+		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
+			return event.Value.ReceiverKey.String()
+		},
+		TaskKey: func(event etcdop.WatchEventT[testResource]) key.TaskKey {
+			resource := event.Value
+			return key.TaskKey{
+				ProjectID: resource.ReceiverKey.ProjectID,
+				TaskID:    key.TaskID("my-receiver/some.task/" + resource.ID),
+			}
+		},
+		TaskCtx: func() (context.Context, context.CancelFunc) {
+			// Each orchestrator task must have a deadline.
+			return context.WithTimeout(ctx, time.Minute)
+		},
+		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Task {
+			return func(_ context.Context, logger log.Logger) (task.Result, error) {
+				logger.Info("message from the task")
+				return event.Value.ID, nil
+			}
+		},
+	}
+
+	// Create orchestrator per each node
+	assert.NoError(t, <-orchestrator.Start(ctx, wg, d, config))
+
+	// Put some key to trigger the task
+	assert.NoError(t, pfx.Key("key1").Put(testResource{ReceiverKey: receiverKey, ID: "ResourceID1"}).Do(ctx, client))
+	assert.Eventually(t, func() bool {
+		return strings.Contains(d.DebugLogger().AllMessages(), "DEBUG  lock released")
+	}, 5*time.Second, 10*time.Millisecond, "timeout")
+	d.DebugLogger().Truncate()
+
+	// 3x restart interval
+	clk.Add(restartInterval)
+	assert.Eventually(t, func() bool {
+		return strings.Contains(d.DebugLogger().AllMessages(), "DEBUG  restart")
+	}, 5*time.Second, 10*time.Millisecond, "timeout")
+
+	// Put some key to trigger the task
+	assert.Eventually(t, func() bool {
+		return strings.Contains(d.DebugLogger().AllMessages(), "DEBUG  lock released")
+	}, 5*time.Second, 10*time.Millisecond, "timeout")
+
+	cancel()
+	wg.Wait()
+	d.Process().Shutdown(errors.New("bye bye"))
+	d.Process().WaitForShutdown()
+
+	wildcards.Assert(t, `
+[orchestrator][some.task]DEBUG  restart
+[orchestrator][some.task]INFO  assigned "00001000/my-receiver/some.task/ResourceID1"
+[task][00001000/my-receiver/some.task/ResourceID1/%s]INFO  started task
+[task][00001000/my-receiver/some.task/ResourceID1/%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/some.task/ResourceID1"
+[task][00001000/my-receiver/some.task/ResourceID1/%s]INFO  message from the task
+[task][00001000/my-receiver/some.task/ResourceID1/%s]INFO  task succeeded (0s): ResourceID1
+[task][00001000/my-receiver/some.task/ResourceID1/%s]DEBUG  lock released "runtime/lock/task/00001000/my-receiver/some.task/ResourceID1"
 %A
 `, d.DebugLogger().AllMessages())
 }
