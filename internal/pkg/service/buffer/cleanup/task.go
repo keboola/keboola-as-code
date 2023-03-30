@@ -166,8 +166,14 @@ func (t *Task) deleteFile(ctx context.Context, file model.File) (slicesCount, re
 		}
 	}
 
+	// Delete received statistics
+	err = t.schema.ReceivedStats().InFile(file.FileKey).DeleteAll().DoOrErr(ctx, t.client)
+	if err != nil {
+		return 0, 0, err
+	}
+
 	// Delete the file
-	_, err = t.schema.Files().InState(file.State).ByKey(file.FileKey).Delete().Do(ctx, t.client)
+	err = t.schema.Files().InState(file.State).ByKey(file.FileKey).Delete().DoOrErr(ctx, t.client)
 	if err != nil {
 		return 0, 0, err
 	}

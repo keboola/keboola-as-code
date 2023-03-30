@@ -46,7 +46,7 @@ func (ts *testSuite) test004EmptyFileAndSlice() {
 	require.NoError(ts.t, err)
 
 	// The slice has been marked as uploaded, the file has been marked as imported.
-	ts.WaitForLogMessages(10*time.Second, `
+	ts.WaitForLogMessages(15*time.Second, `
 [worker-node-%d][task][%s/slice.close/%s]INFO  task succeeded (%s): slice closed
 [worker-node-%d][task][%s/slice.upload/%s]INFO  task succeeded (%s): skipped upload of the empty slice
 [worker-node-%d][task][%s/file.close/%s]INFO  task succeeded (%s): file closed

@@ -10,7 +10,7 @@ import (
 // test003FileImport imports 4 more records; 10 >= 10 (importCountThreshold) - import is triggered.
 func (ts *testSuite) test003FileImport() {
 	// Run imports immediately after the last check to prevent the check during imports.
-	ts.WaitForLogMessages(10*time.Second, `
+	ts.WaitForLogMessages(15*time.Second, `
 [worker-node-%s][service][conditions]INFO  checked "2" opened slices
 	`)
 
@@ -22,7 +22,7 @@ func (ts *testSuite) test003FileImport() {
 	// Periodic condition checks have detected that the IMPORT conditions for both files/exports have been met.
 	// The files and the last slices have now transitioned from the "writing" state to the "closing" state,
 	// and new replacement files in the "writing" state have been created.
-	ts.WaitForLogMessages(10*time.Second, `
+	ts.WaitForLogMessages(15*time.Second, `
 [worker-node-%d][service][conditions]INFO  closing file "%s": count threshold met, received: 10 rows, threshold: 10 rows
 [worker-node-%d][service][conditions]INFO  closing file "%s": count threshold met, received: 10 rows, threshold: 10 rows
 `)
@@ -32,7 +32,7 @@ func (ts *testSuite) test003FileImport() {
 `)
 
 	// The slices have been closed and uploaded.
-	ts.WaitForLogMessages(10*time.Second, `
+	ts.WaitForLogMessages(15*time.Second, `
 [worker-node-%d][task][%s/slice.close/%s]INFO  task succeeded (%s): slice closed
 [worker-node-%d][task][%s/slice.close/%s]INFO  task succeeded (%s): slice closed
 `)
@@ -46,7 +46,7 @@ func (ts *testSuite) test003FileImport() {
 `)
 
 	// The files have been imported
-	ts.WaitForLogMessages(10*time.Second, `
+	ts.WaitForLogMessages(15*time.Second, `
 [worker-node-%d][task][%s/file.close/%s]INFO  task succeeded (%s): file closed
 [worker-node-%d][task][%s/file.close/%s]INFO  task succeeded (%s): file closed
 `)

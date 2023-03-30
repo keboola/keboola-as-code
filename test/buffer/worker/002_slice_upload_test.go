@@ -7,7 +7,7 @@ import (
 // test002SliceUpload imports 2 more records; 6 >= 5 (uploadCountThreshold) - upload is triggered.
 func (ts *testSuite) test002SliceUpload() {
 	// Run imports immediately after the last check to prevent the check during imports.
-	ts.WaitForLogMessages(10*time.Second, `
+	ts.WaitForLogMessages(15*time.Second, `
 [worker-node-%s][service][conditions]INFO  checked "2" opened slices
 	`)
 
@@ -17,20 +17,20 @@ func (ts *testSuite) test002SliceUpload() {
 	}
 
 	// Periodic condition checks have detected that the UPLOAD conditions for both slices/exports have been met.
-	ts.WaitForLogMessages(10*time.Second, `
+	ts.WaitForLogMessages(15*time.Second, `
 [worker-node-%d][service][conditions]INFO  closing slice "%s": count threshold met, received: 6 rows, threshold: 5 rows
 [worker-node-%d][service][conditions]INFO  closing slice "%s": count threshold met, received: 6 rows, threshold: 5 rows
 `)
 
 	// The slices have transitioned from the "writing" state to the "closing" state by the "slice.swap" task,
 	// and new replacement slices in the "writing" state have been created.
-	ts.WaitForLogMessages(10*time.Second, `
+	ts.WaitForLogMessages(15*time.Second, `
 [worker-node-%d][task][%s/slice.swap/%s]INFO  task succeeded (%s): new slice created, the old is closing
 [worker-node-%d][task][%s/slice.swap/%s]INFO  task succeeded (%s): new slice created, the old is closing
 `)
 
 	// All API nodes have been notified about the changes in the slices states.
-	ts.WaitForLogMessages(10*time.Second, `
+	ts.WaitForLogMessages(15*time.Second, `
 [api-node-%d][api][watcher]INFO  state updated to the revision "%d"
 [api-node-%d][api][watcher]INFO  state updated to the revision "%d"
 [api-node-%d][api][watcher]INFO  state updated to the revision "%d"
@@ -42,7 +42,7 @@ func (ts *testSuite) test002SliceUpload() {
 	// These tasks will wait until all API nodes have switched to the new slices.
 	// Once all API nodes have confirmed the switch, the tasks will be unblocked,
 	// and both slices will transition from the "closing" state to the "uploading" state.
-	ts.WaitForLogMessages(10*time.Second, `
+	ts.WaitForLogMessages(15*time.Second, `
 [api-node-%d][api][watcher]INFO  reported revision "%d"
 [api-node-%d][api][watcher]INFO  reported revision "%d"
 [api-node-%d][api][watcher]INFO  reported revision "%d"
