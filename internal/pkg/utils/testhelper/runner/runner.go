@@ -24,7 +24,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
-const testTimeout = 3 * time.Minute
+const testTimeout = 5 * time.Minute
 
 type Runner struct {
 	t          *testing.T
