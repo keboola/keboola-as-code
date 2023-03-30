@@ -55,7 +55,7 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 
 	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
 	cmd.Flags().Bool("async", false, "do not wait for job to finish")
-	cmd.Flags().String("timeout", "2m", "how long to wait for job to finish")
+	cmd.Flags().String("timeout", "5m", "how long to wait for job to finish")
 
 	return cmd
 }
