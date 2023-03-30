@@ -18,6 +18,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+const (
+	SpanNamePrefix = "keboola.go.buffer.orchestrator"
+)
+
 // Config configures the orchestrator.
 //
 // The orchestrator watches for all Source.WatchEvents in the etcd Source.WatchPrefix.
@@ -143,19 +147,23 @@ func Start[T any](ctx context.Context, wg *sync.WaitGroup, d dependencies, confi
 	return w.start(ctx, wg)
 }
 
-func (w orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan error {
-	work := func(distCtx context.Context, assigner *distribution.Assigner) <-chan error {
-		return w.config.Source.WatchPrefix.
-			GetAllAndWatch(distCtx, w.client, w.config.Source.WatchEtcdOps...).
-			SetupConsumer(w.logger).
+func (o orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan error {
+	work := func(ctx context.Context, assigner *distribution.Assigner) <-chan error {
+		ctx, span := o.tracer.Start(ctx, SpanNamePrefix+"."+o.config.Name)
+		return o.config.Source.WatchPrefix.
+			GetAllAndWatch(ctx, o.client, o.config.Source.WatchEtcdOps...).
+			SetupConsumer(o.logger).
+			WithOnClose(func(err error) {
+				telemetry.EndSpan(span, &err)
+			}).
 			WithForEach(func(events []etcdop.WatchEventT[R], header *etcdop.Header, _ bool) {
 				for _, event := range events {
-					w.startTask(ctx, assigner, event)
+					o.startTask(assigner, event)
 				}
 			}).
 			StartConsumer(wg)
 	}
-	return w.dist.StartWork(ctx, wg, w.logger, work, distribution.WithResetInterval(w.config.Source.ReSyncInterval))
+	return o.dist.StartWork(ctx, wg, o.logger, work, distribution.WithResetInterval(o.config.Source.ReSyncInterval))
 }
 
 // startTask for the event received from the watched prefix.
