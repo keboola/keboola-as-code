@@ -34,8 +34,8 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.File]{
 		Name: fileImportTaskType,
 		Source: orchestrator.Source[model.File]{
-			WatchPrefix:    s.schema.Files().Importing().PrefixT(),
-			ReSyncInterval: ImportingFilesCheckInterval,
+			WatchPrefix:     s.schema.Files().Importing().PrefixT(),
+			RestartInterval: ImportingFilesCheckInterval,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[model.File]) string {
 			file := event.Value

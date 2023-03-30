@@ -29,8 +29,8 @@ func (s *Service) retryFailedUploads(ctx context.Context, wg *sync.WaitGroup, d 
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
 		Name: sliceRetryCheckTaskType,
 		Source: orchestrator.Source[model.Slice]{
-			WatchPrefix:    s.schema.Slices().Failed().PrefixT(),
-			ReSyncInterval: FailedSlicesCheckInterval,
+			WatchPrefix:     s.schema.Slices().Failed().PrefixT(),
+			RestartInterval: FailedSlicesCheckInterval,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[model.Slice]) string {
 			slice := event.Value

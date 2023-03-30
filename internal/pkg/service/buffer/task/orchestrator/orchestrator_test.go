@@ -57,8 +57,8 @@ func TestOrchestrator(t *testing.T) {
 	config := orchestrator.Config[testResource]{
 		Name: "some.task",
 		Source: orchestrator.Source[testResource]{
-			WatchPrefix:    pfx,
-			ReSyncInterval: time.Minute,
+			WatchPrefix:     pfx,
+			RestartInterval: time.Minute,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
 			return event.Value.ReceiverKey.String()
@@ -150,8 +150,8 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	config := orchestrator.Config[testResource]{
 		Name: "some.task",
 		Source: orchestrator.Source[testResource]{
-			WatchPrefix:    pfx,
-			ReSyncInterval: time.Minute,
+			WatchPrefix:     pfx,
+			RestartInterval: time.Minute,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
 			return event.Value.ReceiverKey.String()

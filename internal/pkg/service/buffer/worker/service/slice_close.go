@@ -29,8 +29,8 @@ func (s *Service) closeSlices(ctx context.Context, wg *sync.WaitGroup, d depende
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
 		Name: sliceCloseTaskType,
 		Source: orchestrator.Source[model.Slice]{
-			WatchPrefix:    s.schema.Slices().Closing().PrefixT(),
-			ReSyncInterval: ClosingSlicesCheckInterval,
+			WatchPrefix:     s.schema.Slices().Closing().PrefixT(),
+			RestartInterval: ClosingSlicesCheckInterval,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[model.Slice]) string {
 			slice := event.Value

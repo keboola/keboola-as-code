@@ -29,8 +29,8 @@ func (s *Service) retryFailedImports(ctx context.Context, wg *sync.WaitGroup, d 
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.File]{
 		Name: fileRetryCheckTaskType,
 		Source: orchestrator.Source[model.File]{
-			WatchPrefix:    s.schema.Files().Failed().PrefixT(),
-			ReSyncInterval: FailedFilesCheckInterval,
+			WatchPrefix:     s.schema.Files().Failed().PrefixT(),
+			RestartInterval: FailedFilesCheckInterval,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[model.File]) string {
 			file := event.Value

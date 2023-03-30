@@ -73,8 +73,8 @@ func (c Config[T]) Validate() error {
 	if c.Source.WatchPrefix.Prefix() == "" {
 		errs.Append(errors.New("source watch prefix definition must be configured"))
 	}
-	if c.Source.ReSyncInterval <= 0 {
-		errs.Append(errors.New("re-sync interval must be configured"))
+	if c.Source.RestartInterval <= 0 {
+		errs.Append(errors.New("restart interval must be configured"))
 	}
 	if c.DistributionKey == nil {
 		errs.Append(errors.New("task distribution factory key factory must be configured"))
@@ -98,7 +98,7 @@ type Source[T any] struct {
 	// WatchEtcdOps contains additional options for the watch operation
 	WatchEtcdOps []etcd.OpOption
 	// ReSyncInterval defines the interval after all keys in the prefix are processed again.
-	ReSyncInterval time.Duration
+	RestartInterval time.Duration
 }
 
 // Orchestrator creates a task for each watch event, but only on one worker node in the cluster.
@@ -159,7 +159,7 @@ func (o orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan e
 			}).
 			StartConsumer(wg)
 	}
-	return o.dist.StartWork(ctx, wg, o.logger, work, distribution.WithResetInterval(o.config.Source.ReSyncInterval))
+	return o.dist.StartWork(ctx, wg, o.logger, work, distribution.WithResetInterval(o.config.Source.RestartInterval))
 }
 
 // startTask for the event received from the watched prefix.
