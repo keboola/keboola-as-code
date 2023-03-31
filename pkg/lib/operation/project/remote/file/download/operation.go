@@ -72,13 +72,13 @@ func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 				return err
 			}
 		} else {
-			err = runDownloadSliced(ctx, &opts, d.Logger())
+			err = runDownloadSliced(ctx, &opts)
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		err = runDownloadWhole(ctx, &opts, d.Logger())
+		err = runDownloadWhole(ctx, &opts)
 		if err != nil {
 			return err
 		}
@@ -103,23 +103,26 @@ func runDownloadForceUnsliced(ctx context.Context, opts *Options, logger log.Log
 	}()
 
 	logger.Infof("Downloading slices")
-	return downloadSliced(ctx, opts.File, func(reader io.ReadCloser, slice string, len int64, index, total int) (err error) {
+	return downloadSliced(ctx, opts.File, func(reader io.ReadCloser, slice string, size int64, index, total int) (err error) {
 		bar := progressbar.DefaultBytes(
-			len,
+			size,
 			fmt.Sprintf(`downloading slice "%s" %d/%d`, strhelper.Truncate(slice, 20, "..."), index+1, total),
 		)
 
 		if path.Ext(slice) == ".gz" {
 			reader, err = gzip.NewReader(reader)
+			if err != nil {
+				return err
+			}
 		}
 
-		_, err = io.Copy(io.MultiWriter(dst, bar), reader)
+		_, err = io.CopyN(io.MultiWriter(dst, bar), reader, size)
 		return err
 	})
 }
 
 // download slices to `opts.Output` as individual files.
-func runDownloadSliced(ctx context.Context, opts *Options, logger log.Logger) error {
+func runDownloadSliced(ctx context.Context, opts *Options) error {
 	if !opts.ToStdOut() {
 		err := os.MkdirAll(opts.Output, 0o755) // nolint: forbidigo
 		if err != nil && !os.IsExist(err) {    // nolint: forbidigo
@@ -127,9 +130,9 @@ func runDownloadSliced(ctx context.Context, opts *Options, logger log.Logger) er
 		}
 	}
 
-	return downloadSliced(ctx, opts.File, func(reader io.ReadCloser, slice string, len int64, index int, total int) (err error) {
+	return downloadSliced(ctx, opts.File, func(reader io.ReadCloser, slice string, size int64, index int, total int) (err error) {
 		bar := progressbar.DefaultBytes(
-			len,
+			size,
 			fmt.Sprintf(`downloading slice "%s" %d/%d`, strhelper.Truncate(slice, 20, "..."), index+1, total),
 		)
 
@@ -147,7 +150,7 @@ func runDownloadSliced(ctx context.Context, opts *Options, logger log.Logger) er
 }
 
 // download whole file to `opts.Output`.
-func runDownloadWhole(ctx context.Context, opts *Options, logger log.Logger) (err error) {
+func runDownloadWhole(ctx context.Context, opts *Options) (err error) {
 	dst, err := opts.GetOutput("")
 	if err != nil {
 		return err
@@ -171,7 +174,7 @@ func runDownloadWhole(ctx context.Context, opts *Options, logger log.Logger) (er
 	return err
 }
 
-type sliceHandler func(reader io.ReadCloser, slice string, len int64, index int, total int) error
+type sliceHandler func(reader io.ReadCloser, slice string, size int64, index int, total int) error
 
 func downloadSliced(
 	ctx context.Context,
