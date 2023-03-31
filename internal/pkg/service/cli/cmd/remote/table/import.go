@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	common "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	tableImport "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/import"
@@ -38,26 +37,13 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 			var tableID keboola.TableID
 			var primaryKey []string
 			if len(args) < 1 {
-				allTables, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithColumns()).Send(d.CommandCtx())
+				id, createNew, err := askTable(d, true)
 				if err != nil {
 					return err
 				}
+				tableID = id
 
-				table, err := d.Dialogs().AskTable(d.Options(), *allTables, dialog.WithAllowCreateNewTable())
-				if err != nil {
-					return err
-				}
-
-				if table != nil {
-					// user selected table
-					tableID = table.ID
-				} else {
-					// user asked to create new table
-					tableID, err = keboola.ParseTableID(d.Dialogs().AskTableID())
-					if err != nil {
-						return err
-					}
-
+				if createNew {
 					primaryKey = d.Dialogs().AskPrimaryKey(d.Options())
 				}
 			} else {

@@ -37,16 +37,10 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 
 			var tableID keboola.TableID
 			if len(args) == 0 {
-				allTables, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithColumns()).Send(d.CommandCtx())
+				tableID, _, err = askTable(d, false)
 				if err != nil {
 					return err
 				}
-
-				table, err := d.Dialogs().AskTable(d.Options(), *allTables)
-				if err != nil {
-					return err
-				}
-				tableID = table.ID
 			} else {
 				id, err := keboola.ParseTableID(args[0])
 				if err != nil {
