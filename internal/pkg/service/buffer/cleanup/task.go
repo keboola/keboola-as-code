@@ -21,6 +21,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+const (
+	// FileExpiration defines how old files are to be deleted.
+	FileExpiration = 2 * time.Hour
+)
+
 type Task struct {
 	clock       clock.Clock
 	logger      log.Logger
@@ -91,7 +96,7 @@ func (t *Task) deleteExpiredFiles(ctx context.Context) error {
 	filesCount := int64(0)
 	slicesCount := int64(0)
 	recordsCount := int64(0)
-	rangeEnd := key.UTCTime(t.clock.Now().Add(-FileExpirationDays * 24 * time.Hour))
+	rangeEnd := key.UTCTime(t.clock.Now().Add(-FileExpiration))
 
 	// Iterate exports
 	errs := errors.NewMultiError()

@@ -16,7 +16,7 @@ const (
 	// DefaultCheckConditionsInterval defines how often it will be checked upload and import conditions.
 	DefaultCheckConditionsInterval = 30 * time.Second
 	// DefaultCleanupInterval defines how often old tasks and files will be checked and deleted.
-	DefaultCleanupInterval = 15 * time.Minute
+	DefaultCleanupInterval = 5 * time.Minute
 )
 
 // Config of the Buffer Worker.
