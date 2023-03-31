@@ -1,0 +1,25 @@
+Command "remote table import"
+
+Imports a file in the Staging Storage to an existing table.
+
+Usage:
+  kbc remote table import [table] [file] [flags]
+
+Flags:
+      --columns string            comma separated list of column names. If present, the first row in the CSV file is not treated as a header
+      --file-delimiter string     field delimiter used in the CSV file (default ",")
+      --file-enclosure string     field enclosure used in the CSV file (default "\"")
+      --file-escaped-by string    escape character used in the CSV file
+      --file-without-headers      states if the CSV file contains headers on the first row or not
+      --incremental-load          data are either added to existing data in the table or replace the existing data
+      --primary-key strings       primary key for the newly created table if the table doesn't exist
+  -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
+
+Global Flags:
+  -h, --help                       print help for command
+  -l, --log-file string            path to a log file for details
+      --non-interactive            disable interactive dialogs
+  -t, --storage-api-token string   storage API token from your project
+  -v, --verbose                    print details
+      --verbose-api                log each API request and response
+  -d, --working-dir string         use other working directory

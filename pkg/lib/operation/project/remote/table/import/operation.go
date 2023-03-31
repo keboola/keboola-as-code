@@ -23,6 +23,9 @@ type Options struct {
 	FileID          int
 	TableID         keboola.TableID
 	Columns         []string
+	Delimiter       string
+	Enclosure       string
+	EscapedBy       string
 	IncrementalLoad bool
 	WithoutHeaders  bool
 	PrimaryKey      []string
@@ -78,6 +81,9 @@ func getLoadOptions(o *Options) []keboola.LoadDataOption {
 	if len(o.Columns) > 0 {
 		opts = append(opts, keboola.WithColumnsHeaders(o.Columns))
 	}
+	opts = append(opts, keboola.WithDelimiter(o.Delimiter))
+	opts = append(opts, keboola.WithEnclosure(o.Enclosure))
+	opts = append(opts, keboola.WithEscapedBy(o.EscapedBy))
 	opts = append(opts, keboola.WithIncrementalLoad(o.IncrementalLoad))
 	opts = append(opts, keboola.WithoutHeader(o.WithoutHeaders))
 	return opts

@@ -1,0 +1,21 @@
+Command "remote file upload"
+
+Upload a file to Keboola staging storage from a local file or standard input.
+
+Usage:
+  kbc remote file upload [file] [flags]
+
+Flags:
+      --data string               path to the file to be uploaded
+      --file-name string          name of the file to be created
+      --file-tags string          comma-separated list of tags
+  -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
+
+Global Flags:
+  -h, --help                       print help for command
+  -l, --log-file string            path to a log file for details
+      --non-interactive            disable interactive dialogs
+  -t, --storage-api-token string   storage API token from your project
+  -v, --verbose                    print details
+      --verbose-api                log each API request and response
+  -d, --working-dir string         use other working directory
