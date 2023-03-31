@@ -10,8 +10,6 @@ Flags:
       --file-delimiter string     field delimiter used in the CSV file (default ",")
       --file-enclosure string     field enclosure used in the CSV file (default "\"")
       --file-escaped-by string    escape character used in the CSV file
-      --file-name string          name of the file to be created
-      --file-tags string          comma-separated list of file tags
       --file-without-headers      states if the CSV file contains headers on the first row or not
       --incremental-load          data are either added to existing data in the table or replace the existing data
       --primary-key strings       primary key for the newly created table if the table doesn't exist
