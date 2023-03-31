@@ -464,7 +464,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 func createNode(t *testing.T, etcdNamespace string, logs io.Writer, nodeName string) (*task.Node, dependencies.Mocked) {
 	t.Helper()
 	d := createDeps(t, etcdNamespace, logs, nodeName)
-	node, err := task.NewNode(d)
+	node, err := task.NewNode(d, task.WithSpanNamePrefix("keboola.go.buffer.task"))
 	assert.NoError(t, err)
 	return node, d
 }

@@ -14,6 +14,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	bufferConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	serviceDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
@@ -77,7 +78,7 @@ func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 
 	d.watcherNode, err = watcher.NewWorkerNode(d)
 
-	d.taskNode, err = task.NewNode(d)
+	d.taskNode, err = task.NewNode(d, task.WithSpanNamePrefix(bufferConfig.SpanNamePrefix))
 	if err != nil {
 		return nil, err
 	}

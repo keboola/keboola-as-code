@@ -14,11 +14,19 @@ const (
 type NodeOption func(c *nodeConfig)
 
 type nodeConfig struct {
-	ttlSeconds int
+	spanNamePrefix string
+	ttlSeconds     int
 }
 
 func defaultNodeConfig() nodeConfig {
 	return nodeConfig{ttlSeconds: DefaultSessionTTL}
+}
+
+// WithSpanNamePrefix defines prefix for tracing spans.
+func WithSpanNamePrefix(p string) NodeOption {
+	return func(c *nodeConfig) {
+		c.spanNamePrefix = p
+	}
 }
 
 // WithTTL defines time after the session is canceled if the client is unavailable.
