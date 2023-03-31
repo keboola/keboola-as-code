@@ -58,7 +58,6 @@ func TestOrchestrator(t *testing.T) {
 		Name: "some.task",
 		Source: orchestrator.Source[testResource]{
 			WatchPrefix:    pfx,
-			WatchEvents:    []etcdop.EventType{etcdop.CreateEvent},
 			ReSyncInterval: time.Minute,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
@@ -75,6 +74,9 @@ func TestOrchestrator(t *testing.T) {
 				ProjectID: resource.ReceiverKey.ProjectID,
 				TaskID:    key.TaskID("my-receiver/some.task/" + resource.ID),
 			}
+		},
+		TaskCtx: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(ctx, time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Task {
 			return func(_ context.Context, logger log.Logger) (task.Result, error) {
@@ -149,7 +151,6 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 		Name: "some.task",
 		Source: orchestrator.Source[testResource]{
 			WatchPrefix:    pfx,
-			WatchEvents:    []etcdop.EventType{etcdop.CreateEvent},
 			ReSyncInterval: time.Minute,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
@@ -161,6 +162,9 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 				ProjectID: resource.ReceiverKey.ProjectID,
 				TaskID:    key.TaskID("my-receiver/some.task/" + resource.ID),
 			}
+		},
+		TaskCtx: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(ctx, time.Minute)
 		},
 		StartTaskIf: func(event etcdop.WatchEventT[testResource]) (string, bool) {
 			if event.Value.ID == "GoodID" { // <<<<<<<<<<<<<<<<<<<<

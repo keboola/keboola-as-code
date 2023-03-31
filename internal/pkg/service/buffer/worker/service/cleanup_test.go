@@ -172,7 +172,7 @@ task/00001000/github/receiver.cleanup/%s
   "type": "receiver.cleanup",
   "createdAt": "%s",
   "finishedAt": "%s",
-  "workerNode": "%s",
+  "node": "%s",
   "lock": "runtime/lock/task/00001000/github/receiver.cleanup",
   "result": "receiver \"00001000/github\" has been cleaned",
   "duration": %d

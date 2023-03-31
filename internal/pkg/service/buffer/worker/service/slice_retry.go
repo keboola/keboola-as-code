@@ -30,7 +30,6 @@ func (s *Service) retryFailedUploads(ctx context.Context, wg *sync.WaitGroup, d 
 		Name: sliceRetryCheckTaskType,
 		Source: orchestrator.Source[model.Slice]{
 			WatchPrefix:    s.schema.Slices().Failed().PrefixT(),
-			WatchEvents:    []etcdop.EventType{etcdop.CreateEvent},
 			ReSyncInterval: FailedSlicesCheckInterval,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[model.Slice]) string {
@@ -50,6 +49,9 @@ func (s *Service) retryFailedUploads(ctx context.Context, wg *sync.WaitGroup, d 
 				}, "/")),
 			}
 		},
+		TaskCtx: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(context.Background(), time.Minute)
+		},
 		StartTaskIf: func(event etcdop.WatchEventT[model.Slice]) (string, bool) {
 			slice := event.Value
 			now := model.UTCTime(s.clock.Now())
@@ -60,7 +62,7 @@ func (s *Service) retryFailedUploads(ctx context.Context, wg *sync.WaitGroup, d 
 			return fmt.Sprintf(`Slice.RetryAfter condition not met, now: "%s", needed: "%s"`, now, needed), false
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Task {
-			return func(_ context.Context, logger log.Logger) (result string, err error) {
+			return func(ctx context.Context, logger log.Logger) (result string, err error) {
 				slice := event.Value
 				if err := s.store.ScheduleSliceForRetry(ctx, &slice); err != nil {
 					return "", err

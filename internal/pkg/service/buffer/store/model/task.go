@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 )
 
 type Task struct {
@@ -11,8 +12,8 @@ type Task struct {
 	Type       string         `json:"type"` // validate:"required"`
 	CreatedAt  UTCTime        `json:"createdAt" validate:"required"`
 	FinishedAt *UTCTime       `json:"finishedAt,omitempty"`
-	WorkerNode string         `json:"workerNode" validate:"required"`
-	Lock       string         `json:"lock" validate:"required"`
+	Node       string         `json:"node"` // validate:"required"`
+	Lock       etcdop.Key     `json:"lock" validate:"required"`
 	Result     string         `json:"result,omitempty"`
 	Error      string         `json:"error,omitempty"`
 	Duration   *time.Duration `json:"duration,omitempty"`

@@ -22,7 +22,7 @@ func newRecordsReader(ctx context.Context, logger log.Logger, client *etcd.Clien
 		var err error
 		defer func() {
 			if closeErr := in.CloseWithError(err); closeErr != nil {
-				logger.Errorf(`cannot close records reader pipe: %w`, closeErr)
+				logger.Errorf(`cannot close records reader pipe: %s`, closeErr)
 			}
 		}()
 

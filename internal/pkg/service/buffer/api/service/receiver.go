@@ -43,21 +43,25 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 		}, "/")),
 	}
 
-	t, err := d.TaskNode().StartTask(ctx, taskKey, receiverCreateTaskType, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
+	t, err := d.TaskNode().StartTask(task.Config{
+		Type: receiverCreateTaskType,
+		Key:  taskKey,
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(context.Background(), 5*time.Minute)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) (task task.Result, err error) {
+			rb := rollback.New(s.logger)
+			defer rb.InvokeIfErr(ctx, &err)
 
-		rb := rollback.New(s.logger)
-		defer rb.InvokeIfErr(ctx, &err)
+			if err := s.createResourcesForReceiver(ctx, d, rb, &receiver); err != nil {
+				return "", err
+			}
 
-		if err := s.createResourcesForReceiver(ctx, d, rb, &receiver); err != nil {
-			return "", err
-		}
-
-		if err := str.CreateReceiver(ctx, receiver); err != nil {
-			return "", err
-		}
-		return "receiver created", nil
+			if err := str.CreateReceiver(ctx, receiver); err != nil {
+				return "", err
+			}
+			return "receiver created", nil
+		},
 	})
 	if err != nil {
 		return nil, err

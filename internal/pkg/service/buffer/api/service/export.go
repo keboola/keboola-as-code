@@ -45,30 +45,32 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 		return nil, err
 	}
 
-	taskKey := key.TaskKey{
-		ProjectID: receiverKey.ProjectID,
-		TaskID: key.TaskID(strings.Join([]string{
-			export.ReceiverID.String(),
-			export.ExportID.String(),
-			exportCreateTaskType,
-		}, "/")),
-	}
+	t, err := d.TaskNode().StartTask(task.Config{
+		Type: exportCreateTaskType,
+		Key: key.TaskKey{
+			ProjectID: receiverKey.ProjectID,
+			TaskID: key.TaskID(strings.Join([]string{
+				export.ReceiverID.String(),
+				export.ExportID.String(),
+				exportCreateTaskType,
+			}, "/")),
+		},
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(context.Background(), 5*time.Minute)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) (task task.Result, err error) {
+			rb := rollback.New(s.logger)
+			defer rb.InvokeIfErr(ctx, &err)
 
-	t, err := d.TaskNode().StartTask(ctx, taskKey, exportCreateTaskType, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
+			if err := s.createResourcesForExport(ctx, d, rb, &export); err != nil {
+				return "", err
+			}
 
-		rb := rollback.New(s.logger)
-		defer rb.InvokeIfErr(ctx, &err)
-
-		if err := s.createResourcesForExport(ctx, d, rb, &export); err != nil {
-			return "", err
-		}
-
-		if err := str.CreateExport(ctx, export); err != nil {
-			return "", err
-		}
-		return "export created", nil
+			if err := str.CreateExport(ctx, export); err != nil {
+				return "", err
+			}
+			return "export created", nil
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -77,46 +79,47 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 }
 
 func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer.UpdateExportPayload) (res *buffer.Task, err error) {
-	ctx, str := d.RequestCtx(), d.Store()
-
 	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
-	taskKey := key.TaskKey{
-		ProjectID: receiverKey.ProjectID,
-		TaskID: key.TaskID(strings.Join([]string{
-			exportKey.ReceiverID.String(),
-			exportKey.ExportID.String(),
-			exportUpdateTaskType,
-		}, "/")),
-	}
 
-	t, err := d.TaskNode().StartTask(ctx, taskKey, exportUpdateTaskType, func(_ context.Context, logger log.Logger) (task task.Result, err error) {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
+	t, err := d.TaskNode().StartTask(task.Config{
+		Type: exportUpdateTaskType,
+		Key: key.TaskKey{
+			ProjectID: receiverKey.ProjectID,
+			TaskID: key.TaskID(strings.Join([]string{
+				exportKey.ReceiverID.String(),
+				exportKey.ExportID.String(),
+				exportUpdateTaskType,
+			}, "/")),
+		},
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(context.Background(), 5*time.Minute)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) (task task.Result, err error) {
+			rb := rollback.New(s.logger)
+			defer rb.InvokeIfErr(ctx, &err)
 
-		rb := rollback.New(s.logger)
-		defer rb.InvokeIfErr(ctx, &err)
-
-		err = str.UpdateExport(ctx, exportKey, func(export model.Export) (model.Export, error) {
-			oldMapping := export.Mapping
-			if err := s.mapper.UpdateExportModel(&export, payload); err != nil {
-				return export, err
-			}
-
-			// Create resources for the modified mapping
-			if !reflect.DeepEqual(oldMapping, export.Mapping) {
-				if err := s.createResourcesForExport(ctx, d, rb, &export); err != nil {
+			err = d.Store().UpdateExport(ctx, exportKey, func(export model.Export) (model.Export, error) {
+				oldMapping := export.Mapping
+				if err := s.mapper.UpdateExportModel(&export, payload); err != nil {
 					return export, err
 				}
+
+				// Create resources for the modified mapping
+				if !reflect.DeepEqual(oldMapping, export.Mapping) {
+					if err := s.createResourcesForExport(ctx, d, rb, &export); err != nil {
+						return export, err
+					}
+				}
+
+				return export, nil
+			})
+
+			if err != nil {
+				return "", err
 			}
-
-			return export, nil
-		})
-
-		if err != nil {
-			return "", err
-		}
-		return "export updated", nil
+			return "export updated", nil
+		},
 	})
 	if err != nil {
 		return nil, err

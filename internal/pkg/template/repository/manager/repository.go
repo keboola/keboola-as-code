@@ -141,7 +141,7 @@ func (r *CachedRepository) update(ctx context.Context) (*CachedRepository, bool,
 		// Pull
 		result, err := pullOp.Run(ctx, repo, r.d)
 		if err != nil {
-			r.d.Logger().Errorf(`error while updating repository "%s": %w`, r.URLAndRef(), err)
+			r.d.Logger().Errorf(`error while updating repository "%s": %s`, r.URLAndRef(), err)
 			return nil, false, err
 		}
 

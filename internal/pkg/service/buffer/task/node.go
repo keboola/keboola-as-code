@@ -31,6 +31,10 @@ const (
 	LockEtcdPrefix = etcdop.Prefix("runtime/lock/task")
 )
 
+type Task func(ctx context.Context, logger log.Logger) (Result, error)
+
+type Result = string
+
 // Node represents a cluster Worker node on which tasks are run.
 // See comments in the StartTask method.
 type Node struct {
@@ -52,10 +56,6 @@ type Node struct {
 	taskLocksMutex *sync.Mutex
 	taskLocks      map[string]bool
 }
-
-type Result = string
-
-type Task func(ctx context.Context, logger log.Logger) (Result, error)
 
 type dependencies interface {
 	Tracer() trace.Tracer
@@ -126,27 +126,30 @@ func (n *Node) TasksCount() int64 {
 	return n.tasksCount.Load()
 }
 
+func (n *Node) StartTaskOrErr(cfg Config) error {
+	_, err := n.StartTask(cfg)
+	return err
+}
+
 // StartTask backed by local lock and etcd transaction, so the task run at most once.
 // The context will be passed to the operation callback.
-func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, taskType string, operation Task, ops ...Option) (t *model.Task, err error) {
-	// Apply options
-	c := defaultTaskConfig()
-	for _, o := range ops {
-		o(&c)
+func (n *Node) StartTask(cfg Config) (t *model.Task, err error) {
+	if err := cfg.Validate(); err != nil {
+		panic(err)
 	}
 
 	// Generate lock name if it is not set
-	if c.lock == "" {
-		c.lock = taskKey.String()
+	if cfg.Lock == "" {
+		cfg.Lock = cfg.Key.String()
 	}
 
 	// Lock etcd key
-	lock := LockEtcdPrefix.Key(c.lock)
+	lock := LockEtcdPrefix.Key(cfg.Lock)
 
 	// Append datetime and a random suffix to the task ID
 	createdAt := model.UTCTime(n.clock.Now())
-	taskKey.TaskID = key.TaskID(string(taskKey.TaskID) + "/" + createdAt.String() + "_" + idgenerator.Random(5))
-	taskEtcdKey := n.schema.Tasks().ByKey(taskKey)
+	taskKey := cfg.Key
+	taskKey.TaskID = key.TaskID(string(cfg.Key.TaskID) + "/" + createdAt.String() + "_" + idgenerator.Random(5))
 
 	// Lock task locally for periodical re-syncs,
 	// so locally can be determined that the task is already running.
@@ -156,7 +159,7 @@ func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, taskType stri
 	}
 
 	// Create task model
-	task := model.Task{TaskKey: taskKey, Type: taskType, CreatedAt: createdAt, WorkerNode: n.nodeID, Lock: lock.Key()}
+	task := model.Task{TaskKey: taskKey, Type: cfg.Type, CreatedAt: createdAt, Node: n.nodeID, Lock: lock}
 
 	// Get session
 	n.sessionLock.RLock()
@@ -168,8 +171,8 @@ func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, taskType stri
 	// Resistance to outages: If the Worker node fails, the lock is released automatically by the lease, after the session TTL seconds.
 	logger := n.logger.AddPrefix(fmt.Sprintf("[%s]", taskKey.String()))
 	createTaskOp := op.MergeToTxn(
-		taskEtcdKey.Put(task),
-		lock.PutIfNotExists(task.WorkerNode, etcd.WithLease(session.Lease())),
+		n.schema.Tasks().ByKey(task.TaskKey).Put(task),
+		lock.PutIfNotExists(task.Node, etcd.WithLease(session.Lease())),
 	)
 	if resp, err := createTaskOp.Do(n.tasksCtx, n.client); err != nil {
 		unlock()
@@ -180,84 +183,90 @@ func (n *Node) StartTask(ctx context.Context, taskKey key.TaskKey, taskType stri
 		return nil, nil
 	}
 
-	logger.Infof(`started task`)
-	logger.Debugf(`lock acquired "%s"`, lock.Key())
-	createdTask := task
-
 	// Run operation in the background
+	logger.Infof(`started task`)
+	logger.Debugf(`lock acquired "%s"`, task.Lock.Key())
 	go func() {
 		defer unlock()
-
-		// Setup telemetry
-		ctx, span := n.tracer.Start(ctx, SpanNamePrefix+"."+taskType)
-		span.SetAttributes(
-			telemetry.KeepSpan(),
-			attribute.String("projectId", task.ProjectID.String()),
-			attribute.String("taskId", task.TaskID.String()),
-			attribute.String("taskType", taskType),
-			attribute.String("lock", task.Lock),
-			attribute.String("node", task.WorkerNode),
-			attribute.String("createdAt", task.CreatedAt.String()),
-		)
-
-		// Process results, in defer, to catch panic
-		var result string
-		var err error
-		defer telemetry.EndSpan(span, &err)
-
-		startTime := n.clock.Now()
-		defer func() {
-			// Catch panic
-			if panicErr := recover(); panicErr != nil {
-				result = ""
-				err = errors.Errorf("panic: %s, stacktrace: %s", panicErr, string(debug.Stack()))
-				logger.Errorf(`task panic: %s`, err)
-			}
-
-			// Calculate duration
-			endTime := n.clock.Now()
-			finishedAt := key.UTCTime(endTime)
-			duration := endTime.Sub(startTime)
-
-			// Update fields
-			task.FinishedAt = &finishedAt
-			task.Duration = &duration
-			if err == nil {
-				task.Result = result
-				logger.Infof(`task succeeded (%s): %s`, duration, result)
-			} else {
-				task.Error = err.Error()
-				logger.Warnf(`task failed (%s): %s`, duration, errors.Format(err, errors.FormatWithStack()))
-			}
-			span.SetAttributes(
-				attribute.Float64("duration", task.Duration.Seconds()),
-				attribute.String("result", task.Result),
-				attribute.String("finishedAt", task.FinishedAt.String()),
-			)
-
-			// If release of the lock takes longer than the ttl, lease is expired anyway
-			opCtx, cancel := context.WithTimeout(context.Background(), time.Duration(n.config.ttlSeconds)*time.Second)
-			defer cancel()
-
-			// Update task and release lock in etcd
-			finishTaskOp := op.MergeToTxn(
-				taskEtcdKey.Put(task),
-				lock.DeleteIfExists(),
-			)
-			if resp, err := finishTaskOp.Do(opCtx, n.client); err != nil {
-				logger.Errorf(`cannot update task and release lock: %s`, err)
-				return
-			} else if !resp.Succeeded {
-				logger.Errorf(`cannot release task lock "%s", not found`, lock.Key())
-				return
-			}
-			logger.Debugf(`lock released "%s"`, lock.Key())
-		}()
-
-		// Do operation
-		result, err = operation(ctx, logger)
+		n.runTask(logger, task, cfg)
 	}()
-	return &createdTask, nil
+
+	return &task, nil
+}
+
+func (n *Node) runTask(logger log.Logger, task model.Task, cfg Config) {
+	// Create task context
+	ctx, cancel := cfg.Context()
+	defer cancel()
+	if _, ok := ctx.Deadline(); !ok {
+		panic(errors.Errorf(`task "%s" context must have a deadline`, cfg.Type))
+	}
+
+	// Setup telemetry
+	ctx, span := n.tracer.Start(ctx, SpanNamePrefix+"."+cfg.Type, trace.WithAttributes(
+		telemetry.KeepSpan(),
+		attribute.String("projectId", task.ProjectID.String()),
+		attribute.String("taskId", task.TaskID.String()),
+		attribute.String("taskType", cfg.Type),
+		attribute.String("lock", task.Lock.Key()),
+		attribute.String("node", task.Node),
+		attribute.String("createdAt", task.CreatedAt.String()),
+	))
+
+	// Process results in defer to catch panic
+	var result string
+	var err error
+	defer telemetry.EndSpan(span, &err)
+
+	// Do operation
+	startTime := n.clock.Now()
+	func() {
+		if panicErr := recover(); panicErr != nil {
+			result = ""
+			err = errors.Errorf("panic: %s, stacktrace: %s", panicErr, string(debug.Stack()))
+			logger.Errorf(`task panic: %s`, err)
+		}
+		result, err = cfg.Operation(ctx, logger)
+	}()
+
+	// Calculate duration
+	endTime := n.clock.Now()
+	finishedAt := key.UTCTime(endTime)
+	duration := endTime.Sub(startTime)
+
+	// Update fields
+	task.FinishedAt = &finishedAt
+	task.Duration = &duration
+	if err == nil {
+		task.Result = result
+		logger.Infof(`task succeeded (%s): %s`, duration, result)
+	} else {
+		task.Error = err.Error()
+		logger.Warnf(`task failed (%s): %s`, duration, errors.Format(err, errors.FormatWithStack()))
+	}
+	span.SetAttributes(
+		attribute.Float64("duration", task.Duration.Seconds()),
+		attribute.String("result", task.Result),
+		attribute.String("finishedAt", task.FinishedAt.String()),
+	)
+
+	// If release of the lock takes longer than the ttl, lease is expired anyway
+	opCtx, opCancel := context.WithTimeout(context.Background(), time.Duration(n.config.ttlSeconds)*time.Second)
+	defer opCancel()
+
+	// Update task and release lock in etcd
+	finishTaskOp := op.MergeToTxn(
+		n.schema.Tasks().ByKey(task.TaskKey).Put(task),
+		task.Lock.DeleteIfExists(),
+	)
+	if resp, err := finishTaskOp.Do(opCtx, n.client); err != nil {
+		logger.Errorf(`cannot update task and release lock: %s`, err)
+		return
+	} else if !resp.Succeeded {
+		logger.Errorf(`cannot release task lock "%s", not found`, task.Lock.Key())
+		return
+	}
+	logger.Debugf(`lock released "%s"`, task.Lock.Key())
 }
 
 // lockTaskLocally guarantees that the task runs at most once on the Worker node.

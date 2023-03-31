@@ -97,21 +97,21 @@ func (n *Node) startReceiverCleanupTask(ctx context.Context, k key.ReceiverKey) 
 		return nil, err
 	}
 
-	taskKey := key.TaskKey{
-		ProjectID: k.ProjectID,
-		TaskID: key.TaskID(strings.Join([]string{
-			k.ReceiverID.String(),
-			taskTypeReceiverCleanup,
-		}, "/")),
-	}
-
-	return n.tasks.StartTask(ctx, taskKey, taskTypeReceiverCleanup, func(_ context.Context, logger log.Logger) (task.Result, error) {
-		defer n.sem.Release(1)
-
-		// Don't cancel cleanup on the shutdown, but wait for timeout
-		ctx, cancel := context.WithTimeout(context.Background(), ReceiverCleanupTimeout)
-		defer cancel()
-
-		return newTask(n.deps, logger, k).Run(ctx)
+	return n.tasks.StartTask(task.Config{
+		Type: taskTypeReceiverCleanup,
+		Key: key.TaskKey{
+			ProjectID: k.ProjectID,
+			TaskID: key.TaskID(strings.Join([]string{
+				k.ReceiverID.String(),
+				taskTypeReceiverCleanup,
+			}, "/")),
+		},
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(context.Background(), ReceiverCleanupTimeout)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) (task.Result, error) {
+			defer n.sem.Release(1)
+			return newCleanupTask(n.deps, logger, k).Run(ctx)
+		},
 	})
 }

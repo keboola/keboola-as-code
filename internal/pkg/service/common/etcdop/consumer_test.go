@@ -37,6 +37,7 @@ func TestWatchConsumer(t *testing.T) {
 	watchClient := cluster.Client(2)
 
 	// Create consumer
+	onCloseCalled := false
 	pfx := prefixForTest()
 	init := pfx.
 		GetAllAndWatch(ctx, watchClient).
@@ -46,6 +47,15 @@ func TestWatchConsumer(t *testing.T) {
 		}).
 		WithOnRestarted(func(reason string, delay time.Duration) {
 			logger.Infof(`OnRestarted: %s`, reason)
+		}).
+		WithOnError(func(err error) {
+			if !strings.Contains(err.Error(), "mvcc: required revision has been compacted") {
+				assert.Fail(t, "unexpected error", err)
+			}
+		}).
+		WithOnClose(func(err error) {
+			assert.NoError(t, err)
+			onCloseCalled = true
 		}).
 		WithForEach(func(events []WatchEvent, header *Header, restart bool) {
 			var str strings.Builder
@@ -124,4 +134,7 @@ INFO  ForEach: restart=false, events(1): create "my/prefix/key4"
 	// Stop
 	cancel()
 	wg.Wait()
+
+	// OnClose callback must be called
+	assert.True(t, onCloseCalled)
 }
