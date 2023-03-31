@@ -133,15 +133,15 @@ func watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan 
 	// The WithFilterDelete option is used, so only PUT events are watched and statistics are only inserted.
 	// Delete operation is part of the watchClosedSlices, to make transitions between states atomic and prevent duplicates.
 	return n.schema.ReceivedStats().
-		GetAllAndWatch(ctx, n.client, etcd.WithFilterDelete()).
+		GetAllAndWatch(ctx, n.client, etcd.WithPrevKV()).
 		SetupConsumer(n.logger).
 		WithForEach(func(events []etcdop.WatchEventT[model.SliceStats], header *etcdop.Header, restart bool) {
 			n.cache.Atomic(func(t *prefixtree.Tree[model.Stats]) {
 				// Process all PUt events, the keys will be cleared by the watchClosedSlices.
 				for _, event := range events {
-					statsPerAPINode := event.Value
 					switch event.Type {
 					case etcdop.CreateEvent, etcdop.UpdateEvent:
+						statsPerAPINode := event.Value
 						// This event may arrive later than the event in watchClosedSlices.
 						// Therefore, we have to check whether the state of the slice has not changed.
 						_, found1 := t.Get(prefixUploading + statsPerAPINode.SliceKey.String())
@@ -150,6 +150,9 @@ func watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan 
 							// Slice is still open, insert statistics per API node.
 							t.Insert(keyForActiveStats(statsPerAPINode.SliceNodeKey), statsPerAPINode.GetStats())
 						}
+					case etcdop.DeleteEvent:
+						statsPerAPINode := event.Value
+						t.Delete(keyForActiveStats(statsPerAPINode.SliceNodeKey))
 					default:
 						panic(errors.Errorf(`unexpected event type "%v"`, event.Type))
 					}
