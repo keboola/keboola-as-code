@@ -2,6 +2,7 @@
 package download
 
 import (
+	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
@@ -25,38 +26,59 @@ type dependencies interface {
 }
 
 type Options struct {
-	File   *keboola.FileDownloadCredentials
-	Output string
-	// `ForceUnsliced == true`` should be mutually exclusive with `Output == "-"`
-	ForceUnsliced bool
+	File        *keboola.FileDownloadCredentials
+	Output      string
+	SlicedToDir bool
 }
 
 func (o *Options) ToStdOut() bool {
 	return o.Output == "-"
 }
 
+// GetOutput returns an `io.WriteCloser` which either wraps a file or stdout.
+//
+// If `o.Output` is "-", then it wraps stdout, and `Close` is a no-op.
+// Otherwise wraps a file.
+//
+// If `file` is not an empty string, then `o.Output` is treated as a directory
+// and the file created will be at `path.Join(o.Output, file)`.
+func (o *Options) GetOutput(file string) (io.WriteCloser, error) {
+	if o.Output == "-" {
+		return &outputWriter{}, nil
+	} else {
+		var output string
+		if len(file) > 0 {
+			output = path.Join(o.Output, file)
+		} else {
+			output = o.Output
+		}
+
+		file, err := os.Create(output) // nolint: forbidigo
+		if err != nil {
+			return nil, errors.Errorf(`cannot create file "%s": %w`, output, err)
+		}
+		return &outputWriter{file}, nil
+	}
+}
+
 func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.file.download")
 	defer telemetry.EndSpan(span, &err)
 
-	if opts.ForceUnsliced && opts.ToStdOut() {
-		panic("invalid options: ForceUnsliced == true && Output == \"-\"")
-	}
-
 	if opts.File.IsSliced {
-		if opts.ForceUnsliced {
-			err = runForceUnsliced(ctx, &opts, d.Logger())
+		if !opts.SlicedToDir {
+			err = runDownloadForceUnsliced(ctx, &opts, d.Logger())
 			if err != nil {
 				return err
 			}
 		} else {
-			err = runSliced(ctx, &opts)
+			err = runDownloadSliced(ctx, &opts, d.Logger())
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		err = runWhole(ctx, &opts)
+		err = runDownloadWhole(ctx, &opts, d.Logger())
 		if err != nil {
 			return err
 		}
@@ -69,64 +91,71 @@ func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 	return nil
 }
 
-// download slices to temp directory, then copy all slices to final file.
-func runForceUnsliced(ctx context.Context, opts *Options, logger log.Logger) error {
-	tempDir := opts.Output + ".temp"
-	logger.Infof(`Creating temp directory "%s"`, tempDir)
-	err := os.MkdirAll(tempDir, 0o755)  // nolint: forbidigo
-	if err != nil && !os.IsExist(err) { // nolint: forbidigo
-		return errors.Errorf("cannot create temporary directory %s: %w", tempDir, err)
-	}
-	defer func() {
-		logger.Infof(`Deleting temp directory "%s"`, tempDir)
-		os.RemoveAll(tempDir) // nolint: forbidigo
-	}()
-
-	logger.Infof("Downloading slices")
-	slices, err := downloadSlicesTo(ctx, opts.File, tempDir)
+// download slices to `opts.Output` as one file.
+func runDownloadForceUnsliced(ctx context.Context, opts *Options, logger log.Logger) error {
+	logger.Infof(`Creating file "%s"`, opts.Output)
+	dst, err := opts.GetOutput("")
 	if err != nil {
 		return err
 	}
+	defer func() {
+		err = dst.Close()
+	}()
 
-	logger.Infof(`Creating file "%s"`, opts.Output)
-	file, err := os.Create(opts.Output) // nolint: forbidigo
-	if err != nil {
-		return errors.Errorf(`cannot create file "%s": %w`, opts.Output, err)
-	}
+	logger.Infof("Downloading slices")
+	return downloadSliced(ctx, opts.File, func(reader io.ReadCloser, slice string, len int64, index, total int) (err error) {
+		bar := progressbar.DefaultBytes(
+			len,
+			fmt.Sprintf(`downloading slice "%s" %d/%d`, strhelper.Truncate(slice, 20, "..."), index+1, total),
+		)
 
-	logger.Infof(`Copying slices from "%s" to "%s"`, tempDir, opts.Output)
-	offset := int64(0)
-	for _, slice := range slices {
-		data, err := os.ReadFile(slice) // nolint: forbidigo
-		if err != nil {
-			return err
+		if path.Ext(slice) == ".gz" {
+			reader, err = gzip.NewReader(reader)
 		}
 
-		_, err = file.WriteAt(data, offset)
-		if err != nil {
-			return errors.Errorf(`failed to write data to file "%s": %w`, opts.Output, err)
-		}
-		offset += int64(len(data))
-	}
-
-	return nil
+		_, err = io.Copy(io.MultiWriter(dst, bar), reader)
+		return err
+	})
 }
 
-// download slices to `opts.Output`.
-func runSliced(ctx context.Context, opts *Options) error {
+// download slices to `opts.Output` as individual files.
+func runDownloadSliced(ctx context.Context, opts *Options, logger log.Logger) error {
 	if !opts.ToStdOut() {
 		err := os.MkdirAll(opts.Output, 0o755) // nolint: forbidigo
 		if err != nil && !os.IsExist(err) {    // nolint: forbidigo
-			return errors.Errorf("cannot create directory %s: %w", opts.Output, err)
+			return errors.Errorf(`cannot create directory "%s": %w`, opts.Output, err)
 		}
 	}
 
-	_, err := downloadSlicesTo(ctx, opts.File, opts.Output)
-	return err
+	return downloadSliced(ctx, opts.File, func(reader io.ReadCloser, slice string, len int64, index int, total int) (err error) {
+		bar := progressbar.DefaultBytes(
+			len,
+			fmt.Sprintf(`downloading slice "%s" %d/%d`, strhelper.Truncate(slice, 20, "..."), index+1, total),
+		)
+
+		output, err := opts.GetOutput(slice)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			err = output.Close()
+		}()
+
+		_, err = io.Copy(io.MultiWriter(output, bar), reader)
+		return err
+	})
 }
 
-// download file to `opts.Output`.
-func runWhole(ctx context.Context, opts *Options) error {
+// download whole file to `opts.Output`.
+func runDownloadWhole(ctx context.Context, opts *Options, logger log.Logger) (err error) {
+	dst, err := opts.GetOutput("")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = dst.Close()
+	}()
+
 	r, err := keboola.DownloadReader(ctx, opts.File)
 	if err != nil {
 		return err
@@ -134,66 +163,65 @@ func runWhole(ctx context.Context, opts *Options) error {
 
 	attrs, err := keboola.GetFileAttributes(ctx, opts.File, "")
 	if err != nil {
-		return errors.Errorf("cannot get file attributes: %w", err)
+		return errors.Errorf("cannot get storage file attributes: %w", err)
 	}
 	bar := progressbar.DefaultBytes(attrs.Size, "downloading")
 
-	return download(r, opts.Output, bar)
+	_, err = io.Copy(io.MultiWriter(dst, bar), r)
+	return err
 }
 
-func downloadSlicesTo(ctx context.Context, file *keboola.FileDownloadCredentials, outputPath string) ([]string, error) {
-	var slicePaths []string
+type sliceHandler func(reader io.ReadCloser, slice string, len int64, index int, total int) error
 
+func downloadSliced(
+	ctx context.Context,
+	file *keboola.FileDownloadCredentials,
+	handler sliceHandler,
+) error {
 	slices, err := keboola.DownloadManifest(ctx, file)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for i, slice := range slices {
 		r, err := keboola.DownloadSliceReader(ctx, file, slice)
 		if err != nil {
-			return nil, errors.Errorf("cannot download slice %s: %w", slice, err)
+			return errors.Errorf(`cannot download slice "%s": %w`, slice, err)
 		}
 
 		attrs, err := keboola.GetFileAttributes(ctx, file, slice)
 		if err != nil {
-			return nil, errors.Errorf("cannot get slice attributes %s: %w", slice, err)
-		}
-		bar := progressbar.DefaultBytes(attrs.Size, fmt.Sprintf(`downloading slice "%s" %d/%d`, strhelper.Truncate(slice, 20, "..."), i+1, len(slices)))
-
-		sliceOutputPath := "-"
-		if outputPath != "-" {
-			sliceOutputPath = path.Join(outputPath, slice)
+			return errors.Errorf(`cannot get slice attributes "%s": %w`, slice, err)
 		}
 
-		err = download(r, sliceOutputPath, bar)
-		if err != nil {
-			return nil, errors.Errorf("cannot download slice %s: %w", slice, err)
-		}
-		slicePaths = append(slicePaths, sliceOutputPath)
-	}
-
-	return slicePaths, nil
-}
-
-func download(r io.ReadCloser, output string, bar *progressbar.ProgressBar) (err error) {
-	defer func() {
-		err = r.Close()
-	}()
-
-	var dst io.WriteCloser
-	if output == "-" {
-		dst = os.Stdout // nolint: forbidigo
-	} else {
-		dst, err = os.Create(output) // nolint: forbidigo
+		err = handler(r, slice, attrs.Size, i, len(slices))
 		if err != nil {
 			return err
 		}
-		defer func() {
-			err = dst.Close()
-		}()
 	}
 
-	_, err = io.Copy(io.MultiWriter(dst, bar), r)
-	return err
+	return nil
+}
+
+// outputWriter wraps either a file or stdout, and implements `io.WriteCloser`.
+//
+// Close is a no-op if writing to stdout.
+type outputWriter struct {
+	file *os.File
+}
+
+func (o *outputWriter) Write(b []byte) (n int, err error) {
+	if o.file != nil {
+		return o.file.Write(b)
+	} else {
+		return os.Stdout.Write(b)
+	}
+}
+
+func (o *outputWriter) Close() error {
+	if o.file != nil {
+		return o.file.Close()
+	} else {
+		return nil
+	}
 }
