@@ -52,12 +52,16 @@ func (m *Manager) CreateFilesForReceiver(ctx context.Context, rb rollback.Builde
 }
 
 func (m *Manager) CreateFileForExport(ctx context.Context, rb rollback.Builder, export *model.Export) error {
-	file, slice, err := m.createFile(ctx, rb, export.Mapping)
+	file, slice, err := m.createFileAndSlice(ctx, rb, export.Mapping)
 	if err == nil {
 		export.OpenedFile = file
 		export.OpenedSlice = slice
 	}
 	return err
+}
+
+func (m *Manager) CreateFileFromExistingSlice(ctx context.Context, rb rollback.Builder, slice model.Slice) (model.File, error) {
+	return m.createFile(ctx, rb, slice.Mapping)
 }
 
 func (m *Manager) DeleteFile(ctx context.Context, file model.File) error {
@@ -105,11 +109,10 @@ func (m *Manager) UploadManifest(ctx context.Context, resource *keboola.FileUplo
 	return err
 }
 
-func (m *Manager) createFile(ctx context.Context, rb rollback.Builder, mapping model.Mapping) (model.File, model.Slice, error) {
+func (m *Manager) createFile(ctx context.Context, rb rollback.Builder, mapping model.Mapping) (model.File, error) {
 	now := m.clock.Now().UTC()
 	file := model.NewFile(mapping.ExportKey, now, mapping, nil)
 	fileName := file.Filename()
-	slice := model.NewSlice(file.FileKey, now, mapping, 1, nil)
 
 	resource, err := m.keboolaProjectAPI.
 		CreateFileResourceRequest(
@@ -122,7 +125,7 @@ func (m *Manager) createFile(ctx context.Context, rb rollback.Builder, mapping m
 		).
 		Send(ctx)
 	if err != nil {
-		return model.File{}, model.Slice{}, err
+		return model.File{}, err
 	}
 
 	rb.Add(func(ctx context.Context) error {
@@ -131,7 +134,16 @@ func (m *Manager) createFile(ctx context.Context, rb rollback.Builder, mapping m
 	})
 
 	file.StorageResource = resource
-	slice.StorageResource = resource
+	return file, nil
+}
+
+func (m *Manager) createFileAndSlice(ctx context.Context, rb rollback.Builder, mapping model.Mapping) (model.File, model.Slice, error) {
+	file, err := m.createFile(ctx, rb, mapping)
+	if err != nil {
+		return model.File{}, model.Slice{}, err
+	}
+
+	slice := model.NewSlice(file.FileKey, file.OpenedAt(), mapping, 1, file.StorageResource)
 	return file, slice, nil
 }
 

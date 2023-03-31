@@ -16,6 +16,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -102,8 +104,16 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 
 				// Upload slice, set statistics
 				reader := newRecordsReader(ctx, s.logger, s.etcdClient, s.schema, slice)
-				if err := files.UploadSlice(ctx, &slice, reader); err != nil {
-					return "", errors.Errorf(`file upload failed: %w`, err)
+				if err = files.UploadSlice(ctx, &slice, reader); err != nil {
+					if isExpiredCredentialsError(err) {
+						// We have to move the slice to a new file.
+						if err := s.handleExpiredCredentials(ctx, files, &slice); err != nil {
+							return "", errors.Errorf(`expired credentials, slice move to a new file failed: %w`, err)
+						}
+						return "expired credentials, slice has been moved to a new file", err
+					} else {
+						return "", errors.Errorf(`file upload failed: %w`, err)
+					}
 				}
 
 				// Get all uploaded slices from the file
@@ -133,4 +143,32 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 			}
 		},
 	})
+}
+
+func (s *Service) handleExpiredCredentials(ctx context.Context, files *file.Manager, slice *model.Slice) (err error) {
+	oldSlice := *slice
+	rb := rollback.New(s.logger)
+	defer rb.InvokeIfErr(ctx, &err)
+
+	// Create a new file resource
+	f, err := files.CreateFileFromExistingSlice(ctx, rb, *slice)
+	if err != nil {
+		return err
+	}
+
+	// Move slice to the new file
+	slice.FileKey = f.FileKey
+	slice.StorageResource = f.StorageResource
+	return op.MergeToTxn(
+		s.schema.Slices().InState(oldSlice.State).ByKey(oldSlice.SliceKey).Delete(),
+		s.schema.Slices().InState(slice.State).ByKey(slice.SliceKey).Put(*slice),
+	).DoOrErr(ctx, s.etcdClient)
+}
+
+func isExpiredCredentialsError(err error) bool {
+	var errWithCode interface{ ErrorCode() string }
+	if errors.As(err, &errWithCode) && strings.Contains(strings.ToLower(errWithCode.ErrorCode()), "expired") {
+		return true
+	}
+	return false
 }
