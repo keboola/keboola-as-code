@@ -34,8 +34,8 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
 		Name: sliceUploadTaskType,
 		Source: orchestrator.Source[model.Slice]{
-			WatchPrefix:    s.schema.Slices().Uploading().PrefixT(),
-			ReSyncInterval: UploadingSlicesCheckInterval,
+			WatchPrefix:     s.schema.Slices().Uploading().PrefixT(),
+			RestartInterval: UploadingSlicesCheckInterval,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[model.Slice]) string {
 			slice := event.Value

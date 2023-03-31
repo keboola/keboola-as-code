@@ -1,6 +1,7 @@
 package etcdop
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -149,7 +150,12 @@ func (c WatchConsumer[E]) StartConsumer(wg *sync.WaitGroup) (initErr <-chan erro
 		}
 
 		if c.onClose != nil {
-			c.onClose(lastError)
+			if errors.Is(lastError, context.Canceled) || errors.Is(lastError, context.DeadlineExceeded) {
+				// Context cancellation is the proper way to end the watch
+				c.onClose(nil)
+			} else {
+				c.onClose(lastError)
+			}
 		}
 	}()
 	return initErrCh

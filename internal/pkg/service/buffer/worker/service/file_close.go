@@ -33,8 +33,8 @@ func (s *Service) closeFiles(ctx context.Context, wg *sync.WaitGroup, d dependen
 	initDone2 := orchestrator.Start(ctx, wg, d, orchestrator.Config[model.File]{
 		Name: fileCloseTaskType,
 		Source: orchestrator.Source[model.File]{
-			WatchPrefix:    s.schema.Files().Closing().PrefixT(),
-			ReSyncInterval: ClosingFilesCheckInterval,
+			WatchPrefix:     s.schema.Files().Closing().PrefixT(),
+			RestartInterval: ClosingFilesCheckInterval,
 		},
 		DistributionKey: func(event etcdop.WatchEventT[model.File]) string {
 			file := event.Value
