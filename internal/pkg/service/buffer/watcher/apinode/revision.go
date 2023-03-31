@@ -185,10 +185,11 @@ func (s *RevisionSyncer) sync(session *concurrency.Session) error {
 
 	// Compare local and synced value
 	s.lock.Lock()
-	minRevInUse, syncedRev := s.MinRevInUse(), s.syncedRev
+	minRevInUse, syncedRev, currentRev := s.MinRevInUse(), s.syncedRev, s.currentRev
 	s.lock.Unlock()
 	if minRevInUse == syncedRev {
 		// nop
+		s.logger.Infof(`nop: minRevInUse=%v, syncedRev=%v, currentRev=%v`, minRevInUse, syncedRev, currentRev)
 		return nil
 	}
 
