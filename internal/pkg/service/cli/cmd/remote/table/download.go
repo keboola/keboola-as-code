@@ -72,7 +72,7 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 			downloadOpts := download.Options{
 				File:        fileWithCredentials,
 				Output:      fileOutput,
-				SlicedToDir: d.Options().GetBool("sliced-to-dir"),
+				AllowSliced: d.Options().GetBool("allow-sliced"),
 			}
 
 			return download.Run(d.CommandCtx(), downloadOpts, d)
@@ -88,8 +88,8 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 	cmd.Flags().String("order", "", "order by one or more columns")
 	cmd.Flags().String("format", "csv", "output format (json/csv)")
 	cmd.Flags().String("timeout", "2m", "how long to wait for the unload job to finish")
-	cmd.Flags().StringP("output", "o", "", "path to the destination file (if the file is not sliced) or directory (if the file is sliced and `--sliced-to-dir` is set)")
-	cmd.Flags().Bool("sliced-to-dir", false, "output sliced files as a directory containing slices as individual files")
+	cmd.Flags().StringP("output", "o", "", "path to the destination file or directory")
+	cmd.Flags().Bool("allow-sliced", false, "output sliced files as a directory containing slices as individual files")
 
 	return cmd
 }

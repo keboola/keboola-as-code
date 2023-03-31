@@ -64,7 +64,7 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 			opts := download.Options{
 				File:        file,
 				Output:      output,
-				SlicedToDir: d.Options().GetBool("sliced-to-dir"),
+				AllowSliced: d.Options().GetBool("allow-sliced"),
 			}
 
 			return download.Run(d.CommandCtx(), opts, d)
@@ -72,8 +72,8 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 	}
 
 	cmd.Flags().StringP("storage-api-host", "H", "", "storage API host, eg. \"connection.keboola.com\"")
-	cmd.Flags().StringP("output", "o", "", "path to the destination file (if the file is not sliced) or directory (if the file is sliced and `--sliced-to-dir` is set)")
-	cmd.Flags().Bool("sliced-to-dir", false, "output sliced files as a directory containing slices as individual files")
+	cmd.Flags().StringP("output", "o", "", "path to the destination file or directory")
+	cmd.Flags().Bool("allow-sliced", false, "output sliced files as a directory containing slices as individual files")
 
 	return cmd
 }

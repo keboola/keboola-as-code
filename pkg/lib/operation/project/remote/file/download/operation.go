@@ -28,7 +28,7 @@ type dependencies interface {
 type Options struct {
 	File        *keboola.FileDownloadCredentials
 	Output      string
-	SlicedToDir bool
+	AllowSliced bool
 }
 
 func (o *Options) ToStdOut() bool {
@@ -66,7 +66,7 @@ func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 	defer telemetry.EndSpan(span, &err)
 
 	if opts.File.IsSliced {
-		if !opts.SlicedToDir {
+		if !opts.AllowSliced {
 			err = runDownloadForceUnsliced(ctx, &opts, d.Logger())
 			if err != nil {
 				return err
