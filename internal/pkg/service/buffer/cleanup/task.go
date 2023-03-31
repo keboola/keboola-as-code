@@ -23,7 +23,7 @@ import (
 
 const (
 	// FileExpiration defines how old files are to be deleted.
-	FileExpiration = 2 * time.Hour
+	FileExpiration = 24 * time.Hour
 )
 
 type Task struct {
