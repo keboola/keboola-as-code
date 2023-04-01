@@ -112,19 +112,25 @@ func (c *checker) check(ctx context.Context) {
 		}
 
 		// Check import conditions
-		if met, reason := cdn.Evaluate(now, sliceKey.FileKey.OpenedAt(), c.stats.FileStats(sliceKey.FileKey).Total); met {
+		fStats := c.stats.FileStats(sliceKey.FileKey).Total
+		if met, reason := cdn.Evaluate(now, sliceKey.FileKey.OpenedAt(), fStats); met {
 			if err := c.swapFile(sliceKey.FileKey, reason); err != nil {
 				c.logger.Error(err)
 			}
 			continue
+		} else {
+			c.logger.Infof(`import conditions not met "%s": %v`, sliceKey.FileKey.String(), fStats)
 		}
 
 		// Check upload conditions
-		if met, reason := c.config.UploadConditions.Evaluate(now, sliceKey.OpenedAt(), c.stats.SliceStats(sliceKey).Total); met {
+		sStats := c.stats.SliceStats(sliceKey).Total
+		if met, reason := c.config.UploadConditions.Evaluate(now, sliceKey.OpenedAt(), sStats); met {
 			if err := c.swapSlice(sliceKey, reason); err != nil {
 				c.logger.Error(err)
 			}
 			continue
+		} else {
+			c.logger.Infof(`upload conditions not met "%s": %v`, sliceKey.String(), sStats)
 		}
 	}
 	c.logger.Infof(`checked "%d" opened slices | %s`, len(c.openedSlices), c.clock.Since(now))
