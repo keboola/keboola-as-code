@@ -258,7 +258,7 @@ func (o orchestrator[R]) startTask(event etcdop.WatchEventT[R]) {
 	// Should be the task started?
 	if o.config.StartTaskIf != nil {
 		if skipReason, start := o.config.StartTaskIf(event); !start {
-			o.logger.Debugf(`skipped "%s", %s`, taskKey.String(), skipReason)
+			o.logger.Infof(`skipped "%s", %s`, taskKey.String(), skipReason)
 			return
 		}
 	}
