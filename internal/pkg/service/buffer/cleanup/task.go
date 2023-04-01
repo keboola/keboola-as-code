@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -19,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -28,6 +31,7 @@ const (
 )
 
 type Task struct {
+	deps        dependencies
 	clock       clock.Clock
 	logger      log.Logger
 	schema      *schema.Schema
@@ -38,6 +42,7 @@ type Task struct {
 
 func newCleanupTask(d dependencies, logger log.Logger, k key.ReceiverKey) *Task {
 	return &Task{
+		deps:        d,
 		clock:       d.Clock(),
 		logger:      logger,
 		schema:      d.Schema(),
@@ -128,6 +133,43 @@ func (t *Task) deleteExpiredFiles(ctx context.Context) error {
 						}
 						return nil
 					})
+				if err != nil {
+					return err
+				}
+			}
+
+			count, err := t.schema.Files().Opened().InExport(v.ExportKey).Count().Do(ctx, t.client)
+			if err != nil {
+				return err
+			}
+			if count == 0 {
+				t.logger.Infof(`Fixing export "%s" without opened file.`, v.ExportKey.String())
+				mapping, err := t.schema.Configs().Mappings().InExport(v.ExportKey).GetOne(etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx, t.client)
+				if err != nil {
+					return err
+				}
+				token, err := t.schema.Secrets().Tokens().InExport(v.ExportKey).Get().Do(ctx, t.client)
+				if err != nil {
+					return err
+				}
+				c := t.deps.HTTPClient()
+				api, err := keboola.NewAPI(ctx, t.deps.StorageAPIHost(), keboola.WithClient(&c), keboola.WithToken(token.Value.Token))
+				if err != nil {
+					return err
+				}
+				export := model.Export{ExportBase: v, Mapping: mapping.Value}
+				files := file.NewManager(t.clock, api, nil)
+				rb := rollback.New(t.logger)
+				if err := files.CreateFileForExport(ctx, rb, &export); err != nil {
+					rb.Invoke(ctx)
+					return err
+				}
+				t.logger.Infof(`Created new file "%s".`, export.OpenedFile.FileKey.String())
+
+				err = op.MergeToTxn(
+					t.schema.Files().InState(export.OpenedFile.State).ByKey(export.OpenedFile.FileKey).Put(export.OpenedFile),
+					t.schema.Slices().InState(export.OpenedSlice.State).ByKey(export.OpenedSlice.SliceKey).Put(export.OpenedSlice),
+				).DoOrErr(ctx, t.client)
 				if err != nil {
 					return err
 				}
