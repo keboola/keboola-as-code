@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/keboola/go-client/pkg/client"
 	etcd "go.etcd.io/etcd/client/v3"
 	"golang.org/x/sync/semaphore"
 
@@ -35,6 +36,8 @@ type dependencies interface {
 	Store() *store.Store
 	DistributionWorkerNode() *distribution.Node
 	TaskNode() *task.Node
+	HTTPClient() client.Client
+	StorageAPIHost() string
 }
 
 type Node struct {
