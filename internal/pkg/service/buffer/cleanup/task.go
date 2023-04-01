@@ -60,6 +60,22 @@ func (t *Task) Run(ctx context.Context) (task.Result, error) {
 }
 
 func (t *Task) cleanReceiver(ctx context.Context) error {
+	// TMP clean all
+	var ops []op.Op
+	ops = append(ops, t.schema.Records().InReceiver(t.receiverKey).DeleteAll())
+	for _, s := range slicestate.All() {
+		ops = append(ops, t.schema.Slices().InState(s).InReceiver(t.receiverKey).DeleteAll())
+	}
+	for _, s := range filestate.All() {
+		ops = append(ops, t.schema.Files().InState(s).InReceiver(t.receiverKey).DeleteAll())
+	}
+	ops = append(ops, t.schema.ReceivedStats().InReceiver(t.receiverKey).DeleteAll())
+	err := op.MergeToTxn(ops...).DoOrErr(ctx, t.client)
+	if err != nil {
+		return err
+	}
+	t.logger.Infof(`CLEAN ALL OK`)
+
 	errs := errors.NewMultiError()
 	if err := t.deleteExpiredTasks(ctx); err != nil {
 		errs.Append(err)
