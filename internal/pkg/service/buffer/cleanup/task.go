@@ -9,6 +9,7 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -30,6 +31,7 @@ type Task struct {
 	clock       clock.Clock
 	logger      log.Logger
 	schema      *schema.Schema
+	store       *store.Store
 	client      *etcd.Client
 	receiverKey key.ReceiverKey
 }
@@ -39,6 +41,7 @@ func newCleanupTask(d dependencies, logger log.Logger, k key.ReceiverKey) *Task 
 		clock:       d.Clock(),
 		logger:      logger,
 		schema:      d.Schema(),
+		store:       d.Store(),
 		client:      d.EtcdClient(),
 		receiverKey: k,
 	}
@@ -107,8 +110,8 @@ func (t *Task) deleteExpiredFiles(ctx context.Context) error {
 		GetAll().
 		Do(ctx, t.client).
 		ForEachValue(func(v model.ExportBase, header *iterator.Header) error {
-			// Iterate all possible file states
-			for _, state := range filestate.All() {
+			// Iterate imported files and buffered files whose import failed.
+			for _, state := range []filestate.State{filestate.Imported, filestate.Failed} {
 				err := t.schema.
 					Files().
 					InState(state).
@@ -129,6 +132,7 @@ func (t *Task) deleteExpiredFiles(ctx context.Context) error {
 					return err
 				}
 			}
+
 			return nil
 		})
 	if err != nil {
