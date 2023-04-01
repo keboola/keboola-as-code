@@ -139,6 +139,8 @@ func watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan 
 			n.cache.Atomic(func(t *prefixtree.Tree[model.Stats]) {
 				// Process all PUt events, the keys will be cleared by the watchClosedSlices.
 				for _, event := range events {
+					n.logger.Infof(`watchOpenedSlices: event "%v"/"%v"`, event.Type.String(), event.Kv.String())
+
 					switch event.Type {
 					case etcdop.CreateEvent, etcdop.UpdateEvent:
 						statsPerAPINode := event.Value
@@ -146,7 +148,8 @@ func watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan 
 						// Therefore, we have to check whether the state of the slice has not changed.
 						_, found1 := t.Get(prefixUploading + statsPerAPINode.SliceKey.String())
 						_, found2 := t.Get(prefixUploaded + statsPerAPINode.SliceKey.String())
-						if !found1 && !found2 {
+						_, found3 := t.Get(prefixFailed + statsPerAPINode.SliceKey.String())
+						if !found1 && !found2 && !found3 {
 							// Slice is still open, insert statistics per API node.
 							t.Insert(keyForActiveStats(statsPerAPINode.SliceNodeKey), statsPerAPINode.GetStats())
 						}
@@ -177,17 +180,16 @@ func watchClosedSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan 
 
 				// Atomically process all events
 				for _, event := range events {
+					n.logger.Infof(`watchClosedSlices: event "%v"/"%v"`, event.Type.String(), event.Kv.String())
 					slice := event.Value
 					cacheKey := keyForClosedSlice(slice)
 
 					// Update slice stats
 					switch event.Type {
-					case etcdop.CreateEvent:
+					case etcdop.CreateEvent, etcdop.UpdateEvent:
 						// Clear temporary stats to prevent duplicates.
 						// The slice was closed and the statistics were moved directly to the slice.
 						t.DeletePrefix(prefixForActiveStats(slice.SliceKey))
-						fallthrough
-					case etcdop.UpdateEvent:
 						stats := event.Value.GetStats()
 						t.Insert(cacheKey, stats)
 					case etcdop.DeleteEvent:
