@@ -112,8 +112,8 @@ func (c *checker) check(ctx context.Context) {
 		}
 
 		// Check import conditions
-		fStats := c.stats.FileStats(sliceKey.FileKey).Total
-		if met, reason := cdn.Evaluate(now, sliceKey.FileKey.OpenedAt(), fStats); met {
+		fStats := c.stats.FileStats(sliceKey.FileKey)
+		if met, reason := cdn.Evaluate(now, sliceKey.FileKey.OpenedAt(), fStats.Total); met {
 			if err := c.swapFile(sliceKey.FileKey, reason); err != nil {
 				c.logger.Error(err)
 			}
@@ -123,14 +123,16 @@ func (c *checker) check(ctx context.Context) {
 		}
 
 		// Check upload conditions
-		sStats := c.stats.SliceStats(sliceKey).Total
-		if met, reason := c.config.UploadConditions.Evaluate(now, sliceKey.OpenedAt(), sStats); met {
+		sStats := c.stats.SliceStats(sliceKey)
+		if met, reason := c.config.UploadConditions.Evaluate(now, sliceKey.OpenedAt(), sStats.Total); met {
 			if err := c.swapSlice(sliceKey, reason); err != nil {
 				c.logger.Error(err)
 			}
 			continue
 		} else {
 			c.logger.Infof(`upload conditions not met "%s": %v`, sliceKey.String(), sStats)
+			c.logger.Infof(`export stats "%s": %v`, sliceKey.ExportKey.String(), c.stats.ExportStats(sliceKey.ExportKey))
+			c.logger.Infof(`receiver stats "%s": %v`, sliceKey.ReceiverKey.String(), c.stats.ReceiverStats(sliceKey.ReceiverKey))
 		}
 	}
 	c.logger.Infof(`checked "%d" opened slices | %s`, len(c.openedSlices), c.clock.Since(now))
