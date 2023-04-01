@@ -61,6 +61,9 @@ func (t *Task) Run(ctx context.Context) (task.Result, error) {
 
 func (t *Task) cleanReceiver(ctx context.Context) error {
 	errs := errors.NewMultiError()
+	if err := t.schema.ReceivedStats().InReceiver(t.receiverKey).DeleteAll().DoOrErr(ctx, t.client); err != nil {
+		errs.Append(err)
+	}
 	if err := t.deleteExpiredTasks(ctx); err != nil {
 		errs.Append(err)
 	}
