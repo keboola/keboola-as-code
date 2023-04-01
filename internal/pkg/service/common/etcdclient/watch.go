@@ -2,6 +2,7 @@ package etcdclient
 
 import (
 	"context"
+	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/namespace"
@@ -27,7 +28,23 @@ func (w *watcherWrapper) Watch(ctx context.Context, key string, opts ...etcd.OpO
 	//   https://github.com/etcd-io/etcd/issues/15058
 	//   It's very easy for client application to workaround the issue.
 	//   The client just needs to create a new client each time before watching.
-	return namespace.NewWatcher(etcd.NewWatcher(w.client), w.prefix).Watch(ctx, key, opts...)
+	watcher := namespace.NewWatcher(etcd.NewWatcher(w.client), w.prefix)
+
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				_ = watcher.RequestProgress(ctx)
+			}
+		}
+	}()
+
+	return watcher.Watch(ctx, key, opts...)
 }
 
 func (w *watcherWrapper) RequestProgress(_ context.Context) error {
