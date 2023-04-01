@@ -24,7 +24,7 @@ import (
 
 const (
 	// FileExpiration defines how old files are to be deleted.
-	FileExpiration = 24 * time.Hour
+	FileExpiration = 1 * time.Hour
 )
 
 type Task struct {
@@ -111,7 +111,7 @@ func (t *Task) deleteExpiredFiles(ctx context.Context) error {
 		Do(ctx, t.client).
 		ForEachValue(func(v model.ExportBase, header *iterator.Header) error {
 			// Iterate imported files and buffered files whose import failed.
-			for _, state := range []filestate.State{filestate.Imported, filestate.Failed} {
+			for _, state := range []filestate.State{filestate.Closing, filestate.Imported, filestate.Failed} {
 				err := t.schema.
 					Files().
 					InState(state).
