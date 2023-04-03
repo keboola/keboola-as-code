@@ -550,7 +550,7 @@ jobs:
 
       - name: Install on Windows using Scoop
         run: |
-          Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+          iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
           scoop bucket add keboola https://github.com/keboola/scoop-keboola-cli.git
           scoop install keboola/keboola-cli
           kbc --version
