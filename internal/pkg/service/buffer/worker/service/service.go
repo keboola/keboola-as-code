@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -45,6 +46,7 @@ type dependencies interface {
 	Process() *servicectx.Process
 	WorkerConfig() config.Config
 	EtcdClient() *etcd.Client
+	EtcdSerde() *serde.Serde
 	HTTPClient() client.Client
 	StorageAPIHost() string
 	Schema() *schema.Schema

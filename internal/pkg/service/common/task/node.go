@@ -16,9 +16,9 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
@@ -41,7 +41,6 @@ type Node struct {
 	tracer   trace.Tracer
 	clock    clock.Clock
 	logger   log.Logger
-	schema   *schema.Schema
 	client   *etcd.Client
 	tasksCtx context.Context
 	tasksWg  *sync.WaitGroup
@@ -53,6 +52,7 @@ type Node struct {
 	config     nodeConfig
 	tasksCount *atomic.Int64
 
+	taskEtcdPrefix etcdop.PrefixT[commonModel.Task]
 	taskLocksMutex *sync.Mutex
 	taskLocks      map[string]bool
 }
@@ -62,8 +62,8 @@ type dependencies interface {
 	Clock() clock.Clock
 	Logger() log.Logger
 	Process() *servicectx.Process
-	Schema() *schema.Schema
 	EtcdClient() *etcd.Client
+	EtcdSerde() *serde.Serde
 }
 
 func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
@@ -75,15 +75,16 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 
 	proc := d.Process()
 
+	taskPrefix := etcdop.NewTypedPrefix[commonModel.Task](etcdop.NewPrefix(c.taskEtcdPrefix), d.EtcdSerde())
 	n := &Node{
 		tracer:         d.Tracer(),
 		clock:          d.Clock(),
 		logger:         d.Logger().AddPrefix("[task]"),
-		schema:         d.Schema(),
 		client:         d.EtcdClient(),
 		nodeID:         proc.UniqueID(),
 		config:         c,
 		tasksCount:     atomic.NewInt64(0),
+		taskEtcdPrefix: taskPrefix,
 		taskLocksMutex: &sync.Mutex{},
 		taskLocks:      make(map[string]bool),
 	}
@@ -171,7 +172,7 @@ func (n *Node) StartTask(cfg Config) (t *commonModel.Task, err error) {
 	// Resistance to outages: If the Worker node fails, the lock is released automatically by the lease, after the session TTL seconds.
 	logger := n.logger.AddPrefix(fmt.Sprintf("[%s]", taskKey.String()))
 	createTaskOp := op.MergeToTxn(
-		n.schema.Tasks().ByKey(task.Key).Put(task),
+		n.taskEtcdPrefix.Key(taskKey.String()).Put(task),
 		lock.PutIfNotExists(task.Node, etcd.WithLease(session.Lease())),
 	)
 	if resp, err := createTaskOp.Do(n.tasksCtx, n.client); err != nil {
@@ -256,7 +257,7 @@ func (n *Node) runTask(logger log.Logger, task commonModel.Task, cfg Config) {
 
 	// Update task and release lock in etcd
 	finishTaskOp := op.MergeToTxn(
-		n.schema.Tasks().ByKey(task.Key).Put(task),
+		n.taskEtcdPrefix.Key(task.Key.String()).Put(task),
 		task.Lock.DeleteIfExists(),
 	)
 	if resp, err := finishTaskOp.Do(opCtx, n.client); err != nil {

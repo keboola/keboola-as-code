@@ -8,24 +8,33 @@ import (
 )
 
 const (
-	DefaultSessionTTL = 15 // seconds, see WithTTL
+	DefaultSessionTTL     = 15 // seconds, see WithTTL
+	DefaultTaskEtcdPrefix = "task"
 )
 
 type NodeOption func(c *nodeConfig)
 
 type nodeConfig struct {
 	spanNamePrefix string
+	taskEtcdPrefix string
 	ttlSeconds     int
 }
 
 func defaultNodeConfig() nodeConfig {
-	return nodeConfig{ttlSeconds: DefaultSessionTTL}
+	return nodeConfig{taskEtcdPrefix: DefaultTaskEtcdPrefix, ttlSeconds: DefaultSessionTTL}
 }
 
 // WithSpanNamePrefix defines prefix for tracing spans.
 func WithSpanNamePrefix(p string) NodeOption {
 	return func(c *nodeConfig) {
 		c.spanNamePrefix = p
+	}
+}
+
+// WithTaskEtcdPrefix defines prefix for tasks records in etcd.
+func WithTaskEtcdPrefix(p string) NodeOption {
+	return func(c *nodeConfig) {
+		c.taskEtcdPrefix = p
 	}
 }
 

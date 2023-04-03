@@ -66,6 +66,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 )
@@ -111,6 +112,7 @@ type Mocked interface {
 	DebugLogger() log.DebugLogger
 	EnvsMutable() *env.Map
 	EtcdClient() *etcd.Client
+	EtcdSerde() *serde.Serde
 	MockedHTTPTransport() *httpmock.MockTransport
 	MockedProject(fs filesystem.Fs) *projectPkg.Project
 	MockedState() *state.State

@@ -23,6 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/mapper"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/state/manifest"
@@ -431,6 +432,10 @@ func (v *mocked) EtcdClient() *etcd.Client {
 		)
 	}
 	return v.etcdClient
+}
+
+func (v *mocked) EtcdSerde() *serde.Serde {
+	return serde.NewJSON(serde.NoValidation)
 }
 
 func (v *mocked) KeboolaProjectAPI() *keboola.API {
