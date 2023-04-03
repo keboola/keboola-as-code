@@ -70,11 +70,11 @@ func TestCleanup(t *testing.T) {
 	createdAt := utctime.UTCTime(createdAtRaw)
 	timeNow := time.Now()
 
-	// Add file with an Opened state and created in the past - will be deleted
+	// Add file with a Closing state and created in the past - will be deleted
 	fileKey1 := key.FileKey{ExportKey: exportKey1, FileID: key.FileID(createdAt)}
 	file1 := model.File{
 		FileKey: fileKey1,
-		State:   filestate.Opened,
+		State:   filestate.Closing,
 		Mapping: model.Mapping{
 			MappingKey:  key.MappingKey{ExportKey: exportKey1, RevisionID: 1},
 			TableID:     keboola.TableID{BucketID: keboola.BucketID{Stage: "in", BucketName: "test"}, TableName: "test"},
@@ -83,13 +83,13 @@ func TestCleanup(t *testing.T) {
 		},
 		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
-	assert.NoError(t, schema.Files().InState(filestate.Opened).ByKey(fileKey1).Put(file1).Do(ctx, client))
+	assert.NoError(t, schema.Files().InState(filestate.Closing).ByKey(fileKey1).Put(file1).Do(ctx, client))
 
-	// Add file with an Opened state and created recently - will be ignored
+	// Add file with a Closing state and created recently - will be ignored
 	fileKey2 := key.FileKey{ExportKey: exportKey3, FileID: key.FileID(timeNow)}
 	file2 := model.File{
 		FileKey: fileKey2,
-		State:   filestate.Opened,
+		State:   filestate.Closing,
 		Mapping: model.Mapping{
 			MappingKey:  key.MappingKey{ExportKey: exportKey3, RevisionID: 1},
 			TableID:     keboola.TableID{BucketID: keboola.BucketID{Stage: "in", BucketName: "test"}, TableName: "test"},
@@ -98,14 +98,14 @@ func TestCleanup(t *testing.T) {
 		},
 		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
-	assert.NoError(t, schema.Files().InState(filestate.Opened).ByKey(fileKey2).Put(file2).Do(ctx, client))
+	assert.NoError(t, schema.Files().InState(filestate.Closing).ByKey(fileKey2).Put(file2).Do(ctx, client))
 
 	// Add slice for the cleaned-up file - will be deleted
 	sliceKey1 := key.SliceKey{FileKey: fileKey1, SliceID: key.SliceID(createdAt)}
 	slice1 := model.Slice{
 		SliceKey: sliceKey1,
 		Number:   1,
-		State:    slicestate.Imported,
+		State:    slicestate.Uploaded,
 		Mapping: model.Mapping{
 			MappingKey:  key.MappingKey{ExportKey: exportKey1, RevisionID: 1},
 			TableID:     keboola.TableID{BucketID: keboola.BucketID{Stage: "in", BucketName: "test"}, TableName: "test"},
@@ -114,14 +114,14 @@ func TestCleanup(t *testing.T) {
 		},
 		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
-	assert.NoError(t, schema.Slices().InState(slicestate.Imported).ByKey(sliceKey1).Put(slice1).Do(ctx, client))
+	assert.NoError(t, schema.Slices().InState(slicestate.Uploaded).ByKey(sliceKey1).Put(slice1).Do(ctx, client))
 
 	// Add slice for the ignored file - will be ignored
 	sliceKey2 := key.SliceKey{FileKey: fileKey2, SliceID: key.SliceID(timeNow)}
 	slice2 := model.Slice{
 		SliceKey: sliceKey2,
 		Number:   1,
-		State:    slicestate.Imported,
+		State:    slicestate.Uploaded,
 		Mapping: model.Mapping{
 			MappingKey:  key.MappingKey{ExportKey: exportKey3, RevisionID: 1},
 			TableID:     keboola.TableID{BucketID: keboola.BucketID{Stage: "in", BucketName: "test"}, TableName: "test"},
@@ -130,7 +130,7 @@ func TestCleanup(t *testing.T) {
 		},
 		StorageResource: &keboola.FileUploadCredentials{File: keboola.File{ID: 123, Name: "file1.csv"}},
 	}
-	assert.NoError(t, schema.Slices().InState(slicestate.Imported).ByKey(sliceKey2).Put(slice2).Do(ctx, client))
+	assert.NoError(t, schema.Slices().InState(slicestate.Uploaded).ByKey(sliceKey2).Put(slice2).Do(ctx, client))
 
 	// Add record for the cleaned-up slice - will be deleted
 	recordKey1 := key.RecordKey{SliceKey: sliceKey1, ReceivedAt: key.ReceivedAt(createdAt), RandomSuffix: "abcd"}
@@ -211,14 +211,14 @@ config/export/1000/github/third
 >>>>>
 
 <<<<<
-file/opened/1000/github/third/%s
+file/closing/1000/github/third/%s
 -----
 {
   "projectId": 1000,
   "receiverId": "github",
   "exportId": "third",
   "fileId": "%s",
-  "state": "opened",
+  "state": "closing",
   "mapping": {
     "projectId": 1000,
     "receiverId": "github",
@@ -252,7 +252,7 @@ rec
 >>>>>
 
 <<<<<
-slice/archived/successful/imported/1000/github/third/%s/%s
+slice/active/closed/uploaded/1000/github/third/%s/%s
 -----
 {
   "projectId": 1000,
@@ -260,7 +260,7 @@ slice/archived/successful/imported/1000/github/third/%s/%s
   "exportId": "third",
   "fileId": "%s",
   "sliceId": "%s",
-  "state": "archived/successful/imported",
+  "state": "active/closed/uploaded",
   "mapping": {
     "projectId": 1000,
     "receiverId": "github",
