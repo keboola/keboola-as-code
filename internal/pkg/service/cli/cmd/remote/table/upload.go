@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	common "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	fileUpload "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/upload"
@@ -35,27 +34,14 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 
 			var tableID keboola.TableID
 			var primaryKey []string
-			if len(args) == 0 {
-				allTables, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithColumns()).Send(d.CommandCtx())
+			if len(args) < 2 {
+				id, createNew, err := askTable(d, true)
 				if err != nil {
 					return err
 				}
+				tableID = id
 
-				table, err := d.Dialogs().AskTable(d.Options(), *allTables, dialog.WithAllowCreateNewTable())
-				if err != nil {
-					return err
-				}
-
-				if table != nil {
-					// user selected table
-					tableID = table.ID
-				} else {
-					// user asked to create new table
-					tableID, err = keboola.ParseTableID(d.Dialogs().AskTableID())
-					if err != nil {
-						return err
-					}
-
+				if createNew {
 					primaryKey = d.Dialogs().AskPrimaryKey(d.Options())
 				}
 			} else {

@@ -19,6 +19,7 @@ func Commands(p dependencies.Provider) *cobra.Command {
 		PreviewCommand(p),
 		UnloadCommand(p),
 		UploadCommand(p),
+		DownloadCommand(p),
 	)
 
 	return cmd

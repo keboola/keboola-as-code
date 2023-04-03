@@ -95,5 +95,5 @@ func (p *Dialogs) AskTable(
 		return nil, nil
 	}
 
-	return allTables[index], errors.New(`please specify a table`)
+	return allTables[index], nil
 }

@@ -1,0 +1,5 @@
+Unloading table, please wait.
+Table "in.c-test.accounts" unloaded to file "%d".
+Creating file "data.csv"
+Downloading slices
+File "%d" downloaded to "data.csv".

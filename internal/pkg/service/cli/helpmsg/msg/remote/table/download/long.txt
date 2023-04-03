@@ -1,0 +1,3 @@
+Command "remote table download"
+
+Download data from a storage table.
