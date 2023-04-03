@@ -91,7 +91,7 @@ func (p *Dialogs) AskTable(
 	}
 
 	// Special case:
-	if index == 0 {
+	if config.allowCreateNew && index == 0 {
 		return nil, nil
 	}
 
