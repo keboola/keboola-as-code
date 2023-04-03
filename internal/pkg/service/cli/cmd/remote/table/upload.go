@@ -34,7 +34,7 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 
 			var tableID keboola.TableID
 			var primaryKey []string
-			if len(args) < 2 {
+			if len(args) < 1 {
 				id, createNew, err := askTable(d, true)
 				if err != nil {
 					return err
@@ -53,7 +53,7 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			var inputFile string
-			if len(args) == 2 {
+			if len(args) >= 2 {
 				inputFile = args[1]
 			}
 
