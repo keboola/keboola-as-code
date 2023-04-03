@@ -146,7 +146,8 @@ func watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan 
 						// Therefore, we have to check whether the state of the slice has not changed.
 						_, found1 := t.Get(prefixUploading + statsPerAPINode.SliceKey.String())
 						_, found2 := t.Get(prefixUploaded + statsPerAPINode.SliceKey.String())
-						if !found1 && !found2 {
+						_, found3 := t.Get(prefixFailed + statsPerAPINode.SliceKey.String())
+						if !found1 && !found2 && !found3 {
 							// Slice is still open, insert statistics per API node.
 							t.Insert(keyForActiveStats(statsPerAPINode.SliceNodeKey), statsPerAPINode.GetStats())
 						}
