@@ -137,6 +137,7 @@ Example:
 - `<down arrow>`
 - `<left arrow>`
 - `<right arrow>`
+- `<space>`
 - `<enter>`
 
 **Example:**

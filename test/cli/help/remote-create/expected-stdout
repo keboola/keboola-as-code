@@ -8,6 +8,7 @@ Usage:
 Available Commands:
   remote create branch  Create a new branch from the main branch.
   remote create bucket  Create a new bucket.
+  remote create table   Create a new table.
 
 Global Flags:
 %A

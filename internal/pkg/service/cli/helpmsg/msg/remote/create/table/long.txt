@@ -1,0 +1,4 @@
+Command "remote create table"
+
+Creates a new Storage table in the project remote state. The table can be defined by specifying the full table ID
+in the argument or by specifying the bucket ID and table name in the option flags.

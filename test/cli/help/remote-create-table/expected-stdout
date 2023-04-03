@@ -1,0 +1,17 @@
+Command "remote create table"
+
+Creates a new Storage table in the project remote state. The table can be defined by specifying the full table ID
+in the argument or by specifying the bucket ID and table name in the option flags.
+
+Usage:
+  kbc remote create table [table] [flags]
+
+Flags:
+      --bucket string             bucket ID (required if the tableId argument is empty)
+      --columns string            comma-separated list of column names
+      --name string               name of the table (required if the tableId argument is empty)
+      --primary-key string        columns used as primary key, comma-separated
+  -H, --storage-api-host string   if command is run outside the project directory
+
+Global Flags:
+%A
