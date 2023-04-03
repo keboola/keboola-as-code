@@ -42,7 +42,7 @@ func TestImportConditions_Evaluate_Defaults(t *testing.T) {
 		RecordsSize:  10 * datasize.MB,
 	})
 	assert.True(t, res)
-	assert.Equal(t, "size threshold met, received: 10MB, threshold: 5MB", desc)
+	assert.Equal(t, "size threshold met, received: 10.0 MB, threshold: 5MB", desc)
 
 	// Default time met
 	res, desc = ic.Evaluate(now, before20Min, model.Stats{
@@ -88,7 +88,7 @@ func TestImportConditions_Evaluate_Custom(t *testing.T) {
 		RecordsSize:  10 * datasize.MB,
 	})
 	assert.True(t, res)
-	assert.Equal(t, "size threshold met, received: 10MB, threshold: 5MB", desc)
+	assert.Equal(t, "size threshold met, received: 10.0 MB, threshold: 5MB", desc)
 
 	// Time met
 	res, desc = ic.Evaluate(now, before20Min, model.Stats{

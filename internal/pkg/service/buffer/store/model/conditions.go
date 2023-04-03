@@ -42,7 +42,7 @@ func (c Conditions) Evaluate(now time.Time, openedAt time.Time, s Stats) (bool, 
 		return true, fmt.Sprintf("count threshold met, received: %d rows, threshold: %d rows", s.RecordsCount, c.Count)
 	}
 	if s.RecordsSize >= c.Size {
-		return true, fmt.Sprintf("size threshold met, received: %s, threshold: %s", s.RecordsSize.String(), c.Size.String())
+		return true, fmt.Sprintf("size threshold met, received: %s, threshold: %s", s.RecordsSize.HumanReadable(), c.Size.String())
 	}
 
 	sinceOpened := now.Sub(openedAt).Truncate(time.Second)
