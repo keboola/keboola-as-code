@@ -14,9 +14,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
@@ -31,9 +31,9 @@ func TestSuccessfulTask(t *testing.T) {
 
 	lock := "my-lock"
 	taskType := "some.task"
-	taskKey := key.TaskKey{
+	tKey := taskKey.Key{
 		ProjectID: 123,
-		TaskID:    key.TaskID("my-receiver/my-export/" + taskType),
+		TaskID:    taskKey.ID("my-receiver/my-export/" + taskType),
 	}
 
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
@@ -49,7 +49,7 @@ func TestSuccessfulTask(t *testing.T) {
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
 	_, err := node1.StartTask(task.Config{
-		Key:  taskKey,
+		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
 		Context: func() (context.Context, context.CancelFunc) {
@@ -64,7 +64,7 @@ func TestSuccessfulTask(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	_, err = node2.StartTask(task.Config{
-		Key:  taskKey,
+		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
 		Context: func() (context.Context, context.CancelFunc) {
@@ -125,7 +125,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 	taskWork = make(chan struct{})
 	taskDone = make(chan struct{})
 	_, err = node2.StartTask(task.Config{
-		Key:  taskKey,
+		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
 		Context: func() (context.Context, context.CancelFunc) {
@@ -202,9 +202,9 @@ func TestFailedTask(t *testing.T) {
 
 	lock := "my-lock"
 	taskType := "some.task"
-	taskKey := key.TaskKey{
+	tKey := taskKey.Key{
 		ProjectID: 123,
-		TaskID:    key.TaskID("my-receiver/my-export/" + taskType),
+		TaskID:    taskKey.ID("my-receiver/my-export/" + taskType),
 	}
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
@@ -219,7 +219,7 @@ func TestFailedTask(t *testing.T) {
 	taskWork := make(chan struct{})
 	taskDone := make(chan struct{})
 	_, err := node1.StartTask(task.Config{
-		Key:  taskKey,
+		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
 		Context: func() (context.Context, context.CancelFunc) {
@@ -234,7 +234,7 @@ func TestFailedTask(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	_, err = node2.StartTask(task.Config{
-		Key:  taskKey,
+		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
 		Context: func() (context.Context, context.CancelFunc) {
@@ -295,7 +295,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 	taskWork = make(chan struct{})
 	taskDone = make(chan struct{})
 	_, err = node2.StartTask(task.Config{
-		Key:  taskKey,
+		Key:  tKey,
 		Type: taskType,
 		Lock: lock,
 		Context: func() (context.Context, context.CancelFunc) {
@@ -372,9 +372,9 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 
 	lock := "my-lock"
 	taskType := "some.task"
-	taskKey := key.TaskKey{
+	tKey := taskKey.Key{
 		ProjectID: 123,
-		TaskID:    key.TaskID("my-receiver/my-export/" + taskType),
+		TaskID:    taskKey.ID("my-receiver/my-export/" + taskType),
 	}
 
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
@@ -390,7 +390,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	taskDone := make(chan struct{})
 	etcdhelper.ExpectModification(t, client, func() {
 		_, err := node1.StartTask(task.Config{
-			Key:  taskKey,
+			Key:  tKey,
 			Type: taskType,
 			Lock: lock,
 			Context: func() (context.Context, context.CancelFunc) {

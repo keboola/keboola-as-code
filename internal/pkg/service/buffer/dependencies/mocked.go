@@ -16,12 +16,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
 	bufferStore "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	bufferSchema "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher/apinode"
 	workerConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 

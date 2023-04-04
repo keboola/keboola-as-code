@@ -3,14 +3,14 @@ package mapper
 import (
 	bufferDesign "github.com/keboola/keboola-as-code/api/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m Mapper) TaskPayload(model *model.Task) (r *buffer.Task) {
+func (m Mapper) TaskPayload(model *commonModel.Task) (r *buffer.Task) {
 	out := &buffer.Task{
 		ID:        model.TaskID,
-		URL:       formatTaskURL(m.bufferAPIHost, model.TaskKey),
+		URL:       formatTaskURL(m.bufferAPIHost, model.Key),
 		CreatedAt: model.CreatedAt.String(),
 	}
 

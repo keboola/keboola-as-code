@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"time"
 
+	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type ReceiverKey struct {
-	ProjectID  ProjectID  `json:"projectId" validate:"required,min=1"`
-	ReceiverID ReceiverID `json:"receiverId" validate:"required,min=1,max=48"`
+	ProjectID  commonKey.ProjectID `json:"projectId" validate:"required,min=1"`
+	ReceiverID ReceiverID          `json:"receiverId" validate:"required,min=1,max=48"`
 }
 
 type ExportKey struct {
@@ -41,12 +42,12 @@ type SliceNodeKey struct {
 
 type RecordKey struct {
 	SliceKey
-	ReceivedAt   ReceivedAt
+	ReceivedAt   commonKey.ReceivedAt
 	RandomSuffix string
 }
 
 func NewRecordKey(sliceKey SliceKey, now time.Time) RecordKey {
-	return RecordKey{SliceKey: sliceKey, ReceivedAt: ReceivedAt(now)}
+	return RecordKey{SliceKey: sliceKey, ReceivedAt: commonKey.ReceivedAt(now)}
 }
 
 func (v ReceiverKey) GetReceiverKey() ReceiverKey {

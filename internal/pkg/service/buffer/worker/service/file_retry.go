@@ -9,11 +9,12 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 )
 
 const (
@@ -38,7 +39,7 @@ func (s *Service) retryFailedImports(ctx context.Context, wg *sync.WaitGroup, d 
 		},
 		StartTaskIf: func(event etcdop.WatchEventT[model.File]) (string, bool) {
 			file := event.Value
-			now := model.UTCTime(s.clock.Now())
+			now := commonModel.UTCTime(s.clock.Now())
 			needed := *file.RetryAfter
 			if !now.After(needed) {
 				return fmt.Sprintf(`File.RetryAfter condition not met, now: "%s", needed: "%s"`, now, needed), false
@@ -46,11 +47,11 @@ func (s *Service) retryFailedImports(ctx context.Context, wg *sync.WaitGroup, d 
 
 			return "", true
 		},
-		TaskKey: func(event etcdop.WatchEventT[model.File]) key.TaskKey {
+		TaskKey: func(event etcdop.WatchEventT[model.File]) taskKey.Key {
 			file := event.Value
-			return key.TaskKey{
+			return taskKey.Key{
 				ProjectID: file.ProjectID,
-				TaskID: key.TaskID(strings.Join([]string{
+				TaskID: taskKey.ID(strings.Join([]string{
 					file.ReceiverID.String(),
 					file.ExportID.String(),
 					file.FileID.String(),

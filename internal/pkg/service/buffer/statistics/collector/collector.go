@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 )
 
 // Node collects node statistics in memory and periodically synchronizes them to the database.
@@ -29,7 +30,7 @@ type Node struct {
 }
 
 type sliceStats struct {
-	lastRecordAt model.UTCTime
+	lastRecordAt commonModel.UTCTime
 	recordsCount uint64
 	recordsSize  datasize.ByteSize
 	bodySize     datasize.ByteSize
@@ -96,7 +97,7 @@ func (m *Node) Notify(sliceKey key.SliceKey, recordSize, bodySize datasize.ByteS
 	}
 
 	// Update stats
-	receivedAt := model.UTCTime(m.clock.Now())
+	receivedAt := commonModel.UTCTime(m.clock.Now())
 	stats := m.statsPerSlice[sliceKey]
 	stats.recordsCount += 1
 	stats.recordsSize += recordSize

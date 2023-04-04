@@ -5,14 +5,14 @@ import (
 
 	etcd "go.etcd.io/etcd/client/v3"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
+	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
-func (s *Store) GetTask(ctx context.Context, taskKey key.TaskKey) (r model.Task, err error) {
+func (s *Store) GetTask(ctx context.Context, taskKey taskKey.Key) (r model.Task, err error) {
 	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetTask")
 	defer telemetry.EndSpan(span, &err)
 
@@ -23,7 +23,7 @@ func (s *Store) GetTask(ctx context.Context, taskKey key.TaskKey) (r model.Task,
 	return task.Value, nil
 }
 
-func (s *Store) getTaskOp(_ context.Context, taskKey key.TaskKey) op.ForType[*op.KeyValueT[model.Task]] {
+func (s *Store) getTaskOp(_ context.Context, taskKey taskKey.Key) op.ForType[*op.KeyValueT[model.Task]] {
 	return s.schema.
 		Tasks().
 		ByKey(taskKey).

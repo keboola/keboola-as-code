@@ -7,6 +7,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
+	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -23,14 +24,14 @@ type Slice struct {
 	Mapping         Mapping                        `json:"mapping" validate:"required,dive"`
 	StorageResource *keboola.FileUploadCredentials `json:"storageResource" validate:"required"`
 	Number          int                            `json:"sliceNumber" validate:"required"`
-	ClosingAt       *UTCTime                       `json:"closingAt,omitempty"`
-	UploadingAt     *UTCTime                       `json:"uploadingAt,omitempty"`
-	UploadedAt      *UTCTime                       `json:"uploadedAt,omitempty"`
-	FailedAt        *UTCTime                       `json:"failedAt,omitempty"`
-	ImportedAt      *UTCTime                       `json:"importedAt,omitempty"`
+	ClosingAt       *commonModel.UTCTime           `json:"closingAt,omitempty"`
+	UploadingAt     *commonModel.UTCTime           `json:"uploadingAt,omitempty"`
+	UploadedAt      *commonModel.UTCTime           `json:"uploadedAt,omitempty"`
+	FailedAt        *commonModel.UTCTime           `json:"failedAt,omitempty"`
+	ImportedAt      *commonModel.UTCTime           `json:"importedAt,omitempty"`
 	LastError       string                         `json:"lastError,omitempty"`
 	RetryAttempt    int                            `json:"retryAttempt,omitempty"`
-	RetryAfter      *UTCTime                       `json:"retryAfter,omitempty"`
+	RetryAfter      *commonModel.UTCTime           `json:"retryAfter,omitempty"`
 	// Statistics are set by the "slice close" operation, the value is nil, if there is no record.
 	Statistics *Stats `json:"statistics,omitempty"`
 	IsEmpty    bool   `json:"isEmpty,omitempty"`

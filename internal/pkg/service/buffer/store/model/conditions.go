@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+
+	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 )
 
 // Conditions struct configures slice upload and file import conditions.
@@ -47,7 +49,7 @@ func (c Conditions) Evaluate(now time.Time, openedAt time.Time, s Stats) (bool, 
 
 	sinceOpened := now.Sub(openedAt).Truncate(time.Second)
 	if sinceOpened >= c.Time {
-		return true, fmt.Sprintf("time threshold met, opened at: %s, passed: %s threshold: %s", openedAt.Format(TimeFormat), sinceOpened.String(), c.Time.String())
+		return true, fmt.Sprintf("time threshold met, opened at: %s, passed: %s threshold: %s", openedAt.Format(commonModel.TimeFormat), sinceOpened.String(), c.Time.String())
 	}
 
 	return false, "no condition met"

@@ -12,6 +12,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
+	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
+	taskKeyImp "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 )
 
 type keyTestCase struct{ actual, expected string }
@@ -23,16 +25,16 @@ func TestSchema(t *testing.T) {
 	time1, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
 	time2 := time1.Add(time.Hour)
 
-	projectID := key.ProjectID(123)
+	projectID := commonKey.ProjectID(123)
 	receiverKey := key.ReceiverKey{ProjectID: projectID, ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
 	mappingKey := key.MappingKey{ExportKey: exportKey, RevisionID: 10}
 	fileKey := key.FileKey{ExportKey: exportKey, FileID: key.FileID(time1)}
 	sliceKey := key.SliceKey{SliceID: key.SliceID(time2), FileKey: fileKey}
-	recordKey := key.RecordKey{SliceKey: sliceKey, ReceivedAt: key.ReceivedAt(time2.Add(time.Hour)), RandomSuffix: "abcdef"}
-	createdAt := key.UTCTime(time1)
-	taskID := key.TaskID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "some.task", createdAt.String(), "abcdef"))
-	taskKey := key.TaskKey{ProjectID: projectID, TaskID: taskID}
+	recordKey := key.RecordKey{SliceKey: sliceKey, ReceivedAt: commonKey.ReceivedAt(time2.Add(time.Hour)), RandomSuffix: "abcdef"}
+	createdAt := commonKey.UTCTime(time1)
+	taskID := taskKeyImp.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "some.task", createdAt.String(), "abcdef"))
+	taskKey := taskKeyImp.Key{ProjectID: projectID, TaskID: taskID}
 
 	cases := []keyTestCase{
 		{

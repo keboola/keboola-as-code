@@ -3,12 +3,12 @@ package model
 import (
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 )
 
 type Task struct {
-	key.TaskKey
+	taskKey.Key
 	Type       string         `json:"type"` // validate:"required"`
 	CreatedAt  UTCTime        `json:"createdAt" validate:"required"`
 	FinishedAt *UTCTime       `json:"finishedAt,omitempty"`

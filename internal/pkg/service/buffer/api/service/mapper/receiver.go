@@ -4,6 +4,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -24,7 +25,7 @@ func (m Mapper) ReceiverPayload(model model.Receiver) *buffer.Receiver {
 	}
 }
 
-func (m Mapper) CreateReceiverModel(projectID key.ProjectID, secret string, payload buffer.CreateReceiverPayload) (r model.Receiver, err error) {
+func (m Mapper) CreateReceiverModel(projectID commonKey.ProjectID, secret string, payload buffer.CreateReceiverPayload) (r model.Receiver, err error) {
 	receiverBase := m.createReceiverBaseModel(projectID, secret, payload)
 
 	exports := make([]model.Export, 0, len(payload.Exports))
@@ -60,7 +61,7 @@ func (m Mapper) UpdateReceiverModel(receiver model.ReceiverBase, payload buffer.
 	return receiver, nil
 }
 
-func (m Mapper) createReceiverBaseModel(projectID key.ProjectID, secret string, payload buffer.CreateReceiverPayload) model.ReceiverBase {
+func (m Mapper) createReceiverBaseModel(projectID commonKey.ProjectID, secret string, payload buffer.CreateReceiverPayload) model.ReceiverBase {
 	name := payload.Name
 
 	// Generate receiver ID from Name if needed

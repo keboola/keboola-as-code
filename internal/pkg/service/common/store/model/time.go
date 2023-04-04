@@ -1,9 +1,9 @@
 package model
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
+	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 )
 
-const TimeFormat = key.TimeFormat
+const TimeFormat = commonKey.TimeFormat
 
-type UTCTime = key.UTCTime
+type UTCTime = commonKey.UTCTime
