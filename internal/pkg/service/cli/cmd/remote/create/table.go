@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
+	common "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 
@@ -24,7 +25,7 @@ func TableCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			d, err := p.DependenciesForRemoteCommand()
+			d, err := p.DependenciesForRemoteCommand(common.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
