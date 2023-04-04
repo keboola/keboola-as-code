@@ -45,15 +45,6 @@ type RecordKey struct {
 	RandomSuffix string
 }
 
-type TaskKey struct {
-	ProjectID ProjectID `json:"projectId" validate:"required"`
-	TaskID    TaskID    `json:"taskId" validate:"required"`
-}
-
-func FormatTime(t time.Time) string {
-	return t.UTC().Format(TimeFormat)
-}
-
 func NewRecordKey(sliceKey SliceKey, now time.Time) RecordKey {
 	return RecordKey{SliceKey: sliceKey, ReceivedAt: ReceivedAt(now)}
 }
@@ -106,8 +97,4 @@ func (v RecordKey) ID() string {
 		panic(errors.New("randomSuffix cannot be empty"))
 	}
 	return v.ReceivedAt.String() + "_" + v.RandomSuffix
-}
-
-func (v TaskKey) String() string {
-	return fmt.Sprintf("%s/%s", v.ProjectID.String(), v.TaskID.String())
 }
