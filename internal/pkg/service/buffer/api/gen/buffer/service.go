@@ -17,7 +17,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
-
 	"goa.design/goa/v3/security"
 )
 

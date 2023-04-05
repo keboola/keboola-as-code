@@ -344,7 +344,7 @@ var ServiceDetail = Type("ServiceDetail", func() {
 
 var ProjectID = Type("ProjectID", Int, func() {
 	Description("ID of the project")
-	Meta("struct:field:type", "= key.ProjectID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key")
+	Meta("struct:field:type", "= commonKey.ProjectID", "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key", "commonKey")
 })
 
 // Receiver -----------------------------------------------------------------------------------------------------------
@@ -552,7 +552,7 @@ var ImportConditions = Type("Conditions", func() {
 // Task --------------------------------------------------------------------------------------------------------------
 
 var TaskID = Type("TaskID", String, func() {
-	Meta("struct:field:type", "= key.TaskID", "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key")
+	Meta("struct:field:type", "= taskKey.ID", "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key", "taskKey")
 	Description("Unique ID of the task.")
 	Example("task_1234")
 })
