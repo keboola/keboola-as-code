@@ -52,7 +52,6 @@ func TestTemplatesApiE2E(t *testing.T) {
 		addEnvs := env.FromMap(map[string]string{
 			"TEMPLATES_API_DATADOG_ENABLED":  "false",
 			"TEMPLATES_API_STORAGE_API_HOST": test.TestProject().StorageAPIHost(),
-			"TEMPLATES_API_ETCD_ENABLED":     "true",
 			"TEMPLATES_API_ETCD_NAMESPACE":   idgenerator.EtcdNamespaceForTest(),
 			"TEMPLATES_API_ETCD_ENDPOINT":    os.Getenv("TEMPLATES_API_ETCD_ENDPOINT"),
 			"TEMPLATES_API_ETCD_USERNAME":    os.Getenv("TEMPLATES_API_ETCD_USERNAME"),

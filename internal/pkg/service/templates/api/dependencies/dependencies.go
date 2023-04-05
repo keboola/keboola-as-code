@@ -42,7 +42,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManager "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type ctxKey string
@@ -62,7 +61,7 @@ type ForServer interface {
 	dependencies.Public
 	Process() *servicectx.Process
 	RepositoryManager() *repositoryManager.Manager
-	EtcdClient(ctx context.Context) (*etcd.Client, error)
+	EtcdClient() *etcd.Client
 	ProjectLocker() *Locker
 }
 
@@ -92,7 +91,7 @@ type forServer struct {
 	proc              *servicectx.Process
 	logger            log.Logger
 	repositoryManager *repositoryManager.Manager
-	etcdClient        dependencies.Lazy[*etcd.Client]
+	etcdClient        *etcd.Client
 	projectLocker     dependencies.Lazy[*Locker]
 }
 
@@ -149,13 +148,37 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 	}
 	logger.Infof("loaded Storage API index | %s", time.Since(startTime))
 
+	// Get timeout
+	// We use a longer timeout on the API start,
+	// the etcd could be started at the same time as the API.
+	connectTimeout := EtcdDefaultConnectionTimeout
+	if v, found := ctx.Value(EtcdConnectionTimeoutCtxKey).(time.Duration); found {
+		connectTimeout = v
+	}
+
+	// We use a longer timeout when starting the server, because etcd could be restarted at the same time as the API.
+	etcdCtx := context.WithValue(ctx, EtcdConnectionTimeoutCtxKey, 30*time.Second)
+	etcdClient, err := etcdclient.New(
+		etcdCtx,
+		proc,
+		tracer,
+		envs.Get("TEMPLATES_API_ETCD_ENDPOINT"),
+		envs.Get("TEMPLATES_API_ETCD_NAMESPACE"),
+		etcdclient.WithUsername(envs.Get("TEMPLATES_API_ETCD_USERNAME")),
+		etcdclient.WithPassword(envs.Get("TEMPLATES_API_ETCD_PASSWORD")),
+		etcdclient.WithConnectTimeout(connectTimeout),
+		etcdclient.WithLogger(logger),
+		etcdclient.WithDebugOpLogs(cfg.Debug),
+	)
+
 	// Create server dependencies
 	d := &forServer{
-		Base:   baseDeps,
-		Public: publicDeps,
-		config: cfg,
-		proc:   proc,
-		logger: logger,
+		Base:       baseDeps,
+		Public:     publicDeps,
+		config:     cfg,
+		proc:       proc,
+		etcdClient: etcdClient,
+		logger:     logger,
 	}
 
 	// Create repository manager
@@ -163,13 +186,6 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 		return nil, err
 	} else {
 		d.repositoryManager = v
-	}
-
-	// Test connection to etcd at server startup
-	// We use a longer timeout when starting the server, because ETCD could be restarted at the same time as the API.
-	etcdCtx := context.WithValue(ctx, EtcdConnectionTimeoutCtxKey, 30*time.Second)
-	if _, err := d.EtcdClient(etcdCtx); err != nil {
-		d.Logger().Warnf(err.Error())
 	}
 
 	return d, nil
@@ -222,37 +238,8 @@ func (v *forServer) RepositoryManager() *repositoryManager.Manager {
 	return v.repositoryManager
 }
 
-func (v *forServer) EtcdClient(ctx context.Context) (*etcd.Client, error) {
-	return v.etcdClient.InitAndGet(func() (*etcd.Client, error) {
-		ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.EtcdClient")
-		defer telemetry.EndSpan(span, nil)
-
-		// Get timeout
-		// We use a longer timeout on the API start,
-		// the etcd could be started at the same time as the API.
-		connectTimeout := EtcdDefaultConnectionTimeout
-		if v, found := ctx.Value(EtcdConnectionTimeoutCtxKey).(time.Duration); found {
-			connectTimeout = v
-		}
-
-		envs := v.Envs()
-		if envs.Get("TEMPLATES_API_ETCD_ENABLED") == "false" {
-			return nil, errors.New("etcd integration is disabled")
-		}
-
-		return etcdclient.New(
-			ctx,
-			v.proc,
-			v.Tracer(),
-			envs.Get("TEMPLATES_API_ETCD_ENDPOINT"),
-			envs.Get("TEMPLATES_API_ETCD_NAMESPACE"),
-			etcdclient.WithUsername(envs.Get("TEMPLATES_API_ETCD_USERNAME")),
-			etcdclient.WithPassword(envs.Get("TEMPLATES_API_ETCD_PASSWORD")),
-			etcdclient.WithConnectTimeout(connectTimeout),
-			etcdclient.WithLogger(v.logger),
-			etcdclient.WithDebugOpLogs(v.config.Debug),
-		)
-	})
+func (v *forServer) EtcdClient() *etcd.Client {
+	return v.etcdClient
 }
 
 func (v *forServer) ProjectLocker() *Locker {
