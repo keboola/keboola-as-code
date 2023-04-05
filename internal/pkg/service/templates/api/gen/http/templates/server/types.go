@@ -155,8 +155,21 @@ type ValidateInputsResponseBody struct {
 // UseTemplateVersionResponseBody is the type of the "templates" service
 // "UseTemplateVersion" endpoint HTTP response body.
 type UseTemplateVersionResponseBody struct {
-	// Template instance ID.
-	InstanceID string `form:"instanceId" json:"instanceId" xml:"instanceId"`
+	ID string `form:"id" json:"id" xml:"id"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64  `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
 // InstancesIndexResponseBody is the type of the "templates" service
@@ -225,8 +238,21 @@ type UpdateInstanceResponseBody struct {
 // UpgradeInstanceResponseBody is the type of the "templates" service
 // "UpgradeInstance" endpoint HTTP response body.
 type UpgradeInstanceResponseBody struct {
-	// Template instance ID.
-	InstanceID string `form:"instanceId" json:"instanceId" xml:"instanceId"`
+	ID string `form:"id" json:"id" xml:"id"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64  `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
 // UpgradeInstanceInputsIndexResponseBody is the type of the "templates"
@@ -245,6 +271,26 @@ type UpgradeInstanceValidateInputsResponseBody struct {
 	Valid bool `form:"valid" json:"valid" xml:"valid"`
 	// List of Details for the step groups.
 	StepGroups []*StepGroupValidationResultResponseBody `form:"stepGroups" json:"stepGroups" xml:"stepGroups"`
+}
+
+// GetTaskResponseBody is the type of the "templates" service "GetTask"
+// endpoint HTTP response body.
+type GetTaskResponseBody struct {
+	ID string `form:"id" json:"id" xml:"id"`
+	// URL of the task.
+	URL string `form:"url" json:"url" xml:"url"`
+	// Task status, one of: processing, success, error
+	Status string `form:"status" json:"status" xml:"status"`
+	// Shortcut for status != "processing".
+	IsFinished bool `form:"isFinished" json:"isFinished" xml:"isFinished"`
+	// Date and time of the task creation.
+	CreatedAt string `form:"createdAt" json:"createdAt" xml:"createdAt"`
+	// Date and time of the task end.
+	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
+	// Duration of the task in milliseconds.
+	Duration *int64  `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
 // RepositoryIndexTemplatesRepositoryNotFoundResponseBody is the type of the
@@ -749,6 +795,18 @@ type UpgradeInstanceValidateInputsTemplatesVersionNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// GetTaskTemplatesTaskNotFoundResponseBody is the type of the "templates"
+// service "GetTask" endpoint HTTP response body for the
+// "templates.taskNotFound" error.
+type GetTaskTemplatesTaskNotFoundResponseBody struct {
+	// HTTP status code.
+	StatusCode int `form:"statusCode" json:"statusCode" xml:"statusCode"`
+	// Name of error.
+	Name string `form:"error" json:"error" xml:"error"`
+	// Error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // RepositoryResponseBody is used to define fields on response body types.
 type RepositoryResponseBody struct {
 	// Template repository name. Use "keboola" for default Keboola repository.
@@ -1130,9 +1188,17 @@ func NewValidateInputsResponseBody(res *templates.ValidationResult) *ValidateInp
 
 // NewUseTemplateVersionResponseBody builds the HTTP response body from the
 // result of the "UseTemplateVersion" endpoint of the "templates" service.
-func NewUseTemplateVersionResponseBody(res *templates.UseTemplateResult) *UseTemplateVersionResponseBody {
+func NewUseTemplateVersionResponseBody(res *templates.Task) *UseTemplateVersionResponseBody {
 	body := &UseTemplateVersionResponseBody{
-		InstanceID: res.InstanceID,
+		ID:         string(res.ID),
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
 	}
 	return body
 }
@@ -1216,9 +1282,17 @@ func NewUpdateInstanceResponseBody(res *templates.InstanceDetail) *UpdateInstanc
 
 // NewUpgradeInstanceResponseBody builds the HTTP response body from the result
 // of the "UpgradeInstance" endpoint of the "templates" service.
-func NewUpgradeInstanceResponseBody(res *templates.UpgradeInstanceResult) *UpgradeInstanceResponseBody {
+func NewUpgradeInstanceResponseBody(res *templates.Task) *UpgradeInstanceResponseBody {
 	body := &UpgradeInstanceResponseBody{
-		InstanceID: res.InstanceID,
+		ID:         string(res.ID),
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
 	}
 	return body
 }
@@ -1252,6 +1326,23 @@ func NewUpgradeInstanceValidateInputsResponseBody(res *templates.ValidationResul
 		for i, val := range res.StepGroups {
 			body.StepGroups[i] = marshalTemplatesStepGroupValidationResultToStepGroupValidationResultResponseBody(val)
 		}
+	}
+	return body
+}
+
+// NewGetTaskResponseBody builds the HTTP response body from the result of the
+// "GetTask" endpoint of the "templates" service.
+func NewGetTaskResponseBody(res *templates.Task) *GetTaskResponseBody {
+	body := &GetTaskResponseBody{
+		ID:         string(res.ID),
+		URL:        res.URL,
+		Status:     res.Status,
+		IsFinished: res.IsFinished,
+		CreatedAt:  res.CreatedAt,
+		FinishedAt: res.FinishedAt,
+		Duration:   res.Duration,
+		Result:     res.Result,
+		Error:      res.Error,
 	}
 	return body
 }
@@ -1763,6 +1854,17 @@ func NewUpgradeInstanceValidateInputsTemplatesVersionNotFoundResponseBody(res *t
 	return body
 }
 
+// NewGetTaskTemplatesTaskNotFoundResponseBody builds the HTTP response body
+// from the result of the "GetTask" endpoint of the "templates" service.
+func NewGetTaskTemplatesTaskNotFoundResponseBody(res *templates.GenericError) *GetTaskTemplatesTaskNotFoundResponseBody {
+	body := &GetTaskTemplatesTaskNotFoundResponseBody{
+		StatusCode: res.StatusCode,
+		Name:       res.Name,
+		Message:    res.Message,
+	}
+	return body
+}
+
 // NewRepositoriesIndexPayload builds a templates service RepositoriesIndex
 // endpoint payload.
 func NewRepositoriesIndexPayload(storageAPIToken string) *templates.RepositoriesIndexPayload {
@@ -1946,6 +2048,15 @@ func NewUpgradeInstanceValidateInputsPayload(body *UpgradeInstanceValidateInputs
 	v.Branch = branch
 	v.InstanceID = instanceID
 	v.Version = version
+	v.StorageAPIToken = storageAPIToken
+
+	return v
+}
+
+// NewGetTaskPayload builds a templates service GetTask endpoint payload.
+func NewGetTaskPayload(taskID string, storageAPIToken string) *templates.GetTaskPayload {
+	v := &templates.GetTaskPayload{}
+	v.TaskID = templates.TaskID(taskID)
 	v.StorageAPIToken = storageAPIToken
 
 	return v

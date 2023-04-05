@@ -39,6 +39,7 @@ type Server struct {
 	UpgradeInstance               http.Handler
 	UpgradeInstanceInputsIndex    http.Handler
 	UpgradeInstanceValidateInputs http.Handler
+	GetTask                       http.Handler
 	CORS                          http.Handler
 	OpenapiJSON                   http.Handler
 	OpenapiYaml                   http.Handler
@@ -112,6 +113,7 @@ func New(
 			{"UpgradeInstance", "POST", "/v1/project/{branch}/instances/{instanceId}/upgrade/{version}"},
 			{"UpgradeInstanceInputsIndex", "GET", "/v1/project/{branch}/instances/{instanceId}/upgrade/{version}/inputs"},
 			{"UpgradeInstanceValidateInputs", "POST", "/v1/project/{branch}/instances/{instanceId}/upgrade/{version}/inputs"},
+			{"GetTask", "GET", "/v1/tasks/{*taskId}"},
 			{"CORS", "OPTIONS", "/"},
 			{"CORS", "OPTIONS", "/v1"},
 			{"CORS", "OPTIONS", "/health-check"},
@@ -127,6 +129,7 @@ func New(
 			{"CORS", "OPTIONS", "/v1/project/{branch}/instances/{instanceId}"},
 			{"CORS", "OPTIONS", "/v1/project/{branch}/instances/{instanceId}/upgrade/{version}"},
 			{"CORS", "OPTIONS", "/v1/project/{branch}/instances/{instanceId}/upgrade/{version}/inputs"},
+			{"CORS", "OPTIONS", "/v1/tasks/{*taskId}"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.json"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi.yaml"},
 			{"CORS", "OPTIONS", "/v1/documentation/openapi3.json"},
@@ -156,6 +159,7 @@ func New(
 		UpgradeInstance:               NewUpgradeInstanceHandler(e.UpgradeInstance, mux, decoder, encoder, errhandler, formatter),
 		UpgradeInstanceInputsIndex:    NewUpgradeInstanceInputsIndexHandler(e.UpgradeInstanceInputsIndex, mux, decoder, encoder, errhandler, formatter),
 		UpgradeInstanceValidateInputs: NewUpgradeInstanceValidateInputsHandler(e.UpgradeInstanceValidateInputs, mux, decoder, encoder, errhandler, formatter),
+		GetTask:                       NewGetTaskHandler(e.GetTask, mux, decoder, encoder, errhandler, formatter),
 		CORS:                          NewCORSHandler(),
 		OpenapiJSON:                   http.FileServer(fileSystemOpenapiJSON),
 		OpenapiYaml:                   http.FileServer(fileSystemOpenapiYaml),
@@ -188,6 +192,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.UpgradeInstance = m(s.UpgradeInstance)
 	s.UpgradeInstanceInputsIndex = m(s.UpgradeInstanceInputsIndex)
 	s.UpgradeInstanceValidateInputs = m(s.UpgradeInstanceValidateInputs)
+	s.GetTask = m(s.GetTask)
 	s.CORS = m(s.CORS)
 }
 
@@ -214,6 +219,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountUpgradeInstanceHandler(mux, h.UpgradeInstance)
 	MountUpgradeInstanceInputsIndexHandler(mux, h.UpgradeInstanceInputsIndex)
 	MountUpgradeInstanceValidateInputsHandler(mux, h.UpgradeInstanceValidateInputs)
+	MountGetTaskHandler(mux, h.GetTask)
 	MountCORSHandler(mux, h.CORS)
 	MountOpenapiJSON(mux, goahttp.Replace("", "/openapi.json", h.OpenapiJSON))
 	MountOpenapiYaml(mux, goahttp.Replace("", "/openapi.yaml", h.OpenapiYaml))
@@ -1112,6 +1118,57 @@ func NewUpgradeInstanceValidateInputsHandler(
 	})
 }
 
+// MountGetTaskHandler configures the mux to serve the "templates" service
+// "GetTask" endpoint.
+func MountGetTaskHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := HandleTemplatesOrigin(h).(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/v1/tasks/{*taskId}", f)
+}
+
+// NewGetTaskHandler creates a HTTP handler which loads the HTTP request and
+// calls the "templates" service "GetTask" endpoint.
+func NewGetTaskHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeGetTaskRequest(mux, decoder)
+		encodeResponse = EncodeGetTaskResponse(encoder)
+		encodeError    = EncodeGetTaskError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "GetTask")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "templates")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
 // MountOpenapiJSON configures the mux to serve GET request made to
 // "/v1/documentation/openapi.json".
 func MountOpenapiJSON(mux goahttp.Muxer, h http.Handler) {
@@ -1162,6 +1219,7 @@ func MountCORSHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("OPTIONS", "/v1/project/{branch}/instances/{instanceId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/project/{branch}/instances/{instanceId}/upgrade/{version}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/project/{branch}/instances/{instanceId}/upgrade/{version}/inputs", h.ServeHTTP)
+	mux.Handle("OPTIONS", "/v1/tasks/{*taskId}", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.json", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi.yaml", h.ServeHTTP)
 	mux.Handle("OPTIONS", "/v1/documentation/openapi3.json", h.ServeHTTP)

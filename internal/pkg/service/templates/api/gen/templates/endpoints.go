@@ -36,6 +36,7 @@ type Endpoints struct {
 	UpgradeInstance               goa.Endpoint
 	UpgradeInstanceInputsIndex    goa.Endpoint
 	UpgradeInstanceValidateInputs goa.Endpoint
+	GetTask                       goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "templates" service with endpoints.
@@ -61,6 +62,7 @@ func NewEndpoints(s Service) *Endpoints {
 		UpgradeInstance:               NewUpgradeInstanceEndpoint(s, a.APIKeyAuth),
 		UpgradeInstanceInputsIndex:    NewUpgradeInstanceInputsIndexEndpoint(s, a.APIKeyAuth),
 		UpgradeInstanceValidateInputs: NewUpgradeInstanceValidateInputsEndpoint(s, a.APIKeyAuth),
+		GetTask:                       NewGetTaskEndpoint(s, a.APIKeyAuth),
 	}
 }
 
@@ -84,6 +86,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.UpgradeInstance = m(e.UpgradeInstance)
 	e.UpgradeInstanceInputsIndex = m(e.UpgradeInstanceInputsIndex)
 	e.UpgradeInstanceValidateInputs = m(e.UpgradeInstanceValidateInputs)
+	e.GetTask = m(e.GetTask)
 }
 
 // NewAPIRootIndexEndpoint returns an endpoint function that calls the method
@@ -410,5 +413,25 @@ func NewUpgradeInstanceValidateInputsEndpoint(s Service, authAPIKeyFn security.A
 		}
 		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
 		return s.UpgradeInstanceValidateInputs(deps, p)
+	}
+}
+
+// NewGetTaskEndpoint returns an endpoint function that calls the method
+// "GetTask" of service "templates".
+func NewGetTaskEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		p := req.(*GetTaskPayload)
+		var err error
+		sc := security.APIKeyScheme{
+			Name:           "storage-api-token",
+			Scopes:         []string{},
+			RequiredScopes: []string{},
+		}
+		ctx, err = authAPIKeyFn(ctx, p.StorageAPIToken, &sc)
+		if err != nil {
+			return nil, err
+		}
+		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		return s.GetTask(deps, p)
 	}
 }
