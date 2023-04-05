@@ -57,6 +57,7 @@ const (
 type ForServer interface {
 	dependencies.Base
 	dependencies.Public
+	APIConfig() config.Config
 	Process() *servicectx.Process
 	RepositoryManager() *repositoryManager.Manager
 	EtcdClient() *etcd.Client
@@ -216,6 +217,10 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 		repositories:      make(map[string]*repositoryManager.CachedRepository),
 		keboolaProjectAPI: api,
 	}, nil
+}
+
+func (v *forServer) APIConfig() config.Config {
+	return v.config
 }
 
 func (v *forServer) Process() *servicectx.Process {

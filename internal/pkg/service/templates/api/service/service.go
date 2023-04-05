@@ -32,7 +32,9 @@ import (
 
 const ProjectLockedRetryAfter = 5 * time.Second
 
-type service struct{}
+type service struct {
+	mapper *Mapper
+}
 
 func New(d dependencies.ForServer) (Service, error) {
 	if err := StartComponentsCron(d.Process().Ctx(), d); err != nil {
@@ -43,7 +45,9 @@ func New(d dependencies.ForServer) (Service, error) {
 		return nil, err
 	}
 
-	return &service{}, nil
+	return &service{
+		mapper: NewMapper(d),
+	}, nil
 }
 
 func (s *service) APIRootIndex(dependencies.ForPublicRequest) (err error) {

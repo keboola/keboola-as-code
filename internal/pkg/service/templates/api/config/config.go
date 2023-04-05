@@ -30,6 +30,7 @@ type Config struct {
 	EtcdNamespace      string        `mapstructure:"etcd-namespace" usage:"etcd namespace."`
 	EtcdUsername       string        `mapstructure:"etcd-username" usage:"etcd username."`
 	EtcdPassword       string        `mapstructure:"etcd-password" usage:"etcd password."`
+	PublicAddress      *url.URL      `mapstructure:"public-address" usage:"Public address of the Templates API, to generate a link URL."`
 	Repositories       Repositories  `mapstructure:"repositories" usage:"Default repositories, <name1>|<repo1>|<branch1>;..."`
 }
 
@@ -85,6 +86,12 @@ func (c *Config) LoadFrom(args []string, envs env.Provider) error {
 }
 
 func (c *Config) Normalize() {
+	if c.PublicAddress != nil {
+		c.PublicAddress.Host = strhelper.NormalizeHost(c.PublicAddress.Host)
+		if c.PublicAddress.Scheme == "" {
+			c.PublicAddress.Scheme = "https"
+		}
+	}
 	if c.ListenAddress != nil {
 		c.ListenAddress.Host = strhelper.NormalizeHost(c.ListenAddress.Host)
 		if c.ListenAddress.Scheme == "" {
@@ -97,6 +104,9 @@ func (c *Config) Validate() error {
 	errs := errors.NewMultiError()
 	if c.StorageAPIHost == "" {
 		errs.Append(errors.New(`StorageAPIHost must be set`))
+	}
+	if c.PublicAddress == nil || c.PublicAddress.String() == "" {
+		errs.Append(errors.New("public address is not set"))
 	}
 	if c.ListenAddress == nil || c.ListenAddress.String() == "" {
 		errs.Append(errors.New("listen address is not set"))
@@ -112,6 +122,12 @@ func (c Config) Apply(ops ...Option) Config {
 		o(&c)
 	}
 	return c
+}
+
+func WithPublicAddress(v *url.URL) Option {
+	return func(c *Config) {
+		c.PublicAddress = v
+	}
 }
 
 func WithListenAddress(v *url.URL) Option {

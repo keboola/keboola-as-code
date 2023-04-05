@@ -7,9 +7,13 @@ import (
 
 	"github.com/spf13/cast"
 
+	templatesDesign "github.com/keboola/keboola-as-code/api/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
+	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
+	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -19,7 +23,61 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template/jsonnet/function"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
+
+type Mapper struct {
+	apiHost string
+}
+
+type mapperDependencies interface {
+	APIConfig() config.Config
+}
+
+func NewMapper(d mapperDependencies) *Mapper {
+	return &Mapper{
+		apiHost: d.APIConfig().PublicAddress.String(),
+	}
+}
+
+func (m Mapper) TaskPayload(model *commonModel.Task) (r *Task) {
+	out := &Task{
+		ID:        model.TaskID,
+		URL:       formatTaskURL(m.apiHost, model.Key),
+		CreatedAt: model.CreatedAt.String(),
+	}
+
+	if model.FinishedAt != nil {
+		v := model.FinishedAt.String()
+		out.FinishedAt = &v
+	}
+
+	if model.Duration != nil {
+		v := model.Duration.Milliseconds()
+		out.Duration = &v
+	}
+
+	switch {
+	case model.IsProcessing():
+		out.Status = templatesDesign.TaskStatusProcessing
+	case model.IsSuccessful():
+		out.Status = templatesDesign.TaskStatusSuccess
+		out.IsFinished = true
+		out.Result = &model.Result
+	case model.IsFailed():
+		out.Status = templatesDesign.TaskStatusError
+		out.IsFinished = true
+		out.Error = &model.Error
+	default:
+		panic(errors.New("unexpected task status"))
+	}
+
+	return out
+}
+
+func formatTaskURL(apiHost string, k taskKey.Key) string {
+	return fmt.Sprintf("%s/v1/tasks/%s", apiHost, k.TaskID)
+}
 
 func RepositoriesResponse(ctx context.Context, d dependencies.ForProjectRequest) (out *Repositories, err error) {
 	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.RepositoriesResponse")
