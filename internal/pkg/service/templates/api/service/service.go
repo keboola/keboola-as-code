@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -12,9 +13,13 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -30,7 +35,11 @@ import (
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
-const ProjectLockedRetryAfter = 5 * time.Second
+const (
+	ProjectLockedRetryAfter = 5 * time.Second
+	TemplateUpgradeTaskType = "template.upgrade"
+	TemplateUseTaskType     = "template.use"
+)
 
 type service struct {
 	deps   dependencies.ForServer
@@ -124,7 +133,7 @@ func (s *service) ValidateInputs(d dependencies.ForProjectRequest, payload *Vali
 	return result, err
 }
 
-func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *UseTemplateVersionPayload) (res *UseTemplateResult, err error) {
+func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *UseTemplateVersionPayload) (res *Task, err error) {
 	// Lock project
 	if unlockFn, err := tryLockProject(d); err != nil {
 		return nil, err
@@ -161,47 +170,65 @@ func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *
 		}
 	}
 
-	// Create virtual fs, after refactoring it will be removed
-	fs := aferofs.NewMemoryFs(filesystem.WithLogger(d.Logger()))
+	tKey := taskKey.Key{
+		ProjectID: commonKey.ProjectID(d.ProjectID()),
+		TaskID:    taskKey.ID(TemplateUseTaskType),
+	}
 
-	// Create fake manifest
-	m := project.NewManifest(123, "foo")
+	t, err := d.TaskNode().StartTask(task.Config{
+		Type: TemplateUseTaskType,
+		Key:  tKey,
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(context.Background(), 5*time.Minute)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) (task task.Result, err error) {
+			// Create virtual fs, after refactoring it will be removed
+			fs := aferofs.NewMemoryFs(filesystem.WithLogger(d.Logger()))
 
-	// Load all from the target branch, we need shared codes
-	m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.ID))})
-	prj := project.NewWithManifest(d.RequestCtx(), fs, m)
+			// Create fake manifest
+			m := project.NewManifest(123, "foo")
 
-	// Load project state
-	prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true}, d)
+			// Load all from the target branch, we need shared codes
+			m.Filter().SetAllowedBranches(model.AllowedBranches{model.AllowedBranch(cast.ToString(branchKey.ID))})
+			prj := project.NewWithManifest(ctx, fs, m)
+
+			// Load project state
+			prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true}, d)
+			if err != nil {
+				return task, err
+			}
+
+			// Copy remote state to the local
+			for _, objectState := range prjState.All() {
+				objectState.SetLocalState(deepcopy.Copy(objectState.RemoteState()).(model.Object))
+			}
+
+			// Options
+			options := useTemplate.Options{
+				InstanceName: payload.Name,
+				TargetBranch: branchKey,
+				Inputs:       values,
+			}
+
+			// Use template
+			opResult, err := useTemplate.Run(ctx, prjState, tmpl, options, d)
+			if err != nil {
+				return task, err
+			}
+
+			// Push changes
+			changeDesc := fmt.Sprintf("From template %s", tmpl.FullName())
+			if err := push.Run(ctx, prjState, push.Options{ChangeDescription: changeDesc, SkipValidation: true}, d); err != nil {
+				return task, err
+			}
+
+			return fmt.Sprintf(`template instance with id "%s" created`, opResult.InstanceID), nil
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	// Copy remote state to the local
-	for _, objectState := range prjState.All() {
-		objectState.SetLocalState(deepcopy.Copy(objectState.RemoteState()).(model.Object))
-	}
-
-	// Options
-	options := useTemplate.Options{
-		InstanceName: payload.Name,
-		TargetBranch: branchKey,
-		Inputs:       values,
-	}
-
-	// Use template
-	opResult, err := useTemplate.Run(d.RequestCtx(), prjState, tmpl, options, d)
-	if err != nil {
-		return nil, err
-	}
-
-	// Push changes
-	changeDesc := fmt.Sprintf("From template %s", tmpl.FullName())
-	if err := push.Run(d.RequestCtx(), prjState, push.Options{ChangeDescription: changeDesc, SkipValidation: true}, d); err != nil {
-		return nil, err
-	}
-
-	return &UseTemplateResult{InstanceID: opResult.InstanceID}, nil
+	return s.mapper.TaskPayload(t), nil
 }
 
 func (s *service) InstancesIndex(d dependencies.ForProjectRequest, payload *InstancesIndexPayload) (res *Instances, err error) {
@@ -324,7 +351,7 @@ func (s *service) DeleteInstance(d dependencies.ForProjectRequest, payload *Dele
 	return nil
 }
 
-func (s *service) UpgradeInstance(d dependencies.ForProjectRequest, payload *UpgradeInstancePayload) (res *UpgradeInstanceResult, err error) {
+func (s *service) UpgradeInstance(d dependencies.ForProjectRequest, payload *UpgradeInstancePayload) (res *Task, err error) {
 	// Lock project
 	if unlockFn, err := tryLockProject(d); err != nil {
 		return nil, err
@@ -357,24 +384,42 @@ func (s *service) UpgradeInstance(d dependencies.ForProjectRequest, payload *Upg
 		}
 	}
 
-	// Upgrade template instance
-	upgradeOpts := upgradeTemplate.Options{
-		Branch:   branchKey,
-		Instance: *instance,
-		Inputs:   values,
+	tKey := taskKey.Key{
+		ProjectID: commonKey.ProjectID(d.ProjectID()),
+		TaskID:    taskKey.ID(TemplateUpgradeTaskType),
 	}
-	_, err = upgradeTemplate.Run(d.RequestCtx(), prjState, tmpl, upgradeOpts, d)
+
+	t, err := d.TaskNode().StartTask(task.Config{
+		Type: TemplateUpgradeTaskType,
+		Key:  tKey,
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(context.Background(), 5*time.Minute)
+		},
+		Operation: func(ctx context.Context, logger log.Logger) (task task.Result, err error) {
+			// Upgrade template instance
+			upgradeOpts := upgradeTemplate.Options{
+				Branch:   branchKey,
+				Instance: *instance,
+				Inputs:   values,
+			}
+			_, err = upgradeTemplate.Run(ctx, prjState, tmpl, upgradeOpts, d)
+			if err != nil {
+				return task, err
+			}
+
+			// Push changes
+			changeDesc := fmt.Sprintf("Upgraded from template %s", tmpl.FullName())
+			if err := push.Run(ctx, prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
+				return task, err
+			}
+
+			return fmt.Sprintf(`template instance with id "%s" upgraded`, instance.InstanceID), nil
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	// Push changes
-	changeDesc := fmt.Sprintf("Upgraded from template %s", tmpl.FullName())
-	if err := push.Run(d.RequestCtx(), prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
-		return nil, err
-	}
-
-	return &UpgradeInstanceResult{InstanceID: instance.InstanceID}, nil
+	return s.mapper.TaskPayload(t), nil
 }
 
 func (s *service) UpgradeInstanceInputsIndex(d dependencies.ForProjectRequest, payload *UpgradeInstanceInputsIndexPayload) (res *Inputs, err error) {
@@ -409,6 +454,20 @@ func (s *service) UpgradeInstanceValidateInputs(d dependencies.ForProjectRequest
 		Steps:           payload.Steps,
 		StorageAPIToken: payload.StorageAPIToken,
 	})
+}
+
+func (s *service) GetTask(d dependencies.ForProjectRequest, payload *GetTaskPayload) (res *Task, err error) {
+	ctx, str := d.RequestCtx(), d.Store()
+
+	t, err := str.GetTask(ctx, taskKey.Key{
+		ProjectID: commonKey.ProjectID(d.ProjectID()),
+		TaskID:    payload.TaskID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.mapper.TaskPayload(&t), nil
 }
 
 func repositoryRef(d dependencies.ForProjectRequest, name string) (model.TemplateRepository, error) {
