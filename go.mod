@@ -5,8 +5,8 @@ go 1.19
 replace github.com/google/go-jsonnet v0.19.1 => github.com/keboola/go-jsonnet v0.19.1
 
 require (
-	ariga.io/atlas v0.9.1
-	entgo.io/ent v0.11.9
+	ariga.io/atlas v0.10.0
+	entgo.io/ent v0.12.0
 	github.com/ActiveState/vt10x v1.3.1
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/Masterminds/semver v1.5.0
@@ -42,7 +42,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/afero v1.9.5
 	github.com/spf13/cast v1.5.0
-	github.com/spf13/cobra v1.6.1
+	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.2
@@ -82,7 +82,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/iancoleman/strcase v0.2.0
-	github.com/inconshreveable/mousetrap v1.0.1 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/kr/pty v1.1.8 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
