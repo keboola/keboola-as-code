@@ -2,6 +2,7 @@ package config
 
 import (
 	"net/url"
+	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -17,19 +18,19 @@ const (
 // Config of the Templates API.
 // See "cliconfig" package for more information.
 type Config struct {
-	Debug           bool         `mapstructure:"debug" usage:"Enable debug log level."`
-	DebugHTTP       bool         `mapstructure:"debug-http" usage:"Log HTTP client request and response bodies."`
-	DatadogEnabled  bool         `mapstructure:"datadog-enabled" usage:"Enable Datadog telemetry integration."`
-	DatadogDebug    bool         `mapstructure:"datadog-debug" usage:"Enable Datadog debug logs."`
-	CpuProfFilePath string       `mapstructure:"cpu-profile" usage:"Write cpu profile to the file."`
-	ListenAddress   *url.URL     `mapstructure:"listen-address" usage:"Server listen address."`
-	StorageAPIHost  string       `mapstructure:"storage-api-host" usage:"Host of the Storage API."`
-	EtcdEnabled     bool         `mapstructure:"etcd-enabled" usage:"Enable etcd integration for locks."`
-	EtcdEndpoint    string       `mapstructure:"etcd-endpoint" usage:"etcd endpoint."`
-	EtcdNamespace   string       `mapstructure:"etcd-namespace" usage:"etcd namespace."`
-	EtcdUsername    string       `mapstructure:"etcd-username" usage:"etcd username."`
-	EtcdPassword    string       `mapstructure:"etcd-password" usage:"etcd password."`
-	Repositories    Repositories `mapstructure:"repositories" usage:"Default repositories, <name1>|<repo1>|<branch1>;..."`
+	Debug              bool          `mapstructure:"debug" usage:"Enable debug log level."`
+	DebugHTTP          bool          `mapstructure:"debug-http" usage:"Log HTTP client request and response bodies."`
+	DatadogEnabled     bool          `mapstructure:"datadog-enabled" usage:"Enable Datadog telemetry integration."`
+	DatadogDebug       bool          `mapstructure:"datadog-debug" usage:"Enable Datadog debug logs."`
+	CpuProfFilePath    string        `mapstructure:"cpu-profile" usage:"Write cpu profile to the file."`
+	ListenAddress      *url.URL      `mapstructure:"listen-address" usage:"Server listen address."`
+	StorageAPIHost     string        `mapstructure:"storage-api-host" usage:"Host of the Storage API."`
+	EtcdConnectTimeout time.Duration `mapstructure:"etcd-connect-timeout" usage:"etcd connect timeout."`
+	EtcdEndpoint       string        `mapstructure:"etcd-endpoint" usage:"etcd endpoint."`
+	EtcdNamespace      string        `mapstructure:"etcd-namespace" usage:"etcd namespace."`
+	EtcdUsername       string        `mapstructure:"etcd-username" usage:"etcd username."`
+	EtcdPassword       string        `mapstructure:"etcd-password" usage:"etcd password."`
+	Repositories       Repositories  `mapstructure:"repositories" usage:"Default repositories, <name1>|<repo1>|<branch1>;..."`
 }
 
 type Repositories []model.TemplateRepository
@@ -38,12 +39,18 @@ type Option func(c *Config)
 
 func NewConfig() Config {
 	return Config{
-		Debug:           false,
-		DebugHTTP:       false,
-		CpuProfFilePath: "",
-		DatadogEnabled:  true,
-		DatadogDebug:    false,
-		ListenAddress:   &url.URL{Scheme: "http", Host: "0.0.0.0:8000"},
+		Debug:              false,
+		DebugHTTP:          false,
+		CpuProfFilePath:    "",
+		DatadogEnabled:     true,
+		DatadogDebug:       false,
+		StorageAPIHost:     "",
+		EtcdEndpoint:       "",
+		EtcdNamespace:      "",
+		EtcdUsername:       "",
+		EtcdPassword:       "",
+		EtcdConnectTimeout: 30 * time.Second, // longer default timeout, the etcd could be started at the same time as the API
+		ListenAddress:      &url.URL{Scheme: "http", Host: "0.0.0.0:8000"},
 		Repositories: []model.TemplateRepository{
 			{
 				Type: model.RepositoryTypeGit,

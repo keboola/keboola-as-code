@@ -47,11 +47,9 @@ import (
 type ctxKey string
 
 const (
-	ForPublicRequestCtxKey       = ctxKey("ForPublicRequest")
-	ForProjectRequestCtxKey      = ctxKey("ForProjectRequest")
-	EtcdConnectionTimeoutCtxKey  = ctxKey("EtcdConnectionTimeout")
-	EtcdDefaultConnectionTimeout = 2 * time.Second
-	ProjectLockTTLSeconds        = 60
+	ForPublicRequestCtxKey  = ctxKey("ForPublicRequest")
+	ForProjectRequestCtxKey = ctxKey("ForProjectRequest")
+	ProjectLockTTLSeconds   = 60
 )
 
 // ForServer interface provides dependencies for Templates API server.
@@ -148,25 +146,15 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 	}
 	logger.Infof("loaded Storage API index | %s", time.Since(startTime))
 
-	// Get timeout
-	// We use a longer timeout on the API start,
-	// the etcd could be started at the same time as the API.
-	connectTimeout := EtcdDefaultConnectionTimeout
-	if v, found := ctx.Value(EtcdConnectionTimeoutCtxKey).(time.Duration); found {
-		connectTimeout = v
-	}
-
-	// We use a longer timeout when starting the server, because etcd could be restarted at the same time as the API.
-	etcdCtx := context.WithValue(ctx, EtcdConnectionTimeoutCtxKey, 30*time.Second)
 	etcdClient, err := etcdclient.New(
-		etcdCtx,
+		ctx,
 		proc,
 		tracer,
 		envs.Get("TEMPLATES_API_ETCD_ENDPOINT"),
 		envs.Get("TEMPLATES_API_ETCD_NAMESPACE"),
 		etcdclient.WithUsername(envs.Get("TEMPLATES_API_ETCD_USERNAME")),
 		etcdclient.WithPassword(envs.Get("TEMPLATES_API_ETCD_PASSWORD")),
-		etcdclient.WithConnectTimeout(connectTimeout),
+		etcdclient.WithConnectTimeout(cfg.EtcdConnectTimeout),
 		etcdclient.WithLogger(logger),
 		etcdclient.WithDebugOpLogs(cfg.Debug),
 	)
