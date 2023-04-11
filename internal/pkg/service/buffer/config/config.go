@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	EnvPrefix = "BUFFER_API_"
+	EnvPrefix      = "BUFFER_API_"
+	SpanNamePrefix = "keboola.go.buffer.task"
 )
 
 // Config is a common config of the Buffer Service.

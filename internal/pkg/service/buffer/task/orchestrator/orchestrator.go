@@ -13,10 +13,10 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -57,7 +57,7 @@ type Config[T any] struct {
 	Lock func(event etcdop.WatchEventT[T]) string
 	// TaskKey defines etcd prefix where the task will be stored in etcd.
 	// CreatedAt datetime and a random suffix are always appended to the TaskID.
-	TaskKey func(event etcdop.WatchEventT[T]) key.TaskKey
+	TaskKey func(event etcdop.WatchEventT[T]) taskKey.Key
 	// StartTaskIf, if set, it determines whether the task is started or not
 	StartTaskIf func(event etcdop.WatchEventT[T]) (skipReason string, start bool)
 	// TaskCtx must return a task context with a deadline.

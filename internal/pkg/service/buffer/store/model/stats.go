@@ -4,6 +4,7 @@ import (
 	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
+	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 )
 
 // StatsProvider is common interface for all statistics.
@@ -14,7 +15,7 @@ type StatsProvider interface {
 // Stats struct is common for received/uploaded/imported statistics.
 type Stats struct {
 	// LastRecordAt contains the timestamp of the last received record.
-	LastRecordAt UTCTime `json:"lastRecordAt" validate:"required"`
+	LastRecordAt commonModel.UTCTime `json:"lastRecordAt" validate:"required"`
 	// RecordsCount is count of received records.
 	RecordsCount uint64 `json:"recordsCount" validate:"required"`
 	// RecordsSize is total size of CSV rows.

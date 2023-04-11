@@ -15,6 +15,8 @@ import (
 	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
+	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
+	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"goa.design/goa/v3/security"
 )
 
@@ -233,7 +235,7 @@ type Mapping struct {
 }
 
 // ID of the project
-type ProjectID = key.ProjectID
+type ProjectID = commonKey.ProjectID
 
 // Receiver is the result type of the buffer service UpdateReceiver method.
 type Receiver struct {
@@ -290,7 +292,7 @@ type Task struct {
 }
 
 // Unique ID of the task.
-type TaskID = key.TaskID
+type TaskID = taskKey.ID
 
 type Template struct {
 	Language string

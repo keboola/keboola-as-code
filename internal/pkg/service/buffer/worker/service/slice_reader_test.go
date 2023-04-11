@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
+	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -48,7 +49,7 @@ func TestRecordsReader(t *testing.T) {
 	// t.Logf(`write start: %s`, time.Now())
 	for i := 0; i < recordsCount; i++ {
 		clk.Add(time.Second)
-		recordKey := key.RecordKey{SliceKey: sliceKey, ReceivedAt: key.ReceivedAt(clk.Now()), RandomSuffix: "abcde"}
+		recordKey := key.RecordKey{SliceKey: sliceKey, ReceivedAt: commonKey.ReceivedAt(clk.Now()), RandomSuffix: "abcde"}
 		assert.NoError(t, sm.Records().ByKey(recordKey).Put(value).Do(ctx, client))
 	}
 	// t.Logf(`write end: %s`, time.Now())

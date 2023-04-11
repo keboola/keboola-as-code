@@ -16,11 +16,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -77,11 +78,11 @@ func TestOrchestrator(t *testing.T) {
 			resource := event.Value
 			return fmt.Sprintf(`%s/%s`, resource.ReceiverKey.String(), resource.ID)
 		},
-		TaskKey: func(event etcdop.WatchEventT[testResource]) key.TaskKey {
+		TaskKey: func(event etcdop.WatchEventT[testResource]) taskKey.Key {
 			resource := event.Value
-			return key.TaskKey{
+			return taskKey.Key{
 				ProjectID: resource.ReceiverKey.ProjectID,
-				TaskID:    key.TaskID("my-receiver/some.task/" + resource.ID),
+				TaskID:    taskKey.ID("my-receiver/some.task/" + resource.ID),
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
@@ -166,11 +167,11 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
 			return event.Value.ReceiverKey.String()
 		},
-		TaskKey: func(event etcdop.WatchEventT[testResource]) key.TaskKey {
+		TaskKey: func(event etcdop.WatchEventT[testResource]) taskKey.Key {
 			resource := event.Value
-			return key.TaskKey{
+			return taskKey.Key{
 				ProjectID: resource.ReceiverKey.ProjectID,
-				TaskID:    key.TaskID("my-receiver/some.task/" + resource.ID),
+				TaskID:    taskKey.ID("my-receiver/some.task/" + resource.ID),
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
@@ -247,11 +248,11 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
 			return event.Value.ReceiverKey.String()
 		},
-		TaskKey: func(event etcdop.WatchEventT[testResource]) key.TaskKey {
+		TaskKey: func(event etcdop.WatchEventT[testResource]) taskKey.Key {
 			resource := event.Value
-			return key.TaskKey{
+			return taskKey.Key{
 				ProjectID: resource.ReceiverKey.ProjectID,
-				TaskID:    key.TaskID("my-receiver/some.task/" + resource.ID),
+				TaskID:    taskKey.ID("my-receiver/some.task/" + resource.ID),
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {

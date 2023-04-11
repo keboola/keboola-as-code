@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	apiConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
@@ -16,12 +17,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
 	bufferStore "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	bufferSchema "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher/apinode"
 	workerConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -139,7 +140,7 @@ func (v *mocked) WatcherWorkerNode() *watcher.WorkerNode {
 func (v *mocked) TaskNode() *task.Node {
 	if v.taskWorkerNode == nil {
 		var err error
-		v.taskWorkerNode, err = task.NewNode(v)
+		v.taskWorkerNode, err = task.NewNode(v, task.WithSpanNamePrefix(config.SpanNamePrefix))
 		assert.NoError(v.t, err)
 	}
 	return v.taskWorkerNode

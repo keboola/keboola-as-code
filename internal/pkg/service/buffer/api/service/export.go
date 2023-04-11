@@ -12,8 +12,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
+	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -25,7 +27,7 @@ const (
 func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer.CreateExportPayload) (res *buffer.Task, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
-	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
+	receiverKey := key.ReceiverKey{ProjectID: commonKey.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
 	export, err := s.mapper.CreateExportModel(
 		receiverKey,
 		buffer.CreateExportData{
@@ -47,9 +49,9 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 
 	t, err := d.TaskNode().StartTask(task.Config{
 		Type: exportCreateTaskType,
-		Key: key.TaskKey{
+		Key: taskKey.Key{
 			ProjectID: receiverKey.ProjectID,
-			TaskID: key.TaskID(strings.Join([]string{
+			TaskID: taskKey.ID(strings.Join([]string{
 				export.ReceiverID.String(),
 				export.ExportID.String(),
 				exportCreateTaskType,
@@ -79,14 +81,14 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 }
 
 func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer.UpdateExportPayload) (res *buffer.Task, err error) {
-	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
+	receiverKey := key.ReceiverKey{ProjectID: commonKey.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
 
 	t, err := d.TaskNode().StartTask(task.Config{
 		Type: exportUpdateTaskType,
-		Key: key.TaskKey{
+		Key: taskKey.Key{
 			ProjectID: receiverKey.ProjectID,
-			TaskID: key.TaskID(strings.Join([]string{
+			TaskID: taskKey.ID(strings.Join([]string{
 				exportKey.ReceiverID.String(),
 				exportKey.ExportID.String(),
 				exportUpdateTaskType,
@@ -130,7 +132,7 @@ func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer
 func (s *service) GetExport(d dependencies.ForProjectRequest, payload *buffer.GetExportPayload) (r *buffer.Export, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
-	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
+	receiverKey := key.ReceiverKey{ProjectID: commonKey.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
 	export, err := str.GetExport(ctx, exportKey)
 	if err != nil {
@@ -143,7 +145,7 @@ func (s *service) GetExport(d dependencies.ForProjectRequest, payload *buffer.Ge
 func (s *service) ListExports(d dependencies.ForProjectRequest, payload *buffer.ListExportsPayload) (r *buffer.ExportsList, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
-	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
+	receiverKey := key.ReceiverKey{ProjectID: commonKey.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
 	exports, err := str.ListExports(ctx, receiverKey)
 	if err != nil {
 		return nil, err
@@ -155,7 +157,7 @@ func (s *service) ListExports(d dependencies.ForProjectRequest, payload *buffer.
 func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer.DeleteExportPayload) (err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
-	receiverKey := key.ReceiverKey{ProjectID: key.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
+	receiverKey := key.ReceiverKey{ProjectID: commonKey.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
 	return str.DeleteExport(ctx, exportKey)
 }

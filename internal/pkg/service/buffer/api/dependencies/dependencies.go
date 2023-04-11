@@ -35,15 +35,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
+	bufferConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	serviceDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ip"
 )
@@ -182,7 +183,7 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 	d.tokenManager = token.NewManager(d)
 	d.tableManager = table.NewManager(d.KeboolaProjectAPI())
 	d.fileManager = file.NewManager(d.Clock(), d.KeboolaProjectAPI(), nil)
-	d.taskNode, err = task.NewNode(d)
+	d.taskNode, err = task.NewNode(d, task.WithSpanNamePrefix(bufferConfig.SpanNamePrefix))
 	if err != nil {
 		return nil, err
 	}

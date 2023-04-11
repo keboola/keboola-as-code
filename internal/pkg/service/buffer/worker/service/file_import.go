@@ -11,11 +11,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	filePkg "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/table"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
+	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -41,11 +42,11 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 			file := event.Value
 			return file.ReceiverKey.String()
 		},
-		TaskKey: func(event etcdop.WatchEventT[model.File]) key.TaskKey {
+		TaskKey: func(event etcdop.WatchEventT[model.File]) taskKey.Key {
 			file := event.Value
-			return key.TaskKey{
+			return taskKey.Key{
 				ProjectID: file.ProjectID,
-				TaskID: key.TaskID(strings.Join([]string{
+				TaskID: taskKey.ID(strings.Join([]string{
 					file.ReceiverID.String(),
 					file.ExportID.String(),
 					file.FileID.String(),
@@ -65,7 +66,7 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 				defer func() {
 					if err != nil {
 						attempt := fileRes.RetryAttempt + 1
-						retryAfter := model.UTCTime(RetryAt(NewRetryBackoff(), s.clock.Now(), attempt))
+						retryAfter := commonModel.UTCTime(RetryAt(NewRetryBackoff(), s.clock.Now(), attempt))
 						fileRes.RetryAttempt = attempt
 						fileRes.RetryAfter = &retryAfter
 						err = errors.Errorf(`file import failed: %w, import will be retried after "%s"`, err, fileRes.RetryAfter)

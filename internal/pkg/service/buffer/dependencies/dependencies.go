@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -27,6 +28,7 @@ type ForService interface {
 	dependencies.Public
 	Process() *servicectx.Process
 	EtcdClient() *etcd.Client
+	EtcdSerde() *serde.Serde
 	Schema() *schema.Schema
 	Store() *store.Store
 	StatsCache() *statistics.CacheNode
@@ -87,12 +89,14 @@ func NewServiceDeps(
 		return nil, err
 	}
 
+	validateFn := validator.New().Validate
 	serviceDeps := &forService{
 		Base:       baseDeps,
 		Public:     publicDeps,
 		proc:       proc,
 		etcdClient: etcdClient,
-		schema:     schema.New(validator.New().Validate),
+		etcdSerde:  serde.NewJSON(validateFn),
+		schema:     schema.New(validateFn),
 	}
 
 	serviceDeps.store = store.New(serviceDeps)
@@ -111,6 +115,7 @@ type forService struct {
 	dependencies.Public
 	proc       *servicectx.Process
 	etcdClient *etcd.Client
+	etcdSerde  *serde.Serde
 	schema     *schema.Schema
 	store      *store.Store
 	statsCache *statistics.CacheNode
@@ -122,6 +127,10 @@ func (v *forService) Process() *servicectx.Process {
 
 func (v *forService) EtcdClient() *etcd.Client {
 	return v.etcdClient
+}
+
+func (v *forService) EtcdSerde() *serde.Serde {
+	return v.etcdSerde
 }
 
 func (v *forService) Schema() *schema.Schema {

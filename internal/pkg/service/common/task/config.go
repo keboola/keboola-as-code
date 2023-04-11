@@ -3,22 +3,39 @@ package task
 import (
 	"context"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
+	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 const (
-	DefaultSessionTTL = 15 // seconds, see WithTTL
+	DefaultSessionTTL     = 15 // seconds, see WithTTL
+	DefaultTaskEtcdPrefix = "task"
 )
 
 type NodeOption func(c *nodeConfig)
 
 type nodeConfig struct {
-	ttlSeconds int
+	spanNamePrefix string
+	taskEtcdPrefix string
+	ttlSeconds     int
 }
 
 func defaultNodeConfig() nodeConfig {
-	return nodeConfig{ttlSeconds: DefaultSessionTTL}
+	return nodeConfig{taskEtcdPrefix: DefaultTaskEtcdPrefix, ttlSeconds: DefaultSessionTTL}
+}
+
+// WithSpanNamePrefix defines prefix for tracing spans.
+func WithSpanNamePrefix(p string) NodeOption {
+	return func(c *nodeConfig) {
+		c.spanNamePrefix = p
+	}
+}
+
+// WithTaskEtcdPrefix defines prefix for tasks records in etcd.
+func WithTaskEtcdPrefix(p string) NodeOption {
+	return func(c *nodeConfig) {
+		c.taskEtcdPrefix = p
+	}
 }
 
 // WithTTL defines time after the session is canceled if the client is unavailable.
@@ -31,7 +48,7 @@ func WithTTL(v int) NodeOption {
 
 type Config struct {
 	Type      string
-	Key       key.TaskKey
+	Key       taskKey.Key
 	Lock      string
 	Context   ContextFactory
 	Operation Task
@@ -44,7 +61,7 @@ func (c Config) Validate() error {
 	if c.Type == "" {
 		errs.Append(errors.New("task type must be configured"))
 	}
-	if c.Key == (key.TaskKey{}) {
+	if c.Key == (taskKey.Key{}) {
 		errs.Append(errors.New("task key must be configured"))
 	}
 	if c.Context == nil {

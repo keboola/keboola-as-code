@@ -6,16 +6,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
+	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
+	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 )
 
 func TestTask_ForCleanup(t *testing.T) {
 	t.Parallel()
 
 	// Unfinished task, too recent
-	createdAt := key.UTCTime(time.Now().Add(-1 * time.Hour))
+	createdAt := commonKey.UTCTime(time.Now().Add(-1 * time.Hour))
 	task := &Task{
-		TaskKey:    key.TaskKey{},
+		Key:        taskKey.Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: nil,
 		Error:      "",
@@ -23,9 +24,9 @@ func TestTask_ForCleanup(t *testing.T) {
 	assert.False(t, task.IsForCleanup())
 
 	// Unfinished task, too old
-	createdAt = key.UTCTime(time.Now().Add(-30 * 24 * time.Hour))
+	createdAt = commonKey.UTCTime(time.Now().Add(-30 * 24 * time.Hour))
 	task = &Task{
-		TaskKey:    key.TaskKey{},
+		Key:        taskKey.Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: nil,
 		Error:      "",
@@ -33,9 +34,9 @@ func TestTask_ForCleanup(t *testing.T) {
 	assert.True(t, task.IsForCleanup())
 
 	// Finished task, successful, too recent
-	createdAt = key.UTCTime(time.Now().Add(-1 * time.Minute))
+	createdAt = commonKey.UTCTime(time.Now().Add(-1 * time.Minute))
 	task = &Task{
-		TaskKey:    key.TaskKey{},
+		Key:        taskKey.Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: &createdAt,
 		Error:      "",
@@ -43,9 +44,9 @@ func TestTask_ForCleanup(t *testing.T) {
 	assert.False(t, task.IsForCleanup())
 
 	// Finished task, successful, too old
-	createdAt = key.UTCTime(time.Now().Add(-2 * time.Hour))
+	createdAt = commonKey.UTCTime(time.Now().Add(-2 * time.Hour))
 	task = &Task{
-		TaskKey:    key.TaskKey{},
+		Key:        taskKey.Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: &createdAt,
 		Error:      "",
@@ -53,9 +54,9 @@ func TestTask_ForCleanup(t *testing.T) {
 	assert.True(t, task.IsForCleanup())
 
 	// Finished task, error, too recent
-	createdAt = key.UTCTime(time.Now().Add(-2 * time.Hour))
+	createdAt = commonKey.UTCTime(time.Now().Add(-2 * time.Hour))
 	task = &Task{
-		TaskKey:    key.TaskKey{},
+		Key:        taskKey.Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: &createdAt,
 		Error:      "error",
@@ -63,9 +64,9 @@ func TestTask_ForCleanup(t *testing.T) {
 	assert.False(t, task.IsForCleanup())
 
 	// Finished task, successful, too old
-	createdAt = key.UTCTime(time.Now().Add(-48 * time.Hour))
+	createdAt = commonKey.UTCTime(time.Now().Add(-48 * time.Hour))
 	task = &Task{
-		TaskKey:    key.TaskKey{},
+		Key:        taskKey.Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: &createdAt,
 		Error:      "error",

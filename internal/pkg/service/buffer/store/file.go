@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -231,7 +232,7 @@ func (s *Store) setFileStateOp(ctx context.Context, now time.Time, file *model.F
 	clone := *file
 	stm := filestate.NewSTM(file.State, func(ctx context.Context, from, to filestate.State) error {
 		// Update fields
-		nowUTC := model.UTCTime(now)
+		nowUTC := commonModel.UTCTime(now)
 		clone.State = to
 		switch to {
 		case filestate.Closing:

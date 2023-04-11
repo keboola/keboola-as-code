@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -25,7 +26,7 @@ func NewSender(logger log.Logger) *Sender {
 }
 
 type Params struct {
-	ProjectID  key.ProjectID
+	ProjectID  commonKey.ProjectID
 	ReceiverID key.ReceiverID
 	ExportID   key.ExportID
 	Stats      model.Stats
