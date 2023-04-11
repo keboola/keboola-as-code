@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	EnvPrefix = "TEMPLATES_API_"
+	EnvPrefix      = "TEMPLATES_API_"
+	SpanNamePrefix = "keboola.go.templates.task"
 )
 
 // Config of the Templates API.

@@ -33,6 +33,7 @@ import (
 const ProjectLockedRetryAfter = 5 * time.Second
 
 type service struct {
+	deps   dependencies.ForServer
 	mapper *Mapper
 }
 
@@ -46,6 +47,7 @@ func New(d dependencies.ForServer) (Service, error) {
 	}
 
 	return &service{
+		deps:   d,
 		mapper: NewMapper(d),
 	}, nil
 }
