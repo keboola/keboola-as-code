@@ -22,7 +22,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	repositoryManager "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -42,8 +41,17 @@ func TestForPublicRequest_Components_Cached(t *testing.T) {
 	assert.NotEqual(t, components1, components2)
 
 	// Create mocked dependencies for server with "components1"
-	mockedDeps := bufferDependencies.NewMockedDeps(t, dependencies.WithMockedComponents(components1))
-	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, logger: log.NewNopLogger()}
+	mockedDeps := NewMockedDeps(t, dependencies.WithMockedComponents(components1))
+	serviceDeps := &forService{
+		Base:       mockedDeps,
+		Public:     mockedDeps,
+		etcdClient: mockedDeps.EtcdClient(),
+		etcdSerde:  mockedDeps.EtcdSerde(),
+		schema:     mockedDeps.Schema(),
+		store:      mockedDeps.Store(),
+	}
+
+	serverDeps := &forServer{ForService: serviceDeps, logger: log.NewNopLogger()}
 
 	// Request 1 gets "components1"
 	req1Deps := NewDepsForPublicRequest(serverDeps, context.Background(), "req1")
@@ -84,10 +92,18 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 
 	// Create mocked dependencies for server
 	ctx := context.Background()
-	mockedDeps := bufferDependencies.NewMockedDeps(t, dependencies.WithMultipleTokenVerification(true))
+	mockedDeps := NewMockedDeps(t, dependencies.WithMultipleTokenVerification(true))
+	serviceDeps := &forService{
+		Base:       mockedDeps,
+		Public:     mockedDeps,
+		etcdClient: mockedDeps.EtcdClient(),
+		etcdSerde:  mockedDeps.EtcdSerde(),
+		schema:     mockedDeps.Schema(),
+		store:      mockedDeps.Store(),
+	}
 	manager, err := repositoryManager.New(ctx, mockedDeps, nil)
 	assert.NoError(t, err)
-	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, logger: log.NewNopLogger(), repositoryManager: manager}
+	serverDeps := &forServer{ForService: serviceDeps, logger: log.NewNopLogger(), repositoryManager: manager}
 	requestDepsFactory := func(ctx context.Context) (ForProjectRequest, error) {
 		requestId := idgenerator.Random(8)
 		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, ctx, requestId), ctx, mockedDeps.StorageAPITokenID())
@@ -209,10 +225,18 @@ func TestForProjectRequest_Template_Cached(t *testing.T) {
 
 	// Create mocked dependencies for server
 	ctx := context.Background()
-	mockedDeps := bufferDependencies.NewMockedDeps(t, dependencies.WithMultipleTokenVerification(true))
+	mockedDeps := NewMockedDeps(t, dependencies.WithMultipleTokenVerification(true))
+	serviceDeps := &forService{
+		Base:       mockedDeps,
+		Public:     mockedDeps,
+		etcdClient: mockedDeps.EtcdClient(),
+		etcdSerde:  mockedDeps.EtcdSerde(),
+		schema:     mockedDeps.Schema(),
+		store:      mockedDeps.Store(),
+	}
 	manager, err := repositoryManager.New(ctx, mockedDeps, nil)
 	assert.NoError(t, err)
-	serverDeps := &forServer{Base: mockedDeps, Public: mockedDeps, logger: log.NewNopLogger(), repositoryManager: manager}
+	serverDeps := &forServer{ForService: serviceDeps, logger: log.NewNopLogger(), repositoryManager: manager}
 	requestDepsFactory := func(ctx context.Context) (ForProjectRequest, error) {
 		requestId := idgenerator.Random(8)
 		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, ctx, requestId), ctx, mockedDeps.StorageAPITokenID())

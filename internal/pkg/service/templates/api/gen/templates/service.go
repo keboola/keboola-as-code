@@ -11,6 +11,7 @@ package templates
 import (
 	"context"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	"goa.design/goa/v3/security"
 )
@@ -41,7 +42,7 @@ type Service interface {
 	ValidateInputs(dependencies.ForProjectRequest, *ValidateInputsPayload) (res *ValidationResult, err error)
 	// Validate inputs and use template in the branch.
 	// Only configured steps should be send.
-	UseTemplateVersion(dependencies.ForProjectRequest, *UseTemplateVersionPayload) (res *UseTemplateResult, err error)
+	UseTemplateVersion(dependencies.ForProjectRequest, *UseTemplateVersionPayload) (res *Task, err error)
 	// InstancesIndex implements InstancesIndex.
 	InstancesIndex(dependencies.ForProjectRequest, *InstancesIndexPayload) (res *Instances, err error)
 	// InstanceIndex implements InstanceIndex.
@@ -51,11 +52,13 @@ type Service interface {
 	// DeleteInstance implements DeleteInstance.
 	DeleteInstance(dependencies.ForProjectRequest, *DeleteInstancePayload) (err error)
 	// UpgradeInstance implements UpgradeInstance.
-	UpgradeInstance(dependencies.ForProjectRequest, *UpgradeInstancePayload) (res *UpgradeInstanceResult, err error)
+	UpgradeInstance(dependencies.ForProjectRequest, *UpgradeInstancePayload) (res *Task, err error)
 	// UpgradeInstanceInputsIndex implements UpgradeInstanceInputsIndex.
 	UpgradeInstanceInputsIndex(dependencies.ForProjectRequest, *UpgradeInstanceInputsIndexPayload) (res *Inputs, err error)
 	// UpgradeInstanceValidateInputs implements UpgradeInstanceValidateInputs.
 	UpgradeInstanceValidateInputs(dependencies.ForProjectRequest, *UpgradeInstanceValidateInputsPayload) (res *ValidationResult, err error)
+	// Get details of a task.
+	GetTask(dependencies.ForProjectRequest, *GetTaskPayload) (res *Task, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -72,7 +75,7 @@ const ServiceName = "templates"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [18]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "RepositoriesIndex", "RepositoryIndex", "TemplatesIndex", "TemplateIndex", "VersionIndex", "InputsIndex", "ValidateInputs", "UseTemplateVersion", "InstancesIndex", "InstanceIndex", "UpdateInstance", "DeleteInstance", "UpgradeInstance", "UpgradeInstanceInputsIndex", "UpgradeInstanceValidateInputs"}
+var MethodNames = [19]string{"ApiRootIndex", "ApiVersionIndex", "HealthCheck", "RepositoriesIndex", "RepositoryIndex", "TemplatesIndex", "TemplateIndex", "VersionIndex", "InputsIndex", "ValidateInputs", "UseTemplateVersion", "InstancesIndex", "InstanceIndex", "UpdateInstance", "DeleteInstance", "UpgradeInstance", "UpgradeInstanceInputsIndex", "UpgradeInstanceValidateInputs", "GetTask"}
 
 // Author of template or repository.
 type Author struct {
@@ -118,6 +121,12 @@ type GenericError struct {
 	Name string
 	// Error message.
 	Message string
+}
+
+// GetTaskPayload is the payload type of the templates service GetTask method.
+type GetTaskPayload struct {
+	StorageAPIToken string
+	TaskID          TaskID
 }
 
 // User input.
@@ -390,6 +399,28 @@ type StepValidationResult struct {
 	Inputs []*InputValidationResult
 }
 
+// Task is the result type of the templates service UseTemplateVersion method.
+type Task struct {
+	ID TaskID
+	// URL of the task.
+	URL string
+	// Task status, one of: processing, success, error
+	Status string
+	// Shortcut for status != "processing".
+	IsFinished bool
+	// Date and time of the task creation.
+	CreatedAt string
+	// Date and time of the task end.
+	FinishedAt *string
+	// Duration of the task in milliseconds.
+	Duration *int64
+	Result   *string
+	Error    *string
+}
+
+// Unique ID of the task.
+type TaskID = key.ID
+
 // Template.
 type Template struct {
 	// Template ID.
@@ -497,13 +528,6 @@ type UpgradeInstancePayload struct {
 	Steps []*StepPayload
 }
 
-// UpgradeInstanceResult is the result type of the templates service
-// UpgradeInstance method.
-type UpgradeInstanceResult struct {
-	// Template instance ID.
-	InstanceID string
-}
-
 // UpgradeInstanceValidateInputsPayload is the payload type of the templates
 // service UpgradeInstanceValidateInputs method.
 type UpgradeInstanceValidateInputsPayload struct {
@@ -516,13 +540,6 @@ type UpgradeInstanceValidateInputsPayload struct {
 	Branch string
 	// Steps with input values filled in by user.
 	Steps []*StepPayload
-}
-
-// UseTemplateResult is the result type of the templates service
-// UseTemplateVersion method.
-type UseTemplateResult struct {
-	// Template instance ID.
-	InstanceID string
 }
 
 // UseTemplateVersionPayload is the payload type of the templates service

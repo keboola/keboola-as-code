@@ -344,9 +344,6 @@ paths:
                                     - componentId: keboola.ex-db-mysql
                                       configId: "7954825835"
                                       name: My Extractor
-                                    - componentId: keboola.ex-db-mysql
-                                      configId: "7954825835"
-                                      name: My Extractor
                                 created:
                                     date: "2022-04-28T14:20:04+00:00"
                                     tokenId: "245941"
@@ -443,14 +440,22 @@ paths:
                                     - id: api-token
                                       value: "123456"
             responses:
-                "200":
-                    description: OK response.
+                "202":
+                    description: Accepted response.
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/UseTemplateResult'
+                                $ref: '#/components/schemas/Task'
                             example:
-                                instanceId: V1StGXR8IZ5jdHi6BAmyT
+                                id: task-1
+                                url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_task-1
+                                type: template.use
+                                createdAt: "2018-01-01T00:00:00.000Z"
+                                finishedAt: "2018-01-01T00:00:00.000Z"
+                                isFinished: true
+                                duration: 123
+                                result: success
+                                error: ""
                 "400":
                     description: 'InvalidInputs: Inputs are not valid.'
                     content:
@@ -1477,14 +1482,22 @@ paths:
                                     - id: api-token
                                       value: "123456"
             responses:
-                "201":
-                    description: Created response.
+                "202":
+                    description: Accepted response.
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/UseTemplateResult'
+                                $ref: '#/components/schemas/Task'
                             example:
-                                instanceId: V1StGXR8IZ5jdHi6BAmyT
+                                id: task-1
+                                url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_task-1
+                                type: template.use
+                                createdAt: "2018-01-01T00:00:00.000Z"
+                                finishedAt: "2018-01-01T00:00:00.000Z"
+                                isFinished: true
+                                duration: 123
+                                result: success
+                                error: ""
                 "400":
                     description: 'InvalidInputs: Inputs are not valid.'
                     content:
@@ -1606,6 +1619,46 @@ paths:
                                               error: null
                 "404":
                     description: 'templates.versionNotFound: Version not found error.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GenericError'
+            security:
+                - storage-api-token: []
+    /v1/tasks/{taskId}:
+        get:
+            tags:
+                - configuration
+            summary: Get task
+            description: Get details of a task.
+            operationId: GetTask
+            parameters:
+                - name: taskId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    example: task_1234
+                  example: task_1234
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                id: task-1
+                                url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_task-1
+                                type: template.use
+                                createdAt: "2018-01-01T00:00:00.000Z"
+                                finishedAt: "2018-01-01T00:00:00.000Z"
+                                isFinished: true
+                                duration: 123
+                                result: success
+                                error: ""
+                "404":
+                    description: 'templates.taskNotFound: Task not found error.'
                     content:
                         application/json:
                             schema:
@@ -2344,12 +2397,6 @@ components:
                         - componentId: keboola.ex-db-mysql
                           configId: "7954825835"
                           name: My Extractor
-                        - componentId: keboola.ex-db-mysql
-                          configId: "7954825835"
-                          name: My Extractor
-                        - componentId: keboola.ex-db-mysql
-                          configId: "7954825835"
-                          name: My Extractor
                 created:
                     $ref: '#/components/schemas/ChangeInfo'
                 instanceId:
@@ -2381,9 +2428,6 @@ components:
             example:
                 branch: "5876"
                 configurations:
-                    - componentId: keboola.ex-db-mysql
-                      configId: "7954825835"
-                      name: My Extractor
                     - componentId: keboola.ex-db-mysql
                       configId: "7954825835"
                       name: My Extractor
@@ -2433,6 +2477,36 @@ components:
                         $ref: '#/components/schemas/Instance'
                     description: All instances found in branch.
                     example:
+                        - branch: "5876"
+                          created:
+                            date: "2022-04-28T14:20:04+00:00"
+                            tokenId: "245941"
+                          instanceId: V1StGXR8IZ5jdHi6BAmyT
+                          mainConfig:
+                            componentId: keboola.orchestrator
+                            configId: "7954825835"
+                          name: My Instance
+                          repositoryName: keboola
+                          templateId: my-template
+                          updated:
+                            date: "2022-04-28T14:20:04+00:00"
+                            tokenId: "245941"
+                          version: v1.1.0
+                        - branch: "5876"
+                          created:
+                            date: "2022-04-28T14:20:04+00:00"
+                            tokenId: "245941"
+                          instanceId: V1StGXR8IZ5jdHi6BAmyT
+                          mainConfig:
+                            componentId: keboola.orchestrator
+                            configId: "7954825835"
+                          name: My Instance
+                          repositoryName: keboola
+                          templateId: my-template
+                          updated:
+                            date: "2022-04-28T14:20:04+00:00"
+                            tokenId: "245941"
+                          version: v1.1.0
                         - branch: "5876"
                           created:
                             date: "2022-04-28T14:20:04+00:00"
@@ -3079,6 +3153,16 @@ components:
                           id: api-token
                           visible: true
                       valid: true
+                    - configured: false
+                      id: g01-s01
+                      inputs:
+                        - error: API token cannot be empty.
+                          id: api-token
+                          visible: true
+                        - error: API token cannot be empty.
+                          id: api-token
+                          visible: true
+                      valid: true
                 valid: false
             required:
                 - id
@@ -3119,7 +3203,7 @@ components:
                 configured:
                     type: boolean
                     description: True if the step was part of the sent payload.
-                    example: false
+                    example: true
                 id:
                     type: string
                     description: Step ID.
@@ -3139,13 +3223,16 @@ components:
                         - error: API token cannot be empty.
                           id: api-token
                           visible: true
+                        - error: API token cannot be empty.
+                          id: api-token
+                          visible: true
                 valid:
                     type: boolean
                     description: True if all inputs in the step are valid.
                     example: false
             description: Validation Detail of the step.
             example:
-                configured: true
+                configured: false
                 id: g01-s01
                 inputs:
                     - error: API token cannot be empty.
@@ -3166,6 +3253,65 @@ components:
                 - configured
                 - valid
                 - inputs
+        Task:
+            type: object
+            properties:
+                createdAt:
+                    type: string
+                    description: Date and time of the task creation.
+                    example: "2022-04-28T14:20:04.000Z"
+                    format: date-time
+                duration:
+                    type: integer
+                    description: Duration of the task in milliseconds.
+                    example: 123456789
+                    format: int64
+                error:
+                    type: string
+                    example: Voluptatem pariatur quia nisi.
+                finishedAt:
+                    type: string
+                    description: Date and time of the task end.
+                    example: "2022-04-28T14:20:04.000Z"
+                    format: date-time
+                id:
+                    type: string
+                    example: Provident aut provident vero iure omnis et.
+                isFinished:
+                    type: boolean
+                    description: Shortcut for status != "processing".
+                    example: false
+                result:
+                    type: string
+                    example: Voluptatem in corporis id cupiditate tempore magni.
+                status:
+                    type: string
+                    description: 'Task status, one of: processing, success, error'
+                    example: processing
+                    enum:
+                        - processing
+                        - success
+                        - error
+                url:
+                    type: string
+                    description: URL of the task.
+                    example: Maiores animi vitae necessitatibus animi sit earum.
+            example:
+                id: task-1
+                url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_task-1
+                type: template.use
+                createdAt: "2018-01-01T00:00:00.000Z"
+                finishedAt: "2018-01-01T00:00:00.000Z"
+                isFinished: true
+                duration: 123
+                result: success
+                error: ""
+            required:
+                - id
+                - url
+                - status
+                - isFinished
+                - createdAt
         Template:
             type: object
             properties:
@@ -3175,7 +3321,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Vel et esse ipsum minima.
+                        example: Accusamus ex repellendus omnis.
                     description: List of categories the template belongs to.
                     example:
                         - E-commerce
@@ -3185,7 +3331,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Ut sunt perferendis exercitationem.
+                        example: Reprehenderit temporibus.
                     description: List of components used in the template.
                     example:
                         - ex-generic-v2
@@ -3279,7 +3425,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: At quia delectus.
+                        example: Aut debitis.
                     description: List of categories the template belongs to.
                     example:
                         - E-commerce
@@ -3289,7 +3435,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Sunt occaecati veritatis distinctio nulla alias explicabo.
+                        example: Quaerat voluptas.
                     description: List of components used in the template.
                     example:
                         - ex-generic-v2
@@ -3449,60 +3595,6 @@ components:
                             - version: v2.0.0
                               stable: false
                               description: Experimental support for new API.
-                        - author:
-                            name: Keboola
-                            url: https://www.keboola.com
-                          categories:
-                            - E-commerce
-                            - Other
-                            - Social Media
-                          components:
-                            - ex-generic-v2
-                            - keboola.snowflake-transformation
-                          defaultVersion: v1.2.3
-                          description: Full workflow to load all user accounts from the Service.
-                          id: my-template
-                          name: My Template
-                          versions:
-                            - version: v0.1.1
-                              stable: false
-                              description: Initial version.
-                            - version: v1.1.1
-                              stable: true
-                              description: ""
-                            - version: v1.2.3
-                              stable: true
-                              description: ""
-                            - version: v2.0.0
-                              stable: false
-                              description: Experimental support for new API.
-                        - author:
-                            name: Keboola
-                            url: https://www.keboola.com
-                          categories:
-                            - E-commerce
-                            - Other
-                            - Social Media
-                          components:
-                            - ex-generic-v2
-                            - keboola.snowflake-transformation
-                          defaultVersion: v1.2.3
-                          description: Full workflow to load all user accounts from the Service.
-                          id: my-template
-                          name: My Template
-                          versions:
-                            - version: v0.1.1
-                              stable: false
-                              description: Initial version.
-                            - version: v1.1.1
-                              stable: true
-                              description: ""
-                            - version: v1.2.3
-                              stable: true
-                              description: ""
-                            - version: v2.0.0
-                              stable: false
-                              description: Experimental support for new API.
             example:
                 repository:
                     name: keboola
@@ -3571,17 +3663,6 @@ components:
                 name: My Great Instance
             required:
                 - name
-        UseTemplateResult:
-            type: object
-            properties:
-                instanceId:
-                    type: string
-                    description: Template instance ID.
-                    example: V1StGXR8IZ5jdHi6BAmyT
-            example:
-                instanceId: V1StGXR8IZ5jdHi6BAmyT
-            required:
-                - instanceId
         UseTemplateVersionRequestBody:
             type: object
             properties:
@@ -3729,10 +3810,6 @@ components:
                                   id: api-token
                                   visible: true
                               valid: true
-                          valid: false
-                        - error: All steps must be configured.
-                          id: g01
-                          steps:
                             - configured: false
                               id: g01-s01
                               inputs:
@@ -3757,6 +3834,26 @@ components:
                         - error: All steps must be configured.
                           id: g01
                           steps:
+                            - configured: false
+                              id: g01-s01
+                              inputs:
+                                - error: API token cannot be empty.
+                                  id: api-token
+                                  visible: true
+                                - error: API token cannot be empty.
+                                  id: api-token
+                                  visible: true
+                              valid: true
+                            - configured: false
+                              id: g01-s01
+                              inputs:
+                                - error: API token cannot be empty.
+                                  id: api-token
+                                  visible: true
+                                - error: API token cannot be empty.
+                                  id: api-token
+                                  visible: true
+                              valid: true
                             - configured: false
                               id: g01-s01
                               inputs:
@@ -3781,7 +3878,7 @@ components:
                 valid:
                     type: boolean
                     description: True if all groups and inputs are valid.
-                    example: false
+                    example: true
             description: Detail of the inputs validation.
             example:
                 valid: false
@@ -3853,7 +3950,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Dolorem perspiciatis suscipit esse.
+                        example: Consequatur ad modi rerum amet.
                     description: List of components used in the template version.
                     example:
                         - ex-generic-v2
@@ -3908,7 +4005,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Provident dolorum totam ullam.
+                        example: Saepe autem ea possimus architecto.
                     description: List of components used in the template version.
                     example:
                         - ex-generic-v2

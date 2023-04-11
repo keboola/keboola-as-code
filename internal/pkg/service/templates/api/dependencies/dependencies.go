@@ -24,18 +24,14 @@ package dependencies
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -55,11 +51,9 @@ const (
 // ForServer interface provides dependencies for Templates API server.
 // The container exists during the entire run of the API server.
 type ForServer interface {
-	dependencies.Base
-	dependencies.Public
-	Process() *servicectx.Process
+	ForService
+	APIConfig() config.Config
 	RepositoryManager() *repositoryManager.Manager
-	EtcdClient() *etcd.Client
 	ProjectLocker() *Locker
 }
 
@@ -83,13 +77,10 @@ type ForProjectRequest interface {
 
 // forServer implements ForServer interface.
 type forServer struct {
-	dependencies.Base
-	dependencies.Public
+	ForService
 	config            config.Config
-	proc              *servicectx.Process
 	logger            log.Logger
 	repositoryManager *repositoryManager.Manager
-	etcdClient        *etcd.Client
 	projectLocker     dependencies.Lazy[*Locker]
 }
 
@@ -121,52 +112,17 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 		defer telemetry.EndSpan(span, &err)
 	}
 
-	// Create base HTTP client for all API requests to other APIs
-	httpClient := httpclient.New(
-		httpclient.WithUserAgent("keboola-templates-api"),
-		httpclient.WithEnvs(envs),
-		func(c *httpclient.Config) {
-			if cfg.Debug {
-				httpclient.WithDebugOutput(logger.DebugWriter())(c)
-			}
-			if cfg.DebugHTTP {
-				httpclient.WithDumpOutput(logger.DebugWriter())(c)
-			}
-		},
-	)
-	// Create base dependencies
-	baseDeps := dependencies.NewBaseDeps(envs, tracer, logger, httpClient)
-
-	// Create public dependencies - load API index
-	startTime := time.Now()
-	logger.Info("loading Storage API index")
-	publicDeps, err := dependencies.NewPublicDeps(ctx, baseDeps, cfg.StorageAPIHost, dependencies.WithPreloadComponents(true))
+	// Create service dependencies
+	userAgent := "keboola-templates-api"
+	serviceDeps, err := NewServiceDeps(ctx, proc, tracer, cfg, envs, logger, userAgent)
 	if err != nil {
 		return nil, err
 	}
-	logger.Infof("loaded Storage API index | %s", time.Since(startTime))
-
-	etcdClient, err := etcdclient.New(
-		ctx,
-		proc,
-		tracer,
-		envs.Get("TEMPLATES_API_ETCD_ENDPOINT"),
-		envs.Get("TEMPLATES_API_ETCD_NAMESPACE"),
-		etcdclient.WithUsername(envs.Get("TEMPLATES_API_ETCD_USERNAME")),
-		etcdclient.WithPassword(envs.Get("TEMPLATES_API_ETCD_PASSWORD")),
-		etcdclient.WithConnectTimeout(cfg.EtcdConnectTimeout),
-		etcdclient.WithLogger(logger),
-		etcdclient.WithDebugOpLogs(cfg.Debug),
-	)
 
 	// Create server dependencies
 	d := &forServer{
-		Base:       baseDeps,
-		Public:     publicDeps,
+		ForService: serviceDeps,
 		config:     cfg,
-		proc:       proc,
-		etcdClient: etcdClient,
-		logger:     logger,
 	}
 
 	// Create repository manager
@@ -218,16 +174,12 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 	}, nil
 }
 
-func (v *forServer) Process() *servicectx.Process {
-	return v.proc
+func (v *forServer) APIConfig() config.Config {
+	return v.config
 }
 
 func (v *forServer) RepositoryManager() *repositoryManager.Manager {
 	return v.repositoryManager
-}
-
-func (v *forServer) EtcdClient() *etcd.Client {
-	return v.etcdClient
 }
 
 func (v *forServer) ProjectLocker() *Locker {

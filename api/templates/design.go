@@ -2,6 +2,10 @@
 package templates
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/spf13/cast"
 	_ "goa.design/goa/v3/codegen/generator"
 	. "goa.design/goa/v3/dsl"
 	"goa.design/goa/v3/eval"
@@ -17,6 +21,12 @@ import (
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/operationid"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/token"
+)
+
+const (
+	TaskStatusProcessing = "processing"
+	TaskStatusSuccess    = "success"
+	TaskStatusError      = "error"
 )
 
 // API definition ------------------------------------------------------------------------------------------------------
@@ -226,13 +236,13 @@ var _ = Service("templates", func() {
 	Method("UseTemplateVersion", func() {
 		Meta("openapi:summary", "Use template")
 		Description("Validate inputs and use template in the branch.\nOnly configured steps should be send.")
-		Result(UseTemplateResult)
+		Result(Task)
 		Payload(UseTemplateRequest)
 		Error("InvalidInputs", ValidationError, "Inputs are not valid.")
 		HTTP(func() {
 			POST("/repositories/{repository}/templates/{template}/{version}/use")
 			Meta("openapi:tag:template")
-			Response(StatusCreated)
+			Response(StatusAccepted)
 			Response("InvalidInputs", StatusBadRequest)
 			RepositoryNotFoundError()
 			TemplateNotFoundError()
@@ -297,13 +307,13 @@ var _ = Service("templates", func() {
 
 	Method("UpgradeInstance", func() {
 		Meta("openapi:summary", "Re-generate the instance in the same or different version")
-		Result(UpgradeInstanceResult)
+		Result(Task)
 		Error("InvalidInputs", ValidationError, "Inputs are not valid.")
 		Payload(UpgradeInstanceRequest)
 		HTTP(func() {
 			POST("/project/{branch}/instances/{instanceId}/upgrade/{version}")
 			Meta("openapi:tag:instance")
-			Response(StatusOK)
+			Response(StatusAccepted)
 			Response("InvalidInputs", StatusBadRequest)
 			TemplateNotFoundError()
 			BranchNotFoundError()
@@ -342,6 +352,66 @@ var _ = Service("templates", func() {
 			VersionNotFoundError()
 		})
 	})
+
+	Method("GetTask", func() {
+		Meta("openapi:summary", "Get task")
+		Description("Get details of a task.")
+		Result(Task)
+		Payload(GetTaskRequest)
+		HTTP(func() {
+			GET("/tasks/{*taskId}")
+			Meta("openapi:tag:configuration")
+			Response(StatusOK)
+			TaskNotFoundError()
+		})
+	})
+})
+
+// Task --------------------------------------------------------------------------------------------------------------
+
+var TaskID = Type("TaskID", String, func() {
+	Meta("struct:field:type", "= key.ID", "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key")
+	Description("Unique ID of the task.")
+	Example("task_1234")
+})
+
+var Task = Type("Task", func() {
+	Description("An asynchronous task.")
+	Attribute("id", TaskID)
+	Attribute("url", String, func() {
+		Description("URL of the task.")
+	})
+	Attribute("status", String, func() {
+		values := []any{TaskStatusProcessing, TaskStatusSuccess, TaskStatusError}
+		Description(fmt.Sprintf("Task status, one of: %s", strings.Join(cast.ToStringSlice(values), ", ")))
+		Enum(values...)
+	})
+	Attribute("isFinished", Boolean, func() {
+		Description("Shortcut for status != \"processing\".")
+	})
+	Attribute("createdAt", String, func() {
+		Description("Date and time of the task creation.")
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("finishedAt", String, func() {
+		Description("Date and time of the task end.")
+		Format(FormatDateTime)
+		Example("2022-04-28T14:20:04.000Z")
+	})
+	Attribute("duration", Int64, func() {
+		Description("Duration of the task in milliseconds.")
+		Example(123456789)
+	})
+	Attribute("result", String)
+	Attribute("error", String)
+	Required("id", "url", "status", "isFinished", "createdAt")
+	Example(ExampleTask())
+})
+
+var GetTaskRequest = Type("GetTaskRequest", func() {
+	Attribute("taskId", TaskID)
+	Required("taskId")
 })
 
 // Error -------------------------------------------------------------------------------------------------------
@@ -447,6 +517,10 @@ func BranchNotFoundError() {
 
 func InstanceNotFoundError() {
 	GenericError(StatusNotFound, "templates.instanceNotFound", "Instance not found error.", `Instance "V1StGXR8IZ5jdHi6BAmyT" not found.`)
+}
+
+func TaskNotFoundError() {
+	GenericError(StatusNotFound, "templates.taskNotFound", "Task not found error.", `Task "001" not found.`)
 }
 
 // Common attributes----------------------------------------------------------------------------------------------------
@@ -1595,5 +1669,31 @@ func ExampleValidationResult() interface{} {
 				},
 			},
 		},
+	}
+}
+
+type ExampleTaskDef struct {
+	ID         string `json:"id" yaml:"id"`
+	URL        string `json:"url" yaml:"url"`
+	Type       string `json:"type" yaml:"type"`
+	CreatedAt  string `json:"createdAt" yaml:"createdAt"`
+	FinishedAt string `json:"finishedAt" yaml:"finishedAt"`
+	IsFinished bool   `json:"isFinished" yaml:"isFinished"`
+	Duration   int    `json:"duration" yaml:"duration"`
+	Result     string `json:"result" yaml:"result"`
+	Error      string `json:"error" yaml:"error"`
+}
+
+func ExampleTask() ExampleTaskDef {
+	return ExampleTaskDef{
+		ID:         "task-1",
+		URL:        "https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_task-1",
+		Type:       "template.use",
+		CreatedAt:  "2018-01-01T00:00:00.000Z",
+		FinishedAt: "2018-01-01T00:00:00.000Z",
+		IsFinished: true,
+		Duration:   123,
+		Result:     "success",
+		Error:      "",
 	}
 }

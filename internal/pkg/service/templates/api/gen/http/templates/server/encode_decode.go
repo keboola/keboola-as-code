@@ -646,10 +646,10 @@ func EncodeValidateInputsError(encoder func(context.Context, http.ResponseWriter
 // by the templates UseTemplateVersion endpoint.
 func EncodeUseTemplateVersionResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
 	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
-		res, _ := v.(*templates.UseTemplateResult)
+		res, _ := v.(*templates.Task)
 		enc := encoder(ctx, w)
 		body := NewUseTemplateVersionResponseBody(res)
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(http.StatusAccepted)
 		return enc.Encode(body)
 	}
 }
@@ -1186,10 +1186,10 @@ func EncodeDeleteInstanceError(encoder func(context.Context, http.ResponseWriter
 // the templates UpgradeInstance endpoint.
 func EncodeUpgradeInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
 	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
-		res, _ := v.(*templates.UpgradeInstanceResult)
+		res, _ := v.(*templates.Task)
 		enc := encoder(ctx, w)
 		body := NewUpgradeInstanceResponseBody(res)
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusAccepted)
 		return enc.Encode(body)
 	}
 }
@@ -1585,6 +1585,78 @@ func EncodeUpgradeInstanceValidateInputsError(encoder func(context.Context, http
 				body = formatter(ctx, res)
 			} else {
 				body = NewUpgradeInstanceValidateInputsTemplatesVersionNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeGetTaskResponse returns an encoder for responses returned by the
+// templates GetTask endpoint.
+func EncodeGetTaskResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, interface{}) error {
+	return func(ctx context.Context, w http.ResponseWriter, v interface{}) error {
+		res, _ := v.(*templates.Task)
+		enc := encoder(ctx, w)
+		body := NewGetTaskResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeGetTaskRequest returns a decoder for requests sent to the templates
+// GetTask endpoint.
+func DecodeGetTaskRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (interface{}, error) {
+	return func(r *http.Request) (interface{}, error) {
+		var (
+			taskID          string
+			storageAPIToken string
+			err             error
+
+			params = mux.Vars(r)
+		)
+		taskID = params["taskId"]
+		storageAPIToken = r.Header.Get("X-StorageApi-Token")
+		if storageAPIToken == "" {
+			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewGetTaskPayload(taskID, storageAPIToken)
+		if strings.Contains(payload.StorageAPIToken, " ") {
+			// Remove authorization scheme prefix (e.g. "Bearer")
+			cred := strings.SplitN(payload.StorageAPIToken, " ", 2)[1]
+			payload.StorageAPIToken = cred
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeGetTaskError returns an encoder for errors returned by the GetTask
+// templates endpoint.
+func EncodeGetTaskError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "templates.taskNotFound":
+			var res *templates.GenericError
+			errors.As(v, &res)
+			res.StatusCode = http.StatusNotFound
+			enc := encoder(ctx, w)
+			var body interface{}
+			if false { // formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetTaskTemplatesTaskNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)

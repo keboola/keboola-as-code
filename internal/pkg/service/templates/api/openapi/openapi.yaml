@@ -304,12 +304,16 @@ paths:
                     required:
                         - steps
             responses:
-                "200":
-                    description: OK response.
+                "202":
+                    description: Accepted response.
                     schema:
                         $ref: '#/definitions/TemplatesUpgradeInstanceResponseBody'
                         required:
-                            - instanceId
+                            - id
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
                 "400":
                     description: Bad Request response.
                     schema:
@@ -690,12 +694,16 @@ paths:
                         - branch
                         - steps
             responses:
-                "201":
-                    description: Created response.
+                "202":
+                    description: Accepted response.
                     schema:
                         $ref: '#/definitions/TemplatesUseTemplateVersionResponseBody'
                         required:
-                            - instanceId
+                            - id
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
                 "400":
                     description: Bad Request response.
                     schema:
@@ -772,6 +780,42 @@ paths:
                     description: Not Found response.
                     schema:
                         $ref: '#/definitions/TemplatesValidateInputsTemplatesVersionNotFoundResponseBody'
+                        required:
+                            - statusCode
+                            - error
+                            - message
+            schemes:
+                - https
+            security:
+                - storage-api-token: []
+    /v1/tasks/{taskId}:
+        get:
+            tags:
+                - configuration
+            summary: Get task
+            description: Get details of a task.
+            operationId: GetTask
+            parameters:
+                - name: taskId
+                  in: path
+                  description: Unique ID of the task.
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/TemplatesGetTaskResponseBody'
+                        required:
+                            - id
+                            - url
+                            - status
+                            - isFinished
+                            - createdAt
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/TemplatesGetTaskTemplatesTaskNotFoundResponseBody'
                         required:
                             - statusCode
                             - error
@@ -918,16 +962,6 @@ definitions:
                           id: api-token
                           visible: true
                       valid: true
-                    - configured: false
-                      id: g01-s01
-                      inputs:
-                        - error: API token cannot be empty.
-                          id: api-token
-                          visible: true
-                        - error: API token cannot be empty.
-                          id: api-token
-                          visible: true
-                      valid: true
             valid:
                 type: boolean
                 description: True if the required number of steps is configured and all inputs are valid.
@@ -937,26 +971,6 @@ definitions:
             error: All steps must be configured.
             id: g01
             steps:
-                - configured: false
-                  id: g01-s01
-                  inputs:
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                  valid: true
-                - configured: false
-                  id: g01-s01
-                  inputs:
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                    - error: API token cannot be empty.
-                      id: api-token
-                      visible: true
-                  valid: true
                 - configured: false
                   id: g01-s01
                   inputs:
@@ -1045,18 +1059,12 @@ definitions:
             valid:
                 type: boolean
                 description: True if all inputs in the step are valid.
-                example: true
+                example: false
         description: Validation Detail of the step.
         example:
-            configured: false
+            configured: true
             id: g01-s01
             inputs:
-                - error: API token cannot be empty.
-                  id: api-token
-                  visible: true
-                - error: API token cannot be empty.
-                  id: api-token
-                  visible: true
                 - error: API token cannot be empty.
                   id: api-token
                   visible: true
@@ -1079,7 +1087,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Maiores repellat saepe non sunt minus.
+                    example: Expedita ut.
                 description: List of categories the template belongs to.
                 example:
                     - E-commerce
@@ -1089,7 +1097,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Iste ex.
+                    example: Harum rem cum eum autem.
                 description: List of components used in the template.
                 example:
                     - ex-generic-v2
@@ -1266,6 +1274,92 @@ definitions:
             statusCode: 503
             error: templates.projectLocked
             message: The project is locked, another operation is in progress, please try again later.
+        required:
+            - statusCode
+            - error
+            - message
+    TemplatesGetTaskResponseBody:
+        title: TemplatesGetTaskResponseBody
+        type: object
+        properties:
+            createdAt:
+                type: string
+                description: Date and time of the task creation.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            duration:
+                type: integer
+                description: Duration of the task in milliseconds.
+                example: 123456789
+                format: int64
+            error:
+                type: string
+                example: Quia et non.
+            finishedAt:
+                type: string
+                description: Date and time of the task end.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            id:
+                type: string
+                example: Nostrum odio.
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: true
+            result:
+                type: string
+                example: Voluptatem nulla cumque deleniti.
+            status:
+                type: string
+                description: 'Task status, one of: processing, success, error'
+                example: processing
+                enum:
+                    - processing
+                    - success
+                    - error
+            url:
+                type: string
+                description: URL of the task.
+                example: Quam voluptatem explicabo sequi.
+        example:
+            id: task-1
+            url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_task-1
+            type: template.use
+            createdAt: "2018-01-01T00:00:00.000Z"
+            finishedAt: "2018-01-01T00:00:00.000Z"
+            isFinished: true
+            duration: 123
+            result: success
+            error: ""
+        required:
+            - id
+            - url
+            - status
+            - isFinished
+            - createdAt
+    TemplatesGetTaskTemplatesTaskNotFoundResponseBody:
+        title: TemplatesGetTaskTemplatesTaskNotFoundResponseBody
+        type: object
+        properties:
+            error:
+                type: string
+                description: Name of error.
+                example: templates.internalError
+            message:
+                type: string
+                description: Error message.
+                example: Internal Error
+            statusCode:
+                type: integer
+                description: HTTP status code.
+                example: 500
+                format: int64
+        description: Task not found error.
+        example:
+            statusCode: 404
+            error: templates.taskNotFound
+            message: Task "001" not found.
         required:
             - statusCode
             - error
@@ -1815,6 +1909,12 @@ definitions:
                 - componentId: keboola.ex-db-mysql
                   configId: "7954825835"
                   name: My Extractor
+                - componentId: keboola.ex-db-mysql
+                  configId: "7954825835"
+                  name: My Extractor
+                - componentId: keboola.ex-db-mysql
+                  configId: "7954825835"
+                  name: My Extractor
             created:
                 date: "2022-04-28T14:20:04+00:00"
                 tokenId: "245941"
@@ -2014,21 +2114,6 @@ definitions:
                     date: "2022-04-28T14:20:04+00:00"
                     tokenId: "245941"
                   version: v1.1.0
-                - branch: "5876"
-                  created:
-                    date: "2022-04-28T14:20:04+00:00"
-                    tokenId: "245941"
-                  instanceId: V1StGXR8IZ5jdHi6BAmyT
-                  mainConfig:
-                    componentId: keboola.orchestrator
-                    configId: "7954825835"
-                  name: My Instance
-                  repositoryName: keboola
-                  templateId: my-template
-                  updated:
-                    date: "2022-04-28T14:20:04+00:00"
-                    tokenId: "245941"
-                  version: v1.1.0
         required:
             - instances
     TemplatesInstancesIndexTemplatesBranchNotFoundResponseBody:
@@ -2153,7 +2238,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Omnis ducimus molestias et sunt qui.
+                    example: Asperiores harum velit ut itaque.
                 description: List of categories the template belongs to.
                 example:
                     - E-commerce
@@ -2163,7 +2248,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Harum tempore sint possimus temporibus.
+                    example: In numquam nesciunt quia iste nisi.
                 description: List of components used in the template.
                 example:
                     - ex-generic-v2
@@ -2376,6 +2461,33 @@ definitions:
                         - version: v2.0.0
                           stable: false
                           description: Experimental support for new API.
+                    - author:
+                        name: Keboola
+                        url: https://www.keboola.com
+                      categories:
+                        - E-commerce
+                        - Other
+                        - Social Media
+                      components:
+                        - ex-generic-v2
+                        - keboola.snowflake-transformation
+                      defaultVersion: v1.2.3
+                      description: Full workflow to load all user accounts from the Service.
+                      id: my-template
+                      name: My Template
+                      versions:
+                        - version: v0.1.1
+                          stable: false
+                          description: Initial version.
+                        - version: v1.1.1
+                          stable: true
+                          description: ""
+                        - version: v1.2.3
+                          stable: true
+                          description: ""
+                        - version: v2.0.0
+                          stable: false
+                          description: Experimental support for new API.
         example:
             repository:
                 name: keboola
@@ -2522,12 +2634,6 @@ definitions:
         example:
             branch: "5876"
             configurations:
-                - componentId: keboola.ex-db-mysql
-                  configId: "7954825835"
-                  name: My Extractor
-                - componentId: keboola.ex-db-mysql
-                  configId: "7954825835"
-                  name: My Extractor
                 - componentId: keboola.ex-db-mysql
                   configId: "7954825835"
                   name: My Extractor
@@ -3244,14 +3350,62 @@ definitions:
         title: TemplatesUpgradeInstanceResponseBody
         type: object
         properties:
-            instanceId:
+            createdAt:
                 type: string
-                description: Template instance ID.
-                example: V1StGXR8IZ5jdHi6BAmyT
+                description: Date and time of the task creation.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            duration:
+                type: integer
+                description: Duration of the task in milliseconds.
+                example: 123456789
+                format: int64
+            error:
+                type: string
+                example: Delectus sed iste quia fugiat.
+            finishedAt:
+                type: string
+                description: Date and time of the task end.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            id:
+                type: string
+                example: Beatae optio.
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: true
+            result:
+                type: string
+                example: Molestias doloremque nostrum voluptas sed et.
+            status:
+                type: string
+                description: 'Task status, one of: processing, success, error'
+                example: success
+                enum:
+                    - processing
+                    - success
+                    - error
+            url:
+                type: string
+                description: URL of the task.
+                example: Aliquid quod cum.
         example:
-            instanceId: V1StGXR8IZ5jdHi6BAmyT
+            id: task-1
+            url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_task-1
+            type: template.use
+            createdAt: "2018-01-01T00:00:00.000Z"
+            finishedAt: "2018-01-01T00:00:00.000Z"
+            isFinished: true
+            duration: 123
+            result: success
+            error: ""
         required:
-            - instanceId
+            - id
+            - url
+            - status
+            - isFinished
+            - createdAt
     TemplatesUpgradeInstanceTemplatesBranchNotFoundResponseBody:
         title: TemplatesUpgradeInstanceTemplatesBranchNotFoundResponseBody
         type: object
@@ -3441,6 +3595,26 @@ definitions:
                               id: api-token
                               visible: true
                           valid: true
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
                       valid: false
                     - error: All steps must be configured.
                       id: g01
@@ -3465,11 +3639,31 @@ definitions:
                               id: api-token
                               visible: true
                           valid: true
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
                       valid: false
             valid:
                 type: boolean
                 description: True if all groups and inputs are valid.
-                example: true
+                example: false
         example:
             valid: false
             stepGroups:
@@ -3705,14 +3899,62 @@ definitions:
         title: TemplatesUseTemplateVersionResponseBody
         type: object
         properties:
-            instanceId:
+            createdAt:
                 type: string
-                description: Template instance ID.
-                example: V1StGXR8IZ5jdHi6BAmyT
+                description: Date and time of the task creation.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            duration:
+                type: integer
+                description: Duration of the task in milliseconds.
+                example: 123456789
+                format: int64
+            error:
+                type: string
+                example: Laboriosam exercitationem numquam sed qui cum.
+            finishedAt:
+                type: string
+                description: Date and time of the task end.
+                example: "2022-04-28T14:20:04.000Z"
+                format: date-time
+            id:
+                type: string
+                example: Delectus illum sunt occaecati veritatis.
+            isFinished:
+                type: boolean
+                description: Shortcut for status != "processing".
+                example: false
+            result:
+                type: string
+                example: Omnis et.
+            status:
+                type: string
+                description: 'Task status, one of: processing, success, error'
+                example: processing
+                enum:
+                    - processing
+                    - success
+                    - error
+            url:
+                type: string
+                description: URL of the task.
+                example: Nulla alias explicabo inventore provident dolorum totam.
         example:
-            instanceId: V1StGXR8IZ5jdHi6BAmyT
+            id: task-1
+            url: https://templates.keboola.com/v1/tasks/template.use/2018-01-01T00:00:00.000Z_task-1
+            type: template.use
+            createdAt: "2018-01-01T00:00:00.000Z"
+            finishedAt: "2018-01-01T00:00:00.000Z"
+            isFinished: true
+            duration: 123
+            result: success
+            error: ""
         required:
-            - instanceId
+            - id
+            - url
+            - status
+            - isFinished
+            - createdAt
     TemplatesUseTemplateVersionTemplatesProjectLockedResponseBody:
         title: TemplatesUseTemplateVersionTemplatesProjectLockedResponseBody
         type: object
@@ -3876,10 +4118,6 @@ definitions:
                               id: api-token
                               visible: true
                           valid: true
-                      valid: false
-                    - error: All steps must be configured.
-                      id: g01
-                      steps:
                         - configured: false
                           id: g01-s01
                           inputs:
@@ -3924,10 +4162,50 @@ definitions:
                               id: api-token
                               visible: true
                           valid: true
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
                       valid: false
                     - error: All steps must be configured.
                       id: g01
                       steps:
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
                         - configured: false
                           id: g01-s01
                           inputs:
@@ -3952,7 +4230,7 @@ definitions:
             valid:
                 type: boolean
                 description: True if all groups and inputs are valid.
-                example: false
+                example: true
         example:
             valid: false
             stepGroups:
@@ -4074,7 +4352,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Explicabo laudantium.
+                    example: Voluptatem aut est qui qui vel.
                 description: List of components used in the template version.
                 example:
                     - ex-generic-v2
@@ -4275,10 +4553,6 @@ definitions:
                               id: api-token
                               visible: true
                           valid: true
-                      valid: false
-                    - error: All steps must be configured.
-                      id: g01
-                      steps:
                         - configured: false
                           id: g01-s01
                           inputs:
@@ -4303,6 +4577,114 @@ definitions:
                     - error: All steps must be configured.
                       id: g01
                       steps:
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
+                      valid: false
+                    - error: All steps must be configured.
+                      id: g01
+                      steps:
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
+                      valid: false
+                    - error: All steps must be configured.
+                      id: g01
+                      steps:
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
+                        - configured: false
+                          id: g01-s01
+                          inputs:
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                            - error: API token cannot be empty.
+                              id: api-token
+                              visible: true
+                          valid: true
                         - configured: false
                           id: g01-s01
                           inputs:
@@ -4372,7 +4754,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Itaque sed in numquam nesciunt quia iste.
+                    example: Perspiciatis suscipit esse enim nam modi eius.
                 description: List of components used in the template version.
                 example:
                     - ex-generic-v2

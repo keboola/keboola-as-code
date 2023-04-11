@@ -34,10 +34,11 @@ type Client struct {
 	UpgradeInstanceEndpoint               goa.Endpoint
 	UpgradeInstanceInputsIndexEndpoint    goa.Endpoint
 	UpgradeInstanceValidateInputsEndpoint goa.Endpoint
+	GetTaskEndpoint                       goa.Endpoint
 }
 
 // NewClient initializes a "templates" service client given the endpoints.
-func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, repositoriesIndex, repositoryIndex, templatesIndex, templateIndex, versionIndex, inputsIndex, validateInputs, useTemplateVersion, instancesIndex, instanceIndex, updateInstance, deleteInstance, upgradeInstance, upgradeInstanceInputsIndex, upgradeInstanceValidateInputs goa.Endpoint) *Client {
+func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, repositoriesIndex, repositoryIndex, templatesIndex, templateIndex, versionIndex, inputsIndex, validateInputs, useTemplateVersion, instancesIndex, instanceIndex, updateInstance, deleteInstance, upgradeInstance, upgradeInstanceInputsIndex, upgradeInstanceValidateInputs, getTask goa.Endpoint) *Client {
 	return &Client{
 		APIRootIndexEndpoint:                  aPIRootIndex,
 		APIVersionIndexEndpoint:               aPIVersionIndex,
@@ -57,6 +58,7 @@ func NewClient(aPIRootIndex, aPIVersionIndex, healthCheck, repositoriesIndex, re
 		UpgradeInstanceEndpoint:               upgradeInstance,
 		UpgradeInstanceInputsIndexEndpoint:    upgradeInstanceInputsIndex,
 		UpgradeInstanceValidateInputsEndpoint: upgradeInstanceValidateInputs,
+		GetTaskEndpoint:                       getTask,
 	}
 }
 
@@ -195,13 +197,13 @@ func (c *Client) ValidateInputs(ctx context.Context, p *ValidateInputsPayload) (
 //   - "templates.versionNotFound" (type *GenericError): Version not found error.
 //   - "templates.projectLocked" (type *ProjectLockedError): Access to branch metadata must be atomic, so only one write operation can run at a time. If this error occurs, the client should make retries, see Retry-After header.
 //   - error: internal error
-func (c *Client) UseTemplateVersion(ctx context.Context, p *UseTemplateVersionPayload) (res *UseTemplateResult, err error) {
+func (c *Client) UseTemplateVersion(ctx context.Context, p *UseTemplateVersionPayload) (res *Task, err error) {
 	var ires interface{}
 	ires, err = c.UseTemplateVersionEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*UseTemplateResult), nil
+	return ires.(*Task), nil
 }
 
 // InstancesIndex calls the "InstancesIndex" endpoint of the "templates"
@@ -271,13 +273,13 @@ func (c *Client) DeleteInstance(ctx context.Context, p *DeleteInstancePayload) (
 //   - "templates.versionNotFound" (type *GenericError): Version not found error.
 //   - "templates.projectLocked" (type *ProjectLockedError): Access to branch metadata must be atomic, so only one write operation can run at a time. If this error occurs, the client should make retries, see Retry-After header.
 //   - error: internal error
-func (c *Client) UpgradeInstance(ctx context.Context, p *UpgradeInstancePayload) (res *UpgradeInstanceResult, err error) {
+func (c *Client) UpgradeInstance(ctx context.Context, p *UpgradeInstancePayload) (res *Task, err error) {
 	var ires interface{}
 	ires, err = c.UpgradeInstanceEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*UpgradeInstanceResult), nil
+	return ires.(*Task), nil
 }
 
 // UpgradeInstanceInputsIndex calls the "UpgradeInstanceInputsIndex" endpoint
@@ -312,4 +314,17 @@ func (c *Client) UpgradeInstanceValidateInputs(ctx context.Context, p *UpgradeIn
 		return
 	}
 	return ires.(*ValidationResult), nil
+}
+
+// GetTask calls the "GetTask" endpoint of the "templates" service.
+// GetTask may return the following errors:
+//   - "templates.taskNotFound" (type *GenericError): Task not found error.
+//   - error: internal error
+func (c *Client) GetTask(ctx context.Context, p *GetTaskPayload) (res *Task, err error) {
+	var ires interface{}
+	ires, err = c.GetTaskEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Task), nil
 }

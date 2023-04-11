@@ -1,3 +1,7 @@
 {
-  "instanceId": "%s"
+  "id": "template.use/%s",
+  "url": "https://templates.keboola.local/v1/tasks/template.use/%s",
+  "status": "processing",
+  "isFinished": false,
+  "createdAt": "%s"
 }

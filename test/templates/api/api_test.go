@@ -56,6 +56,7 @@ func TestTemplatesApiE2E(t *testing.T) {
 			"TEMPLATES_API_ETCD_ENDPOINT":    os.Getenv("TEMPLATES_API_ETCD_ENDPOINT"),
 			"TEMPLATES_API_ETCD_USERNAME":    os.Getenv("TEMPLATES_API_ETCD_USERNAME"),
 			"TEMPLATES_API_ETCD_PASSWORD":    os.Getenv("TEMPLATES_API_ETCD_PASSWORD"),
+			"TEMPLATES_API_PUBLIC_ADDRESS":   "https://templates.keboola.local",
 		})
 
 		requestDecoratorFn := func(request *runner.APIRequestDef) {

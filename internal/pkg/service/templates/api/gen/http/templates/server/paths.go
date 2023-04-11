@@ -101,3 +101,8 @@ func UpgradeInstanceInputsIndexTemplatesPath(branch string, instanceID string, v
 func UpgradeInstanceValidateInputsTemplatesPath(branch string, instanceID string, version string) string {
 	return fmt.Sprintf("/v1/project/%v/instances/%v/upgrade/%v/inputs", branch, instanceID, version)
 }
+
+// GetTaskTemplatesPath returns the URL path to the templates service GetTask HTTP endpoint.
+func GetTaskTemplatesPath(taskID string) string {
+	return fmt.Sprintf("/v1/tasks/%v", taskID)
+}
