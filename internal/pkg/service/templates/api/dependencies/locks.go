@@ -18,7 +18,7 @@ const (
 
 type lockerDeps interface {
 	Logger() log.Logger
-	EtcdClient(ctx context.Context) (*etcd.Client, error)
+	EtcdClient() *etcd.Client
 }
 
 type Locker struct {
@@ -60,10 +60,7 @@ func (l *Locker) TryLock(requestCtx context.Context, lockName string) (bool, Unl
 
 func (l *Locker) tryLock(requestCtx context.Context, lockName string) (*concurrency.Session, *concurrency.Mutex, error) {
 	// Get client
-	c, err := l.d.EtcdClient(requestCtx)
-	if err != nil {
-		return nil, nil, errors.Errorf(`cannot get etcd client: %w`, err)
-	}
+	c := l.d.EtcdClient()
 
 	// Acquire timeout
 	acquireCtx, cancelFn := context.WithTimeout(requestCtx, LockAcquireTimeout)

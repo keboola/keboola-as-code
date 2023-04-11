@@ -45,8 +45,6 @@ spec:
                 configMapKeyRef:
                   name: templates-api
                   key: storageApiHost
-            - name: TEMPLATES_API_ETCD_ENABLED
-              value: "true"
             - name: TEMPLATES_API_ETCD_ENDPOINT
               value: templates-api-etcd.templates-api.svc.cluster.local:2379
             - name: TEMPLATES_API_ETCD_USERNAME
