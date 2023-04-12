@@ -18,7 +18,7 @@ type remote struct {
 	eventSender event.Sender
 }
 
-func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand, opts ...dependencies.ProjectDepsOption) (*remote, error) {
+func newRemote(ctx context.Context, cmdPublicDeps ForLocalCommand, opts ...dependencies.ProjectDepsOption) (*remote, error) {
 	// Get Storage API token
 	token := cmdPublicDeps.Options().GetString(options.StorageAPITokenOpt)
 	if token == "" {
@@ -35,12 +35,12 @@ func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand, opts ...
 		return nil, err
 	}
 
-	// Storage Api token remote ID and manifest remote ID must be same
+	// Storage Api token project ID and manifest remote ID must be same
 	if prj, exists, err := cmdPublicDeps.LocalProject(false); exists && err == nil {
 		tokenProjectID := projectDeps.ProjectID()
 		manifest := prj.ProjectManifest()
 		if manifest != nil && manifest.ProjectID() != tokenProjectID {
-			return nil, errors.Errorf(`given token is from the remote "%d", but in manifest is defined remote "%d"`, tokenProjectID, manifest.ProjectID())
+			return nil, errors.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, tokenProjectID, manifest.ProjectID())
 		}
 	}
 

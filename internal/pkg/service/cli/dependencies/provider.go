@@ -70,7 +70,7 @@ func (v *provider) BaseDependencies() Base {
 
 func (v *provider) DependenciesForLocalCommand() (ForLocalCommand, error) {
 	return v.publicDeps.InitAndGet(func() (*local, error) {
-		return newPublicDeps(v.BaseDependencies())
+		return newLocal(v.BaseDependencies())
 	})
 }
 
@@ -81,7 +81,7 @@ func (v *provider) DependenciesForRemoteCommand(opts ...dependencies.ProjectDeps
 			return nil, err
 		}
 
-		projectDeps, err := newProjectDeps(publicDeps.CommandCtx(), publicDeps, opts...)
+		projectDeps, err := newRemote(publicDeps.CommandCtx(), publicDeps, opts...)
 		if err != nil {
 			return nil, err
 		}

@@ -42,7 +42,7 @@ type localTemplateValue struct {
 	value *template.Template
 }
 
-func newPublicDeps(baseDeps Base) (*local, error) {
+func newLocal(baseDeps Base) (*local, error) {
 	// Get Storage API host
 	host, err := storageAPIHost(baseDeps.Fs(), baseDeps.Options())
 	if err != nil {

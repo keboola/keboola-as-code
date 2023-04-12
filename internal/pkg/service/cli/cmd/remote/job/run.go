@@ -29,7 +29,7 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			options, err := parseJobRunOptions(localDeps.Options(), args)
+			opts, err := parseJobRunOptions(localDeps.Options(), args)
 			if err != nil {
 				return err
 			}
@@ -49,7 +49,7 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 			// Send cmd successful/failed event
 			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-job-run")
 
-			return run.Run(d.CommandCtx(), options, d)
+			return run.Run(d.CommandCtx(), opts, d)
 		},
 	}
 
