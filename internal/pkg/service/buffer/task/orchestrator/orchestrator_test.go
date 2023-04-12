@@ -21,7 +21,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -78,11 +77,11 @@ func TestOrchestrator(t *testing.T) {
 			resource := event.Value
 			return fmt.Sprintf(`%s/%s`, resource.ReceiverKey.String(), resource.ID)
 		},
-		TaskKey: func(event etcdop.WatchEventT[testResource]) taskKey.Key {
+		TaskKey: func(event etcdop.WatchEventT[testResource]) task.Key {
 			resource := event.Value
-			return taskKey.Key{
+			return task.Key{
 				ProjectID: resource.ReceiverKey.ProjectID,
-				TaskID:    taskKey.ID("my-receiver/some.task/" + resource.ID),
+				TaskID:    task.ID("my-receiver/some.task/" + resource.ID),
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
@@ -167,11 +166,11 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
 			return event.Value.ReceiverKey.String()
 		},
-		TaskKey: func(event etcdop.WatchEventT[testResource]) taskKey.Key {
+		TaskKey: func(event etcdop.WatchEventT[testResource]) task.Key {
 			resource := event.Value
-			return taskKey.Key{
+			return task.Key{
 				ProjectID: resource.ReceiverKey.ProjectID,
-				TaskID:    taskKey.ID("my-receiver/some.task/" + resource.ID),
+				TaskID:    task.ID("my-receiver/some.task/" + resource.ID),
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
@@ -248,11 +247,11 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 		DistributionKey: func(event etcdop.WatchEventT[testResource]) string {
 			return event.Value.ReceiverKey.String()
 		},
-		TaskKey: func(event etcdop.WatchEventT[testResource]) taskKey.Key {
+		TaskKey: func(event etcdop.WatchEventT[testResource]) task.Key {
 			resource := event.Value
-			return taskKey.Key{
+			return task.Key{
 				ProjectID: resource.ReceiverKey.ProjectID,
-				TaskID:    taskKey.ID("my-receiver/some.task/" + resource.ID),
+				TaskID:    task.ID("my-receiver/some.task/" + resource.ID),
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {

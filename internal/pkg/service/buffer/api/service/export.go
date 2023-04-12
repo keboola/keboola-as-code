@@ -15,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -49,9 +48,9 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 
 	t, err := d.TaskNode().StartTask(task.Config{
 		Type: exportCreateTaskType,
-		Key: taskKey.Key{
+		Key: task.Key{
 			ProjectID: receiverKey.ProjectID,
-			TaskID: taskKey.ID(strings.Join([]string{
+			TaskID: task.ID(strings.Join([]string{
 				export.ReceiverID.String(),
 				export.ExportID.String(),
 				exportCreateTaskType,
@@ -86,9 +85,9 @@ func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer
 
 	t, err := d.TaskNode().StartTask(task.Config{
 		Type: exportUpdateTaskType,
-		Key: taskKey.Key{
+		Key: task.Key{
 			ProjectID: receiverKey.ProjectID,
-			TaskID: taskKey.ID(strings.Join([]string{
+			TaskID: task.ID(strings.Join([]string{
 				exportKey.ReceiverID.String(),
 				exportKey.ExportID.String(),
 				exportUpdateTaskType,

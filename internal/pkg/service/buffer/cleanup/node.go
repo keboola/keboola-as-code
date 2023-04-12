@@ -17,7 +17,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -100,9 +99,9 @@ func (n *Node) startReceiverCleanupTask(ctx context.Context, k key.ReceiverKey) 
 
 	return n.tasks.StartTask(task.Config{
 		Type: taskTypeReceiverCleanup,
-		Key: taskKey.Key{
+		Key: task.Key{
 			ProjectID: k.ProjectID,
-			TaskID: taskKey.ID(strings.Join([]string{
+			TaskID: task.ID(strings.Join([]string{
 				k.ReceiverID.String(),
 				taskTypeReceiverCleanup,
 			}, "/")),

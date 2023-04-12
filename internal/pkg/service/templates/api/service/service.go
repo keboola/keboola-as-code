@@ -19,7 +19,6 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -170,9 +169,9 @@ func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *
 		}
 	}
 
-	tKey := taskKey.Key{
+	tKey := task.Key{
 		ProjectID: commonKey.ProjectID(d.ProjectID()),
-		TaskID:    taskKey.ID(TemplateUseTaskType),
+		TaskID:    task.ID(TemplateUseTaskType),
 	}
 
 	t, err := d.TaskNode().StartTask(task.Config{
@@ -384,9 +383,9 @@ func (s *service) UpgradeInstance(d dependencies.ForProjectRequest, payload *Upg
 		}
 	}
 
-	tKey := taskKey.Key{
+	tKey := task.Key{
 		ProjectID: commonKey.ProjectID(d.ProjectID()),
-		TaskID:    taskKey.ID(TemplateUpgradeTaskType),
+		TaskID:    task.ID(TemplateUpgradeTaskType),
 	}
 
 	t, err := d.TaskNode().StartTask(task.Config{
@@ -459,7 +458,7 @@ func (s *service) UpgradeInstanceValidateInputs(d dependencies.ForProjectRequest
 func (s *service) GetTask(d dependencies.ForProjectRequest, payload *GetTaskPayload) (res *Task, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
-	t, err := str.GetTask(ctx, taskKey.Key{
+	t, err := str.GetTask(ctx, task.Key{
 		ProjectID: commonKey.ProjectID(d.ProjectID()),
 		TaskID:    payload.TaskID,
 	})

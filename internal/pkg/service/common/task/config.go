@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -48,7 +47,7 @@ func WithTTL(v int) NodeOption {
 
 type Config struct {
 	Type      string
-	Key       taskKey.Key
+	Key       Key
 	Lock      string
 	Context   ContextFactory
 	Operation Task
@@ -61,7 +60,7 @@ func (c Config) Validate() error {
 	if c.Type == "" {
 		errs.Append(errors.New("task type must be configured"))
 	}
-	if c.Key == (taskKey.Key{}) {
+	if c.Key == (Key{}) {
 		errs.Append(errors.New("task key must be configured"))
 	}
 	if c.Context == nil {

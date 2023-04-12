@@ -16,7 +16,6 @@ import (
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
@@ -31,9 +30,9 @@ func TestSuccessfulTask(t *testing.T) {
 
 	lock := "my-lock"
 	taskType := "some.task"
-	tKey := taskKey.Key{
+	tKey := task.Key{
 		ProjectID: 123,
-		TaskID:    taskKey.ID("my-receiver/my-export/" + taskType),
+		TaskID:    task.ID("my-receiver/my-export/" + taskType),
 	}
 
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
@@ -202,9 +201,9 @@ func TestFailedTask(t *testing.T) {
 
 	lock := "my-lock"
 	taskType := "some.task"
-	tKey := taskKey.Key{
+	tKey := task.Key{
 		ProjectID: 123,
-		TaskID:    taskKey.ID("my-receiver/my-export/" + taskType),
+		TaskID:    task.ID("my-receiver/my-export/" + taskType),
 	}
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
@@ -372,9 +371,9 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 
 	lock := "my-lock"
 	taskType := "some.task"
-	tKey := taskKey.Key{
+	tKey := task.Key{
 		ProjectID: 123,
-		TaskID:    taskKey.ID("my-receiver/my-export/" + taskType),
+		TaskID:    task.ID("my-receiver/my-export/" + taskType),
 	}
 
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)

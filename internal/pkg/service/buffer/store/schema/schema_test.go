@@ -13,7 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
-	taskKeyImp "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
@@ -34,8 +34,8 @@ func TestSchema(t *testing.T) {
 	sliceKey := key.SliceKey{SliceID: key.SliceID(time2), FileKey: fileKey}
 	recordKey := key.RecordKey{SliceKey: sliceKey, ReceivedAt: key.ReceivedAt(time2.Add(time.Hour)), RandomSuffix: "abcdef"}
 	createdAt := utctime.UTCTime(time1)
-	taskID := taskKeyImp.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "some.task", createdAt.String(), "abcdef"))
-	taskKey := taskKeyImp.Key{ProjectID: projectID, TaskID: taskID}
+	taskID := task.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "some.task", createdAt.String(), "abcdef"))
+	taskKey := task.Key{ProjectID: projectID, TaskID: taskID}
 
 	cases := []keyTestCase{
 		{

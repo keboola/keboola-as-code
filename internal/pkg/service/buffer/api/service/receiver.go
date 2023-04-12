@@ -15,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -37,9 +36,9 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 		return nil, err
 	}
 
-	taskKey := taskKey.Key{
+	taskKey := task.Key{
 		ProjectID: receiver.ProjectID,
-		TaskID: taskKey.ID(strings.Join([]string{
+		TaskID: task.ID(strings.Join([]string{
 			receiver.ReceiverID.String(),
 			receiverCreateTaskType,
 		}, "/")),

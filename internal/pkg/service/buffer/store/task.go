@@ -7,28 +7,27 @@ import (
 
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	taskModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
-func (s *Store) GetTask(ctx context.Context, taskKey taskKey.Key) (r taskModel.Model, err error) {
+func (s *Store) GetTask(ctx context.Context, taskKey task.Key) (r task.Model, err error) {
 	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetTask")
 	defer telemetry.EndSpan(span, &err)
 
-	task, err := s.getTaskOp(ctx, taskKey).Do(ctx, s.client)
+	tsk, err := s.getTaskOp(ctx, taskKey).Do(ctx, s.client)
 	if err != nil {
-		return task.TaskModel{}, err
+		return task.Model{}, err
 	}
-	return task.Value, nil
+	return tsk.Value, nil
 }
 
-func (s *Store) getTaskOp(_ context.Context, taskKey taskKey.Key) op.ForType[*op.KeyValueT[taskModel.Model]] {
+func (s *Store) getTaskOp(_ context.Context, taskKey task.Key) op.ForType[*op.KeyValueT[task.Model]] {
 	return s.schema.
 		Tasks().
 		ByKey(taskKey).
 		Get().
-		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[taskModel.Model], err error) (*op.KeyValueT[taskModel.Model], error) {
+		WithProcessor(func(_ context.Context, _ etcd.OpResponse, kv *op.KeyValueT[task.Model], err error) (*op.KeyValueT[task.Model], error) {
 			if kv == nil && err == nil {
 				return nil, serviceError.NewResourceNotFoundError("task", taskKey.TaskID.String(), "project")
 			}

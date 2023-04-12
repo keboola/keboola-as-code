@@ -13,7 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
@@ -47,11 +46,11 @@ func (s *Service) retryFailedImports(ctx context.Context, wg *sync.WaitGroup, d 
 
 			return "", true
 		},
-		TaskKey: func(event etcdop.WatchEventT[model.File]) taskKey.Key {
+		TaskKey: func(event etcdop.WatchEventT[model.File]) task.Key {
 			file := event.Value
-			return taskKey.Key{
+			return task.Key{
 				ProjectID: file.ProjectID,
-				TaskID: taskKey.ID(strings.Join([]string{
+				TaskID: task.ID(strings.Join([]string{
 					file.ReceiverID.String(),
 					file.ExportID.String(),
 					file.FileID.String(),

@@ -4,12 +4,11 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
 type Model struct {
-	taskKey.Key
+	Key
 	Type       string           `json:"type"` // validate:"required"`
 	CreatedAt  utctime.UTCTime  `json:"createdAt" validate:"required"`
 	FinishedAt *utctime.UTCTime `json:"finishedAt,omitempty"`

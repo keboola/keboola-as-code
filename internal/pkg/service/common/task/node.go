@@ -20,7 +20,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
-	taskKeyImp "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -149,7 +148,7 @@ func (n *Node) StartTask(cfg Config) (t *Model, err error) {
 	// Append datetime and a random suffix to the task ID
 	createdAt := utctime.UTCTime(n.clock.Now())
 	taskKey := cfg.Key
-	taskKey.TaskID = taskKeyImp.ID(string(cfg.Key.TaskID) + "/" + createdAt.String() + "_" + idgenerator.Random(5))
+	taskKey.TaskID = ID(string(cfg.Key.TaskID) + "/" + createdAt.String() + "_" + idgenerator.Random(5))
 
 	// Lock task locally for periodical re-syncs,
 	// so locally can be determined that the task is already running.

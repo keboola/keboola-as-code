@@ -15,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -42,11 +41,11 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 			slice := event.Value
 			return slice.ReceiverKey.String()
 		},
-		TaskKey: func(event etcdop.WatchEventT[model.Slice]) taskKey.Key {
+		TaskKey: func(event etcdop.WatchEventT[model.Slice]) task.Key {
 			slice := event.Value
-			return taskKey.Key{
+			return task.Key{
 				ProjectID: slice.ProjectID,
-				TaskID: taskKey.ID(strings.Join([]string{
+				TaskID: task.ID(strings.Join([]string{
 					slice.ReceiverID.String(),
 					slice.ExportID.String(),
 					slice.FileID.String(),

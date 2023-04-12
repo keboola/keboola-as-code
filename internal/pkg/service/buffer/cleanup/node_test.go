@@ -20,8 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	taskModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -72,8 +71,8 @@ func TestCleanup(t *testing.T) {
 	// Add task without a finishedAt timestamp but too old - will be deleted
 	createdAtRaw, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
 	createdAt := utctime.UTCTime(createdAtRaw)
-	taskKey1 := taskKey.Key{ProjectID: receiverKey.ProjectID, TaskID: taskKey.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "some.task", createdAt.String(), "abcdef"))}
-	task1 := taskModel.Model{
+	taskKey1 := task.Key{ProjectID: receiverKey.ProjectID, TaskID: task.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "some.task", createdAt.String(), "abcdef"))}
+	task1 := task.Model{
 		Key:        taskKey1,
 		Type:       "some.task",
 		CreatedAt:  createdAt,
@@ -89,8 +88,8 @@ func TestCleanup(t *testing.T) {
 	// Add task with a finishedAt timestamp in the past - will be deleted
 	time2, _ := time.Parse(time.RFC3339, "2008-01-02T15:04:05+07:00")
 	time2Key := utctime.UTCTime(time2)
-	taskKey2 := taskKey.Key{ProjectID: receiverKey.ProjectID, TaskID: taskKey.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
-	task2 := taskModel.Model{
+	taskKey2 := task.Key{ProjectID: receiverKey.ProjectID, TaskID: task.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
+	task2 := task.Model{
 		Key:        taskKey2,
 		Type:       "other.task",
 		CreatedAt:  createdAt,
@@ -106,8 +105,8 @@ func TestCleanup(t *testing.T) {
 	// Add task with a finishedAt timestamp before a moment - will be ignored
 	time3 := time.Now()
 	time3Key := utctime.UTCTime(time3)
-	taskKey3 := taskKey.Key{ProjectID: receiverKey.ProjectID, TaskID: taskKey.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
-	task3 := taskModel.Model{
+	taskKey3 := task.Key{ProjectID: receiverKey.ProjectID, TaskID: task.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
+	task3 := task.Model{
 		Key:        taskKey3,
 		Type:       "other.task",
 		CreatedAt:  createdAt,
