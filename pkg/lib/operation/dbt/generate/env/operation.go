@@ -65,8 +65,9 @@ func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	linkedBucketEnvsMap := make(map[string]bool)
 	for _, bucket := range o.Buckets {
 		if bucket.LinkedProjectID != 0 && !linkedBucketEnvsMap[bucket.DatabaseEnv] {
-			linkedBucketEnvsMap[bucket.DatabaseEnv] = true // print only once
-			l.Infof(`  export %s=KEBOOLA_%d`, bucket.DatabaseEnv, bucket.LinkedProjectID)
+			stackPrefix, _, _ := strings.Cut(workspace.Details.Connection.Database, "_") // SAPI_..., KEBOOLA_..., etc.
+			linkedBucketEnvsMap[bucket.DatabaseEnv] = true                               // print only once
+			l.Infof(`  export %s=%s_%d`, bucket.DatabaseEnv, stackPrefix, bucket.LinkedProjectID)
 		}
 	}
 	l.Infof(`  export DBT_KBC_%s_ACCOUNT=%s`, targetUpper, host)
