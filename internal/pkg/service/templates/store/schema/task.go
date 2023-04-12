@@ -3,11 +3,11 @@ package schema
 import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
+	taskModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 )
 
-type tasks = PrefixT[model.Task]
+type tasks = PrefixT[taskModel.Model]
 
 type TasksRoot struct {
 	tasks
@@ -18,17 +18,17 @@ type TasksInProject struct {
 }
 
 func (v *Schema) Tasks() TasksRoot {
-	return TasksRoot{tasks: NewTypedPrefix[model.Task]("task", v.serde)}
+	return TasksRoot{tasks: NewTypedPrefix[taskModel.Model]("task", v.serde)}
 }
 
 func (v TasksRoot) InProject(projectID commonKey.ProjectID) TasksInProject {
 	return TasksInProject{tasks: v.tasks.Add(projectID.String())}
 }
 
-func (v TasksInProject) ByID(id taskKey.ID) KeyT[model.Task] {
+func (v TasksInProject) ByID(id taskKey.ID) KeyT[taskModel.Model] {
 	return v.tasks.Key(id.String())
 }
 
-func (v TasksRoot) ByKey(k taskKey.Key) KeyT[model.Task] {
+func (v TasksRoot) ByKey(k taskKey.Key) KeyT[taskModel.Model] {
 	return v.InProject(k.ProjectID).ByID(k.TaskID)
 }

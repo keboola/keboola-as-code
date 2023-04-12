@@ -11,7 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
-	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
+	taskModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
@@ -40,7 +40,7 @@ func NewMapper(d mapperDependencies) *Mapper {
 	}
 }
 
-func (m Mapper) TaskPayload(model *commonModel.Task) (r *Task) {
+func (m Mapper) TaskPayload(model *taskModel.Model) (r *Task) {
 	out := &Task{
 		ID:        model.TaskID,
 		URL:       formatTaskURL(m.apiHost, model.Key),

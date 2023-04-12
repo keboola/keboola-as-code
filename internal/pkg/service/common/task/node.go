@@ -20,7 +20,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
-	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 	taskKeyImp "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -52,7 +51,7 @@ type Node struct {
 	config     nodeConfig
 	tasksCount *atomic.Int64
 
-	taskEtcdPrefix etcdop.PrefixT[commonModel.Task]
+	taskEtcdPrefix etcdop.PrefixT[Model]
 	taskLocksMutex *sync.Mutex
 	taskLocks      map[string]bool
 }
@@ -75,7 +74,7 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 
 	proc := d.Process()
 
-	taskPrefix := etcdop.NewTypedPrefix[commonModel.Task](etcdop.NewPrefix(c.taskEtcdPrefix), d.EtcdSerde())
+	taskPrefix := etcdop.NewTypedPrefix[Model](etcdop.NewPrefix(c.taskEtcdPrefix), d.EtcdSerde())
 	n := &Node{
 		tracer:         d.Tracer(),
 		clock:          d.Clock(),
@@ -134,7 +133,7 @@ func (n *Node) StartTaskOrErr(cfg Config) error {
 
 // StartTask backed by local lock and etcd transaction, so the task run at most once.
 // The context will be passed to the operation callback.
-func (n *Node) StartTask(cfg Config) (t *commonModel.Task, err error) {
+func (n *Node) StartTask(cfg Config) (t *Model, err error) {
 	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
@@ -160,7 +159,7 @@ func (n *Node) StartTask(cfg Config) (t *commonModel.Task, err error) {
 	}
 
 	// Create task model
-	task := commonModel.Task{Key: taskKey, Type: cfg.Type, CreatedAt: createdAt, Node: n.nodeID, Lock: lock}
+	task := Model{Key: taskKey, Type: cfg.Type, CreatedAt: createdAt, Node: n.nodeID, Lock: lock}
 
 	// Get session
 	n.sessionLock.RLock()
@@ -195,7 +194,7 @@ func (n *Node) StartTask(cfg Config) (t *commonModel.Task, err error) {
 	return &task, nil
 }
 
-func (n *Node) runTask(logger log.Logger, task commonModel.Task, cfg Config) {
+func (n *Node) runTask(logger log.Logger, task Model, cfg Config) {
 	// Create task context
 	ctx, cancel := cfg.Context()
 	defer cancel()

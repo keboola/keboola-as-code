@@ -16,7 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
-	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -93,7 +92,7 @@ func (n *Node) Check(ctx context.Context) error {
 	return nil
 }
 
-func (n *Node) startReceiverCleanupTask(ctx context.Context, k key.ReceiverKey) (*commonModel.Task, error) {
+func (n *Node) startReceiverCleanupTask(ctx context.Context, k key.ReceiverKey) (*task.Model, error) {
 	// Limit number of parallel cleanup tasks per node
 	if err := n.sem.Acquire(ctx, 1); err != nil {
 		return nil, err

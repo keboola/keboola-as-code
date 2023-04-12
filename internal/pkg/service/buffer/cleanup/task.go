@@ -17,7 +17,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -69,7 +68,7 @@ func (t *Task) deleteExpiredTasks(ctx context.Context) error {
 		InReceiver(t.receiverKey).
 		GetAll().
 		Do(ctx, t.client).
-		ForEachKV(func(kv op.KeyValueT[commonModel.Task], header *iterator.Header) error {
+		ForEachKV(func(kv op.KeyValueT[task.Model], header *iterator.Header) error {
 			if kv.Value.IsForCleanup() {
 				if err := etcdop.Key(kv.Key()).Delete().DoOrErr(ctx, t.client); err == nil {
 					t.logger.Debugf(`deleted task "%s"`, kv.Value.Key.String())

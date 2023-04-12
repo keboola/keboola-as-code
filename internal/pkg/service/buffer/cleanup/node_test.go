@@ -20,7 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
+	taskModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -73,7 +73,7 @@ func TestCleanup(t *testing.T) {
 	createdAtRaw, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
 	createdAt := utctime.UTCTime(createdAtRaw)
 	taskKey1 := taskKey.Key{ProjectID: receiverKey.ProjectID, TaskID: taskKey.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "some.task", createdAt.String(), "abcdef"))}
-	task1 := commonModel.Task{
+	task1 := taskModel.Model{
 		Key:        taskKey1,
 		Type:       "some.task",
 		CreatedAt:  createdAt,
@@ -90,7 +90,7 @@ func TestCleanup(t *testing.T) {
 	time2, _ := time.Parse(time.RFC3339, "2008-01-02T15:04:05+07:00")
 	time2Key := utctime.UTCTime(time2)
 	taskKey2 := taskKey.Key{ProjectID: receiverKey.ProjectID, TaskID: taskKey.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
-	task2 := commonModel.Task{
+	task2 := taskModel.Model{
 		Key:        taskKey2,
 		Type:       "other.task",
 		CreatedAt:  createdAt,
@@ -107,7 +107,7 @@ func TestCleanup(t *testing.T) {
 	time3 := time.Now()
 	time3Key := utctime.UTCTime(time3)
 	taskKey3 := taskKey.Key{ProjectID: receiverKey.ProjectID, TaskID: taskKey.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
-	task3 := commonModel.Task{
+	task3 := taskModel.Model{
 		Key:        taskKey3,
 		Type:       "other.task",
 		CreatedAt:  createdAt,
