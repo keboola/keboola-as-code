@@ -11,7 +11,7 @@ Flags:
       --changed-until string      only export rows imported before this date
       --columns strings           comma-separated list of columns to export
       --format string             output format (json/csv) (default "csv")
-      --limit uint                limit the number of exported rows (default 100)
+      --limit uint                limit the number of exported rows
       --order string              order by one or more columns
   -H, --storage-api-host string   storage API host, eg. "connection.keboola.com"
       --timeout string            how long to wait for job to finish (default "5m")

@@ -83,7 +83,7 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 	cmd.Flags().String("changed-since", "", "only export rows imported after this date")
 	cmd.Flags().String("changed-until", "", "only export rows imported before this date")
 	cmd.Flags().StringSlice("columns", []string{}, "comma-separated list of columns to export")
-	cmd.Flags().Uint("limit", 100, "limit the number of exported rows")
+	cmd.Flags().Uint("limit", 0, "limit the number of exported rows")
 	cmd.Flags().String("where", "", "filter columns by value")
 	cmd.Flags().String("order", "", "order by one or more columns")
 	cmd.Flags().String("format", "csv", "output format (json/csv)")
