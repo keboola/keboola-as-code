@@ -12,9 +12,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
 const (
@@ -39,7 +39,7 @@ func (s *Service) retryFailedImports(ctx context.Context, wg *sync.WaitGroup, d 
 		},
 		StartTaskIf: func(event etcdop.WatchEventT[model.File]) (string, bool) {
 			file := event.Value
-			now := commonModel.UTCTime(s.clock.Now())
+			now := utctime.UTCTime(s.clock.Now())
 			needed := *file.RetryAfter
 			if !now.After(needed) {
 				return fmt.Sprintf(`File.RetryAfter condition not met, now: "%s", needed: "%s"`, now, needed), false

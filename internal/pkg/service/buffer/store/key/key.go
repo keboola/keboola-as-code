@@ -42,12 +42,12 @@ type SliceNodeKey struct {
 
 type RecordKey struct {
 	SliceKey
-	ReceivedAt   commonKey.ReceivedAt
+	ReceivedAt   ReceivedAt
 	RandomSuffix string
 }
 
 func NewRecordKey(sliceKey SliceKey, now time.Time) RecordKey {
-	return RecordKey{SliceKey: sliceKey, ReceivedAt: commonKey.ReceivedAt(now)}
+	return RecordKey{SliceKey: sliceKey, ReceivedAt: ReceivedAt(now)}
 }
 
 func (v ReceiverKey) GetReceiverKey() ReceiverKey {

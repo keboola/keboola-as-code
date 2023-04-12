@@ -17,9 +17,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -93,7 +93,7 @@ func (t *Task) deleteExpiredFiles(ctx context.Context) error {
 	filesCount := int64(0)
 	slicesCount := int64(0)
 	recordsCount := int64(0)
-	rangeEnd := commonKey.UTCTime(t.clock.Now().Add(-FileExpirationDays * 24 * time.Hour))
+	rangeEnd := utctime.UTCTime(t.clock.Now().Add(-FileExpirationDays * 24 * time.Hour))
 
 	// Iterate exports
 	errs := errors.NewMultiError()

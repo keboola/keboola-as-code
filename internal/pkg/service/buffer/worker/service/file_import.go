@@ -14,9 +14,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -66,7 +66,7 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 				defer func() {
 					if err != nil {
 						attempt := fileRes.RetryAttempt + 1
-						retryAfter := commonModel.UTCTime(RetryAt(NewRetryBackoff(), s.clock.Now(), attempt))
+						retryAfter := utctime.UTCTime(RetryAt(NewRetryBackoff(), s.clock.Now(), attempt))
 						fileRes.RetryAttempt = attempt
 						fileRes.RetryAfter = &retryAfter
 						err = errors.Errorf(`file import failed: %w, import will be retried after "%s"`, err, fileRes.RetryAfter)

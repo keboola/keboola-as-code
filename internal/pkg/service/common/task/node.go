@@ -20,9 +20,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 	taskKeyImp "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -148,7 +148,7 @@ func (n *Node) StartTask(cfg Config) (t *commonModel.Task, err error) {
 	lock := LockEtcdPrefix.Key(cfg.Lock)
 
 	// Append datetime and a random suffix to the task ID
-	createdAt := commonModel.UTCTime(n.clock.Now())
+	createdAt := utctime.UTCTime(n.clock.Now())
 	taskKey := cfg.Key
 	taskKey.TaskID = taskKeyImp.ID(string(cfg.Key.TaskID) + "/" + createdAt.String() + "_" + idgenerator.Random(5))
 
@@ -232,7 +232,7 @@ func (n *Node) runTask(logger log.Logger, task commonModel.Task, cfg Config) {
 
 	// Calculate duration
 	endTime := n.clock.Now()
-	finishedAt := commonKey.UTCTime(endTime)
+	finishedAt := utctime.UTCTime(endTime)
 	duration := endTime.Sub(startTime)
 
 	// Update fields
