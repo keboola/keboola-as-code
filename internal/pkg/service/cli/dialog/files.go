@@ -6,7 +6,6 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/upload"
@@ -27,8 +26,8 @@ func (p *Dialogs) AskFile(allFiles []*keboola.File) (*keboola.File, error) {
 	return nil, errors.New(`please specify a file`)
 }
 
-func (p *Dialogs) AskFileOutput(opts *options.Options) (string, error) {
-	output := opts.GetString(`output`)
+func (p *Dialogs) AskFileOutput() (string, error) {
+	output := p.options.GetString(`output`)
 	if len(output) == 0 {
 		output, _ = p.Ask(&prompt.Question{
 			Label:       "Output",
@@ -40,14 +39,14 @@ func (p *Dialogs) AskFileOutput(opts *options.Options) (string, error) {
 	}
 
 	output = strings.TrimSpace(output)
-	opts.Set(`output`, output)
+	p.options.Set(`output`, output)
 	return output, nil
 }
 
-func (p *Dialogs) AskUploadFile(opts *options.Options, input string, defaultName string) (upload.Options, error) {
+func (p *Dialogs) AskUploadFile(input string, defaultName string) (upload.Options, error) {
 	res := upload.Options{}
 
-	name, err := p.askFileName(opts, defaultName)
+	name, err := p.askFileName(defaultName)
 	if err != nil {
 		return res, err
 	}
@@ -56,16 +55,16 @@ func (p *Dialogs) AskUploadFile(opts *options.Options, input string, defaultName
 	if len(input) > 0 {
 		res.Input = input
 	} else {
-		res.Input = p.askFileInput(opts)
+		res.Input = p.askFileInput()
 	}
 
-	res.Tags = p.askFileTags(opts)
+	res.Tags = p.askFileTags()
 
 	return res, nil
 }
 
-func (p *Dialogs) askFileInput(opts *options.Options) string {
-	input := opts.GetString(`data`)
+func (p *Dialogs) askFileInput() string {
+	input := p.options.GetString(`data`)
 	if len(input) == 0 {
 		input, _ = p.Ask(&prompt.Question{
 			Label:       "File",
@@ -74,13 +73,13 @@ func (p *Dialogs) askFileInput(opts *options.Options) string {
 	}
 
 	input = strings.TrimSpace(input)
-	opts.Set(`input`, input)
+	p.options.Set(`input`, input)
 	return input
 }
 
-func (p *Dialogs) askFileName(opts *options.Options, defaultName string) (string, error) {
-	if opts.IsSet("file-name") {
-		return opts.GetString("file-name"), nil
+func (p *Dialogs) askFileName(defaultName string) (string, error) {
+	if p.options.IsSet("file-name") {
+		return p.options.GetString("file-name"), nil
 	} else {
 		name, ok := p.Ask(&prompt.Question{
 			Label:     "Enter a name for the file",
@@ -94,9 +93,9 @@ func (p *Dialogs) askFileName(opts *options.Options, defaultName string) (string
 	}
 }
 
-func (p *Dialogs) askFileTags(opts *options.Options) []string {
-	tagsStr := opts.GetString(`file-tags`)
-	if !opts.IsSet(`file-tags`) {
+func (p *Dialogs) askFileTags() []string {
+	tagsStr := p.options.GetString(`file-tags`)
+	if !p.options.IsSet(`file-tags`) {
 		tagsStr, _ = p.Ask(&prompt.Question{
 			Label:       "Tags",
 			Description: "Enter a comma-separated list of tags for the file, or enter to skip.",

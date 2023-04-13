@@ -9,7 +9,6 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -29,7 +28,6 @@ type branchesDialog struct {
 
 type branchesDialogDeps interface {
 	KeboolaProjectAPI() *keboola.API
-	Options() *options.Options
 }
 
 func (p *Dialogs) AskAllowedBranches(ctx context.Context, deps branchesDialogDeps) (model.AllowedBranches, error) {
@@ -50,8 +48,8 @@ func (d *branchesDialog) ask(ctx context.Context) (model.AllowedBranches, error)
 	}
 
 	// Defined by flag
-	if d.deps.Options().IsSet(`branches`) {
-		value := d.deps.Options().GetString(`branches`)
+	if d.options.IsSet(`branches`) {
+		value := d.options.GetString(`branches`)
 		if value == "*" {
 			return model.AllowedBranches{model.AllBranchesDef}, nil
 		} else if value == "main" {
@@ -70,7 +68,7 @@ func (d *branchesDialog) ask(ctx context.Context) (model.AllowedBranches, error)
 	case ModeAllBranches:
 		return model.AllowedBranches{model.AllBranchesDef}, nil
 	case ModeSelectSpecific:
-		if selectedBranches, err := d.SelectBranches(d.deps.Options(), d.allBranches, `Allowed project's branches:`); err == nil {
+		if selectedBranches, err := d.SelectBranches(d.allBranches, `Allowed project's branches:`); err == nil {
 			return branchesToAllowedBranches(selectedBranches), nil
 		} else {
 			return nil, err

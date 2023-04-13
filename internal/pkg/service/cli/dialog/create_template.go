@@ -10,7 +10,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -22,7 +21,6 @@ type createTmplDialogDeps interface {
 	Components() *model.ComponentsMap
 	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
-	Options() *options.Options
 }
 
 type createTmplDialog struct {
@@ -45,18 +43,6 @@ func (p *Dialogs) AskCreateTemplateOpts(ctx context.Context, deps createTmplDial
 }
 
 func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, error) {
-	// Host and token
-	errs := errors.NewMultiError()
-	if _, err := d.AskStorageAPIHost(d.deps); err != nil {
-		errs.Append(err)
-	}
-	if _, err := d.AskStorageAPIToken(d.deps); err != nil {
-		errs.Append(err)
-	}
-	if errs.Len() > 0 {
-		return d.out, errs
-	}
-
 	// Get Storage API
 	api := d.deps.KeboolaProjectAPI()
 
@@ -71,8 +57,8 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 	}
 
 	// Name
-	if d.deps.Options().IsSet(`name`) {
-		d.out.Name = d.deps.Options().GetString(`name`)
+	if d.options.IsSet(`name`) {
+		d.out.Name = d.options.GetString(`name`)
 	} else {
 		d.out.Name = d.askName()
 	}
@@ -81,8 +67,8 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 	}
 
 	// ID
-	if d.deps.Options().IsSet(`id`) {
-		d.out.ID = d.deps.Options().GetString(`id`)
+	if d.options.IsSet(`id`) {
+		d.out.ID = d.options.GetString(`id`)
 	} else {
 		d.out.ID = d.askID()
 	}
@@ -91,8 +77,8 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 	}
 
 	// Description
-	if d.deps.Options().IsSet(`description`) {
-		d.out.Description = d.deps.Options().GetString(`description`)
+	if d.options.IsSet(`description`) {
+		d.out.Description = d.options.GetString(`description`)
 	} else {
 		d.out.Description = d.askDescription()
 	}
@@ -102,7 +88,7 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 
 	// Branch
 	var err error
-	d.selectedBranch, err = d.SelectBranch(d.deps.Options(), allBranches, `Select the source branch`)
+	d.selectedBranch, err = d.SelectBranch(allBranches, `Select the source branch`)
 	if err != nil {
 		return d.out, err
 	}
@@ -121,10 +107,10 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 	}
 
 	// Select configs
-	if d.deps.Options().GetBool(`all-configs`) {
+	if d.options.GetBool(`all-configs`) {
 		d.selectedConfigs = d.allConfigs
 	} else {
-		configs, err := d.SelectConfigs(d.deps.Options(), d.allConfigs, `Select the configurations to include in the template`)
+		configs, err := d.SelectConfigs(d.allConfigs, `Select the configurations to include in the template`)
 		if err != nil {
 			return d.out, err
 		}
@@ -146,8 +132,8 @@ func (d *createTmplDialog) ask(ctx context.Context) (createTemplate.Options, err
 	d.out.StepsGroups = stepsGroups
 
 	// Ask for list of used components
-	if d.deps.Options().IsSet(`used-components`) {
-		d.out.Components = strings.Split(d.deps.Options().GetString(`used-components`), `,`)
+	if d.options.IsSet(`used-components`) {
+		d.out.Components = strings.Split(d.options.GetString(`used-components`), `,`)
 	} else {
 		d.out.Components = d.askComponents(d.deps.Components().Used())
 	}

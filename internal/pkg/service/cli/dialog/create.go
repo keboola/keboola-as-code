@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createConfig "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/create/config"
@@ -17,7 +16,6 @@ import (
 )
 
 type createDeps interface {
-	Options() *options.Options
 	Components() *model.ComponentsMap
 }
 
@@ -41,7 +39,7 @@ func (p *Dialogs) AskCreateBranch(d createDeps) (createBranch.Options, error) {
 	out := createBranch.Options{Pull: true}
 
 	// Name
-	name, err := p.askObjectName(d, `branch`)
+	name, err := p.askObjectName(`branch`)
 	if err != nil {
 		return out, err
 	}
@@ -55,7 +53,7 @@ func (p *Dialogs) AskCreateConfig(projectState *project.State, d createDeps) (cr
 
 	// Branch
 	allBranches := projectState.LocalObjects().Branches()
-	branch, err := p.SelectBranch(d.Options(), allBranches, `Select the target branch`)
+	branch, err := p.SelectBranch(allBranches, `Select the target branch`)
 	if err != nil {
 		return out, err
 	}
@@ -69,7 +67,7 @@ func (p *Dialogs) AskCreateConfig(projectState *project.State, d createDeps) (cr
 	out.ComponentID = componentID
 
 	// Name
-	name, err := p.askObjectName(d, `config`)
+	name, err := p.askObjectName(`config`)
 	if err != nil {
 		return out, err
 	}
@@ -83,7 +81,7 @@ func (p *Dialogs) AskCreateRow(projectState *project.State, d createDeps) (creat
 
 	// Branch
 	allBranches := projectState.LocalObjects().Branches()
-	branch, err := p.SelectBranch(d.Options(), allBranches, `Select the target branch`)
+	branch, err := p.SelectBranch(allBranches, `Select the target branch`)
 	if err != nil {
 		return out, err
 	}
@@ -91,7 +89,7 @@ func (p *Dialogs) AskCreateRow(projectState *project.State, d createDeps) (creat
 
 	// Config
 	allConfigs := projectState.LocalObjects().ConfigsWithRowsFrom(branch.BranchKey)
-	config, err := p.SelectConfig(d.Options(), allConfigs, `Select the target config`)
+	config, err := p.SelectConfig(allConfigs, `Select the target config`)
 	if err != nil {
 		return out, err
 	}
@@ -99,7 +97,7 @@ func (p *Dialogs) AskCreateRow(projectState *project.State, d createDeps) (creat
 	out.ConfigID = config.ID
 
 	// Name
-	name, err := p.askObjectName(d, `config row`)
+	name, err := p.askObjectName(`config row`)
 	if err != nil {
 		return out, err
 	}
@@ -108,10 +106,10 @@ func (p *Dialogs) AskCreateRow(projectState *project.State, d createDeps) (creat
 	return out, nil
 }
 
-func (p *Dialogs) askObjectName(d createDeps, desc string) (string, error) {
+func (p *Dialogs) askObjectName(desc string) (string, error) {
 	var name string
-	if d.Options().IsSet(`name`) {
-		return d.Options().GetString(`name`), nil
+	if p.options.IsSet(`name`) {
+		return p.options.GetString(`name`), nil
 	} else {
 		name, _ = p.Ask(&prompt.Question{
 			Label:     fmt.Sprintf(`Enter a name for the new %s`, desc),
@@ -128,8 +126,8 @@ func (p *Dialogs) askComponentID(d createDeps) (keboola.ComponentID, error) {
 	componentID := keboola.ComponentID("")
 	components := d.Components()
 
-	if d.Options().IsSet(`component-id`) {
-		componentID = keboola.ComponentID(strings.TrimSpace(d.Options().GetString(`component-id`)))
+	if p.options.IsSet(`component-id`) {
+		componentID = keboola.ComponentID(strings.TrimSpace(p.options.GetString(`component-id`)))
 	} else {
 		// Make select
 		selectOpts := make([]string, 0)

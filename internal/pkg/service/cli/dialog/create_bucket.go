@@ -3,22 +3,17 @@ package dialog
 import (
 	"github.com/keboola/go-client/pkg/keboola"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/bucket"
 )
 
-type createBucketDeps interface {
-	Options() *options.Options
-}
-
-func (p *Dialogs) AskCreateBucket(d createBucketDeps) (bucket.Options, error) {
+func (p *Dialogs) AskCreateBucket() (bucket.Options, error) {
 	opts := bucket.Options{}
 
-	if d.Options().IsSet("stage") {
-		stage := d.Options().GetString("stage")
+	if p.options.IsSet("stage") {
+		stage := p.options.GetString("stage")
 		if stage != keboola.BucketStageIn && stage != keboola.BucketStageOut {
 			return opts, errors.Errorf("invalid stage, must be one of: %s, %s", keboola.BucketStageIn, keboola.BucketStageOut)
 		}
@@ -34,8 +29,8 @@ func (p *Dialogs) AskCreateBucket(d createBucketDeps) (bucket.Options, error) {
 		opts.Stage = v
 	}
 
-	if d.Options().IsSet("display-name") {
-		opts.DisplayName = d.Options().GetString("display-name")
+	if p.options.IsSet("display-name") {
+		opts.DisplayName = p.options.GetString("display-name")
 	} else {
 		displayName, ok := p.Ask(&prompt.Question{
 			Label: "Enter a display name for the bucket",
@@ -45,8 +40,8 @@ func (p *Dialogs) AskCreateBucket(d createBucketDeps) (bucket.Options, error) {
 		}
 	}
 
-	if d.Options().IsSet("name") {
-		opts.Name = d.Options().GetString("name")
+	if p.options.IsSet("name") {
+		opts.Name = p.options.GetString("name")
 	} else {
 		name, ok := p.Ask(&prompt.Question{
 			Label:     "Enter a name for the bucket",
@@ -59,8 +54,8 @@ func (p *Dialogs) AskCreateBucket(d createBucketDeps) (bucket.Options, error) {
 		opts.Name = name
 	}
 
-	if d.Options().IsSet("description") {
-		opts.Description = d.Options().GetString("description")
+	if p.options.IsSet("description") {
+		opts.Description = p.options.GetString("description")
 	} else {
 		description, ok := p.Ask(&prompt.Question{
 			Label: "Enter a description for the bucket",

@@ -2,16 +2,15 @@ package dialog
 
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	renameOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/template/rename"
 )
 
 // AskRenameInstance - dialog to rename template instance.
-func (p *Dialogs) AskRenameInstance(projectState *project.State, opts *options.Options) (out renameOp.Options, err error) {
+func (p *Dialogs) AskRenameInstance(projectState *project.State) (out renameOp.Options, err error) {
 	// Select instance
-	branchKey, instance, err := p.AskTemplateInstance(projectState, opts)
+	branchKey, instance, err := p.AskTemplateInstance(projectState)
 	if err != nil {
 		return out, err
 	}
@@ -19,7 +18,7 @@ func (p *Dialogs) AskRenameInstance(projectState *project.State, opts *options.O
 	out.Instance = *instance
 
 	// Get name
-	if v := opts.GetString("new-name"); v != "" {
+	if v := p.options.GetString("new-name"); v != "" {
 		out.NewName = v
 	} else {
 		// Ask for instance name

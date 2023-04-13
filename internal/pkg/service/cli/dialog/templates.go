@@ -4,21 +4,20 @@ import (
 	"fmt"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (p *Dialogs) selectTemplateInstance(options *options.Options, branch *model.Branch, label string) (*model.TemplateInstance, error) {
-	if options.IsSet(`instance`) {
-		usage, found, err := branch.Metadata.TemplateInstance(options.GetString(`instance`))
+func (p *Dialogs) selectTemplateInstance(branch *model.Branch, label string) (*model.TemplateInstance, error) {
+	if p.options.IsSet(`instance`) {
+		usage, found, err := branch.Metadata.TemplateInstance(p.options.GetString(`instance`))
 		if err != nil {
 			return nil, err
 		}
 		if found {
 			return usage, nil
 		}
-		return nil, errors.Errorf(`template instance "%s" was not found in branch "%s"`, options.GetString(`instance`), branch.Name)
+		return nil, errors.Errorf(`template instance "%s" was not found in branch "%s"`, p.options.GetString(`instance`), branch.Name)
 	}
 
 	all, err := branch.Metadata.TemplatesInstances()
