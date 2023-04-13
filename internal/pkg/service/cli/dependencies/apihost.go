@@ -11,6 +11,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
+// storageAPIHost loads the Storage API host by the following priority:
+//
+// 1. from the ".keboola/manifest.json file", if present.
+//
+// Or from the Options:
+// 2. Flag.
+// 3. ENV
+// 4. An env file, e.g., ".env.local".
 func storageAPIHost(d Base, fallback string) (string, error) {
 	fs, opts := d.Fs(), d.Options()
 
