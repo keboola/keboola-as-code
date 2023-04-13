@@ -54,7 +54,7 @@ func (s *Service) closeFiles(ctx context.Context, wg *sync.WaitGroup, d dependen
 		TaskCtx: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(context.Background(), time.Minute)
 		},
-		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Task {
+		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) (string, error) {
 				// Wait until all slices are uploaded
 				file := event.Value

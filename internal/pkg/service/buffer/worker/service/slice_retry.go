@@ -61,7 +61,7 @@ func (s *Service) retryFailedUploads(ctx context.Context, wg *sync.WaitGroup, d 
 			}
 			return fmt.Sprintf(`Slice.RetryAfter condition not met, now: "%s", needed: "%s"`, now, needed), false
 		},
-		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Task {
+		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) (result string, err error) {
 				slice := event.Value
 				if err := s.store.ScheduleSliceForRetry(ctx, &slice); err != nil {

@@ -56,7 +56,7 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 		TaskCtx: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(context.Background(), 5*time.Minute)
 		},
-		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Task {
+		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) (result string, err error) {
 				// Get file
 				fileRes := event.Value

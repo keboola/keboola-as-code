@@ -72,7 +72,7 @@ func TestCleanup(t *testing.T) {
 	createdAtRaw, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
 	createdAt := utctime.UTCTime(createdAtRaw)
 	taskKey1 := task.Key{ProjectID: receiverKey.ProjectID, TaskID: task.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "some.task", createdAt.String(), "abcdef"))}
-	task1 := task.Model{
+	task1 := task.Task{
 		Key:        taskKey1,
 		Type:       "some.task",
 		CreatedAt:  createdAt,
@@ -89,7 +89,7 @@ func TestCleanup(t *testing.T) {
 	time2, _ := time.Parse(time.RFC3339, "2008-01-02T15:04:05+07:00")
 	time2Key := utctime.UTCTime(time2)
 	taskKey2 := task.Key{ProjectID: receiverKey.ProjectID, TaskID: task.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
-	task2 := task.Model{
+	task2 := task.Task{
 		Key:        taskKey2,
 		Type:       "other.task",
 		CreatedAt:  createdAt,
@@ -106,7 +106,7 @@ func TestCleanup(t *testing.T) {
 	time3 := time.Now()
 	time3Key := utctime.UTCTime(time3)
 	taskKey3 := task.Key{ProjectID: receiverKey.ProjectID, TaskID: task.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
-	task3 := task.Model{
+	task3 := task.Task{
 		Key:        taskKey3,
 		Type:       "other.task",
 		CreatedAt:  createdAt,

@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
-type Model struct {
+type Task struct {
 	Key
 	Type       string           `json:"type"` // validate:"required"`
 	CreatedAt  utctime.UTCTime  `json:"createdAt" validate:"required"`
@@ -19,19 +19,19 @@ type Model struct {
 	Duration   *time.Duration   `json:"duration,omitempty"`
 }
 
-func (t *Model) IsProcessing() bool {
+func (t *Task) IsProcessing() bool {
 	return t.FinishedAt == nil
 }
 
-func (t *Model) IsSuccessful() bool {
+func (t *Task) IsSuccessful() bool {
 	return !t.IsProcessing() && t.Error == ""
 }
 
-func (t *Model) IsFailed() bool {
+func (t *Task) IsFailed() bool {
 	return !t.IsProcessing() && t.Error != ""
 }
 
-func (t *Model) IsForCleanup() bool {
+func (t *Task) IsForCleanup() bool {
 	now := time.Now()
 	if t.IsProcessing() {
 		taskAge := now.Sub(t.CreatedAt.Time())

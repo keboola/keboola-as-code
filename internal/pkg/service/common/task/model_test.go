@@ -14,7 +14,7 @@ func TestTask_ForCleanup(t *testing.T) {
 
 	// Unfinished task, too recent
 	createdAt := utctime.UTCTime(time.Now().Add(-1 * time.Hour))
-	tsk := &Model{
+	tsk := &Task{
 		Key:        Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: nil,
@@ -24,7 +24,7 @@ func TestTask_ForCleanup(t *testing.T) {
 
 	// Unfinished task, too old
 	createdAt = utctime.UTCTime(time.Now().Add(-30 * 24 * time.Hour))
-	tsk = &Model{
+	tsk = &Task{
 		Key:        Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: nil,
@@ -34,7 +34,7 @@ func TestTask_ForCleanup(t *testing.T) {
 
 	// Finished task, successful, too recent
 	createdAt = utctime.UTCTime(time.Now().Add(-1 * time.Minute))
-	tsk = &Model{
+	tsk = &Task{
 		Key:        Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: &createdAt,
@@ -44,7 +44,7 @@ func TestTask_ForCleanup(t *testing.T) {
 
 	// Finished task, successful, too old
 	createdAt = utctime.UTCTime(time.Now().Add(-2 * time.Hour))
-	tsk = &Model{
+	tsk = &Task{
 		Key:        Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: &createdAt,
@@ -54,7 +54,7 @@ func TestTask_ForCleanup(t *testing.T) {
 
 	// Finished task, error, too recent
 	createdAt = utctime.UTCTime(time.Now().Add(-2 * time.Hour))
-	tsk = &Model{
+	tsk = &Task{
 		Key:        Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: &createdAt,
@@ -64,7 +64,7 @@ func TestTask_ForCleanup(t *testing.T) {
 
 	// Finished task, successful, too old
 	createdAt = utctime.UTCTime(time.Now().Add(-48 * time.Hour))
-	tsk = &Model{
+	tsk = &Task{
 		Key:        Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: &createdAt,

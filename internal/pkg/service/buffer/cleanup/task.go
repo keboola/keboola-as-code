@@ -68,7 +68,7 @@ func (t *Task) deleteExpiredTasks(ctx context.Context) error {
 		InReceiver(t.receiverKey).
 		GetAll().
 		Do(ctx, t.client).
-		ForEachKV(func(kv op.KeyValueT[task.Model], header *iterator.Header) error {
+		ForEachKV(func(kv op.KeyValueT[task.Task], header *iterator.Header) error {
 			if kv.Value.IsForCleanup() {
 				if err := etcdop.Key(kv.Key()).Delete().DoOrErr(ctx, t.client); err == nil {
 					t.logger.Debugf(`deleted task "%s"`, kv.Value.Key.String())

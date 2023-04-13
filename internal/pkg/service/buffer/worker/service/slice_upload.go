@@ -57,7 +57,7 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 		TaskCtx: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(context.Background(), 5*time.Minute)
 		},
-		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Task {
+		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) (result string, err error) {
 				// Get slice
 				slice := event.Value

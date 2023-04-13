@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (m Mapper) TaskPayload(model *taskModel.Model) (r *buffer.Task) {
+func (m Mapper) TaskPayload(model *taskModel.Task) (r *buffer.Task) {
 	out := &buffer.Task{
 		ID:        model.TaskID,
 		URL:       formatTaskURL(m.bufferAPIHost, model.Key),

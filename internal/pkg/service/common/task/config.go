@@ -50,7 +50,7 @@ type Config struct {
 	Key       Key
 	Lock      string
 	Context   ContextFactory
-	Operation Task
+	Operation Fn
 }
 
 type ContextFactory func() (context.Context, context.CancelFunc)

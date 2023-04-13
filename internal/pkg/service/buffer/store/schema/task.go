@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 )
 
-type tasks = PrefixT[task.Model]
+type tasks = PrefixT[task.Task]
 
 type TasksRoot struct {
 	tasks
@@ -26,7 +26,7 @@ type TasksInExport struct {
 }
 
 func (v *Schema) Tasks() TasksRoot {
-	return TasksRoot{tasks: NewTypedPrefix[task.Model]("task", v.serde)}
+	return TasksRoot{tasks: NewTypedPrefix[task.Task]("task", v.serde)}
 }
 
 func (v TasksRoot) InProject(projectID commonKey.ProjectID) TasksInProject {
@@ -41,10 +41,10 @@ func (v TasksRoot) InExport(k key.ExportKey) TasksInExport {
 	return TasksInExport{tasks: v.InReceiver(k.ReceiverKey).tasks.Add(k.ExportID.String())}
 }
 
-func (v TasksInProject) ByID(id task.ID) KeyT[task.Model] {
+func (v TasksInProject) ByID(id task.ID) KeyT[task.Task] {
 	return v.tasks.Key(id.String())
 }
 
-func (v TasksRoot) ByKey(k task.Key) KeyT[task.Model] {
+func (v TasksRoot) ByKey(k task.Key) KeyT[task.Task] {
 	return v.InProject(k.ProjectID).ByID(k.TaskID)
 }

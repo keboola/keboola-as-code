@@ -114,7 +114,7 @@ type orchestrator[T any] struct {
 	config Config[T]
 }
 
-type TaskFactory[T any] func(event etcdop.WatchEventT[T]) task.Task
+type TaskFactory[T any] func(event etcdop.WatchEventT[T]) task.Fn
 
 type dependencies interface {
 	Clock() clock.Clock

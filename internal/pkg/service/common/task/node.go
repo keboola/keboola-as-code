@@ -29,7 +29,7 @@ const (
 	LockEtcdPrefix = etcdop.Prefix("runtime/lock/task")
 )
 
-type Task func(ctx context.Context, logger log.Logger) (Result, error)
+type Fn func(ctx context.Context, logger log.Logger) (Result, error)
 
 type Result = string
 
@@ -50,7 +50,7 @@ type Node struct {
 	config     nodeConfig
 	tasksCount *atomic.Int64
 
-	taskEtcdPrefix etcdop.PrefixT[Model]
+	taskEtcdPrefix etcdop.PrefixT[Task]
 	taskLocksMutex *sync.Mutex
 	taskLocks      map[string]bool
 }
@@ -73,7 +73,7 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 
 	proc := d.Process()
 
-	taskPrefix := etcdop.NewTypedPrefix[Model](etcdop.NewPrefix(c.taskEtcdPrefix), d.EtcdSerde())
+	taskPrefix := etcdop.NewTypedPrefix[Task](etcdop.NewPrefix(c.taskEtcdPrefix), d.EtcdSerde())
 	n := &Node{
 		tracer:         d.Tracer(),
 		clock:          d.Clock(),
@@ -132,7 +132,7 @@ func (n *Node) StartTaskOrErr(cfg Config) error {
 
 // StartTask backed by local lock and etcd transaction, so the task run at most once.
 // The context will be passed to the operation callback.
-func (n *Node) StartTask(cfg Config) (t *Model, err error) {
+func (n *Node) StartTask(cfg Config) (t *Task, err error) {
 	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
@@ -158,7 +158,7 @@ func (n *Node) StartTask(cfg Config) (t *Model, err error) {
 	}
 
 	// Create task model
-	task := Model{Key: taskKey, Type: cfg.Type, CreatedAt: createdAt, Node: n.nodeID, Lock: lock}
+	task := Task{Key: taskKey, Type: cfg.Type, CreatedAt: createdAt, Node: n.nodeID, Lock: lock}
 
 	// Get session
 	n.sessionLock.RLock()
@@ -193,7 +193,7 @@ func (n *Node) StartTask(cfg Config) (t *Model, err error) {
 	return &task, nil
 }
 
-func (n *Node) runTask(logger log.Logger, task Model, cfg Config) {
+func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 	// Create task context
 	ctx, cancel := cfg.Context()
 	defer cancel()

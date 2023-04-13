@@ -61,7 +61,7 @@ func (s *Service) retryFailedImports(ctx context.Context, wg *sync.WaitGroup, d 
 		TaskCtx: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(context.Background(), time.Minute)
 		},
-		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Task {
+		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) (result string, err error) {
 				file := event.Value
 				file.StorageJob = nil

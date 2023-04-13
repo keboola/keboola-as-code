@@ -91,7 +91,7 @@ func (n *Node) Check(ctx context.Context) error {
 	return nil
 }
 
-func (n *Node) startReceiverCleanupTask(ctx context.Context, k key.ReceiverKey) (*task.Model, error) {
+func (n *Node) startReceiverCleanupTask(ctx context.Context, k key.ReceiverKey) (*task.Task, error) {
 	// Limit number of parallel cleanup tasks per node
 	if err := n.sem.Acquire(ctx, 1); err != nil {
 		return nil, err
