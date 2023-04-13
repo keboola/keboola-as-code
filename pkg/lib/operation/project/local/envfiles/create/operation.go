@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -16,6 +17,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Options() *options.Options
 	Tracer() trace.Tracer
+	StorageAPIToken() keboola.Token
 }
 
 func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (err error) {
@@ -24,13 +26,10 @@ func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (err error) {
 
 	logger := d.Logger()
 
-	// Get Storage API token
-	token := d.Options().GetString(options.StorageAPITokenOpt)
-
 	// .env.local - with token value
 	envLocalMsg := " - it contains the API token, keep it local and secret"
 	envLocalLines := []filesystem.FileLine{
-		{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: fmt.Sprintf(`KBC_STORAGE_API_TOKEN="%s"`, token)},
+		{Regexp: "^KBC_STORAGE_API_TOKEN=", Line: fmt.Sprintf(`KBC_STORAGE_API_TOKEN="%s"`, d.StorageAPIToken().Token)},
 	}
 	if err := createFile(logger, fs, ".env.local", envLocalMsg, envLocalLines); err != nil {
 		return err

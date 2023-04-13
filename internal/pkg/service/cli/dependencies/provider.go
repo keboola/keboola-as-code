@@ -68,13 +68,13 @@ func (v *provider) BaseDependencies() Base {
 	})
 }
 
-func (v *provider) DependenciesForLocalCommand() (ForLocalCommand, error) {
+func (v *provider) DependenciesForLocalCommand(opts ...Option) (ForLocalCommand, error) {
 	return v.publicDeps.InitAndGet(func() (*local, error) {
-		return newLocal(v.BaseDependencies())
+		return newLocal(v.BaseDependencies(), opts...)
 	})
 }
 
-func (v *provider) DependenciesForRemoteCommand(opts ...dependencies.ProjectDepsOption) (ForRemoteCommand, error) {
+func (v *provider) DependenciesForRemoteCommand(opts ...Option) (ForRemoteCommand, error) {
 	return v.projectDeps.InitAndGet(func() (*remote, error) {
 		publicDeps, err := v.DependenciesForLocalCommand()
 		if err != nil {
@@ -90,9 +90,9 @@ func (v *provider) DependenciesForRemoteCommand(opts ...dependencies.ProjectDeps
 	})
 }
 
-func (v *provider) LocalProject(ignoreErrors bool) (*project.Project, ForRemoteCommand, error) {
+func (v *provider) LocalProject(ignoreErrors bool, ops ...Option) (*project.Project, ForRemoteCommand, error) {
 	// Get local project
-	publicDeps, err := v.DependenciesForLocalCommand()
+	publicDeps, err := v.DependenciesForLocalCommand(ops...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -110,9 +110,9 @@ func (v *provider) LocalProject(ignoreErrors bool) (*project.Project, ForRemoteC
 	return prj, d, nil
 }
 
-func (v *provider) LocalRepository() (*repository.Repository, ForLocalCommand, error) {
+func (v *provider) LocalRepository(ops ...Option) (*repository.Repository, ForLocalCommand, error) {
 	// Get local repository
-	d, err := v.DependenciesForLocalCommand()
+	d, err := v.DependenciesForLocalCommand(ops...)
 	if err != nil {
 		return nil, nil, err
 	}

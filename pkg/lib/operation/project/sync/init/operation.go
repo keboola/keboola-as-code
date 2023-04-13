@@ -35,6 +35,7 @@ type dependencies interface {
 	Options() *options.Options
 	ProjectID() int
 	StorageAPIHost() string
+	StorageAPIToken() keboola.Token
 	Tracer() trace.Tracer
 }
 
