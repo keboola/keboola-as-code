@@ -17,7 +17,7 @@ func TestAskTemplateInstance_Interactive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -49,7 +49,7 @@ func TestAskTemplateInstance_Interactive(t *testing.T) {
 	}()
 
 	// Run
-	branchKey, instance, err := dialog.AskTemplateInstance(projectState, d.Options())
+	branchKey, instance, err := dialog.AskTemplateInstance(projectState)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -63,7 +63,7 @@ func TestAskTemplateInstance_Noninteractive_InvalidInstance(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, _ := createDialogs(t, true)
+	dialog, o, _ := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -77,10 +77,9 @@ func TestAskTemplateInstance_Noninteractive_InvalidInstance(t *testing.T) {
 	tokenID := "1234"
 	assert.NoError(t, branch.(*model.Branch).Metadata.UpsertTemplateInstance(time.Now(), instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
 
-	options := d.Options()
-	options.Set("branch", 123)
-	options.Set("instance", "inst2")
-	_, _, err = dialog.AskTemplateInstance(projectState, options)
+	o.Set("branch", 123)
+	o.Set("instance", "inst2")
+	_, _, err = dialog.AskTemplateInstance(projectState)
 	assert.Error(t, err)
 	assert.Equal(t, `template instance "inst2" was not found in branch "Main"`, err.Error())
 }
@@ -89,7 +88,7 @@ func TestAskTemplateInstance_Noninteractive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, _ := createDialogs(t, true)
+	dialog, o, _ := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -103,9 +102,8 @@ func TestAskTemplateInstance_Noninteractive(t *testing.T) {
 	tokenID := "1234"
 	assert.NoError(t, branch.(*model.Branch).Metadata.UpsertTemplateInstance(time.Now(), instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
 
-	options := d.Options()
-	options.Set("branch", 123)
-	options.Set("instance", "inst1")
-	_, _, err = dialog.AskTemplateInstance(projectState, options)
+	o.Set("branch", 123)
+	o.Set("instance", "inst1")
+	_, _, err = dialog.AskTemplateInstance(projectState)
 	assert.NoError(t, err)
 }

@@ -7,14 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 )
 
-func TestAskStorageAPIHostInteractive(t *testing.T) {
+func TestAskStorageAPIHost_HTTPS(t *testing.T) {
 	t.Parallel()
 
-	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps(t)
+	dialog, _, console := createDialogs(t, true)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -30,9 +28,8 @@ func TestAskStorageAPIHostInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out, err := dialog.AskStorageAPIHost(d)
-	assert.Equal(t, `foo.bar.com`, out)
-	assert.NoError(t, err)
+	out := dialog.AskStorageAPIHost()
+	assert.Equal(t, `https://foo.bar.com/`, out)
 
 	// Close terminal
 	assert.NoError(t, console.Tty().Close())
@@ -40,31 +37,32 @@ func TestAskStorageAPIHostInteractive(t *testing.T) {
 	assert.NoError(t, console.Close())
 }
 
-func TestAskStorageAPIHostByFlag(t *testing.T) {
+func TestAskStorageAPIHost_HTTP(t *testing.T) {
 	t.Parallel()
 
-	dialog, _ := createDialogs(t, true)
-	d := dependencies.NewMockedDeps(t)
-	opts := d.Options()
-	opts.Set(`storage-api-host`, `foo.bar.com`)
+	dialog, _, console := createDialogs(t, true)
+
+	// Interaction
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		assert.NoError(t, console.ExpectString("API host: "))
+
+		assert.NoError(t, console.SendLine(`http://foo.bar.com/`))
+
+		assert.NoError(t, console.ExpectEOF())
+	}()
 
 	// Run
-	out, err := dialog.AskStorageAPIHost(d)
-	assert.Equal(t, `foo.bar.com`, out)
-	assert.NoError(t, err)
-}
+	out := dialog.AskStorageAPIHost()
+	assert.Equal(t, `http://foo.bar.com/`, out)
 
-func TestAskStorageAPIHostMissing(t *testing.T) {
-	t.Parallel()
-
-	dialog, _ := createDialogs(t, false)
-	d := dependencies.NewMockedDeps(t)
-
-	// Run
-	out, err := dialog.AskStorageAPIHost(d)
-	assert.Empty(t, out)
-	assert.Error(t, err)
-	assert.Equal(t, `missing Storage API host`, err.Error())
+	// Close terminal
+	assert.NoError(t, console.Tty().Close())
+	wg.Wait()
+	assert.NoError(t, console.Close())
 }
 
 func TestAPIHostValidator(t *testing.T) {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/nop"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/terminal"
 )
@@ -20,9 +21,10 @@ func registerMockedBranchesResponse(httpTransport *httpmock.MockTransport, branc
 	)
 }
 
-func createDialogs(t *testing.T, interactive bool) (*dialog.Dialogs, terminal.Console) {
+func createDialogs(t *testing.T, interactive bool) (*dialog.Dialogs, *options.Options, terminal.Console) {
 	t.Helper()
 
+	opts := options.New()
 	if interactive {
 		// Create virtual console
 		console, err := terminal.New(t)
@@ -32,8 +34,8 @@ func createDialogs(t *testing.T, interactive bool) (*dialog.Dialogs, terminal.Co
 		p := cli.NewPrompt(console.Tty(), console.Tty(), console.Tty(), false)
 
 		// Create dialogs
-		return dialog.New(p), console
+		return dialog.New(p, opts), opts, console
 	} else {
-		return dialog.New(nopPrompt.New()), nil
+		return dialog.New(nopPrompt.New(), opts), opts, nil
 	}
 }

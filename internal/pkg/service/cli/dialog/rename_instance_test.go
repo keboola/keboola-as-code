@@ -18,7 +18,7 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -60,7 +60,7 @@ func TestAskRenameInstance_Interactive(t *testing.T) {
 	}()
 
 	// Run
-	opts, err := dialog.AskRenameInstance(projectState, d.Options())
+	opts, err := dialog.AskRenameInstance(projectState)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
@@ -77,7 +77,7 @@ func TestAskRenameInstance_Noninteractive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, _ := createDialogs(t, false)
+	dialog, o, _ := createDialogs(t, false)
 	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -95,11 +95,10 @@ func TestAskRenameInstance_Noninteractive(t *testing.T) {
 	assert.NoError(t, branch.Metadata.UpsertTemplateInstance(now, instanceID, instanceName, templateID, repositoryName, version, tokenID, nil))
 	instance, _, _ := branch.Metadata.TemplateInstance(instanceID)
 
-	options := d.Options()
-	options.Set("branch", 123)
-	options.Set("instance", "inst1")
-	options.Set("new-name", "New Name")
-	opts, err := dialog.AskRenameInstance(projectState, options)
+	o.Set("branch", 123)
+	o.Set("instance", "inst1")
+	o.Set("new-name", "New Name")
+	opts, err := dialog.AskRenameInstance(projectState)
 	assert.NoError(t, err)
 	assert.Equal(t, renameOp.Options{
 		Branch:   branchKey,

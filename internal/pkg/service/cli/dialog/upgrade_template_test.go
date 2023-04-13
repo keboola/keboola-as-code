@@ -19,7 +19,7 @@ func TestAskUpgradeTemplate(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 	projectState := d.MockedState()
 

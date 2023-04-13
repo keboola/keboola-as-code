@@ -8,15 +8,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 )
 
 func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	t.Parallel()
 
-	dialog, console := createDialogs(t, true)
-	o := options.New()
+	dialog, o, console := createDialogs(t, true)
 
 	// Default values are defined by options
 	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
@@ -49,7 +47,7 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out := dialog.AskWorkflowsOptions(o)
+	out := dialog.AskWorkflowsOptions()
 	assert.Equal(t, genWorkflows.Options{
 		Validate:   false,
 		Push:       true,
@@ -66,8 +64,7 @@ func TestAskWorkflowsOptionsInteractive(t *testing.T) {
 func TestAskWorkflowsOptionsByFlag(t *testing.T) {
 	t.Parallel()
 
-	dialog, _ := createDialogs(t, true)
-	o := options.New()
+	dialog, o, _ := createDialogs(t, true)
 	o.Set(`ci-validate`, `false`)
 	o.Set(`ci-push`, `true`)
 	o.Set(`ci-pull`, `false`)
@@ -79,7 +76,7 @@ func TestAskWorkflowsOptionsByFlag(t *testing.T) {
 	assert.NoError(t, o.BindPFlags(flags))
 
 	// Run
-	out := dialog.AskWorkflowsOptions(o)
+	out := dialog.AskWorkflowsOptions()
 	assert.Equal(t, genWorkflows.Options{
 		Validate:   false,
 		Push:       true,

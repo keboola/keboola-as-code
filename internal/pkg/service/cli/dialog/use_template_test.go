@@ -24,7 +24,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -185,7 +185,7 @@ func TestAskUseTemplate_ShowIfMet(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups, d.Options())
+	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups)
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
@@ -212,7 +212,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -306,7 +306,7 @@ func TestAskUseTemplate_ShowIfNotMet(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups, d.Options())
+	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups)
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
@@ -332,7 +332,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
@@ -452,7 +452,7 @@ func TestAskUseTemplate_OptionalSteps(t *testing.T) {
 		assert.NoError(t, console.ExpectEOF())
 	}()
 
-	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups, d.Options())
+	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups)
 	assert.NoError(t, err)
 
 	assert.NoError(t, console.Tty().Close())
@@ -482,11 +482,11 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
 	// Test dependencies
-	dialog, _ := createDialogs(t, false)
+	dialog, o, _ := createDialogs(t, false)
+	o.Set("branch", "123") // see MinimalProjectFs
+	o.Set("instance-name", "My Instance")
+	o.Set("inputs-file", inputsFilePath)
 	d := dependencies.NewMockedDeps(t)
-	d.Options().Set("branch", "123") // see MinimalProjectFs
-	d.Options().Set("instance-name", "My Instance")
-	d.Options().Set("inputs-file", inputsFilePath)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
@@ -550,7 +550,7 @@ func TestAskUseTemplate_InputsFromFile(t *testing.T) {
 		},
 	}
 
-	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups, d.Options())
+	output, err := dialog.AskUseTemplateOptions(projectState, stepsGroups)
 	assert.NoError(t, err)
 
 	// Assert
@@ -576,11 +576,11 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 	assert.NoError(t, os.WriteFile(inputsFilePath, []byte(inputsFile), 0o600))
 
 	// Test dependencies
-	dialog, _ := createDialogs(t, false)
+	dialog, o, _ := createDialogs(t, false)
+	o.Set("branch", "123") // see MinimalProjectFs
+	o.Set("instance-name", "My Instance")
+	o.Set("inputs-file", inputsFilePath)
 	d := dependencies.NewMockedDeps(t)
-	d.Options().Set("branch", "123") // see MinimalProjectFs
-	d.Options().Set("instance-name", "My Instance")
-	d.Options().Set("inputs-file", inputsFilePath)
 	projectState, err := d.MockedProject(fixtures.MinimalProjectFs(t)).LoadState(loadState.Options{LoadLocalState: true}, d)
 	assert.NoError(t, err)
 
@@ -644,7 +644,7 @@ func TestAskUseTemplate_InputsFromFile_InvalidStepsCount(t *testing.T) {
 		},
 	}
 
-	_, err = dialog.AskUseTemplateOptions(projectState, stepsGroups, d.Options())
+	_, err = dialog.AskUseTemplateOptions(projectState, stepsGroups)
 	expectedErr := `
 steps group 1 "Please select which steps you want to fill." is invalid:
 - all steps (3) must be selected

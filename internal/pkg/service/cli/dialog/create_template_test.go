@@ -23,7 +23,7 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 	addMockedObjectsResponses(d.MockedHTTPTransport())
 
@@ -35,18 +35,6 @@ func TestAskCreateTemplateInteractive(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-
-		assert.NoError(t, console.ExpectString("Please enter Keboola Storage API host, eg. \"connection.keboola.com\"."))
-
-		assert.NoError(t, console.ExpectString("API host: "))
-
-		assert.NoError(t, console.SendLine(`foo.bar.com`))
-
-		assert.NoError(t, console.ExpectString("Please enter Keboola Storage API token. The value will be hidden."))
-
-		assert.NoError(t, console.ExpectString("API token:"))
-
-		assert.NoError(t, console.SendLine(`my-secret-token`))
 
 		assert.NoError(t, console.ExpectString("Please enter a template public name for users."))
 
@@ -186,18 +174,18 @@ func TestAskCreateTemplateNonInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, _ := createDialogs(t, false)
+	dialog, o, _ := createDialogs(t, false)
 	d := dependencies.NewMockedDeps(t)
 	addMockedObjectsResponses(d.MockedHTTPTransport())
 
 	// Flags
-	d.Options().Set(`storage-api-host`, `connection.keboola.com`)
-	d.Options().Set(`storage-api-token`, `my-secret`)
-	d.Options().Set(`name`, `My Super Template`)
-	d.Options().Set(`id`, `my-super-template`)
-	d.Options().Set(`branch`, `123`)
-	d.Options().Set(`configs`, `keboola.my-component:1, keboola.my-component:3`)
-	d.Options().Set(`all-inputs`, true)
+	o.Set(`storage-api-host`, `connection.keboola.com`)
+	o.Set(`storage-api-token`, `my-secret`)
+	o.Set(`name`, `My Super Template`)
+	o.Set(`id`, `my-super-template`)
+	o.Set(`branch`, `123`)
+	o.Set(`configs`, `keboola.my-component:1, keboola.my-component:3`)
+	o.Set(`all-inputs`, true)
 
 	// Run
 	opts, err := dialog.AskCreateTemplateOpts(context.Background(), d)
@@ -295,17 +283,17 @@ func TestAskCreateTemplateAllConfigs(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, _ := createDialogs(t, false)
+	dialog, o, _ := createDialogs(t, false)
 	d := dependencies.NewMockedDeps(t)
 	addMockedObjectsResponses(d.MockedHTTPTransport())
 
 	// Flags
-	d.Options().Set(`storage-api-host`, `connection.keboola.com`)
-	d.Options().Set(`storage-api-token`, `my-secret`)
-	d.Options().Set(`name`, `My Super Template`)
-	d.Options().Set(`id`, `my-super-template`)
-	d.Options().Set(`branch`, `123`)
-	d.Options().Set(`all-configs`, true) // <<<<<<<<<<<<<<<<
+	o.Set(`storage-api-host`, `connection.keboola.com`)
+	o.Set(`storage-api-token`, `my-secret`)
+	o.Set(`name`, `My Super Template`)
+	o.Set(`id`, `my-super-template`)
+	o.Set(`branch`, `123`)
+	o.Set(`all-configs`, true) // <<<<<<<<<<<<<<<<
 
 	// Run
 	opts, err := dialog.AskCreateTemplateOpts(context.Background(), d)

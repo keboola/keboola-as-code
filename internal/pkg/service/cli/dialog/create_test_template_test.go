@@ -23,7 +23,7 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, console := createDialogs(t, true)
+	dialog, o, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 	addMockedObjectsResponses(d.MockedHTTPTransport())
 
@@ -82,8 +82,8 @@ func TestAskCreateTemplateTestInteractive(t *testing.T) {
 	}()
 
 	// Run
-	d.Options().Set(`test-name`, `one`)
-	opts, warnings, err := dialog.AskCreateTemplateTestOptions(tmpl, d.Options())
+	o.Set(`test-name`, `one`)
+	opts, warnings, err := dialog.AskCreateTemplateTestOptions(tmpl)
 	assert.NoError(t, err)
 	assert.NoError(t, console.Tty().Close())
 	wg.Wait()
