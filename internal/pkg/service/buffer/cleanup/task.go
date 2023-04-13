@@ -16,7 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -49,42 +48,10 @@ func (t *Task) Run(ctx context.Context) (task.Result, error) {
 
 func (t *Task) cleanReceiver(ctx context.Context) error {
 	errs := errors.NewMultiError()
-	if err := t.deleteExpiredTasks(ctx); err != nil {
-		errs.Append(err)
-	}
 	if err := t.deleteExpiredFiles(ctx); err != nil {
 		errs.Append(err)
 	}
 	return errs.ErrorOrNil()
-}
-
-// deleteExpiredTasks from the receiver.
-func (t *Task) deleteExpiredTasks(ctx context.Context) error {
-	deletedTasksCount := int64(0)
-
-	errs := errors.NewMultiError()
-	err := t.schema.
-		Tasks().
-		InReceiver(t.receiverKey).
-		GetAll().
-		Do(ctx, t.client).
-		ForEachKV(func(kv op.KeyValueT[task.Task], header *iterator.Header) error {
-			if kv.Value.IsForCleanup() {
-				if err := etcdop.Key(kv.Key()).Delete().DoOrErr(ctx, t.client); err == nil {
-					t.logger.Debugf(`deleted task "%s"`, kv.Value.Key.String())
-					deletedTasksCount++
-				} else {
-					errs.Append(err)
-				}
-			}
-			return nil
-		})
-	if err != nil {
-		errs.Append(err)
-	}
-
-	t.logger.Infof(`deleted "%d" tasks`, deletedTasksCount)
-	return err
 }
 
 // deleteExpiredFiles from the receiver, which are older than FileExpirationDays.
