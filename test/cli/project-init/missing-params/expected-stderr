@@ -1,3 +1,2 @@
 Error:
 - Missing Storage Api host, please use "--storage-api-host" flag or ENV variable "KBC_STORAGE_API_HOST".
-- Missing Storage Api token, please use "--storage-api-token" flag or ENV variable "KBC_STORAGE_API_TOKEN".
