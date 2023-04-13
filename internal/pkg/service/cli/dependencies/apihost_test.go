@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
