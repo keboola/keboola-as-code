@@ -16,12 +16,6 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/workspace/create/short`),
 		Long:  helpmsg.Read(`remote/workspace/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Ask for host and token if needed
-			baseDeps := p.BaseDependencies()
-			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
-				return err
-			}
-
 			// Get dependencies
 			d, err := p.DependenciesForRemoteCommand()
 			if err != nil {
@@ -29,7 +23,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Ask options
-			options, err := d.Dialogs().AskCreateWorkspace(d)
+			options, err := d.Dialogs().AskCreateWorkspace()
 			if err != nil {
 				return err
 			}

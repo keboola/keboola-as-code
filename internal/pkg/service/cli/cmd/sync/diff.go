@@ -14,9 +14,21 @@ func DiffCommand(p dependencies.Provider) *cobra.Command {
 		Use:   "diff",
 		Short: helpmsg.Read(`sync/diff/short`),
 		Long:  helpmsg.Read(`sync/diff/long`),
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			// Command must be used in project directory
-			prj, d, err := p.LocalProject(false)
+			_, _, err := p.BaseDependencies().FsInfo().ProjectDir()
+			if err != nil {
+				return err
+			}
+
+			// Get dependencies
+			d, err := p.DependenciesForRemoteCommand()
+			if err != nil {
+				return err
+			}
+
+			// Get local project
+			prj, _, err := d.LocalProject(false)
 			if err != nil {
 				return err
 			}

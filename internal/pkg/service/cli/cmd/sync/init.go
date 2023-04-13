@@ -18,17 +18,11 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`sync/init/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Require empty dir
-			baseDeps := p.BaseDependencies()
-			if _, err := baseDeps.EmptyDir(); err != nil {
+			if _, err := p.BaseDependencies().EmptyDir(); err != nil {
 				return err
 			}
 
-			// Ask for host and token if needed
-			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
-				return err
-			}
-
-			// Authenticate
+			// Get dependencies
 			projectDeps, err := p.DependenciesForRemoteCommand()
 			if err != nil {
 				return err

@@ -17,7 +17,17 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`template/test/run/short`),
 		Long:  helpmsg.Read(`template/test/run/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d, err := p.DependenciesForLocalCommand()
+			// Options
+			o := p.BaseDependencies().Options()
+			options := testOp.Options{
+				LocalOnly:  o.GetBool("local-only"),
+				RemoteOnly: o.GetBool("remote-only"),
+				TestName:   o.GetString("test-name"),
+				Verbose:    o.GetBool("verbose"),
+			}
+
+			// Get dependencies
+			d, err := p.DependenciesForLocalCommand(dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}
@@ -53,14 +63,6 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 					}
 					templates = append(templates, tmpl)
 				}
-			}
-
-			// Options
-			options := testOp.Options{
-				LocalOnly:  d.Options().GetBool("local-only"),
-				RemoteOnly: d.Options().GetBool("remote-only"),
-				TestName:   d.Options().GetString("test-name"),
-				Verbose:    d.Options().GetBool("verbose"),
 			}
 
 			// Test templates

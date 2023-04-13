@@ -21,7 +21,7 @@ func DescribeCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Command must be used in template repository
-			repo, d, err := p.LocalRepository()
+			repo, d, err := p.LocalRepository(dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}

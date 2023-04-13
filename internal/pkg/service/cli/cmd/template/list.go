@@ -15,7 +15,7 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`template/list/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Command must be used in template repository
-			repo, d, err := p.LocalRepository()
+			repo, d, err := p.LocalRepository(dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}

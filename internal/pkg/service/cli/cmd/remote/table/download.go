@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	common "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/download"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/unload"
 )
@@ -20,21 +19,13 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/table/download/long`),
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Ask for host and token if needed
-			baseDeps := p.BaseDependencies()
-			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
-				return err
-			}
-
 			// Get dependencies
-			d, err := p.DependenciesForRemoteCommand(common.WithoutMasterToken())
+			d, err := p.DependenciesForRemoteCommand(dependencies.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
 
-			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-unload")
-
+			// Ask options
 			var tableID keboola.TableID
 			if len(args) == 0 {
 				tableID, _, err = askTable(d, false)
@@ -49,7 +40,7 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 				tableID = id
 			}
 
-			fileOutput, err := baseDeps.Dialogs().AskFileOutput(baseDeps.Options())
+			fileOutput, err := d.Dialogs().AskFileOutput()
 			if err != nil {
 				return err
 			}
@@ -74,6 +65,9 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 				Output:      fileOutput,
 				AllowSliced: d.Options().GetBool("allow-sliced"),
 			}
+
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-unload")
 
 			return download.Run(d.CommandCtx(), downloadOpts, d)
 		},

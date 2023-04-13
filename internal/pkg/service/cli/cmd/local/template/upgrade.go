@@ -30,7 +30,7 @@ func UpgradeCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Select instance
-			branchKey, instance, err := d.Dialogs().AskTemplateInstance(projectState, d.Options())
+			branchKey, instance, err := d.Dialogs().AskTemplateInstance(projectState)
 			if err != nil {
 				return err
 			}

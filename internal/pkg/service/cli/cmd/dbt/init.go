@@ -19,20 +19,14 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Ask for host and token if needed
-			baseDeps := p.BaseDependencies()
-			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
+			// Ask options
+			opts, err := p.BaseDependencies().Dialogs().AskDbtInit()
+			if err != nil {
 				return err
 			}
 
 			// Get dependencies
 			d, err := p.DependenciesForRemoteCommand()
-			if err != nil {
-				return err
-			}
-
-			// Options
-			opts, err := d.Dialogs().AskDbtInit(d)
 			if err != nil {
 				return err
 			}

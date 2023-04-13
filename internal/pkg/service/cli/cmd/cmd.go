@@ -155,7 +155,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		prompt := cli.NewPrompt(os.Stdin, os.Stdout, os.Stderr, root.options.GetBool(options.NonInteractiveOpt))
 
 		// Create dependencies provider
-		p.Set(dependencies.NewProvider(cmd.Context(), envs, root.logger, root.fs, dialog.New(prompt), root.options))
+		p.Set(dependencies.NewProvider(cmd.Context(), envs, root.logger, root.fs, dialog.New(prompt, root.options), root.options))
 
 		// Check version
 		if err := versionCheck.Run(cmd.Context(), p.BaseDependencies()); err != nil {
