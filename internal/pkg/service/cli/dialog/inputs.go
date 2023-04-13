@@ -7,7 +7,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/create"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
@@ -15,7 +14,6 @@ import (
 
 type inputsDialogDeps interface {
 	Logger() log.Logger
-	Options() *options.Options
 	Components() *model.ComponentsMap
 }
 
@@ -29,7 +27,7 @@ func (p *Dialogs) askNewTemplateInputs(deps inputsDialogDeps, branch *model.Bran
 	components := deps.Components()
 
 	// Select which config/row fields will be replaced by user input.
-	selectAllInputs := deps.Options().GetBool("all-inputs")
+	selectAllInputs := p.options.GetBool("all-inputs")
 	selectDialog, err := newInputsSelectDialog(p.Prompt, selectAllInputs, components, branch, configs, inputs)
 	if err != nil {
 		return nil, nil, err

@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	common "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/download"
 )
 
@@ -19,19 +18,14 @@ func DownloadCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/file/download/long`),
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Ask for host and token if needed
-			baseDeps := p.BaseDependencies()
-			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
-				return err
-			}
-
-			output, err := baseDeps.Dialogs().AskFileOutput(baseDeps.Options())
+			// Get dependencies
+			d, err := p.DependenciesForRemoteCommand(dependencies.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
 
-			// Get dependencies
-			d, err := p.DependenciesForRemoteCommand(common.WithoutMasterToken())
+			// Ask options
+			output, err := d.Dialogs().AskFileOutput()
 			if err != nil {
 				return err
 			}

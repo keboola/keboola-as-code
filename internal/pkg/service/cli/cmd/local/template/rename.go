@@ -28,7 +28,7 @@ func RenameCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Ask
-			renameOpts, err := d.Dialogs().AskRenameInstance(projectState, d.Options())
+			renameOpts, err := d.Dialogs().AskRenameInstance(projectState)
 			if err != nil {
 				return err
 			}

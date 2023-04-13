@@ -11,7 +11,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
-	common "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/job/run"
 )
@@ -23,25 +22,14 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/job/run/long`),
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Parse options
-			localDeps, err := p.DependenciesForLocalCommand()
-			if err != nil {
-				return err
-			}
-
-			options, err := parseJobRunOptions(localDeps.Options(), args)
-			if err != nil {
-				return err
-			}
-
-			// Ask for host and token if needed
-			baseDeps := p.BaseDependencies()
-			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
-				return err
-			}
-
 			// Get dependencies
-			d, err := p.DependenciesForRemoteCommand(common.WithoutMasterToken())
+			d, err := p.DependenciesForRemoteCommand(dependencies.WithoutMasterToken())
+			if err != nil {
+				return err
+			}
+
+			// Parse options
+			opts, err := parseJobRunOptions(d.Options(), args)
 			if err != nil {
 				return err
 			}
@@ -49,7 +37,7 @@ func RunCommand(p dependencies.Provider) *cobra.Command {
 			// Send cmd successful/failed event
 			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-job-run")
 
-			return run.Run(d.CommandCtx(), options, d)
+			return run.Run(d.CommandCtx(), opts, d)
 		},
 	}
 

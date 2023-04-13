@@ -51,7 +51,7 @@ func UseCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			options, err := d.Dialogs().AskUseTemplateOptions(projectState, template.Inputs(), d.Options())
+			options, err := d.Dialogs().AskUseTemplateOptions(projectState, template.Inputs())
 			if err != nil {
 				return err
 			}

@@ -19,16 +19,22 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`sync/pull/short`),
 		Long:  helpmsg.Read(`sync/pull/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			publicDeps, err := p.DependenciesForLocalCommand()
+			// Command must be used in project directory
+			_, _, err := p.BaseDependencies().FsInfo().ProjectDir()
 			if err != nil {
 				return err
 			}
 
-			logger := publicDeps.Logger()
-			force := publicDeps.Options().GetBool(`force`)
+			// Authentication
+			d, err := p.DependenciesForRemoteCommand()
+			if err != nil {
+				return err
+			}
 
-			// Command must be used in project directory
-			prj, _, err := publicDeps.LocalProject(force)
+			// Get local project
+			logger := d.Logger()
+			force := d.Options().GetBool(`force`)
+			prj, _, err := d.LocalProject(force)
 			if err != nil {
 				if !force && errors.As(err, &project.InvalidManifestError{}) {
 					logger.Info()
@@ -37,14 +43,8 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Authentication
-			prjDeps, err := p.DependenciesForRemoteCommand()
-			if err != nil {
-				return err
-			}
-
 			// Load project state
-			projectState, err := prj.LoadState(loadState.PullOptions(force), prjDeps)
+			projectState, err := prj.LoadState(loadState.PullOptions(force), d)
 			if err != nil {
 				if !force && errors.As(err, &loadState.InvalidLocalStateError{}) {
 					logger.Info()
@@ -55,15 +55,15 @@ func PullCommand(p dependencies.Provider) *cobra.Command {
 
 			// Options
 			options := pull.Options{
-				DryRun:            prjDeps.Options().GetBool(`dry-run`),
+				DryRun:            d.Options().GetBool(`dry-run`),
 				LogUntrackedPaths: true,
 			}
 
 			// Send cmd successful/failed event
-			defer prjDeps.EventSender().SendCmdEvent(prjDeps.CommandCtx(), time.Now(), &cmdErr, "sync-pull")
+			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "sync-pull")
 
 			// Pull
-			return pull.Run(prjDeps.CommandCtx(), projectState, options, prjDeps)
+			return pull.Run(d.CommandCtx(), projectState, options, d)
 		},
 	}
 

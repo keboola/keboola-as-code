@@ -17,21 +17,13 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/workspace/delete/short`),
 		Long:  helpmsg.Read(`remote/workspace/delete/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			start := time.Now()
-
-			// Ask for host and token if needed
-			baseDeps := p.BaseDependencies()
-			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
-				return err
-			}
-
+			// Get dependencies
 			d, err := p.DependenciesForRemoteCommand()
 			if err != nil {
 				return err
 			}
 
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), start, &cmdErr, "remote-list-workspace")
-
+			// Options
 			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(d.CommandCtx())
 			if err != nil {
 				return errors.Errorf("cannot find default branch: %w", err)
@@ -42,17 +34,15 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			sandbox, err := d.Dialogs().AskWorkspace(d.Options(), allWorkspaces)
+			sandbox, err := d.Dialogs().AskWorkspace(allWorkspaces)
 			if err != nil {
 				return err
 			}
 
-			err = deleteOp.Run(d.CommandCtx(), d, branch.ID, sandbox)
-			if err != nil {
-				return err
-			}
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-list-workspace")
 
-			return nil
+			return deleteOp.Run(d.CommandCtx(), d, branch.ID, sandbox)
 		},
 	}
 

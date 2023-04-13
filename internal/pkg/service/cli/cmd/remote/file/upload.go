@@ -7,7 +7,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	common "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/upload"
 )
 
@@ -17,19 +16,14 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/file/upload/short`),
 		Long:  helpmsg.Read(`remote/file/upload/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Ask for host and token if needed
-			baseDeps := p.BaseDependencies()
-			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
-				return err
-			}
-
-			opts, err := baseDeps.Dialogs().AskUploadFile(baseDeps.Options(), "", "")
+			// Get dependencies
+			d, err := p.DependenciesForRemoteCommand(dependencies.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
 
-			// Get dependencies
-			d, err := p.DependenciesForRemoteCommand(common.WithoutMasterToken())
+			// Ask options
+			opts, err := d.Dialogs().AskUploadFile("", "")
 			if err != nil {
 				return err
 			}

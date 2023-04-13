@@ -20,7 +20,7 @@ import (
 
 func TestAskCreateBranch(t *testing.T) {
 	t.Parallel()
-	dialog, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 
 	// Interaction
@@ -54,7 +54,7 @@ func TestAskCreateConfig(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	fs := aferofs.NewMemoryFs()
 	d := dependencies.NewMockedDeps(t)
 
@@ -126,7 +126,7 @@ func TestAskCreateRow(t *testing.T) {
 	t.Parallel()
 
 	// Test dependencies
-	dialog, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	fs := aferofs.NewMemoryFs()
 	d := dependencies.NewMockedDeps(t)
 

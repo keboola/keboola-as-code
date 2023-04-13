@@ -24,6 +24,7 @@ type projectDepsConfig struct {
 
 type ProjectDepsOption func(c *projectDepsConfig)
 
+// WithoutMasterToken disables the requirement to provide a master token any valid token will be accepted.
 func WithoutMasterToken() ProjectDepsOption {
 	return func(c *projectDepsConfig) {
 		c.withoutMasterToken = true

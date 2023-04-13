@@ -6,21 +6,16 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/generate/env"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/dbt/init"
 )
 
-type targetNameDialogDeps interface {
-	Options() *options.Options
-}
-
-func (p *Dialogs) AskTargetName(d targetNameDialogDeps) (string, error) {
+func (p *Dialogs) AskTargetName() (string, error) {
 	var name string
-	if d.Options().IsSet(`target-name`) {
-		name = d.Options().GetString(`target-name`)
+	if p.options.IsSet(`target-name`) {
+		name = p.options.GetString(`target-name`)
 	} else {
 		name = p.askTargetName()
 	}
@@ -54,13 +49,13 @@ func validateTargetName(val interface{}) error {
 	return nil
 }
 
-func (p *Dialogs) AskGenerateEnv(d targetNameDialogDeps, allWorkspaces []*keboola.WorkspaceWithConfig) (env.Options, error) {
-	targetName, err := p.AskTargetName(d)
+func (p *Dialogs) AskGenerateEnv(allWorkspaces []*keboola.WorkspaceWithConfig) (env.Options, error) {
+	targetName, err := p.AskTargetName()
 	if err != nil {
 		return env.Options{}, err
 	}
 
-	workspace, err := p.AskWorkspace(d.Options(), allWorkspaces)
+	workspace, err := p.AskWorkspace(allWorkspaces)
 	if err != nil {
 		return env.Options{}, err
 	}
@@ -71,13 +66,13 @@ func (p *Dialogs) AskGenerateEnv(d targetNameDialogDeps, allWorkspaces []*kebool
 	}, nil
 }
 
-func (p *Dialogs) AskDbtInit(d targetNameDialogDeps) (initOp.DbtInitOptions, error) {
-	targetName, err := p.AskTargetName(d)
+func (p *Dialogs) AskDbtInit() (initOp.DbtInitOptions, error) {
+	targetName, err := p.AskTargetName()
 	if err != nil {
 		return initOp.DbtInitOptions{}, err
 	}
 
-	workspaceName, err := p.askWorkspaceNameForDbtInit(d)
+	workspaceName, err := p.askWorkspaceNameForDbtInit()
 	if err != nil {
 		return initOp.DbtInitOptions{}, err
 	}
@@ -88,9 +83,9 @@ func (p *Dialogs) AskDbtInit(d targetNameDialogDeps) (initOp.DbtInitOptions, err
 	}, nil
 }
 
-func (p *Dialogs) askWorkspaceNameForDbtInit(d createWorkspaceDeps) (string, error) {
-	if d.Options().IsSet("workspace-name") {
-		return d.Options().GetString("workspace-name"), nil
+func (p *Dialogs) askWorkspaceNameForDbtInit() (string, error) {
+	if p.options.IsSet("workspace-name") {
+		return p.options.GetString("workspace-name"), nil
 	} else {
 		name, ok := p.Ask(&prompt.Question{
 			Label:     "Enter a name for a workspace to create",

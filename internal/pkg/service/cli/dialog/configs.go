@@ -6,14 +6,13 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (p *Dialogs) SelectConfig(options *options.Options, all []*model.ConfigWithRows, label string) (result *model.ConfigWithRows, err error) {
-	if options.IsSet(`config`) {
-		if c, err := search.Config(all, options.GetString(`config`)); err == nil {
+func (p *Dialogs) SelectConfig(all []*model.ConfigWithRows, label string) (result *model.ConfigWithRows, err error) {
+	if p.options.IsSet(`config`) {
+		if c, err := search.Config(all, p.options.GetString(`config`)); err == nil {
 			result = c
 		} else {
 			return nil, err
@@ -34,8 +33,8 @@ func (p *Dialogs) SelectConfig(options *options.Options, all []*model.ConfigWith
 	return result, nil
 }
 
-func (p *Dialogs) SelectConfigs(options *options.Options, all []*model.ConfigWithRows, label string) (results []*model.ConfigWithRows, err error) {
-	if options.IsSet(`configs`) {
+func (p *Dialogs) SelectConfigs(all []*model.ConfigWithRows, label string) (results []*model.ConfigWithRows, err error) {
+	if p.options.IsSet(`configs`) {
 		// Create configs map
 		configByKey := make(map[string]*model.ConfigWithRows)
 		for _, config := range all {
@@ -44,7 +43,7 @@ func (p *Dialogs) SelectConfigs(options *options.Options, all []*model.ConfigWit
 
 		// Parse user input
 		errs := errors.NewMultiError()
-		for _, item := range strings.Split(options.GetString(`configs`), `,`) {
+		for _, item := range strings.Split(p.options.GetString(`configs`), `,`) {
 			item = strings.TrimSpace(item)
 			if len(item) == 0 {
 				continue

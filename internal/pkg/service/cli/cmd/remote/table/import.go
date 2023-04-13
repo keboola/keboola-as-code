@@ -9,7 +9,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	common "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	tableImport "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/import"
 )
 
@@ -20,20 +19,13 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/table/import/long`),
 		Args:  cobra.MaximumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Ask for host and token if needed
-			baseDeps := p.BaseDependencies()
-			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
-				return err
-			}
-
 			// Get dependencies
-			d, err := p.DependenciesForRemoteCommand(common.WithoutMasterToken())
+			d, err := p.DependenciesForRemoteCommand(dependencies.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
 
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-import")
-
+			// Ask options
 			var tableID keboola.TableID
 			var primaryKey []string
 			if len(args) < 1 {
@@ -44,7 +36,7 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 				tableID = id
 
 				if createNew {
-					primaryKey = d.Dialogs().AskPrimaryKey(d.Options())
+					primaryKey = d.Dialogs().AskPrimaryKey()
 				}
 			} else {
 				id, err := keboola.ParseTableID(args[0])
@@ -83,6 +75,9 @@ func ImportCommand(p dependencies.Provider) *cobra.Command {
 				Enclosure:       d.Options().GetString("file-enclosure"),
 				EscapedBy:       d.Options().GetString("file-escaped-by"),
 			}
+
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-import")
 
 			return tableImport.Run(d.CommandCtx(), opts, d)
 		},

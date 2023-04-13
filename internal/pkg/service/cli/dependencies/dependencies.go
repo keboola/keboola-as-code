@@ -72,14 +72,14 @@ type ForRemoteCommand interface {
 // Provider of CLI dependencies.
 type Provider interface {
 	BaseDependencies() Base
-	DependenciesForLocalCommand() (ForLocalCommand, error)
-	DependenciesForRemoteCommand(opts ...dependencies.ProjectDepsOption) (ForRemoteCommand, error)
+	DependenciesForLocalCommand(opts ...Option) (ForLocalCommand, error)
+	DependenciesForRemoteCommand(opts ...Option) (ForRemoteCommand, error)
 	// LocalProject method can be used by a CLI command that must be run in the local project directory.
 	// First, the local project is loaded, and then the authentication is performed,
 	// so the error that we are not in a project directory takes precedence over an invalid/missing token.
-	LocalProject(ignoreErrors bool) (*projectPkg.Project, ForRemoteCommand, error)
+	LocalProject(ignoreErrors bool, ops ...Option) (*projectPkg.Project, ForRemoteCommand, error)
 	// LocalRepository method can be used by a CLI command that must be run in the local repository directory.
-	LocalRepository() (*repository.Repository, ForLocalCommand, error)
+	LocalRepository(ops ...Option) (*repository.Repository, ForLocalCommand, error)
 	// LocalDbtProject method can be used by a CLI command that must be run in the dbt project directory.
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }

@@ -16,7 +16,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`template/test/create/short`),
 		Long:  helpmsg.Read(`template/test/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d, err := p.DependenciesForLocalCommand()
+			d, err := p.DependenciesForLocalCommand(dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}
@@ -44,7 +44,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Options
-			options, warnings, err := d.Dialogs().AskCreateTemplateTestOptions(tmpl, d.Options())
+			options, warnings, err := d.Dialogs().AskCreateTemplateTestOptions(tmpl)
 			if err != nil {
 				return err
 			}

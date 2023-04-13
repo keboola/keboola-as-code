@@ -5,14 +5,13 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (p *Dialogs) AskBucketID(opts *options.Options, all []*keboola.Bucket) (keboola.BucketID, error) {
-	if opts.IsSet(`bucket`) {
-		return keboola.ParseBucketID(opts.GetString(`bucket`))
+func (p *Dialogs) AskBucketID(all []*keboola.Bucket) (keboola.BucketID, error) {
+	if p.options.IsSet(`bucket`) {
+		return keboola.ParseBucketID(p.options.GetString(`bucket`))
 	}
 
 	selectOpts := make([]string, 0)

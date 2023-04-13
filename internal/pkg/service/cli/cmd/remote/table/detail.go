@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	common "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/detail"
 )
 
@@ -19,21 +18,13 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/table/detail/long`),
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Ask for host and token if needed
-			baseDeps := p.BaseDependencies()
-			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
-				return err
-			}
-
 			// Get dependencies
-			d, err := p.DependenciesForRemoteCommand(common.WithoutMasterToken())
+			d, err := p.DependenciesForRemoteCommand(dependencies.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
 
-			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-detail")
-
+			// Ask options
 			var tableID keboola.TableID
 			if len(args) == 0 {
 				tableID, _, err = askTable(d, false)
@@ -47,6 +38,9 @@ func DetailCommand(p dependencies.Provider) *cobra.Command {
 				}
 				tableID = id
 			}
+
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-detail")
 
 			return detail.Run(d.CommandCtx(), tableID, d)
 		},

@@ -28,7 +28,7 @@ func ListCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			branch, err := d.Dialogs().SelectBranch(d.Options(), projectState.LocalObjects().Branches(), `Select branch`)
+			branch, err := d.Dialogs().SelectBranch(projectState.LocalObjects().Branches(), `Select branch`)
 			if err != nil {
 				return err
 			}

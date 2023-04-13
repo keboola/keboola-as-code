@@ -19,12 +19,12 @@ func askTable(d dependencies.ForRemoteCommand, allowCreateNew bool) (tableID keb
 		return keboola.TableID{}, false, err
 	}
 
-	opts := []dialog.AskTableOption{}
+	var opts []dialog.AskTableOption
 	if allowCreateNew {
 		opts = append(opts, dialog.WithAllowCreateNewTable())
 	}
 
-	table, err := d.Dialogs().AskTable(d.Options(), *allTables, opts...)
+	table, err := d.Dialogs().AskTable(*allTables, opts...)
 	if err != nil {
 		return keboola.TableID{}, false, err
 	}

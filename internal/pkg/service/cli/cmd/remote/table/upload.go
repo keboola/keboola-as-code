@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	common "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	fileUpload "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/file/upload"
 	tableImport "github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/import"
 )
@@ -20,18 +19,13 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/table/upload/long`),
 		Args:  cobra.MaximumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Ask for host and token if needed
-			baseDeps := p.BaseDependencies()
-			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
-				return err
-			}
-
 			// Get dependencies
-			d, err := p.DependenciesForRemoteCommand(common.WithoutMasterToken())
+			d, err := p.DependenciesForRemoteCommand(dependencies.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
 
+			// Ask options
 			var tableID keboola.TableID
 			var primaryKey []string
 			if len(args) < 1 {
@@ -42,7 +36,7 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 				tableID = id
 
 				if createNew {
-					primaryKey = d.Dialogs().AskPrimaryKey(d.Options())
+					primaryKey = d.Dialogs().AskPrimaryKey()
 				}
 			} else {
 				id, err := keboola.ParseTableID(args[0])
@@ -57,12 +51,10 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 				inputFile = args[1]
 			}
 
-			fileUploadOpts, err := baseDeps.Dialogs().AskUploadFile(baseDeps.Options(), inputFile, tableID.String())
+			fileUploadOpts, err := d.Dialogs().AskUploadFile(inputFile, tableID.String())
 			if err != nil {
 				return err
 			}
-
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-upload")
 
 			file, err := fileUpload.Run(d.CommandCtx(), fileUploadOpts, d)
 			if err != nil {
@@ -80,6 +72,9 @@ func UploadCommand(p dependencies.Provider) *cobra.Command {
 				WithoutHeaders:  d.Options().GetBool("file-without-headers"),
 				PrimaryKey:      primaryKey,
 			}
+
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-upload")
 
 			return tableImport.Run(d.CommandCtx(), tableImportOpts, d)
 		},

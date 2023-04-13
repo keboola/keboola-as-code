@@ -12,59 +12,17 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/cmd/ci"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
 	genWorkflows "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/workflows/generate"
 	initOp "github.com/keboola/keboola-as-code/pkg/lib/operation/project/sync/init"
 )
 
-func TestDialogs_AskHostAndToken(t *testing.T) {
-	t.Parallel()
-
-	// testDependencies
-	dialog, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps(t)
-	opts := d.Options()
-
-	// Interaction
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		assert.NoError(t, console.ExpectString("Please enter Keboola Storage API host, eg. \"connection.keboola.com\"."))
-
-		assert.NoError(t, console.ExpectString("API host: "))
-
-		assert.NoError(t, console.SendLine(`foo.bar.com`))
-
-		assert.NoError(t, console.ExpectString("Please enter Keboola Storage API token. The value will be hidden."))
-
-		assert.NoError(t, console.ExpectString("API token: "))
-
-		assert.NoError(t, console.SendLine(`my-secret-token`))
-
-		assert.NoError(t, console.ExpectEOF())
-	}()
-
-	// Run
-	err := dialog.AskHostAndToken(d)
-	assert.NoError(t, err)
-	assert.NoError(t, console.Tty().Close())
-	wg.Wait()
-	assert.NoError(t, console.Close())
-
-	// Assert
-	assert.Equal(t, `foo.bar.com`, opts.Get(options.StorageAPIHostOpt))
-	assert.Equal(t, `my-secret-token`, opts.Get(options.StorageAPITokenOpt))
-}
-
 func TestDialogs_AskInitOptions(t *testing.T) {
 	t.Parallel()
 
 	// testDependencies
-	dialog, console := createDialogs(t, true)
+	dialog, o, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 
 	branches := []*model.Branch{{BranchKey: model.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}
@@ -76,7 +34,7 @@ func TestDialogs_AskInitOptions(t *testing.T) {
 	// Default values are defined by options
 	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
 	ci.WorkflowsCmdFlags(flags)
-	assert.NoError(t, d.Options().BindPFlags(flags))
+	assert.NoError(t, o.BindPFlags(flags))
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -138,7 +96,7 @@ func TestDialogs_AskInitOptions_No_CI(t *testing.T) {
 	t.Parallel()
 
 	// testDependencies
-	dialog, console := createDialogs(t, true)
+	dialog, o, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 
 	branches := []*model.Branch{{BranchKey: model.BranchKey{ID: 123}, Name: "Main", IsDefault: true}}
@@ -150,9 +108,9 @@ func TestDialogs_AskInitOptions_No_CI(t *testing.T) {
 	// Default values are defined by options
 	flags := pflag.NewFlagSet(``, pflag.ExitOnError)
 	ci.WorkflowsCmdFlags(flags)
-	assert.NoError(t, d.Options().BindPFlags(flags))
-	d.Options().Set("ci", "false")
-	d.Options().Set("branches", "main")
+	assert.NoError(t, o.BindPFlags(flags))
+	o.Set("ci", "false")
+	o.Set("branches", "main")
 
 	// Run
 	opts, err := dialog.AskInitOptions(context.Background(), d)

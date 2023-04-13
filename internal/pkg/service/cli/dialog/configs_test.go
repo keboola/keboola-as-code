@@ -7,15 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 )
 
 func TestSelectConfigInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, console := createDialogs(t, true)
-	o := options.New()
+	dialog, _, console := createDialogs(t, true)
 
 	// All configs
 	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: `foo.bar`, ID: "1"}, Name: `Config 1`}}
@@ -45,7 +43,7 @@ func TestSelectConfigInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out, err := dialog.SelectConfig(o, allConfigs, `LABEL`)
+	out, err := dialog.SelectConfig(allConfigs, `LABEL`)
 	assert.Same(t, config2, out)
 	assert.NoError(t, err)
 
@@ -59,8 +57,7 @@ func TestSelectConfigByFlag(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _ := createDialogs(t, false)
-	o := options.New()
+	dialog, o, _ := createDialogs(t, false)
 	o.Set(`config`, `2`)
 
 	// All configs
@@ -70,7 +67,7 @@ func TestSelectConfigByFlag(t *testing.T) {
 	allConfigs := []*model.ConfigWithRows{config1, config2, config3}
 
 	// Run
-	out, err := dialog.SelectConfig(o, allConfigs, `LABEL`)
+	out, err := dialog.SelectConfig(allConfigs, `LABEL`)
 	assert.Same(t, config2, out)
 	assert.NoError(t, err)
 }
@@ -79,8 +76,7 @@ func TestSelectConfigNonInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _ := createDialogs(t, false)
-	o := options.New()
+	dialog, o, _ := createDialogs(t, false)
 	o.Set(`non-interactive`, `true`)
 
 	// All configs
@@ -90,7 +86,7 @@ func TestSelectConfigNonInteractive(t *testing.T) {
 	allConfigs := []*model.ConfigWithRows{config1, config2, config3}
 
 	// Run
-	_, err := dialog.SelectConfig(o, allConfigs, `LABEL`)
+	_, err := dialog.SelectConfig(allConfigs, `LABEL`)
 	assert.ErrorContains(t, err, "please specify config")
 }
 
@@ -98,8 +94,7 @@ func TestSelectConfigMissing(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _ := createDialogs(t, false)
-	o := options.New()
+	dialog, _, _ := createDialogs(t, false)
 
 	// All configs
 	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: `foo.bar`, ID: "1"}, Name: `Config 1`}}
@@ -108,7 +103,7 @@ func TestSelectConfigMissing(t *testing.T) {
 	allConfigs := []*model.ConfigWithRows{config1, config2, config3}
 
 	// Run
-	out, err := dialog.SelectConfig(o, allConfigs, `LABEL`)
+	out, err := dialog.SelectConfig(allConfigs, `LABEL`)
 	assert.Nil(t, out)
 	assert.Error(t, err)
 	assert.Equal(t, `please specify config`, err.Error())
@@ -118,8 +113,7 @@ func TestSelectConfigsInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, console := createDialogs(t, true)
-	o := options.New()
+	dialog, _, console := createDialogs(t, true)
 
 	// All configs
 	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: `foo.bar`, ID: "1"}, Name: `Config 1`}}
@@ -163,7 +157,7 @@ func TestSelectConfigsInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out, err := dialog.SelectConfigs(o, allConfigs, `LABEL`)
+	out, err := dialog.SelectConfigs(allConfigs, `LABEL`)
 	assert.Equal(t, []*model.ConfigWithRows{config2, config4}, out)
 	assert.NoError(t, err)
 
@@ -177,8 +171,7 @@ func TestSelectConfigsByFlag(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _ := createDialogs(t, false)
-	o := options.New()
+	dialog, o, _ := createDialogs(t, false)
 	o.Set(`configs`, `foo.bar:2, foo.bar:4`)
 
 	// All configs
@@ -190,7 +183,7 @@ func TestSelectConfigsByFlag(t *testing.T) {
 	allConfigs := []*model.ConfigWithRows{config1, config2, config3, config4, config5}
 
 	// Run
-	out, err := dialog.SelectConfigs(o, allConfigs, `LABEL`)
+	out, err := dialog.SelectConfigs(allConfigs, `LABEL`)
 	assert.Equal(t, []*model.ConfigWithRows{config2, config4}, out)
 	assert.NoError(t, err)
 }
@@ -199,8 +192,7 @@ func TestSelectConfigsMissing(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _ := createDialogs(t, false)
-	o := options.New()
+	dialog, _, _ := createDialogs(t, false)
 
 	// All configs
 	config1 := &model.ConfigWithRows{Config: &model.Config{ConfigKey: model.ConfigKey{BranchID: 1, ComponentID: `foo.bar`, ID: "1"}, Name: `Config 1`}}
@@ -211,7 +203,7 @@ func TestSelectConfigsMissing(t *testing.T) {
 	allConfigs := []*model.ConfigWithRows{config1, config2, config3, config4, config5}
 
 	// Run
-	out, err := dialog.SelectConfigs(o, allConfigs, `LABEL`)
+	out, err := dialog.SelectConfigs(allConfigs, `LABEL`)
 	assert.Nil(t, out)
 	assert.Error(t, err)
 	assert.Equal(t, `please specify at least one config`, err.Error())

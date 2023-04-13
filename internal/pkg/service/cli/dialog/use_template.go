@@ -14,7 +14,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
@@ -31,24 +30,22 @@ type useTmplDialog struct {
 	*Dialogs
 	projectState *project.State
 	inputs       template.StepsGroups
-	options      *options.Options
 	out          useTemplate.Options
 }
 
 // AskUseTemplateOptions - dialog for using the template in the project.
-func (p *Dialogs) AskUseTemplateOptions(projectState *project.State, inputs template.StepsGroups, opts *options.Options) (useTemplate.Options, error) {
+func (p *Dialogs) AskUseTemplateOptions(projectState *project.State, inputs template.StepsGroups) (useTemplate.Options, error) {
 	dialog := &useTmplDialog{
 		Dialogs:      p,
 		projectState: projectState,
 		inputs:       inputs,
-		options:      opts,
 	}
 	return dialog.ask()
 }
 
 func (d *useTmplDialog) ask() (useTemplate.Options, error) {
 	// Target branch
-	targetBranch, err := d.SelectBranch(d.options, d.projectState.LocalObjects().Branches(), `Select the target branch`)
+	targetBranch, err := d.SelectBranch(d.projectState.LocalObjects().Branches(), `Select the target branch`)
 	if err != nil {
 		return d.out, err
 	}
@@ -62,7 +59,7 @@ func (d *useTmplDialog) ask() (useTemplate.Options, error) {
 	}
 
 	// User inputs
-	if v, _, err := d.askUseTemplateInputs(d.inputs.ToExtended(), d.options, false); err != nil {
+	if v, _, err := d.askUseTemplateInputs(d.inputs.ToExtended(), false); err != nil {
 		return d.out, err
 	} else {
 		d.out.Inputs = v
@@ -96,7 +93,6 @@ type useTmplInputsDialog struct {
 	*Dialogs
 	groups        input.StepsGroupsExt
 	inputs        map[string]*input.Input
-	options       *options.Options
 	inputsFile    map[string]any // inputs values loaded from a file specified by inputsFileFlag
 	useInputsFile bool
 	out           template.InputsValues
@@ -105,12 +101,11 @@ type useTmplInputsDialog struct {
 }
 
 // askUseTemplateInputs - dialog to enter template inputs.
-func (p *Dialogs) askUseTemplateInputs(groups input.StepsGroupsExt, opts *options.Options, isForTest bool) (template.InputsValues, []string, error) {
+func (p *Dialogs) askUseTemplateInputs(groups input.StepsGroupsExt, isForTest bool) (template.InputsValues, []string, error) {
 	dialog := &useTmplInputsDialog{
 		Dialogs:      p,
 		groups:       groups,
 		inputs:       groups.InputsMap(),
-		options:      opts,
 		context:      context.Background(),
 		inputsValues: make(map[string]any),
 	}

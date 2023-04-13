@@ -25,14 +25,14 @@ const (
 // TestAllowedBranchesByFlag use flag value if present.
 func TestAskAllowedBranchesByFlag(t *testing.T) {
 	t.Parallel()
-	dialog, console := createDialogs(t, true)
+	dialog, o, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
-	d.Options().SetDefault(`branches`, `*`)
-	d.Options().Set(`branches`, `foo, bar`)
+	o.SetDefault(`branches`, `*`)
+	o.Set(`branches`, `foo, bar`)
 
 	// No interaction expected
 	allowedBranches, err := dialog.AskAllowedBranches(context.Background(), d)
@@ -45,13 +45,13 @@ func TestAskAllowedBranchesByFlag(t *testing.T) {
 // TestAllowedBranchesDefaultValue use default value if terminal is not interactive.
 func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 	t.Parallel()
-	dialog, _ := createDialogs(t, false)
+	dialog, o, _ := createDialogs(t, false)
 	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
 		[]*keboola.Branch{{BranchKey: keboola.BranchKey{ID: 123}, Name: "Main", IsDefault: true}},
 	)
-	d.Options().SetDefault(`branches`, `*`)
+	o.SetDefault(`branches`, `*`)
 
 	// No interaction expected
 	allowedBranches, err := dialog.AskAllowedBranches(context.Background(), d)
@@ -63,7 +63,7 @@ func TestAskAllowedBranchesDefaultValue(t *testing.T) {
 // -> only main branch.
 func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 	t.Parallel()
-	dialog, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
@@ -94,7 +94,7 @@ func TestAskAllowedBranchesOnlyMain(t *testing.T) {
 // -> all branches.
 func TestAskAllowedBranchesAllBranches(t *testing.T) {
 	t.Parallel()
-	dialog, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
@@ -125,7 +125,7 @@ func TestAskAllowedBranchesAllBranches(t *testing.T) {
 // -> select branches, and select 2/4 of the listed brances.
 func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 	t.Parallel()
-	dialog, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),
@@ -177,7 +177,7 @@ func TestAskAllowedBranchesSelectedBranches(t *testing.T) {
 // -> type IDs or names and type two custom definitions.
 func TestAskAllowedBranchesTypeList(t *testing.T) {
 	t.Parallel()
-	dialog, console := createDialogs(t, true)
+	dialog, _, console := createDialogs(t, true)
 	d := dependencies.NewMockedDeps(t)
 	registerMockedBranchesResponse(
 		d.MockedHTTPTransport(),

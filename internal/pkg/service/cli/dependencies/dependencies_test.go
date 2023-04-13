@@ -69,11 +69,11 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	)
 
 	// Assert
-	baseDeps := newBaseDeps(context.Background(), env.Empty(), logger, httpClient, fs, dialog.New(nopPrompt.New()), opts)
-	publicDeps, err := newPublicDeps(baseDeps)
+	baseDeps := newBaseDeps(context.Background(), env.Empty(), logger, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts)
+	localDeps, err := newLocal(baseDeps)
 	assert.NoError(t, err)
-	_, err = newProjectDeps(context.Background(), publicDeps)
-	expected := `given token is from the remote "12345", but in manifest is defined remote "789"`
+	_, err = newRemote(context.Background(), localDeps)
+	expected := `given token is from the project "12345", but in manifest is defined project "789"`
 	assert.Error(t, err)
 	assert.Equal(t, expected, err.Error())
 }

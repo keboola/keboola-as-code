@@ -12,7 +12,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
-	common "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/table/preview"
 )
@@ -24,21 +23,13 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/table/preview/long`),
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Ask for host and token if needed
-			baseDeps := p.BaseDependencies()
-			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
-				return err
-			}
-
 			// Get dependencies
-			d, err := p.DependenciesForRemoteCommand(common.WithoutMasterToken())
+			d, err := p.DependenciesForRemoteCommand(dependencies.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
 
-			// Send cmd successful/failed event
-			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-preview")
-
+			// Ask options
 			var tableID keboola.TableID
 			if len(args) == 0 {
 				tableID, _, err = askTable(d, false)
@@ -53,12 +44,15 @@ func PreviewCommand(p dependencies.Provider) *cobra.Command {
 				tableID = id
 			}
 
-			options, err := parsePreviewOptions(d.Options(), d.Fs(), tableID)
+			opts, err := parsePreviewOptions(d.Options(), d.Fs(), tableID)
 			if err != nil {
 				return err
 			}
 
-			return preview.Run(d.CommandCtx(), options, d)
+			// Send cmd successful/failed event
+			defer d.EventSender().SendCmdEvent(d.CommandCtx(), time.Now(), &cmdErr, "remote-table-preview")
+
+			return preview.Run(d.CommandCtx(), opts, d)
 		},
 	}
 

@@ -21,18 +21,13 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Ask for host and token if needed
-			baseDeps := p.BaseDependencies()
-			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
-				return err
-			}
-
 			// Get dependencies
 			d, err := p.DependenciesForRemoteCommand()
 			if err != nil {
 				return err
 			}
 
+			// Options
 			branch, err := d.KeboolaProjectAPI().GetDefaultBranchRequest().Send(d.CommandCtx())
 			if err != nil {
 				return errors.Errorf("cannot find default branch: %w", err)
@@ -49,9 +44,7 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 					snowflakeWorkspaces = append(snowflakeWorkspaces, w)
 				}
 			}
-
-			// Options
-			opts, err := d.Dialogs().AskGenerateEnv(d, snowflakeWorkspaces)
+			opts, err := d.Dialogs().AskGenerateEnv(snowflakeWorkspaces)
 			if err != nil {
 				return err
 			}

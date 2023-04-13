@@ -67,7 +67,7 @@ func ValidateConfigCommand(p dependencies.Provider) *cobra.Command {
 				return errors.New("please enter two arguments: component ID and JSON file path")
 			}
 
-			d, err := p.DependenciesForLocalCommand()
+			d, err := p.DependenciesForLocalCommand(dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}
@@ -90,7 +90,7 @@ func ValidateRowCommand(p dependencies.Provider) *cobra.Command {
 				return errors.New("please enter two arguments: component ID and JSON file path")
 			}
 
-			d, err := p.DependenciesForLocalCommand()
+			d, err := p.DependenciesForLocalCommand(dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}

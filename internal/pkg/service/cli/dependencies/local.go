@@ -42,9 +42,11 @@ type localTemplateValue struct {
 	value *template.Template
 }
 
-func newPublicDeps(baseDeps Base) (*local, error) {
+func newLocal(baseDeps Base, opts ...Option) (*local, error) {
+	cfg := newConfig(opts)
+
 	// Get Storage API host
-	host, err := storageAPIHost(baseDeps.Fs(), baseDeps.Options())
+	host, err := storageAPIHost(baseDeps, cfg.defaultStorageAPIHost)
 	if err != nil {
 		return nil, err
 	}

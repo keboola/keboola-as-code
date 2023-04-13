@@ -6,7 +6,6 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/event"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -18,15 +17,21 @@ type remote struct {
 	eventSender event.Sender
 }
 
-func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand, opts ...dependencies.ProjectDepsOption) (*remote, error) {
+func newRemote(ctx context.Context, cmdPublicDeps ForLocalCommand, opts ...Option) (*remote, error) {
+	cfg := newConfig(opts)
+
 	// Get Storage API token
-	token := cmdPublicDeps.Options().GetString(options.StorageAPITokenOpt)
-	if token == "" {
-		return nil, ErrMissingStorageAPIToken
+	token, err := storageAPIToken(cmdPublicDeps)
+	if err != nil {
+		return nil, err
 	}
 
 	// Create common remote dependencies (includes API authentication)
-	projectDeps, err := dependencies.NewProjectDeps(ctx, cmdPublicDeps, cmdPublicDeps, token, opts...)
+	var projectOps []dependencies.ProjectDepsOption
+	if cfg.withoutMasterToken {
+		projectOps = append(projectOps, dependencies.WithoutMasterToken())
+	}
+	projectDeps, err := dependencies.NewProjectDeps(ctx, cmdPublicDeps, cmdPublicDeps, token, projectOps...)
 	if err != nil {
 		var storageAPIErr *keboola.StorageError
 		if errors.As(err, &storageAPIErr) && storageAPIErr.ErrCode == "storage.tokenInvalid" {
@@ -35,12 +40,12 @@ func newProjectDeps(ctx context.Context, cmdPublicDeps ForLocalCommand, opts ...
 		return nil, err
 	}
 
-	// Storage Api token remote ID and manifest remote ID must be same
+	// Storage Api token project ID and manifest remote ID must be same
 	if prj, exists, err := cmdPublicDeps.LocalProject(false); exists && err == nil {
 		tokenProjectID := projectDeps.ProjectID()
 		manifest := prj.ProjectManifest()
 		if manifest != nil && manifest.ProjectID() != tokenProjectID {
-			return nil, errors.Errorf(`given token is from the remote "%d", but in manifest is defined remote "%d"`, tokenProjectID, manifest.ProjectID())
+			return nil, errors.Errorf(`given token is from the project "%d", but in manifest is defined project "%d"`, tokenProjectID, manifest.ProjectID())
 		}
 	}
 

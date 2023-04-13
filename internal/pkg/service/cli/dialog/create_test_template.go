@@ -5,7 +5,6 @@ import (
 
 	"github.com/umisama/go-regexpcache"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -16,17 +15,15 @@ const testNameFlag = "test-name"
 
 type createTmplTestDialog struct {
 	*Dialogs
-	options  *options.Options
 	out      createOp.Options
 	template *template.Template
 }
 
 // AskCreateTemplateTestOptions - dialog for creating a template test.
-func (p *Dialogs) AskCreateTemplateTestOptions(template *template.Template, opts *options.Options) (createOp.Options, []string, error) {
+func (p *Dialogs) AskCreateTemplateTestOptions(template *template.Template) (createOp.Options, []string, error) {
 	dialog := &createTmplTestDialog{
 		Dialogs:  p,
 		template: template,
-		options:  opts,
 	}
 	return dialog.ask()
 }
@@ -40,7 +37,7 @@ func (d *createTmplTestDialog) ask() (createOp.Options, []string, error) {
 	}
 
 	// User inputs
-	v, warnings, err := d.askUseTemplateInputs(d.template.Inputs().ToExtended(), d.options, true)
+	v, warnings, err := d.askUseTemplateInputs(d.template.Inputs().ToExtended(), true)
 	if err != nil {
 		return d.out, nil, err
 	} else {

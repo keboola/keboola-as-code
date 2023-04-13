@@ -19,17 +19,14 @@ func ProfileCommand(p dependencies.Provider) *cobra.Command {
 				return err
 			}
 
-			// Get dependencies
-			d, err := p.DependenciesForLocalCommand()
+			// Ask options
+			targetName, err := p.BaseDependencies().Dialogs().AskTargetName()
 			if err != nil {
 				return err
 			}
 
-			// Options
-			targetName, err := d.Dialogs().AskTargetName(d)
-			if err != nil {
-				return err
-			}
+			// Get dependencies
+			d := p.BaseDependencies()
 
 			return profile.Run(d.CommandCtx(), profile.Options{TargetName: targetName}, d)
 		},

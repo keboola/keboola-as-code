@@ -7,15 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 )
 
 func TestSelectBranchInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, console := createDialogs(t, true)
-	o := options.New()
+	dialog, _, console := createDialogs(t, true)
 
 	// All branches
 	branch1 := &model.Branch{BranchKey: model.BranchKey{ID: 1}, Name: `Branch 1`}
@@ -45,7 +43,7 @@ func TestSelectBranchInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out, err := dialog.SelectBranch(o, allBranches, `LABEL`)
+	out, err := dialog.SelectBranch(allBranches, `LABEL`)
 	assert.Same(t, branch2, out)
 	assert.NoError(t, err)
 
@@ -59,8 +57,7 @@ func TestSelectBranchByFlag(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _ := createDialogs(t, false)
-	o := options.New()
+	dialog, o, _ := createDialogs(t, false)
 	o.Set(`branch`, 2)
 
 	// All branches
@@ -70,7 +67,7 @@ func TestSelectBranchByFlag(t *testing.T) {
 	allBranches := []*model.Branch{branch1, branch2, branch3}
 
 	// Run
-	out, err := dialog.SelectBranch(o, allBranches, `LABEL`)
+	out, err := dialog.SelectBranch(allBranches, `LABEL`)
 	assert.Same(t, branch2, out)
 	assert.NoError(t, err)
 }
@@ -79,8 +76,7 @@ func TestSelectBranchNonInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _ := createDialogs(t, false)
-	o := options.New()
+	dialog, o, _ := createDialogs(t, false)
 	o.Set(`non-interactive`, true)
 
 	// All branches
@@ -90,7 +86,7 @@ func TestSelectBranchNonInteractive(t *testing.T) {
 	allBranches := []*model.Branch{branch1, branch2, branch3}
 
 	// Run
-	_, err := dialog.SelectBranch(o, allBranches, `LABEL`)
+	_, err := dialog.SelectBranch(allBranches, `LABEL`)
 	assert.ErrorContains(t, err, "please specify branch")
 }
 
@@ -98,8 +94,7 @@ func TestSelectBranchMissing(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _ := createDialogs(t, false)
-	o := options.New()
+	dialog, _, _ := createDialogs(t, false)
 
 	// All branches
 	branch1 := &model.Branch{BranchKey: model.BranchKey{ID: 1}, Name: `Branch 1`}
@@ -108,7 +103,7 @@ func TestSelectBranchMissing(t *testing.T) {
 	allBranches := []*model.Branch{branch1, branch2, branch3}
 
 	// Run
-	out, err := dialog.SelectBranch(o, allBranches, `LABEL`)
+	out, err := dialog.SelectBranch(allBranches, `LABEL`)
 	assert.Nil(t, out)
 	assert.Error(t, err)
 	assert.Equal(t, `please specify branch`, err.Error())
@@ -118,8 +113,7 @@ func TestSelectBranchesInteractive(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, console := createDialogs(t, true)
-	o := options.New()
+	dialog, _, console := createDialogs(t, true)
 
 	// All branches
 	branch1 := &model.Branch{BranchKey: model.BranchKey{ID: 1}, Name: `Branch 1`}
@@ -163,7 +157,7 @@ func TestSelectBranchesInteractive(t *testing.T) {
 	}()
 
 	// Run
-	out, err := dialog.SelectBranches(o, allBranches, `LABEL`)
+	out, err := dialog.SelectBranches(allBranches, `LABEL`)
 	assert.Equal(t, []*model.Branch{branch2, branch4}, out)
 	assert.NoError(t, err)
 
@@ -177,8 +171,7 @@ func TestSelectBranchesByFlag(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _ := createDialogs(t, false)
-	o := options.New()
+	dialog, o, _ := createDialogs(t, false)
 	o.Set(`branches`, `2,4`)
 
 	// All branches
@@ -190,7 +183,7 @@ func TestSelectBranchesByFlag(t *testing.T) {
 	allBranches := []*model.Branch{branch1, branch2, branch3, branch4, branch5}
 
 	// Run
-	out, err := dialog.SelectBranches(o, allBranches, `LABEL`)
+	out, err := dialog.SelectBranches(allBranches, `LABEL`)
 	assert.Equal(t, []*model.Branch{branch2, branch4}, out)
 	assert.NoError(t, err)
 }
@@ -199,8 +192,7 @@ func TestSelectBranchesMissing(t *testing.T) {
 	t.Parallel()
 
 	// Dependencies
-	dialog, _ := createDialogs(t, false)
-	o := options.New()
+	dialog, _, _ := createDialogs(t, false)
 
 	// All branches
 	branch1 := &model.Branch{BranchKey: model.BranchKey{ID: 1}, Name: `Branch 1`}
@@ -211,7 +203,7 @@ func TestSelectBranchesMissing(t *testing.T) {
 	allBranches := []*model.Branch{branch1, branch2, branch3, branch4, branch5}
 
 	// Run
-	out, err := dialog.SelectBranches(o, allBranches, `LABEL`)
+	out, err := dialog.SelectBranches(allBranches, `LABEL`)
 	assert.Nil(t, out)
 	assert.Error(t, err)
 	assert.Equal(t, `please specify at least one branch`, err.Error())

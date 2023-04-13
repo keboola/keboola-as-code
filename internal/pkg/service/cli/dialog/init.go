@@ -5,9 +5,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	createManifest "github.com/keboola/keboola-as-code/pkg/lib/operation/project/local/manifest/create"
@@ -16,28 +14,7 @@ import (
 )
 
 type initDeps interface {
-	Options() *options.Options
 	KeboolaProjectAPI() *keboola.API
-}
-
-type hostAndTokenDependencies interface {
-	Logger() log.Logger
-	Options() *options.Options
-}
-
-func (p *Dialogs) AskHostAndToken(d hostAndTokenDependencies) error {
-	// Host and token
-	errs := errors.NewMultiError()
-	if _, err := p.AskStorageAPIHost(d); err != nil {
-		errs.Append(err)
-	}
-	if _, err := p.AskStorageAPIToken(d); err != nil {
-		errs.Append(err)
-	}
-	if errs.Len() > 0 {
-		return errs
-	}
-	return nil
 }
 
 func (p *Dialogs) AskInitOptions(ctx context.Context, d initDeps) (initOp.Options, error) {
@@ -57,21 +34,20 @@ func (p *Dialogs) AskInitOptions(ctx context.Context, d initDeps) (initOp.Option
 	}
 
 	// Ask for workflows options
-	options := d.Options()
-	if options.IsSet("ci") {
-		if options.IsSet("ci-validate") || options.IsSet("ci-push") || options.IsSet("ci-pull") {
+	if p.options.IsSet("ci") {
+		if p.options.IsSet("ci-validate") || p.options.IsSet("ci-push") || p.options.IsSet("ci-pull") {
 			return out, errors.New("`ci-*` flags may not be set if `ci` is set to `false`")
 		}
 
 		out.Workflows = workflowsGen.Options{
-			Validate:   options.GetBool("ci"),
-			Push:       options.GetBool("ci"),
-			Pull:       options.GetBool("ci"),
-			MainBranch: options.GetString("ci-main-branch"),
+			Validate:   p.options.GetBool("ci"),
+			Push:       p.options.GetBool("ci"),
+			Pull:       p.options.GetBool("ci"),
+			MainBranch: p.options.GetString("ci-main-branch"),
 		}
 	} else {
 		if p.Confirm(&prompt.Confirm{Label: "Generate workflows files for GitHub Actions?", Default: true}) {
-			out.Workflows = p.AskWorkflowsOptions(options)
+			out.Workflows = p.AskWorkflowsOptions()
 		}
 	}
 

@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
-	common "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/pkg/lib/operation/project/remote/create/table"
 )
 
@@ -19,13 +18,8 @@ func TableCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/create/table/long`),
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			// Ask for host and token if needed
-			baseDeps := p.BaseDependencies()
-			if err := baseDeps.Dialogs().AskHostAndToken(baseDeps); err != nil {
-				return err
-			}
-
-			d, err := p.DependenciesForRemoteCommand(common.WithoutMasterToken())
+			// Get dependencies
+			d, err := p.DependenciesForRemoteCommand(dependencies.WithoutMasterToken())
 			if err != nil {
 				return err
 			}
@@ -40,7 +34,7 @@ func TableCommand(p dependencies.Provider) *cobra.Command {
 				}
 				allBuckets = *allBucketsPtr
 			}
-			opts, err := d.Dialogs().AskCreateTable(args, d, allBuckets)
+			opts, err := d.Dialogs().AskCreateTable(args, allBuckets)
 			if err != nil {
 				return err
 			}

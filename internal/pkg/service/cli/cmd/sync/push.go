@@ -18,7 +18,19 @@ func PushCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`sync/push/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Command must be used in project directory
-			prj, d, err := p.LocalProject(false)
+			_, _, err := p.BaseDependencies().FsInfo().ProjectDir()
+			if err != nil {
+				return err
+			}
+
+			// Get dependencies
+			d, err := p.DependenciesForRemoteCommand()
+			if err != nil {
+				return err
+			}
+
+			// Get local project
+			prj, _, err := d.LocalProject(false)
 			if err != nil {
 				return err
 			}

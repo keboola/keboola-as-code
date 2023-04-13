@@ -8,14 +8,13 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (p *Dialogs) SelectBranch(options *options.Options, all []*model.Branch, label string) (*model.Branch, error) {
-	if options.IsSet(`branch`) {
-		return search.Branch(all, options.GetString(`branch`))
+func (p *Dialogs) SelectBranch(all []*model.Branch, label string) (*model.Branch, error) {
+	if p.options.IsSet(`branch`) {
+		return search.Branch(all, p.options.GetString(`branch`))
 	}
 
 	selectOpts := make([]string, 0)
@@ -32,10 +31,10 @@ func (p *Dialogs) SelectBranch(options *options.Options, all []*model.Branch, la
 	return nil, errors.New(`please specify branch`)
 }
 
-func (p *Dialogs) SelectBranches(options *options.Options, all []*model.Branch, label string) (results []*model.Branch, err error) {
-	if options.IsSet(`branches`) {
+func (p *Dialogs) SelectBranches(all []*model.Branch, label string) (results []*model.Branch, err error) {
+	if p.options.IsSet(`branches`) {
 		errs := errors.NewMultiError()
-		for _, item := range strings.Split(options.GetString(`branches`), `,`) {
+		for _, item := range strings.Split(p.options.GetString(`branches`), `,`) {
 			item = strings.TrimSpace(item)
 			if len(item) == 0 {
 				continue
