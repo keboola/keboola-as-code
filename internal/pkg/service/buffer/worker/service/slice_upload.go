@@ -14,9 +14,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
-	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -42,11 +41,11 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 			slice := event.Value
 			return slice.ReceiverKey.String()
 		},
-		TaskKey: func(event etcdop.WatchEventT[model.Slice]) taskKey.Key {
+		TaskKey: func(event etcdop.WatchEventT[model.Slice]) task.Key {
 			slice := event.Value
-			return taskKey.Key{
+			return task.Key{
 				ProjectID: slice.ProjectID,
-				TaskID: taskKey.ID(strings.Join([]string{
+				TaskID: task.ID(strings.Join([]string{
 					slice.ReceiverID.String(),
 					slice.ExportID.String(),
 					slice.FileID.String(),
@@ -58,7 +57,7 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 		TaskCtx: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(context.Background(), 5*time.Minute)
 		},
-		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Task {
+		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) (result string, err error) {
 				// Get slice
 				slice := event.Value
@@ -67,7 +66,7 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 				defer func() {
 					if err != nil {
 						attempt := slice.RetryAttempt + 1
-						retryAfter := commonModel.UTCTime(RetryAt(NewRetryBackoff(), s.clock.Now(), attempt))
+						retryAfter := utctime.UTCTime(RetryAt(NewRetryBackoff(), s.clock.Now(), attempt))
 						slice.RetryAttempt = attempt
 						slice.RetryAfter = &retryAfter
 						err = errors.Errorf(`slice upload failed: %w, upload will be retried after "%s"`, err, slice.RetryAfter)

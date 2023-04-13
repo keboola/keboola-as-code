@@ -20,9 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
-	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
-	taskKeyImp "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -31,7 +29,7 @@ const (
 	LockEtcdPrefix = etcdop.Prefix("runtime/lock/task")
 )
 
-type Task func(ctx context.Context, logger log.Logger) (Result, error)
+type Fn func(ctx context.Context, logger log.Logger) (Result, error)
 
 type Result = string
 
@@ -52,7 +50,7 @@ type Node struct {
 	config     nodeConfig
 	tasksCount *atomic.Int64
 
-	taskEtcdPrefix etcdop.PrefixT[commonModel.Task]
+	taskEtcdPrefix etcdop.PrefixT[Task]
 	taskLocksMutex *sync.Mutex
 	taskLocks      map[string]bool
 }
@@ -75,7 +73,7 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 
 	proc := d.Process()
 
-	taskPrefix := etcdop.NewTypedPrefix[commonModel.Task](etcdop.NewPrefix(c.taskEtcdPrefix), d.EtcdSerde())
+	taskPrefix := etcdop.NewTypedPrefix[Task](etcdop.NewPrefix(c.taskEtcdPrefix), d.EtcdSerde())
 	n := &Node{
 		tracer:         d.Tracer(),
 		clock:          d.Clock(),
@@ -134,7 +132,7 @@ func (n *Node) StartTaskOrErr(cfg Config) error {
 
 // StartTask backed by local lock and etcd transaction, so the task run at most once.
 // The context will be passed to the operation callback.
-func (n *Node) StartTask(cfg Config) (t *commonModel.Task, err error) {
+func (n *Node) StartTask(cfg Config) (t *Task, err error) {
 	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
@@ -148,9 +146,9 @@ func (n *Node) StartTask(cfg Config) (t *commonModel.Task, err error) {
 	lock := LockEtcdPrefix.Key(cfg.Lock)
 
 	// Append datetime and a random suffix to the task ID
-	createdAt := commonModel.UTCTime(n.clock.Now())
+	createdAt := utctime.UTCTime(n.clock.Now())
 	taskKey := cfg.Key
-	taskKey.TaskID = taskKeyImp.ID(string(cfg.Key.TaskID) + "/" + createdAt.String() + "_" + idgenerator.Random(5))
+	taskKey.TaskID = ID(string(cfg.Key.TaskID) + "/" + createdAt.String() + "_" + idgenerator.Random(5))
 
 	// Lock task locally for periodical re-syncs,
 	// so locally can be determined that the task is already running.
@@ -160,7 +158,7 @@ func (n *Node) StartTask(cfg Config) (t *commonModel.Task, err error) {
 	}
 
 	// Create task model
-	task := commonModel.Task{Key: taskKey, Type: cfg.Type, CreatedAt: createdAt, Node: n.nodeID, Lock: lock}
+	task := Task{Key: taskKey, Type: cfg.Type, CreatedAt: createdAt, Node: n.nodeID, Lock: lock}
 
 	// Get session
 	n.sessionLock.RLock()
@@ -195,7 +193,7 @@ func (n *Node) StartTask(cfg Config) (t *commonModel.Task, err error) {
 	return &task, nil
 }
 
-func (n *Node) runTask(logger log.Logger, task commonModel.Task, cfg Config) {
+func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 	// Create task context
 	ctx, cancel := cfg.Context()
 	defer cancel()
@@ -232,7 +230,7 @@ func (n *Node) runTask(logger log.Logger, task commonModel.Task, cfg Config) {
 
 	// Calculate duration
 	endTime := n.clock.Now()
-	finishedAt := commonKey.UTCTime(endTime)
+	finishedAt := utctime.UTCTime(endTime)
 	duration := endTime.Sub(startTime)
 
 	// Update fields

@@ -20,9 +20,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
-	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -71,9 +70,9 @@ func TestCleanup(t *testing.T) {
 
 	// Add task without a finishedAt timestamp but too old - will be deleted
 	createdAtRaw, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
-	createdAt := commonModel.UTCTime(createdAtRaw)
-	taskKey1 := taskKey.Key{ProjectID: receiverKey.ProjectID, TaskID: taskKey.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "some.task", createdAt.String(), "abcdef"))}
-	task1 := commonModel.Task{
+	createdAt := utctime.UTCTime(createdAtRaw)
+	taskKey1 := task.Key{ProjectID: receiverKey.ProjectID, TaskID: task.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "some.task", createdAt.String(), "abcdef"))}
+	task1 := task.Task{
 		Key:        taskKey1,
 		Type:       "some.task",
 		CreatedAt:  createdAt,
@@ -88,9 +87,9 @@ func TestCleanup(t *testing.T) {
 
 	// Add task with a finishedAt timestamp in the past - will be deleted
 	time2, _ := time.Parse(time.RFC3339, "2008-01-02T15:04:05+07:00")
-	time2Key := commonKey.UTCTime(time2)
-	taskKey2 := taskKey.Key{ProjectID: receiverKey.ProjectID, TaskID: taskKey.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
-	task2 := commonModel.Task{
+	time2Key := utctime.UTCTime(time2)
+	taskKey2 := task.Key{ProjectID: receiverKey.ProjectID, TaskID: task.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
+	task2 := task.Task{
 		Key:        taskKey2,
 		Type:       "other.task",
 		CreatedAt:  createdAt,
@@ -105,9 +104,9 @@ func TestCleanup(t *testing.T) {
 
 	// Add task with a finishedAt timestamp before a moment - will be ignored
 	time3 := time.Now()
-	time3Key := commonKey.UTCTime(time3)
-	taskKey3 := taskKey.Key{ProjectID: receiverKey.ProjectID, TaskID: taskKey.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
-	task3 := commonModel.Task{
+	time3Key := utctime.UTCTime(time3)
+	taskKey3 := task.Key{ProjectID: receiverKey.ProjectID, TaskID: task.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
+	task3 := task.Task{
 		Key:        taskKey3,
 		Type:       "other.task",
 		CreatedAt:  createdAt,
@@ -183,18 +182,18 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, schema.Slices().InState(slicestate.Imported).ByKey(sliceKey2).Put(slice2).Do(ctx, client))
 
 	// Add record for the cleaned-up slice - will be deleted
-	recordKey1 := key.RecordKey{SliceKey: sliceKey1, ReceivedAt: commonKey.ReceivedAt(createdAt), RandomSuffix: "abcd"}
+	recordKey1 := key.RecordKey{SliceKey: sliceKey1, ReceivedAt: key.ReceivedAt(createdAt), RandomSuffix: "abcd"}
 	assert.NoError(t, schema.Records().ByKey(recordKey1).Put("rec").Do(ctx, client))
 
 	// Add record for the ignored slice - will be ignored
-	recordKey2 := key.RecordKey{SliceKey: sliceKey2, ReceivedAt: commonKey.ReceivedAt(time3), RandomSuffix: "efgh"}
+	recordKey2 := key.RecordKey{SliceKey: sliceKey2, ReceivedAt: key.ReceivedAt(time3), RandomSuffix: "efgh"}
 	assert.NoError(t, schema.Records().ByKey(recordKey2).Put("rec").Do(ctx, client))
 
 	// Add received stats for the cleaned-up slice - will be deleted
 	assert.NoError(t, schema.ReceivedStats().InSlice(sliceKey1).ByNodeID("node-123").Put(model.SliceStats{
 		SliceNodeKey: key.SliceNodeKey{SliceKey: sliceKey1, NodeID: "node-123"},
 		Stats: model.Stats{
-			LastRecordAt: commonModel.UTCTime(time3),
+			LastRecordAt: utctime.UTCTime(time3),
 			RecordsCount: 123,
 			RecordsSize:  1 * datasize.KB,
 			BodySize:     1 * datasize.KB,
@@ -205,7 +204,7 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, schema.ReceivedStats().InSlice(sliceKey2).ByNodeID("node-123").Put(model.SliceStats{
 		SliceNodeKey: key.SliceNodeKey{SliceKey: sliceKey2, NodeID: "node-123"},
 		Stats: model.Stats{
-			LastRecordAt: commonModel.UTCTime(time3),
+			LastRecordAt: utctime.UTCTime(time3),
 			RecordsCount: 456,
 			RecordsSize:  2 * datasize.KB,
 			BodySize:     2 * datasize.KB,

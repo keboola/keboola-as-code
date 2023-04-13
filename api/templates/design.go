@@ -370,7 +370,7 @@ var _ = Service("templates", func() {
 // Task --------------------------------------------------------------------------------------------------------------
 
 var TaskID = Type("TaskID", String, func() {
-	Meta("struct:field:type", "= key.ID", "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key")
+	Meta("struct:field:type", "= task.ID", "github.com/keboola/keboola-as-code/internal/pkg/service/common/task")
 	Description("Unique ID of the task.")
 	Example("task_1234")
 })

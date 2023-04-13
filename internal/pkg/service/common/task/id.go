@@ -1,4 +1,4 @@
-package key
+package task
 
 import "github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 

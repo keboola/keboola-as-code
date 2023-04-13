@@ -1,7 +1,7 @@
-package key
+package utctime
 
 import (
-	jsonlib "encoding/json"
+	jsonLib "encoding/json"
 	"time"
 )
 
@@ -10,29 +10,8 @@ const TimeFormat = "2006-01-02T15:04:05.000Z"
 
 type (
 	// UTCTime serializes to the JSON as the UTC time in the TimeFormat.
-	UTCTime    time.Time
-	ReceivedAt UTCTime
+	UTCTime time.Time
 )
-
-func (v ReceivedAt) String() string {
-	return UTCTime(v).String()
-}
-
-func (v ReceivedAt) IsZero() bool {
-	return UTCTime(v).IsZero()
-}
-
-func (v ReceivedAt) After(target ReceivedAt) bool {
-	return UTCTime(v).After(UTCTime(target))
-}
-
-func (v ReceivedAt) MarshalJSON() ([]byte, error) {
-	return UTCTime(v).MarshalJSON()
-}
-
-func (v *ReceivedAt) UnmarshalJSON(b []byte) error {
-	return (*UTCTime)(v).UnmarshalJSON(b)
-}
 
 func (v UTCTime) String() string {
 	return FormatTime(time.Time(v))
@@ -51,12 +30,12 @@ func (v UTCTime) After(target UTCTime) bool {
 }
 
 func (v UTCTime) MarshalJSON() ([]byte, error) {
-	return jsonlib.Marshal(v.String())
+	return jsonLib.Marshal(v.String())
 }
 
 func (v *UTCTime) UnmarshalJSON(b []byte) error {
 	var str string
-	if err := jsonlib.Unmarshal(b, &str); err != nil {
+	if err := jsonLib.Unmarshal(b, &str); err != nil {
 		return err
 	}
 	out, err := time.Parse(TimeFormat, str)
@@ -65,4 +44,8 @@ func (v *UTCTime) UnmarshalJSON(b []byte) error {
 	}
 	*v = UTCTime(out)
 	return nil
+}
+
+func FormatTime(t time.Time) string {
+	return t.UTC().Format(TimeFormat)
 }

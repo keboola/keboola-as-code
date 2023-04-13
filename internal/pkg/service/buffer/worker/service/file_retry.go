@@ -12,9 +12,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
 const (
@@ -39,7 +38,7 @@ func (s *Service) retryFailedImports(ctx context.Context, wg *sync.WaitGroup, d 
 		},
 		StartTaskIf: func(event etcdop.WatchEventT[model.File]) (string, bool) {
 			file := event.Value
-			now := commonModel.UTCTime(s.clock.Now())
+			now := utctime.UTCTime(s.clock.Now())
 			needed := *file.RetryAfter
 			if !now.After(needed) {
 				return fmt.Sprintf(`File.RetryAfter condition not met, now: "%s", needed: "%s"`, now, needed), false
@@ -47,11 +46,11 @@ func (s *Service) retryFailedImports(ctx context.Context, wg *sync.WaitGroup, d 
 
 			return "", true
 		},
-		TaskKey: func(event etcdop.WatchEventT[model.File]) taskKey.Key {
+		TaskKey: func(event etcdop.WatchEventT[model.File]) task.Key {
 			file := event.Value
-			return taskKey.Key{
+			return task.Key{
 				ProjectID: file.ProjectID,
-				TaskID: taskKey.ID(strings.Join([]string{
+				TaskID: task.ID(strings.Join([]string{
 					file.ReceiverID.String(),
 					file.ExportID.String(),
 					file.FileID.String(),
@@ -62,7 +61,7 @@ func (s *Service) retryFailedImports(ctx context.Context, wg *sync.WaitGroup, d 
 		TaskCtx: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(context.Background(), time.Minute)
 		},
-		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Task {
+		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) (result string, err error) {
 				file := event.Value
 				file.StorageJob = nil

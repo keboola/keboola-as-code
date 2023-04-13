@@ -17,7 +17,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -213,9 +212,9 @@ func (c *checker) startTicker(ctx context.Context, wg *sync.WaitGroup) {
 func (c *checker) swapFile(fileKey key.FileKey, reason string) (err error) {
 	return c.tasks.StartTaskOrErr(task.Config{
 		Type: fileSwapTaskType,
-		Key: taskKey.Key{
+		Key: task.Key{
 			ProjectID: fileKey.ProjectID,
-			TaskID: taskKey.ID(strings.Join([]string{
+			TaskID: task.ID(strings.Join([]string{
 				fileKey.ReceiverID.String(),
 				fileKey.ExportID.String(),
 				fileKey.FileID.String(),
@@ -268,9 +267,9 @@ func (c *checker) swapFile(fileKey key.FileKey, reason string) (err error) {
 func (c *checker) swapSlice(sliceKey key.SliceKey, reason string) (err error) {
 	return c.tasks.StartTaskOrErr(task.Config{
 		Type: sliceSwapTaskType,
-		Key: taskKey.Key{
+		Key: task.Key{
 			ProjectID: sliceKey.ProjectID,
-			TaskID: taskKey.ID(strings.Join([]string{
+			TaskID: task.ID(strings.Join([]string{
 				sliceKey.ReceiverID.String(),
 				sliceKey.ExportID.String(),
 				sliceKey.FileID.String(),

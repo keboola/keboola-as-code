@@ -11,7 +11,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 )
 
 const (
@@ -40,11 +39,11 @@ func (s *Service) closeFiles(ctx context.Context, wg *sync.WaitGroup, d dependen
 			file := event.Value
 			return file.ReceiverKey.String()
 		},
-		TaskKey: func(event etcdop.WatchEventT[model.File]) taskKey.Key {
+		TaskKey: func(event etcdop.WatchEventT[model.File]) task.Key {
 			file := event.Value
-			return taskKey.Key{
+			return task.Key{
 				ProjectID: file.ProjectID,
-				TaskID: taskKey.ID(strings.Join([]string{
+				TaskID: task.ID(strings.Join([]string{
 					file.ReceiverID.String(),
 					file.ExportID.String(),
 					file.FileID.String(),
@@ -55,7 +54,7 @@ func (s *Service) closeFiles(ctx context.Context, wg *sync.WaitGroup, d dependen
 		TaskCtx: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(context.Background(), time.Minute)
 		},
-		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Task {
+		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) (string, error) {
 				// Wait until all slices are uploaded
 				file := event.Value

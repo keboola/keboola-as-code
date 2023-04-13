@@ -11,7 +11,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 )
 
 const (
@@ -36,11 +35,11 @@ func (s *Service) closeSlices(ctx context.Context, wg *sync.WaitGroup, d depende
 			slice := event.Value
 			return slice.ReceiverKey.String()
 		},
-		TaskKey: func(event etcdop.WatchEventT[model.Slice]) taskKey.Key {
+		TaskKey: func(event etcdop.WatchEventT[model.Slice]) task.Key {
 			slice := event.Value
-			return taskKey.Key{
+			return task.Key{
 				ProjectID: slice.ProjectID,
-				TaskID: taskKey.ID(strings.Join([]string{
+				TaskID: task.ID(strings.Join([]string{
 					slice.ReceiverID.String(),
 					slice.ExportID.String(),
 					slice.FileID.String(),
@@ -52,7 +51,7 @@ func (s *Service) closeSlices(ctx context.Context, wg *sync.WaitGroup, d depende
 		TaskCtx: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(ctx, time.Minute)
 		},
-		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Task {
+		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) (string, error) {
 				// Wait until all API nodes switch to a new slice.
 				rev := event.Kv.ModRevision

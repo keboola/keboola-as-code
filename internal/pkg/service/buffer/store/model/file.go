@@ -8,7 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
-	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -24,13 +24,13 @@ type File struct {
 	State           filestate.State                `json:"state" validate:"required,oneof=opened closing importing imported failed"`
 	Mapping         Mapping                        `json:"mapping" validate:"required,dive"`
 	StorageResource *keboola.FileUploadCredentials `json:"storageResource" validate:"required"`
-	ClosingAt       *commonModel.UTCTime           `json:"closingAt,omitempty"`
-	ImportingAt     *commonModel.UTCTime           `json:"importingAt,omitempty"`
-	ImportedAt      *commonModel.UTCTime           `json:"importedAt,omitempty"`
-	FailedAt        *commonModel.UTCTime           `json:"failedAt,omitempty"`
+	ClosingAt       *utctime.UTCTime               `json:"closingAt,omitempty"`
+	ImportingAt     *utctime.UTCTime               `json:"importingAt,omitempty"`
+	ImportedAt      *utctime.UTCTime               `json:"importedAt,omitempty"`
+	FailedAt        *utctime.UTCTime               `json:"failedAt,omitempty"`
 	LastError       string                         `json:"lastError,omitempty"`
 	RetryAttempt    int                            `json:"retryAttempt,omitempty"`
-	RetryAfter      *commonModel.UTCTime           `json:"retryAfter,omitempty"`
+	RetryAfter      *utctime.UTCTime               `json:"retryAfter,omitempty"`
 	// Statistics are set by the "file close" operation, the value is nil, if there is no record.
 	Statistics *Stats              `json:"statistics,omitempty"`
 	IsEmpty    bool                `json:"isEmpty,omitempty"`

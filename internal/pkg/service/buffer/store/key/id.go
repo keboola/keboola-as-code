@@ -3,7 +3,7 @@ package key
 import (
 	"fmt"
 
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -12,8 +12,8 @@ type (
 	ReceiverID string
 	ExportID   string
 	RevisionID int
-	FileID     commonKey.UTCTime
-	SliceID    commonKey.UTCTime
+	FileID     utctime.UTCTime
+	SliceID    utctime.UTCTime
 )
 
 func (v ReceiverID) String() string {
@@ -38,39 +38,39 @@ func (v RevisionID) String() string {
 }
 
 func (v FileID) IsZero() bool {
-	return commonKey.UTCTime(v).IsZero()
+	return utctime.UTCTime(v).IsZero()
 }
 
 func (v FileID) String() string {
 	if v.IsZero() {
 		panic(errors.New("record fileID cannot be empty"))
 	}
-	return commonKey.UTCTime(v).String()
+	return utctime.UTCTime(v).String()
 }
 
 func (v SliceID) IsZero() bool {
-	return commonKey.UTCTime(v).IsZero()
+	return utctime.UTCTime(v).IsZero()
 }
 
 func (v SliceID) String() string {
 	if v.IsZero() {
 		panic(errors.New("record sliceID cannot be empty"))
 	}
-	return commonKey.UTCTime(v).String()
+	return utctime.UTCTime(v).String()
 }
 
 func (v FileID) MarshalJSON() ([]byte, error) {
-	return commonKey.UTCTime(v).MarshalJSON()
+	return utctime.UTCTime(v).MarshalJSON()
 }
 
 func (v SliceID) MarshalJSON() ([]byte, error) {
-	return commonKey.UTCTime(v).MarshalJSON()
+	return utctime.UTCTime(v).MarshalJSON()
 }
 
 func (v *FileID) UnmarshalJSON(b []byte) error {
-	return (*commonKey.UTCTime)(v).UnmarshalJSON(b)
+	return (*utctime.UTCTime)(v).UnmarshalJSON(b)
 }
 
 func (v *SliceID) UnmarshalJSON(b []byte) error {
-	return (*commonKey.UTCTime)(v).UnmarshalJSON(b)
+	return (*utctime.UTCTime)(v).UnmarshalJSON(b)
 }

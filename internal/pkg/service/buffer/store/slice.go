@@ -13,7 +13,7 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -239,7 +239,7 @@ func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model
 	clone := *slice
 	stm := slicestate.NewSTM(slice.State, func(ctx context.Context, from, to slicestate.State) error {
 		// Update fields
-		nowUTC := commonModel.UTCTime(now)
+		nowUTC := utctime.UTCTime(now)
 		clone.State = to
 		switch to {
 		case slicestate.Closing:

@@ -11,7 +11,7 @@ package templates
 import (
 	"context"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	"goa.design/goa/v3/security"
 )
@@ -419,7 +419,7 @@ type Task struct {
 }
 
 // Unique ID of the task.
-type TaskID = key.ID
+type TaskID = task.ID
 
 // Template.
 type Template struct {

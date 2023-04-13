@@ -11,8 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
-	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
@@ -40,7 +39,7 @@ func NewMapper(d mapperDependencies) *Mapper {
 	}
 }
 
-func (m Mapper) TaskPayload(model *commonModel.Task) (r *Task) {
+func (m Mapper) TaskPayload(model *task.Task) (r *Task) {
 	out := &Task{
 		ID:        model.TaskID,
 		URL:       formatTaskURL(m.apiHost, model.Key),
@@ -75,7 +74,7 @@ func (m Mapper) TaskPayload(model *commonModel.Task) (r *Task) {
 	return out
 }
 
-func formatTaskURL(apiHost string, k taskKey.Key) string {
+func formatTaskURL(apiHost string, k task.Key) string {
 	return fmt.Sprintf("%s/v1/tasks/%s", apiHost, k.TaskID)
 }
 
@@ -441,11 +440,11 @@ func InstanceResponse(ctx context.Context, d dependencies.ForProjectRequest, prj
 	// Map configurations
 	outConfigs := make([]*Config, 0)
 	branchConfigs := prjState.RemoteObjects().ConfigsWithRowsFrom(branchKey)
-	for _, config := range search.ConfigsForTemplateInstance(branchConfigs, instanceId) {
+	for _, cfg := range search.ConfigsForTemplateInstance(branchConfigs, instanceId) {
 		outConfigs = append(outConfigs, &Config{
-			Name:        config.Name,
-			ConfigID:    string(config.ID),
-			ComponentID: string(config.ComponentID),
+			Name:        cfg.Name,
+			ConfigID:    string(cfg.ID),
+			ComponentID: string(cfg.ComponentID),
 		})
 	}
 

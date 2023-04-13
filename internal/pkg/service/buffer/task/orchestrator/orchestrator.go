@@ -16,7 +16,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -57,7 +56,7 @@ type Config[T any] struct {
 	Lock func(event etcdop.WatchEventT[T]) string
 	// TaskKey defines etcd prefix where the task will be stored in etcd.
 	// CreatedAt datetime and a random suffix are always appended to the TaskID.
-	TaskKey func(event etcdop.WatchEventT[T]) taskKey.Key
+	TaskKey func(event etcdop.WatchEventT[T]) task.Key
 	// StartTaskIf, if set, it determines whether the task is started or not
 	StartTaskIf func(event etcdop.WatchEventT[T]) (skipReason string, start bool)
 	// TaskCtx must return a task context with a deadline.
@@ -115,7 +114,7 @@ type orchestrator[T any] struct {
 	config Config[T]
 }
 
-type TaskFactory[T any] func(event etcdop.WatchEventT[T]) task.Task
+type TaskFactory[T any] func(event etcdop.WatchEventT[T]) task.Fn
 
 type dependencies interface {
 	Clock() clock.Clock

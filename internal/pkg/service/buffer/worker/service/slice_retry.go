@@ -12,9 +12,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	commonModel "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	taskKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/key"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
 const (
@@ -37,11 +36,11 @@ func (s *Service) retryFailedUploads(ctx context.Context, wg *sync.WaitGroup, d 
 			slice := event.Value
 			return slice.ReceiverKey.String()
 		},
-		TaskKey: func(event etcdop.WatchEventT[model.Slice]) taskKey.Key {
+		TaskKey: func(event etcdop.WatchEventT[model.Slice]) task.Key {
 			slice := event.Value
-			return taskKey.Key{
+			return task.Key{
 				ProjectID: slice.ProjectID,
-				TaskID: taskKey.ID(strings.Join([]string{
+				TaskID: task.ID(strings.Join([]string{
 					slice.ReceiverID.String(),
 					slice.ExportID.String(),
 					slice.FileID.String(),
@@ -55,14 +54,14 @@ func (s *Service) retryFailedUploads(ctx context.Context, wg *sync.WaitGroup, d 
 		},
 		StartTaskIf: func(event etcdop.WatchEventT[model.Slice]) (string, bool) {
 			slice := event.Value
-			now := commonModel.UTCTime(s.clock.Now())
+			now := utctime.UTCTime(s.clock.Now())
 			needed := *slice.RetryAfter
 			if now.After(needed) {
 				return "", true
 			}
 			return fmt.Sprintf(`Slice.RetryAfter condition not met, now: "%s", needed: "%s"`, now, needed), false
 		},
-		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Task {
+		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) (result string, err error) {
 				slice := event.Value
 				if err := s.store.ScheduleSliceForRetry(ctx, &slice); err != nil {
