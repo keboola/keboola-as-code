@@ -1,5 +1,5 @@
 <<<<<
-task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/file.close/%s
+task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/file.close/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -8,14 +8,14 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/file.close/%s
   "createdAt": "%s",
   "finishedAt": "%s",
   "node": "worker-node-%d",
-  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/file.close",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/file.close",
   "result": "file closed",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/file.import/%s
+task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/file.import/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -24,7 +24,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/file.import/%s
   "createdAt": "%s",
   "finishedAt": "%s",
   "node": "worker-node-%d",
-  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/file.import",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/file.import",
   "result": "skipped import of the empty file",
   "duration": %d
 }

@@ -206,7 +206,7 @@ Format:
 
 ```
 <<<<<
-/config/export/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-1/export-1
+/config/export/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -222,7 +222,7 @@ Format:
 >>>>>
 
 <<<<<
-/secret/export/token/%%TEST_KBC_PROJECT_ID_8DIG%%/receiver-1/export-1
+/secret/export/token/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1
 -----
 %A
 >>>>>

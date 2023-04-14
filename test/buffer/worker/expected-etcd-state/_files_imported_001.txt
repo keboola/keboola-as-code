@@ -1,5 +1,5 @@
 <<<<<
-file/imported/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s
+file/imported/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -68,7 +68,7 @@ file/imported/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s
 >>>>>
 
 <<<<<
-file/imported/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s
+file/imported/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,

@@ -15,7 +15,6 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-utils/pkg/wildcards"
-	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/umisama/go-regexpcache"
@@ -92,7 +91,6 @@ func startCluster(t *testing.T, ctx context.Context, testDir string, project *te
 	assert.NoError(t, os.MkdirAll(outDir, 0o755))
 
 	envs := project.Env()
-	envs.Set("TEST_KBC_PROJECT_ID_8DIG", fmt.Sprintf("%08d", cast.ToInt(envs.Get("TEST_KBC_PROJECT_ID"))))
 
 	wg := &sync.WaitGroup{}
 	out := &testSuite{

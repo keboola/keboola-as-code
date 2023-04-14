@@ -1,5 +1,5 @@
 <<<<<
-task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s/slice.close/%s
+task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/%s/slice.close/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -8,14 +8,14 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s/slice.close/%s
   "createdAt": "%s",
   "finishedAt": "%s",
   "node": "worker-node-%d",
-  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s/slice.close",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/%s/slice.close",
   "result": "slice closed",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s/slice.close/%s
+task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2/%s/%s/slice.close/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -24,14 +24,14 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s/slice.close/%s
   "createdAt": "%s",
   "finishedAt": "%s",
   "node": "worker-node-%d",
-  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s/slice.close",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2/%s/%s/slice.close",
   "result": "slice closed",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s/slice.upload/%s
+task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/%s/slice.upload/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -40,14 +40,14 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s/slice.upload/%s
   "createdAt": "%s",
   "finishedAt": "%s",
   "node": "worker-node-%d",
-  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s/slice.upload",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/%s/slice.upload",
   "result": "slice uploaded",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/slice.upload/%s
+task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2/%s/slice.upload/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -56,7 +56,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/slice.upload/%s
   "createdAt": "%s",
   "finishedAt": "%s",
   "node": "worker-node-%d",
-  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s/slice.upload",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2/%s/%s/slice.upload",
   "result": "slice uploaded",
   "duration": %d
 }

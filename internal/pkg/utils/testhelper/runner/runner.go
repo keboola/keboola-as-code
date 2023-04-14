@@ -5,7 +5,6 @@ package runner
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -70,7 +68,6 @@ func (r *Runner) NewTest(t *testing.T, testDirName string) (*Test, context.Cance
 	envMap := project.Env()
 	// Disable version check
 	envMap.Set(`KBC_VERSION_CHECK`, `false`)
-	envMap.Set("TEST_KBC_PROJECT_ID_8DIG", fmt.Sprintf("%08d", cast.ToInt(envMap.Get("TEST_KBC_PROJECT_ID"))))
 
 	return &Test{
 		Runner:       *r,
