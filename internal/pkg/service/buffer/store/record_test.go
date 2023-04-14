@@ -23,7 +23,7 @@ func TestStore_CreateRecord(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
-record/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:10.000Z_%c%c%c%c%c
+record/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:10.000Z_%c%c%c%c%c
 -----
 one,two,"th""ree"
 >>>>>

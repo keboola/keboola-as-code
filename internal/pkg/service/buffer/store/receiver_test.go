@@ -118,7 +118,7 @@ func TestStore_CreateReceiverBaseOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
-config/receiver/00001000/github-pull-requests
+config/receiver/1000/github-pull-requests
 -----
 {
   "projectId": 1000,
@@ -153,7 +153,7 @@ func TestStore_GetReceiverBaseOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
-config/receiver/00001000/github-pull-requests
+config/receiver/1000/github-pull-requests
 -----
 {
   "projectId": 1000,
@@ -205,7 +205,7 @@ func TestStore_ListReceiversBaseOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
-config/receiver/00001000/github-issues
+config/receiver/1000/github-issues
 -----
 {
   "projectId": 1000,
@@ -216,7 +216,7 @@ config/receiver/00001000/github-issues
 >>>>>
 
 <<<<<
-config/receiver/00001000/github-pull-requests
+config/receiver/1000/github-pull-requests
 -----
 {
   "projectId": 1000,
@@ -251,7 +251,7 @@ func TestStore_DeleteReceiverBaseOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
-config/receiver/00001000/github-pull-requests
+config/receiver/1000/github-pull-requests
 -----
 {
   "projectId": 1000,

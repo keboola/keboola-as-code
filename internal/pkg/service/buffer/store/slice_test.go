@@ -31,7 +31,7 @@ func TestStore_CreateSlice(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
-slice/active/opened/writing/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/active/opened/writing/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -80,7 +80,7 @@ func TestStore_GetSliceOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
-slice/active/opened/writing/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/active/opened/writing/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -140,7 +140,7 @@ func TestStore_SetSliceState_Transitions(t *testing.T) {
 		assert.Equal(t, tc.to, slice.State, desc)
 		expected := `
 <<<<<
-slice/<FULL_STATE>/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/<FULL_STATE>/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 %A
   "state": "<FULL_STATE>",%A
@@ -208,7 +208,7 @@ func TestStore_ListUploadedSlices(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
-slice/active/closed/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
+slice/active/closed/uploaded/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-02T08:04:05.000Z
 -----
 {
   "projectId": 1000,
@@ -239,7 +239,7 @@ slice/active/closed/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.
 >>>>>
 
 <<<<<
-slice/active/closed/uploaded/00001000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-03T08:04:05.000Z
+slice/active/closed/uploaded/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z/2006-01-03T08:04:05.000Z
 -----
 {
   "projectId": 1000,

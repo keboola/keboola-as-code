@@ -3,6 +3,7 @@ package manifest
 import (
 	"testing"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
@@ -46,7 +47,7 @@ func TestNewManifest(t *testing.T) {
 	t.Parallel()
 	m := New(123, `foo.bar`)
 	assert.NotNil(t, m)
-	assert.Equal(t, 123, m.project.ID)
+	assert.Equal(t, keboola.ProjectID(123), m.project.ID)
 	assert.Equal(t, `foo.bar`, m.project.APIHost)
 }
 

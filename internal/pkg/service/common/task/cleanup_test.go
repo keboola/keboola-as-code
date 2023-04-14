@@ -94,8 +94,8 @@ func TestCleanup(t *testing.T) {
 [node1][task][etcd-session]INFO  creating etcd session
 [node1][task][etcd-session]INFO  created etcd session | %s
 [node1][task][cleanup]DEBUG  lock acquired "runtime/lock/task/tasks.cleanup"
-[node1][task][cleanup]DEBUG  deleted task "00000123/some.task/2006-01-02T08:04:05.000Z_abcdef"
-[node1][task][cleanup]DEBUG  deleted task "00000456/other.task/2006-01-02T08:04:05.000Z_ghijkl"
+[node1][task][cleanup]DEBUG  deleted task "123/some.task/2006-01-02T08:04:05.000Z_abcdef"
+[node1][task][cleanup]DEBUG  deleted task "456/other.task/2006-01-02T08:04:05.000Z_ghijkl"
 [node1][task][cleanup]INFO  deleted "2" tasks
 [node1][task][cleanup]DEBUG  lock released "runtime/lock/task/tasks.cleanup"
 [node1]INFO  exiting (bye bye)
@@ -109,7 +109,7 @@ func TestCleanup(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-task/00000789/third.task/2006-01-02T08:04:05.000Z_mnopqr
+task/789/third.task/2006-01-02T08:04:05.000Z_mnopqr
 -----
 {
   "projectId": 789,

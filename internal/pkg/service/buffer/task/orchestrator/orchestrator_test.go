@@ -121,19 +121,19 @@ func TestOrchestrator(t *testing.T) {
 
 	wildcards.Assert(t, `
 %A
-[orchestrator][some.task]INFO  assigned "00001000/my-receiver/some.task/ResourceID"
+[orchestrator][some.task]INFO  assigned "1000/my-receiver/some.task/ResourceID"
 [task][%s]INFO  started task
-[task][%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/ResourceID"
+[task][%s]DEBUG  lock acquired "runtime/lock/task/1000/my-receiver/ResourceID"
 [task][%s]INFO  message from the task
 [task][%s]INFO  task succeeded (%s): ResourceID
-[task][%s]DEBUG  lock released "runtime/lock/task/00001000/my-receiver/ResourceID"
+[task][%s]DEBUG  lock released "runtime/lock/task/1000/my-receiver/ResourceID"
 %A
 `, d1.DebugLogger().AllMessages())
 
 	wildcards.Assert(t, `
 %A
 [orchestrator][some.task]INFO  ready
-[orchestrator][some.task]DEBUG  not assigned "00001000/my-receiver/some.task/ResourceID", distribution key "00001000/my-receiver"
+[orchestrator][some.task]DEBUG  not assigned "1000/my-receiver/some.task/ResourceID", distribution key "1000/my-receiver"
 %A
 `, d2.DebugLogger().AllMessages())
 }
@@ -205,13 +205,13 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	wildcards.Assert(t, `
 %A
 [orchestrator][some.task]INFO  ready
-[orchestrator][some.task]DEBUG  skipped "00001000/my-receiver/some.task/BadID", StartTaskIf condition evaluated as false
-[orchestrator][some.task]INFO  assigned "00001000/my-receiver/some.task/GoodID"
-[task][00001000/my-receiver/some.task/GoodID/%s]INFO  started task
-[task][00001000/my-receiver/some.task/GoodID/%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/some.task/GoodID"
-[task][00001000/my-receiver/some.task/GoodID/%s]INFO  message from the task
-[task][00001000/my-receiver/some.task/GoodID/%s]INFO  task succeeded (%s): GoodID
-[task][00001000/my-receiver/some.task/GoodID/%s]DEBUG  lock released "runtime/lock/task/00001000/my-receiver/some.task/GoodID"
+[orchestrator][some.task]DEBUG  skipped "1000/my-receiver/some.task/BadID", StartTaskIf condition evaluated as false
+[orchestrator][some.task]INFO  assigned "1000/my-receiver/some.task/GoodID"
+[task][1000/my-receiver/some.task/GoodID/%s]INFO  started task
+[task][1000/my-receiver/some.task/GoodID/%s]DEBUG  lock acquired "runtime/lock/task/1000/my-receiver/some.task/GoodID"
+[task][1000/my-receiver/some.task/GoodID/%s]INFO  message from the task
+[task][1000/my-receiver/some.task/GoodID/%s]INFO  task succeeded (%s): GoodID
+[task][1000/my-receiver/some.task/GoodID/%s]DEBUG  lock released "runtime/lock/task/1000/my-receiver/some.task/GoodID"
 %A
 `, d.DebugLogger().AllMessages())
 }
@@ -294,12 +294,12 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 
 	wildcards.Assert(t, `
 [orchestrator][some.task]DEBUG  restart
-[orchestrator][some.task]INFO  assigned "00001000/my-receiver/some.task/ResourceID1"
-[task][00001000/my-receiver/some.task/ResourceID1/%s]INFO  started task
-[task][00001000/my-receiver/some.task/ResourceID1/%s]DEBUG  lock acquired "runtime/lock/task/00001000/my-receiver/some.task/ResourceID1"
-[task][00001000/my-receiver/some.task/ResourceID1/%s]INFO  message from the task
-[task][00001000/my-receiver/some.task/ResourceID1/%s]INFO  task succeeded (0s): ResourceID1
-[task][00001000/my-receiver/some.task/ResourceID1/%s]DEBUG  lock released "runtime/lock/task/00001000/my-receiver/some.task/ResourceID1"
+[orchestrator][some.task]INFO  assigned "1000/my-receiver/some.task/ResourceID1"
+[task][1000/my-receiver/some.task/ResourceID1/%s]INFO  started task
+[task][1000/my-receiver/some.task/ResourceID1/%s]DEBUG  lock acquired "runtime/lock/task/1000/my-receiver/some.task/ResourceID1"
+[task][1000/my-receiver/some.task/ResourceID1/%s]INFO  message from the task
+[task][1000/my-receiver/some.task/ResourceID1/%s]INFO  task succeeded (0s): ResourceID1
+[task][1000/my-receiver/some.task/ResourceID1/%s]DEBUG  lock released "runtime/lock/task/1000/my-receiver/some.task/ResourceID1"
 %A
 `, d.DebugLogger().AllMessages())
 }
