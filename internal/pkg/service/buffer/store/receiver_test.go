@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -171,7 +171,7 @@ func TestStore_ListReceiversBaseOp(t *testing.T) {
 	ctx := context.Background()
 	store := newStoreForTest(t)
 
-	projectID := commonKey.ProjectID(1000)
+	projectID := keboola.ProjectID(1000)
 
 	// Create receivers
 	input := []model.ReceiverBase{

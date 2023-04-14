@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
@@ -26,7 +26,7 @@ func TestSchema(t *testing.T) {
 	time1, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
 	time2 := time1.Add(time.Hour)
 
-	projectID := commonKey.ProjectID(123)
+	projectID := keboola.ProjectID(123)
 	receiverKey := key.ReceiverKey{ProjectID: projectID, ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
 	mappingKey := key.MappingKey{ExportKey: exportKey, RevisionID: 10}

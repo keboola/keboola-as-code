@@ -3,12 +3,12 @@ package task
 import (
 	"fmt"
 
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
+	"github.com/keboola/go-client/pkg/keboola"
 )
 
 type Key struct {
-	ProjectID commonKey.ProjectID `json:"projectId" validate:"required"`
-	TaskID    ID                  `json:"taskId" validate:"required"`
+	ProjectID keboola.ProjectID `json:"projectId" validate:"required"`
+	TaskID    ID                `json:"taskId" validate:"required"`
 }
 
 func (v Key) String() string {

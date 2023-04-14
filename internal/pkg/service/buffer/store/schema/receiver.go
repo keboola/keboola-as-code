@@ -1,10 +1,11 @@
 package schema
 
 import (
+	"github.com/keboola/go-client/pkg/keboola"
+
 	storeKey "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 )
 
 type receivers = PrefixT[model.ReceiverBase]
@@ -24,7 +25,7 @@ func (v ConfigsRoot) Receivers() Receivers {
 	)}
 }
 
-func (v Receivers) InProject(projectID commonKey.ProjectID) ReceiversInProject {
+func (v Receivers) InProject(projectID keboola.ProjectID) ReceiversInProject {
 	return ReceiversInProject{receivers: v.receivers.Add(projectID.String())}
 }
 

@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -10,7 +11,6 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -40,7 +40,7 @@ func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (er
 		Do(ctx, s.client)
 }
 
-func (s *Store) checkReceiversCountOp(projectID commonKey.ProjectID) op.Op {
+func (s *Store) checkReceiversCountOp(projectID keboola.ProjectID) op.Op {
 	return s.schema.
 		Configs().
 		Receivers().
@@ -169,7 +169,7 @@ func (s *Store) updateReceiverBaseOp(_ context.Context, receiver model.ReceiverB
 // ListReceivers from the store.
 // Logic errors:
 // - ResourceNotFoundError.
-func (s *Store) ListReceivers(ctx context.Context, projectID commonKey.ProjectID) (receivers []model.Receiver, err error) {
+func (s *Store) ListReceivers(ctx context.Context, projectID keboola.ProjectID) (receivers []model.Receiver, err error) {
 	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.ListReceivers")
 	defer telemetry.EndSpan(span, &err)
 
@@ -194,7 +194,7 @@ func (s *Store) ListReceivers(ctx context.Context, projectID commonKey.ProjectID
 	return receivers, nil
 }
 
-func (s *Store) receiversIterator(_ context.Context, projectID commonKey.ProjectID) iterator.DefinitionT[model.ReceiverBase] {
+func (s *Store) receiversIterator(_ context.Context, projectID keboola.ProjectID) iterator.DefinitionT[model.ReceiverBase] {
 	return s.schema.Configs().Receivers().InProject(projectID).GetAll()
 }
 
