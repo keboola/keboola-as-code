@@ -3,6 +3,7 @@ package create
 import (
 	"context"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -21,7 +22,7 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	ProjectID() int
+	ProjectID() keboola.ProjectID
 	StorageAPIHost() string
 	Tracer() trace.Tracer
 }

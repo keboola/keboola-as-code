@@ -28,7 +28,7 @@ type dependencies interface {
 	Components() *model.ComponentsMap
 	KeboolaProjectAPI() *keboola.API
 	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
-	ProjectID() int
+	ProjectID() keboola.ProjectID
 	StorageAPIHost() string
 	StorageAPITokenID() string
 	Tracer() trace.Tracer

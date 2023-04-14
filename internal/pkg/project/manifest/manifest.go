@@ -3,6 +3,8 @@ package manifest
 import (
 	"strings"
 
+	"github.com/keboola/go-client/pkg/keboola"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/naming"
@@ -37,11 +39,11 @@ type Manifest struct {
 }
 
 type Project struct {
-	ID      int    `json:"id" validate:"required"`
-	APIHost string `json:"apiHost" validate:"required"`
+	ID      keboola.ProjectID `json:"id" validate:"required"`
+	APIHost string            `json:"apiHost" validate:"required"`
 }
 
-func New(projectID int, apiHost string) *Manifest {
+func New(projectID keboola.ProjectID, apiHost string) *Manifest {
 	// The "http://" protocol can be used in the API host
 	// Default HTTPS protocol is stripped, to keep backward compatibility.
 	apiHost = strings.TrimPrefix(apiHost, "https://")
@@ -111,7 +113,7 @@ func (m *Manifest) APIHost() string {
 	return m.project.APIHost
 }
 
-func (m *Manifest) ProjectID() int {
+func (m *Manifest) ProjectID() keboola.ProjectID {
 	return m.project.ID
 }
 

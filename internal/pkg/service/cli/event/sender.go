@@ -18,10 +18,10 @@ const componentID = keboola.ComponentID("keboola.keboola-as-code")
 type Sender struct {
 	logger    log.Logger
 	client    *keboola.API
-	projectID int
+	projectID keboola.ProjectID
 }
 
-func NewSender(logger log.Logger, client *keboola.API, projectID int) Sender {
+func NewSender(logger log.Logger, client *keboola.API, projectID keboola.ProjectID) Sender {
 	return Sender{logger: logger, client: client, projectID: projectID}
 }
 

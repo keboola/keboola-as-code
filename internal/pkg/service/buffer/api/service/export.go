@@ -7,8 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/keboola/go-client/pkg/keboola"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
@@ -27,7 +25,7 @@ const (
 func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer.CreateExportPayload) (res *buffer.Task, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
-	receiverKey := key.ReceiverKey{ProjectID: keboola.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
+	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	export, err := s.mapper.CreateExportModel(
 		receiverKey,
 		buffer.CreateExportData{
@@ -81,7 +79,7 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 }
 
 func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer.UpdateExportPayload) (res *buffer.Task, err error) {
-	receiverKey := key.ReceiverKey{ProjectID: keboola.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
+	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
 
 	t, err := d.TaskNode().StartTask(task.Config{
@@ -132,7 +130,7 @@ func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer
 func (s *service) GetExport(d dependencies.ForProjectRequest, payload *buffer.GetExportPayload) (r *buffer.Export, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
-	receiverKey := key.ReceiverKey{ProjectID: keboola.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
+	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
 	export, err := str.GetExport(ctx, exportKey)
 	if err != nil {
@@ -145,7 +143,7 @@ func (s *service) GetExport(d dependencies.ForProjectRequest, payload *buffer.Ge
 func (s *service) ListExports(d dependencies.ForProjectRequest, payload *buffer.ListExportsPayload) (r *buffer.ExportsList, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
-	receiverKey := key.ReceiverKey{ProjectID: keboola.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
+	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	exports, err := str.ListExports(ctx, receiverKey)
 	if err != nil {
 		return nil, err
@@ -157,7 +155,7 @@ func (s *service) ListExports(d dependencies.ForProjectRequest, payload *buffer.
 func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer.DeleteExportPayload) (err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
-	receiverKey := key.ReceiverKey{ProjectID: keboola.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
+	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
 	return str.DeleteExport(ctx, exportKey)
 }

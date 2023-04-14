@@ -1,8 +1,6 @@
 package service
 
 import (
-	"github.com/keboola/go-client/pkg/keboola"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -15,7 +13,7 @@ func (s *service) RefreshReceiverTokens(d dependencies.ForProjectRequest, payloa
 	rb := rollback.New(s.logger)
 	defer rb.InvokeIfErr(ctx, &err)
 
-	receiverKey := key.ReceiverKey{ProjectID: keboola.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
+	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	tokens, err := str.ListTokens(ctx, receiverKey)
 	if err != nil {
 		return nil, err

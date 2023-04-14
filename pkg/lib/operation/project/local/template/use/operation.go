@@ -44,7 +44,7 @@ type dependencies interface {
 	StorageAPITokenID() string
 	Logger() log.Logger
 	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
-	ProjectID() int
+	ProjectID() keboola.ProjectID
 	Tracer() trace.Tracer
 }
 

@@ -33,7 +33,7 @@ type dependencies interface {
 	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
 	Options() *options.Options
-	ProjectID() int
+	ProjectID() keboola.ProjectID
 	StorageAPIHost() string
 	StorageAPIToken() keboola.Token
 	Tracer() trace.Tracer

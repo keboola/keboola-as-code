@@ -26,7 +26,7 @@ func (p *Plan) Name() string {
 	return "encrypt"
 }
 
-func (p *Plan) Invoke(ctx context.Context, projectID int, logger log.Logger, keboolaProjectAPI *keboola.API, state *state.State) error {
+func (p *Plan) Invoke(ctx context.Context, projectID keboola.ProjectID, logger log.Logger, keboolaProjectAPI *keboola.API, state *state.State) error {
 	return newExecutor(ctx, projectID, logger, keboolaProjectAPI, state, p).invoke()
 }
 

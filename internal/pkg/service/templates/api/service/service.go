@@ -207,7 +207,7 @@ func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *
 	}
 
 	tKey := task.Key{
-		ProjectID: keboola.ProjectID(d.ProjectID()),
+		ProjectID: d.ProjectID(),
 		TaskID:    task.ID(TemplateUseTaskType),
 	}
 
@@ -421,7 +421,7 @@ func (s *service) UpgradeInstance(d dependencies.ForProjectRequest, payload *Upg
 	}
 
 	tKey := task.Key{
-		ProjectID: keboola.ProjectID(d.ProjectID()),
+		ProjectID: d.ProjectID(),
 		TaskID:    task.ID(TemplateUpgradeTaskType),
 	}
 
@@ -496,7 +496,7 @@ func (s *service) GetTask(d dependencies.ForProjectRequest, payload *GetTaskPayl
 	ctx, str := d.RequestCtx(), d.Store()
 
 	t, err := str.GetTask(ctx, task.Key{
-		ProjectID: keboola.ProjectID(d.ProjectID()),
+		ProjectID: d.ProjectID(),
 		TaskID:    payload.TaskID,
 	})
 	if err != nil {

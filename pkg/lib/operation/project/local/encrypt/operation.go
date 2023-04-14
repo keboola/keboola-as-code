@@ -20,7 +20,7 @@ type Options struct {
 type dependencies interface {
 	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
-	ProjectID() int
+	ProjectID() keboola.ProjectID
 	Tracer() trace.Tracer
 }
 

@@ -72,8 +72,8 @@ func newProjectDeps(ctx context.Context, base Base, public Public, token keboola
 	return v, nil
 }
 
-func (v project) ProjectID() int {
-	return v.token.ProjectID()
+func (v project) ProjectID() keboola.ProjectID {
+	return keboola.ProjectID(v.token.ProjectID())
 }
 
 func (v project) ProjectName() string {
