@@ -15,8 +15,6 @@ func Commands(d dependencies.Provider) *cobra.Command {
 	}
 	cmd.AddCommand(
 		InitCommand(d),
-		ValidateCommand(d),
-		FixPathsCommand(d),
 	)
 	return cmd
 }
