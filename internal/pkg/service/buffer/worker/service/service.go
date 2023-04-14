@@ -69,6 +69,7 @@ func New(d dependencies) (*Service, error) {
 		schema:         d.Schema(),
 		events:         d.EventSender(),
 		config:         d.WorkerConfig(),
+		tasks:          d.TaskNode(),
 	}
 
 	// Graceful shutdown
@@ -89,7 +90,6 @@ func New(d dependencies) (*Service, error) {
 	}
 	if s.config.ConditionsCheck {
 		s.stats = d.StatsCache()
-		s.tasks = d.TaskNode()
 		init = append(init, s.checkConditions(ctx, wg))
 	}
 	if s.config.CloseSlices {
