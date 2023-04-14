@@ -1,74 +1,75 @@
 package task
 
 import (
+	"github.com/benbjohnson/clock"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
-func TestTask_ForCleanup(t *testing.T) {
+func TestIsForCleanup(t *testing.T) {
 	t.Parallel()
+
+	node := &Node{clock: clock.New()}
 
 	// Unfinished task, too recent
 	createdAt := utctime.UTCTime(time.Now().Add(-1 * time.Hour))
-	tsk := &Task{
+	task := Task{
 		Key:        Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: nil,
 		Error:      "",
 	}
-	assert.False(t, tsk.IsForCleanup())
+	assert.False(t, node.isForCleanup(task))
 
 	// Unfinished task, too old
 	createdAt = utctime.UTCTime(time.Now().Add(-30 * 24 * time.Hour))
-	tsk = &Task{
+	task = Task{
 		Key:        Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: nil,
 		Error:      "",
 	}
-	assert.True(t, tsk.IsForCleanup())
+	assert.True(t, node.isForCleanup(task))
 
 	// Finished task, successful, too recent
 	createdAt = utctime.UTCTime(time.Now().Add(-1 * time.Minute))
-	tsk = &Task{
+	task = Task{
 		Key:        Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: &createdAt,
 		Error:      "",
 	}
-	assert.False(t, tsk.IsForCleanup())
+	assert.False(t, node.isForCleanup(task))
 
 	// Finished task, successful, too old
 	createdAt = utctime.UTCTime(time.Now().Add(-2 * time.Hour))
-	tsk = &Task{
+	task = Task{
 		Key:        Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: &createdAt,
 		Error:      "",
 	}
-	assert.True(t, tsk.IsForCleanup())
+	assert.True(t, node.isForCleanup(task))
 
 	// Finished task, error, too recent
 	createdAt = utctime.UTCTime(time.Now().Add(-2 * time.Hour))
-	tsk = &Task{
+	task = Task{
 		Key:        Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: &createdAt,
 		Error:      "error",
 	}
-	assert.False(t, tsk.IsForCleanup())
+	assert.False(t, node.isForCleanup(task))
 
 	// Finished task, successful, too old
 	createdAt = utctime.UTCTime(time.Now().Add(-48 * time.Hour))
-	tsk = &Task{
+	task = Task{
 		Key:        Key{},
 		CreatedAt:  createdAt,
 		FinishedAt: &createdAt,
 		Error:      "error",
 	}
-	assert.True(t, tsk.IsForCleanup())
+	assert.True(t, node.isForCleanup(task))
 }
