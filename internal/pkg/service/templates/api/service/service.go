@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -19,6 +20,7 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -41,6 +43,7 @@ const (
 )
 
 type service struct {
+	config config.Config
 	deps   dependencies.ForServer
 	mapper *Mapper
 }
@@ -54,10 +57,43 @@ func New(d dependencies.ForServer) (Service, error) {
 		return nil, err
 	}
 
-	return &service{
+	s := &service{
+		config: d.APIConfig(),
 		deps:   d,
 		mapper: NewMapper(d),
-	}, nil
+	}
+
+	// Graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	d.Process().OnShutdown(func() {
+		d.Logger().Info("received shutdown request")
+		cancel()
+		d.Logger().Info("waiting for orchestrators")
+		wg.Wait()
+		d.Logger().Info("shutdown done")
+	})
+
+	// Create orchestrators
+	var init []<-chan error
+	if s.config.Cleanup {
+		init = append(init, s.cleanup(ctx, wg))
+	}
+
+	// Check initialization
+	errs := errors.NewMultiError()
+	for _, done := range init {
+		if err := <-done; err != nil {
+			errs.Append(err)
+		}
+	}
+
+	// Stop on initialization error
+	if err := errs.ErrorOrNil(); err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }
 
 func (s *service) APIRootIndex(dependencies.ForPublicRequest) (err error) {

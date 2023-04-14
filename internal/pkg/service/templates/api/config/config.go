@@ -12,13 +12,16 @@ import (
 )
 
 const (
-	EnvPrefix      = "TEMPLATES_API_"
-	SpanNamePrefix = "keboola.go.templates.task"
+	EnvPrefix              = "TEMPLATES_API_"
+	SpanNamePrefix         = "keboola.go.templates.task"
+	DefaultCleanupInterval = 1 * time.Hour
 )
 
 // Config of the Templates API.
 // See "cliconfig" package for more information.
 type Config struct {
+	Cleanup            bool          `mapstructure:"enable-cleanup" usage:"Enable cleanup functionality."`
+	CleanupInterval    time.Duration `mapstructure:"cleanup-interval" usage:"How often will old resources be deleted."`
 	Debug              bool          `mapstructure:"debug" usage:"Enable debug log level."`
 	DebugHTTP          bool          `mapstructure:"debug-http" usage:"Log HTTP client request and response bodies."`
 	DatadogEnabled     bool          `mapstructure:"datadog-enabled" usage:"Enable Datadog telemetry integration."`
@@ -41,6 +44,8 @@ type Option func(c *Config)
 
 func NewConfig() Config {
 	return Config{
+		Cleanup:            true,
+		CleanupInterval:    DefaultCleanupInterval,
 		Debug:              false,
 		DebugHTTP:          false,
 		CpuProfFilePath:    "",
@@ -103,6 +108,9 @@ func (c *Config) Normalize() {
 
 func (c *Config) Validate() error {
 	errs := errors.NewMultiError()
+	if c.CleanupInterval <= 0 {
+		return errors.Errorf(`CleanupInterval must be positive time.Duration, found "%v"`, c.CleanupInterval)
+	}
 	if c.StorageAPIHost == "" {
 		errs.Append(errors.New(`StorageAPIHost must be set`))
 	}
@@ -123,6 +131,18 @@ func (c Config) Apply(ops ...Option) Config {
 		o(&c)
 	}
 	return c
+}
+
+func WithCleanup(v bool) Option {
+	return func(c *Config) {
+		c.Cleanup = v
+	}
+}
+
+func WithCleanupInterval(v time.Duration) Option {
+	return func(c *Config) {
+		c.CleanupInterval = v
+	}
 }
 
 func WithPublicAddress(v *url.URL) Option {

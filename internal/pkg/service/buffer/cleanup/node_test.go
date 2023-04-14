@@ -2,7 +2,6 @@ package cleanup_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -20,7 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -68,56 +66,9 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, schema.Configs().Exports().ByKey(exportKey2).Put(export2).Do(ctx, client))
 	assert.NoError(t, schema.Configs().Exports().ByKey(exportKey3).Put(export3).Do(ctx, client))
 
-	// Add task without a finishedAt timestamp but too old - will be deleted
 	createdAtRaw, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
 	createdAt := utctime.UTCTime(createdAtRaw)
-	taskKey1 := task.Key{ProjectID: receiverKey.ProjectID, TaskID: task.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "some.task", createdAt.String(), "abcdef"))}
-	task1 := task.Task{
-		Key:        taskKey1,
-		Type:       "some.task",
-		CreatedAt:  createdAt,
-		FinishedAt: nil,
-		Node:       "node1",
-		Lock:       "lock1",
-		Result:     "",
-		Error:      "err",
-		Duration:   nil,
-	}
-	assert.NoError(t, schema.Tasks().ByKey(taskKey1).Put(task1).Do(ctx, client))
-
-	// Add task with a finishedAt timestamp in the past - will be deleted
-	time2, _ := time.Parse(time.RFC3339, "2008-01-02T15:04:05+07:00")
-	time2Key := utctime.UTCTime(time2)
-	taskKey2 := task.Key{ProjectID: receiverKey.ProjectID, TaskID: task.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
-	task2 := task.Task{
-		Key:        taskKey2,
-		Type:       "other.task",
-		CreatedAt:  createdAt,
-		FinishedAt: &time2Key,
-		Node:       "node2",
-		Lock:       "lock2",
-		Result:     "res",
-		Error:      "",
-		Duration:   nil,
-	}
-	assert.NoError(t, schema.Tasks().ByKey(taskKey2).Put(task2).Do(ctx, client))
-
-	// Add task with a finishedAt timestamp before a moment - will be ignored
-	time3 := time.Now()
-	time3Key := utctime.UTCTime(time3)
-	taskKey3 := task.Key{ProjectID: receiverKey.ProjectID, TaskID: task.ID(fmt.Sprintf("%s/%s/%s_%s", receiverKey.ReceiverID.String(), "other.task", createdAt.String(), "ghijkl"))}
-	task3 := task.Task{
-		Key:        taskKey3,
-		Type:       "other.task",
-		CreatedAt:  createdAt,
-		FinishedAt: &time3Key,
-		Node:       "node2",
-		Lock:       "lock2",
-		Result:     "res",
-		Error:      "",
-		Duration:   nil,
-	}
-	assert.NoError(t, schema.Tasks().ByKey(taskKey3).Put(task3).Do(ctx, client))
+	timeNow := time.Now()
 
 	// Add file with an Opened state and created in the past - will be deleted
 	fileKey1 := key.FileKey{ExportKey: exportKey1, FileID: key.FileID(createdAt)}
@@ -135,7 +86,7 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, schema.Files().InState(filestate.Opened).ByKey(fileKey1).Put(file1).Do(ctx, client))
 
 	// Add file with an Opened state and created recently - will be ignored
-	fileKey2 := key.FileKey{ExportKey: exportKey3, FileID: key.FileID(time3)}
+	fileKey2 := key.FileKey{ExportKey: exportKey3, FileID: key.FileID(timeNow)}
 	file2 := model.File{
 		FileKey: fileKey2,
 		State:   filestate.Opened,
@@ -166,7 +117,7 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, schema.Slices().InState(slicestate.Imported).ByKey(sliceKey1).Put(slice1).Do(ctx, client))
 
 	// Add slice for the ignored file - will be ignored
-	sliceKey2 := key.SliceKey{FileKey: fileKey2, SliceID: key.SliceID(time3)}
+	sliceKey2 := key.SliceKey{FileKey: fileKey2, SliceID: key.SliceID(timeNow)}
 	slice2 := model.Slice{
 		SliceKey: sliceKey2,
 		Number:   1,
@@ -186,14 +137,14 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, schema.Records().ByKey(recordKey1).Put("rec").Do(ctx, client))
 
 	// Add record for the ignored slice - will be ignored
-	recordKey2 := key.RecordKey{SliceKey: sliceKey2, ReceivedAt: key.ReceivedAt(time3), RandomSuffix: "efgh"}
+	recordKey2 := key.RecordKey{SliceKey: sliceKey2, ReceivedAt: key.ReceivedAt(timeNow), RandomSuffix: "efgh"}
 	assert.NoError(t, schema.Records().ByKey(recordKey2).Put("rec").Do(ctx, client))
 
 	// Add received stats for the cleaned-up slice - will be deleted
 	assert.NoError(t, schema.ReceivedStats().InSlice(sliceKey1).ByNodeID("node-123").Put(model.SliceStats{
 		SliceNodeKey: key.SliceNodeKey{SliceKey: sliceKey1, NodeID: "node-123"},
 		Stats: model.Stats{
-			LastRecordAt: utctime.UTCTime(time3),
+			LastRecordAt: utctime.UTCTime(timeNow),
 			RecordsCount: 123,
 			RecordsSize:  1 * datasize.KB,
 			BodySize:     1 * datasize.KB,
@@ -204,7 +155,7 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, schema.ReceivedStats().InSlice(sliceKey2).ByNodeID("node-123").Put(model.SliceStats{
 		SliceNodeKey: key.SliceNodeKey{SliceKey: sliceKey2, NodeID: "node-123"},
 		Stats: model.Stats{
-			LastRecordAt: utctime.UTCTime(time3),
+			LastRecordAt: utctime.UTCTime(timeNow),
 			RecordsCount: 456,
 			RecordsSize:  2 * datasize.KB,
 			BodySize:     2 * datasize.KB,
@@ -225,8 +176,6 @@ func TestCleanup(t *testing.T) {
 [task][00001000/github/receiver.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/00001000/github/receiver.cleanup"
 [cleanup]INFO  started "1" receiver cleanup tasks
 %A
-[task][00001000/github/receiver.cleanup/%s]DEBUG  deleted task "00001000/github/some.task/2006-01-02T08:04:05.000Z_abcdef"
-[task][00001000/github/receiver.cleanup/%s]INFO  deleted "1" tasks
 [task][00001000/github/receiver.cleanup/%s]DEBUG  deleted slice "00001000/github/first/2006-01-02T08:04:05.000Z"
 [task][00001000/github/receiver.cleanup/%s]DEBUG  deleted file "00001000/github/first/2006-01-02T08:04:05.000Z"
 [task][00001000/github/receiver.cleanup/%s]INFO  deleted "1" files, "1" slices, "1" records
@@ -353,21 +302,6 @@ stats/received/00001000/github/third/%s/%s/node-123
   "recordsCount": 456,
   "recordsSize": "2KB",
   "bodySize": "2KB"
-}
->>>>>
-
-<<<<<
-task/00001000/github/other.task/2006-01-02T08:04:05.000Z_ghijkl
------
-{
-  "projectId": 1000,
-  "taskId": "github/other.task/2006-01-02T08:04:05.000Z_ghijkl",
-  "type": "other.task",
-  "createdAt": "2006-01-02T08:04:05.000Z",
-  "finishedAt": "%s",
-  "node": "node2",
-  "lock": "lock2",
-  "result": "res"
 }
 >>>>>
 
