@@ -102,14 +102,14 @@ func TestOrchestrator(t *testing.T) {
 	// Put some key to trigger the task
 	assert.NoError(t, pfx.Key("key1").Put(testResource{ReceiverKey: receiverKey, ID: "ResourceID"}).Do(ctx, client))
 
-	// Wait for task on the node 1
+	// Wait for task on the node 2
 	assert.Eventually(t, func() bool {
-		return strings.Contains(d1.DebugLogger().AllMessages(), "DEBUG  lock released")
+		return strings.Contains(d2.DebugLogger().AllMessages(), "DEBUG  lock released")
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
-	// Wait for  "not assigned" message form the node 2
+	// Wait for  "not assigned" message form the node 1
 	assert.Eventually(t, func() bool {
-		return strings.Contains(d2.DebugLogger().AllMessages(), "DEBUG  not assigned")
+		return strings.Contains(d1.DebugLogger().AllMessages(), "DEBUG  not assigned")
 	}, 5*time.Second, 10*time.Millisecond, "timeout")
 
 	cancel()
@@ -128,14 +128,19 @@ func TestOrchestrator(t *testing.T) {
 [task][%s]INFO  task succeeded (%s): ResourceID
 [task][%s]DEBUG  lock released "runtime/lock/task/1000/my-receiver/ResourceID"
 %A
-`, d1.DebugLogger().AllMessages())
+`, d2.DebugLogger().AllMessages())
 
 	wildcards.Assert(t, `
 %A
 [orchestrator][some.task]INFO  ready
+%A
+`, d1.DebugLogger().AllMessages())
+
+	wildcards.Assert(t, `
+%A
 [orchestrator][some.task]DEBUG  not assigned "1000/my-receiver/some.task/ResourceID", distribution key "1000/my-receiver"
 %A
-`, d2.DebugLogger().AllMessages())
+`, d1.DebugLogger().AllMessages())
 }
 
 func TestOrchestrator_StartTaskIf(t *testing.T) {
