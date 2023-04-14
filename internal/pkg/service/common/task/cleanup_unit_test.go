@@ -1,11 +1,13 @@
 package task
 
 import (
-	"github.com/benbjohnson/clock"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/benbjohnson/clock"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
 func TestIsForCleanup(t *testing.T) {

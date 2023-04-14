@@ -3,10 +3,11 @@ package task_test
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/go-utils/pkg/wildcards"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
