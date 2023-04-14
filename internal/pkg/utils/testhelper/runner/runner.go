@@ -68,8 +68,6 @@ func (r *Runner) NewTest(t *testing.T, testDirName string) (*Test, context.Cance
 	envProvider := storageenv.CreateStorageEnvTicketProvider(ctx, project.KeboolaProjectAPI(), project.Env())
 
 	envMap := project.Env()
-	// Enable templates private beta in tests
-	envMap.Set(`KBC_TEMPLATES_PRIVATE_BETA`, `true`)
 	// Disable version check
 	envMap.Set(`KBC_VERSION_CHECK`, `false`)
 	envMap.Set("TEST_KBC_PROJECT_ID_8DIG", fmt.Sprintf("%08d", cast.ToInt(envMap.Get("TEST_KBC_PROJECT_ID"))))
