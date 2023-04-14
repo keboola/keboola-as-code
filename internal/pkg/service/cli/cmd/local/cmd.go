@@ -21,11 +21,8 @@ func Commands(p dependencies.Provider, envs *env.Map) *cobra.Command {
 		EncryptCommand(p),
 		ValidateCommand(p),
 		FixPathsCommand(p),
+		template.Commands(p),
 	)
-
-	if envs.Get(`KBC_TEMPLATES_PRIVATE_BETA`) == `true` {
-		cmd.AddCommand(template.Commands(p))
-	}
 
 	return cmd
 }

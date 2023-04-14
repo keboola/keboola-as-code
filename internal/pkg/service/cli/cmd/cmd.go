@@ -176,12 +176,8 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		local.Commands(p, envs),
 		remote.Commands(p, envs),
 		dbt.Commands(p),
+		template.Commands(p),
 	)
-
-	// Templates are private beta, can be enabled by ENV
-	if envs.Get(`KBC_TEMPLATES_PRIVATE_BETA`) == `true` {
-		root.AddCommand(template.Commands(p))
-	}
 
 	// Get all sub-commands by full path, for example "sync init"
 	visitSubCommands(root.Cmd, func(cmd *cobra.Command) (goDeep bool) {
@@ -208,15 +204,10 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 	root.addAlias(`persist`, `local persist`)
 	root.addAlias(`create`, `local create`)
 	root.addAlias(`encrypt`, `local encrypt`)
-
-	// Templates are in private beta, can be enabled by ENV
-	if envs.Get(`KBC_TEMPLATES_PRIVATE_BETA`) == `true` {
-		root.addAlias(`use`, `local template use`)
-		root.addAlias(`t`, `template`)
-		root.addAlias(`r`, `template repository`)
-		root.addAlias(`repo`, `template repository`)
-	}
-
+	root.addAlias(`use`, `local template use`)
+	root.addAlias(`t`, `template`)
+	root.addAlias(`r`, `template repository`)
+	root.addAlias(`repo`, `template repository`)
 	root.addAlias(`table`, `remote table`)
 
 	// Add aliases to usage template

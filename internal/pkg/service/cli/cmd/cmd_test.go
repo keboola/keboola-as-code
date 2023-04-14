@@ -222,7 +222,6 @@ func newTestRootCommand(fs filesystem.Fs) (*RootCommand, *ioutil.AtomicWriter) {
 	}
 
 	envs := env.Empty()
-	envs.Set("KBC_TEMPLATES_PRIVATE_BETA", "true")
 
 	return NewRootCommand(in, out, out, envs, fsFactory), out
 }
