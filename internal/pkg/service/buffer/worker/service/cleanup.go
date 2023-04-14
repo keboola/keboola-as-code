@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	cleanupPkg "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/cleanup"
-	cleanupTaskPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/cleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -39,10 +38,8 @@ func (s *Service) cleanup(ctx context.Context, wg *sync.WaitGroup, d dependencie
 	return initDone
 }
 
-func (s *Service) cleanupTasks(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
-	logger := s.logger.AddPrefix("[cleanup-tasks]")
-	node := cleanupTaskPkg.NewNode(d, logger)
-
+func (s *Service) cleanupTasks(ctx context.Context, wg *sync.WaitGroup) <-chan error {
+	logger := s.logger.AddPrefix("[task][cleanup][ticker]")
 	initDone := make(chan error)
 	wg.Add(1)
 	go func() {
@@ -59,8 +56,11 @@ func (s *Service) cleanupTasks(ctx context.Context, wg *sync.WaitGroup, d depend
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				if err := node.Check(ctx); err != nil && !errors.Is(err, context.Canceled) {
-					logger.Error(err)
+				// Only one worker should do cleanup
+				if s.dist.MustCheckIsOwner("task.cleanup") {
+					if err := s.tasks.Cleanup(); err != nil && !errors.Is(err, context.Canceled) {
+						logger.Error(err)
+					}
 				}
 			}
 		}
