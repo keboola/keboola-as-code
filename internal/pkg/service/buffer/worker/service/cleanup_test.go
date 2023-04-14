@@ -20,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
@@ -94,42 +95,23 @@ func TestCleanup(t *testing.T) {
 
 	// Check logs
 	wildcards.Assert(t, `
-%A
-[task][00000001/tasks.cleanup/%s]INFO  started task
-[task][00000001/tasks.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/00000001/tasks.cleanup"
-[task][00000001/tasks.cleanup/%s]INFO  deleted "0" tasks
-[task][00000001/tasks.cleanup/%s]INFO  task succeeded (%s): deleted 0 tasks
-%A
-	`, workerDeps.DebugLogger().AllMessages())
+[task][cleanup]DEBUG  lock acquired "runtime/lock/task/tasks.cleanup"
+[task][cleanup]INFO  deleted "0" tasks
+[task][cleanup]DEBUG  lock released "runtime/lock/task/tasks.cleanup"
+	`, strhelper.FilterLines(`^\[task\]\[cleanup\]`, workerDeps.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
-%A
-[task][00000001/tasks.cleanup/%s]DEBUG  lock released "runtime/lock/task/00000001/tasks.cleanup"
-%A
-	`, workerDeps.DebugLogger().AllMessages())
+[service][cleanup]INFO  ready
+[service][cleanup]INFO  started "1" receiver cleanup tasks
+	`, strhelper.FilterLines(`^\[service\]\[cleanup\]`, workerDeps.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
-%A
 [task][00001000/github/receiver.cleanup/%s]INFO  started task
 [task][00001000/github/receiver.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/00001000/github/receiver.cleanup"
-%A
-	`, workerDeps.DebugLogger().AllMessages())
-	wildcards.Assert(t, `
-%A
-[service][cleanup]INFO  started "1" receiver cleanup tasks
-%A
-	`, workerDeps.DebugLogger().AllMessages())
-	wildcards.Assert(t, `
-%A
 [task][00001000/github/receiver.cleanup/%s]DEBUG  deleted slice "00001000/github/first/%s"
 [task][00001000/github/receiver.cleanup/%s]DEBUG  deleted file "00001000/github/first/%s"
 [task][00001000/github/receiver.cleanup/%s]INFO  deleted "1" files, "1" slices, "0" records
 [task][00001000/github/receiver.cleanup/%s]INFO  task succeeded (%s): receiver "00001000/github" has been cleaned
-%A
-	`, workerDeps.DebugLogger().AllMessages())
-	wildcards.Assert(t, `
-%A
 [task][00001000/github/receiver.cleanup/%s]DEBUG  lock released "runtime/lock/task/00001000/github/receiver.cleanup"
-%A
-	`, workerDeps.DebugLogger().AllMessages())
+	`, strhelper.FilterLines(`^\[task\]\[00001000/github/receiver.cleanup`, workerDeps.DebugLogger().AllMessages()))
 
 	// Check etcd state
 	etcdhelper.AssertKVsString(t, client, `
@@ -185,22 +167,6 @@ secret/export/token/00001000/github/first
 slice/active/opened/writing/00001000/github/another/%s
 -----
 %A
->>>>>
-
-<<<<<
-task/00000001/tasks.cleanup/%s
------
-{
-  "projectId": 1,
-  "taskId": "tasks.cleanup/%s",
-  "type": "tasks.cleanup",
-  "createdAt": "%s",
-  "finishedAt": "%s",
-  "node": "%s",
-  "lock": "runtime/lock/task/00000001/tasks.cleanup",
-  "result": "deleted 0 tasks",
-  "duration": %d
-}
 >>>>>
 
 <<<<<

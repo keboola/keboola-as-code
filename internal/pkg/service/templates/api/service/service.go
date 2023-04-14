@@ -45,6 +45,7 @@ const (
 type service struct {
 	config config.Config
 	deps   dependencies.ForServer
+	tasks  *task.Node
 	mapper *Mapper
 }
 
@@ -60,6 +61,7 @@ func New(d dependencies.ForServer) (Service, error) {
 	s := &service{
 		config: d.APIConfig(),
 		deps:   d,
+		tasks:  d.TaskNode(),
 		mapper: NewMapper(d),
 	}
 
@@ -210,7 +212,7 @@ func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *
 		TaskID:    task.ID(TemplateUseTaskType),
 	}
 
-	t, err := d.TaskNode().StartTask(task.Config{
+	t, err := s.tasks.StartTask(task.Config{
 		Type: TemplateUseTaskType,
 		Key:  tKey,
 		Context: func() (context.Context, context.CancelFunc) {
@@ -424,7 +426,7 @@ func (s *service) UpgradeInstance(d dependencies.ForProjectRequest, payload *Upg
 		TaskID:    task.ID(TemplateUpgradeTaskType),
 	}
 
-	t, err := d.TaskNode().StartTask(task.Config{
+	t, err := s.tasks.StartTask(task.Config{
 		Type: TemplateUpgradeTaskType,
 		Key:  tKey,
 		Context: func() (context.Context, context.CancelFunc) {
