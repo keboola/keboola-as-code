@@ -1,35 +1,33 @@
-package cleanup_test
+package task_test
 
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/go-utils/pkg/wildcards"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 
-	"github.com/keboola/go-utils/pkg/wildcards"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/cleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	tmplDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
 
 func TestCleanup(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
+	logs := ioutil.NewAtomicWriter()
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-	d := tmplDependencies.NewMockedDeps(t, dependencies.WithEtcdNamespace(etcdNamespace))
-	schema := d.Schema()
-
-	node := cleanup.NewNode(d, d.Logger().AddPrefix("[cleanup]"))
+	node, d := createNode(t, etcdNamespace, logs, "node1")
+	taskPrefix := etcdop.NewTypedPrefix[task.Task](task.DefaultTaskEtcdPrefix, d.EtcdSerde())
 
 	// Add task without a finishedAt timestamp but too old - will be deleted
 	createdAtRaw, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
@@ -46,7 +44,7 @@ func TestCleanup(t *testing.T) {
 		Error:      "err",
 		Duration:   nil,
 	}
-	assert.NoError(t, schema.Tasks().ByKey(taskKey1).Put(task1).Do(ctx, client))
+	assert.NoError(t, taskPrefix.Key(taskKey1.String()).Put(task1).Do(ctx, client))
 
 	// Add task with a finishedAt timestamp in the past - will be deleted
 	time2, _ := time.Parse(time.RFC3339, "2008-01-02T15:04:05+07:00")
@@ -63,7 +61,7 @@ func TestCleanup(t *testing.T) {
 		Error:      "",
 		Duration:   nil,
 	}
-	assert.NoError(t, schema.Tasks().ByKey(taskKey2).Put(task2).Do(ctx, client))
+	assert.NoError(t, taskPrefix.Key(taskKey2.String()).Put(task2).Do(ctx, client))
 
 	// Add task with a finishedAt timestamp before a moment - will be ignored
 	time3 := time.Now()
@@ -80,27 +78,31 @@ func TestCleanup(t *testing.T) {
 		Error:      "",
 		Duration:   nil,
 	}
-	assert.NoError(t, schema.Tasks().ByKey(taskKey3).Put(task3).Do(ctx, client))
+	assert.NoError(t, taskPrefix.Key(taskKey3.String()).Put(task3).Do(ctx, client))
 
 	// Run the cleanup
-	assert.NoError(t, node.Check(ctx))
+	assert.NoError(t, node.Cleanup())
 
-	// Shutdown - wait for tasks
+	// Shutdown - wait for cleanup
 	d.Process().Shutdown(errors.New("bye bye"))
 	d.Process().WaitForShutdown()
 
 	// Check logs
 	wildcards.Assert(t, `
-%A
-[task][00000001/tasks.cleanup/%s]INFO  started task
-[task][00000001/tasks.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/00000001/tasks.cleanup"
-%A
-[task][00000001/tasks.cleanup/%s]DEBUG  deleted task "00000123/some.task/2006-01-02T08:04:05.000Z_abcdef"
-[task][00000001/tasks.cleanup/%s]DEBUG  deleted task "00000456/other.task/2006-01-02T08:04:05.000Z_ghijkl"
-[task][00000001/tasks.cleanup/%s]INFO  deleted "2" tasks
-[task][00000001/tasks.cleanup/%s]INFO  task succeeded (%s): deleted 2 tasks
-[task][00000001/tasks.cleanup/%s]DEBUG  lock released "runtime/lock/task/00000001/tasks.cleanup"
-%A
+[node1]INFO  process unique id "node1"
+[node1][task][etcd-session]INFO  creating etcd session
+[node1][task][etcd-session]INFO  created etcd session | %s
+[node1][task][cleanup]DEBUG  lock acquired "runtime/lock/task/tasks.cleanup"
+[node1][task][cleanup]DEBUG  deleted task "00000123/some.task/2006-01-02T08:04:05.000Z_abcdef"
+[node1][task][cleanup]DEBUG  deleted task "00000456/other.task/2006-01-02T08:04:05.000Z_ghijkl"
+[node1][task][cleanup]INFO  deleted "2" tasks
+[node1][task][cleanup]DEBUG  lock released "runtime/lock/task/tasks.cleanup"
+[node1]INFO  exiting (bye bye)
+[node1][task]INFO  received shutdown request
+[node1][task][etcd-session]INFO  closing etcd session
+[node1][task][etcd-session]INFO  closed etcd session | %s
+[node1][task]INFO  shutdown done
+[node1]INFO  exited
 `, d.DebugLogger().AllMessages())
 
 	// Check keys
@@ -117,22 +119,6 @@ task/00000789/third.task/2006-01-02T08:04:05.000Z_mnopqr
   "node": "node2",
   "lock": "lock2",
   "result": "res"
-}
->>>>>
-
-<<<<<
-task/00000001/tasks.cleanup/%s
------
-{
-  "projectId": 1,
-  "taskId": "tasks.cleanup/%s",
-  "type": "tasks.cleanup",
-  "createdAt": "%s",
-  "finishedAt": "%s",
-  "node": "%s",
-  "lock": "runtime/lock/task/00000001/tasks.cleanup",
-  "result": "deleted 2 tasks",
-  "duration": %d
 }
 >>>>>
 `)
