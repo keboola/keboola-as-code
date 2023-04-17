@@ -4,7 +4,7 @@ on:
   workflow_call:
 
 env:
-  GO_VERSION: 1.19.3
+  GO_VERSION: 1.20.3
   TEST_PARALLELISM: 4
   TEST_PARALLELISM_PKG: 1
   TEST_KBC_PROJECTS: |
@@ -68,4 +68,3 @@ jobs:
         uses: char0n/swagger-editor-validate@v1
         with:
           definition-file: internal/pkg/service/buffer/api/openapi/openapi3.yaml
-

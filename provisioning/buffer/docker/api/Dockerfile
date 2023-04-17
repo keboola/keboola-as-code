@@ -1,5 +1,5 @@
 # Build container
-FROM golang:1.19.2-alpine3.16 AS buildContainer
+FROM golang:1.20.3-alpine3.17 AS buildContainer
 RUN apk add -U --no-cache bash make curl
 WORKDIR /app
 
@@ -15,7 +15,7 @@ COPY . .
 RUN make build-buffer-api
 
 # Production container
-FROM alpine:3.16
+FROM alpine:3.17
 RUN apk add -U --no-cache ca-certificates git
 
 COPY --from=buildContainer /app/target/buffer/api /app/server
