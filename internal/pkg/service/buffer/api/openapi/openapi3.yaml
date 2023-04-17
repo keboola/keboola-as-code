@@ -24,6 +24,9 @@ paths:
             responses:
                 "301":
                     description: Moved Permanently response.
+                    content:
+                        application/json:
+                            schema: {}
     /v1:
         get:
             tags:
@@ -124,6 +127,9 @@ paths:
             responses:
                 "200":
                     description: OK response.
+                    content:
+                        application/json:
+                            schema: {}
                 "404":
                     description: 'buffer.receiverNotFound: Receiver not found error.'
                     content:
@@ -332,6 +338,9 @@ paths:
             responses:
                 "200":
                     description: OK response.
+                    content:
+                        application/json:
+                            schema: {}
                 "404":
                     description: 'buffer.receiverNotFound: Receiver not found error.'
                     content:
@@ -687,6 +696,9 @@ paths:
             responses:
                 "200":
                     description: OK response.
+                    content:
+                        application/json:
+                            schema: {}
                 "404":
                     description: 'buffer.exportNotFound: Export not found error.'
                     content:
