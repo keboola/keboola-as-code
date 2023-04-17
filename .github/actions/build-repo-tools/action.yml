@@ -15,3 +15,4 @@ runs:
         tags: keboolabot/keboola-as-code-${{ inputs.type }}-tools:latest
         cache-from: type=registry,ref=keboolabot/keboola-as-code-${{ inputs.type }}-tools:buildcache
         cache-to: type=registry,ref=keboolabot/keboola-as-code-${{ inputs.type }}-tools:buildcache,mode=max
+        provenance: false
