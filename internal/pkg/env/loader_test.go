@@ -45,24 +45,19 @@ INFO  Loaded env file ".env".
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
 }
 
-func TestLoadDotEnv_Invalid(t *testing.T) {
+func TestLoadDotEnv_NoKey(t *testing.T) {
 	t.Parallel()
 	// Memory fs
 	logger := log.NewDebugLogger()
 	fs := aferofs.NewMemoryFs(filesystem.WithLogger(logger))
 
 	// Write envs to file
-	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(".env.local", "invalid")))
+	assert.NoError(t, fs.WriteFile(filesystem.NewRawFile(".env.local", "no_key")))
 
 	// Load envs
 	logger.Truncate()
 	envs := LoadDotEnv(logger, Empty(), fs, []string{"."})
 
 	// Assert
-	assert.Equal(t, map[string]string{}, envs.ToMap())
-	expected := `
-DEBUG  Loaded ".env.local"
-WARN  cannot parse env file ".env.local": Can't separate key from value
-`
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
+	assert.Equal(t, map[string]string{"": "no_key"}, envs.ToMap())
 }
