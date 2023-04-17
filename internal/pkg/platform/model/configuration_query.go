@@ -20,7 +20,7 @@ import (
 type ConfigurationQuery struct {
 	config
 	ctx        *QueryContext
-	order      []OrderFunc
+	order      []configuration.OrderOption
 	inters     []Interceptor
 	predicates []predicate.Configuration
 	withParent *BranchQuery
@@ -56,7 +56,7 @@ func (cq *ConfigurationQuery) Unique(unique bool) *ConfigurationQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (cq *ConfigurationQuery) Order(o ...OrderFunc) *ConfigurationQuery {
+func (cq *ConfigurationQuery) Order(o ...configuration.OrderOption) *ConfigurationQuery {
 	cq.order = append(cq.order, o...)
 	return cq
 }
@@ -272,7 +272,7 @@ func (cq *ConfigurationQuery) Clone() *ConfigurationQuery {
 	return &ConfigurationQuery{
 		config:     cq.config,
 		ctx:        cq.ctx.Clone(),
-		order:      append([]OrderFunc{}, cq.order...),
+		order:      append([]configuration.OrderOption{}, cq.order...),
 		inters:     append([]Interceptor{}, cq.inters...),
 		predicates: append([]predicate.Configuration{}, cq.predicates...),
 		withParent: cq.withParent.Clone(),

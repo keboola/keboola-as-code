@@ -21,7 +21,7 @@ import (
 type BranchQuery struct {
 	config
 	ctx                *QueryContext
-	order              []OrderFunc
+	order              []branch.OrderOption
 	inters             []Interceptor
 	predicates         []predicate.Branch
 	withConfigurations *ConfigurationQuery
@@ -56,7 +56,7 @@ func (bq *BranchQuery) Unique(unique bool) *BranchQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (bq *BranchQuery) Order(o ...OrderFunc) *BranchQuery {
+func (bq *BranchQuery) Order(o ...branch.OrderOption) *BranchQuery {
 	bq.order = append(bq.order, o...)
 	return bq
 }
@@ -272,7 +272,7 @@ func (bq *BranchQuery) Clone() *BranchQuery {
 	return &BranchQuery{
 		config:             bq.config,
 		ctx:                bq.ctx.Clone(),
-		order:              append([]OrderFunc{}, bq.order...),
+		order:              append([]branch.OrderOption{}, bq.order...),
 		inters:             append([]Interceptor{}, bq.inters...),
 		predicates:         append([]predicate.Branch{}, bq.predicates...),
 		withConfigurations: bq.withConfigurations.Clone(),
@@ -415,7 +415,7 @@ func (bq *BranchQuery) loadConfigurations(ctx context.Context, query *Configurat
 	}
 	query.withFKs = true
 	query.Where(predicate.Configuration(func(s *sql.Selector) {
-		s.Where(sql.InValues(branch.ConfigurationsColumn, fks...))
+		s.Where(sql.InValues(s.C(branch.ConfigurationsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

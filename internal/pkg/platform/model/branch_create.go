@@ -187,10 +187,7 @@ func (bc *BranchCreate) createSpec() (*Branch, *sqlgraph.CreateSpec) {
 			Columns: []string{branch.ConfigurationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: configuration.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(configuration.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -224,8 +221,8 @@ func (bcb *BranchCreateBulk) Save(ctx context.Context) ([]*Branch, error) {
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, bcb.builders[i+1].mutation)
 				} else {

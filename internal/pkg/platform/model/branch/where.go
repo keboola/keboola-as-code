@@ -284,11 +284,7 @@ func HasConfigurations() predicate.Branch {
 // HasConfigurationsWith applies the HasEdge predicate on the "configurations" edge with a given conditions (other predicates).
 func HasConfigurationsWith(preds ...predicate.Configuration) predicate.Branch {
 	return predicate.Branch(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ConfigurationsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, ConfigurationsTable, ConfigurationsColumn),
-		)
+		step := newConfigurationsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
