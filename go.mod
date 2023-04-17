@@ -16,7 +16,7 @@ require (
 	github.com/armon/go-radix v1.0.0
 	github.com/benbjohnson/clock v1.3.0
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
-	github.com/cenkalti/backoff/v4 v4.2.0
+	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/fatih/color v1.15.0
 	github.com/go-playground/locales v0.14.1
