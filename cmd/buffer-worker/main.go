@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/migration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
@@ -75,6 +76,17 @@ func run() error {
 
 	// Create dependencies.
 	d, err := dependencies.NewWorkerDeps(ctx, proc, cfg, envs, logger)
+	if err != nil {
+		return err
+	}
+
+	// Wait for migration
+	if err := migration.WorkerNode(d.Logger(), d.EtcdClient(), d.DistributionWorkerNode()); err != nil {
+		return err
+	}
+
+	// Recreate dependencies/watchers.
+	d, err = dependencies.NewWorkerDeps(ctx, proc, cfg, envs, logger)
 	if err != nil {
 		return err
 	}

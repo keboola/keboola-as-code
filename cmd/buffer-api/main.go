@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/spf13/pflag"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
@@ -15,6 +17,7 @@ import (
 	bufferGen "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	bufferHttp "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/migration"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/cpuprofile"
@@ -77,6 +80,39 @@ func run() error {
 
 	// Create dependencies.
 	d, err := dependencies.NewServerDeps(ctx, proc, cfg, envs, logger)
+	if err != nil {
+		return err
+	}
+
+	// Temporary HTTP server
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health-check", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	})
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = w.Write([]byte("Temporarily unavailable."))
+	})
+	srvX := &http.Server{Addr: cfg.ListenAddress.Host, Handler: mux, ReadHeaderTimeout: 30 * time.Second}
+	go func() {
+		if err := srvX.ListenAndServe(); err != nil {
+			d.Logger().Error(err)
+		}
+	}()
+
+	// Wait for migration
+	if err := migration.APINode(d.Logger(), d.EtcdClient()); err != nil {
+		return err
+	}
+
+	// Shutdown temporary HTTP server
+	if err := srvX.Shutdown(context.Background()); err != nil {
+		return err
+	}
+
+	// Re-create dependencies/watchers.
+	d, err = dependencies.NewServerDeps(ctx, proc, cfg, envs, logger)
 	if err != nil {
 		return err
 	}
