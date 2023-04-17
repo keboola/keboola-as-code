@@ -24,6 +24,9 @@ paths:
             responses:
                 "301":
                     description: Moved Permanently response.
+                    content:
+                        application/json:
+                            schema: {}
     /v1:
         get:
             tags:
