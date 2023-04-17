@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
@@ -38,6 +39,7 @@ type Configuration struct {
 	// The values are being populated by the ConfigurationQuery when eager-loading is set.
 	Edges                ConfigurationEdges `json:"edges"`
 	configuration_parent *key.BranchKey
+	selectValues         sql.SelectValues
 }
 
 // ConfigurationEdges holds the relations/edges for other nodes in the graph.
@@ -80,7 +82,7 @@ func (*Configuration) scanValues(columns []string) ([]any, error) {
 		case configuration.ForeignKeys[0]: // configuration_parent
 			values[i] = &sql.NullScanner{S: new(key.BranchKey)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Configuration", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -151,9 +153,17 @@ func (c *Configuration) assignValues(columns []string, values []any) error {
 				c.configuration_parent = new(key.BranchKey)
 				*c.configuration_parent = *value.S.(*key.BranchKey)
 			}
+		default:
+			c.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the Configuration.
+// This includes values selected through modifiers, order, etc.
+func (c *Configuration) Value(name string) (ent.Value, error) {
+	return c.selectValues.Get(name)
 }
 
 // QueryParent queries the "parent" edge of the Configuration entity.

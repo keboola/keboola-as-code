@@ -2,6 +2,11 @@
 
 package configuration
 
+import (
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+)
+
 const (
 	// Label holds the string label denoting the configuration type in the database.
 	Label = "configuration"
@@ -81,3 +86,55 @@ var (
 	// IDValidator is a validator for the "id" field. It is called by the builders before save.
 	IDValidator func(string) error
 )
+
+// OrderOption defines the ordering options for the Configuration queries.
+type OrderOption func(*sql.Selector)
+
+// ByID orders the results by the id field.
+func ByID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByBranchID orders the results by the branchID field.
+func ByBranchID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBranchID, opts...).ToFunc()
+}
+
+// ByComponentID orders the results by the componentID field.
+func ByComponentID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldComponentID, opts...).ToFunc()
+}
+
+// ByConfigID orders the results by the configID field.
+func ByConfigID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldConfigID, opts...).ToFunc()
+}
+
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
+}
+
+// ByIsDisabled orders the results by the isDisabled field.
+func ByIsDisabled(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsDisabled, opts...).ToFunc()
+}
+
+// ByParentField orders the results by parent field.
+func ByParentField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newParentStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newParentStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ParentInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, ParentTable, ParentColumn),
+	)
+}
