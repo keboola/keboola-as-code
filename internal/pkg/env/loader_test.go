@@ -62,7 +62,7 @@ func TestLoadDotEnv_Invalid(t *testing.T) {
 	assert.Equal(t, map[string]string{}, envs.ToMap())
 	expected := `
 DEBUG  Loaded ".env.local"
-WARN  cannot parse env file ".env.local": Can't separate key from value
+WARN  cannot parse env file ".env.local": unexpected character "\n" in variable name near "invalid\n"
 `
 	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
 }

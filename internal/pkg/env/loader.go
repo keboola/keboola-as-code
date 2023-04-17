@@ -2,6 +2,7 @@ package env
 
 import (
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 
@@ -61,6 +62,11 @@ func LoadEnvFile(fs filesystem.Fs, path string) (*Map, error) {
 }
 
 func LoadEnvString(str string) (*Map, error) {
+	// Make sure that the last line break is not missing
+	if !strings.HasSuffix(str, "\n") {
+		str += "\n"
+	}
+
 	envsMap, err := godotenv.Unmarshal(str)
 	if err != nil {
 		return nil, err

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/keboola-as-code/internal/pkg/platform/model/branch"
@@ -27,7 +28,8 @@ type Branch struct {
 	IsDefault bool `json:"isDefault,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the BranchQuery when eager-loading is set.
-	Edges BranchEdges `json:"edges"`
+	Edges        BranchEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // BranchEdges holds the relations/edges for other nodes in the graph.
@@ -62,7 +64,7 @@ func (*Branch) scanValues(columns []string) ([]any, error) {
 		case branch.FieldName, branch.FieldDescription:
 			values[i] = new(sql.NullString)
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Branch", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -106,9 +108,17 @@ func (b *Branch) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				b.IsDefault = value.Bool
 			}
+		default:
+			b.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the Branch.
+// This includes values selected through modifiers, order, etc.
+func (b *Branch) Value(name string) (ent.Value, error) {
+	return b.selectValues.Get(name)
 }
 
 // QueryConfigurations queries the "configurations" edge of the Branch entity.
