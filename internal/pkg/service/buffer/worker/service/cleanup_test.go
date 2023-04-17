@@ -7,14 +7,17 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	workerConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -75,6 +78,25 @@ func TestCleanup(t *testing.T) {
 	}
 	err := store.CreateReceiver(ctx, receiver)
 	assert.NoError(t, err)
+
+	// Open new file in export1
+	oldFile, oldSlice := export1.OpenedFile, export1.OpenedSlice
+	fileKey := key.FileKey{ExportKey: export1.ExportKey, FileID: key.FileID(clk.Now())}
+	sliceKey := key.SliceKey{FileKey: fileKey, SliceID: key.SliceID(clk.Now())}
+	export1.OpenedFile = model.File{
+		FileKey:         fileKey,
+		State:           filestate.Opened,
+		Mapping:         export1.Mapping,
+		StorageResource: &keboola.FileUploadCredentials{},
+	}
+	export1.OpenedSlice = model.Slice{
+		SliceKey:        sliceKey,
+		State:           slicestate.Writing,
+		Mapping:         export1.Mapping,
+		StorageResource: &keboola.FileUploadCredentials{},
+		Number:          1,
+	}
+	assert.NoError(t, store.SwapFile(ctx, &oldFile, &oldSlice, export1.OpenedFile, export1.OpenedSlice))
 
 	// Create nodes
 	workerDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
@@ -146,6 +168,12 @@ config/receiver/1000/github
 >>>>>
 
 <<<<<
+file/opened/1000/github/first/%s
+-----
+%A
+>>>>>
+
+<<<<<
 file/opened/1000/github/another/%s
 -----
 %A
@@ -159,6 +187,12 @@ secret/export/token/1000/github/another
 
 <<<<<
 secret/export/token/1000/github/first
+-----
+%A
+>>>>>
+
+<<<<<
+slice/active/opened/writing/1000/github/first/%s
 -----
 %A
 >>>>>

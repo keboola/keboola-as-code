@@ -54,7 +54,7 @@ func (s *Service) closeSlices(ctx context.Context, wg *sync.WaitGroup, d depende
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) (string, error) {
 				// Wait until all API nodes switch to a new slice.
-				rev := event.Kv.ModRevision
+				rev := event.Kv.CreateRevision
 				logger.Infof(`waiting until all API nodes switch to a revision >= %v`, rev)
 				if err := s.watcher.WaitForRevision(ctx, rev); err != nil {
 					return "", err
