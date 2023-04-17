@@ -94,7 +94,7 @@ type Public interface {
 type Project interface {
 	KeboolaProjectAPI() *keboola.API
 	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
-	ProjectID() int
+	ProjectID() keboola.ProjectID
 	ProjectName() string
 	ProjectFeatures() keboola.FeaturesMap
 	StorageAPIToken() keboola.Token

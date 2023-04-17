@@ -1,8 +1,9 @@
 package schema
 
 import (
+	"github.com/keboola/go-client/pkg/keboola"
+
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 )
 
@@ -20,7 +21,7 @@ func (v *Schema) Tasks() TasksRoot {
 	return TasksRoot{tasks: NewTypedPrefix[task.Task]("task", v.serde)}
 }
 
-func (v TasksRoot) InProject(projectID commonKey.ProjectID) TasksInProject {
+func (v TasksRoot) InProject(projectID keboola.ProjectID) TasksInProject {
 	return TasksInProject{tasks: v.tasks.Add(projectID.String())}
 }
 

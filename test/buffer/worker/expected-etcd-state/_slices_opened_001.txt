@@ -1,5 +1,5 @@
 <<<<<
-slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/%s/%s
+slice/active/opened/writing/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -37,7 +37,7 @@ slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1
 >>>>>
 
 <<<<<
-slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2/%s/%s
+slice/active/opened/writing/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2/%s/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,

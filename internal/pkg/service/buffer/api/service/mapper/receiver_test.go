@@ -13,7 +13,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 )
 
 func TestReceiverModel(t *testing.T) {
@@ -22,7 +21,7 @@ func TestReceiverModel(t *testing.T) {
 	d := bufferDependencies.NewMockedDeps(t)
 	mapper := NewMapper(d)
 
-	projectID := commonKey.ProjectID(1000)
+	projectID := keboola.ProjectID(1000)
 	secret := idgenerator.ReceiverSecret()
 
 	payload := buffer.CreateReceiverPayload{

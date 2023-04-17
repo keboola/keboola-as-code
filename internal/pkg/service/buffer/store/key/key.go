@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"time"
 
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
+	"github.com/keboola/go-client/pkg/keboola"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type ReceiverKey struct {
-	ProjectID  commonKey.ProjectID `json:"projectId" validate:"required,min=1"`
-	ReceiverID ReceiverID          `json:"receiverId" validate:"required,min=1,max=48"`
+	ProjectID  keboola.ProjectID `json:"projectId" validate:"required,min=1"`
+	ReceiverID ReceiverID        `json:"receiverId" validate:"required,min=1,max=48"`
 }
 
 type ExportKey struct {

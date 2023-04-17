@@ -17,7 +17,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
@@ -43,7 +42,7 @@ func TestCacheNode(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Resources
-	projectID := commonKey.ProjectID(123)
+	projectID := keboola.ProjectID(123)
 	receiverKey := key.ReceiverKey{ProjectID: projectID, ReceiverID: "my-receiver"}
 	exportKey := key.ExportKey{ExportID: "my-export", ReceiverKey: receiverKey}
 	fileKey := key.FileKey{ExportKey: exportKey, FileID: key.FileID(clk.Now())}

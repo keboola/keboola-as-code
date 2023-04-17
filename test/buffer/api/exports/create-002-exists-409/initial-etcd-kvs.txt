@@ -1,5 +1,5 @@
 <<<<<
-/config/export/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1
+/config/export/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -15,7 +15,7 @@
 >>>>>
 
 <<<<<
-/config/mapping/revision/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/00000001
+/config/mapping/revision/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/00000001
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -40,7 +40,7 @@
 >>>>>
 
 <<<<<
-/config/receiver/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver
+/config/receiver/%%TEST_KBC_PROJECT_ID%%/my-receiver
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -51,7 +51,7 @@
 >>>>>
 
 <<<<<
-/file/opened/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/2023-02-15T13:05:42.403Z
+/file/opened/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/2023-02-15T13:05:42.403Z
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -108,7 +108,7 @@
 >>>>>
 
 <<<<<
-/secret/export/token/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1
+/secret/export/token/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -143,7 +143,7 @@
 >>>>>
 
 <<<<<
-/slice/active/opened/writing/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/2023-02-15T13:05:42.403Z/2023-02-15T13:05:42.403Z
+/slice/active/opened/writing/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/2023-02-15T13:05:42.403Z/2023-02-15T13:05:42.403Z
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -202,7 +202,7 @@
 >>>>>
 
 <<<<<
-/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/export.create/2023-02-15T13:05:41.450Z_Egafb
+/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/export.create/2023-02-15T13:05:41.450Z_Egafb
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -212,7 +212,7 @@
   "createdAt": "2023-02-15T13:05:41.450Z",
   "finishedAt": "2023-02-15T13:05:50.658Z",
   "node": "f5c5800f9f5d-03816",
-  "lock": "export.create/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1",
+  "lock": "export.create/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1",
   "result": "export created",
   "duration": 9206185796
 }

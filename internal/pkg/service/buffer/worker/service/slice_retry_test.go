@@ -133,16 +133,16 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	// Orchestrator logs
 	assert.Contains(t, workerDeps.DebugLogger().AllMessages(), "[orchestrator][slice.retry.check]INFO  assigned")
 	wildcards.Assert(t, `
-[orchestrator][slice.retry.check]INFO  assigned "00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check"
+[orchestrator][slice.retry.check]INFO  assigned "123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check"
 [orchestrator][slice.retry.check]INFO  stopped
 `, strhelper.FilterLines(`^(\[orchestrator\]\[slice.retry.check\])`, workerDeps.DebugLogger().InfoMessages()))
 
 	// Retry check task
 	wildcards.Assert(t, `
 [task][%s]INFO  started task
-[task][%s]DEBUG  lock acquired "runtime/lock/task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check"
+[task][%s]DEBUG  lock acquired "runtime/lock/task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check"
 [task][%s]INFO  task succeeded (%s): slice scheduled for retry
-[task][%s]DEBUG  lock released "runtime/lock/task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check"
+[task][%s]DEBUG  lock released "runtime/lock/task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check"
 `, strhelper.FilterLines(`^(\[task\]\[.+\/slice.retry.check\/)`, workerDeps.DebugLogger().AllMessages()))
 
 	// Retried upload
@@ -158,73 +158,73 @@ func assertStateAfterRetry(t *testing.T, client *etcd.Client) {
 	t.Helper()
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-config/export/00000123/my-receiver-1/my-export-1
+config/export/123/my-receiver-1/my-export-1
 -----
 %A
 >>>>>
 
 <<<<<
-config/mapping/revision/00000123/my-receiver-1/my-export-1/00000001
+config/mapping/revision/123/my-receiver-1/my-export-1/00000001
 -----
 %A
 >>>>>
 
 <<<<<
-config/receiver/00000123/my-receiver-1
+config/receiver/123/my-receiver-1
 -----
 %A
 >>>>>
 
 <<<<<
-file/opened/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z
+file/opened/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z
 -----
 %A
 >>>>>
 
 <<<<<
-record/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:02.000Z_%s
+record/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:02.000Z_%s
 -----
 <<~~id~~>>,0001-01-01T00:00:02.000Z,1.2.3.4,"{""key"":""value001""}","{""Content-Type"":""application/json""}","""---value001---"""
 >>>>>
 
 <<<<<
-record/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:03.000Z_%s
+record/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:03.000Z_%s
 -----
 <<~~id~~>>,0001-01-01T00:00:03.000Z,1.2.3.4,"{""key"":""value002""}","{""Content-Type"":""application/json""}","""---value002---"""
 >>>>>
 
 <<<<<
-record/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:04.000Z_%s
+record/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:04.000Z_%s
 -----
 <<~~id~~>>,0001-01-01T00:00:04.000Z,1.2.3.4,"{""key"":""value003""}","{""Content-Type"":""application/json""}","""---value003---"""
 >>>>>
 
 <<<<<
-record/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:05.000Z_%s
+record/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:05.000Z_%s
 -----
 <<~~id~~>>,0001-01-01T00:00:05.000Z,1.2.3.4,"{""key"":""value004""}","{""Content-Type"":""application/json""}","""---value004---"""
 >>>>>
 
 <<<<<
-record/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:06.000Z_%s
+record/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:06.000Z_%s
 -----
 <<~~id~~>>,0001-01-01T00:00:06.000Z,1.2.3.4,"{""key"":""value005""}","{""Content-Type"":""application/json""}","""---value005---"""
 >>>>>
 
 <<<<<
-runtime/last/record/id/00000123/my-receiver-1/my-export-1
+runtime/last/record/id/123/my-receiver-1/my-export-1
 -----
 5
 >>>>>
 
 <<<<<
-secret/export/token/00000123/my-receiver-1/my-export-1
+secret/export/token/123/my-receiver-1/my-export-1
 -----
 %A
 >>>>>
 
 <<<<<
-slice/active/closed/failed/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
+slice/active/closed/failed/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z
 -----
 {
   "projectId": 123,
@@ -256,7 +256,7 @@ slice/active/closed/failed/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:0
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.close/%s
+task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.close/%s
 -----
 {
   "projectId": 123,
@@ -265,14 +265,14 @@ task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:0
   "createdAt": "%s",
   "finishedAt": "%s",
   "node": "my-worker",
-  "lock": "runtime/lock/task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.close",
+  "lock": "runtime/lock/task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.close",
   "result": "slice closed",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check/%s
+task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check/%s
 -----
 {
   "projectId": 123,
@@ -281,14 +281,14 @@ task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:0
   "createdAt": "%s",
   "finishedAt": "%s",
   "node": "my-worker",
-  "lock": "runtime/lock/task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check",
+  "lock": "runtime/lock/task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check",
   "result": "slice scheduled for retry",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.upload/%s
+task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.upload/%s
 -----
 {
   "projectId": 123,
@@ -297,14 +297,14 @@ task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:0
   "createdAt": "%s",
   "finishedAt": "%s",
   "node": "my-worker",
-  "lock": "runtime/lock/task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.upload",
+  "lock": "runtime/lock/task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.upload",
   "error": "slice upload failed: %s some network error, upload will be retried after \"%s\"",
   "duration": %d
 }
 >>>>>
 
 <<<<<
-task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.upload/%s
+task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.upload/%s
 -----
 {
   "projectId": 123,
@@ -313,7 +313,7 @@ task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:0
   "createdAt": "%s",
   "finishedAt": "%s",
   "node": "my-worker",
-  "lock": "runtime/lock/task/00000123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.upload",
+  "lock": "runtime/lock/task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.upload",
   "error": "slice upload failed: %s some network error, upload will be retried after \"%s\"",
   "duration": %d
 }

@@ -8,7 +8,6 @@ import (
 )
 
 type (
-	ProjectID  int
 	ReceiverID string
 	ExportID   string
 	RevisionID int

@@ -5,7 +5,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 )
 
 func (s *service) RefreshReceiverTokens(d dependencies.ForProjectRequest, payload *buffer.RefreshReceiverTokensPayload) (res *buffer.Receiver, err error) {
@@ -14,7 +13,7 @@ func (s *service) RefreshReceiverTokens(d dependencies.ForProjectRequest, payloa
 	rb := rollback.New(s.logger)
 	defer rb.InvokeIfErr(ctx, &err)
 
-	receiverKey := key.ReceiverKey{ProjectID: commonKey.ProjectID(d.ProjectID()), ReceiverID: payload.ReceiverID}
+	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	tokens, err := str.ListTokens(ctx, receiverKey)
 	if err != nil {
 		return nil, err

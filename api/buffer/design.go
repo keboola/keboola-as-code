@@ -344,7 +344,7 @@ var ServiceDetail = Type("ServiceDetail", func() {
 
 var ProjectID = Type("ProjectID", Int, func() {
 	Description("ID of the project")
-	Meta("struct:field:type", "= commonKey.ProjectID", "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key", "commonKey")
+	Meta("struct:field:type", "= keboola.ProjectID", "github.com/keboola/go-client/pkg/keboola")
 })
 
 // Receiver -----------------------------------------------------------------------------------------------------------

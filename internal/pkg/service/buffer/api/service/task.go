@@ -3,7 +3,6 @@ package service
 import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 )
 
@@ -11,7 +10,7 @@ func (s *service) GetTask(d dependencies.ForProjectRequest, payload *buffer.GetT
 	ctx, str := d.RequestCtx(), d.Store()
 
 	t, err := str.GetTask(ctx, task.Key{
-		ProjectID: commonKey.ProjectID(d.ProjectID()),
+		ProjectID: d.ProjectID(),
 		TaskID:    payload.TaskID,
 	})
 	if err != nil {

@@ -1,5 +1,5 @@
 <<<<<
-/config/receiver/%%TEST_KBC_PROJECT_ID_8DIG%%/weird-id
+/config/receiver/%%TEST_KBC_PROJECT_ID%%/weird-id
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -10,7 +10,7 @@
 >>>>>
 
 <<<<<
-/task/%%TEST_KBC_PROJECT_ID_8DIG%%/weird-id/receiver.create/%s
+/task/%%TEST_KBC_PROJECT_ID%%/weird-id/receiver.create/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -19,7 +19,7 @@
   "createdAt": "%s",
   "finishedAt": "%s",
   "node": "%s",
-  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/weird-id/receiver.create",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/weird-id/receiver.create",
   "result": "receiver created",
   "duration": %d
 }

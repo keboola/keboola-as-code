@@ -85,7 +85,7 @@ node1
 >>>>>
 
 <<<<<
-task/00000123/my-receiver/my-export/some.task/%s
+task/123/my-receiver/my-export/some.task/%s
 -----
 {
   "projectId": 123,
@@ -104,7 +104,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 	// Check etcd state after task
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-task/00000123/my-receiver/my-export/some.task/%s
+task/123/my-receiver/my-export/some.task/%s
 -----
 {
   "projectId": 123,
@@ -145,7 +145,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 	// Check etcd state after second task
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-task/00000123/my-receiver/my-export/some.task/%s
+task/123/my-receiver/my-export/some.task/%s
 -----
 {
   "projectId": 123,
@@ -161,7 +161,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 >>>>>
 
 <<<<<
-task/00000123/my-receiver/my-export/some.task/%s
+task/123/my-receiver/my-export/some.task/%s
 -----
 {
   "projectId": 123,
@@ -179,17 +179,17 @@ task/00000123/my-receiver/my-export/some.task/%s
 
 	// Check logs
 	wildcards.Assert(t, `
-[node1][task][00000123/my-receiver/my-export/some.task/%s]INFO  started task
-[node1][task][00000123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
-[node2][task][00000123/my-receiver/my-export/some.task/%s]INFO  task ignored, the lock "runtime/lock/task/my-lock" is in use
-[node1][task][00000123/my-receiver/my-export/some.task/%s]INFO  some message from the task (1)
-[node1][task][00000123/my-receiver/my-export/some.task/%s]INFO  task succeeded (%s): some result (1)
-[node1][task][00000123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
-[node2][task][00000123/my-receiver/my-export/some.task/%s]INFO  started task
-[node2][task][00000123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
-[node2][task][00000123/my-receiver/my-export/some.task/%s]INFO  some message from the task (2)
-[node2][task][00000123/my-receiver/my-export/some.task/%s]INFO  task succeeded (%s): some result (2)
-[node2][task][00000123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
+[node1][task][123/my-receiver/my-export/some.task/%s]INFO  started task
+[node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
+[node2][task][123/my-receiver/my-export/some.task/%s]INFO  task ignored, the lock "runtime/lock/task/my-lock" is in use
+[node1][task][123/my-receiver/my-export/some.task/%s]INFO  some message from the task (1)
+[node1][task][123/my-receiver/my-export/some.task/%s]INFO  task succeeded (%s): some result (1)
+[node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
+[node2][task][123/my-receiver/my-export/some.task/%s]INFO  started task
+[node2][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
+[node2][task][123/my-receiver/my-export/some.task/%s]INFO  some message from the task (2)
+[node2][task][123/my-receiver/my-export/some.task/%s]INFO  task succeeded (%s): some result (2)
+[node2][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
 `, logs.String())
 }
 
@@ -255,7 +255,7 @@ node1
 >>>>>
 
 <<<<<
-task/00000123/my-receiver/my-export/some.task/%s
+task/123/my-receiver/my-export/some.task/%s
 -----
 {
   "projectId": 123,
@@ -274,7 +274,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 	// Check etcd state after task
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-task/00000123/my-receiver/my-export/some.task/%s
+task/123/my-receiver/my-export/some.task/%s
 -----
 {
   "projectId": 123,
@@ -315,7 +315,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 	// Check etcd state after second task
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-task/00000123/my-receiver/my-export/some.task/%s
+task/123/my-receiver/my-export/some.task/%s
 -----
 {
   "projectId": 123,
@@ -331,7 +331,7 @@ task/00000123/my-receiver/my-export/some.task/%s
 >>>>>
 
 <<<<<
-task/00000123/my-receiver/my-export/some.task/%s
+task/123/my-receiver/my-export/some.task/%s
 -----
 {
   "projectId": 123,
@@ -349,17 +349,17 @@ task/00000123/my-receiver/my-export/some.task/%s
 
 	// Check logs
 	wildcards.Assert(t, `
-[node1][task][00000123/my-receiver/my-export/some.task/%s]INFO  started task
-[node1][task][00000123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
-[node2][task][00000123/my-receiver/my-export/some.task/%s]INFO  task ignored, the lock "runtime/lock/task/my-lock" is in use
-[node1][task][00000123/my-receiver/my-export/some.task/%s]INFO  some message from the task (1)
-[node1][task][00000123/my-receiver/my-export/some.task/%s]WARN  task failed (%s): some error (1) [%s]
-[node1][task][00000123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
-[node2][task][00000123/my-receiver/my-export/some.task/%s]INFO  started task
-[node2][task][00000123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
-[node2][task][00000123/my-receiver/my-export/some.task/%s]INFO  some message from the task (2)
-[node2][task][00000123/my-receiver/my-export/some.task/%s]WARN  task failed (%s): some error (2) [%s]
-[node2][task][00000123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
+[node1][task][123/my-receiver/my-export/some.task/%s]INFO  started task
+[node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
+[node2][task][123/my-receiver/my-export/some.task/%s]INFO  task ignored, the lock "runtime/lock/task/my-lock" is in use
+[node1][task][123/my-receiver/my-export/some.task/%s]INFO  some message from the task (1)
+[node1][task][123/my-receiver/my-export/some.task/%s]WARN  task failed (%s): some error (1) [%s]
+[node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
+[node2][task][123/my-receiver/my-export/some.task/%s]INFO  started task
+[node2][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
+[node2][task][123/my-receiver/my-export/some.task/%s]INFO  some message from the task (2)
+[node2][task][123/my-receiver/my-export/some.task/%s]WARN  task failed (%s): some error (2) [%s]
+[node2][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
 `, logs.String())
 }
 
@@ -427,7 +427,7 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	// Check etcd state
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-task/00000123/my-receiver/my-export/some.task/%s
+task/123/my-receiver/my-export/some.task/%s
 -----
 {
   "projectId": 123,
@@ -450,9 +450,9 @@ task/00000123/my-receiver/my-export/some.task/%s
 [node1]INFO  exiting (some reason)
 [node1][task]INFO  received shutdown request
 [node1][task]INFO  waiting for "1" tasks to be finished
-[node1][task][00000123/my-receiver/my-export/some.task/%s]INFO  some message from the task
-[node1][task][00000123/my-receiver/my-export/some.task/%s]INFO  task succeeded (%s): some result
-[node1][task][00000123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
+[node1][task][123/my-receiver/my-export/some.task/%s]INFO  some message from the task
+[node1][task][123/my-receiver/my-export/some.task/%s]INFO  task succeeded (%s): some result
+[node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
 [node1][task][etcd-session]INFO  closing etcd session
 [node1][task][etcd-session]INFO  closed etcd session | %s
 [node1][task]INFO  shutdown done

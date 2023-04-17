@@ -20,7 +20,7 @@ type Manifest = projectManifest.Manifest
 
 type InvalidManifestError = projectManifest.InvalidManifestError
 
-func NewManifest(projectID int, apiHost string) *Manifest {
+func NewManifest(projectID keboola.ProjectID, apiHost string) *Manifest {
 	return projectManifest.New(projectID, apiHost)
 }
 

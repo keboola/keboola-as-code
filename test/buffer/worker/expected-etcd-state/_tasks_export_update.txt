@@ -1,5 +1,5 @@
 <<<<<
-task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/export.update/%s
+task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/export.update/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -8,7 +8,7 @@ task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/export.update/%s
   "createdAt": "%s",
   "finishedAt": "%s",
   "node": "api-node-%d",
-  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1/export.update",
+  "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/export.update",
   "result": "export updated",
   "duration": %d
 }

@@ -79,7 +79,7 @@ func TestStore_Mapping_Ops(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
-config/mapping/revision/00001000/receiver1/export1/00000001
+config/mapping/revision/1000/receiver1/export1/00000001
 -----
 {
   "projectId": 1000,
@@ -98,7 +98,7 @@ config/mapping/revision/00001000/receiver1/export1/00000001
 >>>>>
 
 <<<<<
-config/mapping/revision/00001000/receiver1/export1/00000002
+config/mapping/revision/1000/receiver1/export1/00000002
 -----
 {
   "projectId": 1000,
@@ -117,7 +117,7 @@ config/mapping/revision/00001000/receiver1/export1/00000002
 >>>>>
 
 <<<<<
-config/mapping/revision/00001000/receiver1/export1/00000010
+config/mapping/revision/1000/receiver1/export1/00000010
 -----
 {
   "projectId": 1000,
@@ -181,7 +181,7 @@ func TestStore_DeleteReceiverMappingsOp(t *testing.T) {
 
 	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
-config/mapping/revision/00001000/receiver0/export0/00000001
+config/mapping/revision/1000/receiver0/export0/00000001
 -----
 {
   "projectId": 1000,
@@ -200,7 +200,7 @@ config/mapping/revision/00001000/receiver0/export0/00000001
 >>>>>
 
 <<<<<
-config/mapping/revision/00001000/receiver1/export1/00000002
+config/mapping/revision/1000/receiver1/export1/00000002
 -----
 {
   "projectId": 1000,
@@ -224,7 +224,7 @@ config/mapping/revision/00001000/receiver1/export1/00000002
 
 	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
-config/mapping/revision/00001000/receiver1/export1/00000002
+config/mapping/revision/1000/receiver1/export1/00000002
 -----
 {
   "projectId": 1000,

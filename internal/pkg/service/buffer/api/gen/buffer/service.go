@@ -12,10 +12,10 @@ import (
 	"context"
 	"io"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"goa.design/goa/v3/security"
 )
@@ -235,7 +235,7 @@ type Mapping struct {
 }
 
 // ID of the project
-type ProjectID = commonKey.ProjectID
+type ProjectID = keboola.ProjectID
 
 // Receiver is the result type of the buffer service UpdateReceiver method.
 type Receiver struct {

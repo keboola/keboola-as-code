@@ -172,46 +172,46 @@ func TestCleanup(t *testing.T) {
 	// Check logs
 	wildcards.Assert(t, `
 %A
-[task][00001000/github/receiver.cleanup/%s]INFO  started task
-[task][00001000/github/receiver.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/00001000/github/receiver.cleanup"
+[task][1000/github/receiver.cleanup/%s]INFO  started task
+[task][1000/github/receiver.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/1000/github/receiver.cleanup"
 [cleanup]INFO  started "1" receiver cleanup tasks
 %A
-[task][00001000/github/receiver.cleanup/%s]DEBUG  deleted slice "00001000/github/first/2006-01-02T08:04:05.000Z"
-[task][00001000/github/receiver.cleanup/%s]DEBUG  deleted file "00001000/github/first/2006-01-02T08:04:05.000Z"
-[task][00001000/github/receiver.cleanup/%s]INFO  deleted "1" files, "1" slices, "1" records
-[task][00001000/github/receiver.cleanup/%s]INFO  task succeeded (%s): receiver "00001000/github" has been cleaned
-[task][00001000/github/receiver.cleanup/%s]DEBUG  lock released "runtime/lock/task/00001000/github/receiver.cleanup"
+[task][1000/github/receiver.cleanup/%s]DEBUG  deleted slice "1000/github/first/2006-01-02T08:04:05.000Z"
+[task][1000/github/receiver.cleanup/%s]DEBUG  deleted file "1000/github/first/2006-01-02T08:04:05.000Z"
+[task][1000/github/receiver.cleanup/%s]INFO  deleted "1" files, "1" slices, "1" records
+[task][1000/github/receiver.cleanup/%s]INFO  task succeeded (%s): receiver "1000/github" has been cleaned
+[task][1000/github/receiver.cleanup/%s]DEBUG  lock released "runtime/lock/task/1000/github/receiver.cleanup"
 %A
 `, d.DebugLogger().AllMessages())
 
 	// Check keys
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-config/receiver/00001000/github
+config/receiver/1000/github
 -----
 %A
 >>>>>
 
 <<<<<
-config/export/00001000/github/first
+config/export/1000/github/first
 -----
 %A
 >>>>>
 
 <<<<<
-config/export/00001000/github/second
+config/export/1000/github/second
 -----
 %A
 >>>>>
 
 <<<<<
-config/export/00001000/github/third
+config/export/1000/github/third
 -----
 %A
 >>>>>
 
 <<<<<
-file/opened/00001000/github/third/%s
+file/opened/1000/github/third/%s
 -----
 {
   "projectId": 1000,
@@ -246,13 +246,13 @@ file/opened/00001000/github/third/%s
 >>>>>
 
 <<<<<
-record/00001000/github/third/%s_efgh
+record/1000/github/third/%s_efgh
 -----
 rec
 >>>>>
 
 <<<<<
-slice/archived/successful/imported/00001000/github/third/%s/%s
+slice/archived/successful/imported/1000/github/third/%s/%s
 -----
 {
   "projectId": 1000,
@@ -289,7 +289,7 @@ slice/archived/successful/imported/00001000/github/third/%s/%s
 >>>>>
 
 <<<<<
-stats/received/00001000/github/third/%s/%s/node-123
+stats/received/1000/github/third/%s/%s/node-123
 -----
  {
   "projectId": 1000,
@@ -306,7 +306,7 @@ stats/received/00001000/github/third/%s/%s/node-123
 >>>>>
 
 <<<<<
-task/00001000/github/receiver.cleanup/%s
+task/1000/github/receiver.cleanup/%s
 -----
 {
   "projectId": 1000,
@@ -315,8 +315,8 @@ task/00001000/github/receiver.cleanup/%s
   "createdAt": "%s",
   "finishedAt": "%s",
   "node": "%s",
-  "lock": "runtime/lock/task/00001000/github/receiver.cleanup",
-  "result": "receiver \"00001000/github\" has been cleaned",
+  "lock": "runtime/lock/task/1000/github/receiver.cleanup",
+  "result": "receiver \"1000/github\" has been cleaned",
   "duration": %d
 }
 >>>>>

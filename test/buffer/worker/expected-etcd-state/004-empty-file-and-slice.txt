@@ -19,13 +19,13 @@
 <include _tasks_files_import_empty>
 
 <<<<<
-runtime/last/record/id/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-1
+runtime/last/record/id/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1
 -----
 10
 >>>>>
 
 <<<<<
-runtime/last/record/id/%%TEST_KBC_PROJECT_ID_8DIG%%/my-receiver/my-export-2
+runtime/last/record/id/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2
 -----
 10
 >>>>>

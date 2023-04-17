@@ -3,6 +3,8 @@ package manifest
 import (
 	"context"
 
+	"github.com/keboola/go-client/pkg/keboola"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -38,7 +40,7 @@ type Templates struct {
 	Repositories []model.TemplateRepository `json:"repositories,omitempty" validate:"dive"`
 }
 
-func newFile(projectID int, apiHost string) *file {
+func newFile(projectID keboola.ProjectID, apiHost string) *file {
 	return &file{
 		Version:           build.MajorVersion,
 		Project:           Project{ID: projectID, APIHost: apiHost},

@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	commonKey "github.com/keboola/keboola-as-code/internal/pkg/service/common/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
@@ -118,7 +118,7 @@ func TestStore_CreateReceiverBaseOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
-config/receiver/00001000/github-pull-requests
+config/receiver/1000/github-pull-requests
 -----
 {
   "projectId": 1000,
@@ -153,7 +153,7 @@ func TestStore_GetReceiverBaseOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
-config/receiver/00001000/github-pull-requests
+config/receiver/1000/github-pull-requests
 -----
 {
   "projectId": 1000,
@@ -171,7 +171,7 @@ func TestStore_ListReceiversBaseOp(t *testing.T) {
 	ctx := context.Background()
 	store := newStoreForTest(t)
 
-	projectID := commonKey.ProjectID(1000)
+	projectID := keboola.ProjectID(1000)
 
 	// Create receivers
 	input := []model.ReceiverBase{
@@ -205,7 +205,7 @@ func TestStore_ListReceiversBaseOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
-config/receiver/00001000/github-issues
+config/receiver/1000/github-issues
 -----
 {
   "projectId": 1000,
@@ -216,7 +216,7 @@ config/receiver/00001000/github-issues
 >>>>>
 
 <<<<<
-config/receiver/00001000/github-pull-requests
+config/receiver/1000/github-pull-requests
 -----
 {
   "projectId": 1000,
@@ -251,7 +251,7 @@ func TestStore_DeleteReceiverBaseOp(t *testing.T) {
 	// Check keys
 	etcdhelper.AssertKVsString(t, store.client, `
 <<<<<
-config/receiver/00001000/github-pull-requests
+config/receiver/1000/github-pull-requests
 -----
 {
   "projectId": 1000,
