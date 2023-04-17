@@ -42,6 +42,12 @@ then
   go install golang.org/x/tools/cmd/godoc@latest
 fi
 
+# go-mod-upgrade
+if ! command -v go-mod-upgrade &> /dev/null
+then
+  go install github.com/oligot/go-mod-upgrade@latest
+fi
+
 # goa - api by design library
 if ! command -v goa &> /dev/null
 then
