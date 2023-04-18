@@ -24,6 +24,10 @@ type PrefixT[T any] struct {
 }
 
 func (v Prefix) Prefix() string {
+	if v == "" {
+		// Special case - all keys
+		return ""
+	}
 	return string(v) + "/"
 }
 

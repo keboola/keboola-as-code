@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	end = ""
+	end = "\000"
 )
 
 type Header = etcdserverpb.ResponseHeader
