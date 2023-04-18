@@ -15,7 +15,7 @@ Create `.env` file with definition of testing projects:
 TEST_KBC_PROJECTS="[{"host":"connection.keboola.com","project":1234,"stagingStorage":"s3","token":"<token>"},...]"
 ```
 
-Staging storage can be `s3` or `abs`, according to the stack.
+Staging storage can be `s3`, `abs` or `gcs`, according to the stack.
 
 Run the test suite and download the dependencies using:
 
@@ -64,9 +64,18 @@ API development uses [Goa code generator](https://goa.design/).
 
 To run the API locally:
 1. Start `bash` in the dev container, run `docker-compose run --rm -u "$UID:$GID" --service-ports dev bash`.
-2. In the container run `make run-templates-api`
- - The API is exposed to `http://localhost:8000/`.
+2. Set env var with Keboola stack: `export TEMPLATES_API_STORAGE_API_HOST=connection.keboola.com` (or `BUFFER_API_STORAGE_API_HOST`)
+3. In the container run `make run-templates-api` (or `make run-buffer-api`)
+ - The API is exposed to `http://localhost:8000/` (or `http://localhost:8001/`
  - When the code changes, the API recompiles and restarts.
+
+To run Buffer Worker locally:
+1. Start `bash` in the dev container, run `docker-compose run --rm -u "$UID:$GID" --service-ports dev bash`.
+2. Set env var with Keboola stack: `export BUFFER_WORKER_STORAGE_API_HOST=connection.keboola.com`
+3. In the container run `make run-buffer-worker`
+
+See [provisioning/buffer/README.md](../provisioning/buffer/README.md) or [provisioning/templates-api/README.md](../provisioning/templates-api/README.md) for more details about etcd and running in Minikube.
+
 
 ### E2E Tests
 
