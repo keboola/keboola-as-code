@@ -1,4 +1,5 @@
 import http from "k6/http";
+import { URL } from 'https://jslib.k6.io/url/1.0.0/index.js';
 import {sleep, check} from 'k6';
 import { Counter } from 'k6/metrics';
 import {randomString} from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
@@ -51,10 +52,11 @@ export function setupReceiver(exports) {
     }
 
     const createReceiverTimeoutSec = 60
-    const taskUrl = res.json().url
+    const taskUrl = stripUrlHost(res.json().url)
     for (let retries = createReceiverTimeoutSec; retries > 0; retries--) {
         res = get(taskUrl)
         if (res.status !== 200) {
+            console.error(res);
             throw new Error("failed to get receiver task");
         }
         if (res.status !== "processing") {
@@ -71,13 +73,17 @@ export function setupReceiver(exports) {
         throw new Error("failed to get receiver");
     }
 
-    const receiverUrl = res.json().url
+    const receiverUrl = stripUrlHost(res.json().url)
     if (!receiverUrl) {
         throw new Error("receiver url is not set");
     }
 
     console.log("Receiver url: " + receiverUrl)
     return {id: receiverId, url: receiverUrl}
+}
+
+export function stripUrlHost(url) {
+    return (new URL(url)).pathname
 }
 
 export function teardownReceiver(receiverId) {
@@ -108,7 +114,7 @@ export function del(url, headers = {}) {
 
 export function normalizeUrl(url) {
     if (url.indexOf('http://') !== 0 && url.indexOf('https://') !== 0) {
-        url = `${HOST}/${url}`
+        url = `${HOST}/${url.replace(/^\//, '')}`
     }
     return url
 }
