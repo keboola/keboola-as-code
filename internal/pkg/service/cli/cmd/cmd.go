@@ -5,8 +5,10 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -24,6 +26,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/spinner"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -177,6 +180,39 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		remote.Commands(p, envs),
 		dbt.Commands(p),
 		template.Commands(p),
+
+		&cobra.Command{
+			Use:   `test`,
+			Short: "test",
+			Long:  "asdf test",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				s := spinner.New(spinner.WithText("Starting..."))
+
+				s.Start()
+				time.Sleep(time.Second)
+				s.SetText("Step 1")
+				time.Sleep(time.Second)
+				s.SetText("Step 2")
+				time.Sleep(time.Second)
+				s.SetText("Step 3")
+				s.Stop()
+
+				p := progressbar.DefaultBytes(100, "Downloading...")
+				time.Sleep(time.Millisecond * 100)
+				p.Write(make([]byte, 50))
+				time.Sleep(time.Millisecond * 100)
+				p.Write(make([]byte, 50))
+				p.Close()
+
+				s.Start()
+				s.SetText("Step 4")
+				time.Sleep(time.Second)
+				s.SetText("Done!")
+				s.Stop()
+
+				return nil
+			},
+		},
 	)
 
 	// Get all sub-commands by full path, for example "sync init"
