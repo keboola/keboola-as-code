@@ -27,6 +27,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/spinner"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
@@ -191,6 +192,8 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 					return time.Millisecond * time.Duration(rand.Int63n(max-min)+min)
 				}
 
+				d := dialog.New(cli.NewPrompt(os.Stdin, os.Stdout, os.Stderr, false), options.New())
+
 				s := spinner.New(spinner.WithText("Starting...")).Start()
 				time.Sleep(duration(250, 1000))
 				s.Step("Step 1")
@@ -207,6 +210,8 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 					p.Write(make([]byte, 25))
 				}
 				p.Close()
+
+				d.Confirm(&prompt.Confirm{Label: "Are you sure?"})
 
 				s.Step("Step 4")
 				time.Sleep(duration(250, 1000))
