@@ -213,12 +213,14 @@ func quote(v string) string {
 }
 
 func keyToStr(key, end []byte) string {
-	if len(key) == 0 {
+	keyStr := strings.ReplaceAll(string(key), "\000", "<NUL>")
+	endStr := strings.ReplaceAll(string(end), "\000", "<NUL>")
+	if len(keyStr) == 0 {
 		return ""
-	} else if len(end) > 0 {
-		return fmt.Sprintf(`["%s", "%s")`, string(key), string(end))
+	} else if len(endStr) > 0 {
+		return fmt.Sprintf(`["%s", "%s")`, keyStr, endStr)
 	} else {
-		return quote(string(key))
+		return quote(keyStr)
 	}
 }
 

@@ -222,6 +222,46 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
 	}
 }
 
+func TestIterator_AllKeys(t *testing.T) {
+	t.Parallel()
+
+	var logs strings.Builder
+	ctx := context.Background()
+	client := etcdhelper.ClientForTest(t)
+	client.KV = etcdlogger.KVLogWrapper(client.KV, &logs)
+	ops := []iterator.Option{iterator.WithPageSize(3)}
+
+	// Generate keys
+	prefix := etcdop.Prefix("") // <<<<< all!
+	for i := 1; i <= 5; i++ {
+		key := prefix.Key(fmt.Sprintf("foo/bar%03d", i))
+		val := fmt.Sprintf("bar%03d", i)
+		assert.NoError(t, key.Put(val).Do(ctx, client))
+	}
+
+	// Get all keys from the etcd
+	logs.Reset()
+	actualKvs, err := prefix.GetAll(ops...).Do(ctx, client).All()
+	assert.NoError(t, err)
+	actual := make([]result, 0)
+	for _, kv := range actualKvs {
+		actual = append(actual, result{key: string(kv.Key), value: string(kv.Value)})
+	}
+	assert.Equal(t, []result{
+		{key: "foo/bar001", value: "bar001"},
+		{key: "foo/bar002", value: "bar002"},
+		{key: "foo/bar003", value: "bar003"},
+		{key: "foo/bar004", value: "bar004"},
+		{key: "foo/bar005", value: "bar005"},
+	}, actual)
+	wildcards.Assert(t, `
+ETCD_REQUEST[%d] ➡️  GET ["<NUL>", "<NUL>")
+ETCD_REQUEST[%d] ✔️️  GET ["<NUL>", "<NUL>") | rev: %d | count: 5 | %s
+ETCD_REQUEST[%d] ➡️  GET ["foo/bar004", "<NUL>") | rev: %d
+ETCD_REQUEST[%d] ✔️️  GET ["foo/bar004", "<NUL>") | rev: %d | count: 2 | %s
+`, logs.String())
+}
+
 func TestIterator_Revision(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
