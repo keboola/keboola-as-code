@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -186,29 +187,31 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 			Short: "test",
 			Long:  "asdf test",
 			RunE: func(cmd *cobra.Command, args []string) error {
-				s := spinner.New(spinner.WithText("Starting..."))
+				duration := func(min, max int64) time.Duration {
+					return time.Millisecond * time.Duration(rand.Int63n(max-min)+min)
+				}
 
-				s.Start()
-				time.Sleep(time.Second)
-				s.SetText("Step 1")
-				time.Sleep(time.Second)
-				s.SetText("Step 2")
-				time.Sleep(time.Second)
-				s.SetText("Step 3")
+				s := spinner.New(spinner.WithText("Starting...")).Start()
+				time.Sleep(duration(250, 1000))
+				s.Step("Step 1")
+				time.Sleep(duration(250, 1000))
+				s.Step("Step 2")
+				time.Sleep(duration(250, 1000))
+				s.Step("Step 3")
+				time.Sleep(duration(250, 1000))
 				s.Stop()
 
-				p := progressbar.DefaultBytes(100, "Downloading...")
-				time.Sleep(time.Millisecond * 100)
-				p.Write(make([]byte, 50))
-				time.Sleep(time.Millisecond * 100)
-				p.Write(make([]byte, 50))
+				p := progressbar.DefaultBytes(100, "Downloading")
+				for i := 0; i < 4; i++ {
+					time.Sleep(duration(100, 500))
+					p.Write(make([]byte, 25))
+				}
 				p.Close()
 
-				s.Start()
-				s.SetText("Step 4")
-				time.Sleep(time.Second)
-				s.SetText("Done!")
+				s.Step("Step 4")
+				time.Sleep(duration(250, 1000))
 				s.Stop()
+				fmt.Println("Done.")
 
 				return nil
 			},

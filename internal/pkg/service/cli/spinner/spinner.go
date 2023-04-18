@@ -13,6 +13,7 @@ const DEFAULT_CHARSET = "|/-\\"
 
 type Spinner struct {
 	ch          chan cmd
+	done        chan struct{}
 	running     atomic.Bool
 	output      io.Writer
 	text        string
@@ -57,6 +58,7 @@ func WithClear(clear bool) option {
 func New(opts ...option) *Spinner {
 	spinner := &Spinner{
 		ch:          make(chan cmd),
+		done:        make(chan struct{}),
 		running:     atomic.Bool{},
 		output:      os.Stdout,
 		text:        "",
@@ -72,12 +74,20 @@ func New(opts ...option) *Spinner {
 	return spinner
 }
 
-func (s *Spinner) Start() {
+func (s *Spinner) Start() *Spinner {
 	if s.running.Load() {
-		return
+		return s
 	}
 	go s.run()
 	s.running.Store(true)
+
+	return s
+}
+
+func (s *Spinner) Step(text string) {
+	s.Stop()
+	s.SetText(text)
+	s.Start()
 }
 
 func (s *Spinner) sendCmd(cmd cmd) {
@@ -153,19 +163,19 @@ func (s *Spinner) SetText(text string) {
 	s.sendCmd(&changeTextCmd{text})
 }
 
-type stopCmd struct {
-	done chan struct{}
-}
+type stopCmd struct{}
 
 func (cmd *stopCmd) apply(s *Spinner) {
 	s.running.Store(false)
-	cmd.done <- struct{}{}
 }
 
 func (s *Spinner) Stop() {
-	done := make(chan struct{})
-	s.sendCmd(&stopCmd{done})
-	<-done
+	if !s.running.Load() {
+		return
+	}
+
+	s.sendCmd(&stopCmd{})
+	<-s.done
 }
 
 func (s *Spinner) run() {
@@ -182,6 +192,7 @@ func (s *Spinner) run() {
 
 		if !s.running.Load() {
 			s.clear()
+			s.done <- struct{}{}
 			return
 		}
 
@@ -197,7 +208,7 @@ func (s *Spinner) render() {
 
 func (s *Spinner) clear() {
 	if s.shouldClear {
-		fmt.Fprintf(s.output, "\033[2K\n")
+		fmt.Fprintf(s.output, "\033[2K\r")
 	} else {
 		fmt.Fprintf(s.output, "\033[2K\r✓ %s\n", s.text)
 	}
