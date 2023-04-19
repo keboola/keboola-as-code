@@ -11,6 +11,8 @@ servers:
                 - keboola.com
                 - eu-central-1.keboola.com
                 - north-europe.azure.keboola.com
+                - eu-west-1.aws.keboola.dev
+                - east-us-2.azure.keboola-testing.com
             default: keboola.com
     - url: http://localhost:8001
 paths:
