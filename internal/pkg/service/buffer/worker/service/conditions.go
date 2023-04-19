@@ -315,7 +315,6 @@ func (c *checker) swapSlice(sliceKey key.SliceKey, reason string) (err error) {
 
 				return nil
 			}()
-
 			if err != nil {
 				return task.ErrResult(err)
 			}

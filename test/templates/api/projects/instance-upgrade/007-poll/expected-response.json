@@ -6,5 +6,8 @@
   "createdAt": "%s",
   "finishedAt": "%s",
   "duration": %d,
-  "result": "template instance with id \"%s\" upgraded"
+  "result": "template instance with id \"%s\" upgraded",
+  "outputs": {
+    "instanceId": "inst-001"
+  }
 }
