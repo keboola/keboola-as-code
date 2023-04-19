@@ -50,7 +50,7 @@ var _ = API("templates", func() {
 			URI("https://templates.{stack}")
 			Variable("stack", String, "Base URL of the stack", func() {
 				Default("keboola.com")
-				Enum("keboola.com", "eu-central-1.keboola.com", "north-europe.azure.keboola.com")
+				Enum("keboola.com", "eu-central-1.keboola.com", "north-europe.azure.keboola.com", "eu-west-1.aws.keboola.dev", "east-us-2.azure.keboola-testing.com")
 			})
 		})
 		Host("localhost", func() {
