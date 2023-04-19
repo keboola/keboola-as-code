@@ -3,7 +3,7 @@ tmp_dir = "target/.watcher"
 
 [build]
   bin = "./target/buffer/api"
-  args_bin = ["--listen-address=http://0.0.0.0:8001"]
+  args_bin = ["--listen-address=http://0.0.0.0:8001", "--public-address=http://localhost:8001"]
   cmd = "make build-buffer-api"
   delay = 2000
   exclude_dir = ["internal/pkg/service/buffer/api/gen"]

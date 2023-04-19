@@ -1,7 +1,7 @@
 # Keboola as Code - Release Process
 
 The release process is handled by [GitHub Actions workflow](https://github.com/keboola/keboola-as-code/actions) defined
-in [.github/workflows/push.yml](../.github/workflows/push.yml) on GitHub release (i.e. on creating a semantic tag 
+in [.github/workflows/release-cli.yml](../.github/workflows/release-cli.yml) on GitHub release (i.e. on creating a semantic tag 
 in the repository).
 
 ![GitHub Push workflow](./release.png)
