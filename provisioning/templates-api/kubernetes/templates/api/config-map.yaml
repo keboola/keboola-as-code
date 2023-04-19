@@ -8,5 +8,6 @@ metadata:
     app: templates-api
 data:
   storageApiHost: "https://connection.$HOSTNAME_SUFFIX"
+  templatesApiHost: "https://templates.$HOSTNAME_SUFFIX"
   keboolaStack: "$KEBOOLA_STACK"
   keboolaRevision: "$RELEASE_ID"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"path"
 	"strconv"
 	"sync"
 	"time"
@@ -103,9 +104,11 @@ func (s *service) APIRootIndex(dependencies.ForPublicRequest) (err error) {
 }
 
 func (s *service) APIVersionIndex(dependencies.ForPublicRequest) (res *ServiceDetail, err error) {
+	url := *s.deps.APIConfig().PublicAddress
+	url.Path = path.Join(url.Path, "v1/documentation")
 	res = &ServiceDetail{
 		API:           "templates",
-		Documentation: "https://templates.keboola.com/v1/documentation",
+		Documentation: url.String(),
 	}
 	return res, nil
 }
