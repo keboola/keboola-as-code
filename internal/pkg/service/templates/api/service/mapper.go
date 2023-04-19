@@ -71,6 +71,14 @@ func (m Mapper) TaskPayload(model *task.Task) (r *Task) {
 		panic(errors.New("unexpected task status"))
 	}
 
+	if model.Outputs != nil {
+		if v, ok := model.Outputs["instanceId"].(string); ok {
+			out.Outputs = &TaskOutputs{
+				InstanceID: &v,
+			}
+		}
+	}
+
 	return out
 }
 
