@@ -1908,6 +1908,19 @@ func unmarshalInputValueRequestBodyToTemplatesInputValue(v *InputValueRequestBod
 	return res
 }
 
+// marshalTemplatesTaskOutputsToTaskOutputsResponseBody builds a value of type
+// *TaskOutputsResponseBody from a value of type *templates.TaskOutputs.
+func marshalTemplatesTaskOutputsToTaskOutputsResponseBody(v *templates.TaskOutputs) *TaskOutputsResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &TaskOutputsResponseBody{
+		InstanceID: v.InstanceID,
+	}
+
+	return res
+}
+
 // marshalTemplatesInstanceToInstanceResponseBody builds a value of type
 // *InstanceResponseBody from a value of type *templates.Instance.
 func marshalTemplatesInstanceToInstanceResponseBody(v *templates.Instance) *InstanceResponseBody {
