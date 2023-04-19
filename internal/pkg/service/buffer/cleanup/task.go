@@ -39,11 +39,11 @@ func newCleanupTask(d dependencies, logger log.Logger, k key.ReceiverKey) *Task 
 	}
 }
 
-func (t *Task) Run(ctx context.Context) (task.Result, error) {
+func (t *Task) Run(ctx context.Context) task.Result {
 	if err := t.cleanReceiver(ctx); err != nil {
-		return "", err
+		return task.ErrResult(err)
 	}
-	return fmt.Sprintf(`receiver "%s" has been cleaned`, t.receiverKey.String()), nil
+	return task.OkResult(fmt.Sprintf(`receiver "%s" has been cleaned`, t.receiverKey.String()))
 }
 
 func (t *Task) cleanReceiver(ctx context.Context) error {

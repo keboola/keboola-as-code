@@ -58,18 +58,25 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 		Context: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(context.Background(), 5*time.Minute)
 		},
-		Operation: func(ctx context.Context, logger log.Logger) (task task.Result, err error) {
-			rb := rollback.New(s.logger)
-			defer rb.InvokeIfErr(ctx, &err)
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			err := func() (err error) {
+				rb := rollback.New(s.logger)
+				defer rb.InvokeIfErr(ctx, &err)
 
-			if err := s.createResourcesForExport(ctx, d, rb, &export); err != nil {
-				return "", err
-			}
+				if err := s.createResourcesForExport(ctx, d, rb, &export); err != nil {
+					return err
+				}
 
-			if err := str.CreateExport(ctx, export); err != nil {
-				return "", err
+				if err := str.CreateExport(ctx, export); err != nil {
+					return err
+				}
+
+				return nil
+			}()
+			if err != nil {
+				return task.ErrResult(err)
 			}
-			return "export created", nil
+			return task.OkResult("export created")
 		},
 	})
 	if err != nil {
@@ -95,30 +102,32 @@ func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer
 		Context: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(context.Background(), 5*time.Minute)
 		},
-		Operation: func(ctx context.Context, logger log.Logger) (task task.Result, err error) {
-			rb := rollback.New(s.logger)
-			defer rb.InvokeIfErr(ctx, &err)
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			err := func() (err error) {
+				rb := rollback.New(s.logger)
+				defer rb.InvokeIfErr(ctx, &err)
 
-			err = d.Store().UpdateExport(ctx, exportKey, func(export model.Export) (model.Export, error) {
-				oldMapping := export.Mapping
-				if err := s.mapper.UpdateExportModel(&export, payload); err != nil {
-					return export, err
-				}
-
-				// Create resources for the modified mapping
-				if !reflect.DeepEqual(oldMapping, export.Mapping) {
-					if err := s.createResourcesForExport(ctx, d, rb, &export); err != nil {
+				return d.Store().UpdateExport(ctx, exportKey, func(export model.Export) (model.Export, error) {
+					oldMapping := export.Mapping
+					if err := s.mapper.UpdateExportModel(&export, payload); err != nil {
 						return export, err
 					}
-				}
 
-				return export, nil
-			})
+					// Create resources for the modified mapping
+					if !reflect.DeepEqual(oldMapping, export.Mapping) {
+						if err := s.createResourcesForExport(ctx, d, rb, &export); err != nil {
+							return export, err
+						}
+					}
 
+					return export, nil
+				})
+			}()
 			if err != nil {
-				return "", err
+				return task.ErrResult(err)
 			}
-			return "export updated", nil
+
+			return task.OkResult("export updated")
 		},
 	})
 	if err != nil {

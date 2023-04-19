@@ -55,19 +55,19 @@ func (s *Service) closeFiles(ctx context.Context, wg *sync.WaitGroup, d dependen
 			return context.WithTimeout(context.Background(), time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Fn {
-			return func(ctx context.Context, logger log.Logger) (string, error) {
+			return func(ctx context.Context, logger log.Logger) task.Result {
 				// Wait until all slices are uploaded
 				file := event.Value
 				if err := w.WaitUntilAllSlicesUploaded(ctx, logger, file.FileKey); err != nil {
-					return "", err
+					return task.ErrResult(err)
 				}
 
 				// Close the file, all slices have been closed.
 				if err := s.store.CloseFile(ctx, &file); err != nil {
-					return "", err
+					return task.ErrResult(err)
 				}
 
-				return "file closed", nil
+				return task.OkResult("file closed")
 			}
 		},
 	})

@@ -109,7 +109,7 @@ func (n *Node) startReceiverCleanupTask(ctx context.Context, k key.ReceiverKey) 
 		Context: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(context.Background(), ReceiverCleanupTimeout)
 		},
-		Operation: func(ctx context.Context, logger log.Logger) (task.Result, error) {
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer n.sem.Release(1)
 			return newCleanupTask(n.deps, logger, k).Run(ctx)
 		},

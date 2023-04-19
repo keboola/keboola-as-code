@@ -52,21 +52,21 @@ func (s *Service) closeSlices(ctx context.Context, wg *sync.WaitGroup, d depende
 			return context.WithTimeout(ctx, time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Fn {
-			return func(ctx context.Context, logger log.Logger) (string, error) {
+			return func(ctx context.Context, logger log.Logger) task.Result {
 				// Wait until all API nodes switch to a new slice.
 				rev := event.Kv.CreateRevision
 				logger.Infof(`waiting until all API nodes switch to a revision >= %v`, rev)
 				if err := s.watcher.WaitForRevision(ctx, rev); err != nil {
-					return "", err
+					return task.ErrResult(err)
 				}
 
 				// Close the slice, no API node is writing to it.
 				slice := event.Value
 				if err := s.store.CloseSlice(ctx, &slice); err != nil {
-					return "", err
+					return task.ErrResult(err)
 				}
 
-				return "slice closed", nil
+				return task.OkResult("slice closed")
 			}
 		},
 	})
