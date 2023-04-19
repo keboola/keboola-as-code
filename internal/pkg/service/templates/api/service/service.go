@@ -220,7 +220,7 @@ func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *
 		Context: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(context.Background(), 5*time.Minute)
 		},
-		Operation: func(ctx context.Context, logger log.Logger) (task task.Result, err error) {
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			// Create virtual fs, after refactoring it will be removed
 			fs := aferofs.NewMemoryFs(filesystem.WithLogger(d.Logger()))
 
@@ -234,7 +234,7 @@ func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *
 			// Load project state
 			prjState, err := prj.LoadState(loadState.Options{LoadRemoteState: true}, d)
 			if err != nil {
-				return task, err
+				return task.ErrResult(err)
 			}
 
 			// Copy remote state to the local
@@ -252,16 +252,18 @@ func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *
 			// Use template
 			opResult, err := useTemplate.Run(ctx, prjState, tmpl, options, d)
 			if err != nil {
-				return task, err
+				return task.ErrResult(err)
 			}
 
 			// Push changes
 			changeDesc := fmt.Sprintf("From template %s", tmpl.FullName())
 			if err := push.Run(ctx, prjState, push.Options{ChangeDescription: changeDesc, SkipValidation: true}, d); err != nil {
-				return task, err
+				return task.ErrResult(err)
 			}
 
-			return fmt.Sprintf(`template instance with id "%s" created`, opResult.InstanceID), nil
+			return task.
+				OkResult(fmt.Sprintf(`template instance with id "%s" created`, opResult.InstanceID)).
+				WithOutput("instanceId", opResult.InstanceID)
 		},
 	})
 	if err != nil {
@@ -434,7 +436,7 @@ func (s *service) UpgradeInstance(d dependencies.ForProjectRequest, payload *Upg
 		Context: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(context.Background(), 5*time.Minute)
 		},
-		Operation: func(ctx context.Context, logger log.Logger) (task task.Result, err error) {
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			// Upgrade template instance
 			upgradeOpts := upgradeTemplate.Options{
 				Branch:   branchKey,
@@ -443,16 +445,18 @@ func (s *service) UpgradeInstance(d dependencies.ForProjectRequest, payload *Upg
 			}
 			_, err = upgradeTemplate.Run(ctx, prjState, tmpl, upgradeOpts, d)
 			if err != nil {
-				return task, err
+				return task.ErrResult(err)
 			}
 
 			// Push changes
 			changeDesc := fmt.Sprintf("Upgraded from template %s", tmpl.FullName())
 			if err := push.Run(ctx, prjState, push.Options{ChangeDescription: changeDesc, AllowRemoteDelete: true, DryRun: false, SkipValidation: true}, d); err != nil {
-				return task, err
+				return task.ErrResult(err)
 			}
 
-			return fmt.Sprintf(`template instance with id "%s" upgraded`, instance.InstanceID), nil
+			return task.
+				OkResult(fmt.Sprintf(`template instance with id "%s" upgraded`, instance.InstanceID)).
+				WithOutput("instanceId", instance.InstanceID)
 		},
 	})
 	if err != nil {

@@ -167,9 +167,10 @@ type UseTemplateVersionResponseBody struct {
 	// Date and time of the task end.
 	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
 	// Duration of the task in milliseconds.
-	Duration *int64  `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
-	Result   *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
-	Error    *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
 // InstancesIndexResponseBody is the type of the "templates" service
@@ -250,9 +251,10 @@ type UpgradeInstanceResponseBody struct {
 	// Date and time of the task end.
 	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
 	// Duration of the task in milliseconds.
-	Duration *int64  `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
-	Result   *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
-	Error    *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
 // UpgradeInstanceInputsIndexResponseBody is the type of the "templates"
@@ -288,9 +290,10 @@ type GetTaskResponseBody struct {
 	// Date and time of the task end.
 	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
 	// Duration of the task in milliseconds.
-	Duration *int64  `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
-	Result   *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
-	Error    *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
 // RepositoryIndexTemplatesRepositoryNotFoundResponseBody is the type of the
@@ -962,6 +965,12 @@ type InputValidationResultResponseBody struct {
 	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
+// TaskOutputsResponseBody is used to define fields on response body types.
+type TaskOutputsResponseBody struct {
+	// The ID of the created/updated template instance.
+	InstanceID *string `form:"instanceId,omitempty" json:"instanceId,omitempty" xml:"instanceId,omitempty"`
+}
+
 // InstanceResponseBody is used to define fields on response body types.
 type InstanceResponseBody struct {
 	// ID of the template.
@@ -1200,6 +1209,9 @@ func NewUseTemplateVersionResponseBody(res *templates.Task) *UseTemplateVersionR
 		Result:     res.Result,
 		Error:      res.Error,
 	}
+	if res.Outputs != nil {
+		body.Outputs = marshalTemplatesTaskOutputsToTaskOutputsResponseBody(res.Outputs)
+	}
 	return body
 }
 
@@ -1294,6 +1306,9 @@ func NewUpgradeInstanceResponseBody(res *templates.Task) *UpgradeInstanceRespons
 		Result:     res.Result,
 		Error:      res.Error,
 	}
+	if res.Outputs != nil {
+		body.Outputs = marshalTemplatesTaskOutputsToTaskOutputsResponseBody(res.Outputs)
+	}
 	return body
 }
 
@@ -1343,6 +1358,9 @@ func NewGetTaskResponseBody(res *templates.Task) *GetTaskResponseBody {
 		Duration:   res.Duration,
 		Result:     res.Result,
 		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalTemplatesTaskOutputsToTaskOutputsResponseBody(res.Outputs)
 	}
 	return body
 }

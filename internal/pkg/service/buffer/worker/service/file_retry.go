@@ -62,13 +62,13 @@ func (s *Service) retryFailedImports(ctx context.Context, wg *sync.WaitGroup, d 
 			return context.WithTimeout(context.Background(), time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Fn {
-			return func(ctx context.Context, logger log.Logger) (result string, err error) {
+			return func(ctx context.Context, logger log.Logger) task.Result {
 				file := event.Value
 				file.StorageJob = nil
 				if err := s.store.ScheduleFileForRetry(ctx, &file); err != nil {
-					return "", err
+					return task.ErrResult(err)
 				}
-				return "file scheduled for retry", nil
+				return task.OkResult("file scheduled for retry")
 			}
 		},
 	})

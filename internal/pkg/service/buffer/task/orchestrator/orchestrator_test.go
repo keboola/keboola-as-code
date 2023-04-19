@@ -88,9 +88,9 @@ func TestOrchestrator(t *testing.T) {
 			return context.WithTimeout(ctx, time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
-			return func(_ context.Context, logger log.Logger) (task.Result, error) {
+			return func(_ context.Context, logger log.Logger) task.Result {
 				logger.Info("message from the task")
-				return event.Value.ID, nil
+				return task.OkResult(event.Value.ID)
 			}
 		},
 	}
@@ -188,9 +188,9 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 			return "StartTaskIf condition evaluated as false", false
 		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
-			return func(_ context.Context, logger log.Logger) (task.Result, error) {
+			return func(_ context.Context, logger log.Logger) task.Result {
 				logger.Info("message from the task")
-				return event.Value.ID, nil
+				return task.OkResult(event.Value.ID)
 			}
 		},
 	}
@@ -264,9 +264,9 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 			return context.WithTimeout(ctx, time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[testResource]) task.Fn {
-			return func(_ context.Context, logger log.Logger) (task.Result, error) {
+			return func(_ context.Context, logger log.Logger) task.Result {
 				logger.Info("message from the task")
-				return event.Value.ID, nil
+				return task.OkResult(event.Value.ID)
 			}
 		},
 	}

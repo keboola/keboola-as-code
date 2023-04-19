@@ -57,18 +57,18 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 			return context.WithTimeout(context.Background(), 5*time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Fn {
-			return func(ctx context.Context, logger log.Logger) (result string, err error) {
+			return func(ctx context.Context, logger log.Logger) (result task.Result) {
 				// Get file
 				fileRes := event.Value
 
 				// Handle error
 				defer func() {
-					if err != nil {
+					if result.IsErr() {
 						attempt := fileRes.RetryAttempt + 1
 						retryAfter := utctime.UTCTime(RetryAt(NewRetryBackoff(), s.clock.Now(), attempt))
 						fileRes.RetryAttempt = attempt
 						fileRes.RetryAfter = &retryAfter
-						err = errors.Errorf(`file import failed: %w, import will be retried after "%s"`, err, fileRes.RetryAfter)
+						result = result.WithErr(errors.Errorf(`file import failed: %w, import will be retried after "%s"`, result.Err(), fileRes.RetryAfter))
 						if err := s.store.MarkFileImportFailed(ctx, &fileRes); err != nil {
 							s.logger.Errorf(`cannot mark the file "%s" as failed: %s`, fileRes.FileKey, err)
 						}
@@ -78,12 +78,12 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 				// Load token
 				token, err := s.store.GetToken(ctx, fileRes.ExportKey)
 				if err != nil {
-					return "", errors.Errorf(`cannot load token for export "%s": %w`, fileRes.ExportKey, err)
+					return task.ErrResult(errors.Errorf(`cannot load token for export "%s": %w`, fileRes.ExportKey, err))
 				}
 
 				api, err := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
 				if err != nil {
-					return "", err
+					return task.ErrResult(err)
 				}
 
 				defer s.events.SendFileImportEvent(ctx, api, time.Now(), &err, fileRes)
@@ -93,7 +93,7 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 					// Create file manager
 					api, err := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
 					if err != nil {
-						return "", err
+						return task.ErrResult(err)
 					}
 					files := filePkg.NewManager(d.Clock(), api, s.config.UploadTransport)
 
@@ -105,9 +105,9 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 
 					// Mark file imported
 					if err := s.store.MarkFileImported(ctx, &fileRes); err != nil {
-						return "", err
+						return task.ErrResult(err)
 					}
-					return "skipped import of the empty file", nil
+					return task.OkResult("skipped import of the empty file")
 				} else {
 					// Create table manager
 					tables := table.NewManager(api)
@@ -117,27 +117,27 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 						// Import file
 						job, err := tables.SendLoadDataRequest(ctx, fileRes)
 						if err != nil {
-							return "", err
+							return task.ErrResult(err)
 						}
 
 						// Store job
 						fileRes.StorageJob = job
 						if err := s.store.UpdateFile(ctx, fileRes); err != nil {
-							return "", err
+							return task.ErrResult(err)
 						}
 					}
 
 					// Wait for job
 					if err := tables.WaitForJob(ctx, fileRes.StorageJob); err != nil {
-						return "", err
+						return task.ErrResult(err)
 					}
 
 					// Mark file imported
 					if err := s.store.MarkFileImported(ctx, &fileRes); err != nil {
-						return "", err
+						return task.ErrResult(err)
 					}
 
-					return "file imported", nil
+					return task.OkResult("file imported")
 				}
 			}
 		},

@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
@@ -29,9 +30,7 @@ const (
 	LockEtcdPrefix = etcdop.Prefix("runtime/lock/task")
 )
 
-type Fn func(ctx context.Context, logger log.Logger) (Result, error)
-
-type Result = string
+type Fn func(ctx context.Context, logger log.Logger) Result
 
 // Node represents a cluster Worker node on which tasks are run.
 // See comments in the StartTask method.
@@ -213,19 +212,22 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 	))
 
 	// Process results in defer to catch panic
-	var result string
-	var err error
-	defer telemetry.EndSpan(span, &err)
+	var result Result
+	defer telemetry.EndSpan(span, &result.error)
 
 	// Do operation
 	startTime := n.clock.Now()
 	func() {
-		if panicErr := recover(); panicErr != nil {
-			result = ""
-			err = errors.Errorf("panic: %s, stacktrace: %s", panicErr, string(debug.Stack()))
-			logger.Errorf(`task panic: %s`, err)
-		}
-		result, err = cfg.Operation(ctx, logger)
+		defer func() {
+			if panicErr := recover(); panicErr != nil {
+				err := errors.Errorf("panic: %s, stacktrace: %s", panicErr, string(debug.Stack()))
+				logger.Errorf(`task panic: %s`, err)
+				if result.error == nil {
+					result = ErrResult(err)
+				}
+			}
+		}()
+		result = cfg.Operation(ctx, logger)
 	}()
 
 	// Calculate duration
@@ -236,12 +238,22 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 	// Update fields
 	task.FinishedAt = &finishedAt
 	task.Duration = &duration
-	if err == nil {
-		task.Result = result
-		logger.Infof(`task succeeded (%s): %s`, duration, result)
+	if result.error == nil {
+		task.Result = result.result
+		task.Outputs = result.outputs
+		if len(task.Outputs) > 0 {
+			logger.Infof(`task succeeded (%s): %s outputs: %s`, duration, task.Result, json.MustEncodeString(task.Outputs, false))
+		} else {
+			logger.Infof(`task succeeded (%s): %s`, duration, task.Result)
+		}
 	} else {
-		task.Error = err.Error()
-		logger.Warnf(`task failed (%s): %s`, duration, errors.Format(err, errors.FormatWithStack()))
+		task.Error = result.error.Error()
+		task.Outputs = result.outputs
+		if len(task.Outputs) > 0 {
+			logger.Warnf(`task failed (%s): %s outputs: %s`, duration, errors.Format(result.error, errors.FormatWithStack()), json.MustEncodeString(task.Outputs, false))
+		} else {
+			logger.Warnf(`task failed (%s): %s`, duration, errors.Format(result.error, errors.FormatWithStack()))
+		}
 	}
 	span.SetAttributes(
 		attribute.Float64("duration", task.Duration.Seconds()),

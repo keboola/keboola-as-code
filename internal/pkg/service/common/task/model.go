@@ -9,13 +9,14 @@ import (
 
 type Task struct {
 	Key
-	Type       string           `json:"type"` // validate:"required"`
+	Type       string           `json:"type" validate:"required"`
 	CreatedAt  utctime.UTCTime  `json:"createdAt" validate:"required"`
 	FinishedAt *utctime.UTCTime `json:"finishedAt,omitempty"`
-	Node       string           `json:"node"` // validate:"required"`
+	Node       string           `json:"node" validate:"required"`
 	Lock       etcdop.Key       `json:"lock" validate:"required"`
 	Result     string           `json:"result,omitempty"`
 	Error      string           `json:"error,omitempty"`
+	Outputs    map[string]any   `json:"outputs,omitempty"`
 	Duration   *time.Duration   `json:"duration,omitempty"`
 }
 

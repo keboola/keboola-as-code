@@ -58,18 +58,18 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 			return context.WithTimeout(context.Background(), 5*time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Fn {
-			return func(ctx context.Context, logger log.Logger) (result string, err error) {
+			return func(ctx context.Context, logger log.Logger) (result task.Result) {
 				// Get slice
 				slice := event.Value
 
 				// Handle error
 				defer func() {
-					if err != nil {
+					if result.IsErr() {
 						attempt := slice.RetryAttempt + 1
 						retryAfter := utctime.UTCTime(RetryAt(NewRetryBackoff(), s.clock.Now(), attempt))
 						slice.RetryAttempt = attempt
 						slice.RetryAfter = &retryAfter
-						err = errors.Errorf(`slice upload failed: %w, upload will be retried after "%s"`, err, slice.RetryAfter)
+						result = result.WithErr(errors.Errorf(`slice upload failed: %w, upload will be retried after "%s"`, result.Err(), slice.RetryAfter))
 						if err := s.store.MarkSliceUploadFailed(ctx, &slice); err != nil {
 							s.logger.Errorf(`cannot mark the slice "%s" as failed: %s`, slice.SliceKey, err)
 						}
@@ -79,20 +79,20 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 				// Skip empty
 				if slice.IsEmpty {
 					if err := s.store.MarkSliceUploaded(ctx, &slice); err != nil {
-						return "", err
+						return task.ErrResult(err)
 					}
-					return "skipped upload of the empty slice", nil
+					return task.OkResult("skipped upload of the empty slice")
 				}
 
 				// Load token
 				token, err := s.store.GetToken(ctx, slice.ExportKey)
 				if err != nil {
-					return "", errors.Errorf(`cannot load token for export "%s": %w`, slice.ExportKey, err)
+					return task.ErrResult(errors.Errorf(`cannot load token for export "%s": %w`, slice.ExportKey, err))
 				}
 
 				api, err := keboola.NewAPI(ctx, s.storageAPIHost, keboola.WithClient(&s.httpClient), keboola.WithToken(token.Token))
 				if err != nil {
-					return "", err
+					return task.ErrResult(err)
 				}
 
 				defer s.events.SendSliceUploadEvent(ctx, api, time.Now(), &err, slice)
@@ -103,7 +103,7 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 				// Upload slice, set statistics
 				reader := newRecordsReader(ctx, s.logger, s.etcdClient, s.schema, slice)
 				if err := files.UploadSlice(ctx, &slice, reader); err != nil {
-					return "", errors.Errorf(`file upload failed: %w`, err)
+					return task.ErrResult(errors.Errorf(`file upload failed: %w`, err))
 				}
 
 				// Get all uploaded slices from the file
@@ -115,21 +115,21 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 						return nil
 					})
 				if err := getSlicesOp.DoOrErr(ctx, s.etcdClient); err != nil {
-					return "", errors.Errorf(`get uploaded slices query failed: %w`, err)
+					return task.ErrResult(errors.Errorf(`get uploaded slices query failed: %w`, err))
 				}
 
 				// Update manifest, so the file is always importable.
 				allSlices = append(allSlices, slice)
 				if err := files.UploadManifest(ctx, slice.StorageResource, allSlices); err != nil {
-					return "", errors.Errorf(`manifest upload failed: %w`, err)
+					return task.ErrResult(errors.Errorf(`manifest upload failed: %w`, err))
 				}
 
 				// Mark slice uploaded
 				if err := s.store.MarkSliceUploaded(ctx, &slice); err != nil {
-					return "", err
+					return task.ErrResult(err)
 				}
 
-				return "slice uploaded", nil
+				return task.OkResult("slice uploaded")
 			}
 		},
 	})

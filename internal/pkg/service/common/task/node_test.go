@@ -54,11 +54,11 @@ func TestSuccessfulTask(t *testing.T) {
 		Context: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(ctx, time.Minute)
 		},
-		Operation: func(ctx context.Context, logger log.Logger) (task.Result, error) {
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
 			logger.Info("some message from the task (1)")
-			return "some result (1)", nil
+			return task.OkResult("some result (1)").WithOutput("key", "value")
 		},
 	})
 	assert.NoError(t, err)
@@ -69,9 +69,9 @@ func TestSuccessfulTask(t *testing.T) {
 		Context: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(ctx, time.Minute)
 		},
-		Operation: func(ctx context.Context, logger log.Logger) (task.Result, error) {
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			assert.Fail(t, "should not be called")
-			return "", nil
+			return task.ErrResult(errors.New("the task should not be called"))
 		},
 	})
 	assert.NoError(t, err)
@@ -115,6 +115,9 @@ task/123/my-receiver/my-export/some.task/%s
   "node": "node1",
   "lock": "runtime/lock/task/my-lock",
   "result": "some result (1)",
+  "outputs": {
+    "key": "value"
+  },
   "duration": %d
 }
 >>>>>
@@ -130,11 +133,11 @@ task/123/my-receiver/my-export/some.task/%s
 		Context: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(ctx, time.Minute)
 		},
-		Operation: func(ctx context.Context, logger log.Logger) (string, error) {
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
 			logger.Info("some message from the task (2)")
-			return "some result (2)", nil
+			return task.OkResult("some result (2)")
 		},
 	})
 	assert.NoError(t, err)
@@ -156,6 +159,9 @@ task/123/my-receiver/my-export/some.task/%s
   "node": "node1",
   "lock": "runtime/lock/task/my-lock",
   "result": "some result (1)",
+  "outputs": {
+    "key": "value"
+  },
   "duration": %d
 }
 >>>>>
@@ -183,7 +189,7 @@ task/123/my-receiver/my-export/some.task/%s
 [node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
 [node2][task][123/my-receiver/my-export/some.task/%s]INFO  task ignored, the lock "runtime/lock/task/my-lock" is in use
 [node1][task][123/my-receiver/my-export/some.task/%s]INFO  some message from the task (1)
-[node1][task][123/my-receiver/my-export/some.task/%s]INFO  task succeeded (%s): some result (1)
+[node1][task][123/my-receiver/my-export/some.task/%s]INFO  task succeeded (%s): some result (1) outputs: {"key":"value"}
 [node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
 [node2][task][123/my-receiver/my-export/some.task/%s]INFO  started task
 [node2][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
@@ -224,11 +230,11 @@ func TestFailedTask(t *testing.T) {
 		Context: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(ctx, time.Minute)
 		},
-		Operation: func(ctx context.Context, logger log.Logger) (string, error) {
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
 			logger.Info("some message from the task (1)")
-			return "", errors.New("some error (1)")
+			return task.ErrResult(errors.New("some error (1)")).WithOutput("key", "value")
 		},
 	})
 	assert.NoError(t, err)
@@ -239,9 +245,9 @@ func TestFailedTask(t *testing.T) {
 		Context: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(ctx, time.Minute)
 		},
-		Operation: func(ctx context.Context, logger log.Logger) (string, error) {
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			assert.Fail(t, "should not be called")
-			return "", nil
+			return task.ErrResult(errors.New("the task should not be called"))
 		},
 	})
 	assert.NoError(t, err)
@@ -285,6 +291,9 @@ task/123/my-receiver/my-export/some.task/%s
   "node": "node1",
   "lock": "runtime/lock/task/my-lock",
   "error": "some error (1)",
+  "outputs": {
+    "key": "value"
+  },
   "duration": %d
 }
 >>>>>
@@ -300,11 +309,11 @@ task/123/my-receiver/my-export/some.task/%s
 		Context: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(ctx, time.Minute)
 		},
-		Operation: func(ctx context.Context, logger log.Logger) (string, error) {
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
 			defer close(taskDone)
 			<-taskWork
 			logger.Info("some message from the task (2)")
-			return "", errors.New("some error (2)")
+			return task.ErrResult(errors.New("some error (2)"))
 		},
 	})
 	assert.NoError(t, err)
@@ -326,6 +335,9 @@ task/123/my-receiver/my-export/some.task/%s
   "node": "node1",
   "lock": "runtime/lock/task/my-lock",
   "error": "some error (1)",
+  "outputs": {
+    "key": "value"
+  },
   "duration": %d
 }
 >>>>>
@@ -353,7 +365,7 @@ task/123/my-receiver/my-export/some.task/%s
 [node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
 [node2][task][123/my-receiver/my-export/some.task/%s]INFO  task ignored, the lock "runtime/lock/task/my-lock" is in use
 [node1][task][123/my-receiver/my-export/some.task/%s]INFO  some message from the task (1)
-[node1][task][123/my-receiver/my-export/some.task/%s]WARN  task failed (%s): some error (1) [%s]
+[node1][task][123/my-receiver/my-export/some.task/%s]WARN  task failed (%s): some error (1) [%s] outputs: {"key":"value"}
 [node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
 [node2][task][123/my-receiver/my-export/some.task/%s]INFO  started task
 [node2][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
@@ -395,11 +407,11 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 			Context: func() (context.Context, context.CancelFunc) {
 				return context.WithTimeout(ctx, time.Minute)
 			},
-			Operation: func(ctx context.Context, logger log.Logger) (string, error) {
+			Operation: func(ctx context.Context, logger log.Logger) task.Result {
 				defer close(taskDone)
 				<-taskWork
 				logger.Info("some message from the task")
-				return "some result", nil
+				return task.OkResult("some result")
 			},
 		})
 		assert.NoError(t, err)
