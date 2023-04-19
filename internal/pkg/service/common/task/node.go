@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
@@ -254,7 +254,6 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 		} else {
 			logger.Warnf(`task failed (%s): %s`, duration, errors.Format(result.error, errors.FormatWithStack()))
 		}
-
 	}
 	span.SetAttributes(
 		attribute.Float64("duration", task.Duration.Seconds()),

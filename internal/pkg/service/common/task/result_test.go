@@ -1,9 +1,11 @@
 package task
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func TestOkResult(t *testing.T) {
