@@ -82,7 +82,7 @@ type Column struct {
 	Type column.Type
 	// Column name.
 	Name string
-	// Template mapping details.
+	// Template mapping details. Only for "type" = "template".
 	Template *Template
 }
 

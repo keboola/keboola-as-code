@@ -486,7 +486,7 @@ type ColumnResponseBody struct {
 	Type column.Type `form:"type" json:"type" xml:"type"`
 	// Column name.
 	Name string `form:"name" json:"name" xml:"name"`
-	// Template mapping details.
+	// Template mapping details. Only for "type" = "template".
 	Template *TemplateResponseBody `form:"template,omitempty" json:"template,omitempty" xml:"template,omitempty"`
 }
 
@@ -549,7 +549,7 @@ type ColumnRequestBody struct {
 	Type *column.Type `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// Column name.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// Template mapping details.
+	// Template mapping details. Only for "type" = "template".
 	Template *TemplateRequestBody `form:"template,omitempty" json:"template,omitempty" xml:"template,omitempty"`
 }
 
@@ -1299,6 +1299,12 @@ func ValidateMappingRequestBody(body *MappingRequestBody) (err error) {
 	}
 	if body.Columns == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("columns", "body"))
+	}
+	if len(body.Columns) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.columns", body.Columns, len(body.Columns), 1, true))
+	}
+	if len(body.Columns) > 50 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.columns", body.Columns, len(body.Columns), 50, false))
 	}
 	for _, e := range body.Columns {
 		if e != nil {

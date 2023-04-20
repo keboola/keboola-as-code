@@ -1496,6 +1496,8 @@ components:
                           template:
                             language: ""
                             content: ""
+                    minItems: 1
+                    maxItems: 50
                 incremental:
                     type: boolean
                     description: Enables incremental loading to the table.
