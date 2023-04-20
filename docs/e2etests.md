@@ -4,16 +4,16 @@ E2E tests are divided by the service they test.
 
 - **CLI**
   - Location: [`test/cli`](../test/cli)
-  - Run the tests: `./scripts/tests.sh -run "TestCliE2E/.*"`
+  - Run the tests: `make tests-cli"`
 - **Templates API**
   - Location: [`test/templates/api`](../test/templates/api)
-  - Run the tests: `./scripts/tests.sh -run "TestTemplatesApiE2E/.*"`
+  - Run the tests: `make tests-templates-api"`
 - **Buffer API**
   - Location: [`test/buffer/api`](../test/buffer/api)
-  - Run the tests: `./scripts/tests.sh -run "TestBufferApiE2E/.*"`
+  - Run the tests: `make tests-buffer-api"`
 - **Buffer Worker**
   - Location: [`test/buffer/worker`](../test/buffer/worker)
-  - Run the tests: `./scripts/tests.sh -run "TestBufferWorkerE2E/.*"`
+  - Run the tests: `make tests-buffer-worker`
 
 Tests for each service are grouped according to a common functionality they test. Then each directory in this group 
 contains a single test.
