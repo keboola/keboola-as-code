@@ -1,5 +1,6 @@
 {
   "id": "weird-id/receiver.create/%s",
+  "type": "receiver.create",
   "url": "https://buffer.keboola.local/v1/tasks/weird-id/receiver.create/%s",
   "status": "processing",
   "isFinished": false,

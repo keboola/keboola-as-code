@@ -67,7 +67,7 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 				return task.ErrResult(err)
 			}
 
-			return task.OkResult("receiver created")
+			return task.OkResult("receiver created").WithOutput("receiverId", receiver.ReceiverID.String())
 		},
 	})
 	if err != nil {

@@ -10,6 +10,10 @@ task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/export.update/%s
   "node": "api-node-%d",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/export.update",
   "result": "export updated",
+  "outputs": {
+    "exportId": "my-export-1",
+    "receiverId": "my-receiver"
+  },
   "duration": %d
 }
 >>>>>

@@ -21,6 +21,9 @@
   "node": "worker-node-1",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver-a/receiver.create",
   "result": "receiver created",
+  "outputs": {
+    "receiverId": "my-receiver-a"
+  },
   "duration": 3600000
 }
 >>>>>
@@ -37,6 +40,9 @@
   "node": "worker-node-1",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver-b/receiver.create",
   "error": "some error",
+  "outputs": {
+    "receiverId": "my-receiver-b"
+  },
   "duration": 3600000
 }
 >>>>>

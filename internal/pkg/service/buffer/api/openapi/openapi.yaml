@@ -183,6 +183,7 @@ paths:
                         $ref: '#/definitions/BufferCreateReceiverResponseBody'
                         required:
                             - id
+                            - type
                             - url
                             - status
                             - isFinished
@@ -367,6 +368,7 @@ paths:
                         $ref: '#/definitions/BufferCreateExportResponseBody'
                         required:
                             - id
+                            - type
                             - url
                             - status
                             - isFinished
@@ -501,6 +503,7 @@ paths:
                         $ref: '#/definitions/BufferUpdateExportResponseBody'
                         required:
                             - id
+                            - type
                             - url
                             - status
                             - isFinished
@@ -572,6 +575,7 @@ paths:
                         $ref: '#/definitions/BufferGetTaskResponseBody'
                         required:
                             - id
+                            - type
                             - url
                             - status
                             - isFinished
@@ -694,7 +698,7 @@ definitions:
             id:
                 type: string
                 description: Optional ID, if not filled in, it will be generated from name. Cannot be changed later.
-                example: uy
+                example: x
                 minLength: 1
                 maxLength: 48
             mapping:
@@ -710,7 +714,7 @@ definitions:
                 count: 100
                 size: 12kB
                 time: 1m10s
-            id: ymc
+            id: o4
             mapping:
                 tableId: in.c-github.changes
                 incremental: true
@@ -760,7 +764,7 @@ definitions:
                 format: int64
             error:
                 type: string
-                example: Quidem molestiae enim ut.
+                example: Ipsam id et.
             finishedAt:
                 type: string
                 description: Date and time of the task end.
@@ -768,39 +772,47 @@ definitions:
                 format: date-time
             id:
                 type: string
-                example: In mollitia veniam sint.
+                example: Eum possimus.
             isFinished:
                 type: boolean
                 description: Shortcut for status != "processing".
-                example: true
+                example: false
+            outputs:
+                $ref: '#/definitions/TaskOutputsResponseBody'
             result:
                 type: string
-                example: Consequuntur ut.
+                example: Nulla laboriosam ad earum in.
             status:
                 type: string
                 description: 'Task status, one of: processing, success, error'
-                example: processing
+                example: success
                 enum:
                     - processing
                     - success
                     - error
+            type:
+                type: string
+                description: Task type.
+                example: Qui aut corrupti nihil voluptatem eveniet sequi.
             url:
                 type: string
                 description: URL of the task.
-                example: Aut laborum necessitatibus.
+                example: Provident dolorum suscipit aut.
         example:
-            id: task-1
-            receiverId: receiver-1
-            url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_task-1
-            type: export
+            id: receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+            receiverId: ""
+            url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+            type: receiver.create
             createdAt: "2018-01-01T00:00:00.000Z"
             finishedAt: "2018-01-01T00:00:00.000Z"
             isFinished: true
             duration: 123
-            result: success
-            error: ""
+            result: task succeeded
+            outputs:
+                receiverId: receiver-1
         required:
             - id
+            - type
             - url
             - status
             - isFinished
@@ -972,10 +984,45 @@ definitions:
                                 language: jsonnet
                                 content: body.foo + "-" + body.bar
                       name: Raw Data Export
+                    - conditions:
+                        count: 100
+                        size: 12kB
+                        time: 1m10s
+                      id: "4"
+                      mapping:
+                        tableId: in.c-github.changes
+                        incremental: true
+                        columns:
+                            - type: id
+                              name: column1
+                              template:
+                                language: ""
+                                content: ""
+                            - type: datetime
+                              name: column2
+                              template:
+                                language: ""
+                                content: ""
+                            - type: ip
+                              name: column3
+                              template:
+                                language: ""
+                                content: ""
+                            - type: headers
+                              name: column5
+                              template:
+                                language: ""
+                                content: ""
+                            - type: template
+                              name: column6
+                              template:
+                                language: jsonnet
+                                content: body.foo + "-" + body.bar
+                      name: Raw Data Export
             id:
                 type: string
                 description: Optional ID, if not filled in, it will be generated from name. Cannot be changed later.
-                example: h
+                example: f
                 minLength: 1
                 maxLength: 48
             name:
@@ -1126,7 +1173,7 @@ definitions:
                             language: jsonnet
                             content: body.foo + "-" + body.bar
                   name: Raw Data Export
-            id: lb
+            id: caa
             name: Github Webhook Receiver
         required:
             - name
@@ -1146,7 +1193,7 @@ definitions:
                 format: int64
             error:
                 type: string
-                example: Fuga quidem sint numquam magnam ut nesciunt.
+                example: Maxime natus qui ut qui facere qui.
             finishedAt:
                 type: string
                 description: Date and time of the task end.
@@ -1154,39 +1201,47 @@ definitions:
                 format: date-time
             id:
                 type: string
-                example: Laudantium est eaque.
+                example: Qui quidem fuga quidem sint numquam magnam.
             isFinished:
                 type: boolean
                 description: Shortcut for status != "processing".
                 example: true
+            outputs:
+                $ref: '#/definitions/TaskOutputsResponseBody'
             result:
                 type: string
-                example: Dolorem qui.
+                example: Dicta ex voluptas.
             status:
                 type: string
                 description: 'Task status, one of: processing, success, error'
-                example: processing
+                example: error
                 enum:
                     - processing
                     - success
                     - error
+            type:
+                type: string
+                description: Task type.
+                example: Nesciunt sunt non est.
             url:
                 type: string
                 description: URL of the task.
-                example: Optio voluptas voluptas velit et ipsum.
+                example: Deleniti ut et culpa laudantium perferendis qui.
         example:
-            id: task-1
-            receiverId: receiver-1
-            url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_task-1
-            type: export
+            id: receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+            receiverId: ""
+            url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+            type: receiver.create
             createdAt: "2018-01-01T00:00:00.000Z"
             finishedAt: "2018-01-01T00:00:00.000Z"
             isFinished: true
             duration: 123
-            result: success
-            error: ""
+            result: task succeeded
+            outputs:
+                receiverId: receiver-1
         required:
             - id
+            - type
             - url
             - status
             - isFinished
@@ -1329,7 +1384,7 @@ definitions:
                 $ref: '#/definitions/ConditionsResponseBody'
             id:
                 type: string
-                example: i
+                example: s
                 minLength: 1
                 maxLength: 48
             mapping:
@@ -1342,7 +1397,7 @@ definitions:
                 maxLength: 40
             receiverId:
                 type: string
-                example: o
+                example: "0"
                 minLength: 1
                 maxLength: 48
         example:
@@ -1462,7 +1517,7 @@ definitions:
                         time: 1m10s
             id:
                 type: string
-                example: pp7
+                example: "2"
                 minLength: 1
                 maxLength: 48
             name:
@@ -1474,7 +1529,7 @@ definitions:
             url:
                 type: string
                 description: URL of the receiver. Contains secret used for authentication.
-                example: Optio ut delectus maxime qui sint facilis.
+                example: Illum veritatis blanditiis non esse.
         example:
             id: github-pull-requests
             url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
@@ -1563,7 +1618,7 @@ definitions:
                 format: int64
             error:
                 type: string
-                example: Dolorum ipsam nulla laboriosam ad.
+                example: Placeat qui veniam maxime voluptates ipsum.
             finishedAt:
                 type: string
                 description: Date and time of the task end.
@@ -1571,39 +1626,47 @@ definitions:
                 format: date-time
             id:
                 type: string
-                example: Quos beatae.
+                example: Illo repellendus.
             isFinished:
                 type: boolean
                 description: Shortcut for status != "processing".
-                example: true
+                example: false
+            outputs:
+                $ref: '#/definitions/TaskOutputsResponseBody'
             result:
                 type: string
-                example: Eveniet sequi itaque provident dolorum suscipit aut.
+                example: Repellendus voluptas dolor doloribus non velit consequatur.
             status:
                 type: string
                 description: 'Task status, one of: processing, success, error'
-                example: error
+                example: processing
                 enum:
                     - processing
                     - success
                     - error
+            type:
+                type: string
+                description: Task type.
+                example: Dolorum praesentium provident velit sed.
             url:
                 type: string
                 description: URL of the task.
-                example: Eaque eum possimus ut qui aut.
+                example: Beatae fuga.
         example:
-            id: task-1
-            receiverId: receiver-1
-            url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_task-1
-            type: export
+            id: receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+            receiverId: ""
+            url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+            type: receiver.create
             createdAt: "2018-01-01T00:00:00.000Z"
             finishedAt: "2018-01-01T00:00:00.000Z"
             isFinished: true
             duration: 123
-            result: success
-            error: ""
+            result: task succeeded
+            outputs:
+                receiverId: receiver-1
         required:
             - id
+            - type
             - url
             - status
             - isFinished
@@ -1938,7 +2001,7 @@ definitions:
                         time: 1m10s
             id:
                 type: string
-                example: y6
+                example: q7v
                 minLength: 1
                 maxLength: 48
             name:
@@ -1950,7 +2013,7 @@ definitions:
             url:
                 type: string
                 description: URL of the receiver. Contains secret used for authentication.
-                example: Consequatur nisi.
+                example: Adipisci molestias quo consequatur quos beatae facere.
         example:
             id: github-pull-requests
             url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
@@ -2114,7 +2177,7 @@ definitions:
                 format: int64
             error:
                 type: string
-                example: Porro ut adipisci molestias quo.
+                example: Nihil veniam aut eius iusto.
             finishedAt:
                 type: string
                 description: Date and time of the task end.
@@ -2122,39 +2185,47 @@ definitions:
                 format: date-time
             id:
                 type: string
-                example: Tenetur molestiae.
+                example: Perspiciatis molestiae doloremque et.
             isFinished:
                 type: boolean
                 description: Shortcut for status != "processing".
-                example: true
+                example: false
+            outputs:
+                $ref: '#/definitions/TaskOutputsResponseBody'
             result:
                 type: string
-                example: Non esse aut dolores.
+                example: Ducimus consequuntur.
             status:
                 type: string
                 description: 'Task status, one of: processing, success, error'
-                example: error
+                example: processing
                 enum:
                     - processing
                     - success
                     - error
+            type:
+                type: string
+                description: Task type.
+                example: Eius pariatur molestiae inventore doloribus quod ut.
             url:
                 type: string
                 description: URL of the task.
-                example: Dolorem voluptas aut.
+                example: Eum laborum illo veritatis.
         example:
-            id: task-1
-            receiverId: receiver-1
-            url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_task-1
-            type: export
+            id: receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+            receiverId: ""
+            url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+            type: receiver.create
             createdAt: "2018-01-01T00:00:00.000Z"
             finishedAt: "2018-01-01T00:00:00.000Z"
             isFinished: true
             duration: 123
-            result: success
-            error: ""
+            result: task succeeded
+            outputs:
+                receiverId: receiver-1
         required:
             - id
+            - type
             - url
             - status
             - isFinished
@@ -2245,7 +2316,7 @@ definitions:
                         time: 1m10s
             id:
                 type: string
-                example: mzk
+                example: "4"
                 minLength: 1
                 maxLength: 48
             name:
@@ -2257,7 +2328,7 @@ definitions:
             url:
                 type: string
                 description: URL of the receiver. Contains secret used for authentication.
-                example: Doloribus quia officiis.
+                example: Ut rerum dolorum minus quibusdam eum.
         example:
             id: github-pull-requests
             url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
@@ -2311,7 +2382,7 @@ definitions:
             name:
                 type: string
                 description: Column name.
-                example: Voluptatibus dicta ex voluptas error maxime natus.
+                example: Dolorem nihil dolores a blanditiis.
             primaryKey:
                 type: boolean
                 description: Sets this column as a part of the primary key of the destination table.
@@ -2322,7 +2393,7 @@ definitions:
             type:
                 type: string
                 description: Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).
-                example: template
+                example: datetime
                 enum:
                     - id
                     - datetime
@@ -2347,18 +2418,18 @@ definitions:
             name:
                 type: string
                 description: Column name.
-                example: Veritatis sunt voluptatem voluptatem.
+                example: Nisi quae in mollitia veniam sint.
             primaryKey:
                 type: boolean
                 description: Sets this column as a part of the primary key of the destination table.
                 default: false
-                example: false
+                example: true
             template:
                 $ref: '#/definitions/TemplateResponseBody'
             type:
                 type: string
                 description: Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).
-                example: body
+                example: headers
                 enum:
                     - id
                     - datetime
@@ -2384,19 +2455,19 @@ definitions:
                 type: integer
                 description: Maximum import buffer size in number of records.
                 default: 10000
-                example: 7392344
+                example: 4085996
                 minimum: 1
                 maximum: 1e+07
             size:
                 type: string
                 description: 'Maximum import buffer size in bytes. Units: B, KB, MB.'
                 default: 5MB
-                example: Sit qui repellendus et voluptas ex.
+                example: Maiores quod commodi iure.
             time:
                 type: string
                 description: 'Minimum import interval. Units: [s]econd,[m]inute,[h]our.'
                 default: 5m0s
-                example: Laborum quod.
+                example: Inventore ut vel ratione fugiat omnis cupiditate.
         description: Table import triggers.
         example:
             count: 100
@@ -2410,19 +2481,19 @@ definitions:
                 type: integer
                 description: Maximum import buffer size in number of records.
                 default: 10000
-                example: 2812913
+                example: 2329517
                 minimum: 1
                 maximum: 1e+07
             size:
                 type: string
                 description: 'Maximum import buffer size in bytes. Units: B, KB, MB.'
                 default: 5MB
-                example: Vel ratione fugiat omnis cupiditate.
+                example: Animi occaecati consequuntur ut assumenda quidem molestiae.
             time:
                 type: string
                 description: 'Minimum import interval. Units: [s]econd,[m]inute,[h]our.'
                 default: 5m0s
-                example: Ut quis voluptatem inventore totam aliquam.
+                example: Ut occaecati animi tempore minus non.
         description: Table import triggers.
         example:
             count: 100
@@ -2437,7 +2508,7 @@ definitions:
             id:
                 type: string
                 description: Optional ID, if not filled in, it will be generated from name. Cannot be changed later.
-                example: 5qn
+                example: "4"
                 minLength: 1
                 maxLength: 48
             mapping:
@@ -2453,7 +2524,7 @@ definitions:
                 count: 100
                 size: 12kB
                 time: 1m10s
-            id: z
+            id: t
             mapping:
                 tableId: in.c-github.changes
                 incremental: true
@@ -2495,7 +2566,7 @@ definitions:
                 $ref: '#/definitions/ConditionsResponseBody'
             id:
                 type: string
-                example: ss
+                example: 7t
                 minLength: 1
                 maxLength: 48
             mapping:
@@ -2508,7 +2579,7 @@ definitions:
                 maxLength: 40
             receiverId:
                 type: string
-                example: pic
+                example: g
                 minLength: 1
                 maxLength: 48
         description: A mapping from imported data to a destination table.
@@ -2577,7 +2648,7 @@ definitions:
             tableId:
                 type: string
                 description: Destination table ID.
-                example: Culpa laudantium.
+                example: Et ab error earum.
         description: Export column mapping.
         example:
             tableId: in.c-github.changes
@@ -2633,7 +2704,7 @@ definitions:
             tableId:
                 type: string
                 description: Destination table ID.
-                example: Sunt in dolorem nihil dolores.
+                example: Maxime qui sint facilis et.
         description: Export column mapping.
         example:
             tableId: in.c-github.changes
@@ -2715,7 +2786,7 @@ definitions:
                         time: 1m10s
             id:
                 type: string
-                example: f46
+                example: cc
                 minLength: 1
                 maxLength: 48
             name:
@@ -2727,7 +2798,7 @@ definitions:
             url:
                 type: string
                 description: URL of the receiver. Contains secret used for authentication.
-                example: Rerum dolorum minus.
+                example: Incidunt ad veritatis tenetur molestiae fugit.
         description: An endpoint for importing data, max 100 receivers per a project.
         example:
             id: github-pull-requests
@@ -2775,13 +2846,29 @@ definitions:
             - url
             - name
             - exports
+    TaskOutputsResponseBody:
+        title: TaskOutputsResponseBody
+        type: object
+        properties:
+            exportId:
+                type: string
+                description: ID of the created/updated export.
+                example: Qui repellendus et.
+            receiverId:
+                type: string
+                description: ID of the created/updated receiver.
+                example: Ex iure laborum quod.
+        description: Outputs generated by the task.
+        example:
+            exportId: Labore dicta illum.
+            receiverId: Autem sint tempora deserunt rerum voluptas expedita.
     TemplateRequestBody:
         title: TemplateRequestBody
         type: object
         properties:
             content:
                 type: string
-                example: "y"
+                example: di
                 minLength: 1
                 maxLength: 4096
             language:
@@ -2801,7 +2888,7 @@ definitions:
         properties:
             content:
                 type: string
-                example: ubi
+                example: "y"
                 minLength: 1
                 maxLength: 4096
             language:

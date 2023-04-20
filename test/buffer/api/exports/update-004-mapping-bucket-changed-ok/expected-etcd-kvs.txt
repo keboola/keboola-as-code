@@ -235,6 +235,10 @@
   "node": "%s",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-1/export.update",
   "result": "export updated",
+  "outputs": {
+    "exportId": "export-1",
+    "receiverId": "my-receiver"
+  },
   "duration": %d
 }
 >>>>>

@@ -144,6 +144,9 @@
   "node": "%s",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver-with-exports/receiver.create",
   "result": "receiver created",
+  "outputs": {
+    "receiverId": "my-receiver-with-exports"
+  },
   "duration": %d
 }
 >>>>>

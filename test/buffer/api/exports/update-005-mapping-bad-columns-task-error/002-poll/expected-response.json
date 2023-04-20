@@ -1,10 +1,15 @@
 {
   "id": "my-receiver/my-export-1/export.create/%s",
+  "type": "export.create",
   "url": "https://buffer.keboola.local/v1/tasks/my-receiver/my-export-1/export.create/%s",
   "status": "success",
   "isFinished": true,
   "createdAt": "%s",
   "finishedAt": "%s",
   "duration": %d,
-  "result": "export created"
+  "result": "export created",
+  "outputs": {
+    "exportId": "my-export-1",
+    "receiverId": "my-receiver"
+  }
 }

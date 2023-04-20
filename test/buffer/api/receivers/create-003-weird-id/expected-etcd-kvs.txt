@@ -21,6 +21,9 @@
   "node": "%s",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/weird-id/receiver.create",
   "result": "receiver created",
+  "outputs": {
+    "receiverId": "weird-id"
+  },
   "duration": %d
 }
 >>>>>

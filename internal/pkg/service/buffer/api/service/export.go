@@ -77,7 +77,10 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 				return task.ErrResult(err)
 			}
 
-			return task.OkResult("export created")
+			return task.
+				OkResult("export created").
+				WithOutput("receiverId", export.ReceiverID.String()).
+				WithOutput("exportId", export.ExportID.String())
 		},
 	})
 	if err != nil {
@@ -128,7 +131,10 @@ func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer
 				return task.ErrResult(err)
 			}
 
-			return task.OkResult("export updated")
+			return task.
+				OkResult("export updated").
+				WithOutput("receiverId", exportKey.ReceiverID.String()).
+				WithOutput("exportId", exportKey.ExportID.String())
 		},
 	})
 	if err != nil {

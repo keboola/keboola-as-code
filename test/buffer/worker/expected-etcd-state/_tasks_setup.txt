@@ -10,6 +10,9 @@ task/%%TEST_KBC_PROJECT_ID%%/my-receiver/receiver.create/%s
   "node": "api-node-%d",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/receiver.create",
   "result": "receiver created",
+  "outputs": {
+    "receiverId": "my-receiver"
+  },
   "duration": %d
 }
 >>>>>
@@ -26,6 +29,10 @@ task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/export.create/%s
   "node": "api-node-%d",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/export.create",
   "result": "export created",
+  "outputs": {
+    "exportId": "my-export-1",
+    "receiverId": "my-receiver"
+  },
   "duration": %d
 }
 >>>>>
@@ -42,6 +49,10 @@ task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2/export.create/%s
   "node": "api-node-%d",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2/export.create",
   "result": "export created",
+  "outputs": {
+    "exportId": "my-export-2",
+    "receiverId": "my-receiver"
+  },
   "duration": %d
 }
 >>>>>

@@ -21,6 +21,9 @@
   "node": "%s",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/receiver.create",
   "result": "receiver created",
+  "outputs": {
+    "receiverId": "my-receiver"
+  },
   "duration": %d
 }
 >>>>>

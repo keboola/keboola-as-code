@@ -290,16 +290,17 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Task'
                             example:
-                                id: task-1
-                                receiverId: receiver-1
-                                url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_task-1
-                                type: export
+                                id: receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+                                receiverId: ""
+                                url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+                                type: receiver.create
                                 createdAt: "2018-01-01T00:00:00.000Z"
                                 finishedAt: "2018-01-01T00:00:00.000Z"
                                 isFinished: true
                                 duration: 123
-                                result: success
-                                error: ""
+                                result: task succeeded
+                                outputs:
+                                    receiverId: receiver-1
                 "409":
                     description: 'buffer.receiverAlreadyExists: Receiver already exists in the project.'
                     content:
@@ -591,7 +592,7 @@ paths:
                                 count: 100
                                 size: 12kB
                                 time: 1m10s
-                            id: qg
+                            id: "y"
                             mapping:
                                 tableId: in.c-github.changes
                                 incremental: true
@@ -630,16 +631,17 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Task'
                             example:
-                                id: task-1
-                                receiverId: receiver-1
-                                url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_task-1
-                                type: export
+                                id: receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+                                receiverId: ""
+                                url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+                                type: receiver.create
                                 createdAt: "2018-01-01T00:00:00.000Z"
                                 finishedAt: "2018-01-01T00:00:00.000Z"
                                 isFinished: true
                                 duration: 123
-                                result: success
-                                error: ""
+                                result: task succeeded
+                                outputs:
+                                    receiverId: receiver-1
                 "404":
                     description: 'buffer.receiverNotFound: Receiver not found error.'
                     content:
@@ -848,16 +850,17 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Task'
                             example:
-                                id: task-1
-                                receiverId: receiver-1
-                                url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_task-1
-                                type: export
+                                id: receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+                                receiverId: ""
+                                url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+                                type: receiver.create
                                 createdAt: "2018-01-01T00:00:00.000Z"
                                 finishedAt: "2018-01-01T00:00:00.000Z"
                                 isFinished: true
                                 duration: 123
-                                result: success
-                                error: ""
+                                result: task succeeded
+                                outputs:
+                                    receiverId: receiver-1
                 "404":
                     description: 'buffer.exportNotFound: Export not found error.'
                     content:
@@ -962,16 +965,17 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Task'
                             example:
-                                id: task-1
-                                receiverId: receiver-1
-                                url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_task-1
-                                type: export
+                                id: receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+                                receiverId: ""
+                                url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+                                type: receiver.create
                                 createdAt: "2018-01-01T00:00:00.000Z"
                                 finishedAt: "2018-01-01T00:00:00.000Z"
                                 isFinished: true
                                 duration: 123
-                                result: success
-                                error: ""
+                                result: task succeeded
+                                outputs:
+                                    receiverId: receiver-1
                 "404":
                     description: 'buffer.taskNotFound: Task not found error.'
                     content:
@@ -988,7 +992,7 @@ components:
                 name:
                     type: string
                     description: Column name.
-                    example: Aut corporis quis.
+                    example: Sint quo assumenda possimus ipsam.
                 primaryKey:
                     type: boolean
                     description: Sets this column as a part of the primary key of the destination table.
@@ -999,7 +1003,7 @@ components:
                 type:
                     type: string
                     description: Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).
-                    example: headers
+                    example: id
                     enum:
                         - id
                         - datetime
@@ -1024,19 +1028,19 @@ components:
                     type: integer
                     description: Maximum import buffer size in number of records.
                     default: 10000
-                    example: 1669624
+                    example: 4738312
                     minimum: 1
                     maximum: 1e+07
                 size:
                     type: string
                     description: 'Maximum import buffer size in bytes. Units: B, KB, MB.'
                     default: 5MB
-                    example: Pariatur molestiae.
+                    example: Quia non fuga vitae quis laborum.
                 time:
                     type: string
                     description: 'Minimum import interval. Units: [s]econd,[m]inute,[h]our.'
                     default: 5m0s
-                    example: Doloribus quod ut sapiente.
+                    example: Distinctio qui perspiciatis vel optio quis.
             description: Table import triggers.
             example:
                 count: 100
@@ -1050,7 +1054,7 @@ components:
                 id:
                     type: string
                     description: Optional ID, if not filled in, it will be generated from name. Cannot be changed later.
-                    example: ff
+                    example: 8e
                     minLength: 1
                     maxLength: 48
                 mapping:
@@ -1066,7 +1070,7 @@ components:
                     count: 100
                     size: 12kB
                     time: 1m10s
-                id: g
+                id: h
                 mapping:
                     tableId: in.c-github.changes
                     incremental: true
@@ -1217,7 +1221,7 @@ components:
                 id:
                     type: string
                     description: Optional ID, if not filled in, it will be generated from name. Cannot be changed later.
-                    example: j
+                    example: r
                     minLength: 1
                     maxLength: 48
                 name:
@@ -1298,42 +1302,7 @@ components:
                                 language: jsonnet
                                 content: body.foo + "-" + body.bar
                       name: Raw Data Export
-                    - conditions:
-                        count: 100
-                        size: 12kB
-                        time: 1m10s
-                      id: "4"
-                      mapping:
-                        tableId: in.c-github.changes
-                        incremental: true
-                        columns:
-                            - type: id
-                              name: column1
-                              template:
-                                language: ""
-                                content: ""
-                            - type: datetime
-                              name: column2
-                              template:
-                                language: ""
-                                content: ""
-                            - type: ip
-                              name: column3
-                              template:
-                                language: ""
-                                content: ""
-                            - type: headers
-                              name: column5
-                              template:
-                                language: ""
-                                content: ""
-                            - type: template
-                              name: column6
-                              template:
-                                language: jsonnet
-                                content: body.foo + "-" + body.bar
-                      name: Raw Data Export
-                id: ohk
+                id: 52b
                 name: Github Webhook Receiver
             required:
                 - name
@@ -1344,7 +1313,7 @@ components:
                     $ref: '#/components/schemas/Conditions'
                 id:
                     type: string
-                    example: d8
+                    example: tg
                     minLength: 1
                     maxLength: 48
                 mapping:
@@ -1357,7 +1326,7 @@ components:
                     maxLength: 40
                 receiverId:
                     type: string
-                    example: f
+                    example: "42"
                     minLength: 1
                     maxLength: 48
             description: A mapping from imported data to a destination table.
@@ -1534,7 +1503,7 @@ components:
                 tableId:
                     type: string
                     description: Destination table ID.
-                    example: Molestiae animi.
+                    example: Doloremque sed omnis ipsam odio beatae ipsa.
             description: Export column mapping.
             example:
                 tableId: in.c-github.changes
@@ -1615,7 +1584,7 @@ components:
                             time: 1m10s
                 id:
                     type: string
-                    example: f5
+                    example: i
                     minLength: 1
                     maxLength: 48
                 name:
@@ -1627,7 +1596,7 @@ components:
                 url:
                     type: string
                     description: URL of the receiver. Contains secret used for authentication.
-                    example: Doloribus non velit consequatur ipsa placeat qui.
+                    example: Ut vel quia itaque.
             example:
                 id: github-pull-requests
                 url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
@@ -1798,7 +1767,7 @@ components:
                     format: int64
                 error:
                     type: string
-                    example: Fuga sed inventore.
+                    example: Commodi sed qui delectus.
                 finishedAt:
                     type: string
                     description: Date and time of the task end.
@@ -1806,14 +1775,16 @@ components:
                     format: date-time
                 id:
                     type: string
-                    example: Et nihil veniam.
+                    example: Sit maiores veniam.
                 isFinished:
                     type: boolean
                     description: Shortcut for status != "processing".
                     example: false
+                outputs:
+                    $ref: '#/components/schemas/TaskOutputs'
                 result:
                     type: string
-                    example: Sed est.
+                    example: Autem earum et.
                 status:
                     type: string
                     description: 'Task status, one of: processing, success, error'
@@ -1822,33 +1793,54 @@ components:
                         - processing
                         - success
                         - error
+                type:
+                    type: string
+                    description: Task type.
+                    example: Aliquid quidem quas voluptatibus id.
                 url:
                     type: string
                     description: URL of the task.
-                    example: Eius iusto placeat illo repellendus eius dolorum.
+                    example: Excepturi et.
             example:
-                id: task-1
-                receiverId: receiver-1
-                url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_task-1
-                type: export
+                id: receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+                receiverId: ""
+                url: https://buffer.keboola.com/v1/receivers/receiver-1/tasks/receiver.create/2018-01-01T00:00:00.000Z_jdkLp
+                type: receiver.create
                 createdAt: "2018-01-01T00:00:00.000Z"
                 finishedAt: "2018-01-01T00:00:00.000Z"
                 isFinished: true
                 duration: 123
-                result: success
-                error: ""
+                result: task succeeded
+                outputs:
+                    receiverId: receiver-1
             required:
                 - id
+                - type
                 - url
                 - status
                 - isFinished
                 - createdAt
+        TaskOutputs:
+            type: object
+            properties:
+                exportId:
+                    type: string
+                    description: ID of the created/updated export.
+                    example: Cumque voluptatibus quam sit eveniet.
+                receiverId:
+                    type: string
+                    description: ID of the created/updated receiver.
+                    example: Earum accusamus impedit sed odio ipsam dolor.
+            description: Outputs generated by the task.
+            example:
+                exportId: Ut nemo distinctio.
+                receiverId: Quis porro inventore dolore nisi suscipit et.
         Template:
             type: object
             properties:
                 content:
                     type: string
-                    example: 5bq
+                    example: gdi
                     minLength: 1
                     maxLength: 4096
                 language:

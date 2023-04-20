@@ -208,6 +208,9 @@
   "node": "abb42d82c9d6-03763",
   "lock": "receiver.create/%%TEST_KBC_PROJECT_ID%%/my-receiver",
   "result": "receiver created",
+  "outputs": {
+    "receiverId": "my-receiver"
+  },
   "duration": 9201912879
 }
 >>>>>
