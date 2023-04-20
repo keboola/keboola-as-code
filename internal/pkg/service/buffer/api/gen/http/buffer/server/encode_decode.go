@@ -1290,6 +1290,20 @@ func unmarshalConditionsRequestBodyToBufferConditions(v *ConditionsRequestBody) 
 	return res
 }
 
+// marshalBufferTaskOutputsToTaskOutputsResponseBody builds a value of type
+// *TaskOutputsResponseBody from a value of type *buffer.TaskOutputs.
+func marshalBufferTaskOutputsToTaskOutputsResponseBody(v *buffer.TaskOutputs) *TaskOutputsResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &TaskOutputsResponseBody{
+		ExportID:   v.ExportID,
+		ReceiverID: v.ReceiverID,
+	}
+
+	return res
+}
+
 // marshalBufferExportToExportResponseBody builds a value of type
 // *ExportResponseBody from a value of type *buffer.Export.
 func marshalBufferExportToExportResponseBody(v *buffer.Export) *ExportResponseBody {

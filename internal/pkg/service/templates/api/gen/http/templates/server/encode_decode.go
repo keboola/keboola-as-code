@@ -14,6 +14,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"unicode/utf8"
 
 	templates "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	goahttp "goa.design/goa/v3/http"
@@ -253,6 +254,12 @@ func DecodeTemplateIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) g
 		)
 		repository = params["repository"]
 		template = params["template"]
+		if utf8.RuneCountInString(template) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("template", template, utf8.RuneCountInString(template), 1, true))
+		}
+		if utf8.RuneCountInString(template) > 40 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("template", template, utf8.RuneCountInString(template), 40, false))
+		}
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
 			err = goa.MergeErrors(err, goa.MissingFieldError("X-StorageApi-Token", "header"))
@@ -342,6 +349,12 @@ func DecodeVersionIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) go
 		)
 		repository = params["repository"]
 		template = params["template"]
+		if utf8.RuneCountInString(template) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("template", template, utf8.RuneCountInString(template), 1, true))
+		}
+		if utf8.RuneCountInString(template) > 40 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("template", template, utf8.RuneCountInString(template), 40, false))
+		}
 		version = params["version"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
@@ -446,6 +459,12 @@ func DecodeInputsIndexRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 		)
 		repository = params["repository"]
 		template = params["template"]
+		if utf8.RuneCountInString(template) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("template", template, utf8.RuneCountInString(template), 1, true))
+		}
+		if utf8.RuneCountInString(template) > 40 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("template", template, utf8.RuneCountInString(template), 40, false))
+		}
 		version = params["version"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
@@ -565,6 +584,12 @@ func DecodeValidateInputsRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		)
 		repository = params["repository"]
 		template = params["template"]
+		if utf8.RuneCountInString(template) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("template", template, utf8.RuneCountInString(template), 1, true))
+		}
+		if utf8.RuneCountInString(template) > 40 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("template", template, utf8.RuneCountInString(template), 40, false))
+		}
 		version = params["version"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
@@ -684,6 +709,12 @@ func DecodeUseTemplateVersionRequest(mux goahttp.Muxer, decoder func(*http.Reque
 		)
 		repository = params["repository"]
 		template = params["template"]
+		if utf8.RuneCountInString(template) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("template", template, utf8.RuneCountInString(template), 1, true))
+		}
+		if utf8.RuneCountInString(template) > 40 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("template", template, utf8.RuneCountInString(template), 40, false))
+		}
 		version = params["version"]
 		storageAPIToken = r.Header.Get("X-StorageApi-Token")
 		if storageAPIToken == "" {
@@ -1697,7 +1728,7 @@ func marshalTemplatesAuthorToAuthorResponseBody(v *templates.Author) *AuthorResp
 // *TemplateResponseBody from a value of type *templates.Template.
 func marshalTemplatesTemplateToTemplateResponseBody(v *templates.Template) *TemplateResponseBody {
 	res := &TemplateResponseBody{
-		ID:             v.ID,
+		ID:             string(v.ID),
 		Name:           v.Name,
 		Description:    v.Description,
 		DefaultVersion: v.DefaultVersion,
@@ -1925,8 +1956,8 @@ func marshalTemplatesTaskOutputsToTaskOutputsResponseBody(v *templates.TaskOutpu
 // *InstanceResponseBody from a value of type *templates.Instance.
 func marshalTemplatesInstanceToInstanceResponseBody(v *templates.Instance) *InstanceResponseBody {
 	res := &InstanceResponseBody{
-		TemplateID:     v.TemplateID,
-		InstanceID:     v.InstanceID,
+		TemplateID:     string(v.TemplateID),
+		InstanceID:     string(v.InstanceID),
 		Branch:         v.Branch,
 		RepositoryName: v.RepositoryName,
 		Version:        v.Version,

@@ -73,6 +73,8 @@ type APIVersionIndexResponseBody struct {
 // "CreateReceiver" endpoint HTTP response body.
 type CreateReceiverResponseBody struct {
 	ID string `form:"id" json:"id" xml:"id"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
 	// URL of the task.
 	URL string `form:"url" json:"url" xml:"url"`
 	// Task status, one of: processing, success, error
@@ -84,9 +86,10 @@ type CreateReceiverResponseBody struct {
 	// Date and time of the task end.
 	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
 	// Duration of the task in milliseconds.
-	Duration *int64  `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
-	Result   *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
-	Error    *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
 // UpdateReceiverResponseBody is the type of the "buffer" service
@@ -135,6 +138,8 @@ type RefreshReceiverTokensResponseBody struct {
 // endpoint HTTP response body.
 type CreateExportResponseBody struct {
 	ID string `form:"id" json:"id" xml:"id"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
 	// URL of the task.
 	URL string `form:"url" json:"url" xml:"url"`
 	// Task status, one of: processing, success, error
@@ -146,9 +151,10 @@ type CreateExportResponseBody struct {
 	// Date and time of the task end.
 	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
 	// Duration of the task in milliseconds.
-	Duration *int64  `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
-	Result   *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
-	Error    *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
 // GetExportResponseBody is the type of the "buffer" service "GetExport"
@@ -174,6 +180,8 @@ type ListExportsResponseBody struct {
 // endpoint HTTP response body.
 type UpdateExportResponseBody struct {
 	ID string `form:"id" json:"id" xml:"id"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
 	// URL of the task.
 	URL string `form:"url" json:"url" xml:"url"`
 	// Task status, one of: processing, success, error
@@ -185,15 +193,18 @@ type UpdateExportResponseBody struct {
 	// Date and time of the task end.
 	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
 	// Duration of the task in milliseconds.
-	Duration *int64  `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
-	Result   *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
-	Error    *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
 // GetTaskResponseBody is the type of the "buffer" service "GetTask" endpoint
 // HTTP response body.
 type GetTaskResponseBody struct {
 	ID string `form:"id" json:"id" xml:"id"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
 	// URL of the task.
 	URL string `form:"url" json:"url" xml:"url"`
 	// Task status, one of: processing, success, error
@@ -205,9 +216,10 @@ type GetTaskResponseBody struct {
 	// Date and time of the task end.
 	FinishedAt *string `form:"finishedAt,omitempty" json:"finishedAt,omitempty" xml:"finishedAt,omitempty"`
 	// Duration of the task in milliseconds.
-	Duration *int64  `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
-	Result   *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
-	Error    *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
+	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
 // CreateReceiverBufferReceiverAlreadyExistsResponseBody is the type of the
@@ -435,6 +447,14 @@ type GetTaskBufferTaskNotFoundResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// TaskOutputsResponseBody is used to define fields on response body types.
+type TaskOutputsResponseBody struct {
+	// ID of the created/updated export.
+	ExportID *string `form:"exportId,omitempty" json:"exportId,omitempty" xml:"exportId,omitempty"`
+	// ID of the created/updated receiver.
+	ReceiverID *string `form:"receiverId,omitempty" json:"receiverId,omitempty" xml:"receiverId,omitempty"`
+}
+
 // ExportResponseBody is used to define fields on response body types.
 type ExportResponseBody struct {
 	ID         string `form:"id" json:"id" xml:"id"`
@@ -564,6 +584,7 @@ func NewAPIVersionIndexResponseBody(res *buffer.ServiceDetail) *APIVersionIndexR
 func NewCreateReceiverResponseBody(res *buffer.Task) *CreateReceiverResponseBody {
 	body := &CreateReceiverResponseBody{
 		ID:         string(res.ID),
+		Type:       res.Type,
 		URL:        res.URL,
 		Status:     res.Status,
 		IsFinished: res.IsFinished,
@@ -572,6 +593,9 @@ func NewCreateReceiverResponseBody(res *buffer.Task) *CreateReceiverResponseBody
 		Duration:   res.Duration,
 		Result:     res.Result,
 		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalBufferTaskOutputsToTaskOutputsResponseBody(res.Outputs)
 	}
 	return body
 }
@@ -645,6 +669,7 @@ func NewRefreshReceiverTokensResponseBody(res *buffer.Receiver) *RefreshReceiver
 func NewCreateExportResponseBody(res *buffer.Task) *CreateExportResponseBody {
 	body := &CreateExportResponseBody{
 		ID:         string(res.ID),
+		Type:       res.Type,
 		URL:        res.URL,
 		Status:     res.Status,
 		IsFinished: res.IsFinished,
@@ -653,6 +678,9 @@ func NewCreateExportResponseBody(res *buffer.Task) *CreateExportResponseBody {
 		Duration:   res.Duration,
 		Result:     res.Result,
 		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalBufferTaskOutputsToTaskOutputsResponseBody(res.Outputs)
 	}
 	return body
 }
@@ -692,6 +720,7 @@ func NewListExportsResponseBody(res *buffer.ExportsList) *ListExportsResponseBod
 func NewUpdateExportResponseBody(res *buffer.Task) *UpdateExportResponseBody {
 	body := &UpdateExportResponseBody{
 		ID:         string(res.ID),
+		Type:       res.Type,
 		URL:        res.URL,
 		Status:     res.Status,
 		IsFinished: res.IsFinished,
@@ -701,6 +730,9 @@ func NewUpdateExportResponseBody(res *buffer.Task) *UpdateExportResponseBody {
 		Result:     res.Result,
 		Error:      res.Error,
 	}
+	if res.Outputs != nil {
+		body.Outputs = marshalBufferTaskOutputsToTaskOutputsResponseBody(res.Outputs)
+	}
 	return body
 }
 
@@ -709,6 +741,7 @@ func NewUpdateExportResponseBody(res *buffer.Task) *UpdateExportResponseBody {
 func NewGetTaskResponseBody(res *buffer.Task) *GetTaskResponseBody {
 	body := &GetTaskResponseBody{
 		ID:         string(res.ID),
+		Type:       res.Type,
 		URL:        res.URL,
 		Status:     res.Status,
 		IsFinished: res.IsFinished,
@@ -717,6 +750,9 @@ func NewGetTaskResponseBody(res *buffer.Task) *GetTaskResponseBody {
 		Duration:   res.Duration,
 		Result:     res.Result,
 		Error:      res.Error,
+	}
+	if res.Outputs != nil {
+		body.Outputs = marshalBufferTaskOutputsToTaskOutputsResponseBody(res.Outputs)
 	}
 	return body
 }

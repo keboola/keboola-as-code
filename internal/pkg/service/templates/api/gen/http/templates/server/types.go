@@ -96,8 +96,7 @@ type TemplatesIndexResponseBody struct {
 type TemplateIndexResponseBody struct {
 	// Information about the repository.
 	Repository *RepositoryResponseBody `form:"repository" json:"repository" xml:"repository"`
-	// Template ID.
-	ID string `form:"id" json:"id" xml:"id"`
+	ID         string                  `form:"id" json:"id" xml:"id"`
 	// Template name.
 	Name string `form:"name" json:"name" xml:"name"`
 	// List of categories the template belongs to.
@@ -156,6 +155,8 @@ type ValidateInputsResponseBody struct {
 // "UseTemplateVersion" endpoint HTTP response body.
 type UseTemplateVersionResponseBody struct {
 	ID string `form:"id" json:"id" xml:"id"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
 	// URL of the task.
 	URL string `form:"url" json:"url" xml:"url"`
 	// Task status, one of: processing, success, error
@@ -169,8 +170,8 @@ type UseTemplateVersionResponseBody struct {
 	// Duration of the task in milliseconds.
 	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
 	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
-	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
 // InstancesIndexResponseBody is the type of the "templates" service
@@ -189,10 +190,8 @@ type InstanceIndexResponseBody struct {
 	VersionDetail *VersionDetailResponseBody `form:"versionDetail,omitempty" json:"versionDetail,omitempty" xml:"versionDetail,omitempty"`
 	// All configurations from the instance.
 	Configurations []*ConfigResponseBody `form:"configurations" json:"configurations" xml:"configurations"`
-	// ID of the template.
-	TemplateID string `form:"templateId" json:"templateId" xml:"templateId"`
-	// ID of the template instance.
-	InstanceID string `form:"instanceId" json:"instanceId" xml:"instanceId"`
+	TemplateID     string                `form:"templateId" json:"templateId" xml:"templateId"`
+	InstanceID     string                `form:"instanceId" json:"instanceId" xml:"instanceId"`
 	// ID of the branch.
 	Branch string `form:"branch" json:"branch" xml:"branch"`
 	// Name of the template repository.
@@ -217,10 +216,8 @@ type UpdateInstanceResponseBody struct {
 	VersionDetail *VersionDetailResponseBody `form:"versionDetail,omitempty" json:"versionDetail,omitempty" xml:"versionDetail,omitempty"`
 	// All configurations from the instance.
 	Configurations []*ConfigResponseBody `form:"configurations" json:"configurations" xml:"configurations"`
-	// ID of the template.
-	TemplateID string `form:"templateId" json:"templateId" xml:"templateId"`
-	// ID of the template instance.
-	InstanceID string `form:"instanceId" json:"instanceId" xml:"instanceId"`
+	TemplateID     string                `form:"templateId" json:"templateId" xml:"templateId"`
+	InstanceID     string                `form:"instanceId" json:"instanceId" xml:"instanceId"`
 	// ID of the branch.
 	Branch string `form:"branch" json:"branch" xml:"branch"`
 	// Name of the template repository.
@@ -240,6 +237,8 @@ type UpdateInstanceResponseBody struct {
 // "UpgradeInstance" endpoint HTTP response body.
 type UpgradeInstanceResponseBody struct {
 	ID string `form:"id" json:"id" xml:"id"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
 	// URL of the task.
 	URL string `form:"url" json:"url" xml:"url"`
 	// Task status, one of: processing, success, error
@@ -253,8 +252,8 @@ type UpgradeInstanceResponseBody struct {
 	// Duration of the task in milliseconds.
 	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
 	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
-	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
 // UpgradeInstanceInputsIndexResponseBody is the type of the "templates"
@@ -279,6 +278,8 @@ type UpgradeInstanceValidateInputsResponseBody struct {
 // endpoint HTTP response body.
 type GetTaskResponseBody struct {
 	ID string `form:"id" json:"id" xml:"id"`
+	// Task type.
+	Type string `form:"type" json:"type" xml:"type"`
 	// URL of the task.
 	URL string `form:"url" json:"url" xml:"url"`
 	// Task status, one of: processing, success, error
@@ -292,8 +293,8 @@ type GetTaskResponseBody struct {
 	// Duration of the task in milliseconds.
 	Duration *int64                   `form:"duration,omitempty" json:"duration,omitempty" xml:"duration,omitempty"`
 	Result   *string                  `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
-	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 	Error    *string                  `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Outputs  *TaskOutputsResponseBody `form:"outputs,omitempty" json:"outputs,omitempty" xml:"outputs,omitempty"`
 }
 
 // RepositoryIndexTemplatesRepositoryNotFoundResponseBody is the type of the
@@ -831,7 +832,6 @@ type AuthorResponseBody struct {
 
 // TemplateResponseBody is used to define fields on response body types.
 type TemplateResponseBody struct {
-	// Template ID.
 	ID string `form:"id" json:"id" xml:"id"`
 	// Template name.
 	Name string `form:"name" json:"name" xml:"name"`
@@ -967,15 +967,13 @@ type InputValidationResultResponseBody struct {
 
 // TaskOutputsResponseBody is used to define fields on response body types.
 type TaskOutputsResponseBody struct {
-	// The ID of the created/updated template instance.
+	// ID of the created/updated template instance.
 	InstanceID *string `form:"instanceId,omitempty" json:"instanceId,omitempty" xml:"instanceId,omitempty"`
 }
 
 // InstanceResponseBody is used to define fields on response body types.
 type InstanceResponseBody struct {
-	// ID of the template.
 	TemplateID string `form:"templateId" json:"templateId" xml:"templateId"`
-	// ID of the template instance.
 	InstanceID string `form:"instanceId" json:"instanceId" xml:"instanceId"`
 	// ID of the branch.
 	Branch string `form:"branch" json:"branch" xml:"branch"`
@@ -1107,7 +1105,7 @@ func NewTemplatesIndexResponseBody(res *templates.Templates) *TemplatesIndexResp
 // of the "TemplateIndex" endpoint of the "templates" service.
 func NewTemplateIndexResponseBody(res *templates.TemplateDetail) *TemplateIndexResponseBody {
 	body := &TemplateIndexResponseBody{
-		ID:             res.ID,
+		ID:             string(res.ID),
 		Name:           res.Name,
 		Description:    res.Description,
 		DefaultVersion: res.DefaultVersion,
@@ -1200,6 +1198,7 @@ func NewValidateInputsResponseBody(res *templates.ValidationResult) *ValidateInp
 func NewUseTemplateVersionResponseBody(res *templates.Task) *UseTemplateVersionResponseBody {
 	body := &UseTemplateVersionResponseBody{
 		ID:         string(res.ID),
+		Type:       res.Type,
 		URL:        res.URL,
 		Status:     res.Status,
 		IsFinished: res.IsFinished,
@@ -1232,8 +1231,8 @@ func NewInstancesIndexResponseBody(res *templates.Instances) *InstancesIndexResp
 // of the "InstanceIndex" endpoint of the "templates" service.
 func NewInstanceIndexResponseBody(res *templates.InstanceDetail) *InstanceIndexResponseBody {
 	body := &InstanceIndexResponseBody{
-		TemplateID:     res.TemplateID,
-		InstanceID:     res.InstanceID,
+		TemplateID:     string(res.TemplateID),
+		InstanceID:     string(res.InstanceID),
 		Branch:         res.Branch,
 		RepositoryName: res.RepositoryName,
 		Version:        res.Version,
@@ -1264,8 +1263,8 @@ func NewInstanceIndexResponseBody(res *templates.InstanceDetail) *InstanceIndexR
 // of the "UpdateInstance" endpoint of the "templates" service.
 func NewUpdateInstanceResponseBody(res *templates.InstanceDetail) *UpdateInstanceResponseBody {
 	body := &UpdateInstanceResponseBody{
-		TemplateID:     res.TemplateID,
-		InstanceID:     res.InstanceID,
+		TemplateID:     string(res.TemplateID),
+		InstanceID:     string(res.InstanceID),
 		Branch:         res.Branch,
 		RepositoryName: res.RepositoryName,
 		Version:        res.Version,
@@ -1297,6 +1296,7 @@ func NewUpdateInstanceResponseBody(res *templates.InstanceDetail) *UpdateInstanc
 func NewUpgradeInstanceResponseBody(res *templates.Task) *UpgradeInstanceResponseBody {
 	body := &UpgradeInstanceResponseBody{
 		ID:         string(res.ID),
+		Type:       res.Type,
 		URL:        res.URL,
 		Status:     res.Status,
 		IsFinished: res.IsFinished,
@@ -1350,6 +1350,7 @@ func NewUpgradeInstanceValidateInputsResponseBody(res *templates.ValidationResul
 func NewGetTaskResponseBody(res *templates.Task) *GetTaskResponseBody {
 	body := &GetTaskResponseBody{
 		ID:         string(res.ID),
+		Type:       res.Type,
 		URL:        res.URL,
 		Status:     res.Status,
 		IsFinished: res.IsFinished,
@@ -1917,7 +1918,7 @@ func NewTemplatesIndexPayload(repository string, storageAPIToken string) *templa
 func NewTemplateIndexPayload(repository string, template string, storageAPIToken string) *templates.TemplateIndexPayload {
 	v := &templates.TemplateIndexPayload{}
 	v.Repository = repository
-	v.Template = template
+	v.Template = templates.TemplateID(template)
 	v.StorageAPIToken = storageAPIToken
 
 	return v
@@ -1928,7 +1929,7 @@ func NewTemplateIndexPayload(repository string, template string, storageAPIToken
 func NewVersionIndexPayload(repository string, template string, version string, storageAPIToken string) *templates.VersionIndexPayload {
 	v := &templates.VersionIndexPayload{}
 	v.Repository = repository
-	v.Template = template
+	v.Template = templates.TemplateID(template)
 	v.Version = version
 	v.StorageAPIToken = storageAPIToken
 
@@ -1940,7 +1941,7 @@ func NewVersionIndexPayload(repository string, template string, version string, 
 func NewInputsIndexPayload(repository string, template string, version string, storageAPIToken string) *templates.InputsIndexPayload {
 	v := &templates.InputsIndexPayload{}
 	v.Repository = repository
-	v.Template = template
+	v.Template = templates.TemplateID(template)
 	v.Version = version
 	v.StorageAPIToken = storageAPIToken
 
@@ -1956,7 +1957,7 @@ func NewValidateInputsPayload(body *ValidateInputsRequestBody, repository string
 		v.Steps[i] = unmarshalStepPayloadRequestBodyToTemplatesStepPayload(val)
 	}
 	v.Repository = repository
-	v.Template = template
+	v.Template = templates.TemplateID(template)
 	v.Version = version
 	v.StorageAPIToken = storageAPIToken
 
@@ -1975,7 +1976,7 @@ func NewUseTemplateVersionPayload(body *UseTemplateVersionRequestBody, repositor
 		v.Steps[i] = unmarshalStepPayloadRequestBodyToTemplatesStepPayload(val)
 	}
 	v.Repository = repository
-	v.Template = template
+	v.Template = templates.TemplateID(template)
 	v.Version = version
 	v.StorageAPIToken = storageAPIToken
 
@@ -1997,7 +1998,7 @@ func NewInstancesIndexPayload(branch string, storageAPIToken string) *templates.
 func NewInstanceIndexPayload(branch string, instanceID string, storageAPIToken string) *templates.InstanceIndexPayload {
 	v := &templates.InstanceIndexPayload{}
 	v.Branch = branch
-	v.InstanceID = instanceID
+	v.InstanceID = templates.InstanceID(instanceID)
 	v.StorageAPIToken = storageAPIToken
 
 	return v
@@ -2010,7 +2011,7 @@ func NewUpdateInstancePayload(body *UpdateInstanceRequestBody, branch string, in
 		Name: *body.Name,
 	}
 	v.Branch = branch
-	v.InstanceID = instanceID
+	v.InstanceID = templates.InstanceID(instanceID)
 	v.StorageAPIToken = storageAPIToken
 
 	return v
@@ -2021,7 +2022,7 @@ func NewUpdateInstancePayload(body *UpdateInstanceRequestBody, branch string, in
 func NewDeleteInstancePayload(branch string, instanceID string, storageAPIToken string) *templates.DeleteInstancePayload {
 	v := &templates.DeleteInstancePayload{}
 	v.Branch = branch
-	v.InstanceID = instanceID
+	v.InstanceID = templates.InstanceID(instanceID)
 	v.StorageAPIToken = storageAPIToken
 
 	return v
@@ -2036,7 +2037,7 @@ func NewUpgradeInstancePayload(body *UpgradeInstanceRequestBody, branch string, 
 		v.Steps[i] = unmarshalStepPayloadRequestBodyToTemplatesStepPayload(val)
 	}
 	v.Branch = branch
-	v.InstanceID = instanceID
+	v.InstanceID = templates.InstanceID(instanceID)
 	v.Version = version
 	v.StorageAPIToken = storageAPIToken
 
@@ -2048,7 +2049,7 @@ func NewUpgradeInstancePayload(body *UpgradeInstanceRequestBody, branch string, 
 func NewUpgradeInstanceInputsIndexPayload(branch string, instanceID string, version string, storageAPIToken string) *templates.UpgradeInstanceInputsIndexPayload {
 	v := &templates.UpgradeInstanceInputsIndexPayload{}
 	v.Branch = branch
-	v.InstanceID = instanceID
+	v.InstanceID = templates.InstanceID(instanceID)
 	v.Version = version
 	v.StorageAPIToken = storageAPIToken
 
@@ -2064,7 +2065,7 @@ func NewUpgradeInstanceValidateInputsPayload(body *UpgradeInstanceValidateInputs
 		v.Steps[i] = unmarshalStepPayloadRequestBodyToTemplatesStepPayload(val)
 	}
 	v.Branch = branch
-	v.InstanceID = instanceID
+	v.InstanceID = templates.InstanceID(instanceID)
 	v.Version = version
 	v.StorageAPIToken = storageAPIToken
 
