@@ -492,6 +492,8 @@ var Mapping = Type("Mapping", func() {
 	})
 	Attribute("columns", ArrayOf(Column), func() {
 		Description("List of export column mappings. An export may have a maximum of 50 columns.")
+		MinLength(1)
+		MaxLength(50)
 		Example([]any{ExampleColumnTypeBody()})
 	})
 	Required("tableId", "columns")
@@ -511,7 +513,7 @@ var Column = Type("Column", func() {
 	})
 	Attribute("name", String, "Column name.")
 	Attribute("template", Template, func() {
-		Description("Template mapping details.")
+		Description(`Template mapping details. Only for "type" = "template".`)
 	})
 	Required("type", "name")
 	Example(ExampleColumnTypeBody())
