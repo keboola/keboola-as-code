@@ -400,6 +400,10 @@
   "node": "f5c5800f9f5d-03816",
   "lock": "export.create/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2",
   "result": "export created",
+  "outputs": {
+    "exportId": "my-export-2",
+    "receiverId": "my-receiver"
+  },
   "duration": 9206185796
 }
 >>>>>
@@ -417,6 +421,10 @@
   "node": "f5c5800f9f5d-03816",
   "lock": "export.create/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1",
   "result": "export created",
+  "outputs": {
+    "exportId": "my-export-1",
+    "receiverId": "my-receiver"
+  },
   "duration": 9206185796
 }
 >>>>>

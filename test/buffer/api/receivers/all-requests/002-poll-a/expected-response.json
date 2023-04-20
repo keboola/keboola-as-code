@@ -1,10 +1,14 @@
 {
   "id": "receiver-a/receiver.create/%s",
+  "type": "receiver.create",
   "url": "https://buffer.keboola.local/v1/tasks/receiver-a/receiver.create/%s",
   "status": "success",
   "isFinished": true,
   "createdAt": "%s",
   "finishedAt": "%s",
   "duration": %d,
-  "result": "receiver created"
+  "result": "receiver created",
+  "outputs": {
+    "receiverId": "receiver-a"
+  }
 }

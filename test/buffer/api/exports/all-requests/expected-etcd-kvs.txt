@@ -227,6 +227,10 @@
   "node": "%s",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/export.create",
   "result": "export created",
+  "outputs": {
+    "exportId": "export-b",
+    "receiverId": "my-receiver"
+  },
   "duration": %d
 }
 >>>>>
@@ -243,6 +247,10 @@
   "node": "%s",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/export.update",
   "result": "export updated",
+  "outputs": {
+    "exportId": "export-b",
+    "receiverId": "my-receiver"
+  },
   "duration": %d
 }
 >>>>>
@@ -259,6 +267,9 @@
   "node": "%s",
   "lock": "runtime/lock/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/receiver.create",
   "result": "receiver created",
+  "outputs": {
+    "receiverId": "my-receiver"
+  },
   "duration": %d
 }
 >>>>>

@@ -35,15 +35,15 @@ func (ts *testSuite) test000Setup() {
 	ts.AssertLoggedLines(`
 [api-node-%d][task][%s/receiver.create/%s]INFO  started task
 [api-node-%d][task][%s/receiver.create/%s]DEBUG  lock acquired "runtime/lock/task/%s/my-receiver/receiver.create"
-[api-node-%d][task][%s/receiver.create/%s]INFO  task succeeded (%s): receiver created
+[api-node-%d][task][%s/receiver.create/%s]INFO  task succeeded (%s): receiver created outputs: {"receiverId":"my-receiver"}
 [api-node-%d][task][%s/receiver.create/%s]DEBUG  lock released "runtime/lock/task/%s/my-receiver/receiver.create"
 [api-node-%d][task][%s/export.create/%s]INFO  started task
 [api-node-%d][task][%s/export.create/%s]DEBUG  lock acquired "runtime/lock/task/%s/my-receiver/my-export-1/export.create"
-[api-node-%d][task][%s/export.create/%s]INFO  task succeeded (%s): export created
+[api-node-%d][task][%s/export.create/%s]INFO  task succeeded (%s): export created outputs: {"exportId":"my-export-1","receiverId":"my-receiver"}
 [api-node-%d][task][%s/export.create/%s]DEBUG  lock released "runtime/lock/task/%s/my-receiver/my-export-1/export.create"
 [api-node-%d][task][%s/export.create/%s]INFO  started task
 [api-node-%d][task][%s/export.create/%s]DEBUG  lock acquired "runtime/lock/task/%s/my-receiver/my-export-2/export.create"
-[api-node-%d][task][%s/export.create/%s]INFO  task succeeded (%s): export created
+[api-node-%d][task][%s/export.create/%s]INFO  task succeeded (%s): export created outputs: {"exportId":"my-export-2","receiverId":"my-receiver"}
 [api-node-%d][task][%s/export.create/%s]DEBUG  lock released "runtime/lock/task/%s/my-receiver/my-export-2/export.create"
 `)
 	ts.TruncateLogs()

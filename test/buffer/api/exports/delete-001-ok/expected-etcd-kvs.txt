@@ -21,6 +21,10 @@
   "node": "%s",
   "lock": "export.create/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1",
   "result": "export created",
+  "outputs": {
+    "exportId": "my-export-1",
+    "receiverId": "my-receiver"
+  },
   "duration": %d
 }
 >>>>>

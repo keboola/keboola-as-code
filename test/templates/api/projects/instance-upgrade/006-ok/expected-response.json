@@ -1,5 +1,6 @@
 {
   "id": "template.upgrade/%s",
+  "type": "template.upgrade",
   "url": "https://templates.keboola.local/v1/tasks/template.upgrade/%s",
   "status": "processing",
   "isFinished": false,

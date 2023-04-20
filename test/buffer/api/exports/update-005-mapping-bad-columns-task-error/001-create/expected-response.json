@@ -1,5 +1,6 @@
 {
   "id": "my-receiver/my-export-1/export.create/%s",
+  "type": "export.create",
   "url": "https://buffer.keboola.local/v1/tasks/my-receiver/my-export-1/export.create/%s",
   "status": "processing",
   "isFinished": false,
