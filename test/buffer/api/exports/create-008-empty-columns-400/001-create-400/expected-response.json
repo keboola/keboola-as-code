@@ -1,5 +1,5 @@
 {
   "statusCode": 400,
   "error": "buffer.invalidLength",
-  "message": "Length of body.columns must be greater or equal than 1 but got value []*server.ColumnRequestBody{} (len=0)"
+  "message": "Length of body.mapping.columns must be greater or equal than 1 but got value []*server.ColumnRequestBody{} (len=0)"
 }
