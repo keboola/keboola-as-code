@@ -569,7 +569,7 @@ func DecodeValidateInputsRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateValidateInputsRequestBody(&body)
+		err = ValidateValidateInputsRequestBody(&body, []string{"body"})
 		if err != nil {
 			return nil, err
 		}
@@ -694,7 +694,7 @@ func DecodeUseTemplateVersionRequest(mux goahttp.Muxer, decoder func(*http.Reque
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateUseTemplateVersionRequestBody(&body)
+		err = ValidateUseTemplateVersionRequestBody(&body, []string{"body"})
 		if err != nil {
 			return nil, err
 		}
@@ -1022,7 +1022,7 @@ func DecodeUpdateInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateUpdateInstanceRequestBody(&body)
+		err = ValidateUpdateInstanceRequestBody(&body, []string{"body"})
 		if err != nil {
 			return nil, err
 		}
@@ -1240,7 +1240,7 @@ func DecodeUpgradeInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request)
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateUpgradeInstanceRequestBody(&body)
+		err = ValidateUpgradeInstanceRequestBody(&body, []string{"body"})
 		if err != nil {
 			return nil, err
 		}
@@ -1520,7 +1520,7 @@ func DecodeUpgradeInstanceValidateInputsRequest(mux goahttp.Muxer, decoder func(
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateUpgradeInstanceValidateInputsRequestBody(&body)
+		err = ValidateUpgradeInstanceValidateInputsRequestBody(&body, []string{"body"})
 		if err != nil {
 			return nil, err
 		}

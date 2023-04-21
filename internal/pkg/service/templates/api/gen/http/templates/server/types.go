@@ -9,6 +9,8 @@
 package server
 
 import (
+	"fmt"
+	"strings"
 	"unicode/utf8"
 
 	templates "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
@@ -2083,13 +2085,14 @@ func NewGetTaskPayload(taskID string, storageAPIToken string) *templates.GetTask
 
 // ValidateValidateInputsRequestBody runs the validations defined on
 // ValidateInputsRequestBody
-func ValidateValidateInputsRequestBody(body *ValidateInputsRequestBody) (err error) {
+func ValidateValidateInputsRequestBody(body *ValidateInputsRequestBody, errContext []string) (err error) {
 	if body.Steps == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("steps", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("steps", strings.Join(errContext, ".")))
 	}
-	for _, e := range body.Steps {
+	for i, e := range body.Steps {
+		errContext := append(errContext, fmt.Sprintf(`steps[%d]`, i))
 		if e != nil {
-			if err2 := ValidateStepPayloadRequestBody(e); err2 != nil {
+			if err2 := ValidateStepPayloadRequestBody(e, errContext); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -2099,19 +2102,20 @@ func ValidateValidateInputsRequestBody(body *ValidateInputsRequestBody) (err err
 
 // ValidateUseTemplateVersionRequestBody runs the validations defined on
 // UseTemplateVersionRequestBody
-func ValidateUseTemplateVersionRequestBody(body *UseTemplateVersionRequestBody) (err error) {
+func ValidateUseTemplateVersionRequestBody(body *UseTemplateVersionRequestBody, errContext []string) (err error) {
 	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", strings.Join(errContext, ".")))
 	}
 	if body.Branch == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("branch", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("branch", strings.Join(errContext, ".")))
 	}
 	if body.Steps == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("steps", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("steps", strings.Join(errContext, ".")))
 	}
-	for _, e := range body.Steps {
+	for i, e := range body.Steps {
+		errContext := append(errContext, fmt.Sprintf(`steps[%d]`, i))
 		if e != nil {
-			if err2 := ValidateStepPayloadRequestBody(e); err2 != nil {
+			if err2 := ValidateStepPayloadRequestBody(e, errContext); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -2121,22 +2125,23 @@ func ValidateUseTemplateVersionRequestBody(body *UseTemplateVersionRequestBody) 
 
 // ValidateUpdateInstanceRequestBody runs the validations defined on
 // UpdateInstanceRequestBody
-func ValidateUpdateInstanceRequestBody(body *UpdateInstanceRequestBody) (err error) {
+func ValidateUpdateInstanceRequestBody(body *UpdateInstanceRequestBody, errContext []string) (err error) {
 	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", strings.Join(errContext, ".")))
 	}
 	return
 }
 
 // ValidateUpgradeInstanceRequestBody runs the validations defined on
 // UpgradeInstanceRequestBody
-func ValidateUpgradeInstanceRequestBody(body *UpgradeInstanceRequestBody) (err error) {
+func ValidateUpgradeInstanceRequestBody(body *UpgradeInstanceRequestBody, errContext []string) (err error) {
 	if body.Steps == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("steps", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("steps", strings.Join(errContext, ".")))
 	}
-	for _, e := range body.Steps {
+	for i, e := range body.Steps {
+		errContext := append(errContext, fmt.Sprintf(`steps[%d]`, i))
 		if e != nil {
-			if err2 := ValidateStepPayloadRequestBody(e); err2 != nil {
+			if err2 := ValidateStepPayloadRequestBody(e, errContext); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -2146,13 +2151,14 @@ func ValidateUpgradeInstanceRequestBody(body *UpgradeInstanceRequestBody) (err e
 
 // ValidateUpgradeInstanceValidateInputsRequestBody runs the validations
 // defined on UpgradeInstanceValidateInputsRequestBody
-func ValidateUpgradeInstanceValidateInputsRequestBody(body *UpgradeInstanceValidateInputsRequestBody) (err error) {
+func ValidateUpgradeInstanceValidateInputsRequestBody(body *UpgradeInstanceValidateInputsRequestBody, errContext []string) (err error) {
 	if body.Steps == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("steps", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("steps", strings.Join(errContext, ".")))
 	}
-	for _, e := range body.Steps {
+	for i, e := range body.Steps {
+		errContext := append(errContext, fmt.Sprintf(`steps[%d]`, i))
 		if e != nil {
-			if err2 := ValidateStepPayloadRequestBody(e); err2 != nil {
+			if err2 := ValidateStepPayloadRequestBody(e, errContext); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -2162,21 +2168,22 @@ func ValidateUpgradeInstanceValidateInputsRequestBody(body *UpgradeInstanceValid
 
 // ValidateStepPayloadRequestBody runs the validations defined on
 // StepPayloadRequestBody
-func ValidateStepPayloadRequestBody(body *StepPayloadRequestBody) (err error) {
+func ValidateStepPayloadRequestBody(body *StepPayloadRequestBody, errContext []string) (err error) {
 	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", strings.Join(errContext, ".")))
 	}
 	if body.Inputs == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("inputs", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("inputs", strings.Join(errContext, ".")))
 	}
 	if body.ID != nil {
 		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "id"), "."), *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
 		}
 	}
-	for _, e := range body.Inputs {
+	for i, e := range body.Inputs {
+		errContext := append(errContext, fmt.Sprintf(`inputs[%d]`, i))
 		if e != nil {
-			if err2 := ValidateInputValueRequestBody(e); err2 != nil {
+			if err2 := ValidateInputValueRequestBody(e, errContext); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -2186,16 +2193,16 @@ func ValidateStepPayloadRequestBody(body *StepPayloadRequestBody) (err error) {
 
 // ValidateInputValueRequestBody runs the validations defined on
 // InputValueRequestBody
-func ValidateInputValueRequestBody(body *InputValueRequestBody) (err error) {
+func ValidateInputValueRequestBody(body *InputValueRequestBody, errContext []string) (err error) {
 	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", strings.Join(errContext, ".")))
 	}
 	if body.Value == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("value", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("value", strings.Join(errContext, ".")))
 	}
 	if body.ID != nil {
 		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "id"), "."), *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
 		}
 	}
 	return
