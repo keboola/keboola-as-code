@@ -1,5 +1,5 @@
 {
   "statusCode": 400,
   "error": "buffer.missingField",
-  "message": "\"name\" is missing from body; \"mapping\" is missing from body."
+  "message": "\"name\" is missing from body.exports[0]; \"mapping\" is missing from body.exports[0]"
 }
