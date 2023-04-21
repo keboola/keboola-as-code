@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/anytype"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/dependencies"
+	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/errormsg"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/genericerror"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/oneof"
 	_ "github.com/keboola/keboola-as-code/internal/pkg/service/common/goaextension/oneof"
