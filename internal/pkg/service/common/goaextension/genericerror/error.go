@@ -9,11 +9,9 @@ import (
 	"goa.design/goa/v3/eval"
 )
 
-const PkgPath = "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
-
 // nolint: gochecknoinits
 func init() {
-	codegen.RegisterPluginFirst("error", "gen", nil, generate)
+	codegen.RegisterPluginFirst("genericerror", "gen", nil, generate)
 }
 
 func generate(_ string, _ []eval.Root, files []*codegen.File) ([]*codegen.File, error) {

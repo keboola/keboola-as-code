@@ -74,7 +74,7 @@ func DecodeCreateReceiverRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateCreateReceiverRequestBody(&body)
+		err = ValidateCreateReceiverRequestBody(&body, []string{"body"})
 		if err != nil {
 			return nil, err
 		}
@@ -171,7 +171,7 @@ func DecodeUpdateReceiverRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateUpdateReceiverRequestBody(&body)
+		err = ValidateUpdateReceiverRequestBody(&body, []string{"body"})
 		if err != nil {
 			return nil, err
 		}
@@ -533,7 +533,7 @@ func DecodeCreateExportRequest(mux goahttp.Muxer, decoder func(*http.Request) go
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateCreateExportRequestBody(&body)
+		err = ValidateCreateExportRequestBody(&body, []string{"body"})
 		if err != nil {
 			return nil, err
 		}
@@ -832,7 +832,7 @@ func DecodeUpdateExportRequest(mux goahttp.Muxer, decoder func(*http.Request) go
 			}
 			return nil, goa.DecodePayloadError(err.Error())
 		}
-		err = ValidateUpdateExportRequestBody(&body)
+		err = ValidateUpdateExportRequestBody(&body, []string{"body"})
 		if err != nil {
 			return nil, err
 		}

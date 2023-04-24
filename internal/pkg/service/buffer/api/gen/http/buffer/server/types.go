@@ -9,6 +9,8 @@
 package server
 
 import (
+	"fmt"
+	"strings"
 	"unicode/utf8"
 
 	buffer "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
@@ -1132,33 +1134,34 @@ func NewGetTaskPayload(taskID string, storageAPIToken string) *buffer.GetTaskPay
 
 // ValidateCreateReceiverRequestBody runs the validations defined on
 // CreateReceiverRequestBody
-func ValidateCreateReceiverRequestBody(body *CreateReceiverRequestBody) (err error) {
+func ValidateCreateReceiverRequestBody(body *CreateReceiverRequestBody, errContext []string) (err error) {
 	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", strings.Join(errContext, ".")))
 	}
 	if body.ID != nil {
 		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "id"), "."), *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
 		}
 	}
 	if body.ID != nil {
 		if utf8.RuneCountInString(*body.ID) > 48 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 48, false))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "id"), "."), *body.ID, utf8.RuneCountInString(*body.ID), 48, false))
 		}
 	}
 	if body.Name != nil {
 		if utf8.RuneCountInString(*body.Name) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 1, true))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "name"), "."), *body.Name, utf8.RuneCountInString(*body.Name), 1, true))
 		}
 	}
 	if body.Name != nil {
 		if utf8.RuneCountInString(*body.Name) > 40 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 40, false))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "name"), "."), *body.Name, utf8.RuneCountInString(*body.Name), 40, false))
 		}
 	}
-	for _, e := range body.Exports {
+	for i, e := range body.Exports {
+		errContext := append(errContext, fmt.Sprintf(`exports[%d]`, i))
 		if e != nil {
-			if err2 := ValidateCreateExportDataRequestBody(e); err2 != nil {
+			if err2 := ValidateCreateExportDataRequestBody(e, errContext); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -1168,15 +1171,15 @@ func ValidateCreateReceiverRequestBody(body *CreateReceiverRequestBody) (err err
 
 // ValidateUpdateReceiverRequestBody runs the validations defined on
 // UpdateReceiverRequestBody
-func ValidateUpdateReceiverRequestBody(body *UpdateReceiverRequestBody) (err error) {
+func ValidateUpdateReceiverRequestBody(body *UpdateReceiverRequestBody, errContext []string) (err error) {
 	if body.Name != nil {
 		if utf8.RuneCountInString(*body.Name) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 1, true))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "name"), "."), *body.Name, utf8.RuneCountInString(*body.Name), 1, true))
 		}
 	}
 	if body.Name != nil {
 		if utf8.RuneCountInString(*body.Name) > 40 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 40, false))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "name"), "."), *body.Name, utf8.RuneCountInString(*body.Name), 40, false))
 		}
 	}
 	return
@@ -1184,40 +1187,40 @@ func ValidateUpdateReceiverRequestBody(body *UpdateReceiverRequestBody) (err err
 
 // ValidateCreateExportRequestBody runs the validations defined on
 // CreateExportRequestBody
-func ValidateCreateExportRequestBody(body *CreateExportRequestBody) (err error) {
+func ValidateCreateExportRequestBody(body *CreateExportRequestBody, errContext []string) (err error) {
 	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", strings.Join(errContext, ".")))
 	}
 	if body.Mapping == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("mapping", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("mapping", strings.Join(errContext, ".")))
 	}
 	if body.ID != nil {
 		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "id"), "."), *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
 		}
 	}
 	if body.ID != nil {
 		if utf8.RuneCountInString(*body.ID) > 48 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 48, false))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "id"), "."), *body.ID, utf8.RuneCountInString(*body.ID), 48, false))
 		}
 	}
 	if body.Name != nil {
 		if utf8.RuneCountInString(*body.Name) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 1, true))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "name"), "."), *body.Name, utf8.RuneCountInString(*body.Name), 1, true))
 		}
 	}
 	if body.Name != nil {
 		if utf8.RuneCountInString(*body.Name) > 40 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 40, false))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "name"), "."), *body.Name, utf8.RuneCountInString(*body.Name), 40, false))
 		}
 	}
 	if body.Mapping != nil {
-		if err2 := ValidateMappingRequestBody(body.Mapping); err2 != nil {
+		if err2 := ValidateMappingRequestBody(body.Mapping, append(errContext, "mapping")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
 	if body.Conditions != nil {
-		if err2 := ValidateConditionsRequestBody(body.Conditions); err2 != nil {
+		if err2 := ValidateConditionsRequestBody(body.Conditions, append(errContext, "conditions")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -1226,24 +1229,24 @@ func ValidateCreateExportRequestBody(body *CreateExportRequestBody) (err error) 
 
 // ValidateUpdateExportRequestBody runs the validations defined on
 // UpdateExportRequestBody
-func ValidateUpdateExportRequestBody(body *UpdateExportRequestBody) (err error) {
+func ValidateUpdateExportRequestBody(body *UpdateExportRequestBody, errContext []string) (err error) {
 	if body.Name != nil {
 		if utf8.RuneCountInString(*body.Name) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 1, true))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "name"), "."), *body.Name, utf8.RuneCountInString(*body.Name), 1, true))
 		}
 	}
 	if body.Name != nil {
 		if utf8.RuneCountInString(*body.Name) > 40 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 40, false))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "name"), "."), *body.Name, utf8.RuneCountInString(*body.Name), 40, false))
 		}
 	}
 	if body.Mapping != nil {
-		if err2 := ValidateMappingRequestBody(body.Mapping); err2 != nil {
+		if err2 := ValidateMappingRequestBody(body.Mapping, append(errContext, "mapping")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
 	if body.Conditions != nil {
-		if err2 := ValidateConditionsRequestBody(body.Conditions); err2 != nil {
+		if err2 := ValidateConditionsRequestBody(body.Conditions, append(errContext, "conditions")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -1252,40 +1255,40 @@ func ValidateUpdateExportRequestBody(body *UpdateExportRequestBody) (err error) 
 
 // ValidateCreateExportDataRequestBody runs the validations defined on
 // CreateExportDataRequestBody
-func ValidateCreateExportDataRequestBody(body *CreateExportDataRequestBody) (err error) {
+func ValidateCreateExportDataRequestBody(body *CreateExportDataRequestBody, errContext []string) (err error) {
 	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", strings.Join(errContext, ".")))
 	}
 	if body.Mapping == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("mapping", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("mapping", strings.Join(errContext, ".")))
 	}
 	if body.ID != nil {
 		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "id"), "."), *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
 		}
 	}
 	if body.ID != nil {
 		if utf8.RuneCountInString(*body.ID) > 48 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 48, false))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "id"), "."), *body.ID, utf8.RuneCountInString(*body.ID), 48, false))
 		}
 	}
 	if body.Name != nil {
 		if utf8.RuneCountInString(*body.Name) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 1, true))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "name"), "."), *body.Name, utf8.RuneCountInString(*body.Name), 1, true))
 		}
 	}
 	if body.Name != nil {
 		if utf8.RuneCountInString(*body.Name) > 40 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 40, false))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "name"), "."), *body.Name, utf8.RuneCountInString(*body.Name), 40, false))
 		}
 	}
 	if body.Mapping != nil {
-		if err2 := ValidateMappingRequestBody(body.Mapping); err2 != nil {
+		if err2 := ValidateMappingRequestBody(body.Mapping, append(errContext, "mapping")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
 	if body.Conditions != nil {
-		if err2 := ValidateConditionsRequestBody(body.Conditions); err2 != nil {
+		if err2 := ValidateConditionsRequestBody(body.Conditions, append(errContext, "conditions")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -1293,22 +1296,23 @@ func ValidateCreateExportDataRequestBody(body *CreateExportDataRequestBody) (err
 }
 
 // ValidateMappingRequestBody runs the validations defined on MappingRequestBody
-func ValidateMappingRequestBody(body *MappingRequestBody) (err error) {
+func ValidateMappingRequestBody(body *MappingRequestBody, errContext []string) (err error) {
 	if body.TableID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("tableId", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("tableId", strings.Join(errContext, ".")))
 	}
 	if body.Columns == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("columns", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("columns", strings.Join(errContext, ".")))
 	}
 	if len(body.Columns) < 1 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.columns", body.Columns, len(body.Columns), 1, true))
+		err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "columns"), "."), body.Columns, len(body.Columns), 1, true))
 	}
 	if len(body.Columns) > 50 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.columns", body.Columns, len(body.Columns), 50, false))
+		err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "columns"), "."), body.Columns, len(body.Columns), 50, false))
 	}
-	for _, e := range body.Columns {
+	for i, e := range body.Columns {
+		errContext := append(errContext, fmt.Sprintf(`columns[%d]`, i))
 		if e != nil {
-			if err2 := ValidateColumnRequestBody(e); err2 != nil {
+			if err2 := ValidateColumnRequestBody(e, errContext); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -1317,20 +1321,20 @@ func ValidateMappingRequestBody(body *MappingRequestBody) (err error) {
 }
 
 // ValidateColumnRequestBody runs the validations defined on ColumnRequestBody
-func ValidateColumnRequestBody(body *ColumnRequestBody) (err error) {
+func ValidateColumnRequestBody(body *ColumnRequestBody, errContext []string) (err error) {
 	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", strings.Join(errContext, ".")))
 	}
 	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", strings.Join(errContext, ".")))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "id" || *body.Type == "datetime" || *body.Type == "ip" || *body.Type == "body" || *body.Type == "headers" || *body.Type == "template") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []interface{}{"id", "datetime", "ip", "body", "headers", "template"}))
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "type"), "."), *body.Type, []interface{}{"id", "datetime", "ip", strings.Join(errContext, "."), "headers", "template"}))
 		}
 	}
 	if body.Template != nil {
-		if err2 := ValidateTemplateRequestBody(body.Template); err2 != nil {
+		if err2 := ValidateTemplateRequestBody(body.Template, append(errContext, "template")); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -1339,26 +1343,26 @@ func ValidateColumnRequestBody(body *ColumnRequestBody) (err error) {
 
 // ValidateTemplateRequestBody runs the validations defined on
 // TemplateRequestBody
-func ValidateTemplateRequestBody(body *TemplateRequestBody) (err error) {
+func ValidateTemplateRequestBody(body *TemplateRequestBody, errContext []string) (err error) {
 	if body.Language == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("language", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("language", strings.Join(errContext, ".")))
 	}
 	if body.Content == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("content", "body"))
+		err = goa.MergeErrors(err, goa.MissingFieldError("content", strings.Join(errContext, ".")))
 	}
 	if body.Language != nil {
 		if !(*body.Language == "jsonnet") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.language", *body.Language, []interface{}{"jsonnet"}))
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(strings.Join(append(errContext, "language"), "."), *body.Language, []interface{}{"jsonnet"}))
 		}
 	}
 	if body.Content != nil {
 		if utf8.RuneCountInString(*body.Content) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.content", *body.Content, utf8.RuneCountInString(*body.Content), 1, true))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "content"), "."), *body.Content, utf8.RuneCountInString(*body.Content), 1, true))
 		}
 	}
 	if body.Content != nil {
 		if utf8.RuneCountInString(*body.Content) > 4096 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.content", *body.Content, utf8.RuneCountInString(*body.Content), 4096, false))
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "content"), "."), *body.Content, utf8.RuneCountInString(*body.Content), 4096, false))
 		}
 	}
 	return
@@ -1366,15 +1370,15 @@ func ValidateTemplateRequestBody(body *TemplateRequestBody) (err error) {
 
 // ValidateConditionsRequestBody runs the validations defined on
 // ConditionsRequestBody
-func ValidateConditionsRequestBody(body *ConditionsRequestBody) (err error) {
+func ValidateConditionsRequestBody(body *ConditionsRequestBody, errContext []string) (err error) {
 	if body.Count != nil {
 		if *body.Count < 1 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.count", *body.Count, 1, true))
+			err = goa.MergeErrors(err, goa.InvalidRangeError(strings.Join(append(errContext, "count"), "."), *body.Count, 1, true))
 		}
 	}
 	if body.Count != nil {
 		if *body.Count > 1e+07 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.count", *body.Count, 1e+07, false))
+			err = goa.MergeErrors(err, goa.InvalidRangeError(strings.Join(append(errContext, "count"), "."), *body.Count, 1e+07, false))
 		}
 	}
 	return
