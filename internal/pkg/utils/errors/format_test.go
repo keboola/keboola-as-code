@@ -11,6 +11,31 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type multiErrsGetterError struct{}
+
+func (e multiErrsGetterError) Error() string {
+	return Format(e)
+}
+
+func (e multiErrsGetterError) Unwrap() error {
+	return e.multiError()
+}
+
+func (e multiErrsGetterError) MainError() error {
+	return New("main error")
+}
+
+func (e multiErrsGetterError) WrappedErrors() []error {
+	return []error{e.multiError()}
+}
+
+func (e multiErrsGetterError) multiError() error {
+	errs := NewMultiError()
+	errs.Append(New("error 1"))
+	errs.Append(New("error 2"))
+	return errs
+}
+
 func TestSingleError_Format(t *testing.T) {
 	t.Parallel()
 	e := NewMultiError()
@@ -47,6 +72,16 @@ func TestMultiError_Format(t *testing.T) {
 - last error
 `
 	assert.Equal(t, strings.TrimSpace(expected), MultiErrorForTest().Error())
+}
+
+func TestMultiErrorGetter_Format(t *testing.T) {
+	t.Parallel()
+	expected := `
+main error:
+- error 1
+- error 2
+`
+	assert.Equal(t, strings.TrimSpace(expected), (multiErrsGetterError{}).Error())
 }
 
 func TestMultiError_Format_WithToSentence(t *testing.T) {
@@ -388,7 +423,7 @@ type customError struct {
 }
 
 func (e customError) WriteError(w Writer, level int, _ StackTrace) {
-	w.Write(fmt.Sprintf("this is a custom error message (%s)", e.error.Error()))
+	w.WritePrefix(level, fmt.Sprintf("this is a custom error message (%s)", e.error.Error()), nil)
 	w.WriteNewLine()
 
 	w.WriteIndent(level)
@@ -413,7 +448,7 @@ func TestCustom_WriteError(t *testing.T) {
 error:
 - reason:
   - lorem ipsum
-  - this is a custom error message (underlying error)
+  - this is a custom error message (underlying error):
     - foo
     - bar
 `
