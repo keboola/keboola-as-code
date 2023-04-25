@@ -3,17 +3,15 @@ package cleanup
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/keboola"
-	file2 "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/keboola"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	file2 "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -21,6 +19,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -44,6 +44,8 @@ func newCleanupTask(d dependencies, logger log.Logger, k key.ReceiverKey) *Task 
 		schema:      d.Schema(),
 		client:      d.EtcdClient(),
 		receiverKey: k,
+		httpClient:  d.HTTPClient(),
+		apiHost:     d.StorageAPIHost(),
 	}
 }
 
@@ -104,11 +106,13 @@ func (t *Task) deleteExpiredFiles(ctx context.Context) error {
 							t.logger.Infof(`Fixing export "%s" without opened file.`, v.ExportKey.String())
 							mapping, err := t.schema.Configs().Mappings().InExport(v.ExportKey).GetOne(etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx, t.client)
 							if err != nil {
-								return err
+								errs.Append(err)
+								return nil
 							}
 							token, err := t.schema.Secrets().Tokens().InExport(v.ExportKey).Get().Do(ctx, t.client)
 							if err != nil {
-								return err
+								errs.Append(err)
+								return nil
 							}
 							api, err := keboola.NewAPI(ctx, t.apiHost, keboola.WithClient(&t.httpClient), keboola.WithToken(token.Value.Token))
 							if err != nil {
@@ -119,7 +123,8 @@ func (t *Task) deleteExpiredFiles(ctx context.Context) error {
 							rb := rollback.New(t.logger)
 							if err := files.CreateFileForExport(ctx, rb, &export); err != nil {
 								rb.Invoke(ctx)
-								return err
+								errs.Append(err)
+								return nil
 							}
 							t.logger.Infof(`Created new file "%s".`, export.OpenedFile.FileKey.String())
 
@@ -128,7 +133,8 @@ func (t *Task) deleteExpiredFiles(ctx context.Context) error {
 								t.schema.Slices().InState(export.OpenedSlice.State).ByKey(export.OpenedSlice.SliceKey).Put(export.OpenedSlice),
 							).DoOrErr(ctx, t.client)
 							if err != nil {
-								return err
+								errs.Append(err)
+								return nil
 							}
 						}
 
