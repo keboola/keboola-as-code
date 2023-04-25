@@ -33,7 +33,7 @@
 ## Other Links 
 - [Developers' guide](./docs/DEVELOPMENT.md)
 - [Release process](./docs/RELEASE.md)
-- [E2E tests](./docs/e2etests.md)
+- [E2E tests](./docs/E2E_TESTS.md)
 
 ## License
 

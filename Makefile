@@ -102,7 +102,7 @@ fix:
 ci: mod lint tests
 
 godoc:
-	# Example url: http://localhost:6060/pkg/github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies/?m=all
+	# Example url: http://localhost:6060/pkg/github.com/keboola/keboola-as-code/?m=all
 	godoc -http=0.0.0.0:6060
 
 check-licenses:
