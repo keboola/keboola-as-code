@@ -1,4 +1,4 @@
 Error:
-- Project local state is invalid:
+- Cannot load local state:
   - Branch "main" not found.
   - Config "main/extractor/ex-generic-v2/empty" not found.
