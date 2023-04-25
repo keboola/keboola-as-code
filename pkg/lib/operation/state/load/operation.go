@@ -23,22 +23,36 @@ type InvalidLocalStateError struct {
 	error
 }
 
+func (e InvalidRemoteStateError) Error() string {
+	return e.MainError().Error() + e.error.Error()
+}
+
 func (e InvalidRemoteStateError) Unwrap() error {
 	return e.error
 }
 
-func (e InvalidRemoteStateError) WriteError(w errors.Writer, level int, trace errors.StackTrace) {
-	// Write underlying error
-	w.WriteErrorLevel(level, e.error, trace)
+func (e InvalidRemoteStateError) MainError() error {
+	return errors.New("cannot load remote state")
+}
+
+func (e InvalidRemoteStateError) WrappedErrors() []error {
+	return []error{e.error}
+}
+
+func (e InvalidLocalStateError) Error() string {
+	return e.MainError().Error() + e.error.Error()
 }
 
 func (e InvalidLocalStateError) Unwrap() error {
 	return e.error
 }
 
-func (e InvalidLocalStateError) WriteError(w errors.Writer, level int, trace errors.StackTrace) {
-	// Write underlying error
-	w.WriteErrorLevel(level, e.error, trace)
+func (e InvalidLocalStateError) MainError() error {
+	return errors.New("cannot load local state")
+}
+
+func (e InvalidLocalStateError) WrappedErrors() []error {
+	return []error{e.error}
 }
 
 type Options struct {
@@ -144,13 +158,13 @@ func Run(ctx context.Context, container state.ObjectsContainer, o OptionsWithFil
 		logger.Debugf("Project state has been successfully loaded.")
 	} else {
 		if remoteErr != nil {
-			return nil, InvalidRemoteStateError{errors.PrefixError(remoteErr, "cannot load project remote state")}
+			return nil, InvalidRemoteStateError{error: remoteErr}
 		}
 		if localErr != nil {
 			if o.IgnoreInvalidLocalState {
 				logger.Info(`Ignoring invalid local state.`)
 			} else {
-				return nil, InvalidLocalStateError{errors.PrefixError(localErr, "project local state is invalid")}
+				return nil, InvalidLocalStateError{error: localErr}
 			}
 		}
 	}

@@ -131,6 +131,11 @@ func PrepareTemplate(ctx context.Context, d dependencies, o ExtendedOptions) (pl
 	// Load template state
 	plan.templateState, err = o.Template.LoadState(o.TemplateCtx, LoadTemplateOptions(), d)
 	if err != nil {
+		var invalidState loadState.InvalidLocalStateError
+		if errors.As(err, &invalidState) {
+			// Strip confusing  local state is invalid:" error envelope.
+			return nil, errors.PrefixError(invalidState.Unwrap(), "template definition is not valid")
+		}
 		return nil, err
 	}
 
