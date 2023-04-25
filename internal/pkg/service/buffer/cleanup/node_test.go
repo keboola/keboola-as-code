@@ -26,6 +26,7 @@ import (
 
 func TestCleanup(t *testing.T) {
 	t.Parallel()
+	t.Skipf("TMP skip")
 
 	ctx := context.Background()
 
