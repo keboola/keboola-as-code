@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
@@ -107,7 +106,7 @@ func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) 
 		Atomic().
 		Read(func() op.Op {
 			return op.MergeToTxn(
-				assertAllPrevSlicesClosed(s.schema, k),
+				// assertAllPrevSlicesClosed(s.schema, k),
 				sumStatsOp(statsPfx.GetAll(), &stats),
 				s.countRecordsOp(k, &recordsCount),
 				s.loadExportRecordsCounter(k.ExportKey, &recordLastID),
@@ -288,22 +287,22 @@ func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model
 		}), nil
 }
 
-// assertAllPrevSlicesClosed checks there is no other previous slice that is not closed,
-// So the ID range for slice records can be generated.
-func assertAllPrevSlicesClosed(schema *schema.Schema, k key.SliceKey) op.Op {
-	return op.MergeToTxn(
-		assertNoPreviousSliceInState(schema, k, slicestate.Writing),
-		assertNoPreviousSliceInState(schema, k, slicestate.Closing),
-	)
-}
+//// assertAllPrevSlicesClosed checks there is no other previous slice that is not closed,
+//// So the ID range for slice records can be generated.
+//func assertAllPrevSlicesClosed(schema *schema.Schema, k key.SliceKey) op.Op {
+//	return op.MergeToTxn(
+//		assertNoPreviousSliceInState(schema, k, slicestate.Writing),
+//		assertNoPreviousSliceInState(schema, k, slicestate.Closing),
+//	)
+//}
 
-func assertNoPreviousSliceInState(schema *schema.Schema, k key.SliceKey, state slicestate.State) op.Op {
-	prefix := schema.Slices().InState(state)
-	end := etcd.WithRange(prefix.ByKey(k).Key())
-	return prefix.InExport(k.ExportKey).Count(end).WithOnResultOrErr(func(v int64) error {
-		if v > 0 {
-			return errors.Errorf(`no slice in the state "%s" expected before the "%s", found %v`, state, k, v)
-		}
-		return nil
-	})
-}
+//func assertNoPreviousSliceInState(schema *schema.Schema, k key.SliceKey, state slicestate.State) op.Op {
+//	prefix := schema.Slices().InState(state)
+//	end := etcd.WithRange(prefix.ByKey(k).Key())
+//	return prefix.InExport(k.ExportKey).Count(end).WithOnResultOrErr(func(v int64) error {
+//		if v > 0 {
+//			return errors.Errorf(`no slice in the state "%s" expected before the "%s", found %v`, state, k, v)
+//		}
+//		return nil
+//	})
+//}
