@@ -3,6 +3,11 @@ package cleanup
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/keboola"
+	file2 "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -27,6 +32,9 @@ type Task struct {
 	schema      *schema.Schema
 	client      *etcd.Client
 	receiverKey key.ReceiverKey
+
+	httpClient client.Client
+	apiHost    string
 }
 
 func newCleanupTask(d dependencies, logger log.Logger, k key.ReceiverKey) *Task {
@@ -86,6 +94,44 @@ func (t *Task) deleteExpiredFiles(ctx context.Context) error {
 						} else {
 							errs.Append(err)
 						}
+
+						// TMP:
+						count, err := t.schema.Files().Opened().InExport(v.ExportKey).Count().Do(ctx, t.client)
+						if err != nil {
+							return err
+						}
+						if count == 0 {
+							t.logger.Infof(`Fixing export "%s" without opened file.`, v.ExportKey.String())
+							mapping, err := t.schema.Configs().Mappings().InExport(v.ExportKey).GetOne(etcd.WithSort(etcd.SortByKey, etcd.SortDescend)).Do(ctx, t.client)
+							if err != nil {
+								return err
+							}
+							token, err := t.schema.Secrets().Tokens().InExport(v.ExportKey).Get().Do(ctx, t.client)
+							if err != nil {
+								return err
+							}
+							api, err := keboola.NewAPI(ctx, t.apiHost, keboola.WithClient(&t.httpClient), keboola.WithToken(token.Value.Token))
+							if err != nil {
+								return err
+							}
+							export := model.Export{ExportBase: v, Mapping: mapping.Value}
+							files := file2.NewManager(t.clock, api, nil)
+							rb := rollback.New(t.logger)
+							if err := files.CreateFileForExport(ctx, rb, &export); err != nil {
+								rb.Invoke(ctx)
+								return err
+							}
+							t.logger.Infof(`Created new file "%s".`, export.OpenedFile.FileKey.String())
+
+							err = op.MergeToTxn(
+								t.schema.Files().InState(export.OpenedFile.State).ByKey(export.OpenedFile.FileKey).Put(export.OpenedFile),
+								t.schema.Slices().InState(export.OpenedSlice.State).ByKey(export.OpenedSlice.SliceKey).Put(export.OpenedSlice),
+							).DoOrErr(ctx, t.client)
+							if err != nil {
+								return err
+							}
+						}
+
 						return nil
 					})
 				if err != nil {
