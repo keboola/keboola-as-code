@@ -281,7 +281,8 @@ func (*testCases) TestFileLoader_ReadYamlFile_Invalid(t *testing.T, fs filesyste
 	assert.Error(t, err)
 	assert.Nil(t, file)
 	expectedError := `
-file "file.yaml" is invalid: yaml: did not find expected key
+file "file.yaml" is invalid:
+- yaml: did not find expected key
 `
 	assert.Equal(t, strings.TrimSpace(expectedError), err.Error())
 }

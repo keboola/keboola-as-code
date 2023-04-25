@@ -84,7 +84,7 @@ func TestValidationRules(t *testing.T) {
 					If:          "1+(2-1>1",
 				},
 			},
-			error: "group 1, step 1, input \"input.id2\": \"showIf\" cannot compile condition:\n  - expression: 1+(2-1>1\n  - error: Unbalanced parenthesis",
+			error: "group 1, step 1, input \"input.id2\": \"showIf\" cannot compile condition:\n- expression: 1+(2-1>1\n- error: Unbalanced parenthesis",
 		},
 		{
 			description: "int default, empty options",

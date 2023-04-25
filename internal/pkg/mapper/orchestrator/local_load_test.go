@@ -273,14 +273,14 @@ func TestMapAfterLocalLoadError(t *testing.T) {
 	// Assert error
 	expectedError := `
 invalid orchestrator config "branch/other/orchestrator":
-  - invalid phase "001-phase":
-    - invalid task "001-task-1":
-      - target config "branch/extractor/target-config-1" not found
-    - invalid task "002-task-2":
-      - target config "branch/extractor/target-config-2" not found
-  - invalid phase "002-phase-with-deps":
-    - missing phase config file "phases/002-phase-with-deps/phase.json"
-  - missing phase "missing-phase", referenced from "001-phase"
+- invalid phase "001-phase":
+  - invalid task "001-task-1":
+    - target config "branch/extractor/target-config-1" not found
+  - invalid task "002-task-2":
+    - target config "branch/extractor/target-config-2" not found
+- invalid phase "002-phase-with-deps":
+  - missing phase config file "phases/002-phase-with-deps/phase.json"
+- missing phase "missing-phase", referenced from "001-phase"
 `
 	assert.Equal(t, strings.Trim(expectedError, "\n"), err.Error())
 }
@@ -335,8 +335,8 @@ func TestMapAfterLocalLoadDepsCycle(t *testing.T) {
 	// Assert error
 	expectedError := `
 invalid orchestrator config "branch/other/orchestrator":
-  - found cycles in phases "dependsOn":
-    - 002-phase -> 003-phase -> 002-phase
+- found cycles in phases "dependsOn":
+  - 002-phase -> 003-phase -> 002-phase
 `
 	assert.Equal(t, strings.Trim(expectedError, "\n"), err.Error())
 }
