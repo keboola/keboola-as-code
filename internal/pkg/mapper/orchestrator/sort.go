@@ -26,13 +26,12 @@ func (v PhasesCyclesError) Error() string {
 
 // WriteError prints found cycles to the output.
 func (v PhasesCyclesError) WriteError(w errors.Writer, level int, trace errors.StackTrace) {
-	w.WritePrefix(v.Error(), trace)
+	w.WritePrefix(level, v.Error(), trace)
 	w.WriteNewLine()
 
 	last := len(v.cycles) - 1
 	for i, cycle := range v.cycles {
-		w.WriteIndent(level)
-		w.WriteBullet()
+		w.WriteBullet(level + 1)
 		w.Write(cycle)
 		if i != last {
 			w.WriteNewLine()
