@@ -238,14 +238,14 @@ func (c *checker) swapFile(fileKey key.FileKey, reason string) (err error) {
 				}
 
 				oldFile := export.OpenedFile
-				if oldFile.FileKey != fileKey {
-					return errors.Errorf(`cannot close file "%s": unexpected export opened file "%s"`, fileKey.String(), oldFile.FileKey)
-				}
+				//if oldFile.FileKey != fileKey {
+				//	return errors.Errorf(`cannot close file "%s": unexpected export opened file "%s"`, fileKey.String(), oldFile.FileKey)
+				//}
 
 				oldSlice := export.OpenedSlice
-				if oldSlice.FileKey != fileKey {
-					return errors.Errorf(`cannot close file "%s": unexpected export opened slice "%s"`, fileKey.String(), oldFile.FileKey)
-				}
+				//if oldSlice.FileKey != fileKey {
+				//	return errors.Errorf(`cannot close file "%s": unexpected export opened slice "%s"`, fileKey.String(), oldFile.FileKey)
+				//}
 
 				api, err := keboola.NewAPI(ctx, c.storageAPIHost, keboola.WithClient(&c.httpClient), keboola.WithToken(export.Token.Token))
 				if err != nil {
