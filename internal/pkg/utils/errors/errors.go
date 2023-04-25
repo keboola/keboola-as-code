@@ -76,7 +76,7 @@
 // Example - a custom multi-line error formatting:
 //
 //	 func (e UnencryptedValueError) WriteError(w errors.Writer, level int, trace errors.StackTrace) {
-//	   w.WritePrefix(e.Error(), trace)
+//	   w.WritePrefix(level, e.Error(), trace)
 //	   w.WriteNewLine()
 //
 //	   last := len(v.values) - 1
