@@ -139,7 +139,7 @@ func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) e
 		case len(e.Causes) > 0:
 			// Process nested errors.
 			if err := processErrors(e.Causes, isSchemaErr || parentIsSchemaErr); err != nil {
-				if e.Message == "" || e.Message == "doesn't validate with ''" {
+				if e.Message == "" || e.Message == "doesn't validate with ''" || e.Message == `'' is invalid:` {
 					formattedErr = err
 				} else {
 					formattedErr = errors.PrefixError(err, e.Message)
