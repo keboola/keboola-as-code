@@ -17,7 +17,7 @@ import (
 )
 
 // pseudoSchemaFile - the validated schema is registered as this resource.
-const pseudoSchemaFile = "/schema.json"
+const pseudoSchemaFile = "file:///schema.json"
 
 func ValidateObjects(logger log.Logger, objects model.ObjectStates) error {
 	errs := errors.NewMultiError()
@@ -129,7 +129,8 @@ func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) e
 	schemaErrs := errors.NewMultiError()
 	docErrs := errors.NewMultiError()
 	for _, e := range errs {
-		isSchemaErr := !strings.HasPrefix(e.AbsoluteKeywordLocation, "file://"+pseudoSchemaFile)
+		// Schema error does not start with our pseudo schema file.
+		isSchemaErr := !strings.HasPrefix(e.AbsoluteKeywordLocation, pseudoSchemaFile)
 		path := strings.TrimLeft(e.InstanceLocation, "/")
 		path = strings.ReplaceAll(path, "/", ".")
 		msg := strings.ReplaceAll(e.Message, `'`, `"`)
