@@ -133,12 +133,16 @@ func processErrors(errs []*jsonschema.ValidationError) error {
 		path := strings.TrimLeft(e.InstanceLocation, "/")
 		path = strings.ReplaceAll(path, "/", ".")
 		msg := strings.ReplaceAll(e.Message, `'`, `"`)
-		
+
 		switch {
 		case len(e.Causes) > 0:
 			// Process nested errors
 			if err := processErrors(e.Causes); err != nil {
-				docErrs.Append(err)
+				if e.Message == "" {
+					docErrs.Append(err)
+				} else {
+					docErrs.Append(errors.PrefixError(err, e.Message))
+				}
 			}
 		case isSchemaErr:
 			// Required field in a JSON schema should be an array of required nested fields.
