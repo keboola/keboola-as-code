@@ -20,22 +20,23 @@ const (
 // Config of the Templates API.
 // See "cliconfig" package for more information.
 type Config struct {
-	Cleanup            bool          `mapstructure:"enable-cleanup" usage:"Enable cleanup functionality."`
-	CleanupInterval    time.Duration `mapstructure:"cleanup-interval" usage:"How often will old resources be deleted."`
-	Debug              bool          `mapstructure:"debug" usage:"Enable debug log level."`
-	DebugHTTP          bool          `mapstructure:"debug-http" usage:"Log HTTP client request and response bodies."`
-	DatadogEnabled     bool          `mapstructure:"datadog-enabled" usage:"Enable Datadog telemetry integration."`
-	DatadogDebug       bool          `mapstructure:"datadog-debug" usage:"Enable Datadog debug logs."`
-	CpuProfFilePath    string        `mapstructure:"cpu-profile" usage:"Write cpu profile to the file."`
-	ListenAddress      *url.URL      `mapstructure:"listen-address" usage:"Server listen address."`
-	StorageAPIHost     string        `mapstructure:"storage-api-host" usage:"Host of the Storage API."`
-	EtcdConnectTimeout time.Duration `mapstructure:"etcd-connect-timeout" usage:"etcd connect timeout."`
-	EtcdEndpoint       string        `mapstructure:"etcd-endpoint" usage:"etcd endpoint."`
-	EtcdNamespace      string        `mapstructure:"etcd-namespace" usage:"etcd namespace."`
-	EtcdUsername       string        `mapstructure:"etcd-username" usage:"etcd username."`
-	EtcdPassword       string        `mapstructure:"etcd-password" usage:"etcd password."`
-	PublicAddress      *url.URL      `mapstructure:"public-address" usage:"Public address of the Templates API, to generate a link URL."`
-	Repositories       Repositories  `mapstructure:"repositories" usage:"Default repositories, <name1>|<repo1>|<branch1>;..."`
+	Cleanup              bool          `mapstructure:"enable-cleanup" usage:"Enable cleanup functionality."`
+	CleanupInterval      time.Duration `mapstructure:"cleanup-interval" usage:"How often will old resources be deleted."`
+	Debug                bool          `mapstructure:"debug" usage:"Enable debug log level."`
+	DebugHTTP            bool          `mapstructure:"debug-http" usage:"Log HTTP client request and response bodies."`
+	DatadogEnabled       bool          `mapstructure:"datadog-enabled" usage:"Enable Datadog telemetry integration."`
+	DatadogDebug         bool          `mapstructure:"datadog-debug" usage:"Enable Datadog debug logs."`
+	CpuProfFilePath      string        `mapstructure:"cpu-profile" usage:"Write cpu profile to the file."`
+	ListenAddress        *url.URL      `mapstructure:"listen-address" usage:"API HTTP server listen address."`
+	MetricsListenAddress *url.URL      `mapstructure:"metrics-listen-address" usage:"Prometheus /metrics HTTP endpoint listen address."`
+	StorageAPIHost       string        `mapstructure:"storage-api-host" usage:"Host of the Storage API."`
+	EtcdConnectTimeout   time.Duration `mapstructure:"etcd-connect-timeout" usage:"etcd connect timeout."`
+	EtcdEndpoint         string        `mapstructure:"etcd-endpoint" usage:"etcd endpoint."`
+	EtcdNamespace        string        `mapstructure:"etcd-namespace" usage:"etcd namespace."`
+	EtcdUsername         string        `mapstructure:"etcd-username" usage:"etcd username."`
+	EtcdPassword         string        `mapstructure:"etcd-password" usage:"etcd password."`
+	PublicAddress        *url.URL      `mapstructure:"public-address" usage:"Public address of the Templates API, to generate a link URL."`
+	Repositories         Repositories  `mapstructure:"repositories" usage:"Default repositories, <name1>|<repo1>|<branch1>;..."`
 }
 
 type Repositories []model.TemplateRepository
@@ -44,20 +45,21 @@ type Option func(c *Config)
 
 func NewConfig() Config {
 	return Config{
-		Cleanup:            true,
-		CleanupInterval:    DefaultCleanupInterval,
-		Debug:              false,
-		DebugHTTP:          false,
-		CpuProfFilePath:    "",
-		DatadogEnabled:     true,
-		DatadogDebug:       false,
-		StorageAPIHost:     "",
-		EtcdEndpoint:       "",
-		EtcdNamespace:      "",
-		EtcdUsername:       "",
-		EtcdPassword:       "",
-		EtcdConnectTimeout: 30 * time.Second, // longer default timeout, the etcd could be started at the same time as the API
-		ListenAddress:      &url.URL{Scheme: "http", Host: "0.0.0.0:8000"},
+		Cleanup:              true,
+		CleanupInterval:      DefaultCleanupInterval,
+		Debug:                false,
+		DebugHTTP:            false,
+		CpuProfFilePath:      "",
+		DatadogEnabled:       true,
+		DatadogDebug:         false,
+		StorageAPIHost:       "",
+		EtcdEndpoint:         "",
+		EtcdNamespace:        "",
+		EtcdUsername:         "",
+		EtcdPassword:         "",
+		EtcdConnectTimeout:   30 * time.Second, // longer default timeout, the etcd could be started at the same time as the API
+		ListenAddress:        &url.URL{Scheme: "http", Host: "0.0.0.0:8000"},
+		MetricsListenAddress: &url.URL{Scheme: "http", Host: "0.0.0.0:9000"},
 		Repositories: []model.TemplateRepository{
 			{
 				Type: model.RepositoryTypeGit,
@@ -104,6 +106,12 @@ func (c *Config) Normalize() {
 			c.ListenAddress.Scheme = "http"
 		}
 	}
+	if c.MetricsListenAddress != nil {
+		c.MetricsListenAddress.Host = strhelper.NormalizeHost(c.MetricsListenAddress.Host)
+		if c.MetricsListenAddress.Scheme == "" {
+			c.MetricsListenAddress.Scheme = "http"
+		}
+	}
 }
 
 func (c *Config) Validate() error {
@@ -119,6 +127,9 @@ func (c *Config) Validate() error {
 	}
 	if c.ListenAddress == nil || c.ListenAddress.String() == "" {
 		errs.Append(errors.New("listen address is not set"))
+	}
+	if c.MetricsListenAddress == nil || c.MetricsListenAddress.String() == "" {
+		errs.Append(errors.New("metrics listen address is not set"))
 	}
 	if len(c.Repositories) == 0 {
 		errs.Append(errors.New(`at least one default repository must be set`))
