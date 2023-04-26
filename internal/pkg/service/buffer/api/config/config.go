@@ -89,8 +89,14 @@ func (c *Config) Validate() error {
 	if c.ListenAddress == nil || c.ListenAddress.String() == "" {
 		errs.Append(errors.New("listen address is not set"))
 	}
+	if c.ListenAddress.Scheme != "http" {
+		errs.Append(errors.Errorf(`scheme "%s" used in the listen address is not supported, use "http"`, c.ListenAddress.Scheme))
+	}
 	if c.MetricsListenAddress == nil || c.MetricsListenAddress.String() == "" {
 		errs.Append(errors.New("metrics listen address is not set"))
+	}
+	if c.MetricsListenAddress.Scheme != "http" {
+		errs.Append(errors.Errorf(`scheme "%s" used in the metrics listen address is not supported, use "http"`, c.MetricsListenAddress.Scheme))
 	}
 	if c.ReceiverBufferSize <= 0 {
 		errs.Append(errors.New("receiver buffer size  must be a positive value"))
