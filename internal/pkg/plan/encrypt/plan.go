@@ -67,18 +67,16 @@ func (v UnencryptedValueError) Error() string {
 	return fmt.Sprintf(`%s "%s" contains unencrypted values`, v.kind, v.filePath)
 }
 
-// WriteError prints an example of the found files to the output.
+// WriteError writes formatted bullet list.
 func (v UnencryptedValueError) WriteError(w errors.Writer, level int, trace errors.StackTrace) {
-	w.WritePrefix(v.Error(), trace)
+	w.WritePrefix(level, v.Error(), trace)
 	w.WriteNewLine()
 
-	last := len(v.values) - 1
 	for i, value := range v.values {
-		w.WriteIndent(level)
-		w.WriteBullet()
-		w.Write(value.path.String())
-		if i != last {
+		if i != 0 {
 			w.WriteNewLine()
 		}
+		w.WriteBullet(level + 1)
+		w.Write(value.path.String())
 	}
 }

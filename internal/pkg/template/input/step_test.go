@@ -176,10 +176,10 @@ func TestStepsGroups_Validate_DuplicateInputs(t *testing.T) {
 	// Assert
 	expectedErr := `
 input "fb.extractor.username" is defined 4 times in:
-  - group 1, step 1 "Step 1"
-  - group 1, step 1 "Step 1"
-  - group 2, step 1 "Step 2"
-  - group 2, step 2 "Step 3"
+- group 1, step 1 "Step 1"
+- group 1, step 1 "Step 1"
+- group 2, step 1 "Step 2"
+- group 2, step 2 "Step 3"
 `
 
 	err := groups.ValidateDefinitions()

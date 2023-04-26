@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/keboola/go-utils/pkg/wildcards"
@@ -107,8 +108,11 @@ func TestManifestContentValidateBadVersion(t *testing.T) {
 	manifestContent.Version = 123
 	err := manifestContent.validate()
 	assert.Error(t, err)
-	expected := `repository manifest is not valid: "version" must be 2 or less`
-	assert.Equal(t, expected, err.Error())
+	expected := `
+repository manifest is not valid:
+- "version" must be 2 or less
+`
+	assert.Equal(t, strings.TrimSpace(expected), err.Error())
 }
 
 func TestManifestBadRecordSemanticVersion(t *testing.T) {

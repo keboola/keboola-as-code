@@ -11,6 +11,31 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+type multiErrsGetterError struct{}
+
+func (e multiErrsGetterError) Error() string {
+	return Format(e)
+}
+
+func (e multiErrsGetterError) Unwrap() error {
+	return e.multiError()
+}
+
+func (e multiErrsGetterError) MainError() error {
+	return New("main error")
+}
+
+func (e multiErrsGetterError) WrappedErrors() []error {
+	return []error{e.multiError()}
+}
+
+func (e multiErrsGetterError) multiError() error {
+	errs := NewMultiError()
+	errs.Append(New("error 1"))
+	errs.Append(New("error 2"))
+	return errs
+}
+
 func TestSingleError_Format(t *testing.T) {
 	t.Parallel()
 	e := NewMultiError()
@@ -22,7 +47,7 @@ func TestSingleError_FormatWithStack(t *testing.T) {
 	t.Parallel()
 	e := NewMultiError()
 	e.Append(fmt.Errorf("foo bar"))
-	wildcards.Assert(t, "foo bar [%s/format_test.go:24]", Format(e, FormatWithStack()))
+	wildcards.Assert(t, "foo bar [%s/format_test.go:%s]", Format(e, FormatWithStack()))
 }
 
 func TestMultiError_Format(t *testing.T) {
@@ -47,6 +72,16 @@ func TestMultiError_Format(t *testing.T) {
 - last error
 `
 	assert.Equal(t, strings.TrimSpace(expected), MultiErrorForTest().Error())
+}
+
+func TestMultiErrorGetter_Format(t *testing.T) {
+	t.Parallel()
+	expected := `
+main error:
+- error 1
+- error 2
+`
+	assert.Equal(t, strings.TrimSpace(expected), (multiErrsGetterError{}).Error())
 }
 
 func TestMultiError_Format_WithToSentence(t *testing.T) {
@@ -78,9 +113,9 @@ func TestMultiError_FormatWithUnwrap(t *testing.T) {
 	expected := `
 - error 1
 - error with debug trace
-- wrapped2: wrapped1: error 2:
-  - *fmt.wrapError >>> wrapped1: error 2:
-    - *fmt.wrapError >>> error 2
+- wrapped2: wrapped1: error 2 (*fmt.wrapError):
+  - wrapped1: error 2 (*fmt.wrapError):
+    - error 2
 - my prefix:
   - abc
   - def
@@ -102,26 +137,26 @@ func TestMultiError_FormatWithUnwrap(t *testing.T) {
 func TestMultiError_FormatWithStack(t *testing.T) {
 	t.Parallel()
 	expected := `
-- error 1 [%s/errors_test.go:13]
-- error with debug trace [%s/errors_test.go:10]
-- wrapped2: wrapped1: error 2 [%s/errors_test.go:17]:
-  - *fmt.wrapError >>> wrapped1: error 2 [%s/errors_test.go:22]:
-    - *fmt.wrapError >>> error 2 [%s/errors_test.go:22]
-- my prefix [%s/errors_test.go:48]:
-  - abc [%s/errors_test.go:27]
-  - def [%s/errors_test.go:28]
-  - sub1 [%s/errors_test.go:38]:
-    - x [%s/errors_test.go:31]
-    - y [%s/errors_test.go:32]
-  - sub2 [%s/errors_test.go:39]:
-    - z [%s/errors_test.go:34]
-  - sub3 with format [%s/errors_test.go:40]:
-    - this is a very long line from error message, it is printed on new line [%s/errors_test.go:36]
-  - sub4 [%s/errors_test.go:41]:
-    - 1 [%s/errors_test.go:42]
-    - 2 [%s/errors_test.go:43]
-    - 3 [%s/errors_test.go:44]
-- last error [%s/errors_test.go:49]
+- error 1 [%s/errors_test.go:%d]
+- error with debug trace [%s/errors_test.go:%d]
+- wrapped2: wrapped1: error 2 [%s/errors_test.go:%d] (*fmt.wrapError):
+  - wrapped1: error 2 [%s/errors_test.go:%d] (*fmt.wrapError):
+    - error 2 [%s/errors_test.go:%d]
+- my prefix [%s/errors_test.go:%d]:
+  - abc [%s/errors_test.go:%d]
+  - def [%s/errors_test.go:%d]
+  - sub1 [%s/errors_test.go:%d]:
+    - x [%s/errors_test.go:%d]
+    - y [%s/errors_test.go:%d]
+  - sub2 [%s/errors_test.go:%d]:
+    - z [%s/errors_test.go:%d]
+  - sub3 with format [%s/errors_test.go:%d]:
+    - this is a very long line from error message, it is printed on new line [%s/errors_test.go:%d]
+  - sub4 [%s/errors_test.go:%d]:
+    - 1 [%s/errors_test.go:%d]
+    - 2 [%s/errors_test.go:%d]
+    - 3 [%s/errors_test.go:%d]
+- last error [%s/errors_test.go:%d]
 `
 	wildcards.Assert(t, strings.TrimSpace(expected), Format(MultiErrorForTest(), FormatWithStack()))
 }
@@ -129,26 +164,26 @@ func TestMultiError_FormatWithStack(t *testing.T) {
 func TestMultiError_FormatWithStack_WithToSentence(t *testing.T) {
 	t.Parallel()
 	expected := `
-- Error 1. [%s/errors_test.go:13]
-- Error with debug trace. [%s/errors_test.go:10]
-- Wrapped2: wrapped1: error 2. [%s/errors_test.go:17]:
-  - *fmt.wrapError >>> Wrapped1: error 2. [%s/errors_test.go:22]:
-    - *fmt.wrapError >>> Error 2. [%s/errors_test.go:22]
-- My prefix. [%s/errors_test.go:48]:
-  - Abc. [%s/errors_test.go:27]
-  - Def. [%s/errors_test.go:28]
-  - Sub1. [%s/errors_test.go:38]:
-    - X. [%s/errors_test.go:31]
-    - Y. [%s/errors_test.go:32]
-  - Sub2. [%s/errors_test.go:39]:
-    - Z. [%s/errors_test.go:34]
-  - Sub3 with format. [%s/errors_test.go:40]:
-    - This is a very long line from error message, it is printed on new line. [%s/errors_test.go:36]
-  - Sub4. [%s/errors_test.go:41]:
-    - 1. [%s/errors_test.go:42]
-    - 2. [%s/errors_test.go:43]
-    - 3. [%s/errors_test.go:44]
-- Last error. [%s/errors_test.go:49]
+- Error 1. [%s/errors_test.go:%d]
+- Error with debug trace. [%s/errors_test.go:%d]
+- Wrapped2: wrapped1: error 2. [%s/errors_test.go:%d] (*fmt.wrapError):
+  - Wrapped1: error 2. [%s/errors_test.go:%d] (*fmt.wrapError):
+    - Error 2. [%s/errors_test.go:%d]
+- My prefix. [%s/errors_test.go:%d]:
+  - Abc. [%s/errors_test.go:%d]
+  - Def. [%s/errors_test.go:%d]
+  - Sub1. [%s/errors_test.go:%d]:
+    - X. [%s/errors_test.go:%d]
+    - Y. [%s/errors_test.go:%d]
+  - Sub2. [%s/errors_test.go:%d]:
+    - Z. [%s/errors_test.go:%d]
+  - Sub3 with format. [%s/errors_test.go:%d]:
+    - This is a very long line from error message, it is printed on new line. [%s/errors_test.go:%d]
+  - Sub4. [%s/errors_test.go:%d]:
+    - 1. [%s/errors_test.go:%d]
+    - 2. [%s/errors_test.go:%d]
+    - 3. [%s/errors_test.go:%d]
+- Last error. [%s/errors_test.go:%d]
 `
 	wildcards.Assert(t, strings.TrimSpace(expected), Format(MultiErrorForTest(), FormatWithStack(), FormatAsSentences()))
 }
@@ -202,9 +237,9 @@ func TestMultiError_CustomMessageFormatter_FormatWithStack(t *testing.T) {
 	expected := `
 - | error 1 |
 - | error with debug trace |
-- | wrapped2: wrapped1: error 2 | --->
-  - *fmt.wrapError >>> | wrapped1: error 2 | --->
-    - *fmt.wrapError >>> | error 2 |
+- | wrapped2: wrapped1: error 2 | (*fmt.wrapError) --->
+  - | wrapped1: error 2 | (*fmt.wrapError) --->
+    - | error 2 |
 - | my prefix | --->
   - | abc |
   - | def |
@@ -277,9 +312,9 @@ func TestWrap_FormatWithStack(t *testing.T) {
 	err.Append(original)
 	err.Append(Wrap(original, "different message"))
 	expected := `
-- some error [%s/errors_test.go:55]
-- different message [%s/format_test.go:%s]:
-  - *errors.wrappedError >>> some error [%s/errors_test.go:55]
+- some error [%s/errors_test.go:%d]
+- different message [%s/format_test.go:%s] (*errors.wrappedError):
+  - some error [%s/errors_test.go:%d]
 `
 	wildcards.Assert(t, strings.TrimSpace(expected), Format(err, FormatWithStack()))
 }
@@ -306,9 +341,9 @@ func TestWrapf_FormatWithStack(t *testing.T) {
 	err.Append(original)
 	err.Append(Wrapf(original, "different %s", "message"))
 	expected := `
-- some error [%s/errors_test.go:55]
-- different message [%s/format_test.go:%s]:
-  - *errors.wrappedError >>> some error [%s/errors_test.go:55]
+- some error [%s/errors_test.go:%d]
+- different message [%s/format_test.go:%s] (*errors.wrappedError):
+  - some error [%s/errors_test.go:%d]
 `
 	wildcards.Assert(t, strings.TrimSpace(expected), Format(err, FormatWithStack()))
 }
@@ -388,16 +423,14 @@ type customError struct {
 }
 
 func (e customError) WriteError(w Writer, level int, _ StackTrace) {
-	w.Write(fmt.Sprintf("this is a custom error message (%s)", e.error.Error()))
+	w.WritePrefix(level, fmt.Sprintf("this is a custom error message (%s)", e.error.Error()), nil)
 	w.WriteNewLine()
 
-	w.WriteIndent(level)
-	w.WriteBullet()
+	w.WriteBullet(level + 1)
 	w.Write("foo")
 	w.WriteNewLine()
 
-	w.WriteIndent(level)
-	w.WriteBullet()
+	w.WriteBullet(level + 1)
 	w.Write("bar")
 }
 
@@ -413,7 +446,7 @@ func TestCustom_WriteError(t *testing.T) {
 error:
 - reason:
   - lorem ipsum
-  - this is a custom error message (underlying error)
+  - this is a custom error message (underlying error):
     - foo
     - bar
 `

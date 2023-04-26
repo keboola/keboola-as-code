@@ -7,11 +7,10 @@ import (
 )
 
 func MultiErrorForTest() error {
-	errWithStackTrace := WithStack(fmt.Errorf("error with debug trace"))
-
 	e := NewMultiError()
 	e.Append(fmt.Errorf(`error 1`))
 
+	errWithStackTrace := WithStack(fmt.Errorf("error with debug trace"))
 	merged := NewMultiError()
 	merged.Append(errWithStackTrace)
 	merged.Append(

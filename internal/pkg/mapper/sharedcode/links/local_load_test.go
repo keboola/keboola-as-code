@@ -102,7 +102,7 @@ func TestLocalLoadTranWithSharedCode_InvalidSharedCodePath(t *testing.T) {
 	changes.AddLoaded(transformation)
 	expectedErr := `
 missing shared code "branch/missing":
-  - referenced from config "branch:123/component:keboola.python-transformation-v2/config:789"
+- referenced from config "branch:123/component:keboola.python-transformation-v2/config:789"
 `
 	err := state.Mapper().AfterLocalOperation(context.Background(), changes)
 	assert.Error(t, err)
@@ -132,7 +132,7 @@ func TestLocalLoadTranWithSharedCode_InvalidSharedCodeRowPath(t *testing.T) {
 	changes.AddLoaded(transformation)
 	expectedErr := `
 missing shared code "branch/_shared/keboola.python-transformation-v2/codes/missing":
-  - referenced from "branch/transformation/blocks/block-1/code-2"
+- referenced from "branch/transformation/blocks/block-1/code-2"
 `
 	err := state.Mapper().AfterLocalOperation(context.Background(), changes)
 	assert.Error(t, err)

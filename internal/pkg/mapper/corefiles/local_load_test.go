@@ -101,7 +101,7 @@ func TestLoadCoreFiles_SkipChildrenLoadIfParentIsInvalid(t *testing.T) {
 	err := uow.Invoke()
 	expectedErr := `
 branch metadata file "main/meta.json" is invalid:
-  - invalid character 'f' looking for beginning of object key string, offset: 3
+- invalid character 'f' looking for beginning of object key string, offset: 3
 `
 	assert.Error(t, err)
 	assert.Equal(t, strings.Trim(expectedErr, "\n"), err.Error())

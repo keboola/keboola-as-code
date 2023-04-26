@@ -90,7 +90,7 @@ func TestValidateObjects_InvalidSchema_FieldType(t *testing.T) {
 	assert.Error(t, err)
 	expected := `
 invalid JSON schema:
-  - "properties" is invalid: expected object, but got boolean
+- "properties" is invalid: expected object, but got boolean
 `
 	assert.Equal(t, strings.TrimSpace(expected), err.Error())
 }

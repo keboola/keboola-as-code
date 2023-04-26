@@ -56,21 +56,18 @@ func (v DirNotEmptyError) Error() string {
 }
 
 // WriteError print an example of the found files to the output.
-func (v DirNotEmptyError) WriteError(w errors.Writer, level int, _ errors.StackTrace) {
-	w.Write(v.Error())
-	w.Write(", found:")
+func (v DirNotEmptyError) WriteError(w errors.Writer, level int, trace errors.StackTrace) {
+	w.WritePrefix(level, v.Error()+", found:", trace)
 	w.WriteNewLine()
-
-	last := len(v.files) - 1
 	for i, item := range v.files {
-		w.WriteIndent(level)
-		w.WriteBullet()
+		if i != 0 {
+			w.WriteNewLine()
+		}
+		w.WriteBullet(level + 1)
 		w.Write(item.Name())
 		if i >= 5 {
 			w.Write(" ...")
 			break
-		} else if i != last {
-			w.WriteNewLine()
 		}
 	}
 }

@@ -23,16 +23,16 @@ func ExampleWrapf() {
 	err := errors.Wrapf(errors.New("original error"), "new error %s", "message")
 	fmt.Println(errors.Format(err, errors.FormatWithUnwrap()))
 	// output:
-	// new error message:
-	//- *errors.wrappedError >>> original error
+	// new error message (*errors.wrappedError):
+	//- original error
 }
 
 func ExampleWrap() {
 	err := errors.Wrap(errors.New("original error"), "new error message")
 	fmt.Println(errors.Format(err, errors.FormatWithUnwrap()))
 	// output:
-	// new error message:
-	//- *errors.wrappedError >>> original error
+	// new error message (*errors.wrappedError):
+	//- original error
 }
 
 func ExampleWithStack() {
@@ -64,8 +64,8 @@ func ExampleFormatWithUnwrap() {
 	// new error message
 	//
 	// FormatWithUnwrap:
-	// new error message:
-	// - *errors.wrappedError >>> original error
+	// new error message (*errors.wrappedError):
+	// - original error
 }
 
 func ExampleFormatAsSentences() {
@@ -117,8 +117,8 @@ func Example_format() {
 	// FormatWithUnwrap:
 	// - foo 1
 	// - foo 2
-	// - new error message:
-	//   - *errors.wrappedError >>> original error
+	// - new error message (*errors.wrappedError):
+	//   - original error
 	//
 	// FormatAsSentences:
 	// - Foo 1.
@@ -128,8 +128,8 @@ func Example_format() {
 	// FormatWithUnwrap, FormatAsSentences:
 	// - Foo 1.
 	// - Foo 2.
-	// - New error message:
-	//   - *errors.wrappedError >>> Original error.
+	// - New error message. (*errors.wrappedError):
+	//   - Original error.
 }
 
 func Example_multiError() {

@@ -14,8 +14,8 @@ const (
 type Writer interface {
 	Write(string)
 	WriteIndent(level int)
-	WriteBullet()
-	WritePrefix(prefix string, trace StackTrace)
+	WriteBullet(level int)
+	WritePrefix(level int, prefix string, trace StackTrace)
 	WriteMessage(msg string, trace StackTrace)
 	WriteNewLine()
 	WriteError(err error)
@@ -85,21 +85,17 @@ func (w *writer) WriteErrorLevel(level int, err error, trace StackTrace) {
 		if w.config.WithUnwrap {
 			if subErr := Unwrap(v); subErr != nil {
 				// Write current error
-				w.Write(w.formatPrefix(w.formatMessage(v.Error(), trace)))
+				w.WriteBullet(level)
+				w.Write(w.formatPrefix(fmt.Sprintf("%s (%T)", w.formatMessage(v.Error(), trace), err)))
 				w.WriteNewLine()
-
-				// Write wrapped error
-				w.WriteIndent(level)
-				w.WriteBullet()
-				w.Write(fmt.Sprintf("%T >>> ", err))
 				w.WriteErrorLevel(level+1, subErr, nil)
 				return
 			}
 		}
-
 		// If the error contains more lines (which shouldn't happen), align all lines, see test.
 		scanner := bufio.NewScanner(strings.NewReader(w.formatMessage(v.Error(), trace)))
 		scanner.Scan()
+		w.WriteBullet(level)
 		w.Write(scanner.Text())
 		for scanner.Scan() {
 			w.WriteNewLine()
@@ -127,48 +123,47 @@ func (w *writer) WriteNestedError(level int, main error, errs []error, trace Sta
 
 	// Convert sub errors to string
 	subErrsWriter := w.clone()
-	subErrsWriter.WriteErrorsList(level, errs)
+	subErrsWriter.WriteErrorsList(level+1, errs)
 	subErrsStr := subErrsWriter.String()
 
 	// If there is more than one error or the message is long,
 	// then break line and create bullet list
 	w.Write(mainStr)
-	if errsCount > 1 || len(mainStr)+len(subErrsStr) > 60 || strings.Contains(subErrsStr, "\n") {
-		w.WriteNewLine()
-		if errsCount == 1 {
-			w.WriteIndent(level)
-			w.WriteBullet()
-			w.WriteErrorLevel(level+1, errs[0], nil)
-		} else {
-			w.WriteErrorsList(level, errs)
-		}
-	} else {
+	if errsCount <= 1 && len(mainStr)+len(subErrsStr) <= 60 && !strings.Contains(subErrsStr, "\n") {
 		w.Write(" ")
-		w.WriteErrorsList(level, errs)
+		w.WriteError(errs[0])
+	} else {
+		w.WriteNewLine()
+		w.WriteErrorsList(level+1, errs)
 	}
 }
 
 func (w *writer) WriteErrorsList(level int, errs []error) {
-	indent := len(errs) > 1
-	last := len(errs) - 1
+	// Write root errors to bullet list, if there is more than one error
+	if level == 0 && len(errs) > 1 {
+		level++
+	}
+
+	// Write each error on a separate line
 	for i, err := range errs {
-		if indent {
-			w.WriteIndent(level)
-			w.WriteBullet()
-		}
-		w.WriteErrorLevel(level+1, err, nil)
-		if i != last {
+		if i > 0 {
 			w.WriteNewLine()
 		}
+		w.WriteErrorLevel(level, err, nil)
 	}
 }
 
 func (w *writer) WriteIndent(level int) {
-	w.Write(strings.Repeat(Indent, level))
+	if level > 0 {
+		w.Write(strings.Repeat(Indent, level))
+	}
 }
 
-func (w *writer) WriteBullet() {
-	w.Write(Bullet)
+func (w *writer) WriteBullet(level int) {
+	if level > 0 {
+		w.WriteIndent(level - 1) // replace one indent by one bullet
+		w.Write(Bullet)
+	}
 }
 
 func (w *writer) WriteNewLine() {
@@ -179,7 +174,8 @@ func (w *writer) Write(s string) {
 	_, _ = w.out.WriteString(s)
 }
 
-func (w *writer) WritePrefix(prefix string, trace StackTrace) {
+func (w *writer) WritePrefix(level int, prefix string, trace StackTrace) {
+	w.WriteBullet(level)
 	w.Write(w.formatPrefix(w.formatMessage(prefix, trace)))
 }
 

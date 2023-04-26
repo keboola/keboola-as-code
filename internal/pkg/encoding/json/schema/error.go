@@ -31,8 +31,9 @@ func (v ValidationError) Error() string {
 	return v.message
 }
 
-func (v ValidationError) WriteError(w errors.Writer, _ int, _ errors.StackTrace) {
+func (v ValidationError) WriteError(w errors.Writer, level int, _ errors.StackTrace) {
 	// Disable other formatting
+	w.WriteBullet(level)
 	w.Write(v.Error())
 }
 
@@ -45,7 +46,8 @@ func (v FieldValidationError) Error() string {
 	return fmt.Sprintf(`"%s": %s`, v.path, v.message)
 }
 
-func (v FieldValidationError) WriteError(w errors.Writer, _ int, _ errors.StackTrace) {
+func (v FieldValidationError) WriteError(w errors.Writer, level int, _ errors.StackTrace) {
 	// Disable other formatting
+	w.WriteBullet(level)
 	w.Write(v.Error())
 }

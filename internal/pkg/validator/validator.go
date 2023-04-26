@@ -106,8 +106,9 @@ func (v Error) Error() string {
 	return v.message
 }
 
-func (v Error) WriteError(w errors.Writer, _ int, _ errors.StackTrace) {
+func (v Error) WriteError(w errors.Writer, level int, _ errors.StackTrace) {
 	// Disable other formatting
+	w.WriteBullet(level)
 	w.Write(v.Error())
 }
 

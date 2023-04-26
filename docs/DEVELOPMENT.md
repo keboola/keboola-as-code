@@ -1,6 +1,8 @@
 # Keboola as Code - Development
 
-## Setup
+## Quick Start
+
+### Clone
 
 Clone this repository and init the workspace with following command:
 
@@ -10,6 +12,8 @@ cd keboola-as-code
 docker-compose build
 ```
 
+### Setup ENV
+
 Create `.env` file with definition of testing projects:
 ```
 TEST_KBC_PROJECTS="[{"host":"connection.keboola.com","project":1234,"stagingStorage":"s3","token":"<token>"},...]"
@@ -17,46 +21,60 @@ TEST_KBC_PROJECTS="[{"host":"connection.keboola.com","project":1234,"stagingStor
 
 Staging storage can be `s3`, `abs` or `gcs`, according to the stack.
 
-Run the test suite and download the dependencies using:
+### Start Dev Container
 
-```
-docker-compose run --rm -u "$UID:$GID" dev make ci
-```
-
-To start the interactive console in the container, you can use:
+Start an interactive console in a container, run:
 ```
 docker-compose run --rm -u "$UID:$GID" --service-ports dev bash
 ```
 
-To run the one or more tests via wildcard:
+### Run Tests
+
+Run the test suite and download the dependencies using:
 ```
-./scripts/tests.sh -run "TestCliE2E/pull/.*"
+make ci
 ```
 
-To run tests in one specific package:
+To run only the CLI [E2E tests](./E2E_TESTS.md), you can use:
 ```
-go test ./internal/pkg/PACKAGE/...
-```
-
-To run tests with verbose output to see HTTP requests, ENVs, etc.:
-```
-docker-compose run --rm dev make tests-verbose
+make tests-cli
 ```
 
-In the container, you can run CLI from the source code using:
+Use the `TEST_VERBOSE=true` ENV to run tests with verbose output to see HTTP requests, ENVs, etc.:
 ```
-go run ./src/main.go help init
+TEST_VERBOSE=true go test -race -v -p 1 ./path/to/pkg... -run TestName/SubTest
 ```
 
-To compile a local binary to `./target`, run in the container:
+Use the `TEST_HTTP_CLIENT_VERBOSE=true` ENV to dump all executed HTTP requests and their responses:
+```
+TEST_HTTP_CLIENT_VERBOSE=true TEST_VERBOSE=true go test -race -v -p 1 ./path/to/pkg... -run TestName/SubTest
+```
+
+Use the `ETCD_VERBOSE=true` ENV to dump all `etcd` operations:
+```
+ETCD_VERBOSE=true TEST_VERBOSE=true go test -race -v -p 1 ./path/to/pkg... -run TestName/SubTest
+```
+
+### Build CLI
+
+To compile a local CLI binary to `./target`, run in the container:
 ```
 make build-local
 ```
 
-To compile a binary for all architectures to `./target`, run in the container:
+To compile the CLI binary for all architectures to `./target`, run in the container:
 ```
 make build
 ```
+
+### Start Documentation Server
+
+To start the [Go Doc](https://go.dev/doc/) documentation server, run the command bellow, then open http://localhost:6060/pkg/github.com/keboola/keboola-as-code/?m=all:
+```
+make godoc
+```
+
+`m=all` is important to show also private packages.
 
 ### API Development
 
@@ -79,7 +97,7 @@ See [provisioning/buffer/README.md](../provisioning/buffer/README.md) or [provis
 
 ### E2E Tests
 
-See [e2etests.md](./e2etests.md).
+See [E2E_TESTS.md](./E2E_TESTS.md).
 
 ### IDE setup
 

@@ -198,7 +198,7 @@ func TestLoadLocalStateBranchInvalidMetaJson(t *testing.T) {
 	_, state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
-	assert.Equal(t, "branch metadata file \"main/meta.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
+	assert.Equal(t, "branch metadata file \"main/meta.json\" is invalid:\n- invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
 
 func TestLoadLocalStateConfigRowMissingDescription(t *testing.T) {
@@ -216,7 +216,7 @@ func TestLoadLocalStateConfigInvalidConfigJson(t *testing.T) {
 	_, state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
-	assert.Equal(t, "config file \"123-branch/extractor/ex-generic-v2/456-todos/config.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
+	assert.Equal(t, "config file \"123-branch/extractor/ex-generic-v2/456-todos/config.json\" is invalid:\n- invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
 
 func TestLoadLocalStateConfigInvalidMetaJson(t *testing.T) {
@@ -225,7 +225,7 @@ func TestLoadLocalStateConfigInvalidMetaJson(t *testing.T) {
 	_, state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
-	assert.Equal(t, "config metadata file \"123-branch/extractor/ex-generic-v2/456-todos/meta.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
+	assert.Equal(t, "config metadata file \"123-branch/extractor/ex-generic-v2/456-todos/meta.json\" is invalid:\n- invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
 
 func TestLoadLocalStateConfigRowInvalidConfigJson(t *testing.T) {
@@ -234,7 +234,7 @@ func TestLoadLocalStateConfigRowInvalidConfigJson(t *testing.T) {
 	_, state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
-	assert.Equal(t, "config row file \"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
+	assert.Equal(t, "config row file \"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/56-disabled/config.json\" is invalid:\n- invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
 
 func TestLoadLocalStateConfigRowInvalidMetaJson(t *testing.T) {
@@ -243,7 +243,7 @@ func TestLoadLocalStateConfigRowInvalidMetaJson(t *testing.T) {
 	_, state, localErr := loadLocalTestState(t, m, fs)
 	assert.NotNil(t, state)
 	assert.Error(t, localErr)
-	assert.Equal(t, "config row metadata file \"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json\" is invalid:\n  - invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
+	assert.Equal(t, "config row metadata file \"123-branch/extractor/keboola.ex-db-mysql/896-tables/rows/12-users/meta.json\" is invalid:\n- invalid character 'f' looking for beginning of object key string, offset: 3", localErr.Error())
 }
 
 func loadLocalTestState(t *testing.T, m *manifest.Manifest, fs filesystem.Fs) (dependencies.Mocked, *State, error) {

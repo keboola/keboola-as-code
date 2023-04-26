@@ -22,7 +22,7 @@ func (e InvalidManifestError) Unwrap() error {
 }
 
 func (e InvalidManifestError) WriteError(w errors.Writer, level int, trace errors.StackTrace) {
-	// Write underlying error
+	// Format underlying error
 	w.WriteErrorLevel(level, e.error, trace)
 }
 
