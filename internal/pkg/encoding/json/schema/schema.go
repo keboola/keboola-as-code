@@ -133,7 +133,7 @@ func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) e
 		isSchemaErr := !strings.HasPrefix(e.AbsoluteKeywordLocation, pseudoSchemaFile)
 		path := strings.TrimLeft(e.InstanceLocation, "/")
 		path = strings.ReplaceAll(path, "/", ".")
-		msg := strings.ReplaceAll(e.Message, `'`, `"`)
+		msg := strings.ReplaceAll(strings.ReplaceAll(e.Message, `'`, `"`), `n"t`, `n't`)
 
 		var formattedErr error
 		switch {
@@ -143,7 +143,7 @@ func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) e
 				if e.Message == "" || e.Message == "doesn't validate with ''" || e.Message == `'' is invalid:` {
 					formattedErr = err
 				} else {
-					formattedErr = errors.PrefixError(err, e.Message)
+					formattedErr = errors.PrefixError(err, msg)
 				}
 			}
 		case isSchemaErr:

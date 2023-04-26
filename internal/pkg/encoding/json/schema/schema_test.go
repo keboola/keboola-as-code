@@ -110,7 +110,7 @@ func TestValidateObjects_InvalidSchema_InvalidType(t *testing.T) {
 	expected := `
 invalid JSON schema:
 - allOf failed:
-  - doesn't validate with 'https://json-schema.org/draft/2020-12/meta/applicator#':
+  - doesn't validate with "https://json-schema.org/draft/2020-12/meta/applicator#":
     - "properties" is invalid: expected object, but got boolean
 `
 	assert.Equal(t, strings.TrimSpace(expected), err.Error())
@@ -148,17 +148,17 @@ func TestValidateObjects_InvalidSchema_Warning1(t *testing.T) {
 	expectedLogs := `
 WARN  config JSON schema of the component "foo.bar" is invalid, please contact support:
 - allOf failed:
-  - doesn't validate with 'https://json-schema.org/draft/2020-12/meta/applicator#':
-    - doesn't validate with 'https://json-schema.org/draft/2020-12/schema#':
+  - doesn't validate with "https://json-schema.org/draft/2020-12/meta/applicator#":
+    - doesn't validate with "https://json-schema.org/draft/2020-12/schema#":
       - allOf failed:
-        - doesn't validate with 'https://json-schema.org/draft/2020-12/meta/applicator#':
+        - doesn't validate with "https://json-schema.org/draft/2020-12/meta/applicator#":
           - "properties.key1.properties" is invalid: expected object, but got boolean
 WARN  config row JSON schema of the component "foo.bar" is invalid, please contact support:
 - allOf failed:
-  - doesn't validate with 'https://json-schema.org/draft/2020-12/meta/applicator#':
-    - doesn't validate with 'https://json-schema.org/draft/2020-12/schema#':
+  - doesn't validate with "https://json-schema.org/draft/2020-12/meta/applicator#":
+    - doesn't validate with "https://json-schema.org/draft/2020-12/schema#":
       - allOf failed:
-        - doesn't validate with 'https://json-schema.org/draft/2020-12/meta/applicator#':
+        - doesn't validate with "https://json-schema.org/draft/2020-12/meta/applicator#":
           - "properties.key1.properties" is invalid: expected object, but got boolean
 `
 	testInvalidComponentSchema(t, invalidSchema, expectedLogs)
@@ -180,12 +180,12 @@ func TestValidateObjects_InvalidSchema_Warning2(t *testing.T) {
 	expectedLogs := `
 WARN  config JSON schema of the component "foo.bar" is invalid, please contact support:
 - anyOf failed:
-  - doesn't validate with '/definitions/simpleTypes':
+  - doesn't validate with "/definitions/simpleTypes":
     - "properties.foo.type" is invalid: value must be one of "array", "boolean", "integer", "null", "number", "object", "string"
   - "properties.foo.type" is invalid: expected array, but got string
 WARN  config row JSON schema of the component "foo.bar" is invalid, please contact support:
 - anyOf failed:
-  - doesn't validate with '/definitions/simpleTypes':
+  - doesn't validate with "/definitions/simpleTypes":
     - "properties.foo.type" is invalid: value must be one of "array", "boolean", "integer", "null", "number", "object", "string"
   - "properties.foo.type" is invalid: expected array, but got string
 `
