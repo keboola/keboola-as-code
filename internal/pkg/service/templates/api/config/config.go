@@ -120,7 +120,7 @@ func (c *Config) Validate() error {
 		return errors.Errorf(`CleanupInterval must be positive time.Duration, found "%v"`, c.CleanupInterval)
 	}
 	if c.StorageAPIHost == "" {
-		errs.Append(errors.New(`StorageAPIHost must be set`))
+		errs.Append(errors.New(`storage API host must be set`))
 	}
 	if c.PublicAddress == nil || c.PublicAddress.String() == "" {
 		errs.Append(errors.New("public address is not set"))

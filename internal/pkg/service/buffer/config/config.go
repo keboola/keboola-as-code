@@ -64,16 +64,16 @@ func (c *Config) Normalize() {
 func (c *Config) Validate() error {
 	errs := errors.NewMultiError()
 	if c.StorageAPIHost == "" {
-		errs.Append(errors.New(`StorageAPIHost must be set`))
+		errs.Append(errors.New(`storage API host must be set`))
 	}
 	if c.EtcdEndpoint == "" {
-		errs.Append(errors.New(`EtcdEndpoint must be set`))
+		errs.Append(errors.New(`etcd endpoint must be set`))
 	}
 	if c.EtcdNamespace == "" {
-		errs.Append(errors.New(`EtcdNamespace must be set`))
+		errs.Append(errors.New(`etcd namespace must be set`))
 	}
 	if c.EtcdConnectTimeout <= 0 {
-		errs.Append(errors.Errorf(`EtcdConnectTimeout must be positive time.Duration, found "%v"`, c.EtcdConnectTimeout))
+		errs.Append(errors.Errorf(`etcd connect timeout must be positive time.Duration, found "%v"`, c.EtcdConnectTimeout))
 	}
 	return errs.ErrorOrNil()
 }
