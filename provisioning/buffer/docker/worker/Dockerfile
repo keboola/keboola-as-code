@@ -21,8 +21,7 @@ RUN apk add -U --no-cache ca-certificates git
 COPY --from=buildContainer /app/target/buffer/worker /app/worker
 WORKDIR /app
 
-ENV HOST 0.0.0.0
-ENV PORT 8000
-EXPOSE 8000
+# Prometheus metrics
+EXPOSE 9000
 
-CMD ["/app/worker"]
+CMD ["/app/worker", "--metrics-listen-address=http://0.0.0.0:9000"]
