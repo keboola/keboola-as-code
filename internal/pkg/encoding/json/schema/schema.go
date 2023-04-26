@@ -16,7 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// pseudoSchemaFile - the validated schema is registered as this resource
+// pseudoSchemaFile - the validated schema is registered as this resource.
 const pseudoSchemaFile = "/schema.json"
 
 func ValidateObjects(logger log.Logger, objects model.ObjectStates) error {
@@ -104,7 +104,7 @@ func ValidateContent(schema []byte, content *orderedmap.OrderedMap) error {
 	// Process schema errors
 	validationErrors := &jsonschema.ValidationError{}
 	if errors.As(err, &validationErrors) {
-		return processErrors(validationErrors.Causes)
+		return processErrors(validationErrors.Causes, false)
 	} else if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
 	return schema.Validate(document.ToMap())
 }
 
-func processErrors(errs []*jsonschema.ValidationError) error {
+func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) error {
 	// Sort errors
 	sort.Slice(errs, func(i, j int) bool {
 		return errs[i].InstanceLocation < errs[j].InstanceLocation
@@ -134,36 +134,53 @@ func processErrors(errs []*jsonschema.ValidationError) error {
 		path = strings.ReplaceAll(path, "/", ".")
 		msg := strings.ReplaceAll(e.Message, `'`, `"`)
 
+		var formattedErr error
 		switch {
 		case len(e.Causes) > 0:
-			// Process nested errors
-			if err := processErrors(e.Causes); err != nil {
-				if e.Message == "" {
-					docErrs.Append(err)
+			// Process nested errors.
+			if err := processErrors(e.Causes, isSchemaErr || parentIsSchemaErr); err != nil {
+				if e.Message == "" || e.Message == "doesn't validate with ''" {
+					formattedErr = err
 				} else {
-					docErrs.Append(errors.PrefixError(err, e.Message))
+					formattedErr = errors.PrefixError(err, e.Message)
 				}
 			}
 		case isSchemaErr:
 			// Required field in a JSON schema should be an array of required nested fields.
 			// But, for historical reasons, in Keboola components, "required: true" is also used.
-			// In the UI, this causes the drop-down list to not have an empty value.
-			// For this reason, we can ignore the error.
+			// In the UI, this causes the drop-down list to not have an empty value, so the error should be ignored.
 			if strings.HasSuffix(e.InstanceLocation, "/required") && e.Message == "expected array, but got boolean" {
 				continue
 			}
-			schemaErrs.Append(errors.Wrapf(e, `"%s" is invalid: %s`, path, e.Message))
+			// The schema may contain a non-standard testConnection definition: {type: button}, so the error should be ignored.
+			if path == "properties.test_connection.type" {
+				continue
+			}
+			formattedErr = errors.Wrapf(e, `"%s" is invalid: %s`, path, e.Message)
 		default:
 			// Format error
 			if path == "" {
-				docErrs.Append(&ValidationError{message: msg})
+				formattedErr = &ValidationError{message: msg}
 			} else {
-				docErrs.Append(&FieldValidationError{path: path, message: msg})
+				formattedErr = &FieldValidationError{path: path, message: msg}
+			}
+		}
+
+		if formattedErr != nil {
+			if isSchemaErr {
+				schemaErrs.Append(formattedErr)
+			} else {
+				docErrs.Append(formattedErr)
 			}
 		}
 	}
 
+	// Errors in the schema have priority, they will be written to the user as a warning.
 	if schemaErrs.Len() > 0 {
+		if parentIsSchemaErr {
+			// Only parent schema error is wrapped to the SchemaError type, nested errors are not.
+			return schemaErrs
+		}
 		return &SchemaError{error: schemaErrs}
 	}
 
