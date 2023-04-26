@@ -16,6 +16,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// pseudoSchemaFile - the validated schema is registered as this resource
+const pseudoSchemaFile = "/schema.json"
+
 func ValidateObjects(logger log.Logger, objects model.ObjectStates) error {
 	errs := errors.NewMultiError()
 	for _, config := range objects.Configs() {
@@ -111,7 +114,7 @@ func ValidateContent(schema []byte, content *orderedmap.OrderedMap) error {
 func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
 	schema, err := compileSchema(schemaStr, false)
 	if err != nil {
-		msg := strings.TrimPrefix(err.Error(), "jsonschema: invalid json schema.json: ")
+		msg := strings.TrimPrefix(err.Error(), "jsonschema: invalid json "+pseudoSchemaFile+": ")
 		return &SchemaError{error: errors.Wrapf(err, msg)}
 	}
 	return schema.Validate(document.ToMap())
@@ -126,31 +129,32 @@ func processErrors(errs []*jsonschema.ValidationError) error {
 	schemaErrs := errors.NewMultiError()
 	docErrs := errors.NewMultiError()
 	for _, e := range errs {
-		// Process nested errors
-		if len(e.Causes) > 0 {
+		isSchemaErr := !strings.HasPrefix(e.AbsoluteKeywordLocation, "file://"+pseudoSchemaFile)
+		switch {
+		case len(e.Causes) > 0:
+			// Process nested errors
 			if err := processErrors(e.Causes); err != nil {
 				docErrs.Append(err)
 			}
-			continue
-		}
-
-		// Format error
-		path := strings.TrimLeft(e.InstanceLocation, "/")
-		path = strings.ReplaceAll(path, "/", ".")
-		msg := strings.ReplaceAll(e.Message, `'`, `"`)
-		if strings.HasPrefix(e.AbsoluteKeywordLocation, "https://json-schema.org/") {
-			// Required field in a JSON schema should be an array of required nested fields.
-			// But, for historical reasons, in Keboola components, "required: true" is also used.
-			// In the UI, this causes the drop-down list to not have an empty value.
-			// For this reason, we can ignore the error.
-			if strings.HasSuffix(e.InstanceLocation, "/required") && e.Message == "expected array, but got boolean" {
-				continue
+		default:
+			// Format error
+			path := strings.TrimLeft(e.InstanceLocation, "/")
+			path = strings.ReplaceAll(path, "/", ".")
+			msg := strings.ReplaceAll(e.Message, `'`, `"`)
+			if isSchemaErr {
+				// Required field in a JSON schema should be an array of required nested fields.
+				// But, for historical reasons, in Keboola components, "required: true" is also used.
+				// In the UI, this causes the drop-down list to not have an empty value.
+				// For this reason, we can ignore the error.
+				if strings.HasSuffix(e.InstanceLocation, "/required") && e.Message == "expected array, but got boolean" {
+					continue
+				}
+				schemaErrs.Append(errors.Wrapf(e, `"%s" is invalid: %s`, path, e.Message))
+			} else if path == "" {
+				docErrs.Append(&ValidationError{message: msg})
+			} else {
+				docErrs.Append(&FieldValidationError{path: path, message: msg})
 			}
-			schemaErrs.Append(errors.Wrapf(e, `"%s" is invalid: %s`, path, e.Message))
-		} else if path == "" {
-			docErrs.Append(&ValidationError{message: msg})
-		} else {
-			docErrs.Append(&FieldValidationError{path: path, message: msg})
 		}
 	}
 
@@ -168,9 +172,9 @@ func compileSchema(schemaStr []byte, savePropertyOrder bool) (*jsonschema.Schema
 		registerPropertyOrderExt(c)
 	}
 
-	if err := c.AddResource("schema.json", bytes.NewReader(schemaStr)); err != nil {
+	if err := c.AddResource(pseudoSchemaFile, bytes.NewReader(schemaStr)); err != nil {
 		return nil, err
 	}
 
-	return c.Compile("schema.json")
+	return c.Compile(pseudoSchemaFile)
 }
