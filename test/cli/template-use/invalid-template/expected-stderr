@@ -1,0 +1,3 @@
+Error:
+- Template definition is not valid:
+  - Cannot parse jsonnet: extractor/ex-generic-v2/myconfig/config.jsonnet:7:28 Unterminated String.
