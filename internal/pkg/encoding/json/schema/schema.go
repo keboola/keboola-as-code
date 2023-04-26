@@ -130,27 +130,28 @@ func processErrors(errs []*jsonschema.ValidationError) error {
 	docErrs := errors.NewMultiError()
 	for _, e := range errs {
 		isSchemaErr := !strings.HasPrefix(e.AbsoluteKeywordLocation, "file://"+pseudoSchemaFile)
+		path := strings.TrimLeft(e.InstanceLocation, "/")
+		path = strings.ReplaceAll(path, "/", ".")
+		msg := strings.ReplaceAll(e.Message, `'`, `"`)
+		
 		switch {
 		case len(e.Causes) > 0:
 			// Process nested errors
 			if err := processErrors(e.Causes); err != nil {
 				docErrs.Append(err)
 			}
+		case isSchemaErr:
+			// Required field in a JSON schema should be an array of required nested fields.
+			// But, for historical reasons, in Keboola components, "required: true" is also used.
+			// In the UI, this causes the drop-down list to not have an empty value.
+			// For this reason, we can ignore the error.
+			if strings.HasSuffix(e.InstanceLocation, "/required") && e.Message == "expected array, but got boolean" {
+				continue
+			}
+			schemaErrs.Append(errors.Wrapf(e, `"%s" is invalid: %s`, path, e.Message))
 		default:
 			// Format error
-			path := strings.TrimLeft(e.InstanceLocation, "/")
-			path = strings.ReplaceAll(path, "/", ".")
-			msg := strings.ReplaceAll(e.Message, `'`, `"`)
-			if isSchemaErr {
-				// Required field in a JSON schema should be an array of required nested fields.
-				// But, for historical reasons, in Keboola components, "required: true" is also used.
-				// In the UI, this causes the drop-down list to not have an empty value.
-				// For this reason, we can ignore the error.
-				if strings.HasSuffix(e.InstanceLocation, "/required") && e.Message == "expected array, but got boolean" {
-					continue
-				}
-				schemaErrs.Append(errors.Wrapf(e, `"%s" is invalid: %s`, path, e.Message))
-			} else if path == "" {
+			if path == "" {
 				docErrs.Append(&ValidationError{message: msg})
 			} else {
 				docErrs.Append(&FieldValidationError{path: path, message: msg})
