@@ -16,6 +16,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+// pseudoSchemaFile - the validated schema is registered as this resource.
+const pseudoSchemaFile = "file:///schema.json"
+
 func ValidateObjects(logger log.Logger, objects model.ObjectStates) error {
 	errs := errors.NewMultiError()
 	for _, config := range objects.Configs() {
@@ -101,7 +104,7 @@ func ValidateContent(schema []byte, content *orderedmap.OrderedMap) error {
 	// Process schema errors
 	validationErrors := &jsonschema.ValidationError{}
 	if errors.As(err, &validationErrors) {
-		return processErrors(validationErrors.Causes)
+		return processErrors(validationErrors.Causes, false)
 	} else if err != nil {
 		return err
 	}
@@ -111,13 +114,13 @@ func ValidateContent(schema []byte, content *orderedmap.OrderedMap) error {
 func validateDocument(schemaStr []byte, document *orderedmap.OrderedMap) error {
 	schema, err := compileSchema(schemaStr, false)
 	if err != nil {
-		msg := strings.TrimPrefix(err.Error(), "jsonschema: invalid json schema.json: ")
+		msg := strings.TrimPrefix(err.Error(), "jsonschema: invalid json "+pseudoSchemaFile+": ")
 		return &SchemaError{error: errors.Wrapf(err, msg)}
 	}
 	return schema.Validate(document.ToMap())
 }
 
-func processErrors(errs []*jsonschema.ValidationError) error {
+func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) error {
 	// Sort errors
 	sort.Slice(errs, func(i, j int) bool {
 		return errs[i].InstanceLocation < errs[j].InstanceLocation
@@ -126,35 +129,59 @@ func processErrors(errs []*jsonschema.ValidationError) error {
 	schemaErrs := errors.NewMultiError()
 	docErrs := errors.NewMultiError()
 	for _, e := range errs {
-		// Process nested errors
-		if len(e.Causes) > 0 {
-			if err := processErrors(e.Causes); err != nil {
-				docErrs.Append(err)
-			}
-			continue
-		}
-
-		// Format error
+		// Schema error does not start with our pseudo schema file.
+		isSchemaErr := !strings.HasPrefix(e.AbsoluteKeywordLocation, pseudoSchemaFile)
 		path := strings.TrimLeft(e.InstanceLocation, "/")
 		path = strings.ReplaceAll(path, "/", ".")
-		msg := strings.ReplaceAll(e.Message, `'`, `"`)
-		if strings.HasPrefix(e.AbsoluteKeywordLocation, "https://json-schema.org/") {
+		msg := strings.ReplaceAll(strings.ReplaceAll(e.Message, `'`, `"`), `n"t`, `n't`)
+
+		var formattedErr error
+		switch {
+		case len(e.Causes) > 0:
+			// Process nested errors.
+			if err := processErrors(e.Causes, isSchemaErr || parentIsSchemaErr); err != nil {
+				if e.Message == "" || e.Message == "doesn't validate with ''" || e.Message == `'' is invalid:` {
+					formattedErr = err
+				} else {
+					formattedErr = errors.PrefixError(err, msg)
+				}
+			}
+		case isSchemaErr:
 			// Required field in a JSON schema should be an array of required nested fields.
 			// But, for historical reasons, in Keboola components, "required: true" is also used.
-			// In the UI, this causes the drop-down list to not have an empty value.
-			// For this reason, we can ignore the error.
+			// In the UI, this causes the drop-down list to not have an empty value, so the error should be ignored.
 			if strings.HasSuffix(e.InstanceLocation, "/required") && e.Message == "expected array, but got boolean" {
 				continue
 			}
-			schemaErrs.Append(errors.Wrapf(e, `"%s" is invalid: %s`, path, e.Message))
-		} else if path == "" {
-			docErrs.Append(&ValidationError{message: msg})
-		} else {
-			docErrs.Append(&FieldValidationError{path: path, message: msg})
+			// The schema may contain a non-standard testConnection definition: {type: button}, so the error should be ignored.
+			if path == "properties.test_connection.type" {
+				continue
+			}
+			formattedErr = errors.Wrapf(e, `"%s" is invalid: %s`, path, e.Message)
+		default:
+			// Format error
+			if path == "" {
+				formattedErr = &ValidationError{message: msg}
+			} else {
+				formattedErr = &FieldValidationError{path: path, message: msg}
+			}
+		}
+
+		if formattedErr != nil {
+			if isSchemaErr {
+				schemaErrs.Append(formattedErr)
+			} else {
+				docErrs.Append(formattedErr)
+			}
 		}
 	}
 
+	// Errors in the schema have priority, they will be written to the user as a warning.
 	if schemaErrs.Len() > 0 {
+		if parentIsSchemaErr {
+			// Only parent schema error is wrapped to the SchemaError type, nested errors are not.
+			return schemaErrs
+		}
 		return &SchemaError{error: schemaErrs}
 	}
 
@@ -168,9 +195,9 @@ func compileSchema(schemaStr []byte, savePropertyOrder bool) (*jsonschema.Schema
 		registerPropertyOrderExt(c)
 	}
 
-	if err := c.AddResource("schema.json", bytes.NewReader(schemaStr)); err != nil {
+	if err := c.AddResource(pseudoSchemaFile, bytes.NewReader(schemaStr)); err != nil {
 		return nil, err
 	}
 
-	return c.Compile("schema.json")
+	return c.Compile(pseudoSchemaFile)
 }

@@ -55,7 +55,7 @@ func TestValidateObjects_Error(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(expectedErr), err.Error())
 }
 
-func TestValidateObjects_InvalidSchema_JSON(t *testing.T) {
+func TestValidateObjects_InvalidSchema_InvalidJSON(t *testing.T) {
 	t.Parallel()
 	invalidSchema := []byte(`{...`)
 	err := ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{
@@ -75,22 +75,43 @@ invalid JSON schema:
 	assert.Equal(t, strings.TrimSpace(expected), err.Error())
 }
 
-func TestValidateObjects_InvalidSchema_FieldType(t *testing.T) {
+func TestValidateObjects_Ignore_TestConnectionButton(t *testing.T) {
+	t.Parallel()
+	invalidSchema := []byte(`
+{
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "properties": {
+    "test_connection": {
+      "type": "button"
+    }
+  }
+}
+`)
+
+	assert.NoError(t, ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{
+		{
+			Key:   "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{{Key: "key", Value: "value"}}),
+		},
+	})))
+}
+
+func TestValidateObjects_InvalidSchema_InvalidType(t *testing.T) {
 	t.Parallel()
 	invalidSchema := []byte(`{"properties":false}`)
 	err := ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{
 		{
-			Key: "parameters",
-			Value: orderedmap.FromPairs([]orderedmap.Pair{
-				{Key: "key1", Value: "value1"},
-				{Key: "key2", Value: "value2"},
-			}),
+			Key:   "parameters",
+			Value: orderedmap.FromPairs([]orderedmap.Pair{{Key: "key", Value: "value"}}),
 		},
 	}))
 	assert.Error(t, err)
 	expected := `
 invalid JSON schema:
-- "properties" is invalid: expected object, but got boolean
+- allOf failed:
+  - doesn't validate with "https://json-schema.org/draft/2020-12/meta/applicator#":
+    - "properties" is invalid: expected object, but got boolean
 `
 	assert.Equal(t, strings.TrimSpace(expected), err.Error())
 }
@@ -121,10 +142,61 @@ func TestValidateObjects_SkipEmpty(t *testing.T) {
 	assert.NoError(t, ValidateContent(schema, content))
 }
 
-func TestValidateObjects_InvalidSchema_Warning(t *testing.T) {
+func TestValidateObjects_InvalidSchema_Warning1(t *testing.T) {
 	t.Parallel()
 	invalidSchema := []byte(`{"properties": {"key1": {"properties": true}}}`)
+	expectedLogs := `
+WARN  config JSON schema of the component "foo.bar" is invalid, please contact support:
+- allOf failed:
+  - doesn't validate with "https://json-schema.org/draft/2020-12/meta/applicator#":
+    - doesn't validate with "https://json-schema.org/draft/2020-12/schema#":
+      - allOf failed:
+        - doesn't validate with "https://json-schema.org/draft/2020-12/meta/applicator#":
+          - "properties.key1.properties" is invalid: expected object, but got boolean
+WARN  config row JSON schema of the component "foo.bar" is invalid, please contact support:
+- allOf failed:
+  - doesn't validate with "https://json-schema.org/draft/2020-12/meta/applicator#":
+    - doesn't validate with "https://json-schema.org/draft/2020-12/schema#":
+      - allOf failed:
+        - doesn't validate with "https://json-schema.org/draft/2020-12/meta/applicator#":
+          - "properties.key1.properties" is invalid: expected object, but got boolean
+`
+	testInvalidComponentSchema(t, invalidSchema, expectedLogs)
+}
 
+func TestValidateObjects_InvalidSchema_Warning2(t *testing.T) {
+	t.Parallel()
+	invalidSchema := []byte(`
+{
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "properties": {
+    "foo": {
+      "type": "bar"
+    }
+  }
+}
+`)
+	expectedLogs := `
+WARN  config JSON schema of the component "foo.bar" is invalid, please contact support:
+- anyOf failed:
+  - doesn't validate with "/definitions/simpleTypes":
+    - "properties.foo.type" is invalid: value must be one of "array", "boolean", "integer", "null", "number", "object", "string"
+  - "properties.foo.type" is invalid: expected array, but got string
+WARN  config row JSON schema of the component "foo.bar" is invalid, please contact support:
+- anyOf failed:
+  - doesn't validate with "/definitions/simpleTypes":
+    - "properties.foo.type" is invalid: value must be one of "array", "boolean", "integer", "null", "number", "object", "string"
+  - "properties.foo.type" is invalid: expected array, but got string
+`
+	testInvalidComponentSchema(t, invalidSchema, expectedLogs)
+}
+
+func testInvalidComponentSchema(t *testing.T, invalidSchema []byte, expectedLogs string) {
+	t.Helper()
+
+	// Create component, config and row definitions
+	logger := log.NewDebugLogger()
 	componentID := keboola.ComponentID("foo.bar")
 	components := model.NewComponentsMap(keboola.Components{
 		{
@@ -145,8 +217,6 @@ func TestValidateObjects_InvalidSchema_Warning(t *testing.T) {
 			}),
 		},
 	})
-
-	logger := log.NewDebugLogger()
 	registry := state.NewRegistry(knownpaths.NewNop(), naming.NewRegistry(), components, model.SortByID)
 	assert.NoError(t, registry.Set(&model.ConfigState{
 		ConfigManifest: &model.ConfigManifest{ConfigKey: model.ConfigKey{ComponentID: componentID}},
@@ -161,15 +231,7 @@ func TestValidateObjects_InvalidSchema_Warning(t *testing.T) {
 	content := orderedmap.New()
 	content.Set(`parameters`, orderedmap.New())
 	assert.NoError(t, ValidateObjects(logger, registry))
-
-	// Check logs
-	expected := `
-WARN  config JSON schema of the component "foo.bar" is invalid, please contact support:
-- "properties.key1.properties" is invalid: expected object, but got boolean
-WARN  config row JSON schema of the component "foo.bar" is invalid, please contact support:
-- "properties.key1.properties" is invalid: expected object, but got boolean
-`
-	assert.Equal(t, strings.TrimLeft(expected, "\n"), logger.AllMessages())
+	assert.Equal(t, strings.TrimLeft(expectedLogs, "\n"), logger.AllMessages())
 }
 
 func getTestSchema() []byte {
