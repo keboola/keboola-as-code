@@ -3,6 +3,7 @@ package dependencies
 import (
 	"context"
 	"testing"
+
 	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
 

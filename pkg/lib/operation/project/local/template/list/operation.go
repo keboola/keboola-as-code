@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -13,11 +11,11 @@ import (
 
 type dependencies interface {
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func Run(ctx context.Context, branch *model.BranchState, d dependencies) (err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.template.list")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.local.template.list")
 	defer telemetry.EndSpan(span, &err)
 
 	w := d.Logger().InfoWriter()

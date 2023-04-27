@@ -88,7 +88,7 @@ func formatTaskURL(apiHost string, k task.Key) string {
 }
 
 func RepositoriesResponse(ctx context.Context, d dependencies.ForProjectRequest) (out *Repositories, err error) {
-	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.RepositoriesResponse")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.RepositoriesResponse")
 	defer telemetry.EndSpan(span, &err)
 
 	out = &Repositories{}
@@ -103,7 +103,7 @@ func RepositoriesResponse(ctx context.Context, d dependencies.ForProjectRequest)
 }
 
 func RepositoryResponse(ctx context.Context, d dependencies.ForProjectRequest, v *repository.Repository) *Repository {
-	_, span := d.Tracer().Start(ctx, "api.server.templates.mapper.RepositoryResponse")
+	_, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.RepositoryResponse")
 	defer telemetry.EndSpan(span, nil)
 
 	repo := v.Definition()
@@ -120,7 +120,7 @@ func RepositoryResponse(ctx context.Context, d dependencies.ForProjectRequest, v
 }
 
 func TemplatesResponse(ctx context.Context, d dependencies.ForProjectRequest, repo *repository.Repository, templates []repository.TemplateRecord) (out *Templates, err error) {
-	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.TemplatesResponse")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.TemplatesResponse")
 	defer telemetry.EndSpan(span, &err)
 
 	out = &Templates{Repository: RepositoryResponse(ctx, d, repo), Templates: make([]*Template, 0)}
@@ -137,7 +137,7 @@ func TemplatesResponse(ctx context.Context, d dependencies.ForProjectRequest, re
 }
 
 func TemplateResponse(ctx context.Context, d dependencies.ForProjectRequest, tmpl *repository.TemplateRecord, author *Author) (out *Template, err error) {
-	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.TemplateResponse")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.TemplateResponse")
 	defer telemetry.EndSpan(span, &err)
 
 	defaultVersion, err := tmpl.DefaultVersionOrErr()
@@ -164,7 +164,7 @@ func TemplateResponse(ctx context.Context, d dependencies.ForProjectRequest, tmp
 }
 
 func TemplateDetailResponse(ctx context.Context, d dependencies.ForProjectRequest, repo *repository.Repository, tmpl *repository.TemplateRecord) (out *TemplateDetail, err error) {
-	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.TemplateDetailResponse")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.TemplateDetailResponse")
 	defer telemetry.EndSpan(span, &err)
 
 	defaultVersion, err := tmpl.DefaultVersionOrErr()
@@ -212,7 +212,7 @@ func VersionDetailResponse(d dependencies.ForProjectRequest, template *template.
 }
 
 func VersionDetailExtendedResponse(ctx context.Context, d dependencies.ForProjectRequest, repo *repository.Repository, template *template.Template) (out *VersionDetailExtended, err error) {
-	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.VersionDetailExtendedResponse")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.VersionDetailExtendedResponse")
 	defer telemetry.EndSpan(span, &err)
 
 	repoResponse := RepositoryResponse(ctx, d, repo)
@@ -264,7 +264,7 @@ func ComponentsResponse(d dependencies.ForProjectRequest, in []string) (out []st
 }
 
 func UpgradeInstanceInputsResponse(ctx context.Context, d dependencies.ForProjectRequest, prjState *project.State, branchKey model.BranchKey, instance *model.TemplateInstance, tmpl *template.Template) (out *Inputs) {
-	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.UpgradeInstanceInputsResponse")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.UpgradeInstanceInputsResponse")
 	defer telemetry.EndSpan(span, nil)
 
 	stepsGroupsExt := upgrade.ExportInputsValues(d.Logger().InfoWriter(), prjState.State(), branchKey, instance.InstanceID, tmpl.Inputs())
@@ -272,7 +272,7 @@ func UpgradeInstanceInputsResponse(ctx context.Context, d dependencies.ForProjec
 }
 
 func InputsResponse(ctx context.Context, d dependencies.ForProjectRequest, stepsGroups input.StepsGroupsExt) (out *Inputs) {
-	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.InputsResponse")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.InputsResponse")
 	defer telemetry.EndSpan(span, nil)
 
 	out = &Inputs{StepGroups: make([]*StepGroup, 0)}
@@ -355,7 +355,7 @@ func OptionsResponse(options input.Options) (out []*InputOption) {
 }
 
 func InstancesResponse(ctx context.Context, d dependencies.ForProjectRequest, prjState *project.State, branchKey model.BranchKey) (out *Instances, err error) {
-	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.InstancesResponse")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.InstancesResponse")
 	defer telemetry.EndSpan(span, &err)
 
 	// Get branch state
@@ -415,7 +415,7 @@ func InstancesResponse(ctx context.Context, d dependencies.ForProjectRequest, pr
 }
 
 func InstanceResponse(ctx context.Context, d dependencies.ForProjectRequest, prjState *project.State, branchKey model.BranchKey, instanceId string) (out *InstanceDetail, err error) {
-	ctx, span := d.Tracer().Start(ctx, "api.server.templates.mapper.InstanceResponse")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.InstanceResponse")
 	defer telemetry.EndSpan(span, &err)
 
 	// Get branch state

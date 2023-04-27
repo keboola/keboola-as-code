@@ -5,13 +5,12 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	serviceConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 const (

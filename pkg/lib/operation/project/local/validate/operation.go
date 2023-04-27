@@ -3,8 +3,6 @@ package validate
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/encrypt"
@@ -20,11 +18,11 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.validate")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.local.validate")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()

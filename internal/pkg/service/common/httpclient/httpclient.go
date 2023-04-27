@@ -12,7 +12,7 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/oteldd"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -60,7 +60,7 @@ func New(opts ...Option) client.Client {
 	transport := client.HTTP2Transport()
 
 	// DataDog low-level tracing (raw http requests)
-	if conf.envs != nil && telemetry.IsDataDogEnabled(conf.envs) {
+	if conf.envs != nil && oteldd.IsDataDogEnabled(conf.envs) {
 		transport = ddHttp.WrapRoundTripper(
 			transport,
 			ddHttp.WithBefore(func(request *http.Request, span ddtrace.Span) {
@@ -99,8 +99,8 @@ func New(opts ...Option) client.Client {
 	}
 
 	// DataDog high-level tracing (api client requests)
-	if conf.envs != nil && telemetry.IsDataDogEnabled(conf.envs) {
-		cl = cl.AndTrace(telemetry.DDTraceFactory())
+	if conf.envs != nil && oteldd.IsDataDogEnabled(conf.envs) {
+		cl = cl.AndTrace(oteldd.DDTraceFactory())
 	}
 
 	return cl

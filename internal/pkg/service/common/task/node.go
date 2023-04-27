@@ -55,7 +55,7 @@ type Node struct {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 	Clock() clock.Clock
 	Logger() log.Logger
 	Process() *servicectx.Process
@@ -74,7 +74,7 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 
 	taskPrefix := etcdop.NewTypedPrefix[Task](etcdop.NewPrefix(c.taskEtcdPrefix), d.EtcdSerde())
 	n := &Node{
-		tracer:         d.Tracer(),
+		tracer:         d.Telemetry().Tracer(),
 		clock:          d.Clock(),
 		logger:         d.Logger().AddPrefix("[task]"),
 		client:         d.EtcdClient(),

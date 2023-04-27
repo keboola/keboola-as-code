@@ -142,7 +142,7 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 }
 
 func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, requestId string) ForPublicRequest {
-	_, span := serverDeps.Tracer().Start(requestCtx, "kac.api.server.templates.dependencies.NewDepsForPublicRequest")
+	_, span := serverDeps.Telemetry().Tracer().Start(requestCtx, "kac.api.server.templates.dependencies.NewDepsForPublicRequest")
 	defer telemetry.EndSpan(span, nil)
 
 	return &forPublicRequest{
@@ -154,7 +154,7 @@ func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, r
 }
 
 func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (ForProjectRequest, error) {
-	ctx, span := publicDeps.Tracer().Start(ctx, "kac.api.server.templates.dependencies.NewDepsForProjectRequest")
+	ctx, span := publicDeps.Telemetry().Tracer().Start(ctx, "kac.api.server.templates.dependencies.NewDepsForProjectRequest")
 	defer telemetry.EndSpan(span, nil)
 
 	projectDeps, err := dependencies.NewProjectDeps(ctx, publicDeps, publicDeps, tokenStr)
@@ -241,7 +241,7 @@ func (v *forProjectRequest) ProjectRepositories() *model.TemplateRepositories {
 }
 
 func (v *forProjectRequest) Template(ctx context.Context, reference model.TemplateRef) (tmpl *template.Template, err error) {
-	ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.Template")
+	ctx, span := v.Telemetry().Tracer().Start(ctx, "kac.api.server.templates.dependencies.Template")
 	defer telemetry.EndSpan(span, &err)
 
 	// Get repository
@@ -255,7 +255,7 @@ func (v *forProjectRequest) Template(ctx context.Context, reference model.Templa
 }
 
 func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition model.TemplateRepository) (tmpl *repository.Repository, err error) {
-	ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.TemplateRepository")
+	ctx, span := v.Telemetry().Tracer().Start(ctx, "kac.api.server.templates.dependencies.TemplateRepository")
 	defer telemetry.EndSpan(span, &err)
 
 	repo, err := v.cachedTemplateRepository(ctx, definition)
@@ -267,7 +267,7 @@ func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition m
 
 func (v *forProjectRequest) cachedTemplateRepository(ctx context.Context, definition model.TemplateRepository) (repo *repositoryManager.CachedRepository, err error) {
 	if _, found := v.repositories[definition.Hash()]; !found {
-		ctx, span := v.Tracer().Start(ctx, "kac.api.server.templates.dependencies.cachedTemplateRepository")
+		ctx, span := v.Telemetry().Tracer().Start(ctx, "kac.api.server.templates.dependencies.cachedTemplateRepository")
 		defer telemetry.EndSpan(span, &err)
 
 		// Get git repository

@@ -119,7 +119,7 @@ type TaskFactory[T any] func(event etcdop.WatchEventT[T]) task.Fn
 type dependencies interface {
 	Clock() clock.Clock
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 	EtcdClient() *etcd.Client
 	DistributionWorkerNode() *distribution.Node
 	TaskNode() *task.Node
@@ -133,7 +133,7 @@ func Start[T any](ctx context.Context, wg *sync.WaitGroup, d dependencies, confi
 	w := &orchestrator[T]{
 		clock:  d.Clock(),
 		logger: d.Logger().AddPrefix(fmt.Sprintf("[orchestrator][%s]", config.Name)),
-		tracer: d.Tracer(),
+		tracer: d.Telemetry().Tracer(),
 		client: d.EtcdClient(),
 		dist:   d.DistributionWorkerNode(),
 		tasks:  d.TaskNode(),

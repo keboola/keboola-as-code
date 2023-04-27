@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	// appName used by the app tracer and meter
+	// appName used by the app tracer and meter.
 	appName = "github.com/keboola/keboola-as-code"
 )
 

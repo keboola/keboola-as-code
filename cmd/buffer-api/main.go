@@ -16,7 +16,7 @@ import (
 	bufferHttp "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/http"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/oteldd"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/cpuprofile"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -60,7 +60,7 @@ func run() error {
 	// Start DataDog tracer.
 	if cfg.DatadogEnabled {
 		tracer.Start(
-			tracer.WithLogger(telemetry.NewDDLogger(logger)),
+			tracer.WithLogger(oteldd.NewDDLogger(logger)),
 			tracer.WithRuntimeMetrics(),
 			tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
 			tracer.WithAnalyticsRate(1.0),

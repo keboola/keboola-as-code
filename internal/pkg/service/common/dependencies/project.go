@@ -32,7 +32,7 @@ func WithoutMasterToken() ProjectDepsOption {
 }
 
 func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr string, opts ...ProjectDepsOption) (v Project, err error) {
-	ctx, span := base.Tracer().Start(ctx, "kac.lib.dependencies.NewProjectDeps")
+	ctx, span := base.Telemetry().Tracer().Start(ctx, "kac.lib.dependencies.NewProjectDeps")
 	defer telemetry.EndSpan(span, &err)
 
 	token, err := public.KeboolaPublicAPI().VerifyTokenRequest(tokenStr).Send(ctx)

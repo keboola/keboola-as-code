@@ -298,7 +298,7 @@ func (s *service) InstancesIndex(d dependencies.ForProjectRequest, payload *Inst
 }
 
 func (s *service) InstanceIndex(d dependencies.ForProjectRequest, payload *InstanceIndexPayload) (res *InstanceDetail, err error) {
-	_, span := d.Tracer().Start(d.RequestCtx(), "api.server.templates.service.InstanceIndex")
+	_, span := d.Telemetry().Tracer().Start(d.RequestCtx(), "api.server.templates.service.InstanceIndex")
 	defer telemetry.EndSpan(span, &err)
 
 	branchKey, err := getBranch(d, payload.Branch)

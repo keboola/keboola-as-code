@@ -5,7 +5,6 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -126,11 +125,11 @@ type dependencies interface {
 	Components() *model.ComponentsMap
 	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func Run(ctx context.Context, container state.ObjectsContainer, o OptionsWithFilter, d dependencies) (s *state.State, err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.state.load")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.state.load")
 	span.SetAttributes(attribute.Bool("remote.load", o.LoadRemoteState))
 	span.SetAttributes(attribute.String("remote.filter", json.MustEncodeString(o.RemoteFilter, false)))
 	span.SetAttributes(attribute.Bool("local.load", o.LoadLocalState))

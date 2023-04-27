@@ -3,8 +3,6 @@ package rename
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/rename"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -20,11 +18,11 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (changed bool, err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.rename")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.local.rename")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()

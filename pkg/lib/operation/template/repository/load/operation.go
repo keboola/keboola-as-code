@@ -3,8 +3,6 @@ package load
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -17,7 +15,7 @@ import (
 
 type dependencies interface {
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 type config struct {
@@ -43,7 +41,7 @@ func OnlyForTemplate(ref model.TemplateRef) Option {
 }
 
 func Run(ctx context.Context, d dependencies, ref model.TemplateRepository, opts ...Option) (repo *repository.Repository, err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.template.repository.load")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.template.repository.load")
 	defer telemetry.EndSpan(span, &err)
 
 	// Create config and apply options

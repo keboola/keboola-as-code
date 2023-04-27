@@ -9,6 +9,7 @@ package dependencies
 
 import (
 	"context"
+
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
@@ -23,11 +22,11 @@ type Options struct {
 type dependencies interface {
 	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.create.table")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.remote.create.table")
 	defer telemetry.EndSpan(span, &err)
 
 	opts := make([]keboola.CreateTableOption, 0)

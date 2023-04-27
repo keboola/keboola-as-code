@@ -3,8 +3,6 @@ package pull
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/plan/pull"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -24,7 +22,7 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func LoadStateOptions(force bool) loadState.Options {
@@ -37,7 +35,7 @@ func LoadStateOptions(force bool) loadState.Options {
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.sync.pull")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.sync.pull")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()

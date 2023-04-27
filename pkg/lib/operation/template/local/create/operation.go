@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -39,11 +38,11 @@ type dependencies interface {
 	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)
 	Logger() log.Logger
 	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.template.local.create")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.template.local.create")
 	defer telemetry.EndSpan(span, &err)
 
 	// Get repository

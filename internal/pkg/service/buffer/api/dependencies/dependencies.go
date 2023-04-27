@@ -26,11 +26,12 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"net"
-	"net/http"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"

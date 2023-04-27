@@ -6,6 +6,7 @@ package oteldd
 import (
 	"context"
 	"encoding/binary"
+
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"

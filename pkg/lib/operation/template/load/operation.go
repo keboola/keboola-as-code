@@ -3,8 +3,6 @@ package load
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
@@ -14,11 +12,11 @@ import (
 
 type dependencies interface {
 	Components() *model.ComponentsMap
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func Run(ctx context.Context, d dependencies, repository *repository.Repository, reference model.TemplateRef) (tmpl *template.Template, err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.template.load")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.template.load")
 	defer telemetry.EndSpan(span, &err)
 
 	// Get template
