@@ -1,4 +1,4 @@
-package telemetry
+package oteldd
 
 import (
 	"context"
@@ -38,7 +38,7 @@ func TestOpenTelemetryToDataDogIntegration(t *testing.T) {
 	defer mockedTracer.Stop()
 
 	ctx := context.Background()
-	otelTracker := NewDataDogTracer()
+	otelTracker := NewProvider().Tracer("default")
 
 	// Start span1
 	startTime1, err := time.Parse(time.RFC3339, "2000-01-01T10:10:10Z")
