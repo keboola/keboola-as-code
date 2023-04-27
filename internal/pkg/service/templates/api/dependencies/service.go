@@ -5,7 +5,6 @@ import (
 	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -36,13 +35,13 @@ type ForService interface {
 func NewServiceDeps(
 	ctx context.Context,
 	proc *servicectx.Process,
-	tracer trace.Tracer,
 	cfg config.Config,
 	envs env.Provider,
 	logger log.Logger,
+	tel telemetry.Telemetry,
 	userAgent string,
 ) (d ForService, err error) {
-	ctx, span := tracer.Start(ctx, "keboola.go.templates.dependencies.NewServiceDeps")
+	ctx, span := tel.Tracer().Start(ctx, "keboola.go.templates.dependencies.NewServiceDeps")
 	defer telemetry.EndSpan(span, &err)
 
 	// Create base HTTP client for all API requests to other APIs
@@ -60,7 +59,7 @@ func NewServiceDeps(
 	)
 
 	// Create base dependencies
-	baseDeps := dependencies.NewBaseDeps(envs, tracer, logger, httpClient)
+	baseDeps := dependencies.NewBaseDeps(envs, logger, tel, httpClient)
 
 	// Create public dependencies - load API index
 	startTime := time.Now()
@@ -75,7 +74,7 @@ func NewServiceDeps(
 	etcdClient, err := etcdclient.New(
 		ctx,
 		proc,
-		tracer,
+		tel,
 		cfg.EtcdEndpoint,
 		cfg.EtcdNamespace,
 		etcdclient.WithUsername(cfg.EtcdUsername),

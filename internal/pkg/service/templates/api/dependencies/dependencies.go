@@ -11,7 +11,7 @@
 //
 // Dependency containers creation:
 //   - Container [ForServer] is created in API main.go entrypoint, in "start" method, see [src/github.com/keboola/keboola-as-code/cmd/templates-api/main.go].
-//   - Container [ForPublicRequest] is created for each HTTP request in the http.ContextMiddleware function, see [src/github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/http/middleware.go].
+//   - Container [ForPublicRequest] is created for each HTTP request in the http.ContextMiddleware function, see [src/github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/http/accesslog.go].
 //   - Container [ForProjectRequest] is created for each authenticated HTTP request in the service.APIKeyAuth method, see [src/github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/service/auth.go].
 //
 // Dependencies injection to service endpoints:
@@ -26,6 +26,7 @@ import (
 	"fmt"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -35,6 +36,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/oteldd"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManager "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
@@ -104,17 +106,21 @@ type forProjectRequest struct {
 }
 
 func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger) (v ForServer, err error) {
-	// Create tracer
-	var tracer trace.Tracer = nil
-	if telemetry.IsDataDogEnabled(envs) {
-		tracer = telemetry.NewDataDogTracer()
-		_, span := tracer.Start(ctx, "kac.lib.api.server.templates.dependencies.NewServerDeps")
-		defer telemetry.EndSpan(span, &err)
+	// Setup telemetry
+	var tracerProvider trace.TracerProvider = nil
+	if oteldd.IsDataDogEnabled(envs) {
+		tracerProvider = oteldd.NewProvider()
 	}
+	var meterProvider metric.MeterProvider = nil
+	tel := telemetry.NewTelemetry(tracerProvider, meterProvider)
+
+	// Create span
+	ctx, span := tel.Tracer().Start(ctx, "kac.lib.api.server.templates.dependencies.NewServerDeps")
+	defer telemetry.EndSpan(span, &err)
 
 	// Create service dependencies
 	userAgent := "keboola-templates-api"
-	serviceDeps, err := NewServiceDeps(ctx, proc, tracer, cfg, envs, logger, userAgent)
+	serviceDeps, err := NewServiceDeps(ctx, proc, cfg, envs, logger, tel, userAgent)
 	if err != nil {
 		return nil, err
 	}

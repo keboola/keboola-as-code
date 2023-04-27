@@ -9,7 +9,7 @@ package dependencies
 
 import (
 	"context"
-
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -23,6 +23,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/oteldd"
 )
 
 // ForWorker interface provides dependencies for Buffer Worker.
@@ -47,20 +48,21 @@ type forWorker struct {
 }
 
 func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger) (v ForWorker, err error) {
-	// Create tracer
-	var tracer trace.Tracer = nil
-	if telemetry.IsDataDogEnabled(envs) {
-		var span trace.Span
-		tracer = telemetry.NewDataDogTracer()
-		ctx, span = tracer.Start(ctx, "keboola.go.buffer.worker.dependencies.NewWorkerDeps")
-		defer telemetry.EndSpan(span, &err)
-	} else {
-		tracer = telemetry.NewNopTracer()
+	// Setup telemetry
+	var tracerProvider trace.TracerProvider = nil
+	if oteldd.IsDataDogEnabled(envs) {
+		tracerProvider = oteldd.NewProvider()
 	}
+	var meterProvider metric.MeterProvider = nil
+	tel := telemetry.NewTelemetry(tracerProvider, meterProvider)
+
+	// Create span
+	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.worker.dependencies.NewWorkerDeps")
+	defer telemetry.EndSpan(span, &err)
 
 	// Create service dependencies
 	userAgent := "keboola-buffer-worker"
-	serviceDeps, err := serviceDependencies.NewServiceDeps(ctx, proc, tracer, cfg.ServiceConfig, envs, logger, userAgent)
+	serviceDeps, err := serviceDependencies.NewServiceDeps(ctx, proc, cfg.ServiceConfig, envs, logger, tel, userAgent)
 	if err != nil {
 		return nil, err
 	}
