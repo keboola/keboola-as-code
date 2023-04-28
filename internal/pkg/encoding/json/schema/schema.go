@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -153,8 +154,8 @@ func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) e
 			if strings.HasSuffix(e.InstanceLocation, "/required") && e.Message == "expected array, but got boolean" {
 				continue
 			}
-			// The schema may contain a non-standard testConnection definition: {type: button}, so the error should be ignored.
-			if path == "properties.test_connection.type" {
+			// JSON schema may contain empty enums, in dynamic selects.
+			if strings.HasSuffix(e.InstanceLocation, "/enum") && e.Message == "minimum 1 items required, but found 0 items" {
 				continue
 			}
 			formattedErr = errors.Wrapf(e, `"%s" is invalid: %s`, path, e.Message)
@@ -188,16 +189,38 @@ func processErrors(errs []*jsonschema.ValidationError, parentIsSchemaErr bool) e
 	return docErrs.ErrorOrNil()
 }
 
-func compileSchema(schemaStr []byte, savePropertyOrder bool) (*jsonschema.Schema, error) {
+func compileSchema(s []byte, savePropertyOrder bool) (*jsonschema.Schema, error) {
 	c := jsonschema.NewCompiler()
 	c.ExtractAnnotations = true
 	if savePropertyOrder {
 		registerPropertyOrderExt(c)
 	}
 
-	if err := c.AddResource(pseudoSchemaFile, bytes.NewReader(schemaStr)); err != nil {
+	// Decode JSON
+	m := orderedmap.New()
+	if err := json.Decode(s, &m); err != nil {
 		return nil, err
 	}
 
-	return c.Compile(pseudoSchemaFile)
+	// Remove non-standard definitions, where type = button.
+	// It is used to test_connection and sync_action definitions.
+	// It has no value for validation, it is a UI definition only.
+	m.VisitAllRecursive(func(path orderedmap.Path, value any, parent any) {
+		if path.Last() == orderedmap.MapStep("type") && value == "button" {
+			if parentMap, ok := parent.(*orderedmap.OrderedMap); ok {
+				parentMap.Delete("type")
+			}
+		}
+	})
+
+	if err := c.AddResource(pseudoSchemaFile, bytes.NewReader(json.MustEncode(m, false))); err != nil {
+		return nil, err
+	}
+
+	schema, err := c.Compile(pseudoSchemaFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return schema, nil
 }
