@@ -70,7 +70,7 @@ func TestValidateObjects_InvalidSchema_InvalidJSON(t *testing.T) {
 	assert.Error(t, err)
 	expected := `
 invalid JSON schema:
-- invalid character '.' looking for beginning of object key string
+- invalid character '.' looking for beginning of object key string, offset: 2
 `
 	assert.Equal(t, strings.TrimSpace(expected), err.Error())
 }
@@ -80,21 +80,123 @@ func TestValidateObjects_Ignore_TestConnectionButton(t *testing.T) {
 	invalidSchema := []byte(`
 {
   "type": "object",
-  "$schema": "http://json-schema.org/draft-04/schema#",
+  "required": ["id"],
   "properties": {
+    "id": {"type": "object"},
     "test_connection": {
-      "type": "button"
+      "type": "button",
+      "format": "sync-action",
+      "propertyOrder": 30,
+      "options": {
+        "async": {
+          "label": "TEST CONNECTION",
+          "action": "validate_connection"
+        }
+      }
     }
   }
 }
 `)
 
-	assert.NoError(t, ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{
-		{
-			Key:   "parameters",
-			Value: orderedmap.FromPairs([]orderedmap.Pair{{Key: "key", Value: "value"}}),
-		},
-	})))
+	err := ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{{Key: "parameters", Value: orderedmap.FromPairs([]orderedmap.Pair{{Key: "key", Value: "value"}})}}))
+	if assert.Error(t, err) {
+		assert.Equal(t, `missing properties: "id"`, err.Error())
+	}
+}
+
+func TestValidateObjects_Ignore_ValidationButton(t *testing.T) {
+	t.Parallel()
+	invalidSchema := []byte(`
+{
+  "type": "object",
+  "required": ["id"],
+  "properties": {
+    "id": {"type": "object"},
+    "validation_button": {
+      "type": "button",
+      "format": "sync-action",
+      "propertyOrder": 10,
+      "options": {
+        "async": {
+          "label": "Validate",
+          "action": "validate_report"
+        }
+      }
+    }
+  }
+}
+`)
+
+	err := ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{{Key: "parameters", Value: orderedmap.FromPairs([]orderedmap.Pair{{Key: "key", Value: "value"}})}}))
+	if assert.Error(t, err) {
+		assert.Equal(t, `missing properties: "id"`, err.Error())
+	}
+}
+
+func TestValidateObjects_Ignore_DynamicSingleSelect(t *testing.T) {
+	t.Parallel()
+	invalidSchema := []byte(`
+{
+  "type": "object",
+  "required": ["id"],
+  "properties": {
+    "id": {"type": "object"},
+    "test_columns_single": {
+      "propertyOrder": 40,
+      "type": "string",
+      "description": "Element loaded by an arbitrary sync action. (single)",
+      "enum": [],
+      "format": "select",
+      "options": {
+        "async": {
+          "label": "Re-load test columns",
+          "action": "testColumns"
+        }
+      }
+    }
+  }
+}
+`)
+
+	err := ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{{Key: "parameters", Value: orderedmap.FromPairs([]orderedmap.Pair{{Key: "key", Value: "value"}})}}))
+	if assert.Error(t, err) {
+		assert.Equal(t, `missing properties: "id"`, err.Error())
+	}
+}
+
+func TestValidateObjects_Ignore_DynamicMultiSelect(t *testing.T) {
+	t.Parallel()
+	invalidSchema := []byte(`
+{
+  "type": "object",
+  "required": ["id"],
+  "properties": {
+    "id": {"type": "object"},
+    "test_columns": {
+      "type": "array",
+      "propertyOrder": 10,
+      "description": "Element loaded by an arbitrary sync action.",
+      "items": {
+        "enum": [],
+        "type": "string"
+      },
+      "format": "select",
+      "options": {
+        "async": {
+          "label": "Re-load test columns",
+          "action": "testColumns"
+        }
+      },
+      "uniqueItems": true
+    }
+  }
+}
+`)
+
+	err := ValidateContent(invalidSchema, orderedmap.FromPairs([]orderedmap.Pair{{Key: "parameters", Value: orderedmap.FromPairs([]orderedmap.Pair{{Key: "key", Value: "value"}})}}))
+	if assert.Error(t, err) {
+		assert.Equal(t, `missing properties: "id"`, err.Error())
+	}
 }
 
 func TestValidateObjects_InvalidSchema_InvalidType(t *testing.T) {
