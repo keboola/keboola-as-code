@@ -31,8 +31,9 @@ const (
 
 type Validator interface {
 	RegisterRule(rules ...Rule)
-	Validate(ctx context.Context, value interface{}) error
-	ValidateCtx(ctx context.Context, value interface{}, tag string, namespace string) error
+	ValidateValue(value any, tag string) error
+	Validate(ctx context.Context, value any) error
+	ValidateCtx(ctx context.Context, value any, tag string, namespace string) error
 }
 
 // Rule is custom validation rule/tag.
@@ -112,13 +113,18 @@ func (v Error) WriteError(w errors.Writer, level int, _ errors.StackTrace) {
 	w.Write(v.Error())
 }
 
+// ValidateValue nested struct fields or slice items.
+func (v *wrapper) ValidateValue(value any, tag string) error {
+	return v.ValidateCtx(context.Background(), value, tag, "")
+}
+
 // Validate nested struct fields or slice items.
-func (v *wrapper) Validate(ctx context.Context, value interface{}) error {
+func (v *wrapper) Validate(ctx context.Context, value any) error {
 	return v.ValidateCtx(ctx, value, "dive", "")
 }
 
 // ValidateCtx validates any value.
-func (v *wrapper) ValidateCtx(ctx context.Context, value interface{}, tag string, namespace string) error {
+func (v *wrapper) ValidateCtx(ctx context.Context, value any, tag string, namespace string) error {
 	// nolint: errorlint // library always returns validator.ValidationErrors
 	if err := v.validator.VarCtx(ctx, value, tag); err != nil {
 		return v.processError(err.(validator.ValidationErrors), namespace, reflect.ValueOf(value))
