@@ -24,7 +24,7 @@ import (
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Printf("fatal error: %s\n", err.Error()) // nolint:forbidigo
+		fmt.Println(errors.PrefixError(err, "fatal error").Error()) // nolint:forbidigo
 		os.Exit(1)
 	}
 }
