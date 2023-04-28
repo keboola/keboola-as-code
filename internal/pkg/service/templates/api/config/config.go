@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 const (
@@ -27,8 +28,8 @@ type Config struct {
 	DatadogEnabled       bool          `mapstructure:"datadog-enabled" usage:"Enable Datadog telemetry integration."`
 	DatadogDebug         bool          `mapstructure:"datadog-debug" usage:"Enable Datadog debug logs."`
 	CpuProfFilePath      string        `mapstructure:"cpu-profile" usage:"Write cpu profile to the file."`
-	ListenAddress        *url.URL      `mapstructure:"listen-address" usage:"API HTTP server listen address."`
-	MetricsListenAddress *url.URL      `mapstructure:"metrics-listen-address" usage:"Prometheus /metrics HTTP endpoint listen address."`
+	ListenAddress        string        `mapstructure:"listen-address" usage:"API HTTP server listen address."`
+	MetricsListenAddress string        `mapstructure:"metrics-listen-address" usage:"Prometheus /metrics HTTP endpoint listen address."`
 	StorageAPIHost       string        `mapstructure:"storage-api-host" usage:"Host of the Storage API."`
 	EtcdConnectTimeout   time.Duration `mapstructure:"etcd-connect-timeout" usage:"etcd connect timeout."`
 	EtcdEndpoint         string        `mapstructure:"etcd-endpoint" usage:"etcd endpoint."`
@@ -58,8 +59,8 @@ func NewConfig() Config {
 		EtcdUsername:         "",
 		EtcdPassword:         "",
 		EtcdConnectTimeout:   30 * time.Second, // longer default timeout, the etcd could be started at the same time as the API
-		ListenAddress:        &url.URL{Scheme: "http", Host: "0.0.0.0:8000"},
-		MetricsListenAddress: &url.URL{Scheme: "http", Host: "0.0.0.0:9000"},
+		ListenAddress:        "0.0.0.0:8000",
+		MetricsListenAddress: "0.0.0.0:9000",
 		Repositories: []model.TemplateRepository{
 			{
 				Type: model.RepositoryTypeGit,
@@ -100,21 +101,10 @@ func (c *Config) Normalize() {
 			c.PublicAddress.Scheme = "https"
 		}
 	}
-	if c.ListenAddress != nil {
-		c.ListenAddress.Host = strhelper.NormalizeHost(c.ListenAddress.Host)
-		if c.ListenAddress.Scheme == "" {
-			c.ListenAddress.Scheme = "http"
-		}
-	}
-	if c.MetricsListenAddress != nil {
-		c.MetricsListenAddress.Host = strhelper.NormalizeHost(c.MetricsListenAddress.Host)
-		if c.MetricsListenAddress.Scheme == "" {
-			c.MetricsListenAddress.Scheme = "http"
-		}
-	}
 }
 
 func (c *Config) Validate() error {
+	v := validator.New()
 	errs := errors.NewMultiError()
 	if c.CleanupInterval <= 0 {
 		return errors.Errorf(`CleanupInterval must be positive time.Duration, found "%v"`, c.CleanupInterval)
@@ -125,17 +115,15 @@ func (c *Config) Validate() error {
 	if c.PublicAddress == nil || c.PublicAddress.String() == "" {
 		errs.Append(errors.New("public address is not set"))
 	}
-	if c.ListenAddress == nil || c.ListenAddress.String() == "" {
+	if c.ListenAddress == "" {
 		errs.Append(errors.New("listen address is not set"))
+	} else if err := v.ValidateValue(c.ListenAddress, "hostname_port"); err != nil {
+		errs.Append(errors.Errorf(`listen address "%s" is not valid`, c.ListenAddress))
 	}
-	if c.ListenAddress.Scheme != "http" {
-		errs.Append(errors.Errorf(`scheme "%s" used in the listen address is not supported, use "http"`, c.ListenAddress.Scheme))
-	}
-	if c.MetricsListenAddress == nil || c.MetricsListenAddress.String() == "" {
+	if c.MetricsListenAddress == "" {
 		errs.Append(errors.New("metrics listen address is not set"))
-	}
-	if c.MetricsListenAddress.Scheme != "http" {
-		errs.Append(errors.Errorf(`scheme "%s" used in the metrics listen address is not supported, use "http"`, c.MetricsListenAddress.Scheme))
+	} else if err := v.ValidateValue(c.MetricsListenAddress, "hostname_port"); err != nil {
+		errs.Append(errors.Errorf(`metrics address "%s" is not valid`, c.MetricsListenAddress))
 	}
 	if len(c.Repositories) == 0 {
 		errs.Append(errors.New(`at least one default repository must be set`))
@@ -168,7 +156,7 @@ func WithPublicAddress(v *url.URL) Option {
 	}
 }
 
-func WithListenAddress(v *url.URL) Option {
+func WithListenAddress(v string) Option {
 	return func(c *Config) {
 		c.ListenAddress = v
 	}

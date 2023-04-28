@@ -2,7 +2,6 @@ package config
 
 import (
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -10,7 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 const (
@@ -27,7 +26,7 @@ type Config struct {
 	CheckConditionsInterval time.Duration    `mapstructure:"check-conditions-interval" usage:"How often will upload and import conditions be checked."`
 	CleanupInterval         time.Duration    `mapstructure:"cleanup-interval" usage:"How often will old resources be deleted."`
 	UploadConditions        model.Conditions `mapstructure:"upload-conditions"`
-	MetricsListenAddress    *url.URL         `mapstructure:"metrics-listen-address" usage:"Prometheus /metrics HTTP endpoint listen address."`
+	MetricsListenAddress    string           `mapstructure:"metrics-listen-address" usage:"Prometheus /metrics HTTP endpoint listen address."`
 	ConditionsCheck         bool             `mapstructure:"enable-conditions-check" usage:"Enable conditions check functionality."`
 	CloseSlices             bool             `mapstructure:"enable-close-slices" usage:"Enable close slices functionality."`
 	UploadSlices            bool             `mapstructure:"enable-upload-slices" usage:"Enable upload slices functionality."`
@@ -47,7 +46,7 @@ func NewConfig() Config {
 		CheckConditionsInterval: DefaultCheckConditionsInterval,
 		CleanupInterval:         DefaultCleanupInterval,
 		UploadConditions:        model.DefaultUploadConditions(),
-		MetricsListenAddress:    &url.URL{Scheme: "http", Host: "0.0.0.0:9000"},
+		MetricsListenAddress:    "0.0.0.0:9000",
 		ConditionsCheck:         true,
 		CloseSlices:             true,
 		UploadSlices:            true,
@@ -74,15 +73,10 @@ func (c *Config) LoadFrom(args []string, envs env.Provider) error {
 
 func (c *Config) Normalize() {
 	c.ServiceConfig.Normalize()
-	if c.MetricsListenAddress != nil {
-		c.MetricsListenAddress.Host = strhelper.NormalizeHost(c.MetricsListenAddress.Host)
-		if c.MetricsListenAddress.Scheme == "" {
-			c.MetricsListenAddress.Scheme = "http"
-		}
-	}
 }
 
 func (c *Config) Validate() error {
+	v := validator.New()
 	errs := errors.NewMultiError()
 	if err := c.ServiceConfig.Validate(); err != nil {
 		errs.Append(err)
@@ -102,11 +96,10 @@ func (c *Config) Validate() error {
 	if c.UploadConditions.Size <= 0 {
 		errs.Append(errors.Errorf(`upload conditions size must be positive number, found "%v"`, c.UploadConditions.Size.String()))
 	}
-	if c.MetricsListenAddress == nil || c.MetricsListenAddress.String() == "" {
+	if c.MetricsListenAddress == "" {
 		errs.Append(errors.New("metrics listen address is not set"))
-	}
-	if c.MetricsListenAddress.Scheme != "http" {
-		errs.Append(errors.Errorf(`scheme "%s" used in the metrics listen address is not supported, use "http"`, c.MetricsListenAddress.Scheme))
+	} else if err := v.ValidateValue(c.MetricsListenAddress, "hostname_port"); err != nil {
+		errs.Append(errors.Errorf(`metrics address "%s" is not valid`, c.MetricsListenAddress))
 	}
 	return errs.ErrorOrNil()
 }
