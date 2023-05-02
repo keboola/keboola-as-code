@@ -7,12 +7,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 // base dependencies container implements Base interface.
 type base struct {
 	envs       env.Provider
 	logger     log.Logger
+	validator  validator.Validator
 	telemetry  telemetry.Telemetry
 	clock      clock.Clock
 	httpClient client.Client
@@ -25,8 +27,9 @@ func NewBaseDeps(envs env.Provider, logger log.Logger, tel telemetry.Telemetry, 
 func newBaseDeps(envs env.Provider, logger log.Logger, tel telemetry.Telemetry, clock clock.Clock, httpClient client.Client) *base {
 	return &base{
 		envs:       envs,
-		telemetry:  tel,
 		logger:     logger,
+		validator:  validator.New(),
+		telemetry:  tel,
 		clock:      clock,
 		httpClient: httpClient,
 	}
@@ -34,6 +37,10 @@ func newBaseDeps(envs env.Provider, logger log.Logger, tel telemetry.Telemetry, 
 
 func (v *base) Envs() env.Provider {
 	return v.envs
+}
+
+func (v *base) Validator() validator.Validator {
+	return v.validator
 }
 
 func (v *base) Telemetry() telemetry.Telemetry {
