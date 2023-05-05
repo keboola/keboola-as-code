@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/go-playground/validator/v10"
 	"github.com/umisama/go-regexpcache"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -84,6 +87,90 @@ func (v *wrapper) registerCustomRules() {
 			},
 			ErrorMsgFunc: func(fe validator.FieldError) string {
 				return fmt.Sprintf("%s exceeded maximum length of %s", fe.Tag(), fe.Param())
+			},
+		},
+		Rule{
+			Tag: "minBytes",
+			FuncCtx: func(ctx context.Context, fl validator.FieldLevel) bool {
+				value, ok := fl.Field().Interface().(datasize.ByteSize)
+				if !ok {
+					panic(errors.Errorf(`unexpected type "%T"`, fl.Field().Interface()))
+				}
+				param, err := datasize.ParseString(fl.Param())
+				if !ok {
+					panic(errors.Errorf(`param "%s" is not valid: %w`, fl.Param(), err))
+				}
+				if param == 0 {
+					panic(errors.Errorf(`param "%s" is not valid`, fl.Param()))
+				}
+				return value >= param
+			},
+			ErrorMsgFunc: func(fe validator.FieldError) string {
+				param, _ := datasize.ParseString(fe.Param())
+				return fmt.Sprintf(`must be %s or greater`, param)
+			},
+		},
+		Rule{
+			Tag: "maxBytes",
+			FuncCtx: func(ctx context.Context, fl validator.FieldLevel) bool {
+				value, ok := fl.Field().Interface().(datasize.ByteSize)
+				if !ok {
+					panic(errors.Errorf(`unexpected type "%T"`, fl.Field().Interface()))
+				}
+				param, err := datasize.ParseString(fl.Param())
+				if !ok {
+					panic(errors.Errorf(`param "%s" is not valid: %w`, fl.Param(), err))
+				}
+				if param == 0 {
+					panic(errors.Errorf(`param "%s" is not valid`, fl.Param()))
+				}
+				return value <= param
+			},
+			ErrorMsgFunc: func(fe validator.FieldError) string {
+				param, _ := datasize.ParseString(fe.Param())
+				return fmt.Sprintf(`must be %s or less`, param)
+			},
+		},
+		Rule{
+			Tag: "minDuration",
+			FuncCtx: func(ctx context.Context, fl validator.FieldLevel) bool {
+				value, ok := fl.Field().Interface().(time.Duration)
+				if !ok {
+					panic(errors.Errorf(`unexpected type "%T"`, fl.Field().Interface()))
+				}
+				param, err := time.ParseDuration(fl.Param())
+				if !ok {
+					panic(errors.Errorf(`param "%s" is not valid: %w`, fl.Param(), err))
+				}
+				if param == 0 {
+					panic(errors.Errorf(`param "%s" is not valid`, fl.Param()))
+				}
+				return value >= param
+			},
+			ErrorMsgFunc: func(fe validator.FieldError) string {
+				param, _ := time.ParseDuration(fe.Param())
+				return fmt.Sprintf(`must be %s or greater`, param)
+			},
+		},
+		Rule{
+			Tag: "maxDuration",
+			FuncCtx: func(ctx context.Context, fl validator.FieldLevel) bool {
+				value, ok := fl.Field().Interface().(time.Duration)
+				if !ok {
+					panic(errors.Errorf(`unexpected type "%T"`, fl.Field().Interface()))
+				}
+				param, err := time.ParseDuration(fl.Param())
+				if !ok {
+					panic(errors.Errorf(`param "%s" is not valid: %w`, fl.Param(), err))
+				}
+				if param == 0 {
+					panic(errors.Errorf(`param "%s" is not valid`, fl.Param()))
+				}
+				return value <= param
+			},
+			ErrorMsgFunc: func(fe validator.FieldError) string {
+				param, _ := time.ParseDuration(fe.Param())
+				return fmt.Sprintf(`must be %s or less`, param.String())
 			},
 		},
 	)
