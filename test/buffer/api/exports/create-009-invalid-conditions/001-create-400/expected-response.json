@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "buffer.badRequest",
+  "message": "Invalid conditions: \"time\" must be 30s or greater."
+}
