@@ -12,11 +12,12 @@ import (
 // Conditions struct configures slice upload and file import conditions.
 type Conditions struct {
 	Count uint64            `json:"count" mapstructure:"count" usage:"Records count." validate:"min=1,max=10000000"`
-	Size  datasize.ByteSize `json:"size" mapstructure:"size" usage:"Records size." validate:"min=100,max=50000000"`                                       // 100B-50MB
-	Time  time.Duration     `json:"time" mapstructure:"time" usage:"Duration from the last upload/import." validate:"min=30000000000,max=86400000000000"` // 30s-24h
+	Size  datasize.ByteSize `json:"size" mapstructure:"size" usage:"Records size." validate:"minBytes=100B,maxBytes=50MB"`
+	Time  time.Duration     `json:"time" mapstructure:"time" usage:"Duration from the last upload/import." validate:"minDuration=30s,maxDuration=24h"`
 }
 
-// UploadConditions determines when a slice will be uploaded. These settings are not configurable.
+// DefaultUploadConditions determines when a slice will be uploaded.
+// These settings are not configurable by user.
 func DefaultUploadConditions() Conditions {
 	return Conditions{
 		Count: 1000,
