@@ -2,7 +2,9 @@ package mapper_test
 
 import (
 	"testing"
+	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
@@ -51,7 +53,7 @@ func TestReceiverModel(t *testing.T) {
 				},
 				Conditions: &buffer.Conditions{
 					Count: 1000,
-					Size:  "100MB",
+					Size:  "20MB",
 					Time:  "3m",
 				},
 			},
@@ -83,8 +85,8 @@ func TestReceiverModel(t *testing.T) {
 					Name:      "Export",
 					ImportConditions: model.Conditions{
 						Count: 1000,
-						Size:  104857600,
-						Time:  180_000_000_000,
+						Size:  20 * datasize.MB,
+						Time:  3 * time.Minute,
 					},
 				},
 				Mapping: model.Mapping{
