@@ -54,6 +54,7 @@ require (
 	go.etcd.io/etcd/tests/v3 v3.5.8
 	go.nhat.io/aferocopy/v2 v2.0.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.41.1
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1
 	go.opentelemetry.io/otel v1.15.1
 	go.opentelemetry.io/otel/exporters/prometheus v0.38.1
 	go.opentelemetry.io/otel/metric v0.38.1
@@ -168,6 +169,7 @@ require (
 	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/dlclark/regexp2 v1.7.0 // indirect
 	github.com/eliukblau/pixterm/pkg/ansimage v0.0.0-20191210081756-9fb6cf8c2f75 // indirect
+	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/inflect v0.19.0 // indirect

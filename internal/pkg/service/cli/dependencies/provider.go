@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
@@ -54,8 +55,12 @@ func NewProvider(commandCtx context.Context, envs env.Provider, logger log.Logge
 
 func (v *provider) BaseDependencies() Base {
 	return v.baseDeps.MustInitAndGet(func() *base {
+		// There is currently no telemetry in the CLI
+		tel := telemetry.NewNopTelemetry()
+
 		// Create base HTTP client for all API requests to other APIs
 		httpClient := httpclient.New(
+			tel,
 			httpclient.WithUserAgent(fmt.Sprintf("keboola-cli/%s", build.BuildVersion)),
 			httpclient.WithDebugOutput(v.logger.DebugWriter()),
 			func(c *httpclient.Config) {
@@ -64,7 +69,7 @@ func (v *provider) BaseDependencies() Base {
 				}
 			},
 		)
-		return newBaseDeps(v.commandCtx, v.envs, v.logger, httpClient, v.fs, v.dialogs, v.options)
+		return newBaseDeps(v.commandCtx, v.envs, v.logger, tel, httpClient, v.fs, v.dialogs, v.options)
 	})
 }
 

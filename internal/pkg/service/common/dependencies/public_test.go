@@ -15,8 +15,9 @@ import (
 
 func TestNewPublicDeps_LazyLoadComponents(t *testing.T) {
 	t.Parallel()
-	httpClient := httpclient.New()
-	baseDeps := newBaseDeps(env.Empty(), log.NewNopLogger(), telemetry.NewNopTelemetry(), clock.New(), httpClient)
+	tel := telemetry.NewNopTelemetry()
+	httpClient := httpclient.New(tel)
+	baseDeps := newBaseDeps(env.Empty(), log.NewNopLogger(), tel, clock.New(), httpClient)
 
 	// Create public deps without loading components.
 	deps, err := newPublicDeps(context.Background(), baseDeps, "https://connection.keboola.com")

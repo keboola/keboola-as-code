@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/nop"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 )
 
@@ -69,7 +70,7 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	)
 
 	// Assert
-	baseDeps := newBaseDeps(context.Background(), env.Empty(), logger, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts)
+	baseDeps := newBaseDeps(context.Background(), env.Empty(), logger, telemetry.NewNopTelemetry(), httpClient, fs, dialog.New(nopPrompt.New(), opts), opts)
 	localDeps, err := newLocal(baseDeps)
 	assert.NoError(t, err)
 	_, err = newRemote(context.Background(), localDeps)
