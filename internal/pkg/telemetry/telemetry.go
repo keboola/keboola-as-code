@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"go.opentelemetry.io/otel/metric"
+	metricNoop "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -40,7 +41,7 @@ func NewTelemetry(tracerProvider trace.TracerProvider, meterProvider metric.Mete
 		tracerProvider = trace.NewNoopTracerProvider()
 	}
 	if meterProvider == nil {
-		meterProvider = metric.NewNoopMeterProvider()
+		meterProvider = metricNoop.NewMeterProvider()
 	}
 	return &telemetry{
 		tracerProvider: tracerProvider,
