@@ -9,8 +9,6 @@ package dependencies
 
 import (
 	"context"
-
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -24,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/oteldd"
 )
 
@@ -49,12 +48,18 @@ type forWorker struct {
 }
 
 func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger) (v ForWorker, err error) {
-	// Setup telemetry
+	// Setup tracing
 	var tracerProvider trace.TracerProvider = nil
 	if oteldd.IsDataDogEnabled(envs) {
 		tracerProvider = oteldd.NewProvider()
 	}
-	var meterProvider metric.MeterProvider = nil
+
+	// Setup metrics
+	meterProvider, err := prometheus.ServeMetrics(ctx, "buffer-worker", cfg.MetricsListenAddress, logger, proc)
+	if err != nil {
+		return nil, err
+	}
+
 	tel := telemetry.NewTelemetry(tracerProvider, meterProvider)
 
 	// Create span
