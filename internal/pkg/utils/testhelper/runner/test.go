@@ -329,13 +329,21 @@ func (t *Test) runAPIServer(
 	requestDecoratorFn func(request *APIRequestDef),
 ) {
 	// Get a free port
-	port, err := netutils.FreePort()
+	listenPort, err := netutils.FreePort()
 	if err != nil {
 		t.t.Fatalf("Could not receive a free port: %s", err)
 	}
-	listenAddress := fmt.Sprintf("localhost:%d", port)
+	metricsListenPort, err := netutils.FreePort()
+	if err != nil {
+		t.t.Fatalf("Could not receive a free port: %s", err)
+	}
+	listenAddress := fmt.Sprintf("localhost:%d", listenPort)
+	metricsListenAddress := fmt.Sprintf("localhost:%d", metricsListenPort)
 	apiURL := "http://" + listenAddress
-	args := append([]string{fmt.Sprintf("--listen-address=%s", listenAddress)}, addArgs...)
+	args := append([]string{
+		fmt.Sprintf("--listen-address=%s", listenAddress),
+		fmt.Sprintf("--metrics-listen-address=%s", metricsListenAddress),
+	}, addArgs...)
 
 	// Envs
 	envs := env.Empty()
