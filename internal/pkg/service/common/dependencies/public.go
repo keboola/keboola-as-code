@@ -38,7 +38,7 @@ func WithPreloadComponents(v bool) PublicDepsOption {
 }
 
 func NewPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts ...PublicDepsOption) (v Public, err error) {
-	ctx, span := base.Tracer().Start(ctx, "kac.lib.dependencies.NewPublicDeps")
+	ctx, span := base.Telemetry().Tracer().Start(ctx, "kac.lib.dependencies.NewPublicDeps")
 	defer telemetry.EndSpan(span, &err)
 	return newPublicDeps(ctx, base, storageAPIHost, opts...)
 }
@@ -91,7 +91,7 @@ func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 
 func storageAPIIndexWithComponents(ctx context.Context, d Base, keboolaPublicAPI *keboola.API) (index *keboola.IndexComponents, err error) {
 	startTime := time.Now()
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.dependencies.public.storageApiIndexWithComponents")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.dependencies.public.storageApiIndexWithComponents")
 	span.SetAttributes(telemetry.KeepSpan())
 	defer telemetry.EndSpan(span, &err)
 

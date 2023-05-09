@@ -6,7 +6,6 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/umisama/go-regexpcache"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/jsonnet"
@@ -113,7 +112,7 @@ type dependencies interface {
 	Components() *model.ComponentsMap
 	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 type _reference = model.TemplateRef
@@ -356,7 +355,7 @@ func (t *Template) LoadState(ctx Context, options loadState.Options, d dependenc
 }
 
 func (t *Template) evaluate(ctx Context) (tmpl *evaluatedTemplate, err error) {
-	_, span := t.deps.Tracer().Start(ctx, "kac.lib.template.evaluate")
+	_, span := t.deps.Telemetry().Tracer().Start(ctx, "kac.lib.template.evaluate")
 	defer telemetry.EndSpan(span, &err)
 
 	// Evaluate manifest

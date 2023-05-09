@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -14,7 +13,7 @@ import (
 type dependencies interface {
 	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 	Fs() filesystem.Fs
 }
 
@@ -42,7 +41,7 @@ type ColumnOrder struct {
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.table.preview")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.remote.table.preview")
 	defer telemetry.EndSpan(span, &err)
 
 	d.Logger().Infof(`Fetching table "%s", please wait.`, o.TableID.String())

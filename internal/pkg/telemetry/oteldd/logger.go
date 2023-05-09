@@ -1,4 +1,4 @@
-package telemetry
+package oteldd
 
 import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"

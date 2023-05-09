@@ -15,7 +15,7 @@ import (
 )
 
 func (s *Store) CreateRecord(ctx context.Context, recordKey key.RecordKey, csvRow string) (err error) {
-	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CreateRecord")
+	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CreateRecord")
 	defer telemetry.EndSpan(span, &err)
 
 	if recordKey.RandomSuffix == "" {
@@ -36,7 +36,7 @@ func (s *Store) CreateRecord(ctx context.Context, recordKey key.RecordKey, csvRo
 }
 
 func (s *Store) CountRecords(ctx context.Context, k key.SliceKey) (count uint64, err error) {
-	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.RecordsCount")
+	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.RecordsCount")
 	defer telemetry.EndSpan(span, &err)
 	err = s.countRecordsOp(k, &count).DoOrErr(ctx, s.client)
 	return count, err

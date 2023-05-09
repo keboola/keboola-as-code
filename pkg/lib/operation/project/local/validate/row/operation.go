@@ -6,7 +6,6 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -23,13 +22,13 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 	Fs() filesystem.Fs
 	Components() *model.ComponentsMap
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.validate.row")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.local.validate.row")
 	defer telemetry.EndSpan(span, &err)
 	logger := d.Logger()
 

@@ -3,8 +3,6 @@ package printdiff
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -19,11 +17,11 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (results *diff.Results, err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.sync.diff.print")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.sync.diff.print")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()

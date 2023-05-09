@@ -3,8 +3,6 @@ package create
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -14,11 +12,11 @@ import (
 
 type dependencies interface {
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (inputs *template.StepsGroups, err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.template.local.inputs.create")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.template.local.inputs.create")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()

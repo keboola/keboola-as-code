@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/keboola/go-client/pkg/client"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -14,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	dependenciesPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
@@ -32,7 +32,7 @@ func PrepareProjectFS(testPrj *testproject.Project, branchID int) (filesystem.Fs
 	return fixtures.LoadFS("empty-branch", envs)
 }
 
-func PrepareProject(ctx context.Context, tracer trace.Tracer, logger log.Logger, branchID int, remote bool) (*project.State, *testproject.Project, *Dependencies, testproject.UnlockFn, error) {
+func PrepareProject(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, branchID int, remote bool) (*project.State, *testproject.Project, *Dependencies, testproject.UnlockFn, error) {
 	// Get OS envs
 	envs, err := env.FromOs()
 	if err != nil {
@@ -45,7 +45,7 @@ func PrepareProject(ctx context.Context, tracer trace.Tracer, logger log.Logger,
 		return nil, nil, nil, nil, err
 	}
 
-	testDeps, err := newTestDependencies(ctx, tracer, logger, testPrj.StorageAPIHost(), testPrj.StorageAPIToken().Token)
+	testDeps, err := newTestDependencies(ctx, logger, tel, testPrj.StorageAPIHost(), testPrj.StorageAPIToken().Token)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -101,8 +101,8 @@ func PrepareProject(ctx context.Context, tracer trace.Tracer, logger log.Logger,
 	return prjState, testPrj, testDeps, unlockFn, nil
 }
 
-func newTestDependencies(ctx context.Context, tracer trace.Tracer, logger log.Logger, apiHost, apiToken string) (*Dependencies, error) {
-	baseDeps := dependenciesPkg.NewBaseDeps(env.Empty(), tracer, logger, client.NewTestClient())
+func newTestDependencies(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, apiHost, apiToken string) (*Dependencies, error) {
+	baseDeps := dependenciesPkg.NewBaseDeps(env.Empty(), logger, tel, client.NewTestClient())
 	publicDeps, err := dependenciesPkg.NewPublicDeps(ctx, baseDeps, apiHost, dependenciesPkg.WithPreloadComponents(true))
 	if err != nil {
 		return nil, err

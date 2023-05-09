@@ -3,8 +3,6 @@ package create
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -13,11 +11,11 @@ import (
 
 type dependencies interface {
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.metadir.create")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.local.metadir.create")
 	defer telemetry.EndSpan(span, &err)
 
 	if err := fs.Mkdir(filesystem.MetadataDir); err != nil {

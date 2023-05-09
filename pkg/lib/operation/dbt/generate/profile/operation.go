@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -21,13 +20,13 @@ type Options struct {
 type dependencies interface {
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 const profilePath = "profiles.yml"
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.dbt.generate.profile")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.dbt.generate.profile")
 	defer telemetry.EndSpan(span, &err)
 
 	// Get dbt project

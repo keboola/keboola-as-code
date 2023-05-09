@@ -12,6 +12,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 // base dependencies container implements Base interface.
@@ -33,7 +34,7 @@ type dbtProjectValue struct {
 
 func newBaseDeps(commandCtx context.Context, envs env.Provider, logger log.Logger, httpClient client.Client, fs filesystem.Fs, dialogs *dialog.Dialogs, opts *options.Options) *base {
 	return &base{
-		Base:       dependencies.NewBaseDeps(envs, nil, logger, httpClient),
+		Base:       dependencies.NewBaseDeps(envs, logger, telemetry.NewNopTelemetry(), httpClient),
 		commandCtx: commandCtx,
 		fs:         fs,
 		fsInfo:     FsInfo{fs: fs},

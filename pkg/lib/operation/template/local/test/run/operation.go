@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/deepcopy"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -34,11 +33,11 @@ type Options struct {
 
 type dependencies interface {
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies) (err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.template.test.run")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.template.test.run")
 	defer telemetry.EndSpan(span, &err)
 
 	tempDir, err := os.MkdirTemp("", "kac-test-template-") //nolint:forbidigo
@@ -102,7 +101,7 @@ func runLocalTest(ctx context.Context, test *template.Test, tmpl *template.Templ
 		logger = log.NewNopLogger()
 	}
 
-	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, d.Tracer(), logger, branchID, false)
+	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, logger, d.Telemetry(), branchID, false)
 	if err != nil {
 		return err
 	}
@@ -160,7 +159,7 @@ func runRemoteTest(ctx context.Context, test *template.Test, tmpl *template.Temp
 		logger = log.NewNopLogger()
 	}
 
-	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, d.Tracer(), logger, 0, true)
+	prjState, testPrj, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, logger, d.Telemetry(), 0, true)
 	if err != nil {
 		return err
 	}

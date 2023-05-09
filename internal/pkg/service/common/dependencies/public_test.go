@@ -10,12 +10,13 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 func TestNewPublicDeps_LazyLoadComponents(t *testing.T) {
 	t.Parallel()
 	httpClient := httpclient.New()
-	baseDeps := newBaseDeps(env.Empty(), nil, log.NewNopLogger(), clock.New(), httpClient)
+	baseDeps := newBaseDeps(env.Empty(), log.NewNopLogger(), telemetry.NewNopTelemetry(), clock.New(), httpClient)
 
 	// Create public deps without loading components.
 	deps, err := newPublicDeps(context.Background(), baseDeps, "https://connection.keboola.com")

@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"net/http"
-	"net/url"
 	"os"
 	"time"
 
@@ -28,7 +27,7 @@ const (
 
 // HandleHTTPServer starts configures and starts a HTTP server on the given
 // URL. It shuts down the server if any error is received in the error channel.
-func HandleHTTPServer(proc *servicectx.Process, d dependencies.ForServer, u *url.URL, endpoints *templates.Endpoints, debug bool) {
+func HandleHTTPServer(proc *servicectx.Process, d dependencies.ForServer, listenAddr string, endpoints *templates.Endpoints, debug bool) {
 	logger := d.Logger()
 
 	// Trace endpoint start, finish and error
@@ -70,7 +69,7 @@ func HandleHTTPServer(proc *servicectx.Process, d dependencies.ForServer, u *url
 	// Start HTTP server using default configuration, change the code to
 	// configure the server as required by your service.
 	srv := &http.Server{
-		Addr:              u.Host,
+		Addr:              listenAddr,
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
@@ -80,12 +79,12 @@ func HandleHTTPServer(proc *servicectx.Process, d dependencies.ForServer, u *url
 
 	proc.Add(func(ctx context.Context, shutdown servicectx.ShutdownFn) {
 		// Start HTTP server in a separate goroutine.
-		logger.Infof("HTTP server listening on %q", u.Host)
+		logger.Infof("HTTP server listening on %q", listenAddr)
 		shutdown(srv.ListenAndServe())
 	})
 
 	proc.OnShutdown(func() {
-		logger.Infof("shutting down HTTP server at %q", u.Host)
+		logger.Infof("shutting down HTTP server at %q", listenAddr)
 
 		// Shutdown gracefully with a 30s timeout.
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

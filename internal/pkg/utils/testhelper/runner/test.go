@@ -333,8 +333,9 @@ func (t *Test) runAPIServer(
 	if err != nil {
 		t.t.Fatalf("Could not receive a free port: %s", err)
 	}
-	apiURL := fmt.Sprintf("http://localhost:%d", port)
-	args := append([]string{fmt.Sprintf("--listen-address=%s", apiURL)}, addArgs...)
+	listenAddress := fmt.Sprintf("localhost:%d", port)
+	apiURL := "http://" + listenAddress
+	args := append([]string{fmt.Sprintf("--listen-address=%s", listenAddress)}, addArgs...)
 
 	// Envs
 	envs := env.Empty()

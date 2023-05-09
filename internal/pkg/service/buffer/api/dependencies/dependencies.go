@@ -30,6 +30,7 @@ import (
 	"net/http"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -46,6 +47,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/oteldd"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ip"
 )
 
@@ -115,20 +117,21 @@ type forProjectRequest struct {
 }
 
 func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger) (v ForServer, err error) {
-	// Create tracer
-	var tracer trace.Tracer = nil
-	if telemetry.IsDataDogEnabled(envs) {
-		var span trace.Span
-		tracer = telemetry.NewDataDogTracer()
-		ctx, span = tracer.Start(ctx, "keboola.go.buffer.api.dependencies.NewServerDeps")
-		defer telemetry.EndSpan(span, &err)
-	} else {
-		tracer = telemetry.NewNopTracer()
+	// Setup telemetry
+	var tracerProvider trace.TracerProvider = nil
+	if oteldd.IsDataDogEnabled(envs) {
+		tracerProvider = oteldd.NewProvider()
 	}
+	var meterProvider metric.MeterProvider = nil
+	tel := telemetry.NewTelemetry(tracerProvider, meterProvider)
+
+	// Create span
+	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.api.dependencies.NewServerDeps")
+	defer telemetry.EndSpan(span, &err)
 
 	// Create service dependencies
 	userAgent := "keboola-buffer-api"
-	serviceDeps, err := serviceDependencies.NewServiceDeps(ctx, proc, tracer, cfg.ServiceConfig, envs, logger, userAgent)
+	serviceDeps, err := serviceDependencies.NewServiceDeps(ctx, proc, cfg.ServiceConfig, envs, logger, tel, userAgent)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +153,7 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 }
 
 func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, requestId string, request *http.Request) ForPublicRequest {
-	_, span := serverDeps.Tracer().Start(requestCtx, "kac.api.server.buffer.dependencies.NewDepsForPublicRequest")
+	_, span := serverDeps.Telemetry().Tracer().Start(requestCtx, "kac.api.server.buffer.dependencies.NewDepsForPublicRequest")
 	defer telemetry.EndSpan(span, nil)
 
 	return &forPublicRequest{
@@ -163,7 +166,7 @@ func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, r
 }
 
 func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (ForProjectRequest, error) {
-	ctx, span := publicDeps.Tracer().Start(ctx, "kac.api.server.buffer.dependencies.NewDepsForProjectRequest")
+	ctx, span := publicDeps.Telemetry().Tracer().Start(ctx, "kac.api.server.buffer.dependencies.NewDepsForProjectRequest")
 	defer telemetry.EndSpan(span, nil)
 
 	projectDeps, err := dependencies.NewProjectDeps(ctx, publicDeps, publicDeps, tokenStr)

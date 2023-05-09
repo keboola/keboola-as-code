@@ -21,7 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -30,6 +29,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	checkoutOp "github.com/keboola/keboola-as-code/pkg/lib/operation/repository/checkout"
 	loadRepositoryOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/repository/load"
@@ -52,8 +52,8 @@ type Manager struct {
 }
 
 type dependencies interface {
-	Tracer() trace.Tracer
 	Logger() log.Logger
+	Telemetry() telemetry.Telemetry
 	Process() *servicectx.Process
 	Components() *model.ComponentsMap
 }

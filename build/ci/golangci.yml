@@ -197,3 +197,8 @@ issues:
       text: "fmt."
       linters:
         - forbidigo
+    # Allow duplicate strings: "http" and "https"
+    - path: ".*"
+      text: "string `https?` has .+ occurrences, make it a constant"
+      linters:
+        - goconst

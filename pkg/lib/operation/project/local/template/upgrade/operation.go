@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
@@ -31,11 +30,11 @@ type dependencies interface {
 	ProjectID() keboola.ProjectID
 	StorageAPIHost() string
 	StorageAPITokenID() string
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func Run(ctx context.Context, projectState *project.State, tmpl *template.Template, o Options, d dependencies) (result *use.Result, err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.template.upgrade")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.local.template.upgrade")
 	defer telemetry.EndSpan(span, &err)
 
 	// Create tickets provider, to generate new IDs, if needed

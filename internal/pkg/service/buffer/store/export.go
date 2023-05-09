@@ -22,7 +22,7 @@ import (
 // - CountLimitReachedError
 // - ResourceAlreadyExistsError.
 func (s *Store) CreateExport(ctx context.Context, export model.Export) (err error) {
-	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CreateExport")
+	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CreateExport")
 	defer telemetry.EndSpan(span, &err)
 
 	return op.
@@ -75,7 +75,7 @@ func (s *Store) createExportBaseOp(_ context.Context, export model.ExportBase) o
 }
 
 func (s *Store) UpdateExport(ctx context.Context, k key.ExportKey, fn func(model.Export) (model.Export, error)) (err error) {
-	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.UpdateExport")
+	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.UpdateExport")
 	defer telemetry.EndSpan(span, &err)
 
 	var export *model.Export
@@ -138,7 +138,7 @@ func (s *Store) updateExportBaseOp(_ context.Context, export model.ExportBase) o
 // - CountLimitReachedError.
 // - ResourceAlreadyExistsError.
 func (s *Store) CheckCreateExport(ctx context.Context, exportKey key.ExportKey) (err error) {
-	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.CheckCreateExport")
+	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CheckCreateExport")
 	defer telemetry.EndSpan(span, &err)
 
 	err = s.getExportBaseOp(ctx, exportKey).DoOrErr(ctx, s.client)
@@ -156,7 +156,7 @@ func (s *Store) CheckCreateExport(ctx context.Context, exportKey key.ExportKey) 
 // Logic errors:
 // - ResourceNotFoundError.
 func (s *Store) GetExport(ctx context.Context, exportKey key.ExportKey) (r model.Export, err error) {
-	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetExport")
+	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.GetExport")
 	defer telemetry.EndSpan(span, &err)
 	return s.getExportOp(ctx, exportKey).Do(ctx, s.client)
 }
@@ -199,7 +199,7 @@ func (s *Store) getExportBaseOp(_ context.Context, exportKey key.ExportKey) op.F
 
 // ListExports from the store.
 func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey, ops ...iterator.Option) (exports []model.Export, err error) {
-	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.ListExports")
+	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.ListExports")
 	defer telemetry.EndSpan(span, &err)
 
 	// Load sub-objects in parallel, stop at the first error
@@ -277,7 +277,7 @@ func (s *Store) exportBaseIterator(_ context.Context, receiverKey key.ReceiverKe
 // Logic errors:
 // - ResourceNotFoundError.
 func (s *Store) DeleteExport(ctx context.Context, exportKey key.ExportKey) (err error) {
-	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.DeleteReceiver")
+	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.DeleteReceiver")
 	defer telemetry.EndSpan(span, &err)
 
 	_, err = op.MergeToTxn(

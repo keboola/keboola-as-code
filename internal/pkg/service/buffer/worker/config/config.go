@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/cliconfig"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 const (
@@ -25,6 +26,7 @@ type Config struct {
 	CheckConditionsInterval time.Duration    `mapstructure:"check-conditions-interval" usage:"How often will upload and import conditions be checked."`
 	CleanupInterval         time.Duration    `mapstructure:"cleanup-interval" usage:"How often will old resources be deleted."`
 	UploadConditions        model.Conditions `mapstructure:"upload-conditions"`
+	MetricsListenAddress    string           `mapstructure:"metrics-listen-address" usage:"Prometheus /metrics HTTP endpoint listen address."`
 	ConditionsCheck         bool             `mapstructure:"enable-conditions-check" usage:"Enable conditions check functionality."`
 	CloseSlices             bool             `mapstructure:"enable-close-slices" usage:"Enable close slices functionality."`
 	UploadSlices            bool             `mapstructure:"enable-upload-slices" usage:"Enable upload slices functionality."`
@@ -44,6 +46,7 @@ func NewConfig() Config {
 		CheckConditionsInterval: DefaultCheckConditionsInterval,
 		CleanupInterval:         DefaultCleanupInterval,
 		UploadConditions:        model.DefaultUploadConditions(),
+		MetricsListenAddress:    "0.0.0.0:9000",
 		ConditionsCheck:         true,
 		CloseSlices:             true,
 		UploadSlices:            true,
@@ -73,25 +76,32 @@ func (c *Config) Normalize() {
 }
 
 func (c *Config) Validate() error {
+	v := validator.New()
+	errs := errors.NewMultiError()
 	if err := c.ServiceConfig.Validate(); err != nil {
-		return err
+		errs.Append(err)
 	}
 	if c.CheckConditionsInterval <= 0 {
-		return errors.Errorf(`CheckConditionsInterval must be positive time.Duration, found "%v"`, c.CheckConditionsInterval)
+		errs.Append(errors.Errorf(`check conditions interval must be positive time.Duration, found "%v"`, c.CheckConditionsInterval))
 	}
 	if c.CleanupInterval <= 0 {
-		return errors.Errorf(`CleanupInterval must be positive time.Duration, found "%v"`, c.CleanupInterval)
+		errs.Append(errors.Errorf(`cleanup interval must be positive time.Duration, found "%v"`, c.CleanupInterval))
 	}
 	if c.UploadConditions.Count <= 0 {
-		return errors.Errorf(`UploadConditions.Count must be positive number, found "%v"`, c.UploadConditions.Count)
+		errs.Append(errors.Errorf(`upload conditions count must be positive number, found "%v"`, c.UploadConditions.Count))
 	}
 	if c.UploadConditions.Time <= 0 {
-		return errors.Errorf(`UploadConditions.Time must be positive time.Duration, found "%v"`, c.UploadConditions.Time.String())
+		errs.Append(errors.Errorf(`upload conditions time must be positive time.Duration, found "%v"`, c.UploadConditions.Time.String()))
 	}
 	if c.UploadConditions.Size <= 0 {
-		return errors.Errorf(`UploadConditions.Size must be positive number, found "%v"`, c.UploadConditions.Size.String())
+		errs.Append(errors.Errorf(`upload conditions size must be positive number, found "%v"`, c.UploadConditions.Size.String()))
 	}
-	return nil
+	if c.MetricsListenAddress == "" {
+		errs.Append(errors.New("metrics listen address is not set"))
+	} else if err := v.ValidateValue(c.MetricsListenAddress, "hostname_port"); err != nil {
+		errs.Append(errors.Errorf(`metrics address "%s" is not valid`, c.MetricsListenAddress))
+	}
+	return errs.ErrorOrNil()
 }
 
 func (c Config) Apply(ops ...Option) Config {

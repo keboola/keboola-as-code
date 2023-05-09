@@ -63,11 +63,11 @@ type dependencies interface {
 	Components() *model.ComponentsMap
 	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *State, err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.state.new")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.state.new")
 	defer telemetry.EndSpan(span, &err)
 
 	// Get dependencies
@@ -97,7 +97,7 @@ func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *St
 		container:       container,
 		validator:       validator.New(),
 		fileLoader:      fileLoader,
-		tracer:          d.Tracer(),
+		tracer:          d.Telemetry().Tracer(),
 		logger:          logger,
 		manifest:        m,
 		mapper:          mapperInst,

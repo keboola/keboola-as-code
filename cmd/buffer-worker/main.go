@@ -14,14 +14,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/oteldd"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/cpuprofile"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Printf("fatal error: %s\n", err.Error()) // nolint:forbidigo
+		fmt.Println(errors.PrefixError(err, "fatal error").Error()) // nolint:forbidigo
 		os.Exit(1)
 	}
 }
@@ -58,7 +58,7 @@ func run() error {
 	// Start DataDog tracer.
 	if cfg.DatadogEnabled {
 		tracer.Start(
-			tracer.WithLogger(telemetry.NewDDLogger(logger)),
+			tracer.WithLogger(oteldd.NewDDLogger(logger)),
 			tracer.WithRuntimeMetrics(),
 			tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
 			tracer.WithAnalyticsRate(1.0),

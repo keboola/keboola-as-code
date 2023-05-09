@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/diff"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
@@ -45,7 +44,7 @@ type dependencies interface {
 	Logger() log.Logger
 	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() keboola.ProjectID
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func LoadTemplateOptions() loadState.Options {
@@ -58,7 +57,7 @@ func LoadTemplateOptions() loadState.Options {
 }
 
 func Run(ctx context.Context, projectState *project.State, tmpl *template.Template, o Options, d dependencies) (result *Result, err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.template.use")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.local.template.use")
 	defer telemetry.EndSpan(span, &err)
 
 	// Create tickets provider, to generate new IDS

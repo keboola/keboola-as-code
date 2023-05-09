@@ -3,8 +3,6 @@ package status
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -21,11 +19,11 @@ type dependencies interface {
 	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func Run(ctx context.Context, d dependencies) (err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.status")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.status")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()

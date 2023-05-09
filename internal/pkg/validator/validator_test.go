@@ -79,7 +79,7 @@ func TestValidateSliceWithNamespace(t *testing.T) {
 
 func TestValidateValue(t *testing.T) {
 	t.Parallel()
-	err := New().ValidateCtx(context.Background(), "", "required", "")
+	err := New().ValidateValue("", "required")
 	assert.Error(t, err)
 	assert.Equal(t, `is a required field`, err.Error())
 }

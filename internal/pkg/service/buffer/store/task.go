@@ -12,7 +12,7 @@ import (
 )
 
 func (s *Store) GetTask(ctx context.Context, taskKey task.Key) (r task.Task, err error) {
-	ctx, span := s.tracer.Start(ctx, "keboola.go.buffer.store.GetTask")
+	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.GetTask")
 	defer telemetry.EndSpan(span, &err)
 
 	tsk, err := s.getTaskOp(ctx, taskKey).Do(ctx, s.client)

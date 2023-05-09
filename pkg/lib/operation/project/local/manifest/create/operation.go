@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -24,11 +23,11 @@ type dependencies interface {
 	Logger() log.Logger
 	ProjectID() keboola.ProjectID
 	StorageAPIHost() string
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 func Run(ctx context.Context, fs filesystem.Fs, o Options, d dependencies) (m *project.Manifest, err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.local.manifest.create")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.local.manifest.create")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()

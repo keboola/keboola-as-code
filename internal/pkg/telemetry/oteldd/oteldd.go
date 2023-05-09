@@ -1,4 +1,7 @@
-package telemetry
+// Package oteldd provides a bridge from OpenTelemetry to Datadog tracing.
+// This approach is deprecated because the Datadog Agent can directly receive OpenTelemetry events,
+// so the code should be removed in the future.
+package oteldd
 
 import (
 	"context"
@@ -13,7 +16,9 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 )
 
-type tracer struct{}
+type tracer struct {
+	provider trace.TracerProvider
+}
 
 type span struct {
 	tracer     *tracer
@@ -22,18 +27,28 @@ type span struct {
 	finishOpts []ddtracer.FinishOption
 }
 
+type TracerProvider struct {
+	tracer trace.Tracer
+}
+
+func (p *TracerProvider) Tracer(_ string, _ ...trace.TracerOption) trace.Tracer {
+	return p.tracer
+}
+
 // IsDataDogEnabled returns true, if the DataDog integration is enabled by the ENV.
 func IsDataDogEnabled(envs env.Provider) bool {
 	return envs.Get("DATADOG_ENABLED") != "false"
 }
 
-// NewDataDogTracer creates new open telemetry tracer connected to the DataDog service.
-func NewDataDogTracer() trace.Tracer {
-	return &tracer{}
+func NewProvider() trace.TracerProvider {
+	p := &TracerProvider{}
+	p.tracer = newTracer(p)
+	return p
 }
 
-func NewNopTracer() trace.Tracer {
-	return trace.NewNoopTracerProvider().Tracer("")
+// newTracer creates new open telemetry tracer connected to the DataDog service.
+func newTracer(p trace.TracerProvider) trace.Tracer {
+	return &tracer{provider: p}
 }
 
 func (t *tracer) Start(ctx context.Context, spanName string, options ...trace.SpanStartOption) (context.Context, trace.Span) {
@@ -134,7 +149,7 @@ func (s *span) SetAttributes(kv ...attribute.KeyValue) {
 // TracerProvider returns a TracerProvider that can be used to generate
 // additional Spans on the same telemetry pipeline as the current Span.
 func (s *span) TracerProvider() trace.TracerProvider {
-	return &TracerProvider{tracer: s.tracer}
+	return s.tracer.provider
 }
 
 func mapSpanStartOpts(parentSpan ddtracer.Span, options []trace.SpanStartOption) (out []ddtracer.StartSpanOption) {

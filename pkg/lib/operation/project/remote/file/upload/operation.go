@@ -10,7 +10,6 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/schollz/progressbar/v3"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -21,7 +20,7 @@ import (
 type dependencies interface {
 	KeboolaProjectAPI() *keboola.API
 	Logger() log.Logger
-	Tracer() trace.Tracer
+	Telemetry() telemetry.Telemetry
 }
 
 type Options struct {
@@ -31,7 +30,7 @@ type Options struct {
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (f *keboola.FileUploadCredentials, err error) {
-	ctx, span := d.Tracer().Start(ctx, "kac.lib.operation.project.remote.file.upload")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.remote.file.upload")
 	defer telemetry.EndSpan(span, &err)
 
 	opts := make([]keboola.CreateFileOption, 0)
