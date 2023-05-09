@@ -12,14 +12,16 @@ cp ../../common/etcd/values.yaml deploy/etcd/values_common.yaml
 cp templates/etcd.yaml deploy/etcd/values_buffer.yaml
 
 # API
-envsubst < templates/api/config-map.yaml > deploy/api/config-map.yaml
-envsubst < templates/api/pdb.yaml        > deploy/api/pdb.yaml
-envsubst < templates/api/deployment.yaml > deploy/api/deployment.yaml
+envsubst < templates/api/config-map.yaml     > deploy/api/config-map.yaml
+envsubst < templates/api/pdb.yaml            > deploy/api/pdb.yaml
+envsubst < templates/api/network-policy.yaml > deploy/api/network-policy.yaml
+envsubst < templates/api/deployment.yaml     > deploy/api/deployment.yaml
 
 # Worker
-envsubst < templates/worker/config-map.yaml > deploy/worker/config-map.yaml
-envsubst < templates/worker/pdb.yaml        > deploy/worker/pdb.yaml
-envsubst < templates/worker/deployment.yaml > deploy/worker/deployment.yaml
+envsubst < templates/worker/config-map.yaml     > deploy/worker/config-map.yaml
+envsubst < templates/worker/pdb.yaml            > deploy/worker/pdb.yaml
+envsubst < templates/worker/network-policy.yaml > deploy/worker/network-policy.yaml
+envsubst < templates/worker/deployment.yaml     > deploy/worker/deployment.yaml
 
 # Remove resources requests/limits to fit all pods to the CI environment
 REMOVE_RESOURCES_LIMITS="${REMOVE_RESOURCES_LIMITS:=false}"

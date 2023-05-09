@@ -24,6 +24,7 @@ env:
   WORKER_RELEASE_NAME: buffer-worker
   ETCD_RELEASE_NAME: buffer-etcd
   ETCD_ENDPOINT: buffer-etcd-headless.buffer.svc.cluster.local:2379
+  METRICS_PORT: 9000
 
 defaults:
   run:
@@ -108,6 +109,72 @@ jobs:
         if: always()
         run: kubectl rollout status "deployment/$WORKER_RELEASE_NAME" --timeout=10s
 
+      - name: Check access to the API metrics from the DataDog Agent
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          kubectl create namespace datadog || true
+          export POD_IP=`kubectl get pod -l app=buffer-api -o=jsonpath='{.items[0].status.podIP}'`
+          echo "Pod IP: $POD_IP"
+          kubectl run --attach --rm --restart=Never check-api-datadog \
+          --namespace datadog \
+          --image docker.io/alpine/curl \
+          --labels="app=datadog-agent" \
+          --env="POD_IP=$POD_IP" \
+          --env="METRICS_PORT=$METRICS_PORT" \
+          --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP:$METRICS_PORT/metrics" | tail"
+
+      - name: Check forbidden access to the API metrics from other places
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          export POD_IP=`kubectl get pod -l app=buffer-api -o=jsonpath='{.items[0].status.podIP}'`
+          echo "Pod IP: $POD_IP"
+          if kubectl run --attach --rm --restart=Never check-api-other \
+            --image docker.io/alpine/curl \
+            --env="POD_IP=$POD_IP" \
+            --env="METRICS_PORT=$METRICS_PORT" \
+            --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP:$METRICS_PORT/metrics" | tail"; then
+            echo "The command did not fail, but it should have."
+            exit 1
+          else
+            echo "The command failed, OK."
+            exit 0
+          fi
+
+      - name: Check access to the Worker metrics from the DataDog Agent
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          kubectl create namespace datadog || true
+          export POD_IP=`kubectl get pod -l app=buffer-worker -o=jsonpath='{.items[0].status.podIP}'`
+          echo "Pod IP: $POD_IP"
+          kubectl run --attach --rm --restart=Never check-worker-datadog \
+          --namespace datadog \
+          --image docker.io/alpine/curl \
+          --labels="app=datadog-agent" \
+          --env="POD_IP=$POD_IP" \
+          --env="METRICS_PORT=$METRICS_PORT" \
+          --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP:$METRICS_PORT/metrics" | tail"
+
+      - name: Check forbidden access to the Worker metrics from other places
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          export POD_IP=`kubectl get pod -l app=buffer-worker -o=jsonpath='{.items[0].status.podIP}'`
+          echo "Pod IP: $POD_IP"
+          if kubectl run --attach --rm --restart=Never check-worker-other \
+            --image docker.io/alpine/curl \
+            --env="POD_IP=$POD_IP" \
+            --env="METRICS_PORT=$METRICS_PORT" \
+            --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP:$METRICS_PORT/metrics" | tail"; then
+            echo "The command did not fail, but it should have."
+            exit 1
+          else
+            echo "The command failed, OK."
+            exit 0
+          fi
+
       - name: Check access to the etcd from a client
         if: always()
         run: |
@@ -124,8 +191,8 @@ jobs:
         if: always()
         run: |
           set -Eeuo pipefail
-          kubectl create namespace datadog
-          kubectl run --attach --rm --restart=Never check-etcd-other-data-dog \
+          kubectl create namespace datadog || true
+          kubectl run --attach --rm --restart=Never check-etcd-other-datadog \
           --namespace datadog \
           --image docker.io/alpine/curl \
           --labels="app=datadog-agent" \
