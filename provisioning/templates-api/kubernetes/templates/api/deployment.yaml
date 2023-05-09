@@ -24,6 +24,18 @@ spec:
       annotations:
         log: "true"
         ad.datadoghq.com/tags: '{"git.commit.sha": "$COMMIT_HASH", "git.repository_url": "https://github.com/keboola/keboola-as-code"}'
+        ad.datadoghq.com/templates-api.checks: |
+          {
+            "openmetrics": {
+              "instances": [
+                {
+                  "openmetrics_endpoint": "http://%%host%%:9000/metrics",
+                  "namespace": "templates_api",
+                  "metrics": ["*"]
+                }
+              ]
+            }
+          }
     spec:
       containers:
         - name: templates-api
@@ -35,7 +47,8 @@ spec:
             limits:
               memory: "768Mi"
           ports:
-            - containerPort: 8000
+            - containerPort: 8000 # API
+            - containerPort: 9000 # metrics
           env:
             # 80% of the resources.limits.memory
             - name: GOMEMLIMIT
