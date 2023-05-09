@@ -19,7 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 type ForService interface {
@@ -88,14 +87,13 @@ func NewServiceDeps(
 		return nil, err
 	}
 
-	validateFn := validator.New().Validate
 	serviceDeps := &forService{
 		Base:       baseDeps,
 		Public:     publicDeps,
 		proc:       proc,
 		etcdClient: etcdClient,
-		etcdSerde:  serde.NewJSON(validateFn),
-		schema:     schema.New(validateFn),
+		etcdSerde:  serde.NewJSON(baseDeps.Validator().Validate),
+		schema:     schema.New(baseDeps.Validator().Validate),
 	}
 
 	serviceDeps.store = store.New(serviceDeps)

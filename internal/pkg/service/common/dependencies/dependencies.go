@@ -69,6 +69,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
 // Base contains basic dependencies.
@@ -77,6 +78,7 @@ type Base interface {
 	Envs() env.Provider
 	HTTPClient() client.Client
 	Logger() log.Logger
+	Validator() validator.Validator
 	Telemetry() telemetry.Telemetry
 }
 

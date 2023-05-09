@@ -1,0 +1,32 @@
+{
+  "path": "/v1/receivers/my-receiver/exports",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-StorageApi-Token": "%%TEST_KBC_STORAGE_API_TOKEN%%"
+  },
+  "body": {
+    "name": "My Export 2",
+    "mapping": {
+      "tableId": "in.c-bucket.table",
+      "incremental": true,
+      "columns": [
+        {
+          "primaryKey": false,
+          "type": "id",
+          "name": "id"
+        },
+        {
+          "type": "body",
+          "name": "body"
+        }
+      ]
+    },
+    "conditions": {
+      "count": 500,
+      "size": "100kB",
+      "time": "10s"
+    }
+  }
+}
+
