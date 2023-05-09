@@ -7,28 +7,24 @@ import (
 	"strings"
 
 	"github.com/keboola/go-client/pkg/client"
-	ddHttp "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/oteldd"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 type Config struct {
 	userAgent   string
-	envs        env.Provider
 	debugWriter io.Writer
 	dumpWriter  io.Writer
 }
 
 type Option func(c *Config)
 
-func WithEnvs(envs env.Provider) Option {
-	return func(c *Config) {
-		c.envs = envs
-	}
+// transport is used to set additional telemetry attributes.
+type transport struct {
+	transport http.RoundTripper
 }
 
 func WithUserAgent(v string) Option {
@@ -49,7 +45,7 @@ func WithDumpOutput(w io.Writer) Option {
 	}
 }
 
-func New(opts ...Option) client.Client {
+func New(tel telemetry.Telemetry, opts ...Option) client.Client {
 	// Apply options
 	conf := Config{userAgent: "keboola-go-client"}
 	for _, o := range opts {
@@ -57,35 +53,22 @@ func New(opts ...Option) client.Client {
 	}
 
 	// Force HTTP2 transport
-	transport := client.HTTP2Transport()
+	t := client.HTTP2Transport()
 
-	// DataDog low-level tracing (raw http requests)
-	if conf.envs != nil && oteldd.IsDataDogEnabled(conf.envs) {
-		transport = ddHttp.WrapRoundTripper(
-			transport,
-			ddHttp.WithBefore(func(request *http.Request, span ddtrace.Span) {
-				// We use "http.request" operation name for request to the API,
-				// so requests to other API must have different operation name.
-				span.SetOperationName("kac.api.client.http.request")
-				span.SetTag("http.host", request.URL.Host)
-				if dotPos := strings.IndexByte(request.URL.Host, '.'); dotPos > 0 {
-					// E.g. connection, encryption, scheduler ...
-					span.SetTag("http.hostPrefix", request.URL.Host[:dotPos])
-				}
-				span.SetTag(ext.EventSampleRate, 1.0)
-				span.SetTag(ext.HTTPURL, request.URL.Redacted())
-				span.SetTag("http.path", request.URL.Path)
-				span.SetTag("http.query", request.URL.Query().Encode())
-			}),
-			ddHttp.RTWithResourceNamer(func(r *http.Request) string {
-				// Set resource name to request path
-				return strhelper.MustURLPathUnescape(r.URL.RequestURI())
-			}))
-	}
+	// Wrap the transport with telemetry
+	t = otelhttp.NewTransport(
+		&transport{t},
+		otelhttp.WithPublicEndpoint(),
+		otelhttp.WithTracerProvider(tel.TracerProvider()),
+		otelhttp.WithMeterProvider(tel.MeterProvider()),
+		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
+			return "HTTP " + r.Method + " " + strhelper.MustURLPathUnescape(r.URL.RequestURI())
+		}),
+	)
 
 	// Create client
 	cl := client.New().
-		WithTransport(transport).
+		WithTransport(t).
 		WithUserAgent(conf.userAgent)
 
 	// Log each HTTP client request/response as debug message
@@ -98,10 +81,18 @@ func New(opts ...Option) client.Client {
 		cl = cl.AndTrace(client.DumpTracer(conf.dumpWriter))
 	}
 
-	// DataDog high-level tracing (api client requests)
-	if conf.envs != nil && oteldd.IsDataDogEnabled(conf.envs) {
-		cl = cl.AndTrace(oteldd.DDTraceFactory())
+	return cl
+}
+
+func (t *transport) RoundTrip(r *http.Request) (*http.Response, error) {
+	labeler, _ := otelhttp.LabelerFromContext(r.Context())
+
+	if dotPos := strings.IndexByte(r.URL.Host, '.'); dotPos > 0 {
+		// Host prefix, e.g. connection, encryption, scheduler ...
+		labeler.Add(attribute.String("http.hostPrefix", r.URL.Host[:dotPos]))
+		// Host suffix, e.g. keboola.com
+		labeler.Add(attribute.String("http.hostSuffix", strings.TrimLeft(r.URL.Host[dotPos:], ".")))
 	}
 
-	return cl
+	return t.transport.RoundTrip(r)
 }
