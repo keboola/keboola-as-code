@@ -7,6 +7,7 @@ on:
   # In PR the previous version is deployed first and then the actual version.
   pull_request:
     paths:
+      - .github/workflows/test-k8s-service-buffer.yml
       - provisioning/buffer/**
       - provisioning/common/**
 
@@ -107,6 +108,32 @@ jobs:
         if: always()
         run: kubectl rollout status "deployment/$WORKER_RELEASE_NAME" --timeout=10s
 
+      - name: Check access to API metrics from the DataDog Agent
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          kubectl create namespace datadog
+          POD_IP=`kubectl get pod buffer-api --template '{{.status.podIP}}'`
+          kubectl run --attach --rm --restart=Never check-api-datadog \
+          --namespace datadog \
+          --image docker.io/alpine/curl \
+          --labels="app=datadog-agent" \
+          --env="POD_IP=$POD_IP" \
+          --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP/metrics" | tail"
+
+      - name: Check access to Worker metrics from the DataDog Agent
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          kubectl create namespace datadog
+          POD_IP=`kubectl get pod buffer-worker --template '{{.status.podIP}}'`
+          kubectl run --attach --rm --restart=Never check-worker-datadog \
+          --namespace datadog \
+          --image docker.io/alpine/curl \
+          --labels="app=datadog-agent" \
+          --env="POD_IP=$POD_IP" \
+          --command -- sh -c "set -eo pipefail; curl -f -L --max-time 5 "$POD_IP/metrics" | tail"
+
       - name: Check access to the etcd from a client
         if: always()
         run: |
@@ -124,7 +151,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           kubectl create namespace datadog
-          kubectl run --attach --rm --restart=Never check-etcd-other-data-dog \
+          kubectl run --attach --rm --restart=Never check-etcd-other-datadog \
           --namespace datadog \
           --image docker.io/alpine/curl \
           --labels="app=datadog-agent" \
