@@ -46,6 +46,7 @@ services:
     ports:
       - "8000:8000" # make run-templates-api
       - "8001:8001" # make run-buffer-api
+      - "9000:9000" # metrics
       - "6060:6060"
   # Same etcd is used for all services, but with different namespace
   etcd:
