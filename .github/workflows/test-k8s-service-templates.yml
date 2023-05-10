@@ -7,6 +7,7 @@ on:
   # In PR the previous version is deployed first and then the actual version.
   pull_request:
     paths:
+      - .github/workflows/test-k8s-service-templates.yml
       - provisioning/templates-api/**
       - provisioning/common/**
 
