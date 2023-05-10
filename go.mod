@@ -61,7 +61,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.38.1
 	go.opentelemetry.io/otel/trace v1.15.1
 	go.uber.org/zap v1.24.0
-	goa.design/goa/v3 v3.11.1
+	goa.design/goa/v3 v3.11.3
 	goa.design/plugins/v3 v3.11.1
 	golang.org/x/sync v0.2.0
 	google.golang.org/grpc v1.54.1
