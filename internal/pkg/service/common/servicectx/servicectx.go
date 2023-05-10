@@ -157,20 +157,19 @@ func (v *Process) Shutdown(err error) {
 	v.terminating = true
 	v.lock.Unlock()
 
+	v.logger.Infof("exiting (%v)", err)
 	v.errCh <- err
 	close(v.errCh)
 }
 
 func (v *Process) WaitForShutdown() {
 	// Wait for signal
-	err, ok := <-v.errCh
+	_, ok := <-v.errCh
 	if !ok {
 		// Channel is closed, the process is already terminating, wait for completion
 		v.wg.Wait()
 		return
 	}
-
-	v.logger.Infof("exiting (%v)", err)
 
 	// Send cancellation signal to the goroutines.
 	v.cancel()

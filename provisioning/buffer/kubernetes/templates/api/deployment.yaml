@@ -24,6 +24,18 @@ spec:
       annotations:
         log: "true"
         ad.datadoghq.com/tags: '{"git.commit.sha": "$COMMIT_HASH", "git.repository_url": "https://github.com/keboola/keboola-as-code"}'
+        ad.datadoghq.com/buffer-api.checks: |
+          {
+            "openmetrics": {
+              "instances": [
+                {
+                  "openmetrics_endpoint": "http://%%host%%:9000/metrics",
+                  "namespace": "buffer_api",
+                  "metrics": ["*"]
+                }
+              ]
+            }
+          }
     spec:
       terminationGracePeriodSeconds: 600
       containers:
@@ -36,7 +48,8 @@ spec:
             limits:
               memory: "512Mi"
           ports:
-            - containerPort: 8000
+            - containerPort: 8000 # API
+            - containerPort: 9000 # metrics
           env:
             # 80% of the resources.limits.memory
             - name: GOMEMLIMIT

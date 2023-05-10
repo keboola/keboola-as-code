@@ -48,4 +48,5 @@ helm upgrade \
 # API
 kubectl apply -f ./kubernetes/deploy/api/config-map.yaml
 kubectl apply -f ./kubernetes/deploy/api/pdb.yaml
+kubectl apply -f ./kubernetes/deploy/api/network-policy.yaml
 kubectl apply -f ./kubernetes/deploy/api/deployment.yaml

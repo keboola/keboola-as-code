@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -31,6 +30,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -329,13 +329,21 @@ func (t *Test) runAPIServer(
 	requestDecoratorFn func(request *APIRequestDef),
 ) {
 	// Get a free port
-	port, err := getFreePort()
+	listenPort, err := netutils.FreePort()
 	if err != nil {
 		t.t.Fatalf("Could not receive a free port: %s", err)
 	}
-	listenAddress := fmt.Sprintf("localhost:%d", port)
+	metricsListenPort, err := netutils.FreePort()
+	if err != nil {
+		t.t.Fatalf("Could not receive a free port: %s", err)
+	}
+	listenAddress := fmt.Sprintf("localhost:%d", listenPort)
+	metricsListenAddress := fmt.Sprintf("localhost:%d", metricsListenPort)
 	apiURL := "http://" + listenAddress
-	args := append([]string{fmt.Sprintf("--listen-address=%s", listenAddress)}, addArgs...)
+	args := append([]string{
+		fmt.Sprintf("--listen-address=%s", listenAddress),
+		fmt.Sprintf("--metrics-listen-address=%s", metricsListenAddress),
+	}, addArgs...)
 
 	// Envs
 	envs := env.Empty()
@@ -630,20 +638,6 @@ func (t *Test) assertProjectState() {
 			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir.`,
 		)
 	}
-}
-
-func getFreePort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		return 0, err
-	}
-
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return 0, err
-	}
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
 func waitForAPI(cmdErrCh <-chan error, apiURL string) error {
