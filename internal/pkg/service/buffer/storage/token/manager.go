@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-client/pkg/request"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -103,7 +103,7 @@ func (m *Manager) RefreshToken(ctx context.Context, rb rollback.Builder, token *
 	return nil
 }
 
-func (m *Manager) createTokenRequest(exportKey key.ExportKey, permissions keboola.BucketPermissions) client.APIRequest[*keboola.Token] {
+func (m *Manager) createTokenRequest(exportKey key.ExportKey, permissions keboola.BucketPermissions) request.APIRequest[*keboola.Token] {
 	return m.keboolaProjectAPI.
 		CreateTokenRequest(
 			keboola.WithDescription(

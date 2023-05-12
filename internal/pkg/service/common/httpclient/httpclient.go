@@ -91,7 +91,7 @@ func New(opts ...Option) client.Client {
 
 	// Log each HTTP client request/response as debug message
 	if conf.debugWriter != nil {
-		cl = cl.AndTrace(client.LogTracer(conf.debugWriter))
+		cl = cl.AndTrace(trace.LogTracer(conf.debugWriter))
 	}
 
 	// Dump each HTTP client request/response body
