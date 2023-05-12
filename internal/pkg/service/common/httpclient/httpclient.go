@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/client/trace"
 	ddHttp "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
@@ -95,12 +96,7 @@ func New(opts ...Option) client.Client {
 
 	// Dump each HTTP client request/response body
 	if conf.dumpWriter != nil {
-		cl = cl.AndTrace(client.DumpTracer(conf.dumpWriter))
-	}
-
-	// DataDog high-level tracing (api client requests)
-	if conf.envs != nil && oteldd.IsDataDogEnabled(conf.envs) {
-		cl = cl.AndTrace(oteldd.DDTraceFactory())
+		cl = cl.AndTrace(trace.DumpTracer(conf.dumpWriter))
 	}
 
 	return cl
