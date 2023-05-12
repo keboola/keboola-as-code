@@ -7,7 +7,9 @@ import (
 	"context"
 	"encoding/binary"
 
+	octrace "go.opencensus.io/trace"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/bridge/opencensus"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
@@ -43,6 +45,10 @@ func IsDataDogEnabled(envs env.Provider) bool {
 func NewProvider() trace.TracerProvider {
 	p := &TracerProvider{}
 	p.tracer = newTracer(p)
+
+	// Register legacy OpenCensus tracing for go-cloud (https://github.com/google/go-cloud/issues/2877).
+	octrace.DefaultTracer = opencensus.NewTracer(p.Tracer("otel.bridge.opencensus"))
+
 	return p
 }
 

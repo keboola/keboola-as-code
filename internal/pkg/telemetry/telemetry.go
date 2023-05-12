@@ -43,6 +43,7 @@ func NewTelemetry(tracerProvider trace.TracerProvider, meterProvider metric.Mete
 	if meterProvider == nil {
 		meterProvider = metricNoop.NewMeterProvider()
 	}
+
 	return &telemetry{
 		tracerProvider: tracerProvider,
 		meterProvider:  meterProvider,
