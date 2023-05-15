@@ -46,8 +46,8 @@ func NewServiceDeps(
 
 	// Create base HTTP client for all API requests to other APIs
 	httpClient := httpclient.New(
+		httpclient.WithTelemetry(tel),
 		httpclient.WithUserAgent(userAgent),
-		httpclient.WithEnvs(envs),
 		func(c *httpclient.Config) {
 			if cfg.Debug {
 				httpclient.WithDebugOutput(logger.DebugWriter())(c)
