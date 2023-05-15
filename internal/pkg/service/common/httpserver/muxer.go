@@ -1,4 +1,4 @@
-package muxer
+package httpserver
 
 import (
 	"net/http"
@@ -8,25 +8,26 @@ import (
 	goaHTTP "goa.design/goa/v3/http"
 
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver"
 )
+
+type Muxer interface {
+	goaHTTP.MiddlewareMuxer
+}
 
 type muxer struct {
 	*httptreemux.ContextMux
 }
 
-// New returns a Muxer implementation with custom not found and panic error handlers.
-func New(errorWriter httpserver.ErrorWriter) goaHTTP.Muxer {
-	r := httptreemux.NewContextMux()
-
-	r.EscapeAddedRoutes = true
-	r.NotFoundHandler = func(w http.ResponseWriter, req *http.Request) {
+// NewMuxer returns a Muxer implementation with custom not found and panic error handlers.
+func NewMuxer(errorWriter ErrorWriter) Muxer {
+	mux := httptreemux.NewContextMux()
+	mux.NotFoundHandler = func(w http.ResponseWriter, req *http.Request) {
 		errorWriter.Write(req.Context(), w, serviceError.NewEndpointNotFoundError(req.URL))
 	}
-	r.PanicHandler = func(w http.ResponseWriter, req *http.Request, value any) {
+	mux.PanicHandler = func(w http.ResponseWriter, req *http.Request, value any) {
 		errorWriter.Write(req.Context(), w, serviceError.NewPanicError(value))
 	}
-	return &muxer{r}
+	return &muxer{ContextMux: mux}
 }
 
 // Handle maps the wildcard format used by goa to the one used by httptreemux.
@@ -37,6 +38,11 @@ func (m *muxer) Handle(method, pattern string, handler http.HandlerFunc) {
 // Vars extracts the path variables from the request context.
 func (m *muxer) Vars(r *http.Request) map[string]string {
 	return httptreemux.ContextParams(r.Context())
+}
+
+// Use appends a middleware to the list of middlewares to be applied to the Muxer.
+func (m *muxer) Use(fn func(http.Handler) http.Handler) {
+	m.UseHandler(fn)
 }
 
 var (
