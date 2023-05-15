@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/spf13/pflag"
@@ -11,15 +12,24 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
+	templatesGenSvr "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/http/templates/server"
 	templatesGen "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
-	templatesHttp "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/http"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/openapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/oteldd"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/cpuprofile"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	swaggerui "github.com/keboola/keboola-as-code/third_party"
+)
+
+const (
+	ErrorNamePrefix   = "templates."
+	ExceptionIdPrefix = "keboola-templates-"
 )
 
 func main() {
@@ -83,18 +93,50 @@ func run() error {
 	}
 
 	// Create service.
-	logger.Infof("starting Buffer API HTTP server, listen-address=%s, debug=%t, debug-http=%t", cfg.ListenAddress, cfg.Debug, cfg.DebugHTTP)
-	srv, err := service.New(d)
+	svc, err := service.New(d)
 	if err != nil {
 		return err
 	}
 
-	// Wrap the services in endpoints that can be invoked from other services
-	// potentially running in different processes.
-	endpoints := templatesGen.NewEndpoints(srv)
-
 	// Start HTTP server.
-	templatesHttp.HandleHTTPServer(proc, d, cfg.ListenAddress, endpoints, cfg.Debug)
+	logger.Infof("starting Templates API HTTP server, listen-address=%s, debug=%t, debug-http=%t", cfg.ListenAddress, cfg.Debug, cfg.DebugHTTP)
+	err = httpserver.Start(d, httpserver.Config{
+		ListenAddress:     cfg.ListenAddress,
+		ErrorNamePrefix:   ErrorNamePrefix,
+		ExceptionIDPrefix: ExceptionIdPrefix,
+		TelemetryOptions: []middleware.OTELOption{
+			middleware.WithRedactedHeader("X-StorageAPI-Token"),
+			middleware.WithFilter(func(req *http.Request) bool {
+				return req.URL.Path == "/health-check"
+			}),
+		},
+		Mount: func(c httpserver.Components) {
+			// Create public request deps for each request
+			c.Muxer.Use(func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					next.ServeHTTP(w, req.WithContext(context.WithValue(
+						req.Context(),
+						dependencies.ForPublicRequestCtxKey, dependencies.NewDepsForPublicRequest(d, req),
+					)))
+				})
+			})
+
+			// Create server with endpoints
+			docsFs := http.FS(openapi.Fs)
+			swaggerUiFs := http.FS(swaggerui.SwaggerFS)
+			endpoints := middleware.TraceEndpoints(templatesGen.NewEndpoints(svc))
+			server := templatesGenSvr.New(endpoints, c.Muxer, c.Decoder, c.Encoder, c.ErrorHandler, c.ErrorFormatter, docsFs, docsFs, docsFs, docsFs, swaggerUiFs)
+
+			// Mount endpoints
+			server.Mount(c.Muxer)
+			for _, m := range server.Mounts {
+				logger.Infof("HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
+			}
+		},
+	})
+	if err != nil {
+		return err
+	}
 
 	// Wait for the service shutdown.
 	proc.WaitForShutdown()
