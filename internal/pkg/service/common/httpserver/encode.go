@@ -9,6 +9,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
+type Encoder func(context.Context, http.ResponseWriter) goaHTTP.Encoder
+
 type encoderWrapper struct {
 	ctx         context.Context
 	logger      log.Logger
@@ -17,7 +19,7 @@ type encoderWrapper struct {
 	errorWriter ErrorWriter
 }
 
-func NewEncoder(logger log.Logger, errorWriter ErrorWriter) func(ctx context.Context, w http.ResponseWriter) goaHTTP.Encoder {
+func NewEncoder(logger log.Logger, errorWriter ErrorWriter) Encoder {
 	return func(ctx context.Context, w http.ResponseWriter) goaHTTP.Encoder {
 		return encoderWrapper{
 			writer:      w,

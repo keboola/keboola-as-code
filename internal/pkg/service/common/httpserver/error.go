@@ -8,11 +8,11 @@ import (
 
 	"github.com/iancoleman/strcase"
 	goaHTTP "goa.design/goa/v3/http"
-	"goa.design/goa/v3/middleware"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -20,6 +20,10 @@ const (
 	DefaultErrorName    = "internalError"
 	DefaultErrorMessage = "Application error. Please contact our support support@keboola.com with exception id (%s) attached."
 )
+
+type ErrorHandler func(context.Context, http.ResponseWriter, error)
+
+type ErrorFormatter func(ctx context.Context, err error) goaHTTP.Statuser
 
 type ErrorWriter struct {
 	logger            log.Logger
@@ -41,6 +45,8 @@ func (wr *ErrorWriter) Write(ctx context.Context, w http.ResponseWriter, err err
 }
 
 func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, err error) error {
+	requestID, _ := ctx.Value(middleware.RequestIDCtxKey).(string)
+
 	// Default values
 	response := &UnexpectedError{
 		StatusCode:  http.StatusInternalServerError,
@@ -74,7 +80,7 @@ func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, er
 		v := exceptionIDProvider.ErrorExceptionId()
 		response.ExceptionID = &v
 	} else if response.StatusCode > 499 {
-		v := wr.exceptionIDPrefix + ctx.Value(middleware.RequestIDKey).(string)
+		v := wr.exceptionIDPrefix + requestID
 		response.ExceptionID = &v
 	}
 
@@ -94,10 +100,11 @@ func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, er
 	response.Message = errors.Format(errForResponse, errors.FormatAsSentences())
 
 	// Log error
+	logger := wr.logger.AddPrefix(fmt.Sprintf("[http][requestId=%s]", requestID))
 	if response.StatusCode > 499 {
-		wr.logger.Error(errorLogMessage(err, response))
+		logger.Error(errorLogMessage(err, response))
 	} else {
-		wr.logger.Info(errorLogMessage(err, response))
+		logger.Info(errorLogMessage(err, response))
 	}
 
 	// Write response
