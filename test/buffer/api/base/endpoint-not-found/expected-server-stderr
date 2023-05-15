@@ -1,4 +1,7 @@
 %A
-[bufferApi][request][requestId=%a]INFO GET /foo/bar %a
-[bufferApi]INFO no endpoint found for path "/foo/bar" | errorName=buffer.endpointNotFound errorType=errors.EndpointNotFoundError response={"statusCode":404,"error":"buffer.endpointNotFound","message":"No endpoint found for path \"/foo/bar\"."}
-[bufferApi][response][requestId=%a]INFO status=404 bytes=%a time=%a
+[bufferApi][http][requestId=%s]INFO request GET /health-check %a
+[bufferApi][http][requestId=%s]INFO response status=200 %a
+[bufferApi][http][requestId=%a]INFO request GET /foo/bar %a
+[bufferApi][http][requestId=%a]INFO no endpoint found for path "/foo/bar" | errorName=buffer.endpointNotFound errorType=errors.EndpointNotFoundError response={"statusCode":404,"error":"buffer.endpointNotFound","message":"No endpoint found for path \"/foo/bar\"."}
+[bufferApi][http][requestId=%a]INFO response status=404 %a
+%A
