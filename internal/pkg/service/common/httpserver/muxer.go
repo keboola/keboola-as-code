@@ -22,10 +22,10 @@ type muxer struct {
 func NewMuxer(errorWriter ErrorWriter) Muxer {
 	mux := httptreemux.NewContextMux()
 	mux.NotFoundHandler = func(w http.ResponseWriter, req *http.Request) {
-		errorWriter.Write(req.Context(), w, serviceError.NewEndpointNotFoundError(req.URL))
+		errorWriter.WriteWithStatusCode(req.Context(), w, serviceError.NewEndpointNotFoundError(req.URL))
 	}
 	mux.PanicHandler = func(w http.ResponseWriter, req *http.Request, value any) {
-		errorWriter.Write(req.Context(), w, serviceError.NewPanicError(value))
+		errorWriter.WriteWithStatusCode(req.Context(), w, serviceError.NewPanicError(value))
 	}
 	return &muxer{ContextMux: mux}
 }
