@@ -16,6 +16,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-client/pkg/request"
 	"github.com/keboola/go-utils/pkg/testproject"
 	"github.com/spf13/cast"
 	"golang.org/x/sync/errgroup"
@@ -254,7 +255,7 @@ func (p *Project) createBranches(branches []*fixtures.BranchState) error {
 	createBranchSem := semaphore.NewWeighted(1)
 
 	// Create branches
-	grp := client.NewWaitGroup(ctx)
+	grp := request.NewWaitGroup(ctx)
 	for _, fixture := range branches {
 		fixture := fixture
 		grp.Send(p.createBranchRequest(fixture, createBranchSem))
@@ -272,7 +273,7 @@ func (p *Project) createBucketsTables(buckets []*fixtures.Bucket) error {
 	defer cancelFn()
 
 	// Create buckets and tables
-	grp := client.NewWaitGroup(ctx)
+	grp := request.NewWaitGroup(ctx)
 	for _, b := range buckets {
 		req := p.keboolaProjectAPI.
 			CreateBucketRequest(&keboola.Bucket{
@@ -454,15 +455,15 @@ func (p *Project) createSandboxes(defaultBranchID keboola.BranchID, sandboxes []
 	return nil
 }
 
-func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranchSem *semaphore.Weighted) client.APIRequest[*keboola.Branch] {
-	var request client.APIRequest[*keboola.Branch]
+func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranchSem *semaphore.Weighted) request.APIRequest[*keboola.Branch] {
+	var req request.APIRequest[*keboola.Branch]
 
 	// Create branch
 	if fixture.IsDefault {
 		// Reset default branch description (default branch cannot be created/deleted)
-		request = client.NewNoOperationAPIRequest(p.defaultBranch) // default branch already exists
+		req = request.NewNoOperationAPIRequest(p.defaultBranch) // default branch already exists
 		if p.defaultBranch.Description != fixture.Description {
-			request = request.WithOnSuccess(func(ctx context.Context, branch *keboola.Branch) error {
+			req = req.WithOnSuccess(func(ctx context.Context, branch *keboola.Branch) error {
 				branch.Description = fixture.Description
 				return p.keboolaProjectAPI.
 					UpdateBranchRequest(branch, []string{"description"}).
@@ -483,7 +484,7 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 		}
 	} else {
 		// Create a new branch
-		request = p.keboolaProjectAPI.
+		req = p.keboolaProjectAPI.
 			CreateBranchRequest(fixture.ToAPI()).
 			WithBefore(func(ctx context.Context) error {
 				p.logf("▶ Branch \"%s\"...", fixture.Name)
@@ -501,20 +502,20 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 	}
 
 	// Branch is ready
-	request = request.WithOnSuccess(func(ctx context.Context, branch *keboola.Branch) error {
+	req = req.WithOnSuccess(func(ctx context.Context, branch *keboola.Branch) error {
 		p.addBranch(branch)
 		return nil
 	})
 
 	// Set branch metadata
-	request = request.WithOnSuccess(func(ctx context.Context, branch *keboola.Branch) error {
+	req = req.WithOnSuccess(func(ctx context.Context, branch *keboola.Branch) error {
 		return p.keboolaProjectAPI.
 			AppendBranchMetadataRequest(branch.BranchKey, fixture.Metadata).
 			WithBefore(func(ctx context.Context) error {
 				p.logf("▶ Branch metadata \"%s\"...", fixture.Name)
 				return nil
 			}).
-			WithOnComplete(func(ctx context.Context, _ client.NoResult, err error) error {
+			WithOnComplete(func(ctx context.Context, _ request.NoResult, err error) error {
 				if err == nil {
 					p.logf("✔️ Branch metadata \"%s\".", fixture.Name)
 					return nil
@@ -524,7 +525,7 @@ func (p *Project) createBranchRequest(fixture *fixtures.BranchState, createBranc
 			}).
 			SendOrErr(ctx)
 	})
-	return request
+	return req
 }
 
 func (p *Project) createConfigsInDefaultBranch(configs []string) error {
@@ -651,7 +652,7 @@ func (p *Project) prepareConfigs(ctx context.Context, grp *errgroup.Group, sendR
 								p.logf("▶ Config metadata \"%s\"...", configDesc)
 								return nil
 							}).
-							WithOnSuccess(func(_ context.Context, _ client.NoResult) error {
+							WithOnSuccess(func(_ context.Context, _ request.NoResult) error {
 								p.logf("✔️️ Config metadata \"%s\".", configDesc)
 								return nil
 							}).
