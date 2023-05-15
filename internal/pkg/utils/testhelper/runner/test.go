@@ -515,7 +515,7 @@ func (t *Test) runRequests(apiURL string, requestDecoratorFn func(*APIRequestDef
 				err = json.DecodeString(resp.String(), &respMap)
 			}
 			requests[requestDir].Response = respMap
-			assert.NoError(t.t, err)
+			assert.NoError(t.t, err, resp.String())
 
 			// Run only once if there is no repeat until condition
 			if request.Repeat.Until == "" {
