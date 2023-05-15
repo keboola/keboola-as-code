@@ -24,6 +24,7 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/keboola/go-client/pkg/keboola"
 	"go.opentelemetry.io/otel/trace"
@@ -32,6 +33,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -147,14 +149,16 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 	return d, nil
 }
 
-func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, requestId string) ForPublicRequest {
-	_, span := serverDeps.Telemetry().Tracer().Start(requestCtx, "kac.api.server.templates.dependencies.NewDepsForPublicRequest")
+func NewDepsForPublicRequest(serverDeps ForServer, req *http.Request) ForPublicRequest {
+	ctx, span := serverDeps.Telemetry().Tracer().Start(req.Context(), "kac.api.server.templates.dependencies.NewDepsForPublicRequest")
 	defer telemetry.EndSpan(span, nil)
+
+	requestId, _ := ctx.Value(middleware.RequestIDCtxKey).(string)
 
 	return &forPublicRequest{
 		ForServer:  serverDeps,
 		logger:     serverDeps.Logger().AddPrefix(fmt.Sprintf("[requestId=%s]", requestId)),
-		requestCtx: requestCtx,
+		requestCtx: ctx,
 		requestID:  requestId,
 	}
 }
