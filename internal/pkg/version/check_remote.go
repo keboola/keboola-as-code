@@ -8,6 +8,7 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/keboola/go-client/pkg/client"
+	"github.com/keboola/go-client/pkg/request"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -78,8 +79,7 @@ func (c *checker) getLatestVersion() (string, error) {
 	// Load releases
 	// The last release may be without assets (build in progress), so we load the last 5 releases.
 	result := make([]interface{}, 0)
-	_, _, err := client.
-		NewHTTPRequest(c.client).
+	_, _, err := request.NewHTTPRequest(c.client).
 		WithGet("repos/keboola/keboola-as-code/releases?per_page=5").
 		WithResult(&result).
 		Send(c.ctx)
