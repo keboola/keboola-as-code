@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,6 +24,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	repositoryManager "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -54,7 +56,7 @@ func TestForPublicRequest_Components_Cached(t *testing.T) {
 	serverDeps := &forServer{ForService: serviceDeps, logger: log.NewNopLogger()}
 
 	// Request 1 gets "components1"
-	req1Deps := NewDepsForPublicRequest(serverDeps, context.Background(), "req1")
+	req1Deps := NewDepsForPublicRequest(serverDeps, httptest.NewRequest("GET", "/req1", nil))
 	assert.Equal(t, components1, req1Deps.Components().All())
 	assert.Equal(t, components1, req1Deps.Components().All())
 
@@ -73,7 +75,7 @@ func TestForPublicRequest_Components_Cached(t *testing.T) {
 	assert.Equal(t, components1, req1Deps.Components().All())
 
 	// But request2 gets "components2"
-	req2Deps := NewDepsForPublicRequest(serverDeps, context.Background(), "req2")
+	req2Deps := NewDepsForPublicRequest(serverDeps, httptest.NewRequest("GET", "/req2", nil))
 	assert.Equal(t, components2, req2Deps.Components().All())
 	assert.Equal(t, components2, req2Deps.Components().All())
 }
@@ -105,8 +107,10 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 	assert.NoError(t, err)
 	serverDeps := &forServer{ForService: serviceDeps, logger: log.NewNopLogger(), repositoryManager: manager}
 	requestDepsFactory := func(ctx context.Context) (ForProjectRequest, error) {
-		requestId := idgenerator.Random(8)
-		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, ctx, requestId), ctx, mockedDeps.StorageAPITokenID())
+		reqID := idgenerator.Random(8)
+		req := httptest.NewRequest("GET", "/req1", nil)
+		req = req.WithContext(context.WithValue(ctx, middleware.RequestIDCtxKey, reqID))
+		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, req), ctx, mockedDeps.StorageAPITokenID())
 	}
 
 	// Get repository for request 1
@@ -238,8 +242,10 @@ func TestForProjectRequest_Template_Cached(t *testing.T) {
 	assert.NoError(t, err)
 	serverDeps := &forServer{ForService: serviceDeps, logger: log.NewNopLogger(), repositoryManager: manager}
 	requestDepsFactory := func(ctx context.Context) (ForProjectRequest, error) {
-		requestId := idgenerator.Random(8)
-		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, ctx, requestId), ctx, mockedDeps.StorageAPITokenID())
+		reqID := idgenerator.Random(8)
+		req := httptest.NewRequest("GET", "/req1", nil)
+		req = req.WithContext(context.WithValue(ctx, middleware.RequestIDCtxKey, reqID))
+		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, req), ctx, mockedDeps.StorageAPITokenID())
 	}
 
 	// Get template for request 1

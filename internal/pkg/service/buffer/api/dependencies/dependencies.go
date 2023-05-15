@@ -43,6 +43,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -158,15 +159,17 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 	return d, nil
 }
 
-func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, requestId string, request *http.Request) ForPublicRequest {
-	_, span := serverDeps.Telemetry().Tracer().Start(requestCtx, "kac.api.server.buffer.dependencies.NewDepsForPublicRequest")
+func NewDepsForPublicRequest(serverDeps ForServer, req *http.Request) ForPublicRequest {
+	ctx, span := serverDeps.Telemetry().Tracer().Start(req.Context(), "kac.api.server.buffer.dependencies.NewDepsForPublicRequest")
 	defer telemetry.EndSpan(span, nil)
+
+	requestId, _ := ctx.Value(middleware.RequestIDCtxKey).(string)
 
 	return &forPublicRequest{
 		ForServer:  serverDeps,
 		logger:     serverDeps.Logger().AddPrefix(fmt.Sprintf("[requestId=%s]", requestId)),
-		request:    request,
-		requestCtx: requestCtx,
+		request:    req,
+		requestCtx: req.Context(),
 		requestID:  requestId,
 	}
 }
