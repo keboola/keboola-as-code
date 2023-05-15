@@ -3,8 +3,8 @@ package scheduler
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-client/pkg/request"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 )
@@ -32,7 +32,7 @@ func (m *schedulerMapper) AfterRemoteOperation(ctx context.Context, changes *mod
 		keboolaProjectAPI := m.KeboolaProjectAPI()
 
 		// Create requests pool
-		grp := client.NewRunGroup(ctx, keboolaProjectAPI.Client())
+		grp := request.NewRunGroup(ctx, keboolaProjectAPI.Client())
 
 		// Activate saved configs
 		for _, o := range saved {

@@ -3,8 +3,8 @@ package encrypt
 import (
 	"context"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-client/pkg/request"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -38,7 +38,7 @@ func newExecutor(ctx context.Context, projectID keboola.ProjectID, logger log.Lo
 
 func (e *executor) invoke() error {
 	// Encrypt values
-	wg := client.NewWaitGroup(e.ctx)
+	wg := request.NewWaitGroup(e.ctx)
 	for _, action := range e.actions {
 		wg.Send(e.encryptRequest(action))
 	}
@@ -54,7 +54,7 @@ func (e *executor) invoke() error {
 	return e.errors.ErrorOrNil()
 }
 
-func (e *executor) encryptRequest(action *action) client.Sendable {
+func (e *executor) encryptRequest(action *action) request.Sendable {
 	object := action.object
 
 	// Each key for encryption, in the API call, must start with #
