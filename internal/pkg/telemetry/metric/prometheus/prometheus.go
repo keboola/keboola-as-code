@@ -4,6 +4,7 @@ package prometheus
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -43,8 +44,8 @@ func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger lo
 	res, err := resource.New(
 		ctx,
 		resource.WithAttributes(attribute.String("service_name", serviceName)),
-		resource.WithFromEnv(),
-		resource.WithTelemetrySDK(),
+		// resource.WithFromEnv(), // unused
+		// resource.WithTelemetrySDK(), // unused
 	)
 	if err != nil {
 		return nil, err
@@ -52,7 +53,7 @@ func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger lo
 
 	// Create metrics registry and exporter
 	registry := prometheus.NewRegistry()
-	exporter, err := export.New(export.WithRegisterer(registry))
+	exporter, err := export.New(export.WithRegisterer(registry), export.WithoutScopeInfo(), export.WithoutUnits())
 	if err != nil {
 		return nil, err
 	}
@@ -88,6 +89,43 @@ func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger lo
 	}
 
 	// Create OpenTelemetry metrics provider
-	provider := metric.NewMeterProvider(metric.WithReader(exporter), metric.WithResource(res))
+	provider := metric.NewMeterProvider(
+		metric.WithReader(exporter),
+		metric.WithResource(res),
+		metric.WithView(View()),
+	)
 	return provider, nil
+}
+
+func View() metric.View {
+	ignoreAttrs := metric.NewView(
+		metric.Instrument{Name: "*"},
+		metric.Stream{AttributeFilter: func(value attribute.KeyValue) bool {
+			switch value.Key {
+			// Remove invalid otelhttp metric attributes with high cardinality.
+			// https://github.com/open-telemetry/opentelemetry-go-contrib/issues/3765
+			case "net.sock.peer.addr",
+				"net.sock.peer.port",
+				"http.user_agent",
+				"http.client_ip",
+				"http.request_content_length",
+				"http.response_content_length":
+				return false
+			// Remove unused attributes.
+			case "http.flavor":
+				return false
+			}
+			return true
+		}},
+	)
+	rename := func(inst metric.Instrument) metric.Instrument {
+		if strings.HasPrefix(inst.Name, "http.server") {
+			inst.Name = "keboola.go." + inst.Name
+		}
+		return inst
+	}
+	return func(inst metric.Instrument) (metric.Stream, bool) {
+		inst = rename(inst)
+		return ignoreAttrs(inst)
+	}
 }
