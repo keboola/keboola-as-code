@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"go.opentelemetry.io/otel/propagation"
 	"net/http"
 	"sort"
 	"strings"
@@ -15,30 +16,41 @@ import (
 )
 
 const (
-	SpanName                = "http.server.request"
-	requestSpanCtxKey       = ctxKey("request-span")
+	SpanName           = "http.server.request"
+	requestSpanCtxKey  = ctxKey("request-span")
+	attrRequestID      = "http.request_id"
+	attrQuery          = "http.query."
+	attrRequestHeader  = "http.header."
+	attrResponseHeader = "http.response.header."
+	// extra attributes for DataDog
+	attrManualDrop          = "manual.drop"
 	attrSpanKind            = "span.kind"
 	attrSpanKindValueServer = "server"
 	attrSpanType            = "span.type"
 	attrSpanTypeValueServer = "web"
-	attrRequestID           = "http.request_id"
-	attrQuery               = "http.query."
-	attrRequestHeader       = "http.header."
-	attrResponseHeader      = "http.response.header."
 )
 
 func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, opts ...OTELOption) Middleware {
 	cfg := newOTELConfig(opts)
+	tracer := tp.Tracer("otel-middleware")
 	return func(next http.Handler) http.Handler {
 		h := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			ctx := req.Context()
+			span := trace.SpanFromContext(ctx)
+
+			// Create dropped span for filtered request, so child spans won't appear in the telemetry too.
+			if !span.IsRecording() {
+				ctx, span = tracer.Start(ctx, SpanName, trace.WithAttributes(attribute.Bool(attrManualDrop, true)))
+				next.ServeHTTP(w, req.WithContext(ctx))
+				span.End()
+				return
+			}
 
 			// Set additional metrics attributes
 			labeler, _ := otelhttp.LabelerFromContext(ctx)
 			labeler.Add(metricAttrs(req)...)
 
 			// Set additional request attributes
-			span := trace.SpanFromContext(ctx)
 			span.SetAttributes(spanRequestAttrs(&cfg, req)...)
 			ctx = context.WithValue(ctx, requestSpanCtxKey, span)
 
@@ -62,7 +74,11 @@ func RequestSpan(ctx context.Context) (trace.Span, bool) {
 }
 
 func otelOptions(cfg otelConfig, tp trace.TracerProvider, mp metric.MeterProvider) []otelhttp.Option {
-	out := []otelhttp.Option{otelhttp.WithTracerProvider(tp), otelhttp.WithMeterProvider(mp)}
+	out := []otelhttp.Option{
+		otelhttp.WithTracerProvider(tp),
+		otelhttp.WithMeterProvider(mp),
+		otelhttp.WithPropagators(propagation.TraceContext{}),
+	}
 	for _, f := range cfg.filters {
 		out = append(out, otelhttp.WithFilter(f))
 	}
