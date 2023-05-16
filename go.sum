@@ -1501,8 +1501,8 @@ github.com/karrick/godirwalk v1.8.0/go.mod h1:H5KPZjojv4lE+QYImBI8xVtrBRgYrIVsaR
 github.com/karrick/godirwalk v1.10.3/go.mod h1:RoGL9dQei4vP9ilrpETWE8CLOZ1kiN0LhBygSwrAsHA=
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 h1:Z9n2FFNUXsshfwJMBgNA0RU6/i7WVaAegv3PtuIHPMs=
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51/go.mod h1:CzGEWj7cYgsdH8dAjBGEr58BoE7ScuLd+fwFZ44+/x8=
-github.com/keboola/go-client v1.15.1-0.20230516163813-2d6d85544519 h1:aAfVY9+gWsM0RRt7Z19fuxWJoC84fvX9U8XW+31dZHs=
-github.com/keboola/go-client v1.15.1-0.20230516163813-2d6d85544519/go.mod h1:3CypucUNkfbIj/1k6r5Oq1Uczisy1zHs6QmnegHCuMg=
+github.com/keboola/go-client v1.15.1-0.20230517150137-71e5f5df8c03 h1:aIumd5ScZgW8jzFO252/c86DrFaRAY4n9h3Q7DQqO1Q=
+github.com/keboola/go-client v1.15.1-0.20230517150137-71e5f5df8c03/go.mod h1:3CypucUNkfbIj/1k6r5Oq1Uczisy1zHs6QmnegHCuMg=
 github.com/keboola/go-jsonnet v0.19.1 h1:vdWv6lKNX2WdZl4R8PCOnOWINIjdcwmLqNssU7OUv+Y=
 github.com/keboola/go-jsonnet v0.19.1/go.mod h1:pSOb2+VoKZjVbIB4z58am8q15yWO/VTEp6n1GxW3x0I=
 github.com/keboola/go-utils v0.8.1 h1:nkTiAX9Me9NHvEkopm762BKV+iMNDqWyXmBsOTVDmyE=
@@ -2151,6 +2151,8 @@ go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0/go.mod h1:
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.37.0/go.mod h1:+ARmXlUlc51J7sZeCBkBJNdHGySrdOzgzxp6VWRWM1U=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1 h1:pX+lppB8PArapyhS6nBStyQmkaDUPWdQf0UmEGRCQ54=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1/go.mod h1:2FmkXne0k9nkp27LD/m+uoh8dNlstsiCJ7PLc/S72aI=
+go.opentelemetry.io/contrib/propagators/b3 v1.16.1 h1:Y9Dk1kR93eSHadRTkqnm+QyQVhHthCcvTkoP/Afh7+4=
+go.opentelemetry.io/contrib/propagators/b3 v1.16.1/go.mod h1:IR0G6txqoetQrjjdoDGe+udhFegxnQQd0dOJfFS8Jg0=
 go.opentelemetry.io/otel v0.20.0/go.mod h1:Y3ugLH2oa81t5QO+Lty+zXf8zC9L26ax4Nzoxm/dooo=
 go.opentelemetry.io/otel v1.3.0/go.mod h1:PWIKzi6JCp7sM0k9yZ43VX+T345uNbAkDKwHVjb2PTs=
 go.opentelemetry.io/otel v1.6.0/go.mod h1:bfJD2DZVw0LBxghOTlgnlI0CV3hLDu9XF/QKOUXMTQQ=
