@@ -88,6 +88,21 @@ func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger lo
 	}
 
 	// Create OpenTelemetry metrics provider
-	provider := metric.NewMeterProvider(metric.WithReader(exporter), metric.WithResource(res))
+	provider := metric.NewMeterProvider(
+		metric.WithReader(exporter),
+		metric.WithResource(res),
+		// Remove invalid otelhttp metric attributes with high cardinality.
+		// https://github.com/open-telemetry/opentelemetry-go-contrib/issues/3765
+		metric.WithView(metric.NewView(
+			metric.Instrument{Name: "*"},
+			metric.Stream{AttributeFilter: func(value attribute.KeyValue) bool {
+				switch value.Key {
+				case "net.sock.peer.addr", "net.sock.peer.port", "http.user_agent", "http.client_ip":
+					return false
+				}
+				return true
+			}},
+		)),
+	)
 	return provider, nil
 }
