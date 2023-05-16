@@ -10,8 +10,6 @@ package dependencies
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	bufferConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
@@ -23,8 +21,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/oteldd"
 )
 
 // ForWorker interface provides dependencies for Buffer Worker.
@@ -48,22 +44,7 @@ type forWorker struct {
 	eventSender *event.Sender
 }
 
-func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger) (v ForWorker, err error) {
-	// Setup tracing
-	var tracerProvider trace.TracerProvider = nil
-	if oteldd.IsDataDogEnabled(envs) {
-		tracerProvider = oteldd.NewProvider()
-	}
-
-	// Setup metrics
-	meterProvider, err := prometheus.ServeMetrics(ctx, "buffer-worker", cfg.MetricsListenAddress, logger, proc)
-	if err != nil {
-		return nil, err
-	}
-
-	tel := telemetry.NewTelemetry(tracerProvider, meterProvider)
-
-	// Create span
+func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger, tel telemetry.Telemetry) (v ForWorker, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.worker.dependencies.NewWorkerDeps")
 	defer telemetry.EndSpan(span, &err)
 
