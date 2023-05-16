@@ -30,7 +30,6 @@ spec:
               "instances": [
                 {
                   "openmetrics_endpoint": "http://%%host%%:9000/metrics",
-                  "namespace": "templates_api",
                   "metrics": [".*"]
                 }
               ]
