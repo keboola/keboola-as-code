@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	ddotel "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/opentelemetry"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
@@ -124,6 +125,7 @@ func run() error {
 		ExceptionIDPrefix: ExceptionIdPrefix,
 		TelemetryOptions: []middleware.OTELOption{
 			middleware.WithRedactedHeader("X-StorageAPI-Token"),
+			middleware.WithPropagators(propagation.TraceContext{}),
 			middleware.WithFilter(func(req *http.Request) bool {
 				return req.URL.Path != "/health-check"
 			}),
