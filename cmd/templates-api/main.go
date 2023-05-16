@@ -94,7 +94,7 @@ func run() error {
 					logger.Error(err)
 				}
 			})
-			return tracerProvider, nil
+			return telemetry.SingleTracerProvider(tracerProvider.Tracer("")), nil
 		},
 		func() (metric.MeterProvider, error) {
 			return prometheus.ServeMetrics(ctx, ServiceName, cfg.MetricsListenAddress, logger, proc)
