@@ -15,7 +15,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, fs filesystem.Fs, d dependencies) (err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.local.metadir.create")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.local.metadir.create")
 	defer telemetry.EndSpan(span, &err)
 
 	if err := fs.Mkdir(filesystem.MetadataDir); err != nil {

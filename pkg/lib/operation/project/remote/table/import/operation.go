@@ -31,7 +31,7 @@ type Options struct {
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.remote.table.import")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.table.import")
 	defer telemetry.EndSpan(span, &err)
 
 	if !checkTableExists(ctx, d, o.TableID) {

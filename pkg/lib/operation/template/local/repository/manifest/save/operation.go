@@ -15,7 +15,7 @@ type Dependencies interface {
 }
 
 func Run(ctx context.Context, m *repositoryManifest.Manifest, fs filesystem.Fs, d Dependencies) (changed bool, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.template.local.repository.manifest.load")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.local.repository.manifest.load")
 	defer telemetry.EndSpan(span, &err)
 
 	// Save if manifest has been changed

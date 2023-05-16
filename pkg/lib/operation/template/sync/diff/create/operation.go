@@ -17,7 +17,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (results *diff.Results, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.template.sync.diff.create")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.sync.diff.create")
 	defer telemetry.EndSpan(span, &err)
 
 	differ := diff.NewDiffer(o.Objects)

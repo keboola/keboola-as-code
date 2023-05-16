@@ -129,7 +129,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, container state.ObjectsContainer, o OptionsWithFilter, d dependencies) (s *state.State, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.state.load")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.state.load")
 	span.SetAttributes(attribute.Bool("remote.load", o.LoadRemoteState))
 	span.SetAttributes(attribute.String("remote.filter", json.MustEncodeString(o.RemoteFilter, false)))
 	span.SetAttributes(attribute.Bool("local.load", o.LoadLocalState))

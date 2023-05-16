@@ -2,11 +2,11 @@ package dependencies
 
 import (
 	"context"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -49,7 +49,7 @@ func NewPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 
 func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts ...PublicDepsOption) (v *public, err error) {
 	parentSpan := trace.SpanFromContext(ctx)
-	ctx, span := base.Telemetry().Tracer().Start(ctx, "kac.lib.dependencies.NewPublicDeps")
+	ctx, span := base.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies..NewPublicDeps")
 	defer telemetry.EndSpan(span, &err)
 
 	cfg := newPublicDepsConfig(opts)
@@ -90,7 +90,7 @@ func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 
 func storageAPIIndexWithComponents(ctx context.Context, d Base, keboolaPublicAPI *keboola.API) (index *keboola.IndexComponents, err error) {
 	startTime := time.Now()
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.dependencies.public.storageApiIndexWithComponents")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies..public.storageApiIndexWithComponents")
 	span.SetAttributes(telemetry.KeepSpan())
 	defer telemetry.EndSpan(span, &err)
 

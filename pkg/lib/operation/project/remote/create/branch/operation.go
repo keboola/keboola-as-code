@@ -23,7 +23,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (branch *keboola.Branch, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.remote.create.branch")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.create.branch")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()

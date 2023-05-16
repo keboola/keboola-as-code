@@ -26,7 +26,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, fs filesystem.Fs, o Options, d dependencies) (err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.local.workflows.generate")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.local.workflows.generate")
 	defer telemetry.EndSpan(span, &err)
 
 	if !o.Enabled() {
