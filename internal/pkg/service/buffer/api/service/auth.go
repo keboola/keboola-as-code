@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"goa.design/goa/v3/security"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -17,12 +16,6 @@ func (s *service) APIKeyAuth(ctx context.Context, tokenStr string, scheme *secur
 		projectDeps, err := dependencies.NewDepsForProjectRequest(publicDeps, ctx, tokenStr)
 		if err != nil {
 			return nil, err
-		}
-
-		// Add tags to DD span
-		if span, ok := tracer.SpanFromContext(ctx); ok {
-			span.SetTag("kac.project.id", projectDeps.ProjectID())
-			span.SetTag("kac.storage.token.id", projectDeps.StorageAPITokenID())
 		}
 
 		// Update context

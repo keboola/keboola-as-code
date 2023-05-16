@@ -28,8 +28,12 @@ type publicDepsConfig struct {
 	logIndexLoading   bool
 }
 
-func publicDepsDefaultConfig() publicDepsConfig {
-	return publicDepsConfig{preloadComponents: false}
+func newPublicDepsConfig(opts []PublicDepsOption) publicDepsConfig {
+	cfg := publicDepsConfig{preloadComponents: false}
+	for _, o := range opts {
+		o(&cfg)
+	}
+	return cfg
 }
 
 // WithPreloadComponents defines if the components should be retrieved from Storage index on startup.
@@ -52,23 +56,17 @@ func NewPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 	return newPublicDeps(ctx, base, storageAPIHost, opts...)
 }
 
-func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts ...PublicDepsOption) (*public, error) {
-	// Apply options
-	c := publicDepsDefaultConfig()
-	for _, o := range opts {
-		o(&c)
-	}
+func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts ...PublicDepsOption) (v *public, err error) {
+	ctx, span := base.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewPublicDeps")
+	defer telemetry.EndSpan(span, &err)
 
-	v := &public{
-		base:           base,
-		storageAPIHost: storageAPIHost,
-	}
-
+	cfg := newPublicDepsConfig(opts)
+	v = &public{base: base, storageAPIHost: storageAPIHost}
 	baseHTTPClient := base.HTTPClient()
 
 	// Optionally log index loading
 	var logger log.Logger
-	if c.logIndexLoading {
+	if cfg.logIndexLoading {
 		logger = base.Logger()
 	} else {
 		logger = log.NewNopLogger()
@@ -76,10 +74,9 @@ func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 
 	// Load API index
 	startTime := time.Now()
-	var err error
 	var index *keboola.Index
 	var indexWithComponents *keboola.IndexComponents
-	if c.preloadComponents {
+	if cfg.preloadComponents {
 		logger.Info("loading Storage API index with components")
 		indexWithComponents, err = keboola.APIIndexWithComponents(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient))
 		if err != nil {
@@ -153,8 +150,4 @@ func (v *public) ComponentsProvider() *model.ComponentsProvider {
 		}
 		return model.NewComponentsProvider(index, v.base.Logger(), v.KeboolaPublicAPI())
 	})
-}
-
-func (v *public) KeboolaProjectAPI() *keboola.API {
-	return v.keboolaPublicAPI
 }
