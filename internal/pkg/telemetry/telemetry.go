@@ -33,10 +33,29 @@ type telemetry struct {
 }
 
 func NewNopTelemetry() Telemetry {
-	return NewTelemetry(nil, nil)
+	tel, _ := NewTelemetry(nil, nil)
+	return tel
 }
 
-func NewTelemetry(tracerProvider trace.TracerProvider, meterProvider metric.MeterProvider) Telemetry {
+func NewTelemetry(tpFactory func() (trace.TracerProvider, error), mpFactory func() (metric.MeterProvider, error)) (Telemetry, error) {
+	var err error
+	var tracerProvider trace.TracerProvider
+	var meterProvider metric.MeterProvider
+
+	if tpFactory != nil {
+		tracerProvider, err = tpFactory()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if mpFactory != nil {
+		meterProvider, err = mpFactory()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if tracerProvider == nil {
 		tracerProvider = trace.NewNoopTracerProvider()
 	}
@@ -48,21 +67,33 @@ func NewTelemetry(tracerProvider trace.TracerProvider, meterProvider metric.Mete
 		meterProvider:  meterProvider,
 		tracer:         tracerProvider.Tracer(appName),
 		meter:          meterProvider.Meter(appName),
-	}
+	}, nil
 }
 
 func (t *telemetry) Tracer() trace.Tracer {
+	if t == nil {
+		return nil
+	}
 	return t.tracer
 }
 
 func (t *telemetry) TracerProvider() trace.TracerProvider {
+	if t == nil {
+		return nil
+	}
 	return t.tracerProvider
 }
 
 func (t *telemetry) Meter() metric.Meter {
+	if t == nil {
+		return nil
+	}
 	return t.meter
 }
 
 func (t *telemetry) MeterProvider() metric.MeterProvider {
+	if t == nil {
+		return nil
+	}
 	return t.meterProvider
 }
