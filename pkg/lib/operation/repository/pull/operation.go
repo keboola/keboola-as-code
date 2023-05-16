@@ -19,7 +19,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, repo *git.RemoteRepository, d dependencies) (result *git.PullResult, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.repository.pull")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.repository.pull")
 	span.SetAttributes(telemetry.KeepSpan())
 	defer telemetry.EndSpan(span, &err)
 
@@ -30,12 +30,14 @@ func Run(ctx context.Context, repo *git.RemoteRepository, d dependencies) (resul
 	// Pull
 	result, err = repo.Pull(ctx)
 	if result != nil {
-		span.SetAttributes(attribute.String("kac.repository.id", repo.String()))
-		span.SetAttributes(attribute.String("kac.repository.url", repo.URL()))
-		span.SetAttributes(attribute.String("kac.repository.ref", repo.Ref()))
-		span.SetAttributes(attribute.String("kac.repository.oldHash", result.OldHash))
-		span.SetAttributes(attribute.String("kac.repository.newHash", result.NewHash))
-		span.SetAttributes(attribute.Bool("kac.repository.changed", result.Changed))
+		span.SetAttributes(
+			attribute.String("templates.repository.id", repo.String()),
+			attribute.String("templates.repository.url", repo.URL()),
+			attribute.String("templates.repository.ref", repo.Ref()),
+			attribute.String("templates.repository.oldHash", result.OldHash),
+			attribute.String("templates.repository.newHash", result.NewHash),
+			attribute.Bool("templates.repository.changed", result.Changed),
+		)
 	}
 
 	return result, err

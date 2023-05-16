@@ -17,7 +17,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, d dependencies, configID keboola.ConfigID) (err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.remote.workspace.create")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.workspace.create")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()

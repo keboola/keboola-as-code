@@ -35,7 +35,7 @@ func LoadStateOptions(force bool) loadState.Options {
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.sync.pull")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.sync.pull")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()

@@ -16,7 +16,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, d dependencies, repository *repository.Repository, reference model.TemplateRef) (tmpl *template.Template, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.template.load")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.load")
 	defer telemetry.EndSpan(span, &err)
 
 	// Get template

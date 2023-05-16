@@ -41,7 +41,7 @@ func OnlyForTemplate(ref model.TemplateRef) Option {
 }
 
 func Run(ctx context.Context, d dependencies, ref model.TemplateRepository, opts ...Option) (repo *repository.Repository, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.template.repository.load")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.repository.load")
 	defer telemetry.EndSpan(span, &err)
 
 	// Create config and apply options

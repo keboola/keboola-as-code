@@ -29,7 +29,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, o DbtInitOptions, d dependencies) (err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.dbt.init")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.dbt.init")
 	defer telemetry.EndSpan(span, &err)
 
 	// Check that we are in dbt directory
