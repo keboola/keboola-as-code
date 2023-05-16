@@ -54,20 +54,24 @@ func New(opts ...Option) client.Client {
 	transport := client.HTTP2Transport()
 
 	// Create client
-	cl := client.New().
-		WithTelemetry(conf.telemetry.TracerProvider(), conf.telemetry.MeterProvider()).
+	c := client.New().
 		WithTransport(transport).
 		WithUserAgent(conf.userAgent)
 
+	// Add telemetry
+	if conf.telemetry != nil {
+		c = c.WithTelemetry(conf.telemetry.TracerProvider(), conf.telemetry.MeterProvider())
+	}
+
 	// Log each HTTP client request/response as debug message
 	if conf.debugWriter != nil {
-		cl = cl.AndTrace(trace.LogTracer(conf.debugWriter))
+		c = c.AndTrace(trace.LogTracer(conf.debugWriter))
 	}
 
 	// Dump each HTTP client request/response body
 	if conf.dumpWriter != nil {
-		cl = cl.AndTrace(trace.DumpTracer(conf.dumpWriter))
+		c = c.AndTrace(trace.DumpTracer(conf.dumpWriter))
 	}
 
-	return cl
+	return c
 }
