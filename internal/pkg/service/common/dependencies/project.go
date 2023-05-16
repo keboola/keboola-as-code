@@ -3,9 +3,13 @@ package dependencies
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/spf13/cast"
+	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -32,7 +36,7 @@ func WithoutMasterToken() ProjectDepsOption {
 }
 
 func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr string, opts ...ProjectDepsOption) (v Project, err error) {
-	ctx, span := base.Telemetry().Tracer().Start(ctx, "kac.lib.dependencies.NewProjectDeps")
+	ctx, span := base.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewProjectDeps")
 	defer telemetry.EndSpan(span, &err)
 
 	token, err := public.KeboolaPublicAPI().VerifyTokenRequest(tokenStr).Send(ctx)
@@ -47,6 +51,19 @@ func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr stri
 
 	base.Logger().Debugf("Storage API token is valid.")
 	base.Logger().Debugf(`Project id: "%d", project name: "%s".`, token.ProjectID(), token.ProjectName())
+
+	if span, found := middleware.RequestSpan(ctx); found {
+		_, stack, _ := strings.Cut(public.StorageAPIHost(), ".")
+		span.SetAttributes(
+			attribute.String("keboola.project.stack", stack),
+			attribute.String("keboola.project.id", cast.ToString(token.Owner.ID)),
+			attribute.String("keboola.project.name", token.Owner.Name),
+			attribute.String("keboola.storage.token.id", token.ID),
+			attribute.String("keboola.storage.token.description", token.Description),
+			attribute.Bool("keboola.storage.token.isMaster", token.IsMaster),
+		)
+	}
+
 	return newProjectDeps(ctx, base, public, *token, config)
 }
 
