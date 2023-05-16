@@ -29,7 +29,7 @@ require (
 	github.com/jarcoal/httpmock v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
-	github.com/keboola/go-client v1.15.0
+	github.com/keboola/go-client v1.15.1-0.20230516163813-2d6d85544519
 	github.com/keboola/go-utils v0.8.1
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kylelemons/godebug v1.1.0
@@ -128,9 +128,9 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v0.12.0 // indirect
 	cloud.google.com/go/storage v1.30.1 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.3.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.6.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.1 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.1.2 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.0.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
@@ -144,7 +144,7 @@ require (
 	github.com/alecthomas/chroma v0.10.0 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
-	github.com/aws/aws-sdk-go v1.44.261 // indirect
+	github.com/aws/aws-sdk-go v1.44.262 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.18.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.25 // indirect

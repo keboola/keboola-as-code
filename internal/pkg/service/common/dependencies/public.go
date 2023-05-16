@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
+
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
