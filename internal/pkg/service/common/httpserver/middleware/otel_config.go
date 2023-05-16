@@ -4,9 +4,11 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 type otelConfig struct {
+	propagators         propagation.TextMapPropagator
 	filters             []otelhttp.Filter
 	redactedRouteParams map[string]struct{}
 	redactedQueryParams map[string]struct{}
@@ -14,6 +16,12 @@ type otelConfig struct {
 }
 
 type OTELOption func(config *otelConfig)
+
+func WithPropagators(v propagation.TextMapPropagator) OTELOption {
+	return func(c *otelConfig) {
+		c.propagators = v
+	}
+}
 
 func WithFilter(filters ...otelhttp.Filter) OTELOption {
 	return func(c *otelConfig) {

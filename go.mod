@@ -29,7 +29,7 @@ require (
 	github.com/jarcoal/httpmock v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
-	github.com/keboola/go-client v1.15.1-0.20230516163813-2d6d85544519
+	github.com/keboola/go-client b0e511ffd8a0a4b4be1bfbb3f9df17e0ffbe5490
 	github.com/keboola/go-utils v0.8.1
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kylelemons/godebug v1.1.0
@@ -55,6 +55,7 @@ require (
 	go.nhat.io/aferocopy/v2 v2.0.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.41.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1
+	go.opentelemetry.io/contrib/propagators/b3 v1.16.1
 	go.opentelemetry.io/otel v1.15.1
 	go.opentelemetry.io/otel/bridge/opencensus v0.38.1
 	go.opentelemetry.io/otel/exporters/prometheus v0.38.1
@@ -137,7 +138,7 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.8.1 // indirect
 	github.com/DataDog/appsec-internal-go v1.0.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.45.0-rc.1 // indirect
-	github.com/DataDog/go-libddwaf v1.1.0 // indirect
+	github.com/DataDog/go-libddwaf Rv1.1.0 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/MichaelMure/go-term-text v0.3.1 // indirect
 	github.com/agext/levenshtein v1.2.1 // indirect

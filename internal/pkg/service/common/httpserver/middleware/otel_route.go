@@ -34,23 +34,21 @@ func OpenTelemetryExtractRoute() Middleware {
 
 				// Set span metadata
 				if span, found := RequestSpan(ctx); found {
+					redactedRouteParams, _ := ctx.Value(redactedRouteParamsCtxKey).(map[string]struct{})
 					span.SetAttributes(attribute.String(attrResourceName, route), semconv.HTTPRoute(route))
-					{
-						var attrs []attribute.KeyValue
-						redactedRouteParams, _ := ctx.Value(redactedRouteParamsCtxKey).(map[string]struct{})
-						for key, value := range routerData.Params() {
-							if redactedRouteParams != nil {
-								if _, found := redactedRouteParams[strings.ToLower(key)]; found {
-									value = maskedValue
-								}
+					var attrs []attribute.KeyValue
+					for key, value := range routerData.Params() {
+						if redactedRouteParams != nil {
+							if _, found := redactedRouteParams[strings.ToLower(key)]; found {
+								value = maskedValue
 							}
-							attrs = append(attrs, attribute.String(attrRouteParam+key, value))
 						}
-						sort.SliceStable(attrs, func(i, j int) bool {
-							return attrs[i].Key < attrs[j].Key
-						})
-						span.SetAttributes(attrs...)
+						attrs = append(attrs, attribute.String(attrRouteParam+key, value))
 					}
+					sort.SliceStable(attrs, func(i, j int) bool {
+						return attrs[i].Key < attrs[j].Key
+					})
+					span.SetAttributes(attrs...)
 				}
 			}
 

@@ -29,16 +29,18 @@ import (
 )
 
 const (
-	testTraceID    = 0xabcd
-	testSpanIDBase = 0x1000
+	testTraceIDBase = 0xabcd
+	testSpanIDBase  = 0x1000
 )
 
 type testIDGenerator struct {
-	spanID uint16
+	traceID uint16
+	spanID  uint16
 }
 
 func (g *testIDGenerator) NewIDs(ctx context.Context) (otelTrace.TraceID, otelTrace.SpanID) {
-	traceID := toTraceID(testTraceID)
+	g.traceID++
+	traceID := toTraceID(testTraceIDBase + g.traceID)
 	return traceID, g.NewSpanID(ctx, traceID)
 }
 
@@ -93,11 +95,21 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 			middleware.WithRedactedRouteParam("secret1"),
 			middleware.WithRedactedQueryParam("secret2"),
 			middleware.WithRedactedHeader("X-StorageAPI-Token"),
+			middleware.WithFilter(func(req *http.Request) bool {
+				return req.URL.Path != "/api/ignored"
+			}),
 		),
 	)
 
-	// Register endpoint
-	mux.NewGroup("/api").POST("/item/:id/:secret1", func(w http.ResponseWriter, req *http.Request) {
+	// Register endpoints
+	grp := mux.NewGroup("/api")
+	grp.GET("/ignored", func(w http.ResponseWriter, req *http.Request) {
+		_, span := tracerProvider.Tracer("my-tracer").Start(req.Context(), "my-ignored-span")
+		span.End()
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	})
+	grp.POST("/item/:id/:secret1", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("some error"))
 	})
@@ -109,10 +121,16 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 	req.Header.Set("User-Agent", "my-user-agent")
 	req.Header.Set("X-StorageAPI-Token", "my-token")
 	handler.ServeHTTP(rec, req)
-
-	// Assert
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 	assert.Equal(t, "some error", rec.Body.String())
+
+	// Send ignored request
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest("GET", "/api/ignored", nil))
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "OK", rec.Body.String())
+
+	// Assert
 	assert.Equal(t, expectedSpans(), actualSpans(t, traceExporter))
 	assert.Equal(t, expectedMetrics(), actualMetrics(t, ctx, metricExporter))
 }
@@ -226,16 +244,21 @@ func actualMetrics(t *testing.T, ctx context.Context, reader metric.Reader) []me
 }
 
 func expectedSpans() tracetest.SpanStubs {
-	rootSpanContext := otelTrace.NewSpanContext(otelTrace.SpanContextConfig{
-		TraceID:    toTraceID(testTraceID),
+	req1Context := otelTrace.NewSpanContext(otelTrace.SpanContextConfig{
+		TraceID:    toTraceID(testTraceIDBase + 1),
 		SpanID:     toSpanID(testSpanIDBase + 1),
+		TraceFlags: otelTrace.FlagsSampled,
+	})
+	req2Context := otelTrace.NewSpanContext(otelTrace.SpanContextConfig{
+		TraceID:    toTraceID(testTraceIDBase + 2),
+		SpanID:     toSpanID(testSpanIDBase + 2),
 		TraceFlags: otelTrace.FlagsSampled,
 	})
 	return tracetest.SpanStubs{
 		{
 			Name:        "http.server.request",
 			SpanKind:    otelTrace.SpanKindServer,
-			SpanContext: rootSpanContext,
+			SpanContext: req1Context,
 			Status: trace.Status{
 				Code:        codes.Error,
 				Description: "",
@@ -262,6 +285,25 @@ func expectedSpans() tracetest.SpanStubs {
 				attribute.Int("http.wrote_bytes", 10),
 				attribute.Int("http.status_code", http.StatusInternalServerError),
 			},
+		},
+		{
+			Name:           "http.server.request",
+			SpanKind:       otelTrace.SpanKindInternal,
+			SpanContext:    req2Context,
+			ChildSpanCount: 1,
+			Attributes: []attribute.KeyValue{
+				attribute.Bool("manual.drop", true),
+			},
+		},
+		{
+			Name:     "my-ignored-span",
+			SpanKind: otelTrace.SpanKindInternal,
+			Parent:   req2Context,
+			SpanContext: otelTrace.NewSpanContext(otelTrace.SpanContextConfig{
+				TraceID:    toTraceID(testTraceIDBase + 2),
+				SpanID:     toSpanID(testSpanIDBase + 3),
+				TraceFlags: otelTrace.FlagsSampled,
+			}),
 		},
 	}
 }
