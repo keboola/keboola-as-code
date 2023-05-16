@@ -6,6 +6,8 @@ import (
 
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/client/trace"
+	"github.com/keboola/go-client/pkg/client/trace/otel"
+	"go.opentelemetry.io/otel/propagation"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -60,7 +62,12 @@ func New(opts ...Option) client.Client {
 
 	// Add telemetry
 	if conf.telemetry != nil {
-		c = c.WithTelemetry(conf.telemetry.TracerProvider(), conf.telemetry.MeterProvider())
+		c = c.WithTelemetry(
+			conf.telemetry.TracerProvider(),
+			conf.telemetry.MeterProvider(),
+			otel.WithRedactedHeaders("X-StorageAPI-Token"),
+			otel.WithPropagators(propagation.TraceContext{}),
+		)
 	}
 
 	// Log each HTTP client request/response as debug message
