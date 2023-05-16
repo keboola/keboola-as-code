@@ -30,7 +30,6 @@ import (
 	"net/http"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -47,8 +46,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/oteldd"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ip"
 )
 
@@ -117,22 +114,7 @@ type forProjectRequest struct {
 	fileManager  *file.Manager
 }
 
-func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger) (v ForServer, err error) {
-	// Setup tracing
-	var tracerProvider trace.TracerProvider = nil
-	if oteldd.IsDataDogEnabled(envs) {
-		tracerProvider = oteldd.NewProvider()
-	}
-
-	// Setup metrics
-	meterProvider, err := prometheus.ServeMetrics(ctx, "buffer-api", cfg.MetricsListenAddress, logger, proc)
-	if err != nil {
-		return nil, err
-	}
-
-	tel := telemetry.NewTelemetry(tracerProvider, meterProvider)
-
-	// Create span
+func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger, tel telemetry.Telemetry) (v ForServer, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.api.dependencies.NewServerDeps")
 	defer telemetry.EndSpan(span, &err)
 
