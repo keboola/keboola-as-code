@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
-
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -86,7 +85,7 @@ func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 
 func storageAPIIndexWithComponents(ctx context.Context, d Base, keboolaPublicAPI *keboola.API) (index *keboola.IndexComponents, err error) {
 	startTime := time.Now()
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.dependencies.public.storageApiIndexWithComponents")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.public.storageApiIndexWithComponents")
 	span.SetAttributes(telemetry.KeepSpan())
 	defer telemetry.EndSpan(span, &err)
 

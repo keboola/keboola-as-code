@@ -28,7 +28,7 @@ type RunOptions struct {
 }
 
 func Run(ctx context.Context, o RunOptions, d dependencies) (err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.remote.job.run")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.job.run")
 	defer telemetry.EndSpan(span, &err)
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, o.Timeout)
