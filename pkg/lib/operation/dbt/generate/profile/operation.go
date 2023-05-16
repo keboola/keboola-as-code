@@ -26,7 +26,7 @@ type dependencies interface {
 const profilePath = "profiles.yml"
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.dbt.generate.profile")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.dbt.generate.profile")
 	defer telemetry.EndSpan(span, &err)
 
 	// Get dbt project

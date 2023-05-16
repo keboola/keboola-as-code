@@ -15,7 +15,7 @@ type Dependencies interface {
 }
 
 func Run(ctx context.Context, m *project.Manifest, fs filesystem.Fs, d Dependencies) (changed bool, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.local.manifest.load")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.local.manifest.load")
 	defer telemetry.EndSpan(span, &err)
 
 	// Save if manifest is changed

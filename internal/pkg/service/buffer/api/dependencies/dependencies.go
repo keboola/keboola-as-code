@@ -142,7 +142,7 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 }
 
 func NewDepsForPublicRequest(serverDeps ForServer, req *http.Request) ForPublicRequest {
-	ctx, span := serverDeps.Telemetry().Tracer().Start(req.Context(), "kac.api.server.buffer.dependencies.NewDepsForPublicRequest")
+	ctx, span := serverDeps.Telemetry().Tracer().Start(req.Context(), "keboola.go.buffer.api.dependencies.NewDepsForPublicRequest")
 	defer telemetry.EndSpan(span, nil)
 
 	requestId, _ := ctx.Value(middleware.RequestIDCtxKey).(string)
@@ -157,7 +157,7 @@ func NewDepsForPublicRequest(serverDeps ForServer, req *http.Request) ForPublicR
 }
 
 func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (ForProjectRequest, error) {
-	ctx, span := publicDeps.Telemetry().Tracer().Start(ctx, "kac.api.server.buffer.dependencies.NewDepsForProjectRequest")
+	ctx, span := publicDeps.Telemetry().Tracer().Start(ctx, "keboola.go.buffer.api.dependencies.NewDepsForProjectRequest")
 	defer telemetry.EndSpan(span, nil)
 
 	projectDeps, err := dependencies.NewProjectDeps(ctx, publicDeps, publicDeps, tokenStr)

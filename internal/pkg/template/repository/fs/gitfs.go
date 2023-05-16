@@ -17,7 +17,7 @@ import (
 // gitFsFor returns template FS loaded from a git repository.
 // Sparse checkout is used to load only the needed files.
 func gitFsFor(ctx context.Context, d dependencies, definition model.TemplateRepository, opts ...Option) (memoryFs filesystem.Fs, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.templates.repository.fs.gitFsFor")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.declarative.templates.repository.fs.gitFsFor")
 	defer telemetry.EndSpan(span, &err)
 
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
