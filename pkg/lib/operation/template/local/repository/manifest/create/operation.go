@@ -15,7 +15,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, emptyDir filesystem.Fs, d dependencies) (m *manifest.Manifest, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.template.local.repository.manifest.create")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.local.repository.manifest.create")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()

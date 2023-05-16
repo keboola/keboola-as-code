@@ -67,7 +67,7 @@ type dependencies interface {
 }
 
 func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *State, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.state.new")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.declarative.state.new")
 	defer telemetry.EndSpan(span, &err)
 
 	// Get dependencies
@@ -201,7 +201,7 @@ func (s *State) Validate(ctx context.Context) (error, error) {
 }
 
 func (s *State) validateLocal(ctx context.Context) (err error) {
-	ctx, span := s.tracer.Start(ctx, "kac.lib.state.validation.local")
+	ctx, span := s.tracer.Start(ctx, "keboola.go.declarative.state.validation.local")
 	telemetry.EndSpan(span, &err)
 
 	errs := errors.NewMultiError()
@@ -216,7 +216,7 @@ func (s *State) validateLocal(ctx context.Context) (err error) {
 }
 
 func (s *State) validateRemote(ctx context.Context) (err error) {
-	ctx, span := s.tracer.Start(ctx, "kac.lib.state.validation.remote")
+	ctx, span := s.tracer.Start(ctx, "keboola.go.declarative.state.validation.remote")
 	telemetry.EndSpan(span, &err)
 
 	errs := errors.NewMultiError()
@@ -236,7 +236,7 @@ func (s *State) ValidateValue(value interface{}) error {
 
 // loadLocalState from manifest and local files to unified internal state.
 func (s *State) loadLocalState(ctx context.Context, _filter *model.ObjectsFilter, ignoreNotFoundErr bool) (err error) {
-	ctx, span := s.tracer.Start(ctx, "kac.lib.state.load.local")
+	ctx, span := s.tracer.Start(ctx, "keboola.go.declarative.state.load.local")
 	defer telemetry.EndSpan(span, &err)
 
 	// Create filter if not set
@@ -257,7 +257,7 @@ func (s *State) loadLocalState(ctx context.Context, _filter *model.ObjectsFilter
 
 // loadRemoteState from API to unified internal state.
 func (s *State) loadRemoteState(ctx context.Context, _filter *model.ObjectsFilter) (err error) {
-	ctx, span := s.tracer.Start(ctx, "kac.lib.state.load.remote")
+	ctx, span := s.tracer.Start(ctx, "keboola.go.declarative.state.load.remote")
 	defer telemetry.EndSpan(span, &err)
 
 	// Create filter if not set

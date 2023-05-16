@@ -15,7 +15,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, stepGroups template.StepsGroups, fs filesystem.Fs, d dependencies) (err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.template.local.inputs.create")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.local.inputs.create")
 	defer telemetry.EndSpan(span, &err)
 
 	if err := stepGroups.Save(fs); err != nil {
