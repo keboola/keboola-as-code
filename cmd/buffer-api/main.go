@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/spf13/pflag"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
+	ddotel "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/opentelemetry"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"net/http"
 	"os"
@@ -19,13 +22,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/oteldd"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/cpuprofile"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	swaggerui "github.com/keboola/keboola-as-code/third_party"
 )
 
 const (
+	ServiceName       = "buffer-api"
 	ErrorNamePrefix   = "buffer."
 	ExceptionIdPrefix = "keboola-buffer-"
 )
@@ -66,26 +71,39 @@ func run() error {
 		defer stop()
 	}
 
-	// Start DataDog tracer.
-	if cfg.DatadogEnabled {
-		tracer.Start(
-			tracer.WithLogger(oteldd.NewDDLogger(logger)),
-			tracer.WithRuntimeMetrics(),
-			tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
-			tracer.WithAnalyticsRate(1.0),
-			tracer.WithDebugMode(cfg.DatadogDebug),
-		)
-		defer tracer.Stop()
-	}
-
 	// Create process abstraction.
 	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger))
 	if err != nil {
 		return err
 	}
 
+	// Setup telemetry
+	tel, err := telemetry.NewTelemetry(
+		func() (trace.TracerProvider, error) {
+			tracerProvider := ddotel.NewTracerProvider(
+				tracer.WithLogger(telemetry.NewDDLogger(logger)),
+				tracer.WithRuntimeMetrics(),
+				tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
+				tracer.WithAnalyticsRate(1.0),
+				tracer.WithDebugMode(cfg.DatadogDebug),
+			)
+			proc.OnShutdown(func() {
+				if err := tracerProvider.Shutdown(); err != nil {
+					logger.Error(err)
+				}
+			})
+			return tracerProvider, nil
+		},
+		func() (metric.MeterProvider, error) {
+			return prometheus.ServeMetrics(ctx, ServiceName, cfg.MetricsListenAddress, logger, proc)
+		},
+	)
+	if err != nil {
+		return err
+	}
+
 	// Create dependencies.
-	d, err := dependencies.NewServerDeps(ctx, proc, cfg, envs, logger)
+	d, err := dependencies.NewServerDeps(ctx, proc, cfg, envs, logger, tel)
 	if err != nil {
 		return err
 	}
