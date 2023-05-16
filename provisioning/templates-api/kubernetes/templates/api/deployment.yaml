@@ -54,6 +54,8 @@ spec:
             # 80% of the resources.limits.memory
             - name: GOMEMLIMIT
               value: "550MiB"
+            - name: TEMPLATES_API_DATADOG_DEBUG
+              value: "true"
             - name: TEMPLATES_API_STORAGE_API_HOST
               valueFrom:
                 configMapKeyRef:
