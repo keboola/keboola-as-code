@@ -2,6 +2,8 @@ package dependencies
 
 import (
 	"context"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -26,8 +28,12 @@ type publicDepsConfig struct {
 	preloadComponents bool
 }
 
-func publicDepsDefaultConfig() publicDepsConfig {
-	return publicDepsConfig{preloadComponents: false}
+func newPublicDepsConfig(opts []PublicDepsOption) publicDepsConfig {
+	cfg := publicDepsConfig{preloadComponents: false}
+	for _, o := range opts {
+		o(&cfg)
+	}
+	return cfg
 }
 
 // WithPreloadComponents defines if the components should be retrieved from Storage index on startup.
@@ -37,31 +43,23 @@ func WithPreloadComponents(v bool) PublicDepsOption {
 	}
 }
 
-func NewPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts ...PublicDepsOption) (v Public, err error) {
-	ctx, span := base.Telemetry().Tracer().Start(ctx, "kac.lib.dependencies.NewPublicDeps")
-	defer telemetry.EndSpan(span, &err)
+func NewPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts ...PublicDepsOption) (Public, error) {
 	return newPublicDeps(ctx, base, storageAPIHost, opts...)
 }
 
-func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts ...PublicDepsOption) (*public, error) {
-	// Apply options
-	c := publicDepsDefaultConfig()
-	for _, o := range opts {
-		o(&c)
-	}
+func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts ...PublicDepsOption) (v *public, err error) {
+	parentSpan := trace.SpanFromContext(ctx)
+	ctx, span := base.Telemetry().Tracer().Start(ctx, "kac.lib.dependencies.NewPublicDeps")
+	defer telemetry.EndSpan(span, &err)
 
-	v := &public{
-		base:           base,
-		storageAPIHost: storageAPIHost,
-	}
-
+	cfg := newPublicDepsConfig(opts)
+	v = &public{base: base, storageAPIHost: storageAPIHost}
 	baseHTTPClient := base.HTTPClient()
 
 	// Load API index
-	var err error
 	var index *keboola.Index
 	var indexWithComponents *keboola.IndexComponents
-	if c.preloadComponents {
+	if cfg.preloadComponents {
 		indexWithComponents, err = keboola.APIIndexWithComponents(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient))
 		if err != nil {
 			return nil, err
@@ -76,6 +74,7 @@ func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 
 	// Create API
 	v.keboolaPublicAPI = keboola.NewAPIFromIndex(storageAPIHost, index, keboola.WithClient(&baseHTTPClient))
+	parentSpan.SetAttributes(attribute.String("keboola.storage.host", v.StorageAPIHost()))
 
 	// Cache components list if it has been loaded
 	if indexWithComponents != nil {
@@ -131,8 +130,4 @@ func (v *public) ComponentsProvider() *model.ComponentsProvider {
 		}
 		return model.NewComponentsProvider(index, v.base.Logger(), v.KeboolaPublicAPI())
 	})
-}
-
-func (v *public) KeboolaProjectAPI() *keboola.API {
-	return v.keboolaPublicAPI
 }
