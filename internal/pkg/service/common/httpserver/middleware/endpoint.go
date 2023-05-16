@@ -19,13 +19,13 @@ func TraceEndpoints[T Endpoints](endpoints T) T {
 		return func(ctx context.Context, request any) (response any, err error) {
 			serviceName, _ := ctx.Value(goa.ServiceKey).(string)
 			endpointName, _ := ctx.Value(goa.MethodKey).(string)
-			trace.
-				SpanFromContext(ctx).
-				SetAttributes(
-					attribute.String("endpoint.service", serviceName),
-					attribute.String("endpoint.name", endpointName),
-					attribute.String("endpoint.fullName", fmt.Sprintf("%s.%s", serviceName, endpointName)),
-				)
+			attrs := []attribute.KeyValue{
+				attribute.String("endpoint.service", serviceName),
+				attribute.String("endpoint.name", endpointName),
+				attribute.String("endpoint.fullName", fmt.Sprintf("%s.%s", serviceName, endpointName)),
+			}
+
+			trace.SpanFromContext(ctx).SetAttributes(attrs...)
 			return endpoint(ctx, request)
 		}
 	})
