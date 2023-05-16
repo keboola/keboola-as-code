@@ -18,7 +18,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, repositoryDir filesystem.Fs, o Options, d dependencies) (fs filesystem.Fs, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.template.local.dir.create")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.local.dir.create")
 	defer telemetry.EndSpan(span, &err)
 
 	// Create template dir

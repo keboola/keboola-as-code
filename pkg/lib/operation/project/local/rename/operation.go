@@ -22,7 +22,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, projectState *project.State, o Options, d dependencies) (changed bool, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.local.rename")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.local.rename")
 	defer telemetry.EndSpan(span, &err)
 
 	logger := d.Logger()

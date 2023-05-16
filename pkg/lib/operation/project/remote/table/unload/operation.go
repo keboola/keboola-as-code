@@ -44,7 +44,7 @@ func ParseFormat(format string) (keboola.UnloadFormat, error) {
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (file *keboola.UnloadedFile, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.project.remote.table.unload")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.table.unload")
 	defer telemetry.EndSpan(span, &err)
 
 	request := d.KeboolaProjectAPI().NewTableUnloadRequest(o.TableID).

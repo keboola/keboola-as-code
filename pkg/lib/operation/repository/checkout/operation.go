@@ -21,7 +21,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, def model.TemplateRepository, d dependencies) (repo *git.RemoteRepository, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.repository.checkout")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.repository.checkout")
 	span.SetAttributes(telemetry.KeepSpan())
 	defer telemetry.EndSpan(span, &err)
 
@@ -34,12 +34,14 @@ func Run(ctx context.Context, def model.TemplateRepository, d dependencies) (rep
 	if err != nil {
 		return nil, errors.Errorf(`cannot checkout out repository "%s": %w`, def, err)
 	} else {
-		span.SetAttributes(attribute.String("kac.repository.id", repo.String()))
-		span.SetAttributes(attribute.String("kac.repository.url", repo.URL()))
-		span.SetAttributes(attribute.String("kac.repository.ref", repo.Ref()))
-		span.SetAttributes(attribute.String("kac.repository.oldHash", ""))
-		span.SetAttributes(attribute.String("kac.repository.newHash", repo.CommitHash()))
-		span.SetAttributes(attribute.Bool("kac.repository.changed", true))
+		span.SetAttributes(
+			attribute.String("templates.repository.id", repo.String()),
+			attribute.String("templates.repository.url", repo.URL()),
+			attribute.String("templates.repository.ref", repo.Ref()),
+			attribute.String("templates.repository.oldHash", ""),
+			attribute.String("templates.repository.newHash", repo.CommitHash()),
+			attribute.Bool("templates.repository.changed", true),
+		)
 	}
 
 	// Done

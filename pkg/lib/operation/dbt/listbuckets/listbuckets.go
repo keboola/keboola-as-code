@@ -18,7 +18,7 @@ type dependencies interface {
 }
 
 func Run(ctx context.Context, o Options, d dependencies) (buckets []Bucket, err error) {
-	ctx, span := d.Telemetry().Tracer().Start(ctx, "kac.lib.operation.dbt.listBuckets")
+	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.dbt.listBuckets")
 	defer telemetry.EndSpan(span, &err)
 
 	tablesList, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithBuckets()).Send(ctx)
