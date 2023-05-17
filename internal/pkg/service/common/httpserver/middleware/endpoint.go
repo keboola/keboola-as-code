@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/dimfeld/httptreemux/v5"
 	"go.opentelemetry.io/otel/attribute"
 	goa "goa.design/goa/v3/pkg"
 )
@@ -19,7 +20,12 @@ func TraceEndpoints[T Endpoints](endpoints T) T {
 			if span, found := RequestSpan(ctx); found {
 				serviceName, _ := ctx.Value(goa.ServiceKey).(string)
 				endpointName, _ := ctx.Value(goa.MethodKey).(string)
+				resName := endpointName
+				if routerData := httptreemux.ContextData(ctx); routerData != nil {
+					resName += routerData.Route() + " " + resName
+				}
 				span.SetAttributes(
+					attribute.String("resource.name", resName),
 					attribute.String("endpoint.service", serviceName),
 					attribute.String("endpoint.name", endpointName),
 					attribute.String("endpoint.fullName", fmt.Sprintf("%s.%s", serviceName, endpointName)),
