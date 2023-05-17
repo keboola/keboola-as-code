@@ -15,32 +15,44 @@ import (
 )
 
 const (
-	SpanName                = "http.server.request"
-	requestSpanCtxKey       = ctxKey("request-span")
+	SpanName           = "http.server.request"
+	RequestSpanCtxKey  = ctxKey("request-span")
+	attrRequestID      = "http.request_id"
+	attrQuery          = "http.query."
+	attrRequestHeader  = "http.header."
+	attrResponseHeader = "http.response.header."
+	// Extra attributes for DataDog.
+	attrManualDrop          = "manual.drop"
 	attrSpanKind            = "span.kind"
 	attrSpanKindValueServer = "server"
 	attrSpanType            = "span.type"
 	attrSpanTypeValueServer = "web"
-	attrRequestID           = "http.request_id"
-	attrQuery               = "http.query."
-	attrRequestHeader       = "http.header."
-	attrResponseHeader      = "http.response.header."
 )
 
 func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, opts ...OTELOption) Middleware {
 	cfg := newOTELConfig(opts)
+	tracer := tp.Tracer("otel-middleware")
 	return func(next http.Handler) http.Handler {
 		h := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			ctx := req.Context()
+			span := trace.SpanFromContext(ctx)
+
+			// Create dropped span for filtered request, so child spans won't appear in the telemetry too.
+			if !span.IsRecording() {
+				ctx, span = tracer.Start(ctx, SpanName, trace.WithAttributes(attribute.Bool(attrManualDrop, true)))
+				ctx = context.WithValue(ctx, RequestSpanCtxKey, span)
+				next.ServeHTTP(w, req.WithContext(ctx))
+				span.End()
+				return
+			}
 
 			// Set additional metrics attributes
 			labeler, _ := otelhttp.LabelerFromContext(ctx)
 			labeler.Add(metricAttrs(req)...)
 
 			// Set additional request attributes
-			span := trace.SpanFromContext(ctx)
 			span.SetAttributes(spanRequestAttrs(&cfg, req)...)
-			ctx = context.WithValue(ctx, requestSpanCtxKey, span)
+			ctx = context.WithValue(ctx, RequestSpanCtxKey, span)
 
 			// Route and route params must be obtained by the OpenTelemetryRoute middleware registered to httptreemux.Muxer.
 			// At this point, we set the list of redacted parameters to the context.
@@ -57,12 +69,18 @@ func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, opts ...OTE
 }
 
 func RequestSpan(ctx context.Context) (trace.Span, bool) {
-	v, ok := ctx.Value(requestSpanCtxKey).(trace.Span)
+	v, ok := ctx.Value(RequestSpanCtxKey).(trace.Span)
 	return v, ok
 }
 
 func otelOptions(cfg otelConfig, tp trace.TracerProvider, mp metric.MeterProvider) []otelhttp.Option {
-	out := []otelhttp.Option{otelhttp.WithTracerProvider(tp), otelhttp.WithMeterProvider(mp)}
+	out := []otelhttp.Option{
+		otelhttp.WithTracerProvider(tp),
+		otelhttp.WithMeterProvider(mp),
+	}
+	if cfg.propagators != nil {
+		out = append(out, otelhttp.WithPropagators(cfg.propagators))
+	}
 	for _, f := range cfg.filters {
 		out = append(out, otelhttp.WithFilter(f))
 	}

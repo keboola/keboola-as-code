@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	ddotel "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/opentelemetry"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
@@ -94,7 +95,7 @@ func run() error {
 					logger.Error(err)
 				}
 			})
-			return telemetry.SingleTracerProvider(tracerProvider.Tracer("")), nil
+			return telemetry.WrapDD(tracerProvider.Tracer("")), nil
 		},
 		func() (metric.MeterProvider, error) {
 			return prometheus.ServeMetrics(ctx, ServiceName, cfg.MetricsListenAddress, logger, proc)
@@ -124,6 +125,7 @@ func run() error {
 		ExceptionIDPrefix: ExceptionIdPrefix,
 		TelemetryOptions: []middleware.OTELOption{
 			middleware.WithRedactedHeader("X-StorageAPI-Token"),
+			middleware.WithPropagators(propagation.TraceContext{}),
 			middleware.WithFilter(func(req *http.Request) bool {
 				return req.URL.Path != "/health-check"
 			}),
@@ -142,10 +144,11 @@ func run() error {
 			// Create server with endpoints
 			docsFs := http.FS(openapi.Fs)
 			swaggerUiFs := http.FS(swaggerui.SwaggerFS)
-			endpoints := middleware.TraceEndpoints(templatesGen.NewEndpoints(svc))
+			endpoints := templatesGen.NewEndpoints(svc)
 			server := templatesGenSvr.New(endpoints, c.Muxer, c.Decoder, c.Encoder, c.ErrorHandler, c.ErrorFormatter, docsFs, docsFs, docsFs, docsFs, swaggerUiFs)
 
 			// Mount endpoints
+			server.Use(middleware.TraceEndpoints())
 			server.Mount(c.Muxer)
 			for _, m := range server.Mounts {
 				logger.Infof("HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
