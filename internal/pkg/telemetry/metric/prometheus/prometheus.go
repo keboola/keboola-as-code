@@ -43,8 +43,8 @@ func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger lo
 	res, err := resource.New(
 		ctx,
 		resource.WithAttributes(attribute.String("service_name", serviceName)),
-		resource.WithFromEnv(),
-		resource.WithTelemetrySDK(),
+		// resource.WithFromEnv(), // unused
+		// resource.WithTelemetrySDK(), // unused
 	)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger lo
 
 	// Create metrics registry and exporter
 	registry := prometheus.NewRegistry()
-	exporter, err := export.New(export.WithRegisterer(registry))
+	exporter, err := export.New(export.WithRegisterer(registry), export.WithoutScopeInfo(), export.WithoutUnits())
 	if err != nil {
 		return nil, err
 	}
@@ -91,13 +91,21 @@ func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger lo
 	provider := metric.NewMeterProvider(
 		metric.WithReader(exporter),
 		metric.WithResource(res),
-		// Remove invalid otelhttp metric attributes with high cardinality.
-		// https://github.com/open-telemetry/opentelemetry-go-contrib/issues/3765
 		metric.WithView(metric.NewView(
 			metric.Instrument{Name: "*"},
 			metric.Stream{AttributeFilter: func(value attribute.KeyValue) bool {
 				switch value.Key {
-				case "net.sock.peer.addr", "net.sock.peer.port", "http.user_agent", "http.client_ip":
+				// Remove invalid otelhttp metric attributes with high cardinality.
+				// https://github.com/open-telemetry/opentelemetry-go-contrib/issues/3765
+				case "net.sock.peer.addr",
+					"net.sock.peer.port",
+					"http.user_agent",
+					"http.client_ip",
+					"http.request_content_length",
+					"http.response_content_length":
+					return false
+				// Remove unused attributes.
+				case "http.flavor":
 					return false
 				}
 				return true
