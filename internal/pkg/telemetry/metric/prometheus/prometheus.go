@@ -91,13 +91,16 @@ func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger lo
 	provider := metric.NewMeterProvider(
 		metric.WithReader(exporter),
 		metric.WithResource(res),
-		// Remove invalid otelhttp metric attributes with high cardinality.
-		// https://github.com/open-telemetry/opentelemetry-go-contrib/issues/3765
 		metric.WithView(metric.NewView(
 			metric.Instrument{Name: "*"},
 			metric.Stream{AttributeFilter: func(value attribute.KeyValue) bool {
 				switch value.Key {
+				// Remove invalid otelhttp metric attributes with high cardinality.
+				// https://github.com/open-telemetry/opentelemetry-go-contrib/issues/3765
 				case "net.sock.peer.addr", "net.sock.peer.port", "http.user_agent", "http.client_ip":
+					return false
+				// Remove unused attributes.
+				case "http_flavor", "otel_scope_name", "otel_scope_version", "telemetry_sdk_language", "telemetry_sdk_name", "telemetry_sdk_version":
 					return false
 				}
 				return true

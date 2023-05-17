@@ -29,7 +29,7 @@ require (
 	github.com/jarcoal/httpmock v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
-	github.com/keboola/go-client v1.15.1-0.20230516163813-2d6d85544519
+	github.com/keboola/go-client v1.15.1-0.20230518095047-c84fe0ad3d08
 	github.com/keboola/go-utils v0.8.1
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kylelemons/godebug v1.1.0
@@ -55,6 +55,7 @@ require (
 	go.nhat.io/aferocopy/v2 v2.0.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.41.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1
+	go.opentelemetry.io/contrib/propagators/b3 v1.16.1
 	go.opentelemetry.io/otel v1.15.1
 	go.opentelemetry.io/otel/bridge/opencensus v0.38.1
 	go.opentelemetry.io/otel/exporters/prometheus v0.38.1
@@ -114,7 +115,7 @@ require (
 	golang.org/x/text v0.9.0
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.9.1
-	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
+	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
