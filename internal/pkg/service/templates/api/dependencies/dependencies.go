@@ -145,9 +145,9 @@ func NewDepsForPublicRequest(serverDeps ForServer, req *http.Request) ForPublicR
 	}
 }
 
-func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (ForProjectRequest, error) {
+func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (v ForProjectRequest, err error) {
 	ctx, span := publicDeps.Telemetry().Tracer().Start(ctx, "keboola.go.templates.api.dependencies.NewDepsForProjectRequest")
-	defer telemetry.EndSpan(span, nil)
+	defer telemetry.EndSpan(span, &err)
 
 	projectDeps, err := dependencies.NewProjectDeps(ctx, publicDeps, publicDeps, tokenStr)
 	if err != nil {
