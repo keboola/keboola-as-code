@@ -30,9 +30,10 @@ spec:
               "instances": [
                 {
                   "openmetrics_endpoint": "http://%%host%%:9000/metrics",
+                  "metrics": [".*"],
                   "collect_histogram_buckets": true,
                   "histogram_buckets_as_distributions": true,
-                  "metrics": [".*"]
+                  "tag_by_endpoint": false
                 }
               ]
             }
