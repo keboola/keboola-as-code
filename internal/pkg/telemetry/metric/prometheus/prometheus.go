@@ -9,6 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/bridge/opencensus"
 	export "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -55,6 +56,9 @@ func ServeMetrics(ctx context.Context, serviceName, listenAddr string, logger lo
 	if err != nil {
 		return nil, err
 	}
+
+	// Register legacy OpenCensus metrics, for go-cloud (https://github.com/google/go-cloud/issues/2877)
+	exporter.RegisterProducer(opencensus.NewMetricProducer())
 
 	// Create HTTP metrics server
 	opts := promhttp.HandlerOpts{ErrorLog: &errLogger{logger: logger}}

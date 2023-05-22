@@ -5,8 +5,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-client/pkg/request"
 	"github.com/keboola/go-utils/pkg/deepcopy"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/spf13/cast"
@@ -78,7 +78,7 @@ func (u *UnitOfWork) LoadAll(filter model.ObjectsFilter) {
 	req := u.keboolaProjectAPI.
 		ListBranchesRequest().
 		WithOnSuccess(func(ctx context.Context, apiBranches *[]*keboola.Branch) error {
-			wg := client.NewWaitGroup(ctx)
+			wg := request.NewWaitGroup(ctx)
 			for _, apiBranch := range *apiBranches {
 				branch := model.NewBranch(apiBranch)
 
@@ -266,7 +266,7 @@ func (u *UnitOfWork) Invoke() error {
 	u.runGroups.SortKeys(sort.Strings)
 	for _, level := range u.runGroups.Keys() {
 		grp, _ := u.runGroups.Get(level)
-		if err := grp.(*client.RunGroup).RunAndWait(); err != nil {
+		if err := grp.(*request.RunGroup).RunAndWait(); err != nil {
 			u.errors.Append(err)
 			break
 		}
@@ -319,7 +319,7 @@ func (u *UnitOfWork) createOrUpdate(objectState model.ObjectState, object model.
 	}
 }
 
-func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe) client.APIRequest[keboola.Object] {
+func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe) request.APIRequest[keboola.Object] {
 	apiObject, _ := recipe.Object.(model.ToAPIObject).ToAPIObject(u.changeDescription, nil)
 	request := u.keboolaProjectAPI.
 		CreateRequest(apiObject).
@@ -358,7 +358,7 @@ func (u *UnitOfWork) createRequest(objectState model.ObjectState, object model.O
 	return request
 }
 
-func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) client.APIRequest[keboola.Object] {
+func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.Object, recipe *model.RemoteSaveRecipe, changedFields model.ChangedFields) request.APIRequest[keboola.Object] {
 	apiObject, apiChangedFields := recipe.Object.(model.ToAPIObject).ToAPIObject(u.changeDescription, changedFields)
 	return u.keboolaProjectAPI.
 		UpdateRequest(apiObject, apiChangedFields).
@@ -371,9 +371,9 @@ func (u *UnitOfWork) updateRequest(objectState model.ObjectState, object model.O
 }
 
 func (u *UnitOfWork) delete(objectState model.ObjectState) {
-	request := u.keboolaProjectAPI.
+	req := u.keboolaProjectAPI.
 		DeleteRequest(objectState.(model.ToAPIObjectKey).ToAPIObjectKey()).
-		WithOnSuccess(func(_ context.Context, _ client.NoResult) error {
+		WithOnSuccess(func(_ context.Context, _ request.NoResult) error {
 			u.Manifest().Delete(objectState)
 			objectState.SetRemoteState(nil)
 			u.changes.AddDeleted(objectState)
@@ -382,32 +382,32 @@ func (u *UnitOfWork) delete(objectState model.ObjectState) {
 
 	// Limit concurrency of branch operations, see u.branchesSem comment.
 	if objectState.Kind().IsBranch() {
-		request.
+		req.
 			WithBefore(func(ctx context.Context) error {
 				return u.branchesSem.Acquire(ctx, 1)
 			}).
-			WithOnComplete(func(_ context.Context, _ client.NoResult, err error) error {
+			WithOnComplete(func(_ context.Context, _ request.NoResult, err error) error {
 				u.branchesSem.Release(1)
 				return err
 			})
 	}
 
 	grp := u.runGroupFor(objectState.Level())
-	grp.Add(request)
+	grp.Add(req)
 }
 
 // runGroupFor each level (branches, configs, rows).
-func (u *UnitOfWork) runGroupFor(level int) *client.RunGroup {
+func (u *UnitOfWork) runGroupFor(level int) *request.RunGroup {
 	if u.invoked {
 		panic(errors.New(`invoked UnitOfWork cannot be reused`))
 	}
 
 	key := cast.ToString(level)
 	if value, found := u.runGroups.Get(key); found {
-		return value.(*client.RunGroup)
+		return value.(*request.RunGroup)
 	}
 
-	grp := client.NewRunGroup(u.ctx, u.keboolaProjectAPI.Client())
+	grp := request.NewRunGroup(u.ctx, u.keboolaProjectAPI.Client())
 	u.runGroups.Set(key, grp)
 	return grp
 }

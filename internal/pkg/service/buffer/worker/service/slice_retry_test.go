@@ -61,7 +61,13 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 			Provider: s3.Provider,
 			Region:   "us‑east‑2",
 		},
-		S3UploadParams: &s3.UploadParams{Path: s3.Path{Key: "foo", Bucket: "bar"}},
+		S3UploadParams: &s3.UploadParams{
+			Path: s3.Path{Key: "foo", Bucket: "bar"},
+			Credentials: s3.Credentials{
+				AccessKeyID:     "foo",
+				SecretAccessKey: "bar",
+			},
+		},
 	}
 
 	// Create receivers, exports and records

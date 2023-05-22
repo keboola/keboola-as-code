@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/go-client/pkg/request"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/fixtures"
@@ -30,10 +30,10 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 	// Branches
 	grp.Go(func() error {
-		request := p.keboolaProjectAPI.
+		req := p.keboolaProjectAPI.
 			ListBranchesRequest().
 			WithOnSuccess(func(ctx context.Context, apiBranches *[]*keboola.Branch) error {
-				wg := client.NewWaitGroup(ctx)
+				wg := request.NewWaitGroup(ctx)
 				for _, apiBranch := range *apiBranches {
 					apiBranch := apiBranch
 					branch := &fixtures.BranchWithConfigs{Branch: &fixtures.Branch{}, Configs: make([]*fixtures.Config, 0)}
@@ -123,24 +123,24 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 
 				return nil
 			})
-		return request.SendOrErr(ctx)
+		return req.SendOrErr(ctx)
 	})
 
 	// Schedules for main branch
 	var schedules []*keboola.Schedule
 	grp.Go(func() error {
-		request := p.keboolaProjectAPI.
+		req := p.keboolaProjectAPI.
 			ListSchedulesRequest().
 			WithOnSuccess(func(_ context.Context, apiSchedules *[]*keboola.Schedule) error {
 				schedules = append(schedules, *apiSchedules...)
 				return nil
 			})
-		return request.SendOrErr(ctx)
+		return req.SendOrErr(ctx)
 	})
 
 	workspacesMap := make(map[string]*keboola.Workspace)
 	grp.Go(func() error {
-		request := p.keboolaProjectAPI.
+		req := p.keboolaProjectAPI.
 			ListWorkspaceInstancesRequest().
 			WithOnSuccess(func(ctx context.Context, result *[]*keboola.Workspace) error {
 				for _, sandbox := range *result {
@@ -148,13 +148,13 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 				}
 				return nil
 			})
-		return request.SendOrErr(ctx)
+		return req.SendOrErr(ctx)
 	})
 
 	// Storage Buckets
 	bucketsMap := map[keboola.BucketID]*fixtures.Bucket{}
 	grp.Go(func() error {
-		request := p.keboolaProjectAPI.
+		req := p.keboolaProjectAPI.
 			ListBucketsRequest().
 			WithOnSuccess(func(_ context.Context, apiBuckets *[]*keboola.Bucket) error {
 				for _, b := range *apiBuckets {
@@ -168,19 +168,19 @@ func (p *Project) NewSnapshot() (*fixtures.ProjectSnapshot, error) {
 				}
 				return nil
 			})
-		return request.SendOrErr(ctx)
+		return req.SendOrErr(ctx)
 	})
 
 	// Storage Tables
 	var tables []*keboola.Table
 	grp.Go(func() error {
-		request := p.keboolaProjectAPI.
+		req := p.keboolaProjectAPI.
 			ListTablesRequest(keboola.WithBuckets(), keboola.WithColumns()).
 			WithOnSuccess(func(_ context.Context, apiTables *[]*keboola.Table) error {
 				tables = append(tables, *apiTables...)
 				return nil
 			})
-		return request.SendOrErr(ctx)
+		return req.SendOrErr(ctx)
 	})
 
 	// Storage Files
