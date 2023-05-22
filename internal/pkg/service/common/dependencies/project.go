@@ -36,6 +36,14 @@ func WithoutMasterToken() ProjectDepsOption {
 	}
 }
 
+func newProjectDepsConfig(opts []ProjectDepsOption) projectDepsConfig {
+	cfg := projectDepsConfig{}
+	for _, o := range opts {
+		o(&cfg)
+	}
+	return cfg
+}
+
 func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr string, opts ...ProjectDepsOption) (v Project, err error) {
 	ctx, span := base.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewProjectDeps")
 	defer telemetry.EndSpan(span, &err)
@@ -57,12 +65,6 @@ func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr stri
 	if err != nil {
 		return nil, err
 	}
-
-	config := &projectDepsConfig{}
-	for _, opt := range opts {
-		opt(config)
-	}
-
 	base.Logger().Debugf("Storage API token is valid.")
 	base.Logger().Debugf(`Project id: "%d", project name: "%s".`, token.ProjectID(), token.ProjectName())
 
@@ -77,12 +79,14 @@ func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr stri
 		)
 	}
 
-	return newProjectDeps(ctx, base, public, *token, config)
+	return newProjectDeps(ctx, base, public, *token, opts...)
 }
 
-func newProjectDeps(ctx context.Context, base Base, public Public, token keboola.Token, config *projectDepsConfig) (*project, error) {
+func newProjectDeps(ctx context.Context, base Base, public Public, token keboola.Token, opts ...ProjectDepsOption) (*project, error) {
+	cfg := newProjectDepsConfig(opts)
+
 	// Require master token
-	if !config.withoutMasterToken && !token.IsMaster {
+	if !cfg.withoutMasterToken && !token.IsMaster {
 		return nil, MasterTokenRequiredError{}
 	}
 
