@@ -202,7 +202,6 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 
 	// Setup telemetry
 	ctx, span := n.tracer.Start(ctx, n.config.spanNamePrefix+"."+cfg.Type, trace.WithAttributes(
-		telemetry.KeepSpan(),
 		attribute.String("projectId", task.ProjectID.String()),
 		attribute.String("taskId", task.TaskID.String()),
 		attribute.String("taskType", cfg.Type),

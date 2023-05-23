@@ -20,7 +20,6 @@ type dependencies interface {
 
 func Run(ctx context.Context, repo *git.RemoteRepository, d dependencies) (result *git.PullResult, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.repository.pull")
-	span.SetAttributes(telemetry.KeepSpan())
 	defer telemetry.EndSpan(span, &err)
 
 	// Context with timeout
