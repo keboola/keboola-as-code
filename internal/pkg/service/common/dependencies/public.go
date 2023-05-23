@@ -58,20 +58,26 @@ func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 	baseHTTPClient := base.HTTPClient()
 
 	// Load API index
+	logger := base.Logger()
+	startTime := time.Now()
 	var err error
 	var index *keboola.Index
 	var indexWithComponents *keboola.IndexComponents
 	if c.preloadComponents {
+		logger.Info("loading Storage API index with components")
 		indexWithComponents, err = keboola.APIIndexWithComponents(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient))
 		if err != nil {
 			return nil, err
 		}
 		index = &indexWithComponents.Index
+		logger.Infof(`loaded Storage API index with "%d" components | %s`, len(indexWithComponents.Components), time.Since(startTime))
 	} else {
+		logger.Info("loading Storage API index without components")
 		index, err = keboola.APIIndex(ctx, storageAPIHost, keboola.WithClient(&baseHTTPClient))
 		if err != nil {
 			return nil, err
 		}
+		logger.Infof("loaded Storage API index without components | %s", time.Since(startTime))
 	}
 
 	// Create API
