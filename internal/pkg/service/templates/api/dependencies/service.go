@@ -61,7 +61,11 @@ func NewServiceDeps(
 	baseDeps := dependencies.NewBaseDeps(envs, logger, tel, httpClient)
 
 	// Create public dependencies - load API index
-	publicDeps, err := dependencies.NewPublicDeps(ctx, baseDeps, cfg.StorageAPIHost, dependencies.WithPreloadComponents(true))
+	publicDeps, err := dependencies.NewPublicDeps(
+		ctx, baseDeps, cfg.StorageAPIHost,
+		dependencies.WithLogIndexLoading(true),
+		dependencies.WithPreloadComponents(true),
+	)
 	if err != nil {
 		return nil, err
 	}

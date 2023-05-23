@@ -6,6 +6,7 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
@@ -24,6 +25,7 @@ type PublicDepsOption func(*publicDepsConfig)
 
 type publicDepsConfig struct {
 	preloadComponents bool
+	logIndexLoading   bool
 }
 
 func publicDepsDefaultConfig() publicDepsConfig {
@@ -34,6 +36,13 @@ func publicDepsDefaultConfig() publicDepsConfig {
 func WithPreloadComponents(v bool) PublicDepsOption {
 	return func(c *publicDepsConfig) {
 		c.preloadComponents = v
+	}
+}
+
+// WithLogIndexLoading enables logging of index loading and also the number of loaded components.
+func WithLogIndexLoading(v bool) PublicDepsOption {
+	return func(c *publicDepsConfig) {
+		c.logIndexLoading = v
 	}
 }
 
@@ -57,8 +66,15 @@ func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 
 	baseHTTPClient := base.HTTPClient()
 
+	// Optionally log index loading
+	var logger log.Logger
+	if c.logIndexLoading {
+		logger = base.Logger()
+	} else {
+		logger = log.NewNopLogger()
+	}
+
 	// Load API index
-	logger := base.Logger()
 	startTime := time.Now()
 	var err error
 	var index *keboola.Index
