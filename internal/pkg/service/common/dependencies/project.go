@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
@@ -46,7 +45,7 @@ func newProjectDepsConfig(opts []ProjectDepsOption) projectDepsConfig {
 
 func NewProjectDeps(ctx context.Context, base Base, public Public, tokenStr string, opts ...ProjectDepsOption) (v Project, err error) {
 	ctx, span := base.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewProjectDeps")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Set attributes before token verification
 	reqSpan, _ := middleware.RequestSpan(ctx)

@@ -23,7 +23,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
@@ -299,7 +298,7 @@ func (s *service) InstancesIndex(d dependencies.ForProjectRequest, payload *Inst
 
 func (s *service) InstanceIndex(d dependencies.ForProjectRequest, payload *InstanceIndexPayload) (res *InstanceDetail, err error) {
 	_, span := d.Telemetry().Tracer().Start(d.RequestCtx(), "api.server.templates.service.InstanceIndex")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	branchKey, err := getBranch(d, payload.Branch)
 	if err != nil {

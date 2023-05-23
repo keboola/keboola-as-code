@@ -106,7 +106,7 @@ type forProjectRequest struct {
 
 func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger, tel telemetry.Telemetry) (v ForServer, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.templates.api.dependencies.dependencies.NewServerDeps")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Create service dependencies
 	userAgent := "keboola-templates-api"
@@ -133,7 +133,7 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 
 func NewDepsForPublicRequest(serverDeps ForServer, req *http.Request) ForPublicRequest {
 	ctx, span := serverDeps.Telemetry().Tracer().Start(req.Context(), "keboola.go.templates.api.dependencies.NewDepsForPublicRequest")
-	defer telemetry.EndSpan(span, nil)
+	defer span.End(nil)
 
 	requestId, _ := ctx.Value(middleware.RequestIDCtxKey).(string)
 
@@ -147,7 +147,7 @@ func NewDepsForPublicRequest(serverDeps ForServer, req *http.Request) ForPublicR
 
 func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (v ForProjectRequest, err error) {
 	ctx, span := publicDeps.Telemetry().Tracer().Start(ctx, "keboola.go.templates.api.dependencies.NewDepsForProjectRequest")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	projectDeps, err := dependencies.NewProjectDeps(ctx, publicDeps, publicDeps, tokenStr)
 	if err != nil {
@@ -234,7 +234,7 @@ func (v *forProjectRequest) ProjectRepositories() *model.TemplateRepositories {
 
 func (v *forProjectRequest) Template(ctx context.Context, reference model.TemplateRef) (tmpl *template.Template, err error) {
 	ctx, span := v.Telemetry().Tracer().Start(ctx, "keboola.go.templates.api.dependencies.Template")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Get repository
 	repo, err := v.cachedTemplateRepository(ctx, reference.Repository())
@@ -248,7 +248,7 @@ func (v *forProjectRequest) Template(ctx context.Context, reference model.Templa
 
 func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition model.TemplateRepository) (tmpl *repository.Repository, err error) {
 	ctx, span := v.Telemetry().Tracer().Start(ctx, "keboola.go.templates.api.dependencies.TemplateRepository")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	repo, err := v.cachedTemplateRepository(ctx, definition)
 	if err != nil {
@@ -260,7 +260,7 @@ func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition m
 func (v *forProjectRequest) cachedTemplateRepository(ctx context.Context, definition model.TemplateRepository) (repo *repositoryManager.CachedRepository, err error) {
 	if _, found := v.repositories[definition.Hash()]; !found {
 		ctx, span := v.Telemetry().Tracer().Start(ctx, "keboola.go.templates.api.dependencies.cachedTemplateRepository")
-		defer telemetry.EndSpan(span, &err)
+		defer span.End(&err)
 
 		// Get git repository
 		repo, unlockFn, err := v.RepositoryManager().Repository(ctx, definition)

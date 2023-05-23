@@ -4,7 +4,6 @@ package store
 import (
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/store/schema"
@@ -15,7 +14,7 @@ type Store struct {
 	clock  clock.Clock
 	logger log.Logger
 	client *etcd.Client
-	tracer trace.Tracer
+	tracer telemetry.Tracer
 	schema *schema.Schema
 }
 
@@ -31,7 +30,7 @@ func New(d dependencies) *Store {
 	return newFrom(d.Clock(), d.Logger(), d.Telemetry().Tracer(), d.EtcdClient(), d.Schema())
 }
 
-func newFrom(clock clock.Clock, logger log.Logger, tracer trace.Tracer, etcdClient *etcd.Client, schema *schema.Schema) *Store {
+func newFrom(clock clock.Clock, logger log.Logger, tracer telemetry.Tracer, etcdClient *etcd.Client, schema *schema.Schema) *Store {
 	return &Store{
 		clock:  clock,
 		logger: logger,

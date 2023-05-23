@@ -356,7 +356,7 @@ func (t *Template) LoadState(ctx Context, options loadState.Options, d dependenc
 
 func (t *Template) evaluate(ctx Context) (tmpl *evaluatedTemplate, err error) {
 	_, span := t.deps.Telemetry().Tracer().Start(ctx, "keboola.go.declarative.template.evaluate")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Evaluate manifest
 	evaluatedManifest, err := t.manifestFile.Evaluate(ctx.JsonnetContext())

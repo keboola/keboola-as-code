@@ -19,7 +19,7 @@ type dependencies interface {
 
 func Run(ctx context.Context, repositoryDir filesystem.Fs, o Options, d dependencies) (fs filesystem.Fs, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.local.dir.create")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Create template dir
 	if err := repositoryDir.Mkdir(o.Path); err != nil {

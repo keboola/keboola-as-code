@@ -8,12 +8,11 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 func (s *Store) GetTask(ctx context.Context, taskKey task.Key) (r task.Task, err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.GetTask")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	tsk, err := s.getTaskOp(ctx, taskKey).Do(ctx, s.client)
 	if err != nil {

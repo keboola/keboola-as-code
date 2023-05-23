@@ -10,7 +10,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -60,7 +59,7 @@ func (n *Node) Cleanup() (err error) {
 
 	// Setup telemetry
 	ctx, span := n.tracer.Start(ctx, n.config.spanNamePrefix+".cleanup")
-	telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Go through tasks and delete old ones
 	deletedTasksCount := int64(0)

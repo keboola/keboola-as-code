@@ -110,7 +110,7 @@ func WithLogger(v log.Logger) Option {
 // The client terminates the connection when the context is done.
 func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry, endpoint, namespace string, opts ...Option) (c *etcd.Client, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.common.dependencies.EtcdClient")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Apply options
 	conf := config{

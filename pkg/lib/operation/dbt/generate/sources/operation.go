@@ -29,7 +29,7 @@ type dependencies interface {
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.dbt.generate.sources")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Get dbt project
 	project, _, err := d.LocalDbtProject(ctx)

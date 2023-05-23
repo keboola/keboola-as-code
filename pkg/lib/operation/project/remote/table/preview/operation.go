@@ -42,7 +42,7 @@ type ColumnOrder struct {
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.table.preview")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	d.Logger().Infof(`Fetching table "%s", please wait.`, o.TableID.String())
 

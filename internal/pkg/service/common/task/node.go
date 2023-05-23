@@ -35,7 +35,7 @@ type Fn func(ctx context.Context, logger log.Logger) Result
 // Node represents a cluster Worker node on which tasks are run.
 // See comments in the StartTask method.
 type Node struct {
-	tracer   trace.Tracer
+	tracer   telemetry.Tracer
 	clock    clock.Clock
 	logger   log.Logger
 	client   *etcd.Client
@@ -212,7 +212,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 
 	// Process results in defer to catch panic
 	var result Result
-	defer telemetry.EndSpan(span, &result.error)
+	defer span.End(&result.error)
 
 	// Do operation
 	startTime := n.clock.Now()

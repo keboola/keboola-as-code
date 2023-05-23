@@ -10,13 +10,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (s *Store) CreateRecord(ctx context.Context, recordKey key.RecordKey, csvRow string) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CreateRecord")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	if recordKey.RandomSuffix == "" {
 		recordKey.RandomSuffix = idgenerator.Random(5)
@@ -37,7 +36,7 @@ func (s *Store) CreateRecord(ctx context.Context, recordKey key.RecordKey, csvRo
 
 func (s *Store) CountRecords(ctx context.Context, k key.SliceKey) (count uint64, err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.RecordsCount")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 	err = s.countRecordsOp(k, &count).DoOrErr(ctx, s.client)
 	return count, err
 }

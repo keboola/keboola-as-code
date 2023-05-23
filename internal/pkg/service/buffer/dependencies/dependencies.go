@@ -41,7 +41,7 @@ func NewServiceDeps(
 	userAgent string,
 ) (d ForService, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.dependencies.NewServiceDeps")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Create base HTTP client for all API requests to other APIs
 	httpClient := httpclient.New(

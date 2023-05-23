@@ -8,7 +8,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 // public dependencies container implements Public interface.
@@ -52,13 +51,13 @@ func WithLogIndexLoading(v bool) PublicDepsOption {
 
 func NewPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts ...PublicDepsOption) (v Public, err error) {
 	ctx, span := base.Telemetry().Tracer().Start(ctx, "kac.lib.dependencies.NewPublicDeps")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 	return newPublicDeps(ctx, base, storageAPIHost, opts...)
 }
 
 func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts ...PublicDepsOption) (v *public, err error) {
 	ctx, span := base.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewPublicDeps")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	cfg := newPublicDepsConfig(opts)
 	v = &public{base: base, storageAPIHost: storageAPIHost}
@@ -111,7 +110,7 @@ func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 func storageAPIIndexWithComponents(ctx context.Context, d Base, keboolaPublicAPI *keboola.API) (index *keboola.IndexComponents, err error) {
 	startTime := time.Now()
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.public.storageApiIndexWithComponents")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	index, err = keboolaPublicAPI.IndexComponentsRequest().Send(ctx)
 	if err != nil {

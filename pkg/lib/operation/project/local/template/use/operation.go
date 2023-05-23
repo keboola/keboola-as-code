@@ -58,7 +58,7 @@ func LoadTemplateOptions() loadState.Options {
 
 func Run(ctx context.Context, projectState *project.State, tmpl *template.Template, o Options, d dependencies) (result *Result, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.local.template.use")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Create tickets provider, to generate new IDS
 	tickets := d.ObjectIDGeneratorFactory()(ctx)

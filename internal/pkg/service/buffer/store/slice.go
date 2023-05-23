@@ -14,13 +14,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 func (s *Store) CreateSlice(ctx context.Context, slice model.Slice) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CreateSlice")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	_, err = s.createSliceOp(ctx, slice).Do(ctx, s.client)
 	return err
@@ -42,7 +41,7 @@ func (s *Store) createSliceOp(_ context.Context, slice model.Slice) op.BoolOp {
 
 func (s *Store) GetSlice(ctx context.Context, sliceKey key.SliceKey) (r model.Slice, err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.GetSlice")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	slice, err := s.getSliceOp(ctx, sliceKey).Do(ctx, s.client)
 	if err != nil {
@@ -82,7 +81,7 @@ func (s *Store) getOpenedSliceOp(_ context.Context, exportKey key.ExportKey, opt
 
 func (s *Store) ListUploadedSlices(ctx context.Context, fileKey key.FileKey) (r []model.Slice, err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.GetAllUploadedSlices")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	slices, err := s.listUploadedSlicesOp(ctx, fileKey).Do(ctx, s.client).All()
 	if err != nil {
@@ -98,7 +97,7 @@ func (s *Store) listUploadedSlicesOp(_ context.Context, fileKey key.FileKey) ite
 
 func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CloseSlice")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 	k := slice.SliceKey
 	statsPfx := s.schema.ReceivedStats().InSlice(k)
 	var recordsCount uint64
@@ -196,7 +195,7 @@ func (s *Store) ScheduleSliceForRetry(ctx context.Context, slice *model.Slice) e
 // False is returned, if the given file is already in the target state.
 func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slicestate.State) (err error) { //nolint:dupl
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.SetSliceState")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	txn, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, to)
 	if err != nil {

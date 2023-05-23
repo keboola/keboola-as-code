@@ -10,7 +10,6 @@ import (
 
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
@@ -107,7 +106,7 @@ type Source[T any] struct {
 type orchestrator[T any] struct {
 	clock  clock.Clock
 	logger log.Logger
-	tracer trace.Tracer
+	tracer telemetry.Tracer
 	client *etcd.Client
 	dist   *distribution.Node
 	tasks  *task.Node
@@ -211,7 +210,7 @@ func (o orchestrator[R]) watch(ctx context.Context, wg *sync.WaitGroup, timeout 
 		GetAllAndWatch(ctx, o.client, o.config.Source.WatchEtcdOps...).
 		SetupConsumer(o.logger).
 		WithOnClose(func(err error) {
-			telemetry.EndSpan(span, &err)
+			span.End(&err)
 			close(done)
 		}).
 		WithForEach(func(events []etcdop.WatchEventT[R], header *etcdop.Header, _ bool) {

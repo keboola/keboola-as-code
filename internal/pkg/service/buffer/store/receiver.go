@@ -11,7 +11,6 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -21,7 +20,7 @@ import (
 // - ResourceAlreadyExistsError.
 func (s *Store) CreateReceiver(ctx context.Context, receiver model.Receiver) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CreateReceiver")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Check exports count
 	if len(receiver.Exports) >= MaxExportsPerReceiver {
@@ -87,7 +86,7 @@ func (s *Store) createReceiverBaseOp(_ context.Context, receiver model.ReceiverB
 // - ResourceAlreadyExistsError.
 func (s *Store) CheckCreateReceiver(ctx context.Context, receiverKey key.ReceiverKey) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CheckCreateReceiver")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	err = s.getReceiverBaseOp(ctx, receiverKey).DoOrErr(ctx, s.client)
 	if err == nil {
@@ -105,7 +104,7 @@ func (s *Store) CheckCreateReceiver(ctx context.Context, receiverKey key.Receive
 // - ResourceNotFoundError.
 func (s *Store) GetReceiver(ctx context.Context, receiverKey key.ReceiverKey) (r model.Receiver, err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.GetReceiver")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	receiverBase, err := s.getReceiverBaseOp(ctx, receiverKey).Do(ctx, s.client)
 	if err != nil {
@@ -138,7 +137,7 @@ func (s *Store) getReceiverBaseOp(_ context.Context, receiverKey key.ReceiverKey
 
 func (s *Store) UpdateReceiver(ctx context.Context, k key.ReceiverKey, fn func(base model.ReceiverBase) (model.ReceiverBase, error)) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.UpdateReceiver")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	var receiver *model.ReceiverBase
 	return op.Atomic().
@@ -171,7 +170,7 @@ func (s *Store) updateReceiverBaseOp(_ context.Context, receiver model.ReceiverB
 // - ResourceNotFoundError.
 func (s *Store) ListReceivers(ctx context.Context, projectID keboola.ProjectID) (receivers []model.Receiver, err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.ListReceivers")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	err = s.
 		receiversIterator(ctx, projectID).Do(ctx, s.client).
@@ -203,7 +202,7 @@ func (s *Store) receiversIterator(_ context.Context, projectID keboola.ProjectID
 // - ResourceNotFoundError.
 func (s *Store) DeleteReceiver(ctx context.Context, receiverKey key.ReceiverKey) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.DeleteReceiver")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	_, err = op.MergeToTxn(
 		s.deleteReceiverBaseOp(ctx, receiverKey),

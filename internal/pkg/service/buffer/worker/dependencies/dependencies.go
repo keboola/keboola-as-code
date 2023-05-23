@@ -46,7 +46,7 @@ type forWorker struct {
 
 func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger, tel telemetry.Telemetry) (v ForWorker, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.worker.dependencies.NewWorkerDeps")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Create service dependencies
 	userAgent := "keboola-buffer-worker"

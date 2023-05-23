@@ -13,7 +13,6 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -23,7 +22,7 @@ import (
 // - ResourceAlreadyExistsError.
 func (s *Store) CreateExport(ctx context.Context, export model.Export) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CreateExport")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	return op.
 		Atomic().
@@ -76,7 +75,7 @@ func (s *Store) createExportBaseOp(_ context.Context, export model.ExportBase) o
 
 func (s *Store) UpdateExport(ctx context.Context, k key.ExportKey, fn func(model.Export) (model.Export, error)) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.UpdateExport")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	var export *model.Export
 	return op.Atomic().
@@ -139,7 +138,7 @@ func (s *Store) updateExportBaseOp(_ context.Context, export model.ExportBase) o
 // - ResourceAlreadyExistsError.
 func (s *Store) CheckCreateExport(ctx context.Context, exportKey key.ExportKey) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CheckCreateExport")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	err = s.getExportBaseOp(ctx, exportKey).DoOrErr(ctx, s.client)
 	if err == nil {
@@ -157,7 +156,7 @@ func (s *Store) CheckCreateExport(ctx context.Context, exportKey key.ExportKey) 
 // - ResourceNotFoundError.
 func (s *Store) GetExport(ctx context.Context, exportKey key.ExportKey) (r model.Export, err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.GetExport")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 	return s.getExportOp(ctx, exportKey).Do(ctx, s.client)
 }
 
@@ -200,7 +199,7 @@ func (s *Store) getExportBaseOp(_ context.Context, exportKey key.ExportKey) op.F
 // ListExports from the store.
 func (s *Store) ListExports(ctx context.Context, receiverKey key.ReceiverKey, ops ...iterator.Option) (exports []model.Export, err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.ListExports")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Load sub-objects in parallel, stop at the first error
 	exportsMap := make(map[key.ExportKey]*model.Export)
@@ -278,7 +277,7 @@ func (s *Store) exportBaseIterator(_ context.Context, receiverKey key.ReceiverKe
 // - ResourceNotFoundError.
 func (s *Store) DeleteExport(ctx context.Context, exportKey key.ExportKey) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.DeleteReceiver")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	_, err = op.MergeToTxn(
 		s.deleteExportBaseOp(ctx, exportKey),

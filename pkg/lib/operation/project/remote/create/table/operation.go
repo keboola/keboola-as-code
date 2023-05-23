@@ -27,7 +27,7 @@ type dependencies interface {
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.create.table")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	opts := make([]keboola.CreateTableOption, 0)
 	if len(o.PrimaryKey) > 0 {

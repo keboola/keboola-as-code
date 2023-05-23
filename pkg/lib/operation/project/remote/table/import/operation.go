@@ -32,7 +32,7 @@ type Options struct {
 
 func Run(ctx context.Context, o Options, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.table.import")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	if !checkTableExists(ctx, d, o.TableID) {
 		d.Logger().Infof(`Table "%s" does not exist, creating it.`, o.TableID)
