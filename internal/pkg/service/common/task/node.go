@@ -254,7 +254,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 	}
 
 	// Update telemetry
-	errType := errorType(result.Err())
+	errType := telemetry.ErrorType(result.Err())
 	span.SetAttributes(spanEndAttrs(&task, errType)...)
 	n.meters.taskDuration.Record(ctx, durationMs, metric.WithAttributes(meterAttrs(&task, errType)...))
 
