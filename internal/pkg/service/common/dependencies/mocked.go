@@ -52,6 +52,7 @@ type MockedConfig struct {
 	ctx          context.Context
 	envs         *env.Map
 	clock        clock.Clock
+	telemetry    telemetry.ForTest
 	loggerPrefix string
 	debugLogger  log.DebugLogger
 	procOpts     []servicectx.Option
@@ -161,6 +162,12 @@ func WithTestProject(project *testproject.Project) MockedOption {
 	}
 }
 
+func WithTelemetry(tel telemetry.ForTest) MockedOption {
+	return func(c *MockedConfig) {
+		c.telemetry = tel
+	}
+}
+
 func WithMockedServices(services keboola.Services) MockedOption {
 	return func(c *MockedConfig) {
 		c.services = services
@@ -211,6 +218,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 		ctx:           context.Background(),
 		envs:          env.Empty(),
 		clock:         clock.New(),
+		telemetry:     telemetry.NewForTest(t),
 		etcdEndpoint:  osEnvs.Get("UNIT_ETCD_ENDPOINT"),
 		etcdUsername:  osEnvs.Get("UNIT_ETCD_USERNAME"),
 		etcdPassword:  osEnvs.Get("UNIT_ETCD_PASSWORD"),
@@ -292,7 +300,7 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 	)
 
 	// Create base, public and project dependencies
-	baseDeps := newBaseDeps(c.envs, logger, telemetry.NewNopTelemetry(), c.clock, httpClient)
+	baseDeps := newBaseDeps(c.envs, logger, c.telemetry, c.clock, httpClient)
 	publicDeps, err := newPublicDeps(c.ctx, baseDeps, c.storageAPIHost, WithPreloadComponents(true))
 	if err != nil {
 		panic(err)
@@ -330,6 +338,10 @@ func NewMockedDeps(t *testing.T, opts ...MockedOption) Mocked {
 
 func (v *mocked) EnvsMutable() *env.Map {
 	return v.config.envs
+}
+
+func (v *mocked) TestTelemetry() telemetry.ForTest {
+	return v.config.telemetry
 }
 
 func (v *mocked) Options() *options.Options {
