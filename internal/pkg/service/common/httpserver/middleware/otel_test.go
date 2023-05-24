@@ -36,7 +36,6 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 	// Create muxer
 	mux := httptreemux.NewContextMux()
 	mux.UseHandler(middleware.OpenTelemetryExtractRoute())
-	mux.UseHandler(middleware.OpenTelemetryExtractEndpoint())
 	handler := middleware.Wrap(
 		mux,
 		middleware.RequestInfo(),
@@ -51,14 +50,38 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 		),
 	)
 
-	// Register endpoints
+	// Create group
 	grp := mux.NewGroup("/api")
+
+	// Register ignored route
 	grp.GET("/ignored", func(w http.ResponseWriter, req *http.Request) {
 		_, span := tel.Tracer().Start(req.Context(), "my-ignored-span")
 		span.End(nil)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})
+
+	// Simulate Goa framework
+	grp.UseHandler(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			// Add fake Goa metadata
+			ctx := req.Context()
+			ctx = context.WithValue(ctx, goa.ServiceKey, "MyService")
+			ctx = context.WithValue(ctx, goa.MethodKey, "MyEndpoint")
+
+			// Apply middleware to nop Goa endpoint
+			goaEndpoint := func(ctx context.Context, request any) (any, error) { return nil, nil }
+			goaEndpoint = middleware.OpenTelemetryExtractEndpoint()(goaEndpoint)
+
+			// Invoke nop endpoint
+			_, err := goaEndpoint(ctx, nil)
+			assert.NoError(t, err)
+
+			next.ServeHTTP(w, req.WithContext(ctx))
+		})
+	})
+
+	// Register endpoint
 	grp.POST("/item/:id/:secret1", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte(responseContent))
@@ -70,10 +93,6 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 	req := httptest.NewRequest("POST", "/api/item/123/my-secret-1?foo=bar&secret2=my-secret-2", body)
 	req.Header.Set("User-Agent", "my-user-agent")
 	req.Header.Set("X-StorageAPI-Token", "my-token")
-
-	// Add Goa metadata
-	req = req.WithContext(context.WithValue(req.Context(), goa.ServiceKey, "MyService"))
-	req = req.WithContext(context.WithValue(req.Context(), goa.MethodKey, "MyEndpoint"))
 
 	// Send request
 	handler.ServeHTTP(rec, req)

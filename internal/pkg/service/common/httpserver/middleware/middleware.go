@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"net/http"
+
+	goa "goa.design/goa/v3/pkg"
 )
 
 const (
@@ -10,6 +12,8 @@ const (
 )
 
 type Middleware func(http.Handler) http.Handler
+
+type GoaMiddleware func(next goa.Endpoint) goa.Endpoint
 
 type ctxKey string
 
