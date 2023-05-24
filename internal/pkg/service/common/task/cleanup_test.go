@@ -13,6 +13,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
@@ -27,7 +28,7 @@ func TestCleanup(t *testing.T) {
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	logs := ioutil.NewAtomicWriter()
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-	node, d := createNode(t, etcdNamespace, logs, "node1")
+	node, d := createNode(t, etcdNamespace, logs, telemetry.NewForTest(t), "node1")
 	taskPrefix := etcdop.NewTypedPrefix[task.Task](task.DefaultTaskEtcdPrefix, d.EtcdSerde())
 
 	// Add task without a finishedAt timestamp but too old - will be deleted
