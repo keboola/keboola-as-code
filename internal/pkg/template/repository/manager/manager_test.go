@@ -129,7 +129,7 @@ func TestRepositoryUpdate(t *testing.T) {
 	d.TestTelemetry().AssertMetrics(t,
 		[]metricdata.Metrics{
 			{
-				Name:        "keboola.go.templates.repository.update.duration",
+				Name:        "keboola.go.templates.repo.sync.duration",
 				Description: "Templates repository update duration.",
 				Unit:        "ms",
 				Data: metricdata.Histogram[float64]{
