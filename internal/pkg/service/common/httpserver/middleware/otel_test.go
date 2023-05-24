@@ -77,7 +77,15 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 	assert.Equal(t, "OK", rec.Body.String())
 
 	// Assert
-	tel.AssertSpans(t, expectedSpans(tel))
+	tel.AssertSpans(t, expectedSpans(tel), telemetry.WithAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
+		if attr.Key == "http.request_id" && len(attr.Value.AsString()) > 0 {
+			return attribute.String(string(attr.Key), "<dynamic>")
+		}
+		if attr.Key == "http.response.header.x-request-id" && len(attr.Value.AsString()) > 0 {
+			return attribute.String(string(attr.Key), "<dynamic>")
+		}
+		return attr
+	}))
 	tel.AssertMetrics(t, expectedMetrics())
 }
 
