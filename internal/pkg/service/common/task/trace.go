@@ -1,12 +1,13 @@
 package task
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"sort"
 
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 type meters struct {

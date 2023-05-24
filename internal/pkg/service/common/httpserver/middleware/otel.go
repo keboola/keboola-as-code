@@ -6,11 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dimfeld/httptreemux/v5"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -46,10 +44,6 @@ func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, opts ...OTE
 				return
 			}
 
-			// Set additional metrics attributes
-			labeler, _ := otelhttp.LabelerFromContext(ctx)
-			labeler.Add(metricAttrs(req)...)
-
 			// Set additional request attributes
 			span.SetAttributes(spanRequestAttrs(&cfg, req)...)
 			ctx = context.WithValue(ctx, RequestSpanCtxKey, span)
@@ -83,14 +77,6 @@ func otelOptions(cfg otelConfig, tp trace.TracerProvider, mp metric.MeterProvide
 	}
 	for _, f := range cfg.filters {
 		out = append(out, otelhttp.WithFilter(f))
-	}
-	return out
-}
-
-func metricAttrs(req *http.Request) (out []attribute.KeyValue) {
-	// Route
-	if routerData := httptreemux.ContextData(req.Context()); routerData != nil {
-		out = append(out, semconv.HTTPRoute(routerData.Route()))
 	}
 	return out
 }
