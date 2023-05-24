@@ -40,10 +40,10 @@ import (
 // Manager provides CachedRepository and templates for Templates API requests.
 // It also contains list of the default repositories.
 type Manager struct {
-	ctx         context.Context
-	deps        dependencies
-	logger      log.Logger
-	updateMeter metric.Float64Histogram
+	ctx       context.Context
+	deps      dependencies
+	logger    log.Logger
+	syncMeter metric.Float64Histogram
 
 	// List of default repositories for the stack/server.
 	// This list is individually modified in the Service according to the set project features.
@@ -62,20 +62,11 @@ type dependencies interface {
 }
 
 func New(ctx context.Context, d dependencies, defaultRepositories []model.TemplateRepository) (*Manager, error) {
-	meter, err := d.Telemetry().Meter().Float64Histogram(
-		"keboola.go.templates.repository.update.duration",
-		metric.WithDescription("Templates repository update duration."),
-		metric.WithUnit("ms"),
-	)
-	if err != nil {
-		return nil, err
-	}
-
 	m := &Manager{
 		ctx:                 ctx,
 		deps:                d,
 		logger:              d.Logger(),
-		updateMeter:         meter,
+		syncMeter:           d.Telemetry().Meter().Histogram("keboola.go.templates.repo.sync.duration", "Templates repository sync duration.", "ms"),
 		defaultRepositories: defaultRepositories,
 		repositories:        make(map[string]*CachedRepository),
 		repositoriesInit:    &singleflight.Group{},
@@ -152,13 +143,14 @@ func (m *Manager) Update(ctx context.Context) <-chan error {
 			// Update
 			startTime := time.Now()
 			newValue, changed, err := oldValue.update(ctx)
-			elapsedTime := float64(time.Since(startTime)) / float64(time.Millisecond)
 
 			// Metric
-			m.updateMeter.Record(ctx, elapsedTime, metric.WithAttributes(
+			elapsedTime := float64(time.Since(startTime)) / float64(time.Millisecond)
+			m.syncMeter.Record(ctx, elapsedTime, metric.WithAttributes(
 				attribute.String("repo.name", repoDef.Name),
 				attribute.String("repo.url", repoDef.URL),
 				attribute.String("repo.ref", repoDef.Ref),
+				attribute.Bool("is_init", false),
 				attribute.Bool("is_success", err == nil),
 				attribute.Bool("is_changed", changed),
 			))
@@ -224,9 +216,22 @@ func (m *Manager) repository(ctx context.Context, ref model.TemplateRepository) 
 
 	// Load repository, there is used "single flight" library:
 	// the function is called only once, but every caller will get the same results.
-	ch := m.repositoriesInit.DoChan(hash, func() (interface{}, error) {
+	ch := m.repositoriesInit.DoChan(hash, func() (out any, err error) {
+		// Metric
+		startTime := time.Now()
+		defer func() {
+			elapsedTime := float64(time.Since(startTime)) / float64(time.Millisecond)
+			m.syncMeter.Record(ctx, elapsedTime, metric.WithAttributes(
+				attribute.String("repo.name", ref.Name),
+				attribute.String("repo.url", ref.URL),
+				attribute.String("repo.ref", ref.Ref),
+				attribute.Bool("is_init", true),
+				attribute.Bool("is_success", err == nil),
+				attribute.Bool("is_changed", true),
+			))
+		}()
+
 		// Load git repository
-		var err error
 		var gitRepo git.Repository
 		if ref.Type == model.RepositoryTypeGit {
 			// Remote repository
@@ -254,6 +259,7 @@ func (m *Manager) repository(ctx context.Context, ref model.TemplateRepository) 
 		// Load content of the template repository
 		fs, unlockFn := gitRepo.Fs()
 		data, err := loadRepositoryOp.Run(ctx, m.deps, ref, loadRepositoryOp.WithFs(fs))
+		// Handle error
 		if err != nil {
 			unlockFn()
 			return nil, err
