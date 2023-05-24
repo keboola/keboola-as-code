@@ -11,16 +11,24 @@ import (
 )
 
 type meters struct {
-	taskDuration metric.Float64Histogram
+	running  metric.Int64UpDownCounter
+	duration metric.Float64Histogram
 }
 
-func newMeters(meter metric.Meter) *meters {
+func newMeters(meter telemetry.Meter) *meters {
 	return &meters{
-		taskDuration: telemetry.Histogram(meter, "keboola.go.task.duration", "Background task duration.", "ms"),
+		running:  meter.UpDownCounter("keboola.go.task.running", "Running tasks count.", ""),
+		duration: meter.Histogram("keboola.go.task.duration", "Background task duration.", "ms"),
 	}
 }
 
-func meterAttrs(task *Task, errType string) []attribute.KeyValue {
+func meterStartAttrs(task *Task) []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.String("task_type", task.Type),
+	}
+}
+
+func meterEndAttrs(task *Task, errType string) []attribute.KeyValue {
 	return []attribute.KeyValue{
 		attribute.String("task_type", task.Type),
 		attribute.Bool("is_success", task.IsSuccessful()),

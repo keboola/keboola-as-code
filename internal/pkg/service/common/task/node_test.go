@@ -267,6 +267,21 @@ task/123/my-receiver/my-export/some.task/%s
 	histBounds := []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000} // ms
 	tel.AssertMetrics(t, []metricdata.Metrics{
 		{
+			Name:        "keboola.go.task.running",
+			Description: "Running tasks count.",
+			Data: metricdata.Sum[int64]{
+				Temporality: 1,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 0,
+						Attributes: attribute.NewSet(
+							attribute.String("task_type", "some.task"),
+						),
+					},
+				},
+			},
+		},
+		{
 			Name:        "keboola.go.task.duration",
 			Description: "Background task duration.",
 			Unit:        "ms",
@@ -545,27 +560,44 @@ task/123/my-receiver/my-export/some.task/%s
 
 	// Check metrics
 	histBounds := []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000} // ms
-	tel.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "keboola.go.task.duration",
-			Description: "Background task duration.",
-			Unit:        "ms",
-			Data: metricdata.Histogram[float64]{
-				Temporality: 1,
-				DataPoints: []metricdata.HistogramDataPoint[float64]{
-					{
-						Count:  2,
-						Bounds: histBounds,
-						Attributes: attribute.NewSet(
-							attribute.String("task_type", "some.task"),
-							attribute.Bool("is_success", false),
-							attribute.String("error_type", "other"),
-						),
+	tel.AssertMetrics(t,
+		[]metricdata.Metrics{
+			{
+				Name:        "keboola.go.task.running",
+				Description: "Running tasks count.",
+				Data: metricdata.Sum[int64]{
+					Temporality: 1,
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Value: 0,
+							Attributes: attribute.NewSet(
+								attribute.String("task_type", "some.task"),
+							),
+						},
+					},
+				},
+			},
+			{
+				Name:        "keboola.go.task.duration",
+				Description: "Background task duration.",
+				Unit:        "ms",
+				Data: metricdata.Histogram[float64]{
+					Temporality: 1,
+					DataPoints: []metricdata.HistogramDataPoint[float64]{
+						{
+							Count:  2,
+							Bounds: histBounds,
+							Attributes: attribute.NewSet(
+								attribute.String("task_type", "some.task"),
+								attribute.Bool("is_success", false),
+								attribute.String("error_type", "other"),
+							),
+						},
 					},
 				},
 			},
 		},
-	})
+	)
 }
 
 func TestWorkerNodeShutdownDuringTask(t *testing.T) {
