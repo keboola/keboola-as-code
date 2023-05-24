@@ -1,15 +1,12 @@
 package task
 
 import (
-	"context"
-	"net"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"sort"
 
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type meters struct {
@@ -18,7 +15,7 @@ type meters struct {
 
 func newMeters(meter metric.Meter) *meters {
 	return &meters{
-		taskDuration: histogram(meter, "keboola.go.task.duration", "Background task duration.", "ms"),
+		taskDuration: telemetry.Histogram(meter, "keboola.go.task.duration", "Background task duration.", "ms"),
 	}
 }
 
@@ -72,34 +69,4 @@ func spanEndAttrs(task *Task, errType string) []attribute.KeyValue {
 	}
 
 	return out
-}
-
-func histogram(meter metric.Meter, name, desc, unit string) metric.Float64Histogram {
-	return mustInstrument(meter.Float64Histogram(name, metric.WithDescription(desc), metric.WithUnit(unit)))
-}
-
-func mustInstrument[T any](instrument T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return instrument
-}
-
-func errorType(err error) string {
-	var netErr net.Error
-	errors.As(err, &netErr)
-	switch {
-	case err == nil:
-		return ""
-	case errors.Is(err, context.Canceled):
-		return "context_canceled"
-	case errors.Is(err, context.DeadlineExceeded):
-		return "deadline_exceeded"
-	case netErr != nil && netErr.Timeout():
-		return "net_timeout"
-	case netErr != nil:
-		return "net"
-	default:
-		return "other"
-	}
 }
