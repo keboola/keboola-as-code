@@ -10,7 +10,7 @@ import (
 	"github.com/benbjohnson/clock"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
-	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 
@@ -35,10 +35,13 @@ type Fn func(ctx context.Context, logger log.Logger) Result
 // Node represents a cluster Worker node on which tasks are run.
 // See comments in the StartTask method.
 type Node struct {
-	tracer   telemetry.Tracer
-	clock    clock.Clock
-	logger   log.Logger
-	client   *etcd.Client
+	tracer telemetry.Tracer
+	meters *meters
+
+	clock  clock.Clock
+	logger log.Logger
+	client *etcd.Client
+
 	tasksCtx context.Context
 	tasksWg  *sync.WaitGroup
 
@@ -75,6 +78,7 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 	taskPrefix := etcdop.NewTypedPrefix[Task](etcdop.NewPrefix(c.taskEtcdPrefix), d.EtcdSerde())
 	n := &Node{
 		tracer:         d.Telemetry().Tracer(),
+		meters:         newMeters(d.Telemetry().Meter()),
 		clock:          d.Clock(),
 		logger:         d.Logger().AddPrefix("[task]"),
 		client:         d.EtcdClient(),
@@ -201,14 +205,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 	}
 
 	// Setup telemetry
-	ctx, span := n.tracer.Start(ctx, n.config.spanNamePrefix+"."+cfg.Type, trace.WithAttributes(
-		attribute.String("projectId", task.ProjectID.String()),
-		attribute.String("taskId", task.TaskID.String()),
-		attribute.String("taskType", cfg.Type),
-		attribute.String("lock", task.Lock.Key()),
-		attribute.String("node", task.Node),
-		attribute.String("createdAt", task.CreatedAt.String()),
-	))
+	ctx, span := n.tracer.Start(ctx, n.config.spanNamePrefix+"."+cfg.Type, trace.WithAttributes(spanStartAttrs(&task)...))
 
 	// Process results in defer to catch panic
 	var result Result
@@ -233,6 +230,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 	endTime := n.clock.Now()
 	finishedAt := utctime.UTCTime(endTime)
 	duration := endTime.Sub(startTime)
+	durationMs := float64(duration) / float64(time.Millisecond)
 
 	// Update fields
 	task.FinishedAt = &finishedAt
@@ -254,11 +252,11 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 			logger.Warnf(`task failed (%s): %s`, duration, errors.Format(result.error, errors.FormatWithStack()))
 		}
 	}
-	span.SetAttributes(
-		attribute.Float64("duration", task.Duration.Seconds()),
-		attribute.String("result", task.Result),
-		attribute.String("finishedAt", task.FinishedAt.String()),
-	)
+
+	// Update telemetry
+	errType := errorType(result.Err())
+	span.SetAttributes(spanEndAttrs(&task, errType)...)
+	n.meters.taskDuration.Record(ctx, durationMs, metric.WithAttributes(meterAttrs(&task, errType)...))
 
 	// If release of the lock takes longer than the ttl, lease is expired anyway
 	opCtx, opCancel := context.WithTimeout(context.Background(), time.Duration(n.config.ttlSeconds)*time.Second)

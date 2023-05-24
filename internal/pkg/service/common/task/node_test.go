@@ -10,12 +10,19 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
@@ -38,11 +45,13 @@ func TestSuccessfulTask(t *testing.T) {
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	logs := ioutil.NewAtomicWriter()
+	tel := telemetry.NewForTest(t)
 
 	// Create nodes
-	node1, _ := createNode(t, etcdNamespace, logs, "node1")
-	node2, _ := createNode(t, etcdNamespace, logs, "node2")
+	node1, _ := createNode(t, etcdNamespace, logs, tel, "node1")
+	node2, _ := createNode(t, etcdNamespace, logs, tel, "node2")
 	logs.Truncate()
+	tel.Reset()
 
 	// Start a task
 	taskWork := make(chan struct{})
@@ -197,6 +206,86 @@ task/123/my-receiver/my-export/some.task/%s
 [node2][task][123/my-receiver/my-export/some.task/%s]INFO  task succeeded (%s): some result (2)
 [node2][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
 `, logs.String())
+
+	// Check spans
+	tel.AssertSpans(t,
+		tracetest.SpanStubs{
+			{
+				Name:     "keboola.go.buffer.task.some.task",
+				SpanKind: trace.SpanKindInternal,
+				SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
+					TraceID:    tel.TraceID(1),
+					SpanID:     tel.SpanID(1),
+					TraceFlags: trace.FlagsSampled,
+				}),
+				Status: tracesdk.Status{Code: codes.Ok},
+				Attributes: []attribute.KeyValue{
+					attribute.String("project_id", "123"),
+					attribute.String("task_id", "<dynamic>"),
+					attribute.String("task_type", "some.task"),
+					attribute.String("lock", "<dynamic>"),
+					attribute.String("node", "node1"),
+					attribute.String("created_at", "<dynamic>"),
+					attribute.String("duration_sec", "<dynamic>"),
+					attribute.String("finished_at", "<dynamic>"),
+					attribute.Bool("is_success", true),
+					attribute.String("result_outputs.key", "value"),
+				},
+			},
+			{
+				Name:     "keboola.go.buffer.task.some.task",
+				SpanKind: trace.SpanKindInternal,
+				SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
+					TraceID:    tel.TraceID(2),
+					SpanID:     tel.SpanID(2),
+					TraceFlags: trace.FlagsSampled,
+				}),
+				Status: tracesdk.Status{Code: codes.Ok},
+				Attributes: []attribute.KeyValue{
+					attribute.String("project_id", "123"),
+					attribute.String("task_id", "<dynamic>"),
+					attribute.String("task_type", "some.task"),
+					attribute.String("lock", "<dynamic>"),
+					attribute.String("node", "node2"),
+					attribute.String("created_at", "<dynamic>"),
+					attribute.String("duration_sec", "<dynamic>"),
+					attribute.String("finished_at", "<dynamic>"),
+					attribute.Bool("is_success", true),
+				},
+			},
+		},
+		telemetry.WithAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
+			switch attr.Key {
+			case "task_id", "lock", "created_at", "duration_sec", "finished_at":
+				return attribute.String(string(attr.Key), "<dynamic>")
+			}
+			return attr
+		}),
+	)
+
+	// Check metrics
+	histBounds := []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000} // ms
+	tel.AssertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "keboola.go.task.duration",
+			Description: "Background task duration.",
+			Unit:        "ms",
+			Data: metricdata.Histogram[float64]{
+				Temporality: 1,
+				DataPoints: []metricdata.HistogramDataPoint[float64]{
+					{
+						Count:  2,
+						Bounds: histBounds,
+						Attributes: attribute.NewSet(
+							attribute.String("task_type", "some.task"),
+							attribute.Bool("is_success", true),
+							attribute.String("error_type", ""),
+						),
+					},
+				},
+			},
+		},
+	})
 }
 
 func TestFailedTask(t *testing.T) {
@@ -214,11 +303,13 @@ func TestFailedTask(t *testing.T) {
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	logs := ioutil.NewAtomicWriter()
+	tel := telemetry.NewForTest(t)
 
 	// Create nodes
-	node1, _ := createNode(t, etcdNamespace, logs, "node1")
-	node2, _ := createNode(t, etcdNamespace, logs, "node2")
+	node1, _ := createNode(t, etcdNamespace, logs, tel, "node1")
+	node2, _ := createNode(t, etcdNamespace, logs, tel, "node2")
 	logs.Truncate()
+	tel.Reset()
 
 	// Start a task
 	taskWork := make(chan struct{})
@@ -373,6 +464,108 @@ task/123/my-receiver/my-export/some.task/%s
 [node2][task][123/my-receiver/my-export/some.task/%s]WARN  task failed (%s): some error (2) [%s]
 [node2][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
 `, logs.String())
+
+	// Check spans
+	tel.AssertSpans(t,
+		tracetest.SpanStubs{
+			{
+				Name:     "keboola.go.buffer.task.some.task",
+				SpanKind: trace.SpanKindInternal,
+				SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
+					TraceID:    tel.TraceID(1),
+					SpanID:     tel.SpanID(1),
+					TraceFlags: trace.FlagsSampled,
+				}),
+				Status: tracesdk.Status{Code: codes.Error, Description: "some error (1)"},
+				Attributes: []attribute.KeyValue{
+					attribute.String("project_id", "123"),
+					attribute.String("task_id", "<dynamic>"),
+					attribute.String("task_type", "some.task"),
+					attribute.String("lock", "<dynamic>"),
+					attribute.String("node", "node1"),
+					attribute.String("created_at", "<dynamic>"),
+					attribute.String("duration_sec", "<dynamic>"),
+					attribute.String("finished_at", "<dynamic>"),
+					attribute.Bool("is_success", false),
+					attribute.String("error", "some error (1)"),
+					attribute.String("error_type", "other"),
+					attribute.String("result_outputs.key", "value"),
+				},
+				Events: []tracesdk.Event{
+					{
+						Name: "exception",
+						Attributes: []attribute.KeyValue{
+							attribute.String("exception.type", "*errors.withStack"),
+							attribute.String("exception.message", "some error (1)"),
+						},
+					},
+				},
+			},
+			{
+				Name:     "keboola.go.buffer.task.some.task",
+				SpanKind: trace.SpanKindInternal,
+				SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
+					TraceID:    tel.TraceID(2),
+					SpanID:     tel.SpanID(2),
+					TraceFlags: trace.FlagsSampled,
+				}),
+				Status: tracesdk.Status{Code: codes.Error, Description: "some error (2)"},
+				Attributes: []attribute.KeyValue{
+					attribute.String("project_id", "123"),
+					attribute.String("task_id", "<dynamic>"),
+					attribute.String("task_type", "some.task"),
+					attribute.String("lock", "<dynamic>"),
+					attribute.String("node", "node2"),
+					attribute.String("created_at", "<dynamic>"),
+					attribute.String("duration_sec", "<dynamic>"),
+					attribute.String("finished_at", "<dynamic>"),
+					attribute.Bool("is_success", false),
+					attribute.String("error", "some error (2)"),
+					attribute.String("error_type", "other"),
+				},
+				Events: []tracesdk.Event{
+					{
+						Name: "exception",
+						Attributes: []attribute.KeyValue{
+							attribute.String("exception.type", "*errors.withStack"),
+							attribute.String("exception.message", "some error (2)"),
+						},
+					},
+				},
+			},
+		},
+		telemetry.WithAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
+			switch attr.Key {
+			case "task_id", "lock", "created_at", "duration_sec", "finished_at":
+				return attribute.String(string(attr.Key), "<dynamic>")
+			}
+			return attr
+		}),
+	)
+
+	// Check metrics
+	histBounds := []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000} // ms
+	tel.AssertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "keboola.go.task.duration",
+			Description: "Background task duration.",
+			Unit:        "ms",
+			Data: metricdata.Histogram[float64]{
+				Temporality: 1,
+				DataPoints: []metricdata.HistogramDataPoint[float64]{
+					{
+						Count:  2,
+						Bounds: histBounds,
+						Attributes: attribute.NewSet(
+							attribute.String("task_type", "some.task"),
+							attribute.Bool("is_success", false),
+							attribute.String("error_type", "other"),
+						),
+					},
+				},
+			},
+		},
+	})
 }
 
 func TestWorkerNodeShutdownDuringTask(t *testing.T) {
@@ -391,9 +584,10 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	logs := ioutil.NewAtomicWriter()
+	tel := telemetry.NewForTest(t)
 
 	// Create node
-	node1, d := createNode(t, etcdNamespace, logs, "node1")
+	node1, d := createNode(t, etcdNamespace, logs, tel, "node1")
 	logs.Truncate()
 
 	// Start a task
@@ -472,20 +666,21 @@ task/123/my-receiver/my-export/some.task/%s
 `, logs.String())
 }
 
-func createNode(t *testing.T, etcdNamespace string, logs io.Writer, nodeName string) (*task.Node, dependencies.Mocked) {
+func createNode(t *testing.T, etcdNamespace string, logs io.Writer, tel telemetry.ForTest, nodeName string) (*task.Node, dependencies.Mocked) {
 	t.Helper()
-	d := createDeps(t, etcdNamespace, logs, nodeName)
+	d := createDeps(t, etcdNamespace, logs, tel, nodeName)
 	node, err := task.NewNode(d, task.WithSpanNamePrefix("keboola.go.buffer.task"))
 	assert.NoError(t, err)
 	return node, d
 }
 
-func createDeps(t *testing.T, etcdNamespace string, logs io.Writer, nodeName string) bufferDependencies.Mocked {
+func createDeps(t *testing.T, etcdNamespace string, logs io.Writer, tel telemetry.ForTest, nodeName string) bufferDependencies.Mocked {
 	t.Helper()
 	d := bufferDependencies.NewMockedDeps(
 		t,
 		dependencies.WithUniqueID(nodeName),
 		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
+		dependencies.WithTelemetry(tel),
 		dependencies.WithEtcdNamespace(etcdNamespace),
 	)
 	if logs != nil {

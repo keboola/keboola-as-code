@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -31,20 +32,45 @@ type ForTest interface {
 	Telemetry
 	TraceID(n int) trace.TraceID
 	SpanID(n int) trace.SpanID
-	Spans(t *testing.T) tracetest.SpanStubs
+	Reset()
+	Spans(t *testing.T, opts ...TestSpanOption) tracetest.SpanStubs
 	Metrics(t *testing.T) []metricdata.Metrics
-	AssertSpans(t *testing.T, expectedSpans tracetest.SpanStubs)
+	AssertSpans(t *testing.T, expectedSpans tracetest.SpanStubs, opts ...TestSpanOption)
 	AssertMetrics(t *testing.T, expectedMetrics []metricdata.Metrics)
+}
+
+type TestSpanOption func(config *assertSpanConfig)
+
+type TestAttributeMapper func(value attribute.KeyValue) attribute.KeyValue
+
+type assertSpanConfig struct {
+	attributeMapper TestAttributeMapper
 }
 
 type forTest struct {
 	*telemetry
+	idGenerator    *testIDGenerator
 	spanExporter   *tracetest.InMemoryExporter
 	metricExporter metricsdk.Reader
 }
 
+func WithAttributeMapper(v TestAttributeMapper) TestSpanOption {
+	return func(cnf *assertSpanConfig) {
+		cnf.attributeMapper = v
+	}
+}
+
+func newAssertSpanConfig(opts []TestSpanOption) assertSpanConfig {
+	cnf := assertSpanConfig{}
+	for _, o := range opts {
+		o(&cnf)
+	}
+	return cnf
+}
+
 func NewForTest(t *testing.T) ForTest {
 	t.Helper()
+	idGenerator := &testIDGenerator{}
 	spanExporter := tracetest.NewInMemoryExporter()
 	metricExporter, err := export.New()
 	require.NoError(t, err)
@@ -52,13 +78,14 @@ func NewForTest(t *testing.T) ForTest {
 		telemetry: newTelemetry(
 			tracesdk.NewTracerProvider(
 				tracesdk.WithSyncer(spanExporter),
-				tracesdk.WithIDGenerator(&testIDGenerator{}),
+				tracesdk.WithIDGenerator(idGenerator),
 			),
 			metricsdk.NewMeterProvider(
 				metricsdk.WithReader(metricExporter),
 				metricsdk.WithView(prometheus.View()),
 			),
 		),
+		idGenerator:    idGenerator,
 		spanExporter:   spanExporter,
 		metricExporter: metricExporter,
 	}
@@ -72,9 +99,15 @@ func (v *forTest) SpanID(n int) trace.SpanID {
 	return toSpanID(testSpanIDBase + uint16(n))
 }
 
-func (v *forTest) Spans(t *testing.T) tracetest.SpanStubs {
+func (v *forTest) Reset() {
+	v.spanExporter.Reset()
+	_ = v.metricExporter.Collect(context.Background(), &metricdata.ResourceMetrics{})
+	v.idGenerator.Reset()
+}
+
+func (v *forTest) Spans(t *testing.T, opts ...TestSpanOption) tracetest.SpanStubs {
 	t.Helper()
-	return getActualSpans(t, v.spanExporter)
+	return getActualSpans(t, v.spanExporter, opts...)
 }
 
 func (v *forTest) Metrics(t *testing.T) []metricdata.Metrics {
@@ -82,9 +115,9 @@ func (v *forTest) Metrics(t *testing.T) []metricdata.Metrics {
 	return getActualMetrics(t, context.Background(), v.metricExporter)
 }
 
-func (v *forTest) AssertSpans(t *testing.T, expectedSpans tracetest.SpanStubs) {
+func (v *forTest) AssertSpans(t *testing.T, expectedSpans tracetest.SpanStubs, opts ...TestSpanOption) {
 	t.Helper()
-	actualSpans := v.Spans(t)
+	actualSpans := v.Spans(t, opts...)
 
 	// Compare spans one by one, for easier debugging
 	assert.Equalf(
@@ -141,19 +174,24 @@ func (v *forTest) AssertMetrics(t *testing.T, expectedMetrics []metricdata.Metri
 }
 
 type testIDGenerator struct {
-	traceID uint16
-	spanID  uint16
+	traceID atomic.Int64
+	spanID  atomic.Int64
+}
+
+func (g *testIDGenerator) Reset() {
+	g.traceID.Store(0)
+	g.spanID.Store(0)
 }
 
 func (g *testIDGenerator) NewIDs(ctx context.Context) (trace.TraceID, trace.SpanID) {
-	g.traceID++
-	traceID := toTraceID(testTraceIDBase + g.traceID)
+	v := g.traceID.Add(1)
+	traceID := toTraceID(testTraceIDBase + uint16(v))
 	return traceID, g.NewSpanID(ctx, traceID)
 }
 
 func (g *testIDGenerator) NewSpanID(_ context.Context, _ trace.TraceID) trace.SpanID {
-	g.spanID++
-	return toSpanID(testSpanIDBase + g.spanID)
+	v := g.spanID.Add(1)
+	return toSpanID(testSpanIDBase + uint16(v))
 }
 
 func toTraceID(in uint16) trace.TraceID { //nolint: unparam
@@ -168,14 +206,16 @@ func toSpanID(in uint16) trace.SpanID {
 	return *(*[8]byte)(tmp)
 }
 
-func getActualSpans(t *testing.T, exporter *tracetest.InMemoryExporter) tracetest.SpanStubs {
+func getActualSpans(t *testing.T, exporter *tracetest.InMemoryExporter, opts ...TestSpanOption) tracetest.SpanStubs {
 	t.Helper()
 	spans := exporter.GetSpans()
-	cleanAndSortSpans(spans)
+	cleanAndSortSpans(spans, opts...)
 	return spans
 }
 
-func cleanAndSortSpans(spans tracetest.SpanStubs) {
+func cleanAndSortSpans(spans tracetest.SpanStubs, opts ...TestSpanOption) {
+	cnf := newAssertSpanConfig(opts)
+
 	// Sort spans
 	sort.SliceStable(spans, func(i, j int) bool {
 		return spans[i].SpanContext.SpanID().String() < spans[j].SpanContext.SpanID().String()
@@ -194,11 +234,8 @@ func cleanAndSortSpans(spans tracetest.SpanStubs) {
 			event.Time = time.Time{}
 		}
 		for k, attr := range s.Attributes {
-			if attr.Key == "http.request_id" && len(attr.Value.AsString()) > 0 {
-				s.Attributes[k] = attribute.String(string(attr.Key), "<dynamic>")
-			}
-			if attr.Key == "http.response.header.x-request-id" && len(attr.Value.AsString()) > 0 {
-				s.Attributes[k] = attribute.String(string(attr.Key), "<dynamic>")
+			if cnf.attributeMapper != nil {
+				s.Attributes[k] = cnf.attributeMapper(attr)
 			}
 		}
 	}
