@@ -139,9 +139,9 @@ func TestRepositoryUpdate(t *testing.T) {
 							Count:  1,
 							Bounds: histBounds,
 							Attributes: attribute.NewSet(
-								attribute.String("repo_name", "keboola"),
-								attribute.String("repo_url", "file://<tmp_dir>"),
-								attribute.String("repo_ref", "main"),
+								attribute.String("repo.name", "keboola"),
+								attribute.String("repo.url", "file://<tmp_dir>"),
+								attribute.String("repo.ref", "main"),
 								attribute.Bool("is_success", true),
 								attribute.Bool("is_changed", false),
 							),
@@ -150,9 +150,9 @@ func TestRepositoryUpdate(t *testing.T) {
 							Count:  1,
 							Bounds: histBounds,
 							Attributes: attribute.NewSet(
-								attribute.String("repo_name", "keboola"),
-								attribute.String("repo_url", "file://<tmp_dir>"),
-								attribute.String("repo_ref", "main"),
+								attribute.String("repo.name", "keboola"),
+								attribute.String("repo.url", "file://<tmp_dir>"),
+								attribute.String("repo.ref", "main"),
 								attribute.Bool("is_success", true),
 								attribute.Bool("is_changed", true),
 							),
@@ -162,7 +162,7 @@ func TestRepositoryUpdate(t *testing.T) {
 			},
 		},
 		telemetry.WithMeterAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
-			if attr.Key == "repo_url" && strings.HasPrefix(attr.Value.AsString(), "file://") {
+			if attr.Key == "repo.url" && strings.HasPrefix(attr.Value.AsString(), "file://") {
 				return attribute.String(string(attr.Key), "file://<tmp_dir>")
 			}
 			return attr
