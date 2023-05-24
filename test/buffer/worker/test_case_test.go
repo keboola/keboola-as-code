@@ -44,6 +44,7 @@ const (
 	uploadCountThreshold       = 5
 	importCountThreshold       = 10
 	statisticsSyncInterval     = 500 * time.Millisecond
+	conditionsCheckInterval    = 500 * time.Millisecond
 	receiverBufferSizeCacheTTL = 500 * time.Millisecond
 	receiverBufferSize         = 100 * datasize.KB
 )
@@ -165,7 +166,7 @@ func startCluster(t *testing.T, ctx context.Context, testDir string, project *te
 				dependencies.WithLoggerPrefix(fmt.Sprintf(`[%s]`, nodeID)),
 			)...)
 			d.SetWorkerConfigOps(
-				workerConfig.WithCheckConditionsInterval(1000*time.Millisecond),
+				workerConfig.WithCheckConditionsInterval(conditionsCheckInterval),
 				workerConfig.WithUploadConditions(model.Conditions{Count: uploadCountThreshold, Size: datasize.MB, Time: time.Hour}),
 			)
 			svc, err := workerService.New(d)

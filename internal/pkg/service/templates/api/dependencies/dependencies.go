@@ -24,19 +24,18 @@ package dependencies
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/oteldd"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManager "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
@@ -105,23 +104,8 @@ type forProjectRequest struct {
 	projectRepositories dependencies.Lazy[*model.TemplateRepositories]
 }
 
-func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger) (v ForServer, err error) {
-	// Setup tracing
-	var tracerProvider trace.TracerProvider = nil
-	if oteldd.IsDataDogEnabled(envs) {
-		tracerProvider = oteldd.NewProvider()
-	}
-
-	// Setup metrics
-	meterProvider, err := prometheus.ServeMetrics(ctx, "templates-api", cfg.MetricsListenAddress, logger, proc)
-	if err != nil {
-		return nil, err
-	}
-
-	tel := telemetry.NewTelemetry(tracerProvider, meterProvider)
-
-	// Create span
-	ctx, span := tel.Tracer().Start(ctx, "kac.lib.api.server.templates.dependencies.NewServerDeps")
+func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger, tel telemetry.Telemetry) (v ForServer, err error) {
+	ctx, span := tel.Tracer().Start(ctx, "keboola.go.templates.api.dependencies.dependencies.NewServerDeps")
 	defer telemetry.EndSpan(span, &err)
 
 	// Create service dependencies
@@ -147,21 +131,23 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 	return d, nil
 }
 
-func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, requestId string) ForPublicRequest {
-	_, span := serverDeps.Telemetry().Tracer().Start(requestCtx, "kac.api.server.templates.dependencies.NewDepsForPublicRequest")
+func NewDepsForPublicRequest(serverDeps ForServer, req *http.Request) ForPublicRequest {
+	ctx, span := serverDeps.Telemetry().Tracer().Start(req.Context(), "keboola.go.templates.api.dependencies.NewDepsForPublicRequest")
 	defer telemetry.EndSpan(span, nil)
+
+	requestId, _ := ctx.Value(middleware.RequestIDCtxKey).(string)
 
 	return &forPublicRequest{
 		ForServer:  serverDeps,
 		logger:     serverDeps.Logger().AddPrefix(fmt.Sprintf("[requestId=%s]", requestId)),
-		requestCtx: requestCtx,
+		requestCtx: ctx,
 		requestID:  requestId,
 	}
 }
 
-func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (ForProjectRequest, error) {
-	ctx, span := publicDeps.Telemetry().Tracer().Start(ctx, "kac.api.server.templates.dependencies.NewDepsForProjectRequest")
-	defer telemetry.EndSpan(span, nil)
+func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (v ForProjectRequest, err error) {
+	ctx, span := publicDeps.Telemetry().Tracer().Start(ctx, "keboola.go.templates.api.dependencies.NewDepsForProjectRequest")
+	defer telemetry.EndSpan(span, &err)
 
 	projectDeps, err := dependencies.NewProjectDeps(ctx, publicDeps, publicDeps, tokenStr)
 	if err != nil {
@@ -247,7 +233,7 @@ func (v *forProjectRequest) ProjectRepositories() *model.TemplateRepositories {
 }
 
 func (v *forProjectRequest) Template(ctx context.Context, reference model.TemplateRef) (tmpl *template.Template, err error) {
-	ctx, span := v.Telemetry().Tracer().Start(ctx, "kac.api.server.templates.dependencies.Template")
+	ctx, span := v.Telemetry().Tracer().Start(ctx, "keboola.go.templates.api.dependencies.Template")
 	defer telemetry.EndSpan(span, &err)
 
 	// Get repository
@@ -261,7 +247,7 @@ func (v *forProjectRequest) Template(ctx context.Context, reference model.Templa
 }
 
 func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition model.TemplateRepository) (tmpl *repository.Repository, err error) {
-	ctx, span := v.Telemetry().Tracer().Start(ctx, "kac.api.server.templates.dependencies.TemplateRepository")
+	ctx, span := v.Telemetry().Tracer().Start(ctx, "keboola.go.templates.api.dependencies.TemplateRepository")
 	defer telemetry.EndSpan(span, &err)
 
 	repo, err := v.cachedTemplateRepository(ctx, definition)
@@ -273,7 +259,7 @@ func (v *forProjectRequest) TemplateRepository(ctx context.Context, definition m
 
 func (v *forProjectRequest) cachedTemplateRepository(ctx context.Context, definition model.TemplateRepository) (repo *repositoryManager.CachedRepository, err error) {
 	if _, found := v.repositories[definition.Hash()]; !found {
-		ctx, span := v.Telemetry().Tracer().Start(ctx, "kac.api.server.templates.dependencies.cachedTemplateRepository")
+		ctx, span := v.Telemetry().Tracer().Start(ctx, "keboola.go.templates.api.dependencies.cachedTemplateRepository")
 		defer telemetry.EndSpan(span, &err)
 
 		// Get git repository

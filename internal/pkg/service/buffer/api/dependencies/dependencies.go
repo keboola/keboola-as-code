@@ -30,7 +30,6 @@ import (
 	"net/http"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -43,11 +42,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/oteldd"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ip"
 )
 
@@ -116,22 +114,7 @@ type forProjectRequest struct {
 	fileManager  *file.Manager
 }
 
-func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger) (v ForServer, err error) {
-	// Setup tracing
-	var tracerProvider trace.TracerProvider = nil
-	if oteldd.IsDataDogEnabled(envs) {
-		tracerProvider = oteldd.NewProvider()
-	}
-
-	// Setup metrics
-	meterProvider, err := prometheus.ServeMetrics(ctx, "buffer-api", cfg.MetricsListenAddress, logger, proc)
-	if err != nil {
-		return nil, err
-	}
-
-	tel := telemetry.NewTelemetry(tracerProvider, meterProvider)
-
-	// Create span
+func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger, tel telemetry.Telemetry) (v ForServer, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.api.dependencies.NewServerDeps")
 	defer telemetry.EndSpan(span, &err)
 
@@ -158,22 +141,24 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 	return d, nil
 }
 
-func NewDepsForPublicRequest(serverDeps ForServer, requestCtx context.Context, requestId string, request *http.Request) ForPublicRequest {
-	_, span := serverDeps.Telemetry().Tracer().Start(requestCtx, "kac.api.server.buffer.dependencies.NewDepsForPublicRequest")
+func NewDepsForPublicRequest(serverDeps ForServer, req *http.Request) ForPublicRequest {
+	ctx, span := serverDeps.Telemetry().Tracer().Start(req.Context(), "keboola.go.buffer.api.dependencies.NewDepsForPublicRequest")
 	defer telemetry.EndSpan(span, nil)
+
+	requestId, _ := ctx.Value(middleware.RequestIDCtxKey).(string)
 
 	return &forPublicRequest{
 		ForServer:  serverDeps,
 		logger:     serverDeps.Logger().AddPrefix(fmt.Sprintf("[requestId=%s]", requestId)),
-		request:    request,
-		requestCtx: requestCtx,
+		request:    req,
+		requestCtx: req.Context(),
 		requestID:  requestId,
 	}
 }
 
-func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (ForProjectRequest, error) {
-	ctx, span := publicDeps.Telemetry().Tracer().Start(ctx, "kac.api.server.buffer.dependencies.NewDepsForProjectRequest")
-	defer telemetry.EndSpan(span, nil)
+func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (v ForProjectRequest, err error) {
+	ctx, span := publicDeps.Telemetry().Tracer().Start(ctx, "keboola.go.buffer.api.dependencies.NewDepsForProjectRequest")
+	defer telemetry.EndSpan(span, &err)
 
 	projectDeps, err := dependencies.NewProjectDeps(ctx, publicDeps, publicDeps, tokenStr)
 	if err != nil {

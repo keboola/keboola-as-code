@@ -14,7 +14,7 @@ type withStatusCode struct {
 }
 
 func HTTPCodeFrom(err error) int {
-	httpCode := 500
+	httpCode := http.StatusInternalServerError
 	var httpCodeProvider WithStatusCode
 	var serviceError *goa.ServiceError
 	if errors.As(err, &httpCodeProvider) {

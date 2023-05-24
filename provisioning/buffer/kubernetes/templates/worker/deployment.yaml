@@ -23,15 +23,17 @@ spec:
         tags.datadoghq.com/version: "$RELEASE_ID"
       annotations:
         log: "true"
-        ad.datadoghq.com/tags: '{"git.commit.sha": "$COMMIT_HASH", "git.repository_url": "https://github.com/keboola/keboola-as-code"}'
+        ad.datadoghq.com/tags: '{"git.commit.sha": "$COMMIT_HASH", "git.repository_url": "github.com/keboola/keboola-as-code"}'
         ad.datadoghq.com/buffer-worker.checks: |
           {
             "openmetrics": {
               "instances": [
                 {
                   "openmetrics_endpoint": "http://%%host%%:9000/metrics",
-                  "namespace": "buffer_worker",
-                  "metrics": ["*"]
+                  "metrics": [".*"],
+                  "collect_histogram_buckets": true,
+                  "histogram_buckets_as_distributions": true,
+                  "tag_by_endpoint": false
                 }
               ]
             }

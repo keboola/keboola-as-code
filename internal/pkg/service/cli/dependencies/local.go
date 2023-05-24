@@ -52,7 +52,10 @@ func newLocal(baseDeps Base, opts ...Option) (*local, error) {
 	}
 
 	// Create common local dependencies
-	publicDep, err := dependencies.NewPublicDeps(baseDeps.CommandCtx(), baseDeps, host, dependencies.WithPreloadComponents(true))
+	publicDep, err := dependencies.NewPublicDeps(
+		baseDeps.CommandCtx(), baseDeps, host,
+		dependencies.WithPreloadComponents(true),
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -2,7 +2,6 @@ package dependencies
 
 import (
 	"context"
-	"time"
 
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -62,13 +61,14 @@ func NewServiceDeps(
 	baseDeps := dependencies.NewBaseDeps(envs, logger, tel, httpClient)
 
 	// Create public dependencies - load API index
-	startTime := time.Now()
-	logger.Info("loading Storage API index")
-	publicDeps, err := dependencies.NewPublicDeps(ctx, baseDeps, cfg.StorageAPIHost)
+	publicDeps, err := dependencies.NewPublicDeps(
+		ctx, baseDeps, cfg.StorageAPIHost,
+		dependencies.WithLogIndexLoading(true),
+		dependencies.WithPreloadComponents(true),
+	)
 	if err != nil {
 		return nil, err
 	}
-	logger.Infof("loaded Storage API index | %s", time.Since(startTime))
 
 	// Create etcd client
 	etcdClient, err := etcdclient.New(

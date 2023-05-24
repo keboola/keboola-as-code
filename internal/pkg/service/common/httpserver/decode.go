@@ -6,7 +6,9 @@ import (
 	goaHTTP "goa.design/goa/v3/http"
 )
 
-func NewDecoder() func(r *http.Request) goaHTTP.Decoder {
+type Decoder func(*http.Request) goaHTTP.Decoder
+
+func NewDecoder() Decoder {
 	return func(r *http.Request) goaHTTP.Decoder {
 		return goaHTTP.RequestDecoder(r)
 	}
