@@ -21,6 +21,8 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
@@ -38,9 +40,10 @@ import (
 // Manager provides CachedRepository and templates for Templates API requests.
 // It also contains list of the default repositories.
 type Manager struct {
-	ctx    context.Context
-	deps   dependencies
-	logger log.Logger
+	ctx         context.Context
+	deps        dependencies
+	logger      log.Logger
+	updateMeter metric.Float64Histogram
 
 	// List of default repositories for the stack/server.
 	// This list is individually modified in the Service according to the set project features.
@@ -59,10 +62,20 @@ type dependencies interface {
 }
 
 func New(ctx context.Context, d dependencies, defaultRepositories []model.TemplateRepository) (*Manager, error) {
+	meter, err := d.Telemetry().Meter().Float64Histogram(
+		"keboola.go.templates.repository.update.duration",
+		metric.WithDescription("Templates repository update duration."),
+		metric.WithUnit("ms"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	m := &Manager{
 		ctx:                 ctx,
 		deps:                d,
 		logger:              d.Logger(),
+		updateMeter:         meter,
 		defaultRepositories: defaultRepositories,
 		repositories:        make(map[string]*CachedRepository),
 		repositoriesInit:    &singleflight.Group{},
@@ -130,19 +143,34 @@ func (m *Manager) Update(ctx context.Context) <-chan error {
 	// Pull repositories in parallel
 	wait := &sync.WaitGroup{}
 	for _, repo := range m.repositories {
+		repoDef := repo.Unwrap().Definition()
 		oldValue := repo
 		wait.Add(1)
 		go func() {
 			defer wait.Done()
 
-			newValue, updated, err := oldValue.update(ctx)
+			// Update
+			startTime := time.Now()
+			newValue, changed, err := oldValue.update(ctx)
+			elapsedTime := float64(time.Since(startTime)) / float64(time.Millisecond)
+
+			// Metric
+			m.updateMeter.Record(ctx, elapsedTime, metric.WithAttributes(
+				attribute.String("repo_name", repoDef.Name),
+				attribute.String("repo_url", repoDef.URL),
+				attribute.String("repo_ref", repoDef.Ref),
+				attribute.Bool("is_success", err == nil),
+				attribute.Bool("is_changed", changed),
+			))
+
+			// Handle error
 			if err != nil {
 				errs.Append(err)
 				return
 			}
 
-			if updated {
-				// Replace value
+			// Replace value
+			if changed {
 				m.repositoriesLock.Lock()
 				m.repositories[newValue.Hash()] = newValue
 				m.repositoriesLock.Unlock()
