@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/knownpaths"
@@ -34,7 +33,7 @@ type State struct {
 	validator       validator.Validator
 	fileLoader      filesystem.FileLoader
 	logger          log.Logger
-	tracer          trace.Tracer
+	tracer          telemetry.Tracer
 	manifest        manifest.Manifest
 	mapper          *mapper.Mapper
 	namingGenerator *naming.Generator
@@ -68,7 +67,7 @@ type dependencies interface {
 
 func New(ctx context.Context, container ObjectsContainer, d dependencies) (s *State, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.declarative.state.new")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Get dependencies
 	logger := d.Logger()
@@ -202,7 +201,7 @@ func (s *State) Validate(ctx context.Context) (error, error) {
 
 func (s *State) validateLocal(ctx context.Context) (err error) {
 	ctx, span := s.tracer.Start(ctx, "keboola.go.declarative.state.validation.local")
-	telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	errs := errors.NewMultiError()
 	for _, objectState := range s.All() {
@@ -217,7 +216,7 @@ func (s *State) validateLocal(ctx context.Context) (err error) {
 
 func (s *State) validateRemote(ctx context.Context) (err error) {
 	ctx, span := s.tracer.Start(ctx, "keboola.go.declarative.state.validation.remote")
-	telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	errs := errors.NewMultiError()
 	for _, objectState := range s.All() {
@@ -237,7 +236,7 @@ func (s *State) ValidateValue(value interface{}) error {
 // loadLocalState from manifest and local files to unified internal state.
 func (s *State) loadLocalState(ctx context.Context, _filter *model.ObjectsFilter, ignoreNotFoundErr bool) (err error) {
 	ctx, span := s.tracer.Start(ctx, "keboola.go.declarative.state.load.local")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Create filter if not set
 	var filter model.ObjectsFilter
@@ -258,7 +257,7 @@ func (s *State) loadLocalState(ctx context.Context, _filter *model.ObjectsFilter
 // loadRemoteState from API to unified internal state.
 func (s *State) loadRemoteState(ctx context.Context, _filter *model.ObjectsFilter) (err error) {
 	ctx, span := s.tracer.Start(ctx, "keboola.go.declarative.state.load.remote")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Create filter if not set
 	var filter model.ObjectsFilter

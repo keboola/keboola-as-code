@@ -10,12 +10,11 @@ import (
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 func (s *Store) ListTokens(ctx context.Context, receiverKey key.ReceiverKey) (out []model.Token, err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.ListTokens")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	tokens, err := s.getReceiverTokensOp(ctx, receiverKey).Do(ctx, s.client).All()
 	if err != nil {
@@ -27,7 +26,7 @@ func (s *Store) ListTokens(ctx context.Context, receiverKey key.ReceiverKey) (ou
 
 func (s *Store) GetToken(ctx context.Context, exportKey key.ExportKey) (out model.Token, err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.GetToken")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	resp, err := s.getTokenOp(ctx, exportKey).Do(ctx, s.client)
 	if err != nil {
@@ -38,7 +37,7 @@ func (s *Store) GetToken(ctx context.Context, exportKey key.ExportKey) (out mode
 
 func (s *Store) UpdateTokens(ctx context.Context, tokens []model.Token) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.UpdateTokens")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	ops := make([]op.Op, 0, len(tokens))
 	for _, token := range tokens {

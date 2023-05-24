@@ -16,7 +16,8 @@ const (
 // Use TracerProvider() and MeterProvider() to use a 3rd party instrumentations library.
 type Telemetry interface {
 	// Tracer for app-specific traces, it is used directly by the app code.
-	Tracer() trace.Tracer
+	// The app code uses the modified Tracer, with a modified End method,
+	Tracer() Tracer
 	// TracerProvider for 3rd party instrumentations, it should not be used directly in the app code.
 	TracerProvider() trace.TracerProvider
 	// Meter for app-specific metrics, it is used directly by the app code.
@@ -28,7 +29,7 @@ type Telemetry interface {
 type telemetry struct {
 	tracerProvider trace.TracerProvider
 	meterProvider  metric.MeterProvider
-	tracer         trace.Tracer
+	tracer         Tracer
 	meter          metric.Meter
 }
 
@@ -65,12 +66,12 @@ func NewTelemetry(tpFactory func() (trace.TracerProvider, error), mpFactory func
 	return &telemetry{
 		tracerProvider: tracerProvider,
 		meterProvider:  meterProvider,
-		tracer:         tracerProvider.Tracer(appName),
+		tracer:         &tracer{tracerProvider.Tracer(appName)},
 		meter:          meterProvider.Meter(appName),
 	}, nil
 }
 
-func (t *telemetry) Tracer() trace.Tracer {
+func (t *telemetry) Tracer() Tracer {
 	return t.tracer
 }
 

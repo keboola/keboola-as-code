@@ -116,7 +116,7 @@ type forProjectRequest struct {
 
 func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger, tel telemetry.Telemetry) (v ForServer, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.api.dependencies.NewServerDeps")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Create service dependencies
 	userAgent := "keboola-buffer-api"
@@ -143,7 +143,7 @@ func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 
 func NewDepsForPublicRequest(serverDeps ForServer, req *http.Request) ForPublicRequest {
 	ctx, span := serverDeps.Telemetry().Tracer().Start(req.Context(), "keboola.go.buffer.api.dependencies.NewDepsForPublicRequest")
-	defer telemetry.EndSpan(span, nil)
+	defer span.End(nil)
 
 	requestId, _ := ctx.Value(middleware.RequestIDCtxKey).(string)
 
@@ -158,7 +158,7 @@ func NewDepsForPublicRequest(serverDeps ForServer, req *http.Request) ForPublicR
 
 func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, tokenStr string) (v ForProjectRequest, err error) {
 	ctx, span := publicDeps.Telemetry().Tracer().Start(ctx, "keboola.go.buffer.api.dependencies.NewDepsForProjectRequest")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	projectDeps, err := dependencies.NewProjectDeps(ctx, publicDeps, publicDeps, tokenStr)
 	if err != nil {

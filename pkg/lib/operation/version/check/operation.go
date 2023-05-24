@@ -18,7 +18,7 @@ type dependencies interface {
 
 func Run(ctx context.Context, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.version.check")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	return version.
 		NewGitHubChecker(ctx, d.Logger(), d.Envs()).

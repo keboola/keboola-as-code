@@ -38,7 +38,7 @@ type dependencies interface {
 
 func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.template.test.run")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	tempDir, err := os.MkdirTemp("", "kac-test-template-") //nolint:forbidigo
 	if err != nil {

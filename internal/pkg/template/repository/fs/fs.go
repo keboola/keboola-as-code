@@ -30,7 +30,7 @@ func OnlyForTemplate(ref model.TemplateRef) Option {
 
 func For(ctx context.Context, d dependencies, ref model.TemplateRepository, opts ...Option) (fs filesystem.Fs, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.declarative.templates.repository.fs.For")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	switch ref.Type {
 	case model.RepositoryTypeDir:

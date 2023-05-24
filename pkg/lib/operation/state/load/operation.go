@@ -134,7 +134,7 @@ func Run(ctx context.Context, container state.ObjectsContainer, o OptionsWithFil
 	span.SetAttributes(attribute.String("remote.filter", json.MustEncodeString(o.RemoteFilter, false)))
 	span.SetAttributes(attribute.Bool("local.load", o.LoadLocalState))
 	span.SetAttributes(attribute.String("local.filter", json.MustEncodeString(o.LocalFilter, false)))
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	logger := d.Logger()
 	loadOptions := state.LoadOptions{

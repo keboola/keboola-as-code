@@ -19,7 +19,7 @@ type dependencies interface {
 
 func Run(ctx context.Context, tableID keboola.TableID, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.table.detail")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	table, err := d.KeboolaProjectAPI().GetTableRequest(tableID).Send(ctx)
 	if err != nil {

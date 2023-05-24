@@ -6,7 +6,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -14,7 +13,7 @@ const maxStatsPerTxn = 50
 
 func (s *Store) UpdateSliceReceivedStats(ctx context.Context, nodeID string, stats []model.SliceStats) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.UpdateSliceReceivedStats")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	var currentTxn *op.TxnOp
 	var allTxn []*op.TxnOp

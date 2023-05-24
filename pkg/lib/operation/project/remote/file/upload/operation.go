@@ -31,7 +31,7 @@ type Options struct {
 
 func Run(ctx context.Context, o Options, d dependencies) (f *keboola.FileUploadCredentials, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.file.upload")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	opts := make([]keboola.CreateFileOption, 0)
 	if len(o.Tags) > 0 {

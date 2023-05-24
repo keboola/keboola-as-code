@@ -9,7 +9,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -18,7 +17,7 @@ import (
 // - CountLimitReachedError.
 func (s *Store) CreateMapping(ctx context.Context, mapping model.Mapping) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CreateMapping")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	if mapping.RevisionID != 0 {
 		return errors.New("unexpected state: mapping revision ID should be 0, it is generated on create")
@@ -89,7 +88,7 @@ func (s *Store) updateMappingOp(_ context.Context, mapping model.Mapping) op.NoR
 // GetLatestMapping fetches the current mapping from the store.
 func (s *Store) GetLatestMapping(ctx context.Context, exportKey key.ExportKey) (r model.Mapping, err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.GetLatestMapping")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	kv, err := s.getLatestMappingOp(ctx, exportKey).Do(ctx, s.client)
 	if err != nil {
@@ -118,7 +117,7 @@ func (s *Store) getLatestMappingOp(_ context.Context, exportKey key.ExportKey, o
 // - ResourceNotFoundError.
 func (s *Store) GetMapping(ctx context.Context, mappingKey key.MappingKey) (r model.Mapping, err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.GetMapping")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	kv, err := s.getMappingOp(ctx, mappingKey).Do(ctx, s.client)
 	if err != nil {

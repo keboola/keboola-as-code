@@ -35,7 +35,7 @@ type dependencies interface {
 
 func Run(ctx context.Context, projectState *project.State, tmpl *template.Template, o Options, d dependencies) (result *use.Result, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.local.template.upgrade")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	// Create tickets provider, to generate new IDs, if needed
 	tickets := d.ObjectIDGeneratorFactory()(ctx)

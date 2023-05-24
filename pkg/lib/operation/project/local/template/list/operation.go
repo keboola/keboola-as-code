@@ -16,7 +16,7 @@ type dependencies interface {
 
 func Run(ctx context.Context, branch *model.BranchState, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.local.template.list")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	w := d.Logger().InfoWriter()
 

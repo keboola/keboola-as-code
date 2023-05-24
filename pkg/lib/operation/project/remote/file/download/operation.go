@@ -62,7 +62,7 @@ func (o *Options) GetOutput(file string) (io.WriteCloser, error) {
 
 func Run(ctx context.Context, opts Options, d dependencies) (err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.operation.project.remote.file.download")
-	defer telemetry.EndSpan(span, &err)
+	defer span.End(&err)
 
 	if opts.File.IsSliced {
 		if !opts.AllowSliced {
