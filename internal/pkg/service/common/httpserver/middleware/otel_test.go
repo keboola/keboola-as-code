@@ -1,6 +1,7 @@
 package middleware_test
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -77,7 +78,7 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 	assert.Equal(t, "OK", rec.Body.String())
 
 	// Assert
-	tel.AssertSpans(t, expectedSpans(tel), telemetry.WithAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
+	tel.AssertSpans(t, expectedSpans(tel), telemetry.WithSpanAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
 		if attr.Key == "http.request_id" && len(attr.Value.AsString()) > 0 {
 			return attribute.String(string(attr.Key), "<dynamic>")
 		}
@@ -86,7 +87,11 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 		}
 		return attr
 	}))
-	tel.AssertMetrics(t, expectedMetrics())
+	tel.AssertMetrics(t, expectedMetrics(), telemetry.WithDataPointSortKey(func(attrs attribute.Set) string {
+		status, _ := attrs.Value("http.status_code")
+		url, _ := attrs.Value("http.url")
+		return fmt.Sprintf("%d:%s", status.AsInt64(), url.AsString())
+	}))
 }
 
 func expectedSpans(tel telemetry.ForTest) tracetest.SpanStubs {

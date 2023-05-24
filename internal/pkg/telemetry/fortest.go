@@ -3,7 +3,6 @@ package telemetry
 import (
 	"context"
 	"encoding/binary"
-	"fmt"
 	"math"
 	"sort"
 	"sync/atomic"
@@ -34,17 +33,24 @@ type ForTest interface {
 	SpanID(n int) trace.SpanID
 	Reset()
 	Spans(t *testing.T, opts ...TestSpanOption) tracetest.SpanStubs
-	Metrics(t *testing.T) []metricdata.Metrics
+	Metrics(t *testing.T, opts ...TestMeterOption) []metricdata.Metrics
 	AssertSpans(t *testing.T, expectedSpans tracetest.SpanStubs, opts ...TestSpanOption)
-	AssertMetrics(t *testing.T, expectedMetrics []metricdata.Metrics)
+	AssertMetrics(t *testing.T, expectedMetrics []metricdata.Metrics, opts ...TestMeterOption)
 }
+
+type TestAttributeMapper func(attr attribute.KeyValue) attribute.KeyValue
 
 type TestSpanOption func(config *assertSpanConfig)
 
-type TestAttributeMapper func(value attribute.KeyValue) attribute.KeyValue
+type TestMeterOption func(config *assertMetricConfig)
 
 type assertSpanConfig struct {
 	attributeMapper TestAttributeMapper
+}
+
+type assertMetricConfig struct {
+	attributeMapper  TestAttributeMapper
+	dataPointSortKey func(attrs attribute.Set) string
 }
 
 type forTest struct {
@@ -54,14 +60,38 @@ type forTest struct {
 	metricExporter metricsdk.Reader
 }
 
-func WithAttributeMapper(v TestAttributeMapper) TestSpanOption {
+// WithSpanAttributeMapper set a mapping function for span attributes.
+func WithSpanAttributeMapper(v TestAttributeMapper) TestSpanOption {
 	return func(cnf *assertSpanConfig) {
 		cnf.attributeMapper = v
 	}
 }
 
+// WithMeterAttributeMapper set a mapping function for span attributes.
+func WithMeterAttributeMapper(v TestAttributeMapper) TestMeterOption {
+	return func(cnf *assertMetricConfig) {
+		cnf.attributeMapper = v
+	}
+}
+
+// WithDataPointSortKey set a function to generate sort key for each data point.
+// DataPoints are internally represented as a map, so they have random order.
+func WithDataPointSortKey(v func(attrs attribute.Set) string) TestMeterOption {
+	return func(cnf *assertMetricConfig) {
+		cnf.dataPointSortKey = v
+	}
+}
+
 func newAssertSpanConfig(opts []TestSpanOption) assertSpanConfig {
 	cnf := assertSpanConfig{}
+	for _, o := range opts {
+		o(&cnf)
+	}
+	return cnf
+}
+
+func newAssertMeterConfig(opts []TestMeterOption) assertMetricConfig {
+	cnf := assertMetricConfig{}
 	for _, o := range opts {
 		o(&cnf)
 	}
@@ -110,9 +140,9 @@ func (v *forTest) Spans(t *testing.T, opts ...TestSpanOption) tracetest.SpanStub
 	return getActualSpans(t, v.spanExporter, opts...)
 }
 
-func (v *forTest) Metrics(t *testing.T) []metricdata.Metrics {
+func (v *forTest) Metrics(t *testing.T, opts ...TestMeterOption) []metricdata.Metrics {
 	t.Helper()
-	return getActualMetrics(t, context.Background(), v.metricExporter)
+	return getActualMetrics(t, context.Background(), v.metricExporter, opts...)
 }
 
 func (v *forTest) AssertSpans(t *testing.T, expectedSpans tracetest.SpanStubs, opts ...TestSpanOption) {
@@ -144,9 +174,9 @@ func (v *forTest) AssertSpans(t *testing.T, expectedSpans tracetest.SpanStubs, o
 	}
 }
 
-func (v *forTest) AssertMetrics(t *testing.T, expectedMetrics []metricdata.Metrics) {
+func (v *forTest) AssertMetrics(t *testing.T, expectedMetrics []metricdata.Metrics, opts ...TestMeterOption) {
 	t.Helper()
-	actualMetrics := v.Metrics(t)
+	actualMetrics := v.Metrics(t, opts...)
 
 	// Compare metrics one by one, for easier debugging
 	assert.Equalf(
@@ -241,27 +271,42 @@ func cleanAndSortSpans(spans tracetest.SpanStubs, opts ...TestSpanOption) {
 	}
 }
 
-func getActualMetrics(t *testing.T, ctx context.Context, reader metricsdk.Reader) []metricdata.Metrics {
+func getActualMetrics(t *testing.T, ctx context.Context, reader metricsdk.Reader, opts ...TestMeterOption) []metricdata.Metrics {
 	t.Helper()
 	all := &metricdata.ResourceMetrics{}
 	assert.NoError(t, reader.Collect(ctx, all))
 	assert.Len(t, all.ScopeMetrics, 1)
 	metrics := all.ScopeMetrics[0].Metrics
-	cleanAndSortMetrics(metrics)
+	cleanAndSortMetrics(metrics, opts...)
 	return metrics
 }
 
-func cleanAndSortMetrics(metrics []metricdata.Metrics) {
+func cleanAndSortMetrics(metrics []metricdata.Metrics, opts ...TestMeterOption) {
+	cnf := newAssertMeterConfig(opts)
+
 	// DataPoints have random order, sort them by statusCode and URL.
 	dataPointKey := func(attrs attribute.Set) string {
-		status, _ := attrs.Value("http.status_code")
-		url, _ := attrs.Value("http.url")
-		return fmt.Sprintf("%d:%s", status.AsInt64(), url.AsString())
+		if cnf.dataPointSortKey != nil {
+			return cnf.dataPointSortKey(attrs)
+		}
+		return ""
+	}
+
+	mapAttributes := func(set attribute.Set) attribute.Set {
+		if cnf.attributeMapper == nil {
+			return set
+		}
+		var attrs []attribute.KeyValue
+		for _, attr := range set.ToSlice() {
+			attrs = append(attrs, cnf.attributeMapper(attr))
+		}
+		return attribute.NewSet(attrs...)
 	}
 
 	// Clear dynamic values
 	for i := range metrics {
 		item := &metrics[i]
+
 		switch record := item.Data.(type) {
 		case metricdata.Sum[int64]:
 			sort.SliceStable(record.DataPoints, func(i, j int) bool {
@@ -271,6 +316,7 @@ func cleanAndSortMetrics(metrics []metricdata.Metrics) {
 				point := &record.DataPoints[k]
 				point.StartTime = time.Time{}
 				point.Time = time.Time{}
+				point.Attributes = mapAttributes(point.Attributes)
 			}
 		case metricdata.Sum[float64]:
 			sort.SliceStable(record.DataPoints, func(i, j int) bool {
@@ -280,6 +326,7 @@ func cleanAndSortMetrics(metrics []metricdata.Metrics) {
 				point := &record.DataPoints[k]
 				point.StartTime = time.Time{}
 				point.Time = time.Time{}
+				point.Attributes = mapAttributes(point.Attributes)
 			}
 		case metricdata.Histogram[int64]:
 			sort.SliceStable(record.DataPoints, func(i, j int) bool {
@@ -293,6 +340,7 @@ func cleanAndSortMetrics(metrics []metricdata.Metrics) {
 				point.Min = metricdata.Extrema[int64]{}
 				point.Max = metricdata.Extrema[int64]{}
 				point.Sum = 0
+				point.Attributes = mapAttributes(point.Attributes)
 			}
 		case metricdata.Histogram[float64]:
 			sort.SliceStable(record.DataPoints, func(i, j int) bool {
@@ -306,6 +354,7 @@ func cleanAndSortMetrics(metrics []metricdata.Metrics) {
 				point.Min = metricdata.Extrema[float64]{}
 				point.Max = metricdata.Extrema[float64]{}
 				point.Sum = 0
+				point.Attributes = mapAttributes(point.Attributes)
 			}
 		}
 	}
