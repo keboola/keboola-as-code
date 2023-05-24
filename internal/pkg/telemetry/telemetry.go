@@ -63,12 +63,16 @@ func NewTelemetry(tpFactory func() (trace.TracerProvider, error), mpFactory func
 	if meterProvider == nil {
 		meterProvider = metricNoop.NewMeterProvider()
 	}
+	return newTelemetry(tracerProvider, meterProvider), nil
+}
+
+func newTelemetry(tp trace.TracerProvider, mp metric.MeterProvider) *telemetry {
 	return &telemetry{
-		tracerProvider: tracerProvider,
-		meterProvider:  meterProvider,
-		tracer:         &tracer{tracerProvider.Tracer(appName)},
-		meter:          meterProvider.Meter(appName),
-	}, nil
+		tracerProvider: tp,
+		meterProvider:  mp,
+		tracer:         &tracer{tp.Tracer(appName)},
+		meter:          mp.Meter(appName),
+	}
 }
 
 func (t *telemetry) Tracer() Tracer {

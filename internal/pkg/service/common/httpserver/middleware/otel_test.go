@@ -1,85 +1,34 @@
 package middleware_test
 
 import (
-	"context"
-	"encoding/binary"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"sort"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/dimfeld/httptreemux/v5"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	export "go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	otelTrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 const (
-	testTraceIDBase = 0xabcd
-	testSpanIDBase  = 0x1000
 	responseContent = "some error"
 )
 
-type testIDGenerator struct {
-	traceID uint16
-	spanID  uint16
-}
-
-func (g *testIDGenerator) NewIDs(ctx context.Context) (otelTrace.TraceID, otelTrace.SpanID) {
-	g.traceID++
-	traceID := toTraceID(testTraceIDBase + g.traceID)
-	return traceID, g.NewSpanID(ctx, traceID)
-}
-
-func (g *testIDGenerator) NewSpanID(_ context.Context, _ otelTrace.TraceID) otelTrace.SpanID {
-	g.spanID++
-	return toSpanID(testSpanIDBase + g.spanID)
-}
-
-func toTraceID(in uint16) otelTrace.TraceID { //nolint: unparam
-	tmp := make([]byte, 16)
-	binary.BigEndian.PutUint16(tmp, in)
-	return *(*[16]byte)(tmp)
-}
-
-func toSpanID(in uint16) otelTrace.SpanID {
-	tmp := make([]byte, 8)
-	binary.BigEndian.PutUint16(tmp, in)
-	return *(*[8]byte)(tmp)
-}
-
 func TestOpenTelemetryMiddleware(t *testing.T) {
 	t.Parallel()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	// Setup tracing
-	traceExporter := tracetest.NewInMemoryExporter()
-	tracerProvider := trace.NewTracerProvider(
-		trace.WithSyncer(traceExporter),
-		trace.WithIDGenerator(&testIDGenerator{}),
-	)
-
-	// Setup metrics
-	metricExporter, err := export.New(export.WithoutScopeInfo())
-	assert.NoError(t, err)
-	meterProvider := metric.NewMeterProvider(
-		metric.WithReader(metricExporter),
-		metric.WithView(prometheus.View()),
-	)
+	tel := telemetry.NewForTest(t)
 
 	// Create muxer
 	mux := httptreemux.NewContextMux()
@@ -88,7 +37,7 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 		mux,
 		middleware.RequestInfo(),
 		middleware.OpenTelemetry(
-			tracerProvider, meterProvider,
+			tel.TracerProvider(), tel.MeterProvider(),
 			middleware.WithRedactedRouteParam("secret1"),
 			middleware.WithRedactedQueryParam("secret2"),
 			middleware.WithRedactedHeader("X-StorageAPI-Token"),
@@ -101,8 +50,8 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 	// Register endpoints
 	grp := mux.NewGroup("/api")
 	grp.GET("/ignored", func(w http.ResponseWriter, req *http.Request) {
-		_, span := tracerProvider.Tracer("my-tracer").Start(req.Context(), "my-ignored-span")
-		span.End()
+		_, span := tel.Tracer().Start(req.Context(), "my-ignored-span")
+		span.End(nil)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})
@@ -128,125 +77,19 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 	assert.Equal(t, "OK", rec.Body.String())
 
 	// Assert
-	assert.Equal(t, expectedSpans(), actualSpans(t, traceExporter))
-	assert.Equal(t, expectedMetrics(), actualMetrics(t, ctx, metricExporter))
+	tel.AssertSpans(t, expectedSpans(tel))
+	tel.AssertMetrics(t, expectedMetrics())
 }
 
-func actualSpans(t *testing.T, exporter *tracetest.InMemoryExporter) tracetest.SpanStubs {
-	t.Helper()
-	spans := exporter.GetSpans()
-	cleanAndSortSpans(spans)
-	return spans
-}
-
-func cleanAndSortSpans(spans tracetest.SpanStubs) {
-	// Sort spans
-	sort.SliceStable(spans, func(i, j int) bool {
-		return spans[i].SpanContext.SpanID().String() < spans[j].SpanContext.SpanID().String()
-	})
-
-	// Clean dynamic values
-	for i := range spans {
-		span := &spans[i]
-		span.StartTime = time.Time{}
-		span.EndTime = time.Time{}
-		span.Resource = nil
-		span.InstrumentationLibrary.Name = ""
-		span.InstrumentationLibrary.Version = ""
-		for j := range span.Events {
-			event := &span.Events[j]
-			event.Time = time.Time{}
-		}
-		for k, attr := range span.Attributes {
-			if attr.Key == "http.request_id" && len(attr.Value.AsString()) > 0 {
-				span.Attributes[k] = attribute.String(string(attr.Key), "<dynamic>")
-			}
-			if attr.Key == "http.response.header.x-request-id" && len(attr.Value.AsString()) > 0 {
-				span.Attributes[k] = attribute.String(string(attr.Key), "<dynamic>")
-			}
-		}
-	}
-}
-
-func actualMetrics(t *testing.T, ctx context.Context, reader metric.Reader) []metricdata.Metrics {
-	t.Helper()
-	all := &metricdata.ResourceMetrics{}
-	assert.NoError(t, reader.Collect(ctx, all))
-	assert.Len(t, all.ScopeMetrics, 1)
-	metrics := all.ScopeMetrics[0].Metrics
-	cleanAndSortMetrics(metrics)
-	return metrics
-}
-
-func cleanAndSortMetrics(metrics []metricdata.Metrics) {
-	// DataPoints have random order, sort them by statusCode and URL.
-	dataPointKey := func(attrs attribute.Set) string {
-		status, _ := attrs.Value("http.status_code")
-		url, _ := attrs.Value("http.url")
-		return fmt.Sprintf("%d:%s", status.AsInt64(), url.AsString())
-	}
-
-	// Clear dynamic values
-	for i := range metrics {
-		item := &metrics[i]
-		switch record := item.Data.(type) {
-		case metricdata.Sum[int64]:
-			sort.SliceStable(record.DataPoints, func(i, j int) bool {
-				return dataPointKey(record.DataPoints[i].Attributes) < dataPointKey(record.DataPoints[j].Attributes)
-			})
-			for k := range record.DataPoints {
-				point := &record.DataPoints[k]
-				point.StartTime = time.Time{}
-				point.Time = time.Time{}
-			}
-		case metricdata.Sum[float64]:
-			sort.SliceStable(record.DataPoints, func(i, j int) bool {
-				return dataPointKey(record.DataPoints[i].Attributes) < dataPointKey(record.DataPoints[j].Attributes)
-			})
-			for k := range record.DataPoints {
-				point := &record.DataPoints[k]
-				point.StartTime = time.Time{}
-				point.Time = time.Time{}
-			}
-		case metricdata.Histogram[int64]:
-			sort.SliceStable(record.DataPoints, func(i, j int) bool {
-				return dataPointKey(record.DataPoints[i].Attributes) < dataPointKey(record.DataPoints[j].Attributes)
-			})
-			for k := range record.DataPoints {
-				point := &record.DataPoints[k]
-				point.StartTime = time.Time{}
-				point.Time = time.Time{}
-				point.BucketCounts = nil
-				point.Min = metricdata.Extrema[int64]{}
-				point.Max = metricdata.Extrema[int64]{}
-				point.Sum = 0
-			}
-		case metricdata.Histogram[float64]:
-			sort.SliceStable(record.DataPoints, func(i, j int) bool {
-				return dataPointKey(record.DataPoints[i].Attributes) < dataPointKey(record.DataPoints[j].Attributes)
-			})
-			for k := range record.DataPoints {
-				point := &record.DataPoints[k]
-				point.StartTime = time.Time{}
-				point.Time = time.Time{}
-				point.BucketCounts = nil
-				point.Min = metricdata.Extrema[float64]{}
-				point.Max = metricdata.Extrema[float64]{}
-				point.Sum = 0
-			}
-		}
-	}
-}
-
-func expectedSpans() tracetest.SpanStubs {
+func expectedSpans(tel telemetry.ForTest) tracetest.SpanStubs {
 	req1Context := otelTrace.NewSpanContext(otelTrace.SpanContextConfig{
-		TraceID:    toTraceID(testTraceIDBase + 1),
-		SpanID:     toSpanID(testSpanIDBase + 1),
+		TraceID:    tel.TraceID(1),
+		SpanID:     tel.SpanID(1),
 		TraceFlags: otelTrace.FlagsSampled,
 	})
 	req2Context := otelTrace.NewSpanContext(otelTrace.SpanContextConfig{
-		TraceID:    toTraceID(testTraceIDBase + 2),
-		SpanID:     toSpanID(testSpanIDBase + 2),
+		TraceID:    tel.TraceID(2),
+		SpanID:     tel.SpanID(2),
 		TraceFlags: otelTrace.FlagsSampled,
 	})
 	return tracetest.SpanStubs{
@@ -297,8 +140,8 @@ func expectedSpans() tracetest.SpanStubs {
 			SpanKind: otelTrace.SpanKindInternal,
 			Parent:   req2Context,
 			SpanContext: otelTrace.NewSpanContext(otelTrace.SpanContextConfig{
-				TraceID:    toTraceID(testTraceIDBase + 2),
-				SpanID:     toSpanID(testSpanIDBase + 3),
+				TraceID:    tel.TraceID(2),
+				SpanID:     tel.SpanID(3),
 				TraceFlags: otelTrace.FlagsSampled,
 			}),
 		},
