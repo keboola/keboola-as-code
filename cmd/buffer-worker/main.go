@@ -70,7 +70,7 @@ func run() error {
 	}
 
 	// Setup telemetry
-	tel, err := telemetry.NewTelemetry(
+	tel, err := telemetry.New(
 		func() (trace.TracerProvider, error) {
 			tracerProvider := ddotel.NewTracerProvider(
 				tracer.WithLogger(telemetry.NewDDLogger(logger)),

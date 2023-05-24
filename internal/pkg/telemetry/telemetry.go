@@ -33,12 +33,12 @@ type telemetry struct {
 	meter          metric.Meter
 }
 
-func NewNopTelemetry() Telemetry {
-	tel, _ := NewTelemetry(nil, nil)
+func NewNop() Telemetry {
+	tel, _ := New(nil, nil)
 	return tel
 }
 
-func NewTelemetry(tpFactory func() (trace.TracerProvider, error), mpFactory func() (metric.MeterProvider, error)) (Telemetry, error) {
+func New(tpFactory func() (trace.TracerProvider, error), mpFactory func() (metric.MeterProvider, error)) (Telemetry, error) {
 	var err error
 	var tracerProvider trace.TracerProvider
 	var meterProvider metric.MeterProvider
