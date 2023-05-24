@@ -2,8 +2,9 @@ package telemetry
 
 import (
 	"context"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"net"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // ErrorType detect error type for a metric.
