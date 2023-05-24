@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -173,24 +174,24 @@ func (v *forTest) AssertMetrics(t *testing.T, expectedMetrics []metricdata.Metri
 }
 
 type testIDGenerator struct {
-	traceID uint16
-	spanID  uint16
+	traceID atomic.Int64
+	spanID  atomic.Int64
 }
 
 func (g *testIDGenerator) Reset() {
-	g.traceID = 0
-	g.spanID = 0
+	g.traceID.Store(0)
+	g.spanID.Store(0)
 }
 
 func (g *testIDGenerator) NewIDs(ctx context.Context) (trace.TraceID, trace.SpanID) {
-	g.traceID++
-	traceID := toTraceID(testTraceIDBase + g.traceID)
+	v := g.traceID.Add(1)
+	traceID := toTraceID(testTraceIDBase + uint16(v))
 	return traceID, g.NewSpanID(ctx, traceID)
 }
 
 func (g *testIDGenerator) NewSpanID(_ context.Context, _ trace.TraceID) trace.SpanID {
-	g.spanID++
-	return toSpanID(testSpanIDBase + g.spanID)
+	v := g.spanID.Add(1)
+	return toSpanID(testSpanIDBase + uint16(v))
 }
 
 func toTraceID(in uint16) trace.TraceID { //nolint: unparam
