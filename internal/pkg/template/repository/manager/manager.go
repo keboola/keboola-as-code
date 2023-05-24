@@ -66,7 +66,7 @@ func New(ctx context.Context, d dependencies, defaultRepositories []model.Templa
 		ctx:                 ctx,
 		deps:                d,
 		logger:              d.Logger(),
-		syncMeter:           telemetry.Histogram(d.Telemetry().Meter(), "keboola.go.templates.repo.sync.duration", "Templates repository update duration.", "ms"),
+		syncMeter:           d.Telemetry().Meter().Histogram("keboola.go.templates.repo.sync.duration", "Templates repository update duration.", "ms"),
 		defaultRepositories: defaultRepositories,
 		repositories:        make(map[string]*CachedRepository),
 		repositoriesInit:    &singleflight.Group{},
