@@ -21,7 +21,7 @@ type Telemetry interface {
 	// TracerProvider for 3rd party instrumentations, it should not be used directly in the app code.
 	TracerProvider() trace.TracerProvider
 	// Meter for app-specific metrics, it is used directly by the app code.
-	Meter() metric.Meter
+	Meter() Meter
 	// MeterProvider for 3rd party instrumentations, it should not be used directly in the app code.
 	MeterProvider() metric.MeterProvider
 }
@@ -30,7 +30,7 @@ type telemetry struct {
 	tracerProvider trace.TracerProvider
 	meterProvider  metric.MeterProvider
 	tracer         Tracer
-	meter          metric.Meter
+	meter          Meter
 }
 
 func NewNop() Telemetry {
@@ -70,8 +70,8 @@ func newTelemetry(tp trace.TracerProvider, mp metric.MeterProvider) *telemetry {
 	return &telemetry{
 		tracerProvider: tp,
 		meterProvider:  mp,
-		tracer:         &tracer{tp.Tracer(appName)},
-		meter:          mp.Meter(appName),
+		tracer:         &tracer{tracer: tp.Tracer(appName)},
+		meter:          &meter{meter: mp.Meter(appName)},
 	}
 }
 
@@ -83,7 +83,7 @@ func (t *telemetry) TracerProvider() trace.TracerProvider {
 	return t.tracerProvider
 }
 
-func (t *telemetry) Meter() metric.Meter {
+func (t *telemetry) Meter() Meter {
 	return t.meter
 }
 
