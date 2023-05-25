@@ -3,12 +3,13 @@ package middleware
 import (
 	"context"
 	"fmt"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 
 	"github.com/dimfeld/httptreemux/v5"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
 	goa "goa.design/goa/v3/pkg"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 // OpenTelemetryExtractEndpoint register middleware to enrich the http.server.request span with attributes from a Goa endpoint.
