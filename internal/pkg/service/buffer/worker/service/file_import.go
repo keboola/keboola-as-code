@@ -63,12 +63,12 @@ func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d depende
 
 				// Handle error
 				defer func() {
-					if result.IsErr() {
+					if result.IsError() {
 						attempt := fileRes.RetryAttempt + 1
 						retryAfter := utctime.UTCTime(RetryAt(NewRetryBackoff(), s.clock.Now(), attempt))
 						fileRes.RetryAttempt = attempt
 						fileRes.RetryAfter = &retryAfter
-						result = result.WithErr(errors.Errorf(`file import failed: %w, import will be retried after "%s"`, result.Err(), fileRes.RetryAfter))
+						result = result.WithError(errors.Errorf(`file import failed: %w, import will be retried after "%s"`, result.Error(), fileRes.RetryAfter))
 						if err := s.store.MarkFileImportFailed(ctx, &fileRes); err != nil {
 							s.logger.Errorf(`cannot mark the file "%s" as failed: %s`, fileRes.FileKey, err)
 						}

@@ -294,6 +294,7 @@ task/123/my-receiver/my-export/some.task/%s
 						Attributes: attribute.NewSet(
 							attribute.String("task_type", "some.task"),
 							attribute.Bool("is_success", true),
+							attribute.Bool("is_unexpected_error", false),
 							attribute.String("error_type", ""),
 						),
 					},
@@ -340,7 +341,9 @@ func TestFailedTask(t *testing.T) {
 			defer close(taskDone)
 			<-taskWork
 			logger.Info("some message from the task (1)")
-			return task.ErrResult(errors.New("some error (1)")).WithOutput("key", "value")
+			return task.
+				ErrResult(task.WrapExpectedError(errors.New("some error (1) - expected"))).
+				WithOutput("key", "value")
 		},
 	})
 	assert.NoError(t, err)
@@ -396,7 +399,7 @@ task/123/my-receiver/my-export/some.task/%s
   "finishedAt": "%s",
   "node": "node1",
   "lock": "runtime/lock/task/my-lock",
-  "error": "some error (1)",
+  "error": "some error (1) - expected",
   "outputs": {
     "key": "value"
   },
@@ -419,7 +422,7 @@ task/123/my-receiver/my-export/some.task/%s
 			defer close(taskDone)
 			<-taskWork
 			logger.Info("some message from the task (2)")
-			return task.ErrResult(errors.New("some error (2)"))
+			return task.ErrResult(errors.New("some error (2) - unexpected"))
 		},
 	})
 	assert.NoError(t, err)
@@ -440,7 +443,7 @@ task/123/my-receiver/my-export/some.task/%s
   "finishedAt": "%s",
   "node": "node1",
   "lock": "runtime/lock/task/my-lock",
-  "error": "some error (1)",
+  "error": "some error (1) - expected",
   "outputs": {
     "key": "value"
   },
@@ -459,7 +462,7 @@ task/123/my-receiver/my-export/some.task/%s
   "finishedAt": "%s",
   "node": "node2",
   "lock": "runtime/lock/task/my-lock",
-  "error": "some error (2)",
+  "error": "some error (2) - unexpected",
   "duration": %d
 }
 >>>>>
@@ -471,12 +474,12 @@ task/123/my-receiver/my-export/some.task/%s
 [node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
 [node2][task][123/my-receiver/my-export/some.task/%s]INFO  task ignored, the lock "runtime/lock/task/my-lock" is in use
 [node1][task][123/my-receiver/my-export/some.task/%s]INFO  some message from the task (1)
-[node1][task][123/my-receiver/my-export/some.task/%s]WARN  task failed (%s): some error (1) [%s] outputs: {"key":"value"}
+[node1][task][123/my-receiver/my-export/some.task/%s]WARN  task failed (%s): some error (1) - expected %A outputs: {"key":"value"}
 [node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
 [node2][task][123/my-receiver/my-export/some.task/%s]INFO  started task
 [node2][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
 [node2][task][123/my-receiver/my-export/some.task/%s]INFO  some message from the task (2)
-[node2][task][123/my-receiver/my-export/some.task/%s]WARN  task failed (%s): some error (2) [%s]
+[node2][task][123/my-receiver/my-export/some.task/%s]WARN  task failed (%s): some error (2) - unexpected [%s]
 [node2][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
 `, logs.String())
 
@@ -491,7 +494,7 @@ task/123/my-receiver/my-export/some.task/%s
 					SpanID:     tel.SpanID(1),
 					TraceFlags: trace.FlagsSampled,
 				}),
-				Status: tracesdk.Status{Code: codes.Error, Description: "some error (1)"},
+				Status: tracesdk.Status{Code: codes.Error, Description: "some error (1) - expected"},
 				Attributes: []attribute.KeyValue{
 					attribute.String("project_id", "123"),
 					attribute.String("task_id", "<dynamic>"),
@@ -502,7 +505,8 @@ task/123/my-receiver/my-export/some.task/%s
 					attribute.String("duration_sec", "<dynamic>"),
 					attribute.String("finished_at", "<dynamic>"),
 					attribute.Bool("is_success", false),
-					attribute.String("error", "some error (1)"),
+					attribute.Bool("is_unexpected_error", false),
+					attribute.String("error", "some error (1) - expected"),
 					attribute.String("error_type", "other"),
 					attribute.String("result_outputs.key", "value"),
 				},
@@ -510,8 +514,8 @@ task/123/my-receiver/my-export/some.task/%s
 					{
 						Name: "exception",
 						Attributes: []attribute.KeyValue{
-							attribute.String("exception.type", "*errors.withStack"),
-							attribute.String("exception.message", "some error (1)"),
+							attribute.String("exception.type", "*task.ExpectedError"),
+							attribute.String("exception.message", "some error (1) - expected"),
 						},
 					},
 				},
@@ -524,7 +528,7 @@ task/123/my-receiver/my-export/some.task/%s
 					SpanID:     tel.SpanID(2),
 					TraceFlags: trace.FlagsSampled,
 				}),
-				Status: tracesdk.Status{Code: codes.Error, Description: "some error (2)"},
+				Status: tracesdk.Status{Code: codes.Error, Description: "some error (2) - unexpected"},
 				Attributes: []attribute.KeyValue{
 					attribute.String("project_id", "123"),
 					attribute.String("task_id", "<dynamic>"),
@@ -535,7 +539,8 @@ task/123/my-receiver/my-export/some.task/%s
 					attribute.String("duration_sec", "<dynamic>"),
 					attribute.String("finished_at", "<dynamic>"),
 					attribute.Bool("is_success", false),
-					attribute.String("error", "some error (2)"),
+					attribute.Bool("is_unexpected_error", true),
+					attribute.String("error", "some error (2) - unexpected"),
 					attribute.String("error_type", "other"),
 				},
 				Events: []tracesdk.Event{
@@ -543,7 +548,7 @@ task/123/my-receiver/my-export/some.task/%s
 						Name: "exception",
 						Attributes: []attribute.KeyValue{
 							attribute.String("exception.type", "*errors.withStack"),
-							attribute.String("exception.message", "some error (2)"),
+							attribute.String("exception.message", "some error (2) - unexpected"),
 						},
 					},
 				},
@@ -584,12 +589,25 @@ task/123/my-receiver/my-export/some.task/%s
 				Data: metricdata.Histogram[float64]{
 					Temporality: 1,
 					DataPoints: []metricdata.HistogramDataPoint[float64]{
+						// Expected error, so it will not be taken as an error in the metrics.
 						{
-							Count:  2,
+							Count:  1,
 							Bounds: histBounds,
 							Attributes: attribute.NewSet(
 								attribute.String("task_type", "some.task"),
 								attribute.Bool("is_success", false),
+								attribute.Bool("is_unexpected_error", false),
+								attribute.String("error_type", "other"),
+							),
+						},
+						// Unexpected error
+						{
+							Count:  1,
+							Bounds: histBounds,
+							Attributes: attribute.NewSet(
+								attribute.String("task_type", "some.task"),
+								attribute.Bool("is_success", false),
+								attribute.Bool("is_unexpected_error", true),
 								attribute.String("error_type", "other"),
 							),
 						},
@@ -597,6 +615,12 @@ task/123/my-receiver/my-export/some.task/%s
 				},
 			},
 		},
+		telemetry.WithDataPointSortKey(func(attrs attribute.Set) string {
+			if v, _ := attrs.Value("is_unexpected_error"); v.AsBool() {
+				return "1"
+			}
+			return "0"
+		}),
 	)
 }
 
