@@ -28,11 +28,12 @@ func meterStartAttrs(task *Task) []attribute.KeyValue {
 	}
 }
 
-func meterEndAttrs(task *Task, errType string) []attribute.KeyValue {
+func meterEndAttrs(task *Task, r Result) []attribute.KeyValue {
 	return []attribute.KeyValue{
 		attribute.String("task_type", task.Type),
 		attribute.Bool("is_success", task.IsSuccessful()),
-		attribute.String("error_type", errType),
+		attribute.Bool("is_unexpected_error", r.IsUnexpectedError()),
+		attribute.String("error_type", r.ErrorType()),
 	}
 }
 
@@ -47,7 +48,7 @@ func spanStartAttrs(task *Task) []attribute.KeyValue {
 	}
 }
 
-func spanEndAttrs(task *Task, errType string) []attribute.KeyValue {
+func spanEndAttrs(task *Task, r Result) []attribute.KeyValue {
 	out := []attribute.KeyValue{
 		attribute.Float64("duration_sec", task.Duration.Seconds()),
 		attribute.String("finished_at", task.FinishedAt.String()),
@@ -60,8 +61,9 @@ func spanEndAttrs(task *Task, errType string) []attribute.KeyValue {
 	} else {
 		out = append(
 			out,
+			attribute.Bool("is_unexpected_error", r.IsUnexpectedError()),
 			attribute.String("error", task.Error),
-			attribute.String("error_type", errType),
+			attribute.String("error_type", r.ErrorType()),
 		)
 	}
 
