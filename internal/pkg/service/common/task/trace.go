@@ -17,7 +17,7 @@ type meters struct {
 
 func newMeters(meter telemetry.Meter) *meters {
 	return &meters{
-		running:  meter.UpDownCounter("keboola.go.task.running", "Running tasks count.", ""),
+		running:  meter.UpDownCounter("keboola.go.task.running", "Background running tasks count.", ""),
 		duration: meter.Histogram("keboola.go.task.duration", "Background task duration.", "ms"),
 	}
 }

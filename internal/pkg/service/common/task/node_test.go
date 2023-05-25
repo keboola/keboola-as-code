@@ -268,7 +268,7 @@ task/123/my-receiver/my-export/some.task/%s
 	tel.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "keboola.go.task.running",
-			Description: "Running tasks count.",
+			Description: "Background running tasks count.",
 			Data: metricdata.Sum[int64]{
 				Temporality: 1,
 				DataPoints: []metricdata.DataPoint[int64]{
@@ -564,7 +564,7 @@ task/123/my-receiver/my-export/some.task/%s
 		[]metricdata.Metrics{
 			{
 				Name:        "keboola.go.task.running",
-				Description: "Running tasks count.",
+				Description: "Background running tasks count.",
 				Data: metricdata.Sum[int64]{
 					Temporality: 1,
 					DataPoints: []metricdata.DataPoint[int64]{
