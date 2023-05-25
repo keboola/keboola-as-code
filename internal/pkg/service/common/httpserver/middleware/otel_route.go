@@ -31,6 +31,7 @@ func OpenTelemetryExtractRoute() Middleware {
 				// Set metrics attributes
 				labeler, _ := otelhttp.LabelerFromContext(ctx)
 				labeler.Add(semconv.HTTPRoute(route))
+				labeler.Add(attribute.String("endpoint.name", route)) // fallback endpoint name to the route
 
 				// Set span attributes
 				if span, found := RequestSpan(ctx); found {
