@@ -199,7 +199,7 @@ func expectedMetrics() []metricdata.Metrics {
 		attribute.String("net.host.name", "example.com"),
 		attribute.String("http.route", "/api/item/:id/:secret1"),
 		attribute.Int("http.status_code", http.StatusInternalServerError),
-		attribute.String("endpoint.name", "MyEndpoint"),
+		attribute.String("endpoint.name", "my-endpoint"),
 	)
 	return []metricdata.Metrics{
 		{
