@@ -255,10 +255,9 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 	}
 
 	// Update telemetry
-	errType := telemetry.ErrorType(result.Err())
-	span.SetAttributes(spanEndAttrs(&task, errType)...)
+	span.SetAttributes(spanEndAttrs(&task, result)...)
 	n.meters.running.Add(ctx, -1, metric.WithAttributes(meterStartAttrs(&task)...))
-	n.meters.duration.Record(ctx, durationMs, metric.WithAttributes(meterEndAttrs(&task, errType)...))
+	n.meters.duration.Record(ctx, durationMs, metric.WithAttributes(meterEndAttrs(&task, result)...))
 
 	// If release of the lock takes longer than the ttl, lease is expired anyway
 	opCtx, opCancel := context.WithTimeout(context.Background(), time.Duration(n.config.ttlSeconds)*time.Second)
