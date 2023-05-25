@@ -254,7 +254,7 @@ task/123/my-receiver/my-export/some.task/%s
 				},
 			},
 		},
-		telemetry.WithAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
+		telemetry.WithSpanAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
 			switch attr.Key {
 			case "task_id", "lock", "created_at", "duration_sec", "finished_at":
 				return attribute.String(string(attr.Key), "<dynamic>")
@@ -534,7 +534,7 @@ task/123/my-receiver/my-export/some.task/%s
 				},
 			},
 		},
-		telemetry.WithAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
+		telemetry.WithSpanAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
 			switch attr.Key {
 			case "task_id", "lock", "created_at", "duration_sec", "finished_at":
 				return attribute.String(string(attr.Key), "<dynamic>")

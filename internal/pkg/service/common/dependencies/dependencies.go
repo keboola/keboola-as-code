@@ -112,6 +112,7 @@ type Mocked interface {
 	Project
 
 	DebugLogger() log.DebugLogger
+	TestTelemetry() telemetry.ForTest
 	EnvsMutable() *env.Map
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde

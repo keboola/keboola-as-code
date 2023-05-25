@@ -1,6 +1,8 @@
 package middleware_test
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +17,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	otelTrace "go.opentelemetry.io/otel/trace"
+	goa "goa.design/goa/v3/pkg"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -33,6 +36,7 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 	// Create muxer
 	mux := httptreemux.NewContextMux()
 	mux.UseHandler(middleware.OpenTelemetryExtractRoute())
+	mux.UseHandler(middleware.OpenTelemetryExtractEndpoint())
 	handler := middleware.Wrap(
 		mux,
 		middleware.RequestInfo(),
@@ -60,12 +64,18 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 		_, _ = w.Write([]byte(responseContent))
 	})
 
-	// Send request
+	// Create request
 	rec := httptest.NewRecorder()
 	body := io.NopCloser(strings.NewReader("some body"))
 	req := httptest.NewRequest("POST", "/api/item/123/my-secret-1?foo=bar&secret2=my-secret-2", body)
 	req.Header.Set("User-Agent", "my-user-agent")
 	req.Header.Set("X-StorageAPI-Token", "my-token")
+
+	// Add Goa metadata
+	req = req.WithContext(context.WithValue(req.Context(), goa.ServiceKey, "MyService"))
+	req = req.WithContext(context.WithValue(req.Context(), goa.MethodKey, "MyEndpoint"))
+
+	// Send request
 	handler.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 	assert.Equal(t, "some error", rec.Body.String())
@@ -77,7 +87,7 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 	assert.Equal(t, "OK", rec.Body.String())
 
 	// Assert
-	tel.AssertSpans(t, expectedSpans(tel), telemetry.WithAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
+	tel.AssertSpans(t, expectedSpans(tel), telemetry.WithSpanAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
 		if attr.Key == "http.request_id" && len(attr.Value.AsString()) > 0 {
 			return attribute.String(string(attr.Key), "<dynamic>")
 		}
@@ -86,7 +96,11 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 		}
 		return attr
 	}))
-	tel.AssertMetrics(t, expectedMetrics())
+	tel.AssertMetrics(t, expectedMetrics(), telemetry.WithDataPointSortKey(func(attrs attribute.Set) string {
+		status, _ := attrs.Value("http.status_code")
+		url, _ := attrs.Value("http.url")
+		return fmt.Sprintf("%d:%s", status.AsInt64(), url.AsString())
+	}))
 }
 
 func expectedSpans(tel telemetry.ForTest) tracetest.SpanStubs {
@@ -123,10 +137,13 @@ func expectedSpans(tel telemetry.ForTest) tracetest.SpanStubs {
 				attribute.String("http.query.foo", "bar"),
 				attribute.String("http.query.secret2", "****"),
 				attribute.String("http.header.x-storageapi-token", "****"),
-				attribute.String("resource.name", "/api/item/:id/:secret1"),
+				attribute.String("resource.name", "/api/item/:id/:secret1 MyEndpoint"),
 				attribute.String("http.route", "/api/item/:id/:secret1"),
 				attribute.String("http.route_param.id", "123"),
 				attribute.String("http.route_param.secret1", "****"),
+				attribute.String("endpoint.service", "MyService"),
+				attribute.String("endpoint.name", "MyEndpoint"),
+				attribute.String("endpoint.name_full", "MyService.MyEndpoint"),
 				attribute.String("http.response.header.x-request-id", "<dynamic>"),
 				attribute.Int("http.wrote_bytes", 10),
 				attribute.Int("http.status_code", http.StatusInternalServerError),
@@ -163,6 +180,7 @@ func expectedMetrics() []metricdata.Metrics {
 		attribute.String("net.host.name", "example.com"),
 		attribute.String("http.route", "/api/item/:id/:secret1"),
 		attribute.Int("http.status_code", http.StatusInternalServerError),
+		attribute.String("endpoint.name", "MyEndpoint"),
 	)
 	return []metricdata.Metrics{
 		{

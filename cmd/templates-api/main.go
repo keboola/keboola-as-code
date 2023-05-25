@@ -148,7 +148,7 @@ func run() error {
 			server := templatesGenSvr.New(endpoints, c.Muxer, c.Decoder, c.Encoder, c.ErrorHandler, c.ErrorFormatter, docsFs, docsFs, docsFs, docsFs, swaggerUiFs)
 
 			// Mount endpoints
-			server.Use(middleware.TraceEndpoints())
+			server.Use(middleware.OpenTelemetryExtractEndpoint())
 			server.Mount(c.Muxer)
 			for _, m := range server.Mounts {
 				logger.Infof("HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)

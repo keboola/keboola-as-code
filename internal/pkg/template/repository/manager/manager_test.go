@@ -2,18 +2,26 @@
 package manager_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
 )
@@ -82,6 +90,90 @@ func TestRepository(t *testing.T) {
 	defer unlockFn2()
 }
 
+func TestRepositoryUpdate(t *testing.T) {
+	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("unstable on windows - random timeouts")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Copy the git repository to temp
+	tmpDir := t.TempDir()
+	assert.NoError(t, aferofs.CopyFs2Fs(nil, filepath.Join("test", "repository"), nil, tmpDir))
+	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git")))
+	repo := model.TemplateRepository{
+		Type: model.RepositoryTypeGit,
+		Name: repository.DefaultTemplateRepositoryName,
+		URL:  fmt.Sprintf("file://%s", tmpDir),
+		Ref:  "main",
+	}
+
+	// Create manager
+	d := dependencies.NewMockedDeps(t)
+	m, err := manager.New(ctx, d, []model.TemplateRepository{repo})
+	assert.NoError(t, err)
+
+	// 1. update - no change
+	assert.NoError(t, <-m.Update(ctx))
+
+	// Modify git repository
+	runGitCommand(t, tmpDir, "reset", "--hard", "HEAD~1")
+
+	// 2. update - change
+	assert.NoError(t, <-m.Update(ctx))
+
+	// Check metrics
+	histBounds := []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000} // ms
+	d.TestTelemetry().AssertMetrics(t,
+		[]metricdata.Metrics{
+			{
+				Name:        "keboola.go.templates.repository.update.duration",
+				Description: "Templates repository update duration.",
+				Unit:        "ms",
+				Data: metricdata.Histogram[float64]{
+					Temporality: 1,
+					DataPoints: []metricdata.HistogramDataPoint[float64]{
+						{
+							Count:  1,
+							Bounds: histBounds,
+							Attributes: attribute.NewSet(
+								attribute.String("repo.name", "keboola"),
+								attribute.String("repo.url", "file://<tmp_dir>"),
+								attribute.String("repo.ref", "main"),
+								attribute.Bool("is_success", true),
+								attribute.Bool("is_changed", false),
+							),
+						},
+						{
+							Count:  1,
+							Bounds: histBounds,
+							Attributes: attribute.NewSet(
+								attribute.String("repo.name", "keboola"),
+								attribute.String("repo.url", "file://<tmp_dir>"),
+								attribute.String("repo.ref", "main"),
+								attribute.Bool("is_success", true),
+								attribute.Bool("is_changed", true),
+							),
+						},
+					},
+				},
+			},
+		},
+		telemetry.WithMeterAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
+			if attr.Key == "repo.url" && strings.HasPrefix(attr.Value.AsString(), "file://") {
+				return attribute.String(string(attr.Key), "file://<tmp_dir>")
+			}
+			return attr
+		}),
+		telemetry.WithDataPointSortKey(func(attrs attribute.Set) string {
+			v, _ := attrs.Value("is_changed")
+			return cast.ToString(v.AsBool())
+		}),
+	)
+}
+
 func TestDefaultRepositories(t *testing.T) {
 	t.Parallel()
 	if runtime.GOOS == "windows" {
@@ -122,4 +214,14 @@ func TestDefaultRepositories(t *testing.T) {
 		fmt.Sprintf("dir:%s", tmpDir),
 		fmt.Sprintf("%s:main:%s", gitURL, commitHash),
 	}, m.ManagedRepositories())
+}
+
+func runGitCommand(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	assert.NoError(t, cmd.Run(), "STDOUT:\n"+stdout.String()+"\n\nSTDERR:\n"+stderr.String())
 }
