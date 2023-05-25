@@ -156,9 +156,9 @@ func (m *Manager) Update(ctx context.Context) <-chan error {
 
 			// Metric
 			m.updateMeter.Record(ctx, elapsedTime, metric.WithAttributes(
-				attribute.String("repo_name", repoDef.Name),
-				attribute.String("repo_url", repoDef.URL),
-				attribute.String("repo_ref", repoDef.Ref),
+				attribute.String("repo.name", repoDef.Name),
+				attribute.String("repo.url", repoDef.URL),
+				attribute.String("repo.ref", repoDef.Ref),
 				attribute.Bool("is_success", err == nil),
 				attribute.Bool("is_changed", changed),
 			))
