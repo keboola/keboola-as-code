@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 
 	"github.com/dimfeld/httptreemux/v5"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -24,7 +25,7 @@ func OpenTelemetryExtractEndpoint() GoaMiddleware {
 			if endpointName != "" {
 				// Set metrics attributes
 				labeler, _ := otelhttp.LabelerFromContext(ctx)
-				labeler.Add(attribute.String("endpoint.name", endpointName))
+				labeler.Add(attribute.String("endpoint.name", strhelper.NormalizeName(endpointName))) // normalize name: prometheus converts string to lower
 
 				// Set span attributes
 				if span, found := RequestSpan(ctx); found {
