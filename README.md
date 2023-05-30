@@ -31,9 +31,9 @@
 - You can also send PR directly, but we do not guarantee that it will be accepted.
 
 ## Other Links 
-- [Developers' guide](./docs/DEVELOPMENT.md)
-- [Release process](./docs/RELEASE.md)
-- [E2E tests](./docs/E2E_TESTS.md)
+- [Developers' guide](./docs/development.md)
+- [Release process](./docs/release.md)
+- [E2E tests](./docs/e2e_tests.md)
 
 ## License
 

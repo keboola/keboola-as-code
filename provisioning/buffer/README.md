@@ -33,7 +33,7 @@ make run-buffer-api
 make run-buffer-worker
 ```
 
-Read more in [`docs/DEVELOPMENT.md`](../../docs/DEVELOPMENT.md).
+Read more in [`docs/DEVELOPMENT.md`](../../docs/development.md).
 
 ### MiniKube
 
