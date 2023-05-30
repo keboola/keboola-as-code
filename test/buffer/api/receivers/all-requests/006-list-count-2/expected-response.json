@@ -4,12 +4,14 @@
       "id": "receiver-a",
       "url": "https://buffer.keboola.local/v1/import/%%TEST_KBC_PROJECT_ID%%/receiver-a/%s",
       "name": "Receiver A",
+      "description": "",
       "exports": []
     },
     {
       "id": "receiver-b",
       "url": "https://buffer.keboola.local/v1/import/%%TEST_KBC_PROJECT_ID%%/receiver-b/%s",
       "name": "Receiver B",
+      "description": "",
       "exports": [
         {
           "id": "export-1",
