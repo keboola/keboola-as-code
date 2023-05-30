@@ -1,36 +1,6 @@
 # Keboola as Code - Release Process
 
-The release process is handled by [GitHub Actions workflow](https://github.com/keboola/keboola-as-code/actions) defined
-in [.github/workflows/release-cli.yml](../.github/workflows/release-cli.yml) on GitHub release (i.e. on creating a semantic tag 
-in the repository).
-
-![GitHub Push workflow](./release.png)
-
-## Workflow Steps
-
-1. `cross-compile` cross-compiles the binaries
-2. `release`
-   1. prepares keys for signing linux and macos packages
-   2. runs [GoReleaser automation](#goreleaser-automation) which signs the binaries and uploads them to the [distribution S3](#s3-distribution)
-   3. uploads compiled (and signed) binaries to the GitHub release files
-   4. creates [Homebrew formula](#homebrew)
-3. `release-msi-windows`
-   1. downloads zipped `amd64` binary from GitHub release
-   2. creates [MSI installer](#msi-installer)
-   3. uploads the msi file to the [distribution S3](#s3-distribution)
-   4. pushes [WinGet manifest](#winget) to its repository index
-4. `update-repositories`
-   1. pushes [Homebrew formula](#homebrew) to its repository index
-   2. pushes [Scoop manifest](#scoop) to its repository index
-   3. updates [linux repositories](#linux-repositories)
-5. `update-repositories-windows`
-   1. pushes [Chocolatey manifest](#chocolatey) to its repository index
-   2. pushes [WinGet manifest](#winget) to its repository index
-6. `build-and-push-templates-api` (triggered on a tag with `templates-api-v` prefix)
-   1. builds the image [Dockerfile-api](../Dockerfile-api)
-   2. pushes the image to Amazon ECR repository `keboola/templates-api` under the `ECR Distribution` account
-   3. pushes the image to Azure ACR `keboola.azurecr.io/templates-api`
-   4. push to the Azure ACR triggers a [release pipeline](#api-release)
+The release process is handled by [.github/workflows](../.github/workflows).
 
 ## GoReleaser Automation
 
