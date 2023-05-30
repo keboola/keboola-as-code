@@ -48,6 +48,7 @@ require (
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.3
 	github.com/umisama/go-regexpcache v0.0.0-20150417035358-2444a542492f
+	github.com/urfave/negroni v1.0.0
 	github.com/writeas/go-strip-markdown v2.0.1+incompatible
 	go.etcd.io/etcd/api/v3 v3.5.9
 	go.etcd.io/etcd/client/v3 v3.5.9
