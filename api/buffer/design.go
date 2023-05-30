@@ -369,7 +369,7 @@ var Receiver = Type("Receiver", func() {
 		Description("List of exports, max 20 exports per a receiver.")
 		Example([]any{ExampleExport()})
 	})
-	Required("id", "url", "name", "exports")
+	Required("id", "url", "name", "description", "exports")
 	Example(ExampleReceiver())
 })
 
@@ -407,6 +407,11 @@ var receiverFields = func() {
 		MinLength(1)
 		MaxLength(40)
 		Example("Github Webhook Receiver")
+	})
+	Attribute("description", String, func() {
+		Description("Description of the receiver.")
+		MaxLength(4096)
+		Example("This receiver receives events from Github.")
 	})
 }
 
