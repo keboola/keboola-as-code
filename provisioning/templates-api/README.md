@@ -35,7 +35,7 @@ docker-compose run --rm -u "$UID:$GID" --service-ports dev base
 make run-templates-api
 ```
 
-Read more in [`docs/DEVELOPMENT.md`](../../docs/DEVELOPMENT.md).
+Read more in [`docs/DEVELOPMENT.md`](../../docs/development.md).
 
 ### MiniKube
 
