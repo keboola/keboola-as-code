@@ -209,6 +209,7 @@ paths:
                         schema:
                             $ref: '#/components/schemas/CreateReceiverRequestBody'
                         example:
+                            description: This receiver receives events from Github.
                             exports:
                                 - conditions:
                                     count: 100
@@ -438,6 +439,7 @@ paths:
                         schema:
                             $ref: '#/components/schemas/UpdateReceiverRequestBody'
                         example:
+                            description: This receiver receives events from Github.
                             name: Github Webhook Receiver
             responses:
                 "200":
@@ -1107,6 +1109,11 @@ components:
         CreateReceiverRequestBody:
             type: object
             properties:
+                description:
+                    type: string
+                    description: Description of teh receiver.
+                    example: This receiver receives events from Github.
+                    maxLength: 4096
                 exports:
                     type: array
                     items:
@@ -1231,6 +1238,7 @@ components:
                     minLength: 1
                     maxLength: 40
             example:
+                description: This receiver receives events from Github.
                 exports:
                     - conditions:
                         count: 100
@@ -1542,6 +1550,11 @@ components:
         Receiver:
             type: object
             properties:
+                description:
+                    type: string
+                    description: Description of teh receiver.
+                    example: This receiver receives events from Github.
+                    maxLength: 4096
                 exports:
                     type: array
                     items:
@@ -1644,6 +1657,7 @@ components:
                 - id
                 - url
                 - name
+                - description
                 - exports
         ReceiversList:
             type: object
@@ -1907,6 +1921,11 @@ components:
         UpdateReceiverRequestBody:
             type: object
             properties:
+                description:
+                    type: string
+                    description: Description of teh receiver.
+                    example: This receiver receives events from Github.
+                    maxLength: 4096
                 name:
                     type: string
                     description: Human readable name of the receiver.
@@ -1914,6 +1933,7 @@ components:
                     minLength: 1
                     maxLength: 40
             example:
+                description: This receiver receives events from Github.
                 name: Github Webhook Receiver
     securitySchemes:
         storage-api-token:
