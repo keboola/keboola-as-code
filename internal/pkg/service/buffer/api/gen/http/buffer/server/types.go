@@ -26,6 +26,8 @@ type CreateReceiverRequestBody struct {
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// Human readable name of the receiver.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// Description of teh receiver.
+	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
 	// List of exports, max 20 exports per a receiver.
 	Exports []*CreateExportDataRequestBody `form:"exports,omitempty" json:"exports,omitempty" xml:"exports,omitempty"`
 }
@@ -35,6 +37,8 @@ type CreateReceiverRequestBody struct {
 type UpdateReceiverRequestBody struct {
 	// Human readable name of the receiver.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// Description of teh receiver.
+	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
 }
 
 // CreateExportRequestBody is the type of the "buffer" service "CreateExport"
@@ -102,6 +106,8 @@ type UpdateReceiverResponseBody struct {
 	URL string `form:"url" json:"url" xml:"url"`
 	// Human readable name of the receiver.
 	Name string `form:"name" json:"name" xml:"name"`
+	// Description of teh receiver.
+	Description string `form:"description" json:"description" xml:"description"`
 	// List of exports, max 20 exports per a receiver.
 	Exports []*ExportResponseBody `form:"exports" json:"exports" xml:"exports"`
 }
@@ -120,6 +126,8 @@ type GetReceiverResponseBody struct {
 	URL string `form:"url" json:"url" xml:"url"`
 	// Human readable name of the receiver.
 	Name string `form:"name" json:"name" xml:"name"`
+	// Description of teh receiver.
+	Description string `form:"description" json:"description" xml:"description"`
 	// List of exports, max 20 exports per a receiver.
 	Exports []*ExportResponseBody `form:"exports" json:"exports" xml:"exports"`
 }
@@ -132,6 +140,8 @@ type RefreshReceiverTokensResponseBody struct {
 	URL string `form:"url" json:"url" xml:"url"`
 	// Human readable name of the receiver.
 	Name string `form:"name" json:"name" xml:"name"`
+	// Description of teh receiver.
+	Description string `form:"description" json:"description" xml:"description"`
 	// List of exports, max 20 exports per a receiver.
 	Exports []*ExportResponseBody `form:"exports" json:"exports" xml:"exports"`
 }
@@ -515,6 +525,8 @@ type ReceiverResponseBody struct {
 	URL string `form:"url" json:"url" xml:"url"`
 	// Human readable name of the receiver.
 	Name string `form:"name" json:"name" xml:"name"`
+	// Description of teh receiver.
+	Description string `form:"description" json:"description" xml:"description"`
 	// List of exports, max 20 exports per a receiver.
 	Exports []*ExportResponseBody `form:"exports" json:"exports" xml:"exports"`
 }
@@ -606,9 +618,10 @@ func NewCreateReceiverResponseBody(res *buffer.Task) *CreateReceiverResponseBody
 // of the "UpdateReceiver" endpoint of the "buffer" service.
 func NewUpdateReceiverResponseBody(res *buffer.Receiver) *UpdateReceiverResponseBody {
 	body := &UpdateReceiverResponseBody{
-		ID:   string(res.ID),
-		URL:  res.URL,
-		Name: res.Name,
+		ID:          string(res.ID),
+		URL:         res.URL,
+		Name:        res.Name,
+		Description: res.Description,
 	}
 	if res.Exports != nil {
 		body.Exports = make([]*ExportResponseBody, len(res.Exports))
@@ -636,9 +649,10 @@ func NewListReceiversResponseBody(res *buffer.ReceiversList) *ListReceiversRespo
 // the "GetReceiver" endpoint of the "buffer" service.
 func NewGetReceiverResponseBody(res *buffer.Receiver) *GetReceiverResponseBody {
 	body := &GetReceiverResponseBody{
-		ID:   string(res.ID),
-		URL:  res.URL,
-		Name: res.Name,
+		ID:          string(res.ID),
+		URL:         res.URL,
+		Name:        res.Name,
+		Description: res.Description,
 	}
 	if res.Exports != nil {
 		body.Exports = make([]*ExportResponseBody, len(res.Exports))
@@ -653,9 +667,10 @@ func NewGetReceiverResponseBody(res *buffer.Receiver) *GetReceiverResponseBody {
 // result of the "RefreshReceiverTokens" endpoint of the "buffer" service.
 func NewRefreshReceiverTokensResponseBody(res *buffer.Receiver) *RefreshReceiverTokensResponseBody {
 	body := &RefreshReceiverTokensResponseBody{
-		ID:   string(res.ID),
-		URL:  res.URL,
-		Name: res.Name,
+		ID:          string(res.ID),
+		URL:         res.URL,
+		Name:        res.Name,
+		Description: res.Description,
 	}
 	if res.Exports != nil {
 		body.Exports = make([]*ExportResponseBody, len(res.Exports))
@@ -979,7 +994,8 @@ func NewGetTaskBufferTaskNotFoundResponseBody(res *buffer.GenericError) *GetTask
 // payload.
 func NewCreateReceiverPayload(body *CreateReceiverRequestBody, storageAPIToken string) *buffer.CreateReceiverPayload {
 	v := &buffer.CreateReceiverPayload{
-		Name: *body.Name,
+		Name:        *body.Name,
+		Description: body.Description,
 	}
 	if body.ID != nil {
 		id := buffer.ReceiverID(*body.ID)
@@ -1000,7 +1016,8 @@ func NewCreateReceiverPayload(body *CreateReceiverRequestBody, storageAPIToken s
 // payload.
 func NewUpdateReceiverPayload(body *UpdateReceiverRequestBody, receiverID string, storageAPIToken string) *buffer.UpdateReceiverPayload {
 	v := &buffer.UpdateReceiverPayload{
-		Name: body.Name,
+		Name:        body.Name,
+		Description: body.Description,
 	}
 	v.ReceiverID = buffer.ReceiverID(receiverID)
 	v.StorageAPIToken = storageAPIToken
@@ -1158,6 +1175,11 @@ func ValidateCreateReceiverRequestBody(body *CreateReceiverRequestBody, errConte
 			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "name"), "."), *body.Name, utf8.RuneCountInString(*body.Name), 40, false))
 		}
 	}
+	if body.Description != nil {
+		if utf8.RuneCountInString(*body.Description) > 4096 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "description"), "."), *body.Description, utf8.RuneCountInString(*body.Description), 4096, false))
+		}
+	}
 	for i, e := range body.Exports {
 		errContext := append(errContext, fmt.Sprintf(`exports[%d]`, i))
 		if e != nil {
@@ -1180,6 +1202,11 @@ func ValidateUpdateReceiverRequestBody(body *UpdateReceiverRequestBody, errConte
 	if body.Name != nil {
 		if utf8.RuneCountInString(*body.Name) > 40 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "name"), "."), *body.Name, utf8.RuneCountInString(*body.Name), 40, false))
+		}
+	}
+	if body.Description != nil {
+		if utf8.RuneCountInString(*body.Description) > 4096 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "description"), "."), *body.Description, utf8.RuneCountInString(*body.Description), 4096, false))
 		}
 	}
 	return
