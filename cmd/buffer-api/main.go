@@ -147,10 +147,10 @@ func run() error {
 			docsFs := http.FS(openapi.Fs)
 			swaggerUiFs := http.FS(swaggerui.SwaggerFS)
 			endpoints := bufferGen.NewEndpoints(svc)
+			endpoints.Use(middleware.OpenTelemetryExtractEndpoint())
 			server := bufferGenSvr.New(endpoints, c.Muxer, c.Decoder, c.Encoder, c.ErrorHandler, c.ErrorFormatter, docsFs, docsFs, docsFs, docsFs, swaggerUiFs)
 
 			// Mount endpoints
-			server.Use(middleware.OpenTelemetryExtractEndpoint())
 			server.Mount(c.Muxer)
 			for _, m := range server.Mounts {
 				logger.Infof("HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)

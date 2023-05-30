@@ -206,6 +206,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 
 	// Setup telemetry
 	ctx, span := n.tracer.Start(ctx, n.config.spanNamePrefix+"."+cfg.Type, trace.WithAttributes(spanStartAttrs(&task)...))
+	n.meters.running.Add(ctx, 1, metric.WithAttributes(meterStartAttrs(&task)...))
 
 	// Process results in defer to catch panic
 	var result Result
@@ -254,9 +255,9 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 	}
 
 	// Update telemetry
-	errType := errorType(result.Err())
-	span.SetAttributes(spanEndAttrs(&task, errType)...)
-	n.meters.taskDuration.Record(ctx, durationMs, metric.WithAttributes(meterAttrs(&task, errType)...))
+	span.SetAttributes(spanEndAttrs(&task, result)...)
+	n.meters.running.Add(ctx, -1, metric.WithAttributes(meterStartAttrs(&task)...))
+	n.meters.duration.Record(ctx, durationMs, metric.WithAttributes(meterEndAttrs(&task, result)...))
 
 	// If release of the lock takes longer than the ttl, lease is expired anyway
 	opCtx, opCancel := context.WithTimeout(context.Background(), time.Duration(n.config.ttlSeconds)*time.Second)

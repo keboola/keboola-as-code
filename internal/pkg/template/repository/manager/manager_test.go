@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -129,12 +128,13 @@ func TestRepositoryUpdate(t *testing.T) {
 	d.TestTelemetry().AssertMetrics(t,
 		[]metricdata.Metrics{
 			{
-				Name:        "keboola.go.templates.repository.update.duration",
-				Description: "Templates repository update duration.",
+				Name:        "keboola.go.templates.repo.sync.duration",
+				Description: "Templates repository sync duration.",
 				Unit:        "ms",
 				Data: metricdata.Histogram[float64]{
 					Temporality: 1,
 					DataPoints: []metricdata.HistogramDataPoint[float64]{
+						// Init
 						{
 							Count:  1,
 							Bounds: histBounds,
@@ -142,10 +142,27 @@ func TestRepositoryUpdate(t *testing.T) {
 								attribute.String("repo.name", "keboola"),
 								attribute.String("repo.url", "file://<tmp_dir>"),
 								attribute.String("repo.ref", "main"),
+								attribute.String("error_type", ""),
+								attribute.Bool("is_init", true),
+								attribute.Bool("is_success", true),
+								attribute.Bool("is_changed", true),
+							),
+						},
+						// Update - no change
+						{
+							Count:  1,
+							Bounds: histBounds,
+							Attributes: attribute.NewSet(
+								attribute.String("repo.name", "keboola"),
+								attribute.String("repo.url", "file://<tmp_dir>"),
+								attribute.String("repo.ref", "main"),
+								attribute.String("error_type", ""),
+								attribute.Bool("is_init", false),
 								attribute.Bool("is_success", true),
 								attribute.Bool("is_changed", false),
 							),
 						},
+						// Update - changed
 						{
 							Count:  1,
 							Bounds: histBounds,
@@ -153,6 +170,8 @@ func TestRepositoryUpdate(t *testing.T) {
 								attribute.String("repo.name", "keboola"),
 								attribute.String("repo.url", "file://<tmp_dir>"),
 								attribute.String("repo.ref", "main"),
+								attribute.String("error_type", ""),
+								attribute.Bool("is_init", false),
 								attribute.Bool("is_success", true),
 								attribute.Bool("is_changed", true),
 							),
@@ -168,8 +187,19 @@ func TestRepositoryUpdate(t *testing.T) {
 			return attr
 		}),
 		telemetry.WithDataPointSortKey(func(attrs attribute.Set) string {
-			v, _ := attrs.Value("is_changed")
-			return cast.ToString(v.AsBool())
+			// Priority: 1. init=true; 2. changed=false
+			var out strings.Builder
+			if init, _ := attrs.Value("is_init"); init.AsBool() {
+				out.WriteByte('0')
+			} else {
+				out.WriteByte('1')
+			}
+			if changed, _ := attrs.Value("is_changed"); changed.AsBool() {
+				out.WriteByte('1')
+			} else {
+				out.WriteByte('0')
+			}
+			return out.String()
 		}),
 	)
 }

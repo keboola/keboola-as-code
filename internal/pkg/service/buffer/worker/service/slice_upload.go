@@ -64,12 +64,12 @@ func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d depend
 
 				// Handle error
 				defer func() {
-					if result.IsErr() {
+					if result.IsError() {
 						attempt := slice.RetryAttempt + 1
 						retryAfter := utctime.UTCTime(RetryAt(NewRetryBackoff(), s.clock.Now(), attempt))
 						slice.RetryAttempt = attempt
 						slice.RetryAfter = &retryAfter
-						result = result.WithErr(errors.Errorf(`slice upload failed: %w, upload will be retried after "%s"`, result.Err(), slice.RetryAfter))
+						result = result.WithError(errors.Errorf(`slice upload failed: %w, upload will be retried after "%s"`, result.Error(), slice.RetryAfter))
 						if err := s.store.MarkSliceUploadFailed(ctx, &slice); err != nil {
 							s.logger.Errorf(`cannot mark the slice "%s" as failed: %s`, slice.SliceKey, err)
 						}

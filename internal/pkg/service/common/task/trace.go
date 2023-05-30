@@ -1,32 +1,39 @@
 package task
 
 import (
-	"context"
-	"net"
 	"sort"
 
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 type meters struct {
-	taskDuration metric.Float64Histogram
+	running  metric.Int64UpDownCounter
+	duration metric.Float64Histogram
 }
 
-func newMeters(meter metric.Meter) *meters {
+func newMeters(meter telemetry.Meter) *meters {
 	return &meters{
-		taskDuration: histogram(meter, "keboola.go.task.duration", "Background task duration.", "ms"),
+		running:  meter.UpDownCounter("keboola.go.task.running", "Background running tasks count.", ""),
+		duration: meter.Histogram("keboola.go.task.duration", "Background task duration.", "ms"),
 	}
 }
 
-func meterAttrs(task *Task, errType string) []attribute.KeyValue {
+func meterStartAttrs(task *Task) []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.String("task_type", task.Type),
+	}
+}
+
+func meterEndAttrs(task *Task, r Result) []attribute.KeyValue {
 	return []attribute.KeyValue{
 		attribute.String("task_type", task.Type),
 		attribute.Bool("is_success", task.IsSuccessful()),
-		attribute.String("error_type", errType),
+		attribute.Bool("is_unexpected_error", r.IsUnexpectedError()),
+		attribute.String("error_type", r.ErrorType()),
 	}
 }
 
@@ -41,7 +48,7 @@ func spanStartAttrs(task *Task) []attribute.KeyValue {
 	}
 }
 
-func spanEndAttrs(task *Task, errType string) []attribute.KeyValue {
+func spanEndAttrs(task *Task, r Result) []attribute.KeyValue {
 	out := []attribute.KeyValue{
 		attribute.Float64("duration_sec", task.Duration.Seconds()),
 		attribute.String("finished_at", task.FinishedAt.String()),
@@ -54,8 +61,9 @@ func spanEndAttrs(task *Task, errType string) []attribute.KeyValue {
 	} else {
 		out = append(
 			out,
+			attribute.Bool("is_unexpected_error", r.IsUnexpectedError()),
 			attribute.String("error", task.Error),
-			attribute.String("error_type", errType),
+			attribute.String("error_type", r.ErrorType()),
 		)
 	}
 
@@ -72,34 +80,4 @@ func spanEndAttrs(task *Task, errType string) []attribute.KeyValue {
 	}
 
 	return out
-}
-
-func histogram(meter metric.Meter, name, desc, unit string) metric.Float64Histogram {
-	return mustInstrument(meter.Float64Histogram(name, metric.WithDescription(desc), metric.WithUnit(unit)))
-}
-
-func mustInstrument[T any](instrument T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return instrument
-}
-
-func errorType(err error) string {
-	var netErr net.Error
-	errors.As(err, &netErr)
-	switch {
-	case err == nil:
-		return ""
-	case errors.Is(err, context.Canceled):
-		return "context_canceled"
-	case errors.Is(err, context.DeadlineExceeded):
-		return "deadline_exceeded"
-	case netErr != nil && netErr.Timeout():
-		return "net_timeout"
-	case netErr != nil:
-		return "net"
-	default:
-		return "other"
-	}
 }
