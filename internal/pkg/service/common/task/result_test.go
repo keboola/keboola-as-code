@@ -66,18 +66,18 @@ func TestErrResult(t *testing.T) {
 	t.Parallel()
 	err := errors.New("task failed")
 	result := ErrResult(err)
-	assert.Equal(t, Result{error: err, errorType: "other", unexpectedError: true}, result)
+	assert.Equal(t, Result{error: err, errorType: "other", applicationError: true}, result)
 	assert.True(t, result.IsError())
-	assert.True(t, result.IsUnexpectedError())
+	assert.True(t, result.IsApplicationError())
 	assert.Equal(t, "other", result.ErrorType())
 	assert.Equal(t, err, result.Error())
 
 	// WithError
 	err = errors.New("new error")
 	result = result.WithError(err)
-	assert.Equal(t, Result{error: err, errorType: "other", unexpectedError: true}, result)
+	assert.Equal(t, Result{error: err, errorType: "other", applicationError: true}, result)
 	assert.True(t, result.IsError())
-	assert.True(t, result.IsUnexpectedError())
+	assert.True(t, result.IsApplicationError())
 	assert.Equal(t, "other", result.ErrorType())
 	assert.Equal(t, err, result.Error())
 
@@ -87,22 +87,24 @@ func TestErrResult(t *testing.T) {
 	})
 }
 
-func TestErrResult_ExpectedError(t *testing.T) {
+func TestErrResult_UserError(t *testing.T) {
 	t.Parallel()
-	err := WrapExpectedError(errors.New("task failed"))
+	err := WrapUserError(errors.New("task failed"))
 	result := ErrResult(err)
-	assert.Equal(t, Result{error: err, errorType: "other", unexpectedError: false}, result)
+	assert.Equal(t, Result{error: err, errorType: "other", applicationError: false}, result)
 	assert.True(t, result.IsError())
-	assert.False(t, result.IsUnexpectedError())
+	assert.True(t, result.IsUserError())
+	assert.False(t, result.IsApplicationError())
 	assert.Equal(t, "other", result.ErrorType())
 	assert.Equal(t, err, result.Error())
 
 	// WithError
-	err = WrapExpectedError(errors.New("new error"))
+	err = WrapUserError(errors.New("new error"))
 	result = result.WithError(err)
-	assert.Equal(t, Result{error: err, errorType: "other", unexpectedError: false}, result)
+	assert.Equal(t, Result{error: err, errorType: "other", applicationError: false}, result)
 	assert.True(t, result.IsError())
-	assert.False(t, result.IsUnexpectedError())
+	assert.True(t, result.IsUserError())
+	assert.False(t, result.IsApplicationError())
 	assert.Equal(t, "other", result.ErrorType())
 	assert.Equal(t, err, result.Error())
 
@@ -117,9 +119,9 @@ func TestErrResult_WithOutput(t *testing.T) {
 	err := errors.New("task failed")
 	result := ErrResult(err).WithOutput("key1", 123).WithOutput("key2", "foo")
 	assert.Equal(t, Result{
-		error:           err,
-		errorType:       "other",
-		unexpectedError: true,
+		error:            err,
+		errorType:        "other",
+		applicationError: true,
 		outputs: map[string]any{
 			"key1": 123,
 			"key2": "foo",
@@ -127,15 +129,17 @@ func TestErrResult_WithOutput(t *testing.T) {
 	}, result)
 	assert.Equal(t, "", result.Result())
 	assert.True(t, result.IsError())
+	assert.False(t, result.IsUserError())
+	assert.True(t, result.IsApplicationError())
 	assert.Equal(t, err, result.Error())
 
 	// WithError
 	err = errors.New("new error")
 	result = result.WithError(err)
 	assert.Equal(t, Result{
-		error:           err,
-		errorType:       "other",
-		unexpectedError: true,
+		error:            err,
+		errorType:        "other",
+		applicationError: true,
 		outputs: map[string]any{
 			"key1": 123,
 			"key2": "foo",
@@ -143,7 +147,8 @@ func TestErrResult_WithOutput(t *testing.T) {
 	}, result)
 	assert.Equal(t, "", result.Result())
 	assert.True(t, result.IsError())
-	assert.True(t, result.IsUnexpectedError())
+	assert.False(t, result.IsUserError())
+	assert.True(t, result.IsApplicationError())
 	assert.Equal(t, "other", result.ErrorType())
 	assert.Equal(t, err, result.Error())
 
