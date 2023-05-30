@@ -239,5 +239,56 @@ func expectedMetrics() []metricdata.Metrics {
 				},
 			},
 		},
+		{
+			Name:        "keboola_go_http_server_apdex_t500",
+			Description: "",
+			Data: metricdata.Sum[float64]{
+				Temporality: 1,
+				IsMonotonic: false, // upDownCounter
+				DataPoints: []metricdata.DataPoint[float64]{
+					{
+						Value: 0, // status code = 500, apdex=0
+						Attributes: attribute.NewSet(
+							attribute.String("http.route", "/api/item/:id/:secret1"),
+							attribute.String("endpoint.name", "my-endpoint"),
+						),
+					},
+				},
+			},
+		},
+		{
+			Name:        "keboola_go_http_server_apdex_t1000",
+			Description: "",
+			Data: metricdata.Sum[float64]{
+				Temporality: 1,
+				IsMonotonic: false, // upDownCounter
+				DataPoints: []metricdata.DataPoint[float64]{
+					{
+						Value: 0, // status code = 500, apdex=0
+						Attributes: attribute.NewSet(
+							attribute.String("http.route", "/api/item/:id/:secret1"),
+							attribute.String("endpoint.name", "my-endpoint"),
+						),
+					},
+				},
+			},
+		},
+		{
+			Name:        "keboola_go_http_server_apdex_t2000",
+			Description: "",
+			Data: metricdata.Sum[float64]{
+				Temporality: 1,
+				IsMonotonic: false, // upDownCounter
+				DataPoints: []metricdata.DataPoint[float64]{
+					{
+						Value: 0, // status code = 500, apdex=0
+						Attributes: attribute.NewSet(
+							attribute.String("http.route", "/api/item/:id/:secret1"),
+							attribute.String("endpoint.name", "my-endpoint"),
+						),
+					},
+				},
+			},
+		},
 	}
 }

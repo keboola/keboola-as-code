@@ -271,14 +271,18 @@ func cleanAndSortSpans(spans tracetest.SpanStubs, opts ...TestSpanOption) {
 	}
 }
 
-func getActualMetrics(t *testing.T, ctx context.Context, reader metricsdk.Reader, opts ...TestMeterOption) []metricdata.Metrics {
+func getActualMetrics(t *testing.T, ctx context.Context, reader metricsdk.Reader, opts ...TestMeterOption) (out []metricdata.Metrics) {
 	t.Helper()
 	all := &metricdata.ResourceMetrics{}
 	assert.NoError(t, reader.Collect(ctx, all))
-	assert.Len(t, all.ScopeMetrics, 1)
-	metrics := all.ScopeMetrics[0].Metrics
-	cleanAndSortMetrics(metrics, opts...)
-	return metrics
+	sort.SliceStable(all.ScopeMetrics, func(i, j int) bool {
+		return all.ScopeMetrics[i].Scope.Name < all.ScopeMetrics[j].Scope.Name
+	})
+	for _, item := range all.ScopeMetrics {
+		out = append(out, item.Metrics...)
+	}
+	cleanAndSortMetrics(out, opts...)
+	return out
 }
 
 func cleanAndSortMetrics(metrics []metricdata.Metrics, opts ...TestMeterOption) {
