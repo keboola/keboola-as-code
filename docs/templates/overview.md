@@ -16,7 +16,6 @@ Templates functionality is implemented also in the CLI. See the commands:
 ## API Entrypoint
 
 - Entrypoint: [cmd/templates-api/main.go](../../cmd/templates-api/main.go)
-- Starts HTTP server defined in: [internal/pkg/service/templates/api/http/http.go](../../internal/pkg/service/templates/api/http/http.go)
 - The server utilizes code generated from the API design. 
 
 ## API Design

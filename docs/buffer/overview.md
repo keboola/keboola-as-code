@@ -9,7 +9,6 @@ User documentation can be found at [https://developers.keboola.com/integrate/pus
 ## API Entrypoint
 
 - Entrypoint: [cmd/buffer-api/main.go](../../cmd/buffer-api/main.go)
-- Starts HTTP server defined in: [internal/pkg/service/buffer/api/http/http.go](../../internal/pkg/service/buffer/api/http/http.go)
 - The server utilizes code generated from the API design.
 
 ## API Design

@@ -26,8 +26,7 @@
 ## Development
 
 - This project is primarily developed by [Keboola](https://www.keboola.com/).
-- Suggestions for improvements and new features can be submitted at:  
-  https://www.keboola.com/resources/roadmap.
+- Suggestions for improvements and new features can be submitted at [support@keboola.com](mailto:support@keboola.com).
 - You can also send PR directly, but we do not guarantee that it will be accepted.
 
 ## Other Links 
