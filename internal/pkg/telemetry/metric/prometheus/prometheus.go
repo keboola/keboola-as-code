@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/bridge/opencensus"
 	export "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/resource"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -118,14 +119,24 @@ func View() metric.View {
 			return true
 		}},
 	)
+	// Rename metrics, all should start with "keboola.go" prefix
 	rename := func(inst metric.Instrument) metric.Instrument {
 		if strings.HasPrefix(inst.Name, "http.server") {
 			inst.Name = "keboola.go." + inst.Name
 		}
 		return inst
 	}
+	// Remove histogram boundaries for apdex (0.0-1.0 value)
+	apdex := func(s metric.Stream) metric.Stream {
+		if strings.Contains(s.Name, "_apdex") {
+			s.Aggregation = aggregation.ExplicitBucketHistogram{Boundaries: []float64{0, 1}, NoMinMax: true}
+		}
+		return s
+	}
 	return func(inst metric.Instrument) (metric.Stream, bool) {
 		inst = rename(inst)
-		return ignoreAttrs(inst)
+		stream, match := ignoreAttrs(inst)
+		stream = apdex(stream)
+		return stream, match
 	}
 }
