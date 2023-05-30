@@ -4,6 +4,7 @@
       "id": "my-receiver",
       "url": "https://buffer.keboola.local/v1/import/%%TEST_KBC_PROJECT_ID%%/my-receiver/%s",
       "name": "My Receiver",
+      "description": "",
       "exports": [
         {
           "id": "export-1",
@@ -37,6 +38,7 @@
       "id": "my-receiver-2",
       "url": "https://buffer.keboola.local/v1/import/%%TEST_KBC_PROJECT_ID%%/my-receiver-2/%s",
       "name": "My Receiver 2",
+      "description": "",
       "exports": []
     }
   ]
