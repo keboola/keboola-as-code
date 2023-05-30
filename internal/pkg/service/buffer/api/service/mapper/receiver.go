@@ -19,10 +19,11 @@ func (m Mapper) ReceiversPayload(receivers []model.Receiver) []*buffer.Receiver 
 
 func (m Mapper) ReceiverPayload(model model.Receiver) *buffer.Receiver {
 	return &buffer.Receiver{
-		ID:      model.ReceiverID,
-		URL:     formatReceiverURL(m.bufferAPIHost, model.ReceiverKey, model.Secret),
-		Name:    model.Name,
-		Exports: m.ExportsPayload(model.Exports),
+		ID:          model.ReceiverID,
+		URL:         formatReceiverURL(m.bufferAPIHost, model.ReceiverKey, model.Secret),
+		Name:        model.Name,
+		Description: model.Description,
+		Exports:     m.ExportsPayload(model.Exports),
 	}
 }
 
@@ -59,18 +60,26 @@ func (m Mapper) UpdateReceiverModel(receiver model.ReceiverBase, payload buffer.
 		receiver.Name = *payload.Name
 	}
 
+	if payload.Description != nil {
+		receiver.Description = *payload.Description
+	}
+
 	return receiver, nil
 }
 
 func (m Mapper) createReceiverBaseModel(projectID keboola.ProjectID, secret string, payload buffer.CreateReceiverPayload) model.ReceiverBase {
-	name := payload.Name
-
 	// Generate receiver ID from Name if needed
 	var id key.ReceiverID
 	if payload.ID != nil && len(*payload.ID) != 0 {
 		id = key.ReceiverID(strhelper.NormalizeName(string(*payload.ID)))
 	} else {
-		id = key.ReceiverID(strhelper.NormalizeName(name))
+		id = key.ReceiverID(strhelper.NormalizeName(payload.Name))
+	}
+
+	// Description is optional
+	var description string
+	if payload.Description != nil {
+		description = *payload.Description
 	}
 
 	return model.ReceiverBase{
@@ -78,7 +87,8 @@ func (m Mapper) createReceiverBaseModel(projectID keboola.ProjectID, secret stri
 			ProjectID:  projectID,
 			ReceiverID: id,
 		},
-		Name:   name,
-		Secret: secret,
+		Name:        payload.Name,
+		Description: description,
+		Secret:      secret,
 	}
 }
