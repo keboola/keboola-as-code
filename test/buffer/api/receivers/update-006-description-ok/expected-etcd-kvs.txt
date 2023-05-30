@@ -1,0 +1,11 @@
+<<<<<
+/config/receiver/%%TEST_KBC_PROJECT_ID%%/my-receiver
+-----
+{
+  "projectId": %%TEST_KBC_PROJECT_ID%%,
+  "receiverId": "my-receiver",
+  "name": "My Receiver",
+  "description": "New description",
+  "secret": "%s"
+}
+>>>>>
