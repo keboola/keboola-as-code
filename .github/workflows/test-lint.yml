@@ -14,6 +14,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Check links in Markdown files
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          config-file: 'ci/markdown_lint.json'
+          use-quiet-mode: 'yes'
+          folder-path: 'api, build, cmd, docs, internal, pkg, provisioning, scripts, test, third_party'
+          file-path: './README.md, ./LICENSE'
+
       - name: Install Go
         uses: actions/setup-go@v3
         with:
