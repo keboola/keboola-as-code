@@ -31,7 +31,7 @@
 
 ## Other Links 
 - [Developers' guide](./docs/development.md)
-- [Release process](./docs/release.md)
+- [Release process](./docs/cli-release.md)
 - [E2E tests](./docs/e2e_tests.md)
 
 ## License

@@ -1,4 +1,4 @@
-# Keboola as Code - Release Process
+# CLI Release Process
 
 The release process is handled by [.github/workflows](../.github/workflows).
 
