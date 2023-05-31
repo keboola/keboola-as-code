@@ -1,4 +1,4 @@
-# Keboola as Code - Development
+# Development
 
 ## Quick Start
 
