@@ -49,6 +49,7 @@ type assertSpanConfig struct {
 }
 
 type assertMetricConfig struct {
+	keepHistogramSum bool
 	attributeMapper  TestAttributeMapper
 	dataPointSortKey func(attrs attribute.Set) string
 }
@@ -79,6 +80,12 @@ func WithMeterAttributeMapper(v TestAttributeMapper) TestMeterOption {
 func WithDataPointSortKey(v func(attrs attribute.Set) string) TestMeterOption {
 	return func(cnf *assertMetricConfig) {
 		cnf.dataPointSortKey = v
+	}
+}
+
+func WithKeepHistogramSum(v bool) TestMeterOption {
+	return func(cnf *assertMetricConfig) {
+		cnf.keepHistogramSum = v
 	}
 }
 
@@ -271,34 +278,38 @@ func cleanAndSortSpans(spans tracetest.SpanStubs, opts ...TestSpanOption) {
 	}
 }
 
-func getActualMetrics(t *testing.T, ctx context.Context, reader metricsdk.Reader, opts ...TestMeterOption) []metricdata.Metrics {
+func getActualMetrics(t *testing.T, ctx context.Context, reader metricsdk.Reader, opts ...TestMeterOption) (out []metricdata.Metrics) {
 	t.Helper()
 	all := &metricdata.ResourceMetrics{}
 	assert.NoError(t, reader.Collect(ctx, all))
-	assert.Len(t, all.ScopeMetrics, 1)
-	metrics := all.ScopeMetrics[0].Metrics
-	cleanAndSortMetrics(metrics, opts...)
-	return metrics
+	sort.SliceStable(all.ScopeMetrics, func(i, j int) bool {
+		return all.ScopeMetrics[i].Scope.Name < all.ScopeMetrics[j].Scope.Name
+	})
+	for _, item := range all.ScopeMetrics {
+		out = append(out, item.Metrics...)
+	}
+	cleanAndSortMetrics(out, opts...)
+	return out
 }
 
 func cleanAndSortMetrics(metrics []metricdata.Metrics, opts ...TestMeterOption) {
-	cnf := newAssertMeterConfig(opts)
+	cfg := newAssertMeterConfig(opts)
 
 	// DataPoints have random order, sort them by statusCode and URL.
 	dataPointKey := func(attrs attribute.Set) string {
-		if cnf.dataPointSortKey != nil {
-			return cnf.dataPointSortKey(attrs)
+		if cfg.dataPointSortKey != nil {
+			return cfg.dataPointSortKey(attrs)
 		}
 		return ""
 	}
 
 	mapAttributes := func(set attribute.Set) attribute.Set {
-		if cnf.attributeMapper == nil {
+		if cfg.attributeMapper == nil {
 			return set
 		}
 		var attrs []attribute.KeyValue
 		for _, attr := range set.ToSlice() {
-			attrs = append(attrs, cnf.attributeMapper(attr))
+			attrs = append(attrs, cfg.attributeMapper(attr))
 		}
 		return attribute.NewSet(attrs...)
 	}
@@ -339,7 +350,9 @@ func cleanAndSortMetrics(metrics []metricdata.Metrics, opts ...TestMeterOption) 
 				point.BucketCounts = nil
 				point.Min = metricdata.Extrema[int64]{}
 				point.Max = metricdata.Extrema[int64]{}
-				point.Sum = 0
+				if !cfg.keepHistogramSum {
+					point.Sum = 0
+				}
 				point.Attributes = mapAttributes(point.Attributes)
 			}
 		case metricdata.Histogram[float64]:
@@ -353,7 +366,9 @@ func cleanAndSortMetrics(metrics []metricdata.Metrics, opts ...TestMeterOption) 
 				point.BucketCounts = nil
 				point.Min = metricdata.Extrema[float64]{}
 				point.Max = metricdata.Extrema[float64]{}
-				point.Sum = 0
+				if !cfg.keepHistogramSum {
+					point.Sum = 0
+				}
 				point.Attributes = mapAttributes(point.Attributes)
 			}
 		}
