@@ -36,7 +36,7 @@ type apdexCounterCollection struct {
 func apdexCounters(meter metric.Meter, thresholds []time.Duration) *apdexCounterCollection {
 	out := &apdexCounterCollection{}
 	for _, satisfied := range thresholds {
-		name := fmt.Sprintf("keboola_go_http_server_apdex_t%d", satisfied.Milliseconds())
+		name := fmt.Sprintf("keboola_go_http_server_apdex_%d", satisfied.Milliseconds())
 		histogram, err := meter.Float64Histogram(name)
 		if err != nil {
 			panic(err)
@@ -52,11 +52,11 @@ func apdexCounters(meter metric.Meter, thresholds []time.Duration) *apdexCounter
 
 func (c *apdexCounterCollection) Record(ctx context.Context, durationMs float64, statusCode int, opts ...metric.RecordOption) {
 	for _, c := range c.counters {
-		c.Add(ctx, durationMs, statusCode, opts...)
+		c.Record(ctx, durationMs, statusCode, opts...)
 	}
 }
 
-func (c *apdexCounter) Add(ctx context.Context, durationMs float64, statusCode int, opts ...metric.RecordOption) {
+func (c *apdexCounter) Record(ctx context.Context, durationMs float64, statusCode int, opts ...metric.RecordOption) {
 	var value float64
 	switch {
 	case durationMs <= c.satisfiedMs && statusCode < http.StatusInternalServerError:

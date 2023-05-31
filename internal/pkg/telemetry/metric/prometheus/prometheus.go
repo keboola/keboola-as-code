@@ -129,7 +129,7 @@ func View() metric.View {
 	// Remove histogram boundaries for apdex (0.0-1.0 value)
 	apdex := func(s metric.Stream) metric.Stream {
 		if strings.Contains(s.Name, "_apdex") {
-			s.Aggregation = aggregation.ExplicitBucketHistogram{Boundaries: []float64{0, 1}, NoMinMax: true}
+			s.Aggregation = aggregation.ExplicitBucketHistogram{Boundaries: []float64{0, 0.5, 1}}
 		}
 		return s
 	}
