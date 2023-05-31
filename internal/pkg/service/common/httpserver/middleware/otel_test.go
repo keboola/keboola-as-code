@@ -201,6 +201,10 @@ func expectedMetrics() []metricdata.Metrics {
 		attribute.Int("http.status_code", http.StatusInternalServerError),
 		attribute.String("endpoint.name", "my-endpoint"),
 	)
+	apdexAttrs := attribute.NewSet(
+		attribute.String("http.route", "/api/item/:id/:secret1"),
+		attribute.String("endpoint.name", "my-endpoint"),
+	)
 	return []metricdata.Metrics{
 		{
 			Name:        "keboola.go.http.server.request_content_length",
@@ -236,6 +240,53 @@ func expectedMetrics() []metricdata.Metrics {
 						Bounds:     []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
 						Attributes: attrs,
 					},
+				},
+			},
+		},
+		{
+			Name:        "keboola_go_http_server_apdex_count",
+			Description: "",
+			Data: metricdata.Sum[int64]{
+				Temporality: 1,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{Value: 1, Attributes: apdexAttrs},
+				},
+			},
+		},
+		{
+			Name:        "keboola_go_http_server_apdex_500_sum",
+			Description: "",
+			Data: metricdata.Sum[float64]{
+				Temporality: 1,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[float64]{
+					// status code = 500, apdex=0
+					{Value: 0, Attributes: apdexAttrs},
+				},
+			},
+		},
+		{
+			Name:        "keboola_go_http_server_apdex_1000_sum",
+			Description: "",
+			Data: metricdata.Sum[float64]{
+				Temporality: 1,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[float64]{
+					// status code = 500, apdex=0
+					{Value: 0, Attributes: apdexAttrs},
+				},
+			},
+		},
+		{
+			Name:        "keboola_go_http_server_apdex_2000_sum",
+			Description: "",
+			Data: metricdata.Sum[float64]{
+				Temporality: 1,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[float64]{
+					// status code = 500, apdex=0
+					{Value: 0, Attributes: apdexAttrs},
 				},
 			},
 		},

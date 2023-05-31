@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/urfave/negroni"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -30,6 +32,13 @@ const (
 func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, opts ...OTELOption) Middleware {
 	cfg := newOTELConfig(opts)
 	tracer := tp.Tracer("otel-middleware")
+	meter := mp.Meter("otel-middleware")
+	apdex := newApdexCounter(meter, []time.Duration{
+		500 * time.Millisecond,
+		1000 * time.Millisecond,
+		2000 * time.Millisecond,
+	})
+
 	return func(next http.Handler) http.Handler {
 		h := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			ctx := req.Context()
@@ -53,7 +62,14 @@ func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, opts ...OTE
 			ctx = context.WithValue(ctx, redactedRouteParamsCtxKey, cfg.redactedRouteParams)
 
 			// Process request
-			next.ServeHTTP(w, req.WithContext(ctx))
+			startTime := time.Now()
+			rw := negroni.NewResponseWriter(w)
+			next.ServeHTTP(rw, req.WithContext(ctx))
+
+			// Record apdex metric
+			labeler, _ := otelhttp.LabelerFromContext(ctx)
+			elapsedTime := float64(time.Since(startTime)) / float64(time.Millisecond)
+			apdex.Add(ctx, req.Method, rw.Status(), elapsedTime, metric.WithAttributes(labeler.Get()...))
 
 			// Set addition response attributes
 			span.SetAttributes(spanResponseAttrs(&cfg, w.Header())...)
