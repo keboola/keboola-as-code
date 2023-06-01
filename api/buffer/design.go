@@ -693,10 +693,11 @@ func ExampleError(statusCode int, name, message string) ExampleErrorDef {
 }
 
 type ExampleReceiverDef struct {
-	ID      string             `json:"id" yaml:"id"`
-	URL     string             `json:"url" yaml:"url"`
-	Name    string             `json:"name" yaml:"name"`
-	Exports []ExampleExportDef `json:"exports" yaml:"exports"`
+	ID          string             `json:"id" yaml:"id"`
+	URL         string             `json:"url" yaml:"url"`
+	Name        string             `json:"name" yaml:"name"`
+	Description string             `json:"description" yaml:"description"`
+	Exports     []ExampleExportDef `json:"exports" yaml:"exports"`
 }
 
 type ExampleExportDef struct {
@@ -746,10 +747,11 @@ type ExampleTaskDef struct {
 func ExampleReceiver() ExampleReceiverDef {
 	id := "github-pull-requests"
 	return ExampleReceiverDef{
-		ID:      id,
-		URL:     "https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH",
-		Name:    "receiver 1",
-		Exports: []ExampleExportDef{ExampleExport()},
+		ID:          id,
+		URL:         "https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH",
+		Name:        "receiver 1",
+		Description: "Some description ...",
+		Exports:     []ExampleExportDef{ExampleExport()},
 	}
 }
 

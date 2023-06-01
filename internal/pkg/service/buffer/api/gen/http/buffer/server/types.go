@@ -26,7 +26,7 @@ type CreateReceiverRequestBody struct {
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// Human readable name of the receiver.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// Description of teh receiver.
+	// Description of the receiver.
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
 	// List of exports, max 20 exports per a receiver.
 	Exports []*CreateExportDataRequestBody `form:"exports,omitempty" json:"exports,omitempty" xml:"exports,omitempty"`
@@ -37,7 +37,7 @@ type CreateReceiverRequestBody struct {
 type UpdateReceiverRequestBody struct {
 	// Human readable name of the receiver.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// Description of teh receiver.
+	// Description of the receiver.
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
 }
 
@@ -106,7 +106,7 @@ type UpdateReceiverResponseBody struct {
 	URL string `form:"url" json:"url" xml:"url"`
 	// Human readable name of the receiver.
 	Name string `form:"name" json:"name" xml:"name"`
-	// Description of teh receiver.
+	// Description of the receiver.
 	Description string `form:"description" json:"description" xml:"description"`
 	// List of exports, max 20 exports per a receiver.
 	Exports []*ExportResponseBody `form:"exports" json:"exports" xml:"exports"`
@@ -126,7 +126,7 @@ type GetReceiverResponseBody struct {
 	URL string `form:"url" json:"url" xml:"url"`
 	// Human readable name of the receiver.
 	Name string `form:"name" json:"name" xml:"name"`
-	// Description of teh receiver.
+	// Description of the receiver.
 	Description string `form:"description" json:"description" xml:"description"`
 	// List of exports, max 20 exports per a receiver.
 	Exports []*ExportResponseBody `form:"exports" json:"exports" xml:"exports"`
@@ -140,7 +140,7 @@ type RefreshReceiverTokensResponseBody struct {
 	URL string `form:"url" json:"url" xml:"url"`
 	// Human readable name of the receiver.
 	Name string `form:"name" json:"name" xml:"name"`
-	// Description of teh receiver.
+	// Description of the receiver.
 	Description string `form:"description" json:"description" xml:"description"`
 	// List of exports, max 20 exports per a receiver.
 	Exports []*ExportResponseBody `form:"exports" json:"exports" xml:"exports"`
@@ -525,7 +525,7 @@ type ReceiverResponseBody struct {
 	URL string `form:"url" json:"url" xml:"url"`
 	// Human readable name of the receiver.
 	Name string `form:"name" json:"name" xml:"name"`
-	// Description of teh receiver.
+	// Description of the receiver.
 	Description string `form:"description" json:"description" xml:"description"`
 	// List of exports, max 20 exports per a receiver.
 	Exports []*ExportResponseBody `form:"exports" json:"exports" xml:"exports"`
