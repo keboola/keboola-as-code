@@ -81,7 +81,7 @@ func (ts *testSuite) test003FileImport() {
 			{"9", `{"key": "payload009"}`, `{"Content-Type":"application/json"}`},
 			{"10", `{"key": "payload010"}`, `{"Content-Type":"application/json"}`},
 		},
-	}, ts.tablePreview(ts.export1.Mapping.TableID, "bodyCol"))
+	}, ts.TablePreview(ts.export1.Mapping.TableID, "bodyCol"))
 	assert.Equal(ts.t, &keboola.TablePreview{
 		Columns: []string{"idCol", "keyValueCol"},
 		Rows: [][]string{
@@ -96,5 +96,5 @@ func (ts *testSuite) test003FileImport() {
 			{"<date>", `"---payload009---"`},
 			{"<date>", `"---payload010---"`},
 		},
-	}, ts.tablePreview(ts.export2.Mapping.TableID, "idCol"))
+	}, ts.TablePreview(ts.export2.Mapping.TableID, "idCol"))
 }
