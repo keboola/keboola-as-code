@@ -230,6 +230,7 @@ paths:
                             - id
                             - url
                             - name
+                            - description
                             - exports
                 "404":
                     description: Not Found response.
@@ -296,6 +297,7 @@ paths:
                             - id
                             - url
                             - name
+                            - description
                             - exports
                 "404":
                     description: Not Found response.
@@ -542,6 +544,7 @@ paths:
                             - id
                             - url
                             - name
+                            - description
                             - exports
                 "404":
                     description: Not Found response.
@@ -873,6 +876,11 @@ definitions:
         title: BufferCreateReceiverRequestBody
         type: object
         properties:
+            description:
+                type: string
+                description: Description of teh receiver.
+                example: This receiver receives events from Github.
+                maxLength: 4096
             exports:
                 type: array
                 items:
@@ -1032,6 +1040,7 @@ definitions:
                 minLength: 1
                 maxLength: 40
         example:
+            description: This receiver receives events from Github.
             exports:
                 - conditions:
                     count: 100
@@ -1473,6 +1482,11 @@ definitions:
         title: BufferGetReceiverResponseBody
         type: object
         properties:
+            description:
+                type: string
+                description: Description of teh receiver.
+                example: This receiver receives events from Github.
+                maxLength: 4096
             exports:
                 type: array
                 items:
@@ -1575,6 +1589,7 @@ definitions:
             - id
             - url
             - name
+            - description
             - exports
     BufferGetTaskBufferTaskNotFoundResponseBody:
         title: BufferGetTaskBufferTaskNotFoundResponseBody
@@ -1957,6 +1972,11 @@ definitions:
         title: BufferRefreshReceiverTokensResponseBody
         type: object
         properties:
+            description:
+                type: string
+                description: Description of teh receiver.
+                example: This receiver receives events from Github.
+                maxLength: 4096
             exports:
                 type: array
                 items:
@@ -2059,6 +2079,7 @@ definitions:
             - id
             - url
             - name
+            - description
             - exports
     BufferUpdateExportBufferExportNotFoundResponseBody:
         title: BufferUpdateExportBufferExportNotFoundResponseBody
@@ -2260,6 +2281,11 @@ definitions:
         title: BufferUpdateReceiverRequestBody
         type: object
         properties:
+            description:
+                type: string
+                description: Description of teh receiver.
+                example: This receiver receives events from Github.
+                maxLength: 4096
             name:
                 type: string
                 description: Human readable name of the receiver.
@@ -2267,11 +2293,17 @@ definitions:
                 minLength: 1
                 maxLength: 40
         example:
+            description: This receiver receives events from Github.
             name: Github Webhook Receiver
     BufferUpdateReceiverResponseBody:
         title: BufferUpdateReceiverResponseBody
         type: object
         properties:
+            description:
+                type: string
+                description: Description of teh receiver.
+                example: This receiver receives events from Github.
+                maxLength: 4096
             exports:
                 type: array
                 items:
@@ -2374,6 +2406,7 @@ definitions:
             - id
             - url
             - name
+            - description
             - exports
     ColumnRequestBody:
         title: ColumnRequestBody
@@ -2746,6 +2779,11 @@ definitions:
         title: ReceiverResponseBody
         type: object
         properties:
+            description:
+                type: string
+                description: Description of teh receiver.
+                example: This receiver receives events from Github.
+                maxLength: 4096
             exports:
                 type: array
                 items:
@@ -2849,6 +2887,7 @@ definitions:
             - id
             - url
             - name
+            - description
             - exports
     TaskOutputsResponseBody:
         title: TaskOutputsResponseBody

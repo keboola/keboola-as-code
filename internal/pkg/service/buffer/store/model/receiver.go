@@ -6,8 +6,9 @@ import (
 
 type ReceiverBase struct {
 	key.ReceiverKey
-	Name   string `json:"name" validate:"required,min=1,max=40"`
-	Secret string `json:"secret" validate:"required,len=48"`
+	Name        string `json:"name" validate:"required,min=1,max=40"`
+	Description string `json:"description,omitempty" validate:"max=4096"`
+	Secret      string `json:"secret" validate:"required,len=48"`
 }
 
 type Receiver struct {

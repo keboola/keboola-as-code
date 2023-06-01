@@ -1408,9 +1408,10 @@ func marshalBufferConditionsToConditionsResponseBody(v *buffer.Conditions) *Cond
 // *ReceiverResponseBody from a value of type *buffer.Receiver.
 func marshalBufferReceiverToReceiverResponseBody(v *buffer.Receiver) *ReceiverResponseBody {
 	res := &ReceiverResponseBody{
-		ID:   string(v.ID),
-		URL:  v.URL,
-		Name: v.Name,
+		ID:          string(v.ID),
+		URL:         v.URL,
+		Name:        v.Name,
+		Description: v.Description,
 	}
 	if v.Exports != nil {
 		res.Exports = make([]*ExportResponseBody, len(v.Exports))
