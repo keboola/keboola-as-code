@@ -8,19 +8,21 @@ import (
 )
 
 type Result struct {
-	result          string
-	error           error
-	errorType       string
-	unexpectedError bool
-	outputs         map[string]any
+	result    string
+	error     error
+	errorType string
+	// applicationError flag is true if the error is an unexpected error that should not occur during normal operation
+	applicationError bool
+	outputs          map[string]any
 }
 
-// ExpectedError marks the wrapped error as expected, so it will not be taken as an error in the metrics.
-type ExpectedError struct {
+// UserError marks the wrapped error as expected, so it will not be taken as an error in the metrics.
+// UserError is an error that could occur during normal operation.
+type UserError struct {
 	error
 }
 
-func (e ExpectedError) Unwrap() error {
+func (e UserError) Unwrap() error {
 	return e.error
 }
 
@@ -38,9 +40,10 @@ func ErrResult(err error) Result {
 	return (Result{}).withError(err)
 }
 
-// WrapExpectedError marks the error as expected, so it will not be taken as an error in the metrics.
-func WrapExpectedError(err error) error {
-	return &ExpectedError{error: err}
+// WrapUserError marks the error as the UserError, so it will not be taken as an error in the metrics.
+// UserError is an error that could occur during normal operation.
+func WrapUserError(err error) error {
+	return &UserError{error: err}
 }
 
 func (r Result) Result() string {
@@ -59,9 +62,14 @@ func (r Result) IsError() bool {
 	return r.error != nil
 }
 
-// IsUnexpectedError returns true if the error should be taken as an error in the metrics.
-func (r Result) IsUnexpectedError() bool {
-	return r.unexpectedError
+// IsUserError returns true if the error is an expected error that could occur during normal operation.
+func (r Result) IsUserError() bool {
+	return !r.applicationError
+}
+
+// IsApplicationError returns true if the error is an unexpected error that should not occur during normal operation.
+func (r Result) IsApplicationError() bool {
+	return r.applicationError
 }
 
 // WithResult can be used to edit the result message later.
@@ -108,11 +116,11 @@ func (r Result) WithOutput(k string, v any) Result {
 func (r Result) withError(err error) Result {
 	r.error = err
 	r.errorType = telemetry.ErrorType(err)
-	r.unexpectedError = isUnexpectedError(err)
+	r.applicationError = isApplicationError(err)
 	return r
 }
 
-func isUnexpectedError(err error) bool {
-	var expectedErr *ExpectedError
+func isApplicationError(err error) bool {
+	var expectedErr *UserError
 	return err != nil && !errors.As(err, &expectedErr)
 }

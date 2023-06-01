@@ -294,7 +294,7 @@ task/123/my-receiver/my-export/some.task/%s
 						Attributes: attribute.NewSet(
 							attribute.String("task_type", "some.task"),
 							attribute.Bool("is_success", true),
-							attribute.Bool("is_unexpected_error", false),
+							attribute.Bool("is_application_error", false),
 							attribute.String("error_type", ""),
 						),
 					},
@@ -342,7 +342,7 @@ func TestFailedTask(t *testing.T) {
 			<-taskWork
 			logger.Info("some message from the task (1)")
 			return task.
-				ErrResult(task.WrapExpectedError(errors.New("some error (1) - expected"))).
+				ErrResult(task.WrapUserError(errors.New("some error (1) - expected"))).
 				WithOutput("key", "value")
 		},
 	})
@@ -505,7 +505,7 @@ task/123/my-receiver/my-export/some.task/%s
 					attribute.String("duration_sec", "<dynamic>"),
 					attribute.String("finished_at", "<dynamic>"),
 					attribute.Bool("is_success", false),
-					attribute.Bool("is_unexpected_error", false),
+					attribute.Bool("is_application_error", false),
 					attribute.String("error", "some error (1) - expected"),
 					attribute.String("error_type", "other"),
 					attribute.String("result_outputs.key", "value"),
@@ -514,7 +514,7 @@ task/123/my-receiver/my-export/some.task/%s
 					{
 						Name: "exception",
 						Attributes: []attribute.KeyValue{
-							attribute.String("exception.type", "*task.ExpectedError"),
+							attribute.String("exception.type", "*task.UserError"),
 							attribute.String("exception.message", "some error (1) - expected"),
 						},
 					},
@@ -539,7 +539,7 @@ task/123/my-receiver/my-export/some.task/%s
 					attribute.String("duration_sec", "<dynamic>"),
 					attribute.String("finished_at", "<dynamic>"),
 					attribute.Bool("is_success", false),
-					attribute.Bool("is_unexpected_error", true),
+					attribute.Bool("is_application_error", true),
 					attribute.String("error", "some error (2) - unexpected"),
 					attribute.String("error_type", "other"),
 				},
@@ -596,7 +596,7 @@ task/123/my-receiver/my-export/some.task/%s
 							Attributes: attribute.NewSet(
 								attribute.String("task_type", "some.task"),
 								attribute.Bool("is_success", false),
-								attribute.Bool("is_unexpected_error", false),
+								attribute.Bool("is_application_error", false),
 								attribute.String("error_type", "other"),
 							),
 						},
@@ -607,7 +607,7 @@ task/123/my-receiver/my-export/some.task/%s
 							Attributes: attribute.NewSet(
 								attribute.String("task_type", "some.task"),
 								attribute.Bool("is_success", false),
-								attribute.Bool("is_unexpected_error", true),
+								attribute.Bool("is_application_error", true),
 								attribute.String("error_type", "other"),
 							),
 						},
@@ -616,7 +616,7 @@ task/123/my-receiver/my-export/some.task/%s
 			},
 		},
 		telemetry.WithDataPointSortKey(func(attrs attribute.Set) string {
-			if v, _ := attrs.Value("is_unexpected_error"); v.AsBool() {
+			if v, _ := attrs.Value("is_application_error"); v.AsBool() {
 				return "1"
 			}
 			return "0"
