@@ -133,7 +133,7 @@ type CreateReceiverPayload struct {
 	ID *ReceiverID
 	// Human readable name of the receiver.
 	Name string
-	// Description of teh receiver.
+	// Description of the receiver.
 	Description *string
 	// List of exports, max 20 exports per a receiver.
 	Exports []*CreateExportData
@@ -246,7 +246,7 @@ type Receiver struct {
 	URL string
 	// Human readable name of the receiver.
 	Name string
-	// Description of teh receiver.
+	// Description of the receiver.
 	Description string
 	// List of exports, max 20 exports per a receiver.
 	Exports []*Export
@@ -334,7 +334,7 @@ type UpdateReceiverPayload struct {
 	StorageAPIToken string
 	// Human readable name of the receiver.
 	Name *string
-	// Description of teh receiver.
+	// Description of the receiver.
 	Description *string
 	ReceiverID  ReceiverID
 }

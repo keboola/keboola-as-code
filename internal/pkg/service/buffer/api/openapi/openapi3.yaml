@@ -157,6 +157,7 @@ paths:
                                     - id: github-pull-requests
                                       url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
                                       name: receiver 1
+                                      description: Some description ...
                                       exports:
                                         - id: github-changed-files
                                           receiverId: ""
@@ -371,6 +372,7 @@ paths:
                                 id: github-pull-requests
                                 url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
                                 name: receiver 1
+                                description: Some description ...
                                 exports:
                                     - id: github-changed-files
                                       receiverId: ""
@@ -452,6 +454,7 @@ paths:
                                 id: github-pull-requests
                                 url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
                                 name: receiver 1
+                                description: Some description ...
                                 exports:
                                     - id: github-changed-files
                                       receiverId: ""
@@ -899,6 +902,7 @@ paths:
                                 id: github-pull-requests
                                 url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
                                 name: receiver 1
+                                description: Some description ...
                                 exports:
                                     - id: github-changed-files
                                       receiverId: ""
@@ -1111,7 +1115,7 @@ components:
             properties:
                 description:
                     type: string
-                    description: Description of teh receiver.
+                    description: Description of the receiver.
                     example: This receiver receives events from Github.
                     maxLength: 4096
                 exports:
@@ -1552,7 +1556,7 @@ components:
             properties:
                 description:
                     type: string
-                    description: Description of teh receiver.
+                    description: Description of the receiver.
                     example: This receiver receives events from Github.
                     maxLength: 4096
                 exports:
@@ -1616,6 +1620,7 @@ components:
                 id: github-pull-requests
                 url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
                 name: receiver 1
+                description: Some description ...
                 exports:
                     - id: github-changed-files
                       receiverId: ""
@@ -1670,6 +1675,7 @@ components:
                         - id: github-pull-requests
                           url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
                           name: receiver 1
+                          description: Some description ...
                           exports:
                             - id: github-changed-files
                               receiverId: ""
@@ -1712,6 +1718,7 @@ components:
                     - id: github-pull-requests
                       url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
                       name: receiver 1
+                      description: Some description ...
                       exports:
                         - id: github-changed-files
                           receiverId: ""
@@ -1923,7 +1930,7 @@ components:
             properties:
                 description:
                     type: string
-                    description: Description of teh receiver.
+                    description: Description of the receiver.
                     example: This receiver receives events from Github.
                     maxLength: 4096
                 name:
