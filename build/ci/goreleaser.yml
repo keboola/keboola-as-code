@@ -15,8 +15,8 @@ builds:
       - -X github.com/keboola/keboola-as-code/internal/pkg/build.GitCommit={{.Commit}}
     hooks:
       post:
-        # Copy binary to TARGET_PATH if set
-        - '{{ if index .Env "TARGET_PATH"  }}cp "{{ .Path }}" "{{ .Env.TARGET_PATH }}"{{ else }}true{{ end }}'
+        # Copy binary to BUILD_TARGET_PATH if set
+        - '{{ if index .Env "BUILD_TARGET_PATH"  }}cp "{{ .Path }}" "{{ .Env.BUILD_TARGET_PATH }}"{{ else }}true{{ end }}'
 
 changelog:
   skip: true

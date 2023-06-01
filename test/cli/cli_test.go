@@ -18,12 +18,7 @@ func TestCliE2E(t *testing.T) {
 	rootDir := filepath.Join(testsDir, "..", "..")
 
 	r := runner.NewRunner(t, testsDir)
-	binaryPath := r.CompileBinary(
-		rootDir,
-		"bin_func_tests",
-		"TARGET_PATH",
-		"build-local",
-	)
+	binaryPath := r.CompileBinary(rootDir, "cli", "build-local")
 
 	r.ForEachTest(func(test *runner.Test) {
 		test.Run(

@@ -15,6 +15,7 @@ generate-buffer-api:
 
 build:
 	GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --rm-dist --snapshot -f ./build/ci/goreleaser.yml
+
 build-local:
 	GORELEASER_CURRENT_TAG=0.0.1-dev goreleaser build --single-target --rm-dist --snapshot -f ./build/ci/goreleaser.yml
 
@@ -24,20 +25,17 @@ release:
 release-local:
 	goreleaser release --rm-dist --snapshot --skip-publish -f ./build/ci/goreleaser.yml
 
-TEMPLATES_API_BUILD_TARGET_PATH ?= "./target/templates/api"
 build-templates-api:
-	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o $(TEMPLATES_API_BUILD_TARGET_PATH) ./cmd/templates-api
+	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o "$(or $(BUILD_TARGET_PATH), ./target/templates/api)" ./cmd/templates-api
 
 run-templates-api:
 	air -c ./provisioning/templates-api/dev/.air-api.toml
 
-BUFFER_API_BUILD_TARGET_PATH ?= "./target/buffer/api"
 build-buffer-api:
-	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o $(BUFFER_API_BUILD_TARGET_PATH) ./cmd/buffer-api
+	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o "$(or $(BUILD_TARGET_PATH), ./target/buffer/api)" ./cmd/buffer-api
 
-BUFFER_WORKER_BUILD_TARGET_PATH ?= "./target/buffer/worker"
 build-buffer-worker:
-	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o $(BUFFER_WORKER_BUILD_TARGET_PATH) ./cmd/buffer-worker
+	CGO_ENABLED=0 go build -v -mod mod -ldflags "-s -w" -o "$(or $(BUILD_TARGET_PATH), ./target/buffer/worker)" ./cmd/buffer-worker
 
 run-buffer-api:
 	air -c ./provisioning/buffer/dev/.air-api.toml

@@ -36,12 +36,7 @@ func TestTemplatesApiE2E(t *testing.T) {
 	rootDir := filepath.Join(testsDir, "..", "..", "..")
 
 	r := runner.NewRunner(t, testsDir)
-	binaryPath := r.CompileBinary(
-		rootDir,
-		"templates-api",
-		"TEMPLATES_API_BUILD_TARGET_PATH",
-		"build-templates-api",
-	)
+	binaryPath := r.CompileBinary(rootDir, "templates-api", "build-templates-api")
 
 	r.ForEachTest(func(test *runner.Test) {
 		var repositories string

@@ -38,12 +38,7 @@ func TestBufferApiE2E(t *testing.T) {
 	rootDir := filepath.Join(testsDir, "..", "..", "..")
 
 	r := runner.NewRunner(t, testsDir)
-	binaryPath := r.CompileBinary(
-		rootDir,
-		"buffer-api",
-		"BUFFER_API_BUILD_TARGET_PATH",
-		"build-buffer-api",
-	)
+	binaryPath := r.CompileBinary(rootDir, "buffer-api", "build-buffer-api")
 
 	r.ForEachTest(func(test *runner.Test) {
 		etcdNamespace := idgenerator.EtcdNamespaceForTest()

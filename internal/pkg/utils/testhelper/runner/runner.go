@@ -101,12 +101,7 @@ func (r *Runner) ForEachTest(runFn func(test *Test)) {
 }
 
 // CompileBinary compiles a binary used in the test by running a make command.
-func (r *Runner) CompileBinary(
-	cmdDir string,
-	binaryName string,
-	binaryPathEnvName string,
-	makeCommand string,
-) string {
+func (r *Runner) CompileBinary(cmdDir string, binaryName string, makeCommand string) string {
 	r.t.Helper()
 
 	binaryPath := filesystem.Join(r.tempDir, "/"+binaryName)
@@ -117,7 +112,7 @@ func (r *Runner) CompileBinary(
 	// Envs
 	envs, err := env.FromOs()
 	assert.NoError(r.t, err)
-	envs.Set(binaryPathEnvName, binaryPath)
+	envs.Set("BUILD_TARGET_PATH", binaryPath)
 
 	// Build cmd
 	var stdout, stderr bytes.Buffer
