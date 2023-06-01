@@ -25,6 +25,7 @@ jobs:
             --exclude-path 'test' 
             --exclude '^http://localhost.*' 
             --exclude '^https://app.datadoghq.eu/.*'
+            --exclude '^https://community.chocolatey.org/.*'
 
       - name: Install Go
         uses: actions/setup-go@v3
