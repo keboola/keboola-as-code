@@ -35,7 +35,7 @@ Run the test suite and download the dependencies using:
 make ci
 ```
 
-To run only the CLI [E2E tests](./E2E_TESTS.md), you can use:
+To run only the CLI [E2E tests](./e2e_tests.md), you can use:
 ```
 make tests-cli
 ```
@@ -97,7 +97,7 @@ See [provisioning/buffer/README.md](../provisioning/buffer/README.md) or [provis
 
 ### E2E Tests
 
-See [E2E_TESTS.md](./E2E_TESTS.md).
+See [E2E_TESTS.md](./e2e_tests.md).
 
 ### IDE setup
 
