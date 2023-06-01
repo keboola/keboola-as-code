@@ -118,7 +118,6 @@ func (r *Runner) CompileBinary(
 	envs, err := env.FromOs()
 	assert.NoError(r.t, err)
 	envs.Set(binaryPathEnvName, binaryPath)
-	envs.Set("SKIP_API_CODE_REGENERATION", "1")
 
 	// Build cmd
 	var stdout, stderr bytes.Buffer
