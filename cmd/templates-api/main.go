@@ -83,19 +83,22 @@ func run() error {
 	// Setup telemetry
 	tel, err := telemetry.New(
 		func() (trace.TracerProvider, error) {
-			tracerProvider := ddotel.NewTracerProvider(
-				tracer.WithLogger(telemetry.NewDDLogger(logger)),
-				tracer.WithRuntimeMetrics(),
-				tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
-				tracer.WithAnalyticsRate(1.0),
-				tracer.WithDebugMode(cfg.DatadogDebug),
-			)
-			proc.OnShutdown(func() {
-				if err := tracerProvider.Shutdown(); err != nil {
-					logger.Error(err)
-				}
-			})
-			return telemetry.WrapDD(tracerProvider.Tracer("")), nil
+			if cfg.DatadogEnabled {
+				tracerProvider := ddotel.NewTracerProvider(
+					tracer.WithLogger(telemetry.NewDDLogger(logger)),
+					tracer.WithRuntimeMetrics(),
+					tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
+					tracer.WithAnalyticsRate(1.0),
+					tracer.WithDebugMode(cfg.DatadogDebug),
+				)
+				proc.OnShutdown(func() {
+					if err := tracerProvider.Shutdown(); err != nil {
+						logger.Error(err)
+					}
+				})
+				return telemetry.WrapDD(tracerProvider.Tracer("")), nil
+			}
+			return nil, nil
 		},
 		func() (metric.MeterProvider, error) {
 			return prometheus.ServeMetrics(ctx, ServiceName, cfg.MetricsListenAddress, logger, proc)
