@@ -597,7 +597,7 @@ paths:
                                 count: 100
                                 size: 12kB
                                 time: 1m10s
-                            id: "y"
+                            id: 5pu
                             mapping:
                                 tableId: in.c-github.changes
                                 incremental: true
@@ -998,18 +998,18 @@ components:
                 name:
                     type: string
                     description: Column name.
-                    example: Sint quo assumenda possimus ipsam.
+                    example: Eius iusto placeat illo repellendus eius dolorum.
                 primaryKey:
                     type: boolean
                     description: Sets this column as a part of the primary key of the destination table.
                     default: false
-                    example: true
+                    example: false
                 template:
                     $ref: '#/components/schemas/Template'
                 type:
                     type: string
                     description: Column mapping type. This represents a static mapping (e.g. `body` or `headers`), or a custom mapping using a template language (`template`).
-                    example: id
+                    example: headers
                     enum:
                         - id
                         - datetime
@@ -1034,19 +1034,19 @@ components:
                     type: integer
                     description: Maximum import buffer size in number of records.
                     default: 10000
-                    example: 4738312
+                    example: 2953406
                     minimum: 1
                     maximum: 1e+07
                 size:
                     type: string
                     description: 'Maximum import buffer size in bytes. Units: B, KB, MB.'
                     default: 5MB
-                    example: Quia non fuga vitae quis laborum.
+                    example: Beatae fuga.
                 time:
                     type: string
                     description: 'Minimum import interval. Units: [s]econd,[m]inute,[h]our.'
                     default: 5m0s
-                    example: Distinctio qui perspiciatis vel optio quis.
+                    example: Inventore est repellendus voluptas dolor doloribus.
             description: Table import triggers.
             example:
                 count: 100
@@ -1060,7 +1060,7 @@ components:
                 id:
                     type: string
                     description: Optional ID, if not filled in, it will be generated from name. Cannot be changed later.
-                    example: 8e
+                    example: ab
                     minLength: 1
                     maxLength: 48
                 mapping:
@@ -1076,7 +1076,7 @@ components:
                     count: 100
                     size: 12kB
                     time: 1m10s
-                id: h
+                id: dk
                 mapping:
                     tableId: in.c-github.changes
                     incremental: true
@@ -1229,10 +1229,45 @@ components:
                                     language: jsonnet
                                     content: body.foo + "-" + body.bar
                           name: Raw Data Export
+                        - conditions:
+                            count: 100
+                            size: 12kB
+                            time: 1m10s
+                          id: "4"
+                          mapping:
+                            tableId: in.c-github.changes
+                            incremental: true
+                            columns:
+                                - type: id
+                                  name: column1
+                                  template:
+                                    language: ""
+                                    content: ""
+                                - type: datetime
+                                  name: column2
+                                  template:
+                                    language: ""
+                                    content: ""
+                                - type: ip
+                                  name: column3
+                                  template:
+                                    language: ""
+                                    content: ""
+                                - type: headers
+                                  name: column5
+                                  template:
+                                    language: ""
+                                    content: ""
+                                - type: template
+                                  name: column6
+                                  template:
+                                    language: jsonnet
+                                    content: body.foo + "-" + body.bar
+                          name: Raw Data Export
                 id:
                     type: string
                     description: Optional ID, if not filled in, it will be generated from name. Cannot be changed later.
-                    example: r
+                    example: v5o
                     minLength: 1
                     maxLength: 48
                 name:
@@ -1314,7 +1349,42 @@ components:
                                 language: jsonnet
                                 content: body.foo + "-" + body.bar
                       name: Raw Data Export
-                id: 52b
+                    - conditions:
+                        count: 100
+                        size: 12kB
+                        time: 1m10s
+                      id: "4"
+                      mapping:
+                        tableId: in.c-github.changes
+                        incremental: true
+                        columns:
+                            - type: id
+                              name: column1
+                              template:
+                                language: ""
+                                content: ""
+                            - type: datetime
+                              name: column2
+                              template:
+                                language: ""
+                                content: ""
+                            - type: ip
+                              name: column3
+                              template:
+                                language: ""
+                                content: ""
+                            - type: headers
+                              name: column5
+                              template:
+                                language: ""
+                                content: ""
+                            - type: template
+                              name: column6
+                              template:
+                                language: jsonnet
+                                content: body.foo + "-" + body.bar
+                      name: Raw Data Export
+                id: "37"
                 name: Github Webhook Receiver
             required:
                 - name
@@ -1325,7 +1395,7 @@ components:
                     $ref: '#/components/schemas/Conditions'
                 id:
                     type: string
-                    example: tg
+                    example: xwd
                     minLength: 1
                     maxLength: 48
                 mapping:
@@ -1338,7 +1408,7 @@ components:
                     maxLength: 40
                 receiverId:
                     type: string
-                    example: "42"
+                    example: x6z
                     minLength: 1
                     maxLength: 48
             description: A mapping from imported data to a destination table.
@@ -1513,11 +1583,11 @@ components:
                 incremental:
                     type: boolean
                     description: Enables incremental loading to the table.
-                    example: true
+                    example: false
                 tableId:
                     type: string
                     description: Destination table ID.
-                    example: Doloremque sed omnis ipsam odio beatae ipsa.
+                    example: Aperiam repellendus ducimus consequuntur.
             description: Export column mapping.
             example:
                 tableId: in.c-github.changes
@@ -1603,7 +1673,7 @@ components:
                             time: 1m10s
                 id:
                     type: string
-                    example: i
+                    example: w
                     minLength: 1
                     maxLength: 48
                 name:
@@ -1615,7 +1685,7 @@ components:
                 url:
                     type: string
                     description: URL of the receiver. Contains secret used for authentication.
-                    example: Ut vel quia itaque.
+                    example: Quis ut earum sed recusandae amet minima.
             example:
                 id: github-pull-requests
                 url: https://buffer.keboola.com/v1/import/1000/github-pull-requests/UBdJHwifkaQxbVwPyaRstdYpcboGwksSluCGIUWKttTiUdVH
@@ -1790,7 +1860,7 @@ components:
                     format: int64
                 error:
                     type: string
-                    example: Commodi sed qui delectus.
+                    example: Ipsam quibusdam aliquid enim voluptatem temporibus sequi.
                 finishedAt:
                     type: string
                     description: Date and time of the task end.
@@ -1798,20 +1868,20 @@ components:
                     format: date-time
                 id:
                     type: string
-                    example: Sit maiores veniam.
+                    example: Ipsum voluptate odit.
                 isFinished:
                     type: boolean
                     description: Shortcut for status != "processing".
-                    example: false
+                    example: true
                 outputs:
                     $ref: '#/components/schemas/TaskOutputs'
                 result:
                     type: string
-                    example: Autem earum et.
+                    example: Aut cum sint quo assumenda.
                 status:
                     type: string
                     description: 'Task status, one of: processing, success, error'
-                    example: success
+                    example: processing
                     enum:
                         - processing
                         - success
@@ -1819,11 +1889,11 @@ components:
                 type:
                     type: string
                     description: Task type.
-                    example: Aliquid quidem quas voluptatibus id.
+                    example: Officia eos ut doloremque.
                 url:
                     type: string
                     description: URL of the task.
-                    example: Excepturi et.
+                    example: Omnis ipsam odio beatae.
             example:
                 id: receiver.create/2018-01-01T00:00:00.000Z_jdkLp
                 receiverId: ""
@@ -1849,21 +1919,25 @@ components:
                 exportId:
                     type: string
                     description: ID of the created/updated export.
-                    example: Cumque voluptatibus quam sit eveniet.
+                    example: a
+                    minLength: 1
+                    maxLength: 48
                 receiverId:
                     type: string
                     description: ID of the created/updated receiver.
-                    example: Earum accusamus impedit sed odio ipsam dolor.
+                    example: w5
+                    minLength: 1
+                    maxLength: 48
             description: Outputs generated by the task.
             example:
-                exportId: Ut nemo distinctio.
-                receiverId: Quis porro inventore dolore nisi suscipit et.
+                exportId: q
+                receiverId: "91"
         Template:
             type: object
             properties:
                 content:
                     type: string
-                    example: gdi
+                    example: "7"
                     minLength: 1
                     maxLength: 4096
                 language:
