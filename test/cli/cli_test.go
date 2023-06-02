@@ -2,10 +2,9 @@
 package cli
 
 import (
-	"path/filepath"
-	"runtime"
 	"testing"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/runner"
 )
 
@@ -13,26 +12,18 @@ import (
 func TestCliE2E(t *testing.T) {
 	t.Parallel()
 
-	_, testFile, _, _ := runtime.Caller(0)
-	testsDir := filepath.Dir(testFile)
-	rootDir := filepath.Join(testsDir, "..", "..")
+	binaryPath := testhelper.CompileBinary(t, "cli", "build-local")
 
-	r := runner.NewRunner(t, testsDir)
-	binaryPath := r.CompileBinary(
-		rootDir,
-		"bin_func_tests",
-		"TARGET_PATH",
-		"build-local",
-	)
-
-	r.ForEachTest(func(test *runner.Test) {
-		test.Run(
-			runner.WithCopyInToWorkingDir(),
-			runner.WithInitProjectState(),
-			runner.WithAddEnvVarsFromFile(),
-			runner.WithRunCLIBinary(binaryPath),
-			runner.WithAssertProjectState(),
-			runner.WithAssertDirContent(),
-		)
-	})
+	runner.
+		NewRunner(t).
+		ForEachTest(func(test *runner.Test) {
+			test.Run(
+				runner.WithCopyInToWorkingDir(),
+				runner.WithInitProjectState(),
+				runner.WithAddEnvVarsFromFile(),
+				runner.WithRunCLIBinary(binaryPath),
+				runner.WithAssertProjectState(),
+				runner.WithAssertDirContent(),
+			)
+		})
 }

@@ -3,10 +3,8 @@
 package runner
 
 import (
-	"bytes"
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -14,7 +12,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
@@ -31,17 +28,20 @@ type Runner struct {
 	workingDir string
 }
 
-func NewRunner(t *testing.T, testsDir string) *Runner {
+func NewRunner(t *testing.T) *Runner {
 	t.Helper()
 
-	workingDir := filesystem.Join(testsDir, ".out")
+	_, callerFile, _, _ := runtime.Caller(1) //nolint:dogsled
+	callerDir := filepath.Dir(callerFile)    // nolint:forbidigo
+
+	workingDir := filesystem.Join(callerDir, ".out")
 	assert.NoError(t, os.RemoveAll(workingDir))
 	assert.NoError(t, os.MkdirAll(workingDir, 0o755))
 
-	return &Runner{t: t, testsDir: testsDir, workingDir: workingDir, tempDir: t.TempDir()}
+	return &Runner{t: t, testsDir: callerDir, workingDir: workingDir, tempDir: t.TempDir()}
 }
 
-func (r *Runner) NewTest(t *testing.T, testDirName string) (*Test, context.CancelFunc) {
+func (r *Runner) newTest(t *testing.T, testDirName string) (*Test, context.CancelFunc) {
 	t.Helper()
 
 	testDir := filepath.Join(r.testsDir, testDirName)
@@ -93,45 +93,9 @@ func (r *Runner) ForEachTest(runFn func(test *Test)) {
 		r.t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 
-			test, cancelFn := r.NewTest(t, testName)
+			test, cancelFn := r.newTest(t, testName)
 			defer cancelFn()
 			runFn(test)
 		})
 	}
-}
-
-// CompileBinary compiles a binary used in the test by running a make command.
-func (r *Runner) CompileBinary(
-	cmdDir string,
-	binaryName string,
-	binaryPathEnvName string,
-	makeCommand string,
-) string {
-	r.t.Helper()
-
-	binaryPath := filesystem.Join(r.tempDir, "/"+binaryName)
-	if runtime.GOOS == "windows" {
-		binaryPath += `.exe`
-	}
-
-	// Envs
-	envs, err := env.FromOs()
-	assert.NoError(r.t, err)
-	envs.Set(binaryPathEnvName, binaryPath)
-	envs.Set("SKIP_API_CODE_REGENERATION", "1")
-
-	// Build cmd
-	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("make", makeCommand)
-	cmd.Dir = cmdDir
-	cmd.Env = envs.ToSlice()
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	// Run
-	if err := cmd.Run(); err != nil {
-		r.t.Fatalf("Compilation failed: %s\n%s\n%s\n", err, stdout.Bytes(), stderr.Bytes())
-	}
-
-	return binaryPath
 }
