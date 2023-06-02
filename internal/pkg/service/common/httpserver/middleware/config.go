@@ -3,58 +3,63 @@ package middleware
 import (
 	"strings"
 
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/propagation"
 )
 
-type otelConfig struct {
+type Config struct {
 	propagators         propagation.TextMapPropagator
-	filters             []otelhttp.Filter
+	filters             []FilterFn
 	redactedRouteParams map[string]struct{}
 	redactedQueryParams map[string]struct{}
 	redactedHeaders     map[string]struct{}
 }
 
-type OTELOption func(config *otelConfig)
+type Option func(config *Config)
 
-func WithPropagators(v propagation.TextMapPropagator) OTELOption {
-	return func(c *otelConfig) {
+// WithPropagators defines propagators of trace/span IDs to other services.
+func WithPropagators(v propagation.TextMapPropagator) Option {
+	return func(c *Config) {
 		c.propagators = v
 	}
 }
 
-func WithFilter(filters ...otelhttp.Filter) OTELOption {
-	return func(c *otelConfig) {
+// WithFilter defines ignored requests that will not be logged/included in telemetry.
+// A Filter must return true if the request should be logged/traced.
+func WithFilter(filters ...FilterFn) Option {
+	return func(c *Config) {
 		c.filters = append(c.filters, filters...)
 	}
 }
 
-func WithRedactedRouteParam(params ...string) OTELOption {
-	return func(c *otelConfig) {
+// WithRedactedRouteParam defines route parameters excluded from tracing.
+func WithRedactedRouteParam(params ...string) Option {
+	return func(c *Config) {
 		for _, p := range params {
 			c.redactedRouteParams[strings.ToLower(p)] = struct{}{}
 		}
 	}
 }
 
-func WithRedactedQueryParam(params ...string) OTELOption {
-	return func(c *otelConfig) {
+// WithRedactedQueryParam defines query parameters excluded from tracing.
+func WithRedactedQueryParam(params ...string) Option {
+	return func(c *Config) {
 		for _, p := range params {
 			c.redactedQueryParams[strings.ToLower(p)] = struct{}{}
 		}
 	}
 }
 
-func WithRedactedHeader(headers ...string) OTELOption {
-	return func(c *otelConfig) {
+// WithRedactedHeader defines headers excluded from tracing.
+func WithRedactedHeader(headers ...string) Option {
+	return func(c *Config) {
 		for _, p := range headers {
 			c.redactedHeaders[strings.ToLower(p)] = struct{}{}
 		}
 	}
 }
 
-func newOTELConfig(opts []OTELOption) otelConfig {
-	cfg := otelConfig{
+func NewConfig(opts ...Option) Config {
+	cfg := Config{
 		redactedRouteParams: make(map[string]struct{}),
 		redactedQueryParams: make(map[string]struct{}),
 		redactedHeaders: map[string]struct{}{

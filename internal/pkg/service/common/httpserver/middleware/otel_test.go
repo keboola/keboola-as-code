@@ -36,18 +36,19 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 	// Create muxer
 	mux := httptreemux.NewContextMux()
 	mux.UseHandler(middleware.OpenTelemetryExtractRoute())
+	cfg := middleware.NewConfig(
+		middleware.WithRedactedRouteParam("secret1"),
+		middleware.WithRedactedQueryParam("secret2"),
+		middleware.WithRedactedHeader("X-StorageAPI-Token"),
+		middleware.WithFilter(func(req *http.Request) bool {
+			return req.URL.Path != "/api/ignored"
+		}),
+	)
 	handler := middleware.Wrap(
 		mux,
 		middleware.RequestInfo(),
-		middleware.OpenTelemetry(
-			tel.TracerProvider(), tel.MeterProvider(),
-			middleware.WithRedactedRouteParam("secret1"),
-			middleware.WithRedactedQueryParam("secret2"),
-			middleware.WithRedactedHeader("X-StorageAPI-Token"),
-			middleware.WithFilter(func(req *http.Request) bool {
-				return req.URL.Path != "/api/ignored"
-			}),
-		),
+		middleware.Filter(cfg),
+		middleware.OpenTelemetry(tel.TracerProvider(), tel.MeterProvider(), cfg),
 	)
 
 	// Create group

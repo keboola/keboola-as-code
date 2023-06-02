@@ -30,12 +30,14 @@ func Start(d dependencies, cfg Config) error {
 	com := newComponents(cfg, logger)
 
 	// Register middlewares
+	middlewareCfg := middleware.NewConfig(cfg.MiddlewareOptions...)
 	com.Muxer.Use(middleware.OpenTelemetryExtractRoute())
 	handler := middleware.Wrap(
 		com.Muxer,
 		middleware.RequestInfo(),
+		middleware.Filter(middlewareCfg),
 		middleware.Logger(logger),
-		middleware.OpenTelemetry(tel.TracerProvider(), tel.MeterProvider(), cfg.TelemetryOptions...),
+		middleware.OpenTelemetry(tel.TracerProvider(), tel.MeterProvider(), middlewareCfg),
 	)
 	// Mount endpoints
 	cfg.Mount(com)

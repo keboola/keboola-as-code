@@ -127,7 +127,7 @@ func run() error {
 		ListenAddress:     cfg.ListenAddress,
 		ErrorNamePrefix:   ErrorNamePrefix,
 		ExceptionIDPrefix: ExceptionIdPrefix,
-		TelemetryOptions: []middleware.OTELOption{
+		MiddlewareOptions: []middleware.Option{
 			middleware.WithRedactedRouteParam("secret"),
 			middleware.WithRedactedHeader("X-StorageAPI-Token"),
 			middleware.WithPropagators(propagation.TraceContext{}),

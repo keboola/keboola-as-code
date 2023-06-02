@@ -29,8 +29,7 @@ const (
 	attrSpanTypeValueServer = "web"
 )
 
-func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, opts ...OTELOption) Middleware {
-	cfg := newOTELConfig(opts)
+func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, cfg Config) Middleware {
 	tracer := tp.Tracer("otel-middleware")
 	meter := mp.Meter("otel-middleware")
 	apdex := newApdexCounter(meter, []time.Duration{
@@ -45,7 +44,7 @@ func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, opts ...OTE
 			span := trace.SpanFromContext(ctx)
 
 			// Create dropped span for filtered request, so child spans won't appear in the telemetry too.
-			if !span.IsRecording() {
+			if isRequestIgnored(req) {
 				ctx, span = tracer.Start(ctx, SpanName, trace.WithAttributes(attribute.Bool(attrManualDrop, true)))
 				ctx = context.WithValue(ctx, RequestSpanCtxKey, span)
 				next.ServeHTTP(w, req.WithContext(ctx))
@@ -83,21 +82,21 @@ func RequestSpan(ctx context.Context) (trace.Span, bool) {
 	return v, ok
 }
 
-func otelOptions(cfg otelConfig, tp trace.TracerProvider, mp metric.MeterProvider) []otelhttp.Option {
+func otelOptions(cfg Config, tp trace.TracerProvider, mp metric.MeterProvider) []otelhttp.Option {
 	out := []otelhttp.Option{
 		otelhttp.WithTracerProvider(tp),
 		otelhttp.WithMeterProvider(mp),
+		otelhttp.WithFilter(func(req *http.Request) bool {
+			return !isRequestIgnored(req)
+		}),
 	}
 	if cfg.propagators != nil {
 		out = append(out, otelhttp.WithPropagators(cfg.propagators))
 	}
-	for _, f := range cfg.filters {
-		out = append(out, otelhttp.WithFilter(f))
-	}
 	return out
 }
 
-func spanRequestAttrs(cfg *otelConfig, req *http.Request) (out []attribute.KeyValue) {
+func spanRequestAttrs(cfg *Config, req *http.Request) (out []attribute.KeyValue) {
 	// Request ID
 	requestID, _ := req.Context().Value(RequestIDCtxKey).(string)
 	out = append(out, attribute.String(attrRequestID, requestID))
@@ -149,7 +148,7 @@ func spanRequestAttrs(cfg *otelConfig, req *http.Request) (out []attribute.KeyVa
 	return out
 }
 
-func spanResponseAttrs(cfg *otelConfig, header http.Header) (out []attribute.KeyValue) {
+func spanResponseAttrs(cfg *Config, header http.Header) (out []attribute.KeyValue) {
 	// Headers
 	{
 		var attrs []attribute.KeyValue

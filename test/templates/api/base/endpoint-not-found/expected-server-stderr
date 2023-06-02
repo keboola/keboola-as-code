@@ -1,6 +1,4 @@
 %A
-[templatesApi][http][requestId=%s]INFO request GET /health-check %a
-[templatesApi][http][requestId=%s]INFO response status=200 %a
 [templatesApi][http][requestId=%a]INFO request GET /foo/bar %a
 [templatesApi][http][requestId=%a]INFO no endpoint found for path "/foo/bar" | errorName=templates.endpointNotFound errorType=errors.EndpointNotFoundError response={"statusCode":404,"error":"templates.endpointNotFound","message":"No endpoint found for path \"/foo/bar\"."}
 [templatesApi][http][requestId=%a]INFO response status=404 %a
