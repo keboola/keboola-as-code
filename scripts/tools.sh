@@ -30,6 +30,18 @@ then
   curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.50.1
 fi
 
+# gci
+if ! command -v gci &> /dev/null
+then
+  go install github.com/daixiang0/gci@latest
+fi
+
+# gofumpt
+if ! command -v gofumpt &> /dev/null
+then
+  go install mvdan.cc/gofumpt@latest
+fi
+
 # air - code changes watcher
 if ! command -v air &> /dev/null
 then

@@ -12,6 +12,7 @@ cd "$SCRIPT_DIR/.."
 pwd
 
 # Check the most important problems first
+echo "Running go vet ..."
 if ! go vet ./...; then
     echo "Please fix ^^^ errors."
     echo
@@ -19,10 +20,20 @@ if ! go vet ./...; then
 fi
 
 # Fix modules
+echo "Running go mod tidy ..."
 go mod tidy
+echo "Running go mod vendor ..."
 go mod vendor
 
+# Format code, gofumpt and gci partially overlap, it is needed to run them separately
+# https://github.com/golangci/golangci-lint/issues/1490
+echo "Running gofumpt ..."
+gofumpt -w ./cmd ./internal ./pkg ./test
+echo "Running gci ..."
+gci write --skip-generated -s standard -s default -s "prefix(github.com/keboola/keboola-as-code)" ./cmd ./internal ./pkg ./test
+
 # Fix linters
+echo "Running golangci-lint ..."
 if golangci-lint run --fix -c "./build/ci/golangci.yml"; then
     echo "Ok. The code looks good."
     echo
