@@ -63,7 +63,8 @@ func run() error {
 	}
 
 	// Create logger.
-	logger := log.NewServiceLogger(os.Stderr, cfg.Debug).AddPrefix("[templatesApi]")
+	logger := log.NewServiceLogger(os.Stderr, cfg.DebugLog).AddPrefix("[templatesApi]")
+	logger.Info("Configuration: ", cfg.Dump())
 
 	// Start CPU profiling, if enabled.
 	if cfg.CpuProfFilePath != "" {
@@ -75,7 +76,7 @@ func run() error {
 	}
 
 	// Create process abstraction.
-	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger))
+	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger), servicectx.WithUniqueID(cfg.UniqueID))
 	if err != nil {
 		return err
 	}
@@ -121,7 +122,7 @@ func run() error {
 	}
 
 	// Start HTTP server.
-	logger.Infof("starting Templates API HTTP server, listen-address=%s, debug=%t, debug-http=%t", cfg.ListenAddress, cfg.Debug, cfg.DebugHTTP)
+	logger.Infof("starting Templates API HTTP server, listen-address=%s", cfg.ListenAddress)
 	err = httpserver.Start(d, httpserver.Config{
 		ListenAddress:     cfg.ListenAddress,
 		ErrorNamePrefix:   ErrorNamePrefix,

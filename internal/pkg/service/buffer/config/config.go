@@ -16,7 +16,8 @@ const (
 
 // Config is a common config of the Buffer Service.
 type Config struct {
-	Debug              bool          `mapstructure:"debug" usage:"Enable debug log level."`
+	DebugLog           bool          `mapstructure:"debug-log" usage:"Enable debug log level."`
+	DebugEtcd          bool          `mapstructure:"debug-etcd" usage:"Enable logging of each etcd KV operation as a debug message."`
 	DebugHTTP          bool          `mapstructure:"debug-http" usage:"Log HTTP client request and response bodies."`
 	DatadogEnabled     bool          `mapstructure:"datadog-enabled" usage:"Enable Datadog telemetry integration."`
 	DatadogDebug       bool          `mapstructure:"datadog-debug" usage:"Enable Datadog debug logs."`
@@ -25,7 +26,7 @@ type Config struct {
 	EtcdEndpoint       string        `mapstructure:"etcd-endpoint" usage:"etcd endpoint."`
 	EtcdNamespace      string        `mapstructure:"etcd-namespace" usage:"etcd namespace."`
 	EtcdUsername       string        `mapstructure:"etcd-username" usage:"etcd username."`
-	EtcdPassword       string        `mapstructure:"etcd-password" usage:"etcd password."`
+	EtcdPassword       string        `mapstructure:"etcd-password" usage:"etcd password." sensitive:"true"`
 	EtcdConnectTimeout time.Duration `mapstructure:"etcd-connect-timeout" usage:"etcd connect timeout."`
 }
 
@@ -33,7 +34,8 @@ type Option func(c *Config)
 
 func NewConfig() Config {
 	return Config{
-		Debug:              false,
+		DebugLog:           false,
+		DebugEtcd:          false,
 		DebugHTTP:          false,
 		CPUProfFilePath:    "",
 		DatadogEnabled:     true,

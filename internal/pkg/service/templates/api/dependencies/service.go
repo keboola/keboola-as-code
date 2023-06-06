@@ -48,7 +48,7 @@ func NewServiceDeps(
 		httpclient.WithTelemetry(tel),
 		httpclient.WithUserAgent(userAgent),
 		func(c *httpclient.Config) {
-			if cfg.Debug {
+			if cfg.DebugLog {
 				httpclient.WithDebugOutput(logger.DebugWriter())(c)
 			}
 			if cfg.DebugHTTP {
@@ -81,7 +81,7 @@ func NewServiceDeps(
 		etcdclient.WithPassword(cfg.EtcdPassword),
 		etcdclient.WithConnectTimeout(cfg.EtcdConnectTimeout),
 		etcdclient.WithLogger(logger),
-		etcdclient.WithDebugOpLogs(cfg.Debug),
+		etcdclient.WithDebugOpLogs(cfg.DebugEtcd),
 	)
 	if err != nil {
 		return nil, err

@@ -75,9 +75,9 @@ func New(d dependencies.ForServer) (Service, error) {
 		d.Logger().Info("shutdown done")
 	})
 
-	// Create orchestrators
+	// Tasks cleanup
 	var init []<-chan error
-	if s.config.Cleanup {
+	if s.config.TasksCleanup {
 		init = append(init, s.cleanup(ctx, wg))
 	}
 

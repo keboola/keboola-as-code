@@ -17,7 +17,7 @@ func (s *Service) cleanup(ctx context.Context, wg *sync.WaitGroup, d dependencie
 	go func() {
 		defer wg.Done()
 
-		ticker := s.clock.Ticker(s.config.CleanupInterval)
+		ticker := s.clock.Ticker(s.config.TasksCleanupInterval)
 		defer ticker.Stop()
 
 		logger.Infof("ready")
@@ -45,7 +45,7 @@ func (s *Service) cleanupTasks(ctx context.Context, wg *sync.WaitGroup) <-chan e
 	go func() {
 		defer wg.Done()
 
-		ticker := s.clock.Ticker(s.config.CleanupInterval)
+		ticker := s.clock.Ticker(s.config.TasksCleanupInterval)
 		defer ticker.Stop()
 
 		logger.Infof("ready")
