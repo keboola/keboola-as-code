@@ -50,6 +50,7 @@ type testSuite struct {
 	outDir      string
 	envs        *env.Map
 	logger      log.DebugLogger
+	*apiClient
 	apiNodes    apiNodes
 	workerNodes workerNodes
 	etcdClient  *etcd.Client
