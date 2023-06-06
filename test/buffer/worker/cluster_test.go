@@ -3,31 +3,30 @@ package worker
 import (
 	"context"
 	"fmt"
+	"io"
 	"math/rand"
-	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/keboola/go-client/pkg/client"
+	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
-	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	apiConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
-	apiService "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service"
-	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	workerConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
-	workerService "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/netutils"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
@@ -35,27 +34,51 @@ import (
 const (
 	apiNodesCount              = 5
 	workerNodesCount           = 5
-	uploadCountThreshold       = 5
-	importCountThreshold       = 10
+	uploadConditionsCount      = 5
+	uploadConditionsSize       = datasize.MB
+	uploadConditionsTime       = time.Hour
+	importConditionsCount      = 10
+	importConditionsSize       = datasize.MB
+	importConditionsTime       = time.Hour
 	statisticsSyncInterval     = 500 * time.Millisecond
-	conditionsCheckInterval    = 500 * time.Millisecond
+	conditionsCheckInterval    = 2000 * time.Millisecond
 	receiverBufferSizeCacheTTL = 500 * time.Millisecond
 	receiverBufferSize         = 100 * datasize.KB
+	startupTimeout             = 30 * time.Second
+	shutdownTimeout            = 10 * time.Second
 )
 
 type testSuite struct {
-	t           *testing.T
-	ctx         context.Context
-	testDir     string
-	outDir      string
-	envs        *env.Map
-	logger      log.DebugLogger
 	*apiClient
+	t       *testing.T
+	fatalCh chan error
+
+	ctx     context.Context
+	project *testproject.Project
+	envs    *env.Map
+
 	apiNodes    apiNodes
 	workerNodes workerNodes
-	etcdClient  *etcd.Client
+	shutdown    bool
 
-	project  *testproject.Project
+	testDir    string
+	outDir     string
+	logsDir    string
+	etcdOutDir string
+
+	apiLogsIn    io.Writer
+	workerLogsIn io.Writer
+	logsOut      *ioutil.AtomicWriter
+
+	apiBinaryPath    string
+	workerBinaryPath string
+
+	etcdEndpoint  string
+	etcdUsername  string
+	etcdPassword  string
+	etcdNamespace string
+	etcdClient    *etcd.Client
+
 	receiver *buffer.Receiver
 	secret   string
 	export1  *buffer.Export
@@ -67,140 +90,293 @@ type apiNodes []*apiNode
 type workerNodes []*workerNode
 
 type apiNode struct {
-	Dependencies bufferDependencies.Mocked
-	Service      buffer.Service
+	ID        string
+	Cmd       *exec.Cmd
+	CmdWaitCh <-chan error
+	Address   string
+	Client    client.Client
 }
 
 type workerNode struct {
-	Dependencies bufferDependencies.Mocked
-	Service      *workerService.Service
+	ID        string
+	Cmd       *exec.Cmd
+	CmdWaitCh <-chan error
 }
 
 //nolint:forbidigo
-func startCluster(t *testing.T, ctx context.Context, testDir string, project *testproject.Project) *testSuite {
+func newTestSuite(t *testing.T, ctx context.Context, testDir string, project *testproject.Project) *testSuite {
 	t.Helper()
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	outDir := filesystem.Join(testDir, ".out")
-	assert.NoError(t, os.RemoveAll(outDir))
-	assert.NoError(t, os.MkdirAll(outDir, 0o755))
-
-	envs := project.Env()
-
-	wg := &sync.WaitGroup{}
-	out := &testSuite{
-		t:           t,
-		ctx:         ctx,
-		project:     project,
-		testDir:     testDir,
-		outDir:      outDir,
-		envs:        envs,
-		apiNodes:    make([]*apiNode, apiNodesCount),
-		workerNodes: make([]*workerNode, workerNodesCount),
+	ts := &testSuite{
+		t:             t,
+		fatalCh:       make(chan error, 1),
+		ctx:           ctx,
+		project:       project,
+		envs:          project.Env(),
+		etcdNamespace: idgenerator.EtcdNamespaceForTest(),
+		etcdEndpoint:  os.Getenv("BUFFER_WORKER_ETCD_ENDPOINT"),
+		etcdUsername:  os.Getenv("BUFFER_WORKER_ETCD_USERNAME"),
+		etcdPassword:  os.Getenv("BUFFER_WORKER_ETCD_PASSWORD"),
+		apiNodes:      make([]*apiNode, apiNodesCount),
+		workerNodes:   make([]*workerNode, workerNodesCount),
 	}
 
-	// Setup logger
-	out.logger = log.NewDebugLogger()
-	out.logger.ConnectTo(testhelper.VerboseStdout())
+	ts.createDirs(testDir)
+	ts.setupLogs()
+	ts.createAPIClient()
+	ts.createEtcdClient()
 
-	// Connect to the etcd
-	etcdNamespace := idgenerator.EtcdNamespaceForTest()
-	etcdEndpoint := os.Getenv("BUFFER_WORKER_ETCD_ENDPOINT")
-	etcdUsername := os.Getenv("BUFFER_WORKER_ETCD_USERNAME")
-	etcdPassword := os.Getenv("BUFFER_WORKER_ETCD_PASSWORD")
-	out.etcdClient = etcdhelper.ClientForTestFrom(
-		t,
-		etcdEndpoint,
-		etcdUsername,
-		etcdPassword,
-		etcdNamespace,
-	)
+	return ts
+}
 
-	opts := []dependencies.MockedOption{
-		dependencies.WithCtx(ctx),
-		dependencies.WithDebugLogger(out.logger),
-		dependencies.WithEtcdEndpoint(etcdEndpoint),
-		dependencies.WithEtcdUsername(etcdUsername),
-		dependencies.WithEtcdPassword(etcdPassword),
-		dependencies.WithEtcdNamespace(etcdNamespace),
-		dependencies.WithTestProject(project),
-	}
-
-	for i := 0; i < apiNodesCount; i++ {
-		i := i
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			nodeID := fmt.Sprintf(`api-node-%d`, i+1)
-			header := make(http.Header)
-			header.Set("Content-Type", "application/json")
-			d := bufferDependencies.NewMockedDeps(t, append(opts,
-				dependencies.WithUniqueID(nodeID),
-				dependencies.WithLoggerPrefix(fmt.Sprintf(`[%s]`, nodeID)),
-				dependencies.WithRequestHeader(header),
-			)...)
-			d.SetAPIConfigOps(
-				apiConfig.WithStatisticsSyncInterval(statisticsSyncInterval),
-				apiConfig.WithReceiverBufferSize(receiverBufferSize),
-				apiConfig.WithReceiverBufferSizeCacheTTL(receiverBufferSizeCacheTTL),
-			)
-			svc := apiService.New(d)
-			out.apiNodes[i] = &apiNode{Dependencies: d, Service: svc}
-		}()
-	}
-
-	for i := 0; i < workerNodesCount; i++ {
-		i := i
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			nodeID := fmt.Sprintf(`worker-node-%d`, i+1)
-			d := bufferDependencies.NewMockedDeps(t, append(opts,
-				dependencies.WithUniqueID(nodeID),
-				dependencies.WithLoggerPrefix(fmt.Sprintf(`[%s]`, nodeID)),
-			)...)
-			d.SetWorkerConfigOps(
-				workerConfig.WithCheckConditionsInterval(conditionsCheckInterval),
-				workerConfig.WithUploadConditions(model.Conditions{Count: uploadCountThreshold, Size: datasize.MB, Time: time.Hour}),
-			)
-			svc, err := workerService.New(d)
-			if err != nil {
-				assert.Fail(t, err.Error())
-			}
-			out.workerNodes[i] = &workerNode{Dependencies: d, Service: svc}
-		}()
-	}
-
-	wg.Wait()
-	return out
+//nolint:forbidigo
+func (ts *testSuite) StartCluster() {
+	ts.compileBinaries()
+	ts.startNodes()
 }
 
 func (ts *testSuite) RandomAPINode() *apiNode {
 	return ts.apiNodes[rand.Intn(apiNodesCount-1)] //nolint:gosec
 }
 
-func (ts *testSuite) Shutdown() {
+func (ts *testSuite) ShutdownCluster() {
+	ts.shutdown = true
 	wg := &sync.WaitGroup{}
 	for _, node := range ts.apiNodes {
-		node := node
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			p := node.Dependencies.Process()
-			p.Shutdown(errors.New("bye bye"))
-			p.WaitForShutdown()
-		}()
+		ts.terminateCmd(wg, node.Cmd, node.CmdWaitCh, node.ID)
 	}
 	for _, node := range ts.workerNodes {
-		node := node
+		ts.terminateCmd(wg, node.Cmd, node.CmdWaitCh, node.ID)
+	}
+	wg.Wait()
+	close(ts.fatalCh)
+}
+
+//nolint:forbidigo
+func (ts *testSuite) createDirs(testDir string) {
+	ts.outDir = filepath.Join(testDir, ".out")
+	require.NoError(ts.t, os.RemoveAll(ts.outDir))
+	require.NoError(ts.t, os.MkdirAll(ts.outDir, 0o755))
+	ts.logsDir = filepath.Join(ts.outDir, "logs")
+	require.NoError(ts.t, os.MkdirAll(ts.logsDir, 0o755))
+	ts.etcdOutDir = filepath.Join(ts.outDir, "etcd")
+	require.NoError(ts.t, os.MkdirAll(ts.etcdOutDir, 0o755))
+}
+
+func (ts *testSuite) setupLogs() {
+	apiLogFile, err := os.OpenFile(filepath.Join(ts.logsDir, "_all-api-nodes.out.txt"), os.O_CREATE|os.O_WRONLY, 0o644) //nolint:forbidigo
+	require.NoError(ts.t, err)
+	ts.t.Cleanup(func() { _ = apiLogFile.Close() })
+	workerLogFile, err := os.OpenFile(filepath.Join(ts.logsDir, "_all-worker-nodes.out.txt"), os.O_CREATE|os.O_WRONLY, 0o644) //nolint:forbidigo
+	require.NoError(ts.t, err)
+	ts.t.Cleanup(func() { _ = workerLogFile.Close() })
+	ts.logsOut = ioutil.NewAtomicWriter()
+	ts.logsOut.ConnectTo(testhelper.VerboseStdout())
+	ts.apiLogsIn = io.MultiWriter(ts.logsOut, apiLogFile)
+	ts.workerLogsIn = io.MultiWriter(ts.logsOut, workerLogFile)
+}
+
+func (ts *testSuite) createAPIClient() {
+	ts.apiClient = newAPIClient(ts)
+}
+
+func (ts *testSuite) createEtcdClient() {
+	ts.etcdClient = etcdhelper.ClientForTestFrom(ts.t, ts.etcdEndpoint, ts.etcdUsername, ts.etcdPassword, ts.etcdNamespace+"/")
+}
+
+func (ts *testSuite) startNodes() {
+	wg := &sync.WaitGroup{}
+	for i := 0; i < apiNodesCount; i++ {
+		i := i
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			p := node.Dependencies.Process()
-			p.Shutdown(errors.New("bye bye"))
-			p.WaitForShutdown()
+			ts.apiNodes[i] = ts.createAPINode(i)
 		}()
 	}
+	for i := 0; i < workerNodesCount; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			ts.workerNodes[i] = ts.createWorkerNode(i)
+		}()
+	}
+
+	ts.t.Logf(`waiting for all nodes ...`)
 	wg.Wait()
+
+	ts.t.Logf("-------------------------")
+	ts.t.Logf("cluster started, %d API nodes, %d worker nodes", len(ts.apiNodes), len(ts.workerNodes))
+	ts.t.Logf("-------------------------")
+}
+
+func (ts *testSuite) createAPINode(i int) *apiNode {
+	nodeID := fmt.Sprintf(`api-node-%d`, i+1)
+
+	apiPort, err := netutils.FreePort()
+	require.NoError(ts.t, err)
+	address := fmt.Sprintf("http://localhost:%d", apiPort)
+
+	metricsPort, err := netutils.FreePort()
+	require.NoError(ts.t, err)
+
+	// Configuration, see internal/pkg/service/buffer/api/config/config.go
+	envs := env.Empty()
+	envs.Set("BUFFER_API_UNIQUE_ID", nodeID)
+	envs.Set("BUFFER_API_DEBUG_LOG", "true")
+	envs.Set("BUFFER_API_DATADOG_ENABLED", "false")
+	envs.Set("BUFFER_API_ETCD_ENDPOINT", ts.etcdEndpoint)
+	envs.Set("BUFFER_API_ETCD_USERNAME", ts.etcdUsername)
+	envs.Set("BUFFER_API_ETCD_PASSWORD", ts.etcdPassword)
+	envs.Set("BUFFER_API_ETCD_NAMESPACE", ts.etcdNamespace)
+	envs.Set("BUFFER_API_STORAGE_API_HOST", ts.project.StorageAPIHost())
+	envs.Set("BUFFER_API_LISTEN_ADDRESS", fmt.Sprintf("0.0.0.0:%d", apiPort))
+	envs.Set("BUFFER_API_METRICS_LISTEN_ADDRESS", fmt.Sprintf("0.0.0.0:%d", metricsPort))
+	envs.Set("BUFFER_API_PUBLIC_ADDRESS", address)
+	envs.Set("BUFFER_API_STATISTICS_SYNC_INTERVAL", statisticsSyncInterval.String())
+	envs.Set("BUFFER_API_RECEIVER_BUFFER_SIZE", receiverBufferSize.String())
+	envs.Set("BUFFER_API_RECEIVER_BUFFER_SIZE_CACHE_TTL", receiverBufferSizeCacheTTL.String())
+
+	// Create log file
+	logFile, err := os.OpenFile(filepath.Join(ts.logsDir, nodeID+".out.txt"), os.O_CREATE|os.O_WRONLY, 0o644) //nolint:forbidigo
+	require.NoError(ts.t, err)
+	logOutput := io.MultiWriter(ioutil.NewPrefixWriter(fmt.Sprintf(`[%s]`, nodeID), ts.apiLogsIn), logFile)
+	ts.t.Cleanup(func() { _ = logFile.Close() })
+
+	// Start process
+	cmd := exec.CommandContext(ts.ctx, ts.apiBinaryPath) // nolint:gosec
+	cmd.Env = envs.ToSlice()
+	cmd.Dir = ts.outDir
+	cmd.Stdout = logOutput
+	cmd.Stderr = logOutput
+	if err := cmd.Start(); err != nil {
+		ts.fatalCh <- errors.Errorf(`cannot start worker node: %w`, err)
+	}
+
+	// Wait for process in goroutine
+	cmdWaitCh := ts.cmdWaitChannel(cmd, nodeID)
+
+	// Wait for API
+	ts.t.Logf(`waiting for node "%s"`, nodeID)
+	if err := testhelper.WaitForAPI(ts.ctx, cmdWaitCh, nodeID, address, startupTimeout); err != nil {
+		ts.fatalCh <- err
+	}
+
+	ts.t.Logf(`started node "%s"`, nodeID)
+	return &apiNode{
+		ID:        nodeID,
+		Cmd:       cmd,
+		CmdWaitCh: cmdWaitCh,
+		Address:   address,
+		Client:    client.NewTestClient().WithBaseURL(address),
+	}
+}
+
+func (ts *testSuite) createWorkerNode(i int) *workerNode {
+	nodeID := fmt.Sprintf(`worker-node-%d`, i+1)
+
+	metricsPort, err := netutils.FreePort()
+	require.NoError(ts.t, err)
+
+	// Configuration, see internal/pkg/service/buffer/worker/config/config.go
+	envs := env.Empty()
+	envs.Set("BUFFER_WORKER_UNIQUE_ID", nodeID)
+	envs.Set("BUFFER_WORKER_DEBUG_LOG", "true")
+	envs.Set("BUFFER_WORKER_DATADOG_ENABLED", "false")
+	envs.Set("BUFFER_WORKER_ETCD_ENDPOINT", ts.etcdEndpoint)
+	envs.Set("BUFFER_WORKER_ETCD_USERNAME", ts.etcdUsername)
+	envs.Set("BUFFER_WORKER_ETCD_PASSWORD", ts.etcdPassword)
+	envs.Set("BUFFER_WORKER_ETCD_NAMESPACE", ts.etcdNamespace)
+	envs.Set("BUFFER_WORKER_STORAGE_API_HOST", ts.project.StorageAPIHost())
+	envs.Set("BUFFER_WORKER_METRICS_LISTEN_ADDRESS", fmt.Sprintf("0.0.0.0:%d", metricsPort))
+	envs.Set("BUFFER_WORKER_CHECK_CONDITIONS_INTERVAL", conditionsCheckInterval.String())
+	envs.Set("BUFFER_WORKER_UPLOAD_CONDITIONS_COUNT", cast.ToString(uploadConditionsCount))
+	envs.Set("BUFFER_WORKER_UPLOAD_CONDITIONS_SIZE", uploadConditionsSize.String())
+	envs.Set("BUFFER_WORKER_UPLOAD_CONDITIONS_TIME", uploadConditionsTime.String())
+
+	// Create log file
+	logFile, err := os.OpenFile(filepath.Join(ts.logsDir, nodeID+".out.txt"), os.O_CREATE|os.O_WRONLY, 0o644) //nolint:forbidigo
+	require.NoError(ts.t, err)
+	logOutput := io.MultiWriter(ioutil.NewPrefixWriter(fmt.Sprintf(`[%s]`, nodeID), ts.workerLogsIn), logFile)
+	ts.t.Cleanup(func() { _ = logFile.Close() })
+
+	// Start process
+	cmd := exec.CommandContext(ts.ctx, ts.workerBinaryPath) // nolint:gosec
+	cmd.Env = envs.ToSlice()
+	cmd.Dir = ts.outDir
+	cmd.Stdout = logOutput
+	cmd.Stderr = logOutput
+	if err := cmd.Start(); err != nil {
+		ts.fatalCh <- errors.Errorf(`cannot start worker node: %w`, err)
+	}
+
+	// Wait for process in goroutine
+	cmdWaitCh := ts.cmdWaitChannel(cmd, nodeID)
+
+	ts.t.Logf(`started node "%s"`, nodeID)
+	return &workerNode{
+		ID:        nodeID,
+		Cmd:       cmd,
+		CmdWaitCh: cmdWaitCh,
+	}
+}
+
+func (ts *testSuite) compileBinaries() {
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		ts.apiBinaryPath = testhelper.CompileBinary(ts.t, "buffer-api", "build-buffer-api")
+	}()
+	go func() {
+		defer wg.Done()
+		ts.workerBinaryPath = testhelper.CompileBinary(ts.t, "buffer-worker", "build-buffer-worker")
+	}()
+	wg.Wait()
+
+	if ts.apiBinaryPath == "" || ts.workerBinaryPath == "" {
+		ts.fatalCh <- errors.New("compilation failed")
+	}
+
+	ts.t.Logf("-------------------------")
+	ts.t.Logf("compilation successful")
+	ts.t.Logf("-------------------------")
+}
+
+func (ts *testSuite) cmdWaitChannel(cmd *exec.Cmd, nodeID string) <-chan error {
+	ch := make(chan error, 1)
+	go func() {
+		err := cmd.Wait()
+		ch <- err
+		close(ch)
+		if err != nil && !ts.shutdown {
+			ts.fatalCh <- errors.Errorf(`node "%s" ended unexpectedly before the end of the test: %s`, nodeID, err)
+		}
+	}()
+	return ch
+}
+
+func (ts *testSuite) terminateCmd(wg *sync.WaitGroup, cmd *exec.Cmd, cmdWaitCh <-chan error, nodeID string) {
+	ctx, cancel := context.WithCancel(ts.ctx)
+
+	// Send SIGTERM and wait
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer cancel()
+		assert.NoErrorf(ts.t, cmd.Process.Signal(syscall.SIGTERM), `node "%s" sigterm failed`, nodeID)
+		assert.NoErrorf(ts.t, <-cmdWaitCh, `node "%s" process failed`, nodeID)
+	}()
+
+	// Kill process after timeout
+	go func() {
+		select {
+		case <-ctx.Done():
+		case <-time.After(shutdownTimeout):
+			_ = cmd.Process.Kill()
+		}
+	}()
 }
