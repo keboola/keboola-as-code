@@ -19,38 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
-// TablePreview loads preview of the table, sorted by the "id" column.
-func (ts *testSuite) TablePreview(tableID, sortBy string) *keboola.TablePreview {
-	opts := []keboola.PreviewOption{keboola.WithLimitRows(20), keboola.WithOrderBy(sortBy, keboola.OrderAsc)}
-	preview, err := ts.project.
-		KeboolaProjectAPI().
-		PreviewTableRequest(keboola.MustParseTableID(tableID), opts...).
-		Send(ts.ctx)
-	assert.NoError(ts.t, err)
-
-	// Replace random dates
-	for i, row := range preview.Rows {
-		for j := range row {
-			col := &preview.Rows[i][j]
-			if regexpcache.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$`).MatchString(*col) {
-				*col = "<date>"
-			}
-		}
-	}
-
-	return preview
-}
-
-func (ts *testSuite) Import(id int) {
-	n := ts.RandomAPINode()
-	time.Sleep(time.Millisecond) // prevent order issues
-	assert.NoError(ts.t, n.Service.Import(n.Dependencies, &buffer.ImportPayload{
-		ProjectID:  buffer.ProjectID(ts.project.ID()),
-		ReceiverID: ts.receiver.ID,
-		Secret:     ts.secret,
-	}, io.NopCloser(strings.NewReader(fmt.Sprintf(`{"key": "payload%03d"}`, id)))))
-}
-
 //nolint:forbidigo
 func (ts *testSuite) AssertEtcdState(expectedFile string) {
 	dump, err := etcdhelper.DumpAllToString(ts.ctx, ts.etcdClient)
