@@ -44,6 +44,8 @@ const (
 	expectedStderrPath   = "expected-server-stderr"
 	inDirName            = `in`
 	initialStateFileName = "initial-state.json"
+	startupTimeout       = 45 * time.Second
+	shutdownTimeout      = 10 * time.Second
 )
 
 type ctxKey string
@@ -373,7 +375,7 @@ func (t *Test) runAPIServer(
 	})
 
 	// Wait for API server
-	if err = waitForAPI(cmdWaitCh, apiURL); err != nil {
+	if err = testhelper.WaitForAPI(t.ctx, cmdWaitCh, "api", apiURL, startupTimeout); err != nil {
 		t.t.Fatalf(
 			"Unexpected error while waiting for API: %s\n\nServer STDERR:%s\n\nServer STDOUT:%s\n",
 			err,
@@ -388,7 +390,7 @@ func (t *Test) runAPIServer(
 	// Shutdown API server
 	_ = cmd.Process.Signal(syscall.SIGTERM)
 	select {
-	case <-time.After(10 * time.Second):
+	case <-time.After(shutdownTimeout):
 		t.t.Fatalf("timeout while waiting for server shutdown")
 	case <-cmdWaitCh:
 		// continue
@@ -637,38 +639,6 @@ func (t *Test) assertProjectState() {
 			json.MustEncodeString(actualState, true),
 			`unexpected project state, compare "expected-state.json" from test and "actual-state.json" from ".out" dir.`,
 		)
-	}
-}
-
-func waitForAPI(cmdErrCh <-chan error, apiURL string) error {
-	client := resty.New()
-
-	serverStartTimeout := 45 * time.Second
-	timeout := time.After(serverStartTimeout)
-	tick := time.Tick(200 * time.Millisecond) // nolint:staticcheck
-	// Keep trying until we're timed out or got a result or got an error
-	for {
-		select {
-		// Handle timeout
-		case <-timeout:
-			return errors.Errorf("server didn't start within %s", serverStartTimeout)
-		// Handle server termination
-		case err := <-cmdErrCh:
-			if err == nil {
-				return errors.New("the server was terminated unexpectedly")
-			} else {
-				return errors.Errorf("the server was terminated unexpectedly with error: %w", err)
-			}
-		// Periodically test health check endpoint
-		case <-tick:
-			resp, err := client.R().Get(fmt.Sprintf("%s/health-check", apiURL))
-			if err != nil && !strings.Contains(err.Error(), "connection refused") {
-				return err
-			}
-			if resp.StatusCode() == 200 {
-				return nil
-			}
-		}
 	}
 }
 
