@@ -45,14 +45,14 @@ func CompileBinary(t *testing.T, binaryName string, makeCommand string) string {
 	cmd.Stderr = io.MultiWriter(&stderr, VerboseStderr())
 
 	// Run
-	t.Logf(`Compiling "%s" binary to "%s" ...`, binaryName, binaryPath)
+	t.Logf(`compiling "%s" binary to "%s" ...`, binaryName, binaryPath)
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("Compilation failed: %s\nSTDOUT:\n%s\n\nSTDERR:\n%s\n", err, stdout.Bytes(), stderr.Bytes())
+		t.Fatalf("compilation failed: %s\nSTDOUT:\n%s\n\nSTDERR:\n%s\n", err, stdout.Bytes(), stderr.Bytes())
 	}
 	if _, err := os.Stat(binaryPath); err != nil { //nolint:forbidigo
-		t.Fatalf("Compilation failed, binary not found: %s\nSTDOUT:\n%s\n\nSTDERR:\n%s\n", err, stdout.Bytes(), stderr.Bytes())
+		t.Fatalf("compilation failed, binary not found: %s\nSTDOUT:\n%s\n\nSTDERR:\n%s\n", err, stdout.Bytes(), stderr.Bytes())
 	}
-	t.Logf("Compilation done.")
+	t.Logf(`compilation "%s" done`, binaryName)
 
 	return binaryPath
 }
