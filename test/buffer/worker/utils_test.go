@@ -2,19 +2,18 @@ package worker
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/umisama/go-regexpcache"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
+	apiModel "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
+	apiServer "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/http/buffer/server"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
@@ -25,7 +24,7 @@ func (ts *testSuite) AssertEtcdState(expectedFile string) {
 	require.NoError(ts.t, err)
 
 	// Write actual state
-	require.NoError(ts.t, os.WriteFile(filepath.Join(ts.outDir, fmt.Sprintf(`actual-%s.txt`, expectedFile)), []byte(dump), 0o644))
+	require.NoError(ts.t, os.WriteFile(filepath.Join(ts.etcdOutDir, fmt.Sprintf(`actual-%s.txt`, expectedFile)), []byte(dump), 0o644))
 
 	// Load expected state
 	content, err := os.ReadFile(filepath.Join(ts.testDir, "expected-etcd-state", fmt.Sprintf("%s.txt", expectedFile)))
@@ -68,21 +67,21 @@ func (ts *testSuite) AssertEtcdState(expectedFile string) {
 // WaitForLogMessages wait until the lines are logged or a timeout occurs.
 // The lines do not have to be logged consecutively,
 // there can be another line between them, but the order must be preserved.
-func (ts *testSuite) WaitForLogMessages(timeout time.Duration, lines string) {
+func (ts *testSuite) WaitForLogMessages(timeout time.Duration, lines string) bool {
 	expected := `%A` + strings.ReplaceAll(strings.TrimSpace(lines), "\n", "\n%A") + `%A`
-	assert.Eventually(ts.t, func() bool {
-		return wildcards.Compare(expected, ts.logger.AllMessages()) == nil
-	}, timeout, 100*time.Millisecond, ts.logger.AllMessages())
+	return assert.Eventually(ts.t, func() bool {
+		return wildcards.Compare(expected, ts.logsOut.String()) == nil
+	}, timeout, 100*time.Millisecond, ts.logsOut.String())
 }
 
 func (ts *testSuite) AssertNoLoggedWarning() {
-	msgs := ts.logger.WarnMessages()
-	assert.Len(ts.t, msgs, 0, "Found some warning messages: %v", msgs)
+	msgs := ts.logsOut.String()
+	assert.Falsef(ts.t, strings.Contains(msgs, "WARN"), "Found some warning messages: %v", msgs)
 }
 
 func (ts *testSuite) AssertNoLoggedError() {
-	msgs := ts.logger.WarnMessages()
-	assert.Len(ts.t, msgs, 0, "Found some error messages: %v", msgs)
+	msgs := ts.logsOut.String()
+	assert.Falsef(ts.t, strings.Contains(msgs, "ERROR"), "Found some error messages: %v", msgs)
 }
 
 // AssertLoggedLines checks that each requested line has been logged.
@@ -91,12 +90,31 @@ func (ts *testSuite) AssertNoLoggedError() {
 // there can be another line between them, but the order must be preserved.
 func (ts *testSuite) AssertLoggedLines(lines string) {
 	expected := `%A` + strings.ReplaceAll(strings.TrimSpace(lines), "\n", "\n%A") + `%A`
-	wildcards.Assert(ts.t, expected, ts.logger.AllMessages())
+	wildcards.Assert(ts.t, expected, ts.logsOut.String())
 }
 
 // TruncateLogs clear all logs.
 func (ts *testSuite) TruncateLogs() {
 	// write to stdout if TEST_VERBOSE=true
-	ts.logger.Info("------------------------------ TRUNCATE LOGS ------------------------------")
-	ts.logger.Truncate()
+	_, _ = ts.logsOut.WriteString("------------------------------ TRUNCATE LOGS ------------------------------\n")
+	ts.logsOut.Truncate()
+}
+
+func columnsModeToBody(columns []*apiModel.Column) (out []*apiServer.ColumnRequestBody) {
+	// Map columns type
+	for _, c := range columns {
+		bodyColumn := &apiServer.ColumnRequestBody{
+			PrimaryKey: &c.PrimaryKey,
+			Type:       &c.Type,
+			Name:       &c.Name,
+		}
+		if c.Template != nil {
+			bodyColumn.Template = &apiServer.TemplateRequestBody{
+				Language: &c.Template.Language,
+				Content:  &c.Template.Content,
+			}
+		}
+		out = append(out, bodyColumn)
+	}
+	return out
 }
