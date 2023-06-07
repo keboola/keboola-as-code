@@ -97,7 +97,7 @@ func NewServiceDeps(
 		schema:     schema.New(validateFn),
 	}
 	serviceDeps.store = store.New(serviceDeps)
-	serviceDeps.taskNode, err = task.NewNode(serviceDeps, task.WithSpanNamePrefix(config.SpanNamePrefix))
+	serviceDeps.taskNode, err = task.NewNode(serviceDeps)
 	if err != nil {
 		return nil, err
 	}

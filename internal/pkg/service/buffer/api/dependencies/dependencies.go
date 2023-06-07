@@ -34,7 +34,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
-	bufferConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	serviceDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
@@ -177,7 +176,7 @@ func NewDepsForProjectRequest(publicDeps ForPublicRequest, ctx context.Context, 
 	d.tokenManager = token.NewManager(d)
 	d.tableManager = table.NewManager(d.KeboolaProjectAPI())
 	d.fileManager = file.NewManager(d.Clock(), d.KeboolaProjectAPI(), nil)
-	d.taskNode, err = task.NewNode(d, task.WithSpanNamePrefix(bufferConfig.SpanNamePrefix))
+	d.taskNode, err = task.NewNode(d)
 	if err != nil {
 		return nil, err
 	}

@@ -61,7 +61,7 @@ func (v *mocked) Store() *store.Store {
 func (v *mocked) TaskNode() *task.Node {
 	if v.taskNode == nil {
 		var err error
-		v.taskNode, err = task.NewNode(v, task.WithSpanNamePrefix(config.SpanNamePrefix))
+		v.taskNode, err = task.NewNode(v)
 		assert.NoError(v.t, err)
 	}
 	return v.taskNode

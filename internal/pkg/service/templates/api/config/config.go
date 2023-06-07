@@ -14,7 +14,6 @@ import (
 
 const (
 	EnvPrefix              = "TEMPLATES_API_"
-	SpanNamePrefix         = "keboola.go.templates.task"
 	DefaultCleanupInterval = 1 * time.Hour
 )
 
