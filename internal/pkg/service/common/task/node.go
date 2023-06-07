@@ -28,6 +28,7 @@ import (
 
 const (
 	LockEtcdPrefix = etcdop.Prefix("runtime/lock/task")
+	spanName       = "keboola.go.task"
 )
 
 type Fn func(ctx context.Context, logger log.Logger) Result
@@ -205,7 +206,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 	}
 
 	// Setup telemetry
-	ctx, span := n.tracer.Start(ctx, n.config.spanNamePrefix+"."+cfg.Type, trace.WithAttributes(spanStartAttrs(&task)...))
+	ctx, span := n.tracer.Start(ctx, spanName, trace.WithAttributes(spanStartAttrs(&task)...))
 	n.meters.running.Add(ctx, 1, metric.WithAttributes(meterStartAttrs(&task)...))
 
 	// Process results in defer to catch panic

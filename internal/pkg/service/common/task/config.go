@@ -14,20 +14,12 @@ const (
 type NodeOption func(c *nodeConfig)
 
 type nodeConfig struct {
-	spanNamePrefix string
 	taskEtcdPrefix string
 	ttlSeconds     int
 }
 
 func defaultNodeConfig() nodeConfig {
 	return nodeConfig{taskEtcdPrefix: DefaultTaskEtcdPrefix, ttlSeconds: DefaultSessionTTL}
-}
-
-// WithSpanNamePrefix defines prefix for tracing spans.
-func WithSpanNamePrefix(p string) NodeOption {
-	return func(c *nodeConfig) {
-		c.spanNamePrefix = p
-	}
 }
 
 // WithTaskEtcdPrefix defines prefix for tasks records in etcd.

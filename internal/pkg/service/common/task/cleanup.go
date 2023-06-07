@@ -6,6 +6,7 @@ import (
 
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
@@ -58,7 +59,7 @@ func (n *Node) Cleanup() (err error) {
 	}()
 
 	// Setup telemetry
-	ctx, span := n.tracer.Start(ctx, n.config.spanNamePrefix+".cleanup")
+	ctx, span := n.tracer.Start(ctx, spanName, trace.WithAttributes(attribute.String("resource_name", "tasks.cleanup")))
 	defer span.End(&err)
 
 	// Go through tasks and delete old ones
