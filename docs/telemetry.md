@@ -100,3 +100,19 @@ the [pkg/client/trace/otel](https://github.com/keboola/go-client/tree/main/pkg/c
 | `keboola_go_http_request_duration`              | Duration of a low-level HTTP request. Each redirect and retry is tracked separately.                   |
 | `keboola_go_http_request_content_length.count`  | Request content length.                                                                                |
 | `keboola_go_http_response_content_length.count` | Response content length.                                                                               |
+
+## Background Tasks
+
+### Spans
+
+| Span                     | Description                                                               |
+|--------------------------|---------------------------------------------------------------------------|
+| `keboola.go.task`        | A background task. The `resource_name` attribute is set to the task type. |
+
+
+### Metrics
+
+| Span                       | Description                         |
+|----------------------------|-------------------------------------|
+| `keboola_go_task_running`  | Number of running background tasks. |
+| `keboola_go_task_duration` | Duration of background tasks.       |
