@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 const (
@@ -22,7 +24,6 @@ const (
 	attrRequestHeader  = "http.header."
 	attrResponseHeader = "http.response.header."
 	// Extra attributes for DataDog.
-	attrManualDrop          = "manual.drop"
 	attrSpanKind            = "span.kind"
 	attrSpanKindValueServer = "server"
 	attrSpanType            = "span.type"
@@ -30,7 +31,7 @@ const (
 )
 
 func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, cfg Config) Middleware {
-	tracer := tp.Tracer("otel-middleware")
+	nopTracer := trace.NewNoopTracerProvider().Tracer("")
 	meter := mp.Meter("otel-middleware")
 	apdex := newApdexCounter(meter, []time.Duration{
 		500 * time.Millisecond,
@@ -45,8 +46,7 @@ func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, cfg Config)
 
 			// Create dropped span for filtered request, so child spans won't appear in the telemetry too.
 			if isRequestIgnored(req) {
-				ctx, span = tracer.Start(ctx, SpanName, trace.WithAttributes(attribute.Bool(attrManualDrop, true)))
-				ctx = context.WithValue(ctx, RequestSpanCtxKey, span)
+				ctx, span = nopTracer.Start(telemetry.ContextWithDisabledTracing(ctx), SpanName)
 				next.ServeHTTP(w, req.WithContext(ctx))
 				span.End()
 				return

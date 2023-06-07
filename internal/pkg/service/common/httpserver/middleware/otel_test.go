@@ -129,11 +129,6 @@ func expectedSpans(tel telemetry.ForTest) tracetest.SpanStubs {
 		SpanID:     tel.SpanID(1),
 		TraceFlags: otelTrace.FlagsSampled,
 	})
-	req2Context := otelTrace.NewSpanContext(otelTrace.SpanContextConfig{
-		TraceID:    tel.TraceID(2),
-		SpanID:     tel.SpanID(2),
-		TraceFlags: otelTrace.FlagsSampled,
-	})
 	return tracetest.SpanStubs{
 		{
 			Name:        "http.server.request",
@@ -168,27 +163,6 @@ func expectedSpans(tel telemetry.ForTest) tracetest.SpanStubs {
 				attribute.Int("http.wrote_bytes", 10),
 				attribute.Int("http.status_code", http.StatusInternalServerError),
 			},
-		},
-		{
-			Name:           "http.server.request",
-			SpanKind:       otelTrace.SpanKindInternal,
-			SpanContext:    req2Context,
-			ChildSpanCount: 1,
-			Attributes: []attribute.KeyValue{
-				attribute.Bool("manual.drop", true),
-				attribute.String("resource.name", "/api/ignored"),
-				attribute.String("http.route", "/api/ignored"),
-			},
-		},
-		{
-			Name:     "my-ignored-span",
-			SpanKind: otelTrace.SpanKindInternal,
-			Parent:   req2Context,
-			SpanContext: otelTrace.NewSpanContext(otelTrace.SpanContextConfig{
-				TraceID:    tel.TraceID(2),
-				SpanID:     tel.SpanID(3),
-				TraceFlags: otelTrace.FlagsSampled,
-			}),
 		},
 	}
 }

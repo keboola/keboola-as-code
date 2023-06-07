@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"runtime"
@@ -33,6 +34,14 @@ type wrappedDDSpan struct {
 
 type stackTracer interface {
 	StackTrace() errors.StackTrace
+}
+
+func (t *wrappedDDTracer) Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+	ctx, span := t.tracer.Start(ctx, spanName, opts...)
+	if span != nil {
+		span = &wrappedDDSpan{Span: span}
+	}
+	return ctx, span
 }
 
 func (s *wrappedDDSpan) RecordError(err error, _ ...trace.EventOption) {
