@@ -352,9 +352,15 @@ func (t *Test) runAPIServer(
 	envs.Set("PATH", os.Getenv("PATH")) // nolint:forbidigo
 	envs.Merge(addEnvs, false)
 
-	// Start API server
+	// Always dump process stdout/stderr
 	stdout := newCmdOut()
 	stderr := newCmdOut()
+	t.T().Cleanup(func() {
+		assert.NoError(t.t, t.workingDirFS.WriteFile(filesystem.NewRawFile("process-stdout.txt", stdout.String())))
+		assert.NoError(t.t, t.workingDirFS.WriteFile(filesystem.NewRawFile("process-stderr.txt", stderr.String())))
+	})
+
+	// Start API server
 	cmd := exec.Command(path, args...)
 	cmd.Env = envs.ToSlice()
 	cmd.Stdout = io.MultiWriter(stdout, testhelper.VerboseStdout())
@@ -395,10 +401,6 @@ func (t *Test) runAPIServer(
 	case <-cmdWaitCh:
 		// continue
 	}
-
-	// Dump process stdout/stderr
-	assert.NoError(t.t, t.workingDirFS.WriteFile(filesystem.NewRawFile("process-stdout.txt", stdout.String())))
-	assert.NoError(t.t, t.workingDirFS.WriteFile(filesystem.NewRawFile("process-stderr.txt", stderr.String())))
 
 	// Check API server stdout/stderr
 	if requestsOk {
