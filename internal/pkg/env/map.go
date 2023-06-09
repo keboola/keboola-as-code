@@ -17,6 +17,7 @@ type Provider interface {
 	Lookup(key string) (string, bool)
 	Get(key string) string
 	MustGet(key string) string
+	ToSlice() []string
 }
 
 // Map - abstraction for ENV variables.

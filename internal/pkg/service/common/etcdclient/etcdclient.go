@@ -58,7 +58,7 @@ func WithPassword(v string) Option {
 	}
 }
 
-// WithDebugOpLogs allows logging of ach KV operation as a debug message.
+// WithDebugOpLogs allows logging of each KV operation as a debug message.
 func WithDebugOpLogs(v bool) Option {
 	return func(c *config) {
 		c.debugOpLogs = v

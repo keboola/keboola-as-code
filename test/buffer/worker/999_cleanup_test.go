@@ -1,25 +1,16 @@
 package worker
 
-import (
-	"github.com/stretchr/testify/assert"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
-)
-
 // test999Cleanup tests the deletion of all objects.
 func (ts *testSuite) test999Cleanup() {
+	ts.t.Logf("-------------------------")
+	ts.t.Logf("999 cleanup")
+	ts.t.Logf("-------------------------")
+
 	// Delete export1
-	n := ts.RandomAPINode()
-	assert.NoError(ts.t, n.Service.DeleteExport(n.Dependencies, &buffer.DeleteExportPayload{
-		ReceiverID: ts.receiver.ID,
-		ExportID:   ts.export1.ID,
-	}))
+	ts.DeleteExport(ts.export1.ReceiverID, ts.export1.ID)
 
 	// Delete receiver (and export2)
-	n = ts.RandomAPINode()
-	assert.NoError(ts.t, n.Service.DeleteReceiver(n.Dependencies, &buffer.DeleteReceiverPayload{
-		ReceiverID: ts.receiver.ID,
-	}))
+	ts.DeleteReceiver(ts.receiver.ID)
 
 	// Check etcd state
 	ts.AssertEtcdState("999-cleanup")

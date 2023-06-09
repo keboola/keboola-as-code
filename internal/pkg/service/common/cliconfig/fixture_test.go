@@ -9,7 +9,7 @@ import (
 type Config struct {
 	Embedded         `mapstructure:",squash"`
 	Ignored          string
-	String           string         `mapstructure:"string"`
+	String           string         `mapstructure:"string" sensitive:"true"`
 	Int              int            `mapstructure:"int"`
 	Float            float64        `mapstructure:"float"`
 	StringWithUsage  string         `mapstructure:"string-with-usage" usage:"An usage text."`

@@ -63,7 +63,8 @@ func run() error {
 	}
 
 	// Create logger.
-	logger := log.NewServiceLogger(os.Stderr, cfg.Debug).AddPrefix("[templatesApi]")
+	logger := log.NewServiceLogger(os.Stderr, cfg.DebugLog).AddPrefix("[templatesApi]")
+	logger.Info("Configuration: ", cfg.Dump())
 
 	// Start CPU profiling, if enabled.
 	if cfg.CpuProfFilePath != "" {
@@ -75,7 +76,7 @@ func run() error {
 	}
 
 	// Create process abstraction.
-	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger))
+	proc, err := servicectx.New(ctx, cancel, servicectx.WithLogger(logger), servicectx.WithUniqueID(cfg.UniqueID))
 	if err != nil {
 		return err
 	}
@@ -83,19 +84,22 @@ func run() error {
 	// Setup telemetry
 	tel, err := telemetry.New(
 		func() (trace.TracerProvider, error) {
-			tracerProvider := ddotel.NewTracerProvider(
-				tracer.WithLogger(telemetry.NewDDLogger(logger)),
-				tracer.WithRuntimeMetrics(),
-				tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
-				tracer.WithAnalyticsRate(1.0),
-				tracer.WithDebugMode(cfg.DatadogDebug),
-			)
-			proc.OnShutdown(func() {
-				if err := tracerProvider.Shutdown(); err != nil {
-					logger.Error(err)
-				}
-			})
-			return telemetry.WrapDD(tracerProvider.Tracer("")), nil
+			if cfg.DatadogEnabled {
+				tracerProvider := ddotel.NewTracerProvider(
+					tracer.WithLogger(telemetry.NewDDLogger(logger)),
+					tracer.WithRuntimeMetrics(),
+					tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
+					tracer.WithAnalyticsRate(1.0),
+					tracer.WithDebugMode(cfg.DatadogDebug),
+				)
+				proc.OnShutdown(func() {
+					if err := tracerProvider.Shutdown(); err != nil {
+						logger.Error(err)
+					}
+				})
+				return telemetry.WrapDD(tracerProvider.Tracer("")), nil
+			}
+			return nil, nil
 		},
 		func() (metric.MeterProvider, error) {
 			return prometheus.ServeMetrics(ctx, ServiceName, cfg.MetricsListenAddress, logger, proc)
@@ -118,12 +122,12 @@ func run() error {
 	}
 
 	// Start HTTP server.
-	logger.Infof("starting Templates API HTTP server, listen-address=%s, debug=%t, debug-http=%t", cfg.ListenAddress, cfg.Debug, cfg.DebugHTTP)
+	logger.Infof("starting Templates API HTTP server, listen-address=%s", cfg.ListenAddress)
 	err = httpserver.Start(d, httpserver.Config{
 		ListenAddress:     cfg.ListenAddress,
 		ErrorNamePrefix:   ErrorNamePrefix,
 		ExceptionIDPrefix: ExceptionIdPrefix,
-		TelemetryOptions: []middleware.OTELOption{
+		MiddlewareOptions: []middleware.Option{
 			middleware.WithRedactedHeader("X-StorageAPI-Token"),
 			middleware.WithPropagators(propagation.TraceContext{}),
 			middleware.WithFilter(func(req *http.Request) bool {

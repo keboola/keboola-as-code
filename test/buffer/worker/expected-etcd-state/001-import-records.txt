@@ -8,25 +8,25 @@
 <<<<<
 record/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/%s
 -----
-<<~~id~~>>,"{""key"": ""payload001""}","{""Content-Type"":""application/json""}"
+<<~~id~~>>,"{""key"": ""payload001""}","{""Accept-Encoding"":""gzip, br"",""Content-Type"":""application/json"",""User-Agent"":""keboola-go-client""}"
 >>>>>
 
 <<<<<
 record/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/%s
 -----
-<<~~id~~>>,"{""key"": ""payload002""}","{""Content-Type"":""application/json""}"
+<<~~id~~>>,"{""key"": ""payload002""}","{""Accept-Encoding"":""gzip, br"",""Content-Type"":""application/json"",""User-Agent"":""keboola-go-client""}"
 >>>>>
 
 <<<<<
 record/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/%s
 -----
-<<~~id~~>>,"{""key"": ""payload003""}","{""Content-Type"":""application/json""}"
+<<~~id~~>>,"{""key"": ""payload003""}","{""Accept-Encoding"":""gzip, br"",""Content-Type"":""application/json"",""User-Agent"":""keboola-go-client""}"
 >>>>>
 
 <<<<<
 record/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1/%s/%s
 -----
-<<~~id~~>>,"{""key"": ""payload004""}","{""Content-Type"":""application/json""}"
+<<~~id~~>>,"{""key"": ""payload004""}","{""Accept-Encoding"":""gzip, br"",""Content-Type"":""application/json"",""User-Agent"":""keboola-go-client""}"
 >>>>>
 
 <<<<<

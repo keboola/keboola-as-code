@@ -1945,8 +1945,10 @@ func marshalTemplatesTaskOutputsToTaskOutputsResponseBody(v *templates.TaskOutpu
 	if v == nil {
 		return nil
 	}
-	res := &TaskOutputsResponseBody{
-		InstanceID: v.InstanceID,
+	res := &TaskOutputsResponseBody{}
+	if v.InstanceID != nil {
+		instanceID := string(*v.InstanceID)
+		res.InstanceID = &instanceID
 	}
 
 	return res

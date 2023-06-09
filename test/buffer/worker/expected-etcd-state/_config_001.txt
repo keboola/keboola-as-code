@@ -5,7 +5,7 @@ config/export/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-1
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "receiverId": "my-receiver",
   "exportId": "my-export-1",
-  "name": "my-export-1",
+  "name": "My Export 1",
   "importConditions": {
     "count": 10,
     "size": "1MB",
@@ -21,7 +21,7 @@ config/export/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export-2
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "receiverId": "my-receiver",
   "exportId": "my-export-2",
-  "name": "my-export-2",
+  "name": "My Export 2",
   "importConditions": {
     "count": 10,
     "size": "1MB",
@@ -90,7 +90,7 @@ config/receiver/%%TEST_KBC_PROJECT_ID%%/my-receiver
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
   "receiverId": "my-receiver",
-  "name": "my-receiver",
+  "name": "My Receiver",
   "secret": "%s"
 }
 >>>>>

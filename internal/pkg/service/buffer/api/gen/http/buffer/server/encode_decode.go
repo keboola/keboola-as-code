@@ -1296,9 +1296,14 @@ func marshalBufferTaskOutputsToTaskOutputsResponseBody(v *buffer.TaskOutputs) *T
 	if v == nil {
 		return nil
 	}
-	res := &TaskOutputsResponseBody{
-		ExportID:   v.ExportID,
-		ReceiverID: v.ReceiverID,
+	res := &TaskOutputsResponseBody{}
+	if v.ExportID != nil {
+		exportID := string(*v.ExportID)
+		res.ExportID = &exportID
+	}
+	if v.ReceiverID != nil {
+		receiverID := string(*v.ReceiverID)
+		res.ReceiverID = &receiverID
 	}
 
 	return res

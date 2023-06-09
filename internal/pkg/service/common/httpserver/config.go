@@ -6,7 +6,7 @@ type Config struct {
 	ListenAddress     string
 	ErrorNamePrefix   string
 	ExceptionIDPrefix string
-	TelemetryOptions  []middleware.OTELOption
+	MiddlewareOptions []middleware.Option
 	// Mount endpoints to the Muxer
 	Mount func(c Components)
 }

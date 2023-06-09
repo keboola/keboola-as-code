@@ -43,10 +43,12 @@ func (m Mapper) TaskPayload(model *taskModel.Task) (r *buffer.Task) {
 	if model.Outputs != nil {
 		out.Outputs = &buffer.TaskOutputs{}
 		if v, ok := model.Outputs["receiverId"].(string); ok {
-			out.Outputs.ReceiverID = &v
+			id := buffer.ReceiverID(v)
+			out.Outputs.ReceiverID = &id
 		}
 		if v, ok := model.Outputs["exportId"].(string); ok {
-			out.Outputs.ExportID = &v
+			id := buffer.ExportID(v)
+			out.Outputs.ExportID = &id
 		}
 	}
 
