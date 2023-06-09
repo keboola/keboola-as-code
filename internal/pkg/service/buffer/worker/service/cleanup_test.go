@@ -117,10 +117,12 @@ func TestCleanup(t *testing.T) {
 
 	// Check logs
 	wildcards.Assert(t, `
-[task][cleanup]DEBUG  lock acquired "runtime/lock/task/tasks.cleanup"
-[task][cleanup]INFO  deleted "0" tasks
-[task][cleanup]DEBUG  lock released "runtime/lock/task/tasks.cleanup"
-	`, strhelper.FilterLines(`^\[task\]\[cleanup\]`, workerDeps.DebugLogger().AllMessages()))
+[task][_system_/tasks.cleanup/%s]INFO  started task
+[task][_system_/tasks.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/tasks.cleanup"
+[task][_system_/tasks.cleanup/%s]INFO  deleted "0" tasks
+[task][_system_/tasks.cleanup/%s]INFO  task succeeded (0s): deleted "0" tasks
+[task][_system_/tasks.cleanup/%s]DEBUG  lock released "runtime/lock/task/tasks.cleanup"
+	`, strhelper.FilterLines(`^\[task\]\[_system_/`, workerDeps.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
 [service][cleanup]INFO  ready
 [service][cleanup]INFO  started "1" receiver cleanup tasks
@@ -215,6 +217,22 @@ task/1000/github/receiver.cleanup/%s
   "node": "%s",
   "lock": "runtime/lock/task/1000/github/receiver.cleanup",
   "result": "receiver \"1000/github\" has been cleaned",
+  "duration": %d
+}
+>>>>>
+
+<<<<<
+task/_system_/tasks.cleanup/%s
+-----
+{
+  "systemTask": true,
+  "taskId": "tasks.cleanup/%s",
+  "type": "tasks.cleanup",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "node": "worker-node-1",
+  "lock": "runtime/lock/task/tasks.cleanup",
+  "result": "deleted \"0\" tasks",
   "duration": %d
 }
 >>>>>

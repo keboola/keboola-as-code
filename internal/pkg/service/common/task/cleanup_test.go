@@ -94,11 +94,13 @@ func TestCleanup(t *testing.T) {
 [node1]INFO  process unique id "node1"
 [node1][task][etcd-session]INFO  creating etcd session
 [node1][task][etcd-session]INFO  created etcd session | %s
-[node1][task][cleanup]DEBUG  lock acquired "runtime/lock/task/tasks.cleanup"
-[node1][task][cleanup]DEBUG  deleted task "123/some.task/2006-01-02T08:04:05.000Z_abcdef"
-[node1][task][cleanup]DEBUG  deleted task "456/other.task/2006-01-02T08:04:05.000Z_ghijkl"
-[node1][task][cleanup]INFO  deleted "2" tasks
-[node1][task][cleanup]DEBUG  lock released "runtime/lock/task/tasks.cleanup"
+[node1][task][_system_/tasks.cleanup/%s]INFO  started task
+[node1][task][_system_/tasks.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/tasks.cleanup"
+[node1][task][_system_/tasks.cleanup/%s]DEBUG  deleted task "123/some.task/2006-01-02T08:04:05.000Z_abcdef"
+[node1][task][_system_/tasks.cleanup/%s]DEBUG  deleted task "456/other.task/2006-01-02T08:04:05.000Z_ghijkl"
+[node1][task][_system_/tasks.cleanup/%s]INFO  deleted "2" tasks
+[node1][task][_system_/tasks.cleanup/%s]INFO  task succeeded (%s): deleted "2" tasks
+[node1][task][_system_/tasks.cleanup/%s]DEBUG  lock released "runtime/lock/task/tasks.cleanup"
 [node1]INFO  exiting (bye bye)
 [node1][task]INFO  received shutdown request
 [node1][task][etcd-session]INFO  closing etcd session
@@ -121,6 +123,22 @@ task/789/third.task/2006-01-02T08:04:05.000Z_mnopqr
   "node": "node2",
   "lock": "lock2",
   "result": "res"
+}
+>>>>>
+
+<<<<<
+task/_system_/tasks.cleanup/%s
+-----
+{
+  "systemTask": true,
+  "taskId": "tasks.cleanup/%s",
+  "type": "tasks.cleanup",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "node": "node1",
+  "lock": "runtime/lock/task/tasks.cleanup",
+  "result": "deleted \"2\" tasks",
+  "duration": %d
 }
 >>>>>
 `)
