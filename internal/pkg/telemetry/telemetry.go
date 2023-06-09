@@ -26,6 +26,8 @@ type Telemetry interface {
 	MeterProvider() metric.MeterProvider
 }
 
+type ctxKey string
+
 type telemetry struct {
 	tracerProvider trace.TracerProvider
 	meterProvider  metric.MeterProvider

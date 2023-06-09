@@ -1,8 +1,6 @@
 package telemetry
 
 import (
-	"context"
-
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -20,12 +18,4 @@ func WrapDD(tracer trace.Tracer) trace.TracerProvider {
 
 func (p *singleTracerProvider) Tracer(_ string, _ ...trace.TracerOption) trace.Tracer {
 	return p.tracer
-}
-
-func (t *wrappedDDTracer) Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
-	ctx, span := t.tracer.Start(ctx, spanName, opts...)
-	if span != nil {
-		span = &wrappedDDSpan{Span: span}
-	}
-	return ctx, span
 }
