@@ -211,7 +211,7 @@ task/123/my-receiver/my-export/some.task/%s
 	tel.AssertSpans(t,
 		tracetest.SpanStubs{
 			{
-				Name:     "keboola.go.buffer.task.some.task",
+				Name:     "keboola.go.task",
 				SpanKind: trace.SpanKindInternal,
 				SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
 					TraceID:    tel.TraceID(1),
@@ -220,6 +220,7 @@ task/123/my-receiver/my-export/some.task/%s
 				}),
 				Status: tracesdk.Status{Code: codes.Ok},
 				Attributes: []attribute.KeyValue{
+					attribute.String("resource.name", "some.task"),
 					attribute.String("project_id", "123"),
 					attribute.String("task_id", "<dynamic>"),
 					attribute.String("task_type", "some.task"),
@@ -233,7 +234,7 @@ task/123/my-receiver/my-export/some.task/%s
 				},
 			},
 			{
-				Name:     "keboola.go.buffer.task.some.task",
+				Name:     "keboola.go.task",
 				SpanKind: trace.SpanKindInternal,
 				SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
 					TraceID:    tel.TraceID(2),
@@ -242,6 +243,7 @@ task/123/my-receiver/my-export/some.task/%s
 				}),
 				Status: tracesdk.Status{Code: codes.Ok},
 				Attributes: []attribute.KeyValue{
+					attribute.String("resource.name", "some.task"),
 					attribute.String("project_id", "123"),
 					attribute.String("task_id", "<dynamic>"),
 					attribute.String("task_type", "some.task"),
@@ -487,7 +489,7 @@ task/123/my-receiver/my-export/some.task/%s
 	tel.AssertSpans(t,
 		tracetest.SpanStubs{
 			{
-				Name:     "keboola.go.buffer.task.some.task",
+				Name:     "keboola.go.task",
 				SpanKind: trace.SpanKindInternal,
 				SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
 					TraceID:    tel.TraceID(1),
@@ -496,6 +498,7 @@ task/123/my-receiver/my-export/some.task/%s
 				}),
 				Status: tracesdk.Status{Code: codes.Error, Description: "some error (1) - expected"},
 				Attributes: []attribute.KeyValue{
+					attribute.String("resource.name", "some.task"),
 					attribute.String("project_id", "123"),
 					attribute.String("task_id", "<dynamic>"),
 					attribute.String("task_type", "some.task"),
@@ -521,7 +524,7 @@ task/123/my-receiver/my-export/some.task/%s
 				},
 			},
 			{
-				Name:     "keboola.go.buffer.task.some.task",
+				Name:     "keboola.go.task",
 				SpanKind: trace.SpanKindInternal,
 				SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
 					TraceID:    tel.TraceID(2),
@@ -530,6 +533,7 @@ task/123/my-receiver/my-export/some.task/%s
 				}),
 				Status: tracesdk.Status{Code: codes.Error, Description: "some error (2) - unexpected"},
 				Attributes: []attribute.KeyValue{
+					attribute.String("resource.name", "some.task"),
 					attribute.String("project_id", "123"),
 					attribute.String("task_id", "<dynamic>"),
 					attribute.String("task_type", "some.task"),
@@ -725,7 +729,7 @@ task/123/my-receiver/my-export/some.task/%s
 func createNode(t *testing.T, etcdNamespace string, logs io.Writer, tel telemetry.ForTest, nodeName string) (*task.Node, dependencies.Mocked) {
 	t.Helper()
 	d := createDeps(t, etcdNamespace, logs, tel, nodeName)
-	node, err := task.NewNode(d, task.WithSpanNamePrefix("keboola.go.buffer.task"))
+	node, err := task.NewNode(d)
 	assert.NoError(t, err)
 	return node, d
 }
