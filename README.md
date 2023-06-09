@@ -36,4 +36,4 @@
 
 ## License
 
-MIT licensed, see [LICENSE](./LICENSE) file.
+See [LICENSE](./LICENSE) file.
