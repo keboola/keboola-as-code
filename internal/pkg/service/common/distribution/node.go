@@ -11,7 +11,6 @@ import (
 	"go.etcd.io/etcd/client/v3/concurrency"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -27,13 +26,13 @@ import (
 // - Embedded listeners listen for distribution changes, when a node is added or removed.
 type Node struct {
 	*assigner
-	clock     clock.Clock
-	logger    log.Logger
-	proc      *servicectx.Process
-	schema    *schema.Schema
-	client    *etcd.Client
-	config    nodeConfig
-	listeners *listeners
+	groupPrefix etcdop.Prefix
+	clock       clock.Clock
+	logger      log.Logger
+	proc        *servicectx.Process
+	client      *etcd.Client
+	config      nodeConfig
+	listeners   *listeners
 }
 
 type assigner = Assigner
@@ -42,11 +41,10 @@ type dependencies interface {
 	Clock() clock.Clock
 	Logger() log.Logger
 	EtcdClient() *etcd.Client
-	Schema() *schema.Schema
 	Process() *servicectx.Process
 }
 
-func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
+func NewNode(group string, d dependencies, opts ...NodeOption) (*Node, error) {
 	// Apply options
 	c := defaultNodeConfig()
 	for _, o := range opts {
@@ -55,13 +53,13 @@ func NewNode(d dependencies, opts ...NodeOption) (*Node, error) {
 
 	// Create instance
 	n := &Node{
-		assigner: newAssigner(d.Process().UniqueID()),
-		clock:    d.Clock(),
-		logger:   d.Logger().AddPrefix("[distribution]"),
-		proc:     d.Process(),
-		schema:   d.Schema(),
-		client:   d.EtcdClient(),
-		config:   c,
+		assigner:    newAssigner(d.Process().UniqueID()),
+		groupPrefix: etcdop.NewPrefix(fmt.Sprintf("runtime/distribution/group/%s/nodes", group)),
+		clock:       d.Clock(),
+		logger:      d.Logger().AddPrefix(fmt.Sprintf("[distribution][%s]", group)),
+		proc:        d.Process(),
+		client:      d.EtcdClient(),
+		config:      c,
 	}
 
 	// Graceful shutdown
@@ -119,7 +117,7 @@ func (n *Node) register(session *concurrency.Session, timeout time.Duration) err
 	startTime := time.Now()
 	n.logger.Infof(`registering the node "%s"`, n.nodeID)
 
-	key := n.schema.Runtime().WorkerNodes().Active().IDs().Node(n.nodeID)
+	key := n.groupPrefix.Key(n.nodeID)
 	if err := key.Put(n.nodeID, etcd.WithLease(session.Lease())).Do(ctx, session.Client()); err != nil {
 		return errors.Errorf(`cannot register the node "%s": %w`, n.nodeID, err)
 	}
@@ -135,7 +133,7 @@ func (n *Node) unregister(timeout time.Duration) {
 	startTime := time.Now()
 	n.logger.Infof(`unregistering the node "%s"`, n.nodeID)
 
-	key := n.schema.Runtime().WorkerNodes().Active().IDs().Node(n.nodeID)
+	key := n.groupPrefix.Key(n.nodeID)
 	if _, err := key.Delete().Do(ctx, n.client); err != nil {
 		n.logger.Warnf(`cannot unregister the node "%s": %s`, n.nodeID, err)
 	}
@@ -146,8 +144,7 @@ func (n *Node) unregister(timeout time.Duration) {
 // watch for other nodes.
 func (n *Node) watch(ctx context.Context, wg *sync.WaitGroup) error {
 	n.logger.Info("watching for other nodes")
-	init := n.schema.
-		Runtime().WorkerNodes().Active().IDs().
+	init := n.groupPrefix.
 		GetAllAndWatch(ctx, n.client, etcd.WithPrevKV()).
 		SetupConsumer(n.logger).
 		WithForEach(func(events []etcdop.WatchEvent, _ *etcdop.Header, restart bool) {

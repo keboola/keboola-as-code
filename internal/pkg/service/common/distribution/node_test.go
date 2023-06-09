@@ -2,6 +2,7 @@ package distribution_test
 
 import (
 	"fmt"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"io"
 	"reflect"
 	"sync"
@@ -15,8 +16,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
-	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -34,7 +33,7 @@ func TestNodesDiscovery(t *testing.T) {
 	// Create 3 nodes and (pseudo) processes
 	nodesCount := 3
 	lock := &sync.Mutex{}
-	nodes := make(map[int]*Node)
+	nodes := make(map[int]*distribution.Node)
 	loggers := make(map[int]log.DebugLogger)
 	processes := make(map[int]*servicectx.Process)
 
@@ -86,19 +85,19 @@ func TestNodesDiscovery(t *testing.T) {
 	// Check etcd state
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-runtime/worker/node/active/id/node1 (lease)
+runtime/distribution/group/my-group/nodes/node1 (lease)
 -----
 node1
 >>>>>
 
 <<<<<
-runtime/worker/node/active/id/node2 (lease)
+runtime/distribution/group/my-group/nodes/node2 (lease)
 -----
 node2
 >>>>>
 
 <<<<<
-runtime/worker/node/active/id/node3 (lease)
+runtime/distribution/group/my-group/nodes/node3 (lease)
 -----
 node3
 >>>>>
@@ -117,13 +116,13 @@ node3
 	// Check etcd state
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-runtime/worker/node/active/id/node2 (lease)
+runtime/distribution/group/my-group/nodes/node2 (lease)
 -----
 node2
 >>>>>
 
 <<<<<
-runtime/worker/node/active/id/node3 (lease)
+runtime/distribution/group/my-group/nodes/node3 (lease)
 -----
 node3
 >>>>>
@@ -151,7 +150,7 @@ node3
 	// Check etcd state
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-runtime/worker/node/active/id/node3 (lease)
+runtime/distribution/group/my-group/nodes/node3 (lease)
 -----
 node3
 >>>>>
@@ -175,68 +174,68 @@ node3
 	// Logs differs in number of "the node ... gone" messages
 	wildcards.Assert(t, `
 [node1]INFO  process unique id "node1"
-[node1][distribution][etcd-session]INFO  creating etcd session
-[node1][distribution][etcd-session]INFO  created etcd session | %s
-[node1][distribution]INFO  registering the node "node1"
-[node1][distribution]INFO  the node "node1" registered | %s
-[node1][distribution]INFO  watching for other nodes
-[node1][distribution]INFO  found a new node "node%d"
-[node1][distribution]INFO  found a new node "node%d"
-[node1][distribution]INFO  found a new node "node%d"
+[node1][distribution][my-group][etcd-session]INFO  creating etcd session
+[node1][distribution][my-group][etcd-session]INFO  created etcd session | %s
+[node1][distribution][my-group]INFO  registering the node "node1"
+[node1][distribution][my-group]INFO  the node "node1" registered | %s
+[node1][distribution][my-group]INFO  watching for other nodes
+[node1][distribution][my-group]INFO  found a new node "node%d"
+[node1][distribution][my-group]INFO  found a new node "node%d"
+[node1][distribution][my-group]INFO  found a new node "node%d"
 [node1]INFO  exiting (bye bye 1)
-[node1][distribution][listeners]INFO  received shutdown request
-[node1][distribution][listeners]INFO  shutdown done
-[node1][distribution]INFO  received shutdown request
-[node1][distribution]INFO  unregistering the node "node1"
-[node1][distribution]INFO  the node "node1" unregistered | %s
-[node1][distribution][etcd-session]INFO  closing etcd session
-[node1][distribution][etcd-session]INFO  closed etcd session | %s
-[node1][distribution]INFO  shutdown done
+[node1][distribution][my-group][listeners]INFO  received shutdown request
+[node1][distribution][my-group][listeners]INFO  shutdown done
+[node1][distribution][my-group]INFO  received shutdown request
+[node1][distribution][my-group]INFO  unregistering the node "node1"
+[node1][distribution][my-group]INFO  the node "node1" unregistered | %s
+[node1][distribution][my-group][etcd-session]INFO  closing etcd session
+[node1][distribution][my-group][etcd-session]INFO  closed etcd session | %s
+[node1][distribution][my-group]INFO  shutdown done
 [node1]INFO  exited
 `, loggers[0].AllMessages())
 	wildcards.Assert(t, `
 [node2]INFO  process unique id "node2"
-[node2][distribution][etcd-session]INFO  creating etcd session
-[node2][distribution][etcd-session]INFO  created etcd session | %s
-[node2][distribution]INFO  registering the node "node2"
-[node2][distribution]INFO  the node "node2" registered | %s
-[node2][distribution]INFO  watching for other nodes
-[node2][distribution]INFO  found a new node "node%d"
-[node2][distribution]INFO  found a new node "node%d"
-[node2][distribution]INFO  found a new node "node%d"
-[node2][distribution]INFO  the node "node%d" gone
+[node2][distribution][my-group][etcd-session]INFO  creating etcd session
+[node2][distribution][my-group][etcd-session]INFO  created etcd session | %s
+[node2][distribution][my-group]INFO  registering the node "node2"
+[node2][distribution][my-group]INFO  the node "node2" registered | %s
+[node2][distribution][my-group]INFO  watching for other nodes
+[node2][distribution][my-group]INFO  found a new node "node%d"
+[node2][distribution][my-group]INFO  found a new node "node%d"
+[node2][distribution][my-group]INFO  found a new node "node%d"
+[node2][distribution][my-group]INFO  the node "node%d" gone
 [node2]INFO  exiting (bye bye 2)
-[node2][distribution][listeners]INFO  received shutdown request
-[node2][distribution][listeners]INFO  shutdown done
-[node2][distribution]INFO  received shutdown request
-[node2][distribution]INFO  unregistering the node "node2"
-[node2][distribution]INFO  the node "node2" unregistered | %s
-[node2][distribution][etcd-session]INFO  closing etcd session
-[node2][distribution][etcd-session]INFO  closed etcd session | %s
-[node2][distribution]INFO  shutdown done
+[node2][distribution][my-group][listeners]INFO  received shutdown request
+[node2][distribution][my-group][listeners]INFO  shutdown done
+[node2][distribution][my-group]INFO  received shutdown request
+[node2][distribution][my-group]INFO  unregistering the node "node2"
+[node2][distribution][my-group]INFO  the node "node2" unregistered | %s
+[node2][distribution][my-group][etcd-session]INFO  closing etcd session
+[node2][distribution][my-group][etcd-session]INFO  closed etcd session | %s
+[node2][distribution][my-group]INFO  shutdown done
 [node2]INFO  exited
 `, loggers[1].AllMessages())
 	wildcards.Assert(t, `
 [node3]INFO  process unique id "node3"
-[node3][distribution][etcd-session]INFO  creating etcd session
-[node3][distribution][etcd-session]INFO  created etcd session | %s
-[node3][distribution]INFO  registering the node "node3"
-[node3][distribution]INFO  the node "node3" registered | %s
-[node3][distribution]INFO  watching for other nodes
-[node3][distribution]INFO  found a new node "node%d"
-[node3][distribution]INFO  found a new node "node%d"
-[node3][distribution]INFO  found a new node "node%d"
-[node3][distribution]INFO  the node "node%d" gone
-[node3][distribution]INFO  the node "node%d" gone
+[node3][distribution][my-group][etcd-session]INFO  creating etcd session
+[node3][distribution][my-group][etcd-session]INFO  created etcd session | %s
+[node3][distribution][my-group]INFO  registering the node "node3"
+[node3][distribution][my-group]INFO  the node "node3" registered | %s
+[node3][distribution][my-group]INFO  watching for other nodes
+[node3][distribution][my-group]INFO  found a new node "node%d"
+[node3][distribution][my-group]INFO  found a new node "node%d"
+[node3][distribution][my-group]INFO  found a new node "node%d"
+[node3][distribution][my-group]INFO  the node "node%d" gone
+[node3][distribution][my-group]INFO  the node "node%d" gone
 [node3]INFO  exiting (bye bye 3)
-[node3][distribution][listeners]INFO  received shutdown request
-[node3][distribution][listeners]INFO  shutdown done
-[node3][distribution]INFO  received shutdown request
-[node3][distribution]INFO  unregistering the node "node3"
-[node3][distribution]INFO  the node "node3" unregistered | %s
-[node3][distribution][etcd-session]INFO  closing etcd session
-[node3][distribution][etcd-session]INFO  closed etcd session | %s
-[node3][distribution]INFO  shutdown done
+[node3][distribution][my-group][listeners]INFO  received shutdown request
+[node3][distribution][my-group][listeners]INFO  shutdown done
+[node3][distribution][my-group]INFO  received shutdown request
+[node3][distribution][my-group]INFO  unregistering the node "node3"
+[node3][distribution][my-group]INFO  the node "node3" unregistered | %s
+[node3][distribution][my-group][etcd-session]INFO  closing etcd session
+[node3][distribution][my-group][etcd-session]INFO  closed etcd session | %s
+[node3][distribution][my-group]INFO  shutdown done
 [node3]INFO  exited
 `, loggers[2].AllMessages())
 
@@ -251,7 +250,7 @@ node3
 	// Check etcd state
 	etcdhelper.AssertKVsString(t, client, `
 <<<<<
-runtime/worker/node/active/id/node4 (lease)
+runtime/distribution/group/my-group/nodes/node4 (lease)
 -----
 node4
 >>>>>
@@ -263,21 +262,21 @@ node4
 
 	wildcards.Assert(t, `
 [node4]INFO  process unique id "node4"
-[node4][distribution][etcd-session]INFO  creating etcd session
-[node4][distribution][etcd-session]INFO  created etcd session | %s
-[node4][distribution]INFO  registering the node "node4"
-[node4][distribution]INFO  the node "node4" registered | %s
-[node4][distribution]INFO  watching for other nodes
-[node4][distribution]INFO  found a new node "node4"
+[node4][distribution][my-group][etcd-session]INFO  creating etcd session
+[node4][distribution][my-group][etcd-session]INFO  created etcd session | %s
+[node4][distribution][my-group]INFO  registering the node "node4"
+[node4][distribution][my-group]INFO  the node "node4" registered | %s
+[node4][distribution][my-group]INFO  watching for other nodes
+[node4][distribution][my-group]INFO  found a new node "node4"
 [node4]INFO  exiting (bye bye 4)
-[node4][distribution][listeners]INFO  received shutdown request
-[node4][distribution][listeners]INFO  shutdown done
-[node4][distribution]INFO  received shutdown request
-[node4][distribution]INFO  unregistering the node "node4"
-[node4][distribution]INFO  the node "node4" unregistered | %s
-[node4][distribution][etcd-session]INFO  closing etcd session
-[node4][distribution][etcd-session]INFO  closed etcd session | %s
-[node4][distribution]INFO  shutdown done
+[node4][distribution][my-group][listeners]INFO  received shutdown request
+[node4][distribution][my-group][listeners]INFO  shutdown done
+[node4][distribution][my-group]INFO  received shutdown request
+[node4][distribution][my-group]INFO  unregistering the node "node4"
+[node4][distribution][my-group]INFO  the node "node4" unregistered | %s
+[node4][distribution][my-group][etcd-session]INFO  closing etcd session
+[node4][distribution][my-group][etcd-session]INFO  closed etcd session | %s
+[node4][distribution][my-group]INFO  shutdown done
 [node4]INFO  exited
 `, d4.DebugLogger().AllMessages())
 }
@@ -332,7 +331,7 @@ func TestConsistentHashLib(t *testing.T) {
 	}, keysPerNode)
 }
 
-func createNode(t *testing.T, clk clock.Clock, etcdNamespace, nodeName string) (*Node, bufferDependencies.Mocked) {
+func createNode(t *testing.T, clk clock.Clock, etcdNamespace, nodeName string) (*distribution.Node, dependencies.Mocked) {
 	t.Helper()
 
 	// Create dependencies
@@ -347,19 +346,20 @@ func createNode(t *testing.T, clk clock.Clock, etcdNamespace, nodeName string) (
 	}
 
 	// Create node
-	node, err := NewNode(
+	node, err := distribution.NewNode(
+		"my-group",
 		d,
-		WithStartupTimeout(time.Second),
-		WithShutdownTimeout(time.Second),
-		WithEventsGroupInterval(groupInterval),
+		distribution.WithStartupTimeout(time.Second),
+		distribution.WithShutdownTimeout(time.Second),
+		distribution.WithEventsGroupInterval(groupInterval),
 	)
 	assert.NoError(t, err)
 	return node, d
 }
 
-func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, nodeName string) bufferDependencies.Mocked {
+func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, nodeName string) dependencies.Mocked {
 	t.Helper()
-	d := bufferDependencies.NewMockedDeps(
+	d := dependencies.NewMockedDeps(
 		t,
 		dependencies.WithClock(clk),
 		dependencies.WithUniqueID(nodeName),
