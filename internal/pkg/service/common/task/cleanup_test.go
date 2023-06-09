@@ -8,6 +8,12 @@ import (
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
@@ -29,6 +35,7 @@ func TestCleanup(t *testing.T) {
 	logs := ioutil.NewAtomicWriter()
 	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	node, d := createNode(t, etcdNamespace, logs, telemetry.NewForTest(t), "node1")
+	tel := d.TestTelemetry()
 	taskPrefix := etcdop.NewTypedPrefix[task.Task](task.DefaultTaskEtcdPrefix, d.EtcdSerde())
 
 	// Add task without a finishedAt timestamp but too old - will be deleted
@@ -83,6 +90,7 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, taskPrefix.Key(taskKey3.String()).Put(task3).Do(ctx, client))
 
 	// Run the cleanup
+	tel.Reset()
 	assert.NoError(t, node.Cleanup())
 
 	// Shutdown - wait for cleanup
@@ -142,4 +150,81 @@ task/_system_/tasks.cleanup/%s
 }
 >>>>>
 `)
+
+	// Check spans
+	tel.AssertSpans(t,
+		tracetest.SpanStubs{
+			{
+				Name:     "keboola.go.task",
+				SpanKind: trace.SpanKindInternal,
+				SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
+					TraceID:    tel.TraceID(1),
+					SpanID:     tel.SpanID(1),
+					TraceFlags: trace.FlagsSampled,
+				}),
+				Status: tracesdk.Status{Code: codes.Ok},
+				Attributes: []attribute.KeyValue{
+					attribute.String("resource.name", "tasks.cleanup"),
+					attribute.String("task_id", "<dynamic>"),
+					attribute.String("task_type", "tasks.cleanup"),
+					attribute.String("lock", "runtime/lock/task/tasks.cleanup"),
+					attribute.String("node", "node1"),
+					attribute.String("created_at", "<dynamic>"),
+					attribute.Int64("task.cleanup.deletedTasksCount", 2),
+					attribute.String("duration_sec", "<dynamic>"),
+					attribute.String("finished_at", "<dynamic>"),
+					attribute.Bool("is_success", true),
+				},
+			},
+		},
+		telemetry.WithSpanAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
+			switch attr.Key {
+			case "task_id", "created_at", "duration_sec", "finished_at":
+				return attribute.String(string(attr.Key), "<dynamic>")
+			}
+			return attr
+		}),
+	)
+
+	// Check metrics
+	histBounds := []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000} // ms
+	tel.AssertMetrics(t,
+		[]metricdata.Metrics{
+			{
+				Name:        "keboola.go.task.running",
+				Description: "Background running tasks count.",
+				Data: metricdata.Sum[int64]{
+					Temporality: 1,
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Value: 0,
+							Attributes: attribute.NewSet(
+								attribute.String("task_type", "tasks.cleanup"),
+							),
+						},
+					},
+				},
+			},
+			{
+				Name:        "keboola.go.task.duration",
+				Description: "Background task duration.",
+				Unit:        "ms",
+				Data: metricdata.Histogram[float64]{
+					Temporality: 1,
+					DataPoints: []metricdata.HistogramDataPoint[float64]{
+						{
+							Count:  1,
+							Bounds: histBounds,
+							Attributes: attribute.NewSet(
+								attribute.String("task_type", "tasks.cleanup"),
+								attribute.Bool("is_success", true),
+								attribute.Bool("is_application_error", false),
+								attribute.String("error_type", ""),
+							),
+						},
+					},
+				},
+			},
+		},
+	)
 }
