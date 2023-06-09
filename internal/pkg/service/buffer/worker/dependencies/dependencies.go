@@ -16,7 +16,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -60,7 +60,7 @@ func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 		config:     cfg,
 	}
 
-	d.distNode, err = distribution.NewNode(d)
+	d.distNode, err = distribution.NewNode(serviceDependencies.DistributionWorkerGroupName, d)
 	if err != nil {
 		return nil, err
 	}
