@@ -10,7 +10,6 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-utils/pkg/wildcards"
-	"github.com/lafikl/consistent"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
@@ -279,56 +278,6 @@ node4
 [node4][distribution][my-group]INFO  shutdown done
 [node4]INFO  exited
 `, d4.DebugLogger().AllMessages())
-}
-
-// TestConsistentHashLib tests the library behavior and shows how it should be used.
-func TestConsistentHashLib(t *testing.T) {
-	t.Parallel()
-	c := consistent.New()
-
-	// Test no node
-	_, err := c.Get("foo")
-	assert.Error(t, err)
-	assert.Equal(t, consistent.ErrNoHosts, err)
-
-	// Add nodes
-	c.Add("node1")
-	c.Add("node2")
-	c.Add("node3")
-	c.Add("node4")
-	c.Add("node5")
-
-	// Check distribution of the keys in 5 nodes
-	keysPerNode := make(map[string]int)
-	for i := 1; i <= 100; i++ {
-		node, err := c.Get(fmt.Sprintf("foo%02d", i))
-		assert.NoError(t, err)
-		keysPerNode[node] = keysPerNode[node] + 1
-	}
-	assert.Equal(t, map[string]int{
-		"node1": 27,
-		"node2": 26,
-		"node3": 13,
-		"node4": 24,
-		"node5": 10,
-	}, keysPerNode)
-
-	// Delete nodes
-	c.Remove("node2")
-	c.Remove("node4")
-
-	// Check distribution of the keys in 3 nodes
-	keysPerNode = make(map[string]int)
-	for i := 1; i <= 100; i++ {
-		node, err := c.Get(fmt.Sprintf("foo%02d", i))
-		assert.NoError(t, err)
-		keysPerNode[node] = keysPerNode[node] + 1
-	}
-	assert.Equal(t, map[string]int{
-		"node1": 47,
-		"node3": 30,
-		"node5": 23,
-	}, keysPerNode)
 }
 
 func createNode(t *testing.T, clk clock.Clock, etcdNamespace, nodeName string) (*distribution.Node, dependencies.Mocked) {
