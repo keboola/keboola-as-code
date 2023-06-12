@@ -38,8 +38,8 @@ Worker behavior is implemented in [internal/pkg/service/buffer/worker/service/se
 The [`internal/pkg/service/buffer/watcher`](../../internal/pkg/service/buffer/watcher) package provides cache for API nodes
 and synchronization between API/Worker nodes. See [internal/pkg/service/buffer/watcher/watcher.go](../../internal/pkg/service/buffer/watcher/watcher.go) for details.
 
-The [`internal/pkg/service/buffer/worker/distribution`](../../internal/pkg/service/buffer/worker/distribution) package
-provides distribution of various keys/tasks between worker nodes. See [internal/pkg/service/buffer/worker/distribution/doc.go](../../internal/pkg/service/buffer/worker/distribution/doc.go) for details.
+The [`internal/pkg/service/common/distribution`](../../internal/pkg/service/common/distribution) package
+provides distribution of various keys/tasks between worker nodes. See [internal/pkg/service/common/distribution/doc.go](../../internal/pkg/service/common/distribution/doc.go) for details.
 
 The [`internal/pkg/service/buffer/worker/task`](../../internal/pkg/service/buffer/task) package
 provides task abstraction for long-running operations in the Worker node.
