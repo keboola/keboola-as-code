@@ -16,13 +16,12 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// Node is created within each Worker node.
+// Node is created within each node in the group.
 //
 // It is responsible for:
-// - Registration/un-registration of the worker node in the cluster, see register and unregister methods.
+// - Registration/un-registration of the node in the cluster, see register and unregister methods.
 // - Discovery of the self and other nodes in the cluster, see watch method.
-// - StartExecutor method starts a new Executor, which is restarted on the distribution changes.
-// - Embedded assigner locally assigns the owner for the task, see documentation of the Assigner.
+// - Embedded Assigner locally assigns a owner for a key, see documentation of the Assigner.
 // - Embedded listeners listen for distribution changes, when a node is added or removed.
 type Node struct {
 	*assigner
