@@ -29,31 +29,31 @@ runtime/api/node/watcher/cached/revision/api-node-5 (lease)
 >>>>>
 
 <<<<<
-runtime/worker/node/active/id/worker-node-1 (lease)
+runtime/distribution/group/buffer-worker/nodes/worker-node-1 (lease)
 -----
 worker-node-1
 >>>>>
 
 <<<<<
-runtime/worker/node/active/id/worker-node-2 (lease)
+runtime/distribution/group/buffer-worker/nodes/worker-node-2 (lease)
 -----
 worker-node-2
 >>>>>
 
 <<<<<
-runtime/worker/node/active/id/worker-node-3 (lease)
+runtime/distribution/group/buffer-worker/nodes/worker-node-3 (lease)
 -----
 worker-node-3
 >>>>>
 
 <<<<<
-runtime/worker/node/active/id/worker-node-4 (lease)
+runtime/distribution/group/buffer-worker/nodes/worker-node-4 (lease)
 -----
 worker-node-4
 >>>>>
 
 <<<<<
-runtime/worker/node/active/id/worker-node-5 (lease)
+runtime/distribution/group/buffer-worker/nodes/worker-node-5 (lease)
 -----
 worker-node-5
 >>>>>
