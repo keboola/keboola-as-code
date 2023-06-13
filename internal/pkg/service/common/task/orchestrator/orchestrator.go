@@ -17,9 +17,6 @@ const (
 	spanName = "keboola.go.task.orchestrator"
 )
 
-// Orchestrator creates a task for each watch event, but only on one worker node in the cluster.
-// Decision is made by the distribution.Assigner.
-// See documentation of: distribution.Node, task.Node, Config[R].
 type orchestrator[T any] struct {
 	config Config[T]
 	node   *Node
@@ -129,7 +126,7 @@ func (o orchestrator[T]) startTask(event etcdop.WatchEventT[T]) {
 
 	// Error is not expected, there is present always at least one node - self.
 	if !o.node.dist.MustCheckIsOwner(distributionKey) {
-		// Another worker node handles the resource.
+		// Another node handles the resource.
 		o.logger.Debugf(`not assigned "%s", distribution key "%s"`, taskKey.String(), distributionKey)
 		return
 	}

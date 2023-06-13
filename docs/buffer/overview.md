@@ -41,11 +41,11 @@ and synchronization between API/Worker nodes. See [internal/pkg/service/buffer/w
 The [`internal/pkg/service/common/distribution`](../../internal/pkg/service/common/distribution) package
 provides distribution of various keys/tasks between worker nodes. See [internal/pkg/service/common/distribution/doc.go](../../internal/pkg/service/common/distribution/doc.go) for details.
 
-The [`internal/pkg/service/buffer/worker/task`](../../internal/pkg/service/buffer/task) package
+The [`internal/pkg/service/common/task`](../../internal/pkg/service/common/task) package
 provides task abstraction for long-running operations in the Worker node.
 
-The [`internal/pkg/service/buffer/worker/task/orchestrator`](../../internal/pkg/service/buffer/task/orchestrator) package
-combines `distribution.Node` and `task.Node` to run a task on one node in the cluster only, as a reaction to a watch event. See [internal/pkg/service/buffer/worker/task/orchestrator/orchestrator.go](../../internal/pkg/service/buffer/task/orchestrator/orchestrator.go) for details.
+The [`internal/pkg/service/buffer/worker/task/orchestrator`](../../internal/pkg/service/common/task/orchestrator) package
+combines `distribution.Node` and `task.Node` to run a task on one node in the cluster only, as a reaction to a watch event. See [internal/pkg/service/buffer/worker/task/orchestrator/orchestrator.go](../../internal/pkg/service/common/task/orchestrator/orchestrator.go) for details.
 
 ## Resources
 

@@ -71,6 +71,9 @@ func NewNode(d dependencies) *Node {
 	return n
 }
 
+// Start a new orchestrator.
+// The returned channel signals completion of initialization and return an error if one occurred.
+// If an error occurs during execution, after successful initialization, it retries until the error is resolved.
 func (n *Node) Start(config configInterface) <-chan error {
 	return config.newOrchestrator(n).start()
 }
