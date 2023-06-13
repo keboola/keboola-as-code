@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	SpanNamePrefix = "keboola.go.buffer.orchestrator"
+	spanName = "keboola.go.task.orchestrator"
 )
 
 // Orchestrator creates a task for each watch event, but only on one worker node in the cluster.
@@ -124,7 +124,7 @@ func (o orchestrator[R]) watch(ctx context.Context, wg *sync.WaitGroup, timeout 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	ctx, span := o.tracer.Start(ctx, SpanNamePrefix+"."+o.config.Name)
+	ctx, span := o.node.tracer.Start(ctx, spanName, trace.WithAttributes(attribute.String("resource.name", o.config.Name)))
 	err := <-o.config.Source.WatchPrefix.
 		GetAllAndWatch(ctx, o.client, o.config.Source.WatchEtcdOps...).
 		SetupConsumer(o.logger).
