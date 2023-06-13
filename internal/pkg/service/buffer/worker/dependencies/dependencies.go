@@ -19,6 +19,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
@@ -27,20 +28,22 @@ import (
 type ForWorker interface {
 	serviceDependencies.ForService
 	WorkerConfig() config.Config
-	DistributionWorkerNode() *distribution.Node
+	DistributionNode() *distribution.Node
 	WatcherWorkerNode() *watcher.WorkerNode
 	TaskNode() *task.Node
+	OrchestratorNode() *orchestrator.Node
 	EventSender() *event.Sender
 }
 
 // forWorker implements ForWorker interface.
 type forWorker struct {
 	serviceDependencies.ForService
-	config      config.Config
-	distNode    *distribution.Node
-	watcherNode *watcher.WorkerNode
-	taskNode    *task.Node
-	eventSender *event.Sender
+	config       config.Config
+	distNode     *distribution.Node
+	watcherNode  *watcher.WorkerNode
+	taskNode     *task.Node
+	orchestrator *orchestrator.Node
+	eventSender  *event.Sender
 }
 
 func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger, tel telemetry.Telemetry) (v ForWorker, err error) {
@@ -72,6 +75,8 @@ func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Con
 		return nil, err
 	}
 
+	d.orchestrator = orchestrator.NewNode(d)
+
 	d.eventSender = event.NewSender(logger)
 
 	return d, nil
@@ -81,7 +86,7 @@ func (v *forWorker) WorkerConfig() config.Config {
 	return v.config
 }
 
-func (v *forWorker) DistributionWorkerNode() *distribution.Node {
+func (v *forWorker) DistributionNode() *distribution.Node {
 	return v.distNode
 }
 
@@ -91,6 +96,10 @@ func (v *forWorker) WatcherWorkerNode() *watcher.WorkerNode {
 
 func (v *forWorker) TaskNode() *task.Node {
 	return v.taskNode
+}
+
+func (v *forWorker) OrchestratorNode() *orchestrator.Node {
+	return v.orchestrator
 }
 
 func (v *forWorker) EventSender() *event.Sender {

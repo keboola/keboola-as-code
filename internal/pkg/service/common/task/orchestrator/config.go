@@ -31,7 +31,6 @@ import (
 //
 // The TaskFactory may return nil, then the event will be ignored.
 type Config[T any] struct {
-	// Name is orchestrator name used by logger.
 	Name string
 	// Source triggers new tasks.
 	Source Source[T]

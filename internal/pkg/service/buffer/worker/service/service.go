@@ -19,11 +19,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 type Service struct {
+	ctx            context.Context
+	wg             *sync.WaitGroup
 	clock          clock.Clock
 	logger         log.Logger
 	store          *store.Store
@@ -52,9 +55,10 @@ type dependencies interface {
 	Schema() *schema.Schema
 	Store() *store.Store
 	WatcherWorkerNode() *watcher.WorkerNode
-	DistributionWorkerNode() *distribution.Node
+	DistributionNode() *distribution.Node
 	StatsCache() *statistics.CacheNode
 	TaskNode() *task.Node
+	OrchestratorNode() *orchestrator.Node
 	EventSender() *event.Sender
 }
 
@@ -73,47 +77,50 @@ func New(d dependencies) (*Service, error) {
 	}
 
 	// Graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
-	wg := &sync.WaitGroup{}
+	var cancel context.CancelFunc
+	s.ctx, cancel = context.WithCancel(context.Background())
+	s.wg = &sync.WaitGroup{}
 	d.Process().OnShutdown(func() {
 		s.logger.Info("received shutdown request")
 		cancel()
-		s.logger.Info("waiting for orchestrators")
-		wg.Wait()
+		s.logger.Info("waiting for background operations")
+		s.wg.Wait()
 		s.logger.Info("shutdown done")
 	})
 
 	// Create orchestrators
 	var init []<-chan error
 	if s.config.ConditionsCheck || s.config.TasksCleanup {
-		s.dist = d.DistributionWorkerNode()
+		s.dist = d.DistributionNode()
 	}
 	if s.config.ConditionsCheck {
 		s.stats = d.StatsCache()
-		init = append(init, s.checkConditions(ctx, wg))
+		init = append(init, s.checkConditions())
 	}
 	if s.config.CloseSlices {
 		s.watcher = d.WatcherWorkerNode()
-		init = append(init, s.closeSlices(ctx, wg, d))
+		init = append(init, s.closeSlices(d))
 	}
 	if s.config.UploadSlices {
-		init = append(init, s.uploadSlices(ctx, wg, d))
+		init = append(init, s.uploadSlices(d))
 	}
 	if s.config.RetryFailedSlices {
-		init = append(init, s.retryFailedUploads(ctx, wg, d))
+		init = append(init, s.retryFailedUploads(d))
 	}
 	if s.config.CloseFiles {
-		init = append(init, s.closeFiles(ctx, wg, d))
+		slicesWatcher, slicesWatcherInit := NewActiveSlicesWatcher(s.ctx, s.wg, s.logger, s.schema, s.etcdClient)
+		init = append(init, slicesWatcherInit)
+		init = append(init, s.closeFiles(slicesWatcher, d))
 	}
 	if s.config.ImportFiles {
-		init = append(init, s.importFiles(ctx, wg, d))
+		init = append(init, s.importFiles(d))
 	}
 	if s.config.RetryFailedFiles {
-		init = append(init, s.retryFailedImports(ctx, wg, d))
+		init = append(init, s.retryFailedImports(d))
 	}
 	if s.config.TasksCleanup {
-		init = append(init, s.cleanup(ctx, wg, d))
-		init = append(init, s.cleanupTasks(ctx, wg))
+		init = append(init, s.cleanup(d))
+		init = append(init, s.cleanupTasks())
 	}
 
 	// Check initialization

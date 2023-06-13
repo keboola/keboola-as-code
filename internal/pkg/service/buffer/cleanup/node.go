@@ -35,7 +35,7 @@ type dependencies interface {
 	Schema() *schema.Schema
 	EtcdClient() *etcd.Client
 	Store() *store.Store
-	DistributionWorkerNode() *distribution.Node
+	DistributionNode() *distribution.Node
 	TaskNode() *task.Node
 }
 
@@ -55,7 +55,7 @@ func NewNode(d dependencies, logger log.Logger) *Node {
 		client: d.EtcdClient(),
 		logger: logger,
 		schema: d.Schema(),
-		dist:   d.DistributionWorkerNode(),
+		dist:   d.DistributionNode(),
 		tasks:  d.TaskNode(),
 		sem:    semaphore.NewWeighted(MaxTasksPerNode),
 	}

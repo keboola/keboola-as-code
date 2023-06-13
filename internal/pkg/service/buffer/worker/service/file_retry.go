@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -25,8 +24,8 @@ const (
 )
 
 // retryFailedUploads watches for failed slices.
-func (s *Service) retryFailedImports(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
-	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.File]{
+func (s *Service) retryFailedImports(d dependencies) <-chan error {
+	return d.OrchestratorNode().Start(orchestrator.Config[model.File]{
 		Name: fileRetryCheckTaskType,
 		Source: orchestrator.Source[model.File]{
 			WatchPrefix:     s.schema.Files().Failed().PrefixT(),
