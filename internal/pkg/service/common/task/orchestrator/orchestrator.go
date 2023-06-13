@@ -2,18 +2,14 @@ package orchestrator
 
 import (
 	"context"
-	"fmt"
-	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
-	etcd "go.etcd.io/etcd/client/v3"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -25,50 +21,16 @@ const (
 // Decision is made by the distribution.Assigner.
 // See documentation of: distribution.Node, task.Node, Config[R].
 type orchestrator[T any] struct {
-	clock  clock.Clock
-	logger log.Logger
-	tracer telemetry.Tracer
-	client *etcd.Client
-	dist   *distribution.Node
-	tasks  *task.Node
 	config Config[T]
+	node   *Node
+	logger log.Logger
 }
 
-type dependencies interface {
-	Clock() clock.Clock
-	Logger() log.Logger
-	Telemetry() telemetry.Telemetry
-	EtcdClient() *etcd.Client
-	DistributionWorkerNode() *distribution.Node
-	TaskNode() *task.Node
-}
-
-func Start[T any](ctx context.Context, wg *sync.WaitGroup, d dependencies, config Config[T]) <-chan error {
-	if err := config.Validate(); err != nil {
-		panic(err)
-	}
-
-	o := &orchestrator[T]{
-		clock:  d.Clock(),
-		logger: d.Logger().AddPrefix(fmt.Sprintf("[orchestrator][%s]", config.Name)),
-		tracer: d.Telemetry().Tracer(),
-		client: d.EtcdClient(),
-		dist:   d.DistributionWorkerNode(),
-		tasks:  d.TaskNode(),
-		config: config,
-	}
-
-	// Delete events are not needed/ignored
-	o.config.Source.WatchEtcdOps = append(o.config.Source.WatchEtcdOps, etcd.WithFilterDelete())
-
-	return o.start(ctx, wg)
-}
-
-func (o orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan error {
+func (o orchestrator[T]) start() <-chan error {
 	initDone := make(chan error, 1)
-	wg.Add(1)
+	o.node.wg.Add(1)
 	go func() {
-		defer wg.Done()
+		defer o.node.wg.Done()
 		defer o.logger.Info("stopped")
 
 		initDone := initDone
@@ -76,7 +38,7 @@ func (o orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan e
 
 		for {
 			select {
-			case <-ctx.Done():
+			case <-o.node.ctx.Done():
 				return
 			default:
 				// The watcher is periodically restarted to rescan existing keys.
@@ -85,7 +47,7 @@ func (o orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan e
 				}
 
 				// Run the watch operation for the RestartInterval.
-				err := o.watch(ctx, wg, o.config.Source.RestartInterval, func() {
+				err := o.watch(o.config.Source.RestartInterval, func() {
 					if initDone != nil {
 						// Initialization was successful
 						o.logger.Info("ready")
@@ -119,25 +81,25 @@ func (o orchestrator[R]) start(ctx context.Context, wg *sync.WaitGroup) <-chan e
 	return initDone
 }
 
-func (o orchestrator[R]) watch(ctx context.Context, wg *sync.WaitGroup, timeout time.Duration, onReady func()) error {
+func (o orchestrator[T]) watch(timeout time.Duration, onReady func()) error {
 	done := make(chan struct{})
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(o.node.ctx)
 	defer cancel()
 
 	ctx, span := o.node.tracer.Start(ctx, spanName, trace.WithAttributes(attribute.String("resource.name", o.config.Name)))
 	err := <-o.config.Source.WatchPrefix.
-		GetAllAndWatch(ctx, o.client, o.config.Source.WatchEtcdOps...).
+		GetAllAndWatch(ctx, o.node.client, o.config.Source.WatchEtcdOps...).
 		SetupConsumer(o.logger).
 		WithOnClose(func(err error) {
 			span.End(&err)
 			close(done)
 		}).
-		WithForEach(func(events []etcdop.WatchEventT[R], header *etcdop.Header, _ bool) {
+		WithForEach(func(events []etcdop.WatchEventT[T], header *etcdop.Header, _ bool) {
 			for _, event := range events {
 				o.startTask(event)
 			}
 		}).
-		StartConsumer(wg)
+		StartConsumer(o.node.wg)
 	if err != nil {
 		return err
 	}
@@ -147,7 +109,7 @@ func (o orchestrator[R]) watch(ctx context.Context, wg *sync.WaitGroup, timeout 
 	select {
 	case <-done:
 		return nil
-	case <-o.clock.After(timeout):
+	case <-o.node.clock.After(timeout):
 		cancel()
 		<-done
 		return nil
@@ -155,7 +117,7 @@ func (o orchestrator[R]) watch(ctx context.Context, wg *sync.WaitGroup, timeout 
 }
 
 // startTask for the event received from the watched prefix.
-func (o orchestrator[R]) startTask(event etcdop.WatchEventT[R]) {
+func (o orchestrator[T]) startTask(event etcdop.WatchEventT[T]) {
 	// Check event type
 	if event.Type != etcdop.CreateEvent {
 		return
@@ -166,7 +128,7 @@ func (o orchestrator[R]) startTask(event etcdop.WatchEventT[R]) {
 	distributionKey := o.config.DistributionKey(event)
 
 	// Error is not expected, there is present always at least one node - self.
-	if !o.dist.MustCheckIsOwner(distributionKey) {
+	if !o.node.dist.MustCheckIsOwner(distributionKey) {
 		// Another worker node handles the resource.
 		o.logger.Debugf(`not assigned "%s", distribution key "%s"`, taskKey.String(), distributionKey)
 		return
@@ -202,7 +164,7 @@ func (o orchestrator[R]) startTask(event etcdop.WatchEventT[R]) {
 		Context:   o.config.TaskCtx,
 		Operation: taskFn,
 	}
-	if _, err := o.tasks.StartTask(taskCfg); err != nil {
+	if _, err := o.node.tasks.StartTask(taskCfg); err != nil {
 		o.logger.Error(err)
 	}
 }
