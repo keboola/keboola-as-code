@@ -31,7 +31,10 @@ const (
 	spanName       = "keboola.go.task"
 )
 
+// Fn represents a task operation.
 type Fn func(ctx context.Context, logger log.Logger) Result
+
+type runTaskFn func() (Result, error)
 
 // Node represents a cluster Worker node on which tasks are run.
 // See comments in the StartTask method.
@@ -129,14 +132,58 @@ func (n *Node) TasksCount() int64 {
 	return n.tasksCount.Load()
 }
 
+// StartTaskOrErr in background, the task run at most once, it is provided by local lock and etcd transaction.
 func (n *Node) StartTaskOrErr(cfg Config) error {
 	_, err := n.StartTask(cfg)
 	return err
 }
 
-// StartTask backed by local lock and etcd transaction, so the task run at most once.
-// The context will be passed to the operation callback.
+// StartTask in background, the task run at most once, it is provided by local lock and etcd transaction.
 func (n *Node) StartTask(cfg Config) (t *Task, err error) {
+	// Prepare task, acquire lock
+	task, fn, err := n.prepareTask(cfg)
+
+	// Run task in background, if it is prepared
+	if fn != nil {
+		go func() {
+			// Error is logged and stored to DB
+			_, _ = fn()
+		}()
+	}
+
+	return task, err
+}
+
+// RunTaskOrErr in foreground, the task run at most once, it is provided by local lock and etcd transaction.
+func (n *Node) RunTaskOrErr(cfg Config) error {
+	_, err := n.RunTask(cfg)
+	return err
+}
+
+// RunTask in foreground, the task run at most once, it is provided by local lock and etcd transaction.
+func (n *Node) RunTask(cfg Config) (t *Task, err error) {
+	// Prepare task, acquire lock, handle error during prepare phase
+	task, fn, err := n.prepareTask(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	// No-op, for example a task with the same lock is already running
+	if fn == nil {
+		return nil, nil
+	}
+
+	// Run task in foreground, handle error during task execution
+	result, err := fn()
+	if err != nil {
+		return t, err
+	}
+
+	// Handle error during task itself
+	return task, result.Error()
+}
+
+func (n *Node) prepareTask(cfg Config) (t *Task, fn runTaskFn, err error) {
 	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
@@ -145,8 +192,6 @@ func (n *Node) StartTask(cfg Config) (t *Task, err error) {
 	if cfg.Lock == "" {
 		cfg.Lock = cfg.Key.String()
 	}
-
-	// Lock etcd key
 	lock := LockEtcdPrefix.Key(cfg.Lock)
 
 	// Append datetime and a random suffix to the task ID
@@ -158,7 +203,7 @@ func (n *Node) StartTask(cfg Config) (t *Task, err error) {
 	// so locally can be determined that the task is already running.
 	ok, unlock := n.lockTaskLocally(lock.Key())
 	if !ok {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	// Create task model
@@ -179,25 +224,26 @@ func (n *Node) StartTask(cfg Config) (t *Task, err error) {
 	)
 	if resp, err := createTaskOp.Do(n.tasksCtx, n.client); err != nil {
 		unlock()
-		return nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, err)
+		return nil, nil, errors.Errorf(`cannot start task "%s": %s`, taskKey, err)
 	} else if !resp.Succeeded {
 		unlock()
 		logger.Infof(`task ignored, the lock "%s" is in use`, lock.Key())
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	// Run operation in the background
 	logger.Infof(`started task`)
 	logger.Debugf(`lock acquired "%s"`, task.Lock.Key())
-	go func() {
-		defer unlock()
-		n.runTask(logger, task, cfg)
-	}()
 
-	return &task, nil
+	// Return function, task is prepared, lock is locked, it can be run in background/foreground.
+	fn = func() (Result, error) {
+		defer unlock()
+		return n.runTask(logger, task, cfg)
+	}
+	return &task, fn, nil
 }
 
-func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
+func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result, err error) {
 	// Create task context
 	ctx, cancel := cfg.Context()
 	defer cancel()
@@ -210,7 +256,6 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 	n.meters.running.Add(ctx, 1, metric.WithAttributes(meterStartAttrs(&task)...))
 
 	// Process results in defer to catch panic
-	var result Result
 	defer span.End(&result.error)
 
 	// Do operation
@@ -270,13 +315,17 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) {
 		task.Lock.DeleteIfExists(),
 	)
 	if resp, err := finishTaskOp.Do(opCtx, n.client); err != nil {
-		logger.Errorf(`cannot update task and release lock: %s`, err)
-		return
+		err = errors.Errorf(`cannot update task and release lock: %w`, err)
+		logger.Error(err)
+		return result, err
 	} else if !resp.Succeeded {
-		logger.Errorf(`cannot release task lock "%s", not found`, task.Lock.Key())
-		return
+		err = errors.Errorf(`cannot release task lock "%s", not found`, task.Lock.Key())
+		logger.Error(err)
+		return result, err
 	}
 	logger.Debugf(`lock released "%s"`, task.Lock.Key())
+
+	return result, nil
 }
 
 // lockTaskLocally guarantees that the task runs at most once on the Worker node.

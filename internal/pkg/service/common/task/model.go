@@ -8,7 +8,7 @@ import (
 )
 
 type Task struct {
-	Key
+	Key        `validate:"dive"`
 	Type       string           `json:"type" validate:"required"`
 	CreatedAt  utctime.UTCTime  `json:"createdAt" validate:"required"`
 	FinishedAt *utctime.UTCTime `json:"finishedAt,omitempty"`

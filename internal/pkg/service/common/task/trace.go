@@ -38,15 +38,20 @@ func meterEndAttrs(task *Task, r Result) []attribute.KeyValue {
 }
 
 func spanStartAttrs(task *Task) []attribute.KeyValue {
-	return []attribute.KeyValue{
+	out := []attribute.KeyValue{
 		attribute.String("resource.name", task.Type),
-		attribute.String("project_id", task.ProjectID.String()),
 		attribute.String("task_id", task.TaskID.String()),
 		attribute.String("task_type", task.Type),
 		attribute.String("lock", task.Lock.Key()),
 		attribute.String("node", task.Node),
 		attribute.String("created_at", task.CreatedAt.String()),
 	}
+
+	if !task.IsSystemTask() {
+		out = append(out, attribute.String("project_id", task.ProjectID.String()))
+	}
+
+	return out
 }
 
 func spanEndAttrs(task *Task, r Result) []attribute.KeyValue {
