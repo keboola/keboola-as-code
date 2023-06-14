@@ -58,7 +58,7 @@ func (n *Node) Cleanup() (err error) {
 
 			// Handle error
 			if errs.Len() > 0 {
-				ErrResult(errs)
+				return ErrResult(errs)
 			}
 
 			return OkResult(infoMsg)
