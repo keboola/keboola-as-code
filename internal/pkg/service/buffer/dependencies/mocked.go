@@ -19,8 +19,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher/apinode"
 	workerConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
@@ -121,7 +121,7 @@ func (v *mocked) DistributionWorkerNode() *distribution.Node {
 		}
 
 		var err error
-		v.distWorkerNode, err = distribution.NewNode(v, distribution.WithEventsGroupInterval(groupingInterval))
+		v.distWorkerNode, err = distribution.NewNode(DistributionWorkerGroupName, v, distribution.WithEventsGroupInterval(groupingInterval))
 		assert.NoError(v.t, err)
 	}
 	return v.distWorkerNode

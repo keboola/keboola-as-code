@@ -20,6 +20,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
+const DistributionWorkerGroupName = "buffer-worker"
+
 type ForService interface {
 	dependencies.Base
 	dependencies.Public

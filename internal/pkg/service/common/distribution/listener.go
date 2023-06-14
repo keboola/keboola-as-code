@@ -11,12 +11,12 @@ import (
 // Listener listens for distribution changes, when a node is added or removed.
 // It contains the C channel with distribution change Events.
 type Listener struct {
+	C      chan Events
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     *sync.WaitGroup
 	all    *listeners
 	id     listenerID
-	C      chan Events
 }
 
 type listeners struct {

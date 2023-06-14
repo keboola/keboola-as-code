@@ -9,15 +9,16 @@ const (
 	EventNodeRemoved
 )
 
-type EventType int
-
-type Events []Event
-
+// Event describes a distribution change - a change in the list of nodes.
 type Event struct {
 	Type    EventType
 	NodeID  string
 	Message string
 }
+
+type EventType int
+
+type Events []Event
 
 // Messages converts events to a string for logging purposes.
 func (v Events) Messages() string {

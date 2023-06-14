@@ -216,22 +216,6 @@ func TestSchema(t *testing.T) {
 			"runtime/",
 		},
 		{
-			s.Runtime().WorkerNodes().Prefix(),
-			"runtime/worker/node/",
-		},
-		{
-			s.Runtime().WorkerNodes().Active().Prefix(),
-			"runtime/worker/node/active/",
-		},
-		{
-			s.Runtime().WorkerNodes().Active().IDs().Prefix(),
-			"runtime/worker/node/active/id/",
-		},
-		{
-			s.Runtime().WorkerNodes().Active().IDs().Node("my-node").Key(),
-			"runtime/worker/node/active/id/my-node",
-		},
-		{
 			s.Runtime().APINodes().Prefix(),
 			"runtime/api/node/",
 		},

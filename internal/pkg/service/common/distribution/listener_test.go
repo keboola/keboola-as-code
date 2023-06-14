@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
-	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
-	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/distribution"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
@@ -25,8 +25,8 @@ func TestOnChangeListener(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	var node1 *Node
-	var d1, d2, d3, d4 bufferDependencies.Mocked
+	var node1 *distribution.Node
+	var d1, d2, d3, d4 dependencies.Mocked
 
 	listenerLogs := ioutil.NewAtomicWriter()
 	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)

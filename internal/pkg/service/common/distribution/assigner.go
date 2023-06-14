@@ -7,11 +7,10 @@ import (
 	"github.com/lafikl/consistent"
 )
 
-// Assigner locally assigns the owner for the task, see NodeFor and IsOwner methods.
-// It is part of the Node and is used as an argument in the DistributedWork callback.
+// Assigner locally assigns the owner for the key, see NodeFor and IsOwner methods. It is part of the Node.
 //
-// The consistent hashing (hash ring) approach is used to make the assigment,
-// it is provided by the "consistent" package.
+// The hash ring/consistent hashing pattern is used to make the assigment,
+// it is provided by the "consistent" package, see TestConsistentHashLib for more information.
 type Assigner struct {
 	nodeID string
 	mutex  *sync.RWMutex
@@ -96,7 +95,8 @@ func (a *Assigner) clone() *Assigner {
 	return clone
 }
 
-// lock acquires write lock for resetNodes, addNode, removeNode operations.
+// lock acquires write lock for resetNodes, addNode, removeNode operations,
+// it provides the ability to make multiple changes atomically.
 func (a *Assigner) lock() {
 	a.mutex.Lock()
 }
