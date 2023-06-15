@@ -61,7 +61,7 @@
 //
 // # Listeners
 //
-// Use Node.OnChangeListener method to create a listener for nodes distribution change events.
+// Use [Node.OnChangeListener] method to create a listener for nodes distribution change events.
 //
 // [etcd lease]: https://etcd.io/docs/v3.5/learning/api/#lease-api
 // [Hash Ring pattern]: https://www.youtube.com/watch?v=UF9Iqmg94tk

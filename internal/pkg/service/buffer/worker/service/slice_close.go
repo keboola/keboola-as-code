@@ -3,14 +3,13 @@ package service
 import (
 	"context"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
 )
 
 const (
@@ -24,8 +23,8 @@ const (
 )
 
 // closeSlices watches for slices switched to the closing state.
-func (s *Service) closeSlices(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
-	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
+func (s *Service) closeSlices(d dependencies) <-chan error {
+	return d.OrchestratorNode().Start(orchestrator.Config[model.Slice]{
 		Name: sliceCloseTaskType,
 		Source: orchestrator.Source[model.Slice]{
 			WatchPrefix:     s.schema.Slices().Closing().PrefixT(),
@@ -49,7 +48,7 @@ func (s *Service) closeSlices(ctx context.Context, wg *sync.WaitGroup, d depende
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
-			return context.WithTimeout(ctx, time.Minute)
+			return context.WithTimeout(s.ctx, time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) task.Result {

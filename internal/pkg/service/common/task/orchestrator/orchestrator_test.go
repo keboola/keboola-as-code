@@ -16,11 +16,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
@@ -58,6 +58,8 @@ func TestOrchestrator(t *testing.T) {
 		dependencies.WithEtcdNamespace(etcdNamespace),
 		dependencies.WithUniqueID("node2"),
 	)
+	node1 := orchestrator.NewNode(d1)
+	node2 := orchestrator.NewNode(d2)
 
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
@@ -96,8 +98,8 @@ func TestOrchestrator(t *testing.T) {
 	}
 
 	// Create orchestrator per each node
-	assert.NoError(t, <-orchestrator.Start(ctx, wg, d1, config))
-	assert.NoError(t, <-orchestrator.Start(ctx, wg, d2, config))
+	assert.NoError(t, <-node1.Start(config))
+	assert.NoError(t, <-node2.Start(config))
 
 	// Put some key to trigger the task
 	assert.NoError(t, pfx.Key("key1").Put(testResource{ReceiverKey: receiverKey, ID: "ResourceID"}).Do(ctx, client))
@@ -157,6 +159,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 		dependencies.WithEtcdNamespace(etcdNamespace),
 		dependencies.WithUniqueID("node1"),
 	)
+	node := orchestrator.NewNode(d)
 
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
@@ -195,7 +198,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 		},
 	}
 
-	assert.NoError(t, <-orchestrator.Start(ctx, wg, d, config))
+	assert.NoError(t, <-node.Start(config))
 	assert.NoError(t, pfx.Key("key1").Put(testResource{ReceiverKey: receiverKey, ID: "BadID"}).Do(ctx, client))
 	assert.NoError(t, pfx.Key("key2").Put(testResource{ReceiverKey: receiverKey, ID: "GoodID"}).Do(ctx, client))
 	assert.Eventually(t, func() bool {
@@ -238,6 +241,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 		dependencies.WithEtcdNamespace(etcdNamespace),
 		dependencies.WithUniqueID("node1"),
 	)
+	node := orchestrator.NewNode(d)
 
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "my-receiver"}
 	pfx := etcdop.NewTypedPrefix[testResource]("my/prefix", serde.NewJSON(validator.New().Validate))
@@ -272,7 +276,7 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	}
 
 	// Create orchestrator per each node
-	assert.NoError(t, <-orchestrator.Start(ctx, wg, d, config))
+	assert.NoError(t, <-node.Start(config))
 
 	// Put some key to trigger the task
 	assert.NoError(t, pfx.Key("key1").Put(testResource{ReceiverKey: receiverKey, ID: "ResourceID1"}).Do(ctx, client))

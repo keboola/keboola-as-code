@@ -5,14 +5,13 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
@@ -25,8 +24,8 @@ const (
 )
 
 // retryFailedUploads watches for failed slices.
-func (s *Service) retryFailedUploads(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
-	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
+func (s *Service) retryFailedUploads(d dependencies) <-chan error {
+	return d.OrchestratorNode().Start(orchestrator.Config[model.Slice]{
 		Name: sliceRetryCheckTaskType,
 		Source: orchestrator.Source[model.Slice]{
 			WatchPrefix:     s.schema.Slices().Failed().PrefixT(),

@@ -3,14 +3,13 @@ package service
 import (
 	"context"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
 )
 
 const (
@@ -24,12 +23,9 @@ const (
 )
 
 // closeFiles watches for files switched to the closing state.
-func (s *Service) closeFiles(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
-	// Watch un-uploaded slices
-	w, initDone1 := NewActiveSlicesWatcher(ctx, wg, s.logger, s.schema, s.etcdClient)
-
+func (s *Service) closeFiles(slicesWatcher *activeSlicesWatcher, d dependencies) <-chan error {
 	// Watch files in closing state
-	initDone2 := orchestrator.Start(ctx, wg, d, orchestrator.Config[model.File]{
+	return d.OrchestratorNode().Start(orchestrator.Config[model.File]{
 		Name: fileCloseTaskType,
 		Source: orchestrator.Source[model.File]{
 			WatchPrefix:     s.schema.Files().Closing().PrefixT(),
@@ -58,7 +54,7 @@ func (s *Service) closeFiles(ctx context.Context, wg *sync.WaitGroup, d dependen
 			return func(ctx context.Context, logger log.Logger) task.Result {
 				// Wait until all slices are uploaded
 				file := event.Value
-				if err := w.WaitUntilAllSlicesUploaded(ctx, logger, file.FileKey); err != nil {
+				if err := slicesWatcher.WaitUntilAllSlicesUploaded(ctx, logger, file.FileKey); err != nil {
 					return task.ErrResult(err)
 				}
 
@@ -71,20 +67,4 @@ func (s *Service) closeFiles(ctx context.Context, wg *sync.WaitGroup, d dependen
 			}
 		},
 	})
-
-	// Wait for initialization of the both watchers
-	initDone := make(chan error)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer close(initDone)
-		if err := <-initDone1; err != nil {
-			initDone <- err
-		}
-		if err := <-initDone2; err != nil {
-			initDone <- err
-		}
-	}()
-
-	return initDone
 }

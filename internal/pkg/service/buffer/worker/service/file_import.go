@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -12,9 +11,9 @@ import (
 	filePkg "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -30,8 +29,8 @@ const (
 )
 
 // importFiles watches for files switched to the importing state.
-func (s *Service) importFiles(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
-	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.File]{
+func (s *Service) importFiles(d dependencies) <-chan error {
+	return d.OrchestratorNode().Start(orchestrator.Config[model.File]{
 		Name: fileImportTaskType,
 		Source: orchestrator.Source[model.File]{
 			WatchPrefix:     s.schema.Files().Importing().PrefixT(),

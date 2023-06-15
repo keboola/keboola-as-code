@@ -46,7 +46,7 @@ type cachedSlice struct {
 	expiration time.Time
 }
 
-func startChecker(ctx context.Context, wg *sync.WaitGroup, s *Service) <-chan error {
+func startChecker(s *Service) <-chan error {
 	c := &checker{
 		Service:          s,
 		logger:           s.logger.AddPrefix("[conditions]"),
@@ -57,31 +57,31 @@ func startChecker(ctx context.Context, wg *sync.WaitGroup, s *Service) <-chan er
 
 	// Start watchers and ticker
 	initDone := make(chan error, 1)
-	wg.Add(1)
+	c.Service.wg.Add(1)
 	go func() {
-		defer wg.Done()
+		defer c.Service.wg.Done()
 		defer close(initDone)
 		startTime := c.clock.Now()
 
-		if err := <-c.watchImportConditions(ctx, wg); err != nil {
+		if err := <-c.watchImportConditions(c.Service.ctx, c.Service.wg); err != nil {
 			initDone <- err
 			return
 		}
 
-		if err := <-c.watchOpenedSlices(ctx, wg); err != nil {
+		if err := <-c.watchOpenedSlices(c.Service.ctx, c.Service.wg); err != nil {
 			initDone <- err
 			return
 		}
 
-		c.startTicker(ctx, wg)
+		c.startTicker(c.Service.ctx, c.Service.wg)
 		c.logger.Infof(`initialized | %s`, c.clock.Since(startTime))
 	}()
 	return initDone
 }
 
 // checkConditions periodically check file import and slice upload conditions.
-func (s *Service) checkConditions(ctx context.Context, wg *sync.WaitGroup) <-chan error {
-	return startChecker(ctx, wg, s)
+func (s *Service) checkConditions() <-chan error {
+	return startChecker(s)
 }
 
 func (c *checker) check(ctx context.Context) {

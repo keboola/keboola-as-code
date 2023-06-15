@@ -22,6 +22,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -31,9 +32,10 @@ type Mocked interface {
 	Store() *bufferStore.Store
 	StatsCollector() *statistics.CollectorNode
 	WatcherAPINode() *watcher.APINode
-	DistributionWorkerNode() *distribution.Node
+	DistributionNode() *distribution.Node
 	WatcherWorkerNode() *watcher.WorkerNode
 	TaskNode() *task.Node
+	OrchestratorNode() *orchestrator.Node
 	StatsCache() *statistics.CacheNode
 	EventSender() *event.Sender
 
@@ -57,8 +59,9 @@ type mocked struct {
 	statsAPINode       *statistics.CollectorNode
 	watcherAPINode     *watcher.APINode
 	watcherWatcherNode *watcher.WorkerNode
-	distWorkerNode     *distribution.Node
-	taskWorkerNode     *task.Node
+	distNode           *distribution.Node
+	taskNode           *task.Node
+	orchestrator       *orchestrator.Node
 	statsCacheNode     *statistics.CacheNode
 	apiConfig          apiConfig.Config
 	workerConfig       workerConfig.Config
@@ -110,8 +113,8 @@ func (v *mocked) WatcherAPINode() *watcher.APINode {
 	return v.watcherAPINode
 }
 
-func (v *mocked) DistributionWorkerNode() *distribution.Node {
-	if v.distWorkerNode == nil {
+func (v *mocked) DistributionNode() *distribution.Node {
+	if v.distNode == nil {
 		// Speedup tests with real clock,
 		// and disable events grouping interval in tests with mocked clocks,
 		// events will be processed immediately.
@@ -121,10 +124,10 @@ func (v *mocked) DistributionWorkerNode() *distribution.Node {
 		}
 
 		var err error
-		v.distWorkerNode, err = distribution.NewNode(DistributionWorkerGroupName, v, distribution.WithEventsGroupInterval(groupingInterval))
+		v.distNode, err = distribution.NewNode(DistributionWorkerGroupName, v, distribution.WithEventsGroupInterval(groupingInterval))
 		assert.NoError(v.t, err)
 	}
-	return v.distWorkerNode
+	return v.distNode
 }
 
 func (v *mocked) WatcherWorkerNode() *watcher.WorkerNode {
@@ -137,12 +140,19 @@ func (v *mocked) WatcherWorkerNode() *watcher.WorkerNode {
 }
 
 func (v *mocked) TaskNode() *task.Node {
-	if v.taskWorkerNode == nil {
+	if v.taskNode == nil {
 		var err error
-		v.taskWorkerNode, err = task.NewNode(v)
+		v.taskNode, err = task.NewNode(v)
 		assert.NoError(v.t, err)
 	}
-	return v.taskWorkerNode
+	return v.taskNode
+}
+
+func (v *mocked) OrchestratorNode() *orchestrator.Node {
+	if v.orchestrator == nil {
+		v.orchestrator = orchestrator.NewNode(v)
+	}
+	return v.orchestrator
 }
 
 func (v *mocked) StatsCache() *statistics.CacheNode {

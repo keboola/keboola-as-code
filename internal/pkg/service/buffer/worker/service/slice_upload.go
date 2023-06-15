@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/keboola/go-client/pkg/keboola"
@@ -11,10 +10,10 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -30,8 +29,8 @@ const (
 )
 
 // uploadSlices watches for slices switched to the uploading state.
-func (s *Service) uploadSlices(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
-	return orchestrator.Start(ctx, wg, d, orchestrator.Config[model.Slice]{
+func (s *Service) uploadSlices(d dependencies) <-chan error {
+	return d.OrchestratorNode().Start(orchestrator.Config[model.Slice]{
 		Name: sliceUploadTaskType,
 		Source: orchestrator.Source[model.Slice]{
 			WatchPrefix:     s.schema.Slices().Uploading().PrefixT(),

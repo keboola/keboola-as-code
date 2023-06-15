@@ -2,20 +2,19 @@ package service
 
 import (
 	"context"
-	"sync"
 
 	cleanupPkg "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/cleanup"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-func (s *Service) cleanup(ctx context.Context, wg *sync.WaitGroup, d dependencies) <-chan error {
+func (s *Service) cleanup(d dependencies) <-chan error {
 	logger := s.logger.AddPrefix("[cleanup]")
 	node := cleanupPkg.NewNode(d, logger)
 
 	initDone := make(chan error)
-	wg.Add(1)
+	s.wg.Add(1)
 	go func() {
-		defer wg.Done()
+		defer s.wg.Done()
 
 		ticker := s.clock.Ticker(s.config.TasksCleanupInterval)
 		defer ticker.Stop()
@@ -25,10 +24,10 @@ func (s *Service) cleanup(ctx context.Context, wg *sync.WaitGroup, d dependencie
 
 		for {
 			select {
-			case <-ctx.Done():
+			case <-s.ctx.Done():
 				return
 			case <-ticker.C:
-				if err := node.Check(ctx); err != nil && !errors.Is(err, context.Canceled) {
+				if err := node.Check(s.ctx); err != nil && !errors.Is(err, context.Canceled) {
 					logger.Error(err)
 				}
 			}
@@ -38,12 +37,12 @@ func (s *Service) cleanup(ctx context.Context, wg *sync.WaitGroup, d dependencie
 	return initDone
 }
 
-func (s *Service) cleanupTasks(ctx context.Context, wg *sync.WaitGroup) <-chan error {
+func (s *Service) cleanupTasks() <-chan error {
 	logger := s.logger.AddPrefix("[task][cleanup][ticker]")
 	initDone := make(chan error)
-	wg.Add(1)
+	s.wg.Add(1)
 	go func() {
-		defer wg.Done()
+		defer s.wg.Done()
 
 		ticker := s.clock.Ticker(s.config.TasksCleanupInterval)
 		defer ticker.Stop()
@@ -53,7 +52,7 @@ func (s *Service) cleanupTasks(ctx context.Context, wg *sync.WaitGroup) <-chan e
 
 		for {
 			select {
-			case <-ctx.Done():
+			case <-s.ctx.Done():
 				return
 			case <-ticker.C:
 				// Only one worker should do cleanup
