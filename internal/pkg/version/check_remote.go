@@ -2,36 +2,31 @@ package version
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/Masterminds/semver"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/request"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-const EnvVersionCheck = "KBC_VERSION_CHECK"
-
 type checker struct {
 	ctx    context.Context
-	envs   env.Provider
 	client client.Client
 	cancel context.CancelFunc
 	logger log.Logger
+	skip   bool
 }
 
-func NewGitHubChecker(parentCtx context.Context, logger log.Logger, envs env.Provider) *checker {
+func NewGitHubChecker(parentCtx context.Context, logger log.Logger, skip bool) *checker {
 	// Timeout 3 seconds
 	ctx, cancel := context.WithTimeout(parentCtx, 3*time.Second)
 
 	// Create client
 	c := client.New().WithBaseURL("https://api.github.com")
-	return &checker{ctx, envs, c, cancel, logger}
+	return &checker{ctx: ctx, client: c, cancel: cancel, logger: logger, skip: skip}
 }
 
 func (c *checker) CheckIfLatest(currentVersion string) error {
@@ -43,8 +38,8 @@ func (c *checker) CheckIfLatest(currentVersion string) error {
 	}
 
 	// Disabled by ENV
-	if value, _ := c.envs.Lookup(EnvVersionCheck); strings.ToLower(value) == "false" {
-		return errors.New(fmt.Sprintf(`skipped, disabled by ENV "%s"`, EnvVersionCheck))
+	if c.skip {
+		return errors.New(`skipped, check disabled`)
 	}
 
 	latestVersion, err := c.getLatestVersion()

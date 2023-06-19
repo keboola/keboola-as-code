@@ -124,7 +124,8 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 	flags.StringP("working-dir", "d", "", "use other working directory")
 	flags.StringP("storage-api-token", "t", "", "storage API token from your project")
 	flags.BoolP("verbose", "v", false, "print details")
-	flags.BoolP("verbose-api", "", false, "log each API request and response")
+	flags.Bool("verbose-api", false, "log each API request and response")
+	flags.Bool("version-check", true, "checks if there is a newer version of the CLI")
 
 	// Root command flags
 	root.Flags().SortFlags = true
@@ -158,7 +159,7 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		p.Set(dependencies.NewProvider(cmd.Context(), envs, root.logger, root.fs, dialog.New(prompt, root.options), root.options))
 
 		// Check version
-		if err := versionCheck.Run(cmd.Context(), p.BaseDependencies()); err != nil {
+		if err := versionCheck.Run(cmd.Context(), root.options.GetBool("version-check"), p.BaseDependencies()); err != nil {
 			// Ignore error, send to logs
 			root.logger.Debugf(`Version check: %s.`, err.Error())
 		} else {
