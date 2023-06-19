@@ -11,7 +11,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 )
 
@@ -83,7 +82,7 @@ func createMockedChecker(t *testing.T) (*checker, log.DebugLogger) {
 
 	// Client with mocked http transport
 	logger := log.NewDebugLogger()
-	c := NewGitHubChecker(context.Background(), logger, env.Empty())
+	c := NewGitHubChecker(context.Background(), logger, false)
 	c.client = c.client.WithTransport(httpTransport).WithRetry(client.TestingRetry())
 	return c, logger
 }
