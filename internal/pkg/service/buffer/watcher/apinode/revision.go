@@ -156,7 +156,7 @@ func (s *RevisionSyncer) Lock() UnlockFn {
 	s.revInUse[currentRev]++ // if the map key is missing, zero value is given
 	if usedCount := s.revInUse[currentRev]; usedCount == 1 {
 		// Log the locked revision on the first use
-		s.logger.Infof(`locked revision "%v"`, currentRev)
+		s.logger.Debugf(`locked revision "%v"`, currentRev)
 	}
 	s.lock.Unlock()
 
@@ -172,7 +172,7 @@ func (s *RevisionSyncer) unlockRevision(rev int64) {
 	s.revInUse[rev]--
 	if v := s.revInUse[rev]; v == 0 {
 		delete(s.revInUse, rev)
-		s.logger.Infof(`unlocked revision "%v"`, rev)
+		s.logger.Debugf(`unlocked revision "%v"`, rev)
 	}
 	s.lock.Unlock()
 }

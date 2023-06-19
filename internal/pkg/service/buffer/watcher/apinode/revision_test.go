@@ -161,12 +161,12 @@ DEBUG  >>> statistics sync
 INFO  reported revision "1"
 DEBUG  >>> statistics sync
 INFO  reported revision "30"
-INFO  locked revision "30"
-INFO  locked revision "50"
-INFO  unlocked revision "30"
+DEBUG  locked revision "30"
+DEBUG  locked revision "50"
+DEBUG  unlocked revision "30"
 DEBUG  >>> statistics sync
 INFO  reported revision "50"
-INFO  unlocked revision "50"
+DEBUG  unlocked revision "50"
 DEBUG  >>> statistics sync
 INFO  reported revision "70"
 [etcd-session]INFO  closing etcd session
