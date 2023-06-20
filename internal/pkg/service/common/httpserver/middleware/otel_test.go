@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	responseContent = "some error"
+	responseContent = "some response"
 )
 
 func TestOpenTelemetryMiddleware(t *testing.T) {
@@ -41,7 +41,10 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 		middleware.WithRedactedQueryParam("secret2"),
 		middleware.WithRedactedHeader("X-StorageAPI-Token"),
 		middleware.WithFilter(func(req *http.Request) bool {
-			return req.URL.Path != "/api/ignored"
+			return req.URL.Path != "/api/ignored-all"
+		}),
+		middleware.WithFilterTracing(func(req *http.Request) bool {
+			return req.URL.Path != "/api/ignored-tracing"
 		}),
 	)
 	handler := middleware.Wrap(
@@ -54,12 +57,18 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 	// Create group
 	grp := mux.NewGroup("/api")
 
-	// Register ignored route
-	grp.GET("/ignored", func(w http.ResponseWriter, req *http.Request) {
-		_, span := tel.Tracer().Start(req.Context(), "my-ignored-span")
+	// Register ignored routes
+	grp.GET("/ignored-all", func(w http.ResponseWriter, req *http.Request) {
+		_, span := tel.Tracer().Start(req.Context(), "my-ignored-span-1")
 		span.End(nil)
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("OK"))
+		_, _ = w.Write([]byte(responseContent))
+	})
+	grp.GET("/ignored-tracing", func(w http.ResponseWriter, req *http.Request) {
+		_, span := tel.Tracer().Start(req.Context(), "my-ignored-span-2")
+		span.End(nil)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(responseContent))
 	})
 
 	// Simulate Goa framework
@@ -98,13 +107,17 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 	// Send request
 	handler.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	assert.Equal(t, "some error", rec.Body.String())
+	assert.Equal(t, responseContent, rec.Body.String())
 
-	// Send ignored request
+	// Send ignored requests
 	rec = httptest.NewRecorder()
-	handler.ServeHTTP(rec, httptest.NewRequest("GET", "/api/ignored", nil))
+	handler.ServeHTTP(rec, httptest.NewRequest("GET", "/api/ignored-all", nil))
 	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "OK", rec.Body.String())
+	assert.Equal(t, responseContent, rec.Body.String())
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest("GET", "/api/ignored-tracing", nil))
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, responseContent, rec.Body.String())
 
 	// Assert
 	tel.AssertSpans(t, expectedSpans(tel), telemetry.WithSpanAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
@@ -118,7 +131,7 @@ func TestOpenTelemetryMiddleware(t *testing.T) {
 	}))
 	tel.AssertMetrics(t, expectedMetrics(), telemetry.WithDataPointSortKey(func(attrs attribute.Set) string {
 		status, _ := attrs.Value("http.status_code")
-		url, _ := attrs.Value("http.url")
+		url, _ := attrs.Value("http.route")
 		return fmt.Sprintf("%d:%s", status.AsInt64(), url.AsString())
 	}))
 }
@@ -160,7 +173,7 @@ func expectedSpans(tel telemetry.ForTest) tracetest.SpanStubs {
 				attribute.String("endpoint.name", "MyEndpoint"),
 				attribute.String("endpoint.name_full", "MyService.MyEndpoint"),
 				attribute.String("http.response.header.x-request-id", "<dynamic>"),
-				attribute.Int("http.wrote_bytes", 10),
+				attribute.Int("http.wrote_bytes", len(responseContent)),
 				attribute.Int("http.status_code", http.StatusInternalServerError),
 			},
 		},
@@ -168,7 +181,15 @@ func expectedSpans(tel telemetry.ForTest) tracetest.SpanStubs {
 }
 
 func expectedMetrics() []metricdata.Metrics {
-	attrs := attribute.NewSet(
+	req1Attrs := attribute.NewSet(
+		attribute.String("http.method", "GET"),
+		attribute.String("http.scheme", "http"),
+		attribute.String("net.host.name", "example.com"),
+		attribute.String("http.route", "/api/ignored-tracing"),
+		attribute.Int("http.status_code", http.StatusOK),
+		attribute.String("endpoint.name", "/api/ignored-tracing"),
+	)
+	req2Attrs := attribute.NewSet(
 		attribute.String("http.method", "POST"),
 		attribute.String("http.scheme", "http"),
 		attribute.String("net.host.name", "example.com"),
@@ -176,7 +197,11 @@ func expectedMetrics() []metricdata.Metrics {
 		attribute.Int("http.status_code", http.StatusInternalServerError),
 		attribute.String("endpoint.name", "my-endpoint"),
 	)
-	apdexAttrs := attribute.NewSet(
+	apdexReq1Attrs := attribute.NewSet(
+		attribute.String("http.route", "/api/ignored-tracing"),
+		attribute.String("endpoint.name", "/api/ignored-tracing"),
+	)
+	apdexReq2Attrs := attribute.NewSet(
 		attribute.String("http.route", "/api/item/:id/:secret1"),
 		attribute.String("endpoint.name", "my-endpoint"),
 	)
@@ -188,7 +213,8 @@ func expectedMetrics() []metricdata.Metrics {
 				Temporality: 1,
 				IsMonotonic: true, // counter
 				DataPoints: []metricdata.DataPoint[int64]{
-					{Value: 0, Attributes: attrs},
+					{Value: 0, Attributes: req1Attrs},
+					{Value: 0, Attributes: req2Attrs},
 				},
 			},
 		},
@@ -199,7 +225,8 @@ func expectedMetrics() []metricdata.Metrics {
 				Temporality: 1,
 				IsMonotonic: true, // counter
 				DataPoints: []metricdata.DataPoint[int64]{
-					{Value: int64(len(responseContent)), Attributes: attrs},
+					{Value: int64(len(responseContent)), Attributes: req1Attrs},
+					{Value: int64(len(responseContent)), Attributes: req2Attrs},
 				},
 			},
 		},
@@ -213,7 +240,12 @@ func expectedMetrics() []metricdata.Metrics {
 					{
 						Count:      1,
 						Bounds:     []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-						Attributes: attrs,
+						Attributes: req1Attrs,
+					},
+					{
+						Count:      1,
+						Bounds:     []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+						Attributes: req2Attrs,
 					},
 				},
 			},
@@ -225,7 +257,8 @@ func expectedMetrics() []metricdata.Metrics {
 				Temporality: 1,
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
-					{Value: 1, Attributes: apdexAttrs},
+					{Value: 1, Attributes: apdexReq1Attrs},
+					{Value: 1, Attributes: apdexReq2Attrs},
 				},
 			},
 		},
@@ -236,8 +269,10 @@ func expectedMetrics() []metricdata.Metrics {
 				Temporality: 1,
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[float64]{
+					// status code = 200, duration OK, apdex=1
+					{Value: 1, Attributes: apdexReq1Attrs},
 					// status code = 500, apdex=0
-					{Value: 0, Attributes: apdexAttrs},
+					{Value: 0, Attributes: apdexReq2Attrs},
 				},
 			},
 		},
@@ -248,8 +283,10 @@ func expectedMetrics() []metricdata.Metrics {
 				Temporality: 1,
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[float64]{
+					// status code = 200, duration OK, apdex=1
+					{Value: 1, Attributes: apdexReq1Attrs},
 					// status code = 500, apdex=0
-					{Value: 0, Attributes: apdexAttrs},
+					{Value: 0, Attributes: apdexReq2Attrs},
 				},
 			},
 		},
@@ -260,8 +297,10 @@ func expectedMetrics() []metricdata.Metrics {
 				Temporality: 1,
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[float64]{
+					// status code = 200, duration OK, apdex=1
+					{Value: 1, Attributes: apdexReq1Attrs},
 					// status code = 500, apdex=0
-					{Value: 0, Attributes: apdexAttrs},
+					{Value: 0, Attributes: apdexReq2Attrs},
 				},
 			},
 		},
