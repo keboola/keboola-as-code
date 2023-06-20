@@ -12,8 +12,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-
-	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
 const (
@@ -31,7 +29,6 @@ const (
 )
 
 func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, cfg Config) Middleware {
-	nopTracer := trace.NewNoopTracerProvider().Tracer("")
 	meter := mp.Meter("otel-middleware")
 	apdex := newApdexCounter(meter, []time.Duration{
 		500 * time.Millisecond,
@@ -41,16 +38,13 @@ func OpenTelemetry(tp trace.TracerProvider, mp metric.MeterProvider, cfg Config)
 
 	return func(next http.Handler) http.Handler {
 		h := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			ctx := req.Context()
-			span := trace.SpanFromContext(ctx)
-
-			// Create dropped span for filtered request, so child spans won't appear in the telemetry too.
-			if isRequestIgnored(req) {
-				ctx, span = nopTracer.Start(telemetry.ContextWithDisabledTracing(ctx), SpanName)
-				next.ServeHTTP(w, req.WithContext(ctx))
-				span.End()
+			if isTelemetryDisabled(req) {
+				next.ServeHTTP(w, req)
 				return
 			}
+
+			ctx := req.Context()
+			span := trace.SpanFromContext(ctx)
 
 			// Set additional request attributes
 			span.SetAttributes(spanRequestAttrs(&cfg, req)...)
@@ -87,7 +81,7 @@ func otelOptions(cfg Config, tp trace.TracerProvider, mp metric.MeterProvider) [
 		otelhttp.WithTracerProvider(tp),
 		otelhttp.WithMeterProvider(mp),
 		otelhttp.WithFilter(func(req *http.Request) bool {
-			return !isRequestIgnored(req)
+			return !isTelemetryDisabled(req)
 		}),
 	}
 	if cfg.propagators != nil {

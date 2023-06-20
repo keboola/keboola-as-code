@@ -25,7 +25,11 @@ func TestLoggerMiddleware(t *testing.T) {
 	// Create dummy handler
 	mux := httptreemux.NewContextMux()
 	grp := mux.NewGroup("/api")
-	grp.GET("/ignored", func(w http.ResponseWriter, req *http.Request) {
+	grp.GET("/ignored-1", func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	})
+	grp.GET("/ignored-2", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})
@@ -35,8 +39,10 @@ func TestLoggerMiddleware(t *testing.T) {
 	})
 
 	// Register middleware
-	filter := func(req *http.Request) bool { return req.URL.Path != "/api/ignored" }
-	cfg := middleware.NewConfig(middleware.WithFilter(filter))
+	cfg := middleware.NewConfig(
+		middleware.WithFilter(func(req *http.Request) bool { return req.URL.Path != "/api/ignored-1" }),
+		middleware.WithFilterAccessLog(func(req *http.Request) bool { return req.URL.Path != "/api/ignored-2" }),
+	)
 	logger := log.NewDebugLogger()
 	handler = middleware.Wrap(handler, middleware.RequestInfo(), middleware.Filter(cfg), middleware.Logger(logger))
 
@@ -48,9 +54,15 @@ func TestLoggerMiddleware(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "OK", rec.Body.String())
 
-	// Send ignored request
+	// Send ignored requests
 	rec = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/api/ignored", nil)
+	req = httptest.NewRequest("GET", "/api/ignored-1", nil)
+	req.Header.Set("User-Agent", "my-user-agent")
+	handler.ServeHTTP(rec, req)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "OK", rec.Body.String())
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/ignored-2", nil)
 	req.Header.Set("User-Agent", "my-user-agent")
 	handler.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
@@ -58,7 +70,6 @@ func TestLoggerMiddleware(t *testing.T) {
 
 	// Assert
 	wildcards.Assert(t, `
-[http][requestId=%s]INFO  request GET /api/action 192.0.2.1 my-user-agent
-[http][requestId=%s]INFO  response status=200 bytes=2 time=%s agent=my-user-agent
+[http][requestId=%s]INFO  req /api/action status=200 bytes=2 time=%s client_ip=192.0.2.1 agent=my-user-agent
 `, logger.AllMessages())
 }
