@@ -9,6 +9,8 @@ import (
 type Config struct {
 	propagators         propagation.TextMapPropagator
 	filters             []FilterFn
+	accessLogFilters    []FilterFn
+	tracingFilters      []FilterFn
 	redactedRouteParams map[string]struct{}
 	redactedQueryParams map[string]struct{}
 	redactedHeaders     map[string]struct{}
@@ -23,11 +25,27 @@ func WithPropagators(v propagation.TextMapPropagator) Option {
 	}
 }
 
-// WithFilter defines ignored requests that will not be logged/included in telemetry.
+// WithFilter defines ignored requests that will not be traced, metered and logged. It disables telemetry at all.
 // A Filter must return true if the request should be logged/traced.
 func WithFilter(filters ...FilterFn) Option {
 	return func(c *Config) {
 		c.filters = append(c.filters, filters...)
+	}
+}
+
+// WithFilterAccessLog defines ignored requests that will not be logged.
+// A Filter must return true if the request should be logged/traced.
+func WithFilterAccessLog(filters ...FilterFn) Option {
+	return func(c *Config) {
+		c.accessLogFilters = append(c.accessLogFilters, filters...)
+	}
+}
+
+// WithFilterTracing defines ignored requests that will not be traced.
+// A Filter must return true if the request should be logged/traced.
+func WithFilterTracing(filters ...FilterFn) Option {
+	return func(c *Config) {
+		c.tracingFilters = append(c.tracingFilters, filters...)
 	}
 }
 
