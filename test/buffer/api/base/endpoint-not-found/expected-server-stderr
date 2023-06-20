@@ -1,5 +1,4 @@
 %A
-[bufferApi][http][requestId=%a]INFO request GET /foo/bar %a
 [bufferApi][http][requestId=%a]INFO no endpoint found for path "/foo/bar" | errorName=buffer.endpointNotFound errorType=errors.EndpointNotFoundError response={"statusCode":404,"error":"buffer.endpointNotFound","message":"No endpoint found for path \"/foo/bar\"."}
-[bufferApi][http][requestId=%a]INFO response status=404 %a
+[bufferApi][http][requestId=%a]INFO req /foo/bar status=404 bytes=%d time=%s client_ip=127.0.0.1 agent=%s
 %A
