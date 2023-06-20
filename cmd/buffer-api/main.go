@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/spf13/pflag"
 	octrace "go.opencensus.io/trace"
@@ -122,6 +123,10 @@ func run() error {
 	// Create service.
 	svc := service.New(d)
 
+	filterImportEndpoint := func(req *http.Request) bool {
+		return !strings.HasPrefix(req.URL.Path, "/v1/import/") || req.URL.RawQuery == "debug=true"
+	}
+
 	// Start HTTP server.
 	logger.Infof("starting Buffer API HTTP server, listen-address=%s", cfg.ListenAddress)
 	err = httpserver.Start(d, httpserver.Config{
@@ -132,9 +137,13 @@ func run() error {
 			middleware.WithRedactedRouteParam("secret"),
 			middleware.WithRedactedHeader("X-StorageAPI-Token"),
 			middleware.WithPropagators(propagation.TraceContext{}),
+			// Ignore health checks
 			middleware.WithFilter(func(req *http.Request) bool {
 				return req.URL.Path != "/health-check"
 			}),
+			// Filter out import endpoint traces and logs, but keep metrics
+			middleware.WithFilterTracing(filterImportEndpoint),
+			middleware.WithFilterAccessLog(filterImportEndpoint),
 		},
 		Mount: func(c httpserver.Components) {
 			// Create public request deps for each request
