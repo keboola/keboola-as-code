@@ -15,12 +15,14 @@ import (
 
 func TestNewPublicDeps_LazyLoadComponents(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 	httpClient := httpclient.New()
-	baseDeps := newBaseDeps(log.NewNopLogger(), telemetry.NewNop(), clock.New(), servicectx.NewForTest(t, context.Background()), httpClient)
+	baseDeps := newBaseScope(ctx, log.NewNopLogger(), telemetry.NewNop(), clock.New(), servicectx.NewForTest(t, ctx), httpClient)
 
 	// Create public deps without loading components.
-	deps, err := newPublicDeps(context.Background(), baseDeps, "https://connection.keboola.com")
+	deps, err := newPublicScope(context.Background(), baseDeps, "https://connection.keboola.com")
 	assert.NoError(t, err)
+
 	// Check the components are loaded lazily.
 	c, found := deps.Components().Get("keboola.ex-currency")
 	assert.True(t, found)
