@@ -110,7 +110,7 @@ func run() error {
 	}
 
 	// Create dependencies.
-	d, err := dependencies.NewServerDeps(ctx, proc, cfg, envs, logger, tel)
+	d, err := dependencies.NewServerDeps(ctx, proc, cfg, logger, tel)
 	if err != nil {
 		return err
 	}

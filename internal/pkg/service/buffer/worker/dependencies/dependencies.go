@@ -46,13 +46,13 @@ type forWorker struct {
 	eventSender  *event.Sender
 }
 
-func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger, tel telemetry.Telemetry) (v ForWorker, err error) {
+func NewWorkerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, logger log.Logger, tel telemetry.Telemetry) (v ForWorker, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.worker.dependencies.NewWorkerDeps")
 	defer span.End(&err)
 
 	// Create service dependencies
 	userAgent := "keboola-buffer-worker"
-	serviceDeps, err := serviceDependencies.NewServiceDeps(ctx, proc, cfg.ServiceConfig, envs, logger, tel, userAgent)
+	serviceDeps, err := serviceDependencies.NewServiceDeps(ctx, proc, cfg.ServiceConfig, logger, tel, userAgent)
 	if err != nil {
 		return nil, err
 	}

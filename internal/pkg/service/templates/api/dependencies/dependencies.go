@@ -28,7 +28,6 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -104,13 +103,13 @@ type forProjectRequest struct {
 	projectRepositories dependencies.Lazy[*model.TemplateRepositories]
 }
 
-func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger, tel telemetry.Telemetry) (v ForServer, err error) {
+func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, logger log.Logger, tel telemetry.Telemetry) (v ForServer, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.templates.api.dependencies.dependencies.NewServerDeps")
 	defer span.End(&err)
 
 	// Create service dependencies
 	userAgent := "keboola-templates-api"
-	serviceDeps, err := NewServiceDeps(ctx, proc, cfg, envs, logger, tel, userAgent)
+	serviceDeps, err := NewServiceDeps(ctx, proc, cfg, logger, tel, userAgent)
 	if err != nil {
 		return nil, err
 	}

@@ -32,7 +32,7 @@ func PrepareProjectFS(testPrj *testproject.Project, branchID int) (filesystem.Fs
 	return fixtures.LoadFS("empty-branch", envs)
 }
 
-func PrepareProject(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, branchID int, remote bool) (*project.State, *testproject.Project, *Dependencies, testproject.UnlockFn, error) {
+func PrepareProject(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, proc *servicectx.Process, branchID int, remote bool) (*project.State, *testproject.Project, *Dependencies, testproject.UnlockFn, error) {
 	// Get OS envs
 	envs, err := env.FromOs()
 	if err != nil {
@@ -45,7 +45,7 @@ func PrepareProject(ctx context.Context, logger log.Logger, tel telemetry.Teleme
 		return nil, nil, nil, nil, err
 	}
 
-	testDeps, err := newTestDependencies(ctx, logger, tel, testPrj.StorageAPIHost(), testPrj.StorageAPIToken().Token)
+	testDeps, err := newTestDependencies(ctx, logger, tel, proc, testPrj.StorageAPIHost(), testPrj.StorageAPIToken().Token)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -101,8 +101,8 @@ func PrepareProject(ctx context.Context, logger log.Logger, tel telemetry.Teleme
 	return prjState, testPrj, testDeps, unlockFn, nil
 }
 
-func newTestDependencies(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, apiHost, apiToken string) (*Dependencies, error) {
-	baseDeps := dependenciesPkg.NewBaseDeps(env.Empty(), logger, tel, client.NewTestClient())
+func newTestDependencies(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, proc *servicectx.Process, apiHost, apiToken string) (*Dependencies, error) {
+	baseDeps := dependenciesPkg.NewBaseDeps(logger, tel, proc, client.NewTestClient())
 	publicDeps, err := dependenciesPkg.NewPublicDeps(ctx, baseDeps, apiHost, dependenciesPkg.WithPreloadComponents(true))
 	if err != nil {
 		return nil, err

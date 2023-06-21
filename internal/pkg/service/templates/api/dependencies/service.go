@@ -35,7 +35,6 @@ func NewServiceDeps(
 	ctx context.Context,
 	proc *servicectx.Process,
 	cfg config.Config,
-	envs env.Provider,
 	logger log.Logger,
 	tel telemetry.Telemetry,
 	userAgent string,
@@ -58,7 +57,7 @@ func NewServiceDeps(
 	)
 
 	// Create base dependencies
-	baseDeps := dependencies.NewBaseDeps(envs, logger, tel, httpClient)
+	baseDeps := dependencies.NewBaseDeps(logger, tel, proc, httpClient)
 
 	// Create public dependencies - load API index
 	publicDeps, err := dependencies.NewPublicDeps(

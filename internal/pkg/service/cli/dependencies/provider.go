@@ -6,7 +6,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -14,14 +13,15 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
 // provider implements Provider interface.
 type provider struct {
 	commandCtx  context.Context
-	envs        env.Provider
 	logger      log.Logger
+	proc        *servicectx.Process
 	fs          filesystem.Fs
 	dialogs     *dialog.Dialogs
 	options     *options.Options
@@ -41,11 +41,11 @@ func (r *ProviderRef) Set(provider Provider) {
 	r._provider = provider
 }
 
-func NewProvider(commandCtx context.Context, envs env.Provider, logger log.Logger, fs filesystem.Fs, dialogs *dialog.Dialogs, opts *options.Options) Provider {
+func NewProvider(commandCtx context.Context, logger log.Logger, proc *servicectx.Process, fs filesystem.Fs, dialogs *dialog.Dialogs, opts *options.Options) Provider {
 	return &provider{
 		commandCtx: commandCtx,
-		envs:       envs,
 		logger:     logger,
+		proc:       proc,
 		fs:         fs,
 		dialogs:    dialogs,
 		options:    opts,
@@ -64,7 +64,7 @@ func (v *provider) BaseDependencies() Base {
 				}
 			},
 		)
-		return newBaseDeps(v.commandCtx, v.envs, v.logger, httpClient, v.fs, v.dialogs, v.options)
+		return newBaseDeps(v.commandCtx, v.logger, v.proc, httpClient, v.fs, v.dialogs, v.options)
 	})
 }
 

@@ -69,7 +69,9 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	)
 
 	// Assert
-	baseDeps := newBaseDeps(context.Background(), env.Empty(), logger, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts)
+	ctx := context.Background()
+	proc := servicectx.NewForTest(t, ctx)
+	baseDeps := newBaseDeps(ctx, logger, proc, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts)
 	localDeps, err := newLocal(baseDeps)
 	assert.NoError(t, err)
 	_, err = newRemote(context.Background(), localDeps)

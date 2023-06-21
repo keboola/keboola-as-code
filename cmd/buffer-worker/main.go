@@ -99,7 +99,7 @@ func run() error {
 	}
 
 	// Create dependencies.
-	d, err := dependencies.NewWorkerDeps(ctx, proc, cfg, envs, logger, tel)
+	d, err := dependencies.NewWorkerDeps(ctx, proc, cfg, logger, tel)
 	if err != nil {
 		return err
 	}

@@ -31,7 +31,6 @@ import (
 
 	"github.com/keboola/go-client/pkg/keboola"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
 	serviceDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
@@ -113,13 +112,13 @@ type forProjectRequest struct {
 	fileManager  *file.Manager
 }
 
-func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, envs env.Provider, logger log.Logger, tel telemetry.Telemetry) (v ForServer, err error) {
+func NewServerDeps(ctx context.Context, proc *servicectx.Process, cfg config.Config, logger log.Logger, tel telemetry.Telemetry) (v ForServer, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.buffer.api.dependencies.NewServerDeps")
 	defer span.End(&err)
 
 	// Create service dependencies
 	userAgent := "keboola-buffer-api"
-	serviceDeps, err := serviceDependencies.NewServiceDeps(ctx, proc, cfg.ServiceConfig, envs, logger, tel, userAgent)
+	serviceDeps, err := serviceDependencies.NewServiceDeps(ctx, proc, cfg.ServiceConfig, logger, tel, userAgent)
 	if err != nil {
 		return nil, err
 	}

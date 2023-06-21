@@ -32,9 +32,9 @@ type dbtProjectValue struct {
 	value *dbt.Project
 }
 
-func newBaseDeps(commandCtx context.Context, envs env.Provider, logger log.Logger, httpClient client.Client, fs filesystem.Fs, dialogs *dialog.Dialogs, opts *options.Options) *base {
+func newBaseDeps(commandCtx context.Context, logger log.Logger, proc *servicectx.Process, httpClient client.Client, fs filesystem.Fs, dialogs *dialog.Dialogs, opts *options.Options) *base {
 	return &base{
-		Base:       dependencies.NewBaseDeps(envs, logger, telemetry.NewNop(), httpClient),
+		Base:       dependencies.NewBaseDeps(logger, telemetry.NewNop(), proc, httpClient),
 		commandCtx: commandCtx,
 		fs:         fs,
 		fsInfo:     FsInfo{fs: fs},

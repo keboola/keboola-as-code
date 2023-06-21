@@ -75,11 +75,11 @@ import (
 // Base contains basic dependencies.
 type Base interface {
 	Clock() clock.Clock
-	Envs() env.Provider
 	HTTPClient() client.Client
 	Logger() log.Logger
 	Validator() validator.Validator
 	Telemetry() telemetry.Telemetry
+	Process() *servicectx.Process
 }
 
 // Public dependencies are available from the Storage API and other sources without authentication / Storage API token.
@@ -113,7 +113,6 @@ type Mocked interface {
 
 	DebugLogger() log.DebugLogger
 	TestTelemetry() telemetry.ForTest
-	EnvsMutable() *env.Map
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
 	MockedHTTPTransport() *httpmock.MockTransport

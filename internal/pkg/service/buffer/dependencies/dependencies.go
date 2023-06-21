@@ -37,7 +37,6 @@ func NewServiceDeps(
 	ctx context.Context,
 	proc *servicectx.Process,
 	cfg config.Config,
-	envs env.Provider,
 	logger log.Logger,
 	tel telemetry.Telemetry,
 	userAgent string,
