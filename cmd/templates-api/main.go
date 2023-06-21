@@ -155,7 +155,7 @@ func run() error {
 			// Mount endpoints
 			server.Mount(c.Muxer)
 			for _, m := range server.Mounts {
-				logger.Infof("HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
+				logger.Debugf("HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 			}
 		},
 	})
