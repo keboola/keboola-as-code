@@ -12,7 +12,7 @@ import (
 
 func TestDumpAll(t *testing.T) {
 	t.Parallel()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
 	_, err := client.Put(context.Background(), "key1", "value1")
