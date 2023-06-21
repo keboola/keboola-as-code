@@ -4,7 +4,6 @@ package api
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/runner"
@@ -45,14 +43,17 @@ func TestTemplatesApiE2E(t *testing.T) {
 			}
 			addArgs := []string{fmt.Sprintf("--repositories=%s", repositories)}
 
-			etcdNamespace := idgenerator.EtcdNamespaceForTest()
+			// Connect to the etcd
+			etcdCredentials := etcdhelper.TmpNamespaceFromEnv(t, "TEMPLATES_API_ETCD_")
+			etcdClient := etcdhelper.ClientForTest(t, etcdCredentials)
+
 			addEnvs := env.FromMap(map[string]string{
 				"TEMPLATES_API_DATADOG_ENABLED":  "false",
 				"TEMPLATES_API_STORAGE_API_HOST": test.TestProject().StorageAPIHost(),
-				"TEMPLATES_API_ETCD_NAMESPACE":   etcdNamespace,
-				"TEMPLATES_API_ETCD_ENDPOINT":    os.Getenv("TEMPLATES_API_ETCD_ENDPOINT"),
-				"TEMPLATES_API_ETCD_USERNAME":    os.Getenv("TEMPLATES_API_ETCD_USERNAME"),
-				"TEMPLATES_API_ETCD_PASSWORD":    os.Getenv("TEMPLATES_API_ETCD_PASSWORD"),
+				"TEMPLATES_API_ETCD_NAMESPACE":   etcdCredentials.Namespace,
+				"TEMPLATES_API_ETCD_ENDPOINT":    etcdCredentials.Endpoint,
+				"TEMPLATES_API_ETCD_USERNAME":    etcdCredentials.Username,
+				"TEMPLATES_API_ETCD_PASSWORD":    etcdCredentials.Password,
 				"TEMPLATES_API_PUBLIC_ADDRESS":   "https://templates.keboola.local",
 			})
 
@@ -75,6 +76,7 @@ func TestTemplatesApiE2E(t *testing.T) {
 				}
 			}
 
+			// Run the test
 			test.Run(
 				runner.WithInitProjectState(),
 				runner.WithRunAPIServerAndRequests(
@@ -87,13 +89,6 @@ func TestTemplatesApiE2E(t *testing.T) {
 			)
 
 			// Write current etcd KVs
-			etcdClient := etcdhelper.ClientForTestFrom(
-				test.T(),
-				os.Getenv("TEMPLATES_API_ETCD_ENDPOINT"),
-				os.Getenv("TEMPLATES_API_ETCD_USERNAME"),
-				os.Getenv("TEMPLATES_API_ETCD_PASSWORD"),
-				etcdNamespace,
-			)
 			etcdDump, err := etcdhelper.DumpAllToString(context.Background(), etcdClient)
 			assert.NoError(test.T(), err)
 			assert.NoError(test.T(), test.WorkingDirFS().WriteFile(filesystem.NewRawFile("actual-etcd-kvs.txt", etcdDump)))

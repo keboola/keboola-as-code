@@ -14,7 +14,7 @@ import (
 func TestValidationError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	pfxNoValidation := NewTypedPrefix[fooType]("my-prefix", serde.NewJSON(serde.NoValidation))
 	pfxFailingValidation := NewTypedPrefix[fooType]("my-prefix", serde.NewJSON(
@@ -50,7 +50,7 @@ func TestValidationError(t *testing.T) {
 func TestEncodeDecodeError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	pfxNoValidation := NewTypedPrefix[fooType]("my-prefix", serde.NewJSON(serde.NoValidation))
 	pfxFailingEncode := NewTypedPrefix[fooType]("my-prefix", serde.New(

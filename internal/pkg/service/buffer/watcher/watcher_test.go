@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
@@ -32,11 +31,11 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	logger := log.NewDebugLogger()
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
 
-	d := bufferDependencies.NewMockedDeps(t, dependencies.WithEtcdNamespace(etcdNamespace))
+	logger := log.NewDebugLogger()
+	d := bufferDependencies.NewMockedDeps(t, dependencies.WithEtcdCredentials(etcdCredentials))
 	str := d.Store()
 
 	createDeps := func(nodeName string) bufferDependencies.Mocked {
@@ -44,7 +43,7 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 			t,
 			dependencies.WithUniqueID(nodeName),
 			dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
-			dependencies.WithEtcdNamespace(etcdNamespace),
+			dependencies.WithEtcdCredentials(etcdCredentials),
 		)
 		nodeDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
 		return nodeDeps

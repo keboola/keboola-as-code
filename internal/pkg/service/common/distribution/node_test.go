@@ -12,7 +12,6 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
@@ -26,8 +25,9 @@ func TestNodesDiscovery(t *testing.T) {
 	t.Parallel()
 
 	clk := clock.New() // use real clock
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
+
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
 
 	// Create 3 nodes and (pseudo) processes
 	nodesCount := 3
@@ -43,7 +43,7 @@ func TestNodesDiscovery(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			node, d := createNode(t, clk, etcdNamespace, fmt.Sprintf("node%d", i+1))
+			node, d := createNode(t, clk, etcdCredentials, fmt.Sprintf("node%d", i+1))
 			if node != nil {
 				lock.Lock()
 				nodes[i] = node
@@ -240,7 +240,7 @@ node3
 
 	// All node are off, start a new node
 	assert.Equal(t, 4, nodesCount+1)
-	node4, d4 := createNode(t, clk, etcdNamespace, "node4")
+	node4, d4 := createNode(t, clk, etcdCredentials, "node4")
 	process4 := d4.Process()
 	assert.Eventually(t, func() bool {
 		return reflect.DeepEqual([]string{"node4"}, node4.Nodes())
@@ -280,11 +280,11 @@ node4
 `, d4.DebugLogger().AllMessages())
 }
 
-func createNode(t *testing.T, clk clock.Clock, etcdNamespace, nodeName string) (*distribution.Node, dependencies.Mocked) {
+func createNode(t *testing.T, clk clock.Clock, etcdCredentials etcdhelper.Credentials, nodeName string) (*distribution.Node, dependencies.Mocked) {
 	t.Helper()
 
 	// Create dependencies
-	d := createDeps(t, clk, nil, etcdNamespace, nodeName)
+	d := createDeps(t, clk, nil, etcdCredentials, nodeName)
 
 	// Speedup tests with real clock,
 	// and disable events grouping interval in tests with mocked clocks,
@@ -306,14 +306,14 @@ func createNode(t *testing.T, clk clock.Clock, etcdNamespace, nodeName string) (
 	return node, d
 }
 
-func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, nodeName string) dependencies.Mocked {
+func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdCredentials etcdhelper.Credentials, nodeName string) dependencies.Mocked {
 	t.Helper()
 	d := dependencies.NewMockedDeps(
 		t,
 		dependencies.WithClock(clk),
 		dependencies.WithUniqueID(nodeName),
 		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
-		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithEtcdCredentials(etcdCredentials),
 	)
 	if logs != nil {
 		d.DebugLogger().ConnectTo(logs)

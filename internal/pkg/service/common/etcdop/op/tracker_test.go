@@ -16,7 +16,7 @@ func TestTracker(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	tracker := NewTracker(client)
 
 	// Create some keys

@@ -167,7 +167,7 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
 	for _, tc := range cases {
 		var logs strings.Builder
 		ctx := context.Background()
-		client := etcdhelper.ClientForTest(t)
+		client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 		client.KV = etcdlogger.KVLogWrapper(client.KV, &logs)
 		prefix := generateKVsT(t, tc.kvCount, ctx, client)
 		ops := append([]iterator.Option{iterator.WithPageSize(tc.pageSize)}, tc.options...)
@@ -218,7 +218,7 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
 func TestIteratorT_Revision(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	serialization := serde.NewJSON(serde.NoValidation)
 	prefix := etcdop.NewTypedPrefix[obj]("some/prefix", serialization)
@@ -260,7 +260,7 @@ func TestIteratorT_Revision(t *testing.T) {
 func TestIteratorT_Value_UsedIncorrectly(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	prefix := generateKVsT(t, 3, ctx, client)
 
 	it := prefix.GetAll().Do(ctx, client)
@@ -272,7 +272,7 @@ func TestIteratorT_Value_UsedIncorrectly(t *testing.T) {
 func TestIteratorT_ForEachOp(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	out := ioutil.NewAtomicWriter()
 	prefix := generateKVsT(t, 5, ctx, client)
 

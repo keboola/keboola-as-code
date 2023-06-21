@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
@@ -35,6 +34,9 @@ func TestSuccessfulTask(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
+
 	lock := "my-lock"
 	taskType := "some.task"
 	tKey := task.Key{
@@ -42,14 +44,12 @@ func TestSuccessfulTask(t *testing.T) {
 		TaskID:    task.ID("my-receiver/my-export/" + taskType),
 	}
 
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	logs := ioutil.NewAtomicWriter()
 	tel := telemetry.NewForTest(t)
 
 	// Create nodes
-	node1, _ := createNode(t, etcdNamespace, logs, tel, "node1")
-	node2, _ := createNode(t, etcdNamespace, logs, tel, "node2")
+	node1, _ := createNode(t, etcdCredentials, logs, tel, "node1")
+	node2, _ := createNode(t, etcdCredentials, logs, tel, "node2")
 	logs.Truncate()
 	tel.Reset()
 
@@ -312,20 +312,21 @@ func TestFailedTask(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
+
 	lock := "my-lock"
 	taskType := "some.task"
 	tKey := task.Key{
 		ProjectID: 123,
 		TaskID:    task.ID("my-receiver/my-export/" + taskType),
 	}
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	logs := ioutil.NewAtomicWriter()
 	tel := telemetry.NewForTest(t)
 
 	// Create nodes
-	node1, _ := createNode(t, etcdNamespace, logs, tel, "node1")
-	node2, _ := createNode(t, etcdNamespace, logs, tel, "node2")
+	node1, _ := createNode(t, etcdCredentials, logs, tel, "node1")
+	node2, _ := createNode(t, etcdCredentials, logs, tel, "node2")
 	logs.Truncate()
 	tel.Reset()
 
@@ -634,6 +635,9 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
+
 	lock := "my-lock"
 	taskType := "some.task"
 	tKey := task.Key{
@@ -641,13 +645,11 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 		TaskID:    task.ID("my-receiver/my-export/" + taskType),
 	}
 
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	logs := ioutil.NewAtomicWriter()
 	tel := telemetry.NewForTest(t)
 
 	// Create node
-	node1, d := createNode(t, etcdNamespace, logs, tel, "node1")
+	node1, d := createNode(t, etcdCredentials, logs, tel, "node1")
 	logs.Truncate()
 
 	// Start a task
@@ -726,22 +728,22 @@ task/123/my-receiver/my-export/some.task/%s
 `, logs.String())
 }
 
-func createNode(t *testing.T, etcdNamespace string, logs io.Writer, tel telemetry.ForTest, nodeName string) (*task.Node, dependencies.Mocked) {
+func createNode(t *testing.T, etcdCredentials etcdhelper.Credentials, logs io.Writer, tel telemetry.ForTest, nodeName string) (*task.Node, dependencies.Mocked) {
 	t.Helper()
-	d := createDeps(t, etcdNamespace, logs, tel, nodeName)
+	d := createDeps(t, etcdCredentials, logs, tel, nodeName)
 	node, err := task.NewNode(d)
 	assert.NoError(t, err)
 	return node, d
 }
 
-func createDeps(t *testing.T, etcdNamespace string, logs io.Writer, tel telemetry.ForTest, nodeName string) bufferDependencies.Mocked {
+func createDeps(t *testing.T, etcdCredentials etcdhelper.Credentials, logs io.Writer, tel telemetry.ForTest, nodeName string) bufferDependencies.Mocked {
 	t.Helper()
 	d := bufferDependencies.NewMockedDeps(
 		t,
 		dependencies.WithUniqueID(nodeName),
 		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
 		dependencies.WithTelemetry(tel),
-		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithEtcdCredentials(etcdCredentials),
 	)
 	if logs != nil {
 		d.DebugLogger().ConnectTo(logs)

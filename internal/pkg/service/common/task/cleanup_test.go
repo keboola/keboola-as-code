@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -31,11 +30,12 @@ func TestCleanup(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
+
 	logs := ioutil.NewAtomicWriter()
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-	node, d := createNode(t, etcdNamespace, logs, telemetry.NewForTest(t), "node1")
 	tel := d.TestTelemetry()
+	node, d := createNode(t, etcdCredentials, logs, telemetry.NewForTest(t), "node1")
 	taskPrefix := etcdop.NewTypedPrefix[task.Task](task.DefaultTaskEtcdPrefix, d.EtcdSerde())
 
 	// Add task without a finishedAt timestamp but too old - will be deleted

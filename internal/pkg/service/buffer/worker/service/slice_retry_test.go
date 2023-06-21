@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	workerConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
@@ -41,16 +40,17 @@ func (v notRetryableError) RetryableError() bool {
 func TestRetryFailedUploadsTask(t *testing.T) {
 	t.Parallel()
 
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
+
 	// Test dependencies
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	clk := clock.NewMock()
 	clk.Set(time.Time{}.Add(time.Second))
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	opts := []dependencies.MockedOption{
 		dependencies.WithClock(clk),
-		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithEtcdCredentials(etcdCredentials),
 	}
 
 	// Create file

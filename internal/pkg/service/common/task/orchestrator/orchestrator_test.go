@@ -12,7 +12,6 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -46,16 +45,17 @@ func TestOrchestrator(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
+
 	d1 := bufferDependencies.NewMockedDeps(t,
 		dependencies.WithCtx(ctx),
-		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithEtcdCredentials(etcdCredentials),
 		dependencies.WithUniqueID("node1"),
 	)
 	d2 := bufferDependencies.NewMockedDeps(t,
 		dependencies.WithCtx(ctx),
-		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithEtcdCredentials(etcdCredentials),
 		dependencies.WithUniqueID("node2"),
 	)
 	node1 := orchestrator.NewNode(d1)
@@ -152,11 +152,12 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
+
 	d := bufferDependencies.NewMockedDeps(t,
 		dependencies.WithCtx(ctx),
-		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithEtcdCredentials(etcdCredentials),
 		dependencies.WithUniqueID("node1"),
 	)
 	node := orchestrator.NewNode(d)
@@ -231,14 +232,15 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
+
 	restartInterval := time.Millisecond
 	clk := clock.NewMock()
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	d := bufferDependencies.NewMockedDeps(t,
 		dependencies.WithCtx(ctx),
 		dependencies.WithClock(clk),
-		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithEtcdCredentials(etcdCredentials),
 		dependencies.WithUniqueID("node1"),
 	)
 	node := orchestrator.NewNode(d)

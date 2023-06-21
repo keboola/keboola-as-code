@@ -11,7 +11,6 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -35,15 +34,16 @@ func TestCleanup(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
+
 	// Create nodes
 	clk := clock.NewMock()
 	clk.Set(time.Now())
 	clk.Add(time.Second)
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
 	opts := []dependencies.MockedOption{
 		dependencies.WithClock(clk),
-		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithEtcdCredentials(etcdCredentials),
 		dependencies.WithTestProject(project),
 	}
 

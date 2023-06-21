@@ -15,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/encoding/json"
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper/runner"
@@ -38,19 +37,9 @@ func TestBufferApiE2E(t *testing.T) {
 	runner.
 		NewRunner(t).
 		ForEachTest(func(test *runner.Test) {
-			etcdNamespace := idgenerator.EtcdNamespaceForTest()
-			etcdEndpoint := os.Getenv("BUFFER_API_ETCD_ENDPOINT")
-			etcdUsername := os.Getenv("BUFFER_API_ETCD_USERNAME")
-			etcdPassword := os.Getenv("BUFFER_API_ETCD_PASSWORD")
-
 			// Connect to the etcd
-			etcdClient := etcdhelper.ClientForTestFrom(
-				test.T(),
-				etcdEndpoint,
-				etcdUsername,
-				etcdPassword,
-				etcdNamespace,
-			)
+			etcdCredentials := etcdhelper.TmpNamespaceFromEnv(t, "BUFFER_API_ETCD_")
+			etcdClient := etcdhelper.ClientForTest(t, etcdCredentials)
 
 			// Init etcd state
 			etcdStateFile := "initial-etcd-kvs.txt"
@@ -64,10 +53,10 @@ func TestBufferApiE2E(t *testing.T) {
 				"BUFFER_API_DATADOG_ENABLED":  "false",
 				"BUFFER_API_STORAGE_API_HOST": "https://" + test.TestProject().StorageAPIHost(),
 				"BUFFER_API_PUBLIC_ADDRESS":   "https://buffer.keboola.local",
-				"BUFFER_API_ETCD_NAMESPACE":   etcdNamespace,
-				"BUFFER_API_ETCD_ENDPOINT":    etcdEndpoint,
-				"BUFFER_API_ETCD_USERNAME":    etcdUsername,
-				"BUFFER_API_ETCD_PASSWORD":    etcdPassword,
+				"BUFFER_API_ETCD_NAMESPACE":   etcdCredentials.Namespace,
+				"BUFFER_API_ETCD_ENDPOINT":    etcdCredentials.Endpoint,
+				"BUFFER_API_ETCD_USERNAME":    etcdCredentials.Username,
+				"BUFFER_API_ETCD_PASSWORD":    etcdCredentials.Password,
 			})
 
 			requestDecoratorFn := func(request *runner.APIRequestDef) {
