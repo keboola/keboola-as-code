@@ -102,16 +102,8 @@ func TestBufferApiE2E(t *testing.T) {
 			// Assert current etcd state against expected state.
 			expectedEtcdKVsPath := "expected-etcd-kvs.txt"
 			if test.TestDirFS().IsFile(expectedEtcdKVsPath) {
-				// Read expected state
-				expectedContent := test.ReadFileFromTestDir(expectedEtcdKVsPath)
-
 				// Compare expected and actual kvs
-				wildcards.Assert(
-					test.T(),
-					expectedContent,
-					etcdDump,
-					`unexpected etcd state, compare "expected-etcd-kvs.txt" from test and "actual-etcd-kvs.txt" from ".out" dir.`,
-				)
+				etcdhelper.AssertKVsString(test.T(), etcdClient, test.ReadFileFromTestDir(expectedEtcdKVsPath))
 			}
 		})
 }

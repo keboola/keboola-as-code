@@ -97,5 +97,12 @@ func TestTemplatesApiE2E(t *testing.T) {
 			etcdDump, err := etcdhelper.DumpAllToString(context.Background(), etcdClient)
 			assert.NoError(test.T(), err)
 			assert.NoError(test.T(), test.WorkingDirFS().WriteFile(filesystem.NewRawFile("actual-etcd-kvs.txt", etcdDump)))
+
+			// Assert current etcd state against expected state.
+			expectedEtcdKVsPath := "expected-etcd-kvs.txt"
+			if test.TestDirFS().IsFile(expectedEtcdKVsPath) {
+				// Compare expected and actual kvs
+				etcdhelper.AssertKVsString(test.T(), etcdClient, test.ReadFileFromTestDir(expectedEtcdKVsPath))
+			}
 		})
 }
