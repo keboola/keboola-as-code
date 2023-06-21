@@ -10,7 +10,7 @@ import (
 
 func createStateWithMapper(t *testing.T) *state.State {
 	t.Helper()
-	d := dependencies.NewMockedDeps(t)
+	d := dependencies.NewMocked(t)
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(corefiles.NewMapper(mockedState))
 	return mockedState

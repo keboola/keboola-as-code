@@ -92,7 +92,7 @@ func TestContext(t *testing.T) {
 	ctxWithVal := context.WithValue(context.Background(), jsonnetfiles.FileDefCtxKey, fileDef)
 
 	// Create template use context
-	d := dependenciesPkg.NewMockedDeps(t)
+	d := dependenciesPkg.NewMocked(t)
 	projectState := d.MockedState()
 	useCtx := NewContext(ctxWithVal, templateRef, fs, instanceID, targetBranch, inputsValues, map[string]*template.Input{}, tickets, testapi.MockedComponentsMap(), projectState)
 
@@ -198,7 +198,7 @@ func TestComponentsFunctions(t *testing.T) {
 	api, err := keboola.NewAPI(ctx, "https://connection.keboola.com", keboola.WithClient(&c))
 	assert.NoError(t, err)
 
-	d := dependenciesPkg.NewMockedDeps(t)
+	d := dependenciesPkg.NewMocked(t)
 	projectState := d.MockedState()
 	tickets := keboola.NewTicketProvider(context.Background(), api)
 	components := model.NewComponentsMap(keboola.Components{})

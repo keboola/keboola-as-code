@@ -44,7 +44,7 @@ func TestNew(t *testing.T) {
 
 	// Create manager
 	ctx := context.Background()
-	d := dependencies.NewMockedDeps(t)
+	d := dependencies.NewMocked(t)
 	m, err := manager.New(ctx, d, nil)
 	assert.NoError(t, err)
 
@@ -74,7 +74,7 @@ func TestRepository(t *testing.T) {
 
 	// Create manager
 	ctx := context.Background()
-	d := dependencies.NewMockedDeps(t)
+	d := dependencies.NewMocked(t)
 	m, err := manager.New(ctx, d, nil)
 	assert.NoError(t, err)
 
@@ -110,7 +110,7 @@ func TestRepositoryUpdate(t *testing.T) {
 	}
 
 	// Create manager
-	d := dependencies.NewMockedDeps(t)
+	d := dependencies.NewMocked(t)
 	m, err := manager.New(ctx, d, []model.TemplateRepository{repo})
 	assert.NoError(t, err)
 
@@ -234,7 +234,7 @@ func TestDefaultRepositories(t *testing.T) {
 
 	// Create manager
 	ctx := context.Background()
-	d := dependencies.NewMockedDeps(t)
+	d := dependencies.NewMocked(t)
 	m, err := manager.New(ctx, d, defaultRepositories)
 	assert.NoError(t, err)
 

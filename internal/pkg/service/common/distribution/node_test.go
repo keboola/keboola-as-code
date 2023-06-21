@@ -308,7 +308,7 @@ func createNode(t *testing.T, clk clock.Clock, etcdCredentials etcdhelper.Creden
 
 func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdCredentials etcdhelper.Credentials, nodeName string) dependencies.Mocked {
 	t.Helper()
-	d := dependencies.NewMockedDeps(
+	d := dependencies.NewMocked(
 		t,
 		dependencies.WithClock(clk),
 		dependencies.WithUniqueID(nodeName),

@@ -11,7 +11,7 @@ import (
 
 func createStateWithMapper(t *testing.T, jsonnetCtx *jsonnet.Context) *state.State {
 	t.Helper()
-	d := dependencies.NewMockedDeps(t)
+	d := dependencies.NewMocked(t)
 	mockedState := d.MockedState()
 	mockedState.Mapper().AddMapper(jsonnetfiles.NewMapper(jsonnetCtx))
 	return mockedState

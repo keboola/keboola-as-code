@@ -803,6 +803,6 @@ func TestResults_Format(t *testing.T) {
 
 func newProjectState(t *testing.T) *state.State {
 	t.Helper()
-	d := dependencies.NewMockedDeps(t)
+	d := dependencies.NewMocked(t)
 	return d.MockedState()
 }

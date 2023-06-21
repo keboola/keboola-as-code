@@ -24,7 +24,7 @@ func TestTemplateRepositoryFs_Git_SparseCheckout(t *testing.T) {
 		t.Skip("unstable on windows - random timeouts")
 	}
 
-	d := dependenciesLib.NewMockedDeps(t)
+	d := dependenciesLib.NewMocked(t)
 
 	// Copy the git repository to temp
 	tmpDir := t.TempDir()
