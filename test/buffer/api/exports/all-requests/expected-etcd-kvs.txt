@@ -1,5 +1,5 @@
 <<<<<
-/config/export/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b
+config/export/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -15,7 +15,7 @@
 >>>>>
 
 <<<<<
-/config/mapping/revision/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/00000001
+config/mapping/revision/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/00000001
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -38,7 +38,7 @@
 >>>>>
 
 <<<<<
-/config/mapping/revision/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/00000002
+config/mapping/revision/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/00000002
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -61,7 +61,7 @@
 >>>>>
 
 <<<<<
-/config/receiver/%%TEST_KBC_PROJECT_ID%%/my-receiver
+config/receiver/%%TEST_KBC_PROJECT_ID%%/my-receiver
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -72,7 +72,7 @@
 >>>>>
 
 <<<<<
-/file/closing/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/%s
+file/closing/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -106,7 +106,7 @@
 >>>>>
 
 <<<<<
-/file/opened/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/%s
+file/opened/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -139,13 +139,13 @@
 >>>>>
 
 <<<<<
-/secret/export/token/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b
+secret/export/token/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b
 -----
 %A
 >>>>>
 
 <<<<<
-/slice/active/opened/closing/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/%s
+slice/active/opened/closing/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -181,7 +181,7 @@
 >>>>>
 
 <<<<<
-/slice/active/opened/writing/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/%s
+slice/active/opened/writing/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -216,7 +216,7 @@
 >>>>>
 
 <<<<<
-/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/export.create/%s
+task/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/export.create/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -236,7 +236,7 @@
 >>>>>
 
 <<<<<
-/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/export.update/%s
+task/%%TEST_KBC_PROJECT_ID%%/my-receiver/export-b/export.update/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -256,7 +256,7 @@
 >>>>>
 
 <<<<<
-/task/%%TEST_KBC_PROJECT_ID%%/my-receiver/receiver.create/%s
+task/%%TEST_KBC_PROJECT_ID%%/my-receiver/receiver.create/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,

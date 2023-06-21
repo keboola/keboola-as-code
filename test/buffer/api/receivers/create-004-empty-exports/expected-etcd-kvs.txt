@@ -1,5 +1,5 @@
 <<<<<
-/config/receiver/%%TEST_KBC_PROJECT_ID%%/receiver-with-empty-exports
+config/receiver/%%TEST_KBC_PROJECT_ID%%/receiver-with-empty-exports
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -10,7 +10,7 @@
 >>>>>
 
 <<<<<
-/task/%%TEST_KBC_PROJECT_ID%%/receiver-with-empty-exports/receiver.create/%s
+task/%%TEST_KBC_PROJECT_ID%%/receiver-with-empty-exports/receiver.create/%s
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
