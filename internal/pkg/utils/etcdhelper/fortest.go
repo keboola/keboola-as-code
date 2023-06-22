@@ -21,13 +21,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdlogger"
 )
 
-type Credentials struct {
-	Endpoint  string
-	Namespace string
-	Username  string
-	Password  string
-}
-
 type testOrBenchmark interface {
 	Cleanup(f func())
 	Skipf(format string, args ...any)
@@ -36,13 +29,13 @@ type testOrBenchmark interface {
 }
 
 // TmpNamespace creates a temporary etcd namespace and registers cleanup after the test.
-func TmpNamespace(t testOrBenchmark) Credentials {
+func TmpNamespace(t testOrBenchmark) etcdclient.Credentials {
 	return TmpNamespaceFromEnv(t, "UNIT_ETCD_")
 }
 
 // TmpNamespaceFromEnv creates a temporary etcd namespace and registers cleanup after the test.
 // Credentials are read from the provided ENV prefix.
-func TmpNamespaceFromEnv(t testOrBenchmark, envPrefix string) Credentials {
+func TmpNamespaceFromEnv(t testOrBenchmark, envPrefix string) etcdclient.Credentials {
 	envs, err := env.FromOs()
 	if err != nil {
 		t.Fatalf("cannot get envs: %s", err)
@@ -52,7 +45,7 @@ func TmpNamespaceFromEnv(t testOrBenchmark, envPrefix string) Credentials {
 		t.Skipf(fmt.Sprintf("etcd test is disabled by %s_ENABLED=false", envPrefix))
 	}
 
-	credentials := Credentials{
+	credentials := etcdclient.Credentials{
 		Endpoint:  envs.Get(envPrefix + "ENDPOINT"),
 		Namespace: idgenerator.EtcdNamespaceForTest(),
 		Username:  envs.Get(envPrefix + "USERNAME"),
@@ -76,7 +69,7 @@ func TmpNamespaceFromEnv(t testOrBenchmark, envPrefix string) Credentials {
 	return credentials
 }
 
-func ClientForTest(t testOrBenchmark, credentials Credentials, dialOpts ...grpc.DialOption) *etcd.Client {
+func ClientForTest(t testOrBenchmark, credentials etcdclient.Credentials, dialOpts ...grpc.DialOption) *etcd.Client {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(func() {
 		cancel()
@@ -84,7 +77,7 @@ func ClientForTest(t testOrBenchmark, credentials Credentials, dialOpts ...grpc.
 	return clientForTest(t, ctx, credentials, dialOpts...)
 }
 
-func clientForTest(t testOrBenchmark, ctx context.Context, credentials Credentials, dialOpts ...grpc.DialOption) *etcd.Client {
+func clientForTest(t testOrBenchmark, ctx context.Context, credentials etcdclient.Credentials, dialOpts ...grpc.DialOption) *etcd.Client {
 	// Normalize namespace
 	credentials.Namespace = strings.Trim(credentials.Namespace, " /") + "/"
 

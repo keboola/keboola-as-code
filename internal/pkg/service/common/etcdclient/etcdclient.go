@@ -27,10 +27,7 @@ const (
 )
 
 type config struct {
-	endpoint          string
-	username          string
-	password          string
-	namespace         string
+	credentials       Credentials
 	debugOpLogs       bool
 	connectTimeout    time.Duration
 	keepAliveTimeout  time.Duration
@@ -44,18 +41,6 @@ func UseNamespace(c *etcd.Client, prefix string) {
 	c.KV = etcdNamespace.NewKV(c.KV, prefix)
 	c.Watcher = NewWatcher(c, prefix)
 	c.Lease = etcdNamespace.NewLease(c.Lease, prefix)
-}
-
-func WithUsername(v string) Option {
-	return func(c *config) {
-		c.username = v
-	}
-}
-
-func WithPassword(v string) Option {
-	return func(c *config) {
-		c.password = v
-	}
 }
 
 // WithDebugOpLogs allows logging of each KV operation as a debug message.
@@ -108,34 +93,30 @@ func WithLogger(v log.Logger) Option {
 
 // New creates new etcd client.
 // The client terminates the connection when the context is done.
-func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry, endpoint, namespace string, opts ...Option) (c *etcd.Client, err error) {
+func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry, credentials Credentials, opts ...Option) (c *etcd.Client, err error) {
 	ctx, span := tel.Tracer().Start(ctx, "keboola.go.common.dependencies.EtcdClient")
 	defer span.End(&err)
 
 	// Apply options
-	conf := config{
-		endpoint:          endpoint,
-		namespace:         namespace,
+	cfg := config{
+		credentials:       credentials,
 		connectTimeout:    defaultConnectionTimeout,
 		keepAliveTimeout:  defaultKeepAliveTimeout,
 		keepAliveInterval: defaultKeepAliveInterval,
+		logger:            log.NewNopLogger(),
 	}
 	for _, o := range opts {
-		o(&conf)
+		o(&cfg)
 	}
 
-	// Trim and validate
-	endpoint = strings.Trim(endpoint, " /")
-	if endpoint == "" {
-		return nil, errors.New("etcd endpoint is not set")
-	}
-	namespace = strings.Trim(namespace, " /") + "/"
-	if namespace == "/" {
-		return nil, errors.New("etcd namespace is not set")
+	// Normalize and validate
+	cfg.credentials.Normalize()
+	if err := cfg.credentials.Validate(); err != nil {
+		return nil, err
 	}
 
 	// Setup logger
-	logger := conf.logger.AddPrefix("[etcd-client]")
+	logger := cfg.logger.AddPrefix("[etcd-client]")
 	if logger == nil {
 		logger = log.NewNopLogger()
 	}
@@ -155,20 +136,20 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 	}))
 
 	// Create connect context
-	connectCtx, connectCancel := context.WithTimeout(ctx, conf.connectTimeout)
+	connectCtx, connectCancel := context.WithTimeout(ctx, cfg.connectTimeout)
 	defer connectCancel()
 
 	// Create client
 	startTime := time.Now()
-	logger.Infof("connecting to etcd, connectTimeout=%s, keepAliveTimeout=%s, keepAliveInterval=%s", conf.connectTimeout, conf.keepAliveTimeout, conf.keepAliveInterval)
+	logger.Infof("connecting to etcd, connectTimeout=%s, keepAliveTimeout=%s, keepAliveInterval=%s", cfg.connectTimeout, cfg.keepAliveTimeout, cfg.keepAliveInterval)
 	c, err = etcd.New(etcd.Config{
 		Context:              context.Background(), // !!! a long-lived context must be used, client exists as long as the entire server
-		Endpoints:            []string{endpoint},
-		DialTimeout:          conf.connectTimeout,
-		DialKeepAliveTimeout: conf.keepAliveTimeout,
-		DialKeepAliveTime:    conf.keepAliveInterval,
-		Username:             conf.username, // optional
-		Password:             conf.password, // optional
+		Endpoints:            []string{cfg.credentials.Endpoint},
+		DialTimeout:          cfg.connectTimeout,
+		DialKeepAliveTimeout: cfg.keepAliveTimeout,
+		DialKeepAliveTime:    cfg.keepAliveInterval,
+		Username:             cfg.credentials.Username, // optional
+		Password:             cfg.credentials.Password, // optional
 		Logger:               etcdLogger,
 		PermitWithoutStream:  true, // always send keep-alive pings
 		DialOptions: []grpc.DialOption{
@@ -191,10 +172,10 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 	}
 
 	// Prefix client by namespace
-	UseNamespace(c, namespace)
+	UseNamespace(c, cfg.credentials.Namespace)
 
 	// Log each KV operation as a debug message, if enabled
-	if conf.debugOpLogs {
+	if cfg.debugOpLogs {
 		c.KV = etcdlogger.KVLogWrapper(c.KV, logger.DebugWriter())
 	}
 
