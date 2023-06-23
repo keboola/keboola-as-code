@@ -107,6 +107,8 @@ func (c *Config) Dump() string {
 }
 
 func (c *Config) Normalize() {
+	c.StorageAPIHost = strhelper.NormalizeHost(c.StorageAPIHost)
+	c.Etcd.Normalize()
 	if c.PublicAddress != nil {
 		c.PublicAddress.Host = strhelper.NormalizeHost(c.PublicAddress.Host)
 		if c.PublicAddress.Scheme == "" {
@@ -123,6 +125,9 @@ func (c *Config) Validate() error {
 	}
 	if c.StorageAPIHost == "" {
 		errs.Append(errors.New(`storage API host must be set`))
+	}
+	if err := c.Etcd.Validate(); err != nil {
+		errs.Append(err)
 	}
 	if c.PublicAddress == nil || c.PublicAddress.String() == "" {
 		errs.Append(errors.New("public address is not set"))

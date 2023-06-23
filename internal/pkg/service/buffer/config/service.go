@@ -42,6 +42,7 @@ func newServiceConfig() ServiceConfig {
 
 func (c *ServiceConfig) Normalize() {
 	c.StorageAPIHost = strhelper.NormalizeHost(c.StorageAPIHost)
+	c.Etcd.Normalize()
 }
 
 func (c *ServiceConfig) Validate() error {
@@ -49,11 +50,8 @@ func (c *ServiceConfig) Validate() error {
 	if c.StorageAPIHost == "" {
 		errs.Append(errors.New(`storage API host must be set`))
 	}
-	if c.Etcd.Endpoint == "" {
-		errs.Append(errors.New(`etcd endpoint must be set`))
-	}
-	if c.Etcd.Namespace == "" {
-		errs.Append(errors.New(`etcd namespace must be set`))
+	if err := c.Etcd.Validate(); err != nil {
+		errs.Append(err)
 	}
 	if c.EtcdConnectTimeout <= 0 {
 		errs.Append(errors.Errorf(`etcd connect timeout must be positive time.Duration, found "%v"`, c.EtcdConnectTimeout))
