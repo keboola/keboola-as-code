@@ -9,7 +9,6 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
-	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/file"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -28,7 +27,7 @@ func TestManager_CreateFile(t *testing.T) {
 
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
-	d := bufferDependencies.NewMockedDeps(t, dependencies.WithClock(clk), dependencies.WithTestProject(p))
+	d := dependencies.NewMocked(t, dependencies.WithClock(clk), dependencies.WithTestProject(p))
 	m := NewManager(d.Clock(), d.KeboolaProjectAPI(), nil)
 	rb := rollback.New(d.Logger())
 	client := p.KeboolaProjectAPI()

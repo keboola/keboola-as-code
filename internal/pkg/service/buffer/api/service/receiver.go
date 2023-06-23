@@ -8,8 +8,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
@@ -21,7 +21,7 @@ const (
 	receiverCreateTaskType = "receiver.create"
 )
 
-func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buffer.CreateReceiverPayload) (res *buffer.Task, err error) {
+func (s *service) CreateReceiver(d dependencies.ProjectRequestScope, payload *buffer.CreateReceiverPayload) (res *buffer.Task, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
 	receiver, err := s.mapper.CreateReceiverModel(d.ProjectID(), idgenerator.ReceiverSecret(), *payload)
@@ -76,7 +76,7 @@ func (s *service) CreateReceiver(d dependencies.ForProjectRequest, payload *buff
 	return s.mapper.TaskPayload(t), nil
 }
 
-func (s *service) UpdateReceiver(d dependencies.ForProjectRequest, payload *buffer.UpdateReceiverPayload) (res *buffer.Receiver, err error) {
+func (s *service) UpdateReceiver(d dependencies.ProjectRequestScope, payload *buffer.UpdateReceiverPayload) (res *buffer.Receiver, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
 	rb := rollback.New(s.logger)
@@ -94,7 +94,7 @@ func (s *service) UpdateReceiver(d dependencies.ForProjectRequest, payload *buff
 	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: receiverKey.ReceiverID})
 }
 
-func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.GetReceiverPayload) (res *buffer.Receiver, err error) {
+func (s *service) GetReceiver(d dependencies.ProjectRequestScope, payload *buffer.GetReceiverPayload) (res *buffer.Receiver, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
@@ -106,7 +106,7 @@ func (s *service) GetReceiver(d dependencies.ForProjectRequest, payload *buffer.
 	return s.mapper.ReceiverPayload(receiver), nil
 }
 
-func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.ListReceiversPayload) (res *buffer.ReceiversList, err error) {
+func (s *service) ListReceivers(d dependencies.ProjectRequestScope, _ *buffer.ListReceiversPayload) (res *buffer.ReceiversList, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
 	receivers, err := str.ListReceivers(ctx, d.ProjectID())
@@ -117,13 +117,13 @@ func (s *service) ListReceivers(d dependencies.ForProjectRequest, _ *buffer.List
 	return &buffer.ReceiversList{Receivers: s.mapper.ReceiversPayload(receivers)}, nil
 }
 
-func (s *service) DeleteReceiver(d dependencies.ForProjectRequest, payload *buffer.DeleteReceiverPayload) (err error) {
+func (s *service) DeleteReceiver(d dependencies.ProjectRequestScope, payload *buffer.DeleteReceiverPayload) (err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	return str.DeleteReceiver(ctx, receiverKey)
 }
 
-func (s *service) createResourcesForReceiver(ctx context.Context, d dependencies.ForProjectRequest, rb rollback.Builder, receiver *model.Receiver) error {
+func (s *service) createResourcesForReceiver(ctx context.Context, d dependencies.ProjectRequestScope, rb rollback.Builder, receiver *model.Receiver) error {
 	// Buket is required by token and table
 	if err := d.TableManager().EnsureBucketsExist(ctx, rb, receiver); err != nil {
 		return err

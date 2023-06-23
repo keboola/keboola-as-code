@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
@@ -22,7 +22,7 @@ const (
 	exportUpdateTaskType = "export.update"
 )
 
-func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer.CreateExportPayload) (res *buffer.Task, err error) {
+func (s *service) CreateExport(d dependencies.ProjectRequestScope, payload *buffer.CreateExportPayload) (res *buffer.Task, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
@@ -89,7 +89,7 @@ func (s *service) CreateExport(d dependencies.ForProjectRequest, payload *buffer
 	return s.mapper.TaskPayload(t), nil
 }
 
-func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer.UpdateExportPayload) (res *buffer.Task, err error) {
+func (s *service) UpdateExport(d dependencies.ProjectRequestScope, payload *buffer.UpdateExportPayload) (res *buffer.Task, err error) {
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
 
@@ -143,7 +143,7 @@ func (s *service) UpdateExport(d dependencies.ForProjectRequest, payload *buffer
 	return s.mapper.TaskPayload(t), nil
 }
 
-func (s *service) GetExport(d dependencies.ForProjectRequest, payload *buffer.GetExportPayload) (r *buffer.Export, err error) {
+func (s *service) GetExport(d dependencies.ProjectRequestScope, payload *buffer.GetExportPayload) (r *buffer.Export, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
@@ -156,7 +156,7 @@ func (s *service) GetExport(d dependencies.ForProjectRequest, payload *buffer.Ge
 	return s.mapper.ExportPayload(export), nil
 }
 
-func (s *service) ListExports(d dependencies.ForProjectRequest, payload *buffer.ListExportsPayload) (r *buffer.ExportsList, err error) {
+func (s *service) ListExports(d dependencies.ProjectRequestScope, payload *buffer.ListExportsPayload) (r *buffer.ExportsList, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
@@ -168,7 +168,7 @@ func (s *service) ListExports(d dependencies.ForProjectRequest, payload *buffer.
 	return &buffer.ExportsList{Exports: s.mapper.ExportsPayload(exports)}, nil
 }
 
-func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer.DeleteExportPayload) (err error) {
+func (s *service) DeleteExport(d dependencies.ProjectRequestScope, payload *buffer.DeleteExportPayload) (err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
@@ -176,7 +176,7 @@ func (s *service) DeleteExport(d dependencies.ForProjectRequest, payload *buffer
 	return str.DeleteExport(ctx, exportKey)
 }
 
-func (s *service) createResourcesForExport(ctx context.Context, d dependencies.ForProjectRequest, rb rollback.Builder, export *model.Export) error {
+func (s *service) createResourcesForExport(ctx context.Context, d dependencies.ProjectRequestScope, rb rollback.Builder, export *model.Export) error {
 	// Bucket is required by token and table
 	if err := d.TableManager().EnsureBucketExists(ctx, rb, export.Mapping.TableID.BucketID); err != nil {
 		return err

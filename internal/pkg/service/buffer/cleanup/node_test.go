@@ -10,15 +10,14 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/cleanup"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -28,13 +27,10 @@ func TestCleanup(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-	d := bufferDependencies.NewMockedDeps(t, dependencies.WithEtcdNamespace(etcdNamespace))
-	schema := d.Schema()
-
-	node := cleanup.NewNode(d, d.Logger().AddPrefix("[cleanup]"))
+	workerScp, mock := bufferDependencies.NewMockedWorkerScope(t, config.NewWorkerConfig())
+	client := mock.TestEtcdClient()
+	schema := workerScp.Schema()
+	node := cleanup.NewNode(workerScp, workerScp.Logger().AddPrefix("[cleanup]"))
 
 	// Create receiver and 3 exports
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "github"}
@@ -166,12 +162,11 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, node.Check(ctx))
 
 	// Shutdown - wait for tasks
-	d.Process().Shutdown(errors.New("bye bye"))
-	d.Process().WaitForShutdown()
+	workerScp.Process().Shutdown(errors.New("bye bye"))
+	workerScp.Process().WaitForShutdown()
 
 	// Check logs
 	wildcards.Assert(t, `
-%A
 [task][1000/github/receiver.cleanup/%s]INFO  started task
 [task][1000/github/receiver.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/1000/github/receiver.cleanup"
 [cleanup]INFO  started "1" receiver cleanup tasks
@@ -182,7 +177,7 @@ func TestCleanup(t *testing.T) {
 [task][1000/github/receiver.cleanup/%s]INFO  task succeeded (%s): receiver "1000/github" has been cleaned
 [task][1000/github/receiver.cleanup/%s]DEBUG  lock released "runtime/lock/task/1000/github/receiver.cleanup"
 %A
-`, d.DebugLogger().AllMessages())
+`, mock.DebugLogger().AllMessages())
 
 	// Check keys
 	etcdhelper.AssertKVsString(t, client, `

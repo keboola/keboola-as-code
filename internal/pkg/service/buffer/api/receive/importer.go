@@ -12,10 +12,10 @@ import (
 	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/receive/quota"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/receive/receivectx"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -28,7 +28,7 @@ import (
 // Importer imports records received by the import endpoint to etcd temporal database.
 // Later, the records will be uploaded and imported to the database backend by a Worker.
 type Importer struct {
-	config         config.Config
+	config         config.APIConfig
 	clock          clock.Clock
 	store          *store.Store
 	watcher        *watcher.APINode
@@ -41,7 +41,7 @@ type dependencies interface {
 	Clock() clock.Clock
 	Logger() log.Logger
 	Process() *servicectx.Process
-	APIConfig() config.Config
+	APIConfig() config.APIConfig
 	Store() *store.Store
 	StatsCollector() *statistics.CollectorNode
 	StatsCache() *statistics.CacheNode

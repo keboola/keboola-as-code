@@ -22,6 +22,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
@@ -72,7 +73,7 @@ type testSuite struct {
 	apiBinaryPath    string
 	workerBinaryPath string
 
-	etcdCredentials etcdhelper.Credentials
+	etcdCredentials etcdclient.Credentials
 	etcdClient      *etcd.Client
 
 	receiver *buffer.Receiver

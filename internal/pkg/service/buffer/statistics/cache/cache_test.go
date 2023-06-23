@@ -9,6 +9,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -32,14 +33,16 @@ func TestCacheNode(t *testing.T) {
 	clk.Set(time.Time{})
 	clk.Add(time.Second)
 	opts := []dependencies.MockedOption{dependencies.WithClock(clk), dependencies.WithEtcdCredentials(etcdCredentials)}
-	apiDeps1 := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("api-node-1"))...)
-	apiDeps2 := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("api-node-2"))...)
-	str := apiDeps1.Store()
+	apiCfg := config.NewAPIConfig()
+	workerCfg := config.NewWorkerConfig()
+	apiScp1, _ := bufferDependencies.NewMockedAPIScope(t, apiCfg, append(opts, dependencies.WithUniqueID("api-node-1"))...)
+	apiScp2, _ := bufferDependencies.NewMockedAPIScope(t, apiCfg, append(opts, dependencies.WithUniqueID("api-node-2"))...)
+	workerScp, _ := bufferDependencies.NewMockedWorkerScope(t, workerCfg, append(opts, dependencies.WithUniqueID("worker-node"))...)
 
 	// Create nodes
-	collector1 := statistics.NewCollectorNode(apiDeps1)
-	collector2 := statistics.NewCollectorNode(apiDeps2)
-	cache, err := statistics.NewCacheNode(bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("worker-node"))...))
+	collector1 := statistics.NewCollectorNode(apiScp1)
+	collector2 := statistics.NewCollectorNode(apiScp2)
+	cache, err := statistics.NewCacheNode(workerScp)
 	assert.NoError(t, err)
 
 	// Resources
@@ -57,6 +60,7 @@ func TestCacheNode(t *testing.T) {
 	slice2 := model.Slice{SliceKey: slice2Key, State: slicestate.Writing, Mapping: mapping, StorageResource: &keboola.FileUploadCredentials{}, Number: 1}
 
 	// Create records for the sliceS1
+	str := apiScp1.Store()
 	assert.NoError(t, str.CreateSlice(ctx, slice1))
 	assert.NoError(t, str.CreateRecord(ctx, key.NewRecordKey(slice1Key, clk.Now()), "..."))
 	assert.NoError(t, str.CreateRecord(ctx, key.NewRecordKey(slice1Key, clk.Now()), "..."))

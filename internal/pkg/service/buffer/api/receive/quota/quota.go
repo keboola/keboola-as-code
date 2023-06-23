@@ -10,7 +10,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -18,7 +18,7 @@ import (
 
 type Quota struct {
 	clock  clock.Clock
-	config config.Config
+	config config.APIConfig
 	stats  *statistics.CacheNode
 
 	// cache computed stats, to improve import throughput
@@ -28,7 +28,7 @@ type Quota struct {
 type bufferedSizeMap = map[key.ReceiverKey]datasize.ByteSize
 
 type dependencies interface {
-	APIConfig() config.Config
+	APIConfig() config.APIConfig
 	Clock() clock.Clock
 	StatsCache() *statistics.CacheNode
 }

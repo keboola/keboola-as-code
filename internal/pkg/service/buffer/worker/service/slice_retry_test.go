@@ -15,9 +15,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
+	config "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
-	workerConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -49,6 +49,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	clk := clock.NewMock()
 	clk.Set(time.Time{}.Add(time.Second))
 	opts := []dependencies.MockedOption{
+		dependencies.WithEnabledOrchestrator(),
 		dependencies.WithClock(clk),
 		dependencies.WithEtcdCredentials(etcdCredentials),
 	}
@@ -71,10 +72,10 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	}
 
 	// Create receivers, exports and records
-	apiDeps1 := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("api-node-1"))...)
-	str := apiDeps1.Store()
+	apiScp, _ := bufferDependencies.NewMockedAPIScope(t, config.NewAPIConfig(), append(opts, dependencies.WithUniqueID("api-node-1"))...)
+	str := apiScp.Store()
 	sliceKey := createExport(t, "my-receiver-1", "my-export-1", ctx, clk, client, str, file)
-	createRecords(t, ctx, clk, apiDeps1, sliceKey.ReceiverKey, 1, 5)
+	createRecords(t, ctx, clk, apiScp, sliceKey.ReceiverKey, 1, 5)
 	clk.Add(time.Minute)
 
 	// Requests to the file storage will fail
@@ -84,20 +85,23 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	})
 
 	// Start worker node
-	workerDeps := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("my-worker"))...)
-	workerDeps.SetWorkerConfigOps(
-		workerConfig.WithUploadTransport(uploadTransport),
-		workerConfig.WithConditionsCheck(false),
-		workerConfig.WithCleanup(false),
-		workerConfig.WithCloseSlices(true),
-		workerConfig.WithUploadSlices(true),
-		workerConfig.WithRetryFailedSlices(true),
-		workerConfig.WithCloseFiles(false),
-		workerConfig.WithImportFiles(false),
-		workerConfig.WithRetryFailedFiles(false),
+	workerScp, workerMock := bufferDependencies.NewMockedWorkerScope(
+		t,
+		config.NewWorkerConfig().Apply(
+			config.WithUploadTransport(uploadTransport),
+			config.WithConditionsCheck(false),
+			config.WithCleanup(false),
+			config.WithCloseSlices(true),
+			config.WithUploadSlices(true),
+			config.WithRetryFailedSlices(true),
+			config.WithCloseFiles(false),
+			config.WithImportFiles(false),
+			config.WithRetryFailedFiles(false),
+		),
+		append(opts, dependencies.WithUniqueID("my-worker"))...,
 	)
-	workerDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
-	_, err := service.New(workerDeps)
+	workerMock.DebugLogger().ConnectTo(testhelper.VerboseStdout())
+	_, err := service.New(workerScp)
 	assert.NoError(t, err)
 
 	// Get slices
@@ -109,16 +113,16 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	assert.NoError(t, str.SetSliceState(ctx, &slice, slicestate.Closing))
 	clk.Add(time.Minute) // sync revision from API nodes
 	assert.Eventually(t, func() bool {
-		count, err := apiDeps1.Schema().Slices().Failed().Count().Do(ctx, client)
+		count, err := apiScp.Schema().Slices().Failed().Count().Do(ctx, client)
 		assert.NoError(t, err)
 		return count == 1
 	}, 10*time.Second, 100*time.Millisecond)
 
 	// Wait for failed upload
 	assert.Eventually(t, func() bool {
-		return strings.Count(workerDeps.DebugLogger().WarnMessages(), "WARN  task failed") == 1
+		return strings.Count(workerMock.DebugLogger().WarnMessages(), "WARN  task failed") == 1
 	}, 10*time.Second, 100*time.Millisecond)
-	workerDeps.DebugLogger().Truncate()
+	workerMock.DebugLogger().Truncate()
 
 	// 3 minutes later:
 	// - triggers service.FailedSlicesCheckInterval
@@ -127,21 +131,21 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 
 	// Wait for retry
 	assert.Eventually(t, func() bool {
-		return strings.Count(workerDeps.DebugLogger().WarnMessages(), "WARN  task failed") == 1
+		return strings.Count(workerMock.DebugLogger().WarnMessages(), "WARN  task failed") == 1
 	}, 10*time.Second, 100*time.Millisecond)
 
 	// Shutdown
-	apiDeps1.Process().Shutdown(errors.New("bye bye API 1"))
-	apiDeps1.Process().WaitForShutdown()
-	workerDeps.Process().Shutdown(errors.New("bye bye Worker"))
-	workerDeps.Process().WaitForShutdown()
+	apiScp.Process().Shutdown(errors.New("bye bye API 1"))
+	apiScp.Process().WaitForShutdown()
+	workerScp.Process().Shutdown(errors.New("bye bye Worker"))
+	workerScp.Process().WaitForShutdown()
 
 	// Orchestrator logs
-	assert.Contains(t, workerDeps.DebugLogger().AllMessages(), "[orchestrator][slice.retry.check]INFO  assigned")
+	assert.Contains(t, workerMock.DebugLogger().AllMessages(), "[orchestrator][slice.retry.check]INFO  assigned")
 	wildcards.Assert(t, `
 [orchestrator][slice.retry.check]INFO  assigned "123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check"
 [orchestrator][slice.retry.check]INFO  stopped
-`, strhelper.FilterLines(`^(\[orchestrator\]\[slice.retry.check\])`, workerDeps.DebugLogger().InfoMessages()))
+`, strhelper.FilterLines(`^(\[orchestrator\]\[slice.retry.check\])`, workerMock.DebugLogger().InfoMessages()))
 
 	// Retry check task
 	wildcards.Assert(t, `
@@ -149,12 +153,12 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 [task][%s]DEBUG  lock acquired "runtime/lock/task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check"
 [task][%s]INFO  task succeeded (%s): slice scheduled for retry
 [task][%s]DEBUG  lock released "runtime/lock/task/123/my-receiver-1/my-export-1/0001-01-01T00:00:01.000Z/0001-01-01T00:00:01.000Z/slice.retry.check"
-`, strhelper.FilterLines(`^(\[task\]\[.+\/slice.retry.check\/)`, workerDeps.DebugLogger().AllMessages()))
+`, strhelper.FilterLines(`^(\[task\]\[.+\/slice.retry.check\/)`, workerMock.DebugLogger().AllMessages()))
 
 	// Retried upload
 	wildcards.Assert(t, `
 [task][%s]WARN  task failed (%s): slice upload failed: %s some network error, upload will be retried after "0001-01-01T00:%s" %s
-`, strhelper.FilterLines(`^\[task\]\[.+\/slice.upload\/`, workerDeps.DebugLogger().WarnMessages()))
+`, strhelper.FilterLines(`^\[task\]\[.+\/slice.upload\/`, workerMock.DebugLogger().WarnMessages()))
 
 	// Check etcd state
 	assertStateAfterRetry(t, client)

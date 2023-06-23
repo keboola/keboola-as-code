@@ -9,12 +9,12 @@ import (
 	etcd "go.etcd.io/etcd/client/v3"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/event"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -39,7 +39,7 @@ type Service struct {
 	stats          *statistics.CacheNode
 	tasks          *task.Node
 	events         *event.Sender
-	config         config.Config
+	config         config.WorkerConfig
 }
 
 type dependencies interface {
@@ -47,7 +47,7 @@ type dependencies interface {
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 	Process() *servicectx.Process
-	WorkerConfig() config.Config
+	WorkerConfig() config.WorkerConfig
 	EtcdClient() *etcd.Client
 	EtcdSerde() *serde.Serde
 	HTTPClient() client.Client

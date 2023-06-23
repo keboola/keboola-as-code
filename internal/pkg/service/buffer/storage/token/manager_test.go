@@ -7,6 +7,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/token"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
@@ -22,7 +23,7 @@ func TestManager_CreateToken(t *testing.T) {
 
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
-	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
+	d := dependencies.NewMocked(t, dependencies.WithTestProject(p))
 	m := NewManager(d)
 	rb := rollback.New(d.Logger())
 	client := p.KeboolaProjectAPI()
@@ -66,9 +67,9 @@ func TestManager_RefreshToken_TokenExists(t *testing.T) {
 
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
-	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
-	m := NewManager(d)
-	rb := rollback.New(d.Logger())
+	prjReqScp, mock := bufferDependencies.NewMockedProjectRequestScope(t, config.NewAPIConfig(), dependencies.WithTestProject(p))
+	m := NewManager(prjReqScp)
+	rb := rollback.New(prjReqScp.Logger())
 	client := p.KeboolaProjectAPI()
 
 	receiverKey := key.ReceiverKey{ProjectID: keboola.ProjectID(123), ReceiverID: "my-receiver"}
@@ -91,7 +92,7 @@ func TestManager_RefreshToken_TokenExists(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create token for the export
-	assert.NoError(t, m.CreateToken(ctx, rollback.New(d.Logger()), &export))
+	assert.NoError(t, m.CreateToken(ctx, rollback.New(prjReqScp.Logger()), &export))
 	oldToken := export.Token
 
 	// Refresh token
@@ -106,7 +107,7 @@ func TestManager_RefreshToken_TokenExists(t *testing.T) {
 
 	// Test rollback - no operation
 	rb.Invoke(ctx)
-	assert.Empty(t, d.DebugLogger().WarnMessages())
+	assert.Empty(t, mock.DebugLogger().WarnMessages())
 	_, err = client.VerifyTokenRequest(export.Token.Token).Send(ctx)
 	assert.NoError(t, err)
 }
@@ -116,9 +117,9 @@ func TestManager_RefreshToken_TokenMissing(t *testing.T) {
 
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
-	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
-	m := NewManager(d)
-	rb := rollback.New(d.Logger())
+	prjReqScp, mock := bufferDependencies.NewMockedProjectRequestScope(t, config.NewAPIConfig(), dependencies.WithTestProject(p))
+	m := NewManager(prjReqScp)
+	rb := rollback.New(prjReqScp.Logger())
 	client := p.KeboolaProjectAPI()
 
 	receiverKey := key.ReceiverKey{ProjectID: keboola.ProjectID(123), ReceiverID: "my-receiver"}
@@ -145,7 +146,7 @@ func TestManager_RefreshToken_TokenMissing(t *testing.T) {
 
 	// Test rollback
 	rb.Invoke(ctx)
-	assert.Empty(t, d.DebugLogger().WarnMessages())
+	assert.Empty(t, mock.DebugLogger().WarnMessages())
 	_, err = client.VerifyTokenRequest(token.Token).Send(ctx)
 	assert.Error(t, err)
 	assert.Equal(t, "storage.tokenInvalid", err.(*keboola.StorageError).ErrCode)

@@ -11,13 +11,13 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
-	workerConfig "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -42,6 +42,7 @@ func TestCleanup(t *testing.T) {
 	clk.Set(time.Now())
 	clk.Add(time.Second)
 	opts := []dependencies.MockedOption{
+		dependencies.WithEnabledOrchestrator(),
 		dependencies.WithClock(clk),
 		dependencies.WithEtcdCredentials(etcdCredentials),
 		dependencies.WithTestProject(project),
@@ -49,19 +50,23 @@ func TestCleanup(t *testing.T) {
 
 	// Create receivers, exports and records
 	cleanupInterval := 2 * time.Second
-	workerDeps := bufferDependencies.NewMockedDeps(t, append(opts, dependencies.WithUniqueID("worker-node-1"))...)
-	workerDeps.SetWorkerConfigOps(
-		workerConfig.WithConditionsCheck(false),
-		workerConfig.WithCloseSlices(false),
-		workerConfig.WithUploadSlices(false),
-		workerConfig.WithRetryFailedSlices(false),
-		workerConfig.WithCloseFiles(false),
-		workerConfig.WithImportFiles(false),
-		workerConfig.WithRetryFailedFiles(false),
-		workerConfig.WithCleanup(true),
-		workerConfig.WithCleanupInterval(cleanupInterval),
+	workerScp, workerMock := bufferDependencies.NewMockedWorkerScope(
+		t,
+		config.NewWorkerConfig().Apply(
+			config.WithConditionsCheck(false),
+			config.WithCloseSlices(false),
+			config.WithUploadSlices(false),
+			config.WithRetryFailedSlices(false),
+			config.WithCloseFiles(false),
+			config.WithImportFiles(false),
+			config.WithRetryFailedFiles(false),
+			config.WithCleanup(true),
+			config.WithCleanupInterval(cleanupInterval),
+		),
+		append(opts, dependencies.WithUniqueID("worker-node-1"))...,
 	)
-	store := workerDeps.Store()
+
+	store := workerScp.Store()
 	receiverKey := key.ReceiverKey{ProjectID: 1000, ReceiverID: "github"}
 	export1 := model.ExportForTest(receiverKey, "first", "in.c-bucket.table", []column.Column{column.ID{Name: "col01"}}, clk.Now().AddDate(0, -1, 0))
 	export2 := model.ExportForTest(receiverKey, "another", "in.c-bucket.table", []column.Column{column.ID{Name: "col01"}}, clk.Now())
@@ -99,8 +104,8 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, store.SwapFile(ctx, &oldFile, &oldSlice, export1.OpenedFile, export1.OpenedSlice))
 
 	// Create nodes
-	workerDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
-	_, err = service.New(workerDeps)
+	workerMock.DebugLogger().ConnectTo(testhelper.VerboseStdout())
+	_, err = service.New(workerScp)
 	assert.NoError(t, err)
 
 	// Trigger cleanup
@@ -108,12 +113,12 @@ func TestCleanup(t *testing.T) {
 
 	// Wait for the cleanup task
 	assert.Eventually(t, func() bool {
-		return strings.Contains(workerDeps.DebugLogger().AllMessages(), "task succeeded")
+		return strings.Contains(workerMock.DebugLogger().AllMessages(), "task succeeded")
 	}, 10*time.Second, 100*time.Millisecond)
 
 	// Shutdown
-	workerDeps.Process().Shutdown(errors.New("bye bye Worker 1"))
-	workerDeps.Process().WaitForShutdown()
+	workerScp.Process().Shutdown(errors.New("bye bye Worker 1"))
+	workerScp.Process().WaitForShutdown()
 
 	// Check logs
 	wildcards.Assert(t, `
@@ -122,11 +127,11 @@ func TestCleanup(t *testing.T) {
 [task][_system_/tasks.cleanup/%s]INFO  deleted "0" tasks
 [task][_system_/tasks.cleanup/%s]INFO  task succeeded (0s): deleted "0" tasks
 [task][_system_/tasks.cleanup/%s]DEBUG  lock released "runtime/lock/task/tasks.cleanup"
-	`, strhelper.FilterLines(`^\[task\]\[_system_/`, workerDeps.DebugLogger().AllMessages()))
+	`, strhelper.FilterLines(`^\[task\]\[_system_/`, workerMock.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
 [service][cleanup]INFO  ready
 [service][cleanup]INFO  started "1" receiver cleanup tasks
-	`, strhelper.FilterLines(`^\[service\]\[cleanup\]`, workerDeps.DebugLogger().AllMessages()))
+	`, strhelper.FilterLines(`^\[service\]\[cleanup\]`, workerMock.DebugLogger().AllMessages()))
 	wildcards.Assert(t, `
 [task][1000/github/receiver.cleanup/%s]INFO  started task
 [task][1000/github/receiver.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/1000/github/receiver.cleanup"
@@ -135,7 +140,7 @@ func TestCleanup(t *testing.T) {
 [task][1000/github/receiver.cleanup/%s]INFO  deleted "1" files, "1" slices, "0" records
 [task][1000/github/receiver.cleanup/%s]INFO  task succeeded (%s): receiver "1000/github" has been cleaned
 [task][1000/github/receiver.cleanup/%s]DEBUG  lock released "runtime/lock/task/1000/github/receiver.cleanup"
-	`, strhelper.FilterLines(`^\[task\]\[1000/github/receiver.cleanup`, workerDeps.DebugLogger().AllMessages()))
+	`, strhelper.FilterLines(`^\[task\]\[1000/github/receiver.cleanup`, workerMock.DebugLogger().AllMessages()))
 
 	// Check etcd state
 	etcdhelper.AssertKVsString(t, client, `

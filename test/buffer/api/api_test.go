@@ -3,12 +3,10 @@ package api
 
 import (
 	"context"
-	"os"
 	"runtime"
 	"strings"
 	"testing"
 
-	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
@@ -62,7 +60,7 @@ func TestBufferApiE2E(t *testing.T) {
 			requestDecoratorFn := func(request *runner.APIRequestDef) {
 				// Replace placeholder by secret loaded from the etcd.
 				if strings.Contains(request.Path, receiverSecretPlaceholder) {
-					resp, err := etcdClient.Get(context.Background(), "/config/receiver/", etcd.WithPrefix())
+					resp, err := etcdClient.Get(context.Background(), "config/receiver/", etcd.WithPrefix())
 					if assert.NoError(t, err) && assert.Len(t, resp.Kvs, 1) {
 						receiver := make(map[string]any)
 						json.MustDecode(resp.Kvs[0].Value, &receiver)

@@ -29,8 +29,8 @@ func TestActiveSlicesWatcher(t *testing.T) {
 	// Create watcher
 	clk := clock.NewMock()
 	clk.Set(time.Time{}.Add(time.Second))
-	d := bufferDependencies.NewMockedDeps(t, dependencies.WithClock(clk))
-	logger := d.DebugLogger()
+	d, mock := bufferDependencies.NewMockedServiceScope(t, dependencies.WithEnabledEtcdClient(), dependencies.WithClock(clk))
+	logger := mock.DebugLogger()
 
 	// Create 2 slices, in writing and closing state
 	receiverKey := key.ReceiverKey{ProjectID: 123, ReceiverID: "my-receiver"}
@@ -45,9 +45,11 @@ func TestActiveSlicesWatcher(t *testing.T) {
 	assert.NoError(t, str.CreateSlice(ctx, slice1))
 	assert.NoError(t, str.CreateSlice(ctx, slice2))
 
-	// Wait until all slices are uploaded
+	// Create watcher
 	w, initDone := service.NewActiveSlicesWatcher(ctx, wg, logger, d.Schema(), d.EtcdClient())
 	assert.NoError(t, <-initDone)
+
+	// Wait until all slices are uploaded
 	start := make(chan struct{})
 	wg.Add(1)
 	go func() {
