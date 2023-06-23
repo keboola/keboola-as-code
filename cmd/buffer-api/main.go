@@ -18,12 +18,12 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	bufferGen "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	bufferGenSvr "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/http/buffer/server"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/openapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -56,7 +56,7 @@ func run() error {
 	if err != nil {
 		return errors.Errorf("cannot load envs: %w", err)
 	}
-	cfg, err := config.LoadFrom(os.Args, envs)
+	cfg, err := config.BindAPIConfig(os.Args, envs)
 	if errors.Is(err, pflag.ErrHelp) {
 		// Stop on --help flag
 		return nil
@@ -115,13 +115,13 @@ func run() error {
 	octrace.DefaultTracer = opencensus.NewTracer(tel.TracerProvider().Tracer("otel.bridge.opencensus"))
 
 	// Create dependencies.
-	d, err := dependencies.NewServerDeps(ctx, proc, cfg, logger, tel)
+	apiScp, err := dependencies.NewAPIScope(ctx, cfg, proc, logger, tel)
 	if err != nil {
 		return err
 	}
 
 	// Create service.
-	svc := service.New(d)
+	svc := service.New(apiScp)
 
 	filterImportEndpoint := func(req *http.Request) bool {
 		return !strings.HasPrefix(req.URL.Path, "/v1/import/") || req.URL.RawQuery == "debug=true"
@@ -129,7 +129,7 @@ func run() error {
 
 	// Start HTTP server.
 	logger.Infof("starting Buffer API HTTP server, listen-address=%s", cfg.ListenAddress)
-	err = httpserver.Start(d, httpserver.Config{
+	err = httpserver.Start(apiScp, httpserver.Config{
 		ListenAddress:     cfg.ListenAddress,
 		ErrorNamePrefix:   ErrorNamePrefix,
 		ExceptionIDPrefix: ExceptionIdPrefix,
@@ -151,7 +151,7 @@ func run() error {
 				return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 					next.ServeHTTP(w, req.WithContext(context.WithValue(
 						req.Context(),
-						dependencies.ForPublicRequestCtxKey, dependencies.NewDepsForPublicRequest(d, req),
+						dependencies.PublicRequestScopeCtxKey, dependencies.NewPublicRequestScope(apiScp, req),
 					)))
 				})
 			})

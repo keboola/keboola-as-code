@@ -13,8 +13,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/worker/service"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
@@ -43,7 +43,7 @@ func run() error {
 	if err != nil {
 		return errors.Errorf("cannot load envs: %w", err)
 	}
-	cfg, err := config.LoadFrom(os.Args, envs)
+	cfg, err := config.BindWorkerConfig(os.Args, envs)
 	if errors.Is(err, pflag.ErrHelp) {
 		// Stop on --help flag
 		return nil
@@ -99,14 +99,14 @@ func run() error {
 	}
 
 	// Create dependencies.
-	d, err := dependencies.NewWorkerDeps(ctx, proc, cfg, logger, tel)
+	workerScp, err := dependencies.NewWorkerScope(ctx, proc, cfg, logger, tel)
 	if err != nil {
 		return err
 	}
 
 	// Create service.
-	logger.Infof("starting Buffer WORKER")
-	_, err = service.New(d)
+	logger.Infof("starting Buffer Worker")
+	_, err = service.New(workerScp)
 	if err != nil {
 		return err
 	}

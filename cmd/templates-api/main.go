@@ -20,11 +20,11 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	templatesGenSvr "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/http/templates/server"
 	templatesGen "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/openapi"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/service"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry/metric/prometheus"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/cpuprofile"
@@ -110,20 +110,20 @@ func run() error {
 	}
 
 	// Create dependencies.
-	d, err := dependencies.NewServerDeps(ctx, proc, cfg, logger, tel)
+	apiScp, err := dependencies.NewAPIScope(ctx, cfg, proc, logger, tel)
 	if err != nil {
 		return err
 	}
 
 	// Create service.
-	svc, err := service.New(d)
+	svc, err := service.New(apiScp)
 	if err != nil {
 		return err
 	}
 
 	// Start HTTP server.
 	logger.Infof("starting Templates API HTTP server, listen-address=%s", cfg.ListenAddress)
-	err = httpserver.Start(d, httpserver.Config{
+	err = httpserver.Start(apiScp, httpserver.Config{
 		ListenAddress:     cfg.ListenAddress,
 		ErrorNamePrefix:   ErrorNamePrefix,
 		ExceptionIDPrefix: ExceptionIdPrefix,
@@ -140,7 +140,7 @@ func run() error {
 				return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 					next.ServeHTTP(w, req.WithContext(context.WithValue(
 						req.Context(),
-						dependencies.ForPublicRequestCtxKey, dependencies.NewDepsForPublicRequest(d, req),
+						dependencies.PublicRequestScopeCtxKey, dependencies.NewPublicRequestScope(apiScp, req),
 					)))
 				})
 			})
