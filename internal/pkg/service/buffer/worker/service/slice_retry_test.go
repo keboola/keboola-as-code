@@ -104,6 +104,13 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	_, err := service.New(workerScp)
 	assert.NoError(t, err)
 
+	// Mock events send request
+	workerMock.MockedHTTPTransport().RegisterResponder(
+		http.MethodPost,
+		"https://mocked.transport.http/v2/storage/events",
+		httpmock.NewJsonResponderOrPanic(http.StatusOK, &keboola.Event{ID: "123"}),
+	)
+
 	// Get slices
 	slice, err := str.GetSlice(ctx, sliceKey)
 	assert.NoError(t, err)
@@ -126,7 +133,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 
 	// 3 minutes later:
 	// - triggers service.FailedSlicesCheckInterval
-	// - unblock the first backoff1 interval
+	// - unblock the first backoff interval
 	clk.Add(3 * time.Minute)
 
 	// Wait for retry
