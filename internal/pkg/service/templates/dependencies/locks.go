@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	LockAcquireTimeout = 2 * time.Second // the lock must be acquired in 2 seconds, otherwise we continue without the lock
-	LockReleaseTimeout = 2 * time.Second // the lock must be released in 2 seconds
+	ProjectLockTTLSeconds = 60
+	LockAcquireTimeout    = 2 * time.Second // the lock must be acquired in 2 seconds, otherwise we continue without the lock
+	LockReleaseTimeout    = 2 * time.Second // the lock must be released in 2 seconds
 )
 
 type lockerDeps interface {

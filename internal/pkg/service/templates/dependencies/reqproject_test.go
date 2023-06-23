@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
@@ -13,74 +12,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jarcoal/httpmock"
-	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
-	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
-	repositoryManager "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// TestForPublicRequest_Components_Cached tests that the value of the component does not change during the entire request.
-func TestForPublicRequest_Components_Cached(t *testing.T) {
-	t.Parallel()
-
-	// Mocked components
-	components1 := keboola.Components{
-		{ComponentKey: keboola.ComponentKey{ID: "foo1.bar1"}, Type: "other", Name: "Foo1 Bar1"},
-	}
-	components2 := keboola.Components{
-		{ComponentKey: keboola.ComponentKey{ID: "foo2.bar2"}, Type: "other", Name: "Foo2 Bar2"},
-	}
-	assert.NotEqual(t, components1, components2)
-
-	// Create mocked dependencies for server with "components1"
-	mockedDeps := NewMockedDeps(t, dependencies.WithMockedComponents(components1))
-	serviceDeps := &forService{
-		Base:       mockedDeps,
-		Public:     mockedDeps,
-		etcdClient: mockedDeps.EtcdClient(),
-		etcdSerde:  mockedDeps.EtcdSerde(),
-		schema:     mockedDeps.Schema(),
-		store:      mockedDeps.Store(),
-	}
-
-	serverDeps := &forServer{ForService: serviceDeps, logger: log.NewNopLogger()}
-
-	// Request 1 gets "components1"
-	req1Deps := NewDepsForPublicRequest(serverDeps, httptest.NewRequest("GET", "/req1", nil))
-	assert.Equal(t, components1, req1Deps.Components().All())
-	assert.Equal(t, components1, req1Deps.Components().All())
-
-	// Components are updated to "components2"
-	mockedDeps.MockedHTTPTransport().RegisterResponder(
-		http.MethodGet,
-		fmt.Sprintf("%s/v2/storage/", mockedDeps.StorageAPIHost()),
-		httpmock.NewJsonResponderOrPanic(200, &keboola.IndexComponents{
-			Components: components2,
-		}).Once(),
-	)
-	assert.NoError(t, mockedDeps.ComponentsProvider().Update(context.Background()))
-
-	// Request 1 still gets "components1"
-	assert.Equal(t, components1, req1Deps.Components().All())
-	assert.Equal(t, components1, req1Deps.Components().All())
-
-	// But request2 gets "components2"
-	req2Deps := NewDepsForPublicRequest(serverDeps, httptest.NewRequest("GET", "/req2", nil))
-	assert.Equal(t, components2, req2Deps.Components().All())
-	assert.Equal(t, components2, req2Deps.Components().All())
-}
-
-func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
+func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	t.Parallel()
 	if runtime.GOOS == "windows" {
 		t.Skip("unstable on windows - random git timeouts")
@@ -92,32 +37,23 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 	assert.NoError(t, os.Rename(filepath.Join(tmpDir, ".gittest"), filepath.Join(tmpDir, ".git"))) // nolint:forbidigo
 	repoDef := model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", URL: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
 
-	// Create mocked dependencies for server
-	ctx := context.Background()
-	mockedDeps := NewMockedDeps(t, dependencies.WithMultipleTokenVerification(true))
-	serviceDeps := &forService{
-		Base:       mockedDeps,
-		Public:     mockedDeps,
-		etcdClient: mockedDeps.EtcdClient(),
-		etcdSerde:  mockedDeps.EtcdSerde(),
-		schema:     mockedDeps.Schema(),
-		store:      mockedDeps.Store(),
-	}
-	manager, err := repositoryManager.New(ctx, mockedDeps, nil)
-	assert.NoError(t, err)
-	serverDeps := &forServer{ForService: serviceDeps, logger: log.NewNopLogger(), repositoryManager: manager}
-	requestDepsFactory := func(ctx context.Context) (ForProjectRequest, error) {
+	// Mocked API scope
+	apiScp, mock := NewMockedAPIScope(t, config.NewConfig(), dependencies.WithMultipleTokenVerification(true))
+	ctx := mock.TestContext()
+	manager := apiScp.RepositoryManager()
+
+	// Mocked request scope
+	reqScpFactory := func(ctx context.Context) ProjectRequestScope {
 		reqID := idgenerator.Random(8)
 		req := httptest.NewRequest("GET", "/req1", nil)
 		req = req.WithContext(context.WithValue(ctx, middleware.RequestIDCtxKey, reqID))
-		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, req), ctx, mockedDeps.StorageAPITokenID())
+		return newProjectRequestScope(NewPublicRequestScope(apiScp, req), mock)
 	}
 
 	// Get repository for request 1
 	req1Ctx, req1CancelFn := context.WithCancel(ctx)
 	defer req1CancelFn()
-	req1Deps, err := requestDepsFactory(req1Ctx)
-	assert.NoError(t, err)
+	req1Deps := reqScpFactory(req1Ctx)
 	repo1, err := req1Deps.TemplateRepository(context.Background(), repoDef)
 
 	// FS contains template1, but doesn't contain template2
@@ -128,14 +64,13 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 	// Update repository -> no change
 	err = <-manager.Update(context.Background())
 	assert.NoError(t, err)
-	wildcards.Assert(t, `%Arepository "%s" update finished, no change found%A`, mockedDeps.DebugLogger().InfoMessages())
-	mockedDeps.DebugLogger().Truncate()
+	wildcards.Assert(t, `%Arepository "%s" update finished, no change found%A`, mock.DebugLogger().InfoMessages())
+	mock.DebugLogger().Truncate()
 
 	// Get repository for request 2 -> no changes
 	req2Ctx, req2CancelFn := context.WithCancel(ctx)
 	defer req2CancelFn()
-	req2Deps, err := requestDepsFactory(req2Ctx)
-	assert.NoError(t, err)
+	req2Deps := reqScpFactory(req2Ctx)
 	repo2, err := req2Deps.TemplateRepository(context.Background(), repoDef)
 	assert.NoError(t, err)
 
@@ -151,14 +86,13 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 	// Update repository -> change occurred
 	err = <-manager.Update(context.Background())
 	assert.NoError(t, err)
-	wildcards.Assert(t, `%Arepository "%s" updated from %s to %s%A`, mockedDeps.DebugLogger().InfoMessages())
-	mockedDeps.DebugLogger().Truncate()
+	wildcards.Assert(t, `%Arepository "%s" updated from %s to %s%A`, mock.DebugLogger().InfoMessages())
+	mock.DebugLogger().Truncate()
 
 	// Get repository for request 3 -> change occurred
 	req3Ctx, req3CancelFn := context.WithCancel(ctx)
 	defer req3CancelFn()
-	req3Deps, err := requestDepsFactory(req3Ctx)
-	assert.NoError(t, err)
+	req3Deps := reqScpFactory(req3Ctx)
 	repo3, err := req3Deps.TemplateRepository(context.Background(), repoDef)
 	assert.NoError(t, err)
 
@@ -203,8 +137,8 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 	// Update repository -> change occurred
 	err = <-manager.Update(context.Background())
 	assert.NoError(t, err)
-	wildcards.Assert(t, `%Arepository "%s" updated from %s to %s%A`, mockedDeps.DebugLogger().InfoMessages())
-	mockedDeps.DebugLogger().Truncate()
+	wildcards.Assert(t, `%Arepository "%s" updated from %s to %s%A`, mock.DebugLogger().InfoMessages())
+	mock.DebugLogger().Truncate()
 
 	// Old FS is deleted (nobody uses it)
 	assert.Eventually(t, func() bool {
@@ -214,7 +148,7 @@ func TestForProjectRequest_TemplateRepository_Cached(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond)
 }
 
-func TestForProjectRequest_Template_Cached(t *testing.T) {
+func TestProjectRequestScope_Template_Cached(t *testing.T) {
 	t.Parallel()
 	if runtime.GOOS == "windows" {
 		t.Skip("unstable on windows - random git timeouts")
@@ -227,32 +161,23 @@ func TestForProjectRequest_Template_Cached(t *testing.T) {
 	repoDef := model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", URL: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
 	tmplDef := model.NewTemplateRef(repoDef, "template1", "1.0.3")
 
-	// Create mocked dependencies for server
-	ctx := context.Background()
-	mockedDeps := NewMockedDeps(t, dependencies.WithMultipleTokenVerification(true))
-	serviceDeps := &forService{
-		Base:       mockedDeps,
-		Public:     mockedDeps,
-		etcdClient: mockedDeps.EtcdClient(),
-		etcdSerde:  mockedDeps.EtcdSerde(),
-		schema:     mockedDeps.Schema(),
-		store:      mockedDeps.Store(),
-	}
-	manager, err := repositoryManager.New(ctx, mockedDeps, nil)
-	assert.NoError(t, err)
-	serverDeps := &forServer{ForService: serviceDeps, logger: log.NewNopLogger(), repositoryManager: manager}
-	requestDepsFactory := func(ctx context.Context) (ForProjectRequest, error) {
+	// Mocked API scope
+	apiScp, mock := NewMockedAPIScope(t, config.NewConfig(), dependencies.WithMultipleTokenVerification(true))
+	ctx := mock.TestContext()
+	manager := apiScp.RepositoryManager()
+
+	// Mocked request scope
+	reqScopeFactory := func(ctx context.Context) ProjectRequestScope {
 		reqID := idgenerator.Random(8)
 		req := httptest.NewRequest("GET", "/req1", nil)
 		req = req.WithContext(context.WithValue(ctx, middleware.RequestIDCtxKey, reqID))
-		return NewDepsForProjectRequest(NewDepsForPublicRequest(serverDeps, req), ctx, mockedDeps.StorageAPITokenID())
+		return newProjectRequestScope(NewPublicRequestScope(apiScp, req), mock)
 	}
 
 	// Get template for request 1
 	req1Ctx, req1CancelFn := context.WithCancel(ctx)
 	defer req1CancelFn()
-	req1Deps, err := requestDepsFactory(req1Ctx)
-	assert.NoError(t, err)
+	req1Deps := reqScopeFactory(req1Ctx)
 	tmpl1Req1, err := req1Deps.Template(context.Background(), tmplDef)
 	assert.NoError(t, err)
 	assert.Equal(t, "Readme version 3 ...\n", tmpl1Req1.Readme())
@@ -260,8 +185,7 @@ func TestForProjectRequest_Template_Cached(t *testing.T) {
 	// Get template for request 2
 	req2Ctx, req2CancelFn := context.WithCancel(ctx)
 	defer req2CancelFn()
-	req2Deps, err := requestDepsFactory(req2Ctx)
-	assert.NoError(t, err)
+	req2Deps := reqScopeFactory(req2Ctx)
 	tmpl1Req2, err := req2Deps.Template(context.Background(), tmplDef)
 	assert.NoError(t, err)
 	assert.Equal(t, "Readme version 3 ...\n", tmpl1Req2.Readme())
@@ -275,14 +199,13 @@ func TestForProjectRequest_Template_Cached(t *testing.T) {
 	// Update repository -> change occurred
 	err = <-manager.Update(context.Background())
 	assert.NoError(t, err)
-	wildcards.Assert(t, `%Arepository "%s" updated from %s to %s%A`, mockedDeps.DebugLogger().InfoMessages())
-	mockedDeps.DebugLogger().Truncate()
+	wildcards.Assert(t, `%Arepository "%s" updated from %s to %s%A`, mock.DebugLogger().InfoMessages())
+	mock.DebugLogger().Truncate()
 
 	// Get template for request 3
 	req3Ctx, req3CancelFn := context.WithCancel(ctx)
 	defer req3CancelFn()
-	req3Deps, err := requestDepsFactory(req3Ctx)
-	assert.NoError(t, err)
+	req3Deps := reqScopeFactory(req3Ctx)
 	tmpl1Req3, err := req3Deps.Template(context.Background(), tmplDef)
 	assert.NoError(t, err)
 	assert.Equal(t, "Readme version 1 ...\n", tmpl1Req3.Readme())
@@ -290,8 +213,7 @@ func TestForProjectRequest_Template_Cached(t *testing.T) {
 	// Get template for request 4
 	req4Ctx, req4CancelFn := context.WithCancel(ctx)
 	defer req4CancelFn()
-	req4Deps, err := requestDepsFactory(req4Ctx)
-	assert.NoError(t, err)
+	req4Deps := reqScopeFactory(req4Ctx)
 	tmpl1Req4, err := req4Deps.Template(context.Background(), tmplDef)
 	assert.NoError(t, err)
 	assert.Equal(t, "Readme version 1 ...\n", tmpl1Req4.Readme())
