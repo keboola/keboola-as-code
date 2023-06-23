@@ -124,6 +124,11 @@ func New(ctx context.Context, proc *servicectx.Process, tel telemetry.Telemetry,
 	// Create a zap logger for etcd client
 	encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
 	etcdLogger := zap.New(log.NewCallbackCore(func(entry zapcore.Entry, fields []zapcore.Field) {
+		// Skip debug messages
+		if entry.Level == log.DebugLevel {
+			return
+		}
+
 		// Add component=etcd-client field
 		fields = append(fields, zapcore.Field{Key: "component", String: "etcd-client", Type: zapcore.StringType})
 
