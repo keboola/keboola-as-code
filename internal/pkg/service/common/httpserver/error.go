@@ -63,7 +63,7 @@ func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, er
 
 	// Normalize error name
 	if !strings.Contains(response.Name, ".") {
-		// Normalize error name, eg., "missing_field" to "buffer.missingField"
+		// Normalize error name, e.g., "missing_field" to "buffer.missingField"
 		response.Name = wr.errorNamePrefix + strcase.ToLowerCamel(response.Name)
 	}
 

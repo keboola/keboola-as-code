@@ -1,11 +1,16 @@
 package errors
 
 import (
+	"context"
 	"net/http"
 
 	goa "goa.design/goa/v3/pkg"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+)
+
+const (
+	StatusClientClosedRequest = 499
 )
 
 type withStatusCode struct {
@@ -14,15 +19,26 @@ type withStatusCode struct {
 }
 
 func HTTPCodeFrom(err error) int {
-	httpCode := http.StatusInternalServerError
 	var httpCodeProvider WithStatusCode
-	var serviceError *goa.ServiceError
 	if errors.As(err, &httpCodeProvider) {
-		httpCode = httpCodeProvider.StatusCode()
-	} else if errors.As(err, &serviceError) {
-		httpCode = http.StatusBadRequest
+		return httpCodeProvider.StatusCode()
 	}
-	return httpCode
+
+	var serviceError *goa.ServiceError
+	if errors.As(err, &serviceError) {
+		return http.StatusBadRequest
+	}
+
+	// Handle client closed request
+	if errors.Is(err, context.Canceled) {
+		// https://httpstatus.in/499/
+		// A non-standard status code introduced by nginx for the case
+		// when a client closes the connection while server is processing the request.
+		// The code is used for telemetry and logging purposes, since the connection is closed.
+		return StatusClientClosedRequest
+	}
+
+	return http.StatusInternalServerError
 }
 
 func WrapWithStatusCode(err error, httpCode int) WithStatusCode {
