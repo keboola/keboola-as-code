@@ -2,7 +2,6 @@
 package schema
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 )
 
@@ -10,10 +9,10 @@ type Schema struct {
 	serde *serde.Serde
 }
 
-type prefix = etcdop.Prefix
+type dependencies interface {
+	EtcdSerde() *serde.Serde
+}
 
-func New(validate serde.ValidateFn) *Schema {
-	return &Schema{
-		serde: serde.NewJSON(validate),
-	}
+func New(d dependencies) *Schema {
+	return &Schema{serde: d.EtcdSerde()}
 }

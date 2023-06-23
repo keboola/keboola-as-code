@@ -21,8 +21,8 @@ import (
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
@@ -43,12 +43,12 @@ const (
 
 type service struct {
 	config config.Config
-	deps   dependencies.ForServer
+	deps   dependencies.APIScope
 	tasks  *task.Node
 	mapper *Mapper
 }
 
-func New(d dependencies.ForServer) (Service, error) {
+func New(d dependencies.APIScope) (Service, error) {
 	if err := StartComponentsCron(d.Process().Ctx(), d); err != nil {
 		return nil, err
 	}
@@ -97,12 +97,12 @@ func New(d dependencies.ForServer) (Service, error) {
 	return s, nil
 }
 
-func (s *service) APIRootIndex(dependencies.ForPublicRequest) (err error) {
+func (s *service) APIRootIndex(dependencies.PublicRequestScope) (err error) {
 	// Redirect / -> /v1
 	return nil
 }
 
-func (s *service) APIVersionIndex(dependencies.ForPublicRequest) (res *ServiceDetail, err error) {
+func (s *service) APIVersionIndex(dependencies.PublicRequestScope) (res *ServiceDetail, err error) {
 	url := *s.deps.APIConfig().PublicAddress
 	url.Path = path.Join(url.Path, "v1/documentation")
 	res = &ServiceDetail{
@@ -112,15 +112,15 @@ func (s *service) APIVersionIndex(dependencies.ForPublicRequest) (res *ServiceDe
 	return res, nil
 }
 
-func (s *service) HealthCheck(dependencies.ForPublicRequest) (res string, err error) {
+func (s *service) HealthCheck(dependencies.PublicRequestScope) (res string, err error) {
 	return "OK", nil
 }
 
-func (s *service) RepositoriesIndex(d dependencies.ForProjectRequest, _ *RepositoriesIndexPayload) (res *Repositories, err error) {
+func (s *service) RepositoriesIndex(d dependencies.ProjectRequestScope, _ *RepositoriesIndexPayload) (res *Repositories, err error) {
 	return RepositoriesResponse(d.RequestCtx(), d)
 }
 
-func (s *service) RepositoryIndex(d dependencies.ForProjectRequest, payload *RepositoryIndexPayload) (res *Repository, err error) {
+func (s *service) RepositoryIndex(d dependencies.ProjectRequestScope, payload *RepositoryIndexPayload) (res *Repository, err error) {
 	repo, err := repositoryInst(d, payload.Repository)
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func (s *service) RepositoryIndex(d dependencies.ForProjectRequest, payload *Rep
 	return RepositoryResponse(d.RequestCtx(), d, repo), nil
 }
 
-func (s *service) TemplatesIndex(d dependencies.ForProjectRequest, payload *TemplatesIndexPayload) (res *Templates, err error) {
+func (s *service) TemplatesIndex(d dependencies.ProjectRequestScope, payload *TemplatesIndexPayload) (res *Templates, err error) {
 	repo, err := repositoryInst(d, payload.Repository)
 	if err != nil {
 		return nil, err
@@ -136,7 +136,7 @@ func (s *service) TemplatesIndex(d dependencies.ForProjectRequest, payload *Temp
 	return TemplatesResponse(d.RequestCtx(), d, repo, repo.Templates())
 }
 
-func (s *service) TemplateIndex(d dependencies.ForProjectRequest, payload *TemplateIndexPayload) (res *TemplateDetail, err error) {
+func (s *service) TemplateIndex(d dependencies.ProjectRequestScope, payload *TemplateIndexPayload) (res *TemplateDetail, err error) {
 	repo, tmplRecord, err := templateRecord(d, payload.Repository, payload.Template)
 	if err != nil {
 		return nil, err
@@ -144,7 +144,7 @@ func (s *service) TemplateIndex(d dependencies.ForProjectRequest, payload *Templ
 	return TemplateDetailResponse(d.RequestCtx(), d, repo, tmplRecord)
 }
 
-func (s *service) VersionIndex(d dependencies.ForProjectRequest, payload *VersionIndexPayload) (res *VersionDetailExtended, err error) {
+func (s *service) VersionIndex(d dependencies.ProjectRequestScope, payload *VersionIndexPayload) (res *VersionDetailExtended, err error) {
 	repo, tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
 	if err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func (s *service) VersionIndex(d dependencies.ForProjectRequest, payload *Versio
 	return VersionDetailExtendedResponse(d.RequestCtx(), d, repo, tmpl)
 }
 
-func (s *service) InputsIndex(d dependencies.ForProjectRequest, payload *InputsIndexPayload) (res *Inputs, err error) {
+func (s *service) InputsIndex(d dependencies.ProjectRequestScope, payload *InputsIndexPayload) (res *Inputs, err error) {
 	_, tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
 	if err != nil {
 		return nil, err
@@ -160,7 +160,7 @@ func (s *service) InputsIndex(d dependencies.ForProjectRequest, payload *InputsI
 	return InputsResponse(d.RequestCtx(), d, tmpl.Inputs().ToExtended()), nil
 }
 
-func (s *service) ValidateInputs(d dependencies.ForProjectRequest, payload *ValidateInputsPayload) (res *ValidationResult, err error) {
+func (s *service) ValidateInputs(d dependencies.ProjectRequestScope, payload *ValidateInputsPayload) (res *ValidationResult, err error) {
 	_, tmpl, err := getTemplateVersion(d, payload.Repository, payload.Template, payload.Version)
 	if err != nil {
 		return nil, err
@@ -171,7 +171,7 @@ func (s *service) ValidateInputs(d dependencies.ForProjectRequest, payload *Vali
 	return result, err
 }
 
-func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *UseTemplateVersionPayload) (res *Task, err error) {
+func (s *service) UseTemplateVersion(d dependencies.ProjectRequestScope, payload *UseTemplateVersionPayload) (res *Task, err error) {
 	// Lock project
 	if unlockFn, err := tryLockProject(d); err != nil {
 		return nil, err
@@ -271,7 +271,7 @@ func (s *service) UseTemplateVersion(d dependencies.ForProjectRequest, payload *
 	return s.mapper.TaskPayload(t), nil
 }
 
-func (s *service) InstancesIndex(d dependencies.ForProjectRequest, payload *InstancesIndexPayload) (res *Instances, err error) {
+func (s *service) InstancesIndex(d dependencies.ProjectRequestScope, payload *InstancesIndexPayload) (res *Instances, err error) {
 	branchKey, err := getBranch(d, payload.Branch)
 	if err != nil {
 		return nil, err
@@ -296,7 +296,7 @@ func (s *service) InstancesIndex(d dependencies.ForProjectRequest, payload *Inst
 	return InstancesResponse(d.RequestCtx(), d, prjState, branchKey)
 }
 
-func (s *service) InstanceIndex(d dependencies.ForProjectRequest, payload *InstanceIndexPayload) (res *InstanceDetail, err error) {
+func (s *service) InstanceIndex(d dependencies.ProjectRequestScope, payload *InstanceIndexPayload) (res *InstanceDetail, err error) {
 	_, span := d.Telemetry().Tracer().Start(d.RequestCtx(), "api.server.templates.service.InstanceIndex")
 	defer span.End(&err)
 
@@ -323,7 +323,7 @@ func (s *service) InstanceIndex(d dependencies.ForProjectRequest, payload *Insta
 	return InstanceResponse(d.RequestCtx(), d, prjState, branchKey, payload.InstanceID)
 }
 
-func (s *service) UpdateInstance(d dependencies.ForProjectRequest, payload *UpdateInstancePayload) (res *InstanceDetail, err error) {
+func (s *service) UpdateInstance(d dependencies.ProjectRequestScope, payload *UpdateInstancePayload) (res *InstanceDetail, err error) {
 	// Lock project
 	if unlockFn, err := tryLockProject(d); err != nil {
 		return nil, err
@@ -357,7 +357,7 @@ func (s *service) UpdateInstance(d dependencies.ForProjectRequest, payload *Upda
 	return InstanceResponse(d.RequestCtx(), d, prjState, branchKey, payload.InstanceID)
 }
 
-func (s *service) DeleteInstance(d dependencies.ForProjectRequest, payload *DeleteInstancePayload) error {
+func (s *service) DeleteInstance(d dependencies.ProjectRequestScope, payload *DeleteInstancePayload) error {
 	// Lock project
 	if unlockFn, err := tryLockProject(d); err != nil {
 		return err
@@ -391,7 +391,7 @@ func (s *service) DeleteInstance(d dependencies.ForProjectRequest, payload *Dele
 	return nil
 }
 
-func (s *service) UpgradeInstance(d dependencies.ForProjectRequest, payload *UpgradeInstancePayload) (res *Task, err error) {
+func (s *service) UpgradeInstance(d dependencies.ProjectRequestScope, payload *UpgradeInstancePayload) (res *Task, err error) {
 	// Lock project
 	if unlockFn, err := tryLockProject(d); err != nil {
 		return nil, err
@@ -464,7 +464,7 @@ func (s *service) UpgradeInstance(d dependencies.ForProjectRequest, payload *Upg
 	return s.mapper.TaskPayload(t), nil
 }
 
-func (s *service) UpgradeInstanceInputsIndex(d dependencies.ForProjectRequest, payload *UpgradeInstanceInputsIndexPayload) (res *Inputs, err error) {
+func (s *service) UpgradeInstanceInputsIndex(d dependencies.ProjectRequestScope, payload *UpgradeInstanceInputsIndexPayload) (res *Inputs, err error) {
 	// Get instance
 	prjState, branchKey, instance, err := getTemplateInstance(d, payload.Branch, payload.InstanceID, true)
 	if err != nil {
@@ -481,7 +481,7 @@ func (s *service) UpgradeInstanceInputsIndex(d dependencies.ForProjectRequest, p
 	return UpgradeInstanceInputsResponse(d.RequestCtx(), d, prjState, branchKey, instance, tmpl), nil
 }
 
-func (s *service) UpgradeInstanceValidateInputs(d dependencies.ForProjectRequest, payload *UpgradeInstanceValidateInputsPayload) (res *ValidationResult, err error) {
+func (s *service) UpgradeInstanceValidateInputs(d dependencies.ProjectRequestScope, payload *UpgradeInstanceValidateInputsPayload) (res *ValidationResult, err error) {
 	// Get instance
 	_, _, instance, err := getTemplateInstance(d, payload.Branch, payload.InstanceID, false)
 	if err != nil {
@@ -498,7 +498,7 @@ func (s *service) UpgradeInstanceValidateInputs(d dependencies.ForProjectRequest
 	})
 }
 
-func (s *service) GetTask(d dependencies.ForProjectRequest, payload *GetTaskPayload) (res *Task, err error) {
+func (s *service) GetTask(d dependencies.ProjectRequestScope, payload *GetTaskPayload) (res *Task, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
 	t, err := str.GetTask(ctx, task.Key{
@@ -512,7 +512,7 @@ func (s *service) GetTask(d dependencies.ForProjectRequest, payload *GetTaskPayl
 	return s.mapper.TaskPayload(&t), nil
 }
 
-func repositoryRef(d dependencies.ForProjectRequest, name string) (model.TemplateRepository, error) {
+func repositoryRef(d dependencies.ProjectRequestScope, name string) (model.TemplateRepository, error) {
 	if repo, found := d.ProjectRepositories().Get(name); found {
 		return repo, nil
 	} else {
@@ -523,7 +523,7 @@ func repositoryRef(d dependencies.ForProjectRequest, name string) (model.Templat
 	}
 }
 
-func repositoryInst(d dependencies.ForProjectRequest, repoName string) (*repository.Repository, error) {
+func repositoryInst(d dependencies.ProjectRequestScope, repoName string) (*repository.Repository, error) {
 	// Get repository ref
 	repoRef, err := repositoryRef(d, repoName)
 	if err != nil {
@@ -538,7 +538,7 @@ func repositoryInst(d dependencies.ForProjectRequest, repoName string) (*reposit
 	return repo, nil
 }
 
-func templateRecord(d dependencies.ForProjectRequest, repoName, templateID string) (*repository.Repository, *repository.TemplateRecord, error) {
+func templateRecord(d dependencies.ProjectRequestScope, repoName, templateID string) (*repository.Repository, *repository.TemplateRecord, error) {
 	// Get repository
 	repo, err := repositoryInst(d, repoName)
 	if err != nil {
@@ -556,7 +556,7 @@ func templateRecord(d dependencies.ForProjectRequest, repoName, templateID strin
 	return repo, &tmpl, nil
 }
 
-func getTemplateVersion(d dependencies.ForProjectRequest, repoName, templateID, versionStr string) (*repository.Repository, *template.Template, error) {
+func getTemplateVersion(d dependencies.ProjectRequestScope, repoName, templateID, versionStr string) (*repository.Repository, *template.Template, error) {
 	// Get repo
 	repo, err := repositoryInst(d, repoName)
 	if err != nil {
@@ -611,7 +611,7 @@ func getTemplateVersion(d dependencies.ForProjectRequest, repoName, templateID, 
 	return repo, tmpl, nil
 }
 
-func getBranch(d dependencies.ForProjectRequest, branchDef string) (model.BranchKey, error) {
+func getBranch(d dependencies.ProjectRequestScope, branchDef string) (model.BranchKey, error) {
 	// Get Keboola API
 	api := d.KeboolaProjectAPI()
 
@@ -638,7 +638,7 @@ func getBranch(d dependencies.ForProjectRequest, branchDef string) (model.Branch
 	return targetBranch, nil
 }
 
-func getTemplateInstance(d dependencies.ForProjectRequest, branchDef, instanceId string, loadConfigs bool) (*project.State, model.BranchKey, *model.TemplateInstance, error) {
+func getTemplateInstance(d dependencies.ProjectRequestScope, branchDef, instanceId string, loadConfigs bool) (*project.State, model.BranchKey, *model.TemplateInstance, error) {
 	// Note:
 	//   Waits for separation of remote and local state.
 	//   A virtual FS and fake manifest are created to make it work.
@@ -687,7 +687,7 @@ func getTemplateInstance(d dependencies.ForProjectRequest, branchDef, instanceId
 }
 
 // tryLockProject.
-func tryLockProject(d dependencies.ForProjectRequest) (dependencies.UnlockFn, error) {
+func tryLockProject(d dependencies.ProjectRequestScope) (dependencies.UnlockFn, error) {
 	d.Logger().Infof(`requested lock for project "%d"`, d.ProjectID())
 
 	// Try lock

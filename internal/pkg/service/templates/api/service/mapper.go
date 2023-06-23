@@ -13,8 +13,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/search"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/gen/templates"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/context/upgrade"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/input"
@@ -86,7 +86,7 @@ func formatTaskURL(apiHost string, k task.Key) string {
 	return fmt.Sprintf("%s/v1/tasks/%s", apiHost, k.TaskID)
 }
 
-func RepositoriesResponse(ctx context.Context, d dependencies.ForProjectRequest) (out *Repositories, err error) {
+func RepositoriesResponse(ctx context.Context, d dependencies.ProjectRequestScope) (out *Repositories, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.RepositoriesResponse")
 	defer span.End(&err)
 
@@ -101,7 +101,7 @@ func RepositoriesResponse(ctx context.Context, d dependencies.ForProjectRequest)
 	return out, nil
 }
 
-func RepositoryResponse(ctx context.Context, d dependencies.ForProjectRequest, v *repository.Repository) *Repository {
+func RepositoryResponse(ctx context.Context, d dependencies.ProjectRequestScope, v *repository.Repository) *Repository {
 	_, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.RepositoryResponse")
 	defer span.End(nil)
 
@@ -118,7 +118,7 @@ func RepositoryResponse(ctx context.Context, d dependencies.ForProjectRequest, v
 	}
 }
 
-func TemplatesResponse(ctx context.Context, d dependencies.ForProjectRequest, repo *repository.Repository, templates []repository.TemplateRecord) (out *Templates, err error) {
+func TemplatesResponse(ctx context.Context, d dependencies.ProjectRequestScope, repo *repository.Repository, templates []repository.TemplateRecord) (out *Templates, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.TemplatesResponse")
 	defer span.End(&err)
 
@@ -135,7 +135,7 @@ func TemplatesResponse(ctx context.Context, d dependencies.ForProjectRequest, re
 	return out, nil
 }
 
-func TemplateResponse(ctx context.Context, d dependencies.ForProjectRequest, tmpl *repository.TemplateRecord, author *Author) (out *Template, err error) {
+func TemplateResponse(ctx context.Context, d dependencies.ProjectRequestScope, tmpl *repository.TemplateRecord, author *Author) (out *Template, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.TemplateResponse")
 	defer span.End(&err)
 
@@ -162,7 +162,7 @@ func TemplateResponse(ctx context.Context, d dependencies.ForProjectRequest, tmp
 	return out, nil
 }
 
-func TemplateDetailResponse(ctx context.Context, d dependencies.ForProjectRequest, repo *repository.Repository, tmpl *repository.TemplateRecord) (out *TemplateDetail, err error) {
+func TemplateDetailResponse(ctx context.Context, d dependencies.ProjectRequestScope, repo *repository.Repository, tmpl *repository.TemplateRecord) (out *TemplateDetail, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.TemplateDetailResponse")
 	defer span.End(&err)
 
@@ -198,7 +198,7 @@ func VersionResponse(v *repository.VersionRecord) *Version {
 	}
 }
 
-func VersionDetailResponse(d dependencies.ForProjectRequest, template *template.Template) *VersionDetail {
+func VersionDetailResponse(d dependencies.ProjectRequestScope, template *template.Template) *VersionDetail {
 	versionRec := template.VersionRecord()
 	return &VersionDetail{
 		Version:         versionRec.Version.String(),
@@ -210,7 +210,7 @@ func VersionDetailResponse(d dependencies.ForProjectRequest, template *template.
 	}
 }
 
-func VersionDetailExtendedResponse(ctx context.Context, d dependencies.ForProjectRequest, repo *repository.Repository, template *template.Template) (out *VersionDetailExtended, err error) {
+func VersionDetailExtendedResponse(ctx context.Context, d dependencies.ProjectRequestScope, repo *repository.Repository, template *template.Template) (out *VersionDetailExtended, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.VersionDetailExtendedResponse")
 	defer span.End(&err)
 
@@ -244,7 +244,7 @@ func CategoriesResponse(in []string) []string {
 
 // ComponentsResponse replaces placeholder in components list.
 // The original order is preserved, it is used in the UI.
-func ComponentsResponse(d dependencies.ForProjectRequest, in []string) (out []string) {
+func ComponentsResponse(d dependencies.ProjectRequestScope, in []string) (out []string) {
 	out = make([]string, 0)
 	for _, componentId := range in {
 		// Map placeholder "<keboola.wr-snowflake>" to real componentId.
@@ -262,7 +262,7 @@ func ComponentsResponse(d dependencies.ForProjectRequest, in []string) (out []st
 	return out
 }
 
-func UpgradeInstanceInputsResponse(ctx context.Context, d dependencies.ForProjectRequest, prjState *project.State, branchKey model.BranchKey, instance *model.TemplateInstance, tmpl *template.Template) (out *Inputs) {
+func UpgradeInstanceInputsResponse(ctx context.Context, d dependencies.ProjectRequestScope, prjState *project.State, branchKey model.BranchKey, instance *model.TemplateInstance, tmpl *template.Template) (out *Inputs) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.UpgradeInstanceInputsResponse")
 	defer span.End(nil)
 
@@ -270,7 +270,7 @@ func UpgradeInstanceInputsResponse(ctx context.Context, d dependencies.ForProjec
 	return InputsResponse(ctx, d, stepsGroupsExt)
 }
 
-func InputsResponse(ctx context.Context, d dependencies.ForProjectRequest, stepsGroups input.StepsGroupsExt) (out *Inputs) {
+func InputsResponse(ctx context.Context, d dependencies.ProjectRequestScope, stepsGroups input.StepsGroupsExt) (out *Inputs) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.InputsResponse")
 	defer span.End(nil)
 
@@ -353,7 +353,7 @@ func OptionsResponse(options input.Options) (out []*InputOption) {
 	return out
 }
 
-func InstancesResponse(ctx context.Context, d dependencies.ForProjectRequest, prjState *project.State, branchKey model.BranchKey) (out *Instances, err error) {
+func InstancesResponse(ctx context.Context, d dependencies.ProjectRequestScope, prjState *project.State, branchKey model.BranchKey) (out *Instances, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.InstancesResponse")
 	defer span.End(&err)
 
@@ -413,7 +413,7 @@ func InstancesResponse(ctx context.Context, d dependencies.ForProjectRequest, pr
 	return out, nil
 }
 
-func InstanceResponse(ctx context.Context, d dependencies.ForProjectRequest, prjState *project.State, branchKey model.BranchKey, instanceId string) (out *InstanceDetail, err error) {
+func InstanceResponse(ctx context.Context, d dependencies.ProjectRequestScope, prjState *project.State, branchKey model.BranchKey, instanceId string) (out *InstanceDetail, err error) {
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "api.server.templates.mapper.InstanceResponse")
 	defer span.End(&err)
 
@@ -490,7 +490,7 @@ func InstanceResponse(ctx context.Context, d dependencies.ForProjectRequest, prj
 	return out, nil
 }
 
-func instanceVersionDetail(ctx context.Context, d dependencies.ForProjectRequest, instance *model.TemplateInstance) *VersionDetail {
+func instanceVersionDetail(ctx context.Context, d dependencies.ProjectRequestScope, instance *model.TemplateInstance) *VersionDetail {
 	repo, tmplRecord, err := templateRecord(d, instance.RepositoryName, instance.TemplateID)
 	if err != nil {
 		return nil
