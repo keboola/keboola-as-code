@@ -107,6 +107,7 @@ Flags:
   -v, --verbose                    print details
       --verbose-api                log each API request and response
   -V, --version                    print version
+      --version-check              checks if there is a newer version of the CLI (default true)
   -d, --working-dir string         use other working directory
 
 Use "kbc [command] --help" for more information about a command.

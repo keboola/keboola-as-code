@@ -6,6 +6,7 @@ DEBUG	Os/Arch:    %s
 DEBUG	Running command [%s --log-file ./log-file.txt]
 DEBUG	Parsed options:
 DEBUG	  log-file = "./log-file.txt"
+DEBUG	  version-check = "false"
 DEBUG	Default options:
 DEBUG	  help = false
 DEBUG	  non-interactive = false

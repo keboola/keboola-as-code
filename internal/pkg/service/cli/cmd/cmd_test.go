@@ -102,6 +102,7 @@ func TestCliCmdPersistentFlags(t *testing.T) {
 		"storage-api-token",
 		"verbose",
 		"verbose-api",
+		"version-check",
 		"working-dir",
 	}
 	assert.Equal(t, expected, names)
