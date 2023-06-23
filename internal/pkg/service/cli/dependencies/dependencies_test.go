@@ -11,7 +11,6 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -19,6 +18,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	nopPrompt "github.com/keboola/keboola-as-code/internal/pkg/service/cli/prompt/nop"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
 )
 
@@ -71,10 +71,10 @@ func TestDifferentProjectIdInManifestAndToken(t *testing.T) {
 	// Assert
 	ctx := context.Background()
 	proc := servicectx.NewForTest(t, ctx)
-	baseDeps := newBaseDeps(ctx, logger, proc, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts)
-	localDeps, err := newLocal(baseDeps)
+	baseScp := newBaseScope(ctx, logger, proc, httpClient, fs, dialog.New(nopPrompt.New(), opts), opts)
+	localScp, err := newLocalCommandScope(baseScp)
 	assert.NoError(t, err)
-	_, err = newRemote(context.Background(), localDeps)
+	_, err = newRemoteCommandScope(context.Background(), localScp)
 	expected := `given token is from the project "12345", but in manifest is defined project "789"`
 	assert.Error(t, err)
 	assert.Equal(t, expected, err.Error())

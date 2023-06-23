@@ -17,10 +17,10 @@ import (
 	loadRepositoryOp "github.com/keboola/keboola-as-code/pkg/lib/operation/template/repository/load"
 )
 
-// local dependencies container implements ForLocalCommand interface.
-type local struct {
-	dependencies.Public
-	Base
+// localCommandScope implements LocalCommandScope interface.
+type localCommandScope struct {
+	dependencies.PublicScope
+	BaseScope
 	components              dependencies.Lazy[*model.ComponentsMap]
 	localProject            dependencies.Lazy[localProjectValue]
 	localTemplate           dependencies.Lazy[localTemplateValue]
@@ -42,38 +42,38 @@ type localTemplateValue struct {
 	value *template.Template
 }
 
-func newLocal(baseDeps Base, opts ...Option) (*local, error) {
+func newLocalCommandScope(baseScp BaseScope, opts ...Option) (*localCommandScope, error) {
 	cfg := newConfig(opts)
 
 	// Get Storage API host
-	host, err := storageAPIHost(baseDeps, cfg.defaultStorageAPIHost)
+	host, err := storageAPIHost(baseScp, cfg.defaultStorageAPIHost)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create common local dependencies
-	publicDep, err := dependencies.NewPublicDeps(
-		baseDeps.CommandCtx(), baseDeps, host,
+	pubScp, err := dependencies.NewPublicScope(
+		baseScp.CommandCtx(), baseScp, host,
 		dependencies.WithPreloadComponents(true),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	return &local{
-		Public: publicDep,
-		Base:   baseDeps,
+	return &localCommandScope{
+		PublicScope: pubScp,
+		BaseScope:   baseScp,
 	}, nil
 }
 
-func (v *local) Components() *model.ComponentsMap {
+func (v *localCommandScope) Components() *model.ComponentsMap {
 	// Use the same version of the components during the entire CLI command
 	return v.components.MustInitAndGet(func() *model.ComponentsMap {
-		return v.Public.Components()
+		return v.PublicScope.Components()
 	})
 }
 
-func (v *local) Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error) {
+func (v *localCommandScope) Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error) {
 	// Load repository
 	repo, err := v.templateRepository(ctx, reference.Repository(), loadRepositoryOp.OnlyForTemplate(reference))
 	if err != nil {
@@ -87,7 +87,7 @@ func (v *local) Template(ctx context.Context, reference model.TemplateRef) (*tem
 	return loadTemplateOp.Run(ctx, v, repo, reference)
 }
 
-func (v *local) LocalProject(ignoreErrors bool) (*projectPkg.Project, bool, error) {
+func (v *localCommandScope) LocalProject(ignoreErrors bool) (*projectPkg.Project, bool, error) {
 	// Check version field
 	value, err := v.localProject.InitAndGet(func() (localProjectValue, error) {
 		fs, found, err := v.FsInfo().ProjectDir()
@@ -107,7 +107,7 @@ func (v *local) LocalProject(ignoreErrors bool) (*projectPkg.Project, bool, erro
 	return value.value, value.found, err
 }
 
-func (v *local) LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error) {
+func (v *localCommandScope) LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error) {
 	value, err := v.localTemplateRepository.InitAndGet(func() (localRepositoryValue, error) {
 		reference, found, err := v.localTemplateRepositoryRef()
 		if err != nil {
@@ -119,7 +119,7 @@ func (v *local) LocalTemplateRepository(ctx context.Context) (*repository.Reposi
 	return value.value, value.found, err
 }
 
-func (v *local) LocalTemplate(ctx context.Context) (*template.Template, bool, error) {
+func (v *localCommandScope) LocalTemplate(ctx context.Context) (*template.Template, bool, error) {
 	value, err := v.localTemplate.InitAndGet(func() (localTemplateValue, error) {
 		// Get template path from current working dir
 		paths, err := v.FsInfo().TemplatePath()
@@ -162,7 +162,7 @@ func (v *local) LocalTemplate(ctx context.Context) (*template.Template, bool, er
 	return value.value, value.found, err
 }
 
-func (v *local) templateRepository(ctx context.Context, reference model.TemplateRepository, _ ...loadRepositoryOp.Option) (*repository.Repository, error) {
+func (v *localCommandScope) templateRepository(ctx context.Context, reference model.TemplateRepository, _ ...loadRepositoryOp.Option) (*repository.Repository, error) {
 	// Handle CLI only features
 	reference = v.mapRepositoryRelPath(reference)
 
@@ -182,7 +182,7 @@ func (v *local) templateRepository(ctx context.Context, reference model.Template
 
 // mapRepositoryRelPath adds support for relative repository path.
 // This feature is only available in the CLI.
-func (v *local) mapRepositoryRelPath(reference model.TemplateRepository) model.TemplateRepository {
+func (v *localCommandScope) mapRepositoryRelPath(reference model.TemplateRepository) model.TemplateRepository {
 	if reference.Type == model.RepositoryTypeDir {
 		// Convert relative path to absolute
 		if !filepath.IsAbs(reference.URL) && v.FsInfo().ProjectExists() { // nolint: forbidigo
@@ -193,7 +193,7 @@ func (v *local) mapRepositoryRelPath(reference model.TemplateRepository) model.T
 	return reference
 }
 
-func (v *local) localTemplateRepositoryRef() (model.TemplateRepository, bool, error) {
+func (v *localCommandScope) localTemplateRepositoryRef() (model.TemplateRepository, bool, error) {
 	// Get repository dir
 	fs, exists, err := v.FsInfo().TemplateRepositoryDir()
 	if err != nil {

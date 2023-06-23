@@ -8,13 +8,13 @@ import (
 // 1. Flag.
 // 2. ENV
 // 3. An env file, e.g., ".env.local".
-func storageAPIToken(d Base) (string, error) {
+func storageAPIToken(baseScp BaseScope) (string, error) {
 	// Get token from options (ENV/flag)
-	token := d.Options().GetString(options.StorageAPITokenOpt)
+	token := baseScp.Options().GetString(options.StorageAPITokenOpt)
 
 	// Interactive dialog
 	if token == "" {
-		token = d.Dialogs().AskStorageAPIToken()
+		token = baseScp.Dialogs().AskStorageAPIToken()
 	}
 
 	// Validate
