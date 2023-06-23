@@ -32,6 +32,7 @@ type ForTest interface {
 	TraceID(n int) trace.TraceID
 	SpanID(n int) trace.SpanID
 	Reset()
+	SetSpanFilter(f TestSpanFilter)
 	Spans(t *testing.T, opts ...TestSpanOption) tracetest.SpanStubs
 	Metrics(t *testing.T, opts ...TestMeterOption) []metricdata.Metrics
 	AssertSpans(t *testing.T, expectedSpans tracetest.SpanStubs, opts ...TestSpanOption)
@@ -43,6 +44,9 @@ type TestAttributeMapper func(attr attribute.KeyValue) attribute.KeyValue
 type TestSpanOption func(config *assertSpanConfig)
 
 type TestMeterOption func(config *assertMetricConfig)
+
+// TestSpanFilter returns true, if the span should be included in collected spans in a test.
+type TestSpanFilter func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool
 
 type assertSpanConfig struct {
 	attributeMapper TestAttributeMapper
@@ -59,6 +63,7 @@ type forTest struct {
 	idGenerator    *testIDGenerator
 	spanExporter   *tracetest.InMemoryExporter
 	metricExporter metricsdk.Reader
+	traceProvider  *filterTraceProvider
 }
 
 // WithSpanAttributeMapper set a mapping function for span attributes.
@@ -111,21 +116,28 @@ func NewForTest(t *testing.T) ForTest {
 	spanExporter := tracetest.NewInMemoryExporter()
 	metricExporter, err := export.New()
 	require.NoError(t, err)
-	return &forTest{
-		telemetry: newTelemetry(
-			tracesdk.NewTracerProvider(
-				tracesdk.WithSyncer(spanExporter),
-				tracesdk.WithIDGenerator(idGenerator),
-			),
-			metricsdk.NewMeterProvider(
-				metricsdk.WithReader(metricExporter),
-				metricsdk.WithView(prometheus.View()),
-			),
+	tp := &filterTraceProvider{
+		provider: tracesdk.NewTracerProvider(
+			tracesdk.WithSyncer(spanExporter),
+			tracesdk.WithIDGenerator(idGenerator),
 		),
+	}
+	mp := metricsdk.NewMeterProvider(
+		metricsdk.WithReader(metricExporter),
+		metricsdk.WithView(prometheus.View()),
+	)
+	return &forTest{
+		traceProvider:  tp,
+		telemetry:      newTelemetry(tp, mp),
 		idGenerator:    idGenerator,
 		spanExporter:   spanExporter,
 		metricExporter: metricExporter,
 	}
+}
+
+func (v *forTest) SetSpanFilter(f TestSpanFilter) {
+	v.traceProvider.filter = f
+	v.Reset()
 }
 
 func (v *forTest) TraceID(n int) trace.TraceID {
@@ -208,6 +220,27 @@ func (v *forTest) AssertMetrics(t *testing.T, expectedMetrics []metricdata.Metri
 			assert.Equal(t, expectedMeter, actualMeter)
 		}
 	}
+}
+
+type filterTraceProvider struct {
+	filter   TestSpanFilter
+	provider trace.TracerProvider
+}
+
+type filterTracer struct {
+	tp     *filterTraceProvider
+	tracer trace.Tracer
+}
+
+func (tp *filterTraceProvider) Tracer(name string, opts ...trace.TracerOption) trace.Tracer {
+	return &filterTracer{tp: tp, tracer: tp.provider.Tracer(name, opts...)}
+}
+
+func (t *filterTracer) Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+	if t.tp.filter != nil && !t.tp.filter(ctx, spanName, opts...) {
+		return nopTracer.Start(ctx, spanName, opts...)
+	}
+	return t.tracer.Start(ctx, spanName, opts...)
 }
 
 type testIDGenerator struct {
