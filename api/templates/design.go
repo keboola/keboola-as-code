@@ -34,7 +34,7 @@ const (
 
 // nolint: gochecknoinits
 func init() {
-	dependencies.RegisterPlugin("github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies")
+	dependencies.RegisterPlugin("github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies")
 }
 
 var _ = API("templates", func() {
