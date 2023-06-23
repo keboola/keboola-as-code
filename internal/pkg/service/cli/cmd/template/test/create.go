@@ -16,7 +16,7 @@ func CreateCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`template/test/create/short`),
 		Long:  helpmsg.Read(`template/test/create/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d, err := p.DependenciesForLocalCommand(dependencies.WithDefaultStorageAPIHost())
+			d, err := p.LocalCommandScope(dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}

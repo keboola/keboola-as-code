@@ -20,13 +20,13 @@ func SourcesCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Ask options
-			targetName, err := p.BaseDependencies().Dialogs().AskTargetName()
+			targetName, err := p.BaseScope().Dialogs().AskTargetName()
 			if err != nil {
 				return err
 			}
 
 			// Get dependencies
-			d, err := p.DependenciesForRemoteCommand()
+			d, err := p.RemoteCommandScope()
 			if err != nil {
 				return err
 			}

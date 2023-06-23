@@ -18,7 +18,7 @@ func DeleteCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`remote/workspace/delete/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Get dependencies
-			d, err := p.DependenciesForRemoteCommand()
+			d, err := p.RemoteCommandScope()
 			if err != nil {
 				return err
 			}
