@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,8 +19,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -46,6 +47,9 @@ func TestSuccessfulTask(t *testing.T) {
 
 	logs := ioutil.NewAtomicWriter()
 	tel := telemetry.NewForTest(t)
+	tel.SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
+		return !strings.HasPrefix(spanName, "etcd")
+	})
 
 	// Create nodes
 	node1, _ := createNode(t, etcdCredentials, logs, tel, "node1")
@@ -323,6 +327,9 @@ func TestFailedTask(t *testing.T) {
 	}
 	logs := ioutil.NewAtomicWriter()
 	tel := telemetry.NewForTest(t)
+	tel.SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
+		return !strings.HasPrefix(spanName, "etcd")
+	})
 
 	// Create nodes
 	node1, _ := createNode(t, etcdCredentials, logs, tel, "node1")
@@ -647,6 +654,9 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 
 	logs := ioutil.NewAtomicWriter()
 	tel := telemetry.NewForTest(t)
+	tel.SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
+		return !strings.HasPrefix(spanName, "etcd")
+	})
 
 	// Create node
 	node1, d := createNode(t, etcdCredentials, logs, tel, "node1")
@@ -724,11 +734,13 @@ task/123/my-receiver/my-export/some.task/%s
 [node1][task][etcd-session]INFO  closing etcd session
 [node1][task][etcd-session]INFO  closed etcd session | %s
 [node1][task]INFO  shutdown done
+[node1][etcd-client]INFO  closing etcd connection
+[node1][etcd-client]INFO  closed etcd connection | %s
 [node1]INFO  exited
 `, logs.String())
 }
 
-func createNode(t *testing.T, etcdCredentials etcdhelper.Credentials, logs io.Writer, tel telemetry.ForTest, nodeName string) (*task.Node, dependencies.Mocked) {
+func createNode(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Writer, tel telemetry.ForTest, nodeName string) (*task.Node, dependencies.Mocked) {
 	t.Helper()
 	d := createDeps(t, etcdCredentials, logs, tel, nodeName)
 	node, err := task.NewNode(d)
@@ -736,19 +748,27 @@ func createNode(t *testing.T, etcdCredentials etcdhelper.Credentials, logs io.Wr
 	return node, d
 }
 
-func createDeps(t *testing.T, etcdCredentials etcdhelper.Credentials, logs io.Writer, tel telemetry.ForTest, nodeName string) bufferDependencies.Mocked {
+func createDeps(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Writer, tel telemetry.ForTest, nodeName string) dependencies.Mocked {
 	t.Helper()
-	d := bufferDependencies.NewMockedDeps(
+	d := dependencies.NewMocked(
 		t,
 		dependencies.WithUniqueID(nodeName),
 		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
 		dependencies.WithTelemetry(tel),
 		dependencies.WithEtcdCredentials(etcdCredentials),
 	)
+
+	// Ignore etcd spans
+	d.TestTelemetry().SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
+		return !strings.HasPrefix(spanName, "etcd")
+	})
+
+	// Connect logs output
+	d.DebugLogger().ConnectTo(testhelper.VerboseStdout())
 	if logs != nil {
 		d.DebugLogger().ConnectTo(logs)
 	}
-	d.DebugLogger().ConnectTo(testhelper.VerboseStdout())
+
 	return d
 }
 

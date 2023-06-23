@@ -85,7 +85,6 @@ target_info{service_name="my-service"} 1
 
 	// Check logs
 	wildcards.Assert(t, `
-INFO  process unique id "%s"
 [metrics]INFO  HTTP server listening on "localhost:%d/metrics"
 INFO  exiting (bye bye)
 [metrics]INFO  shutting down HTTP server at "localhost:%d"

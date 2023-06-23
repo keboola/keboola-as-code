@@ -15,6 +15,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -172,7 +173,6 @@ node3
 
 	// Logs differs in number of "the node ... gone" messages
 	wildcards.Assert(t, `
-[node1]INFO  process unique id "node1"
 [node1][distribution][my-group][etcd-session]INFO  creating etcd session
 [node1][distribution][my-group][etcd-session]INFO  created etcd session | %s
 [node1][distribution][my-group]INFO  registering the node "node1"
@@ -190,10 +190,11 @@ node3
 [node1][distribution][my-group][etcd-session]INFO  closing etcd session
 [node1][distribution][my-group][etcd-session]INFO  closed etcd session | %s
 [node1][distribution][my-group]INFO  shutdown done
+[node1][etcd-client]INFO  closing etcd connection
+[node1][etcd-client]INFO  closed etcd connection | %s
 [node1]INFO  exited
 `, loggers[0].AllMessages())
 	wildcards.Assert(t, `
-[node2]INFO  process unique id "node2"
 [node2][distribution][my-group][etcd-session]INFO  creating etcd session
 [node2][distribution][my-group][etcd-session]INFO  created etcd session | %s
 [node2][distribution][my-group]INFO  registering the node "node2"
@@ -212,10 +213,11 @@ node3
 [node2][distribution][my-group][etcd-session]INFO  closing etcd session
 [node2][distribution][my-group][etcd-session]INFO  closed etcd session | %s
 [node2][distribution][my-group]INFO  shutdown done
+[node2][etcd-client]INFO  closing etcd connection
+[node2][etcd-client]INFO  closed etcd connection | %s
 [node2]INFO  exited
 `, loggers[1].AllMessages())
 	wildcards.Assert(t, `
-[node3]INFO  process unique id "node3"
 [node3][distribution][my-group][etcd-session]INFO  creating etcd session
 [node3][distribution][my-group][etcd-session]INFO  created etcd session | %s
 [node3][distribution][my-group]INFO  registering the node "node3"
@@ -235,6 +237,8 @@ node3
 [node3][distribution][my-group][etcd-session]INFO  closing etcd session
 [node3][distribution][my-group][etcd-session]INFO  closed etcd session | %s
 [node3][distribution][my-group]INFO  shutdown done
+[node3][etcd-client]INFO  closing etcd connection
+[node3][etcd-client]INFO  closed etcd connection | %s
 [node3]INFO  exited
 `, loggers[2].AllMessages())
 
@@ -260,7 +264,6 @@ node4
 	etcdhelper.AssertKVsString(t, client, "")
 
 	wildcards.Assert(t, `
-[node4]INFO  process unique id "node4"
 [node4][distribution][my-group][etcd-session]INFO  creating etcd session
 [node4][distribution][my-group][etcd-session]INFO  created etcd session | %s
 [node4][distribution][my-group]INFO  registering the node "node4"
@@ -276,11 +279,13 @@ node4
 [node4][distribution][my-group][etcd-session]INFO  closing etcd session
 [node4][distribution][my-group][etcd-session]INFO  closed etcd session | %s
 [node4][distribution][my-group]INFO  shutdown done
+[node4][etcd-client]INFO  closing etcd connection
+[node4][etcd-client]INFO  closed etcd connection | %s
 [node4]INFO  exited
 `, d4.DebugLogger().AllMessages())
 }
 
-func createNode(t *testing.T, clk clock.Clock, etcdCredentials etcdhelper.Credentials, nodeName string) (*distribution.Node, dependencies.Mocked) {
+func createNode(t *testing.T, clk clock.Clock, etcdCredentials etcdclient.Credentials, nodeName string) (*distribution.Node, dependencies.Mocked) {
 	t.Helper()
 
 	// Create dependencies
@@ -306,7 +311,7 @@ func createNode(t *testing.T, clk clock.Clock, etcdCredentials etcdhelper.Creden
 	return node, d
 }
 
-func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdCredentials etcdhelper.Credentials, nodeName string) dependencies.Mocked {
+func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdCredentials etcdclient.Credentials, nodeName string) dependencies.Mocked {
 	t.Helper()
 	d := dependencies.NewMocked(
 		t,
