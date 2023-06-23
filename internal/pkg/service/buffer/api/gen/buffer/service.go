@@ -13,7 +13,7 @@ import (
 	"io"
 
 	"github.com/keboola/go-client/pkg/keboola"
-	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
+	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
@@ -23,38 +23,38 @@ import (
 // A service for continuously importing data to Keboola storage.
 type Service interface {
 	// Redirect to /v1.
-	APIRootIndex(dependencies.ForPublicRequest) (err error)
+	APIRootIndex(dependencies.PublicRequestScope) (err error)
 	// List API name and link to documentation.
-	APIVersionIndex(dependencies.ForPublicRequest) (res *ServiceDetail, err error)
+	APIVersionIndex(dependencies.PublicRequestScope) (res *ServiceDetail, err error)
 	// HealthCheck implements HealthCheck.
-	HealthCheck(dependencies.ForPublicRequest) (res string, err error)
+	HealthCheck(dependencies.PublicRequestScope) (res string, err error)
 	// Create a new receiver for a given project
-	CreateReceiver(dependencies.ForProjectRequest, *CreateReceiverPayload) (res *Task, err error)
+	CreateReceiver(dependencies.ProjectRequestScope, *CreateReceiverPayload) (res *Task, err error)
 	// Update a receiver export.
-	UpdateReceiver(dependencies.ForProjectRequest, *UpdateReceiverPayload) (res *Receiver, err error)
+	UpdateReceiver(dependencies.ProjectRequestScope, *UpdateReceiverPayload) (res *Receiver, err error)
 	// List all receivers for a given project.
-	ListReceivers(dependencies.ForProjectRequest, *ListReceiversPayload) (res *ReceiversList, err error)
+	ListReceivers(dependencies.ProjectRequestScope, *ListReceiversPayload) (res *ReceiversList, err error)
 	// Get the configuration of a receiver.
-	GetReceiver(dependencies.ForProjectRequest, *GetReceiverPayload) (res *Receiver, err error)
+	GetReceiver(dependencies.ProjectRequestScope, *GetReceiverPayload) (res *Receiver, err error)
 	// Delete a receiver.
-	DeleteReceiver(dependencies.ForProjectRequest, *DeleteReceiverPayload) (err error)
+	DeleteReceiver(dependencies.ProjectRequestScope, *DeleteReceiverPayload) (err error)
 	// Each export uses its own token scoped to the target bucket, this endpoint
 	// refreshes all of those tokens.
-	RefreshReceiverTokens(dependencies.ForProjectRequest, *RefreshReceiverTokensPayload) (res *Receiver, err error)
+	RefreshReceiverTokens(dependencies.ProjectRequestScope, *RefreshReceiverTokensPayload) (res *Receiver, err error)
 	// Create a new export for an existing receiver.
-	CreateExport(dependencies.ForProjectRequest, *CreateExportPayload) (res *Task, err error)
+	CreateExport(dependencies.ProjectRequestScope, *CreateExportPayload) (res *Task, err error)
 	// Get the configuration of an export.
-	GetExport(dependencies.ForProjectRequest, *GetExportPayload) (res *Export, err error)
+	GetExport(dependencies.ProjectRequestScope, *GetExportPayload) (res *Export, err error)
 	// List all exports for a given receiver.
-	ListExports(dependencies.ForProjectRequest, *ListExportsPayload) (res *ExportsList, err error)
+	ListExports(dependencies.ProjectRequestScope, *ListExportsPayload) (res *ExportsList, err error)
 	// Update a receiver export.
-	UpdateExport(dependencies.ForProjectRequest, *UpdateExportPayload) (res *Task, err error)
+	UpdateExport(dependencies.ProjectRequestScope, *UpdateExportPayload) (res *Task, err error)
 	// Delete a receiver export.
-	DeleteExport(dependencies.ForProjectRequest, *DeleteExportPayload) (err error)
+	DeleteExport(dependencies.ProjectRequestScope, *DeleteExportPayload) (err error)
 	// Upload data into the receiver.
-	Import(dependencies.ForPublicRequest, *ImportPayload, io.ReadCloser) (err error)
+	Import(dependencies.PublicRequestScope, *ImportPayload, io.ReadCloser) (err error)
 	// Get details of a task.
-	GetTask(dependencies.ForProjectRequest, *GetTaskPayload) (res *Task, err error)
+	GetTask(dependencies.ProjectRequestScope, *GetTaskPayload) (res *Task, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
