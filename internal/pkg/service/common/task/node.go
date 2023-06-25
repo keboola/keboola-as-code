@@ -300,21 +300,22 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 		}
 	}
 
+	// Create context for task finalization, the original context could have timed out.
+	// If release of the lock takes longer than the ttl, lease is expired anyway.
+	ctx, finalizationCancel := context.WithTimeout(context.Background(), time.Duration(n.config.ttlSeconds)*time.Second)
+	defer finalizationCancel()
+
 	// Update telemetry
 	span.SetAttributes(spanEndAttrs(&task, result)...)
 	n.meters.running.Add(ctx, -1, metric.WithAttributes(meterStartAttrs(&task)...))
 	n.meters.duration.Record(ctx, durationMs, metric.WithAttributes(meterEndAttrs(&task, result)...))
 
-	// If release of the lock takes longer than the ttl, lease is expired anyway
-	opCtx, opCancel := context.WithTimeout(context.Background(), time.Duration(n.config.ttlSeconds)*time.Second)
-	defer opCancel()
-
 	// Update task and release lock in etcd
-	finishTaskOp := op.MergeToTxn(
+	finalizeTaskOp := op.MergeToTxn(
 		n.taskEtcdPrefix.Key(task.Key.String()).Put(task),
 		task.Lock.DeleteIfExists(),
 	)
-	if resp, err := finishTaskOp.Do(opCtx, n.client); err != nil {
+	if resp, err := finalizeTaskOp.Do(ctx, n.client); err != nil {
 		err = errors.Errorf(`cannot update task and release lock: %w`, err)
 		logger.Error(err)
 		return result, err
