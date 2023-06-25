@@ -499,7 +499,7 @@ func (s *service) UpgradeInstanceValidateInputs(ctx context.Context, d dependenc
 }
 
 func (s *service) GetTask(ctx context.Context, d dependencies.ProjectRequestScope, payload *GetTaskPayload) (res *Task, err error) {
-	ctx, str := ctx, d.Store()
+	str := d.Store()
 
 	t, err := str.GetTask(ctx, task.Key{
 		ProjectID: d.ProjectID(),
