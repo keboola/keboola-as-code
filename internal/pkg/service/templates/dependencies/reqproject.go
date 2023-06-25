@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManager "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // projectRequestScope implements ProjectRequestScope interface.
@@ -99,6 +100,10 @@ func (v *projectRequestScope) cachedTemplateRepository(ctx context.Context, defi
 		v.repositories = make(map[string]*repositoryManager.CachedRepository)
 	}
 
+	if _, ok := ctx.Deadline(); !ok {
+		panic(errors.New("to prevent the lock from remaining locked, please use a request context with a deadline"))
+	}
+
 	if _, found := v.repositories[definition.Hash()]; !found {
 		ctx, span := v.Telemetry().Tracer().Start(ctx, "keboola.go.templates.api.dependencies.cachedTemplateRepository")
 		defer span.End(&err)
@@ -112,7 +117,7 @@ func (v *projectRequestScope) cachedTemplateRepository(ctx context.Context, defi
 
 		// Unlock repository after the request,
 		go func() {
-			<-v.RequestCtx().Done()
+			<-ctx.Done()
 			unlockFn()
 		}()
 
