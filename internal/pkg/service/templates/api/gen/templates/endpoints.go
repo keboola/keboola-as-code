@@ -94,7 +94,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 func NewAPIRootIndexEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
-		return nil, s.APIRootIndex(deps)
+		return nil, s.APIRootIndex(ctx, deps)
 	}
 }
 
@@ -103,7 +103,7 @@ func NewAPIRootIndexEndpoint(s Service) goa.Endpoint {
 func NewAPIVersionIndexEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
-		return s.APIVersionIndex(deps)
+		return s.APIVersionIndex(ctx, deps)
 	}
 }
 
@@ -112,7 +112,7 @@ func NewAPIVersionIndexEndpoint(s Service) goa.Endpoint {
 func NewHealthCheckEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
-		return s.HealthCheck(deps)
+		return s.HealthCheck(ctx, deps)
 	}
 }
 
@@ -132,7 +132,7 @@ func NewRepositoriesIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFun
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.RepositoriesIndex(deps, p)
+		return s.RepositoriesIndex(ctx, deps, p)
 	}
 }
 
@@ -152,7 +152,7 @@ func NewRepositoryIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc)
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.RepositoryIndex(deps, p)
+		return s.RepositoryIndex(ctx, deps, p)
 	}
 }
 
@@ -172,7 +172,7 @@ func NewTemplatesIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.TemplatesIndex(deps, p)
+		return s.TemplatesIndex(ctx, deps, p)
 	}
 }
 
@@ -192,7 +192,7 @@ func NewTemplateIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) g
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.TemplateIndex(deps, p)
+		return s.TemplateIndex(ctx, deps, p)
 	}
 }
 
@@ -212,7 +212,7 @@ func NewVersionIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) go
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.VersionIndex(deps, p)
+		return s.VersionIndex(ctx, deps, p)
 	}
 }
 
@@ -232,7 +232,7 @@ func NewInputsIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.InputsIndex(deps, p)
+		return s.InputsIndex(ctx, deps, p)
 	}
 }
 
@@ -252,7 +252,7 @@ func NewValidateInputsEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.ValidateInputs(deps, p)
+		return s.ValidateInputs(ctx, deps, p)
 	}
 }
 
@@ -272,7 +272,7 @@ func NewUseTemplateVersionEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFu
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.UseTemplateVersion(deps, p)
+		return s.UseTemplateVersion(ctx, deps, p)
 	}
 }
 
@@ -292,7 +292,7 @@ func NewInstancesIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.InstancesIndex(deps, p)
+		return s.InstancesIndex(ctx, deps, p)
 	}
 }
 
@@ -312,7 +312,7 @@ func NewInstanceIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) g
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.InstanceIndex(deps, p)
+		return s.InstanceIndex(ctx, deps, p)
 	}
 }
 
@@ -332,7 +332,7 @@ func NewUpdateInstanceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.UpdateInstance(deps, p)
+		return s.UpdateInstance(ctx, deps, p)
 	}
 }
 
@@ -352,7 +352,7 @@ func NewDeleteInstanceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return nil, s.DeleteInstance(deps, p)
+		return nil, s.DeleteInstance(ctx, deps, p)
 	}
 }
 
@@ -372,7 +372,7 @@ func NewUpgradeInstanceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc)
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.UpgradeInstance(deps, p)
+		return s.UpgradeInstance(ctx, deps, p)
 	}
 }
 
@@ -392,7 +392,7 @@ func NewUpgradeInstanceInputsIndexEndpoint(s Service, authAPIKeyFn security.Auth
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.UpgradeInstanceInputsIndex(deps, p)
+		return s.UpgradeInstanceInputsIndex(ctx, deps, p)
 	}
 }
 
@@ -412,7 +412,7 @@ func NewUpgradeInstanceValidateInputsEndpoint(s Service, authAPIKeyFn security.A
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.UpgradeInstanceValidateInputs(deps, p)
+		return s.UpgradeInstanceValidateInputs(ctx, deps, p)
 	}
 }
 
@@ -432,6 +432,6 @@ func NewGetTaskEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.End
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.GetTask(deps, p)
+		return s.GetTask(ctx, deps, p)
 	}
 }

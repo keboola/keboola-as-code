@@ -23,38 +23,38 @@ import (
 // A service for continuously importing data to Keboola storage.
 type Service interface {
 	// Redirect to /v1.
-	APIRootIndex(dependencies.PublicRequestScope) (err error)
+	APIRootIndex(context.Context, dependencies.PublicRequestScope) (err error)
 	// List API name and link to documentation.
-	APIVersionIndex(dependencies.PublicRequestScope) (res *ServiceDetail, err error)
+	APIVersionIndex(context.Context, dependencies.PublicRequestScope) (res *ServiceDetail, err error)
 	// HealthCheck implements HealthCheck.
-	HealthCheck(dependencies.PublicRequestScope) (res string, err error)
+	HealthCheck(context.Context, dependencies.PublicRequestScope) (res string, err error)
 	// Create a new receiver for a given project
-	CreateReceiver(dependencies.ProjectRequestScope, *CreateReceiverPayload) (res *Task, err error)
+	CreateReceiver(context.Context, dependencies.ProjectRequestScope, *CreateReceiverPayload) (res *Task, err error)
 	// Update a receiver export.
-	UpdateReceiver(dependencies.ProjectRequestScope, *UpdateReceiverPayload) (res *Receiver, err error)
+	UpdateReceiver(context.Context, dependencies.ProjectRequestScope, *UpdateReceiverPayload) (res *Receiver, err error)
 	// List all receivers for a given project.
-	ListReceivers(dependencies.ProjectRequestScope, *ListReceiversPayload) (res *ReceiversList, err error)
+	ListReceivers(context.Context, dependencies.ProjectRequestScope, *ListReceiversPayload) (res *ReceiversList, err error)
 	// Get the configuration of a receiver.
-	GetReceiver(dependencies.ProjectRequestScope, *GetReceiverPayload) (res *Receiver, err error)
+	GetReceiver(context.Context, dependencies.ProjectRequestScope, *GetReceiverPayload) (res *Receiver, err error)
 	// Delete a receiver.
-	DeleteReceiver(dependencies.ProjectRequestScope, *DeleteReceiverPayload) (err error)
+	DeleteReceiver(context.Context, dependencies.ProjectRequestScope, *DeleteReceiverPayload) (err error)
 	// Each export uses its own token scoped to the target bucket, this endpoint
 	// refreshes all of those tokens.
-	RefreshReceiverTokens(dependencies.ProjectRequestScope, *RefreshReceiverTokensPayload) (res *Receiver, err error)
+	RefreshReceiverTokens(context.Context, dependencies.ProjectRequestScope, *RefreshReceiverTokensPayload) (res *Receiver, err error)
 	// Create a new export for an existing receiver.
-	CreateExport(dependencies.ProjectRequestScope, *CreateExportPayload) (res *Task, err error)
+	CreateExport(context.Context, dependencies.ProjectRequestScope, *CreateExportPayload) (res *Task, err error)
 	// Get the configuration of an export.
-	GetExport(dependencies.ProjectRequestScope, *GetExportPayload) (res *Export, err error)
+	GetExport(context.Context, dependencies.ProjectRequestScope, *GetExportPayload) (res *Export, err error)
 	// List all exports for a given receiver.
-	ListExports(dependencies.ProjectRequestScope, *ListExportsPayload) (res *ExportsList, err error)
+	ListExports(context.Context, dependencies.ProjectRequestScope, *ListExportsPayload) (res *ExportsList, err error)
 	// Update a receiver export.
-	UpdateExport(dependencies.ProjectRequestScope, *UpdateExportPayload) (res *Task, err error)
+	UpdateExport(context.Context, dependencies.ProjectRequestScope, *UpdateExportPayload) (res *Task, err error)
 	// Delete a receiver export.
-	DeleteExport(dependencies.ProjectRequestScope, *DeleteExportPayload) (err error)
+	DeleteExport(context.Context, dependencies.ProjectRequestScope, *DeleteExportPayload) (err error)
 	// Upload data into the receiver.
-	Import(dependencies.PublicRequestScope, *ImportPayload, io.ReadCloser) (err error)
+	Import(context.Context, dependencies.PublicRequestScope, *ImportPayload, io.ReadCloser) (err error)
 	// Get details of a task.
-	GetTask(dependencies.ProjectRequestScope, *GetTaskPayload) (res *Task, err error)
+	GetTask(context.Context, dependencies.ProjectRequestScope, *GetTaskPayload) (res *Task, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.

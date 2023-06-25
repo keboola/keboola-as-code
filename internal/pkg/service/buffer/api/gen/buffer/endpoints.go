@@ -95,7 +95,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 func NewAPIRootIndexEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
-		return nil, s.APIRootIndex(deps)
+		return nil, s.APIRootIndex(ctx, deps)
 	}
 }
 
@@ -104,7 +104,7 @@ func NewAPIRootIndexEndpoint(s Service) goa.Endpoint {
 func NewAPIVersionIndexEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
-		return s.APIVersionIndex(deps)
+		return s.APIVersionIndex(ctx, deps)
 	}
 }
 
@@ -113,7 +113,7 @@ func NewAPIVersionIndexEndpoint(s Service) goa.Endpoint {
 func NewHealthCheckEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
-		return s.HealthCheck(deps)
+		return s.HealthCheck(ctx, deps)
 	}
 }
 
@@ -133,7 +133,7 @@ func NewCreateReceiverEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.CreateReceiver(deps, p)
+		return s.CreateReceiver(ctx, deps, p)
 	}
 }
 
@@ -153,7 +153,7 @@ func NewUpdateReceiverEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.UpdateReceiver(deps, p)
+		return s.UpdateReceiver(ctx, deps, p)
 	}
 }
 
@@ -173,7 +173,7 @@ func NewListReceiversEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) g
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.ListReceivers(deps, p)
+		return s.ListReceivers(ctx, deps, p)
 	}
 }
 
@@ -193,7 +193,7 @@ func NewGetReceiverEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.GetReceiver(deps, p)
+		return s.GetReceiver(ctx, deps, p)
 	}
 }
 
@@ -213,7 +213,7 @@ func NewDeleteReceiverEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return nil, s.DeleteReceiver(deps, p)
+		return nil, s.DeleteReceiver(ctx, deps, p)
 	}
 }
 
@@ -233,7 +233,7 @@ func NewRefreshReceiverTokensEndpoint(s Service, authAPIKeyFn security.AuthAPIKe
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.RefreshReceiverTokens(deps, p)
+		return s.RefreshReceiverTokens(ctx, deps, p)
 	}
 }
 
@@ -253,7 +253,7 @@ func NewCreateExportEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) go
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.CreateExport(deps, p)
+		return s.CreateExport(ctx, deps, p)
 	}
 }
 
@@ -273,7 +273,7 @@ func NewGetExportEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.E
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.GetExport(deps, p)
+		return s.GetExport(ctx, deps, p)
 	}
 }
 
@@ -293,7 +293,7 @@ func NewListExportsEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.ListExports(deps, p)
+		return s.ListExports(ctx, deps, p)
 	}
 }
 
@@ -313,7 +313,7 @@ func NewUpdateExportEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) go
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.UpdateExport(deps, p)
+		return s.UpdateExport(ctx, deps, p)
 	}
 }
 
@@ -333,7 +333,7 @@ func NewDeleteExportEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) go
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return nil, s.DeleteExport(deps, p)
+		return nil, s.DeleteExport(ctx, deps, p)
 	}
 }
 
@@ -343,7 +343,7 @@ func NewImportEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		ep := req.(*ImportRequestData)
 		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
-		return nil, s.Import(deps, ep.Payload, ep.Body)
+		return nil, s.Import(ctx, deps, ep.Payload, ep.Body)
 	}
 }
 
@@ -363,6 +363,6 @@ func NewGetTaskEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.End
 			return nil, err
 		}
 		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
-		return s.GetTask(deps, p)
+		return s.GetTask(ctx, deps, p)
 	}
 }
