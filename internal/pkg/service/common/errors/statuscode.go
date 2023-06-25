@@ -38,6 +38,11 @@ func HTTPCodeFrom(err error) int {
 		return StatusClientClosedRequest
 	}
 
+	// Handle request timeout
+	if errors.Is(err, context.DeadlineExceeded) {
+		return http.StatusRequestTimeout
+	}
+
 	return http.StatusInternalServerError
 }
 

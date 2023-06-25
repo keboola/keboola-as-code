@@ -92,6 +92,7 @@ func (v *projectRequestScope) TemplateRepository(ctx context.Context, definition
 	if err != nil {
 		return nil, err
 	}
+
 	return repo.Unwrap(), nil
 }
 
