@@ -113,7 +113,6 @@ type ProjectScope interface {
 
 // RequestInfo dependencies provides information about received HTTP request.
 type RequestInfo interface {
-	RequestCtx() context.Context
 	RequestID() string
 	RequestHeader() http.Header
 	RequestClientIP() net.IP
