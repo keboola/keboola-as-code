@@ -99,8 +99,6 @@ func TestCleanup(t *testing.T) {
 
 	// Check logs
 	wildcards.Assert(t, `
-[node1][task][etcd-session]INFO  creating etcd session
-[node1][task][etcd-session]INFO  created etcd session | %s
 [node1][task][_system_/tasks.cleanup/%s]INFO  started task
 [node1][task][_system_/tasks.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/tasks.cleanup"
 [node1][task][_system_/tasks.cleanup/%s]DEBUG  deleted task "123/some.task/2006-01-02T08:04:05.000Z_abcdef"
