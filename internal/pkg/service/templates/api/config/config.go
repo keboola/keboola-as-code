@@ -43,6 +43,29 @@ type Repositories []model.TemplateRepository
 
 type Option func(c *Config)
 
+func DefaultRepositories() Repositories {
+	return Repositories{
+		{
+			Type: model.RepositoryTypeGit,
+			Name: "keboola",
+			URL:  "https://github.com/keboola/keboola-as-code-templates.git",
+			Ref:  "main",
+		},
+		{
+			Type: model.RepositoryTypeGit,
+			Name: "keboola-beta",
+			URL:  "https://github.com/keboola/keboola-as-code-templates.git",
+			Ref:  "beta",
+		},
+		{
+			Type: model.RepositoryTypeGit,
+			Name: "keboola-dev",
+			URL:  "https://github.com/keboola/keboola-as-code-templates.git",
+			Ref:  "dev",
+		},
+	}
+}
+
 func NewConfig() Config {
 	return Config{
 		DebugLog:             false,
@@ -60,29 +83,10 @@ func NewConfig() Config {
 			Username:  "",
 			Password:  "",
 		},
-		EtcdConnectTimeout: 30 * time.Second, // longer default timeout, the etcd could be started at the same time as the API
-		UniqueID:           "",
-		PublicAddress:      nil,
-		Repositories: []model.TemplateRepository{
-			{
-				Type: model.RepositoryTypeGit,
-				Name: "keboola",
-				URL:  "https://github.com/keboola/keboola-as-code-templates.git",
-				Ref:  "main",
-			},
-			{
-				Type: model.RepositoryTypeGit,
-				Name: "keboola-beta",
-				URL:  "https://github.com/keboola/keboola-as-code-templates.git",
-				Ref:  "beta",
-			},
-			{
-				Type: model.RepositoryTypeGit,
-				Name: "keboola-dev",
-				URL:  "https://github.com/keboola/keboola-as-code-templates.git",
-				Ref:  "dev",
-			},
-		},
+		EtcdConnectTimeout:   30 * time.Second, // longer default timeout, the etcd could be started at the same time as the API
+		UniqueID:             "",
+		PublicAddress:        nil,
+		Repositories:         DefaultRepositories(),
 		TasksCleanup:         true,
 		TasksCleanupInterval: DefaultCleanupInterval,
 	}
@@ -153,6 +157,12 @@ func (c Config) Apply(ops ...Option) Config {
 		o(&c)
 	}
 	return c
+}
+
+func WithDefaultRepositories(v []model.TemplateRepository) Option {
+	return func(c *Config) {
+		c.Repositories = v
+	}
 }
 
 func WithCleanup(v bool) Option {
