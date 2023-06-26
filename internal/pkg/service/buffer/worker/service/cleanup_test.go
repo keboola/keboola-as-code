@@ -23,7 +23,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
@@ -104,7 +103,6 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, store.SwapFile(ctx, &oldFile, &oldSlice, export1.OpenedFile, export1.OpenedSlice))
 
 	// Create nodes
-	workerMock.DebugLogger().ConnectTo(testhelper.VerboseStdout())
 	_, err = service.New(workerScp)
 	assert.NoError(t, err)
 

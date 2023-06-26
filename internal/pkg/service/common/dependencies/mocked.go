@@ -28,6 +28,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testapi"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 )
 
@@ -213,7 +214,6 @@ func newMockedConfig(t *testing.T, opts []MockedOption) *MockedConfig {
 		ctx:         context.Background(),
 		clock:       clock.New(),
 		telemetry:   telemetry.NewForTest(t),
-		debugLogger: log.NewDebugLogger(),
 		useRealAPIs: false,
 		services: keboola.Services{
 			{ID: "encryption", URL: "https://encryption.mocked.transport.http"},
@@ -240,6 +240,11 @@ func newMockedConfig(t *testing.T, opts []MockedOption) *MockedConfig {
 	// Apply options
 	for _, opt := range opts {
 		opt(cfg)
+	}
+
+	if cfg.debugLogger == nil {
+		cfg.debugLogger = log.NewDebugLogger()
+		cfg.debugLogger.ConnectTo(testhelper.VerboseStdout())
 	}
 
 	return cfg
