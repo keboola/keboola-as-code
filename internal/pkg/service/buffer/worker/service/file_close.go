@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"strings"
 	"time"
 
@@ -48,13 +49,18 @@ func (s *Service) closeFiles(slicesWatcher *activeSlicesWatcher, d dependencies)
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
-			return context.WithTimeout(context.Background(), time.Minute)
+			return context.WithTimeout(context.Background(), 5*time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) task.Result {
 				// Wait until all slices are uploaded
 				file := event.Value
 				if err := slicesWatcher.WaitUntilAllSlicesUploaded(ctx, logger, file.FileKey); err != nil {
+					if errors.Is(err, context.DeadlineExceeded) {
+						// Log  a user error.
+						// Timeout occurred while waiting, the error is elsewhere, not in this task.
+						err = task.WrapUserError(err)
+					}
 					return task.ErrResult(err)
 				}
 
