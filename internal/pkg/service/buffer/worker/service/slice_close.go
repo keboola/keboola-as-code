@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"strings"
 	"time"
 
@@ -48,15 +49,26 @@ func (s *Service) closeSlices(d dependencies) <-chan error {
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
-			return context.WithTimeout(s.ctx, time.Minute)
+			return context.WithTimeout(s.ctx, 2*time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) task.Result {
 				// Wait until all API nodes switch to a new slice.
+				waitCtx, waitCancel := context.WithTimeout(ctx, time.Minute)
+				defer waitCancel()
 				rev := event.Kv.CreateRevision
 				logger.Infof(`waiting until all API nodes switch to a revision >= %v`, rev)
-				if err := s.watcher.WaitForRevision(ctx, rev); err != nil {
-					return task.ErrResult(err)
+				if err := s.watcher.WaitForRevision(waitCtx, rev); err != nil {
+					if errors.Is(err, context.DeadlineExceeded) {
+						// We did not receive confirmation from all API nodes
+						// that they are no longer using the old slice,
+						// there is some bug in the mechanism.
+						logger.Error(errors.Errorf("a timeout occurred while waiting until all API nodes switch to a revision >= %v: %w", rev, err))
+						// We will not block close and upload operation, because it would completely block the data flow.
+						// Continue...
+					} else {
+						return task.ErrResult(err)
+					}
 				}
 
 				// Close the slice, no API node is writing to it.
