@@ -14,22 +14,26 @@ import (
 func Logger(baseLogger log.Logger) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			// Skip access log if it is disabledd
+			if isAccessLogDisabled(req) {
+				next.ServeHTTP(w, req)
+				return
+			}
+
 			// Capture response
 			started := time.Now()
 			rw := goaHttpMiddleware.CaptureResponse(w)
 			next.ServeHTTP(rw, req)
 
 			// Log
-			if !isAccessLogDisabled(req) || rw.StatusCode >= http.StatusInternalServerError {
-				requestID, _ := req.Context().Value(RequestIDCtxKey).(string)
-				userAgent := req.Header.Get("User-Agent")
-				logger := baseLogger.AddPrefix(fmt.Sprintf("[http][requestId=%s]", requestID))
-				logger.Infof(
-					"req %s status=%d bytes=%d time=%s client_ip=%s agent=%s",
-					log.Sanitize(req.URL.String()), rw.StatusCode, rw.ContentLength, time.Since(started).String(),
-					log.Sanitize(ip.From(req).String()), userAgent,
-				)
-			}
+			requestID, _ := req.Context().Value(RequestIDCtxKey).(string)
+			userAgent := req.Header.Get("User-Agent")
+			logger := baseLogger.AddPrefix(fmt.Sprintf("[http][requestId=%s]", requestID))
+			logger.Infof(
+				"req %s status=%d bytes=%d time=%s client_ip=%s agent=%s",
+				log.Sanitize(req.URL.String()), rw.StatusCode, rw.ContentLength, time.Since(started).String(),
+				log.Sanitize(ip.From(req).String()), userAgent,
+			)
 		})
 	}
 }
