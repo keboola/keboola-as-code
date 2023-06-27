@@ -155,6 +155,7 @@ func watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan 
 						panic(errors.Errorf(`unexpected event type "%v"`, event.Type))
 					}
 				}
+				n.logger.Debugf(`synced to revision %d`, header.Revision)
 			})
 		}).
 		StartConsumer(wg)
