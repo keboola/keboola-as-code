@@ -1,4 +1,4 @@
-// Package error provides common errors for all services.
+// Package errors provides common errors for all services.
 package errors
 
 type WithStatusCode interface {
@@ -20,4 +20,8 @@ type WithExceptionID interface {
 
 type WithLogMessage interface {
 	ErrorLogMessage() string
+}
+
+type WithErrorLogEnabled interface {
+	ErrorLogEnabled() bool
 }
