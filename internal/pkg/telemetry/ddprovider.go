@@ -1,6 +1,8 @@
 package telemetry
 
 import (
+	octrace "go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/bridge/opencensus"
 	"go.opentelemetry.io/otel/trace"
 	ddotel "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/opentelemetry"
 	ddTracer "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
@@ -22,7 +24,14 @@ func NewDDTracerProvider(logger log.Logger, proc *servicectx.Process, opts ...dd
 			logger.Error(err)
 		}
 	})
-	return wrapDD(tracerProvider.Tracer(""))
+
+	// Get a tracer instance that will be used everywhere
+	tc := tracerProvider.Tracer("")
+
+	// Register legacy OpenCensus tracing for go-cloud (https://github.com/google/go-cloud/issues/2877).
+	octrace.DefaultTracer = opencensus.NewTracer(tc)
+
+	return wrapDD(tc)
 }
 
 // wrapDD is a workaround for DataDog OpenTelemetry tracer.
