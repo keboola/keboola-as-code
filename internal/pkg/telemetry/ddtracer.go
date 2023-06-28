@@ -25,11 +25,13 @@ const (
 )
 
 type wrappedDDTracer struct {
-	tracer trace.Tracer
+	tracer         trace.Tracer
+	tracerProvider trace.TracerProvider
 }
 
 type wrappedDDSpan struct {
 	trace.Span
+	tracerProvider trace.TracerProvider
 }
 
 type stackTracer interface {
@@ -42,6 +44,10 @@ func (t *wrappedDDTracer) Start(ctx context.Context, spanName string, opts ...tr
 		span = &wrappedDDSpan{Span: span}
 	}
 	return ctx, span
+}
+
+func (s *wrappedDDSpan) TracerProvider() trace.TracerProvider {
+	return s.tracerProvider
 }
 
 func (s *wrappedDDSpan) RecordError(err error, _ ...trace.EventOption) {
