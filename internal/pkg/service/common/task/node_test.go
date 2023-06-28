@@ -47,9 +47,6 @@ func TestSuccessfulTask(t *testing.T) {
 
 	logs := ioutil.NewAtomicWriter()
 	tel := telemetry.NewForTest(t)
-	tel.SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
-		return !strings.HasPrefix(spanName, "etcd")
-	})
 
 	// Create nodes
 	node1, _ := createNode(t, etcdCredentials, logs, tel, "node1")
@@ -327,9 +324,6 @@ func TestFailedTask(t *testing.T) {
 	}
 	logs := ioutil.NewAtomicWriter()
 	tel := telemetry.NewForTest(t)
-	tel.SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
-		return !strings.HasPrefix(spanName, "etcd")
-	})
 
 	// Create nodes
 	node1, _ := createNode(t, etcdCredentials, logs, tel, "node1")
@@ -652,9 +646,6 @@ func TestTaskTimeout(t *testing.T) {
 		TaskID:    task.ID("my-receiver/my-export/" + taskType),
 	}
 	tel := telemetry.NewForTest(t)
-	tel.SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
-		return !strings.HasPrefix(spanName, "etcd")
-	})
 
 	// Create node and start task
 	node1, d := createNode(t, etcdCredentials, nil, tel, "node1")
@@ -819,9 +810,6 @@ func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 
 	logs := ioutil.NewAtomicWriter()
 	tel := telemetry.NewForTest(t)
-	tel.SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
-		return !strings.HasPrefix(spanName, "etcd")
-	})
 
 	// Create node
 	node1, d := createNode(t, etcdCredentials, logs, tel, "node1")
@@ -916,6 +904,12 @@ func createNode(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Wr
 
 func createDeps(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Writer, tel telemetry.ForTest, nodeName string) dependencies.Mocked {
 	t.Helper()
+
+	// Ignore etcd spans
+	tel.SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
+		return !strings.HasPrefix(spanName, "etcd")
+	})
+
 	d := dependencies.NewMocked(
 		t,
 		dependencies.WithUniqueID(nodeName),
@@ -923,11 +917,6 @@ func createDeps(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Wr
 		dependencies.WithTelemetry(tel),
 		dependencies.WithEtcdCredentials(etcdCredentials),
 	)
-
-	// Ignore etcd spans
-	d.TestTelemetry().SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
-		return !strings.HasPrefix(spanName, "etcd")
-	})
 
 	// Connect logs output
 	if logs != nil {
