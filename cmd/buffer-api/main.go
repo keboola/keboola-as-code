@@ -8,8 +8,6 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
-	octrace "go.opencensus.io/trace"
-	"go.opentelemetry.io/otel/bridge/opencensus"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -103,9 +101,6 @@ func run() error {
 	if err != nil {
 		return err
 	}
-
-	// Register legacy OpenCensus tracing for go-cloud (https://github.com/google/go-cloud/issues/2877).
-	octrace.DefaultTracer = opencensus.NewTracer(tel.TracerProvider().Tracer("otel.bridge.opencensus"))
 
 	// Create dependencies.
 	apiScp, err := dependencies.NewAPIScope(ctx, cfg, proc, logger, tel)
