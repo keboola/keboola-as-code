@@ -66,7 +66,7 @@ func (s *Service) importFiles(d dependencies) <-chan error {
 						ctx, cancel := context.WithTimeout(context.Background(), fileMarkAsFailedTimeout)
 						defer cancel()
 						retryAt := calculateFileRetryTime(&fileRes, s.clock.Now())
-						result = result.WithError(errors.Errorf(`file import failed: %w, import will be retried after "%s"`, result.Error(), retryAt))
+						result = result.WithError(errors.Errorf(`file import failed: %w, import will be retried after "%s"`, result.Error, retryAt))
 						if err := s.store.MarkFileImportFailed(ctx, &fileRes); err != nil {
 							s.logger.Errorf(`cannot mark the file "%s" as failed: %s`, fileRes.FileKey, err)
 						}

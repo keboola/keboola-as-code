@@ -180,7 +180,7 @@ func (n *Node) RunTask(cfg Config) (t *Task, err error) {
 	}
 
 	// Handle error during task itself
-	return task, result.Error()
+	return task, result.Error
 }
 
 func (n *Node) prepareTask(cfg Config) (t *Task, fn runTaskFn, err error) {
@@ -256,7 +256,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	n.meters.running.Add(ctx, 1, metric.WithAttributes(meterStartAttrs(&task)...))
 
 	// Process results in defer to catch panic
-	defer span.End(&result.error)
+	defer span.End(&result.Error)
 
 	// Do operation
 	startTime := n.clock.Now()
@@ -265,7 +265,7 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 			if panicErr := recover(); panicErr != nil {
 				err := errors.Errorf("panic: %s, stacktrace: %s", panicErr, string(debug.Stack()))
 				logger.Errorf(`task panic: %s`, err)
-				if result.error == nil {
+				if result.Error == nil {
 					result = ErrResult(err)
 				}
 			}
@@ -282,21 +282,21 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	// Update fields
 	task.FinishedAt = &finishedAt
 	task.Duration = &duration
-	if result.error == nil {
-		task.Result = result.result
-		task.Outputs = result.outputs
+	if result.Error == nil {
+		task.Result = result.Result
+		task.Outputs = result.Outputs
 		if len(task.Outputs) > 0 {
 			logger.Infof(`task succeeded (%s): %s outputs: %s`, duration, task.Result, json.MustEncodeString(task.Outputs, false))
 		} else {
 			logger.Infof(`task succeeded (%s): %s`, duration, task.Result)
 		}
 	} else {
-		task.Error = result.error.Error()
-		task.Outputs = result.outputs
+		task.Error = result.Error.Error()
+		task.Outputs = result.Outputs
 		if len(task.Outputs) > 0 {
-			logger.Warnf(`task failed (%s): %s outputs: %s`, duration, errors.Format(result.error, errors.FormatWithStack()), json.MustEncodeString(task.Outputs, false))
+			logger.Warnf(`task failed (%s): %s outputs: %s`, duration, errors.Format(result.Error, errors.FormatWithStack()), json.MustEncodeString(task.Outputs, false))
 		} else {
-			logger.Warnf(`task failed (%s): %s`, duration, errors.Format(result.error, errors.FormatWithStack()))
+			logger.Warnf(`task failed (%s): %s`, duration, errors.Format(result.Error, errors.FormatWithStack()))
 		}
 	}
 

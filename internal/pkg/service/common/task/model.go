@@ -16,9 +16,11 @@ type Task struct {
 	Lock       etcdop.Key       `json:"lock" validate:"required"`
 	Result     string           `json:"result,omitempty"`
 	Error      string           `json:"error,omitempty"`
-	Outputs    map[string]any   `json:"outputs,omitempty"`
+	Outputs    Outputs          `json:"outputs,omitempty"`
 	Duration   *time.Duration   `json:"duration,omitempty"`
 }
+
+type Outputs map[string]any
 
 func (t *Task) IsProcessing() bool {
 	return t.FinishedAt == nil
