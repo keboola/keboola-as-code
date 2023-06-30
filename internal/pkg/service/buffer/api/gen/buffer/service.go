@@ -232,7 +232,7 @@ type Mapping struct {
 	TableID string
 	// Enables incremental loading to the table.
 	Incremental *bool
-	// List of export column mappings. An export may have a maximum of 50 columns.
+	// List of export column mappings. An export may have a maximum of 100 columns.
 	Columns []*Column
 }
 

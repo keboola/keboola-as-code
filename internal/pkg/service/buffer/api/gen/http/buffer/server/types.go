@@ -485,7 +485,7 @@ type MappingResponseBody struct {
 	TableID string `form:"tableId" json:"tableId" xml:"tableId"`
 	// Enables incremental loading to the table.
 	Incremental *bool `form:"incremental,omitempty" json:"incremental,omitempty" xml:"incremental,omitempty"`
-	// List of export column mappings. An export may have a maximum of 50 columns.
+	// List of export column mappings. An export may have a maximum of 100 columns.
 	Columns []*ColumnResponseBody `form:"columns" json:"columns" xml:"columns"`
 }
 
@@ -550,7 +550,7 @@ type MappingRequestBody struct {
 	TableID *string `form:"tableId,omitempty" json:"tableId,omitempty" xml:"tableId,omitempty"`
 	// Enables incremental loading to the table.
 	Incremental *bool `form:"incremental,omitempty" json:"incremental,omitempty" xml:"incremental,omitempty"`
-	// List of export column mappings. An export may have a maximum of 50 columns.
+	// List of export column mappings. An export may have a maximum of 100 columns.
 	Columns []*ColumnRequestBody `form:"columns,omitempty" json:"columns,omitempty" xml:"columns,omitempty"`
 }
 
@@ -1333,8 +1333,8 @@ func ValidateMappingRequestBody(body *MappingRequestBody, errContext []string) (
 	if len(body.Columns) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "columns"), "."), body.Columns, len(body.Columns), 1, true))
 	}
-	if len(body.Columns) > 50 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "columns"), "."), body.Columns, len(body.Columns), 50, false))
+	if len(body.Columns) > 100 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError(strings.Join(append(errContext, "columns"), "."), body.Columns, len(body.Columns), 100, false))
 	}
 	for i, e := range body.Columns {
 		errContext := append(errContext, fmt.Sprintf(`columns[%d]`, i))
