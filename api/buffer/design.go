@@ -497,9 +497,9 @@ var Mapping = Type("Mapping", func() {
 		Description("Enables incremental loading to the table.")
 	})
 	Attribute("columns", ArrayOf(Column), func() {
-		Description("List of export column mappings. An export may have a maximum of 50 columns.")
+		Description("List of export column mappings. An export may have a maximum of 100 columns.")
 		MinLength(1)
-		MaxLength(50)
+		MaxLength(100)
 		Example([]any{ExampleColumnTypeBody()})
 	})
 	Required("tableId", "columns")
