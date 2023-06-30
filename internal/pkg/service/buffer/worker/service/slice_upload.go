@@ -62,6 +62,7 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 				slice := event.Value
 
 				// Handle error
+				defer checkAndWrapUserError(&result.Error)
 				defer func() {
 					if result.IsError() {
 						attempt := slice.RetryAttempt + 1

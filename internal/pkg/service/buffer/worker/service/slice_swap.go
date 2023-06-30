@@ -33,7 +33,9 @@ func (s *Service) swapSlice(sliceKey key.SliceKey, reason string) (err error) {
 		Context: func() (context.Context, context.CancelFunc) {
 			return context.WithTimeout(context.Background(), time.Minute)
 		},
-		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+		Operation: func(ctx context.Context, logger log.Logger) (result task.Result) {
+			defer checkAndWrapUserError(&result.Error)
+
 			logger.Infof(`closing slice "%s": %s`, sliceKey, reason)
 
 			err := func() (err error) {

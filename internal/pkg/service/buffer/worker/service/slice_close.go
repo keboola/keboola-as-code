@@ -52,7 +52,9 @@ func (s *Service) closeSlices(d dependencies) <-chan error {
 			return context.WithTimeout(s.ctx, 2*time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Fn {
-			return func(ctx context.Context, logger log.Logger) task.Result {
+			return func(ctx context.Context, logger log.Logger) (result task.Result) {
+				defer checkAndWrapUserError(&result.Error)
+
 				// Wait until all API nodes switch to a new slice.
 				waitCtx, waitCancel := context.WithTimeout(ctx, time.Minute)
 				defer waitCancel()

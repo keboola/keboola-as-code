@@ -52,7 +52,9 @@ func (s *Service) closeFiles(slicesWatcher *activeSlicesWatcher, d dependencies)
 			return context.WithTimeout(context.Background(), 2*time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Fn {
-			return func(ctx context.Context, logger log.Logger) task.Result {
+			return func(ctx context.Context, logger log.Logger) (result task.Result) {
+				defer checkAndWrapUserError(&result.Error)
+
 				// Wait until all slices are uploaded
 				file := event.Value
 				if err := slicesWatcher.WaitUntilAllSlicesUploaded(ctx, logger, file.FileKey); err != nil {
