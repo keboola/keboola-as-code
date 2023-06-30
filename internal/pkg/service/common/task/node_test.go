@@ -297,8 +297,6 @@ task/123/my-receiver/my-export/some.task/%s
 						Attributes: attribute.NewSet(
 							attribute.String("task_type", "some.task"),
 							attribute.Bool("is_success", true),
-							attribute.Bool("is_application_error", false),
-							attribute.String("error_type", ""),
 						),
 					},
 				},

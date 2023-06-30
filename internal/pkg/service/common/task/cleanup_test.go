@@ -217,8 +217,6 @@ task/_system_/tasks.cleanup/%s
 							Attributes: attribute.NewSet(
 								attribute.String("task_type", "tasks.cleanup"),
 								attribute.Bool("is_success", true),
-								attribute.Bool("is_application_error", false),
-								attribute.String("error_type", ""),
 							),
 						},
 					},

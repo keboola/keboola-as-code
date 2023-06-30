@@ -282,9 +282,9 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 	// Update fields
 	task.FinishedAt = &finishedAt
 	task.Duration = &duration
+	task.Outputs = result.Outputs
 	if result.Error == nil {
 		task.Result = result.Result
-		task.Outputs = result.Outputs
 		if len(task.Outputs) > 0 {
 			logger.Infof(`task succeeded (%s): %s outputs: %s`, duration, task.Result, json.MustEncodeString(task.Outputs, false))
 		} else {
@@ -292,7 +292,6 @@ func (n *Node) runTask(logger log.Logger, task Task, cfg Config) (result Result,
 		}
 	} else {
 		task.Error = result.Error.Error()
-		task.Outputs = result.Outputs
 		if len(task.Outputs) > 0 {
 			logger.Warnf(`task failed (%s): %s outputs: %s`, duration, errors.Format(result.Error, errors.FormatWithStack()), json.MustEncodeString(task.Outputs, false))
 		} else {
