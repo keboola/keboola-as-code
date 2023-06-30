@@ -61,7 +61,9 @@ func (s *Service) retryFailedImports(d dependencies) <-chan error {
 			return context.WithTimeout(context.Background(), time.Minute)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Fn {
-			return func(ctx context.Context, logger log.Logger) task.Result {
+			return func(ctx context.Context, logger log.Logger) (result task.Result) {
+				defer checkAndWrapUserError(&result.Error)
+
 				file := event.Value
 				file.StorageJob = nil
 				if err := s.store.ScheduleFileForRetry(ctx, &file); err != nil {

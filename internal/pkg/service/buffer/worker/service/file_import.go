@@ -61,6 +61,7 @@ func (s *Service) importFiles(d dependencies) <-chan error {
 				fileRes := event.Value
 
 				// Handle error
+				defer checkAndWrapUserError(&result.Error)
 				defer func() {
 					if result.IsError() {
 						ctx, cancel := context.WithTimeout(context.Background(), fileMarkAsFailedTimeout)
