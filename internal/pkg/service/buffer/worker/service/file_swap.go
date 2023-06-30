@@ -35,10 +35,12 @@ func (s *Service) swapFile(fileKey key.FileKey, reason string) (err error) {
 			return context.WithTimeout(context.Background(), time.Minute)
 		},
 		Operation: func(ctx context.Context, logger log.Logger) (result task.Result) {
-			logger.Infof(`closing file "%s": %s`, fileKey, reason)
+			defer checkAndWrapUserError(&result.Error)
 
 			rb := rollback.New(logger)
 			defer rb.InvokeIfErr(ctx, &result.Error)
+
+			logger.Infof(`closing file "%s": %s`, fileKey, reason)
 
 			// Get export
 			export, err := s.store.GetExport(ctx, fileKey.ExportKey)

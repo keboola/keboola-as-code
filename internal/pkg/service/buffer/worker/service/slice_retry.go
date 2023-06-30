@@ -61,7 +61,9 @@ func (s *Service) retryFailedUploads(d dependencies) <-chan error {
 			return fmt.Sprintf(`Slice.RetryAfter condition not met, now: "%s", needed: "%s"`, now, needed), false
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.Slice]) task.Fn {
-			return func(ctx context.Context, logger log.Logger) task.Result {
+			return func(ctx context.Context, logger log.Logger) (result task.Result) {
+				defer checkAndWrapUserError(&result.Error)
+
 				slice := event.Value
 				if err := s.store.ScheduleSliceForRetry(ctx, &slice); err != nil {
 					return task.ErrResult(err)
