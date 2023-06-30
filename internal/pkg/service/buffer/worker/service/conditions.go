@@ -225,10 +225,10 @@ func (c *checker) swapFile(fileKey key.FileKey, reason string) (err error) {
 			return context.WithTimeout(context.Background(), time.Minute)
 		},
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			c.logger.Infof(`closing file "%s": %s`, fileKey, reason)
+			logger.Infof(`closing file "%s": %s`, fileKey, reason)
 
 			err := func() (err error) {
-				rb := rollback.New(c.logger)
+				rb := rollback.New(logger)
 				defer rb.InvokeIfErr(ctx, &err)
 
 				// Get export
@@ -289,10 +289,10 @@ func (c *checker) swapSlice(sliceKey key.SliceKey, reason string) (err error) {
 			return context.WithTimeout(context.Background(), time.Minute)
 		},
 		Operation: func(ctx context.Context, logger log.Logger) task.Result {
-			c.logger.Infof(`closing slice "%s": %s`, sliceKey, reason)
+			logger.Infof(`closing slice "%s": %s`, sliceKey, reason)
 
 			err := func() (err error) {
-				rb := rollback.New(c.logger)
+				rb := rollback.New(logger)
 				defer rb.InvokeIfErr(ctx, &err)
 
 				// Get export
