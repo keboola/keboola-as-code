@@ -32,11 +32,15 @@ func TestCleanup(t *testing.T) {
 
 	etcdCredentials := etcdhelper.TmpNamespace(t)
 	client := etcdhelper.ClientForTest(t, etcdCredentials)
+	tel := newTestTelemetryWithFilter(t)
 
 	logs := ioutil.NewAtomicWriter()
-	node, d := createNode(t, etcdCredentials, logs, telemetry.NewForTest(t), "node1")
+	node, d := createNode(t, etcdCredentials, logs, tel, "node1")
+	logger := d.DebugLogger()
+	logger.Truncate()
+	tel.Reset()
+
 	taskPrefix := etcdop.NewTypedPrefix[task.Task](task.DefaultTaskEtcdPrefix, d.EtcdSerde())
-	tel := d.TestTelemetry()
 
 	// Add task without a finishedAt timestamp but too old - will be deleted
 	createdAtRaw, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
