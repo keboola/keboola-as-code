@@ -35,7 +35,7 @@ type Params struct {
 	Stats      model.Stats
 }
 
-func (s *Sender) SendSliceUploadEvent(ctx context.Context, api *keboola.API, start time.Time, errPtr *error, slice model.Slice) {
+func (s *Sender) SendSliceUploadEvent(ctx context.Context, api *keboola.API, start time.Time, errPtr *error, slice model.Slice, stats model.Stats) {
 	// Get error
 	var err error
 	if errPtr != nil {
@@ -60,7 +60,7 @@ func (s *Sender) SendSliceUploadEvent(ctx context.Context, api *keboola.API, sta
 		ProjectID:  slice.ProjectID,
 		ReceiverID: slice.ReceiverID,
 		ExportID:   slice.ExportID,
-		Stats:      slice.GetStats(),
+		Stats:      stats,
 	})
 
 	// Throw panic
@@ -69,7 +69,7 @@ func (s *Sender) SendSliceUploadEvent(ctx context.Context, api *keboola.API, sta
 	}
 }
 
-func (s *Sender) SendFileImportEvent(ctx context.Context, api *keboola.API, start time.Time, errPtr *error, file model.File) {
+func (s *Sender) SendFileImportEvent(ctx context.Context, api *keboola.API, start time.Time, errPtr *error, file model.File, stats model.Stats) {
 	// Get error
 	var err error
 	if errPtr != nil {
@@ -94,7 +94,7 @@ func (s *Sender) SendFileImportEvent(ctx context.Context, api *keboola.API, star
 		ProjectID:  file.ProjectID,
 		ReceiverID: file.ReceiverID,
 		ExportID:   file.ExportID,
-		Stats:      file.GetStats(),
+		Stats:      stats,
 	})
 
 	// Throw panic
