@@ -264,24 +264,44 @@ func TestSchema(t *testing.T) {
 			"task/123/my-receiver/some.task/2006-01-02T08:04:05.000Z_abcdef",
 		},
 		{
-			s.ReceivedStats().InReceiver(receiverKey).Prefix(),
-			"stats/received/123/my-receiver/",
+			s.SliceStats().InState(slicestate.Writing).Prefix(),
+			"stats/slice/active/opened/writing/",
 		},
 		{
-			s.ReceivedStats().InExport(exportKey).Prefix(),
-			"stats/received/123/my-receiver/my-export/",
+			s.SliceStats().InState(slicestate.Closing).Prefix(),
+			"stats/slice/active/opened/writing/", // !
 		},
 		{
-			s.ReceivedStats().InFile(fileKey).Prefix(),
-			"stats/received/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
+			s.SliceStats().InState(slicestate.Imported).Prefix(),
+			"stats/slice/archived/successful/imported/",
 		},
 		{
-			s.ReceivedStats().InSlice(sliceKey).Prefix(),
-			"stats/received/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z/",
+			s.SliceStats().InState(slicestate.Imported).InReceiver(receiverKey).Prefix(),
+			"stats/slice/archived/successful/imported/123/my-receiver/",
 		},
 		{
-			s.ReceivedStats().InSlice(sliceKey).ByNodeID("my-node").Key(),
-			"stats/received/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z/my-node",
+			s.SliceStats().InState(slicestate.Imported).InExport(exportKey).Prefix(),
+			"stats/slice/archived/successful/imported/123/my-receiver/my-export/",
+		},
+		{
+			s.SliceStats().InState(slicestate.Imported).InExport(exportKey).ReduceSum().Key(),
+			"stats/slice/archived/successful/imported/123/my-receiver/my-export/_reduce_sum",
+		},
+		{
+			s.SliceStats().InState(slicestate.Imported).InFile(fileKey).Prefix(),
+			"stats/slice/archived/successful/imported/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/",
+		},
+		{
+			s.SliceStats().InState(slicestate.Imported).InSlice(sliceKey).Prefix(),
+			"stats/slice/archived/successful/imported/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z/",
+		},
+		{
+			s.SliceStats().InState(slicestate.Writing).InSlice(sliceKey).NodeID("my-node").Key(),
+			"stats/slice/active/opened/writing/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z/my-node",
+		},
+		{
+			s.SliceStats().InState(slicestate.Uploaded).InSlice(sliceKey).AllNodesSum().Key(),
+			"stats/slice/active/closed/uploaded/123/my-receiver/my-export/2006-01-02T08:04:05.000Z/2006-01-02T09:04:05.000Z/_nodes_sum",
 		},
 	}
 

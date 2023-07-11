@@ -11,7 +11,7 @@ import (
 
 const maxStatsPerTxn = 50
 
-func (s *Store) UpdateSliceReceivedStats(ctx context.Context, nodeID string, stats []model.SliceStats) (err error) {
+func (s *Store) UpdateSliceReceivedStats(ctx context.Context, nodeID string, stats []model.SliceAPINodeStats) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.UpdateSliceReceivedStats")
 	defer span.End(&err)
 
@@ -49,7 +49,7 @@ func (s *Store) UpdateSliceReceivedStats(ctx context.Context, nodeID string, sta
 	return errs.ErrorOrNil()
 }
 
-func (s *Store) updateStatsOp(_ context.Context, nodeID string, stats model.SliceStats) op.NoResultOp {
+func (s *Store) updateStatsOp(_ context.Context, nodeID string, stats model.SliceAPINodeStats) op.NoResultOp {
 	return s.schema.
 		ReceivedStats().
 		InSlice(stats.SliceKey).
