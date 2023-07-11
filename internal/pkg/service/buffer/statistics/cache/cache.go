@@ -15,7 +15,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/prefixtree"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
@@ -74,9 +73,6 @@ func NewNode(d Dependencies) (*Node, error) {
 	if err := <-watchOpenedSlices(ctx, wg, n); err != nil {
 		return nil, err
 	}
-	if err := <-watchClosedSlices(ctx, wg, n); err != nil {
-		return nil, err
-	}
 
 	n.logger.Infof(`initialized | %s`, time.Since(startTime))
 	return n, nil
@@ -86,11 +82,11 @@ func (n *Node) SliceStats(k key.SliceKey) model.StatsByType {
 	return n.statsFor(k.String())
 }
 
-func (n *Node) FileStats(k key.FileKey) model.StatsByType {
+func (n *Node) FileStats(k key.FileKey) model.Stats {
 	return n.statsFor(k.String())
 }
 
-func (n *Node) ExportStats(k key.ExportKey) model.StatsByType {
+func (n *Node) ExportStats(k key.ExportKey) model.Stats {
 	return n.statsFor(k.String())
 }
 
@@ -161,63 +157,6 @@ func watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan 
 		StartConsumer(wg)
 }
 
-// watchActiveSlices operation watches for statistics of slices in uploading/failed/uploaded state.
-// These statistics are stored inside the model.Slice structure.
-func watchClosedSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan error {
-	return n.schema.Slices().AllClosed().
-		GetAllAndWatch(ctx, n.client, etcd.WithPrevKV()).
-		SetupConsumer(n.logger).
-		WithForEach(func(events []etcdop.WatchEventT[model.Slice], header *etcdop.Header, restart bool) {
-			n.cache.Atomic(func(t *prefixtree.Tree[model.Stats]) {
-				// Reset the tree after receiving the first batch after the restart.
-				if restart {
-					t.Reset()
-				}
-
-				// Atomically process all events
-				for _, event := range events {
-					slice := event.Value
-					cacheKey := keyForClosedSlice(slice)
-
-					// Update slice stats
-					switch event.Type {
-					case etcdop.CreateEvent, etcdop.UpdateEvent:
-						// Clear temporary stats to prevent duplicates.
-						// The slice was closed and the statistics were moved directly to the slice.
-						t.DeletePrefix(prefixForActiveStats(slice.SliceKey))
-						stats := event.Value.GetStats()
-						t.Insert(cacheKey, stats)
-					case etcdop.DeleteEvent:
-						t.Delete(cacheKey)
-					default:
-						panic(errors.Errorf(`unexpected event type "%v"`, event.Type))
-					}
-				}
-			})
-		}).
-		StartConsumer(wg)
-}
-
 func keyForActiveStats(v key.SliceNodeKey) string {
 	return prefixBuffered + v.String() + "/"
-}
-
-func prefixForActiveStats(v key.SliceKey) string {
-	return prefixBuffered + v.String() + "/"
-}
-
-func keyForClosedSlice(v model.Slice) string {
-	switch v.State {
-	case slicestate.Uploading:
-		// uploading/<sliceKey>
-		return prefixUploading + v.SliceKey.String()
-	case slicestate.Failed:
-		// failed/<sliceKey>
-		return prefixFailed + v.SliceKey.String()
-	case slicestate.Uploaded:
-		// uploaded/<sliceKey>
-		return prefixUploaded + v.SliceKey.String()
-	default:
-		panic(errors.Errorf(`unexpected state "%s"`, v.State.String()))
-	}
 }
