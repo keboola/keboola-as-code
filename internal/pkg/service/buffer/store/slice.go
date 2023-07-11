@@ -98,17 +98,16 @@ func (s *Store) listUploadedSlicesOp(_ context.Context, fileKey key.FileKey) ite
 func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) {
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CloseSlice")
 	defer span.End(&err)
+
 	k := slice.SliceKey
-	statsPfx := s.schema.ReceivedStats().InSlice(k)
 	var recordsCount uint64
 	var recordLastID uint64
-	var stats model.Stats
+
 	return op.
 		Atomic().
 		Read(func() op.Op {
 			return op.MergeToTxn(
 				assertAllPrevSlicesClosed(s.schema, k),
-				sumStatsOp(statsPfx.GetAll(), &stats),
 				s.countRecordsOp(k, &recordsCount),
 				s.loadExportRecordsCounter(k.ExportKey, &recordLastID),
 			)
@@ -122,15 +121,9 @@ func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) 
 			// Set statistics to the slice.
 			// The records count from the statistics may not be accurate
 			// if some statistics were not sent due to a network error.
-			if recordsCount > 0 {
-				modSlice.Statistics = &stats
-				modSlice.Statistics.RecordsCount = recordsCount
-			} else {
+			if recordsCount == 0 {
 				modSlice.IsEmpty = true
 			}
-
-			// Delete all "per node" statistics
-			ops = append(ops, statsPfx.DeleteAll())
 
 			// Set ID range to the slice and update counter
 			if recordsCount > 0 {
@@ -143,7 +136,9 @@ func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) 
 
 			// Set slice state from "closing" to "uploading"
 			// This also saves the changes.
-			if v, err := s.setSliceStateOp(ctx, s.clock.Now(), &modSlice, slicestate.Uploading); err != nil {
+			if v, err := s.setSliceStateOp(ctx, s.clock.Now(), &modSlice, slicestate.Uploading, func(stats *model.Stats) {
+				stats.RecordsCount = recordsCount
+			}); err != nil {
 				return nil, err
 			} else {
 				ops = append(ops, v)
@@ -159,8 +154,12 @@ func (s *Store) CloseSlice(ctx context.Context, slice *model.Slice) (err error) 
 }
 
 // MarkSliceUploaded when the upload is finished.
-func (s *Store) MarkSliceUploaded(ctx context.Context, slice *model.Slice) error {
-	setOp, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, slicestate.Uploaded)
+func (s *Store) MarkSliceUploaded(ctx context.Context, slice *model.Slice, uploadStats model.UploadStats) error {
+	setOp, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, slicestate.Uploaded, func(stats *model.Stats) {
+		stats.RecordsCount = uploadStats.RecordsCount
+		stats.FileSize = uploadStats.FileSize
+		stats.FileGZipSize = uploadStats.FileGZipSize
+	})
 	if err != nil {
 		return err
 	}
@@ -175,7 +174,7 @@ func (s *Store) MarkSliceUploaded(ctx context.Context, slice *model.Slice) error
 
 // MarkSliceUploadFailed when the upload failed.
 func (s *Store) MarkSliceUploadFailed(ctx context.Context, slice *model.Slice) error {
-	setOp, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, slicestate.Failed)
+	setOp, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, slicestate.Failed, nil)
 	if err != nil {
 		return err
 	}
@@ -184,7 +183,7 @@ func (s *Store) MarkSliceUploadFailed(ctx context.Context, slice *model.Slice) e
 
 // ScheduleSliceForRetry when it is time for the next upload attempt.
 func (s *Store) ScheduleSliceForRetry(ctx context.Context, slice *model.Slice) error {
-	setOp, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, slicestate.Uploading)
+	setOp, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, slicestate.Uploading, nil)
 	if err != nil {
 		return err
 	}
@@ -197,7 +196,7 @@ func (s *Store) SetSliceState(ctx context.Context, slice *model.Slice, to slices
 	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.SetSliceState")
 	defer span.End(&err)
 
-	txn, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, to)
+	txn, err := s.setSliceStateOp(ctx, s.clock.Now(), slice, to, nil)
 	if err != nil {
 		return err
 	}
@@ -226,14 +225,14 @@ func (s *Store) swapSliceOp(ctx context.Context, now time.Time, oldSlice *model.
 		panic(errors.Errorf(`new slice "%s" is not from the export "%s"`, newSlice.SliceKey, oldSlice.ExportKey))
 	}
 	createSliceOp := s.createSliceOp(ctx, newSlice)
-	closeSliceOp, err := s.setSliceStateOp(ctx, now, oldSlice, slicestate.Closing)
+	closeSliceOp, err := s.setSliceStateOp(ctx, now, oldSlice, slicestate.Closing, nil)
 	if err != nil {
 		return nil, err
 	}
 	return op.MergeToTxn(createSliceOp, closeSliceOp), nil
 }
 
-func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model.Slice, to slicestate.State) (*op.TxnOpDef, error) { //nolint:dupl
+func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model.Slice, to slicestate.State, modifyStatsFn func(*model.Stats)) (*op.TxnOpDef, error) { //nolint:dupl
 	from := slice.State
 	clone := *slice
 	stm := slicestate.NewSTM(slice.State, func(ctx context.Context, from, to slicestate.State) error {
@@ -261,26 +260,55 @@ func (s *Store) setSliceStateOp(ctx context.Context, now time.Time, slice *model
 		return nil, err
 	}
 
-	// Atomically swap keys in the transaction
+	var ops []op.Op
+
+	// Atomically swap keys
 	alreadyInState := false
+	ops = append(
+		ops,
+		s.schema.Slices().InState(to).ByKey(slice.SliceKey).PutIfNotExists(clone).WithOnResultOrErr(func(ok bool) error {
+			alreadyInState = !ok
+			if !ok {
+				slice.State = to
+				return errors.Errorf(`slice "%s" is already in the "%s" state`, slice.SliceKey, to)
+			}
+			return nil
+		}),
+		s.schema.Slices().InState(from).ByKey(slice.SliceKey).DeleteIfExists().WithOnResultOrErr(func(ok bool) error {
+			if !ok && !alreadyInState {
+				return errors.Errorf(`slice "%s" not found in the "%s" state`, slice.SliceKey, slice.State)
+			}
+			return nil
+		}),
+	)
+
+	// Also move statistics
+	oldStatsPfx := s.schema.SliceStats().InState(from).InSlice(slice.SliceKey)
+	newStatsPfx := s.schema.SliceStats().InState(to).InSlice(slice.SliceKey)
+	if oldStatsPfx.Prefix() != newStatsPfx.Prefix() {
+		var stats model.Stats
+		if err := SumStatsOp(oldStatsPfx.GetAll(), &stats).DoOrErr(ctx, s.client); err != nil {
+			return nil, err
+		}
+		if modifyStatsFn != nil {
+			modifyStatsFn(&stats)
+		}
+		if stats.RecordsCount > 0 {
+			ops = append(
+				ops,
+				oldStatsPfx.DeleteAll().WithProcessor(func(ctx context.Context, response etcd.OpResponse, result int64, err error) (int64, error) {
+					return result, nil
+				}),
+				newStatsPfx.AllNodesSum().Put(stats).WithProcessor(func(ctx context.Context, response etcd.OpResponse, result op.NoResult, err error) (op.NoResult, error) {
+					return op.NoResult{}, nil
+				}),
+			)
+		}
+	}
+
 	return op.
-		MergeToTxn(
-			s.schema.Slices().InState(to).ByKey(slice.SliceKey).PutIfNotExists(clone).WithOnResultOrErr(func(ok bool) error {
-				if !ok {
-					alreadyInState = true
-					slice.State = to
-					return errors.Errorf(`slice "%s" is already in the "%s" state`, slice.SliceKey, to)
-				}
-				return nil
-			}),
-			s.schema.Slices().InState(from).ByKey(slice.SliceKey).DeleteIfExists().WithOnResultOrErr(func(ok bool) error {
-				if !ok && !alreadyInState {
-					return errors.Errorf(`slice "%s" not found in the "%s" state`, slice.SliceKey, slice.State)
-				}
-				return nil
-			}),
-		).
-		WithProcessor(func(_ context.Context, _ *etcd.TxnResponse, result op.TxnResult, err error) error {
+		MergeToTxn(ops...).
+		WithProcessor(func(_ context.Context, _ *etcd.TxnResponse, _ op.TxnResult, err error) error {
 			if err == nil {
 				*slice = clone
 			}
