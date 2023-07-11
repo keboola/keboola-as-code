@@ -95,7 +95,11 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 					return task.ErrResult(err)
 				}
 
-				defer s.events.SendSliceUploadEvent(ctx, api, time.Now(), &err, slice)
+				// Generate Storage API event after the operation
+				defer func() {
+					stats := s.stats.SliceStats(slice.SliceKey)
+					s.events.SendSliceUploadEvent(ctx, api, time.Now(), &err, slice, stats)
+				}()
 
 				// Create file manager
 				files := file.NewManager(d.Clock(), api, s.config.UploadTransport)

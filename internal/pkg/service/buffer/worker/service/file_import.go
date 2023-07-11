@@ -85,7 +85,11 @@ func (s *Service) importFiles(d dependencies) <-chan error {
 					return task.ErrResult(err)
 				}
 
-				defer s.events.SendFileImportEvent(ctx, api, time.Now(), &err, fileRes)
+				// Generate Storage API event after the operation
+				defer func() {
+					stats := s.stats.FileStats(fileRes.FileKey)
+					s.events.SendFileImportEvent(ctx, api, time.Now(), &err, fileRes, stats)
+				}()
 
 				// Skip empty
 				if fileRes.IsEmpty {
