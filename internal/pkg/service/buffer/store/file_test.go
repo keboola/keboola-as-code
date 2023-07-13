@@ -161,7 +161,8 @@ file/<STATE>/1000/my-receiver/my-export/2006-01-01T08:04:05.000Z
 		// Test duplicated transition -> nop
 		file.State = tc.from
 		ok, err = store.SetFileState(ctx, time.Now(), &file, tc.to)
-		assert.NoError(t, err, desc)
+		assert.Error(t, err, desc)
+		assert.Equal(t, fmt.Sprintf(`file "%s" is already in the "%s" state`, file.FileKey, tc.to), err.Error())
 		assert.False(t, ok, desc)
 		assert.Equal(t, tc.to, file.State, desc)
 	}
