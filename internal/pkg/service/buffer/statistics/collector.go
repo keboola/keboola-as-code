@@ -1,5 +1,4 @@
-// Package collector provides lock free collection of statistics from the API import endpoint.
-package collector
+package statistics
 
 import (
 	"context"
@@ -17,8 +16,8 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
-// Node collects node statistics in memory and periodically synchronizes them to the database.
-type Node struct {
+// Collector collects node statistics in memory and periodically synchronizes them to the database.
+type Collector struct {
 	nodeID string
 	config config.APIConfig
 	logger log.Logger
@@ -37,7 +36,7 @@ type sliceStats struct {
 	changed      bool
 }
 
-type Dependencies interface {
+type collectorDeps interface {
 	APIConfig() config.APIConfig
 	Logger() log.Logger
 	Clock() clock.Clock
@@ -45,8 +44,8 @@ type Dependencies interface {
 	Store() *store.Store
 }
 
-func NewNode(d Dependencies) *Node {
-	m := &Node{
+func NewCollector(d collectorDeps) *Collector {
+	c := &Collector{
 		nodeID:        d.Process().UniqueID(),
 		config:        d.APIConfig(),
 		logger:        d.Logger().AddPrefix("[stats]"),
@@ -61,44 +60,44 @@ func NewNode(d Dependencies) *Node {
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 	d.Process().OnShutdown(func() {
-		m.logger.Info("received shutdown request")
+		c.logger.Info("received shutdown request")
 		cancel()
 		wg.Wait()
-		m.logger.Info("shutdown done")
+		c.logger.Info("shutdown done")
 	})
 
 	// Receive notifications and periodically trigger sync
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ticker := m.clock.Ticker(m.config.StatisticsSyncInterval)
+		ticker := c.clock.Ticker(c.config.StatisticsSyncInterval)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ctx.Done():
-				<-m.Sync(context.Background())
+				<-c.Sync(context.Background())
 				return
 			case <-ticker.C:
-				m.Sync(ctx)
+				c.Sync(ctx)
 			}
 		}
 	}()
 
-	return m
+	return c
 }
 
-func (m *Node) Notify(sliceKey key.SliceKey, recordSize, bodySize datasize.ByteSize) {
-	m.statsLock.Lock()
-	defer m.statsLock.Unlock()
+func (c *Collector) Notify(sliceKey key.SliceKey, recordSize, bodySize datasize.ByteSize) {
+	c.statsLock.Lock()
+	defer c.statsLock.Unlock()
 
 	// Init stats
-	if _, exists := m.statsPerSlice[sliceKey]; !exists {
-		m.statsPerSlice[sliceKey] = &sliceStats{}
+	if _, exists := c.statsPerSlice[sliceKey]; !exists {
+		c.statsPerSlice[sliceKey] = &sliceStats{}
 	}
 
 	// Update stats
-	receivedAt := utctime.UTCTime(m.clock.Now())
-	stats := m.statsPerSlice[sliceKey]
+	receivedAt := utctime.UTCTime(c.clock.Now())
+	stats := c.statsPerSlice[sliceKey]
 	stats.recordsCount += 1
 	stats.recordsSize += recordSize
 	stats.bodySize += bodySize
@@ -108,17 +107,17 @@ func (m *Node) Notify(sliceKey key.SliceKey, recordSize, bodySize datasize.ByteS
 	stats.changed = true
 }
 
-func (m *Node) Sync(ctx context.Context) <-chan struct{} {
-	stats := m.statsForSync()
+func (c *Collector) Sync(ctx context.Context) <-chan struct{} {
+	stats := c.statsForSync()
 	done := make(chan struct{})
 	if len(stats) > 0 {
 		go func() {
 			defer close(done)
-			m.logger.Debugf("syncing %d records", len(stats))
-			if err := m.store.UpdateSliceReceivedStats(ctx, m.nodeID, stats); err != nil {
-				m.logger.Errorf("cannot update stats in etcd: %s", err.Error())
+			c.logger.Debugf("syncing %d records", len(stats))
+			if err := c.store.UpdateSliceReceivedStats(ctx, c.nodeID, stats); err != nil {
+				c.logger.Errorf("cannot update stats in etcd: %s", err.Error())
 			}
-			m.logger.Debug("sync done")
+			c.logger.Debug("sync done")
 		}()
 	} else {
 		close(done)
@@ -127,15 +126,15 @@ func (m *Node) Sync(ctx context.Context) <-chan struct{} {
 	return done
 }
 
-func (m *Node) statsForSync() (out []model.SliceStats) {
-	m.statsLock.Lock()
-	defer m.statsLock.Unlock()
-	for k, v := range m.statsPerSlice {
+func (c *Collector) statsForSync() (out []model.SliceStats) {
+	c.statsLock.Lock()
+	defer c.statsLock.Unlock()
+	for k, v := range c.statsPerSlice {
 		if v.changed {
 			out = append(out, model.SliceStats{
 				SliceNodeKey: key.SliceNodeKey{
 					SliceKey: k,
-					NodeID:   m.nodeID,
+					NodeID:   c.nodeID,
 				},
 				Stats: model.Stats{
 					LastRecordAt: v.lastRecordAt,

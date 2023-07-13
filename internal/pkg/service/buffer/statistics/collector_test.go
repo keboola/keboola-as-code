@@ -1,4 +1,4 @@
-package collector_test
+package statistics_test
 
 import (
 	"strings"

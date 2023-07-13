@@ -1,7 +1,8 @@
-package cache_test
+package statistics_test
 
 import (
 	"context"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"testing"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/statistics"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
@@ -40,9 +40,9 @@ func TestCacheNode(t *testing.T) {
 	workerScp, _ := bufferDependencies.NewMockedWorkerScope(t, workerCfg, append(opts, dependencies.WithUniqueID("worker-node"))...)
 
 	// Create nodes
-	collector1 := statistics.NewCollectorNode(apiScp1)
-	collector2 := statistics.NewCollectorNode(apiScp2)
-	cache, err := statistics.NewCacheNode(workerScp)
+	collector1 := statistics.NewCollector(apiScp1)
+	collector2 := statistics.NewCollector(apiScp2)
+	cache, err := statistics.NewCache(workerScp)
 	assert.NoError(t, err)
 
 	// Resources

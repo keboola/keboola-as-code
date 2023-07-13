@@ -115,7 +115,7 @@ func newServiceScope(parentScp parentScopes) (v ServiceScope, err error) {
 
 	d.store = store.New(d)
 
-	d.statsCache, err = statistics.NewCacheNode(d)
+	d.statsCache, err = statistics.NewCache(d)
 	if err != nil {
 		return nil, err
 	}

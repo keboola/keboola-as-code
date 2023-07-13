@@ -1,7 +1,4 @@
-// Package cache provides local cache for files and slices statistics.
-// It is used for fast resolving of the upload/import conditions.
-// The cache is synced via the etcd Watch API.
-package cache
+package statistics
 
 import (
 	"context"
@@ -32,7 +29,7 @@ const (
 	prefixUploaded = "uploaded/"
 )
 
-type Node struct {
+type Cache struct {
 	logger log.Logger
 	clock  clock.Clock
 	client *etcd.Client
@@ -40,7 +37,7 @@ type Node struct {
 	cache  *prefixtree.AtomicTree[model.Stats]
 }
 
-type Dependencies interface {
+type cacheDeps interface {
 	Logger() log.Logger
 	Clock() clock.Clock
 	Process() *servicectx.Process
@@ -48,9 +45,9 @@ type Dependencies interface {
 	Schema() *schema.Schema
 }
 
-func NewNode(d Dependencies) (*Node, error) {
+func NewNode(d cacheDeps) (*Cache, error) {
 	// Create
-	n := &Node{
+	n := &Cache{
 		logger: d.Logger().AddPrefix("[stats-cache]"),
 		clock:  d.Clock(),
 		client: d.EtcdClient(),
@@ -78,24 +75,24 @@ func NewNode(d Dependencies) (*Node, error) {
 	return n, nil
 }
 
-func (n *Node) SliceStats(k key.SliceKey) model.StatsByType {
-	return n.statsFor(k.String())
+func (c *Cache) SliceStats(k key.SliceKey) model.StatsByType {
+	return c.statsFor(k.String())
 }
 
-func (n *Node) FileStats(k key.FileKey) model.Stats {
-	return n.statsFor(k.String())
+func (c *Cache) FileStats(k key.FileKey) model.Stats {
+	return c.statsFor(k.String())
 }
 
-func (n *Node) ExportStats(k key.ExportKey) model.Stats {
-	return n.statsFor(k.String())
+func (c *Cache) ExportStats(k key.ExportKey) model.Stats {
+	return c.statsFor(k.String())
 }
 
-func (n *Node) ReceiverStats(k key.ReceiverKey) model.StatsByType {
-	return n.statsFor(k.String())
+func (c *Cache) ReceiverStats(k key.ReceiverKey) model.StatsByType {
+	return c.statsFor(k.String())
 }
 
-func (n *Node) statsFor(prefix string) (out model.StatsByType) {
-	n.cache.Atomic(func(t *prefixtree.Tree[model.Stats]) {
+func (c *Cache) statsFor(prefix string) (out model.StatsByType) {
+	c.cache.Atomic(func(t *prefixtree.Tree[model.Stats]) {
 		t.WalkPrefix(prefixBuffered+prefix, func(_ string, v model.Stats) bool {
 			out.Total = out.Total.Add(v)
 			out.Buffered = out.Buffered.Add(v)
@@ -125,7 +122,7 @@ func (n *Node) statsFor(prefix string) (out model.StatsByType) {
 // watchOpenedSlices operation watches for statistics of slices in writing/closing state.
 // These temporary statistics are stored separately.
 // The key has format "<sliceKey>/<apiNode>".
-func watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup, n *Node) <-chan error {
+func watchOpenedSlices(ctx context.Context, wg *sync.WaitGroup, n *Cache) <-chan error {
 	// The WithFilterDelete option is used, so only PUT events are watched and statistics are only inserted.
 	// Delete operation is part of the watchClosedSlices, to make transitions between states atomic and prevent duplicates.
 	return n.schema.ReceivedStats().
