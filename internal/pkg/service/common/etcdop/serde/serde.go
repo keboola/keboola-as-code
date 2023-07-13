@@ -35,7 +35,7 @@ func New(encode EncodeFn, decode DecodeFn, validate ValidateFn) *Serde {
 
 func NewJSON(validate ValidateFn) *Serde {
 	if validate == nil {
-		panic(errors.New("validate fn cannot be nil"))
+		panic(errors.New("validate fn cannot be nil, use serde.NoValidation"))
 	}
 	return New(
 		func(ctx context.Context, value any) (string, error) {
