@@ -215,18 +215,12 @@ slice/active/opened/writing/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/%sZ/%sZ
 >>>>>
 
 <<<<<
-stats/received/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/%sZ/%sZ/%s
+stats/slice/active/opened/writing/%%TEST_KBC_PROJECT_ID%%/receiver-1/export-1/%sZ/%sZ/%s
 -----
 {
-  "projectId": %%TEST_KBC_PROJECT_ID%%,
-  "receiverId": "receiver-1",
-  "exportId": "export-1",
-  "fileId": "%s",
-  "sliceId": "%s",
-  "nodeId": "%s",
   "lastRecordAt": "%s",
   "recordsCount": 2,
-  "recordsSize": %s,
+  "recordsSize": "%s",
   "bodySize": "48B"
 }
 >>>>>

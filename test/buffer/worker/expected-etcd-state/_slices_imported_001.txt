@@ -37,14 +37,6 @@ slice/archived/successful/imported/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export
   "uploadingAt": "%s",
   "uploadedAt": "%s",
   "importedAt": "%s",
-  "statistics": {
-    "lastRecordAt": "%s",
-    "recordsCount": 6,
-    "recordsSize": "%s",
-    "bodySize": "%s",
-    "fileSize": "%s",
-    "fileGZipSize": "%s"
-  },
   "idRange": {
     "start": 1,
     "count": 6
@@ -89,14 +81,6 @@ slice/archived/successful/imported/%%TEST_KBC_PROJECT_ID%%/my-receiver/my-export
   "uploadingAt": "%s",
   "uploadedAt": "%s",
   "importedAt": "%s",
-  "statistics": {
-    "lastRecordAt": "%s",
-    "recordsCount": 6,
-    "recordsSize": "%s",
-    "bodySize": "%s",
-    "fileSize": "%s",
-    "fileGZipSize": "%s"
-  },
   "idRange": {
     "start": 1,
     "count": 6

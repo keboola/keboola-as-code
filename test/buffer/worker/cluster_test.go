@@ -32,20 +32,20 @@ import (
 )
 
 const (
-	apiNodesCount              = 5
-	workerNodesCount           = 5
-	uploadConditionsCount      = 5
-	uploadConditionsSize       = datasize.MB
-	uploadConditionsTime       = time.Hour
-	importConditionsCount      = 10
-	importConditionsSize       = datasize.MB
-	importConditionsTime       = time.Hour
-	statisticsSyncInterval     = 500 * time.Millisecond
-	conditionsCheckInterval    = 2000 * time.Millisecond
-	receiverBufferSizeCacheTTL = 500 * time.Millisecond
-	receiverBufferSize         = 100 * datasize.KB
-	startupTimeout             = 30 * time.Second
-	shutdownTimeout            = 10 * time.Second
+	apiNodesCount           = 5
+	workerNodesCount        = 5
+	uploadConditionsCount   = 5
+	uploadConditionsSize    = datasize.MB
+	uploadConditionsTime    = time.Hour
+	importConditionsCount   = 10
+	importConditionsSize    = datasize.MB
+	importConditionsTime    = time.Hour
+	statisticsSyncInterval  = 500 * time.Millisecond
+	conditionsCheckInterval = 2000 * time.Millisecond
+	statisticsL2CacheTTL    = 500 * time.Millisecond
+	receiverBufferSize      = 100 * datasize.KB
+	startupTimeout          = 30 * time.Second
+	shutdownTimeout         = 10 * time.Second
 )
 
 type testSuite struct {
@@ -226,13 +226,13 @@ func (ts *testSuite) createAPINode(i int) *apiNode {
 	envs.Set("BUFFER_API_ETCD_NAMESPACE", ts.etcdCredentials.Namespace)
 	envs.Set("BUFFER_API_ETCD_USERNAME", ts.etcdCredentials.Username)
 	envs.Set("BUFFER_API_ETCD_PASSWORD", ts.etcdCredentials.Password)
+	envs.Set("BUFFER_API_STATISTICS_L2_CACHE_TTL", statisticsL2CacheTTL.String())
 	envs.Set("BUFFER_API_STORAGE_API_HOST", ts.project.StorageAPIHost())
 	envs.Set("BUFFER_API_LISTEN_ADDRESS", fmt.Sprintf("0.0.0.0:%d", apiPort))
 	envs.Set("BUFFER_API_METRICS_LISTEN_ADDRESS", fmt.Sprintf("0.0.0.0:%d", metricsPort))
 	envs.Set("BUFFER_API_PUBLIC_ADDRESS", address)
 	envs.Set("BUFFER_API_STATISTICS_SYNC_INTERVAL", statisticsSyncInterval.String())
 	envs.Set("BUFFER_API_RECEIVER_BUFFER_SIZE", receiverBufferSize.String())
-	envs.Set("BUFFER_API_RECEIVER_BUFFER_SIZE_CACHE_TTL", receiverBufferSizeCacheTTL.String())
 
 	// Create log file
 	logFile, err := os.OpenFile(filepath.Join(ts.logsDir, nodeID+".out.txt"), os.O_CREATE|os.O_WRONLY, 0o644) //nolint:forbidigo
