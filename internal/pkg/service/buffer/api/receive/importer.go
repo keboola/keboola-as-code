@@ -6,7 +6,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"sync"
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
@@ -32,8 +31,7 @@ type Importer struct {
 	clock          clock.Clock
 	store          *store.Store
 	watcher        *watcher.APINode
-	statsCollector *statistics.CollectorNode
-	statsCache     *statistics.CacheNode
+	statsCollector *statistics.Collector
 	quota          *quota.Checker
 }
 
@@ -43,8 +41,8 @@ type dependencies interface {
 	Process() *servicectx.Process
 	APIConfig() config.APIConfig
 	Store() *store.Store
-	StatsCollector() *statistics.CollectorNode
-	StatsCache() *statistics.CacheNode
+	StatsCollector() *statistics.Collector
+	StatisticsProviders() *statistics.Providers
 	WatcherAPINode() *watcher.APINode
 }
 
@@ -54,27 +52,14 @@ type requestDeps interface {
 }
 
 func NewImporter(d dependencies) *Importer {
-	i := &Importer{
+	return &Importer{
 		config:         d.APIConfig(),
 		clock:          d.Clock(),
 		store:          d.Store(),
 		watcher:        d.WatcherAPINode(),
 		statsCollector: d.StatsCollector(),
-		statsCache:     d.StatsCache(),
+		quota:          quota.New(d),
 	}
-
-	// Graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
-	wg := &sync.WaitGroup{}
-	d.Process().OnShutdown(func() {
-		cancel()
-		wg.Wait()
-	})
-
-	// Create quota checker
-	i.quota = quota.New(ctx, wg, d)
-
-	return i
 }
 
 // CreateRecord in etcd temporal database.
@@ -96,7 +81,7 @@ func (i *Importer) CreateRecord(ctx context.Context, d requestDeps, receiverKey 
 	}
 
 	// Check whether the size of records that one receiver can buffer in etcd has not been exceeded.
-	if err := i.quota.Check(receiverKey); err != nil {
+	if err := i.quota.Check(ctx, receiverKey); err != nil {
 		return err
 	}
 
@@ -133,7 +118,7 @@ func (i *Importer) CreateRecord(ctx context.Context, d requestDeps, receiverKey 
 		}
 
 		// Update statistics
-		i.statsCollector.Notify(slice.SliceKey, datasize.ByteSize(len(csvRow)), datasize.ByteSize(bodySize))
+		i.statsCollector.Notify(i.clock.Now(), slice.SliceKey, datasize.ByteSize(len(csvRow)), datasize.ByteSize(bodySize))
 	}
 
 	if errs.Len() > 1 {
