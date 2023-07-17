@@ -26,6 +26,7 @@ const (
 	fileImportTaskType          = "file.import"
 	fileImportTimeout           = 5 * time.Minute
 	fileMarkAsFailedTimeout     = 30 * time.Second
+	importEventSendTimeout      = 10 * time.Second
 )
 
 // importFiles watches for files switched to the importing state.
@@ -87,8 +88,16 @@ func (s *Service) importFiles(d dependencies) <-chan error {
 
 				// Generate Storage API event after the operation
 				defer func() {
-					stats := s.stats.FileStats(fileRes.FileKey)
-					s.events.SendFileImportEvent(ctx, api, time.Now(), &err, fileRes, stats)
+					ctx, cancel := context.WithTimeout(context.Background(), importEventSendTimeout)
+					defer cancel()
+
+					stats, statsErr := s.realtimeStats.FileStats(ctx, fileRes.FileKey)
+					if statsErr != nil {
+						s.logger.Errorf(`cannot send import event: cannot get file "%s" stats: %s`, fileRes.FileKey, statsErr)
+						return
+					}
+
+					s.events.SendFileImportEvent(ctx, api, time.Now(), &err, fileRes, stats.Imported)
 				}()
 
 				// Skip empty
