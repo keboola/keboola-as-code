@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	etcd "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -635,6 +636,171 @@ task/123/my-receiver/my-export/some.task/%s
 	)
 }
 
+func TestTaskTimeout(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
+
+	lock := "my-lock"
+	taskType := "some.task"
+	tKey := task.Key{
+		ProjectID: 123,
+		TaskID:    task.ID("my-receiver/my-export/" + taskType),
+	}
+	tel := telemetry.NewForTest(t)
+	tel.SetSpanFilter(func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) bool {
+		return !strings.HasPrefix(spanName, "etcd")
+	})
+
+	// Create node and start task
+	node1, d := createNode(t, etcdCredentials, nil, tel, "node1")
+	logger := d.DebugLogger()
+	tel.Reset()
+	_, err := node1.StartTask(task.Config{
+		Key:  tKey,
+		Type: taskType,
+		Lock: lock,
+		Context: func() (context.Context, context.CancelFunc) {
+			return context.WithTimeout(ctx, 10*time.Millisecond) // <<<<<<<<<<<<<<<<<
+		},
+		Operation: func(ctx context.Context, logger log.Logger) task.Result {
+			// Sleep for 10 seconds
+			select {
+			case <-time.After(10 * time.Second):
+			case <-ctx.Done():
+				return task.ErrResult(ctx.Err())
+			}
+			return task.ErrResult(errors.New("invalid state, task should time out"))
+		},
+	})
+	assert.NoError(t, err)
+
+	// Wait for the task
+	assert.Eventually(t, func() bool {
+		return strings.Contains(logger.AllMessages(), "DEBUG  lock released")
+	}, 5*time.Second, 100*time.Millisecond, logger.AllMessages())
+
+	// Check etcd state after task
+	etcdhelper.AssertKVsString(t, client, `
+<<<<<
+task/123/my-receiver/my-export/some.task/%s
+-----
+{
+  "projectId": 123,
+  "taskId": "my-receiver/my-export/some.task/%s",
+  "type": "some.task",
+  "createdAt": "%s",
+  "finishedAt": "%s",
+  "node": "node1",
+  "lock": "runtime/lock/task/my-lock",
+  "error": "context deadline exceeded",
+  "duration": %d
+}
+>>>>>
+`)
+
+	// Check logs
+	wildcards.Assert(t, `
+[node1][task][123/my-receiver/my-export/some.task/%s]INFO  started task
+[node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock acquired "runtime/lock/task/my-lock"
+[node1][task][123/my-receiver/my-export/some.task/%s]WARN  task failed (%s): context deadline exceeded
+[node1][task][123/my-receiver/my-export/some.task/%s]DEBUG  lock released "runtime/lock/task/my-lock"
+`, logger.AllMessages())
+
+	// Check spans
+	tel.AssertSpans(t,
+		tracetest.SpanStubs{
+			{
+				Name:     "keboola.go.task",
+				SpanKind: trace.SpanKindInternal,
+				SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
+					TraceID:    tel.TraceID(1),
+					SpanID:     tel.SpanID(1),
+					TraceFlags: trace.FlagsSampled,
+				}),
+				Status: tracesdk.Status{Code: codes.Error, Description: "context deadline exceeded"},
+				Attributes: []attribute.KeyValue{
+					attribute.String("resource.name", "some.task"),
+					attribute.String("task_id", "<dynamic>"),
+					attribute.String("task_type", "some.task"),
+					attribute.String("lock", "<dynamic>"),
+					attribute.String("node", "node1"),
+					attribute.String("created_at", "<dynamic>"),
+					attribute.String("project_id", "123"),
+					attribute.String("duration_sec", "<dynamic>"),
+					attribute.String("finished_at", "<dynamic>"),
+					attribute.Bool("is_success", false),
+					attribute.Bool("is_application_error", true),
+					attribute.String("error", "context deadline exceeded"),
+					attribute.String("error_type", "deadline_exceeded"),
+				},
+				Events: []tracesdk.Event{
+					{
+						Name: "exception",
+						Attributes: []attribute.KeyValue{
+							attribute.String("exception.type", "context.deadlineExceededError"),
+							attribute.String("exception.message", "context deadline exceeded"),
+						},
+					},
+				},
+			},
+		},
+		telemetry.WithSpanAttributeMapper(func(attr attribute.KeyValue) attribute.KeyValue {
+			switch attr.Key {
+			case "task_id", "lock", "created_at", "duration_sec", "finished_at":
+				return attribute.String(string(attr.Key), "<dynamic>")
+			}
+			return attr
+		}),
+	)
+
+	// Check metrics
+	histBounds := []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000} // ms
+	tel.AssertMetrics(t,
+		[]metricdata.Metrics{
+			{
+				Name:        "keboola.go.task.running",
+				Description: "Background running tasks count.",
+				Data: metricdata.Sum[int64]{
+					Temporality: 1,
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Value: 0,
+							Attributes: attribute.NewSet(
+								attribute.String("task_type", "some.task"),
+							),
+						},
+					},
+				},
+			},
+			{
+				Name:        "keboola.go.task.duration",
+				Description: "Background task duration.",
+				Unit:        "ms",
+				Data: metricdata.Histogram[float64]{
+					Temporality: 1,
+					DataPoints: []metricdata.HistogramDataPoint[float64]{
+						{
+							Count:  1,
+							Bounds: histBounds,
+							Attributes: attribute.NewSet(
+								attribute.String("task_type", "some.task"),
+								attribute.Bool("is_success", false),
+								attribute.Bool("is_application_error", true),
+								attribute.String("error_type", "deadline_exceeded"),
+							),
+						},
+					},
+				},
+			},
+		},
+	)
+}
+
 func TestWorkerNodeShutdownDuringTask(t *testing.T) {
 	t.Parallel()
 
@@ -743,7 +909,8 @@ func createNode(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Wr
 	t.Helper()
 	d := createDeps(t, etcdCredentials, logs, tel, nodeName)
 	node, err := task.NewNode(d)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	d.DebugLogger().Truncate()
 	return node, d
 }
 
