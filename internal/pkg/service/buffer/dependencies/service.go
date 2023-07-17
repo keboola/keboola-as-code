@@ -20,9 +20,9 @@ import (
 // serviceScope implements ServiceScope interface.
 type serviceScope struct {
 	parentScopes
-	schema     *schema.Schema
-	store      *store.Store
-	statsCache *statistics.CacheNode
+	schema         *schema.Schema
+	store          *store.Store
+	statsProviders *statistics.Providers
 }
 
 type parentScopes interface {
@@ -48,8 +48,8 @@ func (v *serviceScope) Store() *store.Store {
 	return v.store
 }
 
-func (v *serviceScope) StatsCache() *statistics.CacheNode {
-	return v.statsCache
+func (v *serviceScope) StatisticsProviders() *statistics.Providers {
+	return v.statsProviders
 }
 
 func NewServiceScope(ctx context.Context, cfg config.ServiceConfig, proc *servicectx.Process, logger log.Logger, tel telemetry.Telemetry, userAgent string) (v ServiceScope, err error) {
@@ -59,7 +59,7 @@ func NewServiceScope(ctx context.Context, cfg config.ServiceConfig, proc *servic
 	if err != nil {
 		return nil, err
 	}
-	return newServiceScope(parentSc)
+	return newServiceScope(parentSc, cfg)
 }
 
 func newParentScopes(ctx context.Context, cfg config.ServiceConfig, proc *servicectx.Process, logger log.Logger, tel telemetry.Telemetry, userAgent string) (v parentScopes, err error) {
@@ -106,7 +106,7 @@ func newParentScopes(ctx context.Context, cfg config.ServiceConfig, proc *servic
 	return d, nil
 }
 
-func newServiceScope(parentScp parentScopes) (v ServiceScope, err error) {
+func newServiceScope(parentScp parentScopes, cfg config.ServiceConfig) (v ServiceScope, err error) {
 	d := &serviceScope{}
 
 	d.parentScopes = parentScp
@@ -115,7 +115,7 @@ func newServiceScope(parentScp parentScopes) (v ServiceScope, err error) {
 
 	d.store = store.New(d)
 
-	d.statsCache, err = statistics.NewCache(d)
+	d.statsProviders, err = statistics.NewProviders(d, cfg.StatisticsL2CacheTTL)
 	if err != nil {
 		return nil, err
 	}

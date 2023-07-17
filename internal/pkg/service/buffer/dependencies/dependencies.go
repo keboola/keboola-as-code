@@ -52,7 +52,7 @@ type ServiceScope interface {
 	dependencies.TaskScope
 	Schema() *schema.Schema
 	Store() *store.Store
-	StatsCache() *statistics.Cache
+	StatisticsProviders() *statistics.Providers
 }
 
 type WorkerScope interface {
