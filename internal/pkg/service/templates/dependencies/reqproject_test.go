@@ -17,10 +17,8 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem/aferofs"
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpserver/middleware"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -38,23 +36,21 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	repoDef := model.TemplateRepository{Type: model.RepositoryTypeGit, Name: "keboola", URL: fmt.Sprintf("file://%s", tmpDir), Ref: "main"}
 
 	// Mocked API scope
-	apiScp, mock := NewMockedAPIScope(t, config.NewConfig(), dependencies.WithMultipleTokenVerification(true))
-	ctx := mock.TestContext()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	apiScp, mock := NewMockedAPIScope(t, config.NewConfig(), dependencies.WithCtx(ctx), dependencies.WithMultipleTokenVerification(true))
 	manager := apiScp.RepositoryManager()
 
 	// Mocked request scope
-	reqScpFactory := func(ctx context.Context) ProjectRequestScope {
-		reqID := idgenerator.Random(8)
+	reqScpFactory := func() ProjectRequestScope {
 		req := httptest.NewRequest("GET", "/req1", nil)
-		req = req.WithContext(context.WithValue(ctx, middleware.RequestIDCtxKey, reqID))
 		return newProjectRequestScope(NewPublicRequestScope(apiScp, req), mock)
 	}
 
 	// Get repository for request 1
 	req1Ctx, req1CancelFn := context.WithCancel(ctx)
 	defer req1CancelFn()
-	req1Deps := reqScpFactory(req1Ctx)
-	repo1, err := req1Deps.TemplateRepository(context.Background(), repoDef)
+	repo1, err := reqScpFactory().TemplateRepository(req1Ctx, repoDef)
 
 	// FS contains template1, but doesn't contain template2
 	assert.NoError(t, err)
@@ -62,7 +58,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	assert.False(t, repo1.Fs().Exists("template2"))
 
 	// Update repository -> no change
-	err = <-manager.Update(context.Background())
+	err = <-manager.Update(ctx)
 	assert.NoError(t, err)
 	wildcards.Assert(t, `%Arepository "%s" update finished, no change found%A`, mock.DebugLogger().InfoMessages())
 	mock.DebugLogger().Truncate()
@@ -70,8 +66,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	// Get repository for request 2 -> no changes
 	req2Ctx, req2CancelFn := context.WithCancel(ctx)
 	defer req2CancelFn()
-	req2Deps := reqScpFactory(req2Ctx)
-	repo2, err := req2Deps.TemplateRepository(context.Background(), repoDef)
+	repo2, err := reqScpFactory().TemplateRepository(req2Ctx, repoDef)
 	assert.NoError(t, err)
 
 	// Repo1 and repo2 use same directory/FS.
@@ -84,7 +79,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	runGitCommand(t, tmpDir, "reset", "--hard", "b1")
 
 	// Update repository -> change occurred
-	err = <-manager.Update(context.Background())
+	err = <-manager.Update(ctx)
 	assert.NoError(t, err)
 	wildcards.Assert(t, `%Arepository "%s" updated from %s to %s%A`, mock.DebugLogger().InfoMessages())
 	mock.DebugLogger().Truncate()
@@ -92,8 +87,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	// Get repository for request 3 -> change occurred
 	req3Ctx, req3CancelFn := context.WithCancel(ctx)
 	defer req3CancelFn()
-	req3Deps := reqScpFactory(req3Ctx)
-	repo3, err := req3Deps.TemplateRepository(context.Background(), repoDef)
+	repo3, err := reqScpFactory().TemplateRepository(req3Ctx, repoDef)
 	assert.NoError(t, err)
 
 	// Repo1 and repo2 use still same directory/FS, without change
@@ -135,7 +129,7 @@ func TestProjectRequestScope_TemplateRepository_Cached(t *testing.T) {
 	runGitCommand(t, tmpDir, "reset", "--hard", "HEAD~2")
 
 	// Update repository -> change occurred
-	err = <-manager.Update(context.Background())
+	err = <-manager.Update(ctx)
 	assert.NoError(t, err)
 	wildcards.Assert(t, `%Arepository "%s" updated from %s to %s%A`, mock.DebugLogger().InfoMessages())
 	mock.DebugLogger().Truncate()
@@ -162,31 +156,28 @@ func TestProjectRequestScope_Template_Cached(t *testing.T) {
 	tmplDef := model.NewTemplateRef(repoDef, "template1", "1.0.3")
 
 	// Mocked API scope
-	apiScp, mock := NewMockedAPIScope(t, config.NewConfig(), dependencies.WithMultipleTokenVerification(true))
-	ctx := mock.TestContext()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	apiScp, mock := NewMockedAPIScope(t, config.NewConfig(), dependencies.WithCtx(ctx), dependencies.WithMultipleTokenVerification(true))
 	manager := apiScp.RepositoryManager()
 
 	// Mocked request scope
-	reqScopeFactory := func(ctx context.Context) ProjectRequestScope {
-		reqID := idgenerator.Random(8)
+	reqScopeFactory := func() ProjectRequestScope {
 		req := httptest.NewRequest("GET", "/req1", nil)
-		req = req.WithContext(context.WithValue(ctx, middleware.RequestIDCtxKey, reqID))
 		return newProjectRequestScope(NewPublicRequestScope(apiScp, req), mock)
 	}
 
 	// Get template for request 1
 	req1Ctx, req1CancelFn := context.WithCancel(ctx)
 	defer req1CancelFn()
-	req1Deps := reqScopeFactory(req1Ctx)
-	tmpl1Req1, err := req1Deps.Template(context.Background(), tmplDef)
+	tmpl1Req1, err := reqScopeFactory().Template(req1Ctx, tmplDef)
 	assert.NoError(t, err)
 	assert.Equal(t, "Readme version 3 ...\n", tmpl1Req1.Readme())
 
 	// Get template for request 2
 	req2Ctx, req2CancelFn := context.WithCancel(ctx)
 	defer req2CancelFn()
-	req2Deps := reqScopeFactory(req2Ctx)
-	tmpl1Req2, err := req2Deps.Template(context.Background(), tmplDef)
+	tmpl1Req2, err := reqScopeFactory().Template(req2Ctx, tmplDef)
 	assert.NoError(t, err)
 	assert.Equal(t, "Readme version 3 ...\n", tmpl1Req2.Readme())
 
@@ -197,7 +188,7 @@ func TestProjectRequestScope_Template_Cached(t *testing.T) {
 	runGitCommand(t, tmpDir, "reset", "--hard", "HEAD~2")
 
 	// Update repository -> change occurred
-	err = <-manager.Update(context.Background())
+	err = <-manager.Update(ctx)
 	assert.NoError(t, err)
 	wildcards.Assert(t, `%Arepository "%s" updated from %s to %s%A`, mock.DebugLogger().InfoMessages())
 	mock.DebugLogger().Truncate()
@@ -205,16 +196,14 @@ func TestProjectRequestScope_Template_Cached(t *testing.T) {
 	// Get template for request 3
 	req3Ctx, req3CancelFn := context.WithCancel(ctx)
 	defer req3CancelFn()
-	req3Deps := reqScopeFactory(req3Ctx)
-	tmpl1Req3, err := req3Deps.Template(context.Background(), tmplDef)
+	tmpl1Req3, err := reqScopeFactory().Template(req3Ctx, tmplDef)
 	assert.NoError(t, err)
 	assert.Equal(t, "Readme version 1 ...\n", tmpl1Req3.Readme())
 
 	// Get template for request 4
 	req4Ctx, req4CancelFn := context.WithCancel(ctx)
 	defer req4CancelFn()
-	req4Deps := reqScopeFactory(req4Ctx)
-	tmpl1Req4, err := req4Deps.Template(context.Background(), tmplDef)
+	tmpl1Req4, err := reqScopeFactory().Template(req4Ctx, tmplDef)
 	assert.NoError(t, err)
 	assert.Equal(t, "Readme version 1 ...\n", tmpl1Req4.Readme())
 

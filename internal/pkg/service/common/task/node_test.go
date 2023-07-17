@@ -26,7 +26,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 func TestSuccessfulTask(t *testing.T) {
@@ -764,7 +763,6 @@ func createDeps(t *testing.T, etcdCredentials etcdclient.Credentials, logs io.Wr
 	})
 
 	// Connect logs output
-	d.DebugLogger().ConnectTo(testhelper.VerboseStdout())
 	if logs != nil {
 		d.DebugLogger().ConnectTo(logs)
 	}

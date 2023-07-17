@@ -22,8 +22,8 @@ const (
 	exportUpdateTaskType = "export.update"
 )
 
-func (s *service) CreateExport(d dependencies.ProjectRequestScope, payload *buffer.CreateExportPayload) (res *buffer.Task, err error) {
-	ctx, str := d.RequestCtx(), d.Store()
+func (s *service) CreateExport(ctx context.Context, d dependencies.ProjectRequestScope, payload *buffer.CreateExportPayload) (res *buffer.Task, err error) {
+	str := d.Store()
 
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	export, err := s.mapper.CreateExportModel(
@@ -89,7 +89,7 @@ func (s *service) CreateExport(d dependencies.ProjectRequestScope, payload *buff
 	return s.mapper.TaskPayload(t), nil
 }
 
-func (s *service) UpdateExport(d dependencies.ProjectRequestScope, payload *buffer.UpdateExportPayload) (res *buffer.Task, err error) {
+func (s *service) UpdateExport(ctx context.Context, d dependencies.ProjectRequestScope, payload *buffer.UpdateExportPayload) (res *buffer.Task, err error) {
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
 
@@ -143,12 +143,10 @@ func (s *service) UpdateExport(d dependencies.ProjectRequestScope, payload *buff
 	return s.mapper.TaskPayload(t), nil
 }
 
-func (s *service) GetExport(d dependencies.ProjectRequestScope, payload *buffer.GetExportPayload) (r *buffer.Export, err error) {
-	ctx, str := d.RequestCtx(), d.Store()
-
+func (s *service) GetExport(ctx context.Context, d dependencies.ProjectRequestScope, payload *buffer.GetExportPayload) (r *buffer.Export, err error) {
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
-	export, err := str.GetExport(ctx, exportKey)
+	export, err := d.Store().GetExport(ctx, exportKey)
 	if err != nil {
 		return nil, err
 	}
@@ -156,11 +154,9 @@ func (s *service) GetExport(d dependencies.ProjectRequestScope, payload *buffer.
 	return s.mapper.ExportPayload(export), nil
 }
 
-func (s *service) ListExports(d dependencies.ProjectRequestScope, payload *buffer.ListExportsPayload) (r *buffer.ExportsList, err error) {
-	ctx, str := d.RequestCtx(), d.Store()
-
+func (s *service) ListExports(ctx context.Context, d dependencies.ProjectRequestScope, payload *buffer.ListExportsPayload) (r *buffer.ExportsList, err error) {
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
-	exports, err := str.ListExports(ctx, receiverKey)
+	exports, err := d.Store().ListExports(ctx, receiverKey)
 	if err != nil {
 		return nil, err
 	}
@@ -168,12 +164,10 @@ func (s *service) ListExports(d dependencies.ProjectRequestScope, payload *buffe
 	return &buffer.ExportsList{Exports: s.mapper.ExportsPayload(exports)}, nil
 }
 
-func (s *service) DeleteExport(d dependencies.ProjectRequestScope, payload *buffer.DeleteExportPayload) (err error) {
-	ctx, str := d.RequestCtx(), d.Store()
-
+func (s *service) DeleteExport(ctx context.Context, d dependencies.ProjectRequestScope, payload *buffer.DeleteExportPayload) (err error) {
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
 	exportKey := key.ExportKey{ReceiverKey: receiverKey, ExportID: payload.ExportID}
-	return str.DeleteExport(ctx, exportKey)
+	return d.Store().DeleteExport(ctx, exportKey)
 }
 
 func (s *service) createResourcesForExport(ctx context.Context, d dependencies.ProjectRequestScope, rb rollback.Builder, export *model.Export) error {

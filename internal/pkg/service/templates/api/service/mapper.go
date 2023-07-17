@@ -92,7 +92,7 @@ func RepositoriesResponse(ctx context.Context, d dependencies.ProjectRequestScop
 
 	out = &Repositories{}
 	for _, repoRef := range d.ProjectRepositories().All() {
-		repo, err := repositoryInst(d, repoRef.Name)
+		repo, err := repositoryInst(ctx, d, repoRef.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -491,7 +491,7 @@ func InstanceResponse(ctx context.Context, d dependencies.ProjectRequestScope, p
 }
 
 func instanceVersionDetail(ctx context.Context, d dependencies.ProjectRequestScope, instance *model.TemplateInstance) *VersionDetail {
-	repo, tmplRecord, err := templateRecord(d, instance.RepositoryName, instance.TemplateID)
+	repo, tmplRecord, err := templateRecord(ctx, d, instance.RepositoryName, instance.TemplateID)
 	if err != nil {
 		return nil
 	}

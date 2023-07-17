@@ -32,7 +32,7 @@ type CachedRepository struct {
 	templatesLock *sync.RWMutex       // provides atomic access to the templates field
 
 	unlockFn git.RepositoryFsUnlockFn // unlocks underlying FS, called on free()
-	freeLock *sync.RWMutex            // prevents cleanup of the repository while it is in use, see markInUse and free methods
+	freeLock *sync.RWMutex            // prevents cleanup of the repository while it is in use, see lock and free methods
 }
 
 // UnlockFn callback is returned by Manager. It must be called when the Cached Repository is no longer in use.
@@ -165,7 +165,7 @@ func (r *CachedRepository) update(ctx context.Context) (*CachedRepository, bool,
 			return nil, false, err
 		}
 
-		// Atomically exchange value, see markInUse method
+		// Atomically exchange value, see lock method
 		newRepo := newCachedRepository(ctx, r.d, r.git, unlockFn, newData)
 
 		// Return new value
@@ -210,8 +210,8 @@ func (r *CachedRepository) loadAllTemplates(ctx context.Context) error {
 	return errs.ErrorOrNil()
 }
 
-// markInUse is called when this repository starts to be used by a new request.
-func (r *CachedRepository) markInUse() UnlockFn {
+// lock is called when this repository starts to be used by a new request.
+func (r *CachedRepository) lock() UnlockFn {
 	// See Update method
 	r.freeLock.RLock()
 	return r.freeLock.RUnlock

@@ -10,6 +10,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 	repositoryManager "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manager"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
 // projectRequestScope implements ProjectRequestScope interface.
@@ -91,12 +92,17 @@ func (v *projectRequestScope) TemplateRepository(ctx context.Context, definition
 	if err != nil {
 		return nil, err
 	}
+
 	return repo.Unwrap(), nil
 }
 
 func (v *projectRequestScope) cachedTemplateRepository(ctx context.Context, definition model.TemplateRepository) (repo *repositoryManager.CachedRepository, err error) {
 	if v.repositories == nil {
 		v.repositories = make(map[string]*repositoryManager.CachedRepository)
+	}
+
+	if _, ok := ctx.Deadline(); !ok {
+		panic(errors.New("to prevent the lock from remaining locked, please use a request context with a deadline"))
 	}
 
 	if _, found := v.repositories[definition.Hash()]; !found {
@@ -112,7 +118,7 @@ func (v *projectRequestScope) cachedTemplateRepository(ctx context.Context, defi
 
 		// Unlock repository after the request,
 		go func() {
-			<-v.RequestCtx().Done()
+			<-ctx.Done()
 			unlockFn()
 		}()
 

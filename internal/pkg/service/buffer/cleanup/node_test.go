@@ -21,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 )
 
 func TestCleanup(t *testing.T) {
@@ -177,7 +178,7 @@ func TestCleanup(t *testing.T) {
 [task][1000/github/receiver.cleanup/%s]INFO  task succeeded (%s): receiver "1000/github" has been cleaned
 [task][1000/github/receiver.cleanup/%s]DEBUG  lock released "runtime/lock/task/1000/github/receiver.cleanup"
 %A
-`, mock.DebugLogger().AllMessages())
+`, strhelper.FilterLines(`^\[task|cleanup\]`, mock.DebugLogger().AllMessages()))
 
 	// Check keys
 	etcdhelper.AssertKVsString(t, client, `

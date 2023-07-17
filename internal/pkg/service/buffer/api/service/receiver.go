@@ -21,8 +21,8 @@ const (
 	receiverCreateTaskType = "receiver.create"
 )
 
-func (s *service) CreateReceiver(d dependencies.ProjectRequestScope, payload *buffer.CreateReceiverPayload) (res *buffer.Task, err error) {
-	ctx, str := d.RequestCtx(), d.Store()
+func (s *service) CreateReceiver(ctx context.Context, d dependencies.ProjectRequestScope, payload *buffer.CreateReceiverPayload) (res *buffer.Task, err error) {
+	str := d.Store()
 
 	receiver, err := s.mapper.CreateReceiverModel(d.ProjectID(), idgenerator.ReceiverSecret(), *payload)
 	if err != nil {
@@ -76,14 +76,12 @@ func (s *service) CreateReceiver(d dependencies.ProjectRequestScope, payload *bu
 	return s.mapper.TaskPayload(t), nil
 }
 
-func (s *service) UpdateReceiver(d dependencies.ProjectRequestScope, payload *buffer.UpdateReceiverPayload) (res *buffer.Receiver, err error) {
-	ctx, str := d.RequestCtx(), d.Store()
-
+func (s *service) UpdateReceiver(ctx context.Context, d dependencies.ProjectRequestScope, payload *buffer.UpdateReceiverPayload) (res *buffer.Receiver, err error) {
 	rb := rollback.New(s.logger)
 	defer rb.InvokeIfErr(ctx, &err)
 
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
-	err = str.UpdateReceiver(ctx, receiverKey, func(receiver model.ReceiverBase) (model.ReceiverBase, error) {
+	err = d.Store().UpdateReceiver(ctx, receiverKey, func(receiver model.ReceiverBase) (model.ReceiverBase, error) {
 		return s.mapper.UpdateReceiverModel(receiver, *payload)
 	})
 
@@ -91,14 +89,12 @@ func (s *service) UpdateReceiver(d dependencies.ProjectRequestScope, payload *bu
 		return nil, err
 	}
 
-	return s.GetReceiver(d, &buffer.GetReceiverPayload{ReceiverID: receiverKey.ReceiverID})
+	return s.GetReceiver(ctx, d, &buffer.GetReceiverPayload{ReceiverID: receiverKey.ReceiverID})
 }
 
-func (s *service) GetReceiver(d dependencies.ProjectRequestScope, payload *buffer.GetReceiverPayload) (res *buffer.Receiver, err error) {
-	ctx, str := d.RequestCtx(), d.Store()
-
+func (s *service) GetReceiver(ctx context.Context, d dependencies.ProjectRequestScope, payload *buffer.GetReceiverPayload) (res *buffer.Receiver, err error) {
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
-	receiver, err := str.GetReceiver(ctx, receiverKey)
+	receiver, err := d.Store().GetReceiver(ctx, receiverKey)
 	if err != nil {
 		return nil, err
 	}
@@ -106,10 +102,8 @@ func (s *service) GetReceiver(d dependencies.ProjectRequestScope, payload *buffe
 	return s.mapper.ReceiverPayload(receiver), nil
 }
 
-func (s *service) ListReceivers(d dependencies.ProjectRequestScope, _ *buffer.ListReceiversPayload) (res *buffer.ReceiversList, err error) {
-	ctx, str := d.RequestCtx(), d.Store()
-
-	receivers, err := str.ListReceivers(ctx, d.ProjectID())
+func (s *service) ListReceivers(ctx context.Context, d dependencies.ProjectRequestScope, _ *buffer.ListReceiversPayload) (res *buffer.ReceiversList, err error) {
+	receivers, err := d.Store().ListReceivers(ctx, d.ProjectID())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list receivers in the project")
 	}
@@ -117,10 +111,9 @@ func (s *service) ListReceivers(d dependencies.ProjectRequestScope, _ *buffer.Li
 	return &buffer.ReceiversList{Receivers: s.mapper.ReceiversPayload(receivers)}, nil
 }
 
-func (s *service) DeleteReceiver(d dependencies.ProjectRequestScope, payload *buffer.DeleteReceiverPayload) (err error) {
-	ctx, str := d.RequestCtx(), d.Store()
+func (s *service) DeleteReceiver(ctx context.Context, d dependencies.ProjectRequestScope, payload *buffer.DeleteReceiverPayload) (err error) {
 	receiverKey := key.ReceiverKey{ProjectID: d.ProjectID(), ReceiverID: payload.ReceiverID}
-	return str.DeleteReceiver(ctx, receiverKey)
+	return d.Store().DeleteReceiver(ctx, receiverKey)
 }
 
 func (s *service) createResourcesForReceiver(ctx context.Context, d dependencies.ProjectRequestScope, rb rollback.Builder, receiver *model.Receiver) error {

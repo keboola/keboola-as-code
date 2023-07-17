@@ -116,7 +116,7 @@ func run() error {
 	}
 
 	// Create service.
-	svc, err := service.New(apiScp)
+	svc, err := service.New(ctx, apiScp)
 	if err != nil {
 		return err
 	}

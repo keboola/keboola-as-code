@@ -14,7 +14,7 @@ import (
 func TestHTTPCodeFrom(t *testing.T) {
 	t.Parallel()
 	assert.Equal(t, StatusClientClosedRequest, HTTPCodeFrom(context.Canceled))
-	assert.Equal(t, http.StatusInternalServerError, HTTPCodeFrom(context.DeadlineExceeded))
+	assert.Equal(t, http.StatusRequestTimeout, HTTPCodeFrom(context.DeadlineExceeded))
 	assert.Equal(t, http.StatusInternalServerError, HTTPCodeFrom(errors.New("some error")))
 	assert.Equal(t, http.StatusConflict, HTTPCodeFrom(NewResourceAlreadyExistsError("<what>", "<key>", "<in>")))
 	assert.Equal(t, http.StatusBadRequest, HTTPCodeFrom(NewBadRequestError(errors.New("message"))))

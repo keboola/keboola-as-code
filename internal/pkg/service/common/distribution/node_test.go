@@ -19,7 +19,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 func TestNodesDiscovery(t *testing.T) {
@@ -323,6 +322,5 @@ func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdCredentials e
 	if logs != nil {
 		d.DebugLogger().ConnectTo(logs)
 	}
-	d.DebugLogger().ConnectTo(testhelper.VerboseStdout())
 	return d
 }

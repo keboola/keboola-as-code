@@ -23,7 +23,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 type notRetryableError struct {
@@ -100,7 +99,6 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 		),
 		append(opts, dependencies.WithUniqueID("my-worker"))...,
 	)
-	workerMock.DebugLogger().ConnectTo(testhelper.VerboseStdout())
 	_, err := service.New(workerScp)
 	assert.NoError(t, err)
 

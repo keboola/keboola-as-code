@@ -247,16 +247,28 @@ func (r *RemoteRepository) fetch(ctx context.Context) error {
 }
 
 func (r *RemoteRepository) runGitCmd(ctx context.Context, args ...string) (cmdResult, error) {
+	var lastErr error
 	retry := newBackoff()
 	for {
 		result, err := r.doRunGitCmd(ctx, args...)
 		if result.exitCode == 0 && err == nil {
+			// Success
 			return result, nil
 		}
+		if lastErr == nil || (!errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)) {
+			// Set the last error, if it is not context cancelled or deadline exceeded.
+			// We want to return the reason why retries were made.
+			lastErr = err
+		}
 		if delay := retry.NextBackOff(); delay == retry.Stop {
-			return result, err
+			return result, lastErr
 		} else {
-			time.Sleep(delay)
+			select {
+			case <-ctx.Done():
+				return result, lastErr
+			case <-time.After(delay):
+				// continue, try again
+			}
 		}
 	}
 }

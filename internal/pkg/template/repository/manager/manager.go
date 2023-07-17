@@ -5,7 +5,7 @@
 //   - Default repositories are preloaded in New by Manager.Repository method.
 //   - Manager.Repository creates a new CachedRepository by newCachedRepository function.
 //   - newCachedRepository function preloads all templates by CachedRepository.loadAllTemplates method.
-//   - Manager.Repository calls CachedRepository.markInUse method for every request.
+//   - Manager.Repository calls CachedRepository.lock method for every request.
 //   - After the request is finished, it must call provided UnlockFn.
 //   - Manager.Update is called periodically, it calls CachedRepository.update.
 //   - If there has been a change in the underlying git repository, then CachedRepository.update will return an updated copy of the repository.
@@ -120,7 +120,7 @@ func (m *Manager) Repository(ctx context.Context, ref model.TemplateRepository) 
 
 	// Prevented cleaning of the repository if it is outdated but still in use by some API request.
 	// UnlockFn must be called when the repository is no longer used.
-	unlockFn := cachedRepo.markInUse()
+	unlockFn := cachedRepo.lock()
 	return cachedRepo, unlockFn, nil
 }
 

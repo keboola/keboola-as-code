@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	requestTimeout          = 30 * time.Second
 	readHeaderTimeout       = 10 * time.Second
 	gracefulShutdownTimeout = 30 * time.Second
 )
@@ -34,6 +35,7 @@ func Start(d dependencies, cfg Config) error {
 	com.Muxer.Use(middleware.OpenTelemetryExtractRoute())
 	handler := middleware.Wrap(
 		com.Muxer,
+		middleware.ContextTimout(requestTimeout),
 		middleware.RequestInfo(),
 		middleware.Filter(middlewareCfg),
 		middleware.Logger(logger),

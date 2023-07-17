@@ -1,7 +1,6 @@
 package dependencies
 
 import (
-	"context"
 	"net"
 	"net/http"
 
@@ -28,11 +27,6 @@ func (v *requestInfo) check() {
 	if v == nil {
 		panic(errors.New("dependencies request info scope is not initialized"))
 	}
-}
-
-func (v *requestInfo) RequestCtx() context.Context {
-	v.check()
-	return v.request.Context()
 }
 
 func (v *requestInfo) RequestID() string {

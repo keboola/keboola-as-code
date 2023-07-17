@@ -30,7 +30,7 @@ func RegisterPlugin(pkgPath string) {
 					case "service":
 						// Add dependencies to the service interface, instead of context (it is included in dependencies)
 						search := `{{ .VarName }}(context.Context`
-						replace := `{{ .VarName }}(
+						replace := `{{ .VarName }}(context.Context, 
 {{- $authFound := false}}
 {{- range .Requirements }}
 	{{- range .Schemes }}
@@ -77,11 +77,11 @@ dependencies.PublicRequestScope
 	`
 						s.Source = strings.ReplaceAll(s.Source, search, replace)
 
-						// Add dependencies to the service method call, instead of context (it is included in dependencies)
+						// Add dependencies to the service method call
 						s.Source = strings.ReplaceAll(
 							s.Source,
 							"s.{{ .VarName }}(ctx",
-							"s.{{ .VarName }}(deps",
+							"s.{{ .VarName }}(ctx, deps",
 						)
 					}
 				}

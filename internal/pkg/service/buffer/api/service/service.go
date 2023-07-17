@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/benbjohnson/clock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
@@ -31,12 +33,12 @@ func New(d dependencies.APIScope) buffer.Service {
 	}
 }
 
-func (s *service) APIRootIndex(dependencies.PublicRequestScope) (err error) {
+func (s *service) APIRootIndex(context.Context, dependencies.PublicRequestScope) (err error) {
 	// Redirect / -> /v1
 	return nil
 }
 
-func (s *service) APIVersionIndex(dependencies.PublicRequestScope) (res *buffer.ServiceDetail, err error) {
+func (s *service) APIVersionIndex(context.Context, dependencies.PublicRequestScope) (res *buffer.ServiceDetail, err error) {
 	res = &buffer.ServiceDetail{
 		API:           "buffer",
 		Documentation: "https://buffer.keboola.com/v1/documentation",
@@ -44,6 +46,6 @@ func (s *service) APIVersionIndex(dependencies.PublicRequestScope) (res *buffer.
 	return res, nil
 }
 
-func (s *service) HealthCheck(dependencies.PublicRequestScope) (res string, err error) {
+func (s *service) HealthCheck(context.Context, dependencies.PublicRequestScope) (res string, err error) {
 	return "OK", nil
 }
