@@ -40,7 +40,7 @@ type WorkerConfig struct {
 
 func NewWorkerConfig() WorkerConfig {
 	return WorkerConfig{
-		ServiceConfig:           newServiceConfig(),
+		ServiceConfig:           NewServiceConfig(),
 		UniqueID:                "",
 		CheckConditionsInterval: DefaultCheckConditionsInterval,
 		UploadConditions:        model.DefaultUploadConditions(),
