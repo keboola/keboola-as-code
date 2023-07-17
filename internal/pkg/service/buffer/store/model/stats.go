@@ -28,20 +28,31 @@ type Stats struct {
 	FileGZipSize datasize.ByteSize `json:"fileGZipSize,omitempty"`
 }
 
-type StatsByType struct {
-	// Received = active + closed + uploaded
-	Total Stats
-	// Buffered = all in active, closed state group, size of buffered data in the etcd
-	Buffered Stats
-	// Uploading = all in closed state group, in the process of uploading from the etcd to the file storage
-	Uploading Stats
-	// Uploaded = all in uploaded state group, uploaded in the file storage
-	Uploaded Stats
+type UploadStats struct {
+	// RecordsCount is count of uploaded records.
+	RecordsCount uint64
+	// FileSize is total uploaded size before compression.
+	FileSize datasize.ByteSize
+	// FileSize is total uploaded size after compression.
+	FileGZipSize datasize.ByteSize
 }
 
-type SliceStats struct {
-	key.SliceNodeKey
-	Stats
+type SliceAPINodeStats struct {
+	NodeID   string
+	SliceKey key.SliceKey
+	Stats    Stats
+}
+
+type StatsByType struct {
+	Opened       Stats
+	Uploading    Stats
+	Uploaded     Stats
+	UploadFailed Stats
+	Imported     Stats
+	// AggregatedTotal = all states
+	AggregatedTotal Stats
+	// AggregatedInBuffer = Writing + Closing + Uploading + Failed
+	AggregatedInBuffer Stats
 }
 
 func (s Stats) GetStats() Stats {
