@@ -118,8 +118,15 @@ func (c *checker) check(ctx context.Context) {
 			continue
 		}
 
+		// Get slice stats
+		sliceStats, err := c.cachedStats.SliceStats(ctx, sliceKey)
+		if err != nil {
+			c.logger.Error(err)
+			continue
+		}
+
 		// Check upload conditions
-		if met, reason := c.config.UploadConditions.Evaluate(now, sliceKey.OpenedAt(), c.stats.SliceStats(sliceKey).Total); met {
+		if met, reason := c.config.UploadConditions.Evaluate(now, sliceKey.OpenedAt(), sliceStats.AggregatedTotal); met {
 			if err := c.swapSlice(sliceKey, reason); err != nil {
 				c.logger.Error(err)
 			}
