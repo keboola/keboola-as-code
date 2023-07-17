@@ -19,7 +19,7 @@ type fooResult struct {
 func TestJoin(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Create keys with some values
 	key1 := etcdop.Key("key1")

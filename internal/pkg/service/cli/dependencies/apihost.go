@@ -19,8 +19,8 @@ import (
 // 2. Flag.
 // 3. ENV
 // 4. An env file, e.g., ".env.local".
-func storageAPIHost(d Base, fallback string) (string, error) {
-	fs, opts := d.Fs(), d.Options()
+func storageAPIHost(baseScp BaseScope, fallback string) (string, error) {
+	fs, opts := baseScp.Fs(), baseScp.Options()
 
 	var host string
 	if fs.IsFile(projectManifest.Path()) {
@@ -35,7 +35,7 @@ func storageAPIHost(d Base, fallback string) (string, error) {
 		// Get host from options (ENV/flag)
 		host = opts.GetString(options.StorageAPIHostOpt)
 		if opts.KeySetBy(options.StorageAPIHostOpt) == cliconfig.SetByEnv {
-			d.Logger().Infof(`Storage API host "%s" set from ENV.`, host)
+			baseScp.Logger().Infof(`Storage API host "%s" set from ENV.`, host)
 		}
 	}
 
@@ -46,7 +46,7 @@ func storageAPIHost(d Base, fallback string) (string, error) {
 
 	// Interactive dialog
 	if host == "" {
-		host = d.Dialogs().AskStorageAPIHost()
+		host = baseScp.Dialogs().AskStorageAPIHost()
 	}
 
 	// HTTP protocol can be explicitly specified in the host definition,

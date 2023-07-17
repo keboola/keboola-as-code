@@ -6,7 +6,6 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/build"
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
@@ -14,20 +13,22 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/httpclient"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/template/repository"
 )
 
 // provider implements Provider interface.
 type provider struct {
-	commandCtx  context.Context
-	envs        env.Provider
-	logger      log.Logger
-	fs          filesystem.Fs
-	dialogs     *dialog.Dialogs
-	options     *options.Options
-	baseDeps    dependencies.Lazy[*base]
-	publicDeps  dependencies.Lazy[*local]
-	projectDeps dependencies.Lazy[*remote]
+	commandCtx context.Context
+	logger     log.Logger
+	proc       *servicectx.Process
+	fs         filesystem.Fs
+	dialogs    *dialog.Dialogs
+	options    *options.Options
+
+	baseScp      dependencies.Lazy[*baseScope]
+	localCmdScp  dependencies.Lazy[*localCommandScope]
+	remoteCmdScp dependencies.Lazy[*remoteCommandScope]
 }
 
 type _provider Provider
@@ -41,19 +42,19 @@ func (r *ProviderRef) Set(provider Provider) {
 	r._provider = provider
 }
 
-func NewProvider(commandCtx context.Context, envs env.Provider, logger log.Logger, fs filesystem.Fs, dialogs *dialog.Dialogs, opts *options.Options) Provider {
+func NewProvider(commandCtx context.Context, logger log.Logger, proc *servicectx.Process, fs filesystem.Fs, dialogs *dialog.Dialogs, opts *options.Options) Provider {
 	return &provider{
 		commandCtx: commandCtx,
-		envs:       envs,
 		logger:     logger,
+		proc:       proc,
 		fs:         fs,
 		dialogs:    dialogs,
 		options:    opts,
 	}
 }
 
-func (v *provider) BaseDependencies() Base {
-	return v.baseDeps.MustInitAndGet(func() *base {
+func (v *provider) BaseScope() BaseScope {
+	return v.baseScp.MustInitAndGet(func() *baseScope {
 		// Create base HTTP client for all API requests to other APIs
 		httpClient := httpclient.New(
 			httpclient.WithUserAgent(fmt.Sprintf("keboola-cli/%s", build.BuildVersion)),
@@ -64,65 +65,68 @@ func (v *provider) BaseDependencies() Base {
 				}
 			},
 		)
-		return newBaseDeps(v.commandCtx, v.envs, v.logger, httpClient, v.fs, v.dialogs, v.options)
+		return newBaseScope(v.commandCtx, v.logger, v.proc, httpClient, v.fs, v.dialogs, v.options)
 	})
 }
 
-func (v *provider) DependenciesForLocalCommand(opts ...Option) (ForLocalCommand, error) {
-	return v.publicDeps.InitAndGet(func() (*local, error) {
-		return newLocal(v.BaseDependencies(), opts...)
+func (v *provider) LocalCommandScope(opts ...Option) (LocalCommandScope, error) {
+	return v.localCmdScp.InitAndGet(func() (*localCommandScope, error) {
+		return newLocalCommandScope(v.BaseScope(), opts...)
 	})
 }
 
-func (v *provider) DependenciesForRemoteCommand(opts ...Option) (ForRemoteCommand, error) {
-	return v.projectDeps.InitAndGet(func() (*remote, error) {
-		publicDeps, err := v.DependenciesForLocalCommand()
+func (v *provider) RemoteCommandScope(opts ...Option) (RemoteCommandScope, error) {
+	return v.remoteCmdScp.InitAndGet(func() (*remoteCommandScope, error) {
+		localScope, err := v.LocalCommandScope()
 		if err != nil {
 			return nil, err
 		}
 
-		projectDeps, err := newRemote(publicDeps.CommandCtx(), publicDeps, opts...)
+		remoteScope, err := newRemoteCommandScope(localScope.CommandCtx(), localScope, opts...)
 		if err != nil {
 			return nil, err
 		}
 
-		return projectDeps, nil
+		return remoteScope, nil
 	})
 }
 
-func (v *provider) LocalProject(ignoreErrors bool, ops ...Option) (*project.Project, ForRemoteCommand, error) {
-	// Get local project
-	publicDeps, err := v.DependenciesForLocalCommand(ops...)
+func (v *provider) LocalProject(ignoreErrors bool, ops ...Option) (*project.Project, RemoteCommandScope, error) {
+	// Get local scope
+	localCmdScp, err := v.LocalCommandScope(ops...)
 	if err != nil {
 		return nil, nil, err
 	}
-	prj, _, err := publicDeps.LocalProject(ignoreErrors)
+
+	prj, _, err := localCmdScp.LocalProject(ignoreErrors)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Authentication
-	d, err := v.DependenciesForRemoteCommand()
+	remoteCmdScp, err := v.RemoteCommandScope()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return prj, d, nil
+	return prj, remoteCmdScp, nil
 }
 
-func (v *provider) LocalRepository(ops ...Option) (*repository.Repository, ForLocalCommand, error) {
+func (v *provider) LocalRepository(ops ...Option) (*repository.Repository, LocalCommandScope, error) {
 	// Get local repository
-	d, err := v.DependenciesForLocalCommand(ops...)
+	localCmdScp, err := v.LocalCommandScope(ops...)
 	if err != nil {
 		return nil, nil, err
 	}
-	repo, _, err := d.LocalTemplateRepository(d.CommandCtx())
+
+	repo, _, err := localCmdScp.LocalTemplateRepository(localCmdScp.CommandCtx())
 	if err != nil {
 		return nil, nil, err
 	}
-	return repo, d, nil
+
+	return repo, localCmdScp, nil
 }
 
 func (v *provider) LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error) {
-	return v.BaseDependencies().LocalDbtProject(ctx)
+	return v.BaseScope().LocalDbtProject(ctx)
 }

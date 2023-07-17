@@ -13,7 +13,7 @@ import (
 // If the user selects this entry, they will be asked to enter an ID for the new table
 // (which will be checked to be a valid table ID), and if successful, the return value of
 // `createNew` will be `true`.
-func askTable(d dependencies.ForRemoteCommand, allowCreateNew bool) (tableID keboola.TableID, createNew bool, err error) {
+func askTable(d dependencies.RemoteCommandScope, allowCreateNew bool) (tableID keboola.TableID, createNew bool, err error) {
 	allTables, err := d.KeboolaProjectAPI().ListTablesRequest(keboola.WithColumns()).Send(d.CommandCtx())
 	if err != nil {
 		return keboola.TableID{}, false, err

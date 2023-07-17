@@ -25,7 +25,7 @@ func TestServeMetrics(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	d := dependencies.NewMockedDeps(t)
+	d := dependencies.NewMocked(t)
 
 	port, err := netutils.FreePort()
 	assert.NoError(t, err)
@@ -85,7 +85,6 @@ target_info{service_name="my-service"} 1
 
 	// Check logs
 	wildcards.Assert(t, `
-INFO  process unique id "%s"
 [metrics]INFO  HTTP server listening on "localhost:%d/metrics"
 INFO  exiting (bye bye)
 [metrics]INFO  shutting down HTTP server at "localhost:%d"

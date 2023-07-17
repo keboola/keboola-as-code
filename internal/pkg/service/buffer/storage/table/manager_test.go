@@ -7,7 +7,6 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/stretchr/testify/assert"
 
-	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/storage/table"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
@@ -21,7 +20,7 @@ func TestManager_EnsureBucketExists(t *testing.T) {
 
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
-	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
+	d := dependencies.NewMocked(t, dependencies.WithTestProject(p))
 	m := NewManager(d.KeboolaProjectAPI())
 	rb := rollback.New(d.Logger())
 	client := p.KeboolaProjectAPI()
@@ -56,7 +55,7 @@ func TestManager_EnsureTableExists(t *testing.T) {
 
 	ctx := context.Background()
 	p := testproject.GetTestProjectForTest(t)
-	d := bufferDependencies.NewMockedDeps(t, dependencies.WithTestProject(p))
+	d := dependencies.NewMocked(t, dependencies.WithTestProject(p))
 	m := NewManager(d.KeboolaProjectAPI())
 	rb := rollback.New(d.Logger())
 	client := p.KeboolaProjectAPI()

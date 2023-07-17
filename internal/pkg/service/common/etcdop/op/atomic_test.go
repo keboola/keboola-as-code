@@ -20,7 +20,7 @@ func TestAtomicUpdate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Create keys
 	key1 := etcdop.Key("key1")

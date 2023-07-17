@@ -14,7 +14,7 @@ import (
 func TestGetOneOp(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	factory := func(ctx context.Context) (etcd.Op, error) {
 		return etcd.OpGet("foo"), nil
@@ -51,7 +51,7 @@ func TestGetOneOp(t *testing.T) {
 func TestGetOneTOp(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	type Data struct {
 		Field string `json:"field"`

@@ -52,7 +52,7 @@ type Dependencies interface {
 func NewNode(d Dependencies) (*Node, error) {
 	// Create
 	n := &Node{
-		logger: d.Logger().AddPrefix("[stats][cache]"),
+		logger: d.Logger().AddPrefix("[stats-cache]"),
 		clock:  d.Clock(),
 		client: d.EtcdClient(),
 		schema: d.Schema(),

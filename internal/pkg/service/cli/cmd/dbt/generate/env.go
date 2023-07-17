@@ -22,7 +22,7 @@ func EnvCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Get dependencies
-			d, err := p.DependenciesForRemoteCommand()
+			d, err := p.RemoteCommandScope()
 			if err != nil {
 				return err
 			}

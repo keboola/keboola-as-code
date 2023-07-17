@@ -66,7 +66,7 @@ func TestNewTxnOp_ToRawOp(t *testing.T) {
 func TestNewTxnOp_If_True_Then(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	op := txnForTest(true, false)
 
 	// Test processor
@@ -113,7 +113,7 @@ func TestNewTxnOp_If_True_Then(t *testing.T) {
 func TestNewTxnOp_If_False_Else(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	op := txnForTest(false, false)
 
 	// Test processor
@@ -137,7 +137,7 @@ func TestNewTxnOp_If_False_Else(t *testing.T) {
 func TestNewTxnOp_If_True_Then_MapperError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	op := txnForTest(true, true)
 
 	// Test processor
@@ -206,7 +206,7 @@ func TestMergeToTxn_ToRaw_Complex(t *testing.T) {
 func TestMergeToTxn_ToRaw_Nested_Txn(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Merge 3 operations
 	txn := MergeToTxn(
@@ -398,7 +398,7 @@ func TestMergeToTxn_Processors(t *testing.T) {
 	t.Parallel()
 
 	// Setup
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	ctx := context.Background()
 	pfx := etcdop.Prefix("my/prefix")
 

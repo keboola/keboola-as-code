@@ -14,8 +14,8 @@ import (
 func TestStorageAPIHost_NotSet(t *testing.T) {
 	t.Parallel()
 	o := options.New()
-	d := &base{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
-	_, err := storageAPIHost(d, "")
+	baseScp := &baseScope{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
+	_, err := storageAPIHost(baseScp, "")
 	if assert.Error(t, err) {
 		assert.Equal(t, ErrMissingStorageAPIHost, err)
 	}
@@ -24,8 +24,8 @@ func TestStorageAPIHost_NotSet(t *testing.T) {
 func TestStorageAPIHost_NotSet_Fallback(t *testing.T) {
 	t.Parallel()
 	o := options.New()
-	d := &base{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
-	out, err := storageAPIHost(d, "https://connection.keboola.com")
+	baseScp := &baseScope{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
+	out, err := storageAPIHost(baseScp, "https://connection.keboola.com")
 	assert.NoError(t, err)
 	assert.Equal(t, "https://connection.keboola.com", out) // fallback
 }
@@ -33,10 +33,10 @@ func TestStorageAPIHost_NotSet_Fallback(t *testing.T) {
 func TestStorageAPIHost_Empty(t *testing.T) {
 	t.Parallel()
 	o := options.New()
-	d := &base{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
+	baseScp := &baseScope{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
 	in := ""
 	o.Set("storage-api-host", in)
-	_, err := storageAPIHost(d, "")
+	_, err := storageAPIHost(baseScp, "")
 	if assert.Error(t, err) {
 		assert.Equal(t, ErrMissingStorageAPIHost, err)
 	}
@@ -45,10 +45,10 @@ func TestStorageAPIHost_Empty(t *testing.T) {
 func TestStorageAPIHost_Empty_Fallback(t *testing.T) {
 	t.Parallel()
 	o := options.New()
-	d := &base{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
+	baseScp := &baseScope{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
 	in := ""
 	o.Set("storage-api-host", in)
-	out, err := storageAPIHost(d, "https://connection.keboola.com")
+	out, err := storageAPIHost(baseScp, "https://connection.keboola.com")
 	assert.NoError(t, err)
 	assert.Equal(t, "https://connection.keboola.com", out) // fallback
 }
@@ -56,10 +56,10 @@ func TestStorageAPIHost_Empty_Fallback(t *testing.T) {
 func TestStorageAPIHost_NoProtocol(t *testing.T) {
 	t.Parallel()
 	o := options.New()
-	d := &base{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
+	baseScp := &baseScope{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
 	in := "connection.keboola.local"
 	o.Set("storage-api-host", in)
-	out, err := storageAPIHost(d, "")
+	out, err := storageAPIHost(baseScp, "")
 	assert.NoError(t, err)
 	assert.Equal(t, "https://connection.keboola.local", out)
 }
@@ -67,7 +67,7 @@ func TestStorageAPIHost_NoProtocol(t *testing.T) {
 func TestStorageAPIHost_HTTP_Protocol(t *testing.T) {
 	t.Parallel()
 	o := options.New()
-	d := &base{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
+	d := &baseScope{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
 	in := "http://connection.keboola.local"
 	o.Set("storage-api-host", in)
 	out, err := storageAPIHost(d, "")
@@ -78,10 +78,10 @@ func TestStorageAPIHost_HTTP_Protocol(t *testing.T) {
 func TestStorageAPIHost_HTTPS_Protocol(t *testing.T) {
 	t.Parallel()
 	o := options.New()
-	d := &base{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
+	baseScp := &baseScope{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
 	in := "https://connection.keboola.local"
 	o.Set("storage-api-host", in)
-	out, err := storageAPIHost(d, "")
+	out, err := storageAPIHost(baseScp, "")
 	assert.NoError(t, err)
 	assert.Equal(t, "https://connection.keboola.local", out)
 }
@@ -89,10 +89,10 @@ func TestStorageAPIHost_HTTPS_Protocol(t *testing.T) {
 func TestStorageAPIHost_Invalid_Protocol(t *testing.T) {
 	t.Parallel()
 	o := options.New()
-	d := &base{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
+	baseScp := &baseScope{fs: aferofs.NewMemoryFs(), options: o, dialogs: dialog.New(nopPrompt.New(), o)}
 	in := "foo://connection.keboola.local"
 	o.Set("storage-api-host", in)
-	out, err := storageAPIHost(d, "")
+	out, err := storageAPIHost(baseScp, "")
 	assert.NoError(t, err)
 	assert.Equal(t, "https://foo://connection.keboola.local", out)
 }

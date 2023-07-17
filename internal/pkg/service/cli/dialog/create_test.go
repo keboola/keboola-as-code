@@ -21,7 +21,7 @@ import (
 func TestAskCreateBranch(t *testing.T) {
 	t.Parallel()
 	dialog, _, console := createDialogs(t, true)
-	d := dependencies.NewMockedDeps(t)
+	d := dependencies.NewMocked(t)
 
 	// Interaction
 	wg := sync.WaitGroup{}
@@ -56,7 +56,7 @@ func TestAskCreateConfig(t *testing.T) {
 	// Test dependencies
 	dialog, _, console := createDialogs(t, true)
 	fs := aferofs.NewMemoryFs()
-	d := dependencies.NewMockedDeps(t)
+	d := dependencies.NewMocked(t)
 
 	// Create manifest file
 	manifestContent := `
@@ -128,7 +128,7 @@ func TestAskCreateRow(t *testing.T) {
 	// Test dependencies
 	dialog, _, console := createDialogs(t, true)
 	fs := aferofs.NewMemoryFs()
-	d := dependencies.NewMockedDeps(t)
+	d := dependencies.NewMocked(t)
 
 	// Create manifest file
 	manifestContent := `

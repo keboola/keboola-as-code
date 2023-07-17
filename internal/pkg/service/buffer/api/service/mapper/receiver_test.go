@@ -11,6 +11,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	. "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -20,8 +21,8 @@ import (
 func TestReceiverModel(t *testing.T) {
 	t.Parallel()
 
-	d := bufferDependencies.NewMockedDeps(t)
-	mapper := NewMapper(d)
+	apiScp, _ := bufferDependencies.NewMockedAPIScope(t, config.NewAPIConfig())
+	mapper := NewMapper(apiScp)
 
 	projectID := keboola.ProjectID(1000)
 	secret := idgenerator.ReceiverSecret()
@@ -120,8 +121,8 @@ func TestReceiverModel(t *testing.T) {
 func TestReceiverPayload(t *testing.T) {
 	t.Parallel()
 
-	d := bufferDependencies.NewMockedDeps(t)
-	mapper := NewMapper(d)
+	apiScp, _ := bufferDependencies.NewMockedAPIScope(t, config.NewAPIConfig())
+	mapper := NewMapper(apiScp)
 
 	receiverKey := key.ReceiverKey{
 		ProjectID:  1000,

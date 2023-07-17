@@ -12,9 +12,7 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
@@ -23,6 +21,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/strhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -46,16 +45,19 @@ func TestOrchestrator(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-	d1 := bufferDependencies.NewMockedDeps(t,
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
+
+	d1 := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
-		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithEtcdCredentials(etcdCredentials),
+		dependencies.WithEnabledOrchestrator(),
 		dependencies.WithUniqueID("node1"),
 	)
-	d2 := bufferDependencies.NewMockedDeps(t,
+	d2 := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
-		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithEtcdCredentials(etcdCredentials),
+		dependencies.WithEnabledOrchestrator(),
 		dependencies.WithUniqueID("node2"),
 	)
 	node1 := orchestrator.NewNode(d1)
@@ -122,7 +124,7 @@ func TestOrchestrator(t *testing.T) {
 	d2.Process().WaitForShutdown()
 
 	wildcards.Assert(t, `
-%A
+[orchestrator][some.task]INFO  ready
 [orchestrator][some.task]INFO  assigned "1000/my-receiver/some.task/ResourceID"
 [task][%s]INFO  started task
 [task][%s]DEBUG  lock acquired "runtime/lock/task/1000/my-receiver/ResourceID"
@@ -130,19 +132,18 @@ func TestOrchestrator(t *testing.T) {
 [task][%s]INFO  task succeeded (%s): ResourceID
 [task][%s]DEBUG  lock released "runtime/lock/task/1000/my-receiver/ResourceID"
 %A
-`, d2.DebugLogger().AllMessages())
+`, strhelper.FilterLines(`^\[orchestrator|task\]`, d2.DebugLogger().AllMessages()))
 
 	wildcards.Assert(t, `
-%A
 [orchestrator][some.task]INFO  ready
 %A
-`, d1.DebugLogger().AllMessages())
+`, strhelper.FilterLines(`^\[orchestrator|task\]`, d1.DebugLogger().AllMessages()))
 
 	wildcards.Assert(t, `
 %A
 [orchestrator][some.task]DEBUG  not assigned "1000/my-receiver/some.task/ResourceID", distribution key "1000/my-receiver"
 %A
-`, d1.DebugLogger().AllMessages())
+`, strhelper.FilterLines(`^\[orchestrator|task\]`, d1.DebugLogger().AllMessages()))
 }
 
 func TestOrchestrator_StartTaskIf(t *testing.T) {
@@ -152,12 +153,14 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-	d := bufferDependencies.NewMockedDeps(t,
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
+
+	d := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
-		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithEtcdCredentials(etcdCredentials),
 		dependencies.WithUniqueID("node1"),
+		dependencies.WithEnabledOrchestrator(),
 	)
 	node := orchestrator.NewNode(d)
 
@@ -211,7 +214,6 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 	d.Process().WaitForShutdown()
 
 	wildcards.Assert(t, `
-%A
 [orchestrator][some.task]INFO  ready
 [orchestrator][some.task]DEBUG  skipped "1000/my-receiver/some.task/BadID", StartTaskIf condition evaluated as false
 [orchestrator][some.task]INFO  assigned "1000/my-receiver/some.task/GoodID"
@@ -221,7 +223,7 @@ func TestOrchestrator_StartTaskIf(t *testing.T) {
 [task][1000/my-receiver/some.task/GoodID/%s]INFO  task succeeded (%s): GoodID
 [task][1000/my-receiver/some.task/GoodID/%s]DEBUG  lock released "runtime/lock/task/1000/my-receiver/some.task/GoodID"
 %A
-`, d.DebugLogger().AllMessages())
+`, strhelper.FilterLines(`^\[orchestrator|task\]`, d.DebugLogger().AllMessages()))
 }
 
 func TestOrchestrator_RestartInterval(t *testing.T) {
@@ -231,15 +233,17 @@ func TestOrchestrator_RestartInterval(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
+
 	restartInterval := time.Millisecond
 	clk := clock.NewMock()
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-	d := bufferDependencies.NewMockedDeps(t,
+	d := dependencies.NewMocked(t,
 		dependencies.WithCtx(ctx),
 		dependencies.WithClock(clk),
-		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithEtcdCredentials(etcdCredentials),
 		dependencies.WithUniqueID("node1"),
+		dependencies.WithEnabledOrchestrator(),
 	)
 	node := orchestrator.NewNode(d)
 

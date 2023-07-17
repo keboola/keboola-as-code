@@ -20,7 +20,7 @@ func BranchCommand(p dependencies.Provider) *cobra.Command {
 		Short: helpmsg.Read(`remote/create/branch/short`),
 		Long:  helpmsg.Read(`remote/create/branch/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
-			d, err := p.DependenciesForRemoteCommand()
+			d, err := p.RemoteCommandScope()
 			if err != nil {
 				return err
 			}

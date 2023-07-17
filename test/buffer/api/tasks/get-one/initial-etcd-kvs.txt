@@ -1,5 +1,5 @@
 <<<<<
-/config/receiver/%%TEST_KBC_PROJECT_ID%%/my-receiver
+config/receiver/%%TEST_KBC_PROJECT_ID%%/my-receiver
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -10,7 +10,7 @@
 >>>>>
 
 <<<<<
-/task/%%TEST_KBC_PROJECT_ID%%/my-receiver-a/receiver.create/2023-01-01T08:02:06.000Z_abcdef
+task/%%TEST_KBC_PROJECT_ID%%/my-receiver-a/receiver.create/2023-01-01T08:02:06.000Z_abcdef
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -29,7 +29,7 @@
 >>>>>
 
 <<<<<
-/task/%%TEST_KBC_PROJECT_ID%%/my-receiver-b/receiver.create/2023-01-01T08:02:06.000Z_ghjkl
+task/%%TEST_KBC_PROJECT_ID%%/my-receiver-b/receiver.create/2023-01-01T08:02:06.000Z_ghjkl
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,
@@ -48,7 +48,7 @@
 >>>>>
 
 <<<<<
-/task/%%TEST_KBC_PROJECT_ID%%/my-receiver-c/receiver.create/2023-02-01T08:02:06.000Z_xyzww
+task/%%TEST_KBC_PROJECT_ID%%/my-receiver-c/receiver.create/2023-02-01T08:02:06.000Z_xyzww
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,

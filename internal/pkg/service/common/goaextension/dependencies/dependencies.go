@@ -35,14 +35,14 @@ func RegisterPlugin(pkgPath string) {
 {{- range .Requirements }}
 	{{- range .Schemes }}
 		{{- if eq .Type "APIKey" -}}
-			dependencies.ForProjectRequest
+			dependencies.ProjectRequestScope
 			{{- $authFound = true}}
 			{{- break}}
 		{{- end }}
 	{{- end }}
 {{- end }}
 {{- if eq $authFound false -}}
-dependencies.ForPublicRequest
+dependencies.PublicRequestScope
 {{- end -}}
 	`
 						s.Source = strings.ReplaceAll(s.Source, search, replace)
@@ -64,14 +64,14 @@ dependencies.ForPublicRequest
 {{- range .Requirements }}
 	{{- range .Schemes }}
 		{{- if eq .Type "APIKey" }}
-			deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+			deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 			{{- $authFound = true}}
 			{{- break}}
 		{{- end }}
 	{{- end }}
 {{- end }}
 {{- if eq $authFound false }}
-	deps := ctx.Value(dependencies.ForPublicRequestCtxKey).(dependencies.ForPublicRequest)
+	deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
 {{- end }}
 {{- if .ServerStream }}
 	`

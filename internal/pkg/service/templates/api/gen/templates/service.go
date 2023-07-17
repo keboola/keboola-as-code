@@ -12,53 +12,53 @@ import (
 	"context"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
-	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
+	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies"
 	"goa.design/goa/v3/security"
 )
 
 // Service for applying templates to Keboola projects.
 type Service interface {
 	// Redirect to /v1.
-	APIRootIndex(dependencies.ForPublicRequest) (err error)
+	APIRootIndex(dependencies.PublicRequestScope) (err error)
 	// List API name and link to documentation.
-	APIVersionIndex(dependencies.ForPublicRequest) (res *ServiceDetail, err error)
+	APIVersionIndex(dependencies.PublicRequestScope) (res *ServiceDetail, err error)
 	// HealthCheck implements HealthCheck.
-	HealthCheck(dependencies.ForPublicRequest) (res string, err error)
+	HealthCheck(dependencies.PublicRequestScope) (res string, err error)
 	// List all template repositories defined in the project.
-	RepositoriesIndex(dependencies.ForProjectRequest, *RepositoriesIndexPayload) (res *Repositories, err error)
+	RepositoriesIndex(dependencies.ProjectRequestScope, *RepositoriesIndexPayload) (res *Repositories, err error)
 	// Get details of specified repository. Use "keboola" for default Keboola
 	// repository.
-	RepositoryIndex(dependencies.ForProjectRequest, *RepositoryIndexPayload) (res *Repository, err error)
+	RepositoryIndex(dependencies.ProjectRequestScope, *RepositoryIndexPayload) (res *Repository, err error)
 	// List all templates  defined in the repository.
-	TemplatesIndex(dependencies.ForProjectRequest, *TemplatesIndexPayload) (res *Templates, err error)
+	TemplatesIndex(dependencies.ProjectRequestScope, *TemplatesIndexPayload) (res *Templates, err error)
 	// Get detail and versions of specified template.
-	TemplateIndex(dependencies.ForProjectRequest, *TemplateIndexPayload) (res *TemplateDetail, err error)
+	TemplateIndex(dependencies.ProjectRequestScope, *TemplateIndexPayload) (res *TemplateDetail, err error)
 	// Get details of specified template version.
-	VersionIndex(dependencies.ForProjectRequest, *VersionIndexPayload) (res *VersionDetailExtended, err error)
+	VersionIndex(dependencies.ProjectRequestScope, *VersionIndexPayload) (res *VersionDetailExtended, err error)
 	// Get inputs for the "use" API call.
-	InputsIndex(dependencies.ForProjectRequest, *InputsIndexPayload) (res *Inputs, err error)
+	InputsIndex(dependencies.ProjectRequestScope, *InputsIndexPayload) (res *Inputs, err error)
 	// Validate inputs for the "use" API call.
 	// Only configured steps should be send.
-	ValidateInputs(dependencies.ForProjectRequest, *ValidateInputsPayload) (res *ValidationResult, err error)
+	ValidateInputs(dependencies.ProjectRequestScope, *ValidateInputsPayload) (res *ValidationResult, err error)
 	// Validate inputs and use template in the branch.
 	// Only configured steps should be send.
-	UseTemplateVersion(dependencies.ForProjectRequest, *UseTemplateVersionPayload) (res *Task, err error)
+	UseTemplateVersion(dependencies.ProjectRequestScope, *UseTemplateVersionPayload) (res *Task, err error)
 	// InstancesIndex implements InstancesIndex.
-	InstancesIndex(dependencies.ForProjectRequest, *InstancesIndexPayload) (res *Instances, err error)
+	InstancesIndex(dependencies.ProjectRequestScope, *InstancesIndexPayload) (res *Instances, err error)
 	// InstanceIndex implements InstanceIndex.
-	InstanceIndex(dependencies.ForProjectRequest, *InstanceIndexPayload) (res *InstanceDetail, err error)
+	InstanceIndex(dependencies.ProjectRequestScope, *InstanceIndexPayload) (res *InstanceDetail, err error)
 	// UpdateInstance implements UpdateInstance.
-	UpdateInstance(dependencies.ForProjectRequest, *UpdateInstancePayload) (res *InstanceDetail, err error)
+	UpdateInstance(dependencies.ProjectRequestScope, *UpdateInstancePayload) (res *InstanceDetail, err error)
 	// DeleteInstance implements DeleteInstance.
-	DeleteInstance(dependencies.ForProjectRequest, *DeleteInstancePayload) (err error)
+	DeleteInstance(dependencies.ProjectRequestScope, *DeleteInstancePayload) (err error)
 	// UpgradeInstance implements UpgradeInstance.
-	UpgradeInstance(dependencies.ForProjectRequest, *UpgradeInstancePayload) (res *Task, err error)
+	UpgradeInstance(dependencies.ProjectRequestScope, *UpgradeInstancePayload) (res *Task, err error)
 	// UpgradeInstanceInputsIndex implements UpgradeInstanceInputsIndex.
-	UpgradeInstanceInputsIndex(dependencies.ForProjectRequest, *UpgradeInstanceInputsIndexPayload) (res *Inputs, err error)
+	UpgradeInstanceInputsIndex(dependencies.ProjectRequestScope, *UpgradeInstanceInputsIndexPayload) (res *Inputs, err error)
 	// UpgradeInstanceValidateInputs implements UpgradeInstanceValidateInputs.
-	UpgradeInstanceValidateInputs(dependencies.ForProjectRequest, *UpgradeInstanceValidateInputsPayload) (res *ValidationResult, err error)
+	UpgradeInstanceValidateInputs(dependencies.ProjectRequestScope, *UpgradeInstanceValidateInputsPayload) (res *ValidationResult, err error)
 	// Get details of a task.
-	GetTask(dependencies.ForProjectRequest, *GetTaskPayload) (res *Task, err error)
+	GetTask(dependencies.ProjectRequestScope, *GetTaskPayload) (res *Task, err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.

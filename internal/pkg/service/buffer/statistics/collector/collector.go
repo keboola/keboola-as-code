@@ -9,7 +9,7 @@ import (
 	"github.com/c2h5oh/datasize"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
@@ -20,7 +20,7 @@ import (
 // Node collects node statistics in memory and periodically synchronizes them to the database.
 type Node struct {
 	nodeID string
-	config config.Config
+	config config.APIConfig
 	logger log.Logger
 	clock  clock.Clock
 	store  *store.Store
@@ -38,7 +38,7 @@ type sliceStats struct {
 }
 
 type Dependencies interface {
-	APIConfig() config.Config
+	APIConfig() config.APIConfig
 	Logger() log.Logger
 	Clock() clock.Clock
 	Process() *servicectx.Process

@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/client"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -13,15 +14,16 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/project"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	dependenciesPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/testproject"
 	loadState "github.com/keboola/keboola-as-code/pkg/lib/operation/state/load"
 )
 
 type Dependencies struct {
-	dependenciesPkg.Base
-	dependenciesPkg.Public
-	dependenciesPkg.Project
+	dependenciesPkg.BaseScope
+	dependenciesPkg.PublicScope
+	dependenciesPkg.ProjectScope
 }
 
 func PrepareProjectFS(testPrj *testproject.Project, branchID int) (filesystem.Fs, error) {
@@ -32,7 +34,7 @@ func PrepareProjectFS(testPrj *testproject.Project, branchID int) (filesystem.Fs
 	return fixtures.LoadFS("empty-branch", envs)
 }
 
-func PrepareProject(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, branchID int, remote bool) (*project.State, *testproject.Project, *Dependencies, testproject.UnlockFn, error) {
+func PrepareProject(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, proc *servicectx.Process, branchID int, remote bool) (*project.State, *testproject.Project, *Dependencies, testproject.UnlockFn, error) {
 	// Get OS envs
 	envs, err := env.FromOs()
 	if err != nil {
@@ -45,7 +47,7 @@ func PrepareProject(ctx context.Context, logger log.Logger, tel telemetry.Teleme
 		return nil, nil, nil, nil, err
 	}
 
-	testDeps, err := newTestDependencies(ctx, logger, tel, testPrj.StorageAPIHost(), testPrj.StorageAPIToken().Token)
+	testDeps, err := newTestDependencies(ctx, logger, tel, proc, testPrj.StorageAPIHost(), testPrj.StorageAPIToken().Token)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -86,12 +88,14 @@ func PrepareProject(ctx context.Context, logger log.Logger, tel telemetry.Teleme
 		unlockFn()
 		return nil, nil, nil, nil, err
 	}
+
 	var loadOptions loadState.Options
 	if remote {
 		loadOptions = loadState.Options{LoadRemoteState: true}
 	} else {
 		loadOptions = loadState.LocalOperationOptions()
 	}
+
 	prjState, err := prj.LoadState(loadOptions, testDeps)
 	if err != nil {
 		unlockFn()
@@ -101,19 +105,25 @@ func PrepareProject(ctx context.Context, logger log.Logger, tel telemetry.Teleme
 	return prjState, testPrj, testDeps, unlockFn, nil
 }
 
-func newTestDependencies(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, apiHost, apiToken string) (*Dependencies, error) {
-	baseDeps := dependenciesPkg.NewBaseDeps(env.Empty(), logger, tel, client.NewTestClient())
-	publicDeps, err := dependenciesPkg.NewPublicDeps(ctx, baseDeps, apiHost, dependenciesPkg.WithPreloadComponents(true))
+func newTestDependencies(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, proc *servicectx.Process, apiHost, apiToken string) (*Dependencies, error) {
+	baseDeps := dependenciesPkg.NewBaseScope(ctx, logger, tel, clock.New(), proc, client.NewTestClient())
+	publicDeps, err := dependenciesPkg.NewPublicScope(ctx, baseDeps, apiHost, dependenciesPkg.WithPreloadComponents(true))
 	if err != nil {
 		return nil, err
 	}
-	projectDeps, err := dependenciesPkg.NewProjectDeps(ctx, baseDeps, publicDeps, apiToken)
+
+	y := struct {
+		dependenciesPkg.BaseScope
+		dependenciesPkg.PublicScope
+	}{baseDeps, publicDeps}
+
+	projectDeps, err := dependenciesPkg.NewProjectDeps(ctx, y, apiToken)
 	if err != nil {
 		return nil, err
 	}
 	return &Dependencies{
-		Base:    baseDeps,
-		Public:  publicDeps,
-		Project: projectDeps,
+		BaseScope:    baseDeps,
+		PublicScope:  publicDeps,
+		ProjectScope: projectDeps,
 	}, nil
 }

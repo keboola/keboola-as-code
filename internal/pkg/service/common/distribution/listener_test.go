@@ -11,10 +11,10 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/ioutil"
 )
 
@@ -29,10 +29,10 @@ func TestOnChangeListener(t *testing.T) {
 	var d1, d2, d3, d4 dependencies.Mocked
 
 	listenerLogs := ioutil.NewAtomicWriter()
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
+	etcdCredentials := etcdhelper.TmpNamespace(t)
 
 	// Create node with a listener
-	node1, d1 = createNode(t, clk, etcdNamespace, "node1")
+	node1, d1 = createNode(t, clk, etcdCredentials, "node1")
 	listener := node1.OnChangeListener()
 	go func() {
 		for {
@@ -48,13 +48,13 @@ func TestOnChangeListener(t *testing.T) {
 	}()
 
 	// Add node 2
-	_, d2 = createNode(t, clk, etcdNamespace, "node2")
+	_, d2 = createNode(t, clk, etcdCredentials, "node2")
 	assert.Eventually(t, func() bool {
 		return strings.Contains(listenerLogs.String(), `found a new node "node2"`)
 	}, 10*time.Second, 10*time.Millisecond, "timeout")
 
 	// Add node 3
-	_, d3 = createNode(t, clk, etcdNamespace, "node3")
+	_, d3 = createNode(t, clk, etcdCredentials, "node3")
 	assert.Eventually(t, func() bool {
 		return strings.Contains(listenerLogs.String(), `found a new node "node3"`)
 	}, 10*time.Second, 10*time.Millisecond, "timeout")
@@ -70,7 +70,7 @@ func TestOnChangeListener(t *testing.T) {
 	listener.Stop()
 
 	// Add node 4 (listener is stopped, no log msg expected)
-	_, d4 = createNode(t, clk, etcdNamespace, "node4")
+	_, d4 = createNode(t, clk, etcdCredentials, "node4")
 
 	// Stop all nodes (listener is stopped, no log msg expected)
 	d1.Process().Shutdown(errors.New("test"))

@@ -186,7 +186,7 @@ ETCD_REQUEST[%d] ✔️️  GET ["some/prefix/foo005", "some/prefix0") | rev: %d
 	for _, tc := range cases {
 		var logs strings.Builder
 		ctx := context.Background()
-		client := etcdhelper.ClientForTest(t)
+		client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 		client.KV = etcdlogger.KVLogWrapper(client.KV, &logs)
 		prefix := generateKVs(t, tc.kvCount, ctx, client)
 		ops := append([]iterator.Option{iterator.WithPageSize(tc.pageSize)}, tc.options...)
@@ -227,7 +227,7 @@ func TestIterator_AllKeys(t *testing.T) {
 
 	var logs strings.Builder
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	client.KV = etcdlogger.KVLogWrapper(client.KV, &logs)
 	ops := []iterator.Option{iterator.WithPageSize(3)}
 
@@ -265,7 +265,7 @@ ETCD_REQUEST[%d] ✔️️  GET ["foo/bar004", "<NUL>") | rev: %d | count: 2 | %
 func TestIterator_Revision(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	prefix := etcdop.NewPrefix("some/prefix")
 
@@ -306,7 +306,7 @@ func TestIterator_Revision(t *testing.T) {
 func TestIterator_End(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	prefix := etcdop.NewPrefix("some/prefix")
 
@@ -340,7 +340,7 @@ func TestIterator_End(t *testing.T) {
 func TestIterator_Value_UsedIncorrectly(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	prefix := generateKVs(t, 3, ctx, client)
 
 	it := prefix.GetAll().Do(ctx, client)
@@ -352,7 +352,7 @@ func TestIterator_Value_UsedIncorrectly(t *testing.T) {
 func TestIterator_ForEachOp(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	out := ioutil.NewAtomicWriter()
 	prefix := generateKVs(t, 5, ctx, client)
 

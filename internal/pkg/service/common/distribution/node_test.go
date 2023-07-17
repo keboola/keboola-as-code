@@ -12,10 +12,10 @@ import (
 	"github.com/keboola/go-utils/pkg/wildcards"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
@@ -26,8 +26,9 @@ func TestNodesDiscovery(t *testing.T) {
 	t.Parallel()
 
 	clk := clock.New() // use real clock
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
+
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
 
 	// Create 3 nodes and (pseudo) processes
 	nodesCount := 3
@@ -43,7 +44,7 @@ func TestNodesDiscovery(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			node, d := createNode(t, clk, etcdNamespace, fmt.Sprintf("node%d", i+1))
+			node, d := createNode(t, clk, etcdCredentials, fmt.Sprintf("node%d", i+1))
 			if node != nil {
 				lock.Lock()
 				nodes[i] = node
@@ -172,7 +173,6 @@ node3
 
 	// Logs differs in number of "the node ... gone" messages
 	wildcards.Assert(t, `
-[node1]INFO  process unique id "node1"
 [node1][distribution][my-group][etcd-session]INFO  creating etcd session
 [node1][distribution][my-group][etcd-session]INFO  created etcd session | %s
 [node1][distribution][my-group]INFO  registering the node "node1"
@@ -190,10 +190,11 @@ node3
 [node1][distribution][my-group][etcd-session]INFO  closing etcd session
 [node1][distribution][my-group][etcd-session]INFO  closed etcd session | %s
 [node1][distribution][my-group]INFO  shutdown done
+[node1][etcd-client]INFO  closing etcd connection
+[node1][etcd-client]INFO  closed etcd connection | %s
 [node1]INFO  exited
 `, loggers[0].AllMessages())
 	wildcards.Assert(t, `
-[node2]INFO  process unique id "node2"
 [node2][distribution][my-group][etcd-session]INFO  creating etcd session
 [node2][distribution][my-group][etcd-session]INFO  created etcd session | %s
 [node2][distribution][my-group]INFO  registering the node "node2"
@@ -212,10 +213,11 @@ node3
 [node2][distribution][my-group][etcd-session]INFO  closing etcd session
 [node2][distribution][my-group][etcd-session]INFO  closed etcd session | %s
 [node2][distribution][my-group]INFO  shutdown done
+[node2][etcd-client]INFO  closing etcd connection
+[node2][etcd-client]INFO  closed etcd connection | %s
 [node2]INFO  exited
 `, loggers[1].AllMessages())
 	wildcards.Assert(t, `
-[node3]INFO  process unique id "node3"
 [node3][distribution][my-group][etcd-session]INFO  creating etcd session
 [node3][distribution][my-group][etcd-session]INFO  created etcd session | %s
 [node3][distribution][my-group]INFO  registering the node "node3"
@@ -235,12 +237,14 @@ node3
 [node3][distribution][my-group][etcd-session]INFO  closing etcd session
 [node3][distribution][my-group][etcd-session]INFO  closed etcd session | %s
 [node3][distribution][my-group]INFO  shutdown done
+[node3][etcd-client]INFO  closing etcd connection
+[node3][etcd-client]INFO  closed etcd connection | %s
 [node3]INFO  exited
 `, loggers[2].AllMessages())
 
 	// All node are off, start a new node
 	assert.Equal(t, 4, nodesCount+1)
-	node4, d4 := createNode(t, clk, etcdNamespace, "node4")
+	node4, d4 := createNode(t, clk, etcdCredentials, "node4")
 	process4 := d4.Process()
 	assert.Eventually(t, func() bool {
 		return reflect.DeepEqual([]string{"node4"}, node4.Nodes())
@@ -260,7 +264,6 @@ node4
 	etcdhelper.AssertKVsString(t, client, "")
 
 	wildcards.Assert(t, `
-[node4]INFO  process unique id "node4"
 [node4][distribution][my-group][etcd-session]INFO  creating etcd session
 [node4][distribution][my-group][etcd-session]INFO  created etcd session | %s
 [node4][distribution][my-group]INFO  registering the node "node4"
@@ -276,15 +279,17 @@ node4
 [node4][distribution][my-group][etcd-session]INFO  closing etcd session
 [node4][distribution][my-group][etcd-session]INFO  closed etcd session | %s
 [node4][distribution][my-group]INFO  shutdown done
+[node4][etcd-client]INFO  closing etcd connection
+[node4][etcd-client]INFO  closed etcd connection | %s
 [node4]INFO  exited
 `, d4.DebugLogger().AllMessages())
 }
 
-func createNode(t *testing.T, clk clock.Clock, etcdNamespace, nodeName string) (*distribution.Node, dependencies.Mocked) {
+func createNode(t *testing.T, clk clock.Clock, etcdCredentials etcdclient.Credentials, nodeName string) (*distribution.Node, dependencies.Mocked) {
 	t.Helper()
 
 	// Create dependencies
-	d := createDeps(t, clk, nil, etcdNamespace, nodeName)
+	d := createDeps(t, clk, nil, etcdCredentials, nodeName)
 
 	// Speedup tests with real clock,
 	// and disable events grouping interval in tests with mocked clocks,
@@ -306,14 +311,14 @@ func createNode(t *testing.T, clk clock.Clock, etcdNamespace, nodeName string) (
 	return node, d
 }
 
-func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdNamespace, nodeName string) dependencies.Mocked {
+func createDeps(t *testing.T, clk clock.Clock, logs io.Writer, etcdCredentials etcdclient.Credentials, nodeName string) dependencies.Mocked {
 	t.Helper()
-	d := dependencies.NewMockedDeps(
+	d := dependencies.NewMocked(
 		t,
 		dependencies.WithClock(clk),
 		dependencies.WithUniqueID(nodeName),
 		dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
-		dependencies.WithEtcdNamespace(etcdNamespace),
+		dependencies.WithEtcdCredentials(etcdCredentials),
 	)
 	if logs != nil {
 		d.DebugLogger().ConnectTo(logs)

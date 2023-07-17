@@ -22,6 +22,7 @@ import (
 //
 // The ResistantSession function waits for:
 // - The first session creation.
+// - The first keep-alive request.
 // - The completion of the first OnSession callback call.
 //
 // Any initialization error is reported via the error channel.
@@ -60,6 +61,18 @@ func ResistantSession(ctx context.Context, wg *sync.WaitGroup, logger log.Logger
 				}
 			}
 
+			// Check connection, wait for the first keep-alive.
+			// It prevents weird warnings if a test ends before the first keep alive is completed.
+			if initDone != nil {
+				if _, err = session.Client().KeepAliveOnce(ctx, session.Lease()); err != nil {
+					// Stop initialization
+					_ = session.Close()
+					initDone <- err
+					close(initDone)
+					return
+				}
+			}
+
 			// Reset session backoff
 			b.Reset()
 			logger.Infof("created etcd session | %s", time.Since(startTime))
@@ -71,6 +84,7 @@ func ResistantSession(ctx context.Context, wg *sync.WaitGroup, logger log.Logger
 					logger.Errorf(`etcd session callback failed: %s`, err)
 				} else {
 					// Stop initialization
+					_ = session.Close()
 					initDone <- err
 					close(initDone)
 					return

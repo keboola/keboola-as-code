@@ -15,12 +15,12 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`template/repository/init/long`),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Require empty dir
-			if _, err := p.BaseDependencies().EmptyDir(); err != nil {
+			if _, err := p.BaseScope().EmptyDir(); err != nil {
 				return err
 			}
 
 			// Get dependencies
-			d, err := p.DependenciesForLocalCommand(dependencies.WithDefaultStorageAPIHost())
+			d, err := p.LocalCommandScope(dependencies.WithDefaultStorageAPIHost())
 			if err != nil {
 				return err
 			}

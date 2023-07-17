@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/template"
 	tmplTest "github.com/keboola/keboola-as-code/internal/pkg/template/test"
@@ -20,6 +21,7 @@ type Options struct {
 }
 
 type dependencies interface {
+	Process() *servicectx.Process
 	Logger() log.Logger
 	Telemetry() telemetry.Telemetry
 }
@@ -36,7 +38,7 @@ func Run(ctx context.Context, tmpl *template.Template, o Options, d dependencies
 	}()
 
 	branchID := 1
-	prjState, _, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, d.Logger(), d.Telemetry(), branchID, false)
+	prjState, _, testDeps, unlockFn, err := tmplTest.PrepareProject(ctx, d.Logger(), d.Telemetry(), d.Process(), branchID, false)
 	if err != nil {
 		return err
 	}

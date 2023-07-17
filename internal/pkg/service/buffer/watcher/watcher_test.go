@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	etcd "go.etcd.io/etcd/client/v3"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	bufferDependencies "github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/filestate"
@@ -23,7 +23,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/watcher"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
-	"github.com/keboola/keboola-as-code/internal/pkg/utils/testhelper"
 )
 
 func TestAPIAndWorkerNodesSync(t *testing.T) {
@@ -32,32 +31,25 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	logger := log.NewDebugLogger()
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
 
-	d := bufferDependencies.NewMockedDeps(t, dependencies.WithEtcdNamespace(etcdNamespace))
-	str := d.Store()
-
-	createDeps := func(nodeName string) bufferDependencies.Mocked {
-		nodeDeps := bufferDependencies.NewMockedDeps(
-			t,
-			dependencies.WithUniqueID(nodeName),
-			dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)),
-			dependencies.WithEtcdNamespace(etcdNamespace),
-		)
-		nodeDeps.DebugLogger().ConnectTo(testhelper.VerboseStdout())
-		return nodeDeps
-	}
+	opts := []dependencies.MockedOption{dependencies.WithEtcdCredentials(etcdCredentials)}
+	serviceSp, _ := bufferDependencies.NewMockedServiceScope(t, opts...)
+	str := store.New(serviceSp)
 
 	createAPINode := func(nodeName string) *watcher.APINode {
-		apiNode, err := watcher.NewAPINode(createDeps(nodeName))
+		opts := append(opts, dependencies.WithUniqueID(nodeName), dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)))
+		apiScp, _ := bufferDependencies.NewMockedAPIScope(t, config.NewAPIConfig(), opts...)
+		apiNode, err := watcher.NewAPINode(apiScp)
 		assert.NoError(t, err)
 		return apiNode
 	}
 
 	createWorkerNode := func(nodeName string) *watcher.WorkerNode {
-		workerNode, err := watcher.NewWorkerNode(createDeps(nodeName))
+		opts := append(opts, dependencies.WithUniqueID(nodeName), dependencies.WithLoggerPrefix(fmt.Sprintf("[%s]", nodeName)))
+		workerScp, _ := bufferDependencies.NewMockedWorkerScope(t, config.NewWorkerConfig(), opts...)
+		workerNode, err := watcher.NewWorkerNode(workerScp)
 		assert.NoError(t, err)
 		return workerNode
 	}
@@ -114,6 +106,7 @@ func TestAPIAndWorkerNodesSync(t *testing.T) {
 
 	// The new revision Rev2 will be reported by API nodes ONLY AFTER
 	// all the work with the older Rev1 is completed (unlock1Rev1, unlock2Rev1).
+	logger := log.NewDebugLogger()
 	done1, done2, done3, done4 := make(chan struct{}), make(chan struct{}), make(chan struct{}), make(chan struct{})
 	go func() {
 		defer close(done1)

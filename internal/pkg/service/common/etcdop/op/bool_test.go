@@ -13,7 +13,7 @@ import (
 func TestBoolOp(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	factory := func(ctx context.Context) (etcd.Op, error) {
 		return etcd.OpGet("test", etcd.WithPrefix()), nil

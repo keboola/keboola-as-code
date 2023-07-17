@@ -18,12 +18,12 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`sync/init/long`),
 		RunE: func(cmd *cobra.Command, args []string) (cmdErr error) {
 			// Require empty dir
-			if _, err := p.BaseDependencies().EmptyDir(); err != nil {
+			if _, err := p.BaseScope().EmptyDir(); err != nil {
 				return err
 			}
 
 			// Get dependencies
-			projectDeps, err := p.DependenciesForRemoteCommand()
+			projectDeps, err := p.RemoteCommandScope()
 			if err != nil {
 				return err
 			}

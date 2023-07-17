@@ -25,7 +25,7 @@ func (t *mockedT) Errorf(format string, args ...interface{}) {
 
 func TestAssertKVsString_Equal(t *testing.T) {
 	t.Parallel()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
 	ctx := context.Background()
@@ -52,7 +52,7 @@ value2
 
 func TestAssertKVsString_Equal_WithIgnoredKeyPattern(t *testing.T) {
 	t.Parallel()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
 	ctx := context.Background()
@@ -73,7 +73,7 @@ value1
 
 func TestAssertKVsString_Difference(t *testing.T) {
 	t.Parallel()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
 	ctx := context.Background()
@@ -141,7 +141,7 @@ valueB
 
 func TestAssertKVsString_OnlyInActual(t *testing.T) {
 	t.Parallel()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
 	ctx := context.Background()
@@ -169,7 +169,7 @@ value1
 
 func TestAssertKVsString_OnlyInExpected(t *testing.T) {
 	t.Parallel()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Put keys
 	ctx := context.Background()

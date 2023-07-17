@@ -11,7 +11,7 @@ import (
 
 func TestPutAllFromSnapshot(t *testing.T) {
 	t.Parallel()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	snapshot := `
 <<<<<

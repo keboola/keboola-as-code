@@ -31,7 +31,7 @@ func TestLocker_WithEtcd_TimeToLiveExpired(t *testing.T) {
 	t.Parallel()
 
 	// Create locker
-	d := &testDeps{logger: log.NewDebugLogger(), etcdClient: etcdhelper.ClientForTest(t)}
+	d := &testDeps{logger: log.NewDebugLogger(), etcdClient: etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))}
 	ttlSeconds := 2
 	locker := NewLocker(d, ttlSeconds)
 

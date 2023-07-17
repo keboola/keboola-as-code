@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies"
 )
 
 const (
@@ -12,14 +12,13 @@ const (
 	ComponentsUpdateInterval         = 5 * time.Minute
 )
 
-func StartRepositoriesPullCron(ctx context.Context, d dependencies.ForServer) error {
+func StartRepositoriesPullCron(ctx context.Context, d dependencies.APIScope) error {
 	// Get dependencies
 	manager := d.RepositoryManager()
 
 	// Start background work
+	d.Logger().Infof("repository pull cron ready")
 	go func() {
-		d.Logger().Infof("repository pull cron ready")
-
 		// Delay start to a rounded time
 		interval := TemplateRepositoriesPullInterval
 		startAt := time.Now().Truncate(interval).Add(interval)
@@ -42,14 +41,13 @@ func StartRepositoriesPullCron(ctx context.Context, d dependencies.ForServer) er
 	return nil
 }
 
-func StartComponentsCron(ctx context.Context, d dependencies.ForServer) error {
+func StartComponentsCron(ctx context.Context, d dependencies.APIScope) error {
 	// Get dependencies
 	provider := d.ComponentsProvider()
 
 	// Start background work
+	d.Logger().Infof("components update cron ready")
 	go func() {
-		d.Logger().Infof("components update cron ready")
-
 		// Delay start to a rounded time
 		interval := ComponentsUpdateInterval
 		startAt := time.Now().Truncate(interval).Add(interval)

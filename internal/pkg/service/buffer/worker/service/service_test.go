@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model/column"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/etcdhelper"
 )
 
@@ -50,16 +52,19 @@ func createExport(t *testing.T, receiverID, exportID string, ctx context.Context
 	return export.OpenedSlice.SliceKey
 }
 
-func createRecords(t *testing.T, ctx context.Context, clk *clock.Mock, d bufferDependencies.Mocked, key key.ReceiverKey, start, count int) {
+func createRecords(t *testing.T, ctx context.Context, clk *clock.Mock, d bufferDependencies.APIScope, key key.ReceiverKey, start, count int) {
 	t.Helper()
 
 	importer := receive.NewImporter(d)
-	d.RequestHeaderMutable().Set("Content-Type", "application/json")
 	for i := start; i < start+count; i++ {
 		if clk != nil {
 			clk.Add(time.Second)
 		}
 		body := io.NopCloser(strings.NewReader(fmt.Sprintf(`{"key":"value%03d"}`, i)))
-		assert.NoError(t, importer.CreateRecord(ctx, d, key, receiverSecret, body))
+		req := httptest.NewRequest("GET", "/foo", body)
+		req.RemoteAddr = "1.2.3.4:789"
+		req.Header.Set("Content-Type", "application/json")
+		reqInfo := dependencies.NewRequestInfo(req)
+		assert.NoError(t, importer.CreateRecord(ctx, reqInfo, key, receiverSecret, body))
 	}
 }

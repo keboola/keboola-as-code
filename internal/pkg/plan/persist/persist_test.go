@@ -922,7 +922,7 @@ func (tc *testCase) run(t *testing.T) {
 	testhelper.MustReplaceEnvsDir(fs, `/`, envs)
 
 	// Container
-	d := dependencies.NewMockedDeps(t)
+	d := dependencies.NewMocked(t)
 
 	// Register new IDs API responses
 	var ticketResponses []*http.Response

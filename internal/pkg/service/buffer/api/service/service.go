@@ -4,15 +4,15 @@ import (
 	"github.com/benbjohnson/clock"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/receive"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/service/mapper"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/schema"
 )
 
 type service struct {
-	deps     dependencies.ForServer
+	deps     dependencies.APIScope
 	clock    clock.Clock
 	logger   log.Logger
 	schema   *schema.Schema
@@ -20,7 +20,7 @@ type service struct {
 	importer *receive.Importer
 }
 
-func New(d dependencies.ForServer) buffer.Service {
+func New(d dependencies.APIScope) buffer.Service {
 	return &service{
 		deps:     d,
 		clock:    d.Clock(),
@@ -31,12 +31,12 @@ func New(d dependencies.ForServer) buffer.Service {
 	}
 }
 
-func (s *service) APIRootIndex(dependencies.ForPublicRequest) (err error) {
+func (s *service) APIRootIndex(dependencies.PublicRequestScope) (err error) {
 	// Redirect / -> /v1
 	return nil
 }
 
-func (s *service) APIVersionIndex(dependencies.ForPublicRequest) (res *buffer.ServiceDetail, err error) {
+func (s *service) APIVersionIndex(dependencies.PublicRequestScope) (res *buffer.ServiceDetail, err error) {
 	res = &buffer.ServiceDetail{
 		API:           "buffer",
 		Documentation: "https://buffer.keboola.com/v1/documentation",
@@ -44,6 +44,6 @@ func (s *service) APIVersionIndex(dependencies.ForPublicRequest) (res *buffer.Se
 	return res, nil
 }
 
-func (s *service) HealthCheck(dependencies.ForPublicRequest) (res string, err error) {
+func (s *service) HealthCheck(dependencies.PublicRequestScope) (res string, err error) {
 	return "OK", nil
 }

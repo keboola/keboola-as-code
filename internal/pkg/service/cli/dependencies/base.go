@@ -3,21 +3,22 @@ package dependencies
 import (
 	"context"
 
+	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/client"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/dbt"
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 )
 
-// base dependencies container implements Base interface.
-type base struct {
-	dependencies.Base
+// baseScope dependencies container implements BaseScope interface.
+type baseScope struct {
+	dependencies.BaseScope
 	commandCtx      context.Context
 	fs              filesystem.Fs
 	fsInfo          FsInfo
@@ -32,10 +33,10 @@ type dbtProjectValue struct {
 	value *dbt.Project
 }
 
-func newBaseDeps(commandCtx context.Context, envs env.Provider, logger log.Logger, httpClient client.Client, fs filesystem.Fs, dialogs *dialog.Dialogs, opts *options.Options) *base {
-	return &base{
-		Base:       dependencies.NewBaseDeps(envs, logger, telemetry.NewNop(), httpClient),
-		commandCtx: commandCtx,
+func newBaseScope(ctx context.Context, logger log.Logger, proc *servicectx.Process, httpClient client.Client, fs filesystem.Fs, dialogs *dialog.Dialogs, opts *options.Options) *baseScope {
+	return &baseScope{
+		BaseScope:  dependencies.NewBaseScope(ctx, logger, telemetry.NewNop(), clock.New(), proc, httpClient),
+		commandCtx: ctx,
 		fs:         fs,
 		fsInfo:     FsInfo{fs: fs},
 		dialogs:    dialogs,
@@ -43,27 +44,27 @@ func newBaseDeps(commandCtx context.Context, envs env.Provider, logger log.Logge
 	}
 }
 
-func (v *base) CommandCtx() context.Context {
+func (v *baseScope) CommandCtx() context.Context {
 	return v.commandCtx
 }
 
-func (v *base) Fs() filesystem.Fs {
+func (v *baseScope) Fs() filesystem.Fs {
 	return v.fs
 }
 
-func (v *base) FsInfo() FsInfo {
+func (v *baseScope) FsInfo() FsInfo {
 	return v.fsInfo
 }
 
-func (v *base) Dialogs() *dialog.Dialogs {
+func (v *baseScope) Dialogs() *dialog.Dialogs {
 	return v.dialogs
 }
 
-func (v *base) Options() *options.Options {
+func (v *baseScope) Options() *options.Options {
 	return v.options
 }
 
-func (v *base) EmptyDir() (filesystem.Fs, error) {
+func (v *baseScope) EmptyDir() (filesystem.Fs, error) {
 	return v.emptyDir.InitAndGet(func() (filesystem.Fs, error) {
 		if err := v.fsInfo.AssertEmptyDir(); err != nil {
 			return nil, err
@@ -72,7 +73,7 @@ func (v *base) EmptyDir() (filesystem.Fs, error) {
 	})
 }
 
-func (v *base) LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error) {
+func (v *baseScope) LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error) {
 	value, err := v.localDbtProject.InitAndGet(func() (dbtProjectValue, error) {
 		// Get directory
 		fs, _, err := v.FsInfo().DbtProjectDir()

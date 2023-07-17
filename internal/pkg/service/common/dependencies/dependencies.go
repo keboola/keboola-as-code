@@ -27,9 +27,10 @@
 //
 // For easier work with dependencies, there are dependency containers for CLI / API and tests (see [Mocked]).
 //
-// Dependencies containers for API and CLI are in separate packages
-//   - CLI dependencies: [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies]
-//   - API dependencies: [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies]
+// Dependencies containers for services are in separate packages
+//   - [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/cli/dependencies]
+//   - [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies]
+//   - [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies]
 //
 // Example of difference between CLI and API dependencies implementations:
 //   - In the CLI the Storage API token is read from ENV or flag.
@@ -39,11 +40,16 @@
 //
 // # Common Dependencies
 //
-// In this package is shared/common part of dependencies implementation:
-//   - [Base] interface contains basic dependencies (see [NewBaseDeps]).
-//   - [Public] interface contains dependencies available without authentication (see [NewPublicDeps]).
-//   - [Project] interface contains dependencies available after authentication (see [NewProjectDeps]).
-//   - [Mocked] interface provides dependencies mocked for tests (see [NewMockedDeps]).
+// In this package contains common parts of dependencies implementation:
+//   - [BaseScope] interface provides basic dependencies (see [NewBaseScope]).
+//   - [PublicScope] interface provides dependencies available without authentication (see [NewPublicScope]).
+//   - [ProjectScope] interface provides dependencies available after authentication (see [NewProjectDeps]).
+//   - [RequestInfo] interface provides information about received HTTP request (see [NewRequestInfo]).
+//   - [EtcdClientScope] interface provides etcd client and serialization/deserialization (see [NewEtcdClientScope]).
+//   - [TaskScope] interface provides dependencies to run exclusive tasks on cluster nodes (see [NewTaskScope]).
+//   - [DistributionScope] interface provides dependencies to distribute a work between multiple cluster nodes (see [NewDistributionScope]).
+//   - [OrchestratorScope] interface provides dependencies to trigger tasks based on cluster nodes on etcd events (see [NewOrchestratorScope]).
+//   - [Mocked] interface provides dependencies mocked for tests (see [NewMocked]).
 //
 // [command design pattern]: https://refactoring.guru/design-patterns/command
 package dependencies
@@ -57,33 +63,35 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/keboola"
-	etcd "go.etcd.io/etcd/client/v3"
+	etcdPkg "go.etcd.io/etcd/client/v3"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/filesystem"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
 	projectPkg "github.com/keboola/keboola-as-code/internal/pkg/project"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	distributionPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/distribution"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdclient"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/serde"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
+	taskPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
+	orchestratorPkg "github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
 	"github.com/keboola/keboola-as-code/internal/pkg/state"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-// Base contains basic dependencies.
-type Base interface {
-	Clock() clock.Clock
-	Envs() env.Provider
-	HTTPClient() client.Client
+// BaseScope contains basic dependencies.
+type BaseScope interface {
 	Logger() log.Logger
-	Validator() validator.Validator
 	Telemetry() telemetry.Telemetry
+	Clock() clock.Clock
+	HTTPClient() client.Client
+	Validator() validator.Validator
+	Process() *servicectx.Process
 }
 
-// Public dependencies are available from the Storage API and other sources without authentication / Storage API token.
-type Public interface {
+// PublicScope dependencies are available from the Storage API and other sources without authentication / Storage API token.
+type PublicScope interface {
 	Components() *model.ComponentsMap
 	ComponentsProvider() *model.ComponentsProvider
 	KeboolaPublicAPI() *keboola.API
@@ -92,8 +100,8 @@ type Public interface {
 	StorageAPIHost() string
 }
 
-// Project dependencies require authentication / Storage API token.
-type Project interface {
+// ProjectScope dependencies require authentication - Storage API token.
+type ProjectScope interface {
 	KeboolaProjectAPI() *keboola.API
 	ObjectIDGeneratorFactory() func(ctx context.Context) *keboola.TicketProvider
 	ProjectID() keboola.ProjectID
@@ -103,29 +111,59 @@ type Project interface {
 	StorageAPITokenID() string
 }
 
+// RequestInfo dependencies provides information about received HTTP request.
+type RequestInfo interface {
+	RequestCtx() context.Context
+	RequestID() string
+	RequestHeader() http.Header
+	RequestClientIP() net.IP
+}
+
+// EtcdClientScope dependencies provides etcd client and serialization/deserialization.
+type EtcdClientScope interface {
+	EtcdClient() *etcdPkg.Client
+	EtcdSerde() *serde.Serde
+}
+
+// TaskScope dependencies to run exclusive tasks on cluster nodes.
+type TaskScope interface {
+	TaskNode() *taskPkg.Node
+}
+
+// DistributionScope dependencies to distribute a work between multiple cluster nodes.
+type DistributionScope interface {
+	DistributionNode() *distributionPkg.Node
+}
+
+// OrchestratorScope dependencies to trigger tasks based on cluster nodes on etcd events.
+type OrchestratorScope interface {
+	OrchestratorNode() *orchestratorPkg.Node
+}
+
 // Mocked dependencies for tests.
 // All HTTP requests to APIs are handled by the MockedHttpTransport by default.
-// Use SetFromTestProject method to connect dependencies to a testing project, if it is needed to call real APIs.
 type Mocked interface {
-	Base
-	Public
-	Project
+	BaseScope
+	PublicScope
+	ProjectScope
+	RequestInfo
+	EtcdClientScope
+	TaskScope
+	DistributionScope
+	OrchestratorScope
 
+	MockControl
+}
+
+// MockControl allows modification of mocked scopes and access to the insides in a test.
+type MockControl interface {
 	DebugLogger() log.DebugLogger
+	TestContext() context.Context
 	TestTelemetry() telemetry.ForTest
-	EnvsMutable() *env.Map
-	EtcdClient() *etcd.Client
-	EtcdSerde() *serde.Serde
+	TestEtcdCredentials() etcdclient.Credentials
+	TestEtcdClient() *etcdPkg.Client
+	MockedRequest() *http.Request
 	MockedHTTPTransport() *httpmock.MockTransport
 	MockedProject(fs filesystem.Fs) *projectPkg.Project
 	MockedState() *state.State
-	Options() *options.Options
-
-	Process() *servicectx.Process
-
-	RequestClientIP() net.IP
-	RequestCtx() context.Context
-	RequestHeader() http.Header
-	RequestHeaderMutable() http.Header
-	RequestID() string
 }

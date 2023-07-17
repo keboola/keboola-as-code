@@ -41,6 +41,7 @@ func Start(d dependencies, cfg Config) error {
 	)
 	// Mount endpoints
 	cfg.Mount(com)
+	logger.Infof("mounted HTTP endpoints")
 
 	// Start HTTP server
 	srv := &http.Server{Addr: cfg.ListenAddress, Handler: handler, ReadHeaderTimeout: readHeaderTimeout}

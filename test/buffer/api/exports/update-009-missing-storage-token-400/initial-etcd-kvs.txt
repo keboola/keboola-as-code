@@ -1,5 +1,5 @@
 <<<<<
-/config/receiver/%%TEST_KBC_PROJECT_ID%%/my-receiver
+config/receiver/%%TEST_KBC_PROJECT_ID%%/my-receiver
 -----
 {
   "projectId": %%TEST_KBC_PROJECT_ID%%,

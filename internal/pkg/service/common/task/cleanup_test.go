@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/idgenerator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
@@ -31,12 +30,13 @@ func TestCleanup(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	etcdNamespace := "unit-" + t.Name() + "-" + idgenerator.Random(8)
+	etcdCredentials := etcdhelper.TmpNamespace(t)
+	client := etcdhelper.ClientForTest(t, etcdCredentials)
+
 	logs := ioutil.NewAtomicWriter()
-	client := etcdhelper.ClientForTestWithNamespace(t, etcdNamespace)
-	node, d := createNode(t, etcdNamespace, logs, telemetry.NewForTest(t), "node1")
-	tel := d.TestTelemetry()
+	node, d := createNode(t, etcdCredentials, logs, telemetry.NewForTest(t), "node1")
 	taskPrefix := etcdop.NewTypedPrefix[task.Task](task.DefaultTaskEtcdPrefix, d.EtcdSerde())
+	tel := d.TestTelemetry()
 
 	// Add task without a finishedAt timestamp but too old - will be deleted
 	createdAtRaw, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
@@ -99,7 +99,6 @@ func TestCleanup(t *testing.T) {
 
 	// Check logs
 	wildcards.Assert(t, `
-[node1]INFO  process unique id "node1"
 [node1][task][etcd-session]INFO  creating etcd session
 [node1][task][etcd-session]INFO  created etcd session | %s
 [node1][task][_system_/tasks.cleanup/%s]INFO  started task
@@ -114,6 +113,8 @@ func TestCleanup(t *testing.T) {
 [node1][task][etcd-session]INFO  closing etcd session
 [node1][task][etcd-session]INFO  closed etcd session | %s
 [node1][task]INFO  shutdown done
+[node1][etcd-client]INFO  closing etcd connection
+[node1][etcd-client]INFO  closed etcd connection | %s
 [node1]INFO  exited
 `, d.DebugLogger().AllMessages())
 

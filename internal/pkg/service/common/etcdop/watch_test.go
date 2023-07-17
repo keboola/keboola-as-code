@@ -24,7 +24,7 @@ func TestPrefix_Watch(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	c := etcdhelper.ClientForTest(t)
+	c := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	pfx := prefixForTest()
 
 	// Create watcher
@@ -118,7 +118,7 @@ func TestPrefix_GetAllAndWatch(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	c := etcdhelper.ClientForTest(t)
+	c := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 	pfx := prefixForTest()
 
 	// CREATE key1

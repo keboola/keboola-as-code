@@ -35,7 +35,7 @@ func TestRevisionSyncer(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	clk := clock.NewMock()
 	logger := log.NewDebugLogger()
-	client := etcdhelper.ClientForTest(t)
+	client := etcdhelper.ClientForTest(t, etcdhelper.TmpNamespace(t))
 
 	// Create revision syncer.
 	ttl := 15

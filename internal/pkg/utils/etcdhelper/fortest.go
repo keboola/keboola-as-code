@@ -28,44 +28,64 @@ type testOrBenchmark interface {
 	Fatalf(format string, args ...any)
 }
 
-func NamespaceForTest() string {
-	return idgenerator.EtcdNamespaceForTest()
+// TmpNamespace creates a temporary etcd namespace and registers cleanup after the test.
+func TmpNamespace(t testOrBenchmark) etcdclient.Credentials {
+	return TmpNamespaceFromEnv(t, "UNIT_ETCD_")
 }
 
-func ClientForTest(t testOrBenchmark, dialOpts ...grpc.DialOption) *etcd.Client {
-	namespaceStr := fmt.Sprintf("unit-%s/", NamespaceForTest())
-	return ClientForTestWithNamespace(t, namespaceStr, dialOpts...)
-}
-
-func ClientForTestWithNamespace(t testOrBenchmark, namespaceStr string, dialOpts ...grpc.DialOption) *etcd.Client {
+// TmpNamespaceFromEnv creates a temporary etcd namespace and registers cleanup after the test.
+// Credentials are read from the provided ENV prefix.
+func TmpNamespaceFromEnv(t testOrBenchmark, envPrefix string) etcdclient.Credentials {
 	envs, err := env.FromOs()
 	if err != nil {
 		t.Fatalf("cannot get envs: %s", err)
 	}
 
-	if envs.Get("UNIT_ETCD_ENABLED") == "false" {
-		t.Skipf("etcd test is disabled by UNIT_ETCD_ENABLED=false")
+	if envs.Get(envPrefix+"ENABLED") == "false" {
+		t.Skipf(fmt.Sprintf("etcd test is disabled by %s_ENABLED=false", envPrefix))
 	}
 
-	endpoint := envs.Get("UNIT_ETCD_ENDPOINT")
-	username := envs.Get("UNIT_ETCD_USERNAME")
-	password := envs.Get("UNIT_ETCD_PASSWORD")
+	credentials := etcdclient.Credentials{
+		Endpoint:  envs.Get(envPrefix + "ENDPOINT"),
+		Namespace: idgenerator.EtcdNamespaceForTest(),
+		Username:  envs.Get(envPrefix + "USERNAME"),
+		Password:  envs.Get(envPrefix + "PASSWORD"),
+	}
 
-	return ClientForTestFrom(t, endpoint, username, password, namespaceStr, dialOpts...)
-}
-
-func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespace string, dialOpts ...grpc.DialOption) *etcd.Client {
-	ctx, cancel := context.WithCancel(context.Background())
-	if endpoint == "" {
+	if credentials.Endpoint == "" {
 		t.Fatalf(`etcd endpoint is not set`)
 	}
+
+	t.Cleanup(func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		client := clientForTest(t, ctx, credentials)
+		_, err := client.Delete(ctx, "", etcd.WithFromKey())
+		cancel()
+		if err != nil {
+			t.Fatalf(`cannot clear etcd after test: %s`, err)
+		}
+	})
+
+	return credentials
+}
+
+func ClientForTest(t testOrBenchmark, credentials etcdclient.Credentials, dialOpts ...grpc.DialOption) *etcd.Client {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(func() {
+		cancel()
+	})
+	return clientForTest(t, ctx, credentials, dialOpts...)
+}
+
+func clientForTest(t testOrBenchmark, ctx context.Context, credentials etcdclient.Credentials, dialOpts ...grpc.DialOption) *etcd.Client {
+	// Normalize namespace
+	credentials.Namespace = strings.Trim(credentials.Namespace, " /") + "/"
 
 	// Setup logger
 	var logger *zap.Logger
 
 	// Should be logger enabled?
-	verboseStr, found := os.LookupEnv("ETCD_VERBOSE")
-	verbose := found && strings.ToLower(verboseStr) == "true"
+	verbose := VerboseTestLogs()
 
 	// Enable logger
 	if verbose {
@@ -96,12 +116,12 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespac
 	// Create etcd client
 	etcdClient, err := etcd.New(etcd.Config{
 		Context:              ctx,
-		Endpoints:            []string{endpoint},
+		Endpoints:            []string{credentials.Endpoint},
 		DialTimeout:          10 * time.Second,
 		DialKeepAliveTimeout: 5 * time.Second,
 		DialKeepAliveTime:    10 * time.Second,
-		Username:             username, // optional
-		Password:             password, // optional
+		Username:             credentials.Username, // optional
+		Password:             credentials.Password, // optional
 		Logger:               logger,
 		DialOptions:          dialOpts,
 	})
@@ -109,29 +129,18 @@ func ClientForTestFrom(t testOrBenchmark, endpoint, username, password, namespac
 		t.Fatalf("cannot create etcd client: %s, %s", err, debug.Stack())
 	}
 
-	// Create namespace
-	originalClient := etcdClient.KV // not namespaced client for the cleanup
-	etcdclient.UseNamespace(etcdClient, namespace)
+	// Use namespace
+	etcdclient.UseNamespace(etcdClient, credentials.Namespace)
 
 	// Add operations logger
 	if verbose {
 		etcdClient.KV = etcdlogger.KVLogWrapper(etcdClient.KV, os.Stdout)
 	}
 
-	// Cleanup namespace after the test
-	t.Cleanup(func() {
-		_, err := originalClient.Delete(ctx, namespace, etcd.WithPrefix())
-		if err != nil {
-			t.Fatalf(`cannot clear etcd namespace "%s" after test: %s`, namespace, err)
-		}
-
-		// Close context after second, so running request can finish.
-		// It prevents warnings in the test console.
-		go func() {
-			<-time.After(time.Second)
-			cancel()
-		}()
-	})
-
 	return etcdClient
+}
+
+func VerboseTestLogs() bool {
+	str, found := os.LookupEnv("ETCD_VERBOSE")
+	return found && strings.ToLower(str) == "true"
 }

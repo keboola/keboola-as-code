@@ -1,8 +1,8 @@
 package mapper
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/receive/jsonnet"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/config"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
@@ -13,7 +13,7 @@ type Mapper struct {
 }
 
 type dependencies interface {
-	APIConfig() config.Config
+	APIConfig() config.APIConfig
 	Validator() validator.Validator
 }
 

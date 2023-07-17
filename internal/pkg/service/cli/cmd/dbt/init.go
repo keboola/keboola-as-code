@@ -20,13 +20,13 @@ func InitCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Ask options
-			opts, err := p.BaseDependencies().Dialogs().AskDbtInit()
+			opts, err := p.BaseScope().Dialogs().AskDbtInit()
 			if err != nil {
 				return err
 			}
 
 			// Get dependencies
-			d, err := p.DependenciesForRemoteCommand()
+			d, err := p.RemoteCommandScope()
 			if err != nil {
 				return err
 			}

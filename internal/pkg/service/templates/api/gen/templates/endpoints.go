@@ -11,7 +11,7 @@ package templates
 import (
 	"context"
 
-	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/templates/api/dependencies"
+	dependencies "github.com/keboola/keboola-as-code/internal/pkg/service/templates/dependencies"
 	goa "goa.design/goa/v3/pkg"
 	"goa.design/goa/v3/security"
 )
@@ -93,7 +93,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 // "ApiRootIndex" of service "templates".
 func NewAPIRootIndexEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		deps := ctx.Value(dependencies.ForPublicRequestCtxKey).(dependencies.ForPublicRequest)
+		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
 		return nil, s.APIRootIndex(deps)
 	}
 }
@@ -102,7 +102,7 @@ func NewAPIRootIndexEndpoint(s Service) goa.Endpoint {
 // method "ApiVersionIndex" of service "templates".
 func NewAPIVersionIndexEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		deps := ctx.Value(dependencies.ForPublicRequestCtxKey).(dependencies.ForPublicRequest)
+		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
 		return s.APIVersionIndex(deps)
 	}
 }
@@ -111,7 +111,7 @@ func NewAPIVersionIndexEndpoint(s Service) goa.Endpoint {
 // "HealthCheck" of service "templates".
 func NewHealthCheckEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		deps := ctx.Value(dependencies.ForPublicRequestCtxKey).(dependencies.ForPublicRequest)
+		deps := ctx.Value(dependencies.PublicRequestScopeCtxKey).(dependencies.PublicRequestScope)
 		return s.HealthCheck(deps)
 	}
 }
@@ -131,7 +131,7 @@ func NewRepositoriesIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFun
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.RepositoriesIndex(deps, p)
 	}
 }
@@ -151,7 +151,7 @@ func NewRepositoryIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc)
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.RepositoryIndex(deps, p)
 	}
 }
@@ -171,7 +171,7 @@ func NewTemplatesIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.TemplatesIndex(deps, p)
 	}
 }
@@ -191,7 +191,7 @@ func NewTemplateIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) g
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.TemplateIndex(deps, p)
 	}
 }
@@ -211,7 +211,7 @@ func NewVersionIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) go
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.VersionIndex(deps, p)
 	}
 }
@@ -231,7 +231,7 @@ func NewInputsIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.InputsIndex(deps, p)
 	}
 }
@@ -251,7 +251,7 @@ func NewValidateInputsEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.ValidateInputs(deps, p)
 	}
 }
@@ -271,7 +271,7 @@ func NewUseTemplateVersionEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFu
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.UseTemplateVersion(deps, p)
 	}
 }
@@ -291,7 +291,7 @@ func NewInstancesIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.InstancesIndex(deps, p)
 	}
 }
@@ -311,7 +311,7 @@ func NewInstanceIndexEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) g
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.InstanceIndex(deps, p)
 	}
 }
@@ -331,7 +331,7 @@ func NewUpdateInstanceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.UpdateInstance(deps, p)
 	}
 }
@@ -351,7 +351,7 @@ func NewDeleteInstanceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) 
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return nil, s.DeleteInstance(deps, p)
 	}
 }
@@ -371,7 +371,7 @@ func NewUpgradeInstanceEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc)
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.UpgradeInstance(deps, p)
 	}
 }
@@ -391,7 +391,7 @@ func NewUpgradeInstanceInputsIndexEndpoint(s Service, authAPIKeyFn security.Auth
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.UpgradeInstanceInputsIndex(deps, p)
 	}
 }
@@ -411,7 +411,7 @@ func NewUpgradeInstanceValidateInputsEndpoint(s Service, authAPIKeyFn security.A
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.UpgradeInstanceValidateInputs(deps, p)
 	}
 }
@@ -431,7 +431,7 @@ func NewGetTaskEndpoint(s Service, authAPIKeyFn security.AuthAPIKeyFunc) goa.End
 		if err != nil {
 			return nil, err
 		}
-		deps := ctx.Value(dependencies.ForProjectRequestCtxKey).(dependencies.ForProjectRequest)
+		deps := ctx.Value(dependencies.ProjectRequestScopeCtxKey).(dependencies.ProjectRequestScope)
 		return s.GetTask(deps, p)
 	}
 }

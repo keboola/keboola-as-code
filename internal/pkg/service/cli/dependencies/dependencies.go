@@ -4,10 +4,10 @@
 //
 // This package extends common dependencies from [pkg/github.com/keboola/keboola-as-code/internal/pkg/service/common/dependencies].
 //
-// These dependencies containers are implemented:
-//   - [Base] interface provides basic CLI dependencies.
-//   - [ForLocalCommand] interface provides dependencies for commands that do not modify the remote project
-//   - [ForRemoteCommand] interface provides dependencies for commands that modify the remote project.
+// Following dependencies containers are implemented:
+//   - [BaseScope] interface provides basic CLI dependencies.
+//   - [LocalCommandScope] interface provides dependencies for commands that do not modify the remote project
+//   - [RemoteCommandScope] interface provides dependencies for commands that modify the remote project.
 //
 // These containers can be obtained from the [Provider], it can be created by [NewProvider].
 package dependencies
@@ -38,9 +38,9 @@ var (
 	ErrRepositoryManifestNotFound = errors.New("repository manifest not found")
 )
 
-// Base interface provides basic CLI dependencies.
-type Base interface {
-	dependencies.Base
+// BaseScope interface provides basic CLI dependencies.
+type BaseScope interface {
+	dependencies.BaseScope
 	CommandCtx() context.Context
 	Fs() filesystem.Fs
 	FsInfo() FsInfo
@@ -50,36 +50,36 @@ type Base interface {
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }
 
-// ForLocalCommand interface provides dependencies for commands that do not modify the remote project.
+// LocalCommandScope interface provides dependencies for commands that do not modify the remote project.
 // It contains CLI dependencies that are available from the Storage API and other sources without authentication / Storage API token.
-type ForLocalCommand interface {
-	Base
-	dependencies.Public
+type LocalCommandScope interface {
+	BaseScope
+	dependencies.PublicScope
 	Template(ctx context.Context, reference model.TemplateRef) (*template.Template, error)
 	LocalProject(ignoreErrors bool) (*projectPkg.Project, bool, error)
 	LocalTemplate(ctx context.Context) (*template.Template, bool, error)
 	LocalTemplateRepository(ctx context.Context) (*repository.Repository, bool, error)
 }
 
-// ForRemoteCommand interface provides dependencies for commands that modify remote project.
+// RemoteCommandScope interface provides dependencies for commands that modify remote project.
 // It contains CLI dependencies that require authentication / Storage API token.
-type ForRemoteCommand interface {
-	ForLocalCommand
-	dependencies.Project
+type RemoteCommandScope interface {
+	LocalCommandScope
+	dependencies.ProjectScope
 	EventSender() event.Sender
 }
 
 // Provider of CLI dependencies.
 type Provider interface {
-	BaseDependencies() Base
-	DependenciesForLocalCommand(opts ...Option) (ForLocalCommand, error)
-	DependenciesForRemoteCommand(opts ...Option) (ForRemoteCommand, error)
+	BaseScope() BaseScope
+	LocalCommandScope(opts ...Option) (LocalCommandScope, error)
+	RemoteCommandScope(opts ...Option) (RemoteCommandScope, error)
 	// LocalProject method can be used by a CLI command that must be run in the local project directory.
 	// First, the local project is loaded, and then the authentication is performed,
 	// so the error that we are not in a project directory takes precedence over an invalid/missing token.
-	LocalProject(ignoreErrors bool, ops ...Option) (*projectPkg.Project, ForRemoteCommand, error)
+	LocalProject(ignoreErrors bool, ops ...Option) (*projectPkg.Project, RemoteCommandScope, error)
 	// LocalRepository method can be used by a CLI command that must be run in the local repository directory.
-	LocalRepository(ops ...Option) (*repository.Repository, ForLocalCommand, error)
+	LocalRepository(ops ...Option) (*repository.Repository, LocalCommandScope, error)
 	// LocalDbtProject method can be used by a CLI command that must be run in the dbt project directory.
 	LocalDbtProject(ctx context.Context) (*dbt.Project, bool, error)
 }

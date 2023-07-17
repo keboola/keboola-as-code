@@ -1,60 +1,77 @@
 package dependencies
 
 import (
+	"context"
+
 	"github.com/benbjohnson/clock"
 	"github.com/keboola/go-client/pkg/client"
 
-	"github.com/keboola/keboola-as-code/internal/pkg/env"
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	"github.com/keboola/keboola-as-code/internal/pkg/telemetry"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/validator"
 )
 
-// base dependencies container implements Base interface.
-type base struct {
-	envs       env.Provider
+// baseScope dependencies container implements BaseScope interface.
+type baseScope struct {
 	logger     log.Logger
-	validator  validator.Validator
 	telemetry  telemetry.Telemetry
 	clock      clock.Clock
 	httpClient client.Client
+	validator  validator.Validator
+	process    *servicectx.Process
 }
 
-func NewBaseDeps(envs env.Provider, logger log.Logger, tel telemetry.Telemetry, httpClient client.Client) Base {
-	return newBaseDeps(envs, logger, tel, clock.New(), httpClient)
+func NewBaseScope(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, clk clock.Clock, process *servicectx.Process, httpClient client.Client) BaseScope {
+	return newBaseScope(ctx, logger, tel, clk, process, httpClient)
 }
 
-func newBaseDeps(envs env.Provider, logger log.Logger, tel telemetry.Telemetry, clock clock.Clock, httpClient client.Client) *base {
-	return &base{
-		envs:       envs,
+func newBaseScope(ctx context.Context, logger log.Logger, tel telemetry.Telemetry, clk clock.Clock, process *servicectx.Process, httpClient client.Client) *baseScope {
+	_, span := tel.Tracer().Start(ctx, "keboola.go.common.dependencies.NewBaseScope")
+	defer span.End(nil)
+	return &baseScope{
 		logger:     logger,
-		validator:  validator.New(),
 		telemetry:  tel,
-		clock:      clock,
+		clock:      clk,
+		process:    process,
 		httpClient: httpClient,
+		validator:  validator.New(),
 	}
 }
 
-func (v *base) Envs() env.Provider {
-	return v.envs
+func (v *baseScope) check() {
+	if v == nil {
+		panic(errors.New("dependencies base scope is not initialized"))
+	}
 }
 
-func (v *base) Validator() validator.Validator {
-	return v.validator
-}
-
-func (v *base) Telemetry() telemetry.Telemetry {
-	return v.telemetry
-}
-
-func (v *base) Logger() log.Logger {
+func (v *baseScope) Logger() log.Logger {
+	v.check()
 	return v.logger
 }
 
-func (v *base) Clock() clock.Clock {
+func (v *baseScope) Telemetry() telemetry.Telemetry {
+	v.check()
+	return v.telemetry
+}
+
+func (v *baseScope) Clock() clock.Clock {
+	v.check()
 	return v.clock
 }
 
-func (v *base) HTTPClient() client.Client {
+func (v *baseScope) Process() *servicectx.Process {
+	v.check()
+	return v.process
+}
+
+func (v *baseScope) HTTPClient() client.Client {
+	v.check()
 	return v.httpClient
+}
+
+func (v *baseScope) Validator() validator.Validator {
+	v.check()
+	return v.validator
 }

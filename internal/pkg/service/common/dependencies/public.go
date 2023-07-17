@@ -8,11 +8,12 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/log"
 	"github.com/keboola/keboola-as-code/internal/pkg/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
-// public dependencies container implements Public interface.
-type public struct {
-	base             Base
+// publicScope dependencies container implements PublicScope interface.
+type publicScope struct {
+	base             BaseScope
 	components       Lazy[*model.ComponentsProvider]
 	keboolaPublicAPI *keboola.API
 	stackFeatures    keboola.FeaturesMap
@@ -20,15 +21,15 @@ type public struct {
 	storageAPIHost   string
 }
 
-type PublicDepsOption func(*publicDepsConfig)
+type PublicScopeOption func(*publicScopeConfig)
 
-type publicDepsConfig struct {
+type publicScopeConfig struct {
 	preloadComponents bool
 	logIndexLoading   bool
 }
 
-func newPublicDepsConfig(opts []PublicDepsOption) publicDepsConfig {
-	cfg := publicDepsConfig{preloadComponents: false}
+func newPublicScopeConfig(opts []PublicScopeOption) publicScopeConfig {
+	cfg := publicScopeConfig{preloadComponents: false}
 	for _, o := range opts {
 		o(&cfg)
 	}
@@ -36,37 +37,35 @@ func newPublicDepsConfig(opts []PublicDepsOption) publicDepsConfig {
 }
 
 // WithPreloadComponents defines if the components should be retrieved from Storage index on startup.
-func WithPreloadComponents(v bool) PublicDepsOption {
-	return func(c *publicDepsConfig) {
+func WithPreloadComponents(v bool) PublicScopeOption {
+	return func(c *publicScopeConfig) {
 		c.preloadComponents = v
 	}
 }
 
 // WithLogIndexLoading enables logging of index loading and also the number of loaded components.
-func WithLogIndexLoading(v bool) PublicDepsOption {
-	return func(c *publicDepsConfig) {
+func WithLogIndexLoading(v bool) PublicScopeOption {
+	return func(c *publicScopeConfig) {
 		c.logIndexLoading = v
 	}
 }
 
-func NewPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts ...PublicDepsOption) (v Public, err error) {
-	ctx, span := base.Telemetry().Tracer().Start(ctx, "kac.lib.dependencies.NewPublicDeps")
-	defer span.End(&err)
-	return newPublicDeps(ctx, base, storageAPIHost, opts...)
+func NewPublicScope(ctx context.Context, baseScp BaseScope, storageAPIHost string, opts ...PublicScopeOption) (v PublicScope, err error) {
+	return newPublicScope(ctx, baseScp, storageAPIHost, opts...)
 }
 
-func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts ...PublicDepsOption) (v *public, err error) {
-	ctx, span := base.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewPublicDeps")
+func newPublicScope(ctx context.Context, baseScp BaseScope, storageAPIHost string, opts ...PublicScopeOption) (v *publicScope, err error) {
+	ctx, span := baseScp.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.NewPublicScope")
 	defer span.End(&err)
 
-	cfg := newPublicDepsConfig(opts)
-	v = &public{base: base, storageAPIHost: storageAPIHost}
-	baseHTTPClient := base.HTTPClient()
+	cfg := newPublicScopeConfig(opts)
+	v = &publicScope{base: baseScp, storageAPIHost: storageAPIHost}
+	baseHTTPClient := baseScp.HTTPClient()
 
 	// Optionally log index loading
 	var logger log.Logger
 	if cfg.logIndexLoading {
-		logger = base.Logger()
+		logger = baseScp.Logger()
 	} else {
 		logger = log.NewNopLogger()
 	}
@@ -107,7 +106,7 @@ func newPublicDeps(ctx context.Context, base Base, storageAPIHost string, opts .
 	return v, nil
 }
 
-func storageAPIIndexWithComponents(ctx context.Context, d Base, keboolaPublicAPI *keboola.API) (index *keboola.IndexComponents, err error) {
+func storageAPIIndexWithComponents(ctx context.Context, d BaseScope, keboolaPublicAPI *keboola.API) (index *keboola.IndexComponents, err error) {
 	startTime := time.Now()
 	ctx, span := d.Telemetry().Tracer().Start(ctx, "keboola.go.common.dependencies.public.storageApiIndexWithComponents")
 	defer span.End(&err)
@@ -120,27 +119,39 @@ func storageAPIIndexWithComponents(ctx context.Context, d Base, keboolaPublicAPI
 	return index, nil
 }
 
-func (v *public) StorageAPIHost() string {
+func (v *publicScope) check() {
+	if v == nil {
+		panic(errors.New("dependencies public scope is not initialized"))
+	}
+}
+
+func (v *publicScope) StorageAPIHost() string {
+	v.check()
 	return v.storageAPIHost
 }
 
-func (v *public) KeboolaPublicAPI() *keboola.API {
+func (v *publicScope) KeboolaPublicAPI() *keboola.API {
+	v.check()
 	return v.keboolaPublicAPI
 }
 
-func (v *public) StackFeatures() keboola.FeaturesMap {
+func (v *publicScope) StackFeatures() keboola.FeaturesMap {
+	v.check()
 	return v.stackFeatures
 }
 
-func (v *public) StackServices() keboola.ServicesMap {
+func (v *publicScope) StackServices() keboola.ServicesMap {
+	v.check()
 	return v.stackServices
 }
 
-func (v *public) Components() *model.ComponentsMap {
+func (v *publicScope) Components() *model.ComponentsMap {
+	v.check()
 	return v.ComponentsProvider().Components()
 }
 
-func (v *public) ComponentsProvider() *model.ComponentsProvider {
+func (v *publicScope) ComponentsProvider() *model.ComponentsProvider {
+	v.check()
 	return v.components.MustInitAndGet(func() *model.ComponentsProvider {
 		index, err := storageAPIIndexWithComponents(context.Background(), v.base, v.keboolaPublicAPI)
 		if err != nil {

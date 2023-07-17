@@ -16,10 +16,10 @@ func WorkflowsCommand(p dependencies.Provider) *cobra.Command {
 		Long:  helpmsg.Read(`ci/workflows/long`),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			// Ask options
-			options := p.BaseDependencies().Dialogs().AskWorkflowsOptions()
+			options := p.BaseScope().Dialogs().AskWorkflowsOptions()
 
 			// Get dependencies
-			d, err := p.DependenciesForLocalCommand()
+			d, err := p.LocalCommandScope()
 			if err != nil {
 				return err
 			}

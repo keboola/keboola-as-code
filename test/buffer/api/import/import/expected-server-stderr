@@ -1,0 +1,16 @@
+%A
+[bufferApi][http][requestId=%s]INFO failed to format record for export "export-1":
+- cannot parse request body: unsupported content type "text/plain", supported types: application/json and application/x-www-form-urlencoded [%s] (errors.withStatusCode):
+- failed to format record for export "export-1" [%s]:
+  - cannot parse request body: unsupported content type "text/plain", supported types: application/json and application/x-www-form-urlencoded [%s] (*fmt.wrapError):
+    - unsupported content type "text/plain", supported types: application/json and application/x-www-form-urlencoded | errorName=buffer.unsupportedMediaType errorType=errors.withStatusCode response=%s
+[bufferApi][http][requestId=%s]INFO failed to format record for export "export-1":
+- path "col1" not found in the body [%s] (errors.withStatusCode):
+- failed to format record for export "export-1":
+- path "col1" not found in the body [%s] (errors.BadRequestError):
+  - failed to format record for export "export-1" [%s]:
+    - path "col1" not found in the body [%s] (*errors.wrappedError):
+      - jsonnet error: RUNTIME ERROR: path "col1" not found in the body [%s] (*fmt.wrapError):
+        - RUNTIME ERROR: path "col1" not found in the body | errorName=buffer.badRequest errorType=errors.withStatusCode response=%s
+[bufferApi]INFO exiting (terminated)
+%A

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -24,6 +25,7 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/dialog"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/helpmsg"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/cli/options"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/servicectx"
 	templateManifest "github.com/keboola/keboola-as-code/internal/pkg/template/manifest"
 	repositoryManifest "github.com/keboola/keboola-as-code/internal/pkg/template/repository/manifest"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
@@ -155,11 +157,18 @@ func NewRootCommand(stdin io.Reader, stdout io.Writer, stderr io.Writer, envs *e
 		// Interactive prompt
 		prompt := cli.NewPrompt(os.Stdin, os.Stdout, os.Stderr, root.options.GetBool(options.NonInteractiveOpt))
 
+		// Create process abstraction
+		ctx, cancel := context.WithCancel(cmd.Context())
+		proc, err := servicectx.New(ctx, cancel)
+		if err != nil {
+			return err
+		}
+
 		// Create dependencies provider
-		p.Set(dependencies.NewProvider(cmd.Context(), envs, root.logger, root.fs, dialog.New(prompt, root.options), root.options))
+		p.Set(dependencies.NewProvider(ctx, root.logger, proc, root.fs, dialog.New(prompt, root.options), root.options))
 
 		// Check version
-		if err := versionCheck.Run(cmd.Context(), root.options.GetBool("version-check"), p.BaseDependencies()); err != nil {
+		if err := versionCheck.Run(ctx, root.options.GetBool("version-check"), p.BaseScope()); err != nil {
 			// Ignore error, send to logs
 			root.logger.Debugf(`Version check: %s.`, err.Error())
 		} else {

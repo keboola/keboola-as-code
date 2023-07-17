@@ -20,8 +20,12 @@ type Sender struct {
 	logger log.Logger
 }
 
-func NewSender(logger log.Logger) *Sender {
-	return &Sender{logger: logger}
+type dependencies interface {
+	Logger() log.Logger
+}
+
+func NewSender(d dependencies) *Sender {
+	return &Sender{logger: d.Logger()}
 }
 
 type Params struct {

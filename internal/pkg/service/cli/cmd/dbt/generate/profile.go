@@ -20,13 +20,13 @@ func ProfileCommand(p dependencies.Provider) *cobra.Command {
 			}
 
 			// Ask options
-			targetName, err := p.BaseDependencies().Dialogs().AskTargetName()
+			targetName, err := p.BaseScope().Dialogs().AskTargetName()
 			if err != nil {
 				return err
 			}
 
 			// Get dependencies
-			d := p.BaseDependencies()
+			d := p.BaseScope()
 
 			return profile.Run(d.CommandCtx(), profile.Options{TargetName: targetName}, d)
 		},

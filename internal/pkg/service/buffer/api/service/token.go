@@ -1,13 +1,13 @@
 package service
 
 import (
-	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/api/gen/buffer"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/dependencies"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/rollback"
 )
 
-func (s *service) RefreshReceiverTokens(d dependencies.ForProjectRequest, payload *buffer.RefreshReceiverTokensPayload) (res *buffer.Receiver, err error) {
+func (s *service) RefreshReceiverTokens(d dependencies.ProjectRequestScope, payload *buffer.RefreshReceiverTokensPayload) (res *buffer.Receiver, err error) {
 	ctx, str := d.RequestCtx(), d.Store()
 
 	rb := rollback.New(s.logger)
