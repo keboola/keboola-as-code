@@ -103,8 +103,15 @@ func (c *checker) check(ctx context.Context) {
 			continue
 		}
 
+		// Get file stats
+		fileStats, err := c.cachedStats.FileStats(ctx, sliceKey.FileKey)
+		if err != nil {
+			c.logger.Error(err)
+			continue
+		}
+
 		// Check import conditions
-		if met, reason := cdn.Evaluate(now, sliceKey.FileKey.OpenedAt(), c.stats.FileStats(sliceKey.FileKey).Total); met {
+		if met, reason := cdn.Evaluate(now, sliceKey.FileKey.OpenedAt(), fileStats.AggregatedTotal); met {
 			if err := c.swapFile(sliceKey.FileKey, reason); err != nil {
 				c.logger.Error(err)
 			}
