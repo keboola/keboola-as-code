@@ -3,6 +3,7 @@ package statistics
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/benbjohnson/clock"
 	"github.com/c2h5oh/datasize"
@@ -48,7 +49,7 @@ func NewCollector(d collectorDeps) *Collector {
 	c := &Collector{
 		nodeID:        d.Process().UniqueID(),
 		config:        d.APIConfig(),
-		logger:        d.Logger().AddPrefix("[stats]"),
+		logger:        d.Logger().AddPrefix("[stats-collector]"),
 		clock:         d.Clock(),
 		store:         d.Store(),
 		statsLock:     &sync.Mutex{},
@@ -86,7 +87,7 @@ func NewCollector(d collectorDeps) *Collector {
 	return c
 }
 
-func (c *Collector) Notify(sliceKey key.SliceKey, recordSize, bodySize datasize.ByteSize) {
+func (c *Collector) Notify(receivedAt time.Time, sliceKey key.SliceKey, recordSize, bodySize datasize.ByteSize) {
 	c.statsLock.Lock()
 	defer c.statsLock.Unlock()
 
@@ -96,13 +97,12 @@ func (c *Collector) Notify(sliceKey key.SliceKey, recordSize, bodySize datasize.
 	}
 
 	// Update stats
-	receivedAt := utctime.UTCTime(c.clock.Now())
 	stats := c.statsPerSlice[sliceKey]
 	stats.recordsCount += 1
 	stats.recordsSize += recordSize
 	stats.bodySize += bodySize
-	if receivedAt.After(stats.lastRecordAt) {
-		stats.lastRecordAt = receivedAt
+	if receivedAtUTC := utctime.UTCTime(receivedAt); receivedAtUTC.After(stats.lastRecordAt) {
+		stats.lastRecordAt = receivedAtUTC
 	}
 	stats.changed = true
 }
@@ -126,16 +126,14 @@ func (c *Collector) Sync(ctx context.Context) <-chan struct{} {
 	return done
 }
 
-func (c *Collector) statsForSync() (out []model.SliceStats) {
+func (c *Collector) statsForSync() (out []model.SliceAPINodeStats) {
 	c.statsLock.Lock()
 	defer c.statsLock.Unlock()
 	for k, v := range c.statsPerSlice {
 		if v.changed {
-			out = append(out, model.SliceStats{
-				SliceNodeKey: key.SliceNodeKey{
-					SliceKey: k,
-					NodeID:   c.nodeID,
-				},
+			out = append(out, model.SliceAPINodeStats{
+				NodeID:   c.nodeID,
+				SliceKey: k,
 				Stats: model.Stats{
 					LastRecordAt: v.lastRecordAt,
 					RecordsCount: v.recordsCount,
