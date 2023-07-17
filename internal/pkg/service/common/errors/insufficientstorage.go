@@ -5,11 +5,12 @@ import (
 )
 
 type InsufficientStorageError struct {
+	log bool
 	err error
 }
 
-func NewInsufficientStorageError(err error) InsufficientStorageError {
-	return InsufficientStorageError{err: err}
+func NewInsufficientStorageError(log bool, err error) InsufficientStorageError {
+	return InsufficientStorageError{log: log, err: err}
 }
 
 func (InsufficientStorageError) ErrorName() string {
@@ -26,4 +27,8 @@ func (e InsufficientStorageError) Error() string {
 
 func (e InsufficientStorageError) ErrorUserMessage() string {
 	return e.Error()
+}
+
+func (e InsufficientStorageError) ErrorLogEnabled() bool {
+	return e.log
 }

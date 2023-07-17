@@ -19,7 +19,7 @@ func TestHTTPCodeFrom(t *testing.T) {
 	assert.Equal(t, http.StatusConflict, HTTPCodeFrom(NewResourceAlreadyExistsError("<what>", "<key>", "<in>")))
 	assert.Equal(t, http.StatusBadRequest, HTTPCodeFrom(NewBadRequestError(errors.New("message"))))
 	assert.Equal(t, http.StatusNotFound, HTTPCodeFrom(NewEndpointNotFoundError(&url.URL{Host: "host.local"})))
-	assert.Equal(t, http.StatusInsufficientStorage, HTTPCodeFrom(NewInsufficientStorageError(errors.New("message"))))
+	assert.Equal(t, http.StatusInsufficientStorage, HTTPCodeFrom(NewInsufficientStorageError(false, errors.New("message"))))
 	assert.Equal(t, http.StatusInternalServerError, HTTPCodeFrom(NewNotImplementedError()))
 	assert.Equal(t, http.StatusRequestEntityTooLarge, HTTPCodeFrom(NewPayloadTooLargeError(errors.New("message"))))
 	assert.Equal(t, http.StatusNotFound, HTTPCodeFrom(NewResourceNotFoundError("<what>", "<key>", "<in>")))

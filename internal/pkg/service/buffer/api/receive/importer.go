@@ -34,7 +34,7 @@ type Importer struct {
 	watcher        *watcher.APINode
 	statsCollector *statistics.CollectorNode
 	statsCache     *statistics.CacheNode
-	quota          *quota.Quota
+	quota          *quota.Checker
 }
 
 type dependencies interface {
@@ -97,7 +97,7 @@ func (i *Importer) CreateRecord(ctx context.Context, d requestDeps, receiverKey 
 
 	// Check whether the size of records that one receiver can buffer in etcd has not been exceeded.
 	if err := i.quota.Check(receiverKey); err != nil {
-		return NewInsufficientStorageError(err)
+		return err
 	}
 
 	//  ReadBody, its length is limited.
