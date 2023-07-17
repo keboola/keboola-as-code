@@ -138,25 +138,19 @@ func TestCleanup(t *testing.T) {
 	assert.NoError(t, schema.Records().ByKey(recordKey2).Put("rec").Do(ctx, client))
 
 	// Add received stats for the cleaned-up slice - will be deleted
-	assert.NoError(t, schema.ReceivedStats().InSlice(sliceKey1).ByNodeID("node-123").Put(model.SliceStats{
-		SliceNodeKey: key.SliceNodeKey{SliceKey: sliceKey1, NodeID: "node-123"},
-		Stats: model.Stats{
-			LastRecordAt: utctime.UTCTime(timeNow),
-			RecordsCount: 123,
-			RecordsSize:  1 * datasize.KB,
-			BodySize:     1 * datasize.KB,
-		},
+	assert.NoError(t, schema.SliceStats().InState(slicestate.Writing).InSlice(sliceKey1).NodeID("node-123").Put(model.Stats{
+		LastRecordAt: utctime.UTCTime(timeNow),
+		RecordsCount: 123,
+		RecordsSize:  1 * datasize.KB,
+		BodySize:     1 * datasize.KB,
 	}).Do(ctx, client))
 
 	// Add received stats for the ignored slice - will be ignored
-	assert.NoError(t, schema.ReceivedStats().InSlice(sliceKey2).ByNodeID("node-123").Put(model.SliceStats{
-		SliceNodeKey: key.SliceNodeKey{SliceKey: sliceKey2, NodeID: "node-123"},
-		Stats: model.Stats{
-			LastRecordAt: utctime.UTCTime(timeNow),
-			RecordsCount: 456,
-			RecordsSize:  2 * datasize.KB,
-			BodySize:     2 * datasize.KB,
-		},
+	assert.NoError(t, schema.SliceStats().InState(slicestate.Writing).InSlice(sliceKey2).NodeID("node-123").Put(model.Stats{
+		LastRecordAt: utctime.UTCTime(timeNow),
+		RecordsCount: 456,
+		RecordsSize:  2 * datasize.KB,
+		BodySize:     2 * datasize.KB,
 	}).Do(ctx, client))
 
 	// Run the cleanup
@@ -282,15 +276,9 @@ slice/active/closed/uploaded/1000/github/third/%s/%s
 >>>>>
 
 <<<<<
-stats/received/1000/github/third/%s/%s/node-123
+stats/slice/active/opened/writing/1000/github/third/%s/%s/node-123
 -----
  {
-  "projectId": 1000,
-  "receiverId": "github",
-  "exportId": "third",
-  "fileId": "%s",
-  "sliceId": "%s",
-  "nodeId": "node-123",
   "lastRecordAt": "%s",
   "recordsCount": 456,
   "recordsSize": "2KB",
