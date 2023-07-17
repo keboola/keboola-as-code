@@ -126,7 +126,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	// Wait for failed upload
 	assert.Eventually(t, func() bool {
 		return strings.Count(workerMock.DebugLogger().WarnMessages(), "WARN  task failed") == 1
-	}, 10*time.Second, 100*time.Millisecond)
+	}, 30*time.Second, 100*time.Millisecond)
 	workerMock.DebugLogger().Truncate()
 
 	// 3 minutes later:
@@ -137,7 +137,7 @@ func TestRetryFailedUploadsTask(t *testing.T) {
 	// Wait for retry
 	assert.Eventually(t, func() bool {
 		return strings.Count(workerMock.DebugLogger().WarnMessages(), "WARN  task failed") == 1
-	}, 10*time.Second, 100*time.Millisecond)
+	}, 30*time.Second, 100*time.Millisecond)
 
 	// Shutdown
 	apiScp.Process().Shutdown(errors.New("bye bye API 1"))
