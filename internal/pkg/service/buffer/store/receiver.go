@@ -8,6 +8,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -209,7 +210,6 @@ func (s *Store) DeleteReceiver(ctx context.Context, receiverKey key.ReceiverKey)
 		s.deleteReceiverMappingsOp(ctx, receiverKey),
 		s.deleteReceiverTokensOp(ctx, receiverKey),
 		s.schema.Configs().Exports().InReceiver(receiverKey).DeleteAll(),
-		s.schema.ReceivedStats().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Files().Opened().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Files().Closing().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Files().Importing().InReceiver(receiverKey).DeleteAll(),
@@ -221,6 +221,11 @@ func (s *Store) DeleteReceiver(ctx context.Context, receiverKey key.ReceiverKey)
 		s.schema.Slices().Uploaded().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Slices().Failed().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Slices().Imported().InReceiver(receiverKey).DeleteAll(),
+		s.schema.SliceStats().InState(slicestate.Writing).InReceiver(receiverKey).DeleteAll(),
+		s.schema.SliceStats().InState(slicestate.Uploading).InReceiver(receiverKey).DeleteAll(),
+		s.schema.SliceStats().InState(slicestate.Uploaded).InReceiver(receiverKey).DeleteAll(),
+		s.schema.SliceStats().InState(slicestate.Failed).InReceiver(receiverKey).DeleteAll(),
+		s.schema.SliceStats().InState(slicestate.Imported).InReceiver(receiverKey).DeleteAll(),
 		s.schema.Records().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Tasks().InReceiver(receiverKey).DeleteAll(),
 		s.schema.Runtime().LastRecordID().InReceiver(receiverKey).DeleteAll(),

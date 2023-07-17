@@ -10,6 +10,7 @@ import (
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/key"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	serviceError "github.com/keboola/keboola-as-code/internal/pkg/service/common/errors"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/iterator"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
@@ -283,7 +284,6 @@ func (s *Store) DeleteExport(ctx context.Context, exportKey key.ExportKey) (err 
 		s.deleteExportBaseOp(ctx, exportKey),
 		s.deleteExportMappingsOp(ctx, exportKey),
 		s.deleteExportTokenOp(ctx, exportKey),
-		s.schema.ReceivedStats().InExport(exportKey).DeleteAll(),
 		s.schema.Files().Opened().InExport(exportKey).DeleteAll(),
 		s.schema.Files().Closing().InExport(exportKey).DeleteAll(),
 		s.schema.Files().Importing().InExport(exportKey).DeleteAll(),
@@ -294,7 +294,11 @@ func (s *Store) DeleteExport(ctx context.Context, exportKey key.ExportKey) (err 
 		s.schema.Slices().Uploading().InExport(exportKey).DeleteAll(),
 		s.schema.Slices().Uploaded().InExport(exportKey).DeleteAll(),
 		s.schema.Slices().Failed().InExport(exportKey).DeleteAll(),
-		s.schema.Slices().Imported().InExport(exportKey).DeleteAll(),
+		s.schema.SliceStats().InState(slicestate.Writing).InExport(exportKey).DeleteAll(),
+		s.schema.SliceStats().InState(slicestate.Uploading).InExport(exportKey).DeleteAll(),
+		s.schema.SliceStats().InState(slicestate.Uploaded).InExport(exportKey).DeleteAll(),
+		s.schema.SliceStats().InState(slicestate.Failed).InExport(exportKey).DeleteAll(),
+		s.schema.SliceStats().InState(slicestate.Imported).InExport(exportKey).DeleteAll(),
 		s.schema.Records().InExport(exportKey).DeleteAll(),
 		s.schema.Tasks().InExport(exportKey).DeleteAll(),
 		s.schema.Runtime().LastRecordID().ByKey(exportKey).Delete(),
