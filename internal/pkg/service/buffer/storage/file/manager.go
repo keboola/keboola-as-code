@@ -64,7 +64,7 @@ func (m *Manager) DeleteFile(ctx context.Context, file model.File) error {
 	return m.keboolaProjectAPI.DeleteFileRequest(file.StorageResource.ID).SendOrErr(ctx)
 }
 
-func (m *Manager) UploadSlice(ctx context.Context, s *model.Slice, recordsReader io.Reader) error {
+func (m *Manager) UploadSlice(ctx context.Context, s *model.Slice, recordsReader io.Reader, stats *model.UploadStats) error {
 	// Create slice writer
 	sliceWr, err := keboola.NewUploadSliceWriter(ctx, s.StorageResource, s.Filename(), keboola.WithUploadTransport(m.transport))
 	if err != nil {
@@ -89,8 +89,8 @@ func (m *Manager) UploadSlice(ctx context.Context, s *model.Slice, recordsReader
 
 	// Update stats
 	if err == nil {
-		s.Statistics.FileSize += datasize.ByteSize(uncompressed)
-		s.Statistics.FileGZipSize += datasize.ByteSize(sizeWr.Size)
+		stats.FileSize += datasize.ByteSize(uncompressed)
+		stats.FileGZipSize += datasize.ByteSize(sizeWr.Size)
 	}
 
 	return err

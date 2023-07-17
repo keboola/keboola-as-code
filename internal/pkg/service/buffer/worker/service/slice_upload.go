@@ -105,8 +105,9 @@ func (s *Service) uploadSlices(d dependencies) <-chan error {
 				files := file.NewManager(d.Clock(), api, s.config.UploadTransport)
 
 				// Upload slice, set statistics
-				reader := newRecordsReader(ctx, s.logger, s.etcdClient, s.schema, slice)
-				if err := files.UploadSlice(ctx, &slice, reader); err != nil {
+				uploadStats := model.UploadStats{}
+				reader := newRecordsReader(ctx, s.logger, s.etcdClient, s.schema, slice, stats.Uploading, &uploadStats)
+				if err := files.UploadSlice(ctx, &slice, reader, &uploadStats); err != nil {
 					return task.ErrResult(errors.Errorf(`file upload failed: %w`, err))
 				}
 
