@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/slicestate"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop/op"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
@@ -51,8 +52,9 @@ func (s *Store) UpdateSliceReceivedStats(ctx context.Context, nodeID string, sta
 
 func (s *Store) updateStatsOp(_ context.Context, nodeID string, stats model.SliceAPINodeStats) op.NoResultOp {
 	return s.schema.
-		ReceivedStats().
+		SliceStats().
+		InState(slicestate.Writing).
 		InSlice(stats.SliceKey).
-		ByNodeID(nodeID).
-		Put(stats)
+		NodeID(nodeID).
+		Put(stats.Stats)
 }
