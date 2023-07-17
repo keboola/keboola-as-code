@@ -266,11 +266,12 @@ extraDeploy:
                   {{- if .Values.defragmentation.cronjob.resources }}
                   resources: {{- toYaml .Values.defragmentation.cronjob.resources | nindent 16 }}
                   {{- end }}
-                    {{- if .Values.auth.client.secureTransport }}
+                  {{- if .Values.auth.client.secureTransport }}
+                  volumeMounts:
                     - name: certs
                       mountPath: /opt/bitnami/etcd/certs/client
                       readOnly: true
-                    {{- end }}
+                  {{- end }}
               volumes:
                 {{- if .Values.auth.client.secureTransport }}
                 - name: certs

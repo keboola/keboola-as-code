@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	ddotel "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/opentelemetry"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/keboola/keboola-as-code/internal/pkg/env"
@@ -74,19 +73,13 @@ func run() error {
 	tel, err := telemetry.New(
 		func() (trace.TracerProvider, error) {
 			if cfg.DatadogEnabled {
-				tracerProvider := ddotel.NewTracerProvider(
-					tracer.WithLogger(telemetry.NewDDLogger(logger)),
+				return telemetry.NewDDTracerProvider(
+					logger, proc,
 					tracer.WithRuntimeMetrics(),
 					tracer.WithSamplingRules([]tracer.SamplingRule{tracer.RateRule(1.0)}),
 					tracer.WithAnalyticsRate(1.0),
 					tracer.WithDebugMode(cfg.DatadogDebug),
-				)
-				proc.OnShutdown(func() {
-					if err := tracerProvider.Shutdown(); err != nil {
-						logger.Error(err)
-					}
-				})
-				return tracerProvider, nil
+				), nil
 			}
 			return nil, nil
 		},
