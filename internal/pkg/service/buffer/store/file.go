@@ -16,6 +16,14 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
+func (s *Store) CreateFile(ctx context.Context, file model.File) (err error) {
+	ctx, span := s.telemetry.Tracer().Start(ctx, "keboola.go.buffer.store.CreateFile")
+	defer span.End(&err)
+
+	_, err = s.createFileOp(ctx, file).Do(ctx, s.client)
+	return err
+}
+
 func (s *Store) createFileOp(_ context.Context, file model.File) op.BoolOp {
 	return s.schema.
 		Files().
@@ -118,7 +126,7 @@ func (s *Store) MarkFileImported(ctx context.Context, file *model.File) (err err
 			ops := []op.Op{fileStateOp}
 			for _, slice := range slices {
 				slice := slice
-				sliceStateOp, err := s.setSliceStateOp(ctx, now, &slice, slicestate.Imported)
+				sliceStateOp, err := s.setSliceStateOp(ctx, now, &slice, slicestate.Imported, nil)
 				if err != nil {
 					return nil, err
 				}
@@ -161,7 +169,7 @@ func (s *Store) CloseFile(ctx context.Context, file *model.File) (err error) {
 		Atomic().
 		Read(func() op.Op {
 			return op.MergeToTxn(
-				sumStatsOp(s.schema.Slices().Uploaded().InFile(file.FileKey).GetAll(), &stats),
+				SumStatsOp(s.schema.SliceStats().InState(slicestate.Uploaded).InFile(file.FileKey).GetAll(), &stats),
 			)
 		}).
 		WriteOrErr(func() (op.Op, error) {
@@ -169,9 +177,7 @@ func (s *Store) CloseFile(ctx context.Context, file *model.File) (err error) {
 
 			// Copy slice and do modifications
 			modFile := *file
-			if stats.RecordsCount > 0 {
-				modFile.Statistics = &stats
-			} else {
+			if stats.RecordsCount == 0 {
 				modFile.IsEmpty = true
 			}
 
@@ -268,7 +274,6 @@ func (s *Store) setFileStateOp(ctx context.Context, now time.Time, file *model.F
 				return errors.Errorf(`file "%s" not found in the "%s" state`, file.FileKey, file.State)
 			}
 			return nil
-
 		}),
 	}
 
