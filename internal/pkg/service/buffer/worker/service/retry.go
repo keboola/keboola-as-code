@@ -5,6 +5,9 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+
+	"github.com/keboola/keboola-as-code/internal/pkg/service/buffer/store/model"
+	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 )
 
 func NewRetryBackoff() *backoff.ExponentialBackOff {
@@ -27,4 +30,12 @@ func RetryAt(b *backoff.ExponentialBackOff, now time.Time, attempt int) time.Tim
 		total += interval
 	}
 	return now.Add(total)
+}
+
+func calculateFileRetryTime(f *model.File, now time.Time) *utctime.UTCTime {
+	attempt := f.RetryAttempt + 1
+	retryAfter := utctime.UTCTime(RetryAt(NewRetryBackoff(), now, attempt))
+	f.RetryAttempt = attempt
+	f.RetryAfter = &retryAfter
+	return f.RetryAfter
 }

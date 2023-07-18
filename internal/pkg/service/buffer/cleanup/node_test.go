@@ -170,15 +170,12 @@ func TestCleanup(t *testing.T) {
 	wildcards.Assert(t, `
 [task][1000/github/receiver.cleanup/%s]INFO  started task
 [task][1000/github/receiver.cleanup/%s]DEBUG  lock acquired "runtime/lock/task/1000/github/receiver.cleanup"
-[cleanup]INFO  started "1" receiver cleanup tasks
-%A
 [task][1000/github/receiver.cleanup/%s]DEBUG  deleted slice "1000/github/first/2006-01-02T08:04:05.000Z"
 [task][1000/github/receiver.cleanup/%s]DEBUG  deleted file "1000/github/first/2006-01-02T08:04:05.000Z"
 [task][1000/github/receiver.cleanup/%s]INFO  deleted "1" files, "1" slices, "1" records
 [task][1000/github/receiver.cleanup/%s]INFO  task succeeded (%s): receiver "1000/github" has been cleaned
 [task][1000/github/receiver.cleanup/%s]DEBUG  lock released "runtime/lock/task/1000/github/receiver.cleanup"
-%A
-`, strhelper.FilterLines(`^\[task|cleanup\]`, mock.DebugLogger().AllMessages()))
+`, strhelper.FilterLines(`^\[task\]\[1000/`, mock.DebugLogger().AllMessages()))
 
 	// Check keys
 	etcdhelper.AssertKVsString(t, client, `

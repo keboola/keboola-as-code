@@ -94,11 +94,14 @@ func (wr *ErrorWriter) WriteOrErr(ctx context.Context, w http.ResponseWriter, er
 	response.Message = errors.Format(errForResponse, errors.FormatAsSentences())
 
 	// Log error
-	logger := wr.logger.AddPrefix(fmt.Sprintf("[http][requestId=%s]", requestID))
-	if response.StatusCode > 499 {
-		logger.Error(errorLogMessage(err, response))
-	} else {
-		logger.Info(errorLogMessage(err, response))
+	var logEnabledProvider WithErrorLogEnabled
+	if !errors.As(err, &logEnabledProvider) || logEnabledProvider.ErrorLogEnabled() {
+		logger := wr.logger.AddPrefix(fmt.Sprintf("[http][requestId=%s]", requestID))
+		if response.StatusCode > 499 {
+			logger.Error(errorLogMessage(err, response))
+		} else {
+			logger.Info(errorLogMessage(err, response))
+		}
 	}
 
 	// Write response

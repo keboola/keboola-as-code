@@ -14,7 +14,6 @@ import (
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/etcdop"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task"
 	"github.com/keboola/keboola-as-code/internal/pkg/service/common/task/orchestrator"
-	"github.com/keboola/keboola-as-code/internal/pkg/service/common/utctime"
 	"github.com/keboola/keboola-as-code/internal/pkg/utils/errors"
 )
 
@@ -24,8 +23,9 @@ const (
 	// This re-check mechanism provides retries for failed tasks or failed worker nodes.
 	// In normal operation, switch to the "uploading" state is processed immediately, on event from the Watch API.
 	ImportingFilesCheckInterval = time.Minute
-
-	fileImportTaskType = "file.import"
+	fileImportTaskType          = "file.import"
+	fileImportTimeout           = 5 * time.Minute
+	fileMarkAsFailedTimeout     = 30 * time.Second
 )
 
 // importFiles watches for files switched to the importing state.
@@ -53,7 +53,7 @@ func (s *Service) importFiles(d dependencies) <-chan error {
 			}
 		},
 		TaskCtx: func() (context.Context, context.CancelFunc) {
-			return context.WithTimeout(context.Background(), 5*time.Minute)
+			return context.WithTimeout(context.Background(), fileImportTimeout)
 		},
 		TaskFactory: func(event etcdop.WatchEventT[model.File]) task.Fn {
 			return func(ctx context.Context, logger log.Logger) (result task.Result) {
@@ -63,11 +63,10 @@ func (s *Service) importFiles(d dependencies) <-chan error {
 				// Handle error
 				defer func() {
 					if result.IsError() {
-						attempt := fileRes.RetryAttempt + 1
-						retryAfter := utctime.UTCTime(RetryAt(NewRetryBackoff(), s.clock.Now(), attempt))
-						fileRes.RetryAttempt = attempt
-						fileRes.RetryAfter = &retryAfter
-						result = result.WithError(errors.Errorf(`file import failed: %w, import will be retried after "%s"`, result.Error(), fileRes.RetryAfter))
+						ctx, cancel := context.WithTimeout(context.Background(), fileMarkAsFailedTimeout)
+						defer cancel()
+						retryAt := calculateFileRetryTime(&fileRes, s.clock.Now())
+						result = result.WithError(errors.Errorf(`file import failed: %w, import will be retried after "%s"`, result.Error(), retryAt))
 						if err := s.store.MarkFileImportFailed(ctx, &fileRes); err != nil {
 							s.logger.Errorf(`cannot mark the file "%s" as failed: %s`, fileRes.FileKey, err)
 						}

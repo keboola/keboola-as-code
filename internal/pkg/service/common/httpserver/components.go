@@ -20,6 +20,9 @@ type Components struct {
 func newComponents(cfg Config, logger log.Logger) Components {
 	errorWr := NewErrorWriter(logger, cfg.ErrorNamePrefix, cfg.ExceptionIDPrefix)
 	errFmt := func(ctx context.Context, err error) goaHTTP.Statuser {
+		if v, ok := err.(errors.WithStatusCode); ok { //nolint:errorlint
+			return v
+		}
 		return errors.WrapWithStatusCode(err, errors.HTTPCodeFrom(err))
 	}
 	return Components{
